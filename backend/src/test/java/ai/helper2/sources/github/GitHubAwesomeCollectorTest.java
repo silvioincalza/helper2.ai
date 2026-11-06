@@ -7,6 +7,7 @@ import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.ListEntryText;
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
@@ -111,7 +112,8 @@ class GitHubAwesomeCollectorTest {
         DEEP,
         classifier,
         ai.helper2.shared.CategoryMatcher.NONE,
-        new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
+        SeedDiscoveryHosts.store());
   }
 
   /** Deep search as configured by default (ADR 0058). */

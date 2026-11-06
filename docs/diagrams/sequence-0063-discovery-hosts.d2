@@ -1,0 +1,35 @@
+# Sequence: an admin adds a news site, and the next discovery run reads it (ADR 0063).
+# Source of truth: frontend/src/pages/admin/DiscoveryHostsPanel.tsx,
+#   backend/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java,
+#   backend/src/main/kotlin/ai/helper2/scout/usecase/ManageDiscoveryHosts.kt,
+#   backend/src/main/java/ai/helper2/scout/internal/JdbcDiscoveryHostStore.java,
+#   backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java, DiscoveryPages.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0063-discovery-hosts.d2 && d2 sequence-0063-discovery-hosts.d2 sequence-0063-discovery-hosts.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(admin host)" {class: person}
+spa: "Settings page" {class: app}
+app: "Admin API\n(scout use case)" {class: app}
+db: PostgreSQL {class: data}
+scout: "Discovery run\n(next one)" {class: app}
+tavily: Tavily {class: ext}
+
+add: Add {
+  owner -> spa: "Host techcrunch.com, Writing sites, reason" {class: hot}
+  spa -> app: "POST /api/v1/admin/discovery-hosts\n{host, kind WRITING, reason}"
+  app -> app: "HostNames.check: techcrunch.com"
+  app -> db: "INSERT discovery_host ON CONFLICT DO NOTHING;\nINSERT admin_audit (ADD_DISCOVERY_HOST, ADDED)"
+  app -> spa: "201 {host, kind, addedBy, addedAt}"
+  spa -> owner: "Added: techcrunch.com is now in Writing sites."
+}
+
+use: Next run {
+  scout -> db: "SELECT host, kind FROM discovery_host" {class: hot}
+  scout -> scout: "DiscoveryPages(lists)"
+  scout -> tavily: "POST /search (each query)"
+  tavily -> scout: "results"
+  scout -> scout: "techcrunch.com/2026/…: ARTICLE candidate"
+}

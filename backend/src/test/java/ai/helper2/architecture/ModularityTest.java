@@ -160,7 +160,8 @@ class ModularityTest {
           Map.entry("source_cursor", "scout"),
           Map.entry("scout_run", "scout"),
           Map.entry("scout_schedule", "scout"),
-          Map.entry("enrichment_queue_control", "scout"));
+          Map.entry("enrichment_queue_control", "scout"),
+          Map.entry("discovery_host", "scout"));
 
   /**
    * Known exception, as "table module". The catalog's backlog query reads the Scout's

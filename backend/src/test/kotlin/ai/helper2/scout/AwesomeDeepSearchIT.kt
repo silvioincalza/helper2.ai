@@ -131,6 +131,7 @@ class AwesomeDeepSearchIT {
       RepoClassifier.Heuristic(),
       categories,
       SimpleMeterRegistry(),
+      SeedDiscoveryHosts.store(),
     )
 
   /** The Scout's own store in memory, so this run shares no cursor with other tests. */

@@ -6,6 +6,7 @@ import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
 import ai.helper2.sources.support.RunInterval;
@@ -70,7 +71,8 @@ class GitHubAwesomeLiveTest {
                 1, 3, Duration.ofMinutes(5), 20_000_000L, 50, 0, List.of("youtube.com")),
             nano,
             ai.helper2.shared.CategoryMatcher.NONE,
-            new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+            new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
+            SeedDiscoveryHosts.store());
 
     List<String> lists = collector.discoverLists();
     long started = System.nanoTime();

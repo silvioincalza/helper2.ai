@@ -16,6 +16,9 @@ import type {
   EnrichmentQueueView,
   RuntimeSettings,
   RuntimeSettingState,
+  DiscoveryHosts,
+  DiscoveryHostEntry,
+  DiscoveryHostKind,
   AdminHomeExample,
   ExampleCheckOutcome,
   ExampleDrafts,
@@ -130,6 +133,16 @@ export const adminApi = {
       `/admin/runtime-settings/${encodeURIComponent(key)}/reset`,
       { body },
     ),
+  listDiscoveryHosts: (signal?: AbortSignal) =>
+    request<DiscoveryHosts>('GET', '/admin/discovery-hosts', { signal }),
+  /** 400 invalid-request for a host that is not one or matches too much; 409 duplicate when it is listed. */
+  addDiscoveryHost: (body: { host: string; kind: DiscoveryHostKind; reason: string | null }) =>
+    request<DiscoveryHostEntry>('POST', '/admin/discovery-hosts', { body }),
+  /** 404 not-found when the host is in no list. */
+  removeDiscoveryHost: (host: string, reason: string | null) =>
+    request<void>('POST', `/admin/discovery-hosts/${encodeURIComponent(host)}/remove`, {
+      body: { reason },
+    }),
   /** 409 not-applicable when the resource is neither skipped nor out of retries; 404 for an unknown one. */
   requeueEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),

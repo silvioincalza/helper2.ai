@@ -2,10 +2,15 @@ package ai.helper2.sources.tavily;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.scout.HostLists;
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.shared.CanonicalUrl;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class DiscoveryPagesTest {
+
+  private static final DiscoveryPages PAGES = new DiscoveryPages(SeedDiscoveryHosts.LISTS);
 
   @Test
   void aProductSiteIsAHomePageOrOneLevelBelowItButNotWritingAboutOne() {
@@ -56,16 +61,17 @@ class DiscoveryPagesTest {
   @Test
   void aRepositoryOrAHomePageIsAProductWhateverItsTitleSays() {
     DiscoveryPages.Page repo =
-        DiscoveryPages.classify(
+        PAGES.classify(
             CanonicalUrl.of("https://github.com/danny-avila/LibreChat"),
             "Top 10 alternatives to ChatGPT");
     assertThat(repo.shape()).isEqualTo(DiscoveryPages.Shape.PRODUCT);
     DiscoveryPages.Page list =
-        DiscoveryPages.classify(
+        PAGES.classify(
             CanonicalUrl.of("https://example.com/blog/12-best-ai-tools"), "12 Best AI Tools");
     assertThat(list.shape()).isEqualTo(DiscoveryPages.Shape.LIST);
     assertThat(
-            DiscoveryPages.classify(
+            PAGES
+                .classify(
                     CanonicalUrl.of("https://example.com/blog/how-we-built-it"), "How we built it")
                 .shape())
         .isEqualTo(DiscoveryPages.Shape.ARTICLE);
@@ -77,8 +83,7 @@ class DiscoveryPagesTest {
     String engadget =
         "https://www.engadget.com/2300677/google-gemini-carbon-promises-significant-leap-in-ai-coding";
     DiscoveryPages.Page page =
-        DiscoveryPages.classify(
-            CanonicalUrl.of(engadget), " Google Gemini Carbon promises a leap ");
+        PAGES.classify(CanonicalUrl.of(engadget), " Google Gemini Carbon promises a leap ");
     assertThat(page.shape()).isEqualTo(DiscoveryPages.Shape.ARTICLE);
     assertThat(page.url()).isEqualTo(CanonicalUrl.of(engadget));
     assertThat(page.title()).isEqualTo("Google Gemini Carbon promises a leap");
@@ -105,11 +110,26 @@ class DiscoveryPagesTest {
   }
 
   private static boolean writing(String url) {
-    return DiscoveryPages.isWritingPage(CanonicalUrl.of(url));
+    return PAGES.isWritingPage(CanonicalUrl.of(url));
   }
 
   private static String site(String url) {
-    CanonicalUrl found = DiscoveryPages.productSite(CanonicalUrl.of(url));
+    CanonicalUrl found = PAGES.productSite(CanonicalUrl.of(url));
     return found == null ? null : found.getValue();
+  }
+
+  @Test
+  void theHostListsAreTheOnesGivenNotFixedInCode() {
+    CanonicalUrl post = CanonicalUrl.of("https://example.org/some-launch-news-today");
+    CanonicalUrl directoryPage = CanonicalUrl.of("https://example.org/");
+    DiscoveryPages none = new DiscoveryPages(new HostLists(Set.of(), Set.of()));
+    DiscoveryPages directory = new DiscoveryPages(new HostLists(Set.of(), Set.of("example.org")));
+    DiscoveryPages writing = new DiscoveryPages(new HostLists(Set.of("example.org"), Set.of()));
+
+    assertThat(none.productSite(directoryPage)).isNotNull();
+    assertThat(directory.productSite(directoryPage)).isNull();
+    assertThat(directory.isWritingPage(post)).isFalse();
+    assertThat(writing.isWritingPage(CanonicalUrl.of("https://example.org/launch"))).isTrue();
+    assertThat(none.isWritingPage(CanonicalUrl.of("https://example.org/launch"))).isFalse();
   }
 }

@@ -130,7 +130,9 @@
         "REQUEUE_ENRICHMENT": "Enrichment requeued",
         "SKIP_ENRICHMENT": "Enrichment skipped",
         "PRIORITISE_ENRICHMENT": "Enrichment moved to the top",
-        "BACKFILL_CATEGORIES": "Categories assigned again"
+        "BACKFILL_CATEGORIES": "Categories assigned again",
+        "ADD_DISCOVERY_HOST": "Discovery host added",
+        "REMOVE_DISCOVERY_HOST": "Discovery host removed"
       }
     },
     "budget": {
@@ -292,6 +294,47 @@
         "current": "current",
         "restoreLabel": "Restore {{value}} from {{at}}",
         "restore": "Restore"
+      },
+      "hosts": {
+        "title": "Discovery hosts",
+        "lede": "Sites discovery knows by name. A post on a writing site is proposed as an article; a page on a directory is never kept. The next discovery run uses your change.",
+        "addTitle": "Add a host",
+        "host": "Host",
+        "list": "List",
+        "reason": "Reason (optional)",
+        "add": "Add host",
+        "empty": "Enter a host name, such as techcrunch.com.",
+        "added": "Added: {{host}} is now in {{list}}.",
+        "removed": "Removed: {{host}}.",
+        "refused": "Not saved: {{detail}}",
+        "failed": "The action failed. Please try again.",
+        "loadError": "Could not load the discovery hosts.",
+        "kind": {
+          "WRITING": "Writing sites",
+          "DIRECTORY": "Directories"
+        },
+        "listTitle": {
+          "WRITING_one": "Writing sites ({{count}})",
+          "WRITING_other": "Writing sites ({{count}})",
+          "DIRECTORY_one": "Directories ({{count}})",
+          "DIRECTORY_other": "Directories ({{count}})"
+        },
+        "none": "No hosts in this list.",
+        "col": {
+          "host": "Host",
+          "added": "Added",
+          "actions": "Actions"
+        },
+        "addedBy": "by {{who}} · {{at}}",
+        "remove": "Remove",
+        "removeLabel": "Remove {{host}}",
+        "removeTitle": "Remove {{host}} from {{list}}?",
+        "removeEffect": {
+          "WRITING": "Its posts are then proposed only when their address looks like a post.",
+          "DIRECTORY": "Its pages can then be proposed as products."
+        },
+        "confirmRemove": "Remove host",
+        "cancel": "Cancel"
       }
     },
     "enrichment": {

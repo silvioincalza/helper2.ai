@@ -20,6 +20,7 @@ import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.DomainRoots;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
@@ -48,6 +49,7 @@ import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.CatalogLookup;
 import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
+import ai.helper2.scout.usecase.ManageDiscoveryHosts;
 import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RequeueEnrichment;
@@ -444,6 +446,13 @@ class ScoutConfiguration {
       UnitOfWork scoutUnitOfWork,
       Clock clock) {
     return new SkipEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+  }
+
+  /** The admin's changes to discovery's host lists (ADR 0063). */
+  @Bean
+  ManageDiscoveryHosts manageDiscoveryHosts(
+      DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
+    return new ManageDiscoveryHosts(hosts, audit, scoutUnitOfWork, clock);
   }
 
   @Bean

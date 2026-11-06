@@ -5,6 +5,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.ListText;
 import ai.helper2.search.PopularityKind;
@@ -26,6 +27,7 @@ import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import ai.helper2.sources.tavily.DiscoveryPages;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.time.Clock;
@@ -123,6 +125,7 @@ public class GitHubAwesomeCollector implements Collector {
   private final Deep deep;
   private final ProductLinks productLinks;
   private final CategoryMatcher categories;
+  private final DiscoveryHostStore hosts;
   private final AwesomeMetrics metrics;
 
   public GitHubAwesomeCollector(
@@ -136,7 +139,8 @@ public class GitHubAwesomeCollector implements Collector {
       Deep deep,
       RepoClassifier classifier,
       CategoryMatcher categories,
-      MeterRegistry meters) {
+      MeterRegistry meters,
+      DiscoveryHostStore hosts) {
     this.clock = clock;
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -149,6 +153,7 @@ public class GitHubAwesomeCollector implements Collector {
     this.deep = deep;
     this.productLinks = new ProductLinks(deep.excludeDomains());
     this.categories = categories;
+    this.hosts = hosts;
     this.metrics = new AwesomeMetrics(meters);
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor =
@@ -191,12 +196,14 @@ public class GitHubAwesomeCollector implements Collector {
     if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
       return CollectedBatch.notDue();
     }
+    // Discovery's host lists as they are now (ADR 0063); a failed read fails the run first.
+    DiscoveryPages pages = new DiscoveryPages(hosts.lists());
     Pass pass = read(discoverListRepos());
     List<AwesomeListParser.Entry> all = pass.entries();
     int offset = offset(resumeCursor);
     List<SourceHit> listHits = listHits(pass.read(), startedAt);
     // Proposed once per pass, on its first run: a resumed run reads the same links again.
-    List<Candidate> candidates = offset == 0 ? candidates(pass.crawl()) : List.of();
+    List<Candidate> candidates = offset == 0 ? candidates(pass.crawl(), pages) : List.of();
     if (offset >= all.size()) {
       return batch(listHits, null, startedAt, candidates, pass.texts());
     }
@@ -381,12 +388,12 @@ public class GitHubAwesomeCollector implements Collector {
    * The links of every list read that point at a product's own site (ADR 0058), each site once, in
    * the order the lists were read, at most {@link Deep#maxLinksPerPass}. Every skip is counted.
    */
-  private List<Candidate> candidates(List<AwesomeCrawl.Read> crawl) {
+  private List<Candidate> candidates(List<AwesomeCrawl.Read> crawl, DiscoveryPages pages) {
     Map<String, Candidate> found = new LinkedHashMap<>();
     for (AwesomeCrawl.Read r : crawl) {
       CanonicalUrl list = CanonicalUrl.of(GITHUB + r.list().fullName());
       for (AwesomeListParser.Link link : r.parsed().links()) {
-        ProductLinks.Checked checked = productLinks.check(link.url());
+        ProductLinks.Checked checked = productLinks.check(link.url(), pages);
         if (checked.site() == null) {
           metrics.skipped("link-" + checked.skip().tag());
         } else if (found.containsKey(checked.site().getValue())) {
