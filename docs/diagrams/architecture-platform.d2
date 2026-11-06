@@ -52,7 +52,7 @@ platform: "platform (open module)" {
   class: group
   llm: "llm: LlmSettings · NvidiaOnly\nDailyBudget · BudgetLedger · RedisCallCounter\nModelCallMetrics · LlmPolicies" {class: app}
   http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
-  resilience: "resilience: Resilience\n(named policies on Resilience4j:\nredis, llm-chat, llm-embed, guide, …)\nOutboundThrottle" {class: app}
+  resilience: "resilience: Resilience\n(named policies on Resilience4j:\nredis, llm-chat, llm-embed,\nllm-embed-index, guide, …)\nOutboundThrottle" {class: app}
   quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
   cache: "cache: SharedCaches\nJdbcSharedCache\nSharedCacheRetention (daily purge)" {class: app}
   locks: "ClusterLock · ClusterLocks\n(ShedLock, database time)" {class: app}

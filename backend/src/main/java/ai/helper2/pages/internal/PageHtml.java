@@ -1,5 +1,6 @@
 package ai.helper2.pages.internal;
 
+import ai.helper2.monetisation.Monetisation;
 import ai.helper2.pages.Fact;
 import ai.helper2.pages.Link;
 import ai.helper2.pages.PageBody;
@@ -28,11 +29,17 @@ public class PageHtml {
   private final PageTemplate template;
   private final ObjectMapper json;
   private final String base;
+  private final Monetisation monetisation;
 
-  public PageHtml(PageTemplate template, ObjectMapper json, PagesProperties properties) {
+  public PageHtml(
+      PageTemplate template,
+      ObjectMapper json,
+      PagesProperties properties,
+      Monetisation monetisation) {
     this.template = template;
     this.json = json;
     this.base = properties.publicBaseUrl();
+    this.monetisation = monetisation;
   }
 
   public boolean available() {
@@ -70,6 +77,14 @@ public class PageHtml {
       }
       meta(h, "name", "twitter:card", "summary");
     }
+    // Google's site check for AdSense (ADR 0059). Without data-h2-head: it is the same on every
+    // page, so the app keeps it.
+    monetisation
+        .adsenseClient()
+        .ifPresent(c ->
+            h.append("<meta name=\"google-adsense-account\" content=\"")
+                .append(esc(c))
+                .append("\">"));
     for (Map<String, Object> data : head.getJsonLd()) {
       h.append("<script")
           .append(MARK)

@@ -164,9 +164,10 @@ are candidates in the admin review list.
       device. Claims are the vendor's own, quoted with their source." and "Not legal advice. We do not check whether a
       tool is right for your country or case."
     - **Home radar** ([0042](../frontend/0042-redesign-design-system-v4.md)): every category is a dot. With about 50
-      sources, fixed slots would leave some out, so a dot is placed when it comes on, clear of the 3 to 5 dots on the
+      sources, fixed slots would leave some out, so a dot is placed when it comes on, clear of the 5 to 10 dots on the
       radar, starting from its own point (it tends to come back to the same spot). New dots are picked in turn from
-      the live sources, the collectors and the categories, so 34 categories do not crowd out the rest.
+      the live sources, the collectors and the categories, so 34 categories do not crowd out the rest; within each
+      group the sources queue, so every category comes on before any comes back.
     - **Back office**: Run now for every collector, also one that never ran; the review queue filters by category
       (`?category=`, `ReviewItem.categories`), names every collector that found a page and shows the health and legal
       notices on their candidates. A candidate is a link (https only, `rel="noopener noreferrer nofollow"`), its

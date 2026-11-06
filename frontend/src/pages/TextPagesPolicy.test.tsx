@@ -22,6 +22,7 @@ const CHANGED = {
     storedWebResultsSeconds: 10 * DAY,
     inactiveAccountsSeconds: 547 * DAY,
     handledReportsSeconds: 6 * 30 * DAY,
+    adminRecordsSeconds: 547 * DAY,
   },
 };
 
@@ -81,6 +82,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     );
     expect(keep).toHaveTextContent('or 18 months after you last signed in');
     expect(keep).toHaveTextContent('Reports: 180 days after they were handled.');
+    expect(keep).toHaveTextContent('with their GitHub user ID: 18 months.');
     // Not in the API: typed in the page.
     expect(keep).toHaveTextContent('Database backups: 7 days.');
     expect(region('What we process and why')).toHaveTextContent(
@@ -157,6 +159,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent('Stored results: for a limited time.');
     expect(keep).toHaveTextContent('or a set time after you last signed in');
     expect(keep).toHaveTextContent('Reports: a set time after they were handled.');
+    expect(keep).toHaveTextContent('with their GitHub user ID: for a set time.');
     expect(keep).not.toHaveTextContent('24 months');
     expect(keep).not.toHaveTextContent('12 months');
     expect(keep).toHaveTextContent('Database backups: 7 days.');

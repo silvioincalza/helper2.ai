@@ -8,10 +8,12 @@ import ai.helper2.api.generated.model.LimitsDto;
 import ai.helper2.api.generated.model.LimitsWebSearchesDto;
 import ai.helper2.api.generated.model.MeDto;
 import ai.helper2.api.generated.model.MeLoginProvidersInnerDto;
+import ai.helper2.api.generated.model.MonetisationDto;
 import ai.helper2.api.generated.model.PreferencesChangeDto;
 import ai.helper2.api.generated.model.PreferencesDto;
 import ai.helper2.api.generated.model.ResourceTypeDto;
 import ai.helper2.api.generated.model.WebSearchesDto;
+import ai.helper2.identity.AdminHost;
 import ai.helper2.identity.Bookmarks.Bookmark;
 import ai.helper2.identity.Users.Preferences;
 import ai.helper2.identity.VisitorLimits;
@@ -23,6 +25,7 @@ import ai.helper2.identity.usecase.ListBookmarks;
 import ai.helper2.identity.usecase.MergeLocalBookmarks;
 import ai.helper2.identity.usecase.RemoveBookmark;
 import ai.helper2.identity.usecase.ShowPreferences;
+import ai.helper2.monetisation.Monetisation;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
@@ -63,6 +66,8 @@ class MeController implements MeApi {
   private final ChangePreferences changePreferences;
   private final ObjectProvider<ClientRegistrationRepository> registrations;
   private final VisitorLimits limits;
+  private final Monetisation monetisation;
+  private final AdminHost adminHost;
   private final Clock clock;
   private final HttpServletRequest request;
   private final HttpServletResponse response;
@@ -78,6 +83,8 @@ class MeController implements MeApi {
       ChangePreferences changePreferences,
       ObjectProvider<ClientRegistrationRepository> registrations,
       VisitorLimits limits,
+      Monetisation monetisation,
+      AdminHost adminHost,
       Clock clock,
       HttpServletRequest request,
       HttpServletResponse response) {
@@ -91,6 +98,8 @@ class MeController implements MeApi {
     this.changePreferences = changePreferences;
     this.registrations = registrations;
     this.limits = limits;
+    this.monetisation = monetisation;
+    this.adminHost = adminHost;
     this.clock = clock;
     this.request = request;
     this.response = response;
@@ -113,7 +122,19 @@ class MeController implements MeApi {
             }
           });
     }
-    return ResponseEntity.ok(me.limits(limitsToday()));
+    return ResponseEntity.ok(
+        me.limits(limitsToday())
+            .monetisation(monetisation(monetisation, adminHost.currentRequestOnAdminHost())));
+  }
+
+  /** What the site offers to fund itself (ADR 0057); nothing on the back office host. */
+  static MonetisationDto monetisation(Monetisation m, boolean onAdminHost) {
+    Monetisation shown = onAdminHost ? Monetisation.OFF : m;
+    return new MonetisationDto(
+        shown.githubSponsors().orElse(null),
+        shown.stripePayment().orElse(null),
+        shown.ga4MeasurementId().orElse(null),
+        shown.ethicalAdsPublisher().orElse(null));
   }
 
   /** Counted per client address or user, so read after the user is known (CurrentUser.id). */

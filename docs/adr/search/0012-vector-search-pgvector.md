@@ -24,10 +24,19 @@ never break keyword search.
 4. **Indexer** (`EmbeddingIndexer.tick`) on its own thread `embedding-indexer`, fixed delay: first after 30 s, then
    every 15 s (`helper2.catalog.indexer.every`). Each tick embeds up to 50 resources (`helper2.catalog.indexer.batch`) that have no
    vector for the model or whose `md5(title + "\n" + description)` changed, most popular first; demo rows are skipped.
-   It uses its own client with a 30 s timeout (`helper2.catalog.indexer.timeout`). After a rate limit it pauses for 2 min.
+   It uses its own client with a 30 s timeout (`helper2.catalog.indexer.timeout`) and its own circuit, `llm-embed-index`
+   ([0033](../foundation/0033-resilience-policies.md)), so its failures never refuse a search query's embedding. After a rate limit it pauses for 2 min.
+   When the API rejects a batch (an error answer: 5xx or another status that is not 429), the tick sends up to 5 of
+   its texts one per call (`helper2.catalog.indexer.singles-after-failure`); a text that fails on its own waits for
+   a later tick, and a rate limit, a refused call or a timeout ends the round. NVIDIA failed most calls of two or
+   more texts with 500 "service inference failed" while every single text went through (staging, 5 Nov 2026):
+   without the fallback the same batch failed every tick and the backlog never moved. The log line of a rejected
+   batch carries the provider's reason from the body, cut to 200 characters on one line; a query's failure carries
+   the status only, since a body can echo the visitor's text.
    Every replica runs the thread, but a tick runs only while it holds the cluster lock `embedding-indexer`
    (`platform.ClusterLock`, ShedLock row in PostgreSQL, see [0018](../scout/0018-scout-runner.md)): held at least 90 % of
-   the period (13.5 s) and at most 3 × the timeout + 1 min (2 min 30 s). So the cluster embeds one batch per
+   the period (13.5 s) and at most 3 × the timeout × (1 + the single texts after a failure) + 1 min (10 min with
+   30 s and 5 singles; the lock is not renewed). So the cluster embeds one batch per
    period, as with one replica; a replica whose tick finds the lock taken skips that period.
    Meters: `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`.
    The backlog counts what the indexer still has to do: rows with no vector for the model and rows whose text changed

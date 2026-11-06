@@ -1,0 +1,25 @@
+# Flowchart: the AdSense site check and ads.txt (ADR 0059).
+# Source of truth: backend/src/main/java/ai/helper2/monetisation/Monetisation.java,
+#   pages/internal/PageHtml.java, pages/web/CrawlerFiles.java.
+# Render: cd docs/diagrams && d2 fmt flow-0059-adsense.d2 && d2 flow-0059-adsense.d2 flow-0059-adsense.svg
+
+...@style
+
+direction: down
+
+req: "A request" {class: end}
+which: "Which address?" {class: decision}
+set: "H2_ADS_ADSENSE_CLIENT set?" {class: decision}
+set2: "H2_ADS_ADSENSE_CLIENT set?" {class: decision}
+line: "200 text/plain:\ngoogle.com, pub-..., DIRECT,\nf08c47fec0942fa0" {class: hot}
+missing: "404" {class: fail}
+tag: "Head + meta\ngoogle-adsense-account" {class: hot}
+plain: "Head without the tag" {class: data}
+
+req -> which
+which -> set: "/ads.txt"
+which -> set2: "a page (ADR 0050)"
+set -> line: yes
+set -> missing: no
+set2 -> tag: yes
+set2 -> plain: no

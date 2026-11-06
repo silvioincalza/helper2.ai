@@ -81,6 +81,8 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0040](frontend/0040-frontend-design.md) | Frontend design: home page, results with preview, guide picks bar, design system | 0015, 0025, 0038, 0039 | [flow](../diagrams/flow-0040-frontend-design.svg) · [sequence](../diagrams/sequence-0040-frontend-design.svg) |
 | [0042](frontend/0042-redesign-design-system-v4.md) | Redesign: design system version 4 (Geist fonts, one set of v4 tokens, header, footer, Home with radar, pinned box and the two lists, motion rule, numbers from data; page-by-page move) | 0015, 0017, 0025, 0038, 0040 | [flow](../diagrams/flow-0042-redesign.svg) · [sequence](../diagrams/sequence-0042-redesign.svg) |
 | [0050](frontend/0050-pages-for-crawlers.md) | Pages for crawlers: Spring writes the head and a short body for client routes, real 404s and 301s, one index-worthy rule, sitemap.xml and robots.txt | 0001, 0024, 0025, 0038, 0040 | [flow](../diagrams/flow-0050-pages-for-crawlers.svg) · [sequence](../diagrams/sequence-0050-pages-for-crawlers.svg) |
+| [0057](frontend/0057-monetisation.md) | Monetisation: gifts (GitHub Sponsors, Stripe), Google Analytics only after consent, one EthicalAds slot above the results that also shows while a search runs; CSP per part that is on; footer "No tracking ads." | 0024, 0025, 0040, 0042 | [flow](../diagrams/flow-0057-monetisation.svg) · [sequence](../diagrams/sequence-0057-monetisation.svg) |
+| [0059](frontend/0059-adsense.md) | Google AdSense, part 1: the site check tag on every page and /ads.txt from one setting; part 2 (resource pages, Google's consent tool) agreed | 0050, 0057 | [flow](../diagrams/flow-0059-adsense.svg) · [sequence](../diagrams/sequence-0059-adsense.svg) |
 
 ## Operations — [`operations/`](operations/)
 

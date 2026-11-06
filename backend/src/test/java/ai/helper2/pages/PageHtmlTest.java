@@ -3,6 +3,7 @@ package ai.helper2.pages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.helper2.monetisation.Monetisation;
 import ai.helper2.pages.config.PagesProperties;
 import ai.helper2.pages.internal.PageHtml;
 import ai.helper2.pages.internal.PageTemplate;
@@ -13,6 +14,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -37,13 +39,18 @@ class PageHtmlTest {
   @TempDir Path dist;
 
   private PageHtml html(String shell) throws IOException {
+    return html(shell, Monetisation.OFF);
+  }
+
+  private PageHtml html(String shell, Monetisation monetisation) throws IOException {
     Path index = Files.writeString(dist.resolve("index.html"), shell);
     PagesProperties properties =
         new PagesProperties("https://helper2.ai", false, index.toUri().toString(), 50_000);
     return new PageHtml(
         new PageTemplate(new DefaultResourceLoader(), properties),
         JsonMapper.builder().build(),
-        properties);
+        properties,
+        monetisation);
   }
 
   private static ResourceView hostile() {
@@ -78,6 +85,23 @@ class PageHtmlTest {
         .contains("<script type=\"module\" src=\"/assets/index.js\"></script>")
         .contains("<div id=\"root\"></div>")
         .doesNotContain("<title>Helper2.ai</title>");
+  }
+
+  @Test
+  void theAdSenseSiteCheckIsOnEveryPageWhileAdSenseIsOn() throws IOException {
+    Monetisation adsense =
+        new Monetisation(
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("ca-pub-4688630163076563"));
+    String page = html(SHELL, adsense).render(new Pages("https://helper2.ai").home());
+
+    assertThat(page)
+        .contains("<meta name=\"google-adsense-account\" content=\"ca-pub-4688630163076563\">");
+    assertThat(html(SHELL).render(new Pages("https://helper2.ai").home()))
+        .doesNotContain("google-adsense-account");
   }
 
   @Test
