@@ -19,8 +19,8 @@ import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.llm.BudgetLedger;
 import ai.helper2.platform.settings.RuntimeSetting;
-import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.RuntimeSettingStore;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
@@ -185,7 +185,11 @@ class AdminUseCaseConfiguration {
     @Override
     @Transactional
     public Outcome change(
-        String adminId, RuntimeSetting setting, long value, long expectedVersion, @Nullable String reason) {
+        String adminId,
+        RuntimeSetting setting,
+        long value,
+        long expectedVersion,
+        @Nullable String reason) {
       return super.change(adminId, setting, value, expectedVersion, reason);
     }
 
