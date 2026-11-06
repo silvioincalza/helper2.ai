@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import org.slf4j.LoggerFactory
 
@@ -329,6 +330,7 @@ class RunScoutTest {
           throw LlmUnavailable("daily enrichment budget used up")
       }
     val stranded = mutableListOf<Int>()
+    val requested = mutableListOf<UUID>()
     val hits = (0 until 5).map { hit("mcp", "https://github.com/a/r$it") }
     val c = FakeCollector(descriptor("mcp")) { CollectedBatch(hits, null, "cp") }
     val run =
@@ -341,7 +343,7 @@ class RunScoutTest {
           NO_LOCK,
           maxEnrichmentsPerRun = { 3 },
           backlog =
-            backlog { limit ->
+            backlog(requested = requested) { limit ->
               stranded += limit
               listOf(UUID.randomUUID())
             },
@@ -352,6 +354,55 @@ class RunScoutTest {
     assertEquals(0, run.enrichmentsQueued)
     assertEquals(listOf(EnrichmentOutcome.LLM_UNAVAILABLE), saved)
     assertEquals(emptyList(), stranded)
+    assertEquals(changedIds.drop(1), requested, "the rest wait for the backlog")
+    assertEquals("4 changed resources wait for the backlog (enrichment budget spent)", run.message)
+  }
+
+  @Test
+  fun `changed resources without a slot left go back to the backlog for a later run`() {
+    val store = RecordingEnrichmentStore()
+    val requested = mutableListOf<UUID>()
+    val hits = (0 until 3).map { hit("mcp", "https://github.com/a/r$it") }
+    val c = FakeCollector(descriptor("mcp")) { CollectedBatch(hits, null, "cp") }
+    val run =
+      RunScout(
+          listOf(c),
+          history,
+          catalog,
+          EnrichResource(model(true), store, clock),
+          clock,
+          NO_LOCK,
+          maxEnrichmentsPerRun = { 1 },
+          backlog = backlog(requested = requested) { emptyList() },
+        )
+        .runNow()!!
+        .single()
+    assertEquals(RunStatus.SUCCEEDED, run.status)
+    assertEquals(1, run.enrichmentsQueued)
+    assertEquals(changedIds.take(1), store.enriched)
+    assertEquals(changedIds.drop(1), requested)
+    assertEquals("2 changed resources wait for the backlog (enrichment budget spent)", run.message)
+  }
+
+  @Test
+  fun `a run for an unknown source id is refused before the lock and leaves no record`() {
+    val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
+    var lockAsked = false
+    val lock =
+      object : RunLock {
+        override fun <T : Any> runExclusively(task: Supplier<T>): T? {
+          lockAsked = true
+          return task.get()
+        }
+      }
+    val runner = RunScout(listOf(c), history, catalog, null, clock, lock)
+
+    val refused = assertFailsWith<UnknownSource> { runner.tryStart("nope") }
+
+    assertEquals("nope", refused.sourceId)
+    assertEquals(false, lockAsked)
+    assertEquals(emptyMap(), history.runs)
+    assertEquals(0, c.seenCheckpoints.size)
   }
 
   @Test
@@ -559,11 +610,19 @@ class RunScoutTest {
     }
   }
 
-  private fun backlog(eligible: (List<UUID>) -> List<UUID> = { it }, pending: (Int) -> List<UUID>) =
+  private fun backlog(
+    eligible: (List<UUID>) -> List<UUID> = { it },
+    requested: MutableList<UUID> = mutableListOf(),
+    pending: (Int) -> List<UUID>,
+  ) =
     object : EnrichmentBacklog {
       override fun pending(limit: Int) = pending(limit)
 
       override fun eligible(resourceIds: List<UUID>) = eligible(resourceIds)
+
+      override fun requestRun(resourceId: UUID) {
+        requested += resourceId
+      }
 
       override fun pendingCount() = 0L
 
@@ -771,6 +830,7 @@ class RunScoutTest {
         }
       }
     val scoutStore = history
+    val requested = mutableListOf<UUID>()
 
     val run =
       RunScout(
@@ -780,6 +840,7 @@ class RunScoutTest {
           EnrichResource(model(true), store, clock),
           clock,
           NO_LOCK,
+          backlog = backlog(requested = requested) { emptyList() },
         )
         .runNow()!!
         .single()
@@ -788,6 +849,7 @@ class RunScoutTest {
     assertEquals(3, run.itemsSeen)
     assertEquals(2, run.enrichmentsQueued)
     assertEquals(changedIds.drop(1), enriched)
+    assertEquals(changedIds.take(1), requested, "the failed one goes back to the backlog")
     assertEquals("1 enrichment failed; the backlog retries it", run.message)
     assertEquals(ScoutCursor(NOW.toString(), null, null), scoutStore.cursors["mcp"])
   }

@@ -22,6 +22,7 @@ import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RecheckResult;
 import ai.helper2.scout.usecase.StartScoutRun;
+import ai.helper2.scout.usecase.UnknownSource;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
 import java.util.UUID;
@@ -108,7 +109,12 @@ class AdminController implements AdminApi {
 
   @Override
   public ResponseEntity<List<ScoutRunDto>> startScoutRun(@Nullable ScoutRunRequestDto body) {
-    List<RunSummary> runs = startRun.start(adminId(), body == null ? null : body.getSourceId());
+    List<RunSummary> runs;
+    try {
+      runs = startRun.start(adminId(), body == null ? null : body.getSourceId());
+    } catch (UnknownSource e) {
+      throw new NotFoundException("No collector has this source id.");
+    }
     if (runs == null) {
       throw new ApiProblem(
           ProblemType.RUN_IN_PROGRESS,

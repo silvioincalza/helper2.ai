@@ -3,6 +3,7 @@ package ai.helper2.scout.internal;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Candidate;
 import ai.helper2.catalog.enrichment.EnrichmentResults;
+import ai.helper2.catalog.enrichment.StoredEnrichments;
 import ai.helper2.scout.CheckedCitation;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
@@ -47,16 +48,25 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
 
   private final EnrichmentCandidates candidates;
   private final EnrichmentResults results;
+  private final StoredEnrichments stored;
 
-  CatalogEnrichmentStore(EnrichmentCandidates candidates, EnrichmentResults results) {
+  CatalogEnrichmentStore(
+      EnrichmentCandidates candidates, EnrichmentResults results, StoredEnrichments stored) {
     this.candidates = candidates;
     this.results = results;
+    this.stored = stored;
   }
 
   /** Same text bar as {@link #pending}: a bare title gives the model nothing worth citing. */
   @Override
   public List<UUID> eligible(List<UUID> resourceIds) {
     return candidates.withEnoughText(resourceIds, MIN_DESCRIPTION);
+  }
+
+  /** Back to NOT_RUN with the request time, so {@link #pending} takes it on a later run. */
+  @Override
+  public void requestRun(UUID resourceId) {
+    stored.requestRun(resourceId);
   }
 
   /**

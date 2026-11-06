@@ -77,8 +77,14 @@ private class EnrichmentBudget(private var remaining: Int) {
 /** A collector of a run and its record as saved when the run started. */
 private class Planned(val collector: Collector, val summary: RunSummary)
 
-/** What enriching the changed resources of one collector did. */
-private class EnrichmentCounts(val queued: Int, val failed: Int)
+/**
+ * What enriching the changed resources of one collector did: [deferred] had no slot left (budget
+ * spent or the LLM gone) and wait in the backlog for a later run.
+ */
+private class EnrichmentCounts(val queued: Int, val failed: Int, val deferred: Int)
+
+/** A run asked for one source, and no collector has that id. */
+class UnknownSource(val sourceId: String) : IllegalArgumentException("unknown source: $sourceId")
 
 /**
  * Scheduled, deterministic collection. Each collector runs in isolation: one failure never stops
@@ -124,9 +130,13 @@ class RunScout(
    * disabled), saved before collection begins. The run then collects, then spends what is left of
    * the enrichment budget on the backlog, so resources that missed earlier runs (budget, LLM
    * outage, transient failure) are not stranded. The lock is held until the run ends. Returns null,
-   * without doing anything, while a run holds the lock on any replica.
+   * without doing anything, while a run holds the lock on any replica. Throws [UnknownSource],
+   * before the lock, when no collector has [onlySourceId].
    */
   fun tryStart(onlySourceId: String? = null): List<RunSummary>? {
+    if (onlySourceId != null && collectors.none { it.descriptor.id == onlySourceId }) {
+      throw UnknownSource(onlySourceId)
+    }
     val started = CompletableFuture<List<RunSummary>?>()
     launcher.execute { runReportingStart(onlySourceId, started) }
     val runs = awaitStart(started)
@@ -289,9 +299,9 @@ class RunScout(
 
   /**
    * One enrichment that cannot fail the run: model errors are already outcomes, so this catches the
-   * rest (e.g. the database failing while material loads). null = not attempted; the backlog
-   * retries it. LLM_UNAVAILABLE stops enrichment for the rest of the run: the provider is down or
-   * the budget is spent. UNCHANGED made no model call, so its slot goes back to the budget.
+   * rest (e.g. the database failing while material loads). null = not attempted; the caller puts it
+   * back in the backlog. LLM_UNAVAILABLE stops enrichment for the rest of the run: the provider is
+   * down or the budget is spent. UNCHANGED made no model call, so its slot goes back to the budget.
    */
   private fun enrichQuietly(
     enrichment: EnrichResource,
@@ -463,19 +473,43 @@ class RunScout(
     changed: List<UUID>,
     budget: EnrichmentBudget,
   ): EnrichmentCounts {
-    if (enrichment == null) return EnrichmentCounts(0, 0)
+    if (enrichment == null) return EnrichmentCounts(0, 0, 0)
     var queued = 0
     var failed = 0
+    var deferred = 0
     for (resourceId in eligibleForEnrichment(sourceId, changed)) {
-      if (!budget.take(resourceId)) continue
+      if (resourceId in budget.attempted) continue
+      if (!budget.take(resourceId)) {
+        if (requestLaterRun(resourceId)) deferred++
+        continue
+      }
       when (enrichQuietly(enrichment, resourceId, budget)) {
-        null -> failed++
+        null -> {
+          failed++
+          requestLaterRun(resourceId)
+        }
+        // LLM_UNAVAILABLE is recorded on the resource; the backlog takes it again by itself.
         EnrichmentOutcome.UNCHANGED,
         EnrichmentOutcome.LLM_UNAVAILABLE -> {}
         else -> queued++
       }
     }
-    return EnrichmentCounts(queued, failed)
+    return EnrichmentCounts(queued, failed, deferred)
+  }
+
+  /**
+   * A changed resource this run could not enrich goes back to the backlog: an already enriched one
+   * would otherwise keep its old answer until its text changes again. True when it is there.
+   */
+  private fun requestLaterRun(resourceId: UUID): Boolean {
+    if (backlog == null) return false
+    return try {
+      backlog.requestRun(resourceId)
+      true
+    } catch (e: RuntimeException) {
+      log.warn("putting $resourceId back in the backlog failed: ${e.javaClass.simpleName}")
+      false
+    }
   }
 
   /** The [changed] resources the backlog still wants enriched; none when it cannot tell. */
@@ -515,15 +549,17 @@ class RunScout(
       batch.hits.size,
       changed,
       enriched.queued,
-      successNote(batch, enriched.failed),
+      successNote(batch, enriched),
     )
 
-  private fun successNote(batch: CollectedBatch, failed: Int): String? =
+  private fun successNote(batch: CollectedBatch, enriched: EnrichmentCounts): String? =
     listOfNotNull(
         "Stopped at item budget; next run resumes from the saved cursor"
           .takeIf { batch.nextCursor != null },
-        "$failed enrichment${if (failed == 1) "" else "s"} failed; the backlog retries ${if (failed == 1) "it" else "them"}"
-          .takeIf { failed > 0 },
+        "${enriched.failed} enrichment${if (enriched.failed == 1) "" else "s"} failed; the backlog retries ${if (enriched.failed == 1) "it" else "them"}"
+          .takeIf { enriched.failed > 0 },
+        "${enriched.deferred} changed resource${if (enriched.deferred == 1) " waits" else "s wait"} for the backlog (enrichment budget spent)"
+          .takeIf { enriched.deferred > 0 },
       )
       .joinToString(". ")
       .ifEmpty { null }

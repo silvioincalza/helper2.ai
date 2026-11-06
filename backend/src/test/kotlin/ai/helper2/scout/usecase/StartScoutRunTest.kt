@@ -2,16 +2,22 @@ package ai.helper2.scout.usecase
 
 import ai.helper2.identity.AuditTrail
 import ai.helper2.scout.CatalogIndex
+import ai.helper2.scout.CollectedBatch
+import ai.helper2.scout.Collector
 import ai.helper2.scout.RunLock
 import ai.helper2.scout.RunSummary
 import ai.helper2.scout.ScoutCursor
 import ai.helper2.scout.ScoutStore
+import ai.helper2.search.SourceDescriptor
+import ai.helper2.search.descriptor
 import java.time.Clock
 import java.time.Instant
 import java.util.function.Supplier
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 class StartScoutRunTest {
@@ -40,9 +46,17 @@ class StartScoutRunTest {
     override fun markInterrupted(at: Instant) = 0
   }
 
+  private class EmptyCollector(override val descriptor: SourceDescriptor) : Collector {
+    override fun collect(
+      checkpoint: String?,
+      resumeCursor: String?,
+      maxItems: Int,
+    ) = CollectedBatch(emptyList(), null, checkpoint)
+  }
+
   private fun runner(lock: RunLock) =
     RunScout(
-      emptyList(),
+      listOf(EmptyCollector(descriptor("mcp-registry"))),
       NoStore,
       CatalogIndex { _, _ -> emptyList() },
       null,
@@ -74,5 +88,13 @@ class StartScoutRunTest {
     assertNull(StartScoutRun(runner(held), trail).start("1234567", null))
     assertEquals("BUSY", audit.single().outcome)
     assertNull(audit.single().targetId)
+  }
+
+  @Test
+  fun `a run for an unknown source id is refused and leaves no audit entry`() {
+    val refused =
+      assertFailsWith<UnknownSource> { StartScoutRun(runner(free), trail).start("1234567", "nope") }
+    assertEquals("nope", refused.sourceId)
+    assertTrue(audit.isEmpty())
   }
 }

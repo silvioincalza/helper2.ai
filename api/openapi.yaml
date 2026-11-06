@@ -533,6 +533,11 @@ paths:
               schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
+        '404':
+          description: No collector has the given sourceId; nothing starts.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
 
   /admin/enrichment-recheck:
