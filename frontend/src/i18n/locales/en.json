@@ -1460,6 +1460,10 @@
             "text": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason or note they wrote: {{adminRecords}}.",
             "withoutNumbers": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason or note they wrote: for a set time."
           },
+          {
+            "text": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: {{runtimeSettingChanges}}. The latest change of each limit stays until a newer change replaces it.",
+            "withoutNumbers": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: for a set time. The latest change of each limit stays until a newer change replaces it."
+          },
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
           "Pages of a product's own website: the raw page is never stored. Their cleaned text: up to 24 hours, to try again. The page address and a fingerprint of its text: 30 days.",
