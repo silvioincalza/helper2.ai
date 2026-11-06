@@ -23,24 +23,30 @@ function RelList({ items }: { items: Relationship[] }) {
   const { t } = useTranslation();
   return (
     <ul className="plain-list rel-list">
-      {items.map((r, i) => (
-        <li key={`${r.kind}-${r.targetTitle}-${i}`}>
-          <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
-          {r.targetId ? (
-            <Link to={resourcePath(r.targetId, r.targetTitle)}>{r.targetTitle}</Link>
-          ) : (
-            r.targetTitle
-          )}{' '}
-          <VerificationBadge verification={r.verification} />
-          {r.origin === 'SELF_DECLARED' && (
-            <>
-              {' '}
-              <OriginLabel origin={r.origin} />
-            </>
-          )}
-          <EvidenceList evidence={r.evidence} />
-        </li>
-      ))}
+      {items.map((r, i) => {
+        // A link a model read from the text is AI-written: labelled, and marked in the HTML (ADR 0038).
+        const ai = r.origin !== undefined && isAiOrigin(r.origin);
+        return (
+          <li key={`${r.kind}-${r.targetTitle}-${i}`}>
+            <span {...(ai ? aiMark() : {})}>
+              <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
+              {r.targetId ? (
+                <Link to={resourcePath(r.targetId, r.targetTitle)}>{r.targetTitle}</Link>
+              ) : (
+                r.targetTitle
+              )}
+            </span>{' '}
+            <VerificationBadge verification={r.verification} />
+            {ai && r.origin && (
+              <>
+                {' '}
+                <OriginLabel origin={r.origin} />
+              </>
+            )}
+            <EvidenceList evidence={r.evidence} />
+          </li>
+        );
+      })}
     </ul>
   );
 }

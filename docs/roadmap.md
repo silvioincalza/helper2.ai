@@ -227,6 +227,13 @@ Open items:
   only for the categories where code stays below the bar. Then fold use case into category (one facet, not two).
   Show the health and legal notices on the resource page of a resource in those categories.
 - An admin UI for the curated list.
+- Writing about a resource ([ADR 0062](adr/scout/0062-writing-about-a-resource.md)), next steps:
+  - in the review list, point an ABOUT candidate at a catalog resource, or create the resource (name, official URL,
+    type; the same URL gives the resource that has it, never a second one), or rename the target;
+  - edit a resource candidate before accepting it: type, title, tags, what it is about;
+  - fix a field of an enriched resource: drop the value, or set a curated one (CURATED wins over the source, the
+    source over the AI);
+  - on a model's or product's page, list the articles about it ("In the news").
 - Search inside awesome lists ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): once the search set has
   grades, compare recall and nDCG@10 with and without list words, and tune the half weight from that, not before.
   Then decide on embeddings of entry lines.

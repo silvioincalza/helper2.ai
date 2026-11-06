@@ -20,6 +20,9 @@ import ai.helper2.shared.Verification
  * licence or open-source value the source states wins over them. A summary sentence must keep to
  * its excerpts: every name and number in it is in them, most of its words too, and it holds no
  * superlative, certificate, popularity or comparison.
+ *
+ * ADR 0062 adds the type: an article, a news item or a paper keeps only audience, tech level and
+ * use case, and names what it is about with ABOUT relationships, at most three ([FieldsByType]).
  */
 class EvidenceValidator(
   private val minExcerpt: Int = MIN_EXCERPT_CHARS,
@@ -47,7 +50,9 @@ class EvidenceValidator(
     /** Fields the model may estimate without a quote; stored as AI_ESTIMATED (ADR 0056). */
     @JvmField val JUDGEMENT_FIELDS = setOf("audience", "techLevel")
 
-    val RELATIONSHIP_KINDS = setOf("INTEGRATES_WITH", "USES", "SUPPORTS", "COMPATIBLE_WITH")
+    /** ABOUT is only for writing, the others only for the rest ([FieldsByType], ADR 0062). */
+    val RELATIONSHIP_KINDS =
+      setOf("INTEGRATES_WITH", "USES", "SUPPORTS", "COMPATIBLE_WITH", FieldsByType.ABOUT)
     val USE_CASES =
       setOf(
         "writing",
@@ -258,7 +263,7 @@ class EvidenceValidator(
 
     fun validate(proposal: EnrichmentProposal): ValidationResult {
       val fields = proposal.fields.map(::field)
-      val relationships = capSelfDeclared(proposal.relationships.map(::relationship))
+      val relationships = capAbout(capSelfDeclared(proposal.relationships.map(::relationship)))
       val claims = proposal.summary.take(MAX_SUMMARY_CLAIMS).mapNotNull(::claim)
       val proposed = proposal.fields.size + proposal.relationships.size + proposal.summary.size
       val accepted =
@@ -281,6 +286,8 @@ class EvidenceValidator(
       val rule = allowed[f.field]
       return when {
         rule == null -> rejected(f, "$label: field not allowed")
+        !FieldsByType.allowsField(input.type, f.field) ->
+          rejected(f, "$label: not a fact of a ${input.type}, but of what it is about")
         !rule(f.value) -> rejected(f, "$label: value not allowed")
         f.field in JUDGEMENT_FIELDS -> estimated(f)
         else -> fact(f, label)
@@ -346,6 +353,9 @@ class EvidenceValidator(
       if (r.kind !in RELATIONSHIP_KINDS || r.target.isBlank() || r.target.length > 120) {
         return rejected("$label: invalid kind or target")
       }
+      if (!FieldsByType.allowsRelationship(input.type, r.kind)) {
+        return rejected("$label: not a relationship of a ${input.type}")
+      }
       val cited =
         check(r.citations, label)
           ?: return CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
@@ -385,6 +395,21 @@ class EvidenceValidator(
           kept < MAX_SELF_DECLARED_RELATIONSHIPS -> r.also { kept++ }
           else -> {
             errors += "relationship ${r.kind.take(20)} ${r.target.take(40)}: over the cap"
+            CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
+          }
+        }
+      }
+    }
+
+    /** Keeps the first [FieldsByType.MAX_ABOUT] subjects of a piece of writing. */
+    private fun capAbout(all: List<CheckedRelationship>): List<CheckedRelationship> {
+      var kept = 0
+      return all.map { r ->
+        when {
+          r.kind != FieldsByType.ABOUT || r.verification == Verification.REJECTED -> r
+          kept < FieldsByType.MAX_ABOUT -> r.also { kept++ }
+          else -> {
+            errors += "relationship ABOUT ${r.target.take(40)}: over the cap"
             CheckedRelationship(r.kind, r.target, null, Verification.REJECTED, emptyList())
           }
         }

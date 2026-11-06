@@ -4,6 +4,8 @@ import ai.helper2.identity.AuditTrail
 import ai.helper2.scout.EnrichmentStore
 import ai.helper2.scout.EvidenceRules
 import ai.helper2.scout.FieldTargets
+import ai.helper2.scout.FieldsByType
+import ai.helper2.shared.ResourceType
 import ai.helper2.shared.ValueOrigin
 import ai.helper2.shared.Verification
 import io.micrometer.core.instrument.MeterRegistry
@@ -27,6 +29,7 @@ data class StoredClaimAnswer(val id: UUID, val text: String, val excerpts: List<
 data class StoredAnswer(
   val resourceId: UUID,
   val title: String,
+  val type: ResourceType,
   val promptVersion: String?,
   val fields: List<StoredFieldAnswer>,
   val claims: List<StoredClaimAnswer>,
@@ -64,6 +67,8 @@ data class RecheckResult(
  * rules to what earlier runs stored instead:
  * - a verified pricing, type or use case whose quotes do not state the value is rejected (it shows
  *   "Not stated");
+ * - a field an article, a news item or a paper does not keep (pricing, licence, platforms, open
+ *   source, type: facts of what it is about, ADR 0062) is rejected, whatever its verification;
  * - a summary claim that fails the claim check (names and numbers in its excerpts, enough of its
  *   words, no superlative, certificate, popularity or comparison) is dropped;
  * - a resource that still misses a target fact of its type (FieldTargets), has more to read (a
@@ -88,8 +93,8 @@ constructor(
   private val log = LoggerFactory.getLogger(RecheckEnrichments::class.java)
 
   companion object {
-    /** The marker of the first re-check, the one the prompt enrich-v4 needs. */
-    const val TASK = "recheck-enrichment-enrich-v4"
+    /** The marker of the first re-check, the one the prompt enrich-v5 needs (ADR 0062). */
+    const val TASK = "recheck-enrichment-enrich-v5"
     const val BATCH = 200
     private val AI_FACTS = setOf(ValueOrigin.AI_EXTRACTED, ValueOrigin.SELF_DECLARED)
   }
@@ -131,7 +136,7 @@ constructor(
 
   private fun recheck(resourceId: UUID): RecheckResult {
     val stored = answers.stored(resourceId)
-    val failing = stored.fields.filter(::failsTheNewRules)
+    val failing = stored.fields.filter { failsTheNewRules(it) || notKeptBy(stored.type, it) }
     val dropped =
       stored.claims.filter {
         EvidenceRules.claimProblem(it.text, it.excerpts, stored.title) != null
@@ -149,6 +154,12 @@ constructor(
       f.origin in AI_FACTS &&
       f.field in EvidenceRules.NEWLY_STATED &&
       f.excerpts.none { EvidenceRules.statesValue(it, f.field, f.value) }
+
+  /** An AI field writing does not keep (ADR 0062): a fact of what it is about, not of the page. */
+  private fun notKeptBy(type: ResourceType, f: StoredFieldAnswer): Boolean =
+    f.verification != Verification.REJECTED &&
+      f.origin != ValueOrigin.CURATED &&
+      !FieldsByType.allowsField(type, f.field)
 
   /**
    * True when a target fact is still missing, there is more to read, and the last run predates

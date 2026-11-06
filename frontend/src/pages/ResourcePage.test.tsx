@@ -347,6 +347,30 @@ describe('resource detail', () => {
     expect(screen.getByText('No verified relationships.')).toBeInTheDocument();
   });
 
+  it('labels and marks relationships extracted by AI, verified or not, and not those a source states (ADR 0038)', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          relationships: [
+            { ...rel('Gemini 4 Carbon', 'VERIFIED'), kind: 'ABOUT', origin: 'AI_EXTRACTED' },
+            { ...rel('Claude', 'UNVERIFIED'), kind: 'ABOUT', origin: 'AI_EXTRACTED' },
+            { ...rel('Slack', 'VERIFIED'), origin: 'SOURCE_PROVIDED' },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const item = async (title: string) =>
+      (await screen.findByText(title)).closest('li') as HTMLElement;
+    for (const title of ['Gemini 4 Carbon', 'Claude']) {
+      const li = await item(title);
+      expect(within(li).getByText('Extracted by AI')).toBeInTheDocument();
+      expect(within(li).getByText(title).closest('[data-ai-generated="true"]')).not.toBeNull();
+    }
+    const slack = await item('Slack');
+    expect(within(slack).queryByText('Extracted by AI')).not.toBeInTheDocument();
+    expect(slack.querySelector('[data-ai-generated]')).toBeNull();
+  });
+
   it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0038)', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>

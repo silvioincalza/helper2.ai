@@ -15,6 +15,12 @@ Rules:
   If no listed value fits, omit the field. One entry per value: two use cases = two "useCase" entries.
 {{allowedValues}}
 - Do not output dates, popularity, prices in currency, or URLs.
+- The resource's type is given before the material. ARTICLE, NEWS and PAPER are writing about other
+  resources: give them only audience, techLevel and useCase (the topic of the writing). Never give
+  them the pricing, license, openSource, platforms or type of the models and products they talk about.
+  Instead give one relationship of kind ABOUT for each model, product or tool the writing is mainly
+  about, at most {{maxAbout}}; the target is its name as the material writes it ("Gemini 4 Carbon").
+  For every other type, never use ABOUT.
 - Relationship target = the other product's name. Name only what the material says the resource works with,
   at most {{maxSelfDeclaredRelationships}} from a vendor page.
 - Summary: at most {{maxSummaryClaims}} short factual sentences about what the resource is and does.

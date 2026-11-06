@@ -68,12 +68,13 @@ public class JdbcEnrichmentResults
   /** Two statements: the fields with their excerpts, the claims with theirs. */
   @Override
   public Stored stored(UUID resourceId) {
-    String title =
-        jdbc.sql("SELECT title FROM resource WHERE id = :id")
+    String[] resource =
+        jdbc.sql("SELECT title, type FROM resource WHERE id = :id")
             .param("id", resourceId)
-            .query(String.class)
+            .query((rs, n) -> new String[] {rs.getString("title"), rs.getString("type")})
             .optional()
-            .orElse("");
+            .orElse(new String[] {"", "OTHER"});
+    String title = resource[0];
     Map<UUID, StoredField> fields = new LinkedHashMap<>();
     jdbc.sql(
             """
@@ -139,6 +140,7 @@ public class JdbcEnrichmentResults
     return new Stored(
         resourceId,
         title,
+        resource[1],
         promptVersion,
         List.copyOf(fields.values()),
         List.copyOf(claims.values()));

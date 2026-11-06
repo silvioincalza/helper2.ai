@@ -15,6 +15,7 @@ import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentProposal;
 import ai.helper2.scout.EvidenceValidator;
+import ai.helper2.scout.FieldsByType;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ModelAnswerInvalid;
@@ -40,11 +41,13 @@ import org.springframework.ai.converter.BeanOutputConverter;
 class SpringAiEnrichmentModel implements EnrichmentModel {
 
   /**
-   * v4 (ADR 0056): pricing, type and use case need the value in the excerpt too, audience and tech
-   * level may be estimated without a quote, vendor pages are marked, and summary sentences keep to
-   * their excerpts. (v3 marked the material as untrusted data; v2 listed the allowed values.)
+   * v5 (ADR 0062): the resource's type comes with the material; an article, a news item or a paper
+   * keeps only audience, tech level and use case and names what it is about with ABOUT. v4 (ADR
+   * 0056): pricing, type and use case need the value in the excerpt too, audience and tech level
+   * may be estimated without a quote, vendor pages are marked, and summary sentences keep to their
+   * excerpts. (v3 marked the material as untrusted data; v2 listed the allowed values.)
    */
-  static final String PROMPT_VERSION = "enrich-v4";
+  static final String PROMPT_VERSION = "enrich-v5";
 
   /**
    * Longest material text sent per material: a source record or README keeps 4000 characters, a
@@ -69,7 +72,9 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                 "maxSummaryClaims",
                 EvidenceValidator.MAX_SUMMARY_CLAIMS,
                 "maxSelfDeclaredRelationships",
-                EvidenceValidator.MAX_SELF_DECLARED_RELATIONSHIPS));
+                EvidenceValidator.MAX_SELF_DECLARED_RELATIONSHIPS,
+                "maxAbout",
+                FieldsByType.MAX_ABOUT));
   }
 
   /** Schema the model must follow. */
@@ -144,7 +149,11 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                     + UntrustedText.untrusted(m.getText(), MAX_MATERIAL_CHARS)
                     + "\n</material>")
             .collect(Collectors.joining("\n"));
-    String answer = call(UntrustedText.untrusted(input.getResourceTitle(), 300), material);
+    String answer =
+        call(
+            UntrustedText.untrusted(input.getResourceTitle(), 300),
+            input.getType().name(),
+            material);
     Output out = parse(answer);
     if (out == null) {
       return new EnrichmentProposal(List.of(), List.of(), List.of());
@@ -167,7 +176,7 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
    * will not fix itself and is a FAILED attempt. The budget unit is taken inside the {@code
    * llm-chat} circuit, so a call the open circuit refuses costs nothing and is LLM_UNAVAILABLE too.
    */
-  private String call(String title, String material) {
+  private String call(String title, String type, String material) {
     try {
       return resilience.call(
           LlmPolicies.CHAT,
@@ -186,8 +195,10 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                           .system(system)
                           .user(u ->
                               u.text(
-                                      "Resource: {title}\n\nSOURCE MATERIAL:\n{material}\n\n{format}")
+                                      "Resource: {title}\nType: {type}\n\n"
+                                          + "SOURCE MATERIAL:\n{material}\n\n{format}")
                                   .param("title", title)
+                                  .param("type", type)
                                   .param("material", material)
                                   .param("format", converter.getFormat()))
                           .call()

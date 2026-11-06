@@ -147,11 +147,12 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
                     s.recordId(), s.sourceId(), s.externalId(), s.url(), s.repositoryUrl()))
             .toList();
     GapTarget gap = GapTargets.select(records);
+    ResourceType type = typeOf(candidate.type());
     return new EnrichmentMaterial(
-        new EnrichmentInput(candidate.title(), materials, facts, Map.of()),
+        new EnrichmentInput(candidate.title(), materials, facts, Map.of(), type),
         sha(allText),
         gap,
-        typeOf(candidate.type()),
+        type,
         PageTargets.select(records));
   }
 

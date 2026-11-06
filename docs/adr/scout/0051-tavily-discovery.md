@@ -1,6 +1,6 @@
 # 0051 — Tavily discovery: one collector per category of the AI world, lists indexed, products reviewed
 
-**Status.** Accepted. **Builds on:** [0007](../foundation/0007-configuration-and-secrets.md), [0018](0018-scout-runner.md), [0019](0019-evidence-gated-enrichment.md), [0020](0020-scout-collectors.md), [0033](../foundation/0033-resilience-policies.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0042](../frontend/0042-redesign-design-system-v4.md)
+**Status.** Accepted. **Builds on:** [0007](../foundation/0007-configuration-and-secrets.md), [0018](0018-scout-runner.md), [0019](0019-evidence-gated-enrichment.md), [0020](0020-scout-collectors.md), [0033](../foundation/0033-resilience-policies.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0042](../frontend/0042-redesign-design-system-v4.md) **Amended by:** [0062](0062-writing-about-a-resource.md) (posts about products are ARTICLE candidates).
 
 ## Context
 The Scout's sources are good at models (Hugging Face), MCP servers (the registry) and repositories (GitHub). They

@@ -127,10 +127,11 @@ public class TavilyDiscoveryCollector implements Collector {
             URI.create("https://tavily.com/terms"),
             category.indexLists()
                 ? "Web results via the Tavily Search API; each links to the original publisher."
-                    + " List articles are added without review; products are added only after a"
-                    + " person checks them."
+                    + " List articles are added without review; products and articles about them"
+                    + " are added only after a person checks them."
                 : "Web results via the Tavily Search API; each links to the original publisher."
-                    + " Products are added only after a person checks them.",
+                    + " Products and articles about them are added only after a person checks"
+                    + " them.",
             resourceTypes(category),
             settings.timeout(),
             settings.cacheTtl(),
@@ -144,13 +145,9 @@ public class TavilyDiscoveryCollector implements Collector {
             category.family().id());
   }
 
-  /** The category's product type, and list pages when it indexes them. */
+  /** The category's product type, and the articles about them (list pages, posts: ADR 0062). */
   private static Set<ResourceType> resourceTypes(DiscoveryCategory category) {
-    Set<ResourceType> types = EnumSet.of(category.type());
-    if (category.indexLists()) {
-      types.add(ResourceType.ARTICLE);
-    }
-    return types;
+    return EnumSet.of(category.type(), ResourceType.ARTICLE);
   }
 
   @Override
@@ -202,7 +199,7 @@ public class TavilyDiscoveryCollector implements Collector {
         startedAt.toString(),
         false,
         found.values().stream()
-            .filter(f -> f.page().shape() == Shape.PRODUCT)
+            .filter(f -> f.page().shape() != Shape.LIST)
             .map(this::candidate)
             .toList());
   }
@@ -289,9 +286,9 @@ public class TavilyDiscoveryCollector implements Collector {
   }
 
   /**
-   * The result as a list page or a product site, or null when it is dropped: below the score floor,
-   * not about AI, neither shape, a list page while lists are off, or without this category's words
-   * while they are required.
+   * The result as a list page, a product site or an article, or null when it is dropped: below the
+   * score floor, not about AI, none of the shapes, a list page while lists are off, or without this
+   * category's words while they are required.
    */
   private @Nullable Found keep(
       JsonNode root, JsonNode r, int rank, String query, Instant searchedAt) {
@@ -366,7 +363,7 @@ public class TavilyDiscoveryCollector implements Collector {
         f.page().title(),
         evidence(f.content()),
         String.join(", ", tags),
-        category.type(),
+        f.page().shape() == Shape.ARTICLE ? ResourceType.ARTICLE : category.type(),
         tags,
         f.facts());
   }

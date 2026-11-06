@@ -34,7 +34,9 @@ constructor(
     get() = anchorRecordId != evidenceId
 }
 
-data class EnrichmentInput(
+data class EnrichmentInput
+@JvmOverloads
+constructor(
   val resourceTitle: String,
   val materials: List<Material>,
   /** Values the sources themselves state; the model may not overwrite them. */
@@ -44,6 +46,8 @@ data class EnrichmentInput(
    * are proposed.
    */
   val knownResources: Map<String, UUID> = emptyMap(),
+  /** The catalog's type: writing (ADR 0062) keeps fewer fields and names its subjects. */
+  val type: ResourceType = ResourceType.OTHER,
 )
 
 /**

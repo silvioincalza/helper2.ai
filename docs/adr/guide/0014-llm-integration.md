@@ -92,7 +92,7 @@ Without a configured model the application must still work.
   `UntrustedText`.
 - `backend/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
 - `backend/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
-  `guide/verify-reasons.txt`, `search/translate-query.txt`, `scout/enrich-v4.txt`, `sources/classify-repos.txt`,
+  `guide/verify-reasons.txt`, `search/translate-query.txt`, `scout/enrich-v5.txt`, `sources/classify-repos.txt`,
   `setup/tool-guide.txt`.
 - `backend/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
 - `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,

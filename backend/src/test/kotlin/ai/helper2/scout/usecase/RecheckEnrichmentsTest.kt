@@ -51,6 +51,7 @@ class RecheckEnrichmentsTest {
       StoredAnswer(
         id,
         "Acme Notes",
+        ResourceType.PRODUCT,
         prompt,
         listOf(
             // "Start your free trial" does not state FREE under the new rules.
@@ -194,6 +195,7 @@ class RecheckEnrichmentsTest {
           StoredAnswer(
             resourceId,
             "Acme",
+            ResourceType.PRODUCT,
             "enrich-v4",
             emptyList(),
             listOf(
@@ -223,5 +225,45 @@ class RecheckEnrichmentsTest {
       }
     RecheckEnrichments(answers, enrichment, "enrich-v4", true, trail, meters).runByAdmin("42")
     assertEquals(listOf(partial), dropped)
+  }
+
+  @Test
+  fun `a news item loses the facts of what it is about, its topic stays`() {
+    val price = UUID.randomUUID()
+    val type = UUID.randomUUID()
+    val topic = UUID.randomUUID()
+    val rejected = mutableListOf<UUID>()
+    val answers =
+      object : StoredAnswers {
+        override fun judgedAfter(after: UUID?, limit: Int) =
+          if (after == null) listOf(withPage) else emptyList()
+
+        override fun stored(resourceId: UUID) =
+          StoredAnswer(
+            resourceId,
+            "Google Gemini Carbon promises a leap in AI coding",
+            ResourceType.NEWS,
+            "enrich-v3",
+            listOf(
+              field(price, "pricing", "FREEMIUM", "It comes with a free plan for developers"),
+              field(type, "type", "MODEL", "its latest Gemini 4 Carbon model")
+                .copy(verification = Verification.CONFLICTING),
+              field(topic, "useCase", "coding", "key areas like cybersecurity and coding"),
+            ),
+            emptyList(),
+          )
+
+        override fun rejectFields(ids: List<UUID>) = ids.count { rejected.add(it) }
+
+        override fun dropClaims(ids: List<UUID>) = 0
+
+        override fun requestRun(resourceId: UUID) {}
+
+        override fun claimOnce(name: String) = true
+      }
+    val r =
+      RecheckEnrichments(answers, enrichment, "enrich-v5", true, trail, meters).runByAdmin("42")
+    assertEquals(setOf(price, type), rejected.toSet())
+    assertEquals(2, r.fieldsRejected)
   }
 }
