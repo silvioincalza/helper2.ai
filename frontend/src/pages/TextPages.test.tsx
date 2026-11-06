@@ -33,7 +33,7 @@ describe('mission, privacy and terms pages', () => {
     renderApp('/mission');
     await screen.findByRole('heading', { level: 1, name: 'Our mission' });
     await settle();
-    expect(document.title).toBe('Mission · Helper2.ai');
+    await waitFor(() => expect(document.title).toBe('Mission · Helper2.ai'));
     expect(screen.getByRole('region', { name: 'What we promise' })).toHaveTextContent(
       'Proof before opinion',
     );
@@ -62,7 +62,7 @@ describe('mission, privacy and terms pages', () => {
     renderApp('/privacy');
     await screen.findByRole('heading', { level: 1, name: 'Privacy' });
     await settle();
-    expect(document.title).toBe('Privacy · Helper2.ai');
+    await waitFor(() => expect(document.title).toBe('Privacy · Helper2.ai'));
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute(
       'href',
       'mailto:helper2ai@incalza.me',
@@ -118,7 +118,7 @@ describe('mission, privacy and terms pages', () => {
     const { router } = renderApp('/terms');
     await screen.findByRole('heading', { level: 1, name: 'Terms of use' });
     await settle();
-    expect(document.title).toBe('Terms · Helper2.ai');
+    await waitFor(() => expect(document.title).toBe('Terms · Helper2.ai'));
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute(
       'href',
       'mailto:helper2ai@incalza.me',

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
@@ -9,7 +9,7 @@ describe('not found page', () => {
     renderApp('/no/such/page');
     await screen.findByRole('heading', { level: 1, name: 'Page not found' });
     await settle();
-    expect(document.title).toBe('Page not found · Helper2.ai');
+    await waitFor(() => expect(document.title).toBe('Page not found · Helper2.ai'));
     expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
   });
 });
