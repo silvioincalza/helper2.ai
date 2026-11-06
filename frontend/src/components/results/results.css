@@ -233,12 +233,12 @@ details[open] > .h2-fold-toggle .icon {
 .h2-type-more {
   position: relative;
 }
-/* Opens from More's right edge: More is the last tab, so on a phone it sits at the screen's edge. */
+/* Opens from More's left edge. On a phone it opens from the tabs row instead (below). */
 .h2-type-more__list {
   position: absolute;
   z-index: 5;
   top: 100%;
-  right: 0;
+  left: 0;
   min-width: 12rem;
   padding: var(--space-1);
   background: var(--surface);
@@ -592,7 +592,17 @@ details[open] > .h2-fold-toggle .icon {
     min-width: 0;
   }
   .h2-type-tabs {
+    position: relative;
     gap: 0;
+  }
+  /* More sits at the right edge, or at the left edge when the row wraps. The menu hangs from the row, which spans
+     the screen, so it stays inside the screen either way. More is the last tab, so the row's bottom is More's. */
+  .h2-type-more {
+    position: static;
+  }
+  .h2-type-more__list {
+    right: 0;
+    left: auto;
   }
   .h2-type-tab {
     padding: 0 var(--space-2);
