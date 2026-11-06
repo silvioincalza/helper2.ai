@@ -2,8 +2,10 @@ package ai.helper2.admin.config;
 
 import ai.helper2.admin.ExampleDrafts;
 import ai.helper2.admin.usecase.GetOverview;
+import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
 import ai.helper2.admin.usecase.ResolveReview;
+import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AddHomeExample;
@@ -15,6 +17,7 @@ import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.search.WebSearchQuota;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.ObjectProvider;
@@ -24,8 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The back office's use cases: plain classes over other modules' use cases and ports (ADR 0002).
- * The transaction of ResolveReview is declared here, on a subclass, so the use case itself stays
- * free of Spring.
+ * The transactions of ResolveReview and GetReviewEvidence are declared here, on subclasses, so the
+ * use cases themselves stay free of Spring.
  */
 @Configuration(proxyBeanMethods = false)
 class AdminUseCaseConfiguration {
@@ -46,6 +49,25 @@ class AdminUseCaseConfiguration {
   @Bean
   ListEnrichmentQueue listEnrichmentQueue(EnrichmentBacklog backlog) {
     return new ListEnrichmentQueue(backlog);
+  }
+
+  @Bean
+  GetReviewEvidence getReviewEvidence(ReviewQueue queue, ReviewEvidence evidence) {
+    return new ReadOnlyGetReviewEvidence(queue, evidence);
+  }
+
+  /** The item and its evidence read in one read-only transaction, so they agree. */
+  static class ReadOnlyGetReviewEvidence extends GetReviewEvidence {
+
+    ReadOnlyGetReviewEvidence(ReviewQueue queue, ReviewEvidence evidence) {
+      super(queue, evidence);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<View> get(UUID itemId) {
+      return super.get(itemId);
+    }
   }
 
   @Bean

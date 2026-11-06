@@ -4,14 +4,12 @@ import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * An administrator opens a review item and sees what it is about: the run or the relationship it
- * links to, with the quotes behind them (ADR 0045). Read-only.
+ * links to, with the quotes behind them (ADR 0045). Read-only. Its read-only transaction is
+ * declared where it is wired (AdminUseCaseConfiguration), so the use case stays free of Spring.
  */
-@Service
 public class GetReviewEvidence {
 
   /** The item and its evidence. */
@@ -28,7 +26,6 @@ public class GetReviewEvidence {
   /**
    * Empty when there is no such item. One read-only transaction: the item and its evidence agree.
    */
-  @Transactional(readOnly = true)
   public Optional<View> get(UUID itemId) {
     return queue.find(itemId).map(item -> new View(item, evidence.of(itemId)));
   }
