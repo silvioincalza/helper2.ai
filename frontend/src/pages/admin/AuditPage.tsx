@@ -1,6 +1,7 @@
+import './adminText';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { adminApi } from '@/api/admin';
 import { Pagination } from '@/components/Pagination';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { ScrollBox } from '@/components/ui/ScrollBox';
@@ -20,9 +21,13 @@ export default function AuditPage() {
   const { t, i18n } = useTranslation();
   const [params, setParams] = useSearchParams();
   const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
-  const entries = useApi(`admin/audit/${page}`, (s) => api.listAuditEntries(page, PAGE_SIZE, s), {
-    cache: false,
-  });
+  const entries = useApi(
+    `admin/audit/${page}`,
+    (s) => adminApi.listAuditEntries(page, PAGE_SIZE, s),
+    {
+      cache: false,
+    },
+  );
   const { retry, focusRef: heading } = useRetry(entries.reload, entries.loading);
   const list = entries.data?.items ?? [];
 

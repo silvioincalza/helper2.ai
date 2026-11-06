@@ -1,6 +1,8 @@
+import './adminText';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { adminApi } from '@/api/admin';
 import { api, ApiError } from '@/api/client';
 import type { ReviewItem } from '@/api/types';
 import { Icon } from '@/components/Icon';
@@ -102,7 +104,7 @@ export default function ReviewQueuePage() {
   const note = useRef<HTMLInputElement>(null);
   const items = useApi(
     `review/${status}/${kind ?? ''}/${category ?? ''}/${page}`,
-    (s) => api.listReviewItems({ status, kind, category }, page, PAGE_SIZE, s),
+    (s) => adminApi.listReviewItems({ status, kind, category }, page, PAGE_SIZE, s),
     { cache: false },
   );
   const { retry, focusRef: heading } = useRetry(items.reload, items.loading);
@@ -159,7 +161,10 @@ export default function ReviewQueuePage() {
     setActionError(null);
     try {
       const text = notes[item.id]?.trim();
-      await api.resolveReviewItem(item.id, { status: decision, ...(text ? { note: text } : {}) });
+      await adminApi.resolveReviewItem(item.id, {
+        status: decision,
+        ...(text ? { note: text } : {}),
+      });
       setNotes(({ [item.id]: _, ...rest }) => rest);
       const left = Math.max(0, (items.data?.total ?? 1) - 1);
       setAnnouncement(t(`admin.review.decided.${decision}`, { count: left }));
@@ -184,7 +189,7 @@ export default function ReviewQueuePage() {
     setBusy(true);
     setActionError(null);
     try {
-      const result = await api.resolveReviewItems({
+      const result = await adminApi.resolveReviewItems({
         ids: [...picked.keys()],
         status: decision,
         ...(text ? { note: text } : {}),

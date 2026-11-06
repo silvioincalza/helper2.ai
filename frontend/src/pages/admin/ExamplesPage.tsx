@@ -1,6 +1,8 @@
+import './adminText';
 import { useCallback, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { adminApi } from '@/api/admin';
 import { api, ApiError } from '@/api/client';
 import type { AdminHomeExample, AudiencePath, ResultCard } from '@/api/types';
 import { Icon } from '@/components/Icon';
@@ -52,10 +54,10 @@ export default function ExamplesPage() {
   const outcome = oneOf(params.get('outcome'), CHECK_OUTCOMES);
   const examples = useApi(
     `examples/${outcome ?? ''}`,
-    (s) => api.listAdminHomeExamples(outcome, s),
+    (s) => adminApi.listAdminHomeExamples(outcome, s),
     { cache: false },
   );
-  const all = useApi('examples/', (s) => api.listAdminHomeExamples(undefined, s), {
+  const all = useApi('examples/', (s) => adminApi.listAdminHomeExamples(undefined, s), {
     cache: false,
   });
   const { retry, focusRef: heading } = useRetry(examples.reload, examples.loading);
@@ -103,12 +105,12 @@ export default function ExamplesPage() {
         expectedResourceIds: draft.expected.map((x) => x.id),
       };
       return editing
-        ? api.changeHomeExample(editing.id, {
+        ? adminApi.changeHomeExample(editing.id, {
             ...body,
             status: editing.status,
             version: editing.version,
           })
-        : api.addHomeExample(body);
+        : adminApi.addHomeExample(body);
     }).then((failed) => {
       // After a conflict the editor would keep sending the old version: close it, so it opens again
       // on what is stored now.
@@ -117,7 +119,7 @@ export default function ExamplesPage() {
     });
   const setStatus = (e: AdminHomeExample, status: AdminHomeExample['status']) =>
     void act(() =>
-      api.changeHomeExample(e.id, {
+      adminApi.changeHomeExample(e.id, {
         label: e.label,
         query: e.query,
         path: e.path,
@@ -127,7 +129,7 @@ export default function ExamplesPage() {
       }),
     );
   const remove = (id: string) =>
-    void act(() => api.removeHomeExample(id)).then(() => setRemoving(null));
+    void act(() => adminApi.removeHomeExample(id)).then(() => setRemoving(null));
 
   /** One model call: the drafts wait in the review queue, nothing changes here until one is accepted. */
   const draft = async () => {
@@ -136,7 +138,7 @@ export default function ExamplesPage() {
     setDrafted(null);
     setDraftError(null);
     try {
-      setDrafted((await api.draftHomeExamples()).drafted);
+      setDrafted((await adminApi.draftHomeExamples()).drafted);
     } catch (e) {
       setDraftError(
         e instanceof ApiError && e.problem?.detail ? e.problem.detail : t('admin.examples.failed'),

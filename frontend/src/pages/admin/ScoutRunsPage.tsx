@@ -1,5 +1,7 @@
+import './adminText';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { adminApi } from '@/api/admin';
 import { api, ApiError } from '@/api/client';
 import type { EnrichmentRecheck, ScoutRun } from '@/api/types';
 import { Icon } from '@/components/Icon';
@@ -39,7 +41,7 @@ export default function ScoutRunsPage() {
   const [actionError, setActionError] = useState<'failed' | 'runInProgress' | null>(null);
   const [busy, setBusy] = useState(false);
   const [recheck, setRecheck] = useState<EnrichmentRecheck | 'busy' | 'failed' | null>(null);
-  const runs = useApi('admin/runs', (s) => api.listScoutRuns(s), { cache: false });
+  const runs = useApi('admin/runs', (s) => adminApi.listScoutRuns(s), { cache: false });
   const { retry, focusRef: heading } = useRetry(runs.reload, runs.loading);
 
   // While it reloads, and after a reload that failed, the listing keeps showing the previous runs.
@@ -64,7 +66,7 @@ export default function ScoutRunsPage() {
     setBusy(true);
     setActionError(null);
     try {
-      await api.startScoutRun(sourceId);
+      await adminApi.startScoutRun(sourceId);
       runs.reload();
     } catch (e) {
       setActionError(e instanceof ApiError && e.status === 409 ? 'runInProgress' : 'failed');
@@ -78,7 +80,7 @@ export default function ScoutRunsPage() {
     if (recheck === 'busy') return;
     setRecheck('busy');
     try {
-      setRecheck(await api.recheckEnrichments());
+      setRecheck(await adminApi.recheckEnrichments());
     } catch {
       setRecheck('failed');
     }

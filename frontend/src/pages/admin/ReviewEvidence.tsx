@@ -1,5 +1,6 @@
+import './adminText';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { adminApi } from '@/api/admin';
 import type { ReviewEvidence, ReviewQuote, Verification } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
@@ -23,9 +24,13 @@ const VERIFICATION_TONE: Record<Verification, StatusTone> = {
  */
 export function ReviewEvidencePanel({ itemId }: { itemId: string }) {
   const { t } = useTranslation();
-  const evidence = useApi(`review-evidence/${itemId}`, (s) => api.getReviewEvidence(itemId, s), {
-    cache: false,
-  });
+  const evidence = useApi(
+    `review-evidence/${itemId}`,
+    (s) => adminApi.getReviewEvidence(itemId, s),
+    {
+      cache: false,
+    },
+  );
   return (
     <section aria-labelledby="rq-evidence-h" className="h2-admin__evidence">
       <h4 id="rq-evidence-h" className="h2-admin__h3">

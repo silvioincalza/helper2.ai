@@ -1,7 +1,9 @@
+import './adminText';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { api, ApiError } from '@/api/client';
+import { adminApi } from '@/api/admin';
+import { ApiError } from '@/api/client';
 import type { EnrichmentQueueEntry as Entry, EnrichmentQueueView } from '@/api/types';
 import { Icon } from '@/components/Icon';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
@@ -33,7 +35,7 @@ export default function EnrichmentQueuePage() {
   const after = params.get('after') ?? undefined;
   const queue = useApi(
     `admin/enrichment/${view}/${after ?? ''}`,
-    (s) => api.listEnrichmentQueue(view, after, PAGE_SIZE, s),
+    (s) => adminApi.listEnrichmentQueue(view, after, PAGE_SIZE, s),
     { cache: false },
   );
   const { retry, focusRef: heading } = useRetry(queue.reload, queue.loading);
@@ -71,9 +73,9 @@ export default function EnrichmentQueuePage() {
     setBusy(true);
     setResult(null);
     try {
-      if (action === 'skip') await api.skipEnrichment(e.resourceId, reason);
-      else if (action === 'prioritise') await api.prioritiseEnrichment(e.resourceId);
-      else await api.requeueEnrichment(e.resourceId);
+      if (action === 'skip') await adminApi.skipEnrichment(e.resourceId, reason);
+      else if (action === 'prioritise') await adminApi.prioritiseEnrichment(e.resourceId);
+      else await adminApi.requeueEnrichment(e.resourceId);
       setResult({ ok: true, action, title: e.title });
     } catch (err) {
       setResult({

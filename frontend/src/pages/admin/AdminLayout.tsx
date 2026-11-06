@@ -1,3 +1,4 @@
+import './adminText';
 import { Link, NavLink, Outlet, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { SignIn } from '@/components/SignIn';
