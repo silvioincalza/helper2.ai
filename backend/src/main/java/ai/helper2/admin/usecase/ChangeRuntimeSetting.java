@@ -14,7 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * An administrator sets a runtime setting's value (ADR 0058). The value must be in the setting's
+ * An administrator sets a runtime setting's value (ADR 0060). The value must be in the setting's
  * range, and the change must be made on the setting's newest version. The change and its audit row
  * are written in one transaction; this replica applies it right after the commit, the others within
  * one refresh interval.

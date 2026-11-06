@@ -40,7 +40,7 @@ public interface AuditTrail {
   void record(String adminId, Action action, @Nullable String targetId, String outcome);
 
   /**
-   * The same, with the value before and after the change (a runtime setting, ADR 0058). A trail
+   * The same, with the value before and after the change (a runtime setting, ADR 0060). A trail
    * that keeps no values records the action only.
    */
   default void record(

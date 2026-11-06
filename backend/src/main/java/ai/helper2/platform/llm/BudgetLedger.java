@@ -62,7 +62,7 @@ public final class BudgetLedger implements CallCounter {
 
   /**
    * Every declared budget, by name, with its limit as it is now (a runtime setting can change it,
-   * ADR 0058). A refused call adds nothing; a count still above the limit (the limit was lowered
+   * ADR 0060). A refused call adds nothing; a count still above the limit (the limit was lowered
    * during the day) shows as the limit.
    */
   public List<Reading> today() {

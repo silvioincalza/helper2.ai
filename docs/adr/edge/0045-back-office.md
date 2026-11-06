@@ -52,7 +52,7 @@ them without each module growing an admin corner.
    than 500 characters is refused, so a URL with a user or a password cannot pass even by mistake. Each row names the
    `H2_` variable that sets it. The values are bound at startup, so the page is fixed until the next restart.
    Six spending limits are the exception: they change on the same page, at runtime, and their rows show the value
-   now ([0058](../operations/0058-runtime-settings.md)). The overview says how many of them are changed, with a link
+   now ([0060](../operations/0060-runtime-settings.md)). The overview says how many of them are changed, with a link
    to the page.
 
 ## Consequences

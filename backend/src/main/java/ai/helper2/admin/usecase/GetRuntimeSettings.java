@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
- * The runtime settings as the store holds them (ADR 0058), for the Settings page: each setting's
+ * The runtime settings as the store holds them (ADR 0060), for the Settings page: each setting's
  * value, default, range, version and last changes. Read from the store, not from this replica's
  * snapshot: the page shows what every replica applies within one refresh interval.
  */

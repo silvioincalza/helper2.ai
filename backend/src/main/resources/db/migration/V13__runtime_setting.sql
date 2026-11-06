@@ -1,4 +1,4 @@
--- Runtime settings (ADR 0058): a few spending limits an administrator changes from the back office without a deploy.
+-- Runtime settings (ADR 0060): a few spending limits an administrator changes from the back office without a deploy.
 -- Append-only: the current value of a setting is its newest row; a row with no value means "back to the default"
 -- (the H2_ variable). The version grows with every change of any setting; a setting's version is its newest row's.
 -- Rows are never updated (trigger); past their retention they are deleted, except each setting's newest.

@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.scheduling.annotation.Scheduled;
 
 /**
- * The runtime settings (ADR 0058): the store, the snapshot every module reads, its refresh on its
+ * The runtime settings (ADR 0060): the store, the snapshot every module reads, its refresh on its
  * own thread, and the daily purge of old changes on one replica at a time.
  */
 @Configuration(proxyBeanMethods = false)

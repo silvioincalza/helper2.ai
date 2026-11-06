@@ -62,7 +62,7 @@ or in GitHub settings, and the deploy must not need a person to copy them.
 9. **Six limits change at runtime.** For the spending limits in `RuntimeSetting` (Scout enrichments per run,
    enrichment calls and gap rounds a day, the guide's model calls a day, translations a day, Tavily credits a day),
    the `H2_` value is the default, not a ceiling: an administrator can change it from the back office, between 0
-   and a maximum in code ([0058](../operations/0058-runtime-settings.md)). The record still binds the value at
+   and a maximum in code ([0060](../operations/0060-runtime-settings.md)). The record still binds the value at
    startup; the module reads the limit through a supplier. Every other setting changes only with a deploy.
 
 ## Consequences

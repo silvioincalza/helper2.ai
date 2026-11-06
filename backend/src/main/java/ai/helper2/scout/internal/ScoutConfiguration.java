@@ -360,7 +360,7 @@ class ScoutConfiguration {
   /**
    * The gap round's own daily cap (ADR 0043), counted like the others so a restart does not reset
    * the day. Its calls also count on the enrichment cap, so this is a share of it, not more. 0
-   * turns the gap round off; the limit is a runtime setting (ADR 0058), read on every call.
+   * turns the gap round off; the limit is a runtime setting (ADR 0060), read on every call.
    */
   static GapBudget gapBudget(
       IntSupplier dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {

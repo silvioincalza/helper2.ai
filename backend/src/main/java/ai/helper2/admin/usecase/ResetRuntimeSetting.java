@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * An administrator puts a runtime setting back to its default, the H2_ value (ADR 0058). Nothing is
+ * An administrator puts a runtime setting back to its default, the H2_ value (ADR 0060). Nothing is
  * deleted: a change with no value is appended, so the history shows the reset too.
  */
 @Service

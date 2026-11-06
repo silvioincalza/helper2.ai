@@ -34,7 +34,7 @@ function parseValue(text: string, max: number): number | null {
 }
 
 /**
- * The spending limits an administrator may change at runtime (ADR 0058, UJ-9). Each row: the value
+ * The spending limits an administrator may change at runtime (ADR 0060, UJ-9). Each row: the value
  * now, the default, the allowed range and one line of help. A change goes through a review of the
  * old and the new value, with an optional reason; History restores an earlier value the same way.
  */

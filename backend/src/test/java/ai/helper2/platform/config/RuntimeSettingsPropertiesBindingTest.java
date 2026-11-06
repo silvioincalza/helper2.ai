@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * The runtime settings' refresh and the retention of their changes bind from application.yaml (ADR
- * 0058); a refresh outside 5 s to 60 s stops startup.
+ * 0060); a refresh outside 5 s to 60 s stops startup.
  */
 class RuntimeSettingsPropertiesBindingTest {
 

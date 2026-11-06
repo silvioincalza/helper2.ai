@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * The runtime settings (ADR 0058), from {@code helper2.runtime-settings}.
+ * The runtime settings (ADR 0060), from {@code helper2.runtime-settings}.
  *
  * @param refresh how often each replica checks the store for a change; 5 s to 60 s
  */

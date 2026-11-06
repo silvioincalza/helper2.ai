@@ -73,7 +73,7 @@ class SearchConfiguration {
 
   /**
    * The daily web searches (ADR 0037); an empty global cap means none. The global cap is a runtime
-   * setting (ADR 0058): the H2_ value is its default.
+   * setting (ADR 0060): the H2_ value is its default.
    */
   @Bean
   WebSearchQuota webSearchQuota(

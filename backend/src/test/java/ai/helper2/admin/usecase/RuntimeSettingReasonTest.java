@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** The reason of a runtime setting change is one plain line (ADR 0058). */
+/** The reason of a runtime setting change is one plain line (ADR 0060). */
 class RuntimeSettingReasonTest {
 
   @Test

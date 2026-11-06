@@ -45,7 +45,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
    for the whole cluster. The counter is capped by `H2_TAVILY_GLOBAL_DAILY_CREDITS`; unset, the cap is the code
-   maximum of the runtime setting, 2,000 a day ([0058](../operations/0058-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
+   maximum of the runtime setting, 2,000 a day ([0060](../operations/0060-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
    concurrent requests on any replica never pass a limit. The script counts before the `source-tavily` policy is
    asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
    (`WebSearchQuota.refund`); the asker's own web search stays taken. Scout runs do not count here.

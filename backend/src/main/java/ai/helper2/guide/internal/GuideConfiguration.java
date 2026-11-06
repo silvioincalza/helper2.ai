@@ -69,7 +69,7 @@ class GuideConfiguration {
 
   /**
    * Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. A runtime
-   * setting (ADR 0058): the H2_ value is its default.
+   * setting (ADR 0060): the H2_ value is its default.
    */
   @Bean
   DailyBudget guideBudget(

@@ -436,7 +436,7 @@ helper2:
   admin:
     # The metrics dashboard (Grafana) the back office overview links to for trends. Empty: no link.
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}
-  # Spending limits an administrator changes at runtime (ADR 0058). Each replica checks for a change this often
+  # Spending limits an administrator changes at runtime (ADR 0060). Each replica checks for a change this often
   # (5 s to 60 s); a change applies everywhere within about this long.
   runtime-settings:
     refresh: ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}
@@ -862,7 +862,7 @@ helper2:
     inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
     # Admin audit entries (24 months).
     admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
-    # Runtime setting changes (ADR 0058), with who made them and why (24 months); each setting's newest change stays.
+    # Runtime setting changes (ADR 0060), with who made them and why (24 months); each setting's newest change stays.
     runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
 
 ---

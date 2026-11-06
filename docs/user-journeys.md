@@ -138,7 +138,7 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
    part (Models, AI guide, Search, Scout, Scout sources, Setup guide, Home examples). Each row: the setting in words,
    its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `H2_` variable that sets it, or
    "No variable". Secrets are never shown. A change needs a new value and a restart, except for the spending
-   limits at the top ([ADR 0058](adr/operations/0058-runtime-settings.md)): Scout enrichments per run, enrichment
+   limits at the top ([ADR 0060](adr/operations/0060-runtime-settings.md)): Scout enrichments per run, enrichment
    calls and gap rounds a day, the guide's model calls a day, translations a day, Tavily credits a day. Each row:
    the value now with "Changed" or "Default", the default and its variable, the allowed range ("0 to 3000 calls a
    day") and one line of help. **Change** opens a number field; a value outside the range says "Enter a whole

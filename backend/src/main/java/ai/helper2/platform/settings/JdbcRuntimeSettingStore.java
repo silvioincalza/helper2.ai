@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The runtime_setting table (ADR 0058): rows are inserted and, past their retention, deleted; never
+ * The runtime_setting table (ADR 0060): rows are inserted and, past their retention, deleted; never
  * updated (a trigger refuses it). One change at a time across replicas: a transaction-scoped
  * advisory lock serialises the version check and the insert.
  */

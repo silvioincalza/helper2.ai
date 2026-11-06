@@ -1,4 +1,4 @@
-# 0058 — Runtime settings: a few spending limits change from the back office, without a deploy
+# 0060 — Runtime settings: a few spending limits change from the back office, without a deploy
 
 **Status.** Accepted. **Builds on:** [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-and-secrets.md), [0017](../guide/0017-guide-cost-guard.md), [0023](../edge/0023-identity-and-admin.md), [0034](0034-data-retention.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0043](../scout/0043-enrichment-gap-round.md), [0045](../edge/0045-back-office.md)
 
@@ -96,7 +96,7 @@ spend, and the right number changes with the day.
   `api/AdminRuntimeSettingsApiIT.java`, `frontend/src/pages/admin/SettingsPage.test.tsx`, `Admin.test.tsx`.
 
 ## Diagrams
-[flow](../../diagrams/flow-0058-runtime-settings.svg) · [sequence](../../diagrams/sequence-0058-runtime-settings.svg)
+[flow](../../diagrams/flow-0060-runtime-settings.svg) · [sequence](../../diagrams/sequence-0060-runtime-settings.svg)
 
 ## Roadmap
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

@@ -20,7 +20,9 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
      translations (`H2_SEARCH_TRANSLATION_TTL`), query vectors (`H2_SEARCH_QUERY_VECTOR_TTL`), stored web results
      (`H2_RETENTION_TAVILY_RESULTS`), inactive accounts with their saved items (`H2_RETENTION_INACTIVE_ACCOUNTS`),
      handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators' records in the audit trail
-     (`H2_RETENTION_ADMIN_AUDIT`, [0058](0058-runtime-settings.md)).
+     (`H2_RETENTION_ADMIN_AUDIT`, [0045](../edge/0045-back-office.md)), and runtime setting changes
+     (`H2_RETENTION_RUNTIME_SETTINGS`, [0060](0060-runtime-settings.md); each setting's newest change stays while it
+     applies).
 
    Seconds, not ISO-8601: `Duration.toString()` writes 730 days as `PT17520H`, and a page would need a parser. The
    page rounds seconds to hours, days or months.

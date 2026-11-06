@@ -50,7 +50,7 @@ class TranslationConfiguration {
       SearchProperties search) {
     SearchProperties.Translation settings = search.translation();
     int dailyTranslations = settings.dailyCalls();
-    // Declared even when off, so the Settings page knows the default (ADR 0058).
+    // Declared even when off, so the Settings page knows the default (ADR 0060).
     IntSupplier limit =
         runtime.declare(RuntimeSetting.SEARCH_DAILY_TRANSLATIONS, dailyTranslations);
     ChatModel model = chatModel.getIfAvailable();

@@ -94,7 +94,7 @@ class RunScout(
   private val clock: Clock,
   private val lock: RunLock,
   private val maxItemsPerRun: Int = 500,
-  /** Read once at the start of each run: a runtime setting (ADR 0058) applies from the next run. */
+  /** Read once at the start of each run: a runtime setting (ADR 0060) applies from the next run. */
   private val maxEnrichmentsPerRun: IntSupplier = IntSupplier { 20 },
   private val backlog: EnrichmentBacklog? = null,
   private val meters: MeterRegistry = SimpleMeterRegistry(),

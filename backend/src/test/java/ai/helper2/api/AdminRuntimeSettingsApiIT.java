@@ -24,7 +24,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 
 /**
- * The runtime settings (ADR 0058): ADMIN only, CSRF on writes, the range and the version checked by
+ * The runtime settings (ADR 0060): ADMIN only, CSRF on writes, the range and the version checked by
  * the server, each change in the audit trail with the value before and after, and the replica
  * applies it at once. Only Scout settings change here: no other test of the shared database depends
  * on them. Each test deletes its changes.

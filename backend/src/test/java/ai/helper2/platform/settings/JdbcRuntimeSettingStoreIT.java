@@ -23,7 +23,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * The runtime_setting table on the real schema (ADR 0058): append-only, the newest change wins, a
+ * The runtime_setting table on the real schema (ADR 0060): append-only, the newest change wins, a
  * reset is a change with no value, a stale version appends nothing, and the purge keeps each
  * setting's newest change. Each test uses its own setting names.
  */

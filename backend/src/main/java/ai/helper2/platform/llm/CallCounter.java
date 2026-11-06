@@ -53,7 +53,7 @@ public interface CallCounter {
 
   /**
    * A budget declares its name and daily limit once, so the back office can list every budget. The
-   * limit is a supplier: a runtime setting (ADR 0058) can change it.
+   * limit is a supplier: a runtime setting (ADR 0060) can change it.
    */
   default void declare(String name, IntSupplier dailyCalls) {}
 

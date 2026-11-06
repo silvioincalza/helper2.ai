@@ -6,7 +6,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Outbound port: the changes of the runtime settings (ADR 0058), append-only. The current value of
+ * Outbound port: the changes of the runtime settings (ADR 0060), append-only. The current value of
  * a setting is its newest change; a change with no value means "back to the default". A setting's
  * version is the version of its newest change, 0 when it never changed.
  */

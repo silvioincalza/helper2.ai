@@ -188,7 +188,7 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     ContractValidator.assertArrayMatches("SourceInfo", body);
     assertThat(read(body, "$[?(@.id == 'fake-web')].webCredits.dailyCap"))
         .asList()
-        .as("no H2_ value: the runtime setting's code maximum (ADR 0058)")
+        .as("no H2_ value: the runtime setting's code maximum (ADR 0060)")
         .containsExactly((int) RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS.max());
     assertThat(read(body, "$[?(@.id == 'fake-live')].webCredits")).asList().containsOnlyNulls();
     return (Number)

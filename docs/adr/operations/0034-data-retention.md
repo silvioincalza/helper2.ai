@@ -36,7 +36,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `bookmark` | resource id, title, link, type, saved at | until the user removes it or the account goes | `RemoveBookmark`, `ON DELETE CASCADE` |
    | Postgres `issue_report.reporter_user_id` | link to the reporter | until the account goes | `ON DELETE SET NULL` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome; for a setting change the value before and after and the reason | 24 months after `at` | identity purge |
-   | Postgres `runtime_setting` | setting key, value, admin id, time, reason ([0058](0058-runtime-settings.md)) | 24 months after `changed_at` (`H2_RETENTION_RUNTIME_SETTINGS`); each setting's newest change stays while it is in force | platform purge |
+   | Postgres `runtime_setting` | setting key, value, admin id, time, reason ([0060](0060-runtime-settings.md)) | 24 months after `changed_at` (`H2_RETENTION_RUNTIME_SETTINGS`); each setting's newest change stays while it is in force | platform purge |
    | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`H2_SEARCH_STALE_FOR`) | Redis TTL |
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a keyed hash of the address and the day ([0017](../guide/0017-guide-cost-guard.md)), and the random ids of the questions given back to them | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by a keyed hash of the client address and the day ([0024](../edge/0024-http-edge-protection.md)) | 1 minute or 1 hour (the window) | Redis TTL |

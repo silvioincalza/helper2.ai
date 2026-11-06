@@ -163,7 +163,7 @@ constructor(
   private val keys: QuotaKeys,
   private val limits: DailyLimits = DailyLimits(),
   private val registeredTier: Boolean = false,
-  /** Read on every call: a runtime setting (ADR 0058). Null = no cap. */
+  /** Read on every call: a runtime setting (ADR 0060). Null = no cap. */
   private val globalDailyCredits: Supplier<Long?> = Supplier { null },
 ) {
   fun tierOf(asker: Asker): QuotaTier =
