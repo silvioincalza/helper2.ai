@@ -85,6 +85,9 @@ spec:
             {{- with .adsenseClient }}
             - { name: H2_ADS_ADSENSE_CLIENT, value: {{ . | quote }} }
             {{- end }}
+            {{- with .adsenseSlot }}
+            - { name: H2_ADS_ADSENSE_SLOT, value: {{ . | quote }} }
+            {{- end }}
             {{- end }}
             {{- with .Values.app.publicBaseUrl }}
             # The host every canonical link and sitemap address names (ADR 0050).

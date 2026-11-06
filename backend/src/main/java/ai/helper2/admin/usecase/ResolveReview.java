@@ -52,7 +52,6 @@ public class ResolveReview {
   /**
    * As above, for one item of a bulk decision [batch] (ResolveReviewItems): its own transaction.
    */
-  @Transactional(noRollbackFor = ApiProblem.class)
   public ResolveReviewItem.Outcome resolve(
       UUID id,
       ReviewQueue.Status decision,

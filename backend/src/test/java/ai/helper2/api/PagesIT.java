@@ -50,7 +50,9 @@ class PagesIT extends ApiTestBase {
         .contains("rel=\"canonical\" href=\"https://helper2.ai/resource/" + id + "\"")
         .contains("application/ld+json")
         .contains("<div id=\"root\"><main class=\"h2-prerender\"><h1>DeepL")
-        .contains("<script type=\"module\"");
+        // The shell's script carries the request's CSP nonce, whichever policy is active (ADR
+        // 0059).
+        .containsPattern("<script nonce=\"[A-Za-z0-9+/=]{24}\" type=\"module\"");
   }
 
   @Test

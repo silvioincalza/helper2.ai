@@ -14,6 +14,7 @@ import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { useMonetisation } from '@/context/MonetisationContext';
 import { AnalyticsConsent, openConsentSettings } from './AnalyticsConsent';
+import { showPrivacyChoices } from '@/lib/googleConsent';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme } from '@/lib/theme';
 import { hasOwnSearchBox, showsHome } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
@@ -226,12 +227,14 @@ function OutLink({ href, label, children }: { href: string; label: string; child
 
 /**
  * The footer in design v4 (Main board): the logo, one row of links (the pages, the code, the release, the theme),
- * then one line: what is searched, no tracking ads, who and where. "Support" is there while a way to give is on;
+ * then one line: what is searched, who and where. "Support" is there while a way to give is on; "Privacy choices"
+ * (Google's consent tool) while AdSense is on, else
  * "Cookie settings" while analytics is on (ADR 0057).
  */
 function Footer() {
   const { t } = useTranslation();
-  const { githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId } = useMonetisation();
+  const { githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, adsenseClient } =
+    useMonetisation();
   const support = githubSponsorsUrl !== null || stripePaymentUrl !== null;
   return (
     <footer className="v4 site-footer">
@@ -257,12 +260,20 @@ function Footer() {
               <Link to="/support">{t('footer.support')}</Link>
             </li>
           )}
-          {ga4MeasurementId !== null && (
+          {adsenseClient !== null ? (
             <li>
-              <button type="button" className="v4-text-btn" onClick={openConsentSettings}>
-                {t('footer.cookieSettings')}
+              <button type="button" className="v4-text-btn" onClick={() => showPrivacyChoices()}>
+                {t('footer.privacyChoices')}
               </button>
             </li>
+          ) : (
+            ga4MeasurementId !== null && (
+              <li>
+                <button type="button" className="v4-text-btn" onClick={openConsentSettings}>
+                  {t('footer.cookieSettings')}
+                </button>
+              </li>
+            )
           )}
           <li>
             <OutLink href={REPO_URL} label={t('footer.githubLabel')}>
@@ -288,11 +299,10 @@ function Footer() {
           </li>
         </ul>
       </div>
-      {/* "No tracking ads": the one ad slot is EthicalAds, which builds no profile (ADR 0057, replaces ADR 0040, 9).
-          Where it is run and hosted, as the Privacy page states it (Hosting: Germany). */}
+      {/* No claim about ads (ADR 0059, replaces ADR 0057, 7): the Privacy page says which ads and when. Where it is run
+          and hosted, as the Privacy page states it (Hosting: Germany). */}
       <p className="v4-wrap v4-footer__line">
-        {t('footer.coverage')} <span className="footer-no-ads">{t('footer.noTrackingAds')}</span>{' '}
-        {t('footer.copyright', { year: new Date().getFullYear() })}
+        {t('footer.coverage')} {t('footer.copyright', { year: new Date().getFullYear() })}
         <span className="footer-place"> · {t('footer.place')}</span>
       </p>
     </footer>

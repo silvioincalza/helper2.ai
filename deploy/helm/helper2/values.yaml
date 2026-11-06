@@ -96,6 +96,9 @@ app:
     ethicalAdsPublisher: ""
     # Google AdSense publisher, ca-pub-... (H2_ADS_ADSENSE_CLIENT; ADR 0059): the site check tag and /ads.txt.
     adsenseClient: ""
+    # AdSense ad unit ID (H2_ADS_ADSENSE_SLOT; ADR 0059). With adsenseClient it turns on the slot on resource pages,
+    # Google's consent tool and the nonce CSP on the whole public site.
+    adsenseSlot: ""
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
   environment: ""
   # Ask search engines not to index this deployment: X-Robots-Tag: noindex on every response (H2_NOINDEX).

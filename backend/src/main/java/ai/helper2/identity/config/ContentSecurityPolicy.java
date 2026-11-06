@@ -29,7 +29,27 @@ final class ContentSecurityPolicy {
 
   private ContentSecurityPolicy() {}
 
+  /** Where the request's nonce goes in a policy ({@link CspHeaderWriter} fills it in). */
+  static final String NONCE = "{nonce}";
+
+  /**
+   * Google AdSense supports only a strict nonce policy, not an allowlist (ADR 0059): scripts run by
+   * nonce, and what they load runs too ('strict-dynamic'). 'unsafe-inline', https: and http: only
+   * for browsers that know no nonce; they ignore the rest. Frames, images and requests go to any
+   * https origin, because the ad's origins change.
+   */
+  static final String ADSENSE =
+      "default-src 'self'; script-src 'nonce-"
+          + NONCE
+          + "' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:; "
+          + "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; "
+          + "frame-src https:; font-src 'self' https:; object-src 'none'; base-uri 'none'; "
+          + "form-action 'self'; frame-ancestors 'none'";
+
   static String forPublicSite(Monetisation monetisation) {
+    if (monetisation.adsenseOn()) {
+      return ADSENSE;
+    }
     Map<String, String> d = strict();
     if (monetisation.analyticsOn()) {
       add(d, "script-src", GA4_SCRIPTS);

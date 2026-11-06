@@ -8,7 +8,8 @@
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
 #   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, SessionConfiguration.java,
-#   AdminPortConfiguration.java, identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
+#   AdminPortConfiguration.java, ContentSecurityPolicy.java, CspHeaderWriter.java, platform/CspNonce.java (ADR 0059),
+#   identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
 #   identity/Users.java, Bookmarks.java, AuditLog.java, RetentionPeriods.java (ports), identity/config/IdentityUseCaseConfiguration.java,
 #   backend/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
 # Render: cd docs/diagrams && d2 fmt architecture-platform.d2 && d2 architecture-platform.d2 architecture-platform.svg
@@ -36,6 +37,8 @@ edge: "Request edge (platform)" {
 identity: "identity (Java)" {
   class: group
   sec: "SecurityConfiguration\nCSRF · ADMIN allow-list\nAdminPortConfiguration\n(identity.config)" {class: app}
+  csp: "CspHeaderWriter · ContentSecurityPolicy\nstrict CSP; with AdSense on: nonce CSP\non the public port (CspNonce per request);\nthe admin port stays strict" {class: app}
+  sec -> csp
   session: "SessionConfiguration\nfail-soft session store\n(identity.config)" {class: app}
   me: "MeController · AuditController\n(identity.web)" {class: app}
   usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeExpiredData\n(plain classes, wired in identity.config)" {class: app}
@@ -68,7 +71,9 @@ oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {cla
 browser -> edge.spa: "pages, assets"
 browser -> edge.rate: "/api/v1/*" {class: hot}
 edge.rate -> modules: {class: hot}
-browser -> identity.me: "/me, bookmarks"
+browser -> identity.me: "/me, bookmarks, monetisation"
+google: "In the browser only (ADR 0059):\nGoogle consent tool · AdSense\n(resource pages) · Google Analytics" {class: ext}
+browser -> google: "TCF answer, one ad,\npage path" {class: config}
 admin -> identity.sec: "/admin"
 identity.sec -> oauth: "sign-in" {class: config}
 identity.sec -> identity.session

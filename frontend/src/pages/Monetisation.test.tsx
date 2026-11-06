@@ -4,21 +4,25 @@ import { axeViolations } from '@/test/a11y';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { CONSENT_KEY } from '@/lib/consent';
-import { ANON, makeSearch } from '@/test/fixtures';
+import { ANON, makeDetail, makeSearch } from '@/test/fixtures';
 
 const ON = {
   githubSponsorsUrl: 'https://github.com/sponsors/someone',
   stripePaymentUrl: 'https://buy.stripe.com/abc',
   ga4MeasurementId: 'G-TEST1234',
   ethicalAdsPublisher: 'helper2',
+  adsenseClient: 'ca-pub-4688630163076563',
+  adsenseSlot: '1234567890',
 };
 const OFF = {
   githubSponsorsUrl: null,
   stripePaymentUrl: null,
   ga4MeasurementId: null,
   ethicalAdsPublisher: null,
+  adsenseClient: null,
+  adsenseSlot: null,
 };
-const me = (monetisation: Partial<typeof ON> | typeof OFF) => () => ({
+const me = (monetisation: Partial<Record<keyof typeof ON, string | null>>) => () => ({
   ...ANON,
   monetisation: { ...OFF, ...monetisation },
 });
@@ -26,14 +30,48 @@ const me = (monetisation: Partial<typeof ON> | typeof OFF) => () => ({
 const footer = () => screen.getByRole('contentinfo');
 const banner = () => screen.queryByRole('region', { name: /Google Analytics/ });
 
-afterEach(() => {
+/** Each test starts with no third-party state: a late effect of the previous test can add a script after it ends. */
+function clearThirdParties() {
   document.getElementById('h2-ga4')?.remove();
   document.getElementById('h2-ethicalads')?.remove();
   delete window.gtag;
   delete window.dataLayer;
   delete window['ga-disable-G-TEST1234'];
   delete window.ethicalads;
-});
+  delete window.__tcfapi;
+  delete window.googlefc;
+  delete window.adsbygoogle;
+  for (const id of ['h2-googlefc', 'h2-adsense']) document.getElementById(id)?.remove();
+  document.querySelector('iframe[name="googlefcPresent"]')?.remove();
+}
+beforeEach(clearThirdParties);
+afterEach(clearThirdParties);
+
+/** Google's consent tool as the page sees it: the TCF API, answering with [tc] now and on [answer]. */
+function fakeTcf(tc: Record<string, unknown>) {
+  let listener: ((d: Record<string, unknown>, ok: boolean) => void) | undefined;
+  window.__tcfapi = (command, _version, callback) => {
+    if (command !== 'addEventListener') return;
+    listener = callback as typeof listener;
+    listener?.({ listenerId: 1, ...tc }, true);
+  };
+  return {
+    answer: (next: Record<string, unknown>) =>
+      act(() => listener?.({ listenerId: 1, ...next }, true)),
+  };
+}
+
+const ADSENSE = {
+  adsenseClient: ON.adsenseClient,
+  adsenseSlot: ON.adsenseSlot,
+  ga4MeasurementId: 'G-TEST1234',
+};
+const YES = {
+  gdprApplies: true,
+  eventStatus: 'useractioncomplete',
+  purpose: { consents: { 1: true, 8: true } },
+  vendor: { consents: { 755: true } },
+};
 
 describe('monetisation (ADR 0057)', () => {
   it('while everything is off: no support link, no cookie question, no ad, no third-party script', async () => {
@@ -222,5 +260,87 @@ describe('monetisation (ADR 0057)', () => {
     mockApi({ 'GET /me': me(OFF) });
     renderApp('/support');
     expect(await screen.findByText('Giving is not open yet.')).toBeInTheDocument();
+  });
+
+  describe('with AdSense on (ADR 0059)', () => {
+    it("loads Google's consent tool instead of our bar, and the footer offers Privacy choices", async () => {
+      fakeTcf({ gdprApplies: true, eventStatus: 'cmpuishown' });
+      mockApi({ 'GET /me': me(ADSENSE) });
+      renderApp('/');
+      await waitFor(() => expect(document.getElementById('h2-googlefc')).not.toBeNull());
+      expect((document.getElementById('h2-googlefc') as HTMLScriptElement).src).toBe(
+        'https://fundingchoicesmessages.google.com/i/pub-4688630163076563?ers=1',
+      );
+      expect(banner()).not.toBeInTheDocument();
+      expect(document.getElementById('h2-ga4')).toBeNull();
+      await userEvent.click(within(footer()).getByRole('button', { name: 'Privacy choices' }));
+      expect(window.googlefc?.callbackQueue).toHaveLength(1);
+    });
+
+    it('in Europe, Google Analytics loads only after a yes, and a withdrawal turns it off', async () => {
+      const tcf = fakeTcf({ gdprApplies: true, eventStatus: 'cmpuishown' });
+      mockApi({ 'GET /me': me(ADSENSE) });
+      renderApp('/');
+      await waitFor(() => expect(document.getElementById('h2-googlefc')).not.toBeNull());
+      expect(document.getElementById('h2-ga4')).toBeNull();
+
+      tcf.answer(YES);
+      await waitFor(() => expect(document.getElementById('h2-ga4')).not.toBeNull());
+
+      tcf.answer({ ...YES, purpose: { consents: { 1: true, 8: false } } });
+      await waitFor(() => expect(window['ga-disable-G-TEST1234']).toBe(true));
+    });
+
+    it('where the rules do not apply, Google Analytics loads without a question', async () => {
+      fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
+      mockApi({ 'GET /me': me(ADSENSE) });
+      renderApp('/');
+      await waitFor(() => expect(document.getElementById('h2-ga4')).not.toBeNull());
+    });
+
+    it('a resource page shows one labelled AdSense box with the publisher and the ad unit', async () => {
+      fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
+      const id = '11111111-1111-5111-8111-111111111111';
+      mockApi({ 'GET /me': me(ADSENSE), [`GET /resources/${id}`]: () => makeDetail() });
+      renderApp(`/resource/${id}`);
+      const box = await screen.findByRole('complementary', { name: 'Sponsored' });
+      const ins = box.querySelector('ins.adsbygoogle');
+      expect(ins).toHaveAttribute('data-ad-client', 'ca-pub-4688630163076563');
+      expect(ins).toHaveAttribute('data-ad-slot', '1234567890');
+      expect((document.getElementById('h2-adsense') as HTMLScriptElement).src).toBe(
+        'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4688630163076563',
+      );
+      expect(window.adsbygoogle).toHaveLength(1);
+      expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
+    });
+
+    it("Google's tag does not load on an address with search words", async () => {
+      mockApi({ 'GET /me': me(ADSENSE) });
+      renderApp('/search?q=agents');
+      await settle();
+      expect(document.getElementById('h2-googlefc')).toBeNull();
+      expect(document.getElementById('h2-ga4')).toBeNull();
+    });
+
+    it('leaving a resource page pauses AdSense requests', async () => {
+      fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
+      const id = '11111111-1111-5111-8111-111111111111';
+      mockApi({ 'GET /me': me(ADSENSE), [`GET /resources/${id}`]: () => makeDetail() });
+      const { router } = renderApp(`/resource/${id}`);
+      await screen.findByRole('complementary', { name: 'Sponsored' });
+      expect(window.adsbygoogle?.pauseAdRequests).toBe(0);
+
+      await act(() => router.navigate('/search?q=agents'));
+      await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(1));
+    });
+
+    it('a resource page shows one labelled AdSense box; a search page shows no AdSense', async () => {
+      fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
+      mockApi({ 'GET /me': me({ ...ADSENSE, ethicalAdsPublisher: 'helper2' }) });
+      renderApp('/search?q=agents');
+      await screen.findByRole('complementary', { name: 'Sponsored' });
+      expect(document.querySelector('ins.adsbygoogle')).toBeNull();
+      expect(document.getElementById('h2-adsense')).toBeNull();
+    });
   });
 });
