@@ -109,11 +109,13 @@ pages, Results and the resource page, and the text pages; this record says what 
 7. **Results: one column, no preview, in the terminal style.** Results load on demand (`React.lazy` in `HomePage`);
    the page's `h1`, the box and a skeleton of the list's shape are in the first download, so nothing mounts twice or
    moves while the chunk loads. The skeleton pulses three times and stops.
-   - **The heading.** "All results" over `$ helper2 search · N` (`--timeline` on the timeline; N = `total`), then
-     Filters ("· 2 on"), the sort and List / Timeline (links with `aria-current`: the view is in the URL). Under it
-     the type tabs: All, the four types with most results, More with the rest; a type chosen under More shows as a
-     tab. Filters open in place on a wide screen and as a drawer (a modal `dialog`) up to 720 px, with Close and "Show
-     N results"; Escape and Close give focus back to Filters.
+   - **The heading.** "Results" over `$ helper2 search · N` (`--timeline` on the timeline; N = `total`), List / Timeline
+     next to it (links with `aria-current`: the view is in the URL), then Filters ("· 2 on") and the sort. Under it the
+     type tabs: All, the four types with most results (two on a phone), More with the rest; a type chosen under More
+     shows as a tab. On a phone the heading keeps only the count (the command line is decoration) and shares a line with
+     List / Timeline, Filters and the sort the next one, and the Best for and use case chips are one line each, scrolled
+     sideways, so the first result is in sight. Filters open in place on a wide screen and as a drawer (a modal
+     `dialog`) up to 720 px, with Close and "Show N results"; Escape and Close give focus back to Filters.
    - **Rows.** Dashed rules between rows. A row: type · host · date (updated, else created, else "first seen" in the
      not-stated colour), the guide pick, the title, the description, "From" the sources. The title's link covers the
      row and opens the resource page; nothing is selected or opens in place, on any width. The resource page's **Back
@@ -138,7 +140,7 @@ pages, Results and the resource page, and the text pages; this record says what 
    - **Some sources did not answer:** one quiet line under the heading, no banner and no live region: "2 of 5 sources
      did not answer · Which?" (`CoverageLine`). Which? lists them and why, in words. Try again only when a retry can
      help (an error, a timeout, busy); never while a source is paused or its circuit is open.
-   - **Best for** (All, Apps I can use, Build with AI) sits with the use case chips under the type tabs. It sets the
+   - **Best for** (Anyone, Apps I can use, Build with AI) sits with the use case chips under the type tabs. It sets the
      audience `path`, which changes what ranks first and never hides a result.
    - **The timeline:** the month beside a line of dots, each item its creation date, type, host, title and
      description. The results with no stated date are one group at the end, folded: "Date unknown · N · Show them" (a

@@ -1,12 +1,16 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FacetValue } from '@/api/types';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
-/** Types shown as tabs; the others go under More. */
+/** Types shown as tabs; the others go under More. A phone shows two, so the tabs stay on one line. */
 const SHOWN = 4;
+const SHOWN_ON_PHONE = 2;
+const PHONE = '(max-width: 720px)';
 
 /**
- * The type tabs over the list (ADR 0042, decision 7): All, the four types with the most results, then More with the rest.
+ * The type tabs over the list (ADR 0042, decision 7): All, the four types with the most results (two on a phone), then
+ * More with the rest.
  * A type chosen under More shows as a tab too, so the pressed tab is always in sight. Counts are the facet counts
  * from the API. Escape closes More and gives focus back to it.
  */
@@ -25,8 +29,9 @@ export function TypeTabs({
   const [open, setOpen] = useState(false);
   const moreId = useId();
   const moreButton = useRef<HTMLButtonElement>(null);
+  const limit = useMediaQuery(PHONE, false) ? SHOWN_ON_PHONE : SHOWN;
   const byCount = [...types].sort((a, b) => b.count - a.count);
-  const shown = byCount.filter((f, i) => i < SHOWN || f.value === active);
+  const shown = byCount.filter((f, i) => i < limit || f.value === active);
   const more = byCount.filter((f) => !shown.includes(f));
   useEffect(() => {
     if (!open) return;
