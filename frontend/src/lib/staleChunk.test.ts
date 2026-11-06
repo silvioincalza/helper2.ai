@@ -1,4 +1,10 @@
-import { CHUNK_RELOAD_KEY, RELOAD_GUARD_MS, followNavigation, loadChunk } from '@/lib/staleChunk';
+import {
+  CHUNK_RELOAD_KEY,
+  RELOAD_GUARD_MS,
+  claimReloadedPage,
+  followNavigation,
+  loadChunk,
+} from '@/lib/staleChunk';
 
 type Listener = (state: {
   navigation: { location?: { pathname: string; search: string; hash: string } };
@@ -100,11 +106,30 @@ describe('loading a page file', () => {
       CHUNK_RELOAD_KEY,
       JSON.stringify({ address: '/saved', at: performance.timeOrigin - 1 }),
     );
+    claimReloadedPage();
     vi.setSystemTime(performance.timeOrigin + RELOAD_GUARD_MS + 1);
     await expect(loadChunk(missingFile)).rejects.toThrow(
       'Failed to fetch dynamically imported module',
     );
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('a later page, not the one the reload opened, reloads the same address again for a later release', async () => {
+    // The reload opened an earlier page, which claimed it; this page came from another navigation.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    window.sessionStorage.setItem(
+      CHUNK_RELOAD_KEY,
+      JSON.stringify({
+        address: '/saved',
+        at: performance.timeOrigin - 2_000,
+        page: performance.timeOrigin - 1_000,
+      }),
+    );
+    claimReloadedPage();
+    vi.setSystemTime(performance.timeOrigin + RELOAD_GUARD_MS + 1);
+    loadChunk(missingFile).then(settled, settled);
+    await tick();
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 
   it('reloads again for another address', async () => {

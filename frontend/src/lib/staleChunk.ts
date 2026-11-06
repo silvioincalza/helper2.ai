@@ -6,10 +6,10 @@
  * The tab loads the page the visitor was going to, not the one they are leaving: during a navigation the address bar
  * still shows the old page, so {@link followNavigation} keeps the destination.
  *
- * The tab reloads one address at most once in {@link RELOAD_GUARD_MS}, and never twice for the page the reload
- * opened: the address and the time wait in sessionStorage (this tab only). A page file that loads does not clear them: a route can load several files (the
- * admin layout, then its page), and clearing on the first one would let a file that keeps failing reload the tab
- * forever. If the reload does not help, the error goes on to the route's error page.
+ * The tab reloads one address at most once in {@link RELOAD_GUARD_MS}, and never twice from the page the reload
+ * opened ({@link claimReloadedPage}): the address, the time and that page wait in sessionStorage (this tab only). A
+ * page file that loads does not clear them: a route can load several files (the admin layout, then its page), and
+ * clearing on the first one would let a file that keeps failing reload the tab forever. If the reload does not help, the error goes on to the route's error page.
  */
 export const CHUNK_RELOAD_KEY = 'h2.chunkReload';
 
@@ -19,6 +19,8 @@ export const RELOAD_GUARD_MS = 30_000;
 interface LastReload {
   address: string;
   at: number;
+  /** The start ({@link Performance.timeOrigin}) of the page the reload opened, once that page has claimed it. */
+  page?: number;
 }
 
 /** The router's view this module needs: the address of the navigation in progress, if any. */
@@ -51,7 +53,8 @@ function lastReload(): LastReload | undefined {
       typeof parsed === 'object' &&
       parsed !== null &&
       typeof (parsed as LastReload).address === 'string' &&
-      typeof (parsed as LastReload).at === 'number'
+      typeof (parsed as LastReload).at === 'number' &&
+      ['number', 'undefined'].includes(typeof (parsed as LastReload).page)
     ) {
       return parsed as LastReload;
     }
@@ -62,13 +65,29 @@ function lastReload(): LastReload | undefined {
 }
 
 /**
- * True when the tab already reloaded [address] for this failure: a moment ago, or to open this very page. The page
- * the reload opened started after the reload was asked for, so a file that fails there slowly (a proxy that times
- * out after more than {@link RELOAD_GUARD_MS}) still gets no second reload.
+ * Marks this page as the one the last reload opened, when it is: the first page to start after the reload was asked
+ * for. Runs once, when the page starts, before any page file loads. A later page, opened by another navigation, finds
+ * the reload already claimed and gets only the time guard.
+ */
+export function claimReloadedPage(): void {
+  try {
+    const last = lastReload();
+    if (!last || last.page !== undefined || performance.timeOrigin < last.at) return;
+    const claimed: LastReload = { ...last, page: performance.timeOrigin };
+    window.sessionStorage.setItem(CHUNK_RELOAD_KEY, JSON.stringify(claimed));
+  } catch {
+    /* storage blocked: loadChunk never reloads then */
+  }
+}
+
+/**
+ * True when the tab already reloaded [address] for this failure: a moment ago, or to open this very page. In the
+ * page the reload opened, a file that fails slowly (a proxy that times out after more than {@link RELOAD_GUARD_MS})
+ * still gets no second reload.
  */
 function alreadyReloaded(last: LastReload | undefined, address: string): boolean {
   if (last?.address !== address) return false;
-  const openedByTheReload = performance.timeOrigin >= last.at;
+  const openedByTheReload = last.page === performance.timeOrigin;
   return openedByTheReload || Date.now() - last.at < RELOAD_GUARD_MS;
 }
 
