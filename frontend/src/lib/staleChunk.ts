@@ -11,7 +11,7 @@ export const CHUNK_RELOAD_KEY = 'h2.chunkReload';
 const here = () => window.location.pathname + window.location.search;
 
 /** Starts a reload, unless this address already had one. False when no reload started. */
-export function reloadOnce(): boolean {
+function reloadOnce(): boolean {
   try {
     if (window.sessionStorage.getItem(CHUNK_RELOAD_KEY) === here()) return false;
     window.sessionStorage.setItem(CHUNK_RELOAD_KEY, here());
