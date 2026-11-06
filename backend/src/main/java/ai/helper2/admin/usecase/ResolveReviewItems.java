@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * An administrator decides several review items at once (ADR 0045). Each item goes through the
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
  * refuses ({@link BulkDecisionRule}) stays open and is recorded as NOT_ALLOWED. Not transactional
  * itself, on purpose.
  */
-@Service
 public class ResolveReviewItems {
 
   public static final int MAX_ITEMS = 100;
