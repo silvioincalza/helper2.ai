@@ -16,7 +16,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
 - Lawyer review of back-office records ([ADR 0045](adr/edge/0045-back-office.md)): `admin_audit` keeps an
-  administrator's GitHub id for 24 months, and a review item keeps who decided it and their note. Is the line on the
+  administrator's GitHub id for 24 months, a review item keeps who decided it and their note, and a skipped
+  resource keeps the reason for the skip (`enrichment_queue_control`, until requeued). Is the line on the
   Privacy page enough for the people who run the site, and is 24 months right?
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
@@ -368,7 +369,9 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
 - A GitHub OAuth App allows only one callback URL, and each environment needs two (public host and admin host): use a GitHub App, or one OAuth App per host. A manual step, outside the repo. ([ADR 0035](adr/edge/0035-admin-host.md))
-- The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute); acting on the queue (requeue, skip, prioritise) is not built yet. A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
+- The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute; 1.7 to 1.9 s with 37 500 REJECTED resources and the queue decisions). A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000), and so does the out-of-retries view (1.1 to 1.6 s with 37 500 REJECTED); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
+- The catalog's backlog query reads the Scout's `enrichment_queue_control` (a listed exception in the table-owner test). If it starts to hurt, the catalog can own the table behind a port, as for the re-run request of ADR 0056. ([ADR 0045](adr/edge/0045-back-office.md) §7)
+- Privacy check (privacy-legal): the skip reason in the enrichment queue is free text, like the review note. The form says "No personal data" and the code drops control characters, but nothing stops a name. Confirm whether the Privacy page must list the skip reason, and whether it needs a retention rule (today it stays until a requeue, a new skip or the resource's delete). ([ADR 0045](adr/edge/0045-back-office.md) §7)
 - The admin pages ship in the public bundle (the server still refuses every admin call without ADMIN). Load them lazily so the back office's shape stays out of the public JavaScript.
 - Privacy check: the review decision note is free text kept with the review item. Write no personal data in it; confirm with privacy-legal whether the Privacy page must list it.
 - While Redis is down each replica counts alone (up to 3× the limit on prod). Clients behind one shared address share one limit. ([ADR 0024](adr/edge/0024-http-edge-protection.md))

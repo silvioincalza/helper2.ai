@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates.Part;
 import ai.helper2.platform.BadRequestException;
 import java.time.Instant;
 import java.util.Base64;
@@ -13,13 +14,15 @@ import org.junit.jupiter.api.Test;
 class EnrichmentQueueCursorTest {
 
   @Test
-  void aCursorComesBackAsItWent() {
-    BacklogCursor cursor =
-        new BacklogCursor(false, Instant.parse("2026-11-05T10:15:30.123456Z"), UUID.randomUUID());
-    String token = EnrichmentQueueController.encode(cursor);
+  void aCursorOfEveryPartComesBackAsItWent() {
+    for (Part part : Part.values()) {
+      BacklogCursor cursor =
+          new BacklogCursor(part, Instant.parse("2026-11-05T10:15:30.123456Z"), UUID.randomUUID());
+      String token = EnrichmentQueueController.encode(cursor);
 
-    assertThat(token).matches("[A-Za-z0-9_-]+");
-    assertThat(EnrichmentQueueController.decode(token)).isEqualTo(cursor);
+      assertThat(token).matches("[A-Za-z0-9_-]+");
+      assertThat(EnrichmentQueueController.decode(token)).isEqualTo(cursor);
+    }
   }
 
   @Test

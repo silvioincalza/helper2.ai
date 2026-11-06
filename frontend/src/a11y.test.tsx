@@ -10,6 +10,7 @@ import {
   makeCard,
   makeDetail,
   makeRecent,
+  makeReviewEvidence,
   makeSearch,
   makeStatus,
 } from '@/test/fixtures';
@@ -252,6 +253,14 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         ],
         total: 1,
       }),
+      'GET /admin/review-items/*': () =>
+        makeReviewEvidence({
+          id: '66666666-6666-5666-8666-666666666666',
+          kind: 'ENRICHMENT_VALIDATION',
+          status: 'OPEN',
+          reason: 'Wrong price',
+          createdAt: '2026-10-21T10:00:00Z',
+        }),
       'GET /admin/scout-runs': () => [
         {
           id: '77777777-7777-5777-8777-777777777777',
@@ -322,11 +331,22 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           {
             resourceId: '11111111-1111-5111-8111-111111111111',
             title: 'Acme MCP',
+            state: 'WAITING',
             waiting: 'RETRY',
             firstDiscoveredAt: '2026-11-04T09:00:00Z',
             failedRuns: 1,
             lastOutcome: 'FAILED',
             lastRunAt: '2026-11-05T08:00:00Z',
+          },
+          {
+            resourceId: '22222222-2222-5222-8222-222222222222',
+            title: 'Top MCP',
+            state: 'PRIORITISED',
+            waiting: 'NEW',
+            firstDiscoveredAt: '2026-11-04T08:00:00Z',
+            failedRuns: 0,
+            lastOutcome: null,
+            lastRunAt: null,
           },
         ],
         next: 'c2',
@@ -358,7 +378,11 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(ov.container)).toEqual([]);
     ov.unmount();
     const review = renderApp('/admin/review');
-    await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'p' });
+    await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'button' });
+    // The evidence of the selected item, then the keys help dialog over it.
+    await screen.findByText('Free for everyone.');
+    expect(await axeViolations(review.container)).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Keys (?)' }));
     expect(await axeViolations(review.container)).toEqual([]);
     review.unmount();
     const runs = renderApp('/admin/runs');
@@ -370,7 +394,11 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(examples.container)).toEqual([]);
     examples.unmount();
     const enrichment = renderApp('/admin/enrichment');
-    await within(await screen.findByRole('main')).findByText('Acme MCP');
+    await within(await screen.findByRole('main')).findByRole('link', { name: 'Acme MCP' });
+    expect(await axeViolations(enrichment.container)).toEqual([]);
+    // The skip confirm, with its reason field, open in the row.
+    await userEvent.click(screen.getByRole('button', { name: 'Skip Acme MCP' }));
+    await screen.findByRole('textbox', { name: 'Reason (optional)' });
     expect(await axeViolations(enrichment.container)).toEqual([]);
     enrichment.unmount();
     const audit = renderApp('/admin/audit');
@@ -400,6 +428,14 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
         },
       ],
       'GET /sources': () => HEALTH_SOURCES,
+      'GET /admin/review-items/*': () =>
+        makeReviewEvidence({
+          id: '66666666-6666-5666-8666-666666666666',
+          kind: 'ENRICHMENT_VALIDATION',
+          status: 'OPEN',
+          reason: 'Wrong price',
+          createdAt: '2026-10-21T10:00:00Z',
+        }),
       'GET /admin/review-items': () => ({
         items: [
           {

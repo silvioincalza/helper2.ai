@@ -2,7 +2,10 @@
 # Source of truth: backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
 #   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
-#   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx.
+#   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx,
+#   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
+#   catalog/internal/BacklogRule.java, scout/EnrichmentQueue.kt (QueuePlace),
+#   scout/usecase/RequeueEnrichment.kt, SkipEnrichment.kt, PrioritiseEnrichment.kt, admin/web/EnrichmentQueueController.java.
 # Render: cd docs/diagrams && d2 fmt flow-0045-back-office.d2 && d2 flow-0045-back-office.d2 flow-0045-back-office.svg
 
 ...@style
@@ -44,23 +47,79 @@ uc.compute -> parts.budget
 uc.compute -> parts.credits
 uc.compute -> parts.examples
 
-queue_req: "GET /api/v1/admin/enrichment-queue\n(after = cursor)" {class: end}
+queue_req: "GET /api/v1/admin/enrichment-queue\n(view, after = cursor)" {class: end}
 
 queue: ListEnrichmentQueue {
   class: group
   direction: down
-  part: "Cursor in the\nnever-run part?" {class: decision}
+  view: "Which view?" {class: decision}
+  part: "Which part is\nthe cursor in?" {class: decision}
+  at_top: "Rows at the top after it,\nthen never-run, then to retry" {class: data}
   both: "Never-run rows after it,\nthen the rows to retry" {class: data}
   retry: "Rows to retry\nafter it" {class: data}
+  skipped: "Skipped rows,\nlatest skip first" {class: data}
+  out: "Rows out of retries\n(not skipped)" {class: data}
   more: "One row more than asked?" {class: decision}
   next: "next = cursor of the last row" {class: end}
   last: "next = null" {class: end}
-  part -> both: "yes, or no cursor"
-  part -> retry: no
+  view -> part: WAITING
+  view -> skipped: SKIPPED
+  view -> out: OUT_OF_RETRIES
+  part -> at_top: "at the top, or no cursor"
+  part -> both: "never-run"
+  part -> retry: "to retry"
+  at_top -> more
   both -> more
   retry -> more
+  skipped -> more
+  out -> more
   more -> next: yes
   more -> last: no
 }
 
-queue_req -> queue.part
+queue_req -> queue.view
+
+act_req: "POST /api/v1/admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\n(admin port, ADMIN, CSRF)" {class: end}
+
+act: "RequeueEnrichment · SkipEnrichment · PrioritiseEnrichment\n(one transaction)" {
+  class: group
+  direction: down
+  known: "Resource known?" {class: decision}
+  notfound: "404, audit NOT_FOUND" {class: fail}
+  applies: "Action applies?\nrequeue: skipped or out of retries\nskip: waits, not skipped\nprioritise (after the top lock): waits,\nnot at the top, fewer than 50 at the top" {class: decision}
+  refused: "409 not-applicable,\naudit the reason" {class: fail}
+  write: "Write the control row\n(priority until the next run;\nskip; failures counted from now)" {class: data}
+  done: "204, audit REQUEUED (REQUEUED_RESET\nwhen the retries start again),\nSKIPPED or PRIORITISED" {class: end}
+  known -> notfound: no
+  known -> applies: yes
+  applies -> refused: no
+  applies -> write: yes
+  write -> done
+}
+
+act_req -> act.known
+
+evidence_req: "GET /api/v1/admin/review-items/{id}/evidence" {class: end}
+
+evidence: GetReviewEvidence {
+  class: group
+  direction: down
+  item: "Item exists?" {class: decision}
+  missing: "404" {class: fail}
+  rel: "Item links to a\nrelationship?" {class: decision}
+  relationship: "Run + the relationship,\nat most 5 quotes" {class: data}
+  run: "Item links to a run?" {class: decision}
+  fields: "Run, its validation errors,\nits fields CONFLICTING first,\nat most 5 quotes each" {class: data}
+  none: "The item only" {class: end}
+  marker: "aiContent: provider, model,\nAI-written paths" {class: ai}
+  item -> missing: no
+  item -> rel: yes
+  rel -> relationship: yes
+  rel -> run: no
+  run -> fields: yes
+  run -> none: no
+  relationship -> marker
+  fields -> marker
+}
+
+evidence_req -> evidence.item

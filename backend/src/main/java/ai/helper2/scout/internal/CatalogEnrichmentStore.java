@@ -15,6 +15,7 @@ import ai.helper2.scout.GapTarget;
 import ai.helper2.scout.GapTargets;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.PageTargets;
+import ai.helper2.scout.QueuePlace;
 import ai.helper2.scout.ValidationResult;
 import ai.helper2.shared.ResourceType;
 import java.net.URI;
@@ -81,8 +82,23 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
    */
   @Override
   public List<EnrichmentCandidates.BacklogEntry> queue(
-      EnrichmentCandidates.BacklogCursor after, int size) {
-    return candidates.backlog(after, size, MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
+      EnrichmentCandidates.View view, EnrichmentCandidates.BacklogCursor after, int size) {
+    return candidates.backlog(view, after, size, MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
+  }
+
+  /** Where one resource stands, with the same bars as {@link #pending}. */
+  @Override
+  public QueuePlace place(UUID resourceId) {
+    EnrichmentCandidates.Standing s =
+        candidates.standing(resourceId, MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
+    return s == null
+        ? null
+        : new QueuePlace(s.due(), s.outOfRetries(), s.skipped(), s.prioritised());
+  }
+
+  @Override
+  public int prioritisedCount() {
+    return candidates.prioritisedCount(MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
   }
 
   /**

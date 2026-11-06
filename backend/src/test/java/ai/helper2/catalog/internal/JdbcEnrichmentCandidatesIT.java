@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogEntry;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Candidate;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.SourceText;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates.Standing;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates.State;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates.View;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates.Waiting;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -157,21 +162,147 @@ class JdbcEnrichmentCandidatesIT {
     UUID older = withText("Older", "INDEXED", "NOT_RUN", T0.plus(2, ChronoUnit.DAYS));
     UUID oldest = withText("Oldest", "INDEXED", "NOT_RUN", T0.plus(1, ChronoUnit.DAYS));
 
+    assertThat(pagedOfThisTest(View.WAITING))
+        .containsExactly(newest, older, oldest, retry, unavailable)
+        .containsExactlyElementsOf(pendingOfThisTest());
+  }
+
+  /** Every page of [view], two at a time, as the cursor walks it; only this test's resources. */
+  private List<UUID> pagedOfThisTest(View view) {
     List<UUID> paged = new ArrayList<>();
     EnrichmentCandidates.BacklogCursor after = null;
     while (true) {
-      List<EnrichmentCandidates.BacklogEntry> page =
-          candidates.backlog(after, 2, MIN_TEXT, MAX_FAILED);
+      List<BacklogEntry> page = candidates.backlog(view, after, 2, MIN_TEXT, MAX_FAILED);
       if (page.isEmpty()) {
         break;
       }
-      page.stream().map(EnrichmentCandidates.BacklogEntry::id).forEach(paged::add);
+      page.stream().map(BacklogEntry::id).forEach(paged::add);
       after = page.getLast().cursor();
     }
+    return paged.stream().filter(created::contains).toList();
+  }
 
-    assertThat(paged.stream().filter(created::contains).toList())
-        .containsExactly(newest, older, oldest, retry, unavailable)
-        .containsExactlyElementsOf(pendingOfThisTest());
+  private BacklogEntry entryOf(View view, UUID id) {
+    return candidates.backlog(view, null, 10_000, MIN_TEXT, MAX_FAILED).stream()
+        .filter(e -> e.id().equals(id))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private void control(String set, UUID id, Instant at) {
+    jdbc.sql(
+            "INSERT INTO enrichment_queue_control (resource_id, updated_at) VALUES (:id, now())"
+                + " ON CONFLICT (resource_id) DO NOTHING")
+        .param("id", id)
+        .update();
+    jdbc.sql("UPDATE enrichment_queue_control SET " + set + " WHERE resource_id = :id")
+        .param("id", id)
+        .param("at", java.sql.Timestamp.from(at))
+        .update();
+  }
+
+  private Standing standing(UUID id) {
+    return candidates.standing(id, MIN_TEXT, MAX_FAILED);
+  }
+
+  /**
+   * ADR 0045 §7: one order for the next batch, the page and the count. Prioritised first (before
+   * the never-run part), skipped absent, each resource once.
+   */
+  @Test
+  void prioritisedComeFirstSkippedAreAbsentAndEveryReadKeepsOneOrder() {
+    UUID retry = withText("Retry", "INDEXED", "REJECTED", T0.plus(5, ChronoUnit.DAYS));
+    run(retry, "FAILED", "f1", T0.plus(6, ChronoUnit.DAYS));
+    UUID newest = withText("Newest", "INDEXED", "NOT_RUN", T0.plus(3, ChronoUnit.DAYS));
+    UUID skipped = withText("Skipped", "INDEXED", "NOT_RUN", T0.plus(2, ChronoUnit.DAYS));
+    UUID oldest = withText("Oldest", "INDEXED", "NOT_RUN", T0.plus(1, ChronoUnit.DAYS));
+    long before = candidates.pendingCount(MIN_TEXT, MAX_FAILED);
+    int topBefore = candidates.prioritisedCount(MIN_TEXT, MAX_FAILED);
+
+    control("prioritised_at = :at", retry, T0.plus(7, ChronoUnit.DAYS));
+    control("prioritised_at = :at", oldest, T0.plus(7, ChronoUnit.DAYS));
+    control("skipped_at = :at, skip_reason = 'spam'", skipped, T0.plus(7, ChronoUnit.DAYS));
+
+    assertThat(pendingOfThisTest()).containsExactly(retry, oldest, newest);
+    assertThat(pagedOfThisTest(View.WAITING)).containsExactly(retry, oldest, newest);
+    assertThat(candidates.pending(2, MIN_TEXT, MAX_FAILED)).containsExactly(retry, oldest);
+    assertThat(candidates.pendingCount(MIN_TEXT, MAX_FAILED)).isEqualTo(before - 1);
+    assertThat(candidates.prioritisedCount(MIN_TEXT, MAX_FAILED)).isEqualTo(topBefore + 2);
+    assertThat(pagedOfThisTest(View.SKIPPED)).containsExactly(skipped);
+
+    BacklogEntry top = entryOf(View.WAITING, retry);
+    assertThat(top.state()).isEqualTo(State.PRIORITISED);
+    assertThat(top.waiting()).isEqualTo(Waiting.RETRY);
+    BacklogEntry out = entryOf(View.SKIPPED, skipped);
+    assertThat(out.state()).isEqualTo(State.SKIPPED);
+    assertThat(out.waiting()).isNull();
+    assertThat(out.skipReason()).isEqualTo("spam");
+    assertThat(standing(skipped)).isEqualTo(new Standing(true, false, true, false));
+    assertThat(standing(oldest)).isEqualTo(new Standing(true, false, false, true));
+  }
+
+  /** A move to the top holds until the resource's next run starts. */
+  @Test
+  void aMoveToTheTopEndsWithTheNextRun() {
+    UUID newest = withText("Newest", "INDEXED", "NOT_RUN", T0.plus(3, ChronoUnit.DAYS));
+    UUID moved = withText("Moved", "INDEXED", "LLM_UNAVAILABLE", T0);
+    control("prioritised_at = :at", moved, T0.plus(4, ChronoUnit.DAYS));
+    assertThat(pendingOfThisTest()).containsExactly(moved, newest);
+
+    run(moved, "LLM_UNAVAILABLE", "u1", T0.plus(5, ChronoUnit.DAYS));
+
+    assertThat(pendingOfThisTest()).containsExactly(newest, moved);
+    assertThat(standing(moved).prioritised()).isFalse();
+  }
+
+  /**
+   * Out of retries: still in the backlog index (REJECTED), listed in its own view; a requeue counts
+   * only the FAILED runs after it, so the resource is due again until the cap is reached anew.
+   */
+  @Test
+  void aRequeueAfterTheCapCountsOnlyTheFailedRunsAfterIt() {
+    UUID failing = withText("Failing", "INDEXED", "REJECTED", T0);
+    run(failing, "FAILED", "f1", T0.plus(1, ChronoUnit.HOURS));
+    run(failing, "FAILED", "f2", T0.plus(2, ChronoUnit.HOURS));
+    run(failing, "FAILED", "f3", T0.plus(3, ChronoUnit.HOURS));
+    assertThat(pendingOfThisTest()).isEmpty();
+    assertThat(pagedOfThisTest(View.OUT_OF_RETRIES)).containsExactly(failing);
+    assertThat(entryOf(View.OUT_OF_RETRIES, failing).state()).isEqualTo(State.OUT_OF_RETRIES);
+    assertThat(standing(failing)).isEqualTo(new Standing(false, true, false, false));
+
+    control("failures_reset_at = :at", failing, T0.plus(4, ChronoUnit.HOURS));
+
+    assertThat(pendingOfThisTest()).containsExactly(failing);
+    assertThat(pagedOfThisTest(View.OUT_OF_RETRIES)).isEmpty();
+    assertThat(entryOf(View.WAITING, failing).failedRuns()).isZero();
+    run(failing, "FAILED", "f4", T0.plus(5, ChronoUnit.HOURS));
+    run(failing, "FAILED", "f5", T0.plus(6, ChronoUnit.HOURS));
+    assertThat(pendingOfThisTest()).containsExactly(failing);
+    run(failing, "FAILED", "f6", T0.plus(7, ChronoUnit.HOURS));
+    assertThat(pendingOfThisTest()).isEmpty();
+  }
+
+  /** The skipped view lists the latest skip first, page by page, so a mistake is easy to undo. */
+  @Test
+  void theSkippedViewListsTheLatestSkipFirst() {
+    UUID first = withText("First skip", "INDEXED", "NOT_RUN", T0.plus(2, ChronoUnit.DAYS));
+    UUID second = withText("Second skip", "INDEXED", "NOT_RUN", T0);
+    UUID third = withText("Third skip", "INDEXED", "LLM_UNAVAILABLE", T0.plus(1, ChronoUnit.DAYS));
+    Instant now = Instant.parse("2030-01-01T00:00:00Z");
+    control("skipped_at = :at", first, now);
+    control("skipped_at = :at", second, now.plus(1, ChronoUnit.HOURS));
+    control("skipped_at = :at", third, now.plus(2, ChronoUnit.HOURS));
+
+    assertThat(pagedOfThisTest(View.SKIPPED)).containsExactly(third, second, first);
+    assertThat(entryOf(View.SKIPPED, second).skippedAt()).isEqualTo(now.plus(1, ChronoUnit.HOURS));
+    assertThat(pendingOfThisTest()).isEmpty();
+  }
+
+  @Test
+  void anUnknownResourceHasNoStanding() {
+    assertThat(standing(UUID.randomUUID())).isNull();
+    UUID done = withText("Done", "INDEXED", "VALIDATED", T0);
+    assertThat(standing(done)).isEqualTo(new Standing(false, false, false, false));
   }
 
   @Test
@@ -182,28 +313,34 @@ class JdbcEnrichmentCandidatesIT {
     UUID fresh = withText("Fresh", "INDEXED", "NOT_RUN", T0.plus(8, ChronoUnit.DAYS));
 
     var entries =
-        candidates.backlog(null, 10_000, MIN_TEXT, MAX_FAILED).stream()
+        candidates.backlog(View.WAITING, null, 10_000, MIN_TEXT, MAX_FAILED).stream()
             .filter(e -> created.contains(e.id()))
             .toList();
 
     assertThat(entries)
         .containsExactly(
-            new EnrichmentCandidates.BacklogEntry(
+            new BacklogEntry(
                 fresh,
                 "Fresh",
-                EnrichmentCandidates.Waiting.NEW,
+                State.WAITING,
+                Waiting.NEW,
                 T0.plus(8, ChronoUnit.DAYS),
                 0,
                 null,
+                null,
+                null,
                 null),
-            new EnrichmentCandidates.BacklogEntry(
+            new BacklogEntry(
                 retry,
                 "Retry",
-                EnrichmentCandidates.Waiting.RETRY,
+                State.WAITING,
+                Waiting.RETRY,
                 T0.plus(9, ChronoUnit.DAYS),
                 2,
                 "FAILED",
-                T0.plus(11, ChronoUnit.DAYS)));
+                T0.plus(11, ChronoUnit.DAYS),
+                null,
+                null));
   }
 
   @Test
@@ -236,6 +373,16 @@ class JdbcEnrichmentCandidatesIT {
     assertThat(candidates.withEnoughText(List.of(b, UUID.randomUUID(), bare, a), MIN_TEXT))
         .containsExactly(b, a);
     assertThat(candidates.withEnoughText(List.of(), MIN_TEXT)).isEmpty();
+  }
+
+  /** ADR 0045 §7: a skip holds when a collector sees new text, not only in the backlog. */
+  @Test
+  void aSkippedResourceIsNotEnrichedWhenItsTextChanges() {
+    UUID kept = withText("Kept", "INDEXED", "NOT_RUN", T0);
+    UUID skipped = withText("Skipped", "INDEXED", "NOT_RUN", T0);
+    control("skipped_at = :at", skipped, T0);
+
+    assertThat(candidates.withEnoughText(List.of(skipped, kept), MIN_TEXT)).containsExactly(kept);
   }
 
   @Test

@@ -158,7 +158,15 @@ class ModularityTest {
           Map.entry("guide_similar_question", "guide"),
           Map.entry("source_cursor", "scout"),
           Map.entry("scout_run", "scout"),
-          Map.entry("scout_schedule", "scout"));
+          Map.entry("scout_schedule", "scout"),
+          Map.entry("enrichment_queue_control", "scout"));
+
+  /**
+   * Known exception, as "table module". The catalog's backlog query reads the Scout's
+   * enrichment_queue_control, read only, so the Scout's next batch, the queue page and the count
+   * keep one rule (ADR 0045 §7, BacklogRule).
+   */
+  private static final Set<String> SHARED_TABLES = Set.of("enrichment_queue_control catalog");
 
   private static final Pattern CREATE_TABLE =
       Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");
@@ -201,7 +209,9 @@ class ModularityTest {
               while (sql.find()) {
                 String table = sql.group(1).toLowerCase(java.util.Locale.ROOT);
                 String owner = TABLE_OWNERS.get(table);
-                if (owner != null && !owner.equals(module)) {
+                if (owner != null
+                    && !owner.equals(module)
+                    && !SHARED_TABLES.contains(table + " " + module)) {
                   foreign.add(relative + " uses " + table + " (owner: " + owner + ")");
                 }
               }
