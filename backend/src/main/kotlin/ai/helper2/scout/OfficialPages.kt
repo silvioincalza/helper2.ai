@@ -65,13 +65,18 @@ data class PageTarget(val url: URI, val anchorRecordId: UUID)
 object PageTargets {
 
   /**
-   * True when [sourceId]'s record URL is a product's own page: one a person accepted from any
-   * discovery category (`discovery-<category>`, ADR 0051) or one from the editorial seed. Other
-   * records point at a registry, a repository or an article, and an MCP Registry entry can link any
-   * site its author likes.
+   * True when [sourceId]'s record URL can be a product's own page: one a person accepted from any
+   * discovery category (`discovery-<category>`, ADR 0051), one from the editorial seed, or a
+   * product site linked from an awesome list (ADR 0058). The awesome lists themselves are records
+   * of the same source on github.com, a platform host, so [select] skips them. Other records point
+   * at a registry, a repository or an article, and an MCP Registry entry can link any site its
+   * author likes.
    */
   private fun isPageSource(sourceId: String): Boolean =
-    sourceId == "curated" || WebSources.isDiscovery(sourceId)
+    sourceId == "curated" || sourceId == GITHUB_AWESOME || WebSources.isDiscovery(sourceId)
+
+  /** The awesome-list collector's id (`GitHubAwesomeCollector.ID`). */
+  private const val GITHUB_AWESOME = "github-awesome"
 
   /** Hosts whose pages are listings, not a product's own site: their own adapters read them. */
   private val PLATFORM_HOSTS =

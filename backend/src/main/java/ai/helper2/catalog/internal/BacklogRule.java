@@ -13,13 +13,33 @@ final class BacklogRule {
 
   private BacklogRule() {}
 
-  /** Resources the Scout may enrich: indexed, observed or curated, with enough source text. */
-  private static final String ELIGIBLE =
+  /** A product a person accepted from the review queue (ADR 0056). */
+  private static final String ACCEPTED =
       """
-      r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED')
-        AND EXISTS (SELECT 1 FROM source_record s
-                    WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
+      EXISTS (SELECT 1 FROM review_item i
+              WHERE i.kind = 'RESOURCE_CANDIDATE' AND i.status = 'ACCEPTED'
+                AND i.candidate_url = r.canonical_url)
       """;
+
+  /** At least one source description of [minText] characters. */
+  private static final String ENOUGH_TEXT =
+      """
+      EXISTS (SELECT 1 FROM source_record s
+              WHERE s.resource_id = r.id AND length(coalesce(s.description, '')) >= :minText)
+      """;
+
+  /**
+   * Resources the Scout may enrich: indexed, observed or curated, with enough source text or
+   * accepted by a person. An accepted product may have no source text at all (one linked from an
+   * awesome list keeps no snippet, ADR 0058); the evidence ladder reads its own page instead (ADR
+   * 0056).
+   */
+  private static final String ELIGIBLE =
+      "r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED') AND ("
+          + ENOUGH_TEXT
+          + " OR "
+          + ACCEPTED
+          + ")";
 
   /** The FAILED runs since an admin last requeued the resource; every one before that. */
   static final String FAILED_RUNS =
