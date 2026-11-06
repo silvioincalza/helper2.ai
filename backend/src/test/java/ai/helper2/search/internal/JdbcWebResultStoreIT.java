@@ -100,7 +100,7 @@ class JdbcWebResultStoreIT {
             "Web",
             true,
             SourceMode.LIVE,
-            URI.create("https://tavily.com"),
+            URI.create("https://helper2.ai/sources"),
             null,
             null,
             EnumSet.allOf(ResourceType.class),

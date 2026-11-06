@@ -28,7 +28,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
       "helper2.sources.npm.enabled=false",
       "helper2.sources.mcp-registry.enabled=false",
       "helper2.sources.arxiv.enabled=false",
-      "helper2.sources.tavily.enabled=false",
+      "helper2.sources.live-web.enabled=false",
       "server.forward-headers-strategy=native",
       "helper2.rate-limit.recent-per-minute=3",
       "logging.structured.format.console=",

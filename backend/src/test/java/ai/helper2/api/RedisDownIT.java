@@ -36,7 +36,7 @@ import org.springframework.test.context.DynamicPropertySource;
       "helper2.sources.npm.enabled=false",
       "helper2.sources.mcp-registry.enabled=false",
       "helper2.sources.arxiv.enabled=false",
-      "helper2.sources.tavily.enabled=false",
+      "helper2.sources.live-web.enabled=false",
       "logging.structured.format.console=",
       "spring.security.oauth2.client.registration.test.client-id=test-client",
       "spring.security.oauth2.client.registration.test.client-secret=test-secret",

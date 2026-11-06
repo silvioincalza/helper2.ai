@@ -33,7 +33,7 @@ import org.springframework.test.context.DynamicPropertySource;
       "helper2.sources.npm.enabled=false",
       "helper2.sources.mcp-registry.enabled=false",
       "helper2.sources.arxiv.enabled=false",
-      "helper2.sources.tavily.enabled=false",
+      "helper2.sources.live-web.enabled=false",
       "helper2.rate-limit.search-per-minute=3",
       "helper2.rate-limit.recent-per-minute=3",
       "helper2.rate-limit.guide-per-minute=3",

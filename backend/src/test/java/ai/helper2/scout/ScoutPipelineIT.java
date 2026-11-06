@@ -55,7 +55,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "helper2.sources.npm.enabled=false",
       "helper2.sources.mcp-registry.enabled=true",
       "helper2.sources.arxiv.enabled=false",
-      "helper2.sources.tavily.enabled=false",
+      "helper2.sources.live-web.enabled=false",
       "helper2.sources.hf-trending.enabled=false",
       "helper2.sources.live-web-scout.enabled=false",
       "helper2.sources.course-scout.enabled=false",
