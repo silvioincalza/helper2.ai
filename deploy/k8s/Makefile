@@ -256,14 +256,25 @@ check-env:
 	@test -f $(ENV)/app.env || { echo "$(ENV)/app.env missing: copy app.env.example and fill it"; exit 1; }
 
 # A release left in pending-install/upgrade/rollback (an interrupted helm run) refuses every new
-# upgrade with "another operation is in progress". Stop here with the way out instead.
-# No release yet (first install) is fine.
+# upgrade with "another operation is in progress". Recover it by rolling back to the previous
+# deployed revision before starting a new upgrade. No release yet (first install) is fine.
 release-ready:
 	@status=$$(helm -n $(NS) status helper2 2>/dev/null | awk '/^STATUS:/ {print $$2}'); \
 	case "$$status" in \
 	  pending-*) echo "release helper2 in $(NS) is $$status: an earlier helm run was interrupted."; \
-	             echo "Check the pods, then finish it: make ENV=$(ENV) rollback (back to the last deployed revision)."; \
-	             exit 1 ;; \
+	             echo "Trying automatic recovery: rollback to the last deployed revision."; \
+	             if ! helm -n $(NS) rollback helper2 --wait --timeout 12m >/dev/null; then \
+	               echo "Automatic rollback failed."; \
+	               echo "Check the pods, then run: make ENV=$(ENV) rollback"; \
+	               exit 1; \
+	             fi; \
+	             status=$$(helm -n $(NS) status helper2 2>/dev/null | awk '/^STATUS:/ {print $$2}'); \
+	             case "$$status" in \
+	               pending-*) echo "release helper2 in $(NS) is still $$status after rollback."; \
+	                          echo "Check the pods, then run: make ENV=$(ENV) rollback"; \
+	                          exit 1 ;; \
+	             esac; \
+	             echo "release helper2 in $(NS) recovered: $$status." ;; \
 	esac
 
 # Revision 1 exists in both envs (adopted from kustomize on 2026-10-26), so a failed upgrade rolls
