@@ -2,14 +2,19 @@ import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
 import { Layout } from '@/components/Layout';
 import { AppProviders } from '@/AppProviders';
+import { RouteError } from '@/components/RouteError';
+import { loadChunk } from '@/lib/staleChunk';
 import HomePage from '@/pages/HomePage';
 import ResourcePage from '@/pages/ResourcePage';
 
-/** A route whose page module is loaded the first time the route matches. */
+/**
+ * A route whose page module is loaded the first time the route matches. A file of an older release that is gone
+ * reloads the tab once (lib/staleChunk).
+ */
 const page =
   (load: () => Promise<{ default: ComponentType }>) =>
   async (): Promise<{ Component: ComponentType }> => ({
-    Component: (await load()).default,
+    Component: (await loadChunk(load)).default,
   });
 
 /**
@@ -34,42 +39,50 @@ export const routes: RouteObject[] = [
         <Layout />
       </AppProviders>
     ),
+    // Outside the layout: an error in the header or the providers.
+    errorElement: <RouteError />,
     children: [
-      { index: true, element: <HomePage /> },
-      // Results live on /search (ADR 0040, 3).
-      { path: 'search', element: <HomePage /> },
-      // The readable address (ADR 0050): one route, so replacing a missing or old slug once the resource is
-      // loaded keeps the page mounted.
-      { path: 'resource/:id/:slug?', element: <ResourcePage /> },
-      // Few visits start on the saved, sources, account or sign-in page: they load on demand, outside the first
-      // download.
-      { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) },
-      { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
-      { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
-      { path: 'signin', lazy: page(() => import('@/pages/SignInPage')) },
       {
-        // The back office (ADR 0023, ADR 0035): one guard, a part per route. Loaded on demand, so a visitor's
-        // bundle never carries it.
-        path: 'admin',
-        lazy: page(() => import('@/pages/admin/AdminLayout')),
+        // Inside the layout: a page that cannot open keeps the header, so the visitor can go on.
+        errorElement: <RouteError />,
         children: [
-          { index: true, lazy: page(() => import('@/pages/admin/AdminOverview')) },
-          { path: 'review', lazy: page(() => import('@/pages/admin/ReviewQueuePage')) },
-          { path: 'runs', lazy: page(() => import('@/pages/admin/ScoutRunsPage')) },
-          { path: 'enrichment', lazy: page(() => import('@/pages/admin/EnrichmentQueuePage')) },
-          { path: 'examples', lazy: page(() => import('@/pages/admin/ExamplesPage')) },
-          { path: 'audit', lazy: page(() => import('@/pages/admin/AuditPage')) },
-          { path: 'settings', lazy: page(() => import('@/pages/admin/SettingsPage')) },
+          { index: true, element: <HomePage /> },
+          // Results live on /search (ADR 0040, 3).
+          { path: 'search', element: <HomePage /> },
+          // The readable address (ADR 0050): one route, so replacing a missing or old slug once the resource is
+          // loaded keeps the page mounted.
+          { path: 'resource/:id/:slug?', element: <ResourcePage /> },
+          // Few visits start on the saved, sources, account or sign-in page: they load on demand, outside the first
+          // download.
+          { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) },
+          { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
+          { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
+          { path: 'signin', lazy: page(() => import('@/pages/SignInPage')) },
+          {
+            // The back office (ADR 0023, ADR 0035): one guard, a part per route. Loaded on demand, so a visitor's
+            // bundle never carries it.
+            path: 'admin',
+            lazy: page(() => import('@/pages/admin/AdminLayout')),
+            children: [
+              { index: true, lazy: page(() => import('@/pages/admin/AdminOverview')) },
+              { path: 'review', lazy: page(() => import('@/pages/admin/ReviewQueuePage')) },
+              { path: 'runs', lazy: page(() => import('@/pages/admin/ScoutRunsPage')) },
+              { path: 'enrichment', lazy: page(() => import('@/pages/admin/EnrichmentQueuePage')) },
+              { path: 'examples', lazy: page(() => import('@/pages/admin/ExamplesPage')) },
+              { path: 'audit', lazy: page(() => import('@/pages/admin/AuditPage')) },
+              { path: 'settings', lazy: page(() => import('@/pages/admin/SettingsPage')) },
+            ],
+          },
+          // The text pages are prose read once in a while: on demand too, so the first download stays small.
+          { path: 'mission', lazy: textPage(() => import('@/pages/MissionPage')) },
+          { path: 'privacy', lazy: textPage(() => import('@/pages/PrivacyPage')) },
+          { path: 'terms', lazy: textPage(() => import('@/pages/TermsPage')) },
+          // Few visits: loaded on demand too (ADR 0057).
+          { path: 'support', lazy: page(() => import('@/pages/SupportPage')) },
+          { path: 'support/thanks', lazy: page(() => import('@/pages/SupportThanksPage')) },
+          { path: '*', lazy: page(() => import('@/pages/NotFoundPage')) },
         ],
       },
-      // The text pages are prose read once in a while: on demand too, so the first download stays small.
-      { path: 'mission', lazy: textPage(() => import('@/pages/MissionPage')) },
-      { path: 'privacy', lazy: textPage(() => import('@/pages/PrivacyPage')) },
-      { path: 'terms', lazy: textPage(() => import('@/pages/TermsPage')) },
-      // Few visits: loaded on demand too (ADR 0057).
-      { path: 'support', lazy: page(() => import('@/pages/SupportPage')) },
-      { path: 'support/thanks', lazy: page(() => import('@/pages/SupportThanksPage')) },
-      { path: '*', lazy: page(() => import('@/pages/NotFoundPage')) },
     ],
   },
 ];
