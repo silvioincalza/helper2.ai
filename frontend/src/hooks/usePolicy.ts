@@ -71,7 +71,8 @@ export type PolicyValues = Record<
   | 'storedWebResults'
   | 'inactiveAccounts'
   | 'handledReports'
-  | 'adminRecords',
+  | 'adminRecords'
+  | 'runtimeSettingChanges',
   string
 >;
 
@@ -113,6 +114,7 @@ export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValue
     inactiveAccounts: d(r.inactiveAccountsSeconds),
     handledReports: d(r.handledReportsSeconds),
     adminRecords: d(r.adminRecordsSeconds),
+    runtimeSettingChanges: d(r.runtimeSettingChangesSeconds),
   };
 }
 
