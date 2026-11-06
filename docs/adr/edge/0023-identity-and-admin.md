@@ -25,7 +25,8 @@ traceable to that administrator.
    only a sign-in on that port gets the role ([0035](0035-admin-host.md)). For GitHub the subject
    is the numeric user id, never the login. An OpenID Connect (OIDC) provider may also use `registrationId:email` when
    `email_verified` is true. Roles are set at sign-in; a change to `H2_ADMINS` needs a new sign-in.
-4. **User row on sign-in.** `CurrentUser.signedIn` (on `AuthenticationSuccessEvent`) calls `Users.signedIn`, an upsert
+4. **User row on sign-in.** `CurrentUser.signedIn` (on `InteractiveAuthenticationSuccessEvent`, the event the sign-in
+   filter publishes with the session's token) calls `Users.signedIn`, an upsert
    of `app_user`: provider, subject (GitHub: the numeric id), display name and `last_signed_in_at`, and one display
    setting, `radar_motion` (default true), nothing else (no login, no e-mail). `GET /api/v1/me` returns the setting as
    `preferences.radarMotion` (null for a guest); `PATCH /api/v1/me/preferences` (`ChangePreferences`, CSRF token
@@ -41,12 +42,12 @@ traceable to that administrator.
    renders even when the resource left the catalog. `MeController` only maps requests; `Bookmarks` and `Users` only
    run SQL.
 6. **Delete my account.** The signed-in user's name in the header opens `/account`, where "Delete my account" asks
-   for confirmation, then calls `DELETE /api/v1/me` (CSRF token required). `DeleteMyAccount` deletes the `app_user`
-   row; its bookmarks go by `ON DELETE CASCADE`, and the user's issue reports stay with `reporter_user_id` set to null
-   (`ON DELETE SET NULL`). It then deletes the user's daily web-search counters in Redis
-   ([0037](../search/0037-tavily-store-and-daily-quota.md)); while Redis is down they stay until their 24 h expiry. The
-   controller ends the session, so the next request does not recreate the account; the page
-   reloads signed out. Accounts with no sign-in for 24 months are deleted the same way by the identity purge
+   for confirmation, then calls `DELETE /api/v1/me` (CSRF token required). The controller ends the session first: a
+   session that outlived the row would recreate the account on the next request, and if ending it fails nothing is
+   deleted. Then `DeleteMyAccount` deletes the `app_user` row; its bookmarks go by `ON DELETE CASCADE`, and the user's
+   issue reports stay with `reporter_user_id` set to null (`ON DELETE SET NULL`). It then deletes the user's daily
+   web-search counters in Redis ([0037](../search/0037-tavily-store-and-daily-quota.md)); while Redis is down they
+   stay until their 24 h expiry. The page reloads signed out. Accounts with no sign-in for 24 months are deleted the same way by the identity purge
    ([0034](../operations/0034-data-retention.md)).
 7. **Admin audit trail.** `admin_audit` holds one row per admin write: the administrator's provider subject, the
    action (`RESOLVE_REVIEW_ITEM`, `START_SCOUT_RUN`), the target (review item id, source id, or none for every
@@ -110,7 +111,8 @@ traceable to that administrator.
 - `backend/src/main/java/ai/helper2/identity/AuditTrail.java`, `AuditController.java` — the port, `/api/v1/admin/audit`.
 - `backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
   `backend/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
-- `backend/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit.
+- `backend/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit;
+  `identity/internal/SignInEventIT.java` — the sign-in filter's event writes the row, the provider manager's does not.
 - `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/components/SignIn.tsx`,
   `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/admin/`.
 - `backend/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`.
