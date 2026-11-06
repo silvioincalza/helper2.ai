@@ -188,13 +188,26 @@ class HttpEdgeIT {
   }
 
   @Test
-  void theAdminHostHasNoRateLimitKeyedOnAnAddressTheClientCouldChoose() throws Exception {
-    // ADR 0035: the admin host is closed by the network, not by a per-address counter that a
-    // forwarded header could steer there.
+  void theAdminHostLimitIsNotKeyedOnAnAddressTheClientCouldChoose() throws Exception {
+    // ADR 0035: no Cloudflare in front of the admin host, so a forwarded address there could be
+    // the client's own choice. The limit still holds; everyone not signed in shares one key, and
+    // a forwarded address does not open a new one.
+    int ok = 0;
+    int last = 0;
     for (int i = 0; i < 6; i++) {
-      assertThat(getAt(ADMIN_PORT, "/api/v1/recent").statusCode()).isEqualTo(200);
+      HttpResponse<String> r =
+          noRedirects.send(
+              HttpRequest.newBuilder(
+                      URI.create("http://localhost:" + ADMIN_PORT + "/api/v1/recent"))
+                  .header("X-Forwarded-For", "203.0.113." + (10 + i))
+                  .build(),
+              HttpResponse.BodyHandlers.ofString());
+      last = r.statusCode();
+      ok += last == 200 ? 1 : 0;
     }
-    assertThat(redis.keys("h2:v1:rate:*")).isEmpty();
+    assertThat(ok).isEqualTo(3);
+    assertThat(last).isEqualTo(429);
+    assertThat(redis.keys("h2:v1:rate:*")).hasSize(1);
   }
 
   private static java.util.List<String> sessionCookies(HttpResponse<?> r) {
