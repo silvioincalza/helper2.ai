@@ -8,6 +8,7 @@ import ai.helper2.pages.PageHead;
 import ai.helper2.pages.PageKind;
 import ai.helper2.pages.Pages;
 import ai.helper2.pages.Related;
+import ai.helper2.pages.ResourcePathsKt;
 import ai.helper2.pages.ResourceView;
 import ai.helper2.pages.config.PagesProperties;
 import ai.helper2.search.MergedResult;
@@ -63,7 +64,7 @@ public class RenderPage {
 
   private Page page(String path, boolean hasQuery) {
     return switch (PageAddress.Companion.of(path)) {
-      case PageAddress.Resource r -> resource(r.getId());
+      case PageAddress.Resource r -> resource(r.getId(), r.getSlug());
       case PageAddress.Page p when p.getKind() == PageKind.HOME && hasQuery ->
           Page.ok(pages.of(PageKind.SEARCH));
       case PageAddress.Page p -> Page.ok(pages.of(p.getKind()));
@@ -71,16 +72,26 @@ public class RenderPage {
     };
   }
 
-  private Page resource(@Nullable UUID id) {
+  /**
+   * One address per resource: a merged id, a missing slug or an old one (the title changed) moves
+   * to the current address with a 301 (ADR 0050).
+   */
+  private Page resource(@Nullable UUID id, @Nullable String slug) {
     Optional<ResourceDetail> detail = id == null ? Optional.empty() : details.find(id);
     if (detail.isEmpty()) {
       return Page.notFound(pages.resourceNotFound());
     }
-    UUID owner = detail.get().card().getId().getValue();
-    if (!owner.equals(id)) {
-      return Page.movedTo("/resource/" + owner);
+    MergedResult card = detail.get().card();
+    UUID owner = card.getId().getValue();
+    String current = ResourcePathsKt.resourcePath(owner, card.getTitle());
+    if (!current.equals(asWritten(id, slug))) {
+      return Page.movedTo(current);
     }
     return Page.ok(pages.resource(view(detail.get())));
+  }
+
+  private static String asWritten(UUID id, @Nullable String slug) {
+    return slug == null ? "/resource/" + id : "/resource/" + id + "/" + slug;
   }
 
   private static ResourceView view(ResourceDetail detail) {

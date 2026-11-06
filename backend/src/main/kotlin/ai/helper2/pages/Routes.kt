@@ -6,7 +6,7 @@ import java.util.UUID
 enum class PageKind(val pattern: String) {
   HOME(""),
   SEARCH("search"),
-  RESOURCE("resource/:id"),
+  RESOURCE("resource/:id/:slug?"),
   SAVED("saved"),
   SOURCES("sources"),
   ACCOUNT("account"),
@@ -23,8 +23,11 @@ enum class PageKind(val pattern: String) {
 sealed interface PageAddress {
   data class Page(val kind: PageKind) : PageAddress
 
-  /** [raw] is the id as written; [id] is null when it is not a UUID. */
-  data class Resource(val raw: String, val id: UUID?) : PageAddress
+  /**
+   * [raw] is the id as written; [id] is null when it is not a UUID. [slug] is the readable part
+   * after it, null when the address has none.
+   */
+  data class Resource(val raw: String, val id: UUID?, val slug: String? = null) : PageAddress
 
   data object Unknown : PageAddress
 
@@ -33,8 +36,8 @@ sealed interface PageAddress {
     fun of(path: String): PageAddress {
       val p = path.removePrefix("/")
       val parts = p.split('/')
-      if (parts.size == 2 && parts[0] == "resource" && parts[1].isNotEmpty()) {
-        return Resource(parts[1], uuidOrNull(parts[1]))
+      if (parts.size in 2..3 && parts[0] == "resource" && parts.drop(1).all { it.isNotEmpty() }) {
+        return Resource(parts[1], uuidOrNull(parts[1]), parts.getOrNull(2))
       }
       if (parts.size == 2 && parts[0] == "admin" && parts[1].isNotEmpty()) {
         return Page(PageKind.ADMIN_PAGE)

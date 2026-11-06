@@ -2,6 +2,7 @@ package ai.helper2.pages.usecase;
 
 import ai.helper2.catalog.usecase.ListIndexableResources;
 import ai.helper2.pages.IndexPolicy;
+import ai.helper2.pages.ResourcePathsKt;
 import ai.helper2.pages.config.PagesProperties;
 import java.time.Clock;
 import java.time.Duration;
@@ -60,8 +61,7 @@ public class ListSitemap {
         resources.list(types, IndexPolicy.PROMPT_MIN_LENGTH, limit - STATIC_PAGES.size())) {
       xml.append("<url><loc>")
           .append(base)
-          .append("/resource/")
-          .append(page.id())
+          .append(ResourcePathsKt.resourcePath(page.id(), page.title()))
           .append("</loc><lastmod>")
           .append(page.lastModified().truncatedTo(ChronoUnit.DAYS).toString(), 0, 10)
           .append("</lastmod></url>\n");

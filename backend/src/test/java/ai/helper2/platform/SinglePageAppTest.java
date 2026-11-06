@@ -90,9 +90,14 @@ class SinglePageAppTest {
   @Test
   void everyFrontendRouteServesIndexWithoutCaching() throws Exception {
     List<String> routes = frontendRoutes();
-    assertThat(routes).contains("resource/:id", "sources", "mission");
+    assertThat(routes).contains("resource/:id/:slug?", "sources", "mission");
     for (String route : routes) {
-      mvc.perform(get("/" + route.replace(":id", "8a0e6c1e-2f43-5b6e-9d0a-1f1e2d3c4b5a")))
+      mvc.perform(
+              get(
+                  "/"
+                      + route
+                          .replace(":id", "8a0e6c1e-2f43-5b6e-9d0a-1f1e2d3c4b5a")
+                          .replace(":slug?", "a-slug")))
           .andExpect(status().isOk())
           .andExpect(content().string("<!doctype html><title>Helper2</title>"))
           .andExpect(header().string("Cache-Control", "no-cache"));

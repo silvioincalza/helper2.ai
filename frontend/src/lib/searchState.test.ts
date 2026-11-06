@@ -207,6 +207,12 @@ describe('the resource page path', () => {
     );
     expect(resourcePath('../admin?x=1#y')).toBe('/resource/..%2Fadmin%3Fx%3D1%23y');
   });
+
+  it('adds the title as a slug, and leaves it out when the title has none', () => {
+    const id = '11111111-1111-5111-8111-111111111111';
+    expect(resourcePath(id, 'Café Crème 2.0')).toBe(`/resource/${id}/cafe-creme-2-0`);
+    expect(resourcePath(id, '日本語')).toBe(`/resource/${id}`);
+  });
 });
 
 describe('hasOwnSearchBox', () => {

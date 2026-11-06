@@ -159,7 +159,7 @@ export default function EnrichmentQueuePage() {
               {items.map((e) => (
                 <tr key={e.resourceId}>
                   <th scope="row">
-                    <Link to={resourcePath(e.resourceId)}>{e.title}</Link>
+                    <Link to={resourcePath(e.resourceId, e.title)}>{e.title}</Link>
                   </th>
                   <td>
                     <State entry={e} />

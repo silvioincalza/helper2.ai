@@ -376,7 +376,7 @@ describe('search results', () => {
     // One line per result, linking to its resource page.
     expect(within(timeline).getByRole('link', { name: /New MCP/ })).toHaveAttribute(
       'href',
-      '/resource/11111111-1111-5111-8111-000000000001',
+      '/resource/11111111-1111-5111-8111-000000000001/new-mcp',
     );
     expect(screen.queryByRole('combobox', { name: /Sort by/ })).not.toBeInTheDocument();
 

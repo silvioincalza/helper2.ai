@@ -30,7 +30,7 @@ export function PromptBox({
           {basedOn.map((b, i) => (
             <span key={b.resourceId}>
               {i > 0 && ', '}
-              <Link to={resourcePath(b.resourceId)}>{b.title}</Link>
+              <Link to={resourcePath(b.resourceId, b.title)}>{b.title}</Link>
             </span>
           ))}
         </p>

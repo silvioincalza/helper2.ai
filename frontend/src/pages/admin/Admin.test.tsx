@@ -434,7 +434,7 @@ describe('Feature: deciding review items', () => {
     // The resource link encodes the id, so an id can never add a path segment.
     expect(within(row).getByRole('link', { name: 'Acme' })).toHaveAttribute(
       'href',
-      '/resource/a%2Fb%20c',
+      '/resource/a%2Fb%20c/acme',
     );
     expect(within(row).getByText('Accepted')).toHaveClass('h2-status-pill', 'h2-status-pill--ok');
   });

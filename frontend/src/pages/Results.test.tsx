@@ -165,7 +165,7 @@ describe('results: one column, a row opens the resource page', () => {
     });
     const { router } = renderApp('/search?q=postgres');
     await screen.findByText('Postgres MCP');
-    expect(row('Alpha Search')).toHaveAttribute('href', `/resource/${A.id}`);
+    expect(row('Alpha Search')).toHaveAttribute('href', `/resource/${A.id}/alpha-search`);
     expect(row('Postgres MCP')).toHaveAccessibleName('Postgres MCP');
     await userEvent.click(row('Postgres MCP'));
     await screen.findByRole('heading', { level: 1, name: 'Postgres MCP' });
@@ -579,7 +579,10 @@ describe('results: one column, a row opens the resource page', () => {
     });
     renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
     const chip = await screen.findByRole('link', { name: /#1\s*Elsewhere MCP/ });
-    expect(chip).toHaveAttribute('href', '/resource/cccccccc-cccc-5ccc-8ccc-cccccccccccc');
+    expect(chip).toHaveAttribute(
+      'href',
+      '/resource/cccccccc-cccc-5ccc-8ccc-cccccccccccc/elsewhere-mcp',
+    );
   });
 
   it('on the timeline a pick chip opens its resource page, which says why the guide picked it', async () => {
@@ -591,7 +594,7 @@ describe('results: one column, a row opens the resource page', () => {
     const { router } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp&view=timeline');
     const chip = await screen.findByRole('link', { name: '#1 Postgres MCP' });
     // The timeline has no row to jump to (and a result with no date is folded away): the chip is a page link.
-    expect(chip).toHaveAttribute('href', `/resource/${B.id}`);
+    expect(chip).toHaveAttribute('href', `/resource/${B.id}/postgres-mcp`);
     await userEvent.click(chip);
     expect(
       await screen.findByRole('region', { name: /Why the guide picked it/ }),

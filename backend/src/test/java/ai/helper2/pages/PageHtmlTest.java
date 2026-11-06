@@ -171,9 +171,9 @@ class PageHtmlTest {
     String routes = Files.readString(Path.of("../frontend/src/routes.tsx"));
     List<String> paths =
         Pattern.compile("path: '([^'*]+)'").matcher(routes).results().map(m -> m.group(1)).toList();
-    assertThat(paths).contains("resource/:id", "sources", "review");
+    assertThat(paths).contains("resource/:id/:slug?", "sources", "review");
     for (String path : paths) {
-      String concrete = path.replace(":id", ID.toString());
+      String concrete = path.replace(":id", ID.toString()).replace(":slug?", "a-slug");
       boolean known =
           PageAddress.Companion.of(concrete) != PageAddress.Unknown.INSTANCE
               || PageAddress.Companion.of("admin/" + concrete) != PageAddress.Unknown.INSTANCE;

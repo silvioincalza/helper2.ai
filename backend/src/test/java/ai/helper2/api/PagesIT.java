@@ -21,7 +21,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class PagesIT extends ApiTestBase {
 
   private static final Pattern SITEMAP_RESOURCE =
-      Pattern.compile("<loc>https://helper2\\.ai/resource/([0-9a-f-]{36})</loc>");
+      Pattern.compile("<loc>https://helper2\\.ai(/resource/[0-9a-f-]{36}(?:/[a-z0-9-]+)?)</loc>");
 
   @Autowired JdbcClient jdbc;
 
@@ -41,18 +41,36 @@ class PagesIT extends ApiTestBase {
         .getContentAsString();
   }
 
+  private String movedTo(String path) throws Exception {
+    return mvc.perform(get(path))
+        .andExpect(status().isMovedPermanently())
+        .andReturn()
+        .getResponse()
+        .getHeader("Location");
+  }
+
   @Test
   void aResourcePageCarriesItsHeadAndBody() throws Exception {
     UUID id = curated("https://deepl.com/translator");
-    String html = page("/resource/" + id, 200);
+    String readable = movedTo("/resource/" + id);
+    assertThat(readable).startsWith("/resource/" + id + "/deepl");
+    String html = page(readable, 200);
     assertThat(html)
         .contains("<title data-h2-head>DeepL")
-        .contains("rel=\"canonical\" href=\"https://helper2.ai/resource/" + id + "\"")
+        .contains("rel=\"canonical\" href=\"https://helper2.ai" + readable + "\"")
         .contains("application/ld+json")
         .contains("<div id=\"root\"><main class=\"h2-prerender\"><h1>DeepL")
         // The shell's script carries the request's CSP nonce, whichever policy is active (ADR
         // 0059).
         .containsPattern("<script nonce=\"[A-Za-z0-9+/=]{24}\" type=\"module\"");
+  }
+
+  @Test
+  void aBareIdOrAWrongSlugMovesForGoodToTheReadableAddress() throws Exception {
+    UUID id = curated("https://deepl.com/translator");
+    String readable = movedTo("/resource/" + id);
+    assertThat(movedTo("/resource/" + id + "/an-old-title")).isEqualTo(readable);
+    page(readable, 200);
   }
 
   @Test
@@ -113,12 +131,12 @@ class PagesIT extends ApiTestBase {
             .getResponse()
             .getContentAsString();
     assertThat(xml).contains("<loc>https://helper2.ai/sources</loc>");
-    List<String> ids =
+    List<String> paths =
         SITEMAP_RESOURCE.matcher(xml).results().map(m -> m.group(1)).limit(25).toList();
-    assertThat(ids).isNotEmpty();
-    for (String id : ids) {
-      assertThat(page("/resource/" + id, 200))
-          .as("sitemap resource %s", id)
+    assertThat(paths).isNotEmpty();
+    for (String path : paths) {
+      assertThat(page(path, 200))
+          .as("sitemap resource %s", path)
           .contains("content=\"index, follow\"");
     }
     List<UUID> news =

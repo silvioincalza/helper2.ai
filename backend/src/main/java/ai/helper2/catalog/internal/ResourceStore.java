@@ -491,7 +491,7 @@ public class ResourceStore {
   }
 
   /** One resource page for the sitemap: its id and when it last changed. */
-  public record Indexable(UUID id, Instant lastModified) {}
+  public record Indexable(UUID id, String title, Instant lastModified) {}
 
   /**
    * Every resource whose page is worth a search engine's index, newest change first, at most
@@ -502,7 +502,7 @@ public class ResourceStore {
   public List<Indexable> indexable(Collection<String> types, int promptMin, int limit) {
     return jdbc.sql(
             """
-            SELECT r.id, coalesce(r.updated_at, r.modified_at) AS last_modified FROM resource r
+            SELECT r.id, r.title, coalesce(r.updated_at, r.modified_at) AS last_modified FROM resource r
             WHERE r.description_origin IN ('SOURCE_PROVIDED', 'CURATED', 'COMMUNITY')
               AND length(btrim(coalesce(r.description, ''))) > 0
               AND (
@@ -521,7 +521,9 @@ public class ResourceStore {
         .param("limit", limit)
         .query((rs, n) ->
             new Indexable(
-                rs.getObject("id", UUID.class), rs.getTimestamp("last_modified").toInstant()))
+                rs.getObject("id", UUID.class),
+                rs.getString("title"),
+                rs.getTimestamp("last_modified").toInstant()))
         .list();
   }
 

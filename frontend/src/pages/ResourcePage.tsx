@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router';
+import { useEffect } from 'react';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { Relationship, ResourceDetail } from '@/api/types';
@@ -25,7 +26,11 @@ function RelList({ items }: { items: Relationship[] }) {
       {items.map((r, i) => (
         <li key={`${r.kind}-${r.targetTitle}-${i}`}>
           <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
-          {r.targetId ? <Link to={resourcePath(r.targetId)}>{r.targetTitle}</Link> : r.targetTitle}{' '}
+          {r.targetId ? (
+            <Link to={resourcePath(r.targetId, r.targetTitle)}>{r.targetTitle}</Link>
+          ) : (
+            r.targetTitle
+          )}{' '}
           <VerificationBadge verification={r.verification} />
           {r.origin === 'SELF_DECLARED' && (
             <>
@@ -46,11 +51,30 @@ export default function ResourcePage() {
   return <ResourceView key={id} id={id} />;
 }
 
+/**
+ * Once the resource is here, the address bar shows its readable address (ADR 0050): a bare id, an old slug or a
+ * merged id is replaced, as the server's 301 does for a page load. The history entry is replaced, not added.
+ */
+function useReadableAddress(d: ResourceDetail | undefined) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!d) return;
+    const readable = resourcePath(d.card.id, d.card.title);
+    if (location.pathname === readable) return;
+    void navigate(`${readable}${location.search}${location.hash}`, {
+      replace: true,
+      state: location.state,
+    });
+  }, [d, location.pathname, location.search, location.hash, location.state, navigate]);
+}
+
 function ResourceView({ id }: { id: string }) {
   const { t } = useTranslation();
   const q = useApi(`resource/${id}`, (signal) => api.getResource(id, signal));
   const d = q.data;
   useTitle(d?.card.title ?? '');
+  useReadableAddress(d);
 
   if (q.loading)
     return (

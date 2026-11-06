@@ -317,12 +317,12 @@ function RouteFocus() {
   useDropServerHead();
   const { pathname } = useLocation();
   const live = useRef<HTMLParagraphElement>(null);
-  const first = useRef(true);
+  const previous = useRef<string | null>(null);
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    const before = previous.current;
+    previous.current = pathname;
+    // The first page, and a resource page whose slug was just put in its address, keep the focus where it is.
+    if (before === null || sameResource(before, pathname)) return;
     const main = document.getElementById('main');
     const h1 = main?.querySelector('h1');
     if (h1) h1.tabIndex = -1;
@@ -331,6 +331,13 @@ function RouteFocus() {
     if (live.current) live.current.textContent = h1?.textContent?.trim() || document.title;
   }, [pathname]);
   return <p ref={live} className="sr-only" aria-live="polite" aria-atomic="true" />;
+}
+
+const RESOURCE_ID = /^\/resource\/([^/]+)/;
+
+function sameResource(a: string, b: string): boolean {
+  const id = RESOURCE_ID.exec(a)?.[1];
+  return id !== undefined && id === RESOURCE_ID.exec(b)?.[1];
 }
 
 /**

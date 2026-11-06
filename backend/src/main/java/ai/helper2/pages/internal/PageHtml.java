@@ -6,6 +6,7 @@ import ai.helper2.pages.Link;
 import ai.helper2.pages.PageBody;
 import ai.helper2.pages.PageHead;
 import ai.helper2.pages.Related;
+import ai.helper2.pages.ResourcePathsKt;
 import ai.helper2.pages.config.PagesProperties;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +137,10 @@ public class PageHtml {
     }
     if (!body.getRelated().isEmpty()) {
       b.append("<h2>Related</h2>");
-      list(b, body.getRelated(), (Related r) -> link("/resource/" + r.getId(), r.getTitle()));
+      list(
+          b,
+          body.getRelated(),
+          (Related r) -> link(ResourcePathsKt.resourcePath(r.getId(), r.getTitle()), r.getTitle()));
     }
     return b.append("</main>").toString();
   }

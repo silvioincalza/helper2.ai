@@ -91,7 +91,7 @@ describe('guide on the one page', () => {
     const r = await pickedRow();
     expect(r.getByRole('link', { name: 'Postgres MCP' })).toHaveAttribute(
       'href',
-      '/resource/22222222-2222-5222-8222-222222222222',
+      '/resource/22222222-2222-5222-8222-222222222222/postgres-mcp',
     );
     expect(r.getByText('Guide pick #1')).toBeInTheDocument();
     expect(r.getByText('Lets an agent run read-only SQL against Postgres.')).toBeInTheDocument();
@@ -215,7 +215,7 @@ describe('guide on the one page', () => {
     expect(screen.getByText('Summarise [notes] into decisions and owners.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Meeting summary prompt' })).toHaveAttribute(
       'href',
-      '/resource/33333333-3333-5333-8333-333333333333',
+      '/resource/33333333-3333-5333-8333-333333333333/meeting-summary-prompt',
     );
     expect(screen.getByText(/Third parties wrote the prompts it adapts/)).toBeInTheDocument();
   });

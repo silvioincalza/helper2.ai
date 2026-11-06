@@ -347,7 +347,10 @@ export default function ReviewQueuePage() {
                       <td className="v4-nowrap">{t(`admin.kind.${it.kind}`)}</td>
                       <td>
                         {it.resourceId ? (
-                          <Link className="v4-title" to={resourcePath(it.resourceId)}>
+                          <Link
+                            className="v4-title"
+                            to={resourcePath(it.resourceId, it.resourceTitle)}
+                          >
                             {it.resourceTitle ?? it.resourceId}
                           </Link>
                         ) : (

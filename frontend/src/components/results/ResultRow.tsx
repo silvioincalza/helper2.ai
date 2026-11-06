@@ -46,7 +46,7 @@ export function ResultRow({
       </p>
       <Link
         className="h2-row__title"
-        to={resourcePath(card.id)}
+        to={resourcePath(card.id, card.title)}
         state={toFromResults(location, pick)}
       >
         {card.title}
