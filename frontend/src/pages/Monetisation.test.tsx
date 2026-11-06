@@ -1,5 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { decide } from '@/lib/googleConsent';
 import { axeViolations } from '@/test/a11y';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
@@ -48,16 +49,30 @@ beforeEach(clearThirdParties);
 afterEach(clearThirdParties);
 
 /** Google's consent tool as the page sees it: the TCF API, answering with [tc] now and on [answer]. */
+/**
+ * Google's consent tool: the TCF API, and consent mode, whose analytics storage status (Google's number: 1 granted,
+ * 2 denied) follows the TCF answer, as the tool sets both from one question.
+ */
 function fakeTcf(tc: Record<string, unknown>) {
   let listener: ((d: Record<string, unknown>, ok: boolean) => void) | undefined;
+  let current = tc;
+  window.googlefc = {
+    ...window.googlefc,
+    getGoogleConsentModeValues: () => ({
+      analyticsStoragePurposeConsentStatus: decide(current) === 'granted' ? 1 : 2,
+    }),
+  };
   window.__tcfapi = (command, _version, callback) => {
     if (command !== 'addEventListener') return;
     listener = callback as typeof listener;
-    listener?.({ listenerId: 1, ...tc }, true);
+    listener?.({ listenerId: 1, ...current }, true);
   };
   return {
     answer: (next: Record<string, unknown>) =>
-      act(() => listener?.({ listenerId: 1, ...next }, true)),
+      act(() => {
+        current = next;
+        listener?.({ listenerId: 1, ...next }, true);
+      }),
   };
 }
 
@@ -277,7 +292,24 @@ describe('monetisation (ADR 0057)', () => {
       expect(banner()).not.toBeInTheDocument();
       expect(document.getElementById('h2-ga4')).toBeNull();
       await userEvent.click(within(footer()).getByRole('button', { name: 'Privacy choices' }));
-      expect(window.googlefc?.callbackQueue).toHaveLength(1);
+      expect(
+        window.googlefc?.callbackQueue?.filter((entry) => entry.CONSENT_DATA_READY),
+      ).toHaveLength(1);
+    });
+
+    it('Privacy choices on a search address opens the Privacy page in the app, then asks there', async () => {
+      fakeTcf({ gdprApplies: true, eventStatus: 'cmpuishown' });
+      mockApi({ 'GET /me': me(ADSENSE) });
+      const { router } = renderApp('/search?q=agents');
+      await userEvent.click(
+        await within(footer()).findByRole('button', { name: 'Privacy choices' }),
+      );
+      await waitFor(() => expect(router.state.location.pathname).toBe('/privacy'));
+      expect(router.state.location.search).toBe('');
+      expect(
+        window.googlefc?.callbackQueue?.filter((entry) => entry.CONSENT_DATA_READY),
+      ).toHaveLength(1);
+      await settle();
     });
 
     it('in Europe, Google Analytics loads only after a yes, and a withdrawal turns it off', async () => {

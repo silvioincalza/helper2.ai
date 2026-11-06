@@ -25,7 +25,9 @@ visit: "A visit" {
   api -> person: "monetisation: adsenseClient, adsenseSlot"
   person -> fc: "Privacy & messaging tag (pub-...)"
   fc -> person: "question; TCF answer"
-  person -> person: "purposes 1 + 8, vendor 755:\nGoogle Analytics loads"
+  person -> fc: "CONSENT_MODE_DATA_READY:\ngetGoogleConsentModeValues()"
+  fc -> person: "analyticsStoragePurposeConsentStatus\n(1 granted, 2 denied, ...)"
+  person -> person: "purposes 1 + 8, vendor 755 and\nanalytics storage granted:\nGoogle Analytics loads"
   person -> ads: "adsbygoogle.js, one ad for the box\n(resource address, no search words)"
   ads -> person: "the ad"
 }

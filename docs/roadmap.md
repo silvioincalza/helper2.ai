@@ -58,10 +58,14 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     mode on for ads and for analytics; Auto ads and overlay formats (anchor, vignette, side rail) off; one display ad
     unit; then set its ID in `values-prod.yaml`.
   - Check on staging first, with the CSP report in the browser console: the AdSense CSP and every script of the app
-    (the module preloads and lazy chunks run through the nonce and 'strict-dynamic').
-  - Lawyer: our reading that GA4 needs TCF purposes 1 and 8 and vendor 755; analytics without a question outside
-    Europe; legitimate interest for ads without personalisation; Google as an independent controller for AdSense;
-    the consent tool's cookie names and lifetimes on the Privacy page.
+    (the module preloads and lazy chunks run through the nonce and 'strict-dynamic'). After a yes in Europe,
+    `googlefc.getGoogleConsentModeValues().analyticsStoragePurposeConsentStatus` must be 1: a 4 (not configured)
+    keeps Google Analytics off.
+  - Lawyer: our reading that GA4 needs TCF purposes 1 and 8 and vendor 755, plus consent mode's analytics storage;
+    analytics without a question where `gdprApplies` is false (Swiss visitors included); legitimate interest for ads
+    without personalisation; Google as an independent controller for AdSense; the consent tool's cookie names and
+    lifetimes on the Privacy page; whether the consent tool, once loaded, seeing a later in-app search address is a
+    transfer of search words to Google.
 - Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
   tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
   GitHub's terms for reading README files to build it.
