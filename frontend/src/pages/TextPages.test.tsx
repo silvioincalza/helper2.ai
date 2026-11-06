@@ -99,6 +99,9 @@ describe('mission, privacy and terms pages', () => {
     expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent(
       'Records of our administrators',
     );
+    expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent(
+      'the reason they wrote stays with the resource until it is requeued',
+    );
     expect(keep).toHaveTextContent(
       "administrators' actions in the back office, with their GitHub user ID: 24 months.",
     );

@@ -31,7 +31,7 @@ them without each module growing an admin corner.
 5. **The zero-result rate is a metric.** `helper2.search.results{empty}` counts searches that found nothing, with no
    query text. It goes to Grafana, not to the overview.
 6. **The enrichment queue: the backlog, page by page, in the Scout's order.** `GET /api/v1/admin/enrichment-queue` and
-   `/admin/enrichment` (read-only) list the resources that wait, never-run ones first, then the ones to try again
+   `/admin/enrichment` list the resources that wait, never-run ones first, then the ones to try again
    (model unavailable, or a FAILED run with retries left), each part newest discovery first. Each row says why it waits,
    how many runs FAILED, and the last run. The page is a keyset (part, first discovered, id) behind an opaque cursor, not
    an OFFSET: a deep page costs what the first one does. The overview's backlog count links here.
@@ -39,7 +39,7 @@ them without each module growing an admin corner.
    (`resource_enrichment_backlog_idx`): the second part runs only when the first has too few rows. The Scout's batch
    reads one more part first, the products a person accepted, from their few review items ([0056](../scout/0056-evidence-ladder.md)). Measured on synthetic
    data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s. Every backlog read
-   gives up after 5 seconds. The queue is read-only and admin-only and shows catalog data, no personal data; a cursor
+   gives up after 5 seconds. The queue is admin-only and shows catalog data, no personal data; a cursor
    that is not one of ours (wrong shape, a time outside what the database holds) is a 400.
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
    (ADMIN, admin port) answers what an item is about. A review item already links to its enrichment run and, for a
@@ -62,6 +62,39 @@ them without each module growing an admin corner.
    work only while focus is inside the queue and never in a field (WCAG 2.1.4), and each control names its key
    (`aria-keyshortcuts`). A held key does not repeat: one press is one decision. Decisions stay final: there is no
    undo.
+8. **Acting on the queue: requeue, skip, move to the top.** On `/admin/enrichment` each row has its actions, sent as
+   `POST /api/v1/admin/enrichment-queue/{id}/requeue|skip|prioritise` (admin port, ADMIN, CSRF). An action changes the
+   order only. It never calls the model, and the daily enrichment limit stays the same.
+   - **Move to top** puts a waiting resource before every other part, the accepted products included. It holds until
+     the resource's next run starts. At most 50 wait at the top: with no limit, the order would be whatever I clicked
+     last.
+   - **Skip** takes a waiting resource out of the backlog until I requeue it, with an optional reason (200 characters,
+     control characters dropped; the form says "No personal data"). It drops a move to the top. A skip holds
+     everywhere the Scout enriches: a collector that sees new text for a skipped resource does not send it to the
+     model either (`EnrichmentCandidates.withEnoughText`).
+   - **Requeue** undoes a skip. For a resource out of retries (its last run FAILED, and 3 FAILED runs), only the FAILED
+     runs from now on count against the cap, so it gets 3 more tries.
+   - The page has three views, in the address: waiting (the Scout's order), skipped (the latest skip first), out of
+     retries. A resource out of retries is still in the backlog index (status REJECTED), so its view walks the index.
+   - An unknown resource is a 404. An action that does not apply (requeue a waiting resource, skip a skipped one, move
+     one more to a full top) is a 409 `not-applicable` with the reason in words. Every call writes one audit row, in
+     the same transaction as the change: `REQUEUE_ENRICHMENT`, `SKIP_ENRICHMENT`, `PRIORITISE_ENRICHMENT`, with the
+     outcome (`REQUEUED`, `REQUEUED_RESET` when the retries start again, `SKIPPED`, `PRIORITISED`, or the reason it
+     did not apply, `NOT_FOUND` included).
+   - A move to the top first takes a Postgres advisory lock for the rest of its transaction
+     (`pg_advisory_xact_lock`), then counts. Two moves at the same second wait for each other, so the limit of 50 is
+     strict.
+   - **Who owns what.** The decisions are the Scout's: the rules are `QueuePlace` (Kotlin, no framework) and one use
+     case per action. They are stored in a Scout table, `enrichment_queue_control`, one row per resource I touched,
+     gone with the resource. The Scout is its only writer. The backlog SQL stays in the catalog (`BacklogRule`), and
+     it reads the control rows through a join. This is a known exception in the table-owner test
+     (`ModularityTest`): the catalog reads a Scout table, read only. I chose it because the order must stay one rule
+     for the Scout's next batch, the page and the count. Two copies of the rule would drift apart.
+   - Measured on synthetic data (250 000 resources, 37 500 REJECTED, 50 at the top), with `EXPLAIN ANALYZE`: the next 20
+     in 2 ms (0.9 ms before; 5 ms in the worst case, 500 skips at the head of the never-run part), the count 1.7 to
+     1.9 s (1.4 to 1.65 s before, same data; still cached a minute, with the 5-second limit), a waiting page 1 to 3 ms,
+     the skipped page 0.3 ms, the out-of-retries page 1.1 to 1.6 s (it walks every REJECTED resource), one resource's
+     place 0.1 ms.
 
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
@@ -72,6 +105,9 @@ them without each module growing an admin corner.
   only for the selected item, one request per item.
 - The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
   part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
+- A skip or a move to the top changes which resources get the daily model calls, never how many.
+- Moves to the top run one at a time (the advisory lock). They are rare admin clicks, so the wait is short.
+- The catalog's SQL names a Scout table. The table-owner test lists it as an exception, so it stays visible.
 
 ## Alternatives considered
 - Each module keeps its own admin controller — the overview would still need one place to compose them, and the
@@ -84,12 +120,24 @@ them without each module growing an admin corner.
   when a re-check rejects a field, and a format change for every writer of `details`.
 - Send the evidence with every row of the list — 20 items times their fields and quotes on every page, for the one
   item the admin looks at.
+- Queue decisions as columns on `resource` — the catalog's table would carry the Scout's rules, and every resource a
+  row it rarely needs.
+- The Scout passes its decisions to the catalog as parameters (ids to put first, ids to leave out) — fine for the 50
+  at the top, but the skipped and requeued ids grow without a bound, and the count would need them all.
+- A catalog-owned control table, written through a catalog port (like the re-run request of ADR 0056) — no exception in
+  the table-owner test, but the rules and their data would live in two modules. Possible later, if the exception
+  starts to hurt.
 
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `usecase/GetOverview.java`, `usecase/ListEnrichmentQueue.java`.
 - `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
-  and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`).
+  and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
+  `catalog/internal/BacklogRule.java`.
+- Queue actions: `V14__enrichment_queue_control.sql`; `backend/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
+  (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
+  `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
+  `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
 - `backend/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
 - `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
@@ -103,6 +151,8 @@ them without each module growing an admin corner.
   `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
   `api/EnrichmentQueueApiIT.java`, `admin/web/EnrichmentQueueCursorTest.java`, `catalog/internal/JdbcEnrichmentCandidatesIT.java`,
   `api/ReviewEvidenceApiIT.java`, `catalog/internal/JdbcReviewEvidenceIT.java`,
+  `api/EnrichmentQueueActionsApiIT.java`, `scout/QueuePlaceTest.kt`, `scout/usecase/EnrichmentQueueActionsTest.kt`,
+  `architecture/ModularityTest.java` (the table-owner exception),
   `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `src/a11y.test.tsx`.
 
 ## Diagrams
