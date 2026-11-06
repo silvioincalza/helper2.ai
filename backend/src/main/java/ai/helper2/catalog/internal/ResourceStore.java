@@ -599,8 +599,9 @@ public class ResourceStore {
   /**
    * CATEGORY labels are what the matcher reads in the resource's records now: its title, what its
    * sources wrote (never an AI-written description), every tag of every record (not only the 20
-   * kept as TAG labels), its type, and the collectors that found it (each record's source and the
-   * finders an accepted candidate keeps in foundBy).
+   * kept as TAG labels), its type, the collectors that found it (each record's source and the
+   * finders an accepted candidate keeps in foundBy), and the heading paths of the awesome lists
+   * that link it (ADR 0058).
    */
   private int assignCategories(Collection<UUID> resourceIds) {
     if (resourceIds.isEmpty()) {
@@ -626,7 +627,9 @@ public class ResourceStore {
                          CROSS JOIN LATERAL jsonb_array_elements(
                              CASE WHEN jsonb_typeof(sr.extra -> 'foundBy') = 'array' THEN sr.extra -> 'foundBy'
                                   ELSE '[]'::jsonb END) AS f
-                         WHERE sr.resource_id = r.id AND f ->> 'sourceId' IS NOT NULL) AS finders
+                         WHERE sr.resource_id = r.id AND f ->> 'sourceId' IS NOT NULL) AS finders,
+                   ARRAY(SELECT DISTINCT e.heading_path FROM awesome_list_entry e
+                         WHERE e.resource_id = r.id AND e.heading_path <> '') AS headings
             FROM resource r WHERE r.id = ANY(:ids)
             """)
         .param("ids", ids)
@@ -639,7 +642,8 @@ public class ResourceStore {
                       rs.getString("description"),
                       textArray(rs, "tags"),
                       enumOrNull(ResourceType.class, rs.getString("type")),
-                      textArray(rs, "finders")));
+                      textArray(rs, "finders"),
+                      textArray(rs, "headings")));
           found.forEach(c -> labels.add(new Object[] {id, c}));
           if (!found.isEmpty()) {
             categorized.add(id);

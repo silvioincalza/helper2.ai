@@ -2,7 +2,7 @@
 # Source of truth: backend/src/main/kotlin/ai/helper2/shared/Categories.kt (CategoryMatcher, CategoryCatalog),
 #   backend/src/main/kotlin/ai/helper2/shared/CategoryWords.kt,
 #   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (upsert, assignCategories),
-#   backend/src/main/java/ai/helper2/catalog/usecase/BackfillCategories.java,
+#   backend/src/main/java/ai/helper2/catalog/usecase/BackfillCategories.java, IndexAwesomeLists.java,
 #   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt (categoriesOf),
 #   backend/src/main/kotlin/ai/helper2/search/Filtering.kt (the category facet),
 #   backend/src/main/java/ai/helper2/search/web/SearchController.java (categoryFilter).
@@ -13,7 +13,7 @@
 direction: down
 
 when: "When are categories assigned?" {class: decision}
-upsert: "Catalog upsert, any source:\nfor every resource touched, read its title,\nwhat its sources wrote (not AI text),\nevery tag, its type and its finders" {class: data}
+upsert: "Catalog upsert, any source (and after an\nawesome list's entries are indexed, ADR 0058):\nfor every resource touched, read its title,\nwhat its sources wrote (not AI text),\nevery tag, its type, its finders and the\nawesome-list headings it sits under" {class: data}
 backfill: "Backfill: at startup when the words\nchanged (marker), or Admin action;\n500 resources a batch, one replica" {class: data}
 merge: "Search merge (live web results too):\nthe same inputs from the merged hits,\nplus what the catalog stored" {class: app}
 
@@ -23,7 +23,7 @@ match: CategoryMatcher.match (per category) {
   finder: "Found by discovery-<id>?" {class: decision}
   text: "One of its words in the\ntitle or description?" {class: decision}
   req: "Category requires a word\n(health, legal)?" {class: decision}
-  tag: "A tag is its id or\nhas one of its words?" {class: decision}
+  tag: "A tag, or a list heading (each\nheading alone, ADR 0058), is its id\nor has one of its words?" {class: decision}
   type: "Type PROMPT or SKILL, and the\nonly category with that type?" {class: decision}
   yes: "Category given" {class: end}
   no: "Not given" {class: end}

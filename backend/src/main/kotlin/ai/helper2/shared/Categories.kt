@@ -89,8 +89,9 @@ class CategoryCatalog(categories: List<Category>) {
 }
 
 /**
- * What a resource's categories are read from: its own title and description, its tags, its type and
- * the source ids of the collectors that found it.
+ * What a resource's categories are read from: its own title and description, its tags, its type,
+ * the source ids of the collectors that found it, and the section heading paths of the curated
+ * lists that link it ("Tools > Vector databases", ADR 0058).
  */
 data class CategoryInput
 @JvmOverloads
@@ -100,6 +101,7 @@ constructor(
   val tags: Collection<String> = emptyList(),
   val type: ResourceType? = null,
   val finders: Collection<String> = emptyList(),
+  val headings: Collection<String> = emptyList(),
 )
 
 /**
@@ -108,10 +110,12 @@ constructor(
  * - a collector of that category found it (`discovery-<id>`);
  * - one of the category's words is in its title or description;
  * - one of its tags is the category's id or has one of its words;
+ * - a heading of a list section it sits under is the category's id or has one of its words (each
+ *   heading of a path alone, like a tag, ADR 0058);
  * - its type is PROMPT or SKILL and exactly one category has that type.
  *
- * A category that requires a word (health, legal) comes only from the first two: a tag or a type
- * alone is not enough. The categories are returned in the configured order.
+ * A category that requires a word (health, legal) comes only from the first two: a tag, a heading
+ * or a type alone is not enough. The categories are returned in the configured order.
  */
 class CategoryMatcher(val catalog: CategoryCatalog) {
 
@@ -135,19 +139,33 @@ class CategoryMatcher(val catalog: CategoryCatalog) {
     val text = listOfNotNull(input.title, input.description).joinToString("\n")
     for (c in catalog.all) {
       if (c.id in found) continue
-      if (c.words.matches(text) || (!c.requireKeyword && byTag(c, input.tags))) found += c.id
+      if (c.words.matches(text) || (!c.requireKeyword && byLabel(c, input))) found += c.id
     }
     input.type?.let { namedByType[it] }?.let { found += it }
     return catalog.ordered(found)
   }
 
+  private fun byLabel(c: Category, input: CategoryInput): Boolean =
+    byTag(c, input.tags) || byHeading(c, input.headings)
+
   private fun byTag(c: Category, tags: Collection<String>): Boolean = tags.any {
     it.equals(c.id, ignoreCase = true) || c.words.matches(it)
   }
 
+  /** "Voice and audio" names voice-and-audio; "Tools > Code review" has a coding word. */
+  private fun byHeading(c: Category, paths: Collection<String>): Boolean =
+    paths
+      .asSequence()
+      .flatMap { it.split(HEADING_SEPARATOR).asSequence() }
+      .map(String::trim)
+      .any { CategoryWords.normal(it) == CategoryWords.normal(c.id) || c.words.matches(it) }
+
   companion object {
     /** Types that are a category on their own: a prompt library, a skill. */
     private val NAMING_TYPES = listOf(ResourceType.PROMPT, ResourceType.SKILL)
+
+    /** Between the headings of a list's heading path (ADR 0055). */
+    const val HEADING_SEPARATOR = " > "
 
     @JvmField val NONE = CategoryMatcher(CategoryCatalog.EMPTY)
   }

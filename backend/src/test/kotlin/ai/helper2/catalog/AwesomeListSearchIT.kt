@@ -133,6 +133,24 @@ class AwesomeListSearchIT {
     assertEquals(listOf(id(listed) to "Tools"), entries())
   }
 
+  private fun categories(u: String): List<String> =
+    jdbc
+      .sql("SELECT value FROM resource_label WHERE resource_id = :id AND kind = 'CATEGORY'")
+      .param("id", id(u))
+      .query(String::class.java)
+      .list()
+      .filterNotNull()
+
+  @Test
+  fun `a section heading of the list gives the entry its category (ADR 0058)`() {
+    catalog()
+    assertEquals(emptyList(), categories(listed))
+
+    indexLists.replace(listOf(listText(entry(listed, "Listed", "Tools > Vector databases"))))
+
+    assertEquals(listOf("rag-and-vector-databases"), categories(listed))
+  }
+
   @Test
   fun `a list not in the catalog writes nothing`() {
     val written = indexLists.replace(listOf(listText(entry(listed, "Listed", "Tools"))))

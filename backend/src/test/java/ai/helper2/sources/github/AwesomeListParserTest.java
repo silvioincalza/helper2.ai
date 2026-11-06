@@ -159,4 +159,74 @@ class AwesomeListParserTest {
         .isLessThanOrEqualTo(AwesomeListParser.MAX_HEADINGS_BYTES);
     assertThat(text).startsWith("Section number 0\n");
   }
+
+  static final String WITH_LINKS =
+      """
+      # Awesome Voice
+      - [Voice tools](#voice-tools)
+      ## Tools
+      ### Text-to-speech
+      - [Acme Voice](https://acme.ai/?utm_source=list) - Clones voices. [Docs](https://docs.acme.ai)
+      - [Repo](https://github.com/acme/voice) - [Site](https://repo-site.ai)
+      - [![logo](https://img.example/logo.png)](https://badge-only.ai)
+      - [Again](https://acme.ai/?utm_source=list)
+      - [Licence](LICENSE)
+      ```
+      - [Fenced](https://fenced.ai)
+      ```
+      | Name | Site |
+      | [Tabled](https://tabled.ai) | fast |
+      Prose with [a link](https://prose.ai) is not an entry.
+      """;
+
+  @Test
+  void theFirstLinkOfAnEntryOutsideGitHubIsKeptWithItsHeading() {
+    List<AwesomeListParser.Link> links =
+        AwesomeListParser.parse(WITH_LINKS, "acme/awesome-voice").links();
+
+    assertThat(links)
+        .extracting(
+            AwesomeListParser.Link::url,
+            AwesomeListParser.Link::text,
+            AwesomeListParser.Link::headingPath)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(
+                "https://acme.ai/?utm_source=list", "Acme Voice", "Tools > Text-to-speech"),
+            org.assertj.core.groups.Tuple.tuple(
+                "https://tabled.ai", "Tabled", "Tools > Text-to-speech"));
+  }
+
+  @Test
+  void aLinkTextIsCut() {
+    String readme = "## Tools\n- [" + "n".repeat(250) + "](https://long.ai)\n";
+
+    AwesomeListParser.Link link = AwesomeListParser.parse(readme, "acme/list").links().getFirst();
+
+    assertThat(link.text()).hasSize(AwesomeListParser.MAX_LINK_TEXT);
+  }
+
+  @Test
+  void aLinkToAnotherListIsKnownByItsNameOrItsSection() {
+    String readme =
+        """
+        # A curated list of awesome LLM tools
+        - [Title only](https://github.com/acme/title-only)
+        ## Tools
+        - [Tool](https://github.com/acme/tool)
+        - [Named](https://github.com/acme/Awesome-RAG)
+        ## Other awesome lists
+        - [Survey](https://github.com/acme/llm-survey)
+        ### Even deeper
+        - [Deeper](https://github.com/acme/deeper)
+        ## Contributing
+        - [Guide](https://github.com/acme/guide)
+        """;
+
+    List<AwesomeListParser.Entry> entries = AwesomeListParser.entries(readme, "acme/awesome-llm");
+
+    assertThat(entries)
+        .filteredOn(AwesomeListParser.Entry::pointsAtList)
+        .extracting(AwesomeListParser.Entry::fullName)
+        .containsExactly("acme/Awesome-RAG", "acme/llm-survey", "acme/deeper");
+  }
 }
