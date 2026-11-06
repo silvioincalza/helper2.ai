@@ -1,0 +1,21 @@
+# Sequence: Google checks the site before AdSense serves ads (ADR 0059).
+# Source of truth: backend/src/main/java/ai/helper2/pages/internal/PageHtml.java,
+#   pages/web/CrawlerFiles.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0059-adsense.d2 && d2 sequence-0059-adsense.d2 sequence-0059-adsense.svg
+
+...@style
+
+shape: sequence_diagram
+
+google: "Google AdSense\ncrawler" {class: person}
+edge: "Cloudflare,\ningress" {class: app}
+api: "helper2\n(pages)" {class: app}
+
+check: "Site check" {
+  google -> edge: "GET /"
+  edge -> api: "GET /"
+  api -> google: "index.html with\nmeta google-adsense-account" {class: hot}
+  google -> edge: "GET /ads.txt"
+  edge -> api: "GET /ads.txt"
+  api -> google: "google.com, pub-..., DIRECT, f08c47fec0942fa0" {class: hot}
+}
