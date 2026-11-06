@@ -114,7 +114,7 @@ describe('Feature: what the account has left today', () => {
         ...USER,
         limits: {
           guideQuestions: { limit: 30, remaining: 28 },
-          webSearches: { search: { limit: 10, remaining: 8 }, guide: null },
+          webSearches: { search: { limit: 10, remaining: 8 }, guide: { limit: 3, remaining: 2 } },
           resetsAt: '2026-11-06T00:00:00Z',
         },
       }),
@@ -124,6 +124,7 @@ describe('Feature: what the account has left today', () => {
     expect(within(who).getByText('Ada', { selector: 'dd' })).toBeInTheDocument();
     expect(within(who).getByText('28 of 30 · resets 00:00 UTC')).toBeInTheDocument();
     expect(within(who).getByText('8 of 10 · resets 00:00 UTC')).toBeInTheDocument();
+    expect(within(who).getByText('2 of 3 · resets 00:00 UTC')).toBeInTheDocument();
   });
 
   it('Scenario: a count the server does not give is not shown', async () => {

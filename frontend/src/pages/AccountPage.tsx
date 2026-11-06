@@ -73,6 +73,8 @@ function SignedIn({ me }: { me: Session }) {
   const guide = me.limits?.guideQuestions;
   const answers = guide && guide.limit > 0 ? guide : null;
   const searches = me.limits?.webSearches.search;
+  // The guide's own web-search allowance is separate from the search page's one.
+  const guideSearches = me.limits?.webSearches?.guide;
   return (
     <section aria-labelledby="account-who-h">
       <h2 id="account-who-h">{t('account.signedInTitle')}</h2>
@@ -94,6 +96,12 @@ function SignedIn({ me }: { me: Session }) {
           <div>
             <dt>{t('account.webSearchesLeft')}</dt>
             <dd>{left(searches)}</dd>
+          </div>
+        )}
+        {guideSearches && guideSearches.limit > 0 && (
+          <div>
+            <dt>{t('account.guideWebSearchesLeft')}</dt>
+            <dd>{left(guideSearches)}</dd>
           </div>
         )}
       </dl>

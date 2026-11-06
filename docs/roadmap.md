@@ -262,8 +262,7 @@ Open items:
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
     are in the API, on Home, in the Sources table and on the Account page. `skipReason` on every source status is
     used by the coverage line on Results. The Mission, Privacy and Terms pages take their numbers from GET
-    /api/v1/policy. The account panel shows `limits` (guide questions, web searches for search, the reset time); still
-    to use: `limits.webSearches.guide`.
+    /api/v1/policy. The account panel shows `limits` (guide questions, web searches for search and for the guide, the reset time).
   - **Text pages: what stays typed.** Logs and request traces (3 months), usage totals (90 days) and Google's
     cookie lifetimes are outside the app, so the Privacy page types them. The rate-limit windows are words ("the
     length of the limit").
