@@ -7,6 +7,7 @@ import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { formatDate, safeHref } from '@/lib/format';
+import { RelationshipTarget } from './RelationshipTarget';
 
 /** A conflict needs a person most; a verified value least. The tone only repeats the word. */
 const VERIFICATION_TONE: Record<Verification, StatusTone> = {
@@ -48,15 +49,22 @@ export function ReviewEvidencePanel({ itemId }: { itemId: string }) {
           next={<RetryButton onClick={evidence.reload} />}
         />
       ) : (
-        <EvidenceBody evidence={evidence.data} />
+        <EvidenceBody evidence={evidence.data} onChanged={evidence.reload} />
       )}
     </section>
   );
 }
 
-function EvidenceBody({ evidence }: { evidence: ReviewEvidence }) {
+function EvidenceBody({
+  evidence,
+  onChanged,
+}: {
+  evidence: ReviewEvidence;
+  onChanged: () => void;
+}) {
   const { t, i18n } = useTranslation();
-  const { run, relationship, fields, validationErrors } = evidence;
+  const { item, run, relationship, fields, validationErrors } = evidence;
+  const retargetable = item.status === 'OPEN' && item.kind === 'RELATIONSHIP_CANDIDATE';
   if (!run && !relationship) return <p className="muted">{t('admin.evidence.none')}</p>;
   return (
     <>
@@ -96,14 +104,23 @@ function EvidenceBody({ evidence }: { evidence: ReviewEvidence }) {
       {relationship && (
         <div className="h2-admin__field">
           <p className="h2-admin__field-head">
-            <span {...aiMark(run?.model)}>
-              {t(`relationship.${relationship.kind}`)} {relationship.target}
+            {/* The kind is the model's; a target a person chose is not (ADR 0064). */}
+            <span {...aiMark(run?.model)}>{t(`relationship.${relationship.kind}`)}</span>{' '}
+            <span {...(isAiOrigin(relationship.origin) ? aiMark(run?.model) : {})}>
+              {relationship.target}
             </span>{' '}
             <StatusPill tone={VERIFICATION_TONE[relationship.verification]}>
               {t(`verification.${relationship.verification}`)}
             </StatusPill>
           </p>
           <p className="h2-admin__ai-label">{t(`origin.${relationship.origin}`)}</p>
+          {retargetable && (
+            <RelationshipTarget
+              itemId={item.id}
+              currentTitle={relationship.target}
+              onChanged={onChanged}
+            />
+          )}
           <Quotes quotes={relationship.quotes} />
         </div>
       )}

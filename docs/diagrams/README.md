@@ -84,6 +84,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0061](../adr/scout/0061-linkedin-via-tavily.md) | [flow](flow-0061-linkedin-via-tavily.svg) | [sequence](sequence-0061-linkedin-via-tavily.svg) | how one LinkedIn result found through Tavily becomes a review candidate or nothing, and an admin accepting it. |
 | [0062](../adr/scout/0062-writing-about-a-resource.md) | [flow](flow-0062-writing-about-a-resource.svg) | [sequence](sequence-0062-writing-about-a-resource.svg) | what an enrichment keeps for an article and how it names what the article is about; a discovery post becoming an ARTICLE candidate. |
 | [0063](../adr/scout/0063-discovery-hosts.md) | [flow](flow-0063-discovery-hosts.svg) | [sequence](sequence-0063-discovery-hosts.svg) | an admin adds a writing site or a directory: the host checks, the row and its audit; the next discovery run reading the lists. |
+| [0064](../adr/edge/0064-relationship-target-in-review.md) | [flow](flow-0064-relationship-target-in-review.svg) | [sequence](sequence-0064-relationship-target-in-review.svg) | how an admin points a relationship candidate at a resource, adds it, or renames it, and what a refusal leaves. |
 
 ## Colors
 

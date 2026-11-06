@@ -1,6 +1,6 @@
 # 0062 — Writing about a resource: an article keeps its own facts and names what it is about
 
-**Status.** Accepted. **Builds on:** [0019](0019-evidence-gated-enrichment.md), [0051](0051-tavily-discovery.md), [0056](0056-evidence-ladder.md), [0061](0061-linkedin-via-tavily.md)
+**Status.** Accepted. **Builds on:** [0019](0019-evidence-gated-enrichment.md), [0051](0051-tavily-discovery.md), [0056](0056-evidence-ladder.md), [0061](0061-linkedin-via-tavily.md) **Amended by:** [0064](../edge/0064-relationship-target-in-review.md) (an admin links, adds or renames the target in the review list).
 
 ## Context
 Much of what the Scout finds is writing about other things: a news item about a new model, a blog post about a
@@ -50,8 +50,8 @@ product.
 - An article shows what it is about ("About Gemini 4 Carbon"), not the subject's price or licence.
 - The Engadget item loses its pricing and type at the first re-check; its use case and audience stay.
 - More review work: discovery now proposes posts too. Each one is a candidate once per URL, as before.
-- An ABOUT target that is not in the catalog waits in review by name. Linking it to an existing resource or creating
-  the resource from the review list comes next (roadmap).
+- An ABOUT target that is not in the catalog waits in review by name. The admin links it to a resource, adds the
+  resource, or renames it ([0064](../edge/0064-relationship-target-in-review.md)).
 - No change of cost: the type and two lines of rules add a few tokens per call, inside the same daily caps.
 - No new personal data: the relationship holds a product or model name. The Privacy page does not change.
 - AI Act Art. 50: an ABOUT link is AI-extracted like every relationship, and labelled the same way in the UI and the

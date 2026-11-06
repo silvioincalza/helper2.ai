@@ -188,11 +188,12 @@ class SchemaContractTest {
     expected.put("enrichment_run.outcome", without(names(EnrichmentOutcome.values()), "UNCHANGED"));
     expected.put("field_assertion.verification", names(Verification.values()));
     // The Scout writes AI-extracted, AI-estimated and self-declared values and relationships (ADR
-    // 0056); the seeds write curated values.
+    // 0056); the seeds write curated values; an admin's chosen relationship target is curated (ADR
+    // 0064).
     expected.put(
         "field_assertion.origin",
         Set.of("AI_EXTRACTED", "AI_ESTIMATED", "SELF_DECLARED", "CURATED"));
-    expected.put("relationship.origin", Set.of("AI_EXTRACTED", "SELF_DECLARED"));
+    expected.put("relationship.origin", Set.of("AI_EXTRACTED", "SELF_DECLARED", "CURATED"));
     expected.put("relationship.verification", names(Verification.values()));
     expected.put("relationship.kind", EvidenceValidator.Companion.getRELATIONSHIP_KINDS());
     expected.put("issue_report.kind", names(ReportIssue.Kind.values()));

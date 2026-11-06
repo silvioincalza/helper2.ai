@@ -493,6 +493,26 @@ public class ResourceStore {
   /** One resource page for the sitemap: its id and when it last changed. */
   public record Indexable(UUID id, String title, Instant lastModified) {}
 
+  /** A resource by id and title. */
+  public record Titled(UUID id, String title) {}
+
+  /**
+   * The resource at [url]: the one with that canonical address, or the one a record with that
+   * address belongs to (a record can move to another resource, ADR 0004).
+   */
+  public Optional<Titled> atUrl(String canonicalUrl) {
+    return jdbc.sql(
+            """
+            SELECT r.id, r.title FROM resource r
+            WHERE r.canonical_url = :url
+               OR r.id IN (SELECT resource_id FROM source_record WHERE canonical_url = :url)
+            ORDER BY (r.canonical_url = :url) DESC LIMIT 1
+            """)
+        .param("url", canonicalUrl)
+        .query((rs, n) -> new Titled(rs.getObject("id", UUID.class), rs.getString("title")))
+        .optional();
+  }
+
   /**
    * Every resource whose page is worth a search engine's index, newest change first, at most
    * [limit]. The same rule as pages.IndexPolicy (ADR 0050 §5): a description a source or a person

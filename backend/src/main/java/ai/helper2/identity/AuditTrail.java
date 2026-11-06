@@ -25,7 +25,10 @@ public interface AuditTrail {
     CHANGE_SETTING,
     // Discovery's host lists (V17, ADR 0063).
     ADD_DISCOVERY_HOST,
-    REMOVE_DISCOVERY_HOST
+    REMOVE_DISCOVERY_HOST,
+    // A relationship candidate's target, and a resource added for it (V19, ADR 0064).
+    CHANGE_RELATIONSHIP_TARGET,
+    ADD_RESOURCE
   }
 
   /**

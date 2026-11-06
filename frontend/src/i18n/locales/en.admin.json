@@ -132,7 +132,9 @@
         "PRIORITISE_ENRICHMENT": "Enrichment moved to the top",
         "BACKFILL_CATEGORIES": "Categories assigned again",
         "ADD_DISCOVERY_HOST": "Discovery host added",
-        "REMOVE_DISCOVERY_HOST": "Discovery host removed"
+        "REMOVE_DISCOVERY_HOST": "Discovery host removed",
+        "CHANGE_RELATIONSHIP_TARGET": "Relationship target changed",
+        "ADD_RESOURCE": "Resource added"
       }
     },
     "budget": {
@@ -407,6 +409,30 @@
       "where": "The keys work only while focus is in the queue, and never while you type in a field.",
       "close": "Close",
       "x": "Pick the selected item for a bulk decision"
+    },
+    "target": {
+      "change": "Change the target",
+      "cancel": "Cancel",
+      "legend": "What does it point at?",
+      "modes": {
+        "existing": "A resource in the catalog",
+        "added": "Add the resource",
+        "renamed": "Another name only"
+      },
+      "find": "Find in the catalog",
+      "findButton": "Find",
+      "none": "No resource with these words. Add it instead.",
+      "use": "Point at it",
+      "name": "Name",
+      "url": "Official address (https)",
+      "type": "Type",
+      "save": "Save the target",
+      "saving": "Saving…",
+      "hint": "The item stays open. Accept it to make the link verified. A resource you add is enriched by the next Scout run.",
+      "errors": {
+        "alreadyDecided": "Someone decided this item meanwhile. Reload the list.",
+        "failed": "Could not save the target. Try again."
+      }
     },
     "evidence": {
       "title": "Evidence",
