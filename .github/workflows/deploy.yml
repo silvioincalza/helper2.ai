@@ -169,6 +169,18 @@ jobs:
           mkdir -p "$ENV"
           bao kv get -mount=helper2/kv -field=app_env "ci/$ENV" > "$ENV/app.env"
 
+      - name: Recover interrupted staging release
+        if: inputs.environment == 'staging'
+        run: |
+          set -euo pipefail
+          status=$(helm -n "helper2-$ENV" status helper2 2>/dev/null | awk '/^STATUS:/ {print $2}' || true)
+          case "$status" in
+            pending-*)
+              echo "release helper2 in helper2-$ENV is $status: rolling back to the last deployed revision first"
+              make rollback
+              ;;
+          esac
+
       - name: Diff
         run: make diff
 
