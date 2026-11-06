@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.catalog.enrichment.EnrichmentCandidates;
 import ai.helper2.catalog.enrichment.EnrichmentResults;
+import ai.helper2.catalog.enrichment.StoredEnrichments;
 import ai.helper2.scout.EnrichmentMaterial;
 import ai.helper2.scout.GapKind;
 import ai.helper2.scout.GapTarget;
@@ -87,9 +88,45 @@ class CatalogEnrichmentStoreTest {
     }
   }
 
+  /** Records the resources put back to NOT_RUN; the rest is not the Scout's. */
+  static final class FakeStored implements StoredEnrichments {
+    final List<UUID> requested = new ArrayList<>();
+
+    @Override
+    public List<UUID> judgedAfter(@Nullable UUID after, int limit) {
+      return List.of();
+    }
+
+    @Override
+    public Stored stored(UUID resourceId) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int rejectFields(List<UUID> fieldIds) {
+      return 0;
+    }
+
+    @Override
+    public int dropClaims(List<UUID> claimIds) {
+      return 0;
+    }
+
+    @Override
+    public void requestRun(UUID resourceId) {
+      requested.add(resourceId);
+    }
+
+    @Override
+    public boolean claimOnce(String name) {
+      return false;
+    }
+  }
+
   final FakeCandidates candidates = new FakeCandidates();
   final EnrichmentResults results = (run, checked) -> UUID.randomUUID();
-  final CatalogEnrichmentStore store = new CatalogEnrichmentStore(candidates, results);
+  final FakeStored stored = new FakeStored();
+  final CatalogEnrichmentStore store = new CatalogEnrichmentStore(candidates, results, stored);
 
   private static EnrichmentCandidates.Candidate candidate(
       String type, @Nullable Boolean openSource, @Nullable String license) {
@@ -155,6 +192,13 @@ class CatalogEnrichmentStoreTest {
             "backlog SKIPPED 20 40 3",
             "standing 40 3",
             "prioritisedCount 40 3");
+  }
+
+  @Test
+  void aLaterRunIsRequestedThroughTheCatalog() {
+    store.requestRun(ID);
+
+    assertThat(stored.requested).containsExactly(ID);
   }
 
   @Test

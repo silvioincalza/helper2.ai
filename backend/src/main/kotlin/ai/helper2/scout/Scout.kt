@@ -139,6 +139,13 @@ interface EnrichmentBacklog {
    * admin, in the given order.
    */
   fun eligible(resourceIds: List<UUID>): List<UUID>
+
+  /**
+   * Puts [resourceId] back among the resources that still need enrichment, for a later run: a
+   * changed resource the run had no slot left for. Its unchanged fingerprint does not skip it (ADR
+   * 0056).
+   */
+  fun requestRun(resourceId: UUID)
 }
 
 /**

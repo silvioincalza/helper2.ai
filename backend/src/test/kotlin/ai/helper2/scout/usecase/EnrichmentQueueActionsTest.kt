@@ -54,6 +54,8 @@ class EnrichmentQueueActionsTest {
       }
 
       override fun eligible(resourceIds: List<UUID>) = resourceIds
+
+      override fun requestRun(resourceId: UUID) = Unit
     }
 
   private val control =

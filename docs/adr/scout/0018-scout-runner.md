@@ -18,7 +18,9 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
    passed, or when no scheduled run ever ended. The end time is one row
    in the PostgreSQL table `scout_schedule` (port `ScheduledRunStore`, adapter `JdbcScoutStore`), so every replica
    sees it. An admin can start a run with `POST /api/v1/admin/scout-runs` (optionally one `sourceId`, use case
-   `RunScout.tryStart`). The run starts on its own virtual thread; as soon as it holds the run lock and has saved one
+   `RunScout.tryStart`). A `sourceId` no collector has is refused before anything starts (`UnknownSource`, 404 Not
+   Found, no audit entry): nothing takes the lock, drains the backlog or spends budget for an empty plan. The run
+   starts on its own virtual thread; as soon as it holds the run lock and has saved one
    `scout_run` row per selected collector (`RUNNING`, or `SKIPPED` when disabled), the call answers 202 with those
    rows. The run then collects in the background; the admin page follows it by polling `GET /api/v1/admin/scout-runs`
    every 3 s while a row is `RUNNING`. Admin runs are not recorded in `scout_schedule`.
@@ -78,8 +80,12 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
    makes at most twice as many calls. The hard cap on calls is per UTC day. Changed resources with a source description of at least 40 characters are enriched
    while the budget lasts ([0019](0019-evidence-gated-enrichment.md)). An `UNCHANGED` outcome made no model call, so
    it gives its slot back, and the resource is not tried again in the same run. An `LLM_UNAVAILABLE` outcome
-   (provider down or daily cap spent) sets the budget to 0 for the rest of the run. An enrichment error is counted in the run message;
-   it never turns a collected run into `FAILED`.
+   (provider down or daily cap spent) sets the budget to 0 for the rest of the run. A changed resource the run has
+   no slot left for, and one whose enrichment threw before the model answered, go back to the backlog
+   (`EnrichmentBacklog.requestRun`: status `NOT_RUN` with the request time, as a recheck does,
+   [0056](0056-evidence-ladder.md)), so a later run takes them; an already enriched resource would otherwise never be
+   looked at again, since the backlog does not know it changed. The run message counts the errors and the resources
+   that wait; an enrichment error never turns a collected run into `FAILED`.
 7. **Backlog.** After the collectors, the rest of the budget goes to `EnrichmentBacklog.pending`: resources never
    enriched, enriched while no model was available, or whose last attempt failed (fewer than 3 failures). New
    discoveries first. They are enriched one at a time, so a slot given back by an `UNCHANGED` resource goes to the

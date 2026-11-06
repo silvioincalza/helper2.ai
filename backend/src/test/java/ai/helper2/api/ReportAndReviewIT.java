@@ -334,4 +334,17 @@ class ReportAndReviewIT extends ApiTestBase {
         // test classes need.
         .andExpect(jsonPath("$[?(@.status != 'SKIPPED')]").isEmpty());
   }
+
+  @Test
+  void scoutRunForAnUnknownSourceIsNotFoundAndStartsNothing() throws Exception {
+    var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    mvc.perform(
+            post("/api/v1/admin/scout-runs")
+                .with(admin)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"sourceId\":\"nope\"}"))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.code").value("not-found"));
+  }
 }
