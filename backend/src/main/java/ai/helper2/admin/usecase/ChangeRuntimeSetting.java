@@ -102,6 +102,9 @@ public class ChangeRuntimeSetting {
   static final class Reasons {
     private static final Pattern HIDDEN_CHARACTERS = Pattern.compile("[\\p{Cc}\\p{Cf}]");
 
+    /** The same bound as the database check on {@code runtime_setting.reason} (V15). */
+    static final int MAX_CHARS = 500;
+
     private Reasons() {}
 
     static @Nullable String clean(@Nullable String reason) {
@@ -111,7 +114,11 @@ public class ChangeRuntimeSetting {
       if (HIDDEN_CHARACTERS.matcher(reason).find()) {
         throw new BadRequestException("reason: no control or format characters");
       }
-      return reason.strip();
+      String cleaned = reason.strip();
+      if (cleaned.length() > MAX_CHARS) {
+        throw new BadRequestException("reason: at most " + MAX_CHARS + " characters");
+      }
+      return cleaned;
     }
   }
 }

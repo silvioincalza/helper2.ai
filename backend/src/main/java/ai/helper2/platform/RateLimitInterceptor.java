@@ -8,6 +8,7 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.Principal;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
@@ -111,15 +112,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     if (limiter == null) {
       return true;
     }
-    // The admin host is closed by the network, the port filter and the role (ADR 0035). Without
-    // Cloudflare in front, a forwarded address there could be the client's own choice: no limit
-    // is keyed on it.
-    if (adminHost.currentRequestOnAdminHost()) {
-      return true;
-    }
-    // remoteAddr honours X-Forwarded-For only when H2_FORWARD_HEADERS_STRATEGY is set behind a
-    // trusted proxy.
-    long wait = limiter.acquire(req.getRemoteAddr());
+    long wait = limiter.acquire(clientKey(req));
     if (wait == 0) {
       return true;
     }
@@ -133,4 +126,24 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
                 "Rate limit reached. Try again in " + wait + " seconds."));
     return false;
   }
+
+  /**
+   * Who the limit counts for. On the public host, the client address: it honours X-Forwarded-For
+   * only when H2_FORWARD_HEADERS_STRATEGY is set behind a trusted proxy. On the admin host there is
+   * no Cloudflare in front, so a forwarded address could be the client's own choice (ADR 0035):
+   * the key is the signed-in administrator, and one shared key for whoever is not signed in yet.
+   * The limit still holds there, but nothing a client sends can reset it.
+   */
+  private String clientKey(HttpServletRequest req) {
+    if (!adminHost.currentRequestOnAdminHost()) {
+      return req.getRemoteAddr();
+    }
+    Principal user = req.getUserPrincipal();
+    return user == null ? ADMIN_HOST_ANONYMOUS : ADMIN_HOST_USER + user.getName();
+  }
+
+  /** Neither looks like an address: {@link ClientKey} keeps them as they are. */
+  static final String ADMIN_HOST_ANONYMOUS = "admin-host";
+
+  static final String ADMIN_HOST_USER = "admin-host-user-";
 }

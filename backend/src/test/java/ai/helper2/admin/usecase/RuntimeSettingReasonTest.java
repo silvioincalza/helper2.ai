@@ -24,4 +24,13 @@ class RuntimeSettingReasonTest {
     assertThatThrownBy(() -> ChangeRuntimeSetting.Reasons.clean(reason))
         .isInstanceOf(BadRequestException.class);
   }
+
+  @Test
+  void aReasonLongerThanTheDatabaseAllowsIsRefusedAsABadRequestNotAServerError() {
+    String longest = "x".repeat(ChangeRuntimeSetting.Reasons.MAX_CHARS);
+    assertThat(ChangeRuntimeSetting.Reasons.clean(" " + longest + " ")).isEqualTo(longest);
+    assertThatThrownBy(() -> ChangeRuntimeSetting.Reasons.clean(longest + "x"))
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("500");
+  }
 }
