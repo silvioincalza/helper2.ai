@@ -177,6 +177,7 @@ export const SOURCES: SourceInfo[] = [
     resourceTypes: ['LIBRARY', 'MCP_SERVER'],
     lastOutcome: 'SUCCEEDED',
     lastCheckedAt: '2026-10-22T09:00:00Z',
+    lastCheckedSecondsAgo: 120,
   },
   {
     id: 'seed',
@@ -192,6 +193,7 @@ export const SOURCES: SourceInfo[] = [
     resourceTypes: ['PRODUCT'],
     lastOutcome: null,
     lastCheckedAt: null,
+    lastCheckedSecondsAgo: null,
   },
 ];
 
@@ -212,6 +214,7 @@ export const HEALTH_SOURCES: SourceInfo[] = [
     resourceTypes: ['LIBRARY'],
     lastOutcome: 'SUCCEEDED',
     lastCheckedAt: '2026-10-22T08:30:00Z',
+    lastCheckedSecondsAgo: 120,
     responseTimeMs: 1250,
     circuit: 'OPEN',
     circuitOpenedAt: '2026-10-22T09:14:05Z',
@@ -230,6 +233,7 @@ export const HEALTH_SOURCES: SourceInfo[] = [
     resourceTypes: ['MODEL'],
     lastOutcome: 'FAILED',
     lastCheckedAt: '2026-10-22T08:40:00Z',
+    lastCheckedSecondsAgo: 120,
     responseTimeMs: null,
     circuit: 'HALF_OPEN',
     circuitOpenedAt: null,
@@ -248,6 +252,7 @@ export const HEALTH_SOURCES: SourceInfo[] = [
     resourceTypes: ['NEWS'],
     lastOutcome: 'SUCCEEDED',
     lastCheckedAt: '2026-10-22T08:50:00Z',
+    lastCheckedSecondsAgo: 120,
     responseTimeMs: 800,
     circuit: 'CLOSED',
     circuitOpenedAt: null,

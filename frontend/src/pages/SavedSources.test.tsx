@@ -129,6 +129,7 @@ const sources: SourceInfo[] = [
     resourceTypes: ['PAPER'],
     lastOutcome: 'RATE_LIMITED',
     lastCheckedAt: '2026-10-22T08:00:00Z',
+    lastCheckedSecondsAgo: 120,
   },
   {
     id: 'npm',
@@ -144,6 +145,7 @@ const sources: SourceInfo[] = [
     resourceTypes: ['LIBRARY'],
     lastOutcome: 'FAILED',
     lastCheckedAt: '2026-10-22T08:30:00Z',
+    lastCheckedSecondsAgo: 120,
   },
 ];
 

@@ -81,7 +81,7 @@ function useSize(root: HTMLElement | null, title: RefObject<HTMLElement | null>)
 function useDotName() {
   const { t, i18n } = useTranslation();
   const ago = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' });
-  return (s: SourceInfo, tone: DotTone, now: number): string => {
+  return (s: SourceInfo, tone: DotTone): string => {
     const where = t(s.mode === 'LIVE' ? 'radar.dot.live' : 'radar.dot.index');
     const parts = [s.shortName, where];
     if (tone === 'failed') parts.push(t('radar.dot.failed'));
@@ -95,8 +95,9 @@ function useDotName() {
           time: responseTimeLabel(s.responseTimeMs, i18n.language).short,
         }),
       );
-    else if (s.mode !== 'LIVE' && s.lastCheckedAt) {
-      const minutes = Math.max(0, Math.round((now - Date.parse(s.lastCheckedAt)) / 60_000));
+    else if (s.mode !== 'LIVE' && s.lastCheckedSecondsAgo != null) {
+      // The server's clock, not this browser's, which may be wrong (GET /sources).
+      const minutes = Math.round(s.lastCheckedSecondsAgo / 60);
       const when =
         minutes < 60
           ? ago.format(-minutes, 'minute')
@@ -248,7 +249,6 @@ function RadarDots({
 }) {
   const { t } = useTranslation();
   const name = useDotName();
-  const [now] = useState(Date.now);
   const [byId] = useState(() => new Map(sources.map((s) => [s.id, s])));
   const [ids] = useState(() => sources.map((s) => s.id));
   const groupOf = (id: string) => radarGroup(byId.get(id)!);
@@ -320,7 +320,7 @@ function RadarDots({
         const d = view.spots.get(id);
         if (!d) return null;
         const on = view.shown.includes(id);
-        const label = name(d.source, d.tone, now);
+        const label = name(d.source, d.tone);
         return (
           <li
             key={id}

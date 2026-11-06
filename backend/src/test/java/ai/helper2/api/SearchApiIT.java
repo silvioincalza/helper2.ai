@@ -383,7 +383,8 @@ class SearchApiIT extends ApiTestBase {
     mvc.perform(get("/api/v1/sources"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[?(@.id == 'mcp-registry')].lastOutcome").value("SUCCEEDED"))
-        .andExpect(jsonPath("$[?(@.id == 'mcp-registry')].lastCheckedAt").exists());
+        .andExpect(jsonPath("$[?(@.id == 'mcp-registry')].lastCheckedAt").exists())
+        .andExpect(jsonPath("$[?(@.id == 'mcp-registry')].lastCheckedSecondsAgo").exists());
   }
 
   @Test

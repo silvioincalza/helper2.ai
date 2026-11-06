@@ -253,8 +253,6 @@ Open items:
   - **Saved, drawn but not built:** Undo for a few seconds after Remove, "4 of 500" on the account list, and "We moved
     3 saved items to your account" right after sign-in. Each needs a decision first: Undo changes how Remove works,
     the cap and the moved count need fields on the bookmarks API.
-  - **Sources, open point:** the board shows the last check as "2 min ago"; the table shows the time in UTC, as before.
-    A relative time needs the server's clock on GET /sources, or it goes wrong on a client with a wrong clock.
   - **Mission: section order.** The board puts how the guide answers between What we promise and How we mark AI
     text; the page shows it after the locale sections. Needs a way to place it among them.
   - **API fields:** `newThisWeek` on GET /sources, `limits` on GET /me and `total` on the recent and upcoming responses
