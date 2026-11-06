@@ -4,7 +4,8 @@
 #   catalog/ReviewQueue.java (openCountsByKind), scout/internal/CatalogEnrichmentStore.java, catalog/internal/JdbcEnrichmentCandidates.java (pendingCount),
 #   examples/usecase/CountHomeExamples.java, examples/internal/JdbcHomeExamples.java (all), platform/llm/BudgetLedger.java,
 #   frontend/src/pages/admin/EnrichmentQueuePage.tsx, admin/web/EnrichmentQueueController.java,
-#   scout/usecase/PrioritiseEnrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java.
+#   scout/usecase/PrioritiseEnrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
+#   admin/usecase/GetReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java, frontend/src/pages/admin/ReviewEvidence.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0045-back-office.d2 && d2 sequence-0045-back-office.d2 sequence-0045-back-office.svg
 
 ...@style
@@ -34,13 +35,13 @@ follow: Follow a count {
   spa -> owner: "/admin/review?kind=USER_REPORT"
 }
 
-act: Act on the enrichment queue {
-  owner -> spa: "/admin/enrichment: Move to top"
-  spa -> api: "POST /api/v1/admin/enrichment-queue/{id}/prioritise (CSRF)"
-  api -> db: "lock the top (pg_advisory_xact_lock),\nwhere the resource stands,\nhow many at the top (backlog rule)"
-  api -> db: "one transaction: control row\n+ audit PRIORITISE_ENRICHMENT"
-  api -> spa: "204 (409 not-applicable with the reason)"
-  spa -> api: "GET /api/v1/admin/enrichment-queue"
-  api -> db: "page: at the top first"
   spa -> owner: "\"Acme MCP\" is at the top (focus on the result)"
-}
+review: Review with the evidence {
+  spa -> api: "GET /api/v1/admin/review-items/{id}/evidence\n(the selected item)"
+  api -> db: "the item's links and its run,\nthen fields and quotes (or the relationship)"
+  api -> spa: "run, errors, fields with quotes,\naiContent"
+  spa -> owner: "the item next to the list,\nAI values labelled"
+  owner -> spa: "a (accept)" {class: hot}
+  spa -> api: "PUT /api/v1/admin/review-items/{id}/resolution"
+  api -> spa: "decided"
+  spa -> owner: "next item focused,\n\"Accepted. 11 left.\""
