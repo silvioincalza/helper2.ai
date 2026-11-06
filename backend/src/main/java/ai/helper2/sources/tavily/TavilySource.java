@@ -148,7 +148,7 @@ public class TavilySource implements SearchSource {
     String url = HttpClients.text(r, "url");
     String title = HttpClients.text(r, "title");
     CanonicalUrl canonical = CanonicalUrl.of(url);
-    if (url == null || title == null || canonical == null) {
+    if (url == null || title == null || canonical == null || isTavilysOwnPage(canonical)) {
       return null;
     }
     String content = HttpClients.text(r, "content");
@@ -180,6 +180,16 @@ public class TavilySource implements SearchSource {
         List.of(),
         now,
         position);
+  }
+
+  /**
+   * A page on Tavily's own site, such as its company profiles under /knowledge: the search
+   * provider's index, not a publisher's article. For "rag" one ranked second, as News, with the
+   * bare title "rag".
+   */
+  static boolean isTavilysOwnPage(CanonicalUrl url) {
+    String host = url.getHost();
+    return host.equals("tavily.com") || host.endsWith(".tavily.com");
   }
 
   /** At most 400 characters; null stays null. */
