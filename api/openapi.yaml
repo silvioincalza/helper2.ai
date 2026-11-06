@@ -27,6 +27,7 @@ tags:
   - name: categories
   - name: me
   - name: admin
+  - name: review
   - name: audit
   - name: overview
   - name: enrichment-queue
@@ -447,6 +448,30 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/review-items/{id}/evidence:
+    get:
+      tags: [review]
+      operationId: getReviewEvidence
+      summary: What a review item is about, with the quotes behind it (ADR 0045).
+      description: >-
+        Read through the item's link, never from its details. An item from an enrichment run: the run, its validation
+        errors and the fields it stored, each with at most 5 quotes, CONFLICTING first. A relationship candidate: the
+        run and the relationship, with at most 5 quotes. Any other item: the item only. Field values and the
+        relationship are AI-written (`aiContent`); quotes come from the sources. The run of a decided or superseded
+        item can have no fields left: a newer run replaced them.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The item and its evidence.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewEvidence' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
 
   /admin/scout-runs:
     get:
@@ -2088,6 +2113,77 @@ components:
         createdAt: { type: string, format: date-time }
         resolvedAt: { type: [string, 'null'], format: date-time }
         resolvedBy: { type: [string, 'null'] }
+
+    ReviewEvidence:
+      type: object
+      required: [item, validationErrors, fields]
+      properties:
+        item: { $ref: '#/components/schemas/ReviewItem' }
+        run:
+          oneOf: [{ $ref: '#/components/schemas/ReviewRun' }, { type: 'null' }]
+          description: The enrichment run the item links to; null for items with no run.
+        validationErrors:
+          type: array
+          maxItems: 50
+          items: { type: string }
+          description: What the code check refused in the run, in its words. Each error can quote the refused model output, so aiContent lists it as AI-written. Empty for a relationship candidate.
+        fields:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/ReviewField' }
+          description: The fields the run stored, CONFLICTING first, then UNVERIFIED, VERIFIED and REJECTED. Empty for a relationship candidate.
+        relationship:
+          oneOf: [{ $ref: '#/components/schemas/ReviewRelationship' }, { type: 'null' }]
+          description: The relationship a relationship candidate is about; null for every other kind.
+        aiContent:
+          oneOf: [{ $ref: '#/components/schemas/AiContentMarker' }, { type: 'null' }]
+          description: Present when the evidence holds AI-written values (ADR 0038).
+
+    ReviewRun:
+      type: object
+      required: [id, provider, model, promptVersion, outcome, startedAt]
+      properties:
+        id: { type: string, format: uuid }
+        provider: { type: string }
+        model: { type: string }
+        promptVersion: { type: string }
+        outcome: { type: string, enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        extraEvidence:
+          type: [string, 'null']
+          description: The README or model card the run read in its gap round (ADR 0043), e.g. `github-readme:owner/name`.
+
+    ReviewField:
+      type: object
+      required: [field, value, origin, verification, quotes]
+      properties:
+        field: { type: string }
+        value: { type: string, description: AI-written. }
+        origin: { $ref: '#/components/schemas/ValueOrigin' }
+        verification: { $ref: '#/components/schemas/Verification' }
+        quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
+
+    ReviewRelationship:
+      type: object
+      required: [kind, target, verification, origin, quotes]
+      properties:
+        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH] }
+        target: { type: string, description: The name the model gave. AI-written. }
+        targetId: { type: [string, 'null'], format: uuid, description: The catalog resource of that name; null when none. }
+        verification: { $ref: '#/components/schemas/Verification' }
+        origin: { $ref: '#/components/schemas/ValueOrigin' }
+        quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
+
+    ReviewQuote:
+      type: object
+      required: [sourceUrl, retrievedAt]
+      description: Copied from a source, not AI-written.
+      properties:
+        excerpt: { type: [string, 'null'], maxLength: 500 }
+        sourceUrl: { type: string, description: As the source gave it; a page shows it as a link only when it is http(s). }
+        sourceId: { type: [string, 'null'], description: The source the quote was read from; null for a page the run read itself. }
+        retrievedAt: { type: string, format: date-time }
 
     ReviewResolution:
       type: object
