@@ -17,9 +17,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * The evidence of a review item from the catalog tables. At most three statements whatever the
- * number of fields: the item's links with its run, then the fields and the quotes of all of them,
- * or for a relationship candidate the relationship and its quotes.
+ * The evidence of a review item from the catalog tables, and the conflicts its run left. At most
+ * three statements whatever the number of fields: the item's links with its run, then the fields
+ * and the quotes of all of them, or for a relationship candidate the relationship and its quotes.
  */
 @Repository
 class JdbcReviewEvidence implements ReviewEvidence {
@@ -54,6 +54,20 @@ class JdbcReviewEvidence implements ReviewEvidence {
       return Evidence.NONE;
     }
     return new Evidence(linked.run(), linked.errors(), fields(linked.run().id()), null);
+  }
+
+  @Override
+  public List<String> conflictingFields(UUID itemId) {
+    return jdbc.sql(
+            """
+            SELECT DISTINCT a.field FROM review_item i
+            JOIN field_assertion a ON a.enrichment_run_id = i.enrichment_run_id
+            WHERE i.id = :id AND a.verification = 'CONFLICTING'
+            ORDER BY a.field
+            """)
+        .param("id", itemId)
+        .query(String.class)
+        .list();
   }
 
   private record Linked(@Nullable UUID relationshipId, @Nullable Run run, List<String> errors) {

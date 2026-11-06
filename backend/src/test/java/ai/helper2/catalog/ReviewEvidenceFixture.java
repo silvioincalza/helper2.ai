@@ -97,12 +97,38 @@ public final class ReviewEvidenceFixture {
     return this;
   }
 
+  /**
+   * Another open enrichment check of the resource, from its own run, whose only field is
+   * CONFLICTING on [field]. Returns the item.
+   */
+  public UUID enrichmentItemConflictingOn(String field) {
+    UUID otherRun = UUID.randomUUID();
+    jdbc.sql(
+            """
+            INSERT INTO enrichment_run (id, resource_id, provider, model, prompt_version, input_fingerprint,
+                                        started_at, finished_at, outcome)
+            VALUES (:id, :rid, 'nebius', 'nvidia/nemotron-test', 'enrich-v9', 'fp', :at, :at, 'PARTIAL')
+            """)
+        .param("id", otherRun)
+        .param("rid", resource)
+        .param("at", Timestamp.from(T0))
+        .update();
+    field(otherRun, field, "x", "AI_EXTRACTED", "CONFLICTING");
+    UUID item = UUID.randomUUID();
+    item(item, "ENRICHMENT_VALIDATION", otherRun, null);
+    return item;
+  }
+
   public void delete() {
     jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", resource).update();
     jdbc.sql("DELETE FROM source WHERE id = :id").param("id", SOURCE).update();
   }
 
   private UUID field(String field, String value, String origin, String verification) {
+    return field(run, field, value, origin, verification);
+  }
+
+  private UUID field(UUID runId, String field, String value, String origin, String verification) {
     UUID id = UUID.randomUUID();
     jdbc.sql(
             """
@@ -115,7 +141,7 @@ public final class ReviewEvidenceFixture {
         .param("v", value)
         .param("o", origin)
         .param("ver", verification)
-        .param("run", run)
+        .param("run", runId)
         .update();
     return id;
   }

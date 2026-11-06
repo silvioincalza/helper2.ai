@@ -15,6 +15,7 @@ import { resourcePath } from '@/lib/searchState';
 import { categoryOf } from '@/components/sources/DiscoveryCategories';
 import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE, oneOf } from './adminModel';
+import { BulkBar, bulkSummary, type Decision } from './ReviewBulk';
 import { ReviewEvidencePanel } from './ReviewEvidence';
 import { ItemDetails } from './ReviewItemDetails';
 import { ReviewKeysHelp } from './ReviewKeysHelp';
@@ -25,8 +26,6 @@ const CATEGORY = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 /** The API's limit for a decision note. */
 const NOTE_MAX = 1000;
 const DETAIL_ID = 'rq-detail';
-
-type Decision = 'ACCEPTED' | 'REJECTED';
 
 /** What went wrong with the last decision: refused carries the server's reason, in its words. */
 type ActionError = { kind: 'failed' | 'alreadyDecided' } | { kind: 'refused'; detail: string };
@@ -44,12 +43,23 @@ function actionErrorOf(e: unknown): ActionError {
   return { kind: 'failed' };
 }
 
-/** A key typed into a field is text, not a command; a key with a modifier belongs to the browser. */
+/** A key typed into a field is text, not a command; a key with a modifier belongs to the browser. A checkbox is no field. */
 function isCommandKey(e: KeyboardEvent): boolean {
   const target = e.target as HTMLElement;
+  const box = target instanceof HTMLInputElement && target.type === 'checkbox';
   const typing =
-    target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+    target.isContentEditable || (!box && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
   return !typing && !e.ctrlKey && !e.metaKey && !e.altKey;
+}
+
+/** The picks still open in [list]: the same map when none dropped out. */
+function openPicks(
+  picked: ReadonlyMap<string, ReviewItem>,
+  list: ReviewItem[],
+): ReadonlyMap<string, ReviewItem> {
+  const open = new Set(list.filter((i) => i.status === 'OPEN').map((i) => i.id));
+  const kept = [...picked].filter(([id]) => open.has(id));
+  return kept.length === picked.size ? picked : new Map(kept);
 }
 
 /** The item after [id] in [list], else the one before it: what to review next once [id] is decided. */
@@ -63,8 +73,11 @@ function nextAfter(list: ReviewItem[], id: string): string | undefined {
  * style (ADR 0042), `$ helper2 review --open · N` with N the matching items on the server. Status, kind and page live
  * in the address, so the overview can link into a filtered queue and Back works. The selected item shows its details,
  * its evidence (ADR 0045) and the decision, with an optional note. Keys work only while focus is in the queue
- * (WCAG 2.1.4): j and k move, a accepts, r rejects, n goes to the note, ? lists them. After a decision the next item
- * is selected and takes focus, and a polite status says what is left.
+ * (WCAG 2.1.4): j and k move, x picks, a accepts, r rejects, n goes to the note, ? lists them. A focused checkbox
+ * selects its row, so a key typed on it acts on that row. After a decision the
+ * next item is selected and takes focus, and a polite status says what is left. Picked open items can be decided
+ * together from the bar under the list (ResolveReviewItems): the server decides each on its own and leaves open what
+ * it may not accept in bulk; the items that failed stay picked.
  */
 export default function ReviewQueuePage() {
   const { t, i18n } = useTranslation();
@@ -80,6 +93,9 @@ export default function ReviewQueuePage() {
   const [selectedId, setSelectedId] = useState<string | undefined>();
   const [announcement, setAnnouncement] = useState('');
   const [help, setHelp] = useState(false);
+  /** Open items picked for a bulk decision, by id; kept across reloads until decided or cleared. */
+  const [pickedIds, setPicked] = useState<ReadonlyMap<string, ReviewItem>>(new Map());
+  const [bulkResult, setBulkResult] = useState('');
   /** Set by a decision: once the list has reloaded, the selected row takes focus. */
   const focusAfterLoad = useRef(false);
   const rows = useRef(new Map<string, HTMLButtonElement>());
@@ -95,6 +111,9 @@ export default function ReviewQueuePage() {
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const list = items.data?.items ?? [];
   const selected = list.find((i) => i.id === selectedId) ?? list[0];
+  // Picks live on one page (a new page or filter clears them): once the list has loaded, an item no longer open in it
+  // is decided, so it is not picked any more.
+  const picked = items.data ? openPicks(pickedIds, list) : pickedIds;
 
   useEffect(() => {
     if (items.loading || !focusAfterLoad.current) return;
@@ -111,6 +130,16 @@ export default function ReviewQueuePage() {
     else next.set(name, value);
     if (name !== 'page') next.delete('page');
     setParams(next);
+    setPicked(new Map());
+  };
+
+  const toggle = (item: ReviewItem) => {
+    if (item.status !== 'OPEN') return;
+    setPicked((p) => {
+      const next = new Map(p);
+      if (!next.delete(item.id)) next.set(item.id, item);
+      return next;
+    });
   };
 
   const select = (id: string | undefined, focus: boolean) => {
@@ -146,6 +175,34 @@ export default function ReviewQueuePage() {
     }
   };
 
+  /**
+   * Decides the picked items together. The items that failed stay picked, so the reason is easy to check; the list
+   * reloads and the selected row takes focus. When the request itself fails, the list reloads too and the picks still open stay.
+   */
+  const resolveMany = async (decision: Decision, text: string | undefined) => {
+    if (busy || picked.size === 0) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      const result = await api.resolveReviewItems({
+        ids: [...picked.keys()],
+        status: decision,
+        ...(text ? { note: text } : {}),
+      });
+      const failed = new Set(result.items.filter((i) => i.outcome !== 'RESOLVED').map((i) => i.id));
+      setPicked((p) => new Map([...p].filter(([id]) => failed.has(id))));
+      setBulkResult(bulkSummary(t, result));
+      focusAfterLoad.current = true;
+      items.reload();
+    } catch {
+      // The server decides each item on its own, so some may be decided already: reload; the picks still open stay.
+      setActionError({ kind: 'failed' });
+      items.reload();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onKeyDown = (e: KeyboardEvent) => {
     // A held key repeats: one press is one decision, never a run of them.
     if (e.repeat || !isCommandKey(e)) return;
@@ -153,6 +210,7 @@ export default function ReviewQueuePage() {
     const act: Record<string, () => void> = {
       j: () => select(list[at + 1]?.id, true),
       k: () => select(list[at - 1]?.id, true),
+      x: () => selected && toggle(selected),
       a: () => selected && void resolve(selected, 'ACCEPTED'),
       r: () => selected && void resolve(selected, 'REJECTED'),
       n: () => note.current?.focus(),
@@ -255,6 +313,9 @@ export default function ReviewQueuePage() {
             <table className="v4-table h2-admin__table h2-admin__list" aria-labelledby="rq-h">
               <thead>
                 <tr>
+                  <th scope="col">
+                    <span className="sr-only">{t('admin.bulk.pickColumn')}</span>
+                  </th>
                   <th scope="col">{t('admin.col.kind')}</th>
                   <th scope="col">{t('admin.col.resource')}</th>
                   <th scope="col">{t('admin.col.check')}</th>
@@ -270,6 +331,19 @@ export default function ReviewQueuePage() {
                       key={it.id}
                       className={current ? 'v4-row h2-admin__row--current' : 'v4-row'}
                     >
+                      <td>
+                        {it.status === 'OPEN' && (
+                          <input
+                            type="checkbox"
+                            className="h2-admin__pick-box"
+                            checked={picked.has(it.id)}
+                            aria-label={t('admin.bulk.pick', { reason: it.reason })}
+                            aria-keyshortcuts="x"
+                            onChange={() => toggle(it)}
+                            onFocus={() => setSelectedId(it.id)}
+                          />
+                        )}
+                      </td>
                       <td className="v4-nowrap">{t(`admin.kind.${it.kind}`)}</td>
                       <td>
                         {it.resourceId ? (
@@ -370,6 +444,17 @@ export default function ReviewQueuePage() {
             <ReviewEvidencePanel key={selected.id} itemId={selected.id} />
           </section>
         </div>
+      )}
+      <p role="status" className="h2-admin__bulk-result">
+        {bulkResult}
+      </p>
+      {picked.size > 0 && (
+        <BulkBar
+          picked={[...picked.values()]}
+          busy={busy}
+          onDecide={(decision, text) => void resolveMany(decision, text)}
+          onClear={() => setPicked(new Map())}
+        />
       )}
       {items.data && (
         <Pagination

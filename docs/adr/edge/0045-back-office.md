@@ -95,6 +95,19 @@ them without each module growing an admin corner.
      1.9 s (1.4 to 1.65 s before, same data; still cached a minute, with the 5-second limit), a waiting page 1 to 3 ms,
      the skipped page 0.3 ms, the out-of-retries page 1.1 to 1.6 s (it walks every REJECTED resource), one resource's
      place 0.1 ms.
+9. **Bulk decisions: each item on its own, accept only where it is safe.** `POST /api/v1/admin/review-items/resolutions`
+   takes up to 100 ids, a decision and an optional note (CSRF applies). `ResolveReviewItems` sends each item through the
+   one-item decision (`ResolveReview`) in its own transaction, so each item writes its own audit entry, the same as a
+   single decision, with the batch at the end: `ACCEPTED bulk:<batch>`. One item that fails does not undo the others.
+   The answer gives one outcome per item, in the order sent: RESOLVED, NOT_OPEN, NOT_FOUND or NOT_ALLOWED. Rejecting is
+   allowed for every kind: nothing is added or shown. Accepting is allowed only for an enrichment check whose run has no
+   CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class; the conflicts come from their own
+   query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows): every other kind adds a resource,
+   verifies a relationship, publishes an example or closes a user's report, and a new kind is refused until the rule
+   names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
+   box (x picks the selected item); a bar under the list says "4 selected · Accept · Reject · Clear"; Accept and Reject
+   ask first in a dialog that repeats the count by kind, with focus on Cancel. The line after says "11 done, 1 failed
+   (already decided)", and the items that failed stay picked.
 
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
@@ -103,6 +116,16 @@ them without each module growing an admin corner.
 - A budget that is never built (no model configured), or one that counts only in memory, is not listed.
 - The admin sees the quotes behind a value before deciding, without opening the resource page. The evidence is read
   only for the selected item, one request per item.
+- A batch is not atomic: a server error halfway leaves the first items decided. The page reloads and shows them as
+  they are; the audit trail names the batch.
+- A repeated id makes the whole batch a 400. The contract does not declare the ids unique: the generated set would
+  drop the repeat before the use case could refuse it.
+- The bulk rule is checked before the item's transaction, not inside it. Between the check and the decision the item
+  can be decided by someone else (then it is NOT_OPEN), but its kind and its run cannot change, so the rule's answer
+  stays right. Low risk, and one transaction per item stays simple.
+- Bulk accept takes an enrichment check whose fields are UNVERIFIED or AI_ESTIMATED, as long as licence, open source
+  and pricing are not CONFLICTING. This is a product choice: those values are already shown with their origin and
+  verification, and accepting the check publishes nothing new. I may revisit it.
 - The queue has no total of its own: the overview's count is the total, up to a minute old. A resource that changes
   part between two pages (a run finishes) can be skipped or shown twice; the next visit shows it in its place.
 - A skip or a move to the top changes which resources get the daily model calls, never how many.
@@ -127,6 +150,11 @@ them without each module growing an admin corner.
 - A catalog-owned control table, written through a catalog port (like the re-run request of ADR 0056) — no exception in
   the table-owner test, but the rules and their data would live in two modules. Possible later, if the exception
   starts to hurt.
+- One transaction for a whole batch — one bad item would undo the others, and a long transaction holds locks on up to
+  100 rows. Each item on its own matches what one decision does.
+- Bulk accept for every kind — one click could add 100 resources to the catalog or verify 100 relationships nobody read.
+- An undo for bulk decisions — a decision can publish or verify at once; an undo would have to reverse that. Decisions
+  stay final, and the confirm dialog says so.
 
 ## Code
 - `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
@@ -145,15 +173,19 @@ them without each module growing an admin corner.
 - `backend/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
 - `backend/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
   `catalog/ReviewEvidence.java`, `catalog/internal/JdbcReviewEvidence.java`.
+- `backend/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
+  `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
-  `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ScoutRunsPage.tsx`, `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.
+  `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`, `EnrichmentQueuePage.tsx`, `AuditPage.tsx`.
 - Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
   `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
   `api/EnrichmentQueueApiIT.java`, `admin/web/EnrichmentQueueCursorTest.java`, `catalog/internal/JdbcEnrichmentCandidatesIT.java`,
   `api/ReviewEvidenceApiIT.java`, `catalog/internal/JdbcReviewEvidenceIT.java`,
+  `api/ReviewBulkApiIT.java`, `admin/BulkDecisionRuleTest.java`,
   `api/EnrichmentQueueActionsApiIT.java`, `scout/QueuePlaceTest.kt`, `scout/usecase/EnrichmentQueueActionsTest.kt`,
   `architecture/ModularityTest.java` (the table-owner exception),
-  `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `src/a11y.test.tsx`.
+  `frontend/src/pages/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `ReviewBulk.test.tsx`,
+  `src/a11y.test.tsx`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0045-back-office.svg) · [sequence](../../diagrams/sequence-0045-back-office.svg)

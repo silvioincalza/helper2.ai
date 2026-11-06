@@ -52,6 +52,19 @@ public class ResolveReview {
   @Transactional(noRollbackFor = ApiProblem.class)
   public ResolveReviewItem.Outcome resolve(
       UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note) {
+    return resolve(id, decision, adminId, note, null);
+  }
+
+  /**
+   * As above, for one item of a bulk decision [batch] (ResolveReviewItems): its own transaction.
+   */
+  @Transactional(noRollbackFor = ApiProblem.class)
+  public ResolveReviewItem.Outcome resolve(
+      UUID id,
+      ReviewQueue.Status decision,
+      String adminId,
+      @Nullable String note,
+      @Nullable UUID batch) {
     Optional<ReviewQueue.Item> accepted =
         queue
             .find(id)
@@ -59,7 +72,7 @@ public class ResolveReview {
             .filter(i -> decision == ReviewQueue.Status.ACCEPTED);
     Optional<ReviewQueue.Item> addition = accepted.filter(i -> addsOnAccept(i.kind()));
     addition.ifPresent(item -> addAccepted(item, adminId));
-    ResolveReviewItem.Outcome outcome = resolve.resolve(id, decision, adminId, note);
+    ResolveReviewItem.Outcome outcome = resolve.resolve(id, decision, adminId, note, batch);
     if (addition.isPresent() && !(outcome instanceof ResolveReviewItem.Outcome.Resolved)) {
       // Decided by someone else meanwhile: undo the addition with the decision.
       throw new IllegalStateException("review item " + id + " was decided concurrently");

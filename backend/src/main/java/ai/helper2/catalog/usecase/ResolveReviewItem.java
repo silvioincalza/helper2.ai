@@ -6,6 +6,7 @@ import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.BadRequestException;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,14 +44,32 @@ public class ResolveReviewItem {
    */
   @Transactional
   public Outcome resolve(UUID id, ReviewQueue.Status decision, String by, String note) {
+    return resolve(id, decision, by, note, null);
+  }
+
+  /**
+   * As above, for one item of a bulk decision: the audit entry's outcome ends with {@code
+   * bulk:<batch>}, so the trail shows which entries one decision made.
+   */
+  @Transactional
+  public Outcome resolve(
+      UUID id, ReviewQueue.Status decision, String by, String note, @Nullable UUID batch) {
     if (decision != ReviewQueue.Status.ACCEPTED && decision != ReviewQueue.Status.REJECTED) {
       throw new BadRequestException("decision must be ACCEPTED or REJECTED");
     }
     boolean decided = decisions.decide(id, decision, by, note);
     Outcome outcome = outcomeOf(queue.find(id), decided);
     audit.record(
-        by, AuditTrail.Action.RESOLVE_REVIEW_ITEM, id.toString(), recorded(outcome, decision));
+        by,
+        AuditTrail.Action.RESOLVE_REVIEW_ITEM,
+        id.toString(),
+        inBatch(recorded(outcome, decision), batch));
     return outcome;
+  }
+
+  /** The audit outcome of an item decided in bulk: the outcome, then {@code bulk:<batch>}. */
+  public static String inBatch(String outcome, @Nullable UUID batch) {
+    return batch == null ? outcome : outcome + " bulk:" + batch;
   }
 
   private static Outcome outcomeOf(Optional<ReviewQueue.Item> item, boolean decided) {

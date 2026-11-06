@@ -18,6 +18,8 @@ import type {
   ReviewItemPage,
   SetupGuide,
   ToolGuide,
+  ReviewBulkResolution,
+  ReviewBulkResult,
   ReviewEvidence,
   ReviewResolution,
   ReviewStatus,
@@ -304,6 +306,9 @@ export const api = {
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, {
       body,
     }),
+  /** Decides up to 100 items, each on its own; one outcome per item, in the order sent (ADR 0045). */
+  resolveReviewItems: (body: ReviewBulkResolution) =>
+    request<ReviewBulkResult>('POST', '/admin/review-items/resolutions', { body }),
   /** What a review item is about: its run or relationship, with the quotes behind them (ADR 0045). 404 for no item. */
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {

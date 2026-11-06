@@ -105,6 +105,15 @@ class JdbcReviewEvidenceIT {
   }
 
   @Test
+  void theConflictingFieldsOfAnItemsRunAreReadOnTheirOwn() {
+    assertThat(evidence.conflictingFields(fixture.validationItem)).containsExactly("pricing");
+    assertThat(evidence.conflictingFields(fixture.enrichmentItemConflictingOn("license")))
+        .containsExactly("license");
+    assertThat(evidence.conflictingFields(fixture.reportItem)).isEmpty();
+    assertThat(evidence.conflictingFields(UUID.randomUUID())).isEmpty();
+  }
+
+  @Test
   void anItemWithNoLinkOrNoItemAtAllHasNoEvidence() {
     assertThat(evidence.of(fixture.reportItem)).isEqualTo(Evidence.NONE);
     assertThat(evidence.of(UUID.randomUUID())).isEqualTo(Evidence.NONE);
