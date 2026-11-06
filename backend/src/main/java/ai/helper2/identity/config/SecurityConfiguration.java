@@ -1,6 +1,8 @@
 package ai.helper2.identity.config;
 
 import ai.helper2.monetisation.Monetisation;
+import ai.helper2.platform.ProblemType;
+import ai.helper2.platform.Problems;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -10,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,9 +27,9 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
@@ -34,6 +37,7 @@ import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -132,10 +136,16 @@ class SecurityConfiguration {
                 .csrfTokenRequestHandler(new DeferredSpaCsrfTokenRequestHandler()))
         .addFilterAfter(
             new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class)
+        // A refused API request gets the problem the contract promises, not a bare 401 or the
+        // container's error page (which echoes the path and a timestamp) for a 403.
         .exceptionHandling(e ->
             e.defaultAuthenticationEntryPointFor(
-                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                PathPatternRequestMatcher.withDefaults().matcher("/api/**")))
+                    (req, res, ex) ->
+                        Problems.write(res, ProblemType.SIGN_IN_REQUIRED, "Sign in to do this."),
+                    API)
+                .defaultAccessDeniedHandlerFor(
+                    (req, res, ex) -> Problems.write(res, ProblemType.FORBIDDEN, deniedWhy(ex)),
+                    API))
         .logout(l ->
             l.logoutUrl("/logout")
                 .logoutSuccessHandler(
@@ -166,6 +176,17 @@ class SecurityConfiguration {
                       .oidcUserService(oidcUsers(adminSet, onAdminPort))));
     }
     return http.build();
+  }
+
+  /** Every API path: the paths that answer with a problem instead of a page. */
+  private static final RequestMatcher API =
+      PathPatternRequestMatcher.withDefaults().matcher("/api/**");
+
+  /** A missing or wrong CSRF token is the one 403 the client can fix by itself. */
+  static String deniedWhy(AccessDeniedException ex) {
+    return ex instanceof CsrfException
+        ? "The CSRF token is missing or wrong."
+        : "This account may not do this.";
   }
 
   /** The admin page under the frontend URL ("/" → "/admin"). */

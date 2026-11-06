@@ -103,6 +103,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/RecentResponse' }
         '400': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
   /events/upcoming:
     get:
       tags: [resources]
@@ -159,6 +160,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SetupGuide' }
         '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
         '503': { $ref: '#/components/responses/Problem' }
 
   /resources/{id}/guide:
@@ -798,6 +800,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/HomeExamplePool' }
         '400': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
 
   /policy:
     get:
