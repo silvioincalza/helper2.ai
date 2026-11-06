@@ -158,7 +158,9 @@ public class NvidiaEmbedder implements Embedder {
   }
 
   private static final Pattern CONTROL = Pattern.compile("[\\p{Cc}\\p{Cf}]+");
-  private static final int MAX_REASON = 200;
+
+  /** The Privacy page states it (GET /api/v1/policy). */
+  static final int MAX_REASON = 200;
 
   /** Untrusted shape: every input needs exactly one vector of the expected size. */
   static List<float[]> vectors(Response response, int count, int dimensions) {

@@ -6,11 +6,16 @@ import ai.helper2.api.generated.model.PolicyDailyLimitsWebSearchesDto;
 import ai.helper2.api.generated.model.PolicyDto;
 import ai.helper2.api.generated.model.PolicyGuideDto;
 import ai.helper2.api.generated.model.PolicyRetentionDto;
+import ai.helper2.api.generated.model.PolicySourcesDto;
 import ai.helper2.api.generated.model.WebSearchLimitsDto;
 import ai.helper2.catalog.CatalogPolicy;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.identity.AccountPolicy;
+import ai.helper2.platform.config.CategoriesProperties;
 import ai.helper2.platform.config.PlatformRetentionProperties;
+import ai.helper2.platform.llm.RedisCallCounter;
+import ai.helper2.platform.quota.RedisQuotaCounter;
+import ai.helper2.scout.ScoutPolicy;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.SearchPolicy;
 import java.time.Duration;
@@ -37,12 +42,15 @@ class PolicyController implements PolicyApi {
       GuidePolicy guide,
       AccountPolicy accounts,
       CatalogPolicy catalog,
-      PlatformRetentionProperties platform) {
+      ScoutPolicy scout,
+      PlatformRetentionProperties platform,
+      CategoriesProperties categories) {
     this.policy =
         new PolicyDto(
             new PolicyGuideDto(guide.getMaxCandidates(), guide.getMaxPicks()),
             dailyLimits(search, guide),
-            retention(search, guide, accounts, catalog, platform));
+            retention(search, guide, accounts, catalog, scout, platform),
+            sources(scout, catalog, categories));
   }
 
   @Override
@@ -58,7 +66,9 @@ class PolicyController implements PolicyApi {
             ? new WebSearchLimitsDto(web.getRegisteredSearch(), web.getRegisteredGuide())
             : null;
     return new PolicyDailyLimitsDto(
-        guide.getQuestionsPerDay(), new PolicyDailyLimitsWebSearchesDto(guest, registered));
+        guide.getQuestionsPerDay(),
+        guide.getFreeAnswers(),
+        new PolicyDailyLimitsWebSearchesDto(guest, registered));
   }
 
   private static PolicyRetentionDto retention(
@@ -66,8 +76,17 @@ class PolicyController implements PolicyApi {
       GuidePolicy guide,
       AccountPolicy accounts,
       CatalogPolicy catalog,
+      ScoutPolicy scout,
       PlatformRetentionProperties platform) {
     return new PolicyRetentionDto(
+        RedisQuotaCounter.KEEP.toSeconds(),
+        RedisCallCounter.KEEP.toSeconds(),
+        catalog.webNews().toSeconds(),
+        catalog.pendingReviewPages().toSeconds(),
+        catalog.listIndex().toSeconds(),
+        scout.pageText().toSeconds(),
+        scout.pageRead().toSeconds(),
+        platform.backups().toSeconds(),
         search.getCachedSearches().toSeconds(),
         guide.getCachedAnswers().toSeconds(),
         search.getTranslations().toSeconds(),
@@ -77,5 +96,17 @@ class PolicyController implements PolicyApi {
         catalog.handledReports().toSeconds(),
         accounts.adminRecords().toSeconds(),
         platform.runtimeSettings().toSeconds());
+  }
+
+  private static PolicySourcesDto sources(
+      ScoutPolicy scout, CatalogPolicy catalog, CategoriesProperties categories) {
+    return new PolicySourcesDto(
+        categories.catalog().getAll().size(),
+        categories.discoverySearches(),
+        scout.quoteChars(),
+        scout.articleExcerptChars(),
+        scout.productPageExcerptChars(),
+        scout.productPages(),
+        catalog.errorLogChars());
   }
 }

@@ -49,6 +49,18 @@ public record CategoriesProperties(@Nullable List<Entry> categories) {
     }
   }
 
-  /** What a match needs from the discovery block. */
-  public record Discovery(@Nullable ResourceType type, @Nullable Boolean requireKeyword) {}
+  /** How many web searches the discovery collectors run in all, as the Privacy page states it. */
+  public int discoverySearches() {
+    return categories.stream()
+        .map(Entry::discovery)
+        .filter(d -> d != null && d.queries() != null)
+        .mapToInt(d -> d.queries().size())
+        .sum();
+  }
+
+  /** What a match and the policy need from the discovery block. */
+  public record Discovery(
+      @Nullable ResourceType type,
+      @Nullable Boolean requireKeyword,
+      @Nullable List<String> queries) {}
 }

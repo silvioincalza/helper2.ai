@@ -864,6 +864,8 @@ helper2:
     admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
     # Runtime setting changes (ADR 0060), with who made them and why (24 months); each setting's newest change stays.
     runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
+    # Database dumps (ADR 0027). The chart sets it from backup.retentionDays; the app only states it on /policy.
+    backups: ${H2_RETENTION_BACKUPS:P7D}
 
 ---
 # Setup guide (ADR 0031): documents read at request time, their caches and budgets.

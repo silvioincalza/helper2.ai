@@ -923,7 +923,7 @@ components:
       description: >-
         What Helper2.ai allows and keeps, as configured. Periods are in seconds; the pages round them to hours, days or
         months. Daily limits reset at 00:00 UTC.
-      required: [guide, dailyLimits, retention]
+      required: [guide, dailyLimits, retention, sources]
       properties:
         guide:
           type: object
@@ -933,7 +933,7 @@ components:
             maxPicks: { type: integer, minimum: 1, description: Most picks in one guide answer (ADR 0015). }
         dailyLimits:
           type: object
-          required: [guideQuestions, webSearches]
+          required: [guideQuestions, freeAnswers, webSearches]
           properties:
             guideQuestions:
               type: integer
@@ -941,6 +941,12 @@ components:
               description: >-
                 Fresh guide questions per client address and UTC day (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0017). An
                 answer from the cache costs none.
+            freeAnswers:
+              type: integer
+              minimum: 0
+              description: >-
+                Answers with no pick, and questions that fail, a client address gets a day without spending a question
+                (`H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, ADR 0017).
             webSearches:
               type: object
               description: Live web searches per visitor, feature and UTC day (ADR 0037).
@@ -953,8 +959,16 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0034), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
           properties:
+            webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0037)." }
+            guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0017)." }
+            webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`H2_RETENTION_WEB_NEWS`)." }
+            pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
+            listIndexSeconds: { type: integer, format: int64, minimum: 0, description: "The search index of an awesome list, after the list was last read (`H2_RETENTION_LIST_INDEX`)." }
+            pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
+            pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
+            backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_BACKUP_RETENTION_DAYS`, from the chart's `backup.retentionDays`, ADR 0027)." }
             cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
             cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
             translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`H2_SEARCH_TRANSLATION_TTL`)." }
@@ -964,6 +978,18 @@ components:
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
             adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
             runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0060). Each setting's newest change stays while it applies." }
+        sources:
+          type: object
+          description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0051).
+          required: [categories, categorySearches, quoteChars, articleExcerptChars, productPageExcerptChars, productPages, errorLogChars]
+          properties:
+            categories: { type: integer, minimum: 0, description: Categories of AI tools searched for once a week (`helper2.categories`). }
+            categorySearches: { type: integer, minimum: 0, description: Web searches those categories make in all, once a week. }
+            quoteChars: { type: integer, minimum: 1, description: Longest quote the Scout keeps from a page (fixed in code, ADR 0051). }
+            articleExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of an article found by web search (fixed in code). }
+            productPageExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of a product page found by web search (fixed in code). }
+            productPages: { type: integer, minimum: 1, description: "Most pages of a product's own website read for one product (fixed in code)." }
+            errorLogChars: { type: integer, minimum: 1, description: Longest piece of an NVIDIA error answer kept in the logs (fixed in code). }
 
     WebSearchLimits:
       type: object
