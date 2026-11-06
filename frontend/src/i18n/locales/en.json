@@ -591,7 +591,7 @@
     "refreshFailed": "Could not refresh; showing the list from {{time}}",
     "discovery": {
       "group": "Discovery · {{family}}",
-      "lede": "Discovery categories: once a week, each one runs its own web search through Tavily to find new AI tools, articles that compare them and posts about them.",
+      "lede": "Discovery categories: once a week, each one runs its own live web search to find new AI tools, articles that compare them and posts about them.",
       "lists": "List articles are added without review.",
       "products": "Products and posts about them are added only after a person checks them."
     },
@@ -1123,8 +1123,8 @@
           "Helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
           "We may change, limit or stop the service, or parts of it, at any time and without notice.",
           {
-            "text": "Tavily web searches: {{webSearches}}; stored results are free. The AI guide: {{guideQuestions}} new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to {{freeAnswers}} a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
-            "withoutNumbers": "Tavily web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (within a daily limit). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC."
+            "text": "Live web searches: {{webSearches}}; stored results are free. The AI guide: {{guideQuestions}} new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to {{freeAnswers}} a day). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC.",
+            "withoutNumbers": "Live web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (within a daily limit). After that, the guide shows the top search results without AI picks. Limits reset at 00:00 UTC."
           },
           "You can use Helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
         ]
@@ -1390,7 +1390,7 @@
     "costsTitle": "What it costs to run",
     "costs": [
       "The AI models that write the guide's answers and read the pages about each resource.",
-      "Web searches through Tavily, paid per search.",
+      "Live web searches, paid per search.",
       "The servers in Germany, the database and the backups.",
       "The time to add sources, check results and fix what breaks."
     ],

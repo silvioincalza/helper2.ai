@@ -248,8 +248,8 @@ describe('Feature: the sources page', () => {
   it("Scenario: only the metered source shows today's web credits, with or without a daily cap", async () => {
     mockApi({ 'GET /sources': () => HEALTH_SOURCES });
     const first = renderApp('/sources');
-    const tavily = await rowOf(/Tavily/);
-    expect(within(tavily).getByText(/Web credits today/)).toHaveTextContent(
+    const liveWeb = await rowOf(/Live web \(AI news\)/);
+    expect(within(liveWeb).getByText(/Web credits today/)).toHaveTextContent(
       'Web credits today: 312 of 1,000 (all visitors)',
     );
     expect(screen.getAllByText(/Web credits today/)).toHaveLength(1);
@@ -257,11 +257,11 @@ describe('Feature: the sources page', () => {
     mockApi({
       'GET /sources': () =>
         HEALTH_SOURCES.map((s) =>
-          s.id === 'tavily' ? { ...s, webCredits: { usedToday: 312, dailyCap: null } } : s,
+          s.id === 'live-web' ? { ...s, webCredits: { usedToday: 312, dailyCap: null } } : s,
         ),
     });
     renderApp('/sources');
-    const again = await rowOf(/Tavily/);
+    const again = await rowOf(/Live web \(AI news\)/);
     expect(within(again).getByText(/Web credits today/)).toHaveTextContent(
       'Web credits today: 312 (no daily cap)',
     );
@@ -270,11 +270,11 @@ describe('Feature: the sources page', () => {
   it('Scenario: when the credits cannot be read, the metered source says they are not available', async () => {
     mockApi({
       'GET /sources': () =>
-        HEALTH_SOURCES.map((s) => (s.id === 'tavily' ? { ...s, webCredits: null } : s)),
+        HEALTH_SOURCES.map((s) => (s.id === 'live-web' ? { ...s, webCredits: null } : s)),
     });
     renderApp('/sources');
-    const tavily = await rowOf(/Tavily/);
-    expect(within(tavily).getByText(/Web credits today/)).toHaveTextContent(
+    const liveWeb = await rowOf(/Live web \(AI news\)/);
+    expect(within(liveWeb).getByText(/Web credits today/)).toHaveTextContent(
       'Not available right now',
     );
   });

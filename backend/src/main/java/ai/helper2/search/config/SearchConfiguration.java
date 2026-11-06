@@ -105,7 +105,7 @@ class SearchConfiguration {
         quota.registeredTierEnabled(),
         search.staleFor(),
         search.translation().ttl(),
-        retention.tavilyResults());
+        retention.liveWebResults());
   }
 
   @Bean
@@ -152,7 +152,7 @@ class SearchConfiguration {
         && ordered.stream()
             .anyMatch(s -> s.getDescriptor().getMetered() && s.getDescriptor().getEnabled())) {
       throw new IllegalStateException(
-          "H2_QUOTA_KEY_SECRET must be set while a metered web source (Tavily) is enabled");
+          "H2_QUOTA_KEY_SECRET must be set while a metered web source (live web) is enabled");
     }
     return new SearchResources(
         ordered,
@@ -173,6 +173,8 @@ class SearchConfiguration {
         webResults,
         quota,
         new WebFreshness(
-            search.web().freshTimeBound(), search.web().freshGeneral(), retention.tavilyResults()));
+            search.web().freshTimeBound(),
+            search.web().freshGeneral(),
+            retention.liveWebResults()));
   }
 }

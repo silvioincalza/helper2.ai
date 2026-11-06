@@ -332,7 +332,7 @@ class TavilyDiscoveryCollectorTest {
         .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 2L);
     assertThat(
             meters
-                .get("helper2.tavily.credits")
+                .get("helper2.live-web.credits")
                 .tag("feature", "scout-discovery")
                 .counter()
                 .count())

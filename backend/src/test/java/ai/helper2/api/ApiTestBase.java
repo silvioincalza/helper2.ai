@@ -44,7 +44,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "helper2.sources.arxiv.enabled=false",
       "helper2.sources.tavily.enabled=false",
       "helper2.sources.hf-trending.enabled=false",
-      "helper2.sources.tavily-scout.enabled=false",
+      "helper2.sources.live-web-scout.enabled=false",
       "helper2.sources.course-scout.enabled=false",
       // Collectors too: an admin Scout run in these tests must not call the network, nor hold the
       // cluster-wide run lock (shared with every context through the one PostgreSQL) while it waits

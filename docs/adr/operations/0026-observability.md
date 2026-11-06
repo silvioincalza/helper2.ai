@@ -86,7 +86,7 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2EmbeddingIndexerStalled`: no successful indexer batch for 30 min; `Helper2EmbeddingBacklogStuck`:
      backlog above 0 for 3 h on the replica that indexes;
    - `Helper2ScoutCollectorStale`: a collector's last success older than its run interval plus a day (2 days;
-     `tavily-scout` 6, `course-scout` 8), over a 9-day lookback so a deploy does not lose the gauge; the discovery
+     `live-web-scout` 6, `course-scout` 8), over a 9-day lookback so a deploy does not lose the gauge; the discovery
      categories are left out;
    - `Helper2DiscoveryStale`: one alert per environment when any discovery category (`discovery-*`) has had no
      success for more than 8 days; the description lists them ([0051](../scout/0051-tavily-discovery.md));

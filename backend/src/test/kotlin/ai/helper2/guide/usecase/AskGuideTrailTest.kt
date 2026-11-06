@@ -70,7 +70,7 @@ class AskGuideTrailTest {
   /** A web source that reads the planner's web query. */
   private val web =
     object : SearchSource {
-      override val descriptor = descriptor("tavily").copy(usesWebQuery = true)
+      override val descriptor = descriptor("live-web").copy(usesWebQuery = true)
 
       override fun search(query: SourceQuery): List<SourceHit> = emptyList()
     }

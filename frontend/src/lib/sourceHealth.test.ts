@@ -56,37 +56,37 @@ describe('pauseOf', () => {
 });
 
 describe('creditsOf', () => {
-  const tavily = (over: Partial<SourceInfo> = {}) =>
-    source({ id: 'tavily', metered: true, ...over });
+  const liveWeb = (over: Partial<SourceInfo> = {}) =>
+    source({ id: 'live-web', metered: true, ...over });
 
   it('with a cap, without a cap, or not readable, on the enabled metered source', () => {
-    expect(creditsOf(tavily({ webCredits: { usedToday: 312, dailyCap: 1000 } }))).toEqual({
+    expect(creditsOf(liveWeb({ webCredits: { usedToday: 312, dailyCap: 1000 } }))).toEqual({
       kind: 'capped',
       used: 312,
       cap: 1000,
     });
-    expect(creditsOf(tavily({ webCredits: { usedToday: 312, dailyCap: null } }))).toEqual({
+    expect(creditsOf(liveWeb({ webCredits: { usedToday: 312, dailyCap: null } }))).toEqual({
       kind: 'uncapped',
       used: 312,
     });
-    expect(creditsOf(tavily({ webCredits: null }))).toEqual({ kind: 'unavailable' });
-    expect(creditsOf(tavily())).toEqual({ kind: 'unavailable' });
+    expect(creditsOf(liveWeb({ webCredits: null }))).toEqual({ kind: 'unavailable' });
+    expect(creditsOf(liveWeb())).toEqual({ kind: 'unavailable' });
   });
 
   it('nothing on other sources or on a disabled metered source', () => {
     expect(creditsOf(source({ webCredits: null }))).toBeNull();
-    expect(creditsOf(tavily({ enabled: false }))).toBeNull();
+    expect(creditsOf(liveWeb({ enabled: false }))).toBeNull();
   });
 
   it('the API says which source is metered, not its id', () => {
     expect(creditsOf(source({ id: 'other-web', metered: true, webCredits: null }))).toEqual({
       kind: 'unavailable',
     });
-    expect(creditsOf(tavily({ metered: false, webCredits: null }))).toBeNull();
+    expect(creditsOf(liveWeb({ metered: false, webCredits: null }))).toBeNull();
   });
 
   it('an answer without the field (a replica not yet updated) counts as not metered', () => {
-    const { metered: _, ...old } = tavily({ webCredits: null });
+    const { metered: _, ...old } = liveWeb({ webCredits: null });
     expect(creditsOf(old as SourceInfo)).toBeNull();
   });
 });

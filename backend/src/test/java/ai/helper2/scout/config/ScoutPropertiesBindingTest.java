@@ -55,12 +55,12 @@ class ScoutPropertiesBindingTest {
             "H2_SCOUT_CRON=0 30 4 * * *",
             "H2_SCOUT_MAX_ENRICHMENTS=5",
             "H2_NEBIUS_ENRICH_MAX_TOKENS=4096",
-            "H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS=7",
+            "H2_SCOUT_PAGE_READER_DAILY_CREDITS=7",
             "H2_RETENTION_SCOUT_RUNS=P30D")
         .run(c -> {
           ScoutProperties scout = c.getBean(ScoutProperties.class);
           assertThat(scout.enabled()).isTrue();
-          assertThat(scout.evidence().dailyExtractCredits()).isEqualTo(7);
+          assertThat(scout.evidence().dailyPageReadCredits()).isEqualTo(7);
           assertThat(scout.cron()).isEqualTo("0 30 4 * * *");
           assertThat(scout.maxEnrichmentsPerRun()).isEqualTo(5);
           assertThat(scout.enrichMaxTokens()).isEqualTo(4096);

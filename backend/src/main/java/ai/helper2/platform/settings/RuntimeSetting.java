@@ -58,11 +58,11 @@ public enum RuntimeSetting {
       "Query translations a UTC day. 0: queries run as typed."),
   SEARCH_WEB_GLOBAL_DAILY_CREDITS(
       "search.webGlobalDailyCredits",
-      "Tavily credits a day, all of Helper2",
+      "Live web credits a day, all of Helper2",
       "credits a day",
       2_000,
-      "H2_TAVILY_GLOBAL_DAILY_CREDITS",
-      "Live Tavily calls a UTC day for all of Helper2. 0: no live call, stored results only.");
+      "H2_LIVE_WEB_DAILY_CREDITS",
+      "Live web calls a UTC day for all of Helper2. 0: no live call, stored results only.");
 
   /** The lowest value of every runtime setting: 0 turns the use off. */
   public static final long MIN = 0;

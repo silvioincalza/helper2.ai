@@ -75,7 +75,7 @@ class RedisQuotaCounterIT {
 
   @Test
   void theGlobalLimitRefusesEvenAnUnusedOwnCounterAndCountsOnlyWhatPasses() {
-    Counter global = new Counter(key(), "tavily");
+    Counter global = new Counter(key(), "live-web");
     Counter a = new Counter(key(), "search");
     Counter b = new Counter(key(), "search");
 
@@ -118,7 +118,7 @@ class RedisQuotaCounterIT {
   @Test
   void aCounterExpiresOneDayAfterItsFirstCount() {
     Counter own = new Counter(key(), "guide");
-    Counter global = new Counter(key(), "tavily");
+    Counter global = new Counter(key(), "live-web");
 
     counter().take(own, 3, global, 100);
     counter().take(own, 3, global, 100);
@@ -136,7 +136,7 @@ class RedisQuotaCounterIT {
   @Test
   void concurrentTakesNeverPassTheLimit() throws Exception {
     Counter own = new Counter(key(), "search");
-    Counter global = new Counter(key(), "tavily");
+    Counter global = new Counter(key(), "live-web");
     AtomicInteger taken = new AtomicInteger();
     CountDownLatch start = new CountDownLatch(1);
     try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {

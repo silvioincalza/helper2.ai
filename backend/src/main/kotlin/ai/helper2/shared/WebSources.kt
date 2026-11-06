@@ -15,7 +15,7 @@ object WebSources {
 
   /** The web sources with a fixed id. */
   @JvmField
-  val FIXED: List<String> = listOf("tavily", "tavily-scout", "course-scout", "linkedin-scout")
+  val FIXED: List<String> = listOf("live-web", "live-web-scout", "course-scout", "linkedin-scout")
 
   /** True when [sourceId] is a web source. */
   @JvmStatic

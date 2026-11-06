@@ -31,7 +31,7 @@ import tools.jackson.databind.JsonNode;
  */
 public class TavilyCollector implements Collector {
 
-  static final String ID = "tavily-scout";
+  static final String ID = "live-web-scout";
 
   /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
   static final String POLICY = "collector-" + ID;
@@ -63,13 +63,13 @@ public class TavilyCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "Tavily discovery queries (AI news)",
+            "Live web scout (AI news)",
             "Web scout",
             true,
             SourceMode.INDEXED,
-            URI.create("https://tavily.com"),
-            URI.create("https://tavily.com/terms"),
-            "Web results via the Tavily Search API; each links to the original publisher.",
+            URI.create("https://helper2.ai/sources"),
+            URI.create("https://helper2.ai/terms"),
+            "Web results found by a live web search; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
             settings.timeout(),
             settings.cacheTtl(),

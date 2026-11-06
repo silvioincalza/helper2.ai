@@ -132,7 +132,7 @@ class TavilySourceTest {
                  "content":"Speakers talk about LLM agents."}\
                 """);
 
-    var hit = TavilySource.toHit(result, "tavily", SourceFixtures.CLOCK.instant(), 0);
+    var hit = TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0);
 
     assertThat(hit.getType()).isEqualTo(ResourceType.EVENT);
   }

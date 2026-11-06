@@ -36,7 +36,7 @@ class CategoryFilterTest {
   private val merger = ResultMerger(QueryAnalyzer(), matcher)
   private val contexts =
     mapOf(
-      "tavily" to SourceContext(descriptor("tavily"), ServedFrom.LIVE),
+      "live-web" to SourceContext(descriptor("live-web"), ServedFrom.LIVE),
       "helper2-index" to
         SourceContext(
           descriptor("helper2-index", ai.helper2.shared.SourceMode.INDEXED),
@@ -46,14 +46,14 @@ class CategoryFilterTest {
 
   private val liveCoding =
     hit(
-      "tavily",
+      "live-web",
       "https://acme.dev",
       title = "Acme, the AI coding assistant",
       type = ResourceType.PRODUCT,
     )
   private val liveSelfHosted =
     hit(
-      "tavily",
+      "live-web",
       "https://box.example",
       description = "A self-hosted chat",
       type = ResourceType.PRODUCT,
@@ -61,7 +61,7 @@ class CategoryFilterTest {
   private val indexedBoth =
     hit("helper2-index", "https://both.example", title = "Both")
       .copy(categories = setOf("coding", "self-hosted"))
-  private val plain = hit("tavily", "https://plain.example", title = "Plain")
+  private val plain = hit("live-web", "https://plain.example", title = "Plain")
 
   private val merged =
     merger.merge(listOf(liveCoding, liveSelfHosted, indexedBoth, plain), contexts)
@@ -84,7 +84,7 @@ class CategoryFilterTest {
   @Test
   fun `an AI-written description does not give a category`() {
     val aiWritten =
-      hit("tavily", "https://ai.example", title = "Ai", description = "a coding assistant")
+      hit("live-web", "https://ai.example", title = "Ai", description = "a coding assistant")
         .copy(descriptionOrigin = ValueOrigin.AI_SUMMARY)
     assertEquals(emptySet(), merger.merge(listOf(aiWritten), contexts).single().categories)
   }

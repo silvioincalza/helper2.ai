@@ -15,6 +15,8 @@ relationships) need a quote that states them, or they stay "Not stated". Who a r
 are judgements: a model may estimate them, and the page says so. The description may be AI-written, labelled.
 
 ## Decision
+**Names (6 Nov 2026).** The product calls the page step "page reader" (`page-reader`, `H2_SOURCE_PAGE_READER_*`, `H2_SCOUT_PAGE_READER_DAILY_CREDITS`). Tavily Extract is the adapter behind it (`sources/evidence/TavilyExtract.java`). Tavily's written OK for Extract arrived on 6 Nov 2026; the page step runs on prod with the default of 20 credits a day.
+
 1. **When the ladder climbs.** After the first run, inside the same `EnrichResource` attempt, when a target fact of the
    type is still missing (`FieldTargets.forType`, pure code) or the run is `PARTIAL` or `REJECTED` (as in 0043):
    - `PRODUCT`, `AGENT`: pricing, platforms, use case;
@@ -43,7 +45,7 @@ are judgements: a model may estimate them, and the page says so. The description
 4. **Reading** (port `PageReader`, adapter `sources/evidence/TavilyExtract`): Tavily Extract `POST /extract`,
    `extract_depth` basic, `format` markdown (the links are needed), no images, no favicon. One call for the home page,
    one for the linked pages. Policy `collector-gap-web` (circuit breaker and retry, like a collector). Off without
-   `H2_TAVILY_API_KEY` or with `H2_SOURCE_TAVILY_EXTRACT_ENABLED=false`.
+   `H2_LIVE_WEB_API_KEY` or with `H2_SOURCE_PAGE_READER_ENABLED=false`.
 5. **Cleaning** (`UntrustedPageText`, the README cleaner made general): the first 64 KB; hidden characters, HTML
    comments, scripts, styles, hidden elements (`hidden`, `display:none`, `visibility:hidden`, `aria-hidden`) with their
    whole subtree, tags and link targets removed. Hidden elements are found in one linear pass that counts nested tags
@@ -76,9 +78,9 @@ are judgements: a model may estimate them, and the page says so. The description
    them `data-ai-generated`; the API says `origin: AI_ESTIMATED` (OpenAPI enum `ValueOrigin`).
 9. **Budgets and cost.**
    - Model calls 2 and 3 take the gap cap (`H2_SCOUT_GAP_DAILY_CALLS`, inside the enrichment cap).
-   - Extract credits: `helper2.scout.evidence.daily-extract-credits` (`H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS`, 20).
+   - Extract credits: `helper2.scout.evidence.daily-page-read-credits` (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`, 20).
      Each credit also counts on the global Tavily credit counter of live search ([0037](../search/0037-tavily-store-and-daily-quota.md),
-     `H2_TAVILY_GLOBAL_DAILY_CREDITS`), and on `helper2.tavily.credits{feature=scout-evidence,tier=none}`. When the
+     `H2_LIVE_WEB_DAILY_CREDITS`), and on `helper2.live-web.credits{feature=scout-evidence,tier=none}`. When the
      global counter cannot answer, no page is read. Gauge `helper2.scout.evidence.credits.remaining`.
    - **The one exception to "no page text stored".** The cleaned text of a product's pages (what `UntrustedPageText`
      left: hidden text gone, emails and phone numbers masked, cut to the window) is kept in Redis only, under a SHA-256
@@ -133,7 +135,7 @@ are judgements: a model may estimate them, and the page says so. The description
   so.
 - **Known risk.** Tavily's written OK covers search results for public display, storage and reuse
   ([sources.md](../../sources.md)). Its OK for Extract is still pending. The page step can be turned off with
-  `H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS=0` or `H2_SOURCE_TAVILY_EXTRACT_ENABLED=false` without a release.
+  `H2_SCOUT_PAGE_READER_DAILY_CREDITS=0` or `H2_SOURCE_PAGE_READER_ENABLED=false` without a release.
 - A page is read once in 30 days. A price that changes later is not seen until then (roadmap).
 - A retry after the 24-hour text expired pays Tavily again (one or two credits).
 - The cached text is small (about 10 products a day, at most 4 pages of 6,000 characters each, under 300 KB) next
@@ -174,7 +176,7 @@ are judgements: a model may estimate them, and the page says so. The description
 | 9 | Guardrails | Covered: URL scope, cleaning, stating words, claim checks, caps on relationships, source facts win. |
 | 10 | Observability | Covered: `helper2.scout.fields`, `helper2.scout.gap`, credits counter and gauge; no page text in logs. |
 | 11 | Evaluation | Deferred: adversarial unit tests now; a fill-rate eval set is on the roadmap (needs real runs first). |
-| 12 | Deployment | Covered: config only (`H2_SCOUT_EVIDENCE_*`, `H2_SOURCE_TAVILY_EXTRACT_*`), on by default, off without a key. |
+| 12 | Deployment | Covered: config only (`H2_SCOUT_EVIDENCE_*`, `H2_SOURCE_PAGE_READER_*`), on by default, off without a key. |
 | 13 | Security & Identity | Covered: Tavily key from OpenBao as before; no new secret. |
 | 14 | Human-in-the-Loop | Covered: self-declared relationships wait in the review queue; validation errors open review items. |
 | 15 | Cost & Reliability | Covered: own credit cap, global Tavily cap, gap cap, 30-day ledger, circuit breaker. |
@@ -208,13 +210,13 @@ are judgements: a model may estimate them, and the page says so. The description
 - `backend/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `UntrustedPageText`, `GapKind.OFFICIAL_PAGE`.
 - `backend/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
 - `backend/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java`, `PublicSuffixDomains.java`; beans in `sources/config/SourcesConfiguration.java`.
-- `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `TavilyCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
+- `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
 - `backend/src/main/resources/prompts/scout/enrich-v4.txt`, `db/migration/V11__evidence_ladder_origins.sql`.
 - `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (origins), `JdbcEnrichmentCandidates.java` (accepted products first).
 - `api/openapi.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`.
 - Tests: `FieldTargetsTest`, `EvidenceValidatorLadderTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
-  `TavilyExtractTest`, `PublicSuffixDomainsTest`, `TavilyCreditBudgetTest`, `RecheckEnrichmentsTest`, `RedisPageTextCacheIT`,
+  `TavilyExtractTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`, `RedisPageTextCacheIT`,
   `ScoutPropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `SecurityIT`, `EnrichResourceTest`, `ResourcePage.test.tsx`, `Admin.test.tsx`.
 
 ## Diagrams

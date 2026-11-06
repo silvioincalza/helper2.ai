@@ -19,7 +19,7 @@ spend, and the right number changes with the day.
 2. **The `H2_` value is the default, not a ceiling.** The minimum is 0, which turns the use off. The maximum is in
    code; going above it needs a pull request. A value outside 0 to the maximum is refused by the server (400) and
    blocked in the form. A default above the maximum stops startup with the variable's name. Every runtime setting is
-   a finite number: an empty `H2_TAVILY_GLOBAL_DAILY_CREDITS` (no cap) applies as the code maximum, 2,000 credits a
+   a finite number: an empty `H2_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 2,000 credits a
    day. So "Reset to default" never removes the global Tavily cap. The other choice, refusing a reset when the
    default is empty, still leaves no cap on a fresh install and makes "reset" mean two things; the code maximum is the
    safer of the two.

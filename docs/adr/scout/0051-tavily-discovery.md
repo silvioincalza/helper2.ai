@@ -144,7 +144,7 @@ are candidates in the admin review list.
     the one the live search counts on and the Sources page shows ([0037](../search/0037-tavily-store-and-daily-quota.md)),
     and to the Scout's own counter (`ScoutTavilyCredits`; Redis, same key, field `scout-credits`). A search costs
     Tavily's `usage.credits`, or 2 (advanced) or 1 (basic) when the answer does not say. The metric is
-    `helper2.tavily.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits`
+    `helper2.live-web.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits`
     (`H2_SCOUT_DAILY_CREDITS`, 40) the categories due that day are SKIPPED ("Daily Tavily credit cap of the
     Scout reached") and try again the next day: the skip is `CollectedBatch.deferred`, so their pass stays open. When
     the counter cannot be read, the cap counts as reached. LinkedIn ([0061](0061-linkedin-via-tavily.md)) counts on
@@ -152,7 +152,7 @@ are candidates in the admin review list.
 11. **Failed searches.** A search that fails alone is logged and skipped; the others, already paid for, are kept. When
     half or more of a category's searches fail (an outage, a circuit that opened mid-pass), its pass fails, its
     checkpoint stays and its pass stays open, so the next daily run searches the same pages again.
-12. **Web sources are one predicate.** `WebSources.isWeb(id)` (`tavily`, `tavily-scout`, `course-scout`,
+12. **Web sources are one predicate.** `WebSources.isWeb(id)` (`live-web`, `live-web-scout`, `course-scout`,
     `linkedin-scout` and every `discovery-*`) decides which titles are cleaned as page titles
     (`WebPageTitle.forSource`, `ResourceStore`) and which NEWS and ARTICLE records the web retention deletes
     (`CatalogRetention`).
@@ -191,11 +191,11 @@ are candidates in the admin review list.
 - A person reviews the candidates of 4 or 5 categories a day instead of 30 at once. The total is a guess (50-200 a
   week), to measure in the first weeks. If it is too many, raise a category's `min-score`, turn on its
   `require-keyword`, or turn it off (`enabled: false`).
-- Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). With `tavily-scout`
+- Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). With `live-web-scout`
   (~42), `course-scout` (~43) and `linkedin-scout` (~86, [0061](0061-linkedin-via-tavily.md)) the Scout uses ~506
   credits a month, out of the plan's 14,000 shared with live search. The daily cap (40) is about four times a normal
   day (5 categories × ~1.2 searches × 2 credits); on LinkedIn's day its 20 basic searches bring the day to about 32.
-- The global daily credit cap of the live search (`H2_TAVILY_GLOBAL_DAILY_CREDITS`) now counts the Scout's discovery
+- The global daily credit cap of the live search (`H2_LIVE_WEB_DAILY_CREDITS`) now counts the Scout's discovery
   credits too: a day of discovery leaves less for visitors. The Scout itself checks only its own cap.
 - 34 run records a week instead of one, and 34 rows on the Sources page: grouped by family so they stay readable.
 - The registrar reads its configuration outside `@ConfigurationProperties` (the 0007 exception above). Its entries

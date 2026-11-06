@@ -129,9 +129,9 @@ class WebPageTitleTest {
     CanonicalUrl repo = CanonicalUrl.of("https://github.com/crystaldba/postgres-mcp");
     String raw = "GitHub - crystaldba/postgres-mcp: Postgres MCP Pro · GitHub";
 
-    assertThat(WebPageTitle.forSource("tavily", raw, repo)).isEqualTo("crystaldba/postgres-mcp");
+    assertThat(WebPageTitle.forSource("live-web", raw, repo)).isEqualTo("crystaldba/postgres-mcp");
     assertThat(WebPageTitle.forSource("github", raw, repo)).isEqualTo(raw);
-    assertThat(WebPageTitle.forSource("tavily", "crystaldba/postgres-mcp", repo))
+    assertThat(WebPageTitle.forSource("live-web", "crystaldba/postgres-mcp", repo))
         .isEqualTo("crystaldba/postgres-mcp");
   }
 

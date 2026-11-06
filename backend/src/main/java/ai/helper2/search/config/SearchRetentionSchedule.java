@@ -24,7 +24,7 @@ class SearchRetentionSchedule {
   @Bean("searchPurgeExpiredData")
   PurgeExpiredData searchPurgeExpiredData(
       WebResultRetention retention, Clock clock, SearchRetentionProperties periods) {
-    return new PurgeExpiredData(retention, clock, periods.tavilyResults());
+    return new PurgeExpiredData(retention, clock, periods.liveWebResults());
   }
 
   @Bean

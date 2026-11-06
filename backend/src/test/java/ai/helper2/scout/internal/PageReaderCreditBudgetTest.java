@@ -17,7 +17,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Extract credits take the page step's own cap and the global Tavily credits (ADR 0056). */
-class TavilyCreditBudgetTest {
+class PageReaderCreditBudgetTest {
 
   final Clock clock = Clock.fixed(Instant.parse("2026-11-05T10:00:00Z"), ZoneOffset.UTC);
   final SimpleMeterRegistry meters = new SimpleMeterRegistry();
@@ -59,7 +59,7 @@ class TavilyCreditBudgetTest {
   }
 
   private double spent() {
-    var c = meters.find("helper2.tavily.credits").tag("feature", "scout-evidence").counter();
+    var c = meters.find("helper2.live-web.credits").tag("feature", "scout-evidence").counter();
     return c == null ? 0 : c.count();
   }
 
@@ -67,7 +67,7 @@ class TavilyCreditBudgetTest {
   void aCreditCountsOnTheGlobalTavilyCounterAndTheMeter() {
     MapCounter counter = new MapCounter();
     WebSearchQuota global = quota(counter, 100);
-    var budget = new TavilyCreditBudget(new DailyBudget(5, clock, "x"), global, meters);
+    var budget = new PageReaderCreditBudget(new DailyBudget(5, clock, "x"), global, meters);
 
     assertThat(budget.tryTake()).isTrue();
     assertThat(global.creditsToday().getUsedToday()).isEqualTo(1);
@@ -77,7 +77,8 @@ class TavilyCreditBudgetTest {
   @Test
   void theGlobalCapStopsTheScoutToo() {
     var budget =
-        new TavilyCreditBudget(new DailyBudget(5, clock, "x"), quota(new MapCounter(), 0), meters);
+        new PageReaderCreditBudget(
+            new DailyBudget(5, clock, "x"), quota(new MapCounter(), 0), meters);
 
     assertThat(budget.tryTake()).isFalse();
     assertThat(spent()).isZero();
@@ -87,7 +88,7 @@ class TavilyCreditBudgetTest {
   void theOwnDailyCapComesFirst() {
     MapCounter counter = new MapCounter();
     WebSearchQuota global = quota(counter, 100);
-    var budget = new TavilyCreditBudget(new DailyBudget(1, clock, "x"), global, meters);
+    var budget = new PageReaderCreditBudget(new DailyBudget(1, clock, "x"), global, meters);
 
     assertThat(budget.tryTake()).isTrue();
     assertThat(budget.tryTake()).isFalse();

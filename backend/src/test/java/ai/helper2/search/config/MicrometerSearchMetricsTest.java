@@ -85,7 +85,7 @@ class MicrometerSearchMetricsTest {
 
     metrics.sourceCompleted(
         new SourceStatus(
-            descriptor("tavily"),
+            descriptor("live-web"),
             SourceOutcome.SKIPPED,
             ServedFrom.NONE,
             0,

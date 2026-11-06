@@ -67,9 +67,9 @@ Before the run, for that day only, in staging's `app.env` or chart values (back 
 | `H2_GUIDE_CACHE_TTL` (`app.guideCacheTtl`) | `PT1S` | `PT1S` | every answer is a real model call |
 | `H2_GUIDE_DAILY_MODEL_CALLS` (`app.dailyLimits.guideModelCalls`) | 1000 | 150 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
 | `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (`app.dailyLimits.guideQuestions`) | at least 200 | 1000 | 150 questions from one address |
-| `H2_TAVILY_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | n01 probably hit the guest limit of 3 on 29 Oct |
-| `H2_TAVILY_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
-| `H2_TAVILY_GLOBAL_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 200 | web searches of the guide and of the pool searches |
+| `H2_LIVE_WEB_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | n01 probably hit the guest limit of 3 on 29 Oct |
+| `H2_LIVE_WEB_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
+| `H2_LIVE_WEB_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 200 | web searches of the guide and of the pool searches |
 
 The backend needs its GitHub token (`H2_GITHUB_TOKEN`): the script keeps to 25 live GitHub searches a minute, which only
 an authenticated token allows. Start after the nightly run (01:41 UTC) has finished.

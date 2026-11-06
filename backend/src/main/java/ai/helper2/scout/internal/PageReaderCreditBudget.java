@@ -12,9 +12,9 @@ import org.jspecify.annotations.Nullable;
  * step's own daily cap, then one of the global Tavily credits every live search counts on (ADR
  * 0037), so the Scout cannot spend what visitors need. When the global counter cannot answer, no
  * page is read: credits are not spent unguarded. Counted as {@code
- * helper2.tavily.credits{feature=scout-evidence,tier=none}}, like a live search.
+ * helper2.live-web.credits{feature=scout-evidence,tier=none}}, like a live search.
  */
-final class TavilyCreditBudget implements ExtractBudget {
+final class PageReaderCreditBudget implements ExtractBudget {
 
   static final String FEATURE = "scout-evidence";
 
@@ -22,7 +22,7 @@ final class TavilyCreditBudget implements ExtractBudget {
   private final @Nullable WebSearchQuota global;
   private final MeterRegistry meters;
 
-  TavilyCreditBudget(DailyBudget own, @Nullable WebSearchQuota global, MeterRegistry meters) {
+  PageReaderCreditBudget(DailyBudget own, @Nullable WebSearchQuota global, MeterRegistry meters) {
     this.own = own;
     this.global = global;
     this.meters = meters;
@@ -37,7 +37,7 @@ final class TavilyCreditBudget implements ExtractBudget {
       // The unit of the page step's own cap stays taken: that errs towards the cap.
       return false;
     }
-    meters.counter("helper2.tavily.credits", "feature", FEATURE, "tier", "none").increment();
+    meters.counter("helper2.live-web.credits", "feature", FEATURE, "tier", "none").increment();
     return true;
   }
 }

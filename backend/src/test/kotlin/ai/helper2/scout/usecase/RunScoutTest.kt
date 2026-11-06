@@ -960,11 +960,11 @@ class RunScoutTest {
   @Test
   fun `a collector that is not due is recorded as skipped and keeps its checkpoint`() {
     val store = history
-    store.cursors["tavily"] = ScoutCursor("2026-10-20T00:00:00Z", null, null)
-    val c = FakeCollector(descriptor("tavily")) { CollectedBatch.notDue() }
+    store.cursors["live-web"] = ScoutCursor("2026-10-20T00:00:00Z", null, null)
+    val c = FakeCollector(descriptor("live-web")) { CollectedBatch.notDue() }
     val run = RunScout(listOf(c), store, catalog, null, clock, NO_LOCK).runNow()!!.single()
     assertEquals(RunStatus.SKIPPED, run.status)
-    assertEquals("2026-10-20T00:00:00Z", store.cursors["tavily"]!!.checkpoint)
+    assertEquals("2026-10-20T00:00:00Z", store.cursors["live-web"]!!.checkpoint)
   }
 
   @Test

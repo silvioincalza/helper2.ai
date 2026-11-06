@@ -19,7 +19,7 @@ state what happened.
    caller's resilience policy ([0033](0033-resilience-policies.md)), where they are counted and bounded.
 2. **Timeouts and a total deadline.** The source's timeout is used once as the connect timeout and once as the
    response timeout. Waiting for a free pooled connection is limited to 250 ms (`POOL_WAIT`). Search source timeouts are
-   2.5 s (GitHub, Hugging Face, npm), 3 s (arXiv) and 6 s (Tavily, `H2_SOURCE_TAVILY_TIMEOUT`); Scout
+   2.5 s (GitHub, Hugging Face, npm), 3 s (arXiv) and 6 s (Tavily, `H2_SOURCE_LIVE_WEB_TIMEOUT`); Scout
    collectors use 10 s or 15 s.
    The response timeout applies to each read, so a body that keeps trickling in never trips it. So every call also
    has a total deadline (`BoundedResponse`, `CappedStream`). Its clock starts once, before the request goes out: the
@@ -29,7 +29,7 @@ state what happened.
    `Unavailable("deadline exceeded")`, transient like a timeout. The deadline is:
    - for search sources and the setup guide's fetches, the timeout (`restClientBuilder(timeout, …)`), so a search
      waits as before;
-   - for Scout collectors, `H2_SOURCE_<ID>_DEADLINE` (`hf-trending` `HF_TRENDING`, `tavily-scout` `TAVILY_SCOUT`,
+   - for Scout collectors, `H2_SOURCE_<ID>_DEADLINE` (`hf-trending` `HF_TRENDING`, `live-web-scout` `TAVILY_SCOUT`,
      `course-scout` `COURSE_SCOUT`, `github-awesome` `GITHUB_AWESOME`, `hf-provider-orgs` `HF_ORGS`, `ai-deadlines`
      `AI_DEADLINES`, `mcp-registry` `MCP`), by default twice the timeout (`SourceSettings.deadline`);
    - for one call, its own with `ObservedHttp.deadline(d)`: an awesome-list README may take 60 s (5 MB);
@@ -41,7 +41,7 @@ state what happened.
 4. **Identity and tokens.** Every call sends `User-Agent: Helper2.ai-metasearch/<version> (+https://helper2.ai/sources)`.
    The version is the build version from the boot jar's manifest (`1.0.0`, [0029](../operations/0029-release-versioning.md));
    `dev` when the app runs from classes.
-   A token, when set (`H2_GITHUB_TOKEN`, `H2_SETUP_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_TAVILY_API_KEY`), goes in
+   A token, when set (`H2_GITHUB_TOKEN`, `H2_SETUP_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY`), goes in
    `Authorization: Bearer`.
 5. **Bounded bodies.** Source clients (`restClientBuilder`) read at most 2 MB of a response body
    (`MAX_RESPONSE_BYTES`); a call may set its own cap with `ObservedHttp.maxResponseBytes`, as the awesome-list
@@ -79,7 +79,7 @@ state what happened.
 13. **Live check, weekly.** Every source and collector adapter has one `@Tag("live")` test against the real API
    (`*LiveTest` next to its adapter). Only `./gradlew liveTest` runs them, never `test`; a test whose key is not set
    is skipped. `.github/workflows/live.yml` runs `liveTest` every Monday on a GitHub-hosted runner with the repository
-   secrets `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_TAVILY_API_KEY` and `H2_NEBIUS_API_KEY`. It is not part of CI or CD.
+   secrets `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY` and `H2_NEBIUS_API_KEY`. It is not part of CI or CD.
 
 ## Consequences
 - A failing source costs at most its timeout, and the search still answers with the other sources.

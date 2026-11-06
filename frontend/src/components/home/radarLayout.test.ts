@@ -82,9 +82,9 @@ const CATEGORIES: [string, string, NonNullable<SourceInfo['family']>][] = [
   ['local-ai', 'Local AI', 'run-it-yourself'],
 ];
 const discovery: SourceInfo[] = CATEGORIES.map(([id, shortName, family]) => ({
-  ...STAGING_SOURCES.find((s) => s.id === 'tavily-scout')!,
+  ...STAGING_SOURCES.find((s) => s.id === 'live-web-scout')!,
   id: `discovery-${id}`,
-  name: `Tavily discovery: ${shortName}`,
+  name: `Discovery: ${shortName}`,
   shortName,
   family,
   newThisWeek: 30,
@@ -152,7 +152,7 @@ describe.each([901, 1024, 1280, 1920])(
 
 it('the radar groups: live sources, collectors and discovery categories', () => {
   expect(radarGroup(live())).toBe('live');
-  expect(radarGroup(external.find((s) => s.id === 'tavily-scout')!)).toBe('index');
+  expect(radarGroup(external.find((s) => s.id === 'live-web-scout')!)).toBe('index');
   expect(radarGroup(discovery[0]!)).toBe('discovery');
 });
 

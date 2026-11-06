@@ -35,7 +35,7 @@ class GapRoundTest {
     // The bare prefix is no category, and other web sources link anything.
     assertNull(GapTargets.select(listOf(record("discovery-", "x", "https://github.com/acme/tool"))))
     assertNull(
-      GapTargets.select(listOf(record("tavily-scout", "x", "https://github.com/acme/tool")))
+      GapTargets.select(listOf(record("live-web-scout", "x", "https://github.com/acme/tool")))
     )
   }
 
@@ -112,7 +112,7 @@ class GapRoundTest {
   @Test
   fun `sources that link third-party pages give no target`() {
     assertNull(
-      GapTargets.select(listOf(record("tavily-scout", "x", "https://github.com/acme/tool")))
+      GapTargets.select(listOf(record("live-web-scout", "x", "https://github.com/acme/tool")))
     )
     assertNull(
       GapTargets.select(

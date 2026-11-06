@@ -749,7 +749,7 @@ class AskGuideTest {
   }
 
   private class QueryRecorder : SearchSource {
-    override val descriptor = descriptor("tavily")
+    override val descriptor = descriptor("live-web")
     val seen = mutableListOf<SourceQuery>()
 
     override fun search(query: SourceQuery): List<SourceHit> {

@@ -30,14 +30,14 @@ class ResiliencePoliciesConfigIT {
           "hf-spaces",
           "npm",
           "arxiv",
-          "tavily",
+          "live-web",
           "helper2-index",
           "helper2-semantic",
           "curated");
   static final List<String> COLLECTORS =
       List.of(
           "hf-trending",
-          "tavily-scout",
+          "live-web-scout",
           "course-scout",
           "linkedin-scout",
           "github-awesome",
@@ -150,7 +150,7 @@ class ResiliencePoliciesConfigIT {
     assertThat(
             meters
                 .find("resilience4j.bulkhead.available.concurrent.calls")
-                .tag("name", "source-tavily")
+                .tag("name", "source-live-web")
                 .gauge())
         .isNotNull();
   }

@@ -71,7 +71,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     await openPage('/terms', 'Terms of use');
     const service = region('The service');
     expect(service).toHaveTextContent(
-      'Tavily web searches: 4 a day for search and 6 for the guide without an account, and 10 a day for search and 12 for the guide when signed in; stored results are free.',
+      'Live web searches: 4 a day for search and 6 for the guide without an account, and 10 a day for search and 12 for the guide when signed in; stored results are free.',
     );
     expect(service).toHaveTextContent('The AI guide: 50 new questions a day per IP address');
     expect(service).toHaveTextContent('Limits reset at 00:00 UTC.');
@@ -81,7 +81,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     mockApi();
     await openPage('/terms', 'Terms of use');
     expect(region('The service')).toHaveTextContent(
-      'Tavily web searches: 3 a day for search and 3 for the guide; stored results are free. The AI guide: 30 new questions a day',
+      'Live web searches: 3 a day for search and 3 for the guide; stored results are free. The AI guide: 30 new questions a day',
     );
   });
 
@@ -170,7 +170,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     await openPage('/terms', 'Terms of use');
     const service = region('The service');
     expect(service).toHaveTextContent(
-      'Tavily web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address;',
+      'Live web searches: a daily limit each for search and the guide; stored results are free. The AI guide: a daily limit of new questions per IP address;',
     );
     expect(service).not.toHaveTextContent(/\b(3|30) /);
   });

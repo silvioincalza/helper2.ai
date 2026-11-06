@@ -14,7 +14,7 @@
 direction: down
 
 call: "collect(checkpoint,\nresumeCursor, maxItems)" {class: app}
-enabled: "Enabled? (Tavily needs\nH2_TAVILY_API_KEY, awesome\nlists need H2_GITHUB_TOKEN)" {class: decision}
+enabled: "Enabled? (Tavily needs\nH2_LIVE_WEB_API_KEY, awesome\nlists need H2_GITHUB_TOKEN)" {class: decision}
 skipped: "SKIPPED by RunScout" {class: end}
 due: "RunInterval: no checkpoint,\ninterval passed, or resume?" {class: decision}
 notDue: "CollectedBatch.notDue()" {class: end}

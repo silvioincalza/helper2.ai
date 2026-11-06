@@ -68,27 +68,27 @@ class SearchSettingsConfiguration {
                 "search.translationPrompt", "Translation prompt version", translationPrompt),
             Setting.cap(
                 "search.webGlobalDailyCredits",
-                "Tavily credits a day, all of Helper2",
+                "Live web credits a day, all of Helper2",
                 quota.globalDailyCredits(),
                 "credits a day",
-                "H2_TAVILY_GLOBAL_DAILY_CREDITS"),
+                "H2_LIVE_WEB_DAILY_CREDITS"),
             Setting.count(
                 "search.webGuestSearch",
                 "Web searches a day per guest, search",
                 quota.guest().search(),
                 "searches a day",
-                "H2_TAVILY_GUEST_SEARCH"),
+                "H2_LIVE_WEB_GUEST_SEARCH"),
             Setting.count(
                 "search.webGuestGuide",
                 "Web searches a day per guest, guide",
                 quota.guest().guide(),
                 "searches a day",
-                "H2_TAVILY_GUEST_GUIDE"),
+                "H2_LIVE_WEB_GUEST_GUIDE"),
             Setting.flag(
                 "search.registeredTierOn",
                 "Signed-in limits on",
                 quota.registeredTierEnabled(),
-                "H2_TAVILY_REGISTERED_TIER_ENABLED"),
+                "H2_LIVE_WEB_REGISTERED_TIER_ENABLED"),
             Setting.fixedCount(
                 "search.webRegisteredSearch",
                 "Web searches a day per signed-in user, search",

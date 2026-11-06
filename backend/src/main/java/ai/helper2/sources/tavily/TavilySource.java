@@ -32,7 +32,7 @@ import tools.jackson.databind.JsonNode;
 
 /**
  * Tavily web search (topic "news") for AI news, articles and events. Docs:
- * https://docs.tavily.com/documentation/api-reference/endpoint/search — needs H2_TAVILY_API_KEY;
+ * https://docs.tavily.com/documentation/api-reference/endpoint/search — needs H2_LIVE_WEB_API_KEY;
  * without a key the source is disabled and reported as SKIPPED. One credit per call: the source is
  * metered (ADR 0037). published_date is Tavily's own estimate and stays unknown when Tavily has
  * none. Event dates are never inferred. Titles are page titles, cleaned by {@link WebPageTitle};
@@ -54,14 +54,14 @@ public class TavilySource implements SearchSource {
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
         new SourceDescriptor(
-            "tavily",
-            "Tavily web search (AI news)",
+            "live-web",
+            "Live web (AI news)",
             "Web",
             true,
             SourceMode.LIVE,
-            URI.create("https://tavily.com"),
-            URI.create("https://tavily.com/terms"),
-            "Web results via the Tavily Search API; each links to the original publisher.",
+            URI.create("https://helper2.ai/sources"),
+            URI.create("https://helper2.ai/terms"),
+            "Web results found by a live web search; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
             // Metered: each call costs a credit, so searches read stored result sets first, with
             // their own freshness, and call live only inside the daily quota (ADR 0037); the
@@ -99,10 +99,10 @@ public class TavilySource implements SearchSource {
         HttpClients.getJson(
             () -> http.post().uri("/search").body(body).retrieve().body(String.class), clock);
     return HttpClients.hits(
-        "tavily",
+        "live-web",
         root.path("results"),
         clock.instant(),
-        (item, now, rank) -> toHit(item, "tavily", now, rank));
+        (item, now, rank) -> toHit(item, "live-web", now, rank));
   }
 
   /**

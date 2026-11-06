@@ -131,13 +131,13 @@ public class LinkedInCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "LinkedIn via Tavily (sent to review)",
+            "LinkedIn (sent to review)",
             "LinkedIn",
             true,
             SourceMode.INDEXED,
             URI.create("https://www.linkedin.com"),
-            URI.create("https://tavily.com/terms"),
-            "Public LinkedIn pages found via the Tavily Search API; each links to LinkedIn. An admin"
+            URI.create("https://helper2.ai/terms"),
+            "Public LinkedIn pages found by a live web search; each links to LinkedIn. An admin"
                 + " reviews each before it is catalogued.",
             EnumSet.of(
                 ResourceType.ARTICLE, ResourceType.NEWS, ResourceType.PRODUCT, ResourceType.EVENT),
@@ -161,7 +161,7 @@ public class LinkedInCollector implements Collector {
     }
     if (credits.capReached()) {
       return CollectedBatch.skipped(
-          "Daily Tavily credit cap of the Scout reached ("
+          "Daily live web credit cap of the Scout reached ("
               + credits.dailyCap()
               + " credits); next try tomorrow");
     }

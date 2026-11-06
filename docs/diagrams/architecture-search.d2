@@ -86,7 +86,7 @@ platform.http -> hosts: HTTPS
 search.cache -> redis
 search.core -> platform.quota: "daily web searches"
 platform.quota -> redis
-search.web -> pg: "tavily_query_result"
+search.web -> pg: "live_web_query_result"
 catalog.index -> pg: "full-text"
 catalog.semantic -> pg: "vector search"
 catalog.semantic -> nvapi: "query vector" {class: ai-call}

@@ -161,7 +161,7 @@ class ResourceStoreIT {
     String raw = "GitHub - acme/paged-" + run + ": An AI agent framework for everyone. · GitHub";
     UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
     // A row stored before titles were cleaned on write.
-    store.upsert(merge(titled("tavily", repo, raw)), DataOrigin.OBSERVED, Set.of("tavily"));
+    store.upsert(merge(titled("live-web", repo, raw)), DataOrigin.OBSERVED, Set.of("live-web"));
 
     assertThat(store.findResource(id).orElseThrow().title()).isEqualTo("acme/paged-" + run);
     assertThat(store.recordsOf(id))
@@ -224,13 +224,13 @@ class ResourceStoreIT {
     store.upsert(
         merge(
             titled("github", repo, name),
-            titled("tavily", repo, "GitHub - acme/mixed-" + run + " · GitHub")),
+            titled("live-web", repo, "GitHub - acme/mixed-" + run + " · GitHub")),
         DataOrigin.OBSERVED,
-        Set.of("github", "tavily"));
+        Set.of("github", "live-web"));
 
     assertThat(store.findResource(id).orElseThrow().title()).isEqualTo(name);
     assertThat(store.recordsOf(id))
-        .filteredOn(r -> r.sourceId().equals("tavily"))
+        .filteredOn(r -> r.sourceId().equals("live-web"))
         .singleElement()
         .satisfies(r -> assertThat(r.hit().getTitle()).isEqualTo("acme/mixed-" + run));
   }

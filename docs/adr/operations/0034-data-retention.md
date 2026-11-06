@@ -17,14 +17,14 @@ The periods are a product decision the owner may change; changing one must not n
    |---|---|---|---|
    | Postgres `resource` (`OBSERVED`) | resources only searches saw | 180 days after `last_seen_at` | catalog purge |
    | Postgres `resource` (`INDEXED`, `CURATED`, `DEMO`) | Scout and seed resources | while a source lists them; curated and demo rows as long as their seed | Scout upserts, seeds ([0004](../foundation/0004-persistence-and-provenance.md)) |
-   | Postgres `source_record` from a web source (`WebSources`: `tavily`, `tavily-scout`, `course-scout`, every `discovery-*`, [0051](../scout/0051-tavily-discovery.md), and `linkedin-scout`, [0061](../scout/0061-linkedin-via-tavily.md)), type `NEWS` or `ARTICLE`, with the search facts in its `extra` | web news and list pages | 180 days after `retrieved_at`; a resource left without records goes too | catalog purge |
+   | Postgres `source_record` from a web source (`WebSources`: `live-web`, `live-web-scout`, `course-scout`, every `discovery-*`, [0051](../scout/0051-tavily-discovery.md), and `linkedin-scout`, [0061](../scout/0061-linkedin-via-tavily.md)), type `NEWS` or `ARTICLE`, with the search facts in its `extra` | web news and list pages | 180 days after `retrieved_at`; a resource left without records goes too | catalog purge |
    | Postgres `resource` of type `EVENT` (`OBSERVED`, `INDEXED`) | events | 1 year after `event_ends_at` (or `event_starts_at` without an end) | catalog purge |
    | Postgres `source_record`, `resource_label`, `resource_embedding`, `evidence` and its join tables, `field_assertion`, `relationship`, `summary_claim` | facts of a resource | as long as their resource | `ON DELETE CASCADE` |
    | Postgres `enrichment_run` | model runs | 90 days after `started_at`; the latest run of each resource, and any run a current assertion, relationship, summary claim or review item cites, stay | catalog purge |
    | Postgres `review_item` | review decisions | 180 days after `resolved_at` (decided or superseded); open items stay | catalog purge |
    | Postgres `issue_report` | user reports | 12 months after their review was resolved, with that review item; open ones stay | catalog purge |
    | Postgres `scout_run` | Scout run history | 90 days after `started_at`; a `RUNNING` record stays | Scout purge |
-   | Postgres `tavily_query_result` | Tavily result sets, keyed by an HMAC of the query ([0037](../search/0037-tavily-store-and-daily-quota.md)) | 7 days after `fetched_at` | search purge |
+   | Postgres `live_web_query_result` | Tavily result sets, keyed by an HMAC of the query ([0037](../search/0037-tavily-store-and-daily-quota.md)) | 7 days after `fetched_at` | search purge |
    | Postgres `ai_cache`, cache `translation` | English translations of non-English searches, keyed by a hash of the query | 24 h (`H2_SEARCH_TRANSLATION_TTL`) | read ignores it after `expires_at`; shared cache purge |
    | Postgres `ai_cache`, cache `query-vector` | query vectors (embeddings) of searches, keyed by a hash of the query | 7 days (`H2_SEARCH_QUERY_VECTOR_TTL`) | read ignores it after `expires_at`; shared cache purge |
    | Postgres `ai_cache`, cache `tool-guide` | setup guide answers (checked steps, document links), no user text | 7 days (`H2_SETUP_GUIDE_CACHE_TTL`), 10 minutes for an unreadable model answer (`H2_SETUP_UNREADABLE_TTL`) | read ignores it after `expires_at`; shared cache purge |
@@ -78,7 +78,7 @@ The periods are a product decision the owner may change; changing one must not n
    is `ON DELETE NO ACTION`: it never goes on its own, and a resource delete that cascades to both the run and the
    rows citing it passes, because the check runs at the end of the statement. Each purge has an index on the column
    it filters by (`resource_observed_seen_idx`, `review_item_resolved_idx`, `app_user_last_signed_in_idx`,
-   `admin_audit_at_idx`, `tavily_query_result_fetched_idx`, `ai_cache_expires_idx`, and the run and report indexes on the citing tables),
+   `admin_audit_at_idx`, `live_web_query_result_fetched_idx`, `ai_cache_expires_idx`, and the run and report indexes on the citing tables),
    and every foreign key a delete follows leads an index, so a cascade never scans a child table.
 
 ## Consequences

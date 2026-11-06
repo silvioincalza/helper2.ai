@@ -36,7 +36,7 @@ relevant result: a 0 for each pooled result is the label.
 
 ## Search: record, judge, compare
 
-1. **Record once.** With the catalog database to measure (`H2_DATABASE_URL`), `H2_GITHUB_TOKEN`, `H2_TAVILY_API_KEY` and
+1. **Record once.** With the catalog database to measure (`H2_DATABASE_URL`), `H2_GITHUB_TOKEN`, `H2_LIVE_WEB_API_KEY` and
    `H2_NVIDIA_API_KEY` in the repo-root `.env`: `cd backend && ./gradlew evalRecord`. One live search per query,
    131 queries, about 11 minutes with the default 4 s pause (`H2_EVAL_PAUSE`). Queries that already have a snapshot are
    skipped; delete `backend/eval-data/search-snapshots/` to record a new set.
@@ -84,7 +84,7 @@ grades from the saved answers (`backend/eval-data/guide-runs.json`), with no new
 
 ## Classifier (`classifier-labels.tsv`)
 
-Columns: `source` (github, npm, tavily), `title`, `description`, `labels` (topics or keywords, comma-separated),
+Columns: `source` (github, npm, live-web), `title`, `description`, `labels` (topics or keywords, comma-separated),
 `ai_related` (1, 0, or empty while not judged). Take about 200 items as the sources return them, before the AI gate:
 about 70 from GitHub search, 70 from npm search and 60 from Tavily, for the queries of `search-queries.json`, and
 label each by hand (about 1.5 hours). Then add two lines with the floor the rules must keep, for example

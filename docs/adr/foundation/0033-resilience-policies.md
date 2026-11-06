@@ -32,7 +32,7 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
 
    | Policy | Circuit breaker | Bulkhead (semaphore) | Retry |
    |---|---|---|---|
-   | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, tavily, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 6 (below the database pool of 10) | none: the search deadline is the budget |
+   | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, live-web, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 6 (below the database pool of 10) | none: the search deadline is the budget |
    | `collector-<id>` (the seven Scout collectors) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
    | `redis` (search cache, budget counters, rate limits, outbound throttle, session reads) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
    | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, guide answers, [0004](0004-persistence-and-provenance.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the catalog sources' 6, below the database pool of 10 | none: a miss costs one model call |

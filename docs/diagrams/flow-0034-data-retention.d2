@@ -24,7 +24,7 @@ catalog: "catalog.usecase.PurgeExpiredData (in this order)" {
   rev: "review_item resolved > 180 d,\nnot tied to a report" {class: data}
   rep: "issue_report whose review items\nall resolved > 365 d (with them)" {class: data}
   runs: "enrichment_run > 90 d, not the latest\nof its resource, cited by nothing" {class: data}
-  news: "tavily / tavily-scout NEWS, ARTICLE\nrecords > 180 d; then resources\nleft without a record" {class: data}
+  news: "tavily / live-web-scout NEWS, ARTICLE\nrecords > 180 d; then resources\nleft without a record" {class: data}
   events: "EVENT resources ended\n(or started) > 365 d ago" {class: data}
   observed: "OBSERVED resources unseen > 180 d,\nnot linked from a stronger origin" {class: data}
   ref: "Every resource rule: no issue report\nand no review item points at it?" {class: decision}
@@ -50,7 +50,7 @@ identity: "identity purge" {
 search: "search purge" {
   class: group
   direction: down
-  sets: "search.usecase.PurgeExpiredData:\ntavily_query_result fetched > 7 d" {class: data}
+  sets: "search.usecase.PurgeExpiredData:\nlive_web_query_result fetched > 7 d" {class: data}
 }
 
 shared: "shared cache purge (platform)" {
