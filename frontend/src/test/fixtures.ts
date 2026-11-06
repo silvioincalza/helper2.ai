@@ -324,6 +324,7 @@ export const POLICY: Policy = {
     queryVectorsSeconds: 7 * 86_400,
     storedWebResultsSeconds: 7 * 86_400,
     inactiveAccountsSeconds: 730 * 86_400,
+    adminRecordsSeconds: 730 * 86_400,
     handledReportsSeconds: 365 * 86_400,
   },
 };

@@ -10,6 +10,6 @@ class IdentityPolicyConfiguration {
 
   @Bean
   AccountPolicy accountPolicy(IdentityRetentionProperties retention) {
-    return new AccountPolicy(retention.inactiveAccounts());
+    return new AccountPolicy(retention.inactiveAccounts(), retention.adminAudit());
   }
 }

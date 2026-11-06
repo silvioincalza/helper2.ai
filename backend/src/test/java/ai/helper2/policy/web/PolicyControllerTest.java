@@ -23,7 +23,7 @@ class PolicyControllerTest {
                 Duration.ofHours(6),
                 Duration.ofDays(3)),
             new GuidePolicy(40, 12, Duration.ofHours(2)),
-            new AccountPolicy(Duration.ofDays(365)),
+            new AccountPolicy(Duration.ofDays(365), Duration.ofDays(730)),
             new CatalogPolicy(Duration.ofDays(30), Duration.ofDays(1)))
         .getPolicy()
         .getBody();
@@ -45,6 +45,7 @@ class PolicyControllerTest {
     assertThat(p.getRetention().getStoredWebResultsSeconds()).isEqualTo(259_200);
     assertThat(p.getRetention().getInactiveAccountsSeconds()).isEqualTo(31_536_000);
     assertThat(p.getRetention().getHandledReportsSeconds()).isEqualTo(2_592_000);
+    assertThat(p.getRetention().getAdminRecordsSeconds()).isEqualTo(63_072_000);
   }
 
   @Test
