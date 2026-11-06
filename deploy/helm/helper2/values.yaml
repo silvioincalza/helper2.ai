@@ -94,6 +94,8 @@ app:
     ga4MeasurementId: ""
     # EthicalAds publisher ID of the one ad slot (H2_ADS_ETHICALADS_PUBLISHER).
     ethicalAdsPublisher: ""
+    # Google AdSense publisher, ca-pub-... (H2_ADS_ADSENSE_CLIENT; ADR 0059): the site check tag and /ads.txt.
+    adsenseClient: ""
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
   environment: ""
   # Ask search engines not to index this deployment: X-Robots-Tag: noindex on every response (H2_NOINDEX).

@@ -82,6 +82,9 @@ spec:
             {{- with .ethicalAdsPublisher }}
             - { name: H2_ADS_ETHICALADS_PUBLISHER, value: {{ . | quote }} }
             {{- end }}
+            {{- with .adsenseClient }}
+            - { name: H2_ADS_ADSENSE_CLIENT, value: {{ . | quote }} }
+            {{- end }}
             {{- end }}
             {{- with .Values.app.publicBaseUrl }}
             # The host every canonical link and sitemap address names (ADR 0050).

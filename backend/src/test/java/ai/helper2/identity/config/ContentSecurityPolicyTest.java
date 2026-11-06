@@ -10,7 +10,11 @@ class ContentSecurityPolicyTest {
 
   private static Monetisation with(String ga4, String ads) {
     return new Monetisation(
-        Optional.empty(), Optional.empty(), Optional.ofNullable(ga4), Optional.ofNullable(ads));
+        Optional.empty(),
+        Optional.empty(),
+        Optional.ofNullable(ga4),
+        Optional.ofNullable(ads),
+        Optional.empty());
   }
 
   @Test
