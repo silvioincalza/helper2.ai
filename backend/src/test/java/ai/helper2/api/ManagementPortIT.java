@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Import;
       "helper2.sources.npm.enabled=false",
       "helper2.sources.mcp-registry.enabled=false",
       "helper2.sources.arxiv.enabled=false",
-      "helper2.sources.tavily.enabled=false",
+      "helper2.sources.live-web.enabled=false",
       "management.server.port=0",
       "helper2.identity.metrics-public=true",
       "logging.structured.format.console=",

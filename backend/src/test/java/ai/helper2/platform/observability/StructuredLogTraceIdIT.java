@@ -54,7 +54,7 @@ import tools.jackson.databind.json.JsonMapper;
       "helper2.sources.npm.enabled=false",
       "helper2.sources.mcp-registry.enabled=false",
       "helper2.sources.arxiv.enabled=false",
-      "helper2.sources.tavily.enabled=false",
+      "helper2.sources.live-web.enabled=false",
       "management.tracing.sampling.probability=1.0",
       "management.tracing.export.enabled=false",
     })
