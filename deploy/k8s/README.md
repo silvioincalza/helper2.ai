@@ -139,7 +139,8 @@ table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. Wh
 
 **Never `helm uninstall`:** it deletes the Postgres and Redis StatefulSets and the Secret. Their PVCs
 (`data-postgres-0`, and `data-redis-0` with Redis's append-only file) are not owned by the release and stay; the backup PVC has `helm.sh/resource-policy: keep`.
-To go back, use `helm -n helper2 rollback helper2`.
+To go back, use `make ENV=<env> rollback`: it picks the last revision Helm marked deployed (a bare
+`helm rollback` takes the one just before the current, which after an interrupted rollback is the failed upgrade).
 
 ## Backups
 

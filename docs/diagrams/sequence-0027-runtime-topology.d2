@@ -1,7 +1,7 @@
 # Sequence: the runtime paths of the hosted chart: a visitor's request through Cloudflare and ingress-nginx, the
-# probes and the metrics scrape on the management port, an old pod leaving in a rolling update, and the nightly
-# backup on prod.
-# Source of truth: deploy/helm/helper2/templates/app.yaml, redis.yaml, backup.yaml, networkpolicy.yaml,
+# probes and the metrics scrape on the management port, the Postgres and Redis probes and the restart they
+# trigger, an old pod leaving in a rolling update, and the nightly backup on prod with its verification gate.
+# Source of truth: deploy/helm/helper2/templates/app.yaml, postgres.yaml, redis.yaml, backup.yaml, networkpolicy.yaml,
 #   values-prod.yaml; the edge (tunnel, DNS, Ingresses) is in incalza-me-infra.
 # Render: cd docs/diagrams && d2 fmt sequence-0027-runtime-topology.d2 && d2 sequence-0027-runtime-topology.d2 sequence-0027-runtime-topology.svg
 
@@ -35,6 +35,13 @@ management: Management port, never through an Ingress {
   obs -> app: "GET /actuator/prometheus on 8081\n(Alloy, namespace observability)"
 }
 
+stores: Postgres and Redis probes (postgres.yaml, redis.yaml) {
+  obs -> pg: "startup: pg_isready every 5 s, up to 10 min\n(exit 1 while the log replays after a crash)"
+  obs -> pg: "then readiness 5 s; liveness every 20 s:\n6 failures (2 min) restart the container"
+  obs -> redis: "readiness: PING answers PONG (not while the AOF loads);\nliveness after 30 s: PONG or LOADING, every 20 s,\n6 failures restart the container"
+  obs -> pg: "kubelet restarts a hung server;\nthe volume and its data stay" {class: hot}
+}
+
 shutdown: An old pod leaves (rolling update, app.shutdown) {
   obs -> app: "kubelet: preStop sleep 10 s;\nthe pod still serves"
   obs -> nginx: "the pod leaves the Service endpoints;\nthe controller stops sending to it"
@@ -44,7 +51,8 @@ shutdown: An old pod leaves (rolling update, app.shutdown) {
 }
 
 nightly: 02:30 Europe/Zurich, prod {
-  backup -> pg: "pg_dump --no-owner | gzip"
-  pg -> backup: "dump"
-  backup -> backup: "write to the pg-backup volume (NFS),\ndelete dumps older than 7 days"
+  backup -> pg: "pg_dump --no-owner | gzip (pipefail:\na failed dump fails the Job)"
+  pg -> backup: "dump, into helper2-<date>.sql.gz.tmp\non the pg-backup volume (NFS)"
+  backup -> backup: "gzip -t reads it back whole, and it is\nbigger than an empty dump: else the Job fails\nand the old dumps stay" {class: hot}
+  backup -> backup: "mv .tmp into place, then delete\ndumps older than 7 days"
 }

@@ -14,7 +14,7 @@
 #   make ENV=staging env-secret  write ENV's app.env into the Secret helper2-app-env (never through Helm)
 #   make ENV=staging deploy      env-secret, then helm upgrade --install (chart ../helm/helper2) with TAG, wait,
 #                                roll back on failure
-#   make ENV=staging rollback    previous helm revision
+#   make ENV=staging rollback    last deployed helm revision (not a failed or interrupted one)
 # Promote to prod = the same TAG: make ENV=prod TAG=<tag already on staging> deploy
 
 SHELL    := /bin/bash
@@ -261,15 +261,30 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 check-env:
 	@test -f $(ENV)/app.env || { echo "$(ENV)/app.env missing: copy app.env.example and fill it"; exit 1; }
 
+# The revision a rollback goes to: the newest one before the current that Helm marked deployed (still
+# deployed while the current one is pending or failed, superseded once a later upgrade succeeded).
+# `helm rollback` without a revision takes the one just before the current, which after an interrupted
+# rollback is the failed upgrade itself (10 deployed, 11 failed, 12 pending-rollback: 11).
+LAST_GOOD_REVISION = helm -n $(NS) history helper2 -o json | jq -r \
+	'(max_by(.revision).revision) as $$now \
+	 | [.[] | select(.revision != $$now and (.status == "deployed" or .status == "superseded")) | .revision] \
+	 | max // empty'
+
 # A release left in pending-install/upgrade/rollback (an interrupted helm run) refuses every new
-# upgrade with "another operation is in progress". Recover it by rolling back to the previous
-# deployed revision before starting a new upgrade. No release yet (first install) is fine.
+# upgrade with "another operation is in progress". Recover it by rolling back to the last deployed
+# revision before starting a new upgrade. No release yet (first install) is fine.
 release-ready:
 	@status=$$(helm -n $(NS) status helper2 2>/dev/null | awk '/^STATUS:/ {print $$2}'); \
 	case "$$status" in \
 	  pending-*) echo "release helper2 in $(NS) is $$status: an earlier helm run was interrupted."; \
-	             echo "Trying automatic recovery: rollback to the last deployed revision."; \
-	             if ! helm -n $(NS) rollback helper2 --wait --timeout 12m >/dev/null; then \
+	             rev=$$($(LAST_GOOD_REVISION)); \
+	             if [ -z "$$rev" ]; then \
+	               echo "No earlier deployed revision to roll back to."; \
+	               echo "Check the pods and: helm -n $(NS) history helper2"; \
+	               exit 1; \
+	             fi; \
+	             echo "Trying automatic recovery: rollback to revision $$rev, the last deployed one."; \
+	             if ! helm -n $(NS) rollback helper2 $$rev --wait --timeout 12m >/dev/null; then \
 	               echo "Automatic rollback failed."; \
 	               echo "Check the pods, then run: make ENV=$(ENV) rollback"; \
 	               exit 1; \
@@ -317,8 +332,12 @@ diff: check-env ## what deploy would change in ENV (not the env Secret: env-secr
 	kubectl diff -n $(NS) -f "$$out"; rc=$$?; \
 	if [ $$rc -gt 1 ]; then echo "kubectl diff failed (exit $$rc)"; exit $$rc; fi
 
-rollback: ## back to the previous helm revision of ENV
-	helm -n $(NS) rollback helper2 --wait --timeout 12m
+rollback: ## back to the last deployed helm revision of ENV (not a failed or interrupted one)
+	@set -euo pipefail; \
+	rev=$$($(LAST_GOOD_REVISION)); \
+	test -n "$$rev" || { echo "no earlier deployed revision of helper2 in $(NS) to roll back to"; helm -n $(NS) history helper2 --max 5; exit 1; }; \
+	echo "rolling back helper2 in $(NS) to revision $$rev"; \
+	helm -n $(NS) rollback helper2 $$rev --wait --timeout 12m
 	helm -n $(NS) history helper2 --max 5
 
 status: ## ENV's pods (READY = the readiness probe) and the public site
