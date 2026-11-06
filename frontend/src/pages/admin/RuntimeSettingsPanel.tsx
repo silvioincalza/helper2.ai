@@ -1,6 +1,8 @@
+import './adminText';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api, ApiError } from '@/api/client';
+import { adminApi } from '@/api/admin';
+import { ApiError } from '@/api/client';
 import type { RuntimeSettingState } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -91,8 +93,11 @@ export function RuntimeSettingsPanel({
     try {
       const saved =
         value === null
-          ? await api.resetRuntimeSetting(setting.key, { version: setting.version, reason: why })
-          : await api.changeRuntimeSetting(setting.key, {
+          ? await adminApi.resetRuntimeSetting(setting.key, {
+              version: setting.version,
+              reason: why,
+            })
+          : await adminApi.changeRuntimeSetting(setting.key, {
               value,
               version: setting.version,
               reason: why,

@@ -1,6 +1,7 @@
+import './adminText';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { adminApi } from '@/api/admin';
 import type { ConfigSetting, RuntimeSettingState } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
@@ -47,8 +48,8 @@ function SettingValue({
  */
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const config = useApi('admin/config', (s) => api.getEffectiveConfig(s), { cache: false });
-  const runtime = useApi('admin/runtime-settings', (s) => api.listRuntimeSettings(s), {
+  const config = useApi('admin/config', (s) => adminApi.getEffectiveConfig(s), { cache: false });
+  const runtime = useApi('admin/runtime-settings', (s) => adminApi.listRuntimeSettings(s), {
     cache: false,
   });
   const { retry, focusRef: heading } = useRetry(config.reload, config.loading);

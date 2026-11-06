@@ -1,6 +1,7 @@
+import './adminText';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { adminApi } from '@/api/admin';
 import type { AdminOverview as Overview, AudiencePath, ExampleCheckOutcome } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { StatusPill } from '@/components/ui/StatusPill';
@@ -23,7 +24,7 @@ const HIDING: readonly ExampleCheckOutcome[] = ['WEAK', 'FAIL', 'PENDING'];
  */
 export default function AdminOverview() {
   const { t } = useTranslation();
-  const overview = useApi('admin/overview', (s) => api.getAdminOverview(s), { cache: false });
+  const overview = useApi('admin/overview', (s) => adminApi.getAdminOverview(s), { cache: false });
   const { retry, focusRef: heading } = useRetry(overview.reload, overview.loading);
   const data = overview.data ?? overview.previous;
 

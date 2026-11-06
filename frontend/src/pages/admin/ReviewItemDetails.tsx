@@ -1,3 +1,4 @@
+import './adminText';
 import { useTranslation } from 'react-i18next';
 import type { ReviewItem } from '@/api/types';
 import { CATEGORY_NOTICES, CategoryNotice } from '@/components/sources/DiscoveryCategories';
