@@ -194,6 +194,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     mockApi({ 'GET /search': () => makeSearch({ results: [], total: 0 }) });
     const a = renderApp('/search?q=zzz');
     await screen.findByText('No results from the sources searched');
+    await settle();
     expect(await axeViolations(a.container)).toEqual([]);
     a.unmount();
     clearApiCache(); // a fresh page load: the empty answer above is not remembered
@@ -203,6 +204,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     });
     const b = renderApp('/search?q=zzz');
     await screen.findByRole('alert');
+    await settle();
     expect(await axeViolations(b.container)).toEqual([]);
   });
 
