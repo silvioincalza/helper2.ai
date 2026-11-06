@@ -1201,7 +1201,7 @@
           "The ad on search pages, when ads are on: your browser loads it from EthicalAds. EthicalAds receives your IP address, which it uses only to find your country and does not store, your browser type, the address of the page without your search words, and up to three topic words that its script picks from the results on the page, to choose a matching ad. It sets no cookies and builds no profile. There is no ad on pages with a guide answer.",
           "Gifts, if you give through GitHub Sponsors or Stripe: the payment happens on their site, under their privacy policy. We receive what their dashboards show us: your name or user name, the amount, the date and, for Stripe, your e-mail address. We never see your card details.",
           "The ad on resource pages, when ads are on: your browser loads it from Google AdSense. Google receives your IP address, your browser and device data, and the address of the resource page, which never contains your search words. Where the EU, EEA, UK or Swiss rules apply, Google uses cookies and personalised ads only if you accept them in Google's consent question, and otherwise shows limited ads without personalisation. Elsewhere Google can personalise ads under its own policies. There is never a Google ad on a search page or next to a guide answer.",
-          "Google's consent question, when Google ads are on: Google's consent tool (Privacy & messaging) asks visitors where the EU, EEA, UK or Swiss rules apply, for Google AdSense and Google Analytics together, and keeps your answer in its cookies."
+          "Google's consent question, when Google ads are on: Google's consent tool (Privacy & messaging) asks visitors where the EU, EEA, UK or Swiss rules apply, for Google AdSense and Google Analytics together, and keeps your answer in its cookies. It sees the address of the page, so it does not load on a page with your search words or guide question."
         ]
       },
       {
@@ -1315,7 +1315,9 @@
       },
       {
         "title": "Changes",
-        "paragraphs": ["If this notice changes, we update this page and the date at the top."]
+        "paragraphs": [
+          "If this notice changes, we update this page and the date at the top."
+        ]
       }
     ]
   },

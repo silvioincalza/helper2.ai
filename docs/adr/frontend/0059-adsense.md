@@ -30,12 +30,16 @@ AdSense brings three constraints:
 4. **The slot on resource pages only.** One box, marked "Sponsored", of fixed height, between the resource's sections
    and never next to the AI summary. A resource address has no search words. No AdSense on search pages (EthicalAds
    is there, one network per page), guide answers, Home, text pages, sign-in, error states or the back office. Each
-   resource mounts its own box and asks AdSense for one ad.
+   resource mounts its own box and asks AdSense for one ad. The AdSense script stays loaded in the app, so leaving a
+   resource page pauses its requests (`pauseAdRequests`), and **Auto ads and overlay formats (anchor, vignette, side
+   rail) stay off in the AdSense account**: Google would otherwise place ads, and read the address, on search pages.
 5. **Google's consent tool for AdSense and Google Analytics.** While AdSense is on, the page loads Google's
-   Privacy & messaging tag (`fundingchoicesmessages.google.com/i/pub-...?ers=1`) on every public page, and our own bar
-   (0057) is off. Google asks where the EU, EEA, UK or Swiss rules apply. "Privacy choices" in the footer asks again
+   Privacy & messaging tag (`fundingchoicesmessages.google.com/i/pub-...?ers=1`) on public pages, and our own bar
+   (0057) is off. The tag sees the page address, so it never loads on an address with `q` or `ask`: a visit that
+   starts there gets the tag, and analytics, on its first other page. Google asks where the EU, EEA, UK or Swiss rules apply. "Privacy choices" in the footer asks again
    (`googlefc.showRevocationMessage()`).
-   - The page reads the answer from the TCF API (`__tcfapi`), for every change.
+   - The page reads the answer from the TCF API (`__tcfapi`), for every change, and again when the tab is seen again
+     (another tab may have changed it).
    - `gdprApplies` false: Google Analytics loads without a question.
    - Where the rules apply: it loads only with consent to purposes 1 (store on a device) and 8 (measure content), and
      for Google as a vendor (755). A "no", or a later withdrawal, turns it off (`ga-disable-<ID>`) and deletes its
@@ -43,7 +47,9 @@ AdSense brings three constraints:
    - The tool blocked (an ad blocker): we cannot tell where the visitor is, so GA does not load.
    - Whether an ad is personalised is AdSense's call from the same answer.
 6. **A nonce CSP on the whole public site while AdSense is on.** One nonce per request (`CspNonce`): the server writes
-   it on every script and module preload of the page it fills, and the header names it:
+   it on the scripts and module preloads of the shell and on the JSON-LD it writes, never into text from sources, and
+   the header names it. Pages are sent with `no-store`, so no cache gives one visitor's nonce to another, and
+   `/index.html` (the shell without nonces) redirects to `/`. The policy:
    `script-src 'nonce-…' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`, `object-src 'none'`,
    `base-uri 'none'`, frames, images and requests to any https origin, `frame-ancestors 'none'`. Scripts our bundle
    adds (Google's tags, GA4, EthicalAds) run through `'strict-dynamic'`. The admin port keeps the strict policy of
@@ -59,6 +65,9 @@ AdSense brings three constraints:
 - Outside Europe, Google Analytics runs without asking, and AdSense may personalise ads under Google's policies.
 - If the consent tool is blocked, Europe and the rest are the same: no analytics.
 - Which TCF purposes GA4 needs is our reading (1 and 8), not a Google statement: on the lawyer list.
+- `no-store` turns off the browser's back/forward cache for the shell while AdSense is on.
+- The site check tag is also on the admin host's pages: it is public (`ads.txt` shows the same ID), so it is not
+  filtered there.
 
 ## Alternatives considered
 - **A nonce CSP on resource pages only** — does not work in a single-page app: the CSP of the first page stays.

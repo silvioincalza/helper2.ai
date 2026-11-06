@@ -40,10 +40,27 @@ public class PageTemplate {
     return parts.isPresent();
   }
 
-  /** The shell with [title], [head] (tags before the head's end) and [body] (inside #root). */
-  public String fill(String title, String head, String body) {
+  /**
+   * The shell with [title], [head] (tags before the head's end) and [body] (inside #root). Every
+   * script and module preload of the shell itself carries [nonce] (ADR 0059); the filled parts do
+   * not, so a script that slipped through the escaping would still be refused by the CSP.
+   */
+  public String fill(String title, String head, String body, String nonce) {
     Parts p = parts.orElseThrow(() -> new IllegalStateException("no built app"));
-    return p.beforeTitle() + title + p.afterTitle() + head + p.beforeRoot() + body + p.afterRoot();
+    return withNonce(p.beforeTitle(), nonce)
+        + title
+        + withNonce(p.afterTitle(), nonce)
+        + head
+        + withNonce(p.beforeRoot(), nonce)
+        + body
+        + withNonce(p.afterRoot(), nonce);
+  }
+
+  public static String withNonce(String shell, String nonce) {
+    String attribute = " nonce=\"" + nonce + "\"";
+    return shell
+        .replace("<script", "<script" + attribute)
+        .replace("<link rel=\"modulepreload\"", "<link" + attribute + " rel=\"modulepreload\"");
   }
 
   static Parts cut(String html) {

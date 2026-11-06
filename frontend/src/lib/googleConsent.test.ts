@@ -72,4 +72,19 @@ describe("Google's consent tool (ADR 0059)", () => {
     window.googlefc.callbackQueue?.[0]?.CONSENT_DATA_READY?.();
     expect(show).toHaveBeenCalledOnce();
   });
+
+  it('reads the answer again when the tab is seen again (another tab may have changed it)', () => {
+    let tc: object = YES;
+    window.__tcfapi = (command, _v, cb) => {
+      if (command === 'addEventListener' || command === 'getTCData')
+        cb({ listenerId: 1, ...tc }, true);
+    };
+    const seen: string[] = [];
+    const stop = watchConsent((d) => seen.push(d));
+    tc = { ...YES, vendor: { consents: {} } };
+    document.dispatchEvent(new Event('visibilitychange'));
+    stop();
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(seen).toEqual(['granted', 'denied']);
+  });
 });

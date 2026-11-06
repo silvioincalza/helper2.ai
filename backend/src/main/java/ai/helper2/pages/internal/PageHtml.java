@@ -47,21 +47,20 @@ public class PageHtml {
   }
 
   /**
-   * The filled shell. Every script and module preload carries [nonce], the request's CSP nonce (ADR
-   * 0059): under the AdSense policy a script without it does not run.
+   * The filled shell. The shell's scripts and the JSON-LD scripts written here carry [nonce], the
+   * request's CSP nonce (ADR 0059): under the AdSense policy a script without it does not run. Text
+   * from sources never gets it.
    */
   public String render(PageHead head, String nonce) {
-    String page =
-        template.fill(
-            "<title" + MARK + ">" + esc(head.getTitle()) + "</title>",
-            head(head),
-            body(head.getBody()));
-    String attribute = " nonce=\"" + esc(nonce) + "\"";
-    return page.replace("<script", "<script" + attribute)
-        .replace("<link rel=\"modulepreload\"", "<link" + attribute + " rel=\"modulepreload\"");
+    String safeNonce = esc(nonce);
+    return template.fill(
+        "<title" + MARK + ">" + esc(head.getTitle()) + "</title>",
+        head(head, safeNonce),
+        body(head.getBody()),
+        safeNonce);
   }
 
-  private String head(PageHead head) {
+  private String head(PageHead head, String nonce) {
     StringBuilder h = new StringBuilder();
     meta(h, "name", "robots", head.getRobots().getContent());
     String description = head.getDescription();
@@ -96,7 +95,9 @@ public class PageHtml {
     for (Map<String, Object> data : head.getJsonLd()) {
       h.append("<script")
           .append(MARK)
-          .append(" type=\"application/ld+json\">")
+          .append(" nonce=\"")
+          .append(nonce)
+          .append("\" type=\"application/ld+json\">")
           .append(scriptSafe(json.writeValueAsString(data)))
           .append("</script>");
     }

@@ -95,8 +95,18 @@ export function watchConsent(onDecision: (d: ConsentDecision) => void, win: Wind
     });
   };
   attach();
+  // Another tab may have changed the answer: read it again when this tab is seen again.
+  const recheck = () => {
+    if (win.document.visibilityState !== 'visible') return;
+    win.__tcfapi?.('getTCData', 2, (tc, success) => {
+      const decision = success && !stopped ? decide(tc) : undefined;
+      if (decision) onDecision(decision);
+    });
+  };
+  win.document.addEventListener('visibilitychange', recheck);
   return () => {
     stopped = true;
+    win.document.removeEventListener('visibilitychange', recheck);
     if (listenerId !== undefined)
       win.__tcfapi?.('removeEventListener', 2, () => undefined, listenerId);
   };

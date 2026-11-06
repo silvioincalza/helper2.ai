@@ -1,5 +1,6 @@
 package ai.helper2.pages.web;
 
+import ai.helper2.monetisation.Monetisation;
 import ai.helper2.pages.internal.PageHtml;
 import ai.helper2.pages.usecase.RenderPage;
 import ai.helper2.platform.ClientRoutes;
@@ -26,18 +27,29 @@ import org.springframework.web.servlet.function.ServerResponse;
 class PageRoutes {
 
   @Bean
-  RouterFunction<ServerResponse> pages(RenderPage render, PageHtml html) {
+  RouterFunction<ServerResponse> pages(
+      RenderPage render, PageHtml html, Monetisation monetisation) {
+    CacheControl cache = cacheControl(monetisation);
     return RouterFunctions.route()
         .route(
             request ->
                 (request.method() == HttpMethod.GET || request.method() == HttpMethod.HEAD)
                     && html.available()
                     && ClientRoutes.owns(request.path()),
-            request -> answer(render, html, request))
+            request -> answer(render, html, cache, request))
         .build();
   }
 
-  private static ServerResponse answer(RenderPage render, PageHtml html, ServerRequest request) {
+  /**
+   * no-cache as before; no-store while AdSense is on (ADR 0059): the page carries this request's
+   * CSP nonce, so no cache may give it to anyone else.
+   */
+  static CacheControl cacheControl(Monetisation monetisation) {
+    return monetisation.adsenseOn() ? CacheControl.noStore() : CacheControl.noCache();
+  }
+
+  private static ServerResponse answer(
+      RenderPage render, PageHtml html, CacheControl cache, ServerRequest request) {
     boolean hasQuery = request.param("q").filter(q -> !q.isBlank()).isPresent();
     RenderPage.Page page = render.render(request.path(), hasQuery);
     if (page.location() != null) {
@@ -45,7 +57,7 @@ class PageRoutes {
     }
     return ServerResponse.status(page.status())
         .contentType(new MediaType(MediaType.TEXT_HTML, java.nio.charset.StandardCharsets.UTF_8))
-        .cacheControl(CacheControl.noCache())
+        .cacheControl(cache)
         .body(
             html.render(
                 java.util.Objects.requireNonNull(page.head()),

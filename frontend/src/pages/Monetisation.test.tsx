@@ -30,7 +30,8 @@ const me = (monetisation: Partial<Record<keyof typeof ON, string | null>>) => ()
 const footer = () => screen.getByRole('contentinfo');
 const banner = () => screen.queryByRole('region', { name: /Google Analytics/ });
 
-afterEach(() => {
+/** Each test starts with no third-party state: a late effect of the previous test can add a script after it ends. */
+function clearThirdParties() {
   document.getElementById('h2-ga4')?.remove();
   document.getElementById('h2-ethicalads')?.remove();
   delete window.gtag;
@@ -42,7 +43,9 @@ afterEach(() => {
   delete window.adsbygoogle;
   for (const id of ['h2-googlefc', 'h2-adsense']) document.getElementById(id)?.remove();
   document.querySelector('iframe[name="googlefcPresent"]')?.remove();
-});
+}
+beforeEach(clearThirdParties);
+afterEach(clearThirdParties);
 
 /** Google's consent tool as the page sees it: the TCF API, answering with [tc] now and on [answer]. */
 function fakeTcf(tc: Record<string, unknown>) {
@@ -308,6 +311,26 @@ describe('monetisation (ADR 0057)', () => {
       );
       expect(window.adsbygoogle).toHaveLength(1);
       expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
+    });
+
+    it("Google's tag does not load on an address with search words", async () => {
+      mockApi({ 'GET /me': me(ADSENSE) });
+      renderApp('/search?q=agents');
+      await settle();
+      expect(document.getElementById('h2-googlefc')).toBeNull();
+      expect(document.getElementById('h2-ga4')).toBeNull();
+    });
+
+    it('leaving a resource page pauses AdSense requests', async () => {
+      fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
+      const id = '11111111-1111-5111-8111-111111111111';
+      mockApi({ 'GET /me': me(ADSENSE), [`GET /resources/${id}`]: () => makeDetail() });
+      const { router } = renderApp(`/resource/${id}`);
+      await screen.findByRole('complementary', { name: 'Sponsored' });
+      expect(window.adsbygoogle?.pauseAdRequests).toBe(0);
+
+      await act(() => router.navigate('/search?q=agents'));
+      await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(1));
     });
 
     it('a resource page shows one labelled AdSense box; a search page shows no AdSense', async () => {

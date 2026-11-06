@@ -7,7 +7,8 @@ const SCRIPT_ID = 'h2-adsense';
 
 declare global {
   interface Window {
-    adsbygoogle?: unknown[];
+    /** AdSense's queue; pauseAdRequests 1 stops new ad requests until it is 0 again. */
+    adsbygoogle?: unknown[] & { pauseAdRequests?: number };
   }
 }
 
@@ -33,12 +34,19 @@ export function AdSenseSlot() {
 
   useEffect(() => {
     if (!adsenseClient || !adsenseSlot) return;
+    const queue = (window.adsbygoogle = window.adsbygoogle ?? []);
+    queue.pauseAdRequests = 0;
     loadAdSense(adsenseClient);
     try {
-      (window.adsbygoogle = window.adsbygoogle ?? []).push({});
+      queue.push({});
     } catch {
       // A box that already has its ad (a second effect run in development): nothing to do.
     }
+    // The script stays loaded in the app after this page: it asks for no ad elsewhere (a search address holds the
+    // search words). Auto ads and overlay formats stay off in the AdSense account (ADR 0059).
+    return () => {
+      queue.pauseAdRequests = 1;
+    };
   }, [adsenseClient, adsenseSlot]);
 
   if (!adsenseClient || !adsenseSlot) return null;

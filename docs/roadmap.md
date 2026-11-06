@@ -53,7 +53,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     registered. The Terms say a gift is not tax-deductible.
 - AdSense ([ADR 0059](adr/frontend/0059-adsense.md)), before `app.monetisation.adsenseSlot` is set on prod:
   - Manual: Google approves the site; in AdSense "Privacy & messaging", the European regulations message with consent
-    mode on for ads and for analytics; one display ad unit; then set its ID in `values-prod.yaml`.
+    mode on for ads and for analytics; Auto ads and overlay formats (anchor, vignette, side rail) off; one display ad
+    unit; then set its ID in `values-prod.yaml`.
   - Check on staging first, with the CSP report in the browser console: the AdSense CSP and every script of the app
     (the module preloads and lazy chunks run through the nonce and 'strict-dynamic').
   - Lawyer: our reading that GA4 needs TCF purposes 1 and 8 and vendor 755; analytics without a question outside

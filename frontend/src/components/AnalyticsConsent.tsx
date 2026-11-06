@@ -31,15 +31,22 @@ export function AnalyticsConsent() {
  */
 function GoogleConsent({ client }: { client: string }) {
   const { ga4MeasurementId } = useMonetisation();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const public_ = isAnalyticsPath(pathname);
+  // Google's tag sees the page address: it never loads on an address with search words or a guide question. Once
+  // loaded on another page, it stays for the visit.
+  const quiet = new URLSearchParams(search).has('q') || new URLSearchParams(search).has('ask');
   const [decision, setDecision] = useState<ConsentDecision | undefined>();
 
   useEffect(() => {
+    if (public_ && !quiet) loadGoogleConsent(client);
+  }, [client, public_, quiet]);
+
+  // Listens again when the tag may just have loaded (a visit that started on a search address).
+  useEffect(() => {
     if (!public_) return;
-    loadGoogleConsent(client);
     return watchConsent(setDecision);
-  }, [client, public_]);
+  }, [public_, quiet]);
 
   const allowed = public_ && (decision === 'granted' || decision === 'outside');
 

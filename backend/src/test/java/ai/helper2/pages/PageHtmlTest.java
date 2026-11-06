@@ -106,10 +106,22 @@ class PageHtmlTest {
   }
 
   @Test
+  void onlyTheShellAndOurJsonLdGetTheNonce() {
+    assertThat(
+            ai.helper2.pages.internal.PageTemplate.withNonce(
+                "<script src=\"/a.js\"></script><link rel=\"modulepreload\" href=\"/b.js\">", "n"))
+        .isEqualTo(
+            "<script nonce=\"n\" src=\"/a.js\"></script><link nonce=\"n\" rel=\"modulepreload\""
+                + " href=\"/b.js\">");
+  }
+
+  @Test
   void everyScriptCarriesTheNonce() throws IOException {
     String page = html(SHELL).render(new Pages("https://helper2.ai").resource(hostile()), "n0nce");
 
-    assertThat(Pattern.compile("<script(?! nonce=\"n0nce\")").matcher(page).find()).isFalse();
+    var tags = Pattern.compile("<script[^>]*>").matcher(page).results().toList();
+    assertThat(tags).hasSize(3);
+    assertThat(tags).allSatisfy(t -> assertThat(t.group()).contains(" nonce=\"n0nce\""));
   }
 
   @Test
