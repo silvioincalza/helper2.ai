@@ -25,12 +25,42 @@ final class AwesomeListParser {
   /**
    * One linked repository. [section] is the nearest heading (for the classifier); [headingPath] the
    * headings above it from the second level down ("Tools > Vector databases"), or the title when it
-   * sits under the title only; [text] the entry line as plain words.
+   * sits under the title only; [text] the entry line as plain words; [inListOfLists] true when a
+   * heading above it, below the title, names a section of lists ("Other awesome lists", ADR 0058).
    */
-  record Entry(String fullName, String section, String headingPath, String text) {}
+  record Entry(
+      String fullName, String section, String headingPath, String text, boolean inListOfLists) {
 
-  /** A README: its entries in README order and its headings, each once, in README order. */
-  record Parsed(List<Entry> entries, List<String> headings) {
+    Entry(String fullName, String section, String headingPath, String text) {
+      this(fullName, section, headingPath, text, false);
+    }
+
+    /**
+     * A link to another awesome list (ADR 0058): its name says "awesome", or it sits in a section
+     * of lists.
+     */
+    boolean pointsAtList() {
+      String name = fullName.substring(fullName.indexOf('/') + 1).toLowerCase(Locale.ROOT);
+      return name.contains("awesome") || inListOfLists;
+    }
+  }
+
+  /**
+   * A link to a page outside GitHub that names an entry (ADR 0058): the first link of a list item
+   * or table row, when that link is not on GitHub. [url] as written, [text] the link's words,
+   * cleaned and cut; [headingPath] and [section] as for an {@link Entry}.
+   */
+  record Link(String url, String text, String section, String headingPath) {}
+
+  /**
+   * A README: its entries in README order, its headings, each once, in README order, and its links
+   * outside GitHub, each URL once, in README order.
+   */
+  record Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
+
+    Parsed(List<Entry> entries, List<String> headings) {
+      this(entries, headings, List.of());
+    }
 
     /**
      * The entries the search index gets: at most [maxEntries], and no more than [maxBytes] of entry
@@ -79,7 +109,27 @@ final class AwesomeListParser {
       Pattern.compile("https?://github\\.com/([A-Za-z0-9-]{1,39})/([A-Za-z0-9._-]{1,100})");
 
   private static final Pattern LIST_ITEM = Pattern.compile("^\\s*(?:[-*+|]|\\d+\\.)\\s");
+
+  /**
+   * A Markdown link that is not an image: its text and its target. Bounded classes, so a line is
+   * scanned in linear time.
+   */
+  private static final Pattern MARKDOWN_LINK =
+      Pattern.compile(
+          "(?<!!)\\[([^\\[\\]]{0,300})\\]\\(\\s{0,5}<?([^\\s()<>]{1,2000})>?(?:\\s{1,5}\"[^\"]{0,300}\")?\\s{0,5}\\)");
+
+  /** A link on GitHub: a repository (an entry), a GitHub page or a file of one. */
+  private static final Pattern GITHUB_HOST =
+      Pattern.compile("(?i)^(?:https?:)?//(?:[a-z0-9-]+\\.)*github\\.com(?:[/:?#]|$)");
+
   private static final Pattern HEADING = Pattern.compile("^(#{1,6})\\s*(.*)$");
+
+  /** A heading of a section of lists: "Other awesome lists", "Related lists", "Lists of lists". */
+  private static final Pattern LIST_OF_LISTS =
+      Pattern.compile(
+          "(?i)\\b(?:awesome|curated|related|other|more|similar|further)\\b[\\w\\s-]{0,30}?\\blists?\\b"
+              + "|\\blists? of lists\\b");
+
   private static final Pattern FENCE = Pattern.compile("^\\s*(```|~~~)");
 
   /** First path segments that are GitHub pages, not users or organizations. */
@@ -121,6 +171,12 @@ final class AwesomeListParser {
   /** All headings of one list together. */
   static final int MAX_HEADINGS_BYTES = 16 * 1024;
 
+  /** One link's words: a product's name, not a description. */
+  static final int MAX_LINK_TEXT = 100;
+
+  /** Links outside GitHub kept per README. */
+  static final int MAX_LINKS = 2_000;
+
   private AwesomeListParser() {}
 
   /** Unique repositories in README order; the list itself and GitHub's own pages are left out. */
@@ -133,6 +189,7 @@ final class AwesomeListParser {
    */
   static Parsed parse(String markdown, String listFullName) {
     Map<String, Entry> unique = new LinkedHashMap<>();
+    Map<String, Link> links = new LinkedHashMap<>();
     Set<String> headings = new LinkedHashSet<>();
     String[] stack = new String[7];
     Arrays.fill(stack, "");
@@ -157,9 +214,34 @@ final class AwesomeListParser {
       }
       if (LIST_ITEM.matcher(line).find()) {
         addEntries(line, stack, self, unique);
+        addLink(line, stack, links);
       }
     }
-    return new Parsed(new ArrayList<>(unique.values()), new ArrayList<>(headings));
+    return new Parsed(
+        new ArrayList<>(unique.values()),
+        new ArrayList<>(headings),
+        new ArrayList<>(links.values()));
+  }
+
+  /**
+   * The line's first link names its entry: when it is outside GitHub, it is kept as a {@link Link}.
+   * Later links of the line (docs, a paper, a demo) are about the entry, not entries.
+   */
+  private static void addLink(String line, String[] stack, Map<String, Link> links) {
+    if (links.size() >= MAX_LINKS) {
+      return;
+    }
+    Matcher m = MARKDOWN_LINK.matcher(MarkdownText.cut(line, MarkdownText.MAX_RAW));
+    if (!m.find()) {
+      return;
+    }
+    String url = m.group(2);
+    // An anchor or a relative link points inside the list (a table of contents, a licence file).
+    if (url.indexOf(':') < 0 || GITHUB_HOST.matcher(url).find() || links.containsKey(url)) {
+      return;
+    }
+    String text = MarkdownText.cut(MarkdownText.plain(m.group(1)), MAX_LINK_TEXT);
+    links.put(url, new Link(url, text, section(stack), headingPath(stack)));
   }
 
   /** A heading of [level] replaces the one at its level and closes every deeper one. */
@@ -188,7 +270,8 @@ final class AwesomeListParser {
       if (text == null) {
         text = MarkdownText.cut(MarkdownText.plain(line), MAX_ENTRY_TEXT);
       }
-      unique.put(key, new Entry(fullName, section(stack), headingPath(stack), text));
+      unique.put(
+          key, new Entry(fullName, section(stack), headingPath(stack), text, inListOfLists(stack)));
     }
   }
 
@@ -200,6 +283,12 @@ final class AwesomeListParser {
       }
     }
     return "";
+  }
+
+  /** A heading below the title names a section of lists. */
+  private static boolean inListOfLists(String[] stack) {
+    return Arrays.stream(stack, 2, stack.length)
+        .anyMatch(h -> !h.isEmpty() && LIST_OF_LISTS.matcher(h).find());
   }
 
   /** Headings from the second level down; the title alone when there are none. */

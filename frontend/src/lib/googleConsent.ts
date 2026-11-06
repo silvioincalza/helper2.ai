@@ -21,6 +21,10 @@ interface TcData {
   vendor?: { consents?: Record<number, boolean> };
 }
 
+interface GoogleConsentModeValues {
+  analyticsStoragePurposeConsentStatus?: unknown;
+}
+
 type TcfApi = (
   command: string,
   version: number,
@@ -33,6 +37,7 @@ declare global {
     __tcfapi?: TcfApi;
     googlefc?: {
       callbackQueue?: Record<string, () => void>[];
+      getGoogleConsentModeValues?: () => GoogleConsentModeValues;
       showRevocationMessage?: () => void;
     };
   }
@@ -41,6 +46,23 @@ declare global {
 const SCRIPT_ID = 'h2-googlefc';
 const WAIT_MS = 10_000;
 const POLL_MS = 250;
+const PRIVACY_CHOICES_PATH = '/privacy#cookies-and-browser-storage';
+
+function hasSensitiveQuery(search: string): boolean {
+  const params = new URLSearchParams(search);
+  return params.has('q') || params.has('ask');
+}
+
+function analyticsStorageGranted(win: Window): boolean {
+  const status = win.googlefc?.getGoogleConsentModeValues?.().analyticsStoragePurposeConsentStatus;
+  return status === true || status === 'granted' || status === 'GRANTED';
+}
+
+function settleDecision(tc: TcData, win: Window): ConsentDecision | undefined {
+  const decision = decide(tc);
+  if (decision !== 'granted') return decision;
+  return analyticsStorageGranted(win) ? 'granted' : 'denied';
+}
 
 /** The decision a TCF answer allows, or undefined while the tool has no answer yet. */
 export function decide(tc: TcData): ConsentDecision | undefined {
@@ -90,7 +112,7 @@ export function watchConsent(onDecision: (d: ConsentDecision) => void, win: Wind
     api('addEventListener', 2, (tc, success) => {
       if (!success || stopped) return;
       listenerId = tc.listenerId ?? listenerId;
-      const decision = decide(tc);
+      const decision = settleDecision(tc, win);
       if (decision) onDecision(decision);
     });
   };
@@ -99,7 +121,7 @@ export function watchConsent(onDecision: (d: ConsentDecision) => void, win: Wind
   const recheck = () => {
     if (win.document.visibilityState !== 'visible') return;
     win.__tcfapi?.('getTCData', 2, (tc, success) => {
-      const decision = success && !stopped ? decide(tc) : undefined;
+      const decision = success && !stopped ? settleDecision(tc, win) : undefined;
       if (decision) onDecision(decision);
     });
   };
@@ -114,6 +136,10 @@ export function watchConsent(onDecision: (d: ConsentDecision) => void, win: Wind
 
 /** The footer's "Privacy choices": Google's tool asks the question again. */
 export function showPrivacyChoices(win: Window = window): void {
+  if (hasSensitiveQuery(win.location.search)) {
+    win.location.assign(PRIVACY_CHOICES_PATH);
+    return;
+  }
   win.googlefc = win.googlefc ?? {};
   win.googlefc.callbackQueue = win.googlefc.callbackQueue ?? [];
   win.googlefc.callbackQueue.push({

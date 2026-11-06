@@ -164,6 +164,7 @@ describe('monetisation (ADR 0057)', () => {
     expect(slot).toHaveTextContent('Ads keep helper2 free');
     expect(within(slot).getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
+    // The slot shows on render; the client script is added by its effect, which can run a moment later.
     await waitFor(() => expect(document.getElementById('h2-ethicalads')).not.toBeNull());
 
     await waitFor(() => expect(answer).toBeDefined());

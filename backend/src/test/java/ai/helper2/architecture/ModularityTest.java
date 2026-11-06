@@ -152,13 +152,17 @@ class ModularityTest {
           Map.entry("guide_similar_question", "guide"),
           Map.entry("source_cursor", "scout"),
           Map.entry("scout_run", "scout"),
-          Map.entry("scout_schedule", "scout"));
+          Map.entry("scout_schedule", "scout"),
+          Map.entry("enrichment_queue_control", "scout"));
 
   /**
    * Known exceptions, as "table module". The Scout writes source.last_outcome in JdbcScoutStore;
-   * moving it behind a catalog port is on the roadmap (section 7).
+   * moving it behind a catalog port is on the roadmap (section 7). The catalog's backlog query
+   * reads the Scout's enrichment_queue_control, read only, so the Scout's next batch, the queue
+   * page and the count keep one rule (ADR 0045 §7, BacklogRule).
    */
-  private static final Set<String> SHARED_TABLES = Set.of("source scout");
+  private static final Set<String> SHARED_TABLES =
+      Set.of("source scout", "enrichment_queue_control catalog");
 
   private static final Pattern CREATE_TABLE =
       Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");

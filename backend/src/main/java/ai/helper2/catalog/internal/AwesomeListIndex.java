@@ -31,16 +31,17 @@ public class AwesomeListIndex {
   /**
    * Replaces what [list] had in the index, in one transaction. Entries whose page is not in the
    * catalog are left out (the next pass adds them once the collector indexed them). Returns the
-   * entries written; 0, writing nothing, when the list itself is not in the catalog.
+   * resources of the entries written; none, writing nothing, when the list itself is not in the
+   * catalog.
    */
   @Transactional
-  public int replace(AwesomeListText list) {
+  public List<UUID> replace(AwesomeListText list) {
     UUID listId = ResourceId.of(list.url()).getValue();
     if (!exists(listId)) {
-      return 0;
+      return List.of();
     }
     jdbc.sql("DELETE FROM awesome_list_entry WHERE list_id = :list").param("list", listId).update();
-    int written =
+    List<UUID> written =
         jdbc.sql(
                 """
                 INSERT INTO awesome_list_entry (list_id, resource_id, heading_path, search_vector, updated_at)
@@ -52,10 +53,12 @@ public class AwesomeListIndex {
                 JOIN resource r ON r.id = i.resource_id
                 WHERE i.resource_id <> :list
                 ON CONFLICT (list_id, resource_id) DO NOTHING
+                RETURNING resource_id
                 """)
             .param("list", listId)
             .param("entries", entries(list.entries()))
-            .update();
+            .query(UUID.class)
+            .list();
     jdbc.sql(
             """
             INSERT INTO awesome_list (list_id, search_vector, updated_at)

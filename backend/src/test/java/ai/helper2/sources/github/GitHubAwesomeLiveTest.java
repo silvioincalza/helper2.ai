@@ -66,7 +66,11 @@ class GitHubAwesomeLiveTest {
             new RunInterval(Duration.ofDays(1)),
             List.of("topic:awesome-list topic:llm"),
             new GitHubAwesomeCollector.Limits(1, 1000, 80, 50, 50, 25),
-            nano);
+            new GitHubAwesomeCollector.Deep(
+                1, 3, Duration.ofMinutes(5), 20_000_000L, 50, 0, List.of("youtube.com")),
+            nano,
+            ai.helper2.shared.CategoryMatcher.NONE,
+            new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
 
     List<String> lists = collector.discoverLists();
     long started = System.nanoTime();

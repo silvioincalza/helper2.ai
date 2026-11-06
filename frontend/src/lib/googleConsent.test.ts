@@ -40,6 +40,27 @@ describe("Google's consent tool (ADR 0059)", () => {
     const api = vi.fn((command: string, _v: number, cb: (d: object, ok: boolean) => void) => {
       if (command === 'addEventListener') listener = cb;
     });
+
+    it('keeps analytics off until analytics storage consent is granted', () => {
+      let listener: ((d: object, ok: boolean) => void) | undefined;
+      window.googlefc = {
+        getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: 'denied' }),
+      };
+      window.__tcfapi = (command, _v, cb) => {
+        if (command === 'addEventListener') listener = cb;
+      };
+      const seen: string[] = [];
+      watchConsent((d) => seen.push(d));
+
+      listener?.({ listenerId: 7, ...YES }, true);
+      expect(seen).toEqual(['denied']);
+
+      window.googlefc.getGoogleConsentModeValues = () => ({
+        analyticsStoragePurposeConsentStatus: 'granted',
+      });
+      listener?.({ listenerId: 7, ...YES }, true);
+      expect(seen).toEqual(['denied', 'granted']);
+    });
     window.__tcfapi = api;
     const seen: string[] = [];
     const stop = watchConsent((d) => seen.push(d));
@@ -71,6 +92,17 @@ describe("Google's consent tool (ADR 0059)", () => {
     window.googlefc = { ...window.googlefc, showRevocationMessage: show };
     window.googlefc.callbackQueue?.[0]?.CONSENT_DATA_READY?.();
     expect(show).toHaveBeenCalledOnce();
+  });
+
+  it('Privacy choices redirects from search addresses before reopening', () => {
+    const assign = vi.fn();
+    const fake = {
+      location: { search: '?q=best+mcp', assign },
+      googlefc: { callbackQueue: [] as Record<string, () => void>[] },
+    } as unknown as Window;
+    showPrivacyChoices(fake);
+    expect(assign).toHaveBeenCalledWith('/privacy#cookies-and-browser-storage');
+    expect(fake.googlefc?.callbackQueue).toHaveLength(0);
   });
 
   it('reads the answer again when the tab is seen again (another tab may have changed it)', () => {

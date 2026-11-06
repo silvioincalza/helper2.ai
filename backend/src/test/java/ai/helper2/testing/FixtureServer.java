@@ -56,10 +56,12 @@ public final class FixtureServer implements AutoCloseable {
           requestBodies.add(
               new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
           Reply reply =
+              // The longest matching prefix wins, so "/repos/a/b" and "/repos/a/b/readme" can
+              // both be routed.
               routes.entrySet().stream()
                   .filter(e -> uri.startsWith(e.getKey()))
+                  .max(java.util.Comparator.comparingInt(e -> e.getKey().length()))
                   .map(Map.Entry::getValue)
-                  .findFirst()
                   .orElse(new Reply(404, "{}", Map.of(), 0));
           try {
             Thread.sleep(reply.delayMs());

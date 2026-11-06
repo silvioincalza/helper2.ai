@@ -2,6 +2,7 @@ package ai.helper2.sources.github;
 
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.ListEntryText;
@@ -14,6 +15,8 @@ import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CategoryInput;
+import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
@@ -23,6 +26,7 @@ import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
@@ -31,12 +35,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClient;
@@ -57,6 +63,13 @@ import tools.jackson.databind.node.ObjectNode;
  * <p>Search inside the lists (ADR 0055): every run also returns each list it read as a resource
  * (ARTICLE, tag {@value #LIST_TAG}) and the list's search text (entry lines and headings, cleaned
  * and capped), which the Scout hands to the catalog's list index.
+ *
+ * <p>Deep search (ADR 0058): a run also follows the awesome lists the seed lists link to ({@link
+ * AwesomeCrawl}, up to {@link Deep#maxDepth} steps and {@link Deep#maxNestedLists} lists, within a
+ * time and size budget); they become list resources like the seeds. The first link of an entry that
+ * points outside GitHub at a product's own site ({@link ProductLinks}) becomes a candidate for the
+ * admin review list, never indexed straight away, at most {@link Deep#linksPerDay} new items a day.
+ * Each entry's section headings give its categories ({@link CategoryMatcher}).
  */
 public class GitHubAwesomeCollector implements Collector {
 
@@ -77,6 +90,27 @@ public class GitHubAwesomeCollector implements Collector {
       int minRepoStars,
       int classifyBatch) {}
 
+  /**
+   * Deep search (ADR 0058): how far nested lists are followed, the time and README bytes one run
+   * may spend, and the links to product sites proposed for review.
+   *
+   * @param excludeDomains domains whose pages are never a product's own site (directories, review,
+   *     social and video sites), subdomains included
+   */
+  public record Deep(
+      int maxDepth,
+      int maxNestedLists,
+      Duration maxRunTime,
+      long maxReadmeBytesPerRun,
+      int maxLinksPerPass,
+      int linksPerDay,
+      List<String> excludeDomains) {
+
+    public Deep {
+      excludeDomains = List.copyOf(excludeDomains);
+    }
+  }
+
   private final RestClient http;
   private final Clock clock;
   private final Resilience resilience;
@@ -86,6 +120,10 @@ public class GitHubAwesomeCollector implements Collector {
   private final RepoClassifier classifier;
   private final RepoClassifier fallback = new RepoClassifier.Heuristic();
   private final SourceDescriptor descriptor;
+  private final Deep deep;
+  private final ProductLinks productLinks;
+  private final CategoryMatcher categories;
+  private final AwesomeMetrics metrics;
 
   public GitHubAwesomeCollector(
       SourceSettings settings,
@@ -95,7 +133,10 @@ public class GitHubAwesomeCollector implements Collector {
       RunInterval interval,
       List<String> topicQueries,
       Limits limits,
-      RepoClassifier classifier) {
+      Deep deep,
+      RepoClassifier classifier,
+      CategoryMatcher categories,
+      MeterRegistry meters) {
     this.clock = clock;
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -105,6 +146,10 @@ public class GitHubAwesomeCollector implements Collector {
     this.topicQueries = topicQueries;
     this.limits = limits;
     this.classifier = classifier;
+    this.deep = deep;
+    this.productLinks = new ProductLinks(deep.excludeDomains());
+    this.categories = categories;
+    this.metrics = new AwesomeMetrics(meters);
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor =
         new SourceDescriptor(
@@ -116,7 +161,9 @@ public class GitHubAwesomeCollector implements Collector {
             URI.create("https://github.com/topics/awesome-list"),
             URI.create(
                 "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"),
-            "Repository metadata from the GitHub API; list headings and entry lines are indexed for search, never stored",
+            "Repository metadata from the GitHub API; list headings and entry lines are indexed for"
+                + " search, never stored. Lists linked from lists are followed; links to product"
+                + " sites are added only after a person checks them.",
             EnumSet.of(
                 ResourceType.ARTICLE,
                 ResourceType.LIBRARY,
@@ -148,9 +195,10 @@ public class GitHubAwesomeCollector implements Collector {
     List<AwesomeListParser.Entry> all = pass.entries();
     int offset = offset(resumeCursor);
     List<SourceHit> listHits = listHits(pass.read(), startedAt);
+    // Proposed once per pass, on its first run: a resumed run reads the same links again.
+    List<Candidate> candidates = offset == 0 ? candidates(pass.crawl()) : List.of();
     if (offset >= all.size()) {
-      return new CollectedBatch(
-          listHits, null, startedAt.toString(), false, List.of(), null, pass.texts());
+      return batch(listHits, null, startedAt, candidates, pass.texts());
     }
     int end =
         Math.min(all.size(), offset + Math.max(1, Math.min(maxItems, limits.maxEntriesPerRun())));
@@ -164,14 +212,26 @@ public class GitHubAwesomeCollector implements Collector {
         hits.size(),
         classifier.name());
     hits.addAll(listHits);
+    return batch(
+        hits, end < all.size() ? String.valueOf(end) : null, startedAt, candidates, pass.texts());
+  }
+
+  private CollectedBatch batch(
+      List<SourceHit> hits,
+      @Nullable String nextCursor,
+      Instant startedAt,
+      List<Candidate> candidates,
+      List<ListText> texts) {
     return new CollectedBatch(
         hits,
-        end < all.size() ? String.valueOf(end) : null,
+        nextCursor,
         startedAt.toString(),
         false,
-        List.of(),
+        candidates,
         null,
-        pass.texts());
+        texts,
+        false,
+        deep.linksPerDay());
   }
 
   /** Names of the lists a pass reads, most stars first. */
@@ -234,10 +294,15 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   /**
-   * What one pass read: the entries to collect (unique across lists, at most maxEntriesPerPass),
-   * the lists whose README was read, and their search text (ADR 0055).
+   * What one pass read: the entries to collect (unique across lists, at most maxEntriesPerPass, the
+   * lists read left out), the lists whose README was read, their search text (ADR 0055), and every
+   * list read with its depth (ADR 0058).
    */
-  record Pass(List<AwesomeListParser.Entry> entries, List<ListRepo> read, List<ListText> texts) {}
+  record Pass(
+      List<AwesomeListParser.Entry> entries,
+      List<ListRepo> read,
+      List<ListText> texts,
+      List<AwesomeCrawl.Read> crawl) {}
 
   /**
    * Per list at most this much entry text and heading path goes to the search index (UTF-8 bytes),
@@ -249,36 +314,126 @@ public class GitHubAwesomeCollector implements Collector {
 
   private static final String GITHUB = "https://github.com/";
 
-  private Pass read(List<ListRepo> lists) {
+  private Pass read(List<ListRepo> seeds) {
+    List<AwesomeCrawl.Read> crawl =
+        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits(), clock, metrics);
+    Set<String> lists = new HashSet<>();
+    crawl.forEach(r -> lists.add(r.list().fullName().toLowerCase(Locale.ROOT)));
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();
-    List<ListRepo> read = new ArrayList<>();
     List<ListText> texts = new ArrayList<>();
-    for (ListRepo list : lists) {
-      String readme;
-      try {
-        readme = readme(list.fullName());
-      } catch (SourceFailure.Unavailable e) {
-        log.warn("awesome list {} README unavailable: {}", list.fullName(), e.getMessage());
-        continue;
-      }
-      AwesomeListParser.Parsed parsed = AwesomeListParser.parse(readme, list.fullName());
-      read.add(list);
-      ListText text = searchText(list, parsed);
+    for (AwesomeCrawl.Read r : crawl) {
+      ListText text = searchText(r.list(), r.parsed());
       if (text != null) {
         texts.add(text);
       }
-      for (AwesomeListParser.Entry e : parsed.entries()) {
-        unique.putIfAbsent(e.fullName().toLowerCase(Locale.ROOT), e);
-      }
-      if (unique.size() >= limits.maxEntriesPerPass()) {
-        break;
+      for (AwesomeListParser.Entry e : r.parsed().entries()) {
+        String key = e.fullName().toLowerCase(Locale.ROOT);
+        // A list that was read is a list resource of its own, not an entry to classify.
+        if (unique.size() < limits.maxEntriesPerPass() && !lists.contains(key)) {
+          unique.putIfAbsent(key, e);
+        }
       }
     }
-    List<AwesomeListParser.Entry> entries =
-        new ArrayList<>(unique.values())
-            .subList(0, Math.min(unique.size(), limits.maxEntriesPerPass()));
-    return new Pass(entries, read, texts);
+    List<ListRepo> read = crawl.stream().map(AwesomeCrawl.Read::list).toList();
+    return new Pass(List.copyOf(unique.values()), read, texts, crawl);
   }
+
+  private AwesomeCrawl.Limits crawlLimits() {
+    return new AwesomeCrawl.Limits(
+        deep.maxDepth(),
+        deep.maxNestedLists(),
+        deep.maxRunTime(),
+        deep.maxReadmeBytesPerRun(),
+        limits.minRepoStars());
+  }
+
+  /** The GitHub calls the crawl makes, under this collector's resilience policy. */
+  private AwesomeCrawl.Lists gitHubLists() {
+    return new AwesomeCrawl.Lists() {
+      @Override
+      public JsonNode repo(String fullName) {
+        return repoFacts(fullName);
+      }
+
+      @Override
+      public String readme(String fullName) {
+        return GitHubAwesomeCollector.this.readme(fullName);
+      }
+    };
+  }
+
+  /** A repository's REST facts: the same fields as a search answer's item. */
+  private JsonNode repoFacts(String fullName) {
+    String[] parts = fullName.split("/", 2);
+    return resilience.call(
+        POLICY,
+        () ->
+            HttpClients.getJson(
+                () ->
+                    http.get()
+                        .uri("/repos/{owner}/{repo}", parts[0], parts[1])
+                        .retrieve()
+                        .body(String.class),
+                clock));
+  }
+
+  /**
+   * The links of every list read that point at a product's own site (ADR 0058), each site once, in
+   * the order the lists were read, at most {@link Deep#maxLinksPerPass}. Every skip is counted.
+   */
+  private List<Candidate> candidates(List<AwesomeCrawl.Read> crawl) {
+    Map<String, Candidate> found = new LinkedHashMap<>();
+    for (AwesomeCrawl.Read r : crawl) {
+      CanonicalUrl list = CanonicalUrl.of(GITHUB + r.list().fullName());
+      for (AwesomeListParser.Link link : r.parsed().links()) {
+        ProductLinks.Checked checked = productLinks.check(link.url());
+        if (checked.site() == null) {
+          metrics.skipped("link-" + checked.skip().tag());
+        } else if (found.containsKey(checked.site().getValue())) {
+          metrics.skipped("link-seen");
+        } else if (found.size() >= deep.maxLinksPerPass()) {
+          metrics.skipped("link-cap");
+        } else if (list != null) {
+          found.put(checked.site().getValue(), candidate(checked.site(), link, list));
+        }
+      }
+    }
+    metrics.proposed(found.size());
+    return List.copyOf(found.values());
+  }
+
+  /**
+   * A product site from a list: never indexed, a person decides (ADR 0058). Its title is the link's
+   * words (the product's name), no snippet (the list's text is not kept). Its categories come from
+   * the section headings and the name, at most {@link Candidate#MAX_TAGS}; foundBy keeps the list
+   * and the section.
+   */
+  private Candidate candidate(CanonicalUrl site, AwesomeListParser.Link link, CanonicalUrl list) {
+    String title = link.text().isBlank() ? site.getHost() : link.text();
+    Set<String> tags =
+        new LinkedHashSet<>(
+            categories.match(
+                new CategoryInput(
+                    title, null, List.of(), null, List.of(), List.of(link.headingPath()))));
+    Set<String> capped = new LinkedHashSet<>(tags.stream().limit(Candidate.MAX_TAGS).toList());
+    Map<String, Object> awesome = new LinkedHashMap<>();
+    awesome.put("list", list.getValue());
+    awesome.put("section", link.headingPath());
+    Map<String, Object> facts = new LinkedHashMap<>();
+    facts.put(FOUND_IN, awesome);
+    facts.put("categories", List.copyOf(capped));
+    return new Candidate(
+        site,
+        title,
+        null,
+        capped.isEmpty() ? null : String.join(", ", capped),
+        ResourceType.PRODUCT,
+        capped,
+        facts);
+  }
+
+  /** The candidate fact that says where a link was found: its list and section. */
+  static final String FOUND_IN = "awesome";
 
   /** The list's search text, capped; null when its page has no canonical URL. */
   private ListText searchText(ListRepo list, AwesomeListParser.Parsed parsed) {

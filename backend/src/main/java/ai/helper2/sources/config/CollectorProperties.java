@@ -1,5 +1,6 @@
 package ai.helper2.sources.config;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -11,6 +12,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.unit.DataSize;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -98,6 +100,10 @@ final class CollectorProperties {
     }
   }
 
+  /**
+   * GitHub awesome lists (ADR 0020, 0055) and their deep search (ADR 0058): how a run reads them,
+   * how far it follows nested lists and how many product links it proposes for review.
+   */
   @Validated
   @ConfigurationProperties("helper2.scout.github-awesome")
   record GitHubAwesome(
@@ -110,11 +116,37 @@ final class CollectorProperties {
       @PositiveOrZero int minRepoStars,
       @Positive int classifyBatch,
       @Positive int classifyMaxTokens,
-      @PositiveOrZero int classifierDailyCalls)
+      @PositiveOrZero int classifierDailyCalls,
+      @NotNull Duration maxRunTime,
+      @NotNull DataSize maxReadmeBytesPerRun,
+      @NotNull @Valid Nested nested,
+      @NotNull @Valid Links links)
       implements Scheduled {
 
     GitHubAwesome {
       topicQueries = clean(topicQueries);
+    }
+
+    @AssertTrue(message = "must be positive")
+    boolean isMaxRunTimePositive() {
+      return maxRunTime == null || (!maxRunTime.isNegative() && !maxRunTime.isZero());
+    }
+
+    /** Lists linked from lists: steps from a seed (0 = none) and lists tried per run. */
+    record Nested(@PositiveOrZero @Max(5) int maxDepth, @PositiveOrZero int maxListsPerRun) {}
+
+    /**
+     * Links to product sites: new review items per UTC day, links kept per pass, and the domains
+     * that are never a product's own site, on top of discovery's (helper2.scout.discovery).
+     */
+    record Links(
+        @PositiveOrZero int perDay,
+        @PositiveOrZero int maxPerPass,
+        @NotNull List<String> excludeDomains) {
+
+      Links {
+        excludeDomains = clean(excludeDomains);
+      }
     }
   }
 

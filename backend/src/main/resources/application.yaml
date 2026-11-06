@@ -588,6 +588,28 @@ helper2:
       classify-max-tokens: 8192
       # Classifier model calls per UTC day (about 8 batches per daily pass); the cap only bites when something loops.
       classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
+      # Deep search (ADR 0058). One run reads the seed lists and the lists they link to until either budget is spent;
+      # the lists left unread wait for the next pass. A README is at most 5 MB.
+      max-run-time: ${H2_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}
+      max-readme-bytes-per-run: ${H2_SCOUT_AWESOME_MAX_README_BYTES:50MB}
+      nested:
+        # Steps from a seed list: 2 = the lists a seed links to, and the lists those link to. 0 = seeds only.
+        max-depth: ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}
+        # Nested lists tried per run (one GitHub call for the facts, one for the README), after the seeds.
+        max-lists-per-run: ${H2_SCOUT_AWESOME_NESTED_LISTS:30}
+      links:
+        # Links to product sites become review items, never indexed straight away: at most this many new items a
+        # UTC day. A link past the cap still joins a waiting item of the same site. 0 = none proposed.
+        per-day: ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}
+        # Distinct product sites kept per pass, before the daily cap.
+        max-per-pass: 500
+        # Never a product's own site, on top of discovery's exclude-domains (directories and review sites): papers,
+        # chats, notebooks, package registries, code hosts and app stores.
+        exclude-domains: >-
+          arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
+          discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,
+          kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com,
+          chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
   sources:
     github:
       enabled: ${H2_SOURCE_GITHUB_ENABLED:true}
