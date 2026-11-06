@@ -41,6 +41,9 @@ describe("Google's consent tool (ADR 0059)", () => {
       if (command === 'addEventListener') listener = cb;
     });
     window.__tcfapi = api;
+    window.googlefc = {
+      getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: 1 }),
+    };
     const seen: string[] = [];
     const stop = watchConsent((d) => seen.push(d));
 
@@ -54,25 +57,75 @@ describe("Google's consent tool (ADR 0059)", () => {
     expect(api).toHaveBeenLastCalledWith('removeEventListener', 2, expect.any(Function), 7);
   });
 
-  it('keeps analytics off until analytics storage consent is granted', () => {
+  /** Google's ConsentModePurposeStatusEnum: the status is a number. */
+  const GRANTED = 1;
+  const DENIED = 2;
+  const NOT_APPLICABLE = 3;
+  const NOT_CONFIGURED = 4;
+
+  function withConsentMode(status: unknown) {
     let listener: ((d: object, ok: boolean) => void) | undefined;
     window.googlefc = {
-      getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: 'denied' }),
+      ...window.googlefc,
+      getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: status }),
     };
     window.__tcfapi = (command, _v, cb) => {
       if (command === 'addEventListener') listener = cb;
     };
     const seen: string[] = [];
     watchConsent((d) => seen.push(d));
-
     listener?.({ listenerId: 7, ...YES }, true);
-    expect(seen).toEqual(['denied']);
+    return seen;
+  }
 
-    window.googlefc.getGoogleConsentModeValues = () => ({
-      analyticsStoragePurposeConsentStatus: 'granted',
-    });
-    listener?.({ listenerId: 7, ...YES }, true);
-    expect(seen).toEqual(['denied', 'granted']);
+  it("after a TCF yes, Google's consent mode number for analytics storage decides", () => {
+    expect(withConsentMode(GRANTED)).toEqual(['granted']);
+    delete window.googlefc;
+    expect(withConsentMode(DENIED)).toEqual(['denied']);
+    delete window.googlefc;
+    expect(withConsentMode(NOT_APPLICABLE)).toEqual(['granted']);
+  });
+
+  it('fails closed: no consent mode data yet means no decision, a purpose not configured means no', () => {
+    expect(withConsentMode(undefined)).toEqual([]);
+    delete window.googlefc;
+    expect(withConsentMode(0)).toEqual([]);
+    delete window.googlefc;
+    expect(withConsentMode(NOT_CONFIGURED)).toEqual(['denied']);
+    delete window.googlefc;
+    // The old reading: a word is not one of Google's values, so it grants nothing.
+    expect(withConsentMode('granted')).toEqual([]);
+  });
+
+  it("uses Google's enum when the page has it", () => {
+    window.googlefc = { ConsentModePurposeStatusEnum: { GRANTED: 11, DENIED: 12 } };
+    expect(withConsentMode(11)).toEqual(['granted']);
+    window.googlefc = { ConsentModePurposeStatusEnum: { GRANTED: 11, DENIED: 12 } };
+    expect(withConsentMode(1)).toEqual([]);
+  });
+
+  it('a TCF yes that waited for consent mode is read again when the data is ready', () => {
+    let status: unknown = 0;
+    let tc: object = YES;
+    window.__tcfapi = (command, _v, cb) => {
+      if (command === 'addEventListener' || command === 'getTCData')
+        cb({ listenerId: 1, ...tc }, true);
+    };
+    window.googlefc = {
+      getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: status }),
+    };
+    const seen: string[] = [];
+    const stop = watchConsent((d) => seen.push(d));
+    expect(seen).toEqual([]);
+
+    status = GRANTED;
+    for (const entry of window.googlefc.callbackQueue ?? []) entry.CONSENT_MODE_DATA_READY?.();
+    expect(seen).toEqual(['granted']);
+
+    stop();
+    tc = { ...YES, vendor: { consents: {} } };
+    for (const entry of window.googlefc.callbackQueue ?? []) entry.CONSENT_MODE_DATA_READY?.();
+    expect(seen).toEqual(['granted']);
   });
 
   it('waits for the tool, and never decides when it does not load', () => {
@@ -86,23 +139,33 @@ describe("Google's consent tool (ADR 0059)", () => {
     vi.useRealTimers();
   });
 
-  it('Privacy choices asks the question again through the callback queue', () => {
+  it('Privacy choices asks the question again through the callback queue', async () => {
     const show = vi.fn();
-    showPrivacyChoices();
+    const go = vi.fn();
+    await showPrivacyChoices('', go);
+    expect(go).not.toHaveBeenCalled();
     window.googlefc = { ...window.googlefc, showRevocationMessage: show };
     window.googlefc.callbackQueue?.[0]?.CONSENT_DATA_READY?.();
     expect(show).toHaveBeenCalledOnce();
   });
 
-  it('Privacy choices redirects from search addresses before reopening', () => {
-    const assign = vi.fn();
-    const fake = {
-      location: { search: '?q=best+mcp', assign },
-      googlefc: { callbackQueue: [] as Record<string, () => void>[] },
-    } as unknown as Window;
-    showPrivacyChoices(fake);
-    expect(assign).toHaveBeenCalledWith('/privacy#cookies-and-browser-storage');
-    expect(fake.googlefc?.callbackQueue).toHaveLength(0);
+  it('Privacy choices on a search address moves inside the app first, then asks', async () => {
+    const order: string[] = [];
+    const go = vi.fn(async (path: string) => {
+      order.push(`go ${path} (queue ${window.googlefc?.callbackQueue?.length ?? 0})`);
+    });
+    await showPrivacyChoices('?q=best+mcp', go);
+    order.push(`queue ${window.googlefc?.callbackQueue?.length ?? 0}`);
+    expect(order).toEqual(['go /privacy#cookies-and-browser-storage (queue 0)', 'queue 1']);
+    await showPrivacyChoices('?ask=which+tool', go);
+    expect(go).toHaveBeenCalledTimes(2);
+  });
+
+  it('Privacy choices does not ask when the move inside the app fails', async () => {
+    await expect(
+      showPrivacyChoices('?q=agents', () => Promise.reject(new Error('blocked'))),
+    ).rejects.toThrow('blocked');
+    expect(window.googlefc?.callbackQueue ?? []).toHaveLength(0);
   });
 
   it('reads the answer again when the tab is seen again (another tab may have changed it)', () => {
@@ -110,6 +173,9 @@ describe("Google's consent tool (ADR 0059)", () => {
     window.__tcfapi = (command, _v, cb) => {
       if (command === 'addEventListener' || command === 'getTCData')
         cb({ listenerId: 1, ...tc }, true);
+    };
+    window.googlefc = {
+      getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: 1 }),
     };
     const seen: string[] = [];
     const stop = watchConsent((d) => seen.push(d));

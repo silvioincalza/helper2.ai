@@ -25,6 +25,18 @@ interface GoogleConsentModeValues {
   analyticsStoragePurposeConsentStatus?: unknown;
 }
 
+/**
+ * Google's ConsentModePurposeStatusEnum (Privacy & messaging API): the consent mode answer for one purpose. UNKNOWN
+ * (0) means the data is not ready yet; NOT_CONFIGURED (4) means the purpose is off in the Privacy & messaging UI.
+ */
+const ConsentModeStatus = {
+  UNKNOWN: 0,
+  GRANTED: 1,
+  DENIED: 2,
+  NOT_APPLICABLE: 3,
+  NOT_CONFIGURED: 4,
+} as const;
+
 type TcfApi = (
   command: string,
   version: number,
@@ -38,6 +50,7 @@ declare global {
     googlefc?: {
       callbackQueue?: Record<string, () => void>[];
       getGoogleConsentModeValues?: () => GoogleConsentModeValues;
+      ConsentModePurposeStatusEnum?: Partial<Record<keyof typeof ConsentModeStatus, number>>;
       showRevocationMessage?: () => void;
     };
   }
@@ -53,16 +66,34 @@ function hasSensitiveQuery(search: string): boolean {
   return params.has('q') || params.has('ask');
 }
 
-function analyticsStorageGranted(win: Window): boolean {
-  const status = win.googlefc?.getGoogleConsentModeValues?.().analyticsStoragePurposeConsentStatus;
-  if (status === undefined) return true;
-  return status === true || status === 'granted' || status === 'GRANTED';
+/** The value Google's enum gives [name], or its documented number when the enum is not on the page. */
+function statusValue(win: Window, name: keyof typeof ConsentModeStatus): number {
+  return win.googlefc?.ConsentModePurposeStatusEnum?.[name] ?? ConsentModeStatus[name];
+}
+
+/**
+ * The consent mode answer for analytics storage, after a TCF yes: granted or denied, or undefined while Google's tool
+ * has no consent mode data yet (no answer, UNKNOWN). Fails closed: GA waits until the data is ready, and a purpose
+ * that is not configured in Privacy & messaging counts as no. NOT_APPLICABLE leaves the TCF yes as it is.
+ */
+function analyticsStorage(win: Window): 'granted' | 'denied' | undefined {
+  let status: unknown;
+  try {
+    status = win.googlefc?.getGoogleConsentModeValues?.().analyticsStoragePurposeConsentStatus;
+  } catch {
+    return undefined;
+  }
+  if (status === statusValue(win, 'GRANTED') || status === statusValue(win, 'NOT_APPLICABLE'))
+    return 'granted';
+  if (status === statusValue(win, 'DENIED') || status === statusValue(win, 'NOT_CONFIGURED'))
+    return 'denied';
+  return undefined;
 }
 
 function settleDecision(tc: TcData, win: Window): ConsentDecision | undefined {
   const decision = decide(tc);
   if (decision !== 'granted') return decision;
-  return analyticsStorageGranted(win) ? 'granted' : 'denied';
+  return analyticsStorage(win);
 }
 
 /** The decision a TCF answer allows, or undefined while the tool has no answer yet. */
@@ -118,13 +149,18 @@ export function watchConsent(onDecision: (d: ConsentDecision) => void, win: Wind
     });
   };
   attach();
-  // Another tab may have changed the answer: read it again when this tab is seen again.
-  const recheck = () => {
-    if (win.document.visibilityState !== 'visible') return;
+  const readAgain = () =>
     win.__tcfapi?.('getTCData', 2, (tc, success) => {
       const decision = success && !stopped ? settleDecision(tc, win) : undefined;
       if (decision) onDecision(decision);
     });
+  // A TCF yes waits for the consent mode data: read the answer again once Google's tool has it.
+  win.googlefc = win.googlefc ?? {};
+  win.googlefc.callbackQueue = win.googlefc.callbackQueue ?? [];
+  win.googlefc.callbackQueue.push({ CONSENT_MODE_DATA_READY: readAgain });
+  // Another tab may have changed the answer: read it again when this tab is seen again.
+  const recheck = () => {
+    if (win.document.visibilityState === 'visible') readAgain();
   };
   win.document.addEventListener('visibilitychange', recheck);
   return () => {
@@ -135,12 +171,17 @@ export function watchConsent(onDecision: (d: ConsentDecision) => void, win: Wind
   };
 }
 
-/** The footer's "Privacy choices": Google's tool asks the question again. */
-export function showPrivacyChoices(win: Window = window): void {
-  if (hasSensitiveQuery(win.location.search)) {
-    win.location.assign(PRIVACY_CHOICES_PATH);
-    return;
-  }
+/**
+ * The footer's "Privacy choices": Google's tool asks the question again. Its tag must not see search words or a guide
+ * question, so on such an address ([search], the app's own) the app first moves to the Privacy page with [go] (the
+ * router: no new page load, so no new document gets the search address as its referrer), then asks.
+ */
+export async function showPrivacyChoices(
+  search: string,
+  go: (path: string) => void | Promise<void>,
+  win: Window = window,
+): Promise<void> {
+  if (hasSensitiveQuery(search)) await go(PRIVACY_CHOICES_PATH);
   win.googlefc = win.googlefc ?? {};
   win.googlefc.callbackQueue = win.googlefc.callbackQueue ?? [];
   win.googlefc.callbackQueue.push({

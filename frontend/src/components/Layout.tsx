@@ -233,6 +233,8 @@ function OutLink({ href, label, children }: { href: string; label: string; child
  */
 function Footer() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { search } = useLocation();
   const { githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, adsenseClient } =
     useMonetisation();
   const support = githubSponsorsUrl !== null || stripePaymentUrl !== null;
@@ -262,7 +264,11 @@ function Footer() {
           )}
           {adsenseClient !== null ? (
             <li>
-              <button type="button" className="v4-text-btn" onClick={() => showPrivacyChoices()}>
+              <button
+                type="button"
+                className="v4-text-btn"
+                onClick={() => void showPrivacyChoices(search, navigate)}
+              >
                 {t('footer.privacyChoices')}
               </button>
             </li>

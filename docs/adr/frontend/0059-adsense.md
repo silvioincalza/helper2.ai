@@ -39,13 +39,17 @@ AdSense brings three constraints:
    Privacy & messaging tag (`fundingchoicesmessages.google.com/i/pub-...?ers=1`) on public pages, and our own bar
    (0057) is off. The tag sees the page address, so it never loads on an address with `q` or `ask`: a visit that
    starts there gets the tag, and analytics, on its first other page. Google asks where the EU, EEA, UK or Swiss rules apply. "Privacy choices" in the footer asks again
-   (`googlefc.showRevocationMessage()`).
+   (`googlefc.showRevocationMessage()`). On an address with `q` or `ask` it first moves to the Privacy page inside the
+   app, then asks there: no new page load, so no new document gets the search address as its referrer.
    - The page reads the answer from the TCF API (`__tcfapi`), for every change, and again when the tab is seen again
      (another tab may have changed it).
    - `gdprApplies` false: Google Analytics loads without a question.
    - Where the rules apply: it loads only with consent to purposes 1 (store on a device) and 8 (measure content), and
-     for Google as a vendor (755). A "no", or a later withdrawal, turns it off (`ga-disable-<ID>`) and deletes its
-     cookies. We do not use Google's automatic TCF mode: with it GA would still send cookieless pings after a "no".
+     for Google as a vendor (755), and when Google's consent mode says analytics storage is granted
+     (`googlefc.getGoogleConsentModeValues()`, a number: 1 granted, 3 not applicable). Until the consent mode data is
+     ready (no value, or 0), GA waits and the page reads the answer again on `CONSENT_MODE_DATA_READY`. 2 (denied) and
+     4 (the purpose is not configured in Privacy & messaging) count as no. A "no", or a later withdrawal, turns it off
+     (`ga-disable-<ID>`) and deletes its cookies. We do not use Google's automatic TCF mode: with it GA would still send cookieless pings after a "no".
    - The tool blocked (an ad blocker): we cannot tell where the visitor is, so GA does not load.
    - Whether an ad is personalised is AdSense's call from the same answer.
 6. **A nonce CSP on the whole public site while AdSense is on.** One nonce per request (`CspNonce`): the server writes

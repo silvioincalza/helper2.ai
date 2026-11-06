@@ -322,6 +322,9 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
     await userEvent.keyboard('a');
     expect(await screen.findByText('Nothing in this queue.')).toBeInTheDocument();
     expect(screen.getByText('Accepted. 0 left.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Review queue' })).toHaveFocus();
+    // The queue moves focus in an effect after the empty state renders; a busy CI runner can check before it runs.
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { level: 2, name: 'Review queue' })).toHaveFocus(),
+    );
   });
 });
