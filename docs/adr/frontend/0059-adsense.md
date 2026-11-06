@@ -56,6 +56,21 @@ AdSense brings three constraints:
    0024.
 7. **The footer makes no claim about ads.** The Privacy page says which ads, where and when.
 
+## Threat model (STRIDE)
+Trust boundary: our page and the third-party scripts it loads while AdSense is on (Google's consent tool, AdSense,
+Google Analytics, EthicalAds). They run in our origin with full access to the page.
+
+| | Threat | Mitigation | Left |
+|---|---|---|---|
+| S | An ad imitates the page (a fake "Download" or sign-in) | One box, marked "Sponsored", fixed place; AdSense blocking controls | Accepted: Google's ad review |
+| T | A Google script, or a malicious ad, changes the page or the results | No SRI is possible for Google's scripts; ads only in their box; nothing on the admin host | Accepted while AdSense is on |
+| T | An injected script runs under the weaker CSP | Nonce per request, only on the shell and our JSON-LD, never on source text; `no-store`; `/index.html` redirects | `'unsafe-eval'`: eval-style sinks are open |
+| R | Invalid clicks get the AdSense account closed | No own clicks; nothing asks for clicks | Accepted |
+| I | Search words or the guide question reach Google | No AdSense and no consent tool on `q` or `ask` addresses; requests paused off resource pages; Auto ads and overlay formats off; GA gets the path only | The consent tool, once loaded, stays for the visit |
+| I | Analytics without consent in Europe | GA loads only on the TCF answer (purposes 1 and 8, vendor 755); a "no" sets `ga-disable` and deletes cookies; tool blocked = no GA | Our reading of the purposes: lawyer |
+| D | Ad scripts slow the page (INP, CLS) | Fixed-height box; scripts load after the app | Measure on staging |
+| E | A third-party script uses the CSRF token for same-origin writes | Writes need sign-in or are rate-limited; admin only on the admin host, with the strict CSP and no third-party script | Accepted on the public host |
+
 ## Consequences
 - With the ad unit empty, nothing changes but the site check.
 - While AdSense is on, the public site loses part of its XSS protection: an injected script tag still needs the
