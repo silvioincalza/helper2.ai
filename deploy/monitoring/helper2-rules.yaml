@@ -130,6 +130,50 @@ groups:
           summary: "Container {{ $labels.container }} of pod {{ $labels.pod }} restarted more than twice in an hour ({{ $labels.namespace }})."
           description: "{{ $value }} restarts in the last hour. A crash loop or an out-of-memory kill."
           runbook: "kubectl -n {{ $labels.namespace }} describe pod {{ $labels.pod }} (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
+      - alert: Helper2ReplicasMissing
+        # kube-state-metrics, not up{}: the scrape job's labels live outside this repo.
+        expr: |
+          kube_deployment_status_replicas_available{namespace=~"helper2-.+", deployment="helper2"}
+          < on (namespace, deployment) kube_deployment_spec_replicas{namespace=~"helper2-.+", deployment="helper2"}
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The app runs with fewer replicas than wanted ({{ $labels.namespace }})."
+          description: "{{ $value }} replicas available for 10 minutes. A rollout stuck on a failing probe, a node out, or a scheduling problem."
+          runbook: "kubectl -n {{ $labels.namespace }} rollout status deploy/helper2; kubectl -n {{ $labels.namespace }} get pods -l app=helper2; describe a Pending or not-ready pod."
+      - alert: Helper2NoReplica
+        expr: kube_deployment_status_replicas_available{namespace=~"helper2-.+", deployment="helper2"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No app replica is available: the site is down ({{ $labels.namespace }})."
+          description: "No pod of deploy/helper2 passed its readiness probe for 2 minutes."
+          runbook: "kubectl -n {{ $labels.namespace }} get pods -l app=helper2; kubectl logs for the crash; roll back with the CD workflow (rollback) if a new tag caused it (deploy/k8s/README.md, Rollback)."
+      - alert: Helper2VolumeAlmostFull
+        # Postgres data, the backup volume and the Redis AOF: a full volume stops writes.
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"helper2-.+"}
+          / on (namespace, persistentvolumeclaim) kubelet_volume_stats_capacity_bytes{namespace=~"helper2-.+"} < 0.2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 20% free ({{ $labels.namespace }})."
+          description: "{{ $value | humanizePercentage }} free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0034)."
+      - alert: Helper2VolumeFull
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"helper2-.+"}
+          / on (namespace, persistentvolumeclaim) kubelet_volume_stats_capacity_bytes{namespace=~"helper2-.+"} < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 10% free ({{ $labels.namespace }})."
+          description: "{{ $value | humanizePercentage }} free. Writes fail soon."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim now (values.yaml storage) or free space (old dumps on pg-backup, purge on Postgres)."
       - alert: Helper2BackupFailed
         # Failed Jobs stay for failedJobsHistoryLimit; only a Job started in the last 24 h fires, so tomorrow's
         # successful run clears the alert.

@@ -28,6 +28,12 @@ spec:
           readinessProbe:
             exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
             periodSeconds: 5
+          # Two minutes without an answer (6 x 20 s) restarts a hung server; recovery after a crash gets a minute first.
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
           resources:
             {{- toYaml .Values.postgres.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
