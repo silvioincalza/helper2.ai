@@ -6,8 +6,8 @@
  * The tab loads the page the visitor was going to, not the one they are leaving: during a navigation the address bar
  * still shows the old page, so {@link followNavigation} keeps the destination.
  *
- * The tab reloads one address at most once in {@link RELOAD_GUARD_MS}: the address and the time wait in
- * sessionStorage (this tab only). A page file that loads does not clear them: a route can load several files (the
+ * The tab reloads one address at most once in {@link RELOAD_GUARD_MS}, and never twice for the page the reload
+ * opened: the address and the time wait in sessionStorage (this tab only). A page file that loads does not clear them: a route can load several files (the
  * admin layout, then its page), and clearing on the first one would let a file that keeps failing reload the tab
  * forever. If the reload does not help, the error goes on to the route's error page.
  */
@@ -61,11 +61,21 @@ function lastReload(): LastReload | undefined {
   return undefined;
 }
 
-/** Starts a load of [address], unless the tab reloaded it a moment ago. False when no load started. */
+/**
+ * True when the tab already reloaded [address] for this failure: a moment ago, or to open this very page. The page
+ * the reload opened started after the reload was asked for, so a file that fails there slowly (a proxy that times
+ * out after more than {@link RELOAD_GUARD_MS}) still gets no second reload.
+ */
+function alreadyReloaded(last: LastReload | undefined, address: string): boolean {
+  if (last?.address !== address) return false;
+  const openedByTheReload = performance.timeOrigin >= last.at;
+  return openedByTheReload || Date.now() - last.at < RELOAD_GUARD_MS;
+}
+
+/** Starts a load of [address], unless the tab already reloaded it. False when no load started. */
 function reloadOnce(address: string): boolean {
   try {
-    const last = lastReload();
-    if (last?.address === address && Date.now() - last.at < RELOAD_GUARD_MS) return false;
+    if (alreadyReloaded(lastReload(), address)) return false;
     const next: LastReload = { address, at: Date.now() };
     window.sessionStorage.setItem(CHUNK_RELOAD_KEY, JSON.stringify(next));
   } catch {

@@ -93,6 +93,20 @@ describe('loading a page file', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
+  it('in the page the reload opened, a file that fails after the guard has passed does not reload again', async () => {
+    // A proxy times the file out after more than 30 s: the reloaded page must still not reload a second time.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    window.sessionStorage.setItem(
+      CHUNK_RELOAD_KEY,
+      JSON.stringify({ address: '/saved', at: performance.timeOrigin - 1 }),
+    );
+    vi.setSystemTime(performance.timeOrigin + RELOAD_GUARD_MS + 1);
+    await expect(loadChunk(missingFile)).rejects.toThrow(
+      'Failed to fetch dynamically imported module',
+    );
+    expect(reload).not.toHaveBeenCalled();
+  });
+
   it('reloads again for another address', async () => {
     reloaded('/sources');
     loadChunk(missingFile).then(settled, settled);
