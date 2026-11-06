@@ -834,6 +834,12 @@
         "excerpt": "Search excerpt",
         "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it."
+      },
+      "decided": {
+        "ACCEPTED_one": "Accepted. {{count}} left.",
+        "ACCEPTED_other": "Accepted. {{count}} left.",
+        "REJECTED_one": "Rejected. {{count}} left.",
+        "REJECTED_other": "Rejected. {{count}} left."
       }
     },
     "enrichment": {
@@ -857,6 +863,44 @@
       "lastRun": "{{outcome}}, {{at}}",
       "next": "Next page",
       "first": "First page"
+    },
+    "keys": {
+      "open": "Keys (?)",
+      "title": "Keys in the review queue",
+      "j": "Next item",
+      "k": "Previous item",
+      "a": "Accept the selected item",
+      "r": "Reject the selected item",
+      "n": "Go to the note (Escape goes back to the list)",
+      "help": "Show these keys",
+      "where": "The keys work only while focus is in the queue, and never while you type in a field.",
+      "close": "Close"
+    },
+    "evidence": {
+      "title": "Evidence",
+      "loading": "Loading the evidence…",
+      "loadError": "Could not load the evidence.",
+      "none": "No run or relationship behind this item. Decide from what it says above.",
+      "model": "Model",
+      "prompt": "Prompt",
+      "outcome": "Outcome",
+      "outcomes": {
+        "VALIDATED": "Validated",
+        "PARTIAL": "Partly validated",
+        "REJECTED": "Rejected by the check",
+        "LLM_UNAVAILABLE": "No model available",
+        "FAILED": "Failed"
+      },
+      "finished": "Finished",
+      "notFinished": "Not finished",
+      "extra": "Also read",
+      "errors": "What the code check refused",
+      "errorsAi": "Includes model output: the check quotes what the AI wrote.",
+      "fields": "Fields of this run",
+      "noFields": "This run has no stored fields left. A newer run may have replaced them.",
+      "noQuote": "No quote.",
+      "quotes": "Source quotes",
+      "sourceQuote": "Source quote"
     }
   },
   "notFound": {
