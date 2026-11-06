@@ -190,7 +190,10 @@ Numbers the server does not give (the 00:00 UTC reset, counter lifetimes, logs, 
 3. **The analytics question.** A bar at the bottom: "Can we count your visit with Google Analytics?", with "Reject" and
    "Accept" the same size. Search works before an answer. The answer is kept; "Cookie settings" in the footer asks
    again.
-4. **The ad.** A search page shows one "Sponsored" box above the results, with why it is there. While the search runs,
+4. **Google's question** (while AdSense is on, in place of step 3): where the EU, EEA, UK or Swiss rules apply,
+   Google's consent tool asks once, for ads and analytics. "Privacy choices" in the footer asks again
+   ([ADR 0059](adr/frontend/0059-adsense.md)). A resource page shows one "Sponsored" AdSense box between its sections.
+5. **The ad.** A search page shows one "Sponsored" box above the results, with why it is there. While the search runs,
    it shows a progress bar; the results replace the bar the moment they come. A new search shows a new ad. No ad next
    to a guide answer.
 

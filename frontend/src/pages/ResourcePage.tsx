@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { FieldStates } from '@/components/results/FieldStates';
 import { Resource } from '@/components/results/Resource';
+import { AdSenseSlot } from '@/components/AdSenseSlot';
 import { resourcePath } from '@/lib/searchState';
 
 function RelList({ items }: { items: Relationship[] }) {
@@ -185,6 +186,9 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
           <RelList items={candidates} />
         </section>
       )}
+
+      {/* The one ad of a resource page, between the resource's own sections, never next to the AI summary. */}
+      <AdSenseSlot />
 
       <section aria-labelledby="rec-h" className="panel">
         <h2 id="rec-h">{t('detail.sourceRecords')}</h2>

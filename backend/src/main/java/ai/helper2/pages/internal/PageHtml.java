@@ -46,11 +46,19 @@ public class PageHtml {
     return template.present();
   }
 
-  public String render(PageHead head) {
-    return template.fill(
-        "<title" + MARK + ">" + esc(head.getTitle()) + "</title>",
-        head(head),
-        body(head.getBody()));
+  /**
+   * The filled shell. Every script and module preload carries [nonce], the request's CSP nonce (ADR
+   * 0059): under the AdSense policy a script without it does not run.
+   */
+  public String render(PageHead head, String nonce) {
+    String page =
+        template.fill(
+            "<title" + MARK + ">" + esc(head.getTitle()) + "</title>",
+            head(head),
+            body(head.getBody()));
+    String attribute = " nonce=\"" + esc(nonce) + "\"";
+    return page.replace("<script", "<script" + attribute)
+        .replace("<link rel=\"modulepreload\"", "<link" + attribute + " rel=\"modulepreload\"");
   }
 
   private String head(PageHead head) {

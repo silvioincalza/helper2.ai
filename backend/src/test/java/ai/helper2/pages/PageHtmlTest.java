@@ -76,13 +76,13 @@ class PageHtmlTest {
 
   @Test
   void writesTheHeadIntoTheShellAndTheBodyIntoRoot() throws IOException {
-    String page = html(SHELL).render(new Pages("https://helper2.ai").of(PageKind.SOURCES));
+    String page = html(SHELL).render(new Pages("https://helper2.ai").of(PageKind.SOURCES), "n0nce");
     assertThat(page)
         .startsWith("<!doctype html>")
         .contains("<title data-h2-head>Sources: where Helper2.ai searches · Helper2.ai</title>")
         .contains("<meta data-h2-head name=\"robots\" content=\"index, follow\">")
         .contains("<link data-h2-head rel=\"canonical\" href=\"https://helper2.ai/sources\">")
-        .contains("<script type=\"module\" src=\"/assets/index.js\"></script>")
+        .contains("<script nonce=\"n0nce\" type=\"module\" src=\"/assets/index.js\"></script>")
         .contains("<div id=\"root\"></div>")
         .doesNotContain("<title>Helper2.ai</title>");
   }
@@ -95,18 +95,26 @@ class PageHtmlTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),
-            Optional.of("ca-pub-4688630163076563"));
-    String page = html(SHELL, adsense).render(new Pages("https://helper2.ai").home());
+            Optional.of("ca-pub-4688630163076563"),
+            Optional.empty());
+    String page = html(SHELL, adsense).render(new Pages("https://helper2.ai").home(), "n0nce");
 
     assertThat(page)
         .contains("<meta name=\"google-adsense-account\" content=\"ca-pub-4688630163076563\">");
-    assertThat(html(SHELL).render(new Pages("https://helper2.ai").home()))
+    assertThat(html(SHELL).render(new Pages("https://helper2.ai").home(), "n0nce"))
         .doesNotContain("google-adsense-account");
   }
 
   @Test
+  void everyScriptCarriesTheNonce() throws IOException {
+    String page = html(SHELL).render(new Pages("https://helper2.ai").resource(hostile()), "n0nce");
+
+    assertThat(Pattern.compile("<script(?! nonce=\"n0nce\")").matcher(page).find()).isFalse();
+  }
+
+  @Test
   void sourceTextCannotOpenATagOrLeaveTheJsonLd() throws IOException {
-    String page = html(SHELL).render(new Pages("https://helper2.ai").resource(hostile()));
+    String page = html(SHELL).render(new Pages("https://helper2.ai").resource(hostile()), "n0nce");
     // Only the shell's own script and the JSON-LD scripts open a script element.
     assertThat(Pattern.compile("<script").matcher(page).results().count()).isEqualTo(1 + 2);
     assertThat(page).doesNotContain("<script>alert").doesNotContain("<b>&amp;");
@@ -127,7 +135,7 @@ class PageHtmlTest {
   @Test
   void theAppsOwnShellHasTheMarkers() throws IOException {
     String shell = Files.readString(Path.of("../frontend/index.html"));
-    assertThat(html(shell).render(new Pages("https://helper2.ai").home()))
+    assertThat(html(shell).render(new Pages("https://helper2.ai").home(), "n0nce"))
         .contains("<title data-h2-head>Helper2.ai: the metasearch for the AI universe")
         .contains("<div id=\"root\"></div>");
   }

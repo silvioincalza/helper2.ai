@@ -3,6 +3,7 @@ package ai.helper2.pages.web;
 import ai.helper2.pages.internal.PageHtml;
 import ai.helper2.pages.usecase.RenderPage;
 import ai.helper2.platform.ClientRoutes;
+import ai.helper2.platform.CspNonce;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +46,9 @@ class PageRoutes {
     return ServerResponse.status(page.status())
         .contentType(new MediaType(MediaType.TEXT_HTML, java.nio.charset.StandardCharsets.UTF_8))
         .cacheControl(CacheControl.noCache())
-        .body(html.render(java.util.Objects.requireNonNull(page.head())));
+        .body(
+            html.render(
+                java.util.Objects.requireNonNull(page.head()),
+                CspNonce.of(request.servletRequest())));
   }
 }

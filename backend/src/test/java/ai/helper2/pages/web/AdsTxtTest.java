@@ -21,7 +21,8 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),
-            Optional.of("ca-pub-4688630163076563"));
+            Optional.of("ca-pub-4688630163076563"),
+            Optional.empty());
 
     var res = files(adsense).adsTxt();
 

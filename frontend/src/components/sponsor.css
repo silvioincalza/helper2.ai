@@ -54,3 +54,11 @@
 .h2-sponsor__ad {
   min-height: 6rem;
 }
+/* The AdSense box on resource pages (ADR 0059): the height AdSense's responsive unit needs, held before it loads. */
+.h2-adsense {
+  min-height: 18rem;
+}
+.h2-adsense__ad {
+  display: block;
+  min-height: 15rem;
+}

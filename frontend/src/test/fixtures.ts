@@ -266,6 +266,8 @@ const MONETISATION_OFF: Me['monetisation'] = {
   stripePaymentUrl: null,
   ga4MeasurementId: null,
   ethicalAdsPublisher: null,
+  adsenseClient: null,
+  adsenseSlot: null,
 };
 
 export const ANON: Me = {
