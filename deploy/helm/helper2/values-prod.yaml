@@ -28,6 +28,9 @@ app:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
   environment: prod
+  # Google AdSense (ADR 0059): the site check tag and /ads.txt on helper2.ai. Not a secret: every page shows it.
+  monetisation:
+    adsenseClient: ca-pub-4688630163076563
   replicas: 3
   # Scout: one run a day at 03:07 UTC (the first start runs at once), up to 200 resources enriched per run.
   scoutCron: "0 7 3 * * *"
