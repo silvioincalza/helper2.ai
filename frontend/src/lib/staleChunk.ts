@@ -3,45 +3,89 @@
  * the import fails (404). Loading the page again gets the new index.html and its files. The same happens during a
  * rolling update, when the page comes from a new pod and the file request goes to an old one.
  *
- * The tab reloads at most once per address: the address waits in sessionStorage (this tab only) and is removed as
- * soon as a page file loads. If the reload does not help, the error goes on to the route's error page.
+ * The tab loads the page the visitor was going to, not the one they are leaving: during a navigation the address bar
+ * still shows the old page, so {@link followNavigation} keeps the destination.
+ *
+ * The tab reloads one address at most once in {@link RELOAD_GUARD_MS}: the address and the time wait in
+ * sessionStorage (this tab only). A page file that loads does not clear them: a route can load several files (the
+ * admin layout, then its page), and clearing on the first one would let a file that keeps failing reload the tab
+ * forever. If the reload does not help, the error goes on to the route's error page.
  */
 export const CHUNK_RELOAD_KEY = 'h2.chunkReload';
 
-const here = () => window.location.pathname + window.location.search;
+/** Long enough for the reload to finish and fail again; short enough that a later release can reload the tab. */
+export const RELOAD_GUARD_MS = 30_000;
 
-/** Starts a reload, unless this address already had one. False when no reload started. */
-function reloadOnce(): boolean {
+interface LastReload {
+  address: string;
+  at: number;
+}
+
+/** The router's view this module needs: the address of the navigation in progress, if any. */
+interface NavigatingRouter {
+  subscribe(listener: (state: NavigationState) => void): () => void;
+}
+
+interface NavigationState {
+  navigation: { location?: { pathname: string; search: string; hash: string } | undefined };
+}
+
+let destination: string | undefined;
+
+/** Keeps the address of the navigation in progress, so a reload lands where the visitor was going. */
+export function followNavigation(router: NavigatingRouter): () => void {
+  return router.subscribe(({ navigation }) => {
+    const to = navigation.location;
+    destination = to ? to.pathname + to.search + to.hash : undefined;
+  });
+}
+
+const here = () => window.location.pathname + window.location.search + window.location.hash;
+
+function lastReload(): LastReload | undefined {
+  const stored = window.sessionStorage.getItem(CHUNK_RELOAD_KEY);
+  if (!stored) return undefined;
   try {
-    if (window.sessionStorage.getItem(CHUNK_RELOAD_KEY) === here()) return false;
-    window.sessionStorage.setItem(CHUNK_RELOAD_KEY, here());
+    const parsed: unknown = JSON.parse(stored);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      typeof (parsed as LastReload).address === 'string' &&
+      typeof (parsed as LastReload).at === 'number'
+    ) {
+      return parsed as LastReload;
+    }
+  } catch {
+    /* not ours: no guard */
+  }
+  return undefined;
+}
+
+/** Starts a load of [address], unless the tab reloaded it a moment ago. False when no load started. */
+function reloadOnce(address: string): boolean {
+  try {
+    const last = lastReload();
+    if (last?.address === address && Date.now() - last.at < RELOAD_GUARD_MS) return false;
+    const next: LastReload = { address, at: Date.now() };
+    window.sessionStorage.setItem(CHUNK_RELOAD_KEY, JSON.stringify(next));
   } catch {
     // Storage blocked: no guard against a reload loop, so no reload. The error page offers one.
     return false;
   }
-  window.location.reload();
+  if (address === here()) window.location.reload();
+  else window.location.assign(address);
   return true;
 }
 
-function forgetReload(): void {
-  try {
-    window.sessionStorage.removeItem(CHUNK_RELOAD_KEY);
-  } catch {
-    /* storage blocked: nothing was kept */
-  }
-}
-
 /**
- * Loads a page file. On failure the tab reloads once, and the promise never settles, so the old page stays until the
- * new one is in. On a second failure, the error goes on.
+ * Loads a page file. On failure the tab loads the destination again, once, and the promise never settles, so the old
+ * page stays until the new one is in. On a second failure, the error goes on.
  */
 export async function loadChunk<T>(load: () => Promise<T>): Promise<T> {
   try {
-    const mod = await load();
-    forgetReload();
-    return mod;
+    return await load();
   } catch (error) {
-    if (reloadOnce()) return new Promise<T>(() => {});
+    if (reloadOnce(destination ?? here())) return new Promise<T>(() => {});
     throw error;
   }
 }

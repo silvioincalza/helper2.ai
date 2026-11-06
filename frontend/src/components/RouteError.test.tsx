@@ -13,8 +13,11 @@ describe('a page that cannot open', () => {
   afterEach(() => window.sessionStorage.clear());
 
   it('after the one reload, says so inside the layout and offers a reload, without the stack', async () => {
-    // The tab already reloaded for this address (the memory router leaves window.location on "/").
-    window.sessionStorage.setItem(CHUNK_RELOAD_KEY, '/');
+    // The tab reloaded this address a moment ago (the memory router leaves window.location on "/").
+    window.sessionStorage.setItem(
+      CHUNK_RELOAD_KEY,
+      JSON.stringify({ address: '/', at: Date.now() }),
+    );
     mockApi({ 'GET /me': () => ANON });
     renderApp('/saved');
 
