@@ -66,6 +66,9 @@ and how many web credits the day has used. Two sources can describe the same res
 11. **Sources page numbers.** `GET /api/v1/sources` (`ListSources`) lists every disclosed source by priority, with:
     - `lastOutcome`, `lastCheckedAt`: the newer of this replica's last search (`SourceHealth`) and the Scout's last
       run (`RecordedOutcomes`); when the database cannot answer, this replica's only.
+    - `lastCheckedSecondsAgo`: how long ago that was, by the server's clock when it answers. The home radar says
+      "2 minutes ago" from it, so a browser with a wrong clock does not say the wrong time. The Sources table shows
+      `lastCheckedAt` in UTC.
     - `responseTimeMs`: the median of this replica's last 20 calls to the source, failed and timed-out ones included.
       A cache hit or a skipped call is not a call. A median of a short window is steadier than the last call and
       needs no shared store.

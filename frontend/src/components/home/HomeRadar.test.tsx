@@ -177,6 +177,26 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
     expect(tones).toMatch(/v4-dot--answering/);
   });
 
+  it("Scenario: a dot says how long ago its source was checked by the server's clock", () => {
+    const checked = external.map((s) => ({
+      ...s,
+      lastOutcome: 'SUCCEEDED' as const,
+      lastCheckedAt: '2000-01-01T00:00:00Z',
+      lastCheckedSecondsAgo: 120,
+    }));
+    render(<Page sources={checked} />);
+    const labels: string[] = [];
+    for (let i = 0; i < 40; i++) {
+      advance(i < 5 ? INTRO_MS : STEP_MS);
+      within(screen.getByRole('list', { name: /sources we search/ }))
+        .queryAllByRole('link')
+        .filter((a) => checked.find((s) => s.id === a.dataset.source)?.mode !== 'LIVE')
+        .forEach((a) => labels.push(a.getAttribute('aria-label') ?? ''));
+    }
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) expect(label).toMatch(/2 minutes ago/);
+  });
+
   it('Scenario: only the dots on the radar are in the page; one fading out is hidden from screen readers', () => {
     const { container } = render(<Page />);
     advance(5 * INTRO_MS + 50);

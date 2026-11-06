@@ -45,6 +45,9 @@ import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -69,6 +72,7 @@ class SearchController implements SearchApi, SourcesApi {
   private final ListSources sources;
   private final SignedInUser signedInUser;
   private final CategoryCatalog categories;
+  private final Clock clock;
 
   /** A proxy to the current request: the generated interface does not pass it. */
   private final HttpServletRequest http;
@@ -78,11 +82,13 @@ class SearchController implements SearchApi, SourcesApi {
       ListSources sources,
       SignedInUser signedInUser,
       CategoryCatalog categories,
+      Clock clock,
       HttpServletRequest http) {
     this.search = search;
     this.sources = sources;
     this.signedInUser = signedInUser;
     this.categories = categories;
+    this.clock = clock;
     this.http = http;
   }
 
@@ -144,10 +150,11 @@ class SearchController implements SearchApi, SourcesApi {
 
   @Override
   public ResponseEntity<List<SourceInfoDto>> listSources() {
-    return ResponseEntity.ok(sources.list().stream().map(SearchController::info).toList());
+    Instant now = clock.instant();
+    return ResponseEntity.ok(sources.list().stream().map(o -> info(o, now)).toList());
   }
 
-  private static SourceInfoDto info(SourceOverview o) {
+  private static SourceInfoDto info(SourceOverview o, Instant now) {
     SourceDescriptor d = o.getDescriptor();
     SourceInfoDto dto =
         new SourceInfoDto(
@@ -170,7 +177,8 @@ class SearchController implements SearchApi, SourcesApi {
             .newThisWeek(o.getNewThisWeek());
     if (o.getLast() != null) {
       dto.lastOutcome(SourceOutcomeDto.fromValue(o.getLast().getOutcome().name()))
-          .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()));
+          .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()))
+          .lastCheckedSecondsAgo(secondsBetween(o.getLast().getCheckedAt(), now));
     }
     if (o.getCircuit() != null) {
       dto.circuit(CircuitStateDto.fromValue(o.getCircuit().state().name()))
@@ -182,6 +190,11 @@ class SearchController implements SearchApi, SourcesApi {
               .dailyCap(o.getWebCredits().getDailyCap()));
     }
     return dto;
+  }
+
+  /** The server's clock, not the browser's: a client with a wrong clock still reads "2 min ago". */
+  private static long secondsBetween(Instant then, Instant now) {
+    return Math.max(0, Duration.between(then, now).getSeconds());
   }
 
   private static SearchResponseDto toDto(SearchOutcome out) {

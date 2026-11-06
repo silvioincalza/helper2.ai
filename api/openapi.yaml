@@ -2027,6 +2027,13 @@ components:
             every other source. The Sources page groups the categories by it.
         lastOutcome: { oneOf: [{ $ref: '#/components/schemas/SourceOutcome' }, { type: 'null' }] }
         lastCheckedAt: { type: [string, 'null'], format: date-time }
+        lastCheckedSecondsAgo:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: >-
+            How long ago the last check was, by the server's clock when it answered. A client
+            shows "2 min ago" from this, not from its own clock, which may be wrong.
         responseTimeMs:
           type: [integer, 'null']
           format: int64
