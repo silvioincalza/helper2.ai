@@ -10,7 +10,7 @@ FROM docker.io/library/postgres:18.6-alpine@sha256:10a5c69a83035ab5239f5620d7085
 # sha256, so a moved tag or a tampered download fails the build. For a new version:
 #   git clone --quiet --depth 1 --branch v<version> https://github.com/pgvector/pgvector.git p
 #   git -C p rev-parse HEAD; rm -rf p/.git
-#   (cd p && find . -type f | LC_ALL=C sort | xargs sha256sum | sha256sum)
+#   (cd p && find . -type f | LC_ALL=C sort | while IFS= read -r f; do sha256sum "$f"; done | sha256sum)
 ARG PGVECTOR_VERSION=0.8.6
 ARG PGVECTOR_COMMIT=8ee86c96f0fd72390f890aa8a336fda6d3ab4c6c
 ARG PGVECTOR_SHA256=b669ffedc5ccb50a1cbd17532160df022b10af7274162d45577bb05d4e1d2dc1
@@ -22,9 +22,12 @@ RUN apk add --no-cache --virtual .pgvector-build build-base git \
     && commit=$(git -C /tmp/pgvector rev-parse HEAD) \
     && { [ "$commit" = "$PGVECTOR_COMMIT" ] || { echo "pgvector v${PGVECTOR_VERSION} is $commit, expected $PGVECTOR_COMMIT"; exit 1; }; } \
     && rm -rf /tmp/pgvector/.git \
-    && sum=$(cd /tmp/pgvector && find . -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -d' ' -f1) \
+    && sum=$(cd /tmp/pgvector && find . -type f | LC_ALL=C sort | while IFS= read -r file; do sha256sum "$file"; done | sha256sum | cut -d' ' -f1) \
     && { [ "$sum" = "$PGVECTOR_SHA256" ] || { echo "pgvector source sha256 is $sum, expected $PGVECTOR_SHA256"; exit 1; }; } \
     && make -C /tmp/pgvector OPTFLAGS="" with_llvm=no \
     && make -C /tmp/pgvector install with_llvm=no \
     && rm -rf /tmp/pgvector \
     && apk del .pgvector-build
+
+# Ends as postgres (uid 70), the user the chart runs it as (runAsUser: 70), not as root.
+USER postgres

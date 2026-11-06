@@ -22,7 +22,7 @@ From the repository root:
 ```bash
 REGISTRY=ghcr.io/<owner>
 TAG=$(git rev-parse --short=12 HEAD)
-PG_TAG=18.6-pgvector0.8.6-2  # postgres.image.tag in the chart's values.yaml
+PG_TAG=18.6-pgvector0.8.6-3  # postgres.image.tag in the chart's values.yaml
 
 podman build --platform linux/amd64 -f deploy/Dockerfile -t $REGISTRY/helper2:$TAG .
 podman build --platform linux/amd64 -t $REGISTRY/helper2-postgres:$PG_TAG deploy/postgres
