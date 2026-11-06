@@ -466,7 +466,7 @@ class JdbcEnrichmentCandidatesIT {
   @Test
   void anAcceptedProductOlderThanTheBatchStillComesFirst() {
     UUID accepted = withText("Accepted old", "INDEXED", "NOT_RUN", T0.minus(3650, ChronoUnit.DAYS));
-    withText("Newer", "INDEXED", "NOT_RUN", T0.plus(1, ChronoUnit.DAYS));
+    UUID newer = withText("Newer", "INDEXED", "NOT_RUN", T0.plus(1, ChronoUnit.DAYS));
     String url =
         jdbc.sql("SELECT canonical_url FROM resource WHERE id = :id")
             .param("id", accepted)
@@ -481,12 +481,53 @@ class JdbcEnrichmentCandidatesIT {
         .param("url", url)
         .update();
     try {
-      assertThat(candidates.pending(1, MIN_TEXT, MAX_FAILED)).containsExactly(accepted);
+      // Other tests accept products too (they wait without source text, ADR 0058), so the head of
+      // the batch is shared: the accepted product comes before the newer never-run one.
+      List<UUID> batch = candidates.pending(Integer.MAX_VALUE, MIN_TEXT, MAX_FAILED);
+      assertThat(batch).contains(accepted, newer);
+      assertThat(batch.indexOf(accepted)).isLessThan(batch.indexOf(newer));
       // Once enriched it leaves the backlog: an accepted product is not pinned at the head.
       jdbc.sql("UPDATE resource SET enrichment_status = 'VALIDATED' WHERE id = :id")
           .param("id", accepted)
           .update();
       assertThat(candidates.pending(10_000, MIN_TEXT, MAX_FAILED)).doesNotContain(accepted);
+    } finally {
+      jdbc.sql("DELETE FROM review_item WHERE candidate_url = :url").param("url", url).update();
+    }
+  }
+
+  /**
+   * ADR 0058: a product linked from an awesome list keeps no snippet, so it has no source text.
+   * Once a person accepts it, it still waits for enrichment: the ladder reads its page. The count
+   * and the queue follow the same rule.
+   */
+  @Test
+  void anAcceptedProductWithoutSourceTextIsPending() {
+    UUID accepted = resource("Acme", "INDEXED", "NOT_RUN", T0);
+    record(accepted, "github-awesome", "Acme", null, null);
+    UUID bare = resource("Bare title", "INDEXED", "NOT_RUN", T0);
+    record(bare, "github-awesome", "Bare title", null, null);
+    String url =
+        jdbc.sql("SELECT canonical_url FROM resource WHERE id = :id")
+            .param("id", accepted)
+            .query(String.class)
+            .single();
+    jdbc.sql(
+            """
+            INSERT INTO review_item (id, kind, status, candidate_url, reason, resolved_at)
+            VALUES (:id, 'RESOURCE_CANDIDATE', 'ACCEPTED', :url, 'test', now())
+            """)
+        .param("id", UUID.randomUUID())
+        .param("url", url)
+        .update();
+    try {
+      assertThat(pendingOfThisTest()).containsExactly(accepted);
+      assertThat(candidates.pendingCount(MIN_TEXT, MAX_FAILED))
+          .isEqualTo(candidates.pending(Integer.MAX_VALUE, MIN_TEXT, MAX_FAILED).size());
+      assertThat(candidates.backlog(View.WAITING, null, 10_000, MIN_TEXT, MAX_FAILED))
+          .extracting(EnrichmentCandidates.BacklogEntry::id)
+          .contains(accepted)
+          .doesNotContain(bare);
     } finally {
       jdbc.sql("DELETE FROM review_item WHERE candidate_url = :url").param("url", url).update();
     }

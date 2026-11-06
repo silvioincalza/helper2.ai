@@ -17,10 +17,10 @@ public interface EnrichmentCandidates {
   /**
    * Resources never enriched, enriched while no LLM was available, or whose last attempt FAILED
    * with fewer than [maxFailed] FAILED runs since an admin last requeued it. Only indexed, observed
-   * and curated resources with at least one source description of [minText] characters, and none an
-   * admin skipped. The ones an admin moved to the top first (ADR 0045 §7), then products a person
-   * accepted from the review queue (ADR 0056), then never-run resources, then the rest, each part
-   * newest discoveries first; at most [limit].
+   * and curated resources with at least one source description of [minText] characters or accepted
+   * by a person from the review queue, and none an admin skipped. The ones an admin moved to the
+   * top first (ADR 0045 §7), then products a person accepted from the review queue (ADR 0056), then
+   * never-run resources, then the rest, each part newest discoveries first; at most [limit].
    */
   List<UUID> pending(int limit, int minText, int maxFailed);
 

@@ -71,8 +71,10 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
 
   /**
    * Never enriched, enriched while no LLM was available, or whose last attempt FAILED (stored as
-   * REJECTED) with retries left. Only resources with a source description: a bare title gives the
-   * model nothing worth citing, so it would only produce REJECTED runs. Newest discoveries first.
+   * REJECTED) with retries left. Only resources with a source description, or accepted by a person:
+   * a bare title gives the model nothing worth citing, so it would only produce REJECTED runs,
+   * unless the evidence ladder can read the product's own page (ADR 0056, ADR 0058). Newest
+   * discoveries first.
    */
   @Override
   public List<UUID> pending(int limit) {

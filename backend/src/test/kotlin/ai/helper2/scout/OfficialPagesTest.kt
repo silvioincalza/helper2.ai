@@ -277,6 +277,20 @@ class OfficialPagesTest {
     assertNull(PageTargets.select(listOf(rec("curated", "http://acme.example/"))))
   }
 
+  /** ADR 0058: a product site accepted from an awesome list is a page; the list itself is not. */
+  @Test
+  fun `a product linked from an awesome list is a page target, the list on github is not`() {
+    fun rec(url: String) = GapSourceRecord(UUID.randomUUID(), "github-awesome", url, url, null)
+    assertEquals(
+      URI("https://acme.example/"),
+      PageTargets.select(
+          listOf(rec("https://github.com/acme/awesome-ai"), rec("https://acme.example/"))
+        )
+        ?.url,
+    )
+    assertNull(PageTargets.select(listOf(rec("https://github.com/acme/awesome-ai"))))
+  }
+
   @Test
   fun `a product page is cleaned and phone numbers are masked`() {
     val reader =
