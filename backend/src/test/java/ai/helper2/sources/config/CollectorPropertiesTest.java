@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Each collector's settings bind from helper2.scout.<collector> with the defaults of
@@ -64,7 +65,11 @@ class CollectorPropertiesTest {
           .hasSize(10)
           .startsWith("coursera.org=Coursera", "oreilly.com=O'Reilly")
           .endsWith("nvidia.com=NVIDIA");
-      assertThat(c.getBean(CollectorProperties.GitHubAwesome.class))
+      CollectorProperties.GitHubAwesome awesome =
+          c.getBean(CollectorProperties.GitHubAwesome.class);
+      assertThat(awesome)
+          .usingRecursiveComparison()
+          .ignoringFields("maxRunTime", "maxReadmeBytesPerRun", "nested", "links")
           .isEqualTo(
               new CollectorProperties.GitHubAwesome(
                   Duration.ofDays(1),
@@ -82,7 +87,17 @@ class CollectorPropertiesTest {
                   50,
                   25,
                   8192,
-                  300));
+                  300,
+                  null,
+                  null,
+                  null,
+                  null));
+      assertThat(awesome.maxRunTime()).isEqualTo(Duration.ofMinutes(15));
+      assertThat(awesome.maxReadmeBytesPerRun()).isEqualTo(DataSize.ofMegabytes(50));
+      assertThat(awesome.nested()).isEqualTo(new CollectorProperties.GitHubAwesome.Nested(2, 30));
+      assertThat(awesome.links().perDay()).isEqualTo(50);
+      assertThat(awesome.links().maxPerPass()).isEqualTo(500);
+      assertThat(awesome.links().excludeDomains()).contains("arxiv.org", "discord.gg");
       assertThat(c.getBean(CollectorProperties.HfProviderOrgs.class))
           .isEqualTo(
               new CollectorProperties.HfProviderOrgs(
@@ -107,10 +122,17 @@ class CollectorPropertiesTest {
   @Test
   void anH2VariableReachesItsField() {
     context
-        .withSystemProperties("H2_SCOUT_AWESOME_PER_RUN=50", "H2_SCOUT_MCP_INTERVAL=PT2H")
+        .withSystemProperties(
+            "H2_SCOUT_AWESOME_PER_RUN=50",
+            "H2_SCOUT_MCP_INTERVAL=PT2H",
+            "H2_SCOUT_AWESOME_NESTED_LISTS=5",
+            "H2_SCOUT_AWESOME_LINKS_PER_DAY=0")
         .run(c -> {
-          assertThat(c.getBean(CollectorProperties.GitHubAwesome.class).maxEntriesPerRun())
-              .isEqualTo(50);
+          CollectorProperties.GitHubAwesome awesome =
+              c.getBean(CollectorProperties.GitHubAwesome.class);
+          assertThat(awesome.maxEntriesPerRun()).isEqualTo(50);
+          assertThat(awesome.nested().maxListsPerRun()).isEqualTo(5);
+          assertThat(awesome.links().perDay()).isZero();
           assertThat(c.getBean(CollectorProperties.McpRegistry.class).interval())
               .isEqualTo(Duration.ofHours(2));
         });

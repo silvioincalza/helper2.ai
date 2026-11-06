@@ -108,8 +108,16 @@ class GitHubAwesomeCollectorTest {
         new RunInterval(Duration.ofDays(1)),
         List.of("topic:awesome-list topic:llm"),
         new GitHubAwesomeCollector.Limits(10, 1000, 1000, perRun, 50, 25),
-        classifier);
+        DEEP,
+        classifier,
+        ai.helper2.shared.CategoryMatcher.NONE,
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
   }
+
+  /** Deep search as configured by default (ADR 0058). */
+  static final GitHubAwesomeCollector.Deep DEEP =
+      new GitHubAwesomeCollector.Deep(
+          2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
 
   void routes() {
     server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));

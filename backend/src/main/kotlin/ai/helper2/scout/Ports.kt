@@ -36,6 +36,11 @@ constructor(
    * open, so the next run tries it again ([notDue] only).
    */
   val deferred: Boolean = false,
+  /**
+   * At most this many new review items a UTC day from this collector's [candidates]; past it a
+   * candidate only joins an OPEN item of its URL (ADR 0058). null: no daily cap.
+   */
+  val newCandidatesPerDay: Int? = null,
 ) {
   companion object {
     /** Nothing collected and nothing advanced: the previous checkpoint stays. */
@@ -118,6 +123,14 @@ fun interface CandidateReview {
    * were opened.
    */
   fun propose(sourceId: String, candidates: List<Candidate>): Int
+
+  /**
+   * As [propose], opening at most [newPerDay] items for [sourceId] in the current UTC day, counting
+   * the ones opened earlier that day (ADR 0058). Past the cap a candidate still joins the OPEN item
+   * of its URL. null: no cap.
+   */
+  fun propose(sourceId: String, candidates: List<Candidate>, newPerDay: Int?): Int =
+    propose(sourceId, candidates)
 }
 
 /**

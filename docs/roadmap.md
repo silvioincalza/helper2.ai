@@ -23,6 +23,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
   tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
   GitHub's terms for reading README files to build it.
+- Lawyer review of deep search in awesome lists ([ADR 0058](adr/scout/0058-awesome-deep-search.md)): GitHub's terms
+  for reading up to 40 README files a day and following links from list to list; keeping and showing links to
+  third-party product sites with the link's words and the list's section (consent, liability for links under the DSA
+  and Swiss law); a section heading used as a category as reuse of the list's selection or arrangement.
 - Lawyer review of README and model-card quotes ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): the quotation
   right (Swiss URG Art. 25, EU InfoSoc Art. 5(3)(d)) for 20–300-character excerpts, also of repositories with no
   licence; GitHub and Hugging Face terms for reading and keeping them (the Hub `raw` path is not its API); author names
@@ -186,6 +190,9 @@ Open items:
 - Search inside awesome lists ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): once the search set has
   grades, compare recall and nDCG@10 with and without list words, and tune the half weight from that, not before.
   Then decide on embeddings of entry lines.
+- Deep search in awesome lists ([ADR 0058](adr/scout/0058-awesome-deep-search.md)): follow a list known only by its
+  topics (one facts call per candidate link, measured first); read `<a href>` links in READMEs; measure the category
+  precision from headings once the category labels exist.
 - Source requests: anyone can ask for a new source of information (a registry, an e-learning platform, a vendor's
   catalog, a newsletter) from the Sources page. A request names the site and what it lists; it goes to the admin
   review list, and an accepted request becomes a collector or a curated entry after a terms review for public
@@ -298,6 +305,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Accepted risk (owner, 30 Oct 2026): rotating addresses can drain the monthly Tavily credits while no cap is set; searches then answer from stored sets and other sources. Failing closed loses fresh web results for a Redis outage. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 - Categories ([ADR 0053](adr/search/0053-category-filter.md)) are as good as their words: a tool that uses none of a category's words has no category. Facet counts see only the hits of this query. A changed category filter on a page where the guide was asked asks the guide again (one more AI answer, unless cached). The guide's comparison and explanation subject searches ignore the filter on purpose.
 - Awesome-list words are English-stemmed: a list in another language matches only exact word forms. An entry whose repository was renamed since the list was written links the old URL and is left out of the index. ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md))
+- Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap. ([ADR 0058](adr/scout/0058-awesome-deep-search.md))
 - The web-search quota is taken before the call, so a call the circuit refuses still counts. A stored hit is read back with two short queries; a set not yet stored is a miss. ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md))
 
 ### Scout

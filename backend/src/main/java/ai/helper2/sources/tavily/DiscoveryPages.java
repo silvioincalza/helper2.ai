@@ -20,8 +20,11 @@ import org.jspecify.annotations.Nullable;
  *       product's own home page or repository is a LIST page, indexed as an ARTICLE;
  *   <li>anything else (a blog post, a docs page, a publisher's page) is neither: it is dropped.
  * </ul>
+ *
+ * <p>The awesome-list collector uses {@link #productSite} too (ADR 0058), so a link in a list is
+ * kept by the same rules as a search result.
  */
-final class DiscoveryPages {
+public final class DiscoveryPages {
 
   private DiscoveryPages() {}
 
@@ -267,7 +270,7 @@ final class DiscoveryPages {
    *       one product per page.
    * </ul>
    */
-  static @Nullable CanonicalUrl productSite(CanonicalUrl url) {
+  public static @Nullable CanonicalUrl productSite(CanonicalUrl url) {
     String host = url.getHost();
     if (host.equals("github.com")) {
       return isRepository(url) ? url : null;

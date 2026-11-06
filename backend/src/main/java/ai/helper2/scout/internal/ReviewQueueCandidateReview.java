@@ -7,6 +7,7 @@ import ai.helper2.scout.usecase.AcceptedCandidate;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.shared.ResourceType;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,16 +35,42 @@ class ReviewQueueCandidateReview implements CandidateReview {
 
   @Override
   public int propose(String sourceId, List<Candidate> candidates) {
+    return propose(sourceId, candidates, null);
+  }
+
+  /**
+   * Past the daily cap (ADR 0058) a candidate opens nothing new; it still joins the OPEN item of
+   * its URL, so a page two collectors found stays one item.
+   */
+  @Override
+  public int propose(String sourceId, List<Candidate> candidates, @Nullable Integer newPerDay) {
+    int left = newPerDay == null ? Integer.MAX_VALUE : remainingToday(sourceId, newPerDay);
     int opened = 0;
+    int capped = 0;
     for (Candidate c : candidates) {
-      if (open(sourceId, c)) {
-        opened++;
+      if (opened < left) {
+        if (open(sourceId, c)) {
+          opened++;
+        }
+      } else if (c.getType() != ResourceType.COURSE) {
+        capped++;
+        mergeIntoOpenItem(sourceId, c);
       }
     }
-    if (opened > 0) {
-      log.info("{}: {} of {} candidate pages sent to review", sourceId, opened, candidates.size());
+    if (opened > 0 || capped > 0) {
+      log.info(
+          "{}: {} of {} candidate pages sent to review, {} past the daily cap",
+          sourceId,
+          opened,
+          candidates.size(),
+          capped);
     }
     return opened;
+  }
+
+  private int remainingToday(String sourceId, int newPerDay) {
+    return Math.max(
+        0, newPerDay - queue.candidatesOpenedToday(ReviewQueue.Kind.RESOURCE_CANDIDATE, sourceId));
   }
 
   private boolean open(String sourceId, Candidate c) {
