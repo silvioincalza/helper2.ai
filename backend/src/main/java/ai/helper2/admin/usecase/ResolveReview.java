@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * An administrator decides a review item. Accepting a drafted example (EXAMPLE_CANDIDATE, ADR 0049
