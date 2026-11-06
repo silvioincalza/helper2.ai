@@ -39,7 +39,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
    is Cloudflare (appends the visitor's address to `X-Forwarded-For`), the platform's tunnel, then ingress-nginx
    (`compute-full-forwarded-for`: appends the tunnel pod's address). Tomcat's remote-IP handling reads the header from
    the right and skips private and loopback addresses (its default `internalProxies`), so the first public address is the one
-   Cloudflare appended. A client can prepend addresses but cannot replace that one.
+   Cloudflare appended. A client can prepend addresses but cannot replace that one. The admin host has no Cloudflare in front, so
+   no rate limit is keyed on an address there ([0035](0035-admin-host.md)).
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST: it writes it on `GET /api/v1/me`, which the SPA calls when it starts,

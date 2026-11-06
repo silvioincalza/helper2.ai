@@ -114,7 +114,7 @@ The constraints:
 - `backend/src/main/java/ai/helper2/monetisation/` — `Monetisation`, `config/MonetisationProperties.java`,
   `config/MonetisationConfiguration.java`.
 - `backend/src/main/java/ai/helper2/identity/config/ContentSecurityPolicy.java` — the public CSP;
-  `CspHeaderWriter.java` sends it, or the strict one on the admin port; `identity/AdminHost.java` tells other modules.
+  `CspHeaderWriter.java` sends it, or the strict one on the admin port; `platform/AdminHost.java` (answered by identity) tells other modules.
 - `backend/src/main/java/ai/helper2/identity/web/MeController.java`, `api/openapi.yaml` — `Me.monetisation`.
 - `frontend/src/context/MonetisationContext.tsx` (reads `/me`), `lib/consent.ts`, `lib/analytics.ts`,
   `components/AnalyticsConsent.tsx`, `components/SponsorSlot.tsx`, `pages/SupportPage.tsx`,

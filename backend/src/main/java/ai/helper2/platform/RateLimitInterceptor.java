@@ -38,6 +38,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
   private final Resilience resilience;
   private final Clock clock;
   private final MeterRegistry meters;
+  private final AdminHost adminHost;
 
   RateLimitInterceptor(
       Clock clock,
@@ -45,12 +46,14 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
       QuotaKeys keys,
       Resilience resilience,
       MeterRegistry meters,
-      RateLimitProperties limits) {
+      RateLimitProperties limits,
+      AdminHost adminHost) {
     this.redis = redis.getIfAvailable();
     this.keys = keys;
     this.resilience = resilience;
     this.clock = clock;
     this.meters = meters;
+    this.adminHost = adminHost;
     // Each guide question costs three LLM calls: keep it tighter than search. The guide and the
     // tool guide share one limiter, so switching endpoint does not double a client's budget.
     RateLimiter guide = limiter("guide", limits.guidePerMinute(), Duration.ofMinutes(1));
@@ -106,6 +109,12 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     }
     RateLimiter limiter = limiters.get(hm.getMethod().getName());
     if (limiter == null) {
+      return true;
+    }
+    // The admin host is closed by the network, the port filter and the role (ADR 0035). Without
+    // Cloudflare in front, a forwarded address there could be the client's own choice: no limit
+    // is keyed on it.
+    if (adminHost.currentRequestOnAdminHost()) {
       return true;
     }
     // remoteAddr honours X-Forwarded-For only when H2_FORWARD_HEADERS_STRATEGY is set behind a

@@ -49,6 +49,9 @@ reaches the cluster with an address from the platform's private ranges.
 ## Consequences
 - The back office is closed at three layers: the network edge, the port filter and the role. Each one alone keeps
   it closed.
+- No rate limit on the admin host. There is no Cloudflare in front of it, so a forwarded address there could be
+  the client's own choice; a counter keyed on it would be the client's to steer. The network closes the host
+  (`RateLimitInterceptor` asks `AdminHost`, a platform port identity answers).
 - End users can sign in on the public site, so bookmarks are kept on the server and the registered tier is possible.
 - The GitHub app needs two callback URLs per environment.
 - Local development keeps one port (`H2_ADMIN_PORT` unset).

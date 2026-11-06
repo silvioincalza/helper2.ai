@@ -1,6 +1,6 @@
 package ai.helper2.identity.config;
 
-import ai.helper2.identity.AdminHost;
+import ai.helper2.platform.AdminHost;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.Problems;
 import jakarta.servlet.FilterChain;
