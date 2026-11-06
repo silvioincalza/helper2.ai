@@ -6,14 +6,14 @@
  */
 
 /** TCF purposes Google Analytics needs: store information on a device (1), measure content performance (8). */
-export const ANALYTICS_PURPOSES = [1, 8] as const;
+const ANALYTICS_PURPOSES = [1, 8] as const;
 /** Google's vendor ID in the IAB Global Vendor List. */
-export const GOOGLE_VENDOR = 755;
+const GOOGLE_VENDOR = 755;
 
 /** outside: the rules do not apply (no question); granted / denied: the answer where they apply. */
 export type ConsentDecision = 'outside' | 'granted' | 'denied';
 
-export interface TcData {
+interface TcData {
   gdprApplies?: boolean;
   eventStatus?: string;
   listenerId?: number;
