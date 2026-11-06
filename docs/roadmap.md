@@ -15,11 +15,47 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - Lawyer review of the web-search quota ([ADR 0037](adr/search/0037-tavily-store-and-daily-quota.md)): whether an HMAC of
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
+- Lawyer review of back-office records ([ADR 0045](adr/edge/0045-back-office.md)): `admin_audit` keeps an
+  administrator's GitHub id for 24 months, and a review item keeps who decided it and their note. Is the line on the
+  Privacy page enough for the people who run the site, and is 24 months right?
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
-  NVIDIA API catalog in the US (not yet listed under transfers abroad). 
+  NVIDIA API catalog in the US. The Privacy page lists the transfer, what NVIDIA receives and what its terms let it do
+  with the text (6 Nov 2026); the lawyer confirms the wording and whether Art. 49(1)(b) GDPR can carry transfers made
+  on every search.
+- Silvio: buy the NVIDIA API subscription before the next prod release; the trial terms forbid production
+  ([NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf),
+  v. 19 Sep 2025, §1.2 and §1.4). NVIDIA publishes no terms for a paid use of `integrate.api.nvidia.com`: §1.4 says the
+  subscription's own terms govern production use. Before signing, get in writing that the subscription covers calls to
+  the hosted endpoint, what NVIDIA does with the text (the trial terms let it improve its models, §3.3(iv)), how long it
+  keeps it (§2.3, §2.4), where the endpoint runs, and whether a data processing agreement with standard contractual
+  clauses is part of it. Then update the Embeddings sentence on the Privacy page.
+- Confirm with Nebius where `nvidia/nemotron-3-super-120b-a12b` is served; the Privacy page says guide questions are
+  processed in the European Union. The Nebius Token Factory model catalog (read 6 Nov 2026) lists the model in
+  `us-central1` (Kansas City, US) only; Nemotron 3 Nano is in `eu-north1` (Finland). The choose and reason-check calls
+  use the reasoning model (`H2_NEBIUS_REASONING_MODEL` on prod, in OpenBao). If it runs in the US: Nebius Inc. is
+  DPF-certified EU-US only, not Swiss-US, so the Swiss transfer needs the SCCs of the Nebius DPA, and the page changes.
 - Review each source's terms again for commercial use.
+- Monetisation ([ADR 0057](adr/frontend/0057-monetisation.md)), before a setting is filled on prod:
+  - Manual: create the GA4 property (EU data), retention 2 months; in enhanced measurement turn off "Page changes based
+    on browser history events", site search and form interactions; Google signals off; a separate stream for staging.
+    Check once in DebugView that no hit carries `q=` or `ask=`.
+  - Manual: EthicalAds applied (6 Nov 2026), waiting for the publisher ID; set up GitHub Sponsors and a Stripe Payment
+    Link whose confirmation page is `https://helper2.ai/support/thanks`; then fill `app.monetisation.*` per
+    environment.
+  - Check on staging that the browser console shows no CSP errors with each part on (the CSP lists `media.` and
+    `server.ethicalads.io`; the client loads ads as JSONP from `server.`).
+  - Lawyer: check the consent wording, the Swiss rules on ad labelling (UWG), whether EthicalAds (Read the Docs, Inc.,
+    US) needs consent or a transfer basis (it receives the IP address and topic words from the page), and that the
+    DSA ad duties do not apply.
+  - Tax advisor: gifts and ad income as a private person in Switzerland, and whether a sole proprietorship must be
+    registered. The Terms say a gift is not tax-deductible.
+- AdSense part 2 ([ADR 0059](adr/frontend/0059-adsense.md)), after Google approves the site: the ad slot on resource
+  pages; Google's consent tool (Privacy & messaging, consent mode on for ads and analytics) in place of our bar, for
+  AdSense and GA4; GA4 only after consent where `gdprApplies`, without a question elsewhere; nonce CSP on resource pages
+  only; the footer line about ads removed; Privacy and Terms pages updated. First check which TCF purposes Google needs
+  for GA4. Manual: the European regulations message in AdSense, and one ad unit ID.
 - Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
   tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
   GitHub's terms for reading README files to build it.
@@ -349,6 +385,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 ### Frontend
 
+- With ads on, public pages allow inline styles (`style-src 'unsafe-inline'`) for the EthicalAds client. The ad slot's height is fixed by hand; check it against real ads on staging. ([ADR 0057](adr/frontend/0057-monetisation.md))
+- Google Analytics hosts are listed by hand in the CSP; if Google changes them, hits are blocked until the list is updated. ([ADR 0057](adr/frontend/0057-monetisation.md))
 - A user who never presses Ask the guide (or Shift+Enter) never sees the guide's picks: Enter only searches. ([ADR 0025](adr/frontend/0025-frontend-one-box.md))
 - knip does not read locale files or CSS: a text key or a style that only dead code used stays until it is removed by hand (today the `freshness.*` texts and `.badge.freshness`). Moderate `npm audit` advisories in build and test tools are only reported. ([ADR 0054](adr/quality/0054-dead-code-and-dependency-audit.md))
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI. ([ADR 0025](adr/frontend/0025-frontend-one-box.md), [ADR 0028](adr/operations/0028-ci-cd.md))

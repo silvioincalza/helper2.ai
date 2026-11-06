@@ -1,5 +1,6 @@
 package ai.helper2.identity.config;
 
+import ai.helper2.identity.AdminHost;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.Problems;
 import jakarta.servlet.FilterChain;
@@ -32,6 +33,12 @@ class AdminPortConfiguration {
     AdminPort adminPort = new AdminPort(identity.adminPort());
     requireAdminPortWithRealSignIn(adminPort, environment);
     return adminPort;
+  }
+
+  /** The admin host as other modules see it (ADR 0057). */
+  @Bean
+  AdminHost adminHost(AdminPort adminPort) {
+    return adminPort::currentRequestOnAdminHost;
   }
 
   /**

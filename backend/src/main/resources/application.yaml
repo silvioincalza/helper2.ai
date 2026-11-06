@@ -152,7 +152,9 @@ management:
 #   llm-chat        circuit breaker on every chat-model call (guide, translation, setup guide, enrichment, classifier);
 #                   only provider errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we
 #                   could not parse.
-#   llm-embed       circuit breaker on every embedding call (search queries and the background indexer).
+#   llm-embed       circuit breaker on the embedding calls of search queries and guide questions.
+#   llm-embed-index circuit breaker on the background indexer's embedding calls: its own, so failed batches never
+#                   refuse a visitor's query.
 #   guide           bulkhead: guide questions at once in this replica, held per question (GuideLimits), not per call.
 resilience4j:
   circuitbreaker:
@@ -223,6 +225,7 @@ resilience4j:
         # Malformed JSON or a spent daily budget is not an outage of the provider: neither success nor failure.
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
       llm-embed: {base-config: model}
+      llm-embed-index: {base-config: model}
       db-cache:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
@@ -369,6 +372,10 @@ helper2:
       timeout: 30s
       # 50 texts every 15 s = 4 requests/min, far below the API catalog's rate limit; ~25k rows in about 2 h.
       batch: 50
+      # When the API rejects a batch (an error answer), this many of its texts go one per call in the same tick.
+      # NVIDIA failed most calls of 2+ texts with 500 "service inference failed" while every single text went
+      # through (staging, 5 Nov 2026). No published rate limit for the key: at most 1 + 5 calls per tick.
+      singles-after-failure: 5
       initial-delay: PT30S
       every: PT15S
     # The categories of every resource (ADR 0053): assigned again at startup when the category words or rules in
@@ -412,6 +419,17 @@ helper2:
     admins: ${H2_ADMINS:}
     # X-Robots-Tag: noindex on every response. On for staging, so it never competes with the live site in search engines.
     noindex: ${H2_NOINDEX:false}
+  monetisation:
+    # ADR 0057. Each part is off while its value is empty: no link, no script, no CSP origin.
+    # Support page links (https only).
+    github-sponsors-url: ${H2_SUPPORT_GITHUB_SPONSORS_URL:}
+    stripe-payment-url: ${H2_SUPPORT_STRIPE_PAYMENT_URL:}
+    # Google Analytics 4 (G-...), loaded only after the visitor accepts; never on the admin port.
+    ga4-measurement-id: ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}
+    # EthicalAds publisher ID of the one ad slot beside the results.
+    ethical-ads-publisher: ${H2_ADS_ETHICALADS_PUBLISHER:}
+    # Google AdSense publisher (ca-pub-...): the site check tag and /ads.txt (ADR 0059).
+    adsense-client: ${H2_ADS_ADSENSE_CLIENT:}
   admin:
     # The metrics dashboard (Grafana) the back office overview links to for trends. Empty: no link.
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}

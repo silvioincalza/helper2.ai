@@ -2,6 +2,7 @@ package ai.helper2.eval
 
 import ai.helper2.catalog.Embedder
 import ai.helper2.catalog.internal.NvidiaEmbedder
+import ai.helper2.platform.llm.LlmPolicies
 import ai.helper2.platform.resilience.Resilience
 import io.micrometer.observation.ObservationRegistry
 import java.time.Duration
@@ -36,6 +37,7 @@ class GuideSimilarRecorder {
         Duration.ofSeconds(60),
         ObservationRegistry.NOOP,
         Resilience.NONE,
+        LlmPolicies.EMBED,
       )
     val questions = GuideSimilarEvaluation.questions(GuideSimilarEvaluation.set())
     val vectors =
