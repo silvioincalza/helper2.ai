@@ -50,9 +50,10 @@ public class ResolveReview {
   }
 
   /**
-  * As above, for one item of a bulk decision [batch] (ResolveReviewItems): its own transaction.
-  */
-  public ResolveReviewItem.Outcome resolve(      UUID id,
+   * As above, for one item of a bulk decision [batch] (ResolveReviewItems): its own transaction.
+   */
+  public ResolveReviewItem.Outcome resolve(
+      UUID id,
       ReviewQueue.Status decision,
       String adminId,
       @Nullable String note,

@@ -12,6 +12,7 @@ import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.examples.usecase.AddHomeExample;
 import ai.helper2.examples.usecase.CountHomeExamples;
+import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.llm.BudgetLedger;
 import ai.helper2.scout.EnrichmentBacklog;
@@ -88,6 +89,12 @@ class AdminUseCaseConfiguration {
     return new TransactionalResolveReview(queue, resolve, addExample, indexCandidate, drafts);
   }
 
+  @Bean
+  ResolveReviewItems resolveReviewItems(
+      ReviewQueue queue, ReviewEvidence evidence, ResolveReview resolve, AuditTrail audit) {
+    return new ResolveReviewItems(queue, evidence, resolve, audit);
+  }
+
   /**
    * The addition and the decision in one transaction. A refused addition (an {@link ApiProblem})
    * does not roll back: its audit entry stays.
@@ -108,6 +115,17 @@ class AdminUseCaseConfiguration {
     public ResolveReviewItem.Outcome resolve(
         UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note) {
       return super.resolve(id, decision, adminId, note);
+    }
+
+    @Override
+    @Transactional(noRollbackFor = ApiProblem.class)
+    public ResolveReviewItem.Outcome resolve(
+        UUID id,
+        ReviewQueue.Status decision,
+        String adminId,
+        @Nullable String note,
+        @Nullable UUID batch) {
+      return super.resolve(id, decision, adminId, note, batch);
     }
   }
 }
