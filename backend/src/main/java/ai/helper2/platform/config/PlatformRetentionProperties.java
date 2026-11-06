@@ -11,7 +11,10 @@ import org.springframework.validation.annotation.Validated;
  *
  * @param runtimeSettings how long a runtime setting change is kept (ADR 0060); each setting's
  *     newest change stays
+ * @param backups how long a database dump is kept (ADR 0027); the chart passes its own number, the
+ *     app only states it on GET /api/v1/policy
  */
 @Validated
 @ConfigurationProperties("helper2.retention")
-public record PlatformRetentionProperties(@NotNull Duration runtimeSettings) {}
+public record PlatformRetentionProperties(
+    @NotNull Duration runtimeSettings, @NotNull Duration backups) {}

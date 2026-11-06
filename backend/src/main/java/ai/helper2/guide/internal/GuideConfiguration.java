@@ -125,7 +125,10 @@ class GuideConfiguration {
   @Bean
   GuidePolicy guidePolicy(GuideProperties settings) {
     return new GuidePolicy(
-        settings.clientDailyQuestions(), settings.maxCandidates(), settings.cacheTtl());
+        settings.clientDailyQuestions(),
+        settings.clientDailyFreeAnswers(),
+        settings.maxCandidates(),
+        settings.cacheTtl());
   }
 
   /**

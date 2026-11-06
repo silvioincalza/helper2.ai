@@ -17,7 +17,8 @@ import org.springframework.data.redis.core.script.RedisScript;
  */
 public final class RedisCallCounter implements CallCounter {
 
-  private static final Duration KEEP = Duration.ofDays(2);
+  /** How long a day's count lives; the Privacy page states it (GET /api/v1/policy). */
+  public static final Duration KEEP = Duration.ofDays(2);
 
   /**
    * KEYS: the count. ARGV: expiry in ms, limit. At the limit, answers count + 1 and adds nothing.

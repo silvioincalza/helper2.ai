@@ -45,7 +45,13 @@ class CatalogConfiguration {
   /** The catalog's numbers for GET /api/v1/policy (ADR 0052). */
   @Bean
   CatalogPolicy catalogPolicy(CatalogProperties catalog, CatalogRetentionProperties retention) {
-    return new CatalogPolicy(retention.resolvedIssueReports(), catalog.semantic().queryVectorTtl());
+    return new CatalogPolicy(
+        retention.resolvedIssueReports(),
+        catalog.semantic().queryVectorTtl(),
+        retention.webNews(),
+        retention.resolvedReviewItems(),
+        retention.listIndex(),
+        NvidiaEmbedder.MAX_REASON);
   }
 
   /** Background writer for what searches observed; see CatalogResultObserver. */

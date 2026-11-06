@@ -63,16 +63,32 @@ export type PolicyValues = Record<
   | 'maxCandidates'
   | 'maxPicks'
   | 'guideQuestions'
+  | 'freeAnswers'
   | 'webSearches'
   | 'cachedSearches'
   | 'cachedGuideAnswers'
   | 'translations'
   | 'queryVectors'
   | 'storedWebResults'
+  | 'webSearchCounters'
+  | 'guideQuestionCounters'
+  | 'webNews'
+  | 'pendingReviewPages'
+  | 'listIndex'
+  | 'pageText'
+  | 'pageRead'
+  | 'backups'
   | 'inactiveAccounts'
   | 'handledReports'
   | 'adminRecords'
-  | 'runtimeSettingChanges',
+  | 'runtimeSettingChanges'
+  | 'categories'
+  | 'categorySearches'
+  | 'quoteChars'
+  | 'articleExcerptChars'
+  | 'productPageExcerptChars'
+  | 'productPages'
+  | 'errorLogChars',
   string
 >;
 
@@ -101,20 +117,37 @@ export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValue
   const n: Num = (v) => fmt.format(v);
   const d = (s: number) => formatDuration(s, t);
   const r = p.retention;
+  const s = p.sources;
   return {
     maxCandidates: n(p.guide.maxCandidates),
     maxPicks: n(p.guide.maxPicks),
     guideQuestions: n(p.dailyLimits.guideQuestions),
+    freeAnswers: n(p.dailyLimits.freeAnswers),
     webSearches: webSearches(p.dailyLimits.webSearches, t, n),
     cachedSearches: d(r.cachedSearchesSeconds),
     cachedGuideAnswers: d(r.cachedGuideAnswersSeconds),
     translations: d(r.translationsSeconds),
     queryVectors: d(r.queryVectorsSeconds),
     storedWebResults: d(r.storedWebResultsSeconds),
+    webSearchCounters: d(r.webSearchCountersSeconds),
+    guideQuestionCounters: d(r.guideQuestionCountersSeconds),
+    webNews: d(r.webNewsSeconds),
+    pendingReviewPages: d(r.pendingReviewPagesSeconds),
+    listIndex: d(r.listIndexSeconds),
+    pageText: d(r.pageTextSeconds),
+    pageRead: d(r.pageReadSeconds),
+    backups: d(r.backupsSeconds),
     inactiveAccounts: d(r.inactiveAccountsSeconds),
     handledReports: d(r.handledReportsSeconds),
     adminRecords: d(r.adminRecordsSeconds),
     runtimeSettingChanges: d(r.runtimeSettingChangesSeconds),
+    categories: n(s.categories),
+    categorySearches: n(s.categorySearches),
+    quoteChars: n(s.quoteChars),
+    articleExcerptChars: n(s.articleExcerptChars),
+    productPageExcerptChars: n(s.productPageExcerptChars),
+    productPages: n(s.productPages),
+    errorLogChars: n(s.errorLogChars),
   };
 }
 

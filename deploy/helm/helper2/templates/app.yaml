@@ -110,6 +110,9 @@ spec:
             {{- with .Values.app.guideSimilarThreshold }}
             - { name: H2_GUIDE_SIMILAR_THRESHOLD, value: {{ . | toString | quote }} }
             {{- end }}
+            # The Privacy page states how long a dump is kept (GET /api/v1/policy); the backup CronJob
+            # deletes by the same number (backup.retentionDays).
+            - { name: H2_RETENTION_BACKUPS, value: {{ printf "P%dD" (int .Values.backup.retentionDays) | quote }} }
             - { name: H2_COOKIE_SECURE, value: "true" }
             # Only the Ingress controller reaches this pod (NetworkPolicy); it sets X-Forwarded-For, and
             # Tomcat takes the right-most address that is not an internal proxy.

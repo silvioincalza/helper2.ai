@@ -2,6 +2,7 @@
 # Source of truth: backend/src/main/java/ai/helper2/policy/web/PolicyController.java,
 #   backend/src/main/kotlin/ai/helper2/search/SearchPolicy.kt, guide/GuidePolicy.kt,
 #   backend/src/main/java/ai/helper2/identity/AccountPolicy.java, catalog/CatalogPolicy.java,
+#   scout/ScoutPolicy.java, platform/config/PlatformRetentionProperties.java, platform/config/CategoriesProperties.java,
 #   platform/RateLimitInterceptor.java, identity/config/SecurityConfiguration.java.
 # Render: cd docs/diagrams && d2 fmt flow-0052-policy-endpoint.d2 && d2 flow-0052-policy-endpoint.d2 flow-0052-policy-endpoint.svg
 
@@ -18,11 +19,11 @@ startup: "At startup" {
   direction: down
   config: "application.yaml + H2_ variables" {class: config}
   bind: "@ConfigurationProperties records\n(validated: a bad value stops startup)" {class: config}
-  facts: "One policy value per owning module:\nsearch, guide, identity, catalog" {class: data}
+  facts: "One policy value per owning module:\nsearch, guide, identity, catalog, scout;\nplatform: counter lifetimes, backups, categories" {class: data}
   config -> bind -> facts
 }
 
-answer: "Policy\nguide: max candidates, max picks\ndaily limits: guide questions,\nweb searches (guest; registered or null)\nretention: periods in seconds" {class: app}
+answer: "Policy\nguide: max candidates, max picks\ndaily limits: guide questions, free answers,\nweb searches (guest; registered or null)\nretention: periods in seconds\nsources: counts and sizes fixed in code" {class: app}
 registered: "Registered tier on?" {class: decision}
 reg: "registered: its limits" {class: data}
 nul: "registered: null\n(everyone has the guest limits)" {class: data}

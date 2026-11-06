@@ -16,7 +16,8 @@ import org.springframework.data.redis.core.script.RedisScript;
  */
 public final class RedisQuotaCounter implements QuotaCounter {
 
-  static final Duration KEEP = Duration.ofDays(1);
+  /** How long a day's count lives; the Privacy page states it (GET /api/v1/policy). */
+  public static final Duration KEEP = Duration.ofDays(1);
 
   /**
    * ARGV: own field, own limit, global field, global limit, expiry in ms; an empty field means no

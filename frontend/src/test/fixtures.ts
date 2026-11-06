@@ -319,9 +319,18 @@ export const POLICY: Policy = {
   guide: { maxCandidates: 24, maxPicks: 3 },
   dailyLimits: {
     guideQuestions: 30,
+    freeAnswers: 30,
     webSearches: { guest: { search: 3, guide: 3 }, registered: null },
   },
   retention: {
+    webSearchCountersSeconds: 86_400,
+    guideQuestionCountersSeconds: 2 * 86_400,
+    webNewsSeconds: 180 * 86_400,
+    pendingReviewPagesSeconds: 180 * 86_400,
+    listIndexSeconds: 30 * 86_400,
+    pageTextSeconds: 86_400,
+    pageReadSeconds: 30 * 86_400,
+    backupsSeconds: 7 * 86_400,
     cachedSearchesSeconds: 86_400,
     cachedGuideAnswersSeconds: 86_400,
     translationsSeconds: 86_400,
@@ -331,6 +340,15 @@ export const POLICY: Policy = {
     adminRecordsSeconds: 730 * 86_400,
     handledReportsSeconds: 365 * 86_400,
     runtimeSettingChangesSeconds: 730 * 86_400,
+  },
+  sources: {
+    categories: 34,
+    categorySearches: 39,
+    quoteChars: 300,
+    articleExcerptChars: 400,
+    productPageExcerptChars: 2400,
+    productPages: 4,
+    errorLogChars: 200,
   },
 };
 

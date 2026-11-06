@@ -12,9 +12,18 @@ const CHANGED = {
   guide: { maxCandidates: 40, maxPicks: 5 },
   dailyLimits: {
     guideQuestions: 50,
+    freeAnswers: 45,
     webSearches: { guest: { search: 4, guide: 6 }, registered: { search: 10, guide: 12 } },
   },
   retention: {
+    webSearchCountersSeconds: 2 * DAY,
+    guideQuestionCountersSeconds: 5 * DAY,
+    webNewsSeconds: 200 * DAY,
+    pendingReviewPagesSeconds: 150 * DAY,
+    listIndexSeconds: 45 * DAY,
+    pageTextSeconds: 48 * 3600,
+    pageReadSeconds: 60 * DAY,
+    backupsSeconds: 9 * DAY,
     cachedSearchesSeconds: 2 * DAY,
     cachedGuideAnswersSeconds: 36 * 3600,
     translationsSeconds: 3 * DAY,
@@ -24,6 +33,15 @@ const CHANGED = {
     handledReportsSeconds: 6 * 30 * DAY,
     adminRecordsSeconds: 547 * DAY,
     runtimeSettingChangesSeconds: 365 * DAY,
+  },
+  sources: {
+    categories: 41,
+    categorySearches: 47,
+    quoteChars: 350,
+    articleExcerptChars: 450,
+    productPageExcerptChars: 2600,
+    productPages: 6,
+    errorLogChars: 250,
   },
 };
 
@@ -87,11 +105,43 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent(
       'the reason they wrote: 12 months. The latest change of each limit stays',
     );
+    expect(keep).toHaveTextContent(
+      'Web search counters: 2 days. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions per day: 5 days.',
+    );
+    expect(keep).toHaveTextContent(
+      'Database backups: 9 days. Anything deleted above is gone from the backups within 9 days.',
+    );
+    expect(keep).toHaveTextContent('Their cleaned text: up to 2 days, to try again.');
+    expect(keep).toHaveTextContent('a fingerprint of its text: 60 days.');
+    expect(keep).toHaveTextContent('200 days after we last retrieved them');
+    expect(keep).toHaveTextContent('until we decide, then 150 days.');
+    expect(keep).toHaveTextContent('45 days after a list was last read');
     // Not in the API: typed in the page.
-    expect(keep).toHaveTextContent('Database backups: 7 days.');
+    expect(keep).toHaveTextContent('Technical logs and request traces: up to 3 months.');
     expect(region('What we process and why')).toHaveTextContent(
       'we keep the stored copy for up to 2 days, so results can still be shown when a source fails. Guide answers are kept for up to 36 hours.',
     );
+  });
+
+  it('Scenario: Privacy states what the sources read, as the code has it', async () => {
+    mockApi({ 'GET /policy': () => CHANGED });
+    await openPage('/privacy', 'Privacy');
+    const sources = region('Public data about AI resources');
+    expect(sources).toHaveTextContent('41 categories of AI tools');
+    expect(sources).toHaveTextContent('47 searches in all');
+    expect(sources).toHaveTextContent('short quotes of up to 350 characters');
+    expect(sources).toHaveTextContent(
+      'up to 450 characters for an article, up to 2,600 characters for a product page',
+    );
+    expect(sources).toHaveTextContent('read up to 6 pages of the product');
+    expect(sources).toHaveTextContent('up to 2 days in our cache');
+    expect(sources).toHaveTextContent('cut to 250 characters');
+  });
+
+  it('Scenario: Terms states how many free answers a day the guide gives', async () => {
+    mockApi({ 'GET /policy': () => CHANGED });
+    await openPage('/terms', 'Terms of use');
+    expect(region('The service')).toHaveTextContent('does not count either (up to 45 a day)');
   });
 
   it('Scenario: Privacy no longer says searches are cached for 30 minutes (the code keeps them 24 hours)', async () => {
@@ -167,7 +217,13 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent('the reason they wrote: for a set time. The latest change');
     expect(keep).not.toHaveTextContent('24 months');
     expect(keep).not.toHaveTextContent('12 months');
-    expect(keep).toHaveTextContent('Database backups: 7 days.');
+    expect(keep).toHaveTextContent('Database backups: a limited number of days.');
+    expect(keep).not.toHaveTextContent('7 days');
+    expect(keep).toHaveTextContent('Technical logs and request traces: up to 3 months.');
+    const sources = region('Public data about AI resources');
+    expect(sources).toHaveTextContent('a fixed set of categories');
+    expect(sources).not.toHaveTextContent('300 characters');
+    expect(sources).not.toHaveTextContent('{{');
   });
 
   it('Scenario: the numbers arrive after the page opened', async () => {

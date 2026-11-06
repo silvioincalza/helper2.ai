@@ -2,7 +2,8 @@
 # Source of truth: backend/src/main/java/ai/helper2/policy/web/PolicyController.java,
 #   platform/RateLimitInterceptor.java, identity/config/SecurityConfiguration.java,
 #   search/config/SearchConfiguration.java, guide/internal/GuideConfiguration.java,
-#   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java;
+#   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java,
+#   scout/internal/ScoutConfiguration.java, platform/config/PlatformRetentionProperties.java;
 #   frontend/src/routes.tsx (textPage), hooks/usePolicy.ts, components/TextSections.tsx, lib/duration.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0052-policy-endpoint.d2 && d2 sequence-0052-policy-endpoint.d2 sequence-0052-policy-endpoint.svg
 
@@ -14,10 +15,10 @@ visitor: "Visitor\n(Mission, Privacy, Terms)" {class: person}
 edge: "Cloudflare,\ningress-nginx" {class: ext}
 api: "helper2\n(policy)" {class: app}
 redis: Redis {class: data}
-modules: "search, guide,\nidentity, catalog\n(config at startup)" {class: config}
+modules: "search, guide, identity,\ncatalog, scout, platform\n(config at startup)" {class: config}
 
 boot: "Startup" {
-  modules -> api: "SearchPolicy, GuidePolicy,\nAccountPolicy, CatalogPolicy"
+  modules -> api: "SearchPolicy, GuidePolicy,\nAccountPolicy, CatalogPolicy, ScoutPolicy,\nPlatformRetentionProperties, CategoriesProperties"
 }
 
 read: "Read" {

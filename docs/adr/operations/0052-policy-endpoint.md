@@ -13,24 +13,38 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
    applies them. No sign-in, no cookie, no personal data: the same answer for everyone.
 2. **What it holds.** Only values the code reads from configuration, or a rule fixed in code that a page states:
    - `guide`: `maxCandidates` (`H2_GUIDE_MAX_CANDIDATES`) and `maxPicks` (`GuideValidator.MAX_PICKS`, fixed in code).
-   - `dailyLimits`: `guideQuestions` (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`) and `webSearches` per feature for guests and
-     for signed-in users. `registered` is null while the registered tier is off, because everyone then gets the guest
-     limits.
-   - `retention`, in seconds: cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers (`H2_GUIDE_CACHE_TTL`),
-     translations (`H2_SEARCH_TRANSLATION_TTL`), query vectors (`H2_SEARCH_QUERY_VECTOR_TTL`), stored web results
-     (`H2_RETENTION_TAVILY_RESULTS`), inactive accounts with their saved items (`H2_RETENTION_INACTIVE_ACCOUNTS`),
-     handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators' records in the audit trail
-     (`H2_RETENTION_ADMIN_AUDIT`, [0045](../edge/0045-back-office.md)), and runtime setting changes
-     (`H2_RETENTION_RUNTIME_SETTINGS`, [0060](0060-runtime-settings.md); each setting's newest change stays while it
-     applies).
+   - `dailyLimits`: `guideQuestions` (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), `freeAnswers` (answers with no pick and
+     failed questions that spend no question, `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, [0017](../guide/0017-guide-cost-guard.md))
+     and `webSearches` per feature for guests and for signed-in users. `registered` is null while the registered tier
+     is off, because everyone then gets the guest limits.
+   - `retention`, in seconds: the web search counters (`RedisQuotaCounter.KEEP`, fixed in code) and the guide question
+     counters (`RedisCallCounter.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
+     pages waiting for review after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`), the index of awesome lists
+     (`H2_RETENTION_LIST_INDEX`), a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
+     with a fingerprint (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0056](../scout/0056-official-pages.md)); database backups
+     (`H2_RETENTION_BACKUPS`: the chart passes its `backup.retentionDays`, the app only states it,
+     [0027](0027-runtime-topology.md)); cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers
+     (`H2_GUIDE_CACHE_TTL`), translations (`H2_SEARCH_TRANSLATION_TTL`), query vectors (`H2_SEARCH_QUERY_VECTOR_TTL`),
+     stored web results (`H2_RETENTION_TAVILY_RESULTS`), inactive accounts with their saved items
+     (`H2_RETENTION_INACTIVE_ACCOUNTS`), handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators'
+     records in the audit trail (`H2_RETENTION_ADMIN_AUDIT`, [0045](../edge/0045-back-office.md)), and runtime
+     setting changes (`H2_RETENTION_RUNTIME_SETTINGS`, [0060](0060-runtime-settings.md); each setting's newest change
+     stays while it applies).
+   - `sources`: what the Scout reads, as the Privacy page states it: how many categories the discovery searches cover
+     and how many searches that is (`helper2.categories`), the longest quote (`EvidenceValidator.MAX_EXCERPT_CHARS`),
+     the excerpt kept of an article and of a product page, how many pages of a product's own website one read takes
+     (`OfficialPages.MAX_LINKED_PAGES` + 1), and how much of a provider's error message the log keeps
+     (`NvidiaEmbedder.MAX_REASON`). All fixed in code.
 
    Seconds, not ISO-8601: `Duration.toString()` writes 730 days as `PT17520H`, and a page would need a parser. The
    page rounds seconds to hours, days or months.
 3. **Each module publishes its own numbers.** The module that owns a setting builds one small value from its
    `@ConfigurationProperties` records at startup, in its base package: `search.SearchPolicy`, `guide.GuidePolicy`,
-   `identity.AccountPolicy`, `catalog.CatalogPolicy`. The config records stay internal to their module.
+   `identity.AccountPolicy`, `catalog.CatalogPolicy`, `scout.ScoutPolicy`. The config records stay internal to their
+   module. The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
+   from the platform directly: they belong to no module.
 4. **A thin `policy` module serves them.** Like the back office, it composes other modules and owns no table; no module
-   depends on it. `policy.web.PolicyController` maps the four values to the contract. There is no use case: the
+   depends on it. `policy.web.PolicyController` maps the five values to the contract. There is no use case: the
    endpoint makes no decision.
 5. **Cached and rate-limited.** `Cache-Control: public, max-age=300`, like the home examples. The values change only
    with a restart, so 5 minutes of a stale number after a deploy is acceptable. No ETag: the body is a few hundred
@@ -44,8 +58,11 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
   refresh, with no release of the frontend.
 - A new setting that a page states needs one field in the contract, in the owning module's policy value and in the
   controller.
-- Values fixed in code that are not in the response (the counter lifetimes, the rate-limit windows, the 6-hour
-  lifetime of a dated guide answer) and values the code does not know (log retention, backups) stay typed in the pages.
+- A number fixed in code that a page states is in the response too (the counter lifetimes, the quote and excerpt
+  lengths): a changed constant changes the page with it. What stays typed is what the code does not know: the
+  retention of logs, traces and usage totals, which live outside the app, and the lifetimes of Google's cookies. The
+  rate-limit windows stay as words ("the length of the limit"): each limiter has its own.
+- Every text page item with a number has a second wording without it, shown when the policy read fails.
 
 ## Alternatives considered
 - Keep the numbers typed in the pages — no code, but nothing tells when a page and the server disagree.
@@ -60,11 +77,17 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
 - `api/openapi.yaml` — `GET /policy`, schemas `Policy` and `WebSearchLimits`.
 - `backend/src/main/java/ai/helper2/policy/` — the module and `web/PolicyController.java`.
 - `backend/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
-  `backend/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java` — the values; built in
-  `search/config/SearchConfiguration.java`, `guide/internal/GuideConfiguration.java`,
-  `identity/config/IdentityPolicyConfiguration.java`, `catalog/internal/CatalogConfiguration.java`.
+  `backend/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
+  `scout/ScoutPolicy.java` — the values; built in `search/config/SearchConfiguration.java`,
+  `guide/internal/GuideConfiguration.java`, `identity/config/IdentityPolicyConfiguration.java`,
+  `catalog/internal/CatalogConfiguration.java`, `scout/internal/ScoutConfiguration.java`.
+- `backend/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
+  `H2_RETENTION_BACKUPS`, set by `deploy/helm/helper2/templates/app.yaml` from `backup.retentionDays`),
+  `platform/config/CategoriesProperties.java` (`discoverySearches`), `platform/quota/RedisQuotaCounter.java` and
+  `platform/llm/RedisCallCounter.java` (`KEEP`) — the platform's numbers.
 - `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
 - `backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — the public path.
+- `backend/src/test/java/ai/helper2/policy/web/PolicyControllerTest.java` — every number comes from its module.
 - `backend/src/test/java/ai/helper2/api/PolicyApiIT.java` — contract, cache header, values from configuration, rate limit.
 
 ## Diagrams
