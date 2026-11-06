@@ -86,8 +86,11 @@ class AskGuide(
 
   private val log = LoggerFactory.getLogger(AskGuide::class.java)
 
-  /** Everything that changes an answer besides the question: a change gives new cache keys. */
-  private val configHash: String =
+  /**
+   * Everything that changes an answer besides the question: a change gives new cache keys. Shown on
+   * the back office's Settings page.
+   */
+  val configHash: String =
     sha256Hex(
         listOf(
             model?.provider,

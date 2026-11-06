@@ -1,6 +1,7 @@
 package ai.helper2.admin.config;
 
 import ai.helper2.admin.ExampleDrafts;
+import ai.helper2.admin.usecase.GetEffectiveSettings;
 import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
@@ -14,11 +15,13 @@ import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.llm.BudgetLedger;
+import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.search.WebSearchQuota;
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -46,6 +49,11 @@ class AdminUseCaseConfiguration {
       Clock clock) {
     return new GetOverview(
         reviewQueue, backlog, runs, budgets, webSearchQuota::getIfAvailable, homeExamples, clock);
+  }
+
+  @Bean
+  GetEffectiveSettings getEffectiveSettings(List<SettingsGroup> groups) {
+    return new GetEffectiveSettings(groups);
   }
 
   @Bean

@@ -57,6 +57,7 @@ export const routes: RouteObject[] = [
           { path: 'enrichment', lazy: page(() => import('@/pages/admin/EnrichmentQueuePage')) },
           { path: 'examples', lazy: page(() => import('@/pages/admin/ExamplesPage')) },
           { path: 'audit', lazy: page(() => import('@/pages/admin/AuditPage')) },
+          { path: 'settings', lazy: page(() => import('@/pages/admin/SettingsPage')) },
         ],
       },
       // The text pages are prose read once in a while: on demand too, so the first download stays small.

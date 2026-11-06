@@ -29,6 +29,7 @@ import type {
   AuditEntryPage,
   AdminOverview,
   EnrichmentQueuePage,
+  EffectiveConfig,
   EnrichmentQueueView,
   AdminHomeExample,
   ExampleCheckOutcome,
@@ -362,6 +363,8 @@ export const api = {
       }),
       signal,
     }),
+  getEffectiveConfig: (signal?: AbortSignal) =>
+    request<EffectiveConfig>('GET', '/admin/config', { signal }),
   /** 409 not-applicable when the resource is neither skipped nor out of retries; 404 for an unknown one. */
   requeueEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),
