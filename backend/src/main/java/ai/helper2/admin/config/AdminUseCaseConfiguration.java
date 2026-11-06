@@ -84,8 +84,8 @@ class AdminUseCaseConfiguration {
 
   @Bean
   ResolveReviewItems resolveReviewItems(
-      ReviewQueue queue, ReviewEvidence evidence, ResolveReview resolveReview, AuditTrail audit) {
-    return new ResolveReviewItems(queue, evidence, resolveReview, audit);
+      ReviewQueue queue, ReviewEvidence evidence, ResolveReview resolve, AuditTrail audit) {
+    return new ResolveReviewItems(queue, evidence, resolve, audit);
   }
 
   /**

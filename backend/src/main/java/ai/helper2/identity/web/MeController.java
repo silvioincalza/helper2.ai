@@ -134,7 +134,9 @@ class MeController implements MeApi {
         shown.githubSponsors().orElse(null),
         shown.stripePayment().orElse(null),
         shown.ga4MeasurementId().orElse(null),
-        shown.ethicalAdsPublisher().orElse(null));
+        shown.ethicalAdsPublisher().orElse(null),
+        shown.adsenseOn() ? shown.adsenseClient().orElse(null) : null,
+        shown.adsenseOn() ? shown.adsenseSlot().orElse(null) : null);
   }
 
   /** Counted per client address or user, so read after the user is known (CurrentUser.id). */

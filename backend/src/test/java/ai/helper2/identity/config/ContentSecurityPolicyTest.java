@@ -14,6 +14,7 @@ class ContentSecurityPolicyTest {
         Optional.empty(),
         Optional.ofNullable(ga4),
         Optional.ofNullable(ads),
+        Optional.empty(),
         Optional.empty());
   }
 
@@ -56,5 +57,39 @@ class ContentSecurityPolicyTest {
         .contains(
             "script-src 'self' https://www.googletagmanager.com https://media.ethicalads.io"
                 + " https://server.ethicalads.io;");
+  }
+
+  @Test
+  void adSenseNeedsThePublisherAndTheAdUnit() {
+    Monetisation publisherOnly =
+        new Monetisation(
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("ca-pub-4688630163076563"),
+            Optional.empty());
+
+    assertThat(ContentSecurityPolicy.forPublicSite(publisherOnly))
+        .isEqualTo(SecurityConfiguration.CSP);
+  }
+
+  @Test
+  void adSenseUsesTheNoncePolicy() {
+    Monetisation adsense =
+        new Monetisation(
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("G-TEST1234"),
+            Optional.of("helper2"),
+            Optional.of("ca-pub-4688630163076563"),
+            Optional.of("1234567890"));
+
+    assertThat(ContentSecurityPolicy.forPublicSite(adsense))
+        .contains("script-src 'nonce-{nonce}' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic'")
+        .contains("object-src 'none'")
+        .contains("base-uri 'none'")
+        .contains("frame-ancestors 'none'")
+        .doesNotContain("script-src 'self'");
   }
 }

@@ -1,25 +1,48 @@
-# Flowchart: the AdSense site check and ads.txt (ADR 0059).
+# Flowchart: what a public page loads for Google AdSense and the consent tool (ADR 0059).
 # Source of truth: backend/src/main/java/ai/helper2/monetisation/Monetisation.java,
-#   pages/internal/PageHtml.java, pages/web/CrawlerFiles.java.
+#   identity/config/ContentSecurityPolicy.java, CspHeaderWriter.java, pages/internal/PageHtml.java,
+#   pages/web/CrawlerFiles.java, frontend/src/lib/googleConsent.ts, components/AnalyticsConsent.tsx,
+#   components/AdSenseSlot.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0059-adsense.d2 && d2 flow-0059-adsense.d2 flow-0059-adsense.svg
 
 ...@style
 
 direction: down
 
-req: "A request" {class: end}
-which: "Which address?" {class: decision}
-set: "H2_ADS_ADSENSE_CLIENT set?" {class: decision}
-set2: "H2_ADS_ADSENSE_CLIENT set?" {class: decision}
-line: "200 text/plain:\ngoogle.com, pub-..., DIRECT,\nf08c47fec0942fa0" {class: hot}
-missing: "404" {class: fail}
-tag: "Head + meta\ngoogle-adsense-account" {class: hot}
-plain: "Head without the tag" {class: data}
+req: "A public request" {class: end}
+pub: "Publisher set?" {class: decision}
+plain: "As before:\nno tag, /ads.txt 404" {class: data}
+check: "Site check tag on every page,\n/ads.txt names Google" {class: hot}
+unit: "Ad unit set too?" {class: decision}
+strict: "CSP of ADR 0057,\nour own analytics bar" {class: data}
+nonce: "Nonce CSP for the whole public site;\nGoogle's consent tool on every page" {class: hot}
 
-req -> which
-which -> set: "/ads.txt"
-which -> set2: "a page (ADR 0050)"
-set -> line: yes
-set -> missing: no
-set2 -> tag: yes
-set2 -> plain: no
+ga: {
+  class: group
+  direction: down
+  applies: "gdprApplies?" {class: decision}
+  yes: "Purposes 1 + 8 and\nvendor 755 consented?" {class: decision}
+  load: "Load Google Analytics" {class: hot}
+  off: "ga-disable, delete _ga cookies" {class: data}
+  applies -> load: no
+  applies -> yes: yes
+  yes -> load: yes
+  yes -> off: no
+}
+blocked: "Tool blocked: no analytics" {class: fail}
+
+page: "Resource page?" {class: decision}
+slot: "One AdSense box, Sponsored" {class: hot}
+noslot: "No AdSense on this page" {class: data}
+
+req -> pub
+pub -> plain: no
+pub -> check: yes
+check -> unit
+unit -> strict: no
+unit -> nonce: yes
+nonce -> ga.applies: "TCF answer"
+nonce -> blocked: "no TCF API"
+nonce -> page
+page -> slot: yes
+page -> noslot: no

@@ -2,6 +2,7 @@ package ai.helper2.identity.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.platform.CspNonce;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -40,5 +41,28 @@ class CspHeaderWriterTest {
     res.setHeader(CspHeaderWriter.HEADER, "set-before");
     new CspHeaderWriter(new AdminPort(0), PUBLIC).writeHeaders(req, res);
     assertThat(res.getHeader(CspHeaderWriter.HEADER)).isEqualTo("set-before");
+  }
+
+  @Test
+  void theNoncePolicyNamesThisRequestsNonce() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.setLocalPort(8080);
+    MockHttpServletResponse res = new MockHttpServletResponse();
+    new CspHeaderWriter(new AdminPort(8082), ContentSecurityPolicy.ADSENSE).writeHeaders(req, res);
+
+    String nonce = CspNonce.of(req);
+    assertThat(nonce).hasSizeGreaterThanOrEqualTo(24);
+    assertThat(res.getHeader(CspHeaderWriter.HEADER)).contains("'nonce-" + nonce + "'");
+    assertThat(CspNonce.of(new MockHttpServletRequest())).isNotEqualTo(nonce);
+  }
+
+  @Test
+  void theAdminPortNeverGetsTheNoncePolicy() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.setLocalPort(8082);
+    MockHttpServletResponse res = new MockHttpServletResponse();
+    new CspHeaderWriter(new AdminPort(8082), ContentSecurityPolicy.ADSENSE).writeHeaders(req, res);
+
+    assertThat(res.getHeader(CspHeaderWriter.HEADER)).isEqualTo(SecurityConfiguration.CSP);
   }
 }

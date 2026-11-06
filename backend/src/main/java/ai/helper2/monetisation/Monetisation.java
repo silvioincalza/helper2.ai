@@ -13,17 +13,25 @@ import java.util.Optional;
  * @param ethicalAdsPublisher the EthicalAds publisher ID of the one ad slot
  * @param adsenseClient the Google AdSense publisher ({@code ca-pub-...}, ADR 0059): the site
  *     verification tag and ads.txt
+ * @param adsenseSlot the AdSense ad unit of the slot on resource pages; with the publisher, it
+ *     turns on the slot, Google's consent tool and the nonce CSP
  */
 public record Monetisation(
     Optional<URI> githubSponsors,
     Optional<URI> stripePayment,
     Optional<String> ga4MeasurementId,
     Optional<String> ethicalAdsPublisher,
-    Optional<String> adsenseClient) {
+    Optional<String> adsenseClient,
+    Optional<String> adsenseSlot) {
 
   public static final Monetisation OFF =
       new Monetisation(
-          Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty());
 
   public boolean analyticsOn() {
     return ga4MeasurementId.isPresent();
@@ -31,6 +39,14 @@ public record Monetisation(
 
   public boolean adsOn() {
     return ethicalAdsPublisher.isPresent();
+  }
+
+  /**
+   * AdSense serves ads: the publisher and the ad unit are both set (ADR 0059). The publisher alone
+   * only answers Google's site check.
+   */
+  public boolean adsenseOn() {
+    return adsenseClient.isPresent() && adsenseSlot.isPresent();
   }
 
   /**

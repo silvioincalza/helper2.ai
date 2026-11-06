@@ -62,7 +62,7 @@ nebius: "Nebius Token Factory\nNemotron 3 Super · Nano" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily" {class: ext}
 oauth: "github.com OAuth" {class: ext}
-thirdparty: "In the browser only:\nGoogle Analytics (after consent)\nEthicalAds · GitHub Sponsors · Stripe" {class: ext}
+thirdparty: "In the browser only:\nGoogle consent tool · AdSense (resource pages)\nGoogle Analytics · EthicalAds\nGitHub Sponsors · Stripe" {class: ext}
 
 browser -> app.search: "search" {class: hot}
 browser -> app.guide: "ask (SSE)" {class: hot}
@@ -70,7 +70,7 @@ browser -> app.catalog: "resource, events"
 browser -> app.setup: "Set it up"
 browser -> app.examples: "home examples"
 browser -> app.policy: "policy numbers"
-browser -> thirdparty: "page path, ad request,\ngift (ADR 0057)"
+browser -> thirdparty: "page path, ad request,\nconsent, gift (ADR 0057, 0059)"
 crawler: "Crawler,\nlink preview" {class: person}
 crawler -> app.pages: "page head, sitemap.xml,\nrobots.txt"
 admin -> app.identity: "sign-in on the admin host"

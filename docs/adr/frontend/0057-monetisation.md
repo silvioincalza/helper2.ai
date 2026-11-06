@@ -74,7 +74,8 @@ The constraints:
    - There is no ad on a page with a guide answer (`ask`), in the guide picks, on the home page, on text pages, on
      sign-in, on error states or on the back office. An ad is never written by our AI and never looks like an answer
      ([0038](../guide/0038-ai-content-marking.md)).
-7. **Footer: "No tracking ads."** It replaces "No ads." (0040, 9). It stays true: the only ad network is EthicalAds.
+7. **Footer: "No tracking ads."** Replaced by [0059](0059-adsense.md): with Google AdSense the footer makes no claim
+   about ads.
 8. **Privacy and Terms say it.** The Privacy page lists Google Analytics (consent, cookies, 2 months at Google),
    EthicalAds (IP used for the country only, the page address with the search words, no cookies) and the gift
    providers. The Terms page has "Ads and gifts": an ad never changes results or their order, a gift buys nothing

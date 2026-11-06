@@ -21,7 +21,8 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),
-            Optional.of("ca-pub-4688630163076563"));
+            Optional.of("ca-pub-4688630163076563"),
+            Optional.empty());
 
     var res = files(adsense).adsTxt();
 
@@ -33,5 +34,28 @@ class AdsTxtTest {
   @Test
   void notFoundWhileAdSenseIsOff() {
     assertThat(files(Monetisation.OFF).adsTxt().getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void theBuiltShellAddressGoesHome() {
+    var res = files(Monetisation.OFF).indexHtml();
+
+    assertThat(res.getStatusCode().value()).isEqualTo(301);
+    assertThat(res.getHeaders().getLocation()).hasToString("/");
+  }
+
+  @Test
+  void pagesAreNeverStoredWhileAdSenseIsOn() {
+    var adsense =
+        new Monetisation(
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of("ca-pub-4688630163076563"),
+            Optional.of("1234567890"));
+
+    assertThat(PageRoutes.cacheControl(adsense).getHeaderValue()).isEqualTo("no-store");
+    assertThat(PageRoutes.cacheControl(Monetisation.OFF).getHeaderValue()).isEqualTo("no-cache");
   }
 }

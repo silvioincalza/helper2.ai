@@ -52,11 +52,15 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     DSA ad duties do not apply.
   - Tax advisor: gifts and ad income as a private person in Switzerland, and whether a sole proprietorship must be
     registered. The Terms say a gift is not tax-deductible.
-- AdSense part 2 ([ADR 0059](adr/frontend/0059-adsense.md)), after Google approves the site: the ad slot on resource
-  pages; Google's consent tool (Privacy & messaging, consent mode on for ads and analytics) in place of our bar, for
-  AdSense and GA4; GA4 only after consent where `gdprApplies`, without a question elsewhere; nonce CSP on resource pages
-  only; the footer line about ads removed; Privacy and Terms pages updated. First check which TCF purposes Google needs
-  for GA4. Manual: the European regulations message in AdSense, and one ad unit ID.
+- AdSense ([ADR 0059](adr/frontend/0059-adsense.md)), before `app.monetisation.adsenseSlot` is set on prod:
+  - Manual: Google approves the site; in AdSense "Privacy & messaging", the European regulations message with consent
+    mode on for ads and for analytics; Auto ads and overlay formats (anchor, vignette, side rail) off; one display ad
+    unit; then set its ID in `values-prod.yaml`.
+  - Check on staging first, with the CSP report in the browser console: the AdSense CSP and every script of the app
+    (the module preloads and lazy chunks run through the nonce and 'strict-dynamic').
+  - Lawyer: our reading that GA4 needs TCF purposes 1 and 8 and vendor 755; analytics without a question outside
+    Europe; legitimate interest for ads without personalisation; Google as an independent controller for AdSense;
+    the consent tool's cookie names and lifetimes on the Privacy page.
 - Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
   tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
   GitHub's terms for reading README files to build it.
