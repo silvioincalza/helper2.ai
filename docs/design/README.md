@@ -46,22 +46,24 @@ them they show the system fonts.
 - Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
 - Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
   counts the same sources.
-- 3 to 5 sources at a time, each in its own spot. It starts with 3, one after another. Then every 1.6 s one step: a
-  new random source comes while it grows, up to 5; the oldest leaves while it shrinks, down to 3.
+- 5 to 10 sources at a time, each in its own spot. It starts with 5, one after another. Then every 1.6 s one step: the
+  next source of the queue comes while it grows, up to 10; the oldest leaves while it shrinks, down to 5. The queue
+  holds every source, shuffled once; a source that leaves goes to the back, so every source of a group is on the
+  radar once before any of them comes back.
 - A dot shows only when the beam passes it: full opacity, a short pop and a glow in its colour, then it fades to
   about a fifth until the next pass. A source that leaves is not painted again and fades out within 3 s.
 - Every dot is filled with its colour: orange answering, amber slow or limited, red failed.
 - Only the short name under a dot. The timing and the state are in its accessible name and tooltip.
 - The beam and the dots hold still while the search box has focus. Under reduced motion, or with the account setting
-  off, the beam stands still and a fixed set of 4 shows at full opacity.
-- Under the box: "3-5 of N sources at a time", the three colours, and a link to the Sources page.
+  off, the beam stands still and a fixed set of 7 shows at full opacity.
+- Under the box: "5-10 of N sources at a time", the three colours, and a link to the Sources page.
 
 ### Sources, Saved and the back office (5 Nov 2026)
 
 - A `$ helper2 … · N` line next to each list heading, N from the API: `sources --all`, `saved`, `review --open`,
   `scouts --runs`, `examples`, `audit`.
 - Sources is one table with every source, ours included. Same short names and colours as the radar. One line says
-  the radar shows 3-5 of the external ones at a time.
+  the radar shows 5-10 of the external ones at a time.
 - Saved keeps its rows and chips. Loading, sync error and empty are the states of the Home lists.
 - The review queue, the Scout runs, the budgets and the audit trail are tables. Only the look changed.
 
