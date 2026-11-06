@@ -38,6 +38,15 @@ function withFirst(list: Bookmark[], b: Bookmark): Bookmark[] {
 /** A save or removal made while the account list was still on its way. */
 type Edit = { kind: 'save'; entry: Bookmark } | { kind: 'remove'; id: string };
 
+function editedId(e: Edit): string {
+  return e.kind === 'save' ? e.entry.resourceId : e.id;
+}
+
+/** The edits with `edit` as the last word on its resource: a save then a removal is just the removal. */
+function withEdit(edits: Edit[], edit: Edit): Edit[] {
+  return [...edits.filter((e) => editedId(e) !== editedId(edit)), edit];
+}
+
 function withEdits(list: Bookmark[], edits: Edit[]): Bookmark[] {
   return edits.reduce(
     (acc, e) =>
@@ -121,11 +130,12 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
         }
       },
       () => {
-        // The browser's list stays the one shown: it takes the edits, and the next merge sends them.
+        // The browser's list stays the one shown: it takes the edits, and the next merge sends the saves.
+        // A removal stays pending: a merge only adds, so the account's copy goes once the list is here.
         const pending = editsRef.current;
         if (pending.length) {
           persistLocal(withEdits(readLocalBookmarks(), pending));
-          setEdits([]);
+          setEdits(pending.filter((e) => e.kind === 'remove'));
         }
         setServerError(true);
       },
@@ -142,7 +152,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
   const remove = useCallback(
     (id: string) => {
       if (!server) return persistLocal(local.filter((b) => b.resourceId !== id));
-      if (remote === null) return setEdits((e) => [...e, { kind: 'remove', id }]);
+      if (remote === null) return setEdits((e) => withEdit(e, { kind: 'remove', id }));
       const gone = remote.find((b) => b.resourceId === id);
       if (gone) removeFromAccount(gone);
     },
@@ -155,7 +165,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       if (saved) return remove(b.resourceId);
       const entry: Bookmark = { ...b, savedAt: new Date().toISOString() };
       if (!server) return persistLocal([...local, entry]);
-      if (remote === null) return setEdits((e) => [...e, { kind: 'save', entry }]);
+      if (remote === null) return setEdits((e) => withEdit(e, { kind: 'save', entry }));
       saveToAccount(entry);
     },
     [items, server, remote, local, remove, persistLocal, saveToAccount],

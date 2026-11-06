@@ -155,6 +155,81 @@ describe('bookmarks (signed in)', () => {
     expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
   });
 
+  it('a save then a removal while the list is on its way ends unsaved, and sends nothing', async () => {
+    const acme = '11111111-1111-5111-8111-111111111111';
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      'PUT /me/bookmarks/*': () => bm,
+      'DELETE /me/bookmarks/*': () => undefined,
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
+    const save = (
+      await screen.findAllByRole('button', { name: /Save Acme Translator/ })
+    )[0] as HTMLElement;
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+
+    await act(async () => answer([]));
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findByText(/Nothing saved yet/)).toBeInTheDocument();
+    expect(m.callsTo('PUT', `/me/bookmarks/${acme}`)).toHaveLength(0);
+    expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(0);
+  });
+
+  it('a removal while a merge that then fails is on its way still reaches the account after Try again', async () => {
+    const acme = '11111111-1111-5111-8111-111111111111';
+    writeLocalBookmarks([{ ...bm, resourceId: acme, title: 'Acme Translator' }]);
+    let fail = true;
+    const server = [
+      { ...bm, resourceId: acme, title: 'Acme Translator', savedAt: '2026-10-22T00:00:00Z' },
+    ];
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      'GET /me/bookmarks': () => (fail ? problem(500, 'Boom') : server),
+      'DELETE /me/bookmarks/*': () => undefined,
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1));
+    const save = (
+      await screen.findAllByRole('button', { name: /Save Acme Translator/ })
+    )[0] as HTMLElement;
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+
+    // The merge fails: the browser keeps the list without Acme, and the removal waits for the account.
+    await act(async () => answer(problem(500, 'Boom')));
+    expect(readLocalBookmarks()).toEqual([]);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    await act(() => router.navigate('/saved'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Could not sync with your account.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
+
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
+  });
+
   it('uses GET when there is nothing to merge, and DELETE on remove', async () => {
     const list = [
       {
