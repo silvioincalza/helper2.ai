@@ -40,7 +40,7 @@ tag: Resolve tag {
 
 deploy: Deploy {
   runner -> k8s: "make diff (kubectl diff)"
-  runner -> k8s: "make deploy: helm upgrade --install\n--server-side --wait --timeout 6m\n--rollback-on-failure" {class: hot}
+  runner -> k8s: "make deploy: release-ready (a pending-* release:\nrollback to the last deployed revision), then\nhelm upgrade --install --server-side\n--wait --timeout 12m --rollback-on-failure" {class: hot}
   k8s -> runner: "ready, or rolled back\nto the previous revision"
   runner -> site: "make status: GET / → HTTP code"
   runner -> runner: "always: rm app.env, kubeconfig"

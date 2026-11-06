@@ -1,7 +1,7 @@
 # Flowchart: what one Helm render of deploy/helm/helper2 decides from its values: the checks that fail the render,
 # then which workloads, PodDisruptionBudget and network policy rules it adds. Hosted values: values-staging.yaml,
 # values-prod.yaml. The resulting topology is drawn in infrastructure.d2.
-# Source of truth: deploy/k8s/check-app-env.sh, deploy/helm/helper2/templates/_helpers.tpl, app.yaml, redis.yaml,
+# Source of truth: deploy/k8s/check-app-env.sh, deploy/helm/helper2/templates/_helpers.tpl, app.yaml, postgres.yaml, redis.yaml,
 #   backup.yaml, networkpolicy.yaml, values.yaml, values-staging.yaml, values-prod.yaml.
 # Render: cd docs/diagrams && d2 fmt flow-0027-runtime-topology.d2 && d2 flow-0027-runtime-topology.d2 flow-0027-runtime-topology.svg
 
@@ -22,7 +22,7 @@ checks: "Checks (check-app-env.sh, _helpers.tpl)" {
   redis -> fail: no
 }
 
-always: "Always: helper2 Deployment (RollingUpdate maxSurge 1, maxUnavailable 0,\nspread by hostname), postgres and redis StatefulSets (one replica, RWO volume),\nServiceAccount helper2 without token, ingress-postgres, ingress-redis" {class: app}
+always: "Always: helper2 Deployment (RollingUpdate maxSurge 1, maxUnavailable 0,\nspread by hostname), postgres and redis StatefulSets (one replica, RWO volume;\npostgres: startup probe up to 10 min, then liveness; redis: liveness after 30 s),\nServiceAccount helper2 without token, ingress-postgres, ingress-redis" {class: app}
 
 options: Per-environment values {
   class: group
@@ -36,7 +36,7 @@ options: Per-environment values {
   egress: "networkPolicy.egress.enabled?\n(default yes)" {class: decision}
   out: "Egress per workload: app DNS, 5432, 6379,\nOTLP 4318, 443 without private ranges" {class: app}
   backup: "backup.enabled?\n(prod only)" {class: decision}
-  cron: "pg-backup CronJob 02:30 Europe/Zurich,\nPVC kept on uninstall, 7 days;\npostgres accepts pg-backup" {class: app}
+  cron: "pg-backup CronJob 02:30 Europe/Zurich,\nmissed if it cannot start within an hour;\nPVC kept on uninstall, 7 days;\npostgres accepts pg-backup" {class: app}
   offsite: "backup.offsite.enabled?\n(off unless configured)" {class: decision}
   rclone: "rclone copy to R2 after the dump;\npg-backup egress 443" {class: app}
 

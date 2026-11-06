@@ -37,7 +37,7 @@ cd: cd.yml (push to main or release/*) {
   scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0046, report-only)" {class: app}
   staging: "deploy.yml env staging:\ndiff, deploy, status" {class: app}
   ok: "Staging rollout\nhealthy?" {class: decision}
-  rollback: "helm --rollback-on-failure:\nprevious revision" {class: fail}
+  rollback: "helm --rollback-on-failure:\nback to the last deployed revision" {class: fail}
   branch: "Push to main?" {class: decision}
   imageonly: "release/* (0048): image only,\nno staging" {class: end}
   done: "Staging runs the commit;\nprod unchanged" {class: end}

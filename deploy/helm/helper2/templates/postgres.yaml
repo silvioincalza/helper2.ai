@@ -28,10 +28,16 @@ spec:
           readinessProbe:
             exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
             periodSeconds: 5
-          # Two minutes without an answer (6 x 20 s) restarts a hung server; recovery after a crash gets a minute first.
+          # pg_isready also fails (exit 1) while the server is up but still replaying its log after a crash,
+          # so recovery gets up to 10 min (120 x 5 s) before the liveness probe counts: a liveness
+          # restart during recovery would start the recovery over, every time.
+          startupProbe:
+            exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
+            periodSeconds: 5
+            failureThreshold: 120
+          # Then two minutes without an answer (6 x 20 s) restarts a hung server.
           livenessProbe:
             exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
-            initialDelaySeconds: 60
             periodSeconds: 20
             failureThreshold: 6
           resources:
