@@ -77,7 +77,8 @@ class PageReaderCreditBudgetTest {
   @Test
   void theGlobalCapStopsTheScoutToo() {
     var budget =
-        new PageReaderCreditBudget(new DailyBudget(5, clock, "x"), quota(new MapCounter(), 0), meters);
+        new PageReaderCreditBudget(
+            new DailyBudget(5, clock, "x"), quota(new MapCounter(), 0), meters);
 
     assertThat(budget.tryTake()).isFalse();
     assertThat(spent()).isZero();

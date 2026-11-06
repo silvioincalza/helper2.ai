@@ -76,8 +76,8 @@ class MicrometerSearchMetrics implements SearchMetrics {
   }
 
   /**
-   * {@code helper2.live-web.credits{feature,tier}}: one per live call of the metered source; internal
-   * calls are {@code none}.
+   * {@code helper2.live-web.credits{feature,tier}}: one per live call of the metered source;
+   * internal calls are {@code none}.
    */
   @Override
   public void creditSpent(String sourceId, Asker asker, QuotaTier tier) {

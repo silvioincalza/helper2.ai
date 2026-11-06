@@ -232,7 +232,11 @@ class JdbcWebResultStoreIT {
   void setsFetchedMoreThanSevenDaysAgoArePurged() {
     Instant purgeNow = Instant.parse("2000-07-01T00:00:00Z");
     store.replace(
-        "live-web", "old " + run, IntentClass.GENERAL, purgeNow.minus(Duration.ofDays(8)), List.of());
+        "live-web",
+        "old " + run,
+        IntentClass.GENERAL,
+        purgeNow.minus(Duration.ofDays(8)),
+        List.of());
     store.replace(
         "live-web",
         "recent " + run,

@@ -207,7 +207,11 @@ class LinkedInCollectorTest {
         .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.CREDITS), 2L)
         .containsEntry(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 2L);
     assertThat(
-            meters.get("helper2.live-web.credits").tag("feature", "scout-linkedin").counter().count())
+            meters
+                .get("helper2.live-web.credits")
+                .tag("feature", "scout-linkedin")
+                .counter()
+                .count())
         .isEqualTo(2.0);
   }
 

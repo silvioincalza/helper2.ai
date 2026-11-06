@@ -173,6 +173,8 @@ class SearchConfiguration {
         webResults,
         quota,
         new WebFreshness(
-            search.web().freshTimeBound(), search.web().freshGeneral(), retention.liveWebResults()));
+            search.web().freshTimeBound(),
+            search.web().freshGeneral(),
+            retention.liveWebResults()));
   }
 }

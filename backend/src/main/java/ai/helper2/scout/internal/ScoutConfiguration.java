@@ -358,7 +358,12 @@ class ScoutConfiguration {
         "Evidence ladder: product pages on, {} Extract credits a day",
         evidence.dailyPageReadCredits());
     return new OfficialPages(
-        reader, new PageReaderCreditBudget(credits, quota, meters), roots, clock, ledger, textCache);
+        reader,
+        new PageReaderCreditBudget(credits, quota, meters),
+        roots,
+        clock,
+        ledger,
+        textCache);
   }
 
   /**
