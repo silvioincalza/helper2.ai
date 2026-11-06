@@ -38,7 +38,9 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       // Results live on /search (ADR 0040, 3).
       { path: 'search', element: <HomePage /> },
-      { path: 'resource/:id', element: <ResourcePage /> },
+      // The readable address (ADR 0050): one route, so replacing a missing or old slug once the resource is
+      // loaded keeps the page mounted.
+      { path: 'resource/:id/:slug?', element: <ResourcePage /> },
       // Few visits start on the saved, sources, account or sign-in page: they load on demand, outside the first
       // download.
       { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) },

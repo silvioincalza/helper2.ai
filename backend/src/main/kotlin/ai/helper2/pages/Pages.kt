@@ -70,7 +70,7 @@ class Pages(private val base: String) {
     PageHead(brand("Resource not found"), null, null, Robots.NOINDEX)
 
   fun resource(r: ResourceView): PageHead {
-    val path = "/resource/${r.id}"
+    val path = resourcePath(r.id, r.title)
     val description = r.sourceDescription?.let { cut(it, DESCRIPTION_MAX) } ?: factLine(r)
     return PageHead(
       title = resourceTitle(r),

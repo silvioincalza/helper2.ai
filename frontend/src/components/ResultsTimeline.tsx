@@ -75,7 +75,11 @@ export function ResultsTimeline({ cards }: { cards: ResultCard[] }) {
                     <p className="tl-meta">
                       {t(`type.${card.type}`)} · {displayHost(card.url)}
                     </p>
-                    <Link to={resourcePath(card.id)} state={{ from }} className="tl-title">
+                    <Link
+                      to={resourcePath(card.id, card.title)}
+                      state={{ from }}
+                      className="tl-title"
+                    >
                       {card.title}
                     </Link>
                     {card.description &&

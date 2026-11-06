@@ -67,7 +67,7 @@ export function GuidePicks({
                     <Link
                       className="h2-pick-chip"
                       title={p.title}
-                      to={resourcePath(p.resourceId)}
+                      to={resourcePath(p.resourceId, p.title)}
                       state={toFromResults(location, p)}
                     >
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>

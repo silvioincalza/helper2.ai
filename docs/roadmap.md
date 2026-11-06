@@ -80,8 +80,6 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   whether an AI-estimated audience or tech level needs more than the Art. 50 label.
 - SEO ([ADR 0050](adr/frontend/0050-pages-for-crawlers.md) is built; the resource page adds about 1 ms at p95 on
   staging, budget 20 ms). Next, in this order:
-  - Readable addresses `/resource/{id}/{slug}`: the id stays the key, a wrong or old slug gets a 301. Do it before
-    Google indexes many pages: changing addresses later costs ranking.
   - One Open Graph image for the brand (1200×630 in `public/`); one per resource only if links get shared often.
   - Hub pages per type (`/mcp-servers`, `/models`): when Search Console shows which types get impressions.
   - 410 for resources removed on purpose, once the catalog has a removed state; a sitemap index past 50,000 pages.

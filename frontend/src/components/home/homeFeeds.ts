@@ -101,7 +101,7 @@ function toNewsRow(card: ResultCard): NewsRow {
     dateKind: date?.kind ?? null,
     type: card.type,
     title: card.title,
-    href: resourcePath(card.id),
+    href: resourcePath(card.id, card.title),
     host: hostOf(card),
   };
 }
@@ -118,7 +118,7 @@ function toEventRow(card: ResultCard, now: number): EventRow {
     format: card.eventFormat ?? null,
     location: card.location ?? null,
     title: card.title,
-    href: resourcePath(card.id),
+    href: resourcePath(card.id, card.title),
   };
 }
 

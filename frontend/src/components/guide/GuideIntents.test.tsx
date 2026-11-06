@@ -148,7 +148,7 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     expect(screen.getByRole('heading', { name: /What it is/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'ollama' })).toHaveAttribute(
       'href',
-      '/resource/11111111-1111-5111-8111-111111111111',
+      '/resource/11111111-1111-5111-8111-111111111111/ollama',
     );
     expect(
       screen.getByText('Get up and running with large language models locally.'),

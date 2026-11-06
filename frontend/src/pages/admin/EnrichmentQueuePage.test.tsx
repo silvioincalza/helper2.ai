@@ -43,7 +43,7 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
     const [fresh, flaky] = within(table).getAllByRole('row').slice(1);
     expect(within(fresh!).getByRole('link', { name: 'Acme MCP' })).toHaveAttribute(
       'href',
-      '/resource/11111111-1111-5111-8111-111111111111',
+      '/resource/11111111-1111-5111-8111-111111111111/acme-mcp',
     );
     expect(within(fresh!).getByText('Not run yet')).toHaveClass('h2-status-pill--next');
     expect(within(fresh!).getByText('None')).toBeInTheDocument();

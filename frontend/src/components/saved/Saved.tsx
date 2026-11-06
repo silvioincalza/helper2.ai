@@ -116,7 +116,7 @@ export function Saved() {
                     </span>
                   </p>
                   <h2 className="h2-saved__title">
-                    <Link to={resourcePath(b.resourceId)}>{b.title}</Link>
+                    <Link to={resourcePath(b.resourceId, b.title)}>{b.title}</Link>
                   </h2>
                 </div>
                 <div className="h2-saved__actions">

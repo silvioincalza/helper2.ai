@@ -23,7 +23,9 @@ export function ComparisonTable({
             {comparison.subjects.map((s) => (
               <th key={s.key} scope="col">
                 {s.resourceId ? (
-                  <Link to={resourcePath(s.resourceId)}>{s.title ?? s.name}</Link>
+                  <Link to={resourcePath(s.resourceId, s.title ?? s.name)}>
+                    {s.title ?? s.name}
+                  </Link>
                 ) : (
                   <>
                     {s.name} <span className="muted small">({t('guide.comparison.notFound')})</span>
@@ -79,7 +81,7 @@ export function ExplanationBlock({
         {explanation.sentences.map((x, i) => (
           <li key={i}>
             <span {...aiMark()}>{x.text}</span>{' '}
-            <Link to={resourcePath(x.resourceId)} className="small">
+            <Link to={resourcePath(x.resourceId, x.title)} className="small">
               {x.title}
             </Link>
             <q>{x.quote}</q>

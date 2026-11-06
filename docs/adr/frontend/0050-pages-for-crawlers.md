@@ -26,8 +26,8 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
 2. **What each address says, and its status.**
    | Address | Status | Robots | Head |
    |---|---|---|---|
-   | `/resource/{id}`, found | 200 | index, or noindex when not index-worthy (5) | from the resource (3) |
-   | `/resource/{id}`, id merged into another resource | 301 to `/resource/{owner}` | — | — |
+   | `/resource/{id}/{slug}`, found, slug right | 200 | index, or noindex when not index-worthy (5) | from the resource (3) |
+   | `/resource/{id}` without a slug, a wrong or old slug, or an id merged into another resource | 301 to `/resource/{owner}/{slug}` | — | — |
    | `/resource/{id}`, unknown or not a UUID | 404 | noindex | "Resource not found" |
    | `/`, `/sources`, `/mission`, `/privacy`, `/terms` | 200 | index | fixed title and description per page |
    | `/search`, `/?q=…`, `/saved`, `/account` | 200 | noindex, follow | fixed title |
@@ -37,6 +37,15 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
    The 404 pages still carry the app, so a person sees the same "not found" page as today. The pages the server knows
    are one list (`PageKind`, `Routes.kt`); a test reads `routes.tsx` and fails when a path of the app is not in it, so a
    new page cannot ship as a 404.
+
+   **Readable addresses.** The id is the key; the slug only helps people and search engines read the link. The slug
+   is the title in plain lowercase words: accents dropped, every run of other characters one hyphen, at most 60
+   characters cut at a hyphen (`Slug`, `ResourcePaths.kt`). It is computed from the title on each request, not
+   stored, so a new title gives a new slug and the old one moves with a 301. A title with no Latin letter or digit has
+   no slug, and its address is `/resource/{id}`. The frontend computes the same slug (`frontend/src/lib/slug.ts`);
+   both sides test the same list of titles. Every link the app writes, the canonical, the JSON-LD, the related links
+   and the sitemap use the readable address. The app has one route, `resource/:id/:slug?`: when the address it
+   opened is not the readable one, it replaces it once the resource is loaded, without moving the focus.
 3. **The resource head.**
    - Title, about 60 characters: `{title}: {type in words} · Helper2.ai`.
    - Meta description: the source's own description, cut at a word near 155 characters. An AI-written description
@@ -123,7 +132,9 @@ touched.
 - `backend/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
   `catalog/internal/ResourceStore.indexable`.
 - `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`).
-- Tests: `pages/PagesTest.kt`, `pages/PageHtmlTest.java`, `api/PagesIT.java`, `frontend/src/lib/head.test.tsx`.
+- `backend/src/main/kotlin/ai/helper2/pages/ResourcePaths.kt` (`Slug`, `resourcePath`); `frontend/src/lib/slug.ts`,
+  `frontend/src/lib/searchState.ts` (`resourcePath`), `frontend/src/pages/ResourcePage.tsx` (the address replaced).
+- Tests: `pages/PagesTest.kt` (slug list), `pages/PageHtmlTest.java`, `api/PagesIT.java`, `frontend/src/lib/head.test.tsx`, `frontend/src/lib/slug.test.ts` (same slug list).
 
 ## Diagrams
 [flow](../../diagrams/flow-0050-pages-for-crawlers.svg) · [sequence](../../diagrams/sequence-0050-pages-for-crawlers.svg)
@@ -131,5 +142,4 @@ touched.
 ## Roadmap
 - 410 for resources removed on purpose, once the catalog has a removed state.
 - A sitemap index when index-worthy pages pass 50,000; an Open Graph image (brand first, then per resource).
-- Readable slugs (`/resource/{id}/{slug}`): decide before Google indexes many pages.
 - Hub pages per type or use case (`/mcp-servers`), `llms.txt`, IndexNow pings, one Open Graph image per resource.

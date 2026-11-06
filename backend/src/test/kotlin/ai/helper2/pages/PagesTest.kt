@@ -48,10 +48,10 @@ class PagesTest {
     val head = pages.resource(resource())
     assertEquals("postgres-mcp: MCP server · Helper2.ai", head.title)
     assertEquals("An MCP server that lets an agent query Postgres.", head.description)
-    assertEquals("/resource/$id", head.canonicalPath)
+    assertEquals("/resource/$id/postgres-mcp", head.canonicalPath)
     assertEquals(Robots.INDEX, head.robots)
     assertEquals("SoftwareSourceCode", head.jsonLd.first()["@type"])
-    assertEquals("https://helper2.ai/resource/$id", head.jsonLd.first()["url"])
+    assertEquals("https://helper2.ai/resource/$id/postgres-mcp", head.jsonLd.first()["url"])
     assertEquals("BreadcrumbList", head.jsonLd.last()["@type"])
   }
 
@@ -155,8 +155,31 @@ class PagesTest {
     assertEquals(PageAddress.Resource(id.toString(), id), PageAddress.of("/resource/$id"))
     assertEquals(PageAddress.Resource("nope", null), PageAddress.of("/resource/nope"))
     assertEquals(PageAddress.Unknown, PageAddress.of("/sources/"))
-    assertEquals(PageAddress.Unknown, PageAddress.of("/resource/$id/extra"))
+    assertEquals(
+      PageAddress.Resource(id.toString(), id, "postgres-mcp"),
+      PageAddress.of("/resource/$id/postgres-mcp"),
+    )
+    assertEquals(PageAddress.Unknown, PageAddress.of("/resource/$id/postgres-mcp/extra"))
     assertEquals(PageAddress.Unknown, PageAddress.of("/nope"))
+  }
+
+  @Test
+  fun `a slug is the title in plain lowercase words, the same as the frontend's`() {
+    // The same table is in frontend/src/lib/slug.test.ts: both sides must give the same slug.
+    val vectors =
+      listOf(
+        "postgres-mcp" to "postgres-mcp",
+        "LangChain: Build LLM apps" to "langchain-build-llm-apps",
+        "Café Crème 2.0" to "cafe-creme-2-0",
+        "  --Hello__World--  " to "hello-world",
+        "日本語" to "",
+        "" to "",
+        "word ".repeat(20).trim() to "word-word-word-word-word-word-word-word-word-word-word-word",
+        "a".repeat(70) to "a".repeat(60),
+      )
+    for ((title, slug) in vectors) assertEquals(slug, Slug.of(title), title)
+    assertEquals("/resource/$id/postgres-mcp", resourcePath(id, "postgres-mcp"))
+    assertEquals("/resource/$id", resourcePath(id, "日本語"))
   }
 
   @Test

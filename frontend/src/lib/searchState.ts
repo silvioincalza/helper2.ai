@@ -1,5 +1,6 @@
 import { audiencePathValues, sortOrderValues, triStateValues } from '@/api/schema';
 import type { AudiencePath, GuideRequest, SearchQuery, SortOrder, TriState } from '@/api/types';
+import { slugOf } from './slug';
 
 export const MULTI_KEYS = [
   'type',
@@ -215,9 +216,14 @@ export function showsHome(pathname: string, sp: URLSearchParams): boolean {
   return pathname === '/' && !parseSearchParams(sp).q && !askedQuestion(sp);
 }
 
-/** The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. */
-export function resourcePath(id: string): string {
-  return `/resource/${encodeURIComponent(id)}`;
+/**
+ * The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. With a title, the
+ * readable address `/resource/{id}/{slug}` (ADR 0050): the id stays the key, the slug is for people and search
+ * engines.
+ */
+export function resourcePath(id: string, title?: string | null): string {
+  const slug = slugOf(title);
+  return `/resource/${encodeURIComponent(id)}${slug ? `/${slug}` : ''}`;
 }
 
 /**
