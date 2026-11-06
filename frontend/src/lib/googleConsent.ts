@@ -55,6 +55,7 @@ function hasSensitiveQuery(search: string): boolean {
 
 function analyticsStorageGranted(win: Window): boolean {
   const status = win.googlefc?.getGoogleConsentModeValues?.().analyticsStoragePurposeConsentStatus;
+  if (status === undefined) return true;
   return status === true || status === 'granted' || status === 'GRANTED';
 }
 

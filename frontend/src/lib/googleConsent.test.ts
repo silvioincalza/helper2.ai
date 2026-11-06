@@ -40,27 +40,6 @@ describe("Google's consent tool (ADR 0059)", () => {
     const api = vi.fn((command: string, _v: number, cb: (d: object, ok: boolean) => void) => {
       if (command === 'addEventListener') listener = cb;
     });
-
-    it('keeps analytics off until analytics storage consent is granted', () => {
-      let listener: ((d: object, ok: boolean) => void) | undefined;
-      window.googlefc = {
-        getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: 'denied' }),
-      };
-      window.__tcfapi = (command, _v, cb) => {
-        if (command === 'addEventListener') listener = cb;
-      };
-      const seen: string[] = [];
-      watchConsent((d) => seen.push(d));
-
-      listener?.({ listenerId: 7, ...YES }, true);
-      expect(seen).toEqual(['denied']);
-
-      window.googlefc.getGoogleConsentModeValues = () => ({
-        analyticsStoragePurposeConsentStatus: 'granted',
-      });
-      listener?.({ listenerId: 7, ...YES }, true);
-      expect(seen).toEqual(['denied', 'granted']);
-    });
     window.__tcfapi = api;
     const seen: string[] = [];
     const stop = watchConsent((d) => seen.push(d));
@@ -73,6 +52,27 @@ describe("Google's consent tool (ADR 0059)", () => {
 
     expect(seen).toEqual(['granted', 'denied']);
     expect(api).toHaveBeenLastCalledWith('removeEventListener', 2, expect.any(Function), 7);
+  });
+
+  it('keeps analytics off until analytics storage consent is granted', () => {
+    let listener: ((d: object, ok: boolean) => void) | undefined;
+    window.googlefc = {
+      getGoogleConsentModeValues: () => ({ analyticsStoragePurposeConsentStatus: 'denied' }),
+    };
+    window.__tcfapi = (command, _v, cb) => {
+      if (command === 'addEventListener') listener = cb;
+    };
+    const seen: string[] = [];
+    watchConsent((d) => seen.push(d));
+
+    listener?.({ listenerId: 7, ...YES }, true);
+    expect(seen).toEqual(['denied']);
+
+    window.googlefc.getGoogleConsentModeValues = () => ({
+      analyticsStoragePurposeConsentStatus: 'granted',
+    });
+    listener?.({ listenerId: 7, ...YES }, true);
+    expect(seen).toEqual(['denied', 'granted']);
   });
 
   it('waits for the tool, and never decides when it does not load', () => {
