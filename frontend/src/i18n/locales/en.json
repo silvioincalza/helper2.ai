@@ -1284,8 +1284,8 @@
             "withoutNumbers": "Reports: a set time after they were handled. If your account is deleted, your reports stay without your name until then."
           },
           {
-            "text": "Records of our administrators' actions in the back office, with their GitHub user ID: {{adminRecords}}.",
-            "withoutNumbers": "Records of our administrators' actions in the back office, with their GitHub user ID: for a set time."
+            "text": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason or note they wrote: {{adminRecords}}.",
+            "withoutNumbers": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason or note they wrote: for a set time."
           },
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
