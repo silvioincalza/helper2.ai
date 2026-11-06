@@ -6,14 +6,11 @@ import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.RuntimeSettings;
 import java.time.Clock;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * An administrator puts a runtime setting back to its default, the H2_ value (ADR 0060). Nothing is
  * deleted: a change with no value is appended, so the history shows the reset too.
  */
-@Service
 public class ResetRuntimeSetting {
 
   public sealed interface Outcome {
@@ -42,7 +39,6 @@ public class ResetRuntimeSetting {
     this.clock = clock;
   }
 
-  @Transactional
   public Outcome reset(
       String adminId, RuntimeSetting setting, long expectedVersion, @Nullable String reason) {
     GetRuntimeSettings.State before = settings.of(setting);
@@ -64,8 +60,13 @@ public class ResetRuntimeSetting {
     if (stored == null) {
       return new Outcome.Conflict(settings.of(setting));
     }
-    ChangeRuntimeSetting.applyAfterCommit(runtime);
+    applyAfterCommit(runtime);
     return new Outcome.Reset(settings.of(setting));
+  }
+
+  /** This replica reads the settings again once the change is committed, not before. */
+  protected void applyAfterCommit(RuntimeSettings runtime) {
+    runtime.reloadIfChanged();
   }
 
   /** What a reset leads to, as the audit trail writes it. */

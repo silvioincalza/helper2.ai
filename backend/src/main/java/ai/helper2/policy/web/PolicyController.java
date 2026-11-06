@@ -10,6 +10,7 @@ import ai.helper2.api.generated.model.WebSearchLimitsDto;
 import ai.helper2.catalog.CatalogPolicy;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.identity.AccountPolicy;
+import ai.helper2.platform.config.PlatformRetentionProperties;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.SearchPolicy;
 import java.time.Duration;
@@ -32,12 +33,16 @@ class PolicyController implements PolicyApi {
   private final PolicyDto policy;
 
   PolicyController(
-      SearchPolicy search, GuidePolicy guide, AccountPolicy accounts, CatalogPolicy catalog) {
+      SearchPolicy search,
+      GuidePolicy guide,
+      AccountPolicy accounts,
+      CatalogPolicy catalog,
+      PlatformRetentionProperties platform) {
     this.policy =
         new PolicyDto(
             new PolicyGuideDto(guide.getMaxCandidates(), guide.getMaxPicks()),
             dailyLimits(search, guide),
-            retention(search, guide, accounts, catalog));
+            retention(search, guide, accounts, catalog, platform));
   }
 
   @Override
@@ -57,7 +62,11 @@ class PolicyController implements PolicyApi {
   }
 
   private static PolicyRetentionDto retention(
-      SearchPolicy search, GuidePolicy guide, AccountPolicy accounts, CatalogPolicy catalog) {
+      SearchPolicy search,
+      GuidePolicy guide,
+      AccountPolicy accounts,
+      CatalogPolicy catalog,
+      PlatformRetentionProperties platform) {
     return new PolicyRetentionDto(
         search.getCachedSearches().toSeconds(),
         guide.getCachedAnswers().toSeconds(),
@@ -66,6 +75,7 @@ class PolicyController implements PolicyApi {
         search.getStoredWebResults().toSeconds(),
         accounts.inactiveAccounts().toSeconds(),
         catalog.handledReports().toSeconds(),
-        accounts.adminRecords().toSeconds());
+        accounts.adminRecords().toSeconds(),
+        platform.runtimeSettings().toSeconds());
   }
 }

@@ -1,10 +1,13 @@
 package ai.helper2.admin.config;
 
 import ai.helper2.admin.ExampleDrafts;
+import ai.helper2.admin.usecase.ChangeRuntimeSetting;
 import ai.helper2.admin.usecase.GetEffectiveSettings;
 import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.admin.usecase.GetReviewEvidence;
+import ai.helper2.admin.usecase.GetRuntimeSettings;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
+import ai.helper2.admin.usecase.ResetRuntimeSetting;
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.catalog.ReviewEvidence;
@@ -15,6 +18,9 @@ import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.identity.AuditTrail;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.llm.BudgetLedger;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
+import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
@@ -29,6 +35,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * The back office's use cases: plain classes over other modules' use cases and ports (ADR 0002).
@@ -46,9 +54,17 @@ class AdminUseCaseConfiguration {
       BudgetLedger budgets,
       ObjectProvider<WebSearchQuota> webSearchQuota,
       CountHomeExamples homeExamples,
+      RuntimeSettings runtimeSettings,
       Clock clock) {
     return new GetOverview(
-        reviewQueue, backlog, runs, budgets, webSearchQuota::getIfAvailable, homeExamples, clock);
+        reviewQueue,
+        backlog,
+        runs,
+        budgets,
+        webSearchQuota::getIfAvailable,
+        homeExamples,
+        runtimeSettings,
+        clock);
   }
 
   @Bean
@@ -96,6 +112,31 @@ class AdminUseCaseConfiguration {
     return new ResolveReviewItems(queue, evidence, resolve, audit);
   }
 
+  @Bean
+  GetRuntimeSettings getRuntimeSettings(RuntimeSettingStore store, RuntimeSettings runtime) {
+    return new GetRuntimeSettings(store, runtime);
+  }
+
+  @Bean
+  ChangeRuntimeSetting changeRuntimeSetting(
+      RuntimeSettingStore store,
+      GetRuntimeSettings settings,
+      RuntimeSettings runtime,
+      AuditTrail audit,
+      Clock clock) {
+    return new TransactionalChangeRuntimeSetting(store, settings, runtime, audit, clock);
+  }
+
+  @Bean
+  ResetRuntimeSetting resetRuntimeSetting(
+      RuntimeSettingStore store,
+      GetRuntimeSettings settings,
+      RuntimeSettings runtime,
+      AuditTrail audit,
+      Clock clock) {
+    return new TransactionalResetRuntimeSetting(store, settings, runtime, audit, clock);
+  }
+
   /**
    * The addition and the decision in one transaction. A refused addition (an {@link ApiProblem})
    * does not roll back: its audit entry stays.
@@ -127,6 +168,82 @@ class AdminUseCaseConfiguration {
         @Nullable String note,
         @Nullable UUID batch) {
       return super.resolve(id, decision, adminId, note, batch);
+    }
+  }
+
+  static class TransactionalChangeRuntimeSetting extends ChangeRuntimeSetting {
+
+    TransactionalChangeRuntimeSetting(
+        RuntimeSettingStore store,
+        GetRuntimeSettings settings,
+        RuntimeSettings runtime,
+        AuditTrail audit,
+        Clock clock) {
+      super(store, settings, runtime, audit, clock);
+    }
+
+    @Override
+    @Transactional
+    public Outcome change(
+        String adminId, RuntimeSetting setting, long value, long expectedVersion, @Nullable String reason) {
+      return super.change(adminId, setting, value, expectedVersion, reason);
+    }
+
+    @Override
+    protected void applyAfterCommit(RuntimeSettings runtime) {
+      if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+        runtime.reloadIfChanged();
+        return;
+      }
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              try {
+                runtime.reloadIfChanged();
+              } catch (RuntimeException e) {
+                // The refresh thread reads it within one interval.
+              }
+            }
+          });
+    }
+  }
+
+  static class TransactionalResetRuntimeSetting extends ResetRuntimeSetting {
+
+    TransactionalResetRuntimeSetting(
+        RuntimeSettingStore store,
+        GetRuntimeSettings settings,
+        RuntimeSettings runtime,
+        AuditTrail audit,
+        Clock clock) {
+      super(store, settings, runtime, audit, clock);
+    }
+
+    @Override
+    @Transactional
+    public Outcome reset(
+        String adminId, RuntimeSetting setting, long expectedVersion, @Nullable String reason) {
+      return super.reset(adminId, setting, expectedVersion, reason);
+    }
+
+    @Override
+    protected void applyAfterCommit(RuntimeSettings runtime) {
+      if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+        runtime.reloadIfChanged();
+        return;
+      }
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              try {
+                runtime.reloadIfChanged();
+              } catch (RuntimeException e) {
+                // The refresh thread reads it within one interval.
+              }
+            }
+          });
     }
   }
 }

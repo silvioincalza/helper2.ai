@@ -6,14 +6,12 @@ import ai.helper2.platform.settings.RuntimeSettings;
 import java.util.Arrays;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * The runtime settings as the store holds them (ADR 0060), for the Settings page: each setting's
  * value, default, range, version and last changes. Read from the store, not from this replica's
  * snapshot: the page shows what every replica applies within one refresh interval.
  */
-@Service
 public class GetRuntimeSettings {
 
   /** Changes listed per setting. */

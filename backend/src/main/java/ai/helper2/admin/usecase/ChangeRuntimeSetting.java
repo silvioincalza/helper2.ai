@@ -8,10 +8,6 @@ import ai.helper2.platform.settings.RuntimeSettings;
 import java.time.Clock;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * An administrator sets a runtime setting's value (ADR 0060). The value must be in the setting's
@@ -19,7 +15,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * are written in one transaction; this replica applies it right after the commit, the others within
  * one refresh interval.
  */
-@Service
 public class ChangeRuntimeSetting {
 
   public sealed interface Outcome {
@@ -50,7 +45,6 @@ public class ChangeRuntimeSetting {
     this.clock = clock;
   }
 
-  @Transactional
   public Outcome change(
       String adminId,
       RuntimeSetting setting,
@@ -96,22 +90,8 @@ public class ChangeRuntimeSetting {
   }
 
   /** This replica reads the settings again once the change is committed, not before. */
-  static void applyAfterCommit(RuntimeSettings runtime) {
-    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-      runtime.reloadIfChanged();
-      return;
-    }
-    TransactionSynchronizationManager.registerSynchronization(
-        new TransactionSynchronization() {
-          @Override
-          public void afterCommit() {
-            try {
-              runtime.reloadIfChanged();
-            } catch (RuntimeException e) {
-              // The refresh thread reads it within one interval.
-            }
-          }
-        });
+  protected void applyAfterCommit(RuntimeSettings runtime) {
+    runtime.reloadIfChanged();
   }
 
   /**
