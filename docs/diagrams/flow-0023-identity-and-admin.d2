@@ -54,7 +54,7 @@ signin: Sign-in (only from /admin) {
   roles: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}
   user: "ROLE_USER" {class: app}
   adm: "ROLE_USER + ROLE_ADMIN" {class: app}
-  ensure: "AuthenticationSuccessEvent →\nUsers.signedIn: upsert app_user\n(provider, subject, name,\nlast sign-in; no e-mail)" {class: data}
+  ensure: "InteractiveAuthenticationSuccessEvent\n(the sign-in filter) → Users.signedIn: upsert app_user\n(provider, subject, name,\nlast sign-in; no e-mail)" {class: data}
   back: "Redirect to /admin\n(failure: /admin?signin=failed)" {class: end}
   profile -> nosign: no
   profile -> github: yes
@@ -87,10 +87,11 @@ account: Delete my account {
   direction: down
   page: "/account: Delete my account,\nthen confirm" {class: app}
   call: "DELETE /api/v1/me\n(X-XSRF-TOKEN)" {class: app}
+  end: "Session ended first (a session\nthat outlives the row would\nrecreate the account)" {class: app}
   del: "DeleteMyAccount: delete app_user;\nbookmarks cascade, reports keep\nreporter = NULL" {class: data}
   quota: "Delete the user's daily\nweb-search counters (Redis);\nRedis down: they expire in 24 h" {class: data}
-  out: "Session ended, page reloads\nsigned out" {class: end}
-  page -> call -> del -> quota -> out
+  out: "204, page reloads\nsigned out" {class: end}
+  page -> call -> end -> del -> quota -> out
 }
 
 audit: Admin audit trail {

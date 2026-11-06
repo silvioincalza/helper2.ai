@@ -161,10 +161,12 @@ class MeController implements MeApi {
 
   @Override
   public ResponseEntity<Void> deleteMyAccount() {
-    deleteMyAccount.delete(user());
-    // The session would otherwise recreate the account on the next request (CurrentUser.id).
+    UUID userId = user();
+    // The session ends first: one that outlived the row would recreate the account on the next
+    // request (CurrentUser.id). If ending it fails, nothing is deleted and the user retries.
     new SecurityContextLogoutHandler()
         .logout(request, response, SecurityContextHolder.getContext().getAuthentication());
+    deleteMyAccount.delete(userId);
     return ResponseEntity.noContent().build();
   }
 

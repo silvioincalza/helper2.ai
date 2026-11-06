@@ -5,7 +5,7 @@ import ai.helper2.platform.SignedInUser;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.event.EventListener;
-import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
+import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -39,8 +39,12 @@ public class CurrentUser implements SignedInUser {
     return Optional.empty();
   }
 
+  /**
+   * The sign-in filter publishes this event with the session's token. (The provider manager's
+   * {@code AuthenticationSuccessEvent} carries the login token, another type, and is not it.)
+   */
   @EventListener
-  void signedIn(AuthenticationSuccessEvent event) {
+  void signedIn(InteractiveAuthenticationSuccessEvent event) {
     if (event.getAuthentication() instanceof OAuth2AuthenticationToken t) {
       users.signedIn(t.getAuthorizedClientRegistrationId(), t.getName(), displayName(t));
     }
