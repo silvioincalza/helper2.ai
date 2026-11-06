@@ -2,8 +2,7 @@
 # Source of truth: backend/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
 #   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
-#   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx,
-#   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java.
+#   backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0045-back-office.d2 && d2 flow-0045-back-office.d2 flow-0045-back-office.svg
 
 ...@style
@@ -65,28 +64,3 @@ queue: ListEnrichmentQueue {
 }
 
 queue_req -> queue.part
-
-evidence_req: "GET /api/v1/admin/review-items/{id}/evidence" {class: end}
-
-evidence: GetReviewEvidence {
-  class: group
-  direction: down
-  item: "Item exists?" {class: decision}
-  missing: "404" {class: fail}
-  rel: "Item links to a\nrelationship?" {class: decision}
-  relationship: "Run + the relationship,\nat most 5 quotes" {class: data}
-  run: "Item links to a run?" {class: decision}
-  fields: "Run, its validation errors,\nits fields CONFLICTING first,\nat most 5 quotes each" {class: data}
-  none: "The item only" {class: end}
-  marker: "aiContent: provider, model,\nAI-written paths" {class: ai}
-  item -> missing: no
-  item -> rel: yes
-  rel -> relationship: yes
-  rel -> run: no
-  run -> fields: yes
-  run -> none: no
-  relationship -> marker
-  fields -> marker
-}
-
-evidence_req -> evidence.item
