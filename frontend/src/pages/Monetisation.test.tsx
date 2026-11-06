@@ -312,6 +312,14 @@ describe('monetisation (ADR 0057)', () => {
       );
       expect(window.adsbygoogle).toHaveLength(1);
       expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
+      // Google's consent tool goes in before the ad script, so the ad request waits for the consent signal.
+      const consentTag = document.getElementById('h2-googlefc');
+      const adTag = document.getElementById('h2-adsense');
+      expect(consentTag).not.toBeNull();
+      expect(document.querySelector('iframe[name="googlefcPresent"]')).not.toBeNull();
+      expect(
+        consentTag!.compareDocumentPosition(adTag!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it("Google's tag does not load on an address with search words", async () => {

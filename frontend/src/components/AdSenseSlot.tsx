@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMonetisation } from '@/context/MonetisationContext';
+import { loadGoogleConsent } from '@/lib/googleConsent';
 import '@/components/sponsor.css';
 
 const SCRIPT_ID = 'h2-adsense';
@@ -36,6 +37,9 @@ export function AdSenseSlot() {
     if (!adsenseClient || !adsenseSlot) return;
     const queue = (window.adsbygoogle = window.adsbygoogle ?? []);
     queue.pauseAdRequests = 0;
+    // Google's consent tool first, as in Google's own snippet: its presence frame makes the ad script wait for the
+    // consent signal. The layout loads the tool too, but after this page's effects.
+    loadGoogleConsent(adsenseClient);
     loadAdSense(adsenseClient);
     try {
       queue.push({});

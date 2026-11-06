@@ -30,7 +30,9 @@ AdSense brings three constraints:
 4. **The slot on resource pages only.** One box, marked "Sponsored", of fixed height, between the resource's sections
    and never next to the AI summary. A resource address has no search words. No AdSense on search pages (EthicalAds
    is there, one network per page), guide answers, Home, text pages, sign-in, error states or the back office. Each
-   resource mounts its own box and asks AdSense for one ad. The AdSense script stays loaded in the app, so leaving a
+   resource mounts its own box and asks AdSense for one ad, after it has put Google's consent tool in the page (point
+   5): as in Google's own snippet, the tool's presence frame makes the ad request wait for the consent signal, also
+   for a visit that lands on a resource page. The AdSense script stays loaded in the app, so leaving a
    resource page pauses its requests (`pauseAdRequests`), and **Auto ads and overlay formats (anchor, vignette, side
    rail) stay off in the AdSense account**: Google would otherwise place ads, and read the address, on search pages.
 5. **Google's consent tool for AdSense and Google Analytics.** While AdSense is on, the page loads Google's
