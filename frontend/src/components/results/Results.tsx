@@ -335,8 +335,8 @@ function ResultsBody({
 }
 
 /**
- * The list's heading in the terminal style: "All results" over `$ helper2 search · N` (N = `total` from the API), the
- * Filters button, the sort and the List / Timeline switch (links: the view is in the URL). When some sources did not
+ * The list's heading in the terminal style: "Results" over `$ helper2 search · N` (N = `total` from the API), the
+ * List / Timeline switch next to it, then the Filters button and the sort (links: the view is in the URL). When some sources did not
  * answer, one quiet line says so here (`CoverageLine`), with no live region: it is read with the heading, not on every
  * search. [coverage] is false when nothing was searched: the error panel says it then.
  */
@@ -378,6 +378,20 @@ function ListHead({
             {res.total}
           </span>
         </h2>
+        <nav className="h2-view" aria-label={t('timeline.viewLabel')}>
+          {(['list', 'timeline'] as ResultsView[]).map((v) => (
+            <Link
+              key={v}
+              to={{
+                search: `?${homeParams(patchState(state, { view: v }), askedQuestion(sp), sp)}`,
+              }}
+              preventScrollReset
+              aria-current={state.view === v ? 'page' : undefined}
+            >
+              {t(`timeline.view.${v}`)}
+            </Link>
+          ))}
+        </nav>
         <div className="h2-all__tools">
           <button
             ref={toggle}
@@ -409,20 +423,6 @@ function ListHead({
               </select>
             </label>
           )}
-          <nav className="h2-view" aria-label={t('timeline.viewLabel')}>
-            {(['list', 'timeline'] as ResultsView[]).map((v) => (
-              <Link
-                key={v}
-                to={{
-                  search: `?${homeParams(patchState(state, { view: v }), askedQuestion(sp), sp)}`,
-                }}
-                preventScrollReset
-                aria-current={state.view === v ? 'page' : undefined}
-              >
-                {t(`timeline.view.${v}`)}
-              </Link>
-            ))}
-          </nav>
         </div>
         {coverage && res.coverage.partial && (
           <div className="h2-partial">

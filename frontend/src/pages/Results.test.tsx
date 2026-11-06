@@ -141,19 +141,19 @@ describe('results: one column, a row opens the resource page', () => {
     expect(within(rowOf('Alpha Search')).queryByText(/^Found in/)).not.toBeInTheDocument();
   });
 
-  it('the heading says "All results" over the command line with the total from the API', async () => {
+  it('the heading says "Results" over the command line with the total from the API', async () => {
     mockApi({ 'GET /search': () => ({ ...search(), total: 104 }) });
     renderApp('/search?q=postgres');
-    const h = await screen.findByRole('heading', { level: 2, name: /All results/ });
-    expect(h).toHaveTextContent('All results $ helper2 search · 104');
-    // The command is decoration: the heading is read as "All results 104".
+    const h = await screen.findByRole('heading', { level: 2, name: /^Results/ });
+    expect(h).toHaveTextContent('Results $ helper2 search · 104');
+    // The command is decoration: the heading is read as "Results 104".
     expect(h.querySelector('[aria-hidden="true"]')).toHaveTextContent('$ helper2 search ·');
   });
 
   it('the timeline heading names its own command', async () => {
     mockApi({ 'GET /search': () => search() });
     renderApp('/search?q=postgres&view=timeline');
-    expect(await screen.findByRole('heading', { level: 2, name: /All results/ })).toHaveTextContent(
+    expect(await screen.findByRole('heading', { level: 2, name: /^Results/ })).toHaveTextContent(
       '$ helper2 search --timeline · 2',
     );
   });
@@ -628,11 +628,11 @@ describe('results: who the results are best for', () => {
   const lastSearch = (m: ReturnType<typeof mockApi>) =>
     new URLSearchParams(m.callsTo('GET', '/search').at(-1)?.search);
 
-  it('"Apps I can use" puts the path in the URL and in the search call; Back brings "All" back', async () => {
+  it('"Apps I can use" puts the path in the URL and in the search call; Back brings "Anyone" back', async () => {
     const m = mockApi({ 'GET /search': () => search() });
     const { router, params } = renderApp('/search?q=translate+newsletter');
     await screen.findByText('Postgres MCP');
-    expect(choice('All')).toHaveAttribute('aria-pressed', 'true');
+    expect(choice('Anyone')).toHaveAttribute('aria-pressed', 'true');
     expect(lastSearch(m).get('path')).toBeNull();
 
     await userEvent.click(choice('Apps I can use'));
@@ -640,23 +640,23 @@ describe('results: who the results are best for', () => {
     expect(params().get('q')).toBe('translate newsletter');
     await waitFor(() => expect(lastSearch(m).get('path')).toBe('USE_AI'));
     expect(choice('Apps I can use')).toHaveAttribute('aria-pressed', 'true');
-    expect(choice('All')).toHaveAttribute('aria-pressed', 'false');
+    expect(choice('Anyone')).toHaveAttribute('aria-pressed', 'false');
 
     await act(async () => router.navigate(-1));
     await waitFor(() => expect(params().get('path')).toBeNull());
-    expect(choice('All')).toHaveAttribute('aria-pressed', 'true');
+    expect(choice('Anyone')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('"All" removes the path from the URL and the search call', async () => {
+  it('"Anyone" removes the path from the URL and the search call', async () => {
     const m = mockApi({ 'GET /search': () => search() });
     const { params } = renderApp('/search?q=postgres&path=BUILD_WITH_AI');
     await screen.findByText('Postgres MCP');
     expect(lastSearch(m).get('path')).toBe('BUILD_WITH_AI');
 
-    choice('All').focus();
+    choice('Anyone').focus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(params().get('path')).toBeNull());
     await waitFor(() => expect(lastSearch(m).get('path')).toBeNull());
-    expect(choice('All')).toHaveAttribute('aria-pressed', 'true');
+    expect(choice('Anyone')).toHaveAttribute('aria-pressed', 'true');
   });
 });

@@ -141,7 +141,7 @@
   },
   "results": {
     "title": "Search results",
-    "all": "All results",
+    "all": "Results",
     "command": "helper2 search",
     "commandTimeline": "helper2 search --timeline",
     "filtersOn": " · {{count}} on",
@@ -170,7 +170,7 @@
     "suggestUseCase": "Narrow by use case:",
     "path": {
       "label": "Best for:",
-      "ALL": "All",
+      "ALL": "Anyone",
       "USE_AI": "Apps I can use",
       "BUILD_WITH_AI": "Build with AI"
     },

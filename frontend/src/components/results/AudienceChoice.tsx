@@ -5,9 +5,9 @@ import type { AudiencePath } from '@/api/types';
 import { patchState, type SearchState } from '@/lib/searchState';
 
 /**
- * "Best for": All, Apps I can use, Build with AI. Sets the audience `path` of the search, which only changes what
+ * "Best for": Anyone, Apps I can use, Build with AI. Sets the audience `path` of the search, which only changes what
  * ranks first; it never hides a result. A path a home example set shows here as chosen. New words drop it again
- * (patchState), so the row then says "All".
+ * (patchState), so the row then says "Anyone".
  */
 export function AudienceChoice({
   state,

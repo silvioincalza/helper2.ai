@@ -72,7 +72,7 @@ describe('home examples: from the served pool, the built-in list as fallback', (
       'aria-pressed',
       'true',
     );
-    expect(within(bestFor).getByRole('button', { name: 'All' })).toHaveAttribute(
+    expect(within(bestFor).getByRole('button', { name: 'Anyone' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );

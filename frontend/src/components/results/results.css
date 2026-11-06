@@ -108,12 +108,11 @@ details[open] > .h2-fold-toggle .icon {
   margin: 0;
 }
 
-/* ===== The list's heading: All results, $ helper2 search · N, the tools ===== */
+/* ===== The list's heading: Results, $ helper2 search · N, the view switch, then the tools ===== */
 .h2-all {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   padding-bottom: var(--space-3);
   border-bottom: 2px solid var(--ink);
@@ -137,6 +136,10 @@ details[open] > .h2-fold-toggle .icon {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
+}
+/* The view switch stays next to the heading; the tools go to the end of the row. Screen order is the tab order. */
+.h2-all > .h2-all__tools {
+  margin-left: auto;
 }
 .h2-all__on {
   color: var(--muted);
@@ -563,6 +566,49 @@ details[open] > .h2-fold-toggle .icon {
 @media (max-width: 720px) {
   .h2-results .h2-all__title {
     font-size: 1.5rem;
+  }
+  /* A phone: heading and view switch on one line, Filters and the sort on the next, so the first result is in sight. */
+  /* The command line is decoration (aria-hidden): a phone keeps only the count, so List / Timeline fits beside it. */
+  .h2-all__cmd > [aria-hidden='true'] {
+    display: none;
+  }
+  .h2-all > .h2-view {
+    margin-left: auto;
+  }
+  .h2-all > .h2-all__tools {
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    margin-left: 0;
+  }
+  .h2-sort {
+    flex: 1;
+    min-width: 0;
+  }
+  .h2-sort select {
+    flex: 1;
+    min-width: 0;
+  }
+  .h2-type-tabs {
+    gap: 0;
+  }
+  .h2-type-tab {
+    padding: 0 var(--space-2);
+  }
+  /* Best for and the use case chips: one line each, scrolled sideways, instead of two or three lines. */
+  .h2-hints-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .h2-results .h2-hints {
+    position: relative;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .h2-results .h2-hints > * {
+    flex: none;
   }
   .tl-group {
     grid-template-columns: minmax(0, 1fr);
