@@ -1,5 +1,6 @@
 package ai.helper2.identity.internal;
 
+import ai.helper2.identity.Users;
 import ai.helper2.platform.SignedInUser;
 import java.util.Optional;
 import java.util.UUID;

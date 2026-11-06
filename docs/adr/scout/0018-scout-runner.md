@@ -37,7 +37,7 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
    - **Interrupted runs.** A `scout_run` row still `RUNNING` while no run holds `scout-run` belongs to a replica that
      stopped mid-run. At startup (`ApplicationReadyEvent`) and at the start of every run, under `scout-run`,
      `ScoutStore.markInterrupted` closes such rows as `FAILED` "Interrupted: the replica running it stopped" and sets
-     their source's last outcome to `FAILED`. A replica that starts while another one runs the Scout leaves the rows
+     their source's last outcome to `FAILED` through the catalog's `SourceOutcomes`, in one transaction. A replica that starts while another one runs the Scout leaves the rows
      alone; the next run closes them.
 3. **Per collector, isolated.** For each `Collector` (port in `scout/Ports.kt`):
    - disabled → `SKIPPED` "Disabled in configuration";

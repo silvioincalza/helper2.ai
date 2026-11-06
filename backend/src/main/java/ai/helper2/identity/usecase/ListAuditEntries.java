@@ -1,11 +1,9 @@
 package ai.helper2.identity.usecase;
 
-import ai.helper2.identity.internal.AuditLog;
+import ai.helper2.identity.AuditLog;
 import ai.helper2.platform.BadRequestException;
-import org.springframework.stereotype.Service;
 
 /** One page of the admin audit trail, newest first. */
-@Service
 public class ListAuditEntries {
 
   /** The largest page the back office may ask for. */

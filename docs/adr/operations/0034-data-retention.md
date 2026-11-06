@@ -102,7 +102,8 @@ The periods are a product decision the owner may change; changing one must not n
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
   `backend/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
 - `backend/src/main/java/ai/helper2/identity/usecase/PurgeExpiredData.java`, `identity/internal/IdentityRetentionSchedule.java`,
-  `identity/internal/Users.java`, `AuditLog.java` — identity rules.
+  `identity/Users.java`, `AuditLog.java`, `RetentionPeriods.java`, `identity/internal/JdbcUsers.java`, `JdbcAuditLog.java`
+  — identity rules.
 - `backend/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`,
   `backend/src/main/java/ai/helper2/search/config/SearchRetentionSchedule.java`, `search/internal/JdbcWebResultStore.java`
   — search rule.

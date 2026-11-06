@@ -3,7 +3,8 @@
 # Only possible where profile oauth-github is active (off unless set for the environment).
 # Source of truth: backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
 #   backend/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
-#   backend/src/main/java/ai/helper2/identity/internal/Users.java, Bookmarks.java, AuditLog.java,
+#   backend/src/main/java/ai/helper2/identity/Users.java, Bookmarks.java, AuditLog.java (ports),
+#   identity/internal/JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
 #   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
 #   frontend/src/pages/admin/, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,

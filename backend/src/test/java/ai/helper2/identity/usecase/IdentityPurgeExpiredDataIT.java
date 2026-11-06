@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.identity.AuditLog;
+import ai.helper2.identity.Users;
 import ai.helper2.identity.config.IdentityRetentionProperties;
-import ai.helper2.identity.internal.AuditLog;
-import ai.helper2.identity.internal.Users;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;

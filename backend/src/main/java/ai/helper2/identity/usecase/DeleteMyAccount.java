@@ -1,12 +1,11 @@
 package ai.helper2.identity.usecase;
 
-import ai.helper2.identity.internal.Users;
+import ai.helper2.identity.Users;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 /**
  * A signed-in user deletes their account: the app_user row and, with it, every bookmark, then the
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
  * (the reviewer still needs them). The caller ends the session. While Redis is down the counters
  * stay until they expire, within a day.
  */
-@Service
 public class DeleteMyAccount {
 
   private static final Logger log = LoggerFactory.getLogger(DeleteMyAccount.class);
