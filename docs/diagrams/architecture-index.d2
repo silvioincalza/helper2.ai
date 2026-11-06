@@ -12,6 +12,7 @@
 #   admin/ExampleDrafts.java, admin/internal/JsonExampleDrafts.java, admin/config/AdminUseCaseConfiguration.java.
 #   scout/EnrichmentQueue.kt, scout/usecase/{Requeue,Skip,Prioritise}Enrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
 #   catalog/internal/BacklogRule.java, admin/web/EnrichmentQueueController.java (enrichment queue actions, ADR 0045 §7).
+#   admin/usecase/GetReviewEvidence.java, catalog/ReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java (evidence view, ADR 0045 §7).
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
 ...@style
@@ -68,6 +69,9 @@ sources: "sources (collectors, gap evidence)" {
 catalog: "catalog (Java)" {
   class: group
   catalog: "IndexResources · IndexAwesomeLists\nReviewQueue · BackfillCategories" {class: app}
+  p_evidence: "ReviewEvidence\n(evidence view, query port)" {class: port}
+  review_evidence: JdbcReviewEvidence {class: app}
+  review_evidence -> p_evidence: implements {class: config}
   p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults\nSourceOutcomes" {class: port}
   enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults\nJdbcSourceOutcomes" {class: app}
   store: "ResourceStore\nAwesomeListIndex" {class: app}
@@ -87,12 +91,13 @@ nebius: "Nebius Token Factory\nNemotron 3 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com" {class: ext}
 
-backoffice: "admin module\nAdminController · ResolveReview\n(drafts read through ExampleDrafts)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise" {class: app}
+backoffice: "admin module\nAdminController · ResolveReview · GetReviewEvidence\n(drafts read through ExampleDrafts)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/review-items/{id}/evidence\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise" {class: app}
 admin -> backoffice: "trigger run, review,\norder the enrichment queue"
 backoffice -> scout.core
 backoffice -> scout.jdbc: "enrichment queue (read)"
 backoffice -> scout.queue: "requeue, skip, prioritise"
 backoffice -> scout.accept: "accept a resource candidate"
+backoffice -> catalog.p_evidence: "evidence of a review item\n(run, fields, quotes; 3 statements)"
 scout.json -> catalog.catalog: "RESOURCE_CANDIDATE items"
 sources.collectors -> scout.p_collector: implements {class: config}
 sources.evidence -> scout.p_extra: implements {class: config}
@@ -105,4 +110,5 @@ scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs,\nlast o
 scout.jdbc -> pg: "JDBC: scout_run, cursors,\nenrichment_queue_control (writes)"
 catalog.store -> pg: JDBC
 catalog.enrichment -> pg: "JDBC; the backlog reads\nenrichment_queue_control"
+catalog.review_evidence -> pg: "JDBC: run, fields,\nquotes, errors"
 catalog.embed -> nvapi: "/embeddings" {class: ai-call}
