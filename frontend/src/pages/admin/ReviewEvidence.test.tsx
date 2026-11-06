@@ -114,8 +114,9 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
     });
     renderApp('/admin/review');
     const evidence = await screen.findByRole('region', { name: 'Evidence' });
-    const claim = await within(evidence).findByText('Integrates with LangChain');
-    expect(claim).toHaveAttribute('data-ai-generated', 'true');
+    const kind = await within(evidence).findByText('Integrates with');
+    expect(kind).toHaveAttribute('data-ai-generated', 'true');
+    expect(within(evidence).getByText('LangChain')).toHaveAttribute('data-ai-generated', 'true');
     expect(evidence).toHaveTextContent('Self-declared by the vendor (extracted by AI)');
     expect(evidence).toHaveTextContent('Unverified');
   });

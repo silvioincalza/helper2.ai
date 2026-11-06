@@ -4,6 +4,8 @@ import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.api.generated.ReviewApi;
 import ai.helper2.api.generated.model.AiContentMarkerDto;
+import ai.helper2.api.generated.model.NewResourceDto;
+import ai.helper2.api.generated.model.RelationshipTargetChangeDto;
 import ai.helper2.api.generated.model.ReviewBulkItemDto;
 import ai.helper2.api.generated.model.ReviewBulkResolutionDto;
 import ai.helper2.api.generated.model.ReviewBulkResultDto;
@@ -16,8 +18,12 @@ import ai.helper2.api.generated.model.ValueOriginDto;
 import ai.helper2.api.generated.model.VerificationDto;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
+import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
+import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
+import ai.helper2.shared.ValueOrigin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +33,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** The review queue's evidence view and bulk decisions (ADMIN only, admin port; ADR 0045). */
+/**
+ * The review queue's evidence view, bulk decisions and relationship targets (ADMIN only, admin
+ * port; ADR 0045, 0064).
+ */
 @RestController
 @RequestMapping("/api/v1")
 class ReviewController implements ReviewApi {
@@ -37,10 +46,42 @@ class ReviewController implements ReviewApi {
 
   private final GetReviewEvidence evidence;
   private final ResolveReviewItems resolveMany;
+  private final ChangeRelationshipTarget changeTarget;
 
-  ReviewController(GetReviewEvidence evidence, ResolveReviewItems resolveMany) {
+  ReviewController(
+      GetReviewEvidence evidence,
+      ResolveReviewItems resolveMany,
+      ChangeRelationshipTarget changeTarget) {
     this.evidence = evidence;
     this.resolveMany = resolveMany;
+    this.changeTarget = changeTarget;
+  }
+
+  /** ADR 0064: exactly one of a catalog resource, a resource to add, or a new name. */
+  @Override
+  public ResponseEntity<ReviewEvidenceDto> changeRelationshipTarget(
+      UUID id, RelationshipTargetChangeDto body) {
+    changeTarget.change(id, target(body), adminId());
+    return getReviewEvidence(id);
+  }
+
+  private static ChangeRelationshipTarget.Target target(RelationshipTargetChangeDto body) {
+    int given =
+        (body.getResourceId() == null ? 0 : 1)
+            + (body.getNewResource() == null ? 0 : 1)
+            + (body.getTitle() == null ? 0 : 1);
+    if (given != 1) {
+      throw new BadRequestException("Give exactly one of resourceId, newResource and title.");
+    }
+    if (body.getResourceId() != null) {
+      return new ChangeRelationshipTarget.Target.Existing(body.getResourceId());
+    }
+    NewResourceDto r = body.getNewResource();
+    if (r != null) {
+      return new ChangeRelationshipTarget.Target.Added(
+          r.getTitle(), r.getUrl(), ResourceType.valueOf(r.getType().getValue()));
+    }
+    return new ChangeRelationshipTarget.Target.Renamed(body.getTitle());
   }
 
   @Override
@@ -99,7 +140,10 @@ class ReviewController implements ReviewApi {
     }
     if (e.relationship() != null) {
       paths.add("relationship.kind");
-      paths.add("relationship.target");
+      // A target a person chose (ADR 0064) is theirs, not the model's.
+      if (e.relationship().origin() != ValueOrigin.CURATED) {
+        paths.add("relationship.target");
+      }
     }
     return new AiContentMarkerDto(
         true, e.run().provider(), List.of(e.run().model()), paths, AI_MARKING_POLICY);

@@ -4,6 +4,7 @@ import type {
   ReviewBulkResolution,
   ReviewBulkResult,
   ReviewEvidence,
+  RelationshipTargetChange,
   ReviewResolution,
   ReviewStatus,
   ReviewKind,
@@ -62,6 +63,16 @@ export const adminApi = {
   resolveReviewItems: (body: ReviewBulkResolution) =>
     request<ReviewBulkResult>('POST', '/admin/review-items/resolutions', { body }),
   /** What a review item is about: its run or relationship, with the quotes behind them (ADR 0045). 404 for no item. */
+  /**
+   * Points an open relationship candidate at a catalog resource, a resource added now, or another name (ADR 0064).
+   * The item stays open. 400 for an unusable value, 409 when the item is decided or not a relationship candidate.
+   */
+  changeRelationshipTarget: (id: string, body: RelationshipTargetChange) =>
+    request<ReviewEvidence>(
+      'PUT',
+      `/admin/review-items/${encodeURIComponent(id)}/relationship-target`,
+      { body },
+    ),
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
       signal,

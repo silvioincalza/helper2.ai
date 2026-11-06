@@ -1,6 +1,6 @@
 # 0045 — Back office: a thin admin module, one page per part, an overview of what needs a person
 
-**Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0017](../guide/0017-guide-cost-guard.md), [0018](../scout/0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0035](0035-admin-host.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md)
+**Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0017](../guide/0017-guide-cost-guard.md), [0018](../scout/0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0035](0035-admin-host.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md) **Amended by:** [0064](0064-relationship-target-in-review.md) (the target of a relationship candidate).
 
 ## Context
 The back office was one page: the review queue and the Scout runs. To see if something was wrong I had to scroll and

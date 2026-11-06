@@ -122,7 +122,9 @@ class CatalogConfiguration {
             URI.create("https://helper2.ai/sources"),
             null,
             "Editorial seed written by the Helper2 team; not live data. Dates are unknown unless sourced.",
-            EnumSet.of(ResourceType.PRODUCT),
+            // The seed is products; an admin adds models and other tools from the review list (ADR
+            // 0064).
+            EnumSet.copyOf(CuratedTypes.TYPES),
             timeout,
             Duration.ZERO,
             enabled,
