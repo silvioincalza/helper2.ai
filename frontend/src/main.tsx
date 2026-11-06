@@ -6,11 +6,12 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import './i18n';
-import { followNavigation } from './lib/staleChunk';
+import { claimReloadedPage, followNavigation } from './lib/staleChunk';
 import { routes } from './routes';
 import './styles/tokens.css';
 import './styles/app.css';
 
+claimReloadedPage();
 const router = createBrowserRouter(routes);
 followNavigation(router);
 const root = document.getElementById('root');
