@@ -113,6 +113,48 @@ describe('bookmarks (signed in)', () => {
     expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1);
   });
 
+  it('a removal while the merge is on its way wins over the merge, and is sent after it', async () => {
+    const acme = '11111111-1111-5111-8111-111111111111';
+    writeLocalBookmarks([{ ...bm, resourceId: acme, title: 'Acme Translator' }]);
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      'DELETE /me/bookmarks/*': () => undefined,
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1));
+    const save = (
+      await screen.findAllByRole('button', { name: /Save Acme Translator/ })
+    )[0] as HTMLElement;
+    expect(save).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(0);
+
+    await act(async () =>
+      answer([
+        { ...bm, resourceId: acme, title: 'Acme Translator', savedAt: '2026-10-22T00:00:00Z' },
+        {
+          resourceId: '33333333-3333-5333-8333-333333333333',
+          title: 'Server only',
+          url: 'https://s.example',
+          type: null,
+          savedAt: '2026-10-21T00:00:00Z',
+        },
+      ]),
+    );
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() => expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(1));
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findByRole('link', { name: 'Server only' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
+  });
+
   it('uses GET when there is nothing to merge, and DELETE on remove', async () => {
     const list = [
       {

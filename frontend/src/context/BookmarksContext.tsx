@@ -35,16 +35,63 @@ function withFirst(list: Bookmark[], b: Bookmark): Bookmark[] {
   return [b, ...list.filter((i) => i.resourceId !== b.resourceId)];
 }
 
+/** A save or removal made while the account list was still on its way. */
+type Edit = { kind: 'save'; entry: Bookmark } | { kind: 'remove'; id: string };
+
+function withEdits(list: Bookmark[], edits: Edit[]): Bookmark[] {
+  return edits.reduce(
+    (acc, e) =>
+      e.kind === 'save' ? withFirst(acc, e.entry) : acc.filter((b) => b.resourceId !== e.id),
+    list,
+  );
+}
+
 export function BookmarksProvider({ children }: { children: ReactNode }) {
   const { me, loaded } = useMe();
   const server = loaded && me.authenticated;
   const [local, setLocal] = useState<Bookmark[]>(() => readLocalBookmarks());
   // null until the account list has arrived: until then, and if it never does, the browser's list is shown.
   const [remote, setRemote] = useState<Bookmark[] | null>(null);
+  // Edits made while the list was on its way: shown at once, sent to the account once the list is here
+  // (a removal sent during the merge would be undone by it), and kept in the browser if it never comes.
+  const [edits, setEdits] = useState<Edit[]>([]);
+  // The load effect reads the edits when the list arrives, long after its own render.
+  const editsRef = useRef(edits);
+  useEffect(() => {
+    editsRef.current = edits;
+  }, [edits]);
   const [storageFailed, setStorageFailed] = useState(false);
   const [serverError, setServerError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const loadedFor = useRef(-1);
+
+  const persistLocal = useCallback((list: Bookmark[]) => {
+    setLocal(list);
+    setStorageFailed(!writeLocalBookmarks(list));
+  }, []);
+
+  const removeFromAccount = useCallback((gone: Bookmark) => {
+    setRemote((r) => (r ?? []).filter((b) => b.resourceId !== gone.resourceId));
+    api.deleteBookmark(gone.resourceId).catch(() => {
+      // Put it back: the account still has it.
+      setRemote((r) => withFirst(r ?? [], gone));
+      setServerError(true);
+    });
+  }, []);
+
+  const saveToAccount = useCallback((entry: Bookmark) => {
+    // Shown as saved at once, so a second click removes it instead of saving it twice.
+    setRemote((r) => withFirst(r ?? [], entry));
+    const { savedAt: _savedAt, ...request } = entry;
+    api.addBookmark(request).then(
+      (stored) =>
+        setRemote((r) => (r ?? []).map((i) => (i.resourceId === stored.resourceId ? stored : i))),
+      () => {
+        setRemote((r) => (r ?? []).filter((i) => i.resourceId !== entry.resourceId));
+        setServerError(true);
+      },
+    );
+  }, []);
 
   useEffect(() => {
     if (!server || loadedFor.current === attempt) return;
@@ -61,40 +108,45 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
           })
       : api.listBookmarks();
     run.then(
-      // Keep what was saved or removed while the list was on its way.
-      (list) =>
-        setRemote((r) => (r === null ? list : r.reduce((acc, b) => withFirst(acc, b), list))),
-      () => setServerError(true),
+      (list) => {
+        const pending = editsRef.current;
+        setRemote(withEdits(list, pending));
+        setEdits([]);
+        for (const e of pending) {
+          if (e.kind === 'save') saveToAccount(e.entry);
+          else {
+            const gone = list.find((b) => b.resourceId === e.id);
+            if (gone) removeFromAccount(gone);
+          }
+        }
+      },
+      () => {
+        // The browser's list stays the one shown: it takes the edits, and the next merge sends them.
+        const pending = editsRef.current;
+        if (pending.length) {
+          persistLocal(withEdits(readLocalBookmarks(), pending));
+          setEdits([]);
+        }
+        setServerError(true);
+      },
     );
-  }, [server, attempt]);
+  }, [server, attempt, persistLocal, saveToAccount, removeFromAccount]);
 
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
 
-  const persistLocal = useCallback((list: Bookmark[]) => {
-    setLocal(list);
-    setStorageFailed(!writeLocalBookmarks(list));
-  }, []);
-
   const items = useMemo(
-    () => (server && remote !== null ? remote : local),
-    [server, remote, local],
+    () => (server && remote !== null ? remote : withEdits(local, edits)),
+    [server, remote, local, edits],
   );
 
   const remove = useCallback(
     (id: string) => {
-      if (server) {
-        const gone = items.find((b) => b.resourceId === id);
-        setRemote((r) => (r ?? []).filter((b) => b.resourceId !== id));
-        api.deleteBookmark(id).catch(() => {
-          // Put it back: the account still has it.
-          if (gone) setRemote((r) => withFirst(r ?? [], gone));
-          setServerError(true);
-        });
-      } else {
-        persistLocal(local.filter((b) => b.resourceId !== id));
-      }
+      if (!server) return persistLocal(local.filter((b) => b.resourceId !== id));
+      if (remote === null) return setEdits((e) => [...e, { kind: 'remove', id }]);
+      const gone = remote.find((b) => b.resourceId === id);
+      if (gone) removeFromAccount(gone);
     },
-    [server, items, local, persistLocal],
+    [server, remote, local, persistLocal, removeFromAccount],
   );
 
   const toggle = useCallback(
@@ -102,24 +154,11 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
       const saved = items.some((i) => i.resourceId === b.resourceId);
       if (saved) return remove(b.resourceId);
       const entry: Bookmark = { ...b, savedAt: new Date().toISOString() };
-      if (server) {
-        // Shown as saved at once, so a second click removes it instead of saving it twice.
-        setRemote((r) => withFirst(r ?? [], entry));
-        api.addBookmark(b).then(
-          (stored) =>
-            setRemote((r) =>
-              (r ?? []).map((i) => (i.resourceId === stored.resourceId ? stored : i)),
-            ),
-          () => {
-            setRemote((r) => (r ?? []).filter((i) => i.resourceId !== b.resourceId));
-            setServerError(true);
-          },
-        );
-      } else {
-        persistLocal([...local, entry]);
-      }
+      if (!server) return persistLocal([...local, entry]);
+      if (remote === null) return setEdits((e) => [...e, { kind: 'save', entry }]);
+      saveToAccount(entry);
     },
-    [items, server, local, remove, persistLocal],
+    [items, server, remote, local, remove, persistLocal, saveToAccount],
   );
 
   const value = useMemo<BookmarksValue>(
