@@ -1,14 +1,28 @@
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { api } from '@/api/client';
-import type { ConfigSetting } from '@/api/types';
+import type { ConfigSetting, RuntimeSettingState } from '@/api/types';
 import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDuration } from '@/lib/duration';
+import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
 
-/** One value in words, by its kind; ids and expressions in code style. */
-function SettingValue({ setting, t }: { setting: ConfigSetting; t: TFunction }) {
+/** One value in words, by its kind; ids and expressions in code style. A runtime setting shows its value now. */
+function SettingValue({
+  setting,
+  runtime,
+  t,
+}: {
+  setting: ConfigSetting;
+  runtime: RuntimeSettingState | undefined;
+  t: TFunction;
+}) {
+  if (runtime) {
+    const now =
+      runtime.value === null ? t('admin.settings.noCap') : `${runtime.value} ${runtime.unit}`;
+    return <>{runtime.overridden ? `${now} (${t('admin.settings.changedAtRuntime')})` : now}</>;
+  }
   const { kind, value, unit } = setting;
   switch (kind) {
     case 'FLAG':
@@ -34,8 +48,13 @@ function SettingValue({ setting, t }: { setting: ConfigSetting; t: TFunction }) 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const config = useApi('admin/config', (s) => api.getEffectiveConfig(s), { cache: false });
+  const runtime = useApi('admin/runtime-settings', (s) => api.listRuntimeSettings(s), {
+    cache: false,
+  });
   const { retry, focusRef: heading } = useRetry(config.reload, config.loading);
   const groups = config.data?.groups ?? [];
+  const runtimeSettings = runtime.data?.settings ?? [];
+  const runtimeByKey = new Map(runtimeSettings.map((r) => [r.key, r]));
 
   return (
     <section aria-labelledby="settings-h" className="h2-admin__part">
@@ -43,6 +62,12 @@ export default function SettingsPage() {
         {t('admin.settings.title')}
       </h2>
       <p className="muted">{t('admin.settings.lede')}</p>
+      <RuntimeSettingsPanel
+        settings={runtimeSettings}
+        loading={runtime.loading}
+        error={runtime.error}
+        reload={runtime.reload}
+      />
       {config.loading ? (
         <p role="status" className="muted">
           {t('common.loading')}
@@ -74,7 +99,7 @@ export default function SettingsPage() {
                     <tr key={s.key}>
                       <th scope="row">{s.label}</th>
                       <td>
-                        <SettingValue setting={s} t={t} />
+                        <SettingValue setting={s} runtime={runtimeByKey.get(s.key)} t={t} />
                       </td>
                       <td>
                         {s.variable ? (

@@ -32,6 +32,7 @@ tags:
   - name: overview
   - name: enrichment-queue
   - name: settings
+  - name: runtime-settings
   - name: examples
   - name: examples-admin
   - name: policy
@@ -700,6 +701,79 @@ paths:
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
 
+  /admin/runtime-settings:
+    get:
+      tags: [runtime-settings]
+      operationId: listRuntimeSettings
+      summary: The spending limits an administrator may change at runtime, with their history.
+      description: >-
+        Each setting of the allow-list (ADR 0060): the value applied now, the default (the H2_ variable), the allowed
+        range, its version and its last changes. The value a replica applies can be up to one refresh interval
+        (20 s by default) behind.
+      responses:
+        '200':
+          description: Every runtime setting, in a fixed order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettings' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/runtime-settings/{key}:
+    parameters:
+      - { name: key, in: path, required: true, schema: { type: string, maxLength: 100 } }
+    put:
+      tags: [runtime-settings]
+      operationId: changeRuntimeSetting
+      summary: Set a runtime setting's value.
+      description: >-
+        400 when the value is outside 0 to the setting's maximum. 404 for a key that is not in the allow-list. 409
+        when the version is not the setting's newest (someone changed it first). Recorded in the audit trail with
+        the value before and after.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuntimeSettingChange' }
+      responses:
+        '200':
+          description: Changed; this replica applies it now, the others within one refresh interval.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettingState' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/runtime-settings/{key}/reset:
+    parameters:
+      - { name: key, in: path, required: true, schema: { type: string, maxLength: 100 } }
+    post:
+      tags: [runtime-settings]
+      operationId: resetRuntimeSetting
+      summary: Back to the default (the H2_ variable).
+      description: >-
+        Appends a change with no value. 404 for a key that is not in the allow-list; 409 when the version is not the
+        setting's newest.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuntimeSettingReset' }
+      responses:
+        '200':
+          description: Back to the default.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettingState' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
   /home/examples:
     get:
       tags: [examples]
@@ -871,7 +945,7 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0034), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
           properties:
             cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
             cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
@@ -880,7 +954,8 @@ components:
             storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_TAVILY_RESULTS`)." }
             inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
-            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
+            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
+            runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0060). Each setting's newest change stays while it applies." }
 
     WebSearchLimits:
       type: object
@@ -1980,7 +2055,7 @@ components:
         dailyCap:
           type: [integer, 'null']
           format: int64
-          description: The global daily cap (`H2_TAVILY_GLOBAL_DAILY_CREDITS`); null when no cap is set.
+          description: The global daily cap (`H2_TAVILY_GLOBAL_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0060); null only without a runtime setting.
 
     Me:
       type: object
@@ -2009,18 +2084,12 @@ components:
       description: >-
         How the site funds itself (ADR 0057), as configured. Each value is null while that part is off (no link, no
         script), and all are null on the admin host. Read with GET /me, which every page already calls.
-      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher, adsenseClient, adsenseSlot]
+      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher]
       properties:
         githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
         stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
         ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`H2_ANALYTICS_GA4_MEASUREMENT_ID`)." }
         ethicalAdsPublisher: { type: [string, 'null'], description: "EthicalAds publisher of the one ad slot (`H2_ADS_ETHICALADS_PUBLISHER`)." }
-        adsenseClient:
-          type: [string, 'null']
-          description: >-
-            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0059). Null unless the ad unit is set too:
-            then the page loads Google's consent tool and shows the slot on resource pages.
-        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0059)." }
 
     Preferences:
       type: object
@@ -2106,7 +2175,7 @@ components:
 
     AdminOverview:
       type: object
-      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h, homeExamples]
+      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h, homeExamples, overridesActive]
       properties:
         generatedAt: { type: string, format: date-time }
         openReviewItems:
@@ -2127,6 +2196,7 @@ components:
           items: { $ref: '#/components/schemas/ScoutRun' }
         failedRunsLast24h: { type: integer, minimum: 0 }
         homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
+        overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0060). }
         grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
 
     HomeExampleCounts:
@@ -2197,6 +2267,61 @@ components:
           description: "\"(hidden)\" when the value has a quote, an @ or more than 500 characters."
         unit: { type: [string, 'null'], description: "The unit of a COUNT or CAP: calls a day, tokens, ..." }
         variable: { type: [string, 'null'], description: The H2_ variable that sets it; null when the code or the chart fixes it. }
+
+    RuntimeSettings:
+      type: object
+      required: [overridesActive, settings]
+      properties:
+        overridesActive: { type: integer, minimum: 0, description: Settings whose value is not the default now. }
+        settings:
+          type: array
+          items: { $ref: '#/components/schemas/RuntimeSettingState' }
+
+    RuntimeSettingState:
+      type: object
+      required: [key, label, unit, help, min, max, variable, defaultValue, value, overridden, inUse, version, history]
+      properties:
+        key: { type: string, description: The setting's key on the Settings page (ConfigSetting.key). }
+        label: { type: string }
+        unit: { type: string, description: "calls a day, calls a run, credits a day" }
+        help: { type: string, description: One line on what the setting does and what 0 means. }
+        min: { type: integer, minimum: 0, description: Always 0; 0 turns the use off. }
+        max: { type: integer, minimum: 0, description: The absolute maximum, in code; more needs a pull request. }
+        variable: { type: string, description: The H2_ variable whose value is the default. }
+        defaultValue: { type: [integer, 'null'], minimum: 0, description: The H2_ value; null = no cap, or the setting is not used on this replica. }
+        value: { type: [integer, 'null'], minimum: 0, description: The value applied now; null = no cap. }
+        overridden: { type: boolean, description: True when an administrator set the value; false when the default applies. }
+        inUse: { type: boolean, description: False when no module of this replica uses the setting (the feature is off); a change is kept and applies when it is on. }
+        version: { type: integer, minimum: 0, description: The setting's newest change; send it back with a change. 0 = never changed. }
+        history:
+          type: array
+          description: The last changes, newest first (at most 10).
+          items: { $ref: '#/components/schemas/RuntimeSettingHistoryEntry' }
+
+    RuntimeSettingHistoryEntry:
+      type: object
+      required: [version, value, changedBy, changedAt, reason]
+      properties:
+        version: { type: integer, minimum: 1 }
+        value: { type: [integer, 'null'], minimum: 0, description: The value set; null = back to the default. }
+        changedBy: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
+        changedAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'] }
+
+    RuntimeSettingChange:
+      type: object
+      required: [value, version]
+      properties:
+        value: { type: integer, minimum: 0, description: "0 to the setting's max; 0 turns the use off." }
+        version: { type: integer, minimum: 0, description: The version the change was made on. }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    RuntimeSettingReset:
+      type: object
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 0, description: The version the reset was made on. }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
 
     EnrichmentQueuePage:
       type: object
@@ -2410,10 +2535,13 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT] }
-        targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id or the resource id; null when a run covered every source." }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING] }
+        targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id, the resource id or the setting's key; null when a run covered every source." }
         at: { type: string, format: date-time }
-        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue." }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting." }
+        before: { type: [string, 'null'], description: "The value before a setting change (\"default\" for the default); null for other actions." }
+        after: { type: [string, 'null'], description: The value after a setting change; null for other actions. }
+        reason: { type: [string, 'null'], description: Why the administrator changed a setting (optional). }
 
     EnrichmentRecheck:
       type: object

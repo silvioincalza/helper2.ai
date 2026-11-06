@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
@@ -187,14 +188,15 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     ContractValidator.assertArrayMatches("SourceInfo", body);
     assertThat(read(body, "$[?(@.id == 'fake-web')].webCredits.dailyCap"))
         .asList()
-        .containsExactly((Object) null);
+        .as("no H2_ value: the runtime setting's code maximum (ADR 0060)")
+        .containsExactly((int) RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS.max());
     assertThat(read(body, "$[?(@.id == 'fake-live')].webCredits")).asList().containsOnlyNulls();
     return (Number)
         ((List<?>) read(body, "$[?(@.id == 'fake-web')].webCredits.usedToday")).getFirst();
   }
 
   @Test
-  void theSourcesPageShowsTheCreditsOfTheDayForAllVisitorsWithoutACap() throws Exception {
+  void theSourcesPageShowsTheCreditsOfTheDayForAllVisitorsUnderTheCodeMaximum() throws Exception {
     long before = creditsToday().longValue();
 
     search("agents " + UUID.randomUUID());

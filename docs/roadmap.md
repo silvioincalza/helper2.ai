@@ -16,8 +16,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   the address or of the query is personal data, legitimate interest as the basis, and the wording on the transfer of
   queries to Tavily in the US.
 - Lawyer review of back-office records ([ADR 0045](adr/edge/0045-back-office.md)): `admin_audit` keeps an
-  administrator's GitHub id for 24 months, a review item keeps who decided it and their note, and a skipped
-  resource keeps the reason for the skip (`enrichment_queue_control`, until requeued). Is the line on the
+  administrator's GitHub id for 24 months, a review item keeps who decided it and their note, a skipped
+  resource keeps the reason for the skip (`enrichment_queue_control`, until requeued), and `runtime_setting` keeps
+  the GitHub id and reason of each change for 24 months, the newest per setting for as long as it applies. Is the line on the
   Privacy page enough for the people who run the site, and is 24 months right?
 - Check each US source and GitHub for Data Privacy Framework certification, as the Privacy page states.
 - Lawyer review of guide question embeddings ([ADR 0041](adr/guide/0041-guide-answer-cache.md)): whether an embedding of a
@@ -298,10 +299,12 @@ Open items:
 
 ## 7. Architecture
 
-- The Java use cases of catalog read its `internal` stores directly (`ResourceStore`, `ResourceCards`), and nothing
-  checks them for framework types. Put the stores behind ports, then add the packages to the `DOMAIN` rule of
-  `ModularityTest`, as identity and admin do
-  ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)). Only the JDBC adapters are guarded today
+- The Scout writes `source.last_outcome` (`JdbcScoutStore`); move it behind a catalog port
+  ([ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md)).
+- The Java use cases of catalog, identity and admin read their module's `internal` stores
+  directly (`ResourceStore`, `ResourceCards`, `Users`, `Bookmarks`, `AuditLog`), and nothing
+  checks them for framework types. Put the stores behind ports, then add the packages to the
+  `DOMAIN` rule of `ModularityTest`. Only the JDBC adapters are guarded today
   (`useCasesDoNotNameJdbcAdapters`).
 - The model helpers live in the open `platform` module (`platform.llm`), so every module can use all of them. A
   closed `llm` module with a small public API would make each use explicit
@@ -407,6 +410,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Deleting an old image needs the Harbor immutability rule disabled first, and enabled again after. ([ADR 0029](adr/operations/0029-release-versioning.md))
 - A release that has no version tag in Harbor (one made before release tags) is deployed by its commit, not by its version. ([ADR 0048](adr/operations/0048-release-branches-and-version-tags.md))
 - A deleted row stays in the backups for up to 7 days; purges run daily, so a row can outlive its period by a day; a purged observed resource seen again comes back with a new `first_discovered_at`. ([ADR 0034](adr/operations/0034-data-retention.md))
+- Runtime settings ([ADR 0060](adr/operations/0060-runtime-settings.md)): a change reaches the other replicas within about 20 s, so for those seconds two replicas can cut off at two limits. The Settings page's read-only groups show the startup value for every other setting. A change has no Grafana annotation yet, so a dashboard does not show when a limit moved. A limit raised for one day stays until someone resets it: an expiry ("until midnight UTC") would need one more column. The six maximums are first guesses (2.5 to 5 times today's prod values); revisit them after a month of use. A new `H2_` default with an override in place changes nothing until the override is reset.
 
 ### Quality
 

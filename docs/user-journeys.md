@@ -137,7 +137,18 @@ Anyone can sign in, to keep saved items on the account and get a larger daily qu
 7. **Settings** (read-only, [ADR 0045](adr/edge/0045-back-office.md)): what the app runs with now, one table per
    part (Models, AI guide, Search, Scout, Scout sources, Setup guide, Home examples). Each row: the setting in words,
    its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `H2_` variable that sets it, or
-   "No variable". Secrets are never shown. A change needs a new value and a restart.
+   "No variable". Secrets are never shown. A change needs a new value and a restart, except for the spending
+   limits at the top ([ADR 0060](adr/operations/0060-runtime-settings.md)): Scout enrichments per run, enrichment
+   calls and gap rounds a day, the guide's model calls a day, translations a day, Tavily credits a day. Each row:
+   the value now with "Changed" or "Default", the default and its variable, the allowed range ("0 to 3000 calls a
+   day") and one line of help. **Change** opens a number field; a value outside the range says "Enter a whole
+   number from 0 to 3000." and nothing is sent. **Review changes** shows "600 calls a day → 50 calls a day", says
+   when 0 turns the use off, and asks for an optional reason; focus moves to the review. **Confirm change** saves:
+   "Saved: … is now 50 calls a day." **Reset to default** and **Restore** (in History, the last 10 changes with
+   who, when and why) go through the same review. Someone changed the limit first: "Someone changed this limit
+   first." and the row shows the current value. Every replica applies a change within about 20 seconds. The
+   overview says "2 spending limits changed at runtime", a link to this page; the audit trail shows each change
+   as "default 600 → 50" with its reason.
 
 Each item is a row: the kind, the resource, the reason, the date and the status in words in a pill. The selected row has a saffron bar. Each run shows its status in a pill too. One action runs at a time; the other buttons wait.
 

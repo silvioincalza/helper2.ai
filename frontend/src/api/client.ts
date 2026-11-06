@@ -31,6 +31,8 @@ import type {
   EnrichmentQueuePage,
   EffectiveConfig,
   EnrichmentQueueView,
+  RuntimeSettings,
+  RuntimeSettingState,
   AdminHomeExample,
   ExampleCheckOutcome,
   ExampleDrafts,
@@ -365,6 +367,23 @@ export const api = {
     }),
   getEffectiveConfig: (signal?: AbortSignal) =>
     request<EffectiveConfig>('GET', '/admin/config', { signal }),
+  listRuntimeSettings: (signal?: AbortSignal) =>
+    request<RuntimeSettings>('GET', '/admin/runtime-settings', { signal }),
+  /** 400 invalid-request outside 0 to max; 409 version-conflict when someone changed it first. */
+  changeRuntimeSetting: (
+    key: string,
+    body: { value: number; version: number; reason: string | null },
+  ) =>
+    request<RuntimeSettingState>('PUT', `/admin/runtime-settings/${encodeURIComponent(key)}`, {
+      body,
+    }),
+  /** Back to the default (the H2_ value); 409 version-conflict when someone changed it first. */
+  resetRuntimeSetting: (key: string, body: { version: number; reason: string | null }) =>
+    request<RuntimeSettingState>(
+      'POST',
+      `/admin/runtime-settings/${encodeURIComponent(key)}/reset`,
+      { body },
+    ),
   /** 409 not-applicable when the resource is neither skipped nor out of retries; 404 for an unknown one. */
   requeueEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),

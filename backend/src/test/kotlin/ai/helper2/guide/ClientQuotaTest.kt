@@ -61,7 +61,7 @@ class ClientQuotaTest {
         override fun increment(name: String, day: java.time.LocalDate, limit: Int) =
           counter.increment(name, day, limit)
 
-        override fun declare(name: String, dailyCalls: Int) {
+        override fun declare(name: String, dailyCalls: java.util.function.IntSupplier) {
           declared += name
         }
       }

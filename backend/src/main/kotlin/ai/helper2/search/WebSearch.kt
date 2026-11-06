@@ -7,6 +7,7 @@ import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.shared.ResourceType
 import java.time.Duration
 import java.util.UUID
+import java.util.function.Supplier
 
 /*
  * Web search with credits (Tavily, ADR 0037): store first, then a live call inside the asker's daily quota.
@@ -162,7 +163,8 @@ constructor(
   private val keys: QuotaKeys,
   private val limits: DailyLimits = DailyLimits(),
   private val registeredTier: Boolean = false,
-  private val globalDailyCredits: Long? = null,
+  /** Read on every call: a runtime setting (ADR 0060). Null = no cap. */
+  private val globalDailyCredits: Supplier<Long?> = Supplier { null },
 ) {
   fun tierOf(asker: Asker): QuotaTier =
     if (registeredTier && asker.userId != null) QuotaTier.REGISTERED else QuotaTier.GUEST
@@ -244,7 +246,7 @@ constructor(
    */
   fun creditsToday(): WebCredits? =
     try {
-      WebCredits(counter.used(global()), globalDailyCredits)
+      WebCredits(counter.used(global()), globalDailyCredits.get())
     } catch (_: RuntimeException) {
       null
     }
@@ -266,7 +268,7 @@ constructor(
   ): QuotaDecision {
     val result =
       try {
-        counter.take(own, limit, global, globalDailyCredits ?: Long.MAX_VALUE)
+        counter.take(own, limit, global, globalDailyCredits.get() ?: Long.MAX_VALUE)
       } catch (_: RuntimeException) {
         return QuotaDecision.Unavailable
       }

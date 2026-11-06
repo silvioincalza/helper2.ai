@@ -3,7 +3,8 @@
 #   V2__enrichment_extra_evidence.sql (ADR 0043), V3__review_item_drop_source_conflict.sql (review kinds),
 #   V4__home_example.sql (ADR 0049), V10__resource_enrichment_backlog_idx.sql (ADR 0045), V11__evidence_ladder_origins.sql (ADR 0056: origins, maintenance_task),
 #   V12__resource_categories.sql (CATEGORY labels, catalog_marker; ADR 0053),
-#   V13__awesome_list_search.sql (ADR 0055), V14__enrichment_queue_control.sql (ADR 0045 §7).
+#   V13__awesome_list_search.sql (ADR 0055), V14__enrichment_queue_control.sql (ADR 0045 §7),
+#   V15__runtime_setting.sql (ADR 0060: runtime_setting, admin_audit before/after/reason).
 #   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -338,6 +339,22 @@ people: "people and review" {
     target_id: text
     at: timestamptz
     outcome: "text (append-only)"
+    before_value: text
+    after_value: text
+    reason: "text (≤ 500)"
+  }
+}
+
+settings: "runtime settings (ADR 0060): append-only, newest row wins" {
+  class: group
+  runtime_setting: {
+    class: table
+    version: "bigint (identity)" {constraint: primary_key}
+    name: "text (allow-list key)"
+    value: "bigint (≥ 0; null = default)"
+    changed_by: "text (provider subject)"
+    changed_at: timestamptz
+    reason: "text (≤ 500)"
   }
 }
 

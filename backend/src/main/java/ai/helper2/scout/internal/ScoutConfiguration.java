@@ -13,6 +13,8 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.CandidateReview;
@@ -66,6 +68,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -104,15 +107,18 @@ class ScoutConfiguration {
       ModelCallMetrics metrics,
       MeterRegistry meters,
       Resilience resilience,
+      RuntimeSettings runtime,
       ScoutProperties scout) {
     int maxTokens = scout.enrichMaxTokens();
     int dailyCalls = scout.dailyEnrichmentCalls();
+    // Declared with or without a model, so the Settings page knows the default either way.
+    IntSupplier limit = runtime.declare(RuntimeSetting.SCOUT_DAILY_ENRICHMENT_CALLS, dailyCalls);
     ChatModel model = chatModel.getIfAvailable();
     if (!llm.usable(model) || !llm.hasReasoningModel()) {
       log.info("No LLM configured: enrichment disabled, deterministic source metadata only");
       return new UnavailableModel();
     }
-    DailyBudget budget = new DailyBudget(dailyCalls, clock, "enrichment", budgetCounter);
+    DailyBudget budget = new DailyBudget(limit, clock, "enrichment", budgetCounter);
     Gauge.builder("helper2.scout.enrichment.budget.remaining", budget, DailyBudget::remaining)
         .description("Scout enrichment model calls left under today's cap (UTC day)")
         .register(meters);
@@ -255,10 +261,13 @@ class ScoutConfiguration {
       ObjectMapper json,
       Resilience resilience,
       CallCounter budgetCounter,
+      RuntimeSettings runtime,
       ScoutProperties scout) {
     int maxItemsPerRun = scout.maxItemsPerRun();
-    int maxEnrichmentsPerRun = scout.maxEnrichmentsPerRun();
-    int gapDailyCalls = scout.gapDailyCalls();
+    IntSupplier maxEnrichmentsPerRun =
+        runtime.declare(RuntimeSetting.SCOUT_MAX_ENRICHMENTS_PER_RUN, scout.maxEnrichmentsPerRun());
+    IntSupplier gapDailyCalls =
+        runtime.declare(RuntimeSetting.SCOUT_GAP_DAILY_CALLS, scout.gapDailyCalls());
     OfficialPages pages =
         officialPages(
             pageReader.getIfAvailable(),
@@ -351,23 +360,10 @@ class ScoutConfiguration {
   /**
    * The gap round's own daily cap (ADR 0043), counted like the others so a restart does not reset
    * the day. Its calls also count on the enrichment cap, so this is a share of it, not more. 0
-   * turns the gap round off.
+   * turns the gap round off; the limit is a runtime setting (ADR 0060), read on every call.
    */
   static GapBudget gapBudget(
-      int dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
-    if (dailyCalls <= 0) {
-      return new GapBudget() {
-        @Override
-        public boolean tryAcquire() {
-          return false;
-        }
-
-        @Override
-        public boolean hasRoom() {
-          return false;
-        }
-      };
-    }
+      IntSupplier dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
     DailyBudget budget = new DailyBudget(dailyCalls, clock, "enrichment-gap", counter);
     Gauge.builder("helper2.scout.gap.budget.remaining", budget, DailyBudget::remaining)
         .description("Scout gap-round model calls left under today's cap (UTC day)")

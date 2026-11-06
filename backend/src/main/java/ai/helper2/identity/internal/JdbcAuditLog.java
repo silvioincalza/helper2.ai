@@ -25,14 +25,26 @@ class JdbcAuditLog implements AuditTrail, AuditLog {
 
   @Override
   public void record(String adminId, Action action, @Nullable String targetId, String outcome) {
+    record(adminId, action, targetId, outcome, new Change(null, null, null));
+  }
+
+  @Override
+  public void record(
+      String adminId, Action action, @Nullable String targetId, String outcome, Change change) {
     jdbc.sql(
-            "INSERT INTO admin_audit (id, admin_id, action, target_id, at, outcome) VALUES (:id, :admin, :action, :target, :at, :outcome)")
+            """
+            INSERT INTO admin_audit (id, admin_id, action, target_id, at, outcome, before_value, after_value, reason)
+            VALUES (:id, :admin, :action, :target, :at, :outcome, :before, :after, :reason)
+            """)
         .param("id", UUID.randomUUID())
         .param("admin", adminId)
         .param("action", action.name())
         .param("target", targetId)
         .param("at", Timestamp.from(clock.instant()))
         .param("outcome", outcome)
+        .param("before", change.before())
+        .param("after", change.after())
+        .param("reason", change.reason())
         .update();
   }
 
@@ -49,7 +61,10 @@ class JdbcAuditLog implements AuditTrail, AuditLog {
                     Action.valueOf(rs.getString("action")),
                     rs.getString("target_id"),
                     rs.getTimestamp("at").toInstant(),
-                    rs.getString("outcome")))
+                    rs.getString("outcome"),
+                    rs.getString("before_value"),
+                    rs.getString("after_value"),
+                    rs.getString("reason")))
             .list();
     long total = jdbc.sql("SELECT count(*) FROM admin_audit").query(Long.class).single();
     return new Page(items, total);

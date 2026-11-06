@@ -21,6 +21,8 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.search.usecase.SearchResources;
@@ -65,11 +67,23 @@ class GuideConfiguration {
     return new JdbcSimilarQuestionIndex(jdbc);
   }
 
-  /** Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. */
+  /**
+   * Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. A runtime
+   * setting (ADR 0060): the H2_ value is its default.
+   */
   @Bean
   DailyBudget guideBudget(
-      Clock clock, CallCounter budgetCounter, MeterRegistry meters, GuideProperties settings) {
-    DailyBudget budget = new DailyBudget(settings.dailyModelCalls(), clock, "guide", budgetCounter);
+      Clock clock,
+      CallCounter budgetCounter,
+      MeterRegistry meters,
+      RuntimeSettings runtime,
+      GuideProperties settings) {
+    DailyBudget budget =
+        new DailyBudget(
+            runtime.declare(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, settings.dailyModelCalls()),
+            clock,
+            "guide",
+            budgetCounter);
     Gauge.builder("helper2.guide.budget.remaining", budget, DailyBudget::remaining)
         .description("Guide model calls left under today's cap (UTC day)")
         .register(meters);

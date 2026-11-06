@@ -32,9 +32,9 @@ class BudgetLedgerTest {
   void theListIsBoundedAndAListedBudgetKeepsItsPlace() {
     BudgetLedger ledger = new BudgetLedger(null, clock);
     for (int i = 0; i < BudgetLedger.MAX_LISTED + 10; i++) {
-      ledger.declare("b" + i, 1);
+      ledger.declare("b" + i, () -> 1);
     }
-    ledger.declare("b0", 5);
+    ledger.declare("b0", () -> 5);
 
     assertThat(ledger.today())
         .hasSize(BudgetLedger.MAX_LISTED)
@@ -47,5 +47,17 @@ class BudgetLedgerTest {
     new DailyBudget(3, clock, "guide-client:abc", ledger.unlisted());
 
     assertThat(ledger.today()).isEmpty();
+  }
+
+  @Test
+  void theLimitShownIsTheBudgetsLimitNowAfterARuntimeChange() {
+    BudgetLedger ledger = new BudgetLedger(null, clock);
+    java.util.concurrent.atomic.AtomicInteger limit =
+        new java.util.concurrent.atomic.AtomicInteger(500);
+    new DailyBudget(limit::get, clock, "enrichment", ledger);
+
+    limit.set(120);
+
+    assertThat(ledger.today()).containsExactly(new BudgetLedger.Reading("enrichment", 120, null));
   }
 }

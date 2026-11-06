@@ -155,6 +155,7 @@ class ModularityTest {
           Map.entry("tavily_query_result", "search"),
           Map.entry("ai_cache", "platform"),
           Map.entry("shedlock", "platform"),
+          Map.entry("runtime_setting", "platform"),
           Map.entry("guide_similar_question", "guide"),
           Map.entry("source_cursor", "scout"),
           Map.entry("scout_run", "scout"),

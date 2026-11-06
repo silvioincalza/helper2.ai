@@ -6,6 +6,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -24,7 +25,7 @@ public final class BudgetLedger implements CallCounter {
 
   private final @Nullable RedisCallCounter store;
   private final Clock clock;
-  private final Map<String, Integer> limits = new ConcurrentSkipListMap<>();
+  private final Map<String, IntSupplier> limits = new ConcurrentSkipListMap<>();
 
   BudgetLedger(@Nullable RedisCallCounter store, Clock clock) {
     this.store = store;
@@ -53,23 +54,25 @@ public final class BudgetLedger implements CallCounter {
   static final int MAX_LISTED = 64;
 
   @Override
-  public void declare(String name, int dailyCalls) {
+  public void declare(String name, IntSupplier dailyCalls) {
     if (limits.size() < MAX_LISTED || limits.containsKey(name)) {
       limits.put(name, dailyCalls);
     }
   }
 
   /**
-   * Every declared budget, by name. A refused call adds nothing; a count still above the limit (the
-   * limit was lowered during the day) shows as the limit.
+   * Every declared budget, by name, with its limit as it is now (a runtime setting can change it,
+   * ADR 0060). A refused call adds nothing; a count still above the limit (the limit was lowered
+   * during the day) shows as the limit.
    */
   public List<Reading> today() {
     LocalDate day = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
     return limits.entrySet().stream()
         .map(e -> {
+          int limit = e.getValue().getAsInt();
           Long used = store == null ? null : store.current(e.getKey(), day);
-          Long shown = used == null ? null : Math.min(used, (long) Math.max(e.getValue(), 0));
-          return new Reading(e.getKey(), e.getValue(), shown);
+          Long shown = used == null ? null : Math.min(used, (long) Math.max(limit, 0));
+          return new Reading(e.getKey(), limit, shown);
         })
         .toList();
   }

@@ -72,7 +72,8 @@ class OverviewController implements OverviewApi {
                     .toList(),
                 o.recentRuns().stream().map(AdminController::dto).toList(),
                 o.failedRunsLast24h(),
-                dto(o.homeExamples()))
+                dto(o.homeExamples()),
+                o.overridesActive())
             .grafanaUrl(grafanaUrl);
     if (o.webCredits() != null) {
       dto.webCredits(

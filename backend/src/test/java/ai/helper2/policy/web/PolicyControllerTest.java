@@ -7,6 +7,7 @@ import ai.helper2.api.generated.model.WebSearchLimitsDto;
 import ai.helper2.catalog.CatalogPolicy;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.identity.AccountPolicy;
+import ai.helper2.platform.config.PlatformRetentionProperties;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.SearchPolicy;
 import java.time.Duration;
@@ -24,7 +25,8 @@ class PolicyControllerTest {
                 Duration.ofDays(3)),
             new GuidePolicy(40, 12, Duration.ofHours(2)),
             new AccountPolicy(Duration.ofDays(365), Duration.ofDays(730)),
-            new CatalogPolicy(Duration.ofDays(30), Duration.ofDays(1)))
+            new CatalogPolicy(Duration.ofDays(30), Duration.ofDays(1)),
+            new PlatformRetentionProperties(Duration.ofDays(90)))
         .getPolicy()
         .getBody();
   }
@@ -46,6 +48,7 @@ class PolicyControllerTest {
     assertThat(p.getRetention().getInactiveAccountsSeconds()).isEqualTo(31_536_000);
     assertThat(p.getRetention().getHandledReportsSeconds()).isEqualTo(2_592_000);
     assertThat(p.getRetention().getAdminRecordsSeconds()).isEqualTo(63_072_000);
+    assertThat(p.getRetention().getRuntimeSettingChangesSeconds()).isEqualTo(7_776_000);
   }
 
   @Test

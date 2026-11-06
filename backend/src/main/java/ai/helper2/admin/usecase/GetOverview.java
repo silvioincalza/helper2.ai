@@ -4,6 +4,7 @@ import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.examples.PoolCounts;
 import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.platform.llm.BudgetLedger;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.RunSummary;
@@ -21,8 +22,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * What needs a person now (ADR 0045): open review items per kind, the enrichment backlog, today's
  * model budgets and web credits, the last Scout runs and how many failed in the last day, and how
- * many home examples are shown and hidden (ADR 0049). Counts only. Computed at most once per {@link
- * #FRESH}: the backlog count is a full pass, and one admin pressing Refresh must not repeat it.
+ * many home examples are shown and hidden (ADR 0049), and how many runtime settings are not at
+ * their default (ADR 0060). Counts only. Computed at most once per {@link #FRESH}: the backlog
+ * count is a full pass, and one admin pressing Refresh must not repeat it.
  */
 public class GetOverview {
 
@@ -45,7 +47,8 @@ public class GetOverview {
       @Nullable WebCredits webCredits,
       List<RunSummary> recentRuns,
       int failedRunsLast24h,
-      PoolCounts homeExamples) {}
+      PoolCounts homeExamples,
+      int overridesActive) {}
 
   private final ReviewQueue reviewQueue;
   private final EnrichmentBacklog backlog;
@@ -53,6 +56,7 @@ public class GetOverview {
   private final BudgetLedger budgets;
   private final Supplier<@Nullable WebSearchQuota> webSearchQuota;
   private final CountHomeExamples homeExamples;
+  private final RuntimeSettings runtimeSettings;
   private final Clock clock;
   private @Nullable Overview last;
 
@@ -63,6 +67,7 @@ public class GetOverview {
       BudgetLedger budgets,
       Supplier<@Nullable WebSearchQuota> webSearchQuota,
       CountHomeExamples homeExamples,
+      RuntimeSettings runtimeSettings,
       Clock clock) {
     this.reviewQueue = reviewQueue;
     this.backlog = backlog;
@@ -70,6 +75,7 @@ public class GetOverview {
     this.budgets = budgets;
     this.webSearchQuota = webSearchQuota;
     this.homeExamples = homeExamples;
+    this.runtimeSettings = runtimeSettings;
     this.clock = clock;
   }
 
@@ -96,7 +102,8 @@ public class GetOverview {
         quota == null ? null : quota.creditsToday(),
         recent.stream().limit(RECENT_RUNS).toList(),
         failedSince(recent, now.minus(Duration.ofDays(1))),
-        homeExamples.count());
+        homeExamples.count(),
+        runtimeSettings.overrideCount());
   }
 
   /** Runs that FAILED and started at or after [since]. */

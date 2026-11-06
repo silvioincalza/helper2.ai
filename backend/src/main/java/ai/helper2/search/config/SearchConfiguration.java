@@ -3,6 +3,8 @@ package ai.helper2.search.config;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.DiscoveredResources;
@@ -69,9 +71,13 @@ class SearchConfiguration {
     return new JdbcWebResultStore(jdbc, keys, catalog);
   }
 
-  /** The daily web searches (ADR 0037); an empty global cap means none. */
+  /**
+   * The daily web searches (ADR 0037); an empty global cap means none. The global cap is a runtime
+   * setting (ADR 0060): the H2_ value is its default.
+   */
   @Bean
-  WebSearchQuota webSearchQuota(QuotaCounter counter, QuotaKeys keys, SearchProperties search) {
+  WebSearchQuota webSearchQuota(
+      QuotaCounter counter, QuotaKeys keys, RuntimeSettings runtime, SearchProperties search) {
     SearchProperties.Quota quota = search.web().quota();
     return new WebSearchQuota(
         counter,
@@ -82,7 +88,8 @@ class SearchConfiguration {
             quota.registered().search(),
             quota.registered().guide()),
         quota.registeredTierEnabled(),
-        quota.globalDailyCredits());
+        runtime.declareCap(
+            RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS, quota.globalDailyCredits()));
   }
 
   /** Search's numbers for GET /api/v1/policy (ADR 0052). */

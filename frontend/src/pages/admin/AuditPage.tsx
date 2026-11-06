@@ -64,7 +64,19 @@ export default function AuditPage() {
                   <th scope="row">{formatDate(e.at, i18n.language, 'INSTANT')}</th>
                   <td>{t(`admin.audit.actions.${e.action}`)}</td>
                   <td className="h2-admin__id">{e.targetId ?? '—'}</td>
-                  <td>{e.outcome}</td>
+                  <td>
+                    {e.outcome}
+                    {(e.before || e.after) && (
+                      <>
+                        {' · '}
+                        {t('admin.audit.change', {
+                          before: e.before ?? '—',
+                          after: e.after ?? '—',
+                        })}
+                      </>
+                    )}
+                    {e.reason && <span className="muted"> · {e.reason}</span>}
+                  </td>
                   <td>{e.adminId}</td>
                 </tr>
               ))}
