@@ -41,7 +41,8 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
     const detail = await screen.findByRole('region', { name: 'Item 1' });
     expect(rowButton('Item 1')).toHaveAttribute('aria-current', 'true');
     const evidence = await within(detail).findByRole('region', { name: 'Evidence' });
-    expect(evidence).toHaveTextContent('nvidia/nemotron-test');
+    // The region shows "Loading the evidence…" first; the run comes with the next request.
+    await waitFor(() => expect(evidence).toHaveTextContent('nvidia/nemotron-test'));
     expect(evidence).toHaveTextContent('enrich-v9');
     expect(evidence).toHaveTextContent('Partly validated');
     expect(evidence).toHaveTextContent('github-readme:acme/tool');
