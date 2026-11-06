@@ -385,6 +385,46 @@ class RunScoutTest {
   }
 
   @Test
+  fun `a changed resource whose source text the last run already judged does not go back to the backlog`() {
+    // Only its metadata changed (stars, a date): the backlog would send the same text to the
+    // model again, since a requested run no longer skips it as UNCHANGED.
+    val sameText = mutableSetOf<UUID>()
+    val store =
+      object : RecordingEnrichmentStore() {
+        override fun lastFingerprint(resourceId: UUID) =
+          if (resourceId in sameText) material().fingerprintFor(model(true)) else null
+      }
+    val requested = mutableListOf<UUID>()
+    val hits = (0 until 3).map { hit("mcp", "https://github.com/a/r$it") }
+    val c = FakeCollector(descriptor("mcp")) { CollectedBatch(hits, null, "cp") }
+    val catalog = CatalogIndex { results, _ ->
+      results
+        .map { it.id.value }
+        .also { ids ->
+          sameText += ids[1]
+          changedIds += ids
+        }
+    }
+    val run =
+      RunScout(
+          listOf(c),
+          history,
+          catalog,
+          EnrichResource(model(true), store, clock),
+          clock,
+          NO_LOCK,
+          maxEnrichmentsPerRun = { 1 },
+          backlog = backlog(requested = requested) { emptyList() },
+        )
+        .runNow()!!
+        .single()
+    assertEquals(RunStatus.SUCCEEDED, run.status)
+    assertEquals(changedIds.take(1), store.enriched)
+    assertEquals(changedIds.drop(2), requested, "only the resource with new text waits")
+    assertEquals("1 changed resource waits for the backlog (enrichment budget spent)", run.message)
+  }
+
+  @Test
   fun `a run for an unknown source id is refused before the lock and leaves no record`() {
     val c = FakeCollector(descriptor("mcp")) { CollectedBatch(emptyList(), null, "cp") }
     var lockAsked = false
@@ -593,7 +633,7 @@ class RunScoutTest {
     assertEquals(0, off.seenCheckpoints.size)
   }
 
-  private class RecordingEnrichmentStore : FakeEnrichmentStore() {
+  private open class RecordingEnrichmentStore : FakeEnrichmentStore() {
     val enriched = mutableListOf<UUID>()
 
     override fun save(

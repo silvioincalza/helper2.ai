@@ -480,7 +480,7 @@ class RunScout(
     for (resourceId in eligibleForEnrichment(sourceId, changed)) {
       if (resourceId in budget.attempted) continue
       if (!budget.take(resourceId)) {
-        if (requestLaterRun(resourceId)) deferred++
+        if (stillToJudge(enrichment, resourceId) && requestLaterRun(resourceId)) deferred++
         continue
       }
       when (enrichQuietly(enrichment, resourceId, budget)) {
@@ -496,6 +496,20 @@ class RunScout(
     }
     return EnrichmentCounts(queued, failed, deferred)
   }
+
+  /**
+   * false when the last run already judged this source text: a requested run would send the same
+   * text to the model again, since the request makes the backlog forget that judgement. A change in
+   * metadata alone (stars, a date) is such a case. When the check itself fails, the run is
+   * requested anyway rather than losing the update.
+   */
+  private fun stillToJudge(enrichment: EnrichResource, resourceId: UUID): Boolean =
+    try {
+      !enrichment.unchanged(resourceId)
+    } catch (e: RuntimeException) {
+      log.warn("checking the last run of $resourceId failed: ${e.javaClass.simpleName}")
+      true
+    }
 
   /**
    * A changed resource this run could not enrich goes back to the backlog: an already enriched one

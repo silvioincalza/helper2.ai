@@ -84,7 +84,11 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
    no slot left for, and one whose enrichment threw before the model answered, go back to the backlog
    (`EnrichmentBacklog.requestRun`: status `NOT_RUN` with the request time, as a recheck does,
    [0056](0056-evidence-ladder.md)), so a later run takes them; an already enriched resource would otherwise never be
-   looked at again, since the backlog does not know it changed. The run message counts the errors and the resources
+   looked at again, since the backlog does not know it changed. A request makes the backlog forget the last
+   judgement, so a resource whose source text the last run already judged with this model is not requested
+   (`EnrichResource.unchanged`: the stored fingerprint against the material, no model call): a change in
+   metadata alone (stars, a date) would otherwise send the same text to the model again. When that check fails,
+   the run is requested rather than losing the update. The run message counts the errors and the resources
    that wait; an enrichment error never turns a collected run into `FAILED`.
 7. **Backlog.** After the collectors, the rest of the budget goes to `EnrichmentBacklog.pending`: resources never
    enriched, enriched while no model was available, or whose last attempt failed (fewer than 3 failures). New

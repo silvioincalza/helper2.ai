@@ -91,6 +91,15 @@ constructor(
       meters.counter("helper2.scout.enrichment", "outcome", it.name).increment()
     }
 
+  /**
+   * true when the last run already judged this source text with this model, so a run now would end
+   * UNCHANGED. Reads the material and the stored fingerprint only: no model call.
+   */
+  fun unchanged(resourceId: UUID): Boolean {
+    val material = store.load(resourceId) ?: return false
+    return store.lastFingerprint(resourceId) == material.fingerprintFor(model)
+  }
+
   private fun attempt(resourceId: UUID): EnrichmentOutcome {
     val started = clock.instant()
     val material = store.load(resourceId) ?: return EnrichmentOutcome.REJECTED

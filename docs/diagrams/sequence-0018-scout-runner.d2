@@ -1,9 +1,10 @@
 # Sequence: one scheduled Scout run on one replica: the tick takes the cluster lock scout-run (a 2-minute lease kept
 # alive while the run lives), checks the end of the last scheduled run (table scout_schedule), closes run rows left
-# RUNNING by a stopped replica, runs one due collector with its cursor and enrichments, drains
+# RUNNING by a stopped replica, runs one due collector with its cursor and enrichments, sends a changed resource
+# the budget has no slot for back to the backlog (unless the last run already judged its text), drains
 # the backlog, records the new end time, then releases the lock.
 # Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout.tryRunScheduled, runCollector,
-#   drainBacklog),
+#   enrichChanged, stillToJudge, requestLaterRun, drainBacklog), EnrichResource.kt (unchanged),
 #   backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
 #   ClusterRunLock, catalogIndex),
 #   backend/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java (KeepAliveLockProvider),
@@ -57,6 +58,9 @@ runner -> backlog: "eligible(changed ids)"
 backlog -> runner: "ids with description ≥ 40 chars"
 runner -> enrich: "enrich(id) while budget left\n(ADR 0019)" {class: ai-call}
 enrich -> runner: "EnrichmentOutcome"
+runner -> enrich: "unchanged(id): a changed id\nthe budget has no slot for\n(stored fingerprint only, no model call)"
+enrich -> runner: "false: the text is new\n(true: not requested, the model\nwould see the same text again)"
+runner -> backlog: "requestRun(id): NOT_RUN with the\nrequest time; a later run takes it"
 runner -> store: "save(SUCCEEDED, seen,\nchanged, queued)"
 runner -> backlog: "pending(budget left + attempted)"
 backlog -> runner: "resources still to enrich"

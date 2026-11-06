@@ -2,8 +2,11 @@
 # Shows the cluster lock scout-run (a ShedLock lease in Postgres table shedlock, kept alive while the run lives)
 # held by every run, the closing at startup, the 202 answer of an admin start, the closing of runs left RUNNING by a stopped replica, the due check
 # against the end of the last scheduled run (table scout_schedule), per-collector isolation, cursor and
-# checkpoint rules, the shared enrichment budget, and the backlog drain at the end. Enrichment itself is in flow-0019.
-# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout), scout/Scout.kt (ScheduledRun, ScheduledRunStore),
+# checkpoint rules, the shared enrichment budget, the changed resources sent back to the backlog when the budget is spent
+# (unless the last run already judged their text), and the backlog drain at the end. Enrichment itself is in flow-0019.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout, enrichChanged, stillToJudge, requestLaterRun),
+#   backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (unchanged), scout/Scout.kt (ScheduledRun, ScheduledRunStore,
+#   EnrichmentBacklog, UnknownSource),
 #   backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java (scout_schedule),
 #   backend/src/main/kotlin/ai/helper2/scout/Ports.kt (CollectedBatch, CandidateReview),
 #   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
@@ -18,7 +21,10 @@
 direction: down
 
 trigger: "ScoutSchedule tick on each replica\n(H2_SCOUT_ENABLED): first after 20 s,\nthen every H2_SCOUT_TICK (10 min)" {class: end}
-admin: "POST /api/v1/admin/scout-runs\n(run starts on a virtual thread)" {class: end}
+admin: "POST /api/v1/admin/scout-runs\n(optionally one sourceId)" {class: end}
+known: "Every sourceId has\na collector?" {class: decision}
+unknown: "404 Not Found (UnknownSource):\nno lock, no backlog, no budget,\nno audit entry" {class: fail}
+thread: "Run starts on a virtual thread" {class: app}
 guard: "Lock \"scout-run\" free\nin the cluster?\n(2 min lease, renewed every\nminute while the run lives)" {class: decision}
 startup: "Replica starts\n(ApplicationReadyEvent)" {class: end}
 startupClose: "Lock free: close rows left RUNNING\nas FAILED, release \"scout-run\"\n(held: the next run closes them)" {class: data}
@@ -47,6 +53,9 @@ each: For each collector (isolated) {
   resume: "Save resumeCursor;\ncheckpoint unchanged" {class: data}
   done: "Pass complete:\ncheckpoint = pass start" {class: data}
   enrich: "Eligible changed ids\n(description ≥ 40 chars):\nenrich while budget left;\nUNCHANGED gives its slot back" {class: ai}
+  judged: "No slot left: last run already\njudged this text with this model?\n(EnrichResource.unchanged:\nfingerprint only, no model call)" {class: decision}
+  request: "EnrichmentBacklog.requestRun:\nNOT_RUN with the request time;\na later run takes it" {class: data}
+  skip: "Not requested: a request would\nsend the same text to the model\n(metadata alone changed)" {class: end}
   ok: "SUCCEEDED\n(seen, changed, queued)" {class: end}
   failed: "FAILED\n\"Collection failed: <class>\"\ncursor not moved" {class: fail}
   stop: "LLM_UNAVAILABLE\n(provider down or daily\nbudget spent)?" {class: decision}
@@ -72,6 +81,12 @@ each: For each collector (isolated) {
   stop -> stopped: yes
   stopped -> ok
   enrich -> ok: "no id or\nbudget left"
+  enrich -> request: "enrichment threw\nbefore the answer"
+  enrich -> judged: "changed id,\nno slot left"
+  judged -> request: "no, or the\ncheck failed"
+  judged -> skip: yes
+  request -> ok: "message counts it"
+  skip -> ok
   collect -> open: "exception" {class: config}
   open -> failed: "exception" {class: config}
   index -> failed: "exception" {class: config}
@@ -85,7 +100,10 @@ release: "\"scout-run\" released" {class: end}
 
 trigger -> guard
 startup -> startupClose
-admin -> guard
+admin -> known
+known -> unknown: no
+known -> thread: yes
+thread -> guard
 guard -> busy: no
 guard -> due: "yes (tick)" {class: hot}
 guard -> interrupted: "yes (admin)"
