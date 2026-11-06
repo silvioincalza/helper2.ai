@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * An administrator decides a review item. Accepting a drafted example (EXAMPLE_CANDIDATE, ADR 0049
@@ -51,11 +50,9 @@ public class ResolveReview {
   }
 
   /**
-   * As above, for one item of a bulk decision [batch] (ResolveReviewItems): its own transaction.
-   */
-  @Transactional(noRollbackFor = ApiProblem.class)
-  public ResolveReviewItem.Outcome resolve(
-      UUID id,
+  * As above, for one item of a bulk decision [batch] (ResolveReviewItems): its own transaction.
+  */
+  public ResolveReviewItem.Outcome resolve(      UUID id,
       ReviewQueue.Status decision,
       String adminId,
       @Nullable String note,

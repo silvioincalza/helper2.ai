@@ -5,9 +5,11 @@ import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
 import ai.helper2.admin.usecase.ResolveReview;
+import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
+import ai.helper2.identity.AuditTrail;
 import ai.helper2.examples.usecase.AddHomeExample;
 import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.platform.ApiProblem;
@@ -68,6 +70,12 @@ class AdminUseCaseConfiguration {
     public Optional<View> get(UUID itemId) {
       return super.get(itemId);
     }
+  }
+
+  @Bean
+  ResolveReviewItems resolveReviewItems(
+      ReviewQueue queue, ReviewEvidence evidence, ResolveReview resolve, AuditTrail audit) {
+    return new ResolveReviewItems(queue, evidence, resolve, audit);
   }
 
   @Bean
