@@ -336,7 +336,7 @@ describe('monetisation (ADR 0057)', () => {
       mockApi({ 'GET /me': me(ADSENSE), [`GET /resources/${id}`]: () => makeDetail() });
       const { router } = renderApp(`/resource/${id}`);
       await screen.findByRole('complementary', { name: 'Sponsored' });
-      expect(window.adsbygoogle?.pauseAdRequests).toBe(0);
+      await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(0));
 
       await act(() => router.navigate('/search?q=agents'));
       await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(1));
