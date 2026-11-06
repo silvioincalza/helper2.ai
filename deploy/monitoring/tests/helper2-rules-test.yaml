@@ -163,7 +163,7 @@ tests:
               description: "No new products or list articles from: discovery-coding discovery-legal "
               runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
 
-  # LinkedIn (ADR 0053): weekly, so 8 days is the limit, as course-scout. Quiet at 3 days, fires past 8.
+  # LinkedIn (ADR 0061): weekly, so 8 days is the limit, as course-scout. Quiet at 3 days, fires past 8.
   - interval: 1h
     input_series:
       - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="linkedin-scout"}'

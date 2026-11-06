@@ -3,7 +3,7 @@ package ai.helper2.shared
 /**
  * The sources whose records are web pages found by a web search (Tavily): the live source, the
  * Scout's Tavily queries, course discovery, every discovery category (ADR 0051) and LinkedIn via
- * Tavily (ADR 0053). One place for the page titles ([WebPageTitle.forSource]) and the retention of
+ * Tavily (ADR 0061). One place for the page titles ([WebPageTitle.forSource]) and the retention of
  * web news and articles.
  */
 object WebSources {
