@@ -24,6 +24,25 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   question is personal data, the basis for keeping it up to a day, and the transfer of search and guide text to the
   NVIDIA API catalog in the US (not yet listed under transfers abroad). 
 - Review each source's terms again for commercial use.
+- Monetisation ([ADR 0057](adr/frontend/0057-monetisation.md)), before a setting is filled on prod:
+  - Manual: create the GA4 property (EU data), retention 2 months; in enhanced measurement turn off "Page changes based
+    on browser history events", site search and form interactions; Google signals off; a separate stream for staging.
+    Check once in DebugView that no hit carries `q=` or `ask=`.
+  - Manual: EthicalAds applied (6 Nov 2026), waiting for the publisher ID; set up GitHub Sponsors and a Stripe Payment
+    Link whose confirmation page is `https://helper2.ai/support/thanks`; then fill `app.monetisation.*` per
+    environment.
+  - Check on staging that the browser console shows no CSP errors with each part on (the CSP lists `media.` and
+    `server.ethicalads.io`; the client loads ads as JSONP from `server.`).
+  - Lawyer: check the consent wording, the Swiss rules on ad labelling (UWG), whether EthicalAds (Read the Docs, Inc.,
+    US) needs consent or a transfer basis (it receives the IP address and topic words from the page), and that the
+    DSA ad duties do not apply.
+  - Tax advisor: gifts and ad income as a private person in Switzerland, and whether a sole proprietorship must be
+    registered. The Terms say a gift is not tax-deductible.
+- AdSense part 2 ([ADR 0059](adr/frontend/0059-adsense.md)), after Google approves the site: the ad slot on resource
+  pages; Google's consent tool (Privacy & messaging, consent mode on for ads and analytics) in place of our bar, for
+  AdSense and GA4; GA4 only after consent where `gdprApplies`, without a question elsewhere; nonce CSP on resource pages
+  only; the footer line about ads removed; Privacy and Terms pages updated. First check which TCF purposes Google needs
+  for GA4. Manual: the European regulations message in AdSense, and one ad unit ID.
 - Lawyer review of the awesome-list search index ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): whether a
   tsvector of a list's words is a reproduction or a database extraction, keeping and showing section headings, and
   GitHub's terms for reading README files to build it.

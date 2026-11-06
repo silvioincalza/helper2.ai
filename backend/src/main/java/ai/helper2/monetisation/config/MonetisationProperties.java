@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
  * @param stripePaymentUrl {@code H2_SUPPORT_STRIPE_PAYMENT_URL}
  * @param ga4MeasurementId {@code H2_ANALYTICS_GA4_MEASUREMENT_ID}, e.g. G-ABC123XYZ9
  * @param ethicalAdsPublisher {@code H2_ADS_ETHICALADS_PUBLISHER}
+ * @param adsenseClient {@code H2_ADS_ADSENSE_CLIENT}, e.g. ca-pub-1234567890123456 (ADR 0059)
  */
 @Validated
 @ConfigurationProperties("helper2.monetisation")
@@ -21,4 +22,5 @@ public record MonetisationProperties(
     @Pattern(regexp = "^$|https://(buy|donate)\\.stripe\\.com/[A-Za-z0-9_]+")
         String stripePaymentUrl,
     @Pattern(regexp = "^$|G-[A-Z0-9]{4,16}") String ga4MeasurementId,
-    @Pattern(regexp = "^$|[a-z0-9-]{2,64}") String ethicalAdsPublisher) {}
+    @Pattern(regexp = "^$|[a-z0-9-]{2,64}") String ethicalAdsPublisher,
+    @Pattern(regexp = "^$|ca-pub-[0-9]{16}") String adsenseClient) {}

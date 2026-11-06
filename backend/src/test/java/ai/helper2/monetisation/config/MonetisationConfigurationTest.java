@@ -13,8 +13,13 @@ class MonetisationConfigurationTest {
       Validation.buildDefaultValidatorFactory().getValidator();
 
   @Test
+  void noAdsTxtWhileAdSenseIsOff() {
+    assertThat(Monetisation.OFF.adsTxt()).isEmpty();
+  }
+
+  @Test
   void emptyMeansOff() {
-    assertThat(MonetisationConfiguration.from(new MonetisationProperties("", " ", null, "")))
+    assertThat(MonetisationConfiguration.from(new MonetisationProperties("", " ", null, "", "")))
         .isEqualTo(Monetisation.OFF);
   }
 
@@ -26,8 +31,10 @@ class MonetisationConfigurationTest {
                 "https://github.com/sponsors/someone",
                 "https://buy.stripe.com/abc123",
                 "G-ABC123XYZ9",
-                "helper2"));
+                "helper2",
+                "ca-pub-4688630163076563"));
 
+    assertThat(m.adsTxt()).contains("google.com, pub-4688630163076563, DIRECT, f08c47fec0942fa0");
     assertThat(m.githubSponsors()).hasValueSatisfying(u -> assertThat(u).hasHost("github.com"));
     assertThat(m.stripePayment()).isPresent();
     assertThat(m.analyticsOn()).isTrue();
@@ -42,9 +49,10 @@ class MonetisationConfigurationTest {
                     "https://github.com/sponsors/someone",
                     "https://donate.stripe.com/abc_123",
                     "G-ABC123XYZ9",
-                    "helper2")))
+                    "helper2",
+                    "ca-pub-4688630163076563")))
         .isEmpty();
-    assertThat(VALIDATOR.validate(new MonetisationProperties("", "", "", ""))).isEmpty();
+    assertThat(VALIDATOR.validate(new MonetisationProperties("", "", "", "", ""))).isEmpty();
   }
 
   @Test
@@ -55,7 +63,8 @@ class MonetisationConfigurationTest {
                     "http://github.com/sponsors/someone",
                     "https://evil.example/pay",
                     "UA-12345-1",
-                    "Bad Publisher")))
-        .hasSize(4);
+                    "Bad Publisher",
+                    "pub-4688630163076563")))
+        .hasSize(5);
   }
 }
