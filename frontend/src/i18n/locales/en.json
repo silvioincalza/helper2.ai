@@ -541,6 +541,7 @@
     "name": "Name",
     "aiAnswersLeft": "AI answers left today",
     "webSearchesLeft": "Web searches left today",
+    "guideWebSearchesLeft": "Guide searches left today",
     "leftOf": "{{remaining}} of {{limit}} · resets {{time}}",
     "displayTitle": "Display",
     "radarMotion": "Radar: keep moving",
