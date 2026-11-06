@@ -127,6 +127,9 @@ them without each module growing an admin corner.
 
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
+- The public JavaScript does not carry the back office: its pages, its API calls (`api/admin.ts`) and its copy
+  (`en.admin.json`) load only when an admin page opens. `api/adminBundle.test.ts` keeps the shared client and the
+  public translations free of them. The server refuses every admin call without ADMIN anyway.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.
 - A budget that is never built (no model configured), or one that counts only in memory, is not listed.
@@ -207,7 +210,8 @@ them without each module growing an admin corner.
   `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
   `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`,
-  `EnrichmentQueuePage.tsx`, `AuditPage.tsx`, `SettingsPage.tsx`.
+  `EnrichmentQueuePage.tsx`, `AuditPage.tsx`, `SettingsPage.tsx`; `adminText.ts` adds the back office's copy
+  (`i18n/locales/en.admin.json`) when an admin page loads; `frontend/src/api/admin.ts` holds the admin calls.
 - Tests: `api/AdminOverviewApiIT.java`, `admin/usecase/GetOverviewTest.java`, `platform/llm/BudgetLedgerTest.java`,
   `RedisCallCounterIT.java`, `scout/internal/CatalogEnrichmentStoreIT.java`, `search/config/MicrometerSearchMetricsTest.java`,
   `api/EnrichmentQueueApiIT.java`, `admin/web/EnrichmentQueueCursorTest.java`, `catalog/internal/JdbcEnrichmentCandidatesIT.java`,

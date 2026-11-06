@@ -1,6 +1,7 @@
+import './adminText';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '@/api/client';
+import { adminApi } from '@/api/admin';
 
 /**
  * "Assign categories again" (ADR 0053): starts the category backfill over the whole catalog. It answers at once and
@@ -13,7 +14,7 @@ export function CategoryBackfill() {
     if (state === 'busy') return;
     setState('busy');
     try {
-      await api.backfillCategories();
+      await adminApi.backfillCategories();
       setState('started');
     } catch {
       setState('failed');
