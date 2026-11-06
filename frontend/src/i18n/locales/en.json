@@ -1070,6 +1070,7 @@
             "text": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: {{runtimeSettingChanges}}. The latest change of each limit stays until a newer change replaces it.",
             "withoutNumbers": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: for a set time. The latest change of each limit stays until a newer change replaces it."
           },
+          "The sites our search for new AI resources knows by name (writing sites and directories), with the GitHub user ID of the administrator who added each and the reason they wrote: until an administrator removes the site. The record of the change stays with the other administrator records.",
           {
             "text": "Database backups: {{backups}}. Anything deleted above is gone from the backups within {{backups}}.",
             "withoutNumbers": "Database backups: a limited number of days. Anything deleted above is gone from the backups within that time."

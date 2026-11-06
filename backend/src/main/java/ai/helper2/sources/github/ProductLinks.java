@@ -138,7 +138,7 @@ final class ProductLinks {
   }
 
   /** The product site [raw] points at, or why it is skipped. */
-  Checked check(@Nullable String raw) {
+  Checked check(@Nullable String raw, DiscoveryPages pages) {
     URI uri = parse(raw);
     if (uri == null) {
       return Checked.skipped(Skip.MALFORMED);
@@ -165,7 +165,7 @@ final class ProductLinks {
     if (page == null) {
       return Checked.skipped(Skip.MALFORMED);
     }
-    CanonicalUrl site = DiscoveryPages.productSite(page);
+    CanonicalUrl site = pages.productSite(page);
     return site == null ? Checked.skipped(Skip.NOT_A_PRODUCT_PAGE) : Checked.kept(site);
   }
 

@@ -1,5 +1,6 @@
 package ai.helper2.sources.tavily;
 
+import ai.helper2.scout.HostLists;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.WebPageTitle;
 import java.net.URI;
@@ -29,7 +30,24 @@ import org.jspecify.annotations.Nullable;
  */
 public final class DiscoveryPages {
 
-  private DiscoveryPages() {}
+  /** Hosts that publish articles about many products: a post there is an ARTICLE (ADR 0062). */
+  private final Set<String> writingHosts;
+
+  /** Directories, reviews and wikis: they list products, and a page there is never kept. */
+  private final Set<String> directoryHosts;
+
+  /** Hosts that publish about many products; a page there is never a product's own site. */
+  private final Set<String> publisherHosts;
+
+  /**
+   * The rules with the host lists of one run (ADR 0063): an admin keeps them in the back office,
+   * and each run reads them once.
+   */
+  public DiscoveryPages(HostLists hosts) {
+    this.writingHosts = Set.copyOf(hosts.getWriting());
+    this.directoryHosts = Set.copyOf(hosts.getDirectory());
+    this.publisherHosts = union(writingHosts, directoryHosts);
+  }
 
   /** What a result is: a list page to index, or a product site or an article to review. */
   enum Shape {
@@ -152,50 +170,6 @@ public final class DiscoveryPages {
    */
   private static final Set<String> ARTICLE_PLACES = union(WRITING_PLACES, OTHER_PLACES);
 
-  /** Hosts that publish articles about many products: a post there is an ARTICLE (ADR 0062). */
-  private static final Set<String> WRITING_HOSTS =
-      Set.of(
-          "medium.com",
-          "dev.to",
-          "substack.com",
-          "forbes.com",
-          "techcrunch.com",
-          "theverge.com",
-          "wired.com",
-          "zdnet.com",
-          "venturebeat.com",
-          "hashnode.dev",
-          "wordpress.com",
-          "blogspot.com",
-          "beehiiv.com");
-
-  /** Directories, reviews and wikis: they list products, and a page there is never kept. */
-  private static final Set<String> DIRECTORY_HOSTS =
-      Set.of(
-          "producthunt.com",
-          "huggingface.co",
-          "wikipedia.org",
-          "news.ycombinator.com",
-          "g2.com",
-          "capterra.com",
-          "gartner.com",
-          "notion.site",
-          "theresanaiforthat.com",
-          "futurepedia.io",
-          "futuretools.io",
-          "toolify.ai",
-          "topai.tools",
-          "aitools.fyi",
-          "getapp.com",
-          "softwareadvice.com",
-          "trustradius.com",
-          "trustpilot.com",
-          "alternativeto.net",
-          "saasworthy.com");
-
-  /** Hosts that publish about many products; a page there is never a product's own site. */
-  private static final Set<String> PUBLISHER_HOSTS = union(WRITING_HOSTS, DIRECTORY_HOSTS);
-
   /**
    * Pages of a site that stand for the site itself: a page one level below the home page with one
    * of these names becomes the home page. Any other one-level page (aws.amazon.com/bedrock) is the
@@ -226,7 +200,7 @@ public final class DiscoveryPages {
    * alternative to ChatGPT"). Any other page with a list-like title is a list; any other page one
    * level below a home page stands for its site. Null: neither.
    */
-  static @Nullable Page classify(CanonicalUrl url, String title) {
+  @Nullable Page classify(CanonicalUrl url, String title) {
     CanonicalUrl site = productSite(url);
     if (site != null && (isRepository(url) || pagePath(url).isEmpty())) {
       return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
@@ -245,10 +219,10 @@ public final class DiscoveryPages {
    * news.example.com/x), on a host that publishes articles, or with a post's slug. Not the index of
    * a blog, not a directory entry, nothing in a docs, careers or legal place.
    */
-  static boolean isWritingPage(CanonicalUrl url) {
+  boolean isWritingPage(CanonicalUrl url) {
     String host = url.getHost();
     List<String> path = pagePath(url);
-    if (path.isEmpty() || hostIn(host, DIRECTORY_HOSTS) || host.equals("github.com")) {
+    if (path.isEmpty() || hostIn(host, directoryHosts) || host.equals("github.com")) {
       return false;
     }
     List<String> lower = path.stream().map(p -> p.toLowerCase(Locale.ROOT)).toList();
@@ -264,8 +238,8 @@ public final class DiscoveryPages {
   }
 
   /** blog.example.com, news.example.com, or a host that publishes articles about many products. */
-  private static boolean isWritingHost(String host) {
-    return WRITING_PLACES.contains(host.split("\\.")[0]) || hostIn(host, WRITING_HOSTS);
+  private boolean isWritingHost(String host) {
+    return WRITING_PLACES.contains(host.split("\\.")[0]) || hostIn(host, writingHosts);
   }
 
   /**
@@ -322,7 +296,7 @@ public final class DiscoveryPages {
    *       one product per page.
    * </ul>
    */
-  public static @Nullable CanonicalUrl productSite(CanonicalUrl url) {
+  public @Nullable CanonicalUrl productSite(CanonicalUrl url) {
     String host = url.getHost();
     if (host.equals("github.com")) {
       return isRepository(url) ? url : null;
@@ -364,8 +338,8 @@ public final class DiscoveryPages {
     return ARTICLE_PLACES.contains(host.split("\\.")[0]);
   }
 
-  private static boolean isPublisher(String host) {
-    return hostIn(host, PUBLISHER_HOSTS);
+  private boolean isPublisher(String host) {
+    return hostIn(host, publisherHosts);
   }
 
   private static boolean hostIn(String host, Set<String> hosts) {

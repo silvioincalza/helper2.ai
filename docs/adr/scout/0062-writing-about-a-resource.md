@@ -37,7 +37,8 @@ product.
    links when it is next enriched (new or changed text, or an admin requeue), not by a rerun of the whole catalog.
 5. **Discovery keeps posts about products as ARTICLE candidates** (`DiscoveryPages`, shape ARTICLE). A post is a page:
    - below a writing place (`/blog/…`, `/news/…`, `/posts/…`, `/insights/…`), or on a writing host (`blog.`,
-     `news.`, Medium, Substack, TechCrunch …);
+     `news.`, Medium, Substack, TechCrunch …; the admin keeps the writing hosts and the directories,
+     [0063](0063-discovery-hosts.md));
    - or with a post's slug (`/google-gemini-carbon-promises-significant-leap`).
 
    Not a post: a blog's index, an author's page (`medium.com/@someone`), docs, help, careers, legal and community

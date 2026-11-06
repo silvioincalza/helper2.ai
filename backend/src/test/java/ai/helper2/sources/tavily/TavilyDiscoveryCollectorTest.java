@@ -9,7 +9,11 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.DiscoveryHost;
+import ai.helper2.scout.HostKind;
+import ai.helper2.scout.InMemoryDiscoveryHostStore;
 import ai.helper2.scout.ScoutCursor;
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryWords;
@@ -20,6 +24,7 @@ import ai.helper2.testing.FixtureServer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -66,6 +71,7 @@ class TavilyDiscoveryCollectorTest {
   final MapCounter counter = new MapCounter();
   final QuotaKeys keys = new QuotaKeys("", SourceFixtures.CLOCK);
   final SimpleMeterRegistry meters = new SimpleMeterRegistry();
+  final InMemoryDiscoveryHostStore hosts = SeedDiscoveryHosts.store();
 
   @AfterEach
   void stop() {
@@ -112,7 +118,8 @@ class TavilyDiscoveryCollectorTest {
         new TavilyDiscoveryCollector.Search("advanced", 10),
         all[0],
         List.of(all),
-        new ScoutTavilyCredits(counter, keys, cap, meters));
+        new ScoutTavilyCredits(counter, keys, cap, meters),
+        hosts);
   }
 
   TavilyDiscoveryCollector collector(DiscoveryCategory... all) {
@@ -143,6 +150,29 @@ class TavilyDiscoveryCollectorTest {
         .contains("\"time_range\":\"month\"")
         .doesNotContain("start_date");
     assertThat(server.requestBodies.get(1)).contains("\"query\":\"health app\"");
+  }
+
+  @Test
+  void aRunWhoseHostListsCannotBeReadFailsBeforeAnySearch() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.setFailing(true);
+
+    assertThatThrownBy(() -> collector(SELF_HOSTED).collect(null, null, 1000))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(server.requestBodies).isEmpty();
+  }
+
+  @Test
+  void aHostTheAdminAddsAsADirectoryIsNoLongerAProductSite() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.add(
+        new DiscoveryHost("openwebui.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory"));
+
+    CollectedBatch batch = collector(SELF_HOSTED).collect(null, null, 1000);
+
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue())
+        .doesNotContain("https://openwebui.com");
   }
 
   @Test
@@ -360,7 +390,8 @@ class TavilyDiscoveryCollectorTest {
         new TavilyDiscoveryCollector.Search("advanced", 10),
         SELF_HOSTED,
         List.of(LOCAL_AI, SELF_HOSTED),
-        new ScoutTavilyCredits(counter, keys, 40, meters));
+        new ScoutTavilyCredits(counter, keys, 40, meters),
+        SeedDiscoveryHosts.store());
   }
 
   @Test

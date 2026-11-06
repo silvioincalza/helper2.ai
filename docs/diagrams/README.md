@@ -83,6 +83,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0060](../adr/operations/0060-runtime-settings.md) | [flow](flow-0060-runtime-settings.svg) | [sequence](sequence-0060-runtime-settings.svg) | a spending limit changed from the Settings page: the checks, the append-only row and its audit, and every replica's snapshot refresh. |
 | [0061](../adr/scout/0061-linkedin-via-tavily.md) | [flow](flow-0061-linkedin-via-tavily.svg) | [sequence](sequence-0061-linkedin-via-tavily.svg) | how one LinkedIn result found through Tavily becomes a review candidate or nothing, and an admin accepting it. |
 | [0062](../adr/scout/0062-writing-about-a-resource.md) | [flow](flow-0062-writing-about-a-resource.svg) | [sequence](sequence-0062-writing-about-a-resource.svg) | what an enrichment keeps for an article and how it names what the article is about; a discovery post becoming an ARTICLE candidate. |
+| [0063](../adr/scout/0063-discovery-hosts.md) | [flow](flow-0063-discovery-hosts.svg) | [sequence](sequence-0063-discovery-hosts.svg) | an admin adds a writing site or a directory: the host checks, the row and its audit; the next discovery run reading the lists. |
 
 ## Colors
 

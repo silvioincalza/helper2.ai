@@ -71,6 +71,9 @@ const CONFIG: EffectiveConfig = {
   ],
 };
 
+/** The discovery host lists of the same page (ADR 0063): empty, so they add nothing to these scenarios. */
+const NO_HOSTS = { 'GET /admin/discovery-hosts': () => ({ max: 500, hosts: [] }) };
+
 const GUIDE: RuntimeSettingState = {
   key: 'guide.dailyModelCalls',
   label: 'Model calls a day, all visitors',
@@ -136,6 +139,7 @@ const row = (table: HTMLElement, label: string) =>
 describe('Feature: the Settings page shows what the app runs with now', () => {
   it('Scenario: each group is a table, each value in words, with the variable that sets it', async () => {
     mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(GUIDE, CREDITS),
@@ -181,6 +185,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
   it('Scenario: a failed load offers Try again and keeps focus on the heading', async () => {
     let fail = true;
     mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => (fail ? problem(503, 'Service Unavailable') : CONFIG),
       'GET /admin/runtime-settings': () => runtime(GUIDE),
@@ -200,6 +205,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
 describe('Feature: an administrator changes a spending limit without a deploy', () => {
   it('Scenario: each limit shows its value now, its default, its range and one line of help', async () => {
     mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(GUIDE, CREDITS),
@@ -224,6 +230,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
   it('Scenario: a change is reviewed old to new, confirmed with a reason, and sent with its version', async () => {
     let state = GUIDE;
     const m = mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(state),
@@ -260,6 +267,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
 
   it('Scenario: a value outside the range is blocked in the form, nothing is sent', async () => {
     const m = mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(GUIDE),
@@ -280,6 +288,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
   it('Scenario: someone changed it first; the page says so and shows the current value', async () => {
     let loads = 0;
     mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () =>
@@ -299,6 +308,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
 
   it('Scenario: History restores an earlier value through the same review, and Reset goes back to the default', async () => {
     const m = mockApi({
+      ...NO_HOSTS,
       'GET /me': () => ADMIN,
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(CREDITS),

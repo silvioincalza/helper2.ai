@@ -2,13 +2,17 @@ package ai.helper2.sources.github;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.sources.github.ProductLinks.Skip;
+import ai.helper2.sources.tavily.DiscoveryPages;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class ProductLinksTest {
+
+  private static final DiscoveryPages PAGES = new DiscoveryPages(SeedDiscoveryHosts.LISTS);
 
   final ProductLinks links = new ProductLinks(List.of("youtube.com", "producthunt.com"));
 
@@ -21,7 +25,7 @@ class ProductLinksTest {
     "https://acme.ai., https://acme.ai",
   })
   void aProductLinkBecomesItsHomePageOrItsOneLevelPage(String raw, String site) {
-    ProductLinks.Checked checked = links.check(raw);
+    ProductLinks.Checked checked = links.check(raw, PAGES);
 
     assertThat(checked.skip()).isNull();
     assertThat(checked.site().getValue()).isEqualTo(site);
@@ -83,7 +87,7 @@ class ProductLinksTest {
     "'', MALFORMED",
   })
   void aHostileOrNonProductLinkIsSkippedWithItsReason(String raw, Skip reason) {
-    ProductLinks.Checked checked = links.check(raw);
+    ProductLinks.Checked checked = links.check(raw, PAGES);
 
     assertThat(checked.site()).isNull();
     assertThat(checked.skip()).isEqualTo(reason);
@@ -91,13 +95,14 @@ class ProductLinksTest {
 
   @Test
   void aVeryLongLinkIsSkipped() {
-    assertThat(links.check("https://acme.ai/" + "a".repeat(3000)).skip()).isEqualTo(Skip.MALFORMED);
+    assertThat(links.check("https://acme.ai/" + "a".repeat(3000), PAGES).skip())
+        .isEqualTo(Skip.MALFORMED);
   }
 
   @Test
   void aControlOrInvisibleCharacterIsSkipped() {
-    assertThat(links.check("https://acme.ai/\u0000").skip()).isEqualTo(Skip.MALFORMED);
-    assertThat(links.check("https://acme‮.ai/").skip()).isEqualTo(Skip.MALFORMED);
+    assertThat(links.check("https://acme.ai/\u0000", PAGES).skip()).isEqualTo(Skip.MALFORMED);
+    assertThat(links.check("https://acme‮.ai/", PAGES).skip()).isEqualTo(Skip.MALFORMED);
   }
 
   @Test

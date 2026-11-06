@@ -7,6 +7,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.ListText;
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Category;
 import ai.helper2.shared.CategoryCatalog;
@@ -117,7 +118,8 @@ class GitHubAwesomeDeepSearchTest {
         GitHubAwesomeCollectorTest.DEEP,
         new GitHubAwesomeCollectorTest.FakeModel(),
         categories,
-        meters);
+        meters,
+        SeedDiscoveryHosts.store());
   }
 
   double count(String name, String... tags) {
@@ -220,7 +222,8 @@ class GitHubAwesomeDeepSearchTest {
             GitHubAwesomeCollectorTest.DEEP,
             new GitHubAwesomeCollectorTest.FakeModel(),
             new CategoryMatcher(new CategoryCatalog(many)),
-            meters);
+            meters,
+            SeedDiscoveryHosts.store());
 
     Candidate candidate = c.collect(null, null, 500).getCandidates().getFirst();
 

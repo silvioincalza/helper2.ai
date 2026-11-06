@@ -1,6 +1,7 @@
 package ai.helper2.sources.config;
 
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.DiscoveryCategory;
 import ai.helper2.sources.tavily.ScoutTavilyCredits;
@@ -70,6 +71,7 @@ class DiscoveryCollectorRegistrar implements BeanRegistrar {
         new TavilyDiscoveryCollector.Search(d.searchDepth(), d.maxResults()),
         categories.get(id),
         categories.all(),
-        ctx.bean(ScoutTavilyCredits.class));
+        ctx.bean(ScoutTavilyCredits.class),
+        ctx.bean(DiscoveryHostStore.class));
   }
 }

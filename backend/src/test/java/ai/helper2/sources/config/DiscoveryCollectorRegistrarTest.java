@@ -6,6 +6,8 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.tavily.DiscoveryCategory;
@@ -62,6 +64,11 @@ class DiscoveryCollectorRegistrarTest {
     ScoutTavilyCredits credits() {
       return new ScoutTavilyCredits(
           new NoCounter(), new QuotaKeys("", SourceFixtures.CLOCK), 40, new SimpleMeterRegistry());
+    }
+
+    @Bean
+    DiscoveryHostStore hosts() {
+      return SeedDiscoveryHosts.store();
     }
   }
 

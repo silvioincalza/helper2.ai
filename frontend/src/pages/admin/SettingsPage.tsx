@@ -7,6 +7,7 @@ import { RetryButton, StatePanel } from '@/components/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDuration } from '@/lib/duration';
+import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
 
 /** One value in words, by its kind; ids and expressions in code style. A runtime setting shows its value now. */
@@ -69,6 +70,7 @@ export default function SettingsPage() {
         error={runtime.error}
         reload={runtime.reload}
       />
+      <DiscoveryHostsPanel />
       {config.loading ? (
         <p role="status" className="muted">
           {t('common.loading')}

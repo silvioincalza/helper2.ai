@@ -4,6 +4,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
@@ -90,6 +91,7 @@ public class TavilyDiscoveryCollector implements Collector {
   private final DiscoveryCategory category;
   private final List<DiscoveryCategory> all;
   private final ScoutTavilyCredits credits;
+  private final DiscoveryHostStore hosts;
   private final SourceDescriptor descriptor;
 
   /**
@@ -103,7 +105,8 @@ public class TavilyDiscoveryCollector implements Collector {
       Search search,
       DiscoveryCategory category,
       List<DiscoveryCategory> all,
-      ScoutTavilyCredits credits) {
+      ScoutTavilyCredits credits,
+      DiscoveryHostStore hosts) {
     this.clock = clock;
     this.resilience = resilience;
     boolean enabled = settings.enabled() && category.enabled();
@@ -115,6 +118,7 @@ public class TavilyDiscoveryCollector implements Collector {
     this.category = category;
     this.all = List.copyOf(all);
     this.credits = credits;
+    this.hosts = hosts;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
         new SourceDescriptor(
@@ -188,7 +192,9 @@ public class TavilyDiscoveryCollector implements Collector {
               + credits.dailyCap()
               + " credits); next try tomorrow");
     }
-    Map<String, Found> found = searchAll(TavilyCollector.startDate(checkpoint), startedAt);
+    // The host lists as they are now (ADR 0063); a failed read fails the run before any search.
+    DiscoveryPages pages = new DiscoveryPages(hosts.lists());
+    Map<String, Found> found = searchAll(pages, TavilyCollector.startDate(checkpoint), startedAt);
     return new CollectedBatch(
         found.values().stream()
             .filter(f -> f.page().shape() == Shape.LIST)
@@ -213,7 +219,8 @@ public class TavilyDiscoveryCollector implements Collector {
    * Every query of the category, merged by URL. A search that fails alone is skipped, so the paid
    * ones are kept; when half or more fail, the pass fails and its checkpoint stays.
    */
-  private Map<String, Found> searchAll(@Nullable String since, Instant searchedAt) {
+  private Map<String, Found> searchAll(
+      DiscoveryPages pages, @Nullable String since, Instant searchedAt) {
     Map<String, Found> found = new LinkedHashMap<>();
     RuntimeException lastFailure = null;
     int failed = 0;
@@ -221,7 +228,8 @@ public class TavilyDiscoveryCollector implements Collector {
       try {
         JsonNode root = searchFor(query, since);
         credits.spent(root, search.searchDepth());
-        sort(root, query, searchedAt).forEach(f -> found.putIfAbsent(f.page().url().getValue(), f));
+        sort(pages, root, query, searchedAt)
+            .forEach(f -> found.putIfAbsent(f.page().url().getValue(), f));
       } catch (RuntimeException e) {
         log.warn("{}: a search failed: {}", category.sourceId(), e.getClass().getSimpleName());
         lastFailure = e;
@@ -273,11 +281,11 @@ public class TavilyDiscoveryCollector implements Collector {
   }
 
   /** One search's kept results, in Tavily's order. */
-  private List<Found> sort(JsonNode root, String query, Instant searchedAt) {
+  private List<Found> sort(DiscoveryPages pages, JsonNode root, String query, Instant searchedAt) {
     List<Found> kept = new ArrayList<>();
     int position = 0;
     for (JsonNode r : root.path("results")) {
-      Found f = keep(root, r, position++, query, searchedAt);
+      Found f = keep(pages, root, r, position++, query, searchedAt);
       if (f != null) {
         kept.add(f);
       }
@@ -291,7 +299,7 @@ public class TavilyDiscoveryCollector implements Collector {
    * category's words while they are required.
    */
   private @Nullable Found keep(
-      JsonNode root, JsonNode r, int rank, String query, Instant searchedAt) {
+      DiscoveryPages pages, JsonNode root, JsonNode r, int rank, String query, Instant searchedAt) {
     double score = r.path("score").asDouble(0);
     String title = HttpClients.text(r, "title");
     CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
@@ -302,7 +310,7 @@ public class TavilyDiscoveryCollector implements Collector {
         || !Classification.isAiRelated(title, content, Set.of())) {
       return null;
     }
-    Page page = DiscoveryPages.classify(url, title);
+    Page page = pages.classify(url, title);
     if (page == null || (page.shape() == Shape.LIST && !category.indexLists())) {
       return null;
     }

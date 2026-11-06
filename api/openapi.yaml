@@ -33,6 +33,7 @@ tags:
   - name: enrichment-queue
   - name: settings
   - name: runtime-settings
+  - name: discovery-hosts
   - name: examples
   - name: examples-admin
   - name: policy
@@ -780,6 +781,66 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/discovery-hosts:
+    get:
+      tags: [discovery-hosts]
+      operationId: listDiscoveryHosts
+      summary: The hosts discovery knows by name, with who added each and why.
+      description: >-
+        WRITING hosts publish articles about many products (a post there is an ARTICLE candidate); DIRECTORY hosts
+        list products (a page there is never kept). Discovery reads the lists at the start of each run (ADR 0063).
+      responses:
+        '200':
+          description: Every host, by kind and name.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiscoveryHosts' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [discovery-hosts]
+      operationId: addDiscoveryHost
+      summary: Add a host to one list.
+      description: >-
+        The host is kept in lower case, without "www." and a trailing dot. 400 when it is not a host name, when it
+        would match too much (a top-level domain, "co.uk", an IP address), for github.com, for a reason that is not
+        one plain line, and when the lists are full (500 hosts). 409 when the host is in a list already, of either
+        kind. Recorded in the audit trail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiscoveryHostAdd' }
+      responses:
+        '201':
+          description: Added; the next discovery run uses it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiscoveryHostEntry' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
+  /admin/discovery-hosts/{host}/remove:
+    parameters:
+      - { name: host, in: path, required: true, schema: { type: string, maxLength: 260 } }
+    post:
+      tags: [discovery-hosts]
+      operationId: removeDiscoveryHost
+      summary: Remove a host from its list.
+      description: 404 when the host is in no list. Recorded in the audit trail with the list it was in.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiscoveryHostRemove' }
+      responses:
+        '204': { description: Removed; the next discovery run no longer uses it. }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
 
   /home/examples:
     get:
@@ -2370,6 +2431,43 @@ components:
         version: { type: integer, minimum: 0, description: The version the reset was made on. }
         reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
 
+    DiscoveryHostKind:
+      type: string
+      enum: [WRITING, DIRECTORY]
+      description: WRITING publishes articles about many products; DIRECTORY lists products.
+
+    DiscoveryHostEntry:
+      type: object
+      required: [host, kind, addedBy, addedAt]
+      properties:
+        host: { type: string, maxLength: 253 }
+        kind: { $ref: '#/components/schemas/DiscoveryHostKind' }
+        addedBy: { type: string, description: 'The administrator (provider subject), or "migration" for the first lists.' }
+        addedAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'], maxLength: 500 }
+
+    DiscoveryHosts:
+      type: object
+      required: [hosts, max]
+      properties:
+        hosts:
+          type: array
+          items: { $ref: '#/components/schemas/DiscoveryHostEntry' }
+        max: { type: integer, description: The most hosts the two lists hold together. }
+
+    DiscoveryHostAdd:
+      type: object
+      required: [host, kind]
+      properties:
+        host: { type: string, maxLength: 260, description: 'A host name such as "techcrunch.com"; no scheme or path.' }
+        kind: { $ref: '#/components/schemas/DiscoveryHostKind' }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    DiscoveryHostRemove:
+      type: object
+      properties:
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
     EnrichmentQueuePage:
       type: object
       required: [items]
@@ -2582,7 +2680,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id, the resource id or the setting's key; null when a run covered every source." }
         at: { type: string, format: date-time }
         outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting." }

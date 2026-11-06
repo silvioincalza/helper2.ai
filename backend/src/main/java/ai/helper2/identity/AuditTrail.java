@@ -22,7 +22,10 @@ public interface AuditTrail {
     REQUEUE_ENRICHMENT,
     SKIP_ENRICHMENT,
     PRIORITISE_ENRICHMENT,
-    CHANGE_SETTING
+    CHANGE_SETTING,
+    // Discovery's host lists (V17, ADR 0063).
+    ADD_DISCOVERY_HOST,
+    REMOVE_DISCOVERY_HOST
   }
 
   /**

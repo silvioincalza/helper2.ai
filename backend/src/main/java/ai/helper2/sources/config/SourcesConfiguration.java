@@ -11,6 +11,7 @@ import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.arxiv.ArxivSource;
@@ -288,7 +289,8 @@ class SourcesConfiguration {
       LlmSettings llm,
       CallCounter budgetCounter,
       ModelCallMetrics metrics,
-      MeterRegistry meters) {
+      MeterRegistry meters,
+      DiscoveryHostStore hosts) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -325,7 +327,8 @@ class SourcesConfiguration {
         deep(c, discovery),
         classifier,
         categories,
-        meters);
+        meters,
+        hosts);
   }
 
   /**

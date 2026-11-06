@@ -234,6 +234,9 @@ Open items:
   - fix a field of an enriched resource: drop the value, or set a curated one (CURATED wins over the source, the
     source over the AI);
   - on a model's or product's page, list the articles about it ("In the news").
+- Discovery hosts ([ADR 0063](adr/scout/0063-discovery-hosts.md)): show on each host how many candidates it
+  kept or dropped in the last 30 days, so a wrong entry shows; let the admin move a host to the other list in one step
+  instead of remove and add; a public-suffix check instead of the short list of registry second levels.
 - Search inside awesome lists ([ADR 0055](adr/search/0055-search-inside-awesome-lists.md)): once the search set has
   grades, compare recall and nDCG@10 with and without list words, and tune the half weight from that, not before.
   Then decide on embeddings of entry lines.

@@ -4,7 +4,8 @@
 #   V4__home_example.sql (ADR 0049), V10__resource_enrichment_backlog_idx.sql (ADR 0045), V11__evidence_ladder_origins.sql (ADR 0056: origins, maintenance_task),
 #   V12__resource_categories.sql (CATEGORY labels, catalog_marker; ADR 0053),
 #   V13__awesome_list_search.sql (ADR 0055), V14__enrichment_queue_control.sql (ADR 0045 §7),
-#   V15__runtime_setting.sql (ADR 0060: runtime_setting, admin_audit before/after/reason).
+#   V15__runtime_setting.sql (ADR 0060: runtime_setting, admin_audit before/after/reason),
+#   V17__discovery_host.sql (ADR 0063: discovery_host, two admin_audit actions).
 #   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -271,6 +272,15 @@ scout: "scout: collection checkpoints, runs, enrichment queue decisions" {
     skip_reason: text
     failures_reset_at: timestamptz
     updated_at: timestamptz
+  }
+
+  discovery_host: {
+    class: table
+    host: "text (lower case, 3-253)" {constraint: primary_key}
+    kind: "text (WRITING | DIRECTORY)"
+    added_by: "text (provider subject, or migration)"
+    added_at: timestamptz
+    reason: "text (≤ 500)"
   }
 
   maintenance_task: {
