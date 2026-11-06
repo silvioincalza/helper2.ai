@@ -1,9 +1,13 @@
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup } from '@testing-library/react';
+import { act, cleanup, configure } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 import { clearApiCache } from '@/hooks/useApi';
 import { clearPolicyCache } from '@/hooks/usePolicy';
 import i18n from '@/i18n';
+
+// A lazy page's first import can take over a second when the whole suite runs on a busy CI runner. The default wait
+// of findBy and waitFor (1 s) then fails tests at random; 3 s does not. A real failure is reported 2 s later.
+configure({ asyncUtilTimeout: 3000 });
 
 // A state update outside act() means a test checked the screen before React finished: fail it, do not just warn.
 const realError = console.error;
