@@ -117,6 +117,7 @@ describe('mission, privacy and terms pages', () => {
     mockApi();
     const { router } = renderApp('/terms');
     await screen.findByRole('heading', { level: 1, name: 'Terms of use' });
+    await settle();
     expect(document.title).toBe('Terms · Helper2.ai');
     expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute(
       'href',
