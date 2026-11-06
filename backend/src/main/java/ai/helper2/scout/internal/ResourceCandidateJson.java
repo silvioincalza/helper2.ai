@@ -29,9 +29,10 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <p>Version 2 fields: {@code version}, {@code sourceId} (the first collector that found it), url,
  * title, type, tags, snippet when there is one, and {@code foundBy}: one entry per collector that
- * found it, with what its search said ({@code {sourceId, discovery}}). Version 1 (no version, no
- * foundBy) is still read. When a second collector finds an OPEN candidate, {@link #merge} joins it
- * in: the tags are joined, the most specific type is kept, and the collector is added to foundBy.
+ * found it, with what it knew ({@code {sourceId, discovery}} for a search, {@code {sourceId,
+ * awesome: {list, section}}} for an awesome list, ADR 0058). Version 1 (no version, no foundBy) is
+ * still read. When a second collector finds an OPEN candidate, {@link #merge} joins it in: the tags
+ * are joined, the most specific type is kept, and the collector is added to foundBy.
  */
 @Component
 class ResourceCandidateJson implements CandidateDetails {
@@ -158,16 +159,24 @@ class ResourceCandidateJson implements CandidateDetails {
     return ids;
   }
 
-  /** One foundBy entry: the collector and what its search said. */
+  /**
+   * One foundBy entry: the collector and what it knew: what its search said ({@code discovery}), or
+   * the awesome list and section it was linked from ({@code awesome}, ADR 0058).
+   */
   private static Map<String, Object> finder(String sourceId, Candidate c) {
     Map<String, Object> f = new LinkedHashMap<>();
     f.put("sourceId", sourceId);
-    Object discovery = c.getFacts().get("discovery");
-    if (discovery != null) {
-      f.put("discovery", discovery);
+    for (String fact : FINDER_FACTS) {
+      Object value = c.getFacts().get(fact);
+      if (value != null) {
+        f.put(fact, value);
+      }
     }
     return f;
   }
+
+  /** The facts of a candidate that say how its collector found it. */
+  private static final List<String> FINDER_FACTS = List.of("discovery", "awesome");
 
   /**
    * What the record keeps in its extra when the candidate is accepted: the first finder's search,

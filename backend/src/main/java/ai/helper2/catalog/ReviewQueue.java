@@ -151,6 +151,24 @@ public class ReviewQueue {
         == 1;
   }
 
+  /**
+   * Candidate items of [kind] that [sourceId] opened (it found them first) since the start of the
+   * current UTC day, by the database clock: for a collector's daily cap (ADR 0058).
+   */
+  public int candidatesOpenedToday(Kind kind, String sourceId) {
+    return jdbc.sql(
+            """
+            SELECT count(*) FROM review_item
+            WHERE kind = :kind AND candidate_url IS NOT NULL
+              AND created_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+              AND details LIKE '{%' AND CAST(details AS jsonb) ->> 'sourceId' = :source
+            """)
+        .param("kind", kind.name())
+        .param("source", sourceId)
+        .query(Integer.class)
+        .single();
+  }
+
   /** True when the catalog has a resource at [canonicalUrl]. */
   public boolean inCatalog(String canonicalUrl) {
     return jdbc.sql("SELECT EXISTS (SELECT 1 FROM resource WHERE canonical_url = :url)")

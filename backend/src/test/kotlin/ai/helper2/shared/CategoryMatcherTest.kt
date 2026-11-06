@@ -128,6 +128,43 @@ class CategoryMatcherTest {
     )
   }
 
+  private fun underHeading(vararg headings: String, title: String = "Acme") =
+    matcher.match(CategoryInput(title, headings = headings.toList()))
+
+  @Test
+  fun `a section heading with one of the words gives the category`() {
+    assertEquals(listOf("coding"), underHeading("Tools > Code Review"))
+    assertEquals(listOf("self-hosted"), underHeading("Apps > Self-Hosted"))
+  }
+
+  @Test
+  fun `a heading that names the category id gives it`() {
+    assertEquals(listOf("prompt-libraries"), underHeading("Prompt libraries"))
+    assertEquals(listOf("coding"), underHeading("Coding"))
+  }
+
+  @Test
+  fun `each heading of a path is read alone, so two never join into one phrase`() {
+    assertEquals(emptyList(), underHeading("Code > Review"))
+    assertEquals(emptyList(), underHeading("Self > Hosted"))
+  }
+
+  @Test
+  fun `a heading alone never gives a category that requires a word`() {
+    assertEquals(emptyList(), underHeading("Health > Clinical notes"))
+    assertEquals(listOf("health"), underHeading("Health", title = "Acme clinical notes"))
+  }
+
+  @Test
+  fun `a heading path joins the other inputs`() {
+    assertEquals(
+      listOf("coding", "self-hosted"),
+      matcher.match(
+        CategoryInput("Acme", tags = listOf("homelab"), headings = listOf("Coding assistants"))
+      ),
+    )
+  }
+
   @Test
   fun `the same input gives the same answer`() {
     val input = CategoryInput("A coding assistant", "for your homelab", listOf("x"))

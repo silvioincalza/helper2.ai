@@ -9,6 +9,7 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.classifier.RepoClassifier;
@@ -37,6 +38,8 @@ import io.micrometer.observation.ObservationRegistry;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,6 +254,8 @@ class SourcesConfiguration {
   GitHubAwesomeCollector gitHubAwesomeCollector(
       SourcesProperties p,
       CollectorProperties.GitHubAwesome c,
+      CollectorProperties.Discovery discovery,
+      CategoryMatcher categories,
       Clock clock,
       Resilience resilience,
       ObservationRegistry observations,
@@ -292,7 +297,28 @@ class SourcesConfiguration {
             c.maxEntriesPerRun(),
             c.minRepoStars(),
             c.classifyBatch()),
-        classifier);
+        deep(c, discovery),
+        classifier,
+        categories,
+        meters);
+  }
+
+  /**
+   * Deep search (ADR 0058): a product link is skipped on discovery's excluded domains too, so a
+   * list and a search keep the same sites out.
+   */
+  private static GitHubAwesomeCollector.Deep deep(
+      CollectorProperties.GitHubAwesome c, CollectorProperties.Discovery discovery) {
+    List<String> excluded = new ArrayList<>(discovery.excludeDomains());
+    excluded.addAll(c.links().excludeDomains());
+    return new GitHubAwesomeCollector.Deep(
+        c.nested().maxDepth(),
+        c.nested().maxListsPerRun(),
+        c.maxRunTime(),
+        c.maxReadmeBytesPerRun().toBytes(),
+        c.links().maxPerPass(),
+        c.links().perDay(),
+        excluded);
   }
 
   @Bean

@@ -390,7 +390,7 @@ class RunScout(
     if (batch.notDue) return notDueRun(running, batch.skipReason)
     val changed = index(d, batch.hits)
     indexListsQuietly(d.id, batch.lists)
-    proposeCandidates(d.id, batch.candidates)
+    proposeCandidates(d.id, batch.candidates, batch.newCandidatesPerDay)
     store.saveCursor(d.id, cursorAfter(cursor, batch, running.startedAt))
     // From here the pass is indexed and its cursor saved: nothing below may turn the run into
     // FAILED.
@@ -419,10 +419,10 @@ class RunScout(
     }
   }
 
-  private fun proposeCandidates(sourceId: String, candidates: List<Candidate>) {
+  private fun proposeCandidates(sourceId: String, candidates: List<Candidate>, newPerDay: Int?) {
     if (candidates.isEmpty()) return
     checkNotNull(review) { "$sourceId proposed candidates but no review list is configured" }
-      .propose(sourceId, candidates)
+      .propose(sourceId, candidates, newPerDay)
   }
 
   /**
