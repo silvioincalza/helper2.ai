@@ -330,6 +330,7 @@ export const POLICY: Policy = {
     inactiveAccountsSeconds: 730 * 86_400,
     adminRecordsSeconds: 730 * 86_400,
     handledReportsSeconds: 365 * 86_400,
+    runtimeSettingChangesSeconds: 730 * 86_400,
   },
 };
 

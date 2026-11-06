@@ -18,6 +18,9 @@ import type {
   ReviewItemPage,
   SetupGuide,
   ToolGuide,
+  ReviewBulkResolution,
+  ReviewBulkResult,
+  ReviewEvidence,
   ReviewResolution,
   ReviewStatus,
   ReviewKind,
@@ -27,6 +30,7 @@ import type {
   AdminOverview,
   EnrichmentQueuePage,
   EffectiveConfig,
+  EnrichmentQueueView,
   RuntimeSettings,
   RuntimeSettingState,
   AdminHomeExample,
@@ -37,6 +41,7 @@ import type {
   HomeExamplePool,
   SearchResponse,
   SourceInfo,
+  Category,
 } from './types';
 
 import { guideStreamEventValues } from './schema';
@@ -265,6 +270,8 @@ export const api = {
     request<IssueReportAccepted>('POST', `/resources/${encodeURIComponent(id)}/reports`, { body }),
   askGuideStream,
   listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
+  /** The categories search filters by (ADR 0053), in their order; the same for everyone, cached by the browser. */
+  listCategories: (signal?: AbortSignal) => request<Category[]>('GET', '/categories', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
   /** A signed-in user's display settings; fields left out stay as they are. */
   changePreferences: (body: PreferencesChange) =>
@@ -302,8 +309,21 @@ export const api = {
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, {
       body,
     }),
+  /** Decides up to 100 items, each on its own; one outcome per item, in the order sent (ADR 0045). */
+  resolveReviewItems: (body: ReviewBulkResolution) =>
+    request<ReviewBulkResult>('POST', '/admin/review-items/resolutions', { body }),
+  /** What a review item is about: its run or relationship, with the quotes behind them (ADR 0045). 404 for no item. */
+  getReviewEvidence: (id: string, signal?: AbortSignal) =>
+    request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
+      signal,
+    }),
   listScoutRuns: (signal?: AbortSignal) =>
     request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
+  /** Starts assigning every resource's categories again, in the background (ADR 0053). */
+  backfillCategories: async (): Promise<void> => {
+    // 202 with no body.
+    await send('POST', absolute(`${API_BASE}/admin/category-backfill`), {});
+  },
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
@@ -327,10 +347,22 @@ export const api = {
   draftHomeExamples: () => request<ExampleDrafts>('POST', '/admin/home-examples/drafts'),
   removeHomeExample: (id: string) =>
     request<void>('DELETE', `/admin/home-examples/${encodeURIComponent(id)}`),
-  /** The enrichment backlog in the Scout's order; pass the previous page's next as after. 400 for a foreign cursor. */
-  listEnrichmentQueue: (after: string | undefined, size: number, signal?: AbortSignal) =>
+  /**
+   * One view of the enrichment queue (WAITING: the Scout's order); pass the previous page's next as after, with the
+   * same view. 400 for a foreign cursor.
+   */
+  listEnrichmentQueue: (
+    view: EnrichmentQueueView,
+    after: string | undefined,
+    size: number,
+    signal?: AbortSignal,
+  ) =>
     request<EnrichmentQueuePage>('GET', '/admin/enrichment-queue', {
-      query: new URLSearchParams({ ...(after ? { after } : {}), size: String(size) }),
+      query: new URLSearchParams({
+        ...(view === 'WAITING' ? {} : { view }),
+        ...(after ? { after } : {}),
+        size: String(size),
+      }),
       signal,
     }),
   getEffectiveConfig: (signal?: AbortSignal) =>
@@ -352,6 +384,17 @@ export const api = {
       `/admin/runtime-settings/${encodeURIComponent(key)}/reset`,
       { body },
     ),
+  /** 409 not-applicable when the resource is neither skipped nor out of retries; 404 for an unknown one. */
+  requeueEnrichment: (resourceId: string) =>
+    request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),
+  /** 409 not-applicable when the resource does not wait or is already skipped. */
+  skipEnrichment: (resourceId: string, reason: string) =>
+    request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
+      body: reason.trim() ? { reason: reason.trim() } : {},
+    }),
+  /** 409 not-applicable when the resource does not wait, is already at the top, or the top is full. */
+  prioritiseEnrichment: (resourceId: string) =>
+    request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/prioritise`),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>
     request<AuditEntryPage>('GET', '/admin/audit', {
       query: new URLSearchParams({ page: String(page), size: String(size) }),
