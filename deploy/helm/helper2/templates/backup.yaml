@@ -31,6 +31,8 @@ spec:
   schedule: {{ .Values.backup.schedule | quote }}
   timeZone: {{ .Values.backup.timeZone }}
   concurrencyPolicy: Forbid
+  # A run that cannot start within the hour is missed: the stale alert says so, a late start does not hide it.
+  startingDeadlineSeconds: 3600
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -60,8 +62,15 @@ spec:
               command: ["/bin/sh", "-ec"]
               args:
                 - |
+                  # A failed pg_dump fails the Job (pipefail); the new dump replaces the old one only
+                  # once gzip reads it back whole and it is bigger than an empty dump; old dumps go last.
+                  set -o pipefail
                   f=/backup/helper2-$(date +%Y-%m-%d).sql.gz
-                  pg_dump --no-owner | gzip > "$f.tmp" && mv "$f.tmp" "$f"
+                  trap 'rm -f "$f.tmp"' EXIT
+                  pg_dump --no-owner | gzip > "$f.tmp"
+                  gzip -t "$f.tmp"
+                  [ "$(wc -c < "$f.tmp")" -gt 1024 ]
+                  mv "$f.tmp" "$f"
                   find /backup -name 'helper2-*.sql.gz' -mtime +{{ .Values.backup.retentionDays }} -delete
                   ls -l /backup
               resources:

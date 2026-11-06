@@ -66,8 +66,13 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    ([0005](../foundation/0005-redis-disposable-cache.md)): a Redis restart keeps sessions, rate-limit windows and cached
    answers. The volume holds only cache data and is not backed up.
 8. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the Network File System (NFS)
-   volume `pg-backup` (kept on `helm uninstall`), 7 days kept. With `backup.offsite.enabled`, rclone then
-   copies new dumps to Cloudflare R2 (it never deletes there; the bucket's lifecycle rule sets retention).
+   volume `pg-backup` (kept on `helm uninstall`), 7 days kept. A failed `pg_dump` fails the Job (`pipefail`); the
+   new dump replaces the old one only once `gzip -t` reads it back whole and it is bigger than an empty dump, and
+   the old dumps are deleted after that, never before. A run that cannot start within an hour is missed
+   (`startingDeadlineSeconds`). Two alerts: `Helper2BackupFailed` for a failed Job, `Helper2BackupStale` when no
+   run has succeeded for 36 hours (a suspended CronJob, a Pod stuck Pending, a missed start). With
+   `backup.offsite.enabled`, rclone then copies new dumps to Cloudflare R2 (it never deletes there; the bucket's
+   lifecycle rule sets retention).
 9. **Per environment.** The chart runs the Scout once a day at 03:07 UTC (`app.scoutCron`, so each collector runs at
    most once a day; each replica checks every 10 minutes, `H2_SCOUT_TICK` default, and a restart does not add a run) with at most 200 enrichments per run (`app.scoutMaxEnrichments`); the daily enrichment cap
    (500) still applies. Staging has the Scout off and no backup.

@@ -145,6 +145,20 @@ groups:
           description: "Tonight's pg_dump (or its off-site upload) failed after its retries. Dumps are kept 7 days, so each failed night shortens the history."
           runbook: "kubectl -n {{ $labels.namespace }} logs job/{{ $labels.job_name }} -c dump (and -c upload with the off-site copy). Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
 
+      - alert: Helper2BackupStale
+        # Catches what BackupFailed cannot: a Job that never ran (a suspended CronJob, a missed start, a Pod stuck
+        # Pending). A CronJob that has never succeeded has no last_successful_time and stays quiet: check after
+        # the first deploy.
+        expr: |
+          time() - max by (namespace) (kube_cronjob_status_last_successful_time{namespace=~"helper2-.+", cronjob="pg-backup"}) > 36 * 3600
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful Postgres backup for 36 hours ({{ $labels.namespace }})."
+          description: "The pg-backup CronJob last succeeded {{ $value | humanizeDuration }} ago. Tonight's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+          runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-backup; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-backup. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+
   - name: helper2-budgets
     rules:
       - alert: Helper2DailyBudgetLow

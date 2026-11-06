@@ -395,6 +395,26 @@ tests:
         alertname: Helper2BackupFailed
         exp_alerts: []
 
+  # Backup stale: the CronJob last succeeded at t=0. A day later it is quiet; after 36 h it fires with the age.
+  - interval: 1h
+    input_series:
+      - series: 'kube_cronjob_status_last_successful_time{namespace="helper2-prod", cronjob="pg-backup"}'
+        values: '0x60'
+    alert_rule_test:
+      - eval_time: 24h
+        alertname: Helper2BackupStale
+        exp_alerts: []
+      - eval_time: 40h
+        alertname: Helper2BackupStale
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: helper2-prod
+            exp_annotations:
+              summary: "No successful Postgres backup for 36 hours (helper2-prod)."
+              description: "The pg-backup CronJob last succeeded 1d 16h 0m 0s ago. Tonight's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+              runbook: "kubectl -n helper2-prod get cronjob pg-backup; kubectl -n helper2-prod get jobs,pods -l app=pg-backup. Rerun: kubectl -n helper2-prod create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+
   # Pod restarts: 3 restarts within an hour fire.
   - interval: 10m
     input_series:
