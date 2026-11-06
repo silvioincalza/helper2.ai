@@ -21,6 +21,7 @@ import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentProposal;
+import ai.helper2.scout.EnrichmentQueueControl;
 import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
@@ -37,12 +38,16 @@ import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.ScoutStore;
+import ai.helper2.scout.UnitOfWork;
 import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.CatalogLookup;
 import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
+import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
+import ai.helper2.scout.usecase.RequeueEnrichment;
 import ai.helper2.scout.usecase.RunScout;
+import ai.helper2.scout.usecase.SkipEnrichment;
 import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.usecase.StoredAnswers;
 import ai.helper2.search.WebSearchQuota;
@@ -73,6 +78,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -323,6 +330,49 @@ class ScoutConfiguration {
   @Bean
   StartScoutRun startScoutRun(RunScout scoutRunner, AuditTrail audit) {
     return new StartScoutRun(scoutRunner, audit);
+  }
+
+  /** One database transaction for an admin's change and its audit entry. */
+  @Bean
+  UnitOfWork scoutUnitOfWork(PlatformTransactionManager transactions) {
+    TransactionTemplate template = new TransactionTemplate(transactions);
+    return new UnitOfWork() {
+      @Override
+      public <T> T run(Supplier<T> work) {
+        return template.execute(status -> work.get());
+      }
+    };
+  }
+
+  /** The admin's actions on the enrichment queue (ADR 0045 §7). */
+  @Bean
+  RequeueEnrichment requeueEnrichment(
+      EnrichmentBacklog backlog,
+      EnrichmentQueueControl control,
+      AuditTrail audit,
+      UnitOfWork scoutUnitOfWork,
+      Clock clock) {
+    return new RequeueEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+  }
+
+  @Bean
+  SkipEnrichment skipEnrichment(
+      EnrichmentBacklog backlog,
+      EnrichmentQueueControl control,
+      AuditTrail audit,
+      UnitOfWork scoutUnitOfWork,
+      Clock clock) {
+    return new SkipEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+  }
+
+  @Bean
+  PrioritiseEnrichment prioritiseEnrichment(
+      EnrichmentBacklog backlog,
+      EnrichmentQueueControl control,
+      AuditTrail audit,
+      UnitOfWork scoutUnitOfWork,
+      Clock clock) {
+    return new PrioritiseEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
   }
 
   /**

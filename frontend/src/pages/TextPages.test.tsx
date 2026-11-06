@@ -100,6 +100,9 @@ describe('mission, privacy and terms pages', () => {
       'Records of our administrators',
     );
     expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent(
+      'the reason they wrote stays with the resource until it is requeued',
+    );
+    expect(screen.getByRole('region', { name: 'What we process and why' })).toHaveTextContent(
       'one batch ID links those records',
     );
     expect(keep).toHaveTextContent(

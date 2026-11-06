@@ -119,18 +119,57 @@ interface EnrichmentBacklog {
   fun pendingCount(): Long
 
   /**
-   * One page of the backlog in the order [pending] takes it, after [after] (null: from the start);
-   * for the back office queue.
+   * One page of [view] after [after] (null: from the start); for the back office queue. The WAITING
+   * view is the backlog in the order [pending] takes it.
    */
   fun queue(
+    view: EnrichmentCandidates.View,
     after: EnrichmentCandidates.BacklogCursor?,
     size: Int,
   ): List<EnrichmentCandidates.BacklogEntry>
 
+  /** Where one resource stands in the queue; null for an unknown resource. */
+  fun place(resourceId: UUID): QueuePlace?
+
+  /** How many resources an admin moved to the top still wait for their next run. */
+  fun prioritisedCount(): Int
+
   /**
-   * The subset of [resourceIds] with enough source text for the model to cite, in the given order.
+   * The subset of [resourceIds] with enough source text for the model to cite and not skipped by an
+   * admin, in the given order.
    */
   fun eligible(resourceIds: List<UUID>): List<UUID>
+}
+
+/**
+ * Outbound port: one database transaction, so an admin's change and its audit entry commit together
+ * or not at all.
+ */
+interface UnitOfWork {
+  fun <T : Any> run(work: Supplier<T>): T
+}
+
+/**
+ * Outbound port: an admin's decisions on the enrichment queue (ADR 0045 §7), kept by the Scout.
+ * Each one changes the order only; it never calls the model by itself.
+ */
+interface EnrichmentQueueControl {
+  /**
+   * Waits until no other move to the top is in progress, and holds that until the transaction ends,
+   * so the count of resources at the top cannot change between the check and the move.
+   */
+  fun lockTop()
+
+  /** Moves the resource to the top until its next run starts. */
+  fun prioritise(resourceId: UUID, at: Instant)
+
+  /** Takes the resource out of the backlog until it is requeued; drops a move to the top. */
+  fun skip(resourceId: UUID, reason: String?, at: Instant)
+
+  /**
+   * Undoes a skip; with [resetFailures], only FAILED runs after [at] count against the retry cap.
+   */
+  fun requeue(resourceId: UUID, resetFailures: Boolean, at: Instant)
 }
 
 /** Loads evidence material and persists validated enrichment. Implemented over the catalog. */
