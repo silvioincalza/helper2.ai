@@ -104,8 +104,9 @@ traceable to that administrator.
   limits on `/me`.
 - `backend/src/main/java/ai/helper2/identity/usecase/` — `AddBookmark`, `RemoveBookmark`, `ListBookmarks`,
   `MergeLocalBookmarks`, `BookmarkRules` (http(s), 2000 characters, the 500 cap), `DeleteMyAccount`, `ListAuditEntries`.
-- `backend/src/main/java/ai/helper2/identity/internal/Users.java`, `Bookmarks.java`, `AuditLog.java` — `app_user`,
-  `bookmark`, `admin_audit`.
+- `backend/src/main/java/ai/helper2/identity/Users.java`, `Bookmarks.java`, `AuditLog.java` — the ports of the use
+  cases; `identity/internal/JdbcUsers.java`, `JdbcBookmarks.java`, `JdbcAuditLog.java` — `app_user`, `bookmark`,
+  `admin_audit`; `identity/config/IdentityUseCaseConfiguration.java` — wiring and transactions.
 - `backend/src/main/java/ai/helper2/identity/AuditTrail.java`, `AuditController.java` — the port, `/api/v1/admin/audit`.
 - `backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
   `backend/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.

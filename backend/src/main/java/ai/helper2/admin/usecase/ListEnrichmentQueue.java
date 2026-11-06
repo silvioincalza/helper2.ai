@@ -7,14 +7,12 @@ import ai.helper2.platform.BadRequestException;
 import ai.helper2.scout.EnrichmentBacklog;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
 /**
  * The enrichment queue page by page (ADR 0045): the backlog in the order the Scout takes it, or the
  * resources an admin skipped, or the ones out of retries. Acting on a resource is a use case of its
  * own (RequeueEnrichment, SkipEnrichment, PrioritiseEnrichment).
  */
-@Service
 public class ListEnrichmentQueue {
 
   public static final int MAX_PAGE_SIZE = 100;

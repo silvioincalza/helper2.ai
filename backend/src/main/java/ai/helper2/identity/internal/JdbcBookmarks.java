@@ -1,28 +1,23 @@
 package ai.helper2.identity.internal;
 
+import ai.helper2.identity.Bookmarks;
 import java.net.URI;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-/**
- * The bookmark table. The rules (valid URLs, the per-account cap) are the use cases'
- * (identity.usecase).
- */
+/** Bookmarks in the bookmark table. */
 @Repository
-public class Bookmarks {
-
-  public record Bookmark(UUID resourceId, String title, URI url, String type, Instant savedAt) {}
+class JdbcBookmarks implements Bookmarks {
 
   private final JdbcClient jdbc;
 
-  Bookmarks(JdbcClient jdbc) {
+  JdbcBookmarks(JdbcClient jdbc) {
     this.jdbc = jdbc;
   }
 
-  /** Newest first. */
+  @Override
   public List<Bookmark> list(UUID userId) {
     return jdbc.sql(
             "SELECT resource_id, title, url, type, saved_at FROM bookmark WHERE user_id = :u ORDER BY saved_at DESC")
@@ -37,7 +32,7 @@ public class Bookmarks {
         .list();
   }
 
-  /** Inserts each resource the account has not saved yet; one it has keeps its first savedAt. */
+  @Override
   public void addMissing(UUID userId, List<Bookmark> items) {
     for (Bookmark b : items) {
       jdbc.sql(
@@ -54,6 +49,7 @@ public class Bookmarks {
     }
   }
 
+  @Override
   public long count(UUID userId) {
     return jdbc.sql("SELECT count(*) FROM bookmark WHERE user_id = :u")
         .param("u", userId)
@@ -61,6 +57,7 @@ public class Bookmarks {
         .single();
   }
 
+  @Override
   public void remove(UUID userId, UUID resourceId) {
     jdbc.sql("DELETE FROM bookmark WHERE user_id = :u AND resource_id = :r")
         .param("u", userId)

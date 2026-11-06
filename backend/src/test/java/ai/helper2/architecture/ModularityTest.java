@@ -35,8 +35,9 @@ class ModularityTest {
           .importPackages("ai.helper2");
 
   /**
-   * Packages that hold the business rules (Kotlin): the top-level packages, their use cases and the
-   * guide's answer steps — not their web/cache/config/internal adapters.
+   * Packages that hold the business rules: the top-level packages, their use cases and the guide's
+   * answer steps — not their web/cache/config/internal adapters. Kotlin, and the Java use cases of
+   * identity and admin, which reach the outside through ports.
    */
   private static final String[] DOMAIN = {
     "ai.helper2.shared",
@@ -49,7 +50,11 @@ class ModularityTest {
     "ai.helper2.search.usecase",
     "ai.helper2.scout.usecase",
     "ai.helper2.guide.usecase",
-    "ai.helper2.guide.steps"
+    "ai.helper2.guide.steps",
+    "ai.helper2.identity",
+    "ai.helper2.identity.usecase",
+    "ai.helper2.admin",
+    "ai.helper2.admin.usecase"
   };
 
   @Test
@@ -86,8 +91,9 @@ class ModularityTest {
   }
 
   /**
-   * Every use case reaches a JDBC adapter through a port, never by its class. The Java use cases
-   * are not in {@link #DOMAIN} yet: they still read their module's internal stores (roadmap).
+   * Every use case reaches a JDBC adapter through a port, never by its class. The Java use cases of
+   * catalog and examples are not in {@link #DOMAIN}: they are Spring services, and catalog's still
+   * read its internal stores (roadmap).
    */
   @Test
   void useCasesDoNotNameJdbcAdapters() {
@@ -156,13 +162,11 @@ class ModularityTest {
           Map.entry("enrichment_queue_control", "scout"));
 
   /**
-   * Known exceptions, as "table module". The Scout writes source.last_outcome in JdbcScoutStore;
-   * moving it behind a catalog port is on the roadmap (section 7). The catalog's backlog query
-   * reads the Scout's enrichment_queue_control, read only, so the Scout's next batch, the queue
-   * page and the count keep one rule (ADR 0045 §7, BacklogRule).
+   * Known exception, as "table module". The catalog's backlog query reads the Scout's
+   * enrichment_queue_control, read only, so the Scout's next batch, the queue page and the count
+   * keep one rule (ADR 0045 §7, BacklogRule).
    */
-  private static final Set<String> SHARED_TABLES =
-      Set.of("source scout", "enrichment_queue_control catalog");
+  private static final Set<String> SHARED_TABLES = Set.of("enrichment_queue_control catalog");
 
   private static final Pattern CREATE_TABLE =
       Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");

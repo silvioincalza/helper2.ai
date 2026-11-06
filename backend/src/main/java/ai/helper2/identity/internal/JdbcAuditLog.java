@@ -1,5 +1,6 @@
 package ai.helper2.identity.internal;
 
+import ai.helper2.identity.AuditLog;
 import ai.helper2.identity.AuditTrail;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -12,22 +13,12 @@ import org.springframework.stereotype.Repository;
 
 /** The admin_audit table: rows are inserted and, past their retention, deleted; never updated. */
 @Repository
-public class AuditLog implements AuditTrail {
-
-  public record Entry(
-      UUID id,
-      String adminId,
-      Action action,
-      @Nullable String targetId,
-      Instant at,
-      String outcome) {}
-
-  public record Page(List<Entry> items, long total) {}
+class JdbcAuditLog implements AuditTrail, AuditLog {
 
   private final JdbcClient jdbc;
   private final Clock clock;
 
-  AuditLog(JdbcClient jdbc, Clock clock) {
+  JdbcAuditLog(JdbcClient jdbc, Clock clock) {
     this.jdbc = jdbc;
     this.clock = clock;
   }
@@ -45,7 +36,7 @@ public class AuditLog implements AuditTrail {
         .update();
   }
 
-  /** Newest first. */
+  @Override
   public Page page(int page, int size) {
     List<Entry> items =
         jdbc.sql("SELECT * FROM admin_audit ORDER BY at DESC, id LIMIT :size OFFSET :offset")
@@ -64,7 +55,7 @@ public class AuditLog implements AuditTrail {
     return new Page(items, total);
   }
 
-  /** Deletes the entries written before [cutoff]; returns how many. */
+  @Override
   public int deleteBefore(Instant cutoff) {
     return jdbc.sql("DELETE FROM admin_audit WHERE at < :cutoff")
         .param("cutoff", Timestamp.from(cutoff))
