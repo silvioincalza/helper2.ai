@@ -88,27 +88,26 @@ afterEach(() => {
 });
 
 describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4)', () => {
-  it('Scenario: it starts with 3 sources, one after another', () => {
+  it('Scenario: it starts with 5 sources, one after another', () => {
     render(<Page />);
     expect(shown()).toHaveLength(0);
     advance(INTRO_MS + 50);
-    expect(shown()).toHaveLength(1);
-    advance(INTRO_MS);
-    expect(shown()).toHaveLength(2);
-    advance(INTRO_MS);
-    expect(shown()).toHaveLength(3);
+    for (let n = 1; n <= 5; n++) {
+      expect(shown()).toHaveLength(n);
+      advance(INTRO_MS);
+    }
   });
 
-  it('Scenario: the count always stays between 3 and 5', () => {
+  it('Scenario: the count always stays between 5 and 10', () => {
     render(<Page />);
-    advance(3 * INTRO_MS + 50);
+    advance(5 * INTRO_MS + 50);
     const counts: number[] = [];
     for (let i = 0; i < 60; i++) {
       advance(STEP_MS / 2);
       counts.push(shown().length);
     }
-    expect(Math.min(...counts)).toBe(3);
-    expect(Math.max(...counts)).toBe(5);
+    expect(Math.min(...counts)).toBe(5);
+    expect(Math.max(...counts)).toBe(10);
   });
 
   it('Scenario: the oldest leaves first, and fades out where it was', () => {
@@ -116,7 +115,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
     let order: string[] = [];
     let left = 0;
     for (let i = 0; i < 40; i++) {
-      advance(i < 3 ? INTRO_MS : STEP_MS);
+      advance(i < 5 ? INTRO_MS : STEP_MS);
       const now = shown();
       const gone = order.filter((id) => !now.includes(id));
       if (gone.length > 0) {
@@ -152,7 +151,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
     render(<Page sources={radarSources(STAGING_SOURCES)} />);
     const seen = new Set<string>();
     for (let i = 0; i < 60; i++) {
-      advance(i < 3 ? INTRO_MS : STEP_MS);
+      advance(i < 5 ? INTRO_MS : STEP_MS);
       shown().forEach((id) => seen.add(id));
     }
     const externalIds = STAGING_SOURCES.filter((s) => s.external).map((s) => s.id);
@@ -164,7 +163,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
 
   it('Scenario: each dot shows only its short name, filled with its state colour', () => {
     const { container } = render(<Page />);
-    advance(INTRO_MS + 50);
+    advance(5 * INTRO_MS + 50);
     const link = within(screen.getByRole('list', { name: /sources we search/ })).getAllByRole(
       'link',
     )[0]!;
@@ -180,10 +179,10 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
 
   it('Scenario: only the dots on the radar are in the page; one fading out is hidden from screen readers', () => {
     const { container } = render(<Page />);
-    advance(3 * INTRO_MS + 50);
-    expect(container.querySelectorAll('.v4-radar__dots li')).toHaveLength(3);
-    // Up to 5, then the oldest leaves and fades out.
-    advance(3 * STEP_MS);
+    advance(5 * INTRO_MS + 50);
+    expect(container.querySelectorAll('.v4-radar__dots li')).toHaveLength(5);
+    // Up to 10, then the oldest leaves and fades out.
+    advance(6 * STEP_MS);
     const leaving = container.querySelectorAll('.v4-radar__dots li.is-leaving');
     expect(leaving.length).toBeGreaterThan(0);
     for (const li of leaving) {
@@ -205,7 +204,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
     const groups = { live: 0, index: 0, discovery: 0 };
     let before: string[] = [];
     for (let i = 0; i < 150; i++) {
-      advance(i < 3 ? INTRO_MS : STEP_MS);
+      advance(i < 5 ? INTRO_MS : STEP_MS);
       const now = shown();
       for (const id of now.filter((x) => !before.includes(x))) {
         seen.add(id);
@@ -224,7 +223,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
 
   it('Scenario: while the search box has focus the clock stops: beam and dots hold still', () => {
     const { container } = render(<Page />);
-    advance(3 * INTRO_MS + 1000);
+    advance(5 * INTRO_MS + 1000);
     const box = screen.getByRole('textbox', { name: 'Search AI resources' });
     act(() => box.focus());
     expect(radar(container)).toHaveClass('is-paused');
@@ -240,23 +239,23 @@ describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4
     expect(shown()).not.toEqual(before);
   });
 
-  it('Scenario: under reduced motion the beam stands still and a fixed set of 4 shows', () => {
+  it('Scenario: under reduced motion the beam stands still and a fixed set of 7 shows', () => {
     reducedMotion(true);
     const { container } = render(<Page />);
     expect(radar(container)).toHaveClass('is-still');
     const before = shown();
-    expect(before).toHaveLength(4);
+    expect(before).toHaveLength(7);
     advance(60_000);
     expect(shown()).toEqual(before);
     expect(beam(container)).toBe('');
   });
 
-  it('Scenario: a signed-in user who turned the motion off sees a fixed set of 4', () => {
+  it('Scenario: a signed-in user who turned the motion off sees a fixed set of 7', () => {
     session.me = { ...USER, preferences: { radarMotion: false } };
     const { container } = render(<Page />);
     expect(radar(container)).toHaveClass('is-still');
     const before = shown();
-    expect(before).toHaveLength(4);
+    expect(before).toHaveLength(7);
     advance(60_000);
     expect(shown()).toEqual(before);
     expect(beam(container)).toBe('');
