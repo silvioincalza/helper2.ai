@@ -130,9 +130,9 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
   /**
    * Who the limit counts for. On the public host, the client address: it honours X-Forwarded-For
    * only when H2_FORWARD_HEADERS_STRATEGY is set behind a trusted proxy. On the admin host there is
-   * no Cloudflare in front, so a forwarded address could be the client's own choice (ADR 0035):
-   * the key is the signed-in administrator, and one shared key for whoever is not signed in yet.
-   * The limit still holds there, but nothing a client sends can reset it.
+   * no Cloudflare in front, so a forwarded address could be the client's own choice (ADR 0035): the
+   * key is the signed-in administrator, and one shared key for whoever is not signed in yet. The
+   * limit still holds there, but nothing a client sends can reset it.
    */
   private String clientKey(HttpServletRequest req) {
     if (!adminHost.currentRequestOnAdminHost()) {
