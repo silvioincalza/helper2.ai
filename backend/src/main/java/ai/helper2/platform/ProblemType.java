@@ -26,6 +26,8 @@ public enum ProblemType {
   VERSION_CONFLICT("version-conflict", HttpStatus.CONFLICT, "Changed by someone else"),
   /** Another item already has the same unique text. */
   DUPLICATE("duplicate", HttpStatus.CONFLICT, "Duplicate"),
+  /** The action does not apply to the item as it is now (the detail says why). */
+  NOT_APPLICABLE("not-applicable", HttpStatus.CONFLICT, "Not applicable"),
   RATE_LIMITED("rate-limited", HttpStatus.TOO_MANY_REQUESTS, "Too many requests"),
   INTERNAL("internal", HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong"),
   /** A dependency (sign-in sessions, setup data, the guide's model) cannot answer now. */
