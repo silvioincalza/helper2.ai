@@ -66,7 +66,7 @@ class TokenRedirectTest {
             "/api/models",
             (s, b) -> new HuggingFaceModelsSource(s, b, SourceFixtures.CLOCK)),
         new TokenSource(
-            "tavily", false, "/search", (s, b) -> new TavilySource(s, b, SourceFixtures.CLOCK)));
+            "live-web", false, "/search", (s, b) -> new TavilySource(s, b, SourceFixtures.CLOCK)));
   }
 
   private SearchSource source(TokenSource t) {

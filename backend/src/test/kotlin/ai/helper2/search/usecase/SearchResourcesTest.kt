@@ -420,7 +420,7 @@ class SearchResourcesTest {
 
   @Test
   fun `a planned web query splits the cache only for sources that use it`() {
-    val web = descriptor("tavily").copy(usesWebQuery = true)
+    val web = descriptor("live-web").copy(usesWebQuery = true)
     val other = descriptor("github")
     val plain = SourceQuery("nvidia agents", emptyList(), null, 10)
     val planned = plain.copy(webQuery = "NVIDIA AI agents announcement this week")
@@ -507,12 +507,12 @@ class SearchResourcesTest {
     val inside = java.util.concurrent.CountDownLatch(1)
     val release = java.util.concurrent.CountDownLatch(1)
     val slow =
-      FakeSource(descriptor("tavily", timeout = Duration.ofSeconds(5))) {
+      FakeSource(descriptor("live-web", timeout = Duration.ofSeconds(5))) {
         inside.countDown()
         release.await(5, java.util.concurrent.TimeUnit.SECONDS)
         emptyList()
       }
-    val svc = service(listOf(slow), resilience = policies("tavily", concurrent = 1))
+    val svc = service(listOf(slow), resilience = policies("live-web", concurrent = 1))
     val first = executor.submit<Unit> { svc.search(req("first")) }
     assertTrue(inside.await(5, java.util.concurrent.TimeUnit.SECONDS))
 

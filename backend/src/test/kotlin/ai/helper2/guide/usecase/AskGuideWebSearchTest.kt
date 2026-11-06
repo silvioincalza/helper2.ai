@@ -56,20 +56,20 @@ class AskGuideWebSearchTest {
   private val webCalls = AtomicInteger()
   private val web =
     object : SearchSource {
-      override val descriptor = descriptor("tavily").copy(metered = true)
+      override val descriptor = descriptor("live-web").copy(metered = true)
 
       override fun search(query: SourceQuery): List<SourceHit> {
         webCalls.incrementAndGet()
         return listOf(
           hit(
-            "tavily",
+            "live-web",
             "https://github.com/ollama/ollama",
             title = "ollama",
             type = ResourceType.PRODUCT,
             description = "Get up and running with large language models locally. MIT License",
           ),
           hit(
-            "tavily",
+            "live-web",
             "https://lmstudio.ai",
             title = "LM Studio",
             rank = 1,
@@ -78,7 +78,7 @@ class AskGuideWebSearchTest {
               "Discover, download and run local LLMs on your computer with a desktop app",
           ),
           hit(
-            "tavily",
+            "live-web",
             "https://ai.google.dev/gemini",
             title = "Gemini",
             rank = 2,
@@ -87,7 +87,7 @@ class AskGuideWebSearchTest {
             description = "Gemini is a family of multimodal models developed by Google",
           ),
           hit(
-            "tavily",
+            "live-web",
             "https://github.com/google-gemini/gemini-cli",
             title = "gemini-cli",
             rank = 3,

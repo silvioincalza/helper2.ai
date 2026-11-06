@@ -394,7 +394,7 @@ examples: "examples: the home page's example searches" {
 caches: "shared caches: no query text stored, purged by expiry" {
   class: group
 
-  tavily_query_result: {
+  live_web_query_result: {
     class: table
     query_key: "bytea (HMAC)" {constraint: primary_key}
     intent_class: text {constraint: primary_key}
@@ -474,6 +474,6 @@ people.review_item.report_id -> people.issue_report.id: CASCADE
 # ---- Links without a foreign key. ----
 
 people.bookmark.resource_id -> catalog.resource.id: "snapshot, may not be indexed" {class: soft}
-caches.tavily_query_result.result_ids -> catalog.resource.id: "ids of the hits" {class: soft}
+caches.live_web_query_result.result_ids -> catalog.resource.id: "ids of the hits" {class: soft}
 examples.home_example.expected_resource_ids -> catalog.resource.id: "expected results" {class: soft}
 caches.guide_similar_question.answer_key -> caches.ai_cache.key_hash: "guide-answer key" {class: soft}

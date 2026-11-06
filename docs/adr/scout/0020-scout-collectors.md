@@ -22,10 +22,10 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    incremental: each pass reads the current list; unchanged models are a no-op in the catalog.
 3. **Hugging Face provider organizations** (`hf-provider-orgs`, 1 day). The 20 newest models of each official org:
    `meta-llama`, `nvidia`, `mistralai`, `deepseek-ai`, `Qwen`, `google`, `openai`, `xai-org`. The org is added as a tag.
-4. **Tavily news** (`tavily-scout`, every `H2_SCOUT_TAVILY_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
+4. **Tavily news** (`live-web-scout`, every `H2_SCOUT_LIVE_WEB_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
    launched", "new MCP server released"…), `search_depth basic`, up to 20 results each, published since the day of the
    last complete pass (first run: the last week). Each query costs one credit: 7 queries in 6 passes, about 42
-   credits a month. Stored as NEWS, ARTICLE or EVENT with Tavily's snippet as description. Off without `H2_TAVILY_API_KEY`.
+   credits a month. Stored as NEWS, ARTICLE or EVENT with Tavily's snippet as description. Off without `H2_LIVE_WEB_API_KEY`.
 5. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `H2_GITHUB_TOKEN` (GraphQL rejects anonymous calls).
    - Topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
    - Each README (read up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
@@ -46,7 +46,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    credit per platform and pass, about 43 credits a month. A result is kept only when it is on the platform's host and
    path, about AI and reads like a course or certification page. Kept pages are the batch's **candidates**, not hits:
    each becomes a `COURSE_CANDIDATE` review item, and nothing reaches the catalog until an admin accepts it. Off
-   without `H2_TAVILY_API_KEY`.
+   without `H2_LIVE_WEB_API_KEY`.
 7. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
    `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com` and without the GitHub
    token. One EVENT per conference: its next edition that has not ended ([0022](0022-next-events.md)). A file that
@@ -61,12 +61,12 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
    searches a week, registered from `helper2.categories` by a `BeanRegistrar`. List pages are indexed as ARTICLE; a
    product's own site or repository becomes a `RESOURCE_CANDIDATE` review item, merged when another category finds
    it, and accepting it indexes it. Each result gets the tag of every category it belongs to. About 335 credits a
-   month, capped at 40 a day. Off without `H2_TAVILY_API_KEY`.
+   month, capped at 40 a day. Off without `H2_LIVE_WEB_API_KEY`.
 
 9. **LinkedIn via Tavily** (`linkedin-scout`, every `H2_SCOUT_LINKEDIN_INTERVAL`, 7 days;
    [0061](0061-linkedin-via-tavily.md)). 20 Tavily searches restricted to `linkedin.com`; we never call LinkedIn.
    The URL path makes a page an article, a post, a company page or an event; every one becomes a `RESOURCE_CANDIDATE`
-   review item, and accepting it indexes it. About 86 credits a month, on the Scout's daily cap of 40 with discovery's. Off without `H2_TAVILY_API_KEY`.
+   review item, and accepting it indexes it. About 86 credits a month, on the Scout's daily cap of 40 with discovery's. Off without `H2_LIVE_WEB_API_KEY`.
 ## Consequences
 - The index grows from registries, the Hub, news and curated lists, with each record's source disclosed.
 - Intervals keep cost and load low: Tavily credits (about 506 a month: news ~42, courses ~43, discovery ~335, LinkedIn ~86), GitHub limits and

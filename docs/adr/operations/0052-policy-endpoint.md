@@ -25,7 +25,7 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
      (`H2_RETENTION_BACKUPS`: the chart passes its `backup.retentionDays`, the app only states it,
      [0027](0027-runtime-topology.md)); cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers
      (`H2_GUIDE_CACHE_TTL`), translations (`H2_SEARCH_TRANSLATION_TTL`), query vectors (`H2_SEARCH_QUERY_VECTOR_TTL`),
-     stored web results (`H2_RETENTION_TAVILY_RESULTS`), inactive accounts with their saved items
+     stored web results (`H2_RETENTION_LIVE_WEB_RESULTS`), inactive accounts with their saved items
      (`H2_RETENTION_INACTIVE_ACCOUNTS`), handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators'
      records in the audit trail (`H2_RETENTION_ADMIN_AUDIT`, [0045](../edge/0045-back-office.md)), and runtime
      setting changes (`H2_RETENTION_RUNTIME_SETTINGS`, [0060](0060-runtime-settings.md); each setting's newest change

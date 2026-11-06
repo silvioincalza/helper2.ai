@@ -31,7 +31,7 @@ class SourceHitCodecTest {
   void anEventKeepsItsDaysPlaceKindAndFormatThroughTheCache() {
     SourceHit event =
         new SourceHit(
-            "tavily",
+            "live-web",
             "x",
             URI.create("https://conf.example.org/2026"),
             CanonicalUrl.of("https://conf.example.org/2026"),
@@ -48,13 +48,13 @@ class SourceHitCodecTest {
             null,
             Set.of(),
             null,
-            DateFact.fromSource(Instant.parse("2026-09-01T00:00:00Z"), "tavily", now),
+            DateFact.fromSource(Instant.parse("2026-09-01T00:00:00Z"), "live-web", now),
             DateFact.unknown(),
-            List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, 42, "tavily", now)),
+            List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, 42, "live-web", now)),
             now,
             3,
-            DateFact.scheduledDay(LocalDate.parse("2026-12-06"), "tavily"),
-            DateFact.scheduledDay(LocalDate.parse("2026-12-12"), "tavily"),
+            DateFact.scheduledDay(LocalDate.parse("2026-12-06"), "live-web"),
+            DateFact.scheduledDay(LocalDate.parse("2026-12-12"), "live-web"),
             "Sydney, Australia",
             EventKind.HACKATHON,
             EventFormat.HYBRID);

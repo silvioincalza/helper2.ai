@@ -333,7 +333,7 @@ class SearchApiIT extends ApiTestBase {
 
     ContractValidator.assertArrayMatches("SourceInfo", body);
     List<Object> metered = com.jayway.jsonpath.JsonPath.read(body, "$[?(@.metered == true)].id");
-    assertThat(metered).as("metered even while disabled").containsExactly("tavily");
+    assertThat(metered).as("metered even while disabled").containsExactly("live-web");
     assertThat(source(body, "github").get("metered")).isEqualTo(false);
     assertThat(source(body, "mcp-registry").get("metered")).isEqualTo(false);
   }
@@ -406,7 +406,7 @@ class SearchApiIT extends ApiTestBase {
     assertThat(source(body, "mcp-registry").get("circuit"))
         .as("a Scout collector has no source circuit")
         .isNull();
-    assertThat(source(body, "tavily").get("webCredits")).as("disabled").isNull();
+    assertThat(source(body, "live-web").get("webCredits")).as("disabled").isNull();
     assertThat(body)
         .doesNotContainIgnoringCase("exception")
         .doesNotContain("localhost")

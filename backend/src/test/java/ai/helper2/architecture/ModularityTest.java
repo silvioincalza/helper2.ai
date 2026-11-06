@@ -152,7 +152,7 @@ class ModularityTest {
           Map.entry("app_user", "identity"),
           Map.entry("bookmark", "identity"),
           Map.entry("admin_audit", "identity"),
-          Map.entry("tavily_query_result", "search"),
+          Map.entry("live_web_query_result", "search"),
           Map.entry("ai_cache", "platform"),
           Map.entry("shedlock", "platform"),
           Map.entry("runtime_setting", "platform"),
@@ -173,6 +173,10 @@ class ModularityTest {
   private static final Pattern CREATE_TABLE =
       Pattern.compile("(?im)^CREATE TABLE (?:IF NOT EXISTS )?(\\w+)");
 
+  /** A later migration may rename a table: the new name is the one that exists. */
+  private static final Pattern RENAME_TABLE =
+      Pattern.compile("(?im)^ALTER TABLE (\\w+) RENAME TO (\\w+)");
+
   /** Block and line comments: prose like "derived from source data" is not SQL. */
   private static final Pattern COMMENT = Pattern.compile("(?s)/\\*.*?\\*/|(?m)//.*$");
 
@@ -184,10 +188,19 @@ class ModularityTest {
     Set<String> tables = new TreeSet<>();
     try (Stream<Path> migrations = Files.list(Path.of("src/main/resources/db/migration"))) {
       for (Path migration :
-          migrations.filter(m -> m.getFileName().toString().matches("V\\d+__.*\\.sql")).toList()) {
-        Matcher created = CREATE_TABLE.matcher(Files.readString(migration));
+          migrations
+              .filter(m -> m.getFileName().toString().matches("V\\d+__.*\\.sql"))
+              .sorted(java.util.Comparator.comparingInt(ModularityTest::version))
+              .toList()) {
+        String sql = Files.readString(migration);
+        Matcher created = CREATE_TABLE.matcher(sql);
         while (created.find()) {
           tables.add(created.group(1).toLowerCase(java.util.Locale.ROOT));
+        }
+        Matcher renamed = RENAME_TABLE.matcher(sql);
+        while (renamed.find()) {
+          tables.remove(renamed.group(1).toLowerCase(java.util.Locale.ROOT));
+          tables.add(renamed.group(2).toLowerCase(java.util.Locale.ROOT));
         }
       }
     }
@@ -229,5 +242,10 @@ class ModularityTest {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private static int version(Path migration) {
+    String name = migration.getFileName().toString();
+    return Integer.parseInt(name.substring(1, name.indexOf("__")));
   }
 }

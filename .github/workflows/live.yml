@@ -28,7 +28,7 @@ jobs:
     env:
       H2_GITHUB_TOKEN: ${{ secrets.H2_GITHUB_TOKEN }}
       H2_HF_TOKEN: ${{ secrets.H2_HF_TOKEN }}
-      H2_TAVILY_API_KEY: ${{ secrets.H2_TAVILY_API_KEY }}
+      H2_LIVE_WEB_API_KEY: ${{ secrets.H2_LIVE_WEB_API_KEY }}
       H2_NEBIUS_API_KEY: ${{ secrets.H2_NEBIUS_API_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

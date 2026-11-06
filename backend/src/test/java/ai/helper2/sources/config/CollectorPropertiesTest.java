@@ -21,7 +21,7 @@ class CollectorPropertiesTest {
   @Configuration(proxyBeanMethods = false)
   @EnableConfigurationProperties({
     CollectorProperties.HfTrending.class,
-    CollectorProperties.TavilyScout.class,
+    CollectorProperties.LiveWebScout.class,
     CollectorProperties.Courses.class,
     CollectorProperties.ScoutCredits.class,
     CollectorProperties.Discovery.class,
@@ -46,9 +46,9 @@ class CollectorPropertiesTest {
       assertThat(discovery.excludeDomains()).contains("producthunt.com", "alternativeto.net");
       assertThat(c.getBean(CollectorProperties.HfTrending.class))
           .isEqualTo(new CollectorProperties.HfTrending(Duration.ofDays(1), 20));
-      assertThat(c.getBean(CollectorProperties.TavilyScout.class))
+      assertThat(c.getBean(CollectorProperties.LiveWebScout.class))
           .isEqualTo(
-              new CollectorProperties.TavilyScout(
+              new CollectorProperties.LiveWebScout(
                   Duration.ofDays(5),
                   List.of(
                       "new AI tool launched",
@@ -142,10 +142,10 @@ class CollectorPropertiesTest {
   void foldedListsAreTrimmedAndBlankEntriesDropped() {
     context
         .withPropertyValues(
-            "helper2.scout.tavily.queries=new AI tool launched,\n  new MCP server released, ,",
+            "helper2.scout.live-web.queries=new AI tool launched,\n  new MCP server released, ,",
             "helper2.scout.courses.platforms= edx.org=edX , coursera.org=Coursera")
         .run(c -> {
-          assertThat(c.getBean(CollectorProperties.TavilyScout.class).queries())
+          assertThat(c.getBean(CollectorProperties.LiveWebScout.class).queries())
               .containsExactly("new AI tool launched", "new MCP server released");
           assertThat(c.getBean(CollectorProperties.Courses.class).platforms())
               .containsExactly("edx.org=edX", "coursera.org=Coursera");

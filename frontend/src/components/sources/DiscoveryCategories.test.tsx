@@ -6,7 +6,7 @@ import { ADMIN, SOURCES, STAGING_SOURCES } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 
-const scout = STAGING_SOURCES.find((s) => s.id === 'tavily-scout')!;
+const scout = STAGING_SOURCES.find((s) => s.id === 'live-web-scout')!;
 
 /** A discovery category as GET /sources lists it (ADR 0051). */
 function category(

@@ -76,7 +76,7 @@ class MicrometerSearchMetrics implements SearchMetrics {
   }
 
   /**
-   * {@code helper2.tavily.credits{feature,tier}}: one per live call of the metered source; internal
+   * {@code helper2.live-web.credits{feature,tier}}: one per live call of the metered source; internal
    * calls are {@code none}.
    */
   @Override

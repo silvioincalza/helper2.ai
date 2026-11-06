@@ -48,7 +48,7 @@ public class TavilyExtract implements PageReader {
     this.clock = clock;
   }
 
-  /** Off without H2_TAVILY_API_KEY or with H2_SOURCE_TAVILY_EXTRACT_ENABLED=false. */
+  /** Off without H2_LIVE_WEB_API_KEY or with H2_SOURCE_PAGE_READER_ENABLED=false. */
   @Override
   public boolean getAvailable() {
     return available;

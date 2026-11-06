@@ -35,15 +35,15 @@ class SourcesPropertiesBindingTest {
                   Duration.ofMinutes(30),
                   Duration.ofMillis(2500).multipliedBy(2)));
       assertThat(sources.get("arxiv").cacheTtl()).isEqualTo(Duration.ofHours(6));
-      assertThat(sources.get("tavily").timeout()).isEqualTo(Duration.ofSeconds(6));
-      assertThat(sources.get("tavily").cacheTtl()).isEqualTo(Duration.ofMinutes(30));
+      assertThat(sources.get("live-web").timeout()).isEqualTo(Duration.ofSeconds(6));
+      assertThat(sources.get("live-web").cacheTtl()).isEqualTo(Duration.ofMinutes(30));
       assertThat(sources.get("hf-trending").deadline())
           .as("empty deadline: twice the timeout")
           .isEqualTo(Duration.ofSeconds(20));
       for (String collector :
           new String[] {
             "hf-trending",
-            "tavily-scout",
+            "live-web-scout",
             "course-scout",
             "linkedin-scout",
             "discovery",
@@ -62,7 +62,7 @@ class SourcesPropertiesBindingTest {
     context
         .withSystemProperties(
             "H2_GITHUB_TOKEN=ghp_x",
-            "H2_SOURCE_TAVILY_TIMEOUT=8s",
+            "H2_SOURCE_LIVE_WEB_TIMEOUT=8s",
             "H2_SOURCE_MCP_DEADLINE=PT45S",
             "H2_SOURCE_NPM_ENABLED=false")
         .run(c -> {
@@ -70,7 +70,7 @@ class SourcesPropertiesBindingTest {
           assertThat(sources.get("github").token()).isEqualTo("ghp_x");
           assertThat(sources.get("github-awesome").token()).isEqualTo("ghp_x");
           assertThat(sources.get("ai-deadlines").token()).isEqualTo("ghp_x");
-          assertThat(sources.get("tavily").timeout()).isEqualTo(Duration.ofSeconds(8));
+          assertThat(sources.get("live-web").timeout()).isEqualTo(Duration.ofSeconds(8));
           assertThat(sources.get("mcp-registry").deadline()).isEqualTo(Duration.ofSeconds(45));
           assertThat(sources.get("npm").enabled()).isFalse();
         });
@@ -79,13 +79,13 @@ class SourcesPropertiesBindingTest {
   @Test
   void anEmptyTimeoutStopsStartupAndNamesTheProperty() {
     context
-        .withPropertyValues("H2_SOURCE_TAVILY_TIMEOUT=")
+        .withPropertyValues("H2_SOURCE_LIVE_WEB_TIMEOUT=")
         .run(c -> {
           assertThat(c).hasFailed();
           assertThat(c.getStartupFailure())
               .rootCause()
               .isInstanceOf(BindValidationException.class)
-              .hasMessageContaining("helper2.sources[tavily].timeout");
+              .hasMessageContaining("helper2.sources[live-web].timeout");
         });
   }
 

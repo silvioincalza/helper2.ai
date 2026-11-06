@@ -1,6 +1,6 @@
 # Flowchart: what one search (or one search of a guide question) does with the metered web source, Tavily.
 # Store first; a live call only inside the asker's daily web searches; every live call counts on the global counter
-# (the credits of the day, capped only when set) and gives it back when the source-tavily policy refuses the call;
+# (the credits of the day, capped only when set) and gives it back when the source-live-web policy refuses the call;
 # a live answer replaces the stored set.
 # Source of truth: backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (Run.start, Run.quotaAllows, Run.save, stale),
 #   backend/src/main/kotlin/ai/helper2/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota, refund, creditsToday),
@@ -16,18 +16,18 @@ direction: down
 
 req: "Search or guide question\n(Asker: feature, client, user id)" {class: person}
 intent: "IntentClass: time-bound (news, courses,\nhackathons, conferences, events; guide:\nNEWEST, WHEN, LEARN) or general" {class: app}
-lookup: "tavily_query_result by HMAC(query)\n+ intent class; every hit still\nin the catalog?" {class: decision}
+lookup: "live_web_query_result by HMAC(query)\n+ intent class; every hit still\nin the catalog?" {class: decision}
 fresh: "Fetched less than 24 h ago\n(time-bound) or 48 h (general)?" {class: decision}
 served: "SUCCEEDED, served CACHE\nno live call, no quota used" {class: end}
 asked: "This action already took\nits web search?" {class: decision}
 quota: "Redis Lua, one step:\nown counter < 3 (guest) or 10\n(registered, flag on) and global\ncounter < cap (none if unset)?\n→ both +1" {class: decision}
 down: "Redis down or\nredis circuit open" {class: fail}
-gcheck: "Global counter < cap?\n(H2_TAVILY_GLOBAL_DAILY_CREDITS;\nnone if unset) → +1" {class: decision}
+gcheck: "Global counter < cap?\n(H2_LIVE_WEB_DAILY_CREDITS;\nnone if unset) → +1" {class: decision}
 skip: "SKIPPED: DAILY_LIMIT or\nQUOTA_UNAVAILABLE" {class: fail}
 stale: "Stored set younger\nthan 7 days?" {class: decision}
 stalehit: "served STALE_CACHE" {class: end}
 nothing: "served NONE; the other\nsources still answer" {class: fail}
-live: "source-tavily policy → live call\nhelper2.tavily.credits{feature,tier} +1" {class: ext}
+live: "source-live-web policy → live call\nhelper2.live-web.credits{feature,tier} +1" {class: ext}
 ok: "SUCCEEDED, LIVE: replace the\nstored set; hits go to the catalog\nin the background" {class: end}
 failed: "FAILED / TIMED_OUT" {class: fail}
 refused: "SKIPPED: CIRCUIT_OPEN or BUSY\nglobal counter -1 (refund),\nown web search stays taken" {class: fail}

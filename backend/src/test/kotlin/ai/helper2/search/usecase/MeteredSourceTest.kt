@@ -53,7 +53,7 @@ class MeteredSourceTest {
   @AfterTest fun shutdown() = executor.shutdownNow().let {}
 
   private class Web(var hits: List<SourceHit>) : SearchSource {
-    override val descriptor: SourceDescriptor = descriptor("tavily").copy(metered = true)
+    override val descriptor: SourceDescriptor = descriptor("live-web").copy(metered = true)
     val calls = AtomicInteger()
     var failing = false
 
@@ -128,8 +128,8 @@ class MeteredSourceTest {
   private val web =
     Web(
       listOf(
-        hit("tavily", "https://news.example/a"),
-        hit("tavily", "https://news.example/b", rank = 1),
+        hit("live-web", "https://news.example/a"),
+        hit("live-web", "https://news.example/b", rank = 1),
       )
     )
   private val store = MapStore()
@@ -270,9 +270,9 @@ class MeteredSourceTest {
 
     assertEquals(
       SkipReason.DAILY_LIMIT,
-      out.statuses.single { it.source.id == "tavily" }.skipReason,
+      out.statuses.single { it.source.id == "live-web" }.skipReason,
     )
-    assertEquals(ServedFrom.NONE, out.statuses.single { it.source.id == "tavily" }.servedFrom)
+    assertEquals(ServedFrom.NONE, out.statuses.single { it.source.id == "live-web" }.servedFrom)
     assertEquals(1, out.total)
     assertNull(out.webFreshUntil)
     // Out of web credits is by design and shown by its own line, not by the partial banner.

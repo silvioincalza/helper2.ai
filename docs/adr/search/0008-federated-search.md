@@ -14,7 +14,7 @@ and how many web credits the day has used. Two sources can describe the same res
 1. **One port.** Every source implements `SearchSource` with a `SourceDescriptor`: id, name, short name, external, mode
    (`LIVE`, `INDEXED`, `CURATED`, `DEMO`), timeout, cache time to live (TTL), `enabled`, `priority`, `usesWebQuery`,
    `usesTranslation`, `metered`. Search sources and their priority (lower wins on display text): `curated` 10, `github` 20,
-   `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `tavily` 48, `helper2-index` 50, `helper2-semantic` 55
+   `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `live-web` 48, `helper2-index` 50, `helper2-semantic` 55
    (only with an embedding key, [0012](0012-vector-search-pgvector.md)). `GET /api/v1/sources` lists them.
    The short name (`shortName`, 1 to 12 characters, e.g. `HF models`, `Web scout`) is the name under the source's dot
    on the home radar ([0042](../frontend/0042-redesign-design-system-v4.md)); the descriptor refuses a missing or
@@ -25,7 +25,7 @@ and how many web credits the day has used. Two sources can describe the same res
    (one virtual thread per task). A disabled source is reported as `SKIPPED` with `SkipReason.DISABLED`
    ("Disabled in configuration"); it leaves no outcome on the Sources page.
 3. **Own deadline per source.** The deadline and the reported latency count from the source's own start.
-   Timeouts: `github`, `hf-models`, `hf-spaces`, `npm` 2500 ms; `arxiv` 3 s; `tavily` `H2_SOURCE_TAVILY_TIMEOUT` (6 s);
+   Timeouts: `github`, `hf-models`, `hf-spaces`, `npm` 2500 ms; `arxiv` 3 s; `live-web` `H2_SOURCE_LIVE_WEB_TIMEOUT` (6 s);
    `helper2-index` `H2_SOURCE_INDEX_TIMEOUT` (3 s); `helper2-semantic` `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s); `curated` 1000 ms.
    On timeout the task is canceled and the outcome is `TIMED_OUT`.
 4. **Cache for LIVE sources.** The fresh and stale windows of [0005](../foundation/0005-redis-disposable-cache.md) apply: a fresh entry

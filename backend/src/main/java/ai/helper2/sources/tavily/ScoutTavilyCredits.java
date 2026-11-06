@@ -70,7 +70,7 @@ public class ScoutTavilyCredits {
   /** Counts the credits of one search that answered with [root], at [searchDepth]. */
   public long spent(JsonNode root, String searchDepth) {
     long credits = creditsOf(root, searchDepth);
-    meters.counter("helper2.tavily.credits", "feature", feature, "tier", "none").increment(credits);
+    meters.counter("helper2.live-web.credits", "feature", feature, "tier", "none").increment(credits);
     try {
       counter.add(new QuotaCounter.Counter(keys.global(), QuotaKeys.CREDITS), credits);
       counter.add(scout(), credits);

@@ -33,7 +33,7 @@ Helper2.ai is a product, built and run by Silvio Incalza. The only instance is *
 - Every answer records the provider and model ids; the page shows them.
 - No key, provider down or credits exhausted: the guide shows the top real search results (`LLM_UNAVAILABLE`), and search keeps working.
 - Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0017](docs/adr/guide/0017-guide-cost-guard.md)).
-- **Tavily** adds web results to search and to the guide (only with `H2_TAVILY_API_KEY`). A stored answer is reused
+- **Tavily** adds web results to search and to the guide (only with `H2_LIVE_WEB_API_KEY`). A stored answer is reused
   first, and each visitor gets a few live web searches a day ([ADR 0037](docs/adr/search/0037-tavily-store-and-daily-quota.md)).
 
 Feedback on Token Factory and Nemotron: [docs/hackathon/feedback.md](docs/hackathon/feedback.md).
@@ -68,7 +68,7 @@ Prerequisites: Java 25 (Gradle downloads it if missing), Node 26, Docker or Podm
 From the repository root:
 
 ```bash
-cp .env.example .env          # optional: H2_NEBIUS_API_KEY, H2_NVIDIA_API_KEY, H2_GITHUB_TOKEN, H2_TAVILY_API_KEY
+cp .env.example .env          # optional: H2_NEBIUS_API_KEY, H2_NVIDIA_API_KEY, H2_GITHUB_TOKEN, H2_LIVE_WEB_API_KEY
 podman compose up -d postgres redis
 ```
 

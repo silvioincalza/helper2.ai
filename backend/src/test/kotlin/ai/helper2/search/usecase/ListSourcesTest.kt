@@ -58,7 +58,7 @@ class ListSourcesTest {
 
   private val github = Described(descriptor("github", priority = 20))
   private val npm = Described(descriptor("npm", priority = 40))
-  private val tavily = Described(descriptor("tavily", priority = 48).copy(metered = true))
+  private val tavily = Described(descriptor("live-web", priority = 48).copy(metered = true))
 
   private fun quota(
     counter: QuotaCounter = Counts(mapOf(Counter(keys.global(), "credits") to 12L)),
@@ -77,7 +77,7 @@ class ListSourcesTest {
 
   @Test
   fun `sources are listed by priority, then id`() {
-    assertEquals(listOf("github", "npm", "tavily"), list().map { it.descriptor.id })
+    assertEquals(listOf("github", "npm", "live-web"), list().map { it.descriptor.id })
   }
 
   @Test
@@ -108,7 +108,7 @@ class ListSourcesTest {
     assertEquals(Circuit(Circuit.State.CLOSED, null), byId.getValue("github").circuit)
     assertEquals(Circuit(Circuit.State.OPEN, opened), byId.getValue("npm").circuit)
     assertNull(byId.getValue("npm").responseTime)
-    assertNull(byId.getValue("tavily").circuit, "a policy without a circuit")
+    assertNull(byId.getValue("live-web").circuit, "a policy without a circuit")
   }
 
   @Test
@@ -123,7 +123,7 @@ class ListSourcesTest {
   fun `only an enabled metered source shows the credits of the day, with the cap`() {
     val byId = list().associateBy { it.descriptor.id }
 
-    assertEquals(WebCredits(12, 200), byId.getValue("tavily").webCredits)
+    assertEquals(WebCredits(12, 200), byId.getValue("live-web").webCredits)
     assertNull(byId.getValue("github").webCredits)
 
     val off = Described(tavily.descriptor.copy(enabled = false))
@@ -134,7 +134,7 @@ class ListSourcesTest {
   fun `credits that cannot be read are left out, the rest still shows`() {
     val listed = list(quota = quota(Counts(emptyMap(), down = true)))
 
-    assertNull(listed.single { it.descriptor.id == "tavily" }.webCredits)
+    assertNull(listed.single { it.descriptor.id == "live-web" }.webCredits)
     assertEquals(3, listed.size)
   }
 

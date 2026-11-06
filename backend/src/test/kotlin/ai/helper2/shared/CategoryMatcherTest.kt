@@ -60,7 +60,7 @@ class CategoryMatcherTest {
 
   @Test
   fun `a finder that is not a discovery collector or not a configured category gives nothing`() {
-    assertEquals(emptyList(), match("Acme", finders = listOf("github", "tavily", "discovery-gone")))
+    assertEquals(emptyList(), match("Acme", finders = listOf("github", "live-web", "discovery-gone")))
   }
 
   @Test

@@ -309,12 +309,12 @@ class CatalogPurgeExpiredDataIT {
   @Test
   void tavilyNewsRecordsGoAfterHalfAYearWithTheResourcesTheyLeaveEmpty() {
     UUID news = resource("INDEXED", "NEWS", NOW);
-    UUID oldRecord = record(news, "tavily-scout", "NEWS", daysAgo(181));
+    UUID oldRecord = record(news, "live-web-scout", "NEWS", daysAgo(181));
     UUID shared = resource("INDEXED", "NEWS", NOW);
-    UUID sharedOld = record(shared, "tavily", "ARTICLE", daysAgo(181));
+    UUID sharedOld = record(shared, "live-web", "ARTICLE", daysAgo(181));
     UUID sharedOther = record(shared, "github", "LIBRARY", daysAgo(181));
     UUID fresh = resource("INDEXED", "NEWS", NOW);
-    UUID freshRecord = record(fresh, "tavily", "NEWS", daysAgo(179));
+    UUID freshRecord = record(fresh, "live-web", "NEWS", daysAgo(179));
 
     purge().purge();
 

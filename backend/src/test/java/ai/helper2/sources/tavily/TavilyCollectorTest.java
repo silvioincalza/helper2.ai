@@ -64,7 +64,7 @@ class TavilyCollectorTest {
         .extracting(SourceHit::getExternalId)
         .containsExactly("https://news.example/acme-launches-agent");
     SourceHit hit = batch.getHits().getFirst();
-    assertThat(hit.getSourceId()).isEqualTo("tavily-scout");
+    assertThat(hit.getSourceId()).isEqualTo("live-web-scout");
     assertThat(hit.getType()).isEqualTo(ResourceType.NEWS);
     assertThat(hit.getDescription()).contains("Forge");
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());

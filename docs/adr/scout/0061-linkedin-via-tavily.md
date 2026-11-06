@@ -16,6 +16,8 @@ LinkedIn pages are about people more than any other source: a post has an author
 page title and in the URL.
 
 ## Decision
+**Names (6 Nov 2026).** The collector is "LinkedIn" in the product; the live web search behind it is the adapter of [0037](../search/0037-tavily-store-and-daily-quota.md).
+
 1. **Collector `linkedin-scout`** (`LinkedInCollector`). One Tavily search per fixed query, every 7 days
    (`H2_SCOUT_LINKEDIN_INTERVAL`), with `include_domains: ["linkedin.com"]`, `topic: general`,
    `search_depth: basic` (1 credit), `max_results: 10`, `include_usage`, no raw content, no images, no answer, and
@@ -61,7 +63,7 @@ page title and in the URL.
    for, are kept. When half or more fail, the pass fails and its checkpoint stays, so the next daily run repeats it.
 9. **Credits are counted and capped with discovery's.** Every search adds its credits (Tavily's `usage.credits`, or 1)
    to the day's global credit counter and to the Scout's own counter (`ScoutTavilyCredits`,
-   [0051](0051-tavily-discovery.md) §10), with the metric `helper2.tavily.credits{feature="scout-linkedin"}`. Past the
+   [0051](0051-tavily-discovery.md) §10), with the metric `helper2.live-web.credits{feature="scout-linkedin"}`. Past the
    Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, 40, shared with the discovery categories) the pass is
    SKIPPED ("Daily Tavily credit cap of the Scout reached") and tried again the next day.
 10. **Retention and titles.** `linkedin-scout` is a web source (`WebSources`, [0051](0051-tavily-discovery.md)
@@ -119,7 +121,7 @@ page title and in the URL.
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — the type check per finder;
   `ResourceCandidateJson` reads the finders.
 - `backend/src/main/kotlin/ai/helper2/shared/WebSources.kt` — `linkedin-scout` in `FIXED` (titles, retention).
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2TavilyCreditsHigh`.
+- `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2LiveWebCreditsHigh`.
 - Tests: `LinkedInCollectorTest`, `IndexAcceptedCandidateTest`, `ResourceCandidateJsonTest`,
   `SourcesPropertiesBindingTest`, `CatalogPurgeExpiredDataIT`, the rule tests.
 - Diagrams: [flow](../../diagrams/flow-0061-linkedin-via-tavily.svg) · [sequence](../../diagrams/sequence-0061-linkedin-via-tavily.svg).

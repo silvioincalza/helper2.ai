@@ -17,11 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 /**
- * Opt-in: the real Tavily Search API, one test per adapter. H2_TAVILY_API_KEY=... ./gradlew
+ * Opt-in: the real Tavily Search API, one test per adapter. H2_LIVE_WEB_API_KEY=... ./gradlew
  * liveTest Three credits per run (search_depth basic, one query each).
  */
 @Tag("live")
-@EnabledIfEnvironmentVariable(named = "H2_TAVILY_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "H2_LIVE_WEB_API_KEY", matches = ".+")
 class TavilyLiveTest {
 
   static final String API = "https://api.tavily.com";
@@ -29,7 +29,7 @@ class TavilyLiveTest {
   @Test
   void searchSourceFindsPagesWithTheirAnswerSnippet() {
     TavilySource source =
-        new TavilySource(live(API, "H2_TAVILY_API_KEY"), liveHttp(), Clock.systemUTC());
+        new TavilySource(live(API, "H2_LIVE_WEB_API_KEY"), liveHttp(), Clock.systemUTC());
 
     List<SourceHit> hits = source.search(query("new open-source LLM released"));
 
@@ -42,7 +42,7 @@ class TavilyLiveTest {
   void discoveryCollectorRunsOneNewsQuery() {
     TavilyCollector collector =
         new TavilyCollector(
-            live(API, "H2_TAVILY_API_KEY"),
+            live(API, "H2_LIVE_WEB_API_KEY"),
             liveHttp(),
             Clock.systemUTC(),
             Resilience.NONE,
@@ -59,7 +59,7 @@ class TavilyLiveTest {
   void courseCollectorKeepsOnlyPagesOnThePlatform() {
     CourseCollector collector =
         new CourseCollector(
-            live(API, "H2_TAVILY_API_KEY"),
+            live(API, "H2_LIVE_WEB_API_KEY"),
             liveHttp(),
             Clock.systemUTC(),
             Resilience.NONE,

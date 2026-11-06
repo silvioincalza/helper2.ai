@@ -199,7 +199,7 @@ class SchemaContractTest {
     expected.put("review_item.kind", names(ReviewQueue.Kind.values()));
     expected.put("review_item.status", names(ReviewQueue.Status.values()));
     expected.put("admin_audit.action", names(AuditTrail.Action.values()));
-    expected.put("tavily_query_result.intent_class", names(IntentClass.values()));
+    expected.put("live_web_query_result.intent_class", names(IntentClass.values()));
     expected.put("scout_run.status", names(RunStatus.values()));
 
     Map<String, Set<String>> actual = new TreeMap<>();

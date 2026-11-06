@@ -44,11 +44,11 @@ final class CollectorProperties {
       implements Scheduled {}
 
   @Validated
-  @ConfigurationProperties("helper2.scout.tavily")
-  record TavilyScout(@NotNull Duration interval, @NotNull List<String> queries)
+  @ConfigurationProperties("helper2.scout.live-web")
+  record LiveWebScout(@NotNull Duration interval, @NotNull List<String> queries)
       implements Scheduled {
 
-    TavilyScout {
+    LiveWebScout {
       queries = clean(queries);
     }
   }

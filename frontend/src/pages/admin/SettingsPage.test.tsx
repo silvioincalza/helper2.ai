@@ -44,11 +44,11 @@ const CONFIG: EffectiveConfig = {
         },
         {
           key: 'search.webGlobalDailyCredits',
-          label: 'Tavily credits a day, all of Helper2',
+          label: 'Live web credits a day, all of Helper2',
           kind: 'CAP',
           value: null,
           unit: 'credits a day',
-          variable: 'H2_TAVILY_GLOBAL_DAILY_CREDITS',
+          variable: 'H2_LIVE_WEB_DAILY_CREDITS',
         },
         {
           key: 'search.translationOn',
@@ -91,12 +91,12 @@ const GUIDE: RuntimeSettingState = {
 };
 const CREDITS: RuntimeSettingState = {
   key: 'search.webGlobalDailyCredits',
-  label: 'Tavily credits a day, all of Helper2',
+  label: 'Live web credits a day, all of Helper2',
   unit: 'credits a day',
-  help: 'Live Tavily calls a UTC day for all of Helper2. 0: no live call, stored results only.',
+  help: 'Live web calls a UTC day for all of Helper2. 0: no live call, stored results only.',
   min: 0,
   max: 2000,
-  variable: 'H2_TAVILY_GLOBAL_DAILY_CREDITS',
+  variable: 'H2_LIVE_WEB_DAILY_CREDITS',
   defaultValue: null,
   value: 120,
   overridden: true,
@@ -157,7 +157,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
       within(row(search, 'Translations a day')).getByText('300 calls a day'),
     ).toBeInTheDocument();
     expect(
-      within(row(search, 'Tavily credits a day, all of Helper2')).getByText(
+      within(row(search, 'Live web credits a day, all of Helper2')).getByText(
         '120 credits a day (changed at runtime)',
       ),
     ).toBeInTheDocument();
@@ -222,7 +222,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
       'nothing to reset at the default',
     ).not.toBeInTheDocument();
 
-    const credits = limitRow('Tavily credits a day');
+    const credits = limitRow('Live web credits a day');
     expect(within(credits).getByText('Changed')).toHaveClass('h2-status-pill--next');
     expect(within(credits).getByText(/^No cap/)).toBeInTheDocument();
   });
@@ -339,7 +339,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
 
     await userEvent.click(
       await screen.findByRole('button', {
-        name: 'Reset to default: Tavily credits a day, all of Helper2',
+        name: 'Reset to default: Live web credits a day, all of Helper2',
       }),
     );
     expect(screen.getByRole('group', { name: 'Review changes' })).toHaveTextContent(

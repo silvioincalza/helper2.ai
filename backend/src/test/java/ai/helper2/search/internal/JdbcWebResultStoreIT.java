@@ -67,7 +67,7 @@ class JdbcWebResultStoreIT {
   private SourceHit hit(String path, int rank) {
     String url = "https://news.example/" + run + "/" + path;
     return new SourceHit(
-        "tavily",
+        "live-web",
         CanonicalUrl.of(url).getValue(),
         URI.create(url),
         CanonicalUrl.of(url),
@@ -95,7 +95,7 @@ class JdbcWebResultStoreIT {
   private void recordInCatalog(SourceHit... hits) {
     SourceDescriptor tavily =
         new SourceDescriptor(
-            "tavily",
+            "live-web",
             "Tavily",
             "Web",
             true,
@@ -108,8 +108,8 @@ class JdbcWebResultStoreIT {
             Duration.ZERO);
     var merged =
         new ResultMerger()
-            .merge(List.of(hits), Map.of("tavily", new SourceContext(tavily, ServedFrom.LIVE)));
-    catalog.upsert(merged, DataOrigin.OBSERVED, Set.of("tavily"));
+            .merge(List.of(hits), Map.of("live-web", new SourceContext(tavily, ServedFrom.LIVE)));
+    catalog.upsert(merged, DataOrigin.OBSERVED, Set.of("live-web"));
   }
 
   @Test
@@ -118,8 +118,8 @@ class JdbcWebResultStoreIT {
     SourceHit second = hit("a", 1);
     recordInCatalog(first, second);
 
-    store.replace("tavily", "agents " + run, IntentClass.GENERAL, now, List.of(first, second));
-    CachedHits found = store.find("tavily", "agents " + run, IntentClass.GENERAL);
+    store.replace("live-web", "agents " + run, IntentClass.GENERAL, now, List.of(first, second));
+    CachedHits found = store.find("live-web", "agents " + run, IntentClass.GENERAL);
 
     assertThat(found).isNotNull();
     assertThat(found.getFetchedAt()).isEqualTo(now);
@@ -127,7 +127,7 @@ class JdbcWebResultStoreIT {
         .extracting(SourceHit::getTitle)
         .containsExactly("AI news b", "AI news a");
     assertThat(found.getHits()).extracting(SourceHit::getRank).containsExactly(0, 1);
-    assertThat(found.getHits()).allMatch(h -> h.getSourceId().equals("tavily"));
+    assertThat(found.getHits()).allMatch(h -> h.getSourceId().equals("live-web"));
   }
 
   @Test
@@ -135,7 +135,7 @@ class JdbcWebResultStoreIT {
     String url = "https://scored.tools/" + run + "/vector-databases";
     SourceHit raw =
         new SourceHit(
-            "tavily",
+            "live-web",
             url,
             URI.create(url),
             CanonicalUrl.of(url),
@@ -158,9 +158,9 @@ class JdbcWebResultStoreIT {
             now,
             0);
     recordInCatalog(raw);
-    store.replace("tavily", "vector db " + run, IntentClass.GENERAL, now, List.of(raw));
+    store.replace("live-web", "vector db " + run, IntentClass.GENERAL, now, List.of(raw));
 
-    CachedHits found = store.find("tavily", "vector db " + run, IntentClass.GENERAL);
+    CachedHits found = store.find("live-web", "vector db " + run, IntentClass.GENERAL);
 
     assertThat(found.getHits())
         .extracting(SourceHit::getTitle)
@@ -171,26 +171,26 @@ class JdbcWebResultStoreIT {
   @Test
   void theKeyIsTheSourceTheQueryAndTheIntentClassExactly() {
     recordInCatalog(hit("a", 0));
-    store.replace("tavily", "agents " + run, IntentClass.TIME_BOUND, now, List.of(hit("a", 0)));
+    store.replace("live-web", "agents " + run, IntentClass.TIME_BOUND, now, List.of(hit("a", 0)));
 
-    assertThat(store.find("tavily", "agents " + run, IntentClass.GENERAL)).isNull();
-    assertThat(store.find("tavily", "agent " + run, IntentClass.TIME_BOUND)).isNull();
+    assertThat(store.find("live-web", "agents " + run, IntentClass.GENERAL)).isNull();
+    assertThat(store.find("live-web", "agent " + run, IntentClass.TIME_BOUND)).isNull();
     assertThat(store.find("other", "agents " + run, IntentClass.TIME_BOUND)).isNull();
-    assertThat(store.find("tavily", "agents " + run, IntentClass.TIME_BOUND)).isNotNull();
+    assertThat(store.find("live-web", "agents " + run, IntentClass.TIME_BOUND)).isNotNull();
   }
 
   @Test
   void aNewLiveAnswerReplacesTheStoredSet() {
     recordInCatalog(hit("a", 0), hit("b", 0));
     store.replace(
-        "tavily",
+        "live-web",
         "agents " + run,
         IntentClass.GENERAL,
         now.minus(Duration.ofDays(3)),
         List.of(hit("a", 0)));
-    store.replace("tavily", "agents " + run, IntentClass.GENERAL, now, List.of(hit("b", 0)));
+    store.replace("live-web", "agents " + run, IntentClass.GENERAL, now, List.of(hit("b", 0)));
 
-    CachedHits found = store.find("tavily", "agents " + run, IntentClass.GENERAL);
+    CachedHits found = store.find("live-web", "agents " + run, IntentClass.GENERAL);
 
     assertThat(found.getFetchedAt()).isEqualTo(now);
     assertThat(found.getHits()).extracting(SourceHit::getTitle).containsExactly("AI news b");
@@ -200,28 +200,28 @@ class JdbcWebResultStoreIT {
   void aSetWithAHitTheCatalogDoesNotHoldIsAMissNotAPartialAnswer() {
     recordInCatalog(hit("a", 0));
     store.replace(
-        "tavily",
+        "live-web",
         "agents " + run,
         IntentClass.GENERAL,
         now,
         List.of(hit("a", 0), hit("not-recorded", 1)));
 
-    assertThat(store.find("tavily", "agents " + run, IntentClass.GENERAL)).isNull();
+    assertThat(store.find("live-web", "agents " + run, IntentClass.GENERAL)).isNull();
   }
 
   @Test
   void anEmptySetIsStoredAndFound() {
-    store.replace("tavily", "nothing " + run, IntentClass.GENERAL, now, List.of());
+    store.replace("live-web", "nothing " + run, IntentClass.GENERAL, now, List.of());
 
-    assertThat(store.find("tavily", "nothing " + run, IntentClass.GENERAL).getHits()).isEmpty();
+    assertThat(store.find("live-web", "nothing " + run, IntentClass.GENERAL).getHits()).isEmpty();
   }
 
   @Test
   void noQueryTextIsStored() {
-    store.replace("tavily", "secret plans " + run, IntentClass.GENERAL, now, List.of());
+    store.replace("live-web", "secret plans " + run, IntentClass.GENERAL, now, List.of());
 
     List<byte[]> keys =
-        jdbc.sql("SELECT query_key FROM tavily_query_result").query(byte[].class).list();
+        jdbc.sql("SELECT query_key FROM live_web_query_result").query(byte[].class).list();
     assertThat(keys)
         .allSatisfy(k ->
             assertThat(new String(k, StandardCharsets.ISO_8859_1)).doesNotContain("secret plans"));
@@ -232,9 +232,9 @@ class JdbcWebResultStoreIT {
   void setsFetchedMoreThanSevenDaysAgoArePurged() {
     Instant purgeNow = Instant.parse("2000-07-01T00:00:00Z");
     store.replace(
-        "tavily", "old " + run, IntentClass.GENERAL, purgeNow.minus(Duration.ofDays(8)), List.of());
+        "live-web", "old " + run, IntentClass.GENERAL, purgeNow.minus(Duration.ofDays(8)), List.of());
     store.replace(
-        "tavily",
+        "live-web",
         "recent " + run,
         IntentClass.GENERAL,
         purgeNow.minus(Duration.ofDays(6)),
@@ -245,8 +245,8 @@ class JdbcWebResultStoreIT {
             .purge();
 
     assertThat(deleted).isEqualTo(1);
-    assertThat(store.find("tavily", "old " + run, IntentClass.GENERAL)).isNull();
-    assertThat(store.find("tavily", "recent " + run, IntentClass.GENERAL)).isNotNull();
-    jdbc.sql("DELETE FROM tavily_query_result WHERE fetched_at < '2001-01-01'").update();
+    assertThat(store.find("live-web", "old " + run, IntentClass.GENERAL)).isNull();
+    assertThat(store.find("live-web", "recent " + run, IntentClass.GENERAL)).isNotNull();
+    jdbc.sql("DELETE FROM live_web_query_result WHERE fetched_at < '2001-01-01'").update();
   }
 }

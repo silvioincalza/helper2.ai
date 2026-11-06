@@ -272,7 +272,7 @@ class OfficialPagesTest {
       URI("https://notes.example/"),
       PageTargets.select(listOf(rec("discovery-writing", "https://notes.example/")))?.url,
     )
-    assertNull(PageTargets.select(listOf(rec("tavily-scout", "https://news.example/acme"))))
+    assertNull(PageTargets.select(listOf(rec("live-web-scout", "https://news.example/acme"))))
     assertNull(PageTargets.select(listOf(rec("tavily-discovery", "https://acme.example/"))))
     assertNull(PageTargets.select(listOf(rec("curated", "http://acme.example/"))))
   }

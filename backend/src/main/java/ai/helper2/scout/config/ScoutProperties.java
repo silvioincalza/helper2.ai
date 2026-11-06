@@ -43,7 +43,7 @@ public record ScoutProperties(
   /**
    * The evidence ladder's page step (ADR 0056). Its model calls count on gapDailyCalls.
    *
-   * @param dailyExtractCredits Tavily Extract credits per UTC day (one call of up to 5 pages is one
+   * @param dailyPageReadCredits Tavily Extract credits per UTC day (one call of up to 5 pages is one
    *     credit); also counted on the global Tavily credit cap; 0 = page step off
    * @param pageReadTtl how long a page a saved run read is not read again (only its URL and a hash
    *     of its text are kept)
@@ -51,7 +51,7 @@ public record ScoutProperties(
    *     at most one day
    */
   public record Evidence(
-      @PositiveOrZero int dailyExtractCredits,
+      @PositiveOrZero int dailyPageReadCredits,
       @NotNull Duration pageReadTtl,
       @NotNull Duration pageTextTtl) {
 

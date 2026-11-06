@@ -51,7 +51,7 @@ class SourceHealthTest {
     val health = SourceHealth()
     health.sourceCompleted(
       SourceStatus(
-        descriptor("tavily"),
+        descriptor("live-web"),
         SourceOutcome.SKIPPED,
         ServedFrom.NONE,
         0,
@@ -62,7 +62,7 @@ class SourceHealthTest {
       )
     )
 
-    assertNull(health.lastFor("tavily", null))
+    assertNull(health.lastFor("live-web", null))
   }
 
   @Test

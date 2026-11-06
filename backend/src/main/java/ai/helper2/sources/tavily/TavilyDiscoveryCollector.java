@@ -127,13 +127,13 @@ public class TavilyDiscoveryCollector implements Collector {
             category.shortName(),
             true,
             SourceMode.INDEXED,
-            URI.create("https://tavily.com"),
-            URI.create("https://tavily.com/terms"),
+            URI.create("https://helper2.ai/sources"),
+            URI.create("https://helper2.ai/terms"),
             category.indexLists()
-                ? "Web results via the Tavily Search API; each links to the original publisher."
+                ? "Web results found by a live web search; each links to the original publisher."
                     + " List articles are added without review; products and articles about them"
                     + " are added only after a person checks them."
-                : "Web results via the Tavily Search API; each links to the original publisher."
+                : "Web results found by a live web search; each links to the original publisher."
                     + " Products and articles about them are added only after a person checks"
                     + " them.",
             resourceTypes(category),
@@ -188,7 +188,7 @@ public class TavilyDiscoveryCollector implements Collector {
     }
     if (credits.capReached()) {
       return CollectedBatch.deferred(
-          "Daily Tavily credit cap of the Scout reached ("
+          "Daily live web credit cap of the Scout reached ("
               + credits.dailyCap()
               + " credits); next try tomorrow");
     }

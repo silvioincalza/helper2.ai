@@ -109,13 +109,13 @@ public class CourseCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "Tavily course discovery (sent to review)",
+            "Course discovery (sent to review)",
             "Courses",
             true,
             SourceMode.INDEXED,
-            URI.create("https://tavily.com"),
-            URI.create("https://tavily.com/terms"),
-            "Course and certification pages found via the Tavily Search API; an admin reviews each before it is catalogued.",
+            URI.create("https://helper2.ai/sources"),
+            URI.create("https://helper2.ai/terms"),
+            "Course and certification pages found by a live web search; an admin reviews each before it is catalogued.",
             EnumSet.of(ResourceType.COURSE),
             settings.timeout(),
             settings.cacheTtl(),

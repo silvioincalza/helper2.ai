@@ -201,7 +201,7 @@ resilience4j:
       source-hf-spaces: {base-config: source}
       source-npm: {base-config: source}
       source-arxiv: {base-config: source}
-      source-tavily:
+      source-live-web:
         base-config: source
         # Tavily answers in 2-4 s (timeout 6 s).
         slow-call-duration-threshold: 5s
@@ -209,7 +209,7 @@ resilience4j:
       source-helper2-semantic: {base-config: source}
       source-curated: {base-config: source}
       collector-hf-trending: {base-config: collector}
-      collector-tavily-scout: {base-config: collector}
+      collector-live-web-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
       collector-discovery: {base-config: collector}
       collector-linkedin-scout: {base-config: collector}
@@ -254,7 +254,7 @@ resilience4j:
       source-hf-spaces: {base-config: source}
       source-npm: {base-config: source}
       source-arxiv: {base-config: source}
-      source-tavily: {base-config: source}
+      source-live-web: {base-config: source}
       source-helper2-index: {base-config: catalog}
       source-helper2-semantic: {base-config: catalog}
       source-curated: {base-config: catalog}
@@ -279,7 +279,7 @@ resilience4j:
         retry-exception-predicate: ai.helper2.sources.support.TransientSourceFailure
     instances:
       collector-hf-trending: {base-config: collector}
-      collector-tavily-scout: {base-config: collector}
+      collector-live-web-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
       collector-discovery: {base-config: collector}
       collector-linkedin-scout: {base-config: collector}
@@ -474,10 +474,10 @@ helper2:
     gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
     # Evidence ladder (ADR 0056): a product's own pages, read with Tavily Extract when a run leaves a target field
     # unproven. One Extract call (up to 5 pages, basic depth) is one credit; a product takes at most 2. Credits also
-    # count on the global Tavily cap (H2_TAVILY_GLOBAL_DAILY_CREDITS). 0 turns the page step off. A page a saved run
+    # count on the global Tavily cap (H2_LIVE_WEB_DAILY_CREDITS). 0 turns the page step off. A page a saved run
     # read is not read again for page-read-ttl: for that, only its URL and a hash of its text are kept.
     evidence:
-      daily-extract-credits: ${H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS:20}
+      daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
       page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
       # The cleaned text of the pages (no hidden text, emails and phone numbers masked, cut to the window), in Redis
       # only, so a retry within the day costs no credit. At most P1D, checked at startup.
@@ -488,9 +488,9 @@ helper2:
     hf-trending:
       interval: ${H2_SCOUT_HF_INTERVAL:P1D}
       min-likes: 20
-    tavily:
+    live-web:
       # Each query costs 1 Tavily credit per run (search_depth basic): 7 queries every 5 days ~ 42 credits/month.
-      interval: ${H2_SCOUT_TAVILY_INTERVAL:P5D}
+      interval: ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}
       queries: >-
         new AI tool launched,
         new open-source LLM released,
@@ -637,13 +637,13 @@ helper2:
       base-url: https://export.arxiv.org
       timeout: 3s
       cache-ttl: 6h
-    tavily:
-      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
-      enabled: ${H2_SOURCE_TAVILY_ENABLED:true}
+    live-web:
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
+      enabled: ${H2_SOURCE_LIVE_WEB_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_TAVILY_API_KEY:}
+      token: ${H2_LIVE_WEB_API_KEY:}
       # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
-      timeout: ${H2_SOURCE_TAVILY_TIMEOUT:6s}
+      timeout: ${H2_SOURCE_LIVE_WEB_TIMEOUT:6s}
       cache-ttl: 30m
     hf-trending:
       enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
@@ -653,49 +653,49 @@ helper2:
       cache-ttl: 30m
       # Total time per call, body included (ADR 0006 §2); empty = twice the timeout.
       deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
-    tavily-scout:
-      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
-      enabled: ${H2_SOURCE_TAVILY_SCOUT_ENABLED:true}
+    live-web-scout:
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
+      enabled: ${H2_SOURCE_LIVE_WEB_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_TAVILY_API_KEY:}
+      token: ${H2_LIVE_WEB_API_KEY:}
       timeout: 10s
       cache-ttl: 30m
-      deadline: ${H2_SOURCE_TAVILY_SCOUT_DEADLINE:}
+      deadline: ${H2_SOURCE_LIVE_WEB_SCOUT_DEADLINE:}
     course-scout:
-      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set.
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
       enabled: ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_TAVILY_API_KEY:}
+      token: ${H2_LIVE_WEB_API_KEY:}
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
     linkedin-scout:
-      # Disabled (reported as SKIPPED) until H2_TAVILY_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0061).
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0061).
       enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_TAVILY_API_KEY:}
+      token: ${H2_LIVE_WEB_API_KEY:}
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
     discovery:
       # Every discovery category (helper2.categories, ADR 0051). Disabled (reported as SKIPPED) until
-      # H2_TAVILY_API_KEY is set.
+      # H2_LIVE_WEB_API_KEY is set.
       enabled: ${H2_SOURCE_DISCOVERY_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_TAVILY_API_KEY:}
+      token: ${H2_LIVE_WEB_API_KEY:}
       # search_depth advanced is slower than basic.
       timeout: 20s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_DISCOVERY_DEADLINE:}
-    tavily-extract:
-      # Product pages for the evidence ladder (ADR 0056). Off without H2_TAVILY_API_KEY.
-      enabled: ${H2_SOURCE_TAVILY_EXTRACT_ENABLED:true}
+    page-reader:
+      # Product pages for the evidence ladder (ADR 0056). Off without H2_LIVE_WEB_API_KEY.
+      enabled: ${H2_SOURCE_PAGE_READER_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_TAVILY_API_KEY:}
+      token: ${H2_LIVE_WEB_API_KEY:}
       # Basic extraction waits up to 10 s on Tavily's side; a call reads up to 4 pages.
       timeout: 20s
       cache-ttl: 30m
-      deadline: ${H2_SOURCE_TAVILY_EXTRACT_DEADLINE:}
+      deadline: ${H2_SOURCE_PAGE_READER_DEADLINE:}
     github-awesome:
       # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
       enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}
@@ -913,23 +913,23 @@ helper2:
     web:
       # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and
       # events for 24 h, anything else for 48 h.
-      fresh-time-bound: ${H2_TAVILY_FRESH_TIMEBOUND:PT24H}
-      fresh-general: ${H2_TAVILY_FRESH_GENERAL:PT48H}
+      fresh-time-bound: ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}
+      fresh-general: ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}
       quota:
         # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
         guest:
-          search: ${H2_TAVILY_GUEST_SEARCH:3}
-          guide: ${H2_TAVILY_GUEST_GUIDE:3}
+          search: ${H2_LIVE_WEB_GUEST_SEARCH:3}
+          guide: ${H2_LIVE_WEB_GUEST_GUIDE:3}
         registered:
           search: 10
           guide: 10
         # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
-        registered-tier-enabled: ${H2_TAVILY_REGISTERED_TIER_ENABLED:false}
+        registered-tier-enabled: ${H2_LIVE_WEB_REGISTERED_TIER_ENABLED:false}
         # Live calls a day for all of Helper2; empty = no cap.
-        global-daily-credits: ${H2_TAVILY_GLOBAL_DAILY_CREDITS:}
+        global-daily-credits: ${H2_LIVE_WEB_DAILY_CREDITS:}
   retention:
     # Stored Tavily result sets after they were fetched.
-    tavily-results: ${H2_RETENTION_TAVILY_RESULTS:P7D}
+    live-web-results: ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}
 
 ---
 # The categories of the AI world (ADR 0051): 34 categories in 7 families. Each is its own discovery collector

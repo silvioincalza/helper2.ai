@@ -205,7 +205,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		grep -q '^  volumeClaimTemplates:' <<<"$$redis" || { echo "Redis must keep /data on a PersistentVolumeClaim"; exit 1; }; \
 	done; \
 	echo "== daily limits and the guide cache TTL are rendered only where set: prod the credit cap, staging all six"; \
-	limits='name: H2_(TAVILY_GUEST_SEARCH|TAVILY_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|TAVILY_GLOBAL_DAILY_CREDITS|GUIDE_DAILY_MODEL_CALLS|GUIDE_CACHE_TTL),'; \
+	limits='name: H2_(LIVE_WEB_GUEST_SEARCH|LIVE_WEB_GUEST_GUIDE|GUIDE_CLIENT_DAILY_QUESTIONS|LIVE_WEB_DAILY_CREDITS|GUIDE_DAILY_MODEL_CALLS|GUIDE_CACHE_TTL),'; \
 	for e in prod staging; do \
 		n=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 \
 			--show-only templates/app.yaml | grep -cE "$$limits" || true); \

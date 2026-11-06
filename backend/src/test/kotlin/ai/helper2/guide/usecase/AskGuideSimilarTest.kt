@@ -58,13 +58,13 @@ class AskGuideSimilarTest {
   private val webCalls = AtomicInteger()
   private val web =
     object : SearchSource {
-      override val descriptor = descriptor("tavily").copy(metered = true)
+      override val descriptor = descriptor("live-web").copy(metered = true)
 
       override fun search(query: SourceQuery): List<SourceHit> {
         webCalls.incrementAndGet()
         return listOf(
           hit(
-            "tavily",
+            "live-web",
             "https://example.org/pdf-chat",
             title = "pdf-chat",
             type = ResourceType.PRODUCT,

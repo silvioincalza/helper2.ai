@@ -14,7 +14,9 @@ searches per day, for search and for the guide apart. The rest of the search mus
 used up. The counts must hold across 3 replicas, store no address and no query text, and survive a restart.
 
 ## Decision
-1. **Store first.** `tavily_query_result(query_key, intent_class, fetched_at, result_ids[])` in PostgreSQL. The key
+**Names (6 Nov 2026).** The product calls this source "Live web" (`live-web`; the Scout's queries `live-web-scout`, the stored result sets `live_web_query_result`, settings `H2_LIVE_WEB_*`). Tavily is the adapter behind it (`sources/tavily/`) and can be replaced; its name stays on the Privacy page, which must name the recipient of the search text, and in this ADR, which records the choice.
+
+1. **Store first.** `live_web_query_result(query_key, intent_class, fetched_at, result_ids[])` in PostgreSQL. The key
    is HMAC-SHA256(`H2_QUOTA_KEY_SECRET`, source id and the normalised query: words, expansions, limit, web query and
    date window, the same material as the source cache key of [0005](../foundation/0005-redis-disposable-cache.md)); exact match
    only. `result_ids` are the resource ids of the hits' own URLs, in Tavily's order; the hits come back from the
@@ -22,8 +24,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    ([0004](../foundation/0004-persistence-and-provenance.md)). A set with a hit the catalog does not hold is a miss. The search
    module owns the table (`JdbcWebResultStore`); a metered source never uses the Redis source cache.
 2. **Freshness by intent.** A stored set answers without a live call and without quota while it is fresh: 24 h for a
-   time-bound question (news, courses, hackathons, conferences, events; `H2_TAVILY_FRESH_TIMEBOUND`), 48 h otherwise
-   (`H2_TAVILY_FRESH_GENERAL`). The guide states the class from its intent (`NEWEST`, `WHEN`, `LEARN` are
+   time-bound question (news, courses, hackathons, conferences, events; `H2_LIVE_WEB_FRESH_TIMEBOUND`), 48 h otherwise
+   (`H2_LIVE_WEB_FRESH_GENERAL`). The guide states the class from its intent (`NEWEST`, `WHEN`, `LEARN` are
    time-bound); a search reads it from its words, type filter, date window or newest-first order (`IntentClass`).
    Served as `CACHE`. A live answer replaces the set (and its rows in the catalog get a new `last_seen_at`).
 3. **Daily web searches per feature.** Before a live call `WebSearchQuota` takes one web search for the asker:
@@ -31,22 +33,22 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    | Tier | Search / day | Guide / day | Counter (Redis hash, field = feature) |
    |---|---|---|---|
    | guest | 3 | 3 | `h2:v1:quota:guest:<HMAC-SHA256(day key, client)>`, day key = HMAC-SHA256(secret, UTC date) |
-   | registered | 10 | 10 | `h2:v1:quota:user:<user id>:<UTC date>`, only with `H2_TAVILY_REGISTERED_TIER_ENABLED` |
+   | registered | 10 | 10 | `h2:v1:quota:user:<user id>:<UTC date>`, only with `H2_LIVE_WEB_REGISTERED_TIER_ENABLED` |
 
    The client is `ClientKey` (IPv6 by /64, [0017](../guide/0017-guide-cost-guard.md)); no address is stored and the keys of two
    days cannot be linked without the secret. A key expires 24 h after its first count. One user action is one web
    search: a guide question that searches several times takes it at its first live call. Over the limit the source
    is `SKIPPED` (`SkipReason.DAILY_LIMIT`, "Daily limit of web searches reached; back at 00:00 UTC"), with its stored
    set when it is not older than 7 days (`STALE_CACHE`); the other sources answer as usual.
-   The guest limits are `H2_TAVILY_GUEST_SEARCH` and `H2_TAVILY_GUEST_GUIDE` (default 3). The chart sets them, with
+   The guest limits are `H2_LIVE_WEB_GUEST_SEARCH` and `H2_LIVE_WEB_GUEST_GUIDE` (default 3). The chart sets them, with
    the guide's questions per client and the global cap, only where `app.dailyLimits` sets them: staging raises the
    per-visitor limits to 1000, so a test is never cut off by earlier tests, and keeps a global cap of 200 live calls
    a day, because staging is public. Prod keeps the defaults.
 4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
-   for the whole cluster. The counter is capped by `H2_TAVILY_GLOBAL_DAILY_CREDITS`; unset, the cap is the code
+   for the whole cluster. The counter is capped by `H2_LIVE_WEB_DAILY_CREDITS`; unset, the cap is the code
    maximum of the runtime setting, 2,000 a day ([0060](../operations/0060-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
-   concurrent requests on any replica never pass a limit. The script counts before the `source-tavily` policy is
+   concurrent requests on any replica never pass a limit. The script counts before the `source-live-web` policy is
    asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
    (`WebSearchQuota.refund`); the asker's own web search stays taken. Scout runs do not count here.
 5. **Fail closed.** When Redis cannot answer or the `redis` policy refuses the call ([0033](../foundation/0033-resilience-policies.md)),
@@ -66,15 +68,15 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 7. **Guide answers live no longer than their web results.** Guide answers are kept in PostgreSQL
    (the shared cache `ai_cache`, [0041](../guide/0041-guide-answer-cache.md)). Answer TTL = min(24 h, freshness left of the web
    results it used); an answer built on stale web results is not cached ([0017](../guide/0017-guide-cost-guard.md)).
-8. **Credits are measured.** `helper2.tavily.credits{feature,tier}` counts every live call (`none` for internal
-   callers). Alert `Helper2TavilyCreditsHigh` when more than 200 credits were spent in 24 h: 80% of prod's
+8. **Credits are measured.** `helper2.live-web.credits{feature,tier}` counts every live call (`none` for internal
+   callers). Alert `Helper2LiveWebCreditsHigh` when more than 200 credits were spent in 24 h: 80% of prod's
    daily cap (250, `app.dailyLimits.webSearchCredits`). The plan has 14,000 credits a month for prod, staging (cap
    150 a day) and the Scout (~506 a month); a 31-day month at both caps stays about 1,010 under it. The Scout's
    discovery and LinkedIn searches count on the global daily counter and in the alert too (features `scout-discovery`
    and `scout-linkedin`, at most 40 a day together, [0051](../scout/0051-tavily-discovery.md),
    [0061](../scout/0061-linkedin-via-tavily.md)).
 9. **Retention** ([0034](../operations/0034-data-retention.md)): stored sets are deleted 7 days after `fetched_at`
-   (`H2_RETENTION_TAVILY_RESULTS`) by the search module's daily purge; counters by their 24 h TTL. `DeleteMyAccount`
+   (`H2_RETENTION_LIVE_WEB_RESULTS`) by the search module's daily purge; counters by their 24 h TTL. `DeleteMyAccount`
    deletes the user's counters with the account.
 10. **No secret, no start.** An enabled metered source without `H2_QUOTA_KEY_SECRET` (OpenBao) stops startup.
 
@@ -117,7 +119,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
 - `backend/src/main/java/ai/helper2/identity/usecase/DeleteMyAccount.java` — counters deleted with the account.
 - `backend/src/main/resources/application.yaml` (`helper2.search.web.*`), `db/migration/V1__schema.sql`, `api/openapi.yaml` (`WebSearches`).
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2TavilyCreditsHigh`.
+- `deploy/monitoring/helper2-rules.yaml` — `Helper2LiveWebCreditsHigh`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0037-tavily-store-and-quota.svg) · [sequence](../../diagrams/sequence-0037-tavily-store-and-quota.svg)

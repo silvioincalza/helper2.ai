@@ -87,18 +87,18 @@ tests:
   # a day) stays quiet. Search and guide add up.
   - interval: 1h
     input_series:
-      - series: 'helper2_tavily_credits_total{application="helper2", environment="prod", instance="a", feature="search", tier="guest"}'
+      - series: 'helper2_live_web_credits_total{application="helper2", environment="prod", instance="a", feature="search", tier="guest"}'
         values: '0+5x30'
-      - series: 'helper2_tavily_credits_total{application="helper2", environment="prod", instance="b", feature="guide", tier="guest"}'
+      - series: 'helper2_live_web_credits_total{application="helper2", environment="prod", instance="b", feature="guide", tier="guest"}'
         values: '0+5x30'
-      - series: 'helper2_tavily_credits_total{application="helper2", environment="staging", instance="a", feature="search", tier="guest"}'
+      - series: 'helper2_live_web_credits_total{application="helper2", environment="staging", instance="a", feature="search", tier="guest"}'
         values: '0+5x30'
     alert_rule_test:
       - eval_time: 12h
-        alertname: Helper2TavilyCreditsHigh
+        alertname: Helper2LiveWebCreditsHigh
         exp_alerts: []
       - eval_time: 25h
-        alertname: Helper2TavilyCreditsHigh
+        alertname: Helper2LiveWebCreditsHigh
         exp_alerts:
           - exp_labels:
               severity: warning
@@ -106,16 +106,16 @@ tests:
             exp_annotations:
               summary: "Tavily used more than 200 credits in the last 24 hours (prod)."
               description: "240 Tavily credits (live calls and the Scout's discovery and LinkedIn searches) in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
-              runbook: "Dashboard: helper2_tavily_credits_total by feature and tier (scout-discovery and scout-linkedin are the Scout). Many guest addresses at the limit = rotating IPs: set H2_TAVILY_GLOBAL_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+              runbook: "Dashboard: helper2_live_web_credits_total by feature and tier (scout-discovery and scout-linkedin are the Scout). Many guest addresses at the limit = rotating IPs: set H2_LIVE_WEB_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
 
   # Scout age (the gauge holds epoch seconds; test time starts at epoch 0). hf-trending (daily) last succeeded at
-  # 1h: quiet at 49h (48 h old), fires at 73h. tavily-scout (every 5 days) is as old and stays quiet; mcp-registry
+  # 1h: quiet at 49h (48 h old), fires at 73h. live-web-scout (every 5 days) is as old and stays quiet; mcp-registry
   # keeps succeeding.
   - interval: 1h
     input_series:
       - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="hf-trending"}'
         values: '3600x96'
-      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="tavily-scout"}'
+      - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="live-web-scout"}'
         values: '3600x96'
       - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="mcp-registry"}'
         values: '0+3600x96'
@@ -649,7 +649,7 @@ tests:
   # Not permitted: 2 refused calls a minute for 15 minutes fire; one refused call now and then does not.
   - interval: 1m
     input_series:
-      - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="source-tavily", kind="not_permitted"}'
+      - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="source-live-web", kind="not_permitted"}'
         values: '0+2x30'
       - series: 'resilience4j_circuitbreaker_not_permitted_calls_total{application="helper2", environment="prod", instance="a", name="redis", kind="not_permitted"}'
         values: '0 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2'
@@ -663,8 +663,8 @@ tests:
           - exp_labels:
               severity: warning
               environment: prod
-              name: source-tavily
+              name: source-live-web
             exp_annotations:
-              summary: "Policy source-tavily refuses calls (prod)."
-              description: "2 calls a minute were refused by the open circuit of source-tavily over the last 5 minutes, for 10 minutes."
-              runbook: "Same cause as Helper2CircuitOpen for source-tavily; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."
+              summary: "Policy source-live-web refuses calls (prod)."
+              description: "2 calls a minute were refused by the open circuit of source-live-web over the last 5 minutes, for 10 minutes."
+              runbook: "Same cause as Helper2CircuitOpen for source-live-web; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."

@@ -61,7 +61,7 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({
   SourcesConfiguration.SourcesProperties.class,
   CollectorProperties.HfTrending.class,
-  CollectorProperties.TavilyScout.class,
+  CollectorProperties.LiveWebScout.class,
   CollectorProperties.Courses.class,
   CollectorProperties.ScoutCredits.class,
   CollectorProperties.Discovery.class,
@@ -152,7 +152,7 @@ class SourcesConfiguration {
 
   @Bean
   TavilySource tavilySource(SourcesProperties p, Clock clock, ObservationRegistry observations) {
-    SourceSettings s = p.get("tavily");
+    SourceSettings s = p.get("live-web");
     return new TavilySource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
   }
 
@@ -176,11 +176,11 @@ class SourcesConfiguration {
   @Bean
   TavilyCollector tavilyCollector(
       SourcesProperties p,
-      CollectorProperties.TavilyScout c,
+      CollectorProperties.LiveWebScout c,
       Clock clock,
       Resilience resilience,
       ObservationRegistry observations) {
-    SourceSettings s = p.get("tavily-scout");
+    SourceSettings s = p.get("live-web-scout");
     return new TavilyCollector(
         s,
         collectorClient(s, observations),
@@ -260,7 +260,7 @@ class SourcesConfiguration {
         List.of(
             Setting.count(
                 "scoutSources.dailyCredits",
-                "Tavily credits a day, Scout searches",
+                "Live web credits a day, Scout searches",
                 credits.dailyCredits(),
                 "credits a day",
                 "H2_SCOUT_DAILY_CREDITS"),
@@ -381,12 +381,12 @@ class SourcesConfiguration {
 
   /**
    * A product's own pages for the Scout's evidence ladder (ADR 0056): Tavily Extract. Off (not
-   * available) without H2_TAVILY_API_KEY.
+   * available) without H2_LIVE_WEB_API_KEY.
    */
   @Bean
   TavilyExtract tavilyExtract(
       SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations) {
-    SourceSettings s = p.get("tavily-extract");
+    SourceSettings s = p.get("page-reader");
     return new TavilyExtract(s, collectorClient(s, observations), resilience, clock);
   }
 

@@ -204,10 +204,10 @@ class ScoutConfiguration {
                 "H2_SCOUT_GAP_DAILY_CALLS"),
             Setting.count(
                 "scout.evidenceDailyExtractCredits",
-                "Tavily Extract credits a day, product pages",
-                scout.evidence().dailyExtractCredits(),
+                "Page reads a day, product pages",
+                scout.evidence().dailyPageReadCredits(),
                 "credits a day",
-                "H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS"),
+                "H2_SCOUT_PAGE_READER_DAILY_CREDITS"),
             Setting.count(
                 "scout.enrichMaxTokens",
                 "Output cap of one enrichment call",
@@ -340,14 +340,14 @@ class ScoutConfiguration {
     if (reader == null
         || !reader.getAvailable()
         || roots == null
-        || evidence.dailyExtractCredits() <= 0) {
+        || evidence.dailyPageReadCredits() <= 0) {
       log.info("Evidence ladder: product pages off (no reader, no key or no credits)");
       return null;
     }
     DailyBudget credits =
-        new DailyBudget(evidence.dailyExtractCredits(), clock, "scout-evidence-extract", counter);
+        new DailyBudget(evidence.dailyPageReadCredits(), clock, "scout-evidence-extract", counter);
     Gauge.builder("helper2.scout.evidence.credits.remaining", credits, DailyBudget::remaining)
-        .description("Tavily Extract credits left for product pages under today's cap (UTC day)")
+        .description("Page reads left for product pages under today's cap (UTC day)")
         .register(meters);
     PageLedger ledger =
         caches == null
@@ -356,9 +356,9 @@ class ScoutConfiguration {
                 caches.named(SharedCachePageLedger.CACHE), evidence.pageReadTtl());
     log.info(
         "Evidence ladder: product pages on, {} Extract credits a day",
-        evidence.dailyExtractCredits());
+        evidence.dailyPageReadCredits());
     return new OfficialPages(
-        reader, new TavilyCreditBudget(credits, quota, meters), roots, clock, ledger, textCache);
+        reader, new PageReaderCreditBudget(credits, quota, meters), roots, clock, ledger, textCache);
   }
 
   /**

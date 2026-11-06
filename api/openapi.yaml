@@ -1034,7 +1034,7 @@ components:
             cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
             translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`H2_SEARCH_TRANSLATION_TTL`)." }
             queryVectorsSeconds: { type: integer, format: int64, minimum: 0, description: "Search vectors used to search by meaning (`H2_SEARCH_QUERY_VECTOR_TTL`)." }
-            storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_TAVILY_RESULTS`)." }
+            storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_LIVE_WEB_RESULTS`)." }
             inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
             adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
@@ -1501,7 +1501,7 @@ components:
     WebSearches:
       type: object
       description: |
-        Live web searches (Tavily) this visitor has left today for this feature; search and the guide count apart
+        Live web searches this visitor has left today for this feature; search and the guide count apart
         (ADR 0037). Resets at 00:00 UTC. Results already stored cost none. Null when no web source is enabled or the
         count cannot be read.
       required: [limit, remaining]
@@ -2075,7 +2075,7 @@ components:
         metered:
           type: boolean
           description: >-
-            True for a source whose calls spend a paid quota (today only Tavily), enabled or not. Only a metered source
+            True for a source whose calls spend a paid quota (today the live web source), enabled or not. Only a metered source
             can have `webCredits`.
         homepage: { type: string, format: uri }
         termsUrl: { type: [string, 'null'], format: uri }
@@ -2153,11 +2153,11 @@ components:
           format: int64
           description: >-
             Credits taken today by live calls from search and the guide and by the Scout's discovery searches, counted
-            in Redis by every replica (the Scout's other Tavily queries are not included).
+            in Redis by every replica (the Scout's other live web queries are not included).
         dailyCap:
           type: [integer, 'null']
           format: int64
-          description: The global daily cap (`H2_TAVILY_GLOBAL_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0060); null only without a runtime setting.
+          description: The global daily cap (`H2_LIVE_WEB_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0060); null only without a runtime setting.
 
     Me:
       type: object
@@ -2275,7 +2275,7 @@ components:
         COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
         EXAMPLE_CANDIDATE is a home example a model drafted for the resource (the draft as JSON in details: label,
         query, path, model); accepting it adds the example. RESOURCE_CANDIDATE is a product page found by the Scout's
-        Tavily discovery and not yet in the catalog (no resource; the candidate as JSON in details: sourceId, url,
+        discovery and not yet in the catalog (no resource; the candidate as JSON in details: sourceId, url,
         title, type, tags, snippet); accepting it indexes it, unless another source listed the page
         meanwhile.
       enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE, EXAMPLE_CANDIDATE,

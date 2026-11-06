@@ -48,10 +48,10 @@ class SearchPropertiesBindingTest {
         .withSystemProperties(
             "H2_SEARCH_TRANSLATE_TIMEOUT_MS=1200",
             "H2_SEARCH_DAILY_TRANSLATIONS=50",
-            "H2_TAVILY_GUEST_SEARCH=7",
-            "H2_TAVILY_GLOBAL_DAILY_CREDITS=900",
-            "H2_TAVILY_REGISTERED_TIER_ENABLED=true",
-            "H2_RETENTION_TAVILY_RESULTS=P3D")
+            "H2_LIVE_WEB_GUEST_SEARCH=7",
+            "H2_LIVE_WEB_DAILY_CREDITS=900",
+            "H2_LIVE_WEB_REGISTERED_TIER_ENABLED=true",
+            "H2_RETENTION_LIVE_WEB_RESULTS=P3D")
         .run(c -> {
           SearchProperties search = c.getBean(SearchProperties.class);
           assertThat(search.translateTimeout())
@@ -61,7 +61,7 @@ class SearchPropertiesBindingTest {
           assertThat(search.web().quota().guest().search()).isEqualTo(7);
           assertThat(search.web().quota().globalDailyCredits()).isEqualTo(900L);
           assertThat(search.web().quota().registeredTierEnabled()).isTrue();
-          assertThat(c.getBean(SearchRetentionProperties.class).tavilyResults())
+          assertThat(c.getBean(SearchRetentionProperties.class).liveWebResults())
               .isEqualTo(Duration.ofDays(3));
         });
   }
@@ -69,7 +69,7 @@ class SearchPropertiesBindingTest {
   @Test
   void aNegativeQuotaStopsStartup() {
     context
-        .withSystemProperties("H2_TAVILY_GUEST_GUIDE=-1")
+        .withSystemProperties("H2_LIVE_WEB_GUEST_GUIDE=-1")
         .run(c -> {
           assertThat(c).hasFailed();
           assertThat(c.getStartupFailure())

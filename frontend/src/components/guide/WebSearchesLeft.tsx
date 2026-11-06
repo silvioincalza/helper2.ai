@@ -19,7 +19,7 @@ function resetTime(now = new Date()): string {
 }
 
 /**
- * Live web searches (Tavily) left today for one feature (ADR 0037): search and the guide count apart. Said from the
+ * Live web searches left today for one feature (ADR 0037): search and the guide count apart. Said from the
  * first one used, because the limit is small; nothing before that, and nothing when the count is unknown (null).
  * A limit of [TEST_CEILING] or more is a test environment's ceiling, not a limit a visitor plans around: the count is
  * not said, only that none is left.
