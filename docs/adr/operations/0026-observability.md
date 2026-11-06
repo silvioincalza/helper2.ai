@@ -95,7 +95,13 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2GuideFirstUsefulSlow`: the p95 of `helper2.guide.first_useful` above its 8 s target for 15 min, above
      3 questions in 15 min (item 8);
    - `Helper2BackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
-     `Helper2PodRestarting`: more than 2 restarts of a container in an hour.
+     `Helper2BackupStale` (critical): no successful backup for 36 h;
+     `Helper2PodRestarting`: more than 2 restarts of a container in an hour;
+   - `Helper2ReplicasMissing`: the `helper2` Deployment has had fewer available replicas than wanted for 10 min;
+     `Helper2NoReplica` (critical): none for 2 min, the site is down. Both read kube-state-metrics, not `up{}`:
+     the scrape job's labels live outside this repository;
+   - `Helper2VolumeAlmostFull`: a PersistentVolumeClaim in a `helper2-*` namespace (Postgres data, backups, the
+     Redis append-only file) under 20% free for 15 min; `Helper2VolumeFull` (critical): under 10% for 5 min.
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
    renders the `PrometheusRule` once and validates it against its CRD schema.
 7. **Retention.** Required of the observability stack, which lives outside this repository and must use these values:

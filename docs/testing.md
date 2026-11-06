@@ -21,7 +21,7 @@ promtool test rules deploy/monitoring/tests/*.yaml
 cd frontend && npm test -- --run && npm run lint && npm run typecheck
 ```
 
-The 19 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
+The 23 alert rules have promtool unit tests; CI runs them in the `monitoring` job.
 `evalTest` and `evalRecord` are not part of `test`: see [docs/eval](eval/README.md).
 The guide evaluation (`scripts/eval-guide.mjs`, default and adversarial sets) runs every night against staging in
 [`guide-eval.yml`](../.github/workflows/guide-eval.yml) ([ADR 0030](adr/quality/0030-guide-evaluation.md)).
@@ -50,7 +50,7 @@ The guide evaluation (`scripts/eval-guide.mjs`, default and adversarial sets) ru
 | Statement counts and latency | HomeListsIT, HomeListsPerfTest | the home lists read their cards in 6 statements for any size (`StatementCounting`, datasource-proxy), batched cards equal the one-by-one ones; `HomeListsPerfTest` gives p50/p95/p99 before and after on 25 000 resources (`perfTest` only) |
 | Live smoke | GitHubSourceLiveTest, HuggingFaceLiveTest, NpmSourceLiveTest, ArxivSourceLiveTest, TavilyLiveTest, McpRegistryCollectorLiveTest, AiDeadlinesCollectorLiveTest, GitHubAwesomeLiveTest | one per adapter, against the real API (the awesome-list collector with Nemotron classification); a test whose key is missing is skipped; runs only with `./gradlew liveTest`, once a week in the `live` workflow |
 | Frontend | Vitest + RTL tests next to each component and page (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom; the review queue's evidence (loading, error, none, AI values and refused values labelled and marked, quotes labelled as source text, links only http(s)) and its keys (j/k, a, r, n, ?, only inside the queue, a held key decides nothing, focus and status after a decision) in ReviewEvidence.test.tsx; the enrichment queue's actions (move to top, skip with a reason and focus back on Cancel, the skipped view and requeue, a refused action says why; axe with the skip confirm); bulk decisions (boxes, x, the bar, the confirm with focus on Cancel, the result line, failed items stay picked) in ReviewBulk.test.tsx |
-| Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 19 rules fires on its condition and stays quiet otherwise |
+| Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 23 rules fires on its condition and stays quiet otherwise |
 
 ## Known gaps (not covered by automated tests)
 

@@ -13,7 +13,9 @@ on:
         description: environment to deploy
         type: choice
         options: [staging, prod]
-        default: prod
+        # Staging by default: a run started without a thought lands where it does no harm. Prod needs the
+        # choice and the required reviewer of the prod environment (ADR 0028).
+        default: staging
       tag:
         description: 12-char commit already built, or a release version X.Y.Z. Empty = HEAD of main for staging, what staging runs for prod
         type: string

@@ -45,7 +45,9 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    `helper2-admin`, `app.adminPort`, [0035](../edge/0035-admin-host.md)) and Actuator on 8081 (`H2_MANAGEMENT_PORT`).
    Probes and the Prometheus scrape use 8081. No Service routes 8081; only the admin names reach 8082.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
-   every 10 s.
+   every 10 s. Postgres and Redis have a liveness probe too (`pg_isready`; `redis-cli ping`, where LOADING
+   counts as alive): two minutes without an answer (6 × 20 s) restarts a hung server, after a first minute
+   (Postgres) or 30 s (Redis) for recovery at start.
 6. **Network policy.** One policy per workload and direction, each naming only the peers that workload needs.
    Ingress is denied by default, then allowed per workload:
    - app (`ingress-app`): the Ingress controller's pods (`networkPolicy.ingressController`: namespace

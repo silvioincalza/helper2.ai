@@ -53,6 +53,12 @@ spec:
           ports: [{ containerPort: 6379, name: redis }]
           # Not ready while the AOF loads (PING answers LOADING).
           readinessProbe: { exec: { command: ["sh", "-c", "redis-cli ping | grep -qx PONG"] }, periodSeconds: 5 }
+          # Alive while it answers at all, LOADING included; two minutes of silence (6 x 20 s) restarts it.
+          livenessProbe:
+            exec: { command: ["sh", "-c", "redis-cli ping | grep -qE 'PONG|LOADING'"] }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
           resources:
             {{- toYaml .Values.redis.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }

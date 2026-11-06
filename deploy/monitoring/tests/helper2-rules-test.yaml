@@ -437,6 +437,98 @@ tests:
               description: "3 restarts in the last hour. A crash loop or an out-of-memory kill."
               runbook: "kubectl -n helper2-prod describe pod helper2-abc (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
 
+  # Replicas: 3 wanted. Two available for 10 minutes warns; none for 2 minutes is critical. Staging's one of one stays quiet.
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="helper2"}'
+        values: '3x30'
+      - series: 'kube_deployment_status_replicas_available{namespace="helper2-prod", deployment="helper2"}'
+        values: '3x5 2x12 0x13'
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-staging", deployment="helper2"}'
+        values: '1x30'
+      - series: 'kube_deployment_status_replicas_available{namespace="helper2-staging", deployment="helper2"}'
+        values: '1x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2ReplicasMissing
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: Helper2ReplicasMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              deployment: helper2
+            exp_annotations:
+              summary: "The app runs with fewer replicas than wanted (helper2-prod)."
+              description: "2 replicas available for 10 minutes. A rollout stuck on a failing probe, a node out, or a scheduling problem."
+              runbook: "kubectl -n helper2-prod rollout status deploy/helper2; kubectl -n helper2-prod get pods -l app=helper2; describe a Pending or not-ready pod."
+      - eval_time: 19m
+        alertname: Helper2NoReplica
+        exp_alerts: []
+      - eval_time: 21m
+        alertname: Helper2NoReplica
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: helper2-prod
+              deployment: helper2
+            exp_annotations:
+              summary: "No app replica is available: the site is down (helper2-prod)."
+              description: "No pod of deploy/helper2 passed its readiness probe for 2 minutes."
+              runbook: "kubectl -n helper2-prod get pods -l app=helper2; kubectl logs for the crash; roll back with the CD workflow (rollback) if a new tag caused it (deploy/k8s/README.md, Rollback)."
+
+  # Volumes: the Postgres data volume at 15% free warns after 15 minutes; the backup volume at 5% free is critical after 5.
+  # A volume at 50% free stays quiet.
+  - interval: 1m
+    input_series:
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="helper2-prod", persistentvolumeclaim="data-postgres-0"}'
+        values: '1000x20'
+      - series: 'kubelet_volume_stats_available_bytes{namespace="helper2-prod", persistentvolumeclaim="data-postgres-0"}'
+        values: '150x20'
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="helper2-prod", persistentvolumeclaim="pg-backup"}'
+        values: '1000x20'
+      - series: 'kubelet_volume_stats_available_bytes{namespace="helper2-prod", persistentvolumeclaim="pg-backup"}'
+        values: '50x20'
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="helper2-prod", persistentvolumeclaim="data-redis-0"}'
+        values: '1000x20'
+      - series: 'kubelet_volume_stats_available_bytes{namespace="helper2-prod", persistentvolumeclaim="data-redis-0"}'
+        values: '500x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Helper2VolumeAlmostFull
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: Helper2VolumeAlmostFull
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              persistentvolumeclaim: data-postgres-0
+            exp_annotations:
+              summary: "Volume data-postgres-0 has less than 20% free (helper2-prod)."
+              description: "15% free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
+              runbook: "kubectl -n helper2-prod get pvc data-postgres-0; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0034)."
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              persistentvolumeclaim: pg-backup
+            exp_annotations:
+              summary: "Volume pg-backup has less than 20% free (helper2-prod)."
+              description: "5% free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
+              runbook: "kubectl -n helper2-prod get pvc pg-backup; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0034)."
+      - eval_time: 6m
+        alertname: Helper2VolumeFull
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: helper2-prod
+              persistentvolumeclaim: pg-backup
+            exp_annotations:
+              summary: "Volume pg-backup has less than 10% free (helper2-prod)."
+              description: "5% free. Writes fail soon."
+              runbook: "kubectl -n helper2-prod get pvc pg-backup; grow the claim now (values.yaml storage) or free space (old dumps on pg-backup, purge on Postgres)."
+
   # Source latency p95: 18 of 20 arxiv calls answer under 0.5 s, 2 time out above the last bucket. The outcomes are
   # summed, so the timeouts set the p95 (the upper bound of the last finite bucket).
   - interval: 1m
