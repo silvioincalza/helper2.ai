@@ -1,5 +1,8 @@
-# Sequence: an accepted product whose first run leaves pricing and platforms unproven; its own pages state them.
-# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, climb, pageMaterials),
+# Sequence: an accepted product with its own GitHub repository (an MCP Registry entry in its io.github namespace).
+# Its README goes into the first run; pricing and platforms stay unproven; its own pages state them.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, checkReadme, climb, pageMaterial),
+#   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (fingerprintFor), backend/src/main/kotlin/ai/helper2/scout/GapRound.kt
+#   (GapTargets.repository), backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java (check, github-readme-revision),
 #   backend/src/main/kotlin/ai/helper2/scout/OfficialPages.kt (OfficialPages.read), backend/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt,
 #   backend/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java, PublicSuffixDomains.java,
 #   backend/src/main/java/ai/helper2/scout/internal/TavilyCreditBudget.java, SharedCachePageLedger.java, CatalogEnrichmentStore.java,
@@ -12,6 +15,9 @@ shape: sequence_diagram
 
 svc: EnrichResource {class: app}
 store: CatalogEnrichmentStore {class: app}
+readme: ReadmeEvidence {class: app}
+revisions: "ai_cache\ngithub-readme-revision" {class: data}
+gh: "GitHub API" {class: ext}
 model: SpringAiEnrichmentModel {class: app}
 tf: "Token Factory\n(reasoning model)" {class: ai}
 val: EvidenceValidator {class: app}
@@ -24,11 +30,23 @@ tavily: "Tavily API\n(US)" {class: ext}
 results: "EnrichmentResults\n(catalog)" {class: app}
 
 svc -> store: "load(resourceId)"
-store -> svc: "records, type PRODUCT,\npage target acme.example (discovery-coding)"
-svc -> model: "propose(records)"
-model -> tf: "enrich-v4" {class: ai-call}
-tf -> model: "useCase writing (quoted)"
-svc -> val: "validate"
+store -> svc: "records, type PRODUCT,\npage target acme.example (discovery-coding),\nREADME target acme/notes (mcp-registry io.github.acme)"
+svc -> readme: "check(acme/notes)"
+readme -> revisions: "get(github, acme, notes)"
+revisions -> readme: "miss (first read)"
+readme -> gh: "GET /repos/acme/notes/readme (raw)"
+gh -> readme: "200, ETag, README"
+readme -> gh: "GET /repos/acme/notes"
+gh -> readme: "license.spdx_id = MIT"
+readme -> revisions: "put(ETag + README hash, 30 days)"
+readme -> svc: "revision, README text, licence MIT"
+svc -> store: "lastFingerprint(resourceId)"
+store -> svc: "another one: records + README hash is new"
+svc -> svc: "UntrustedPageText.clean + window 4000"
+svc -> model: "propose(records + README)"
+model -> tf: "enrich-v4, README as kind=readme" {class: ai-call}
+tf -> model: "useCase writing, license MIT (quoted)"
+svc -> val: "validate (licence fact MIT)"
 val -> svc: "VALIDATED; pricing, platforms missing"
 svc -> pages: "read(acme.example)"
 pages -> pages: "PageScope.of: https, domain acme.example (PSL)"
@@ -50,12 +68,12 @@ pages -> pages: "scope.allows each returned url:\ndrop evil.example"
 pages -> pages: "UntrustedPageText.clean + window 6000"
 pages -> textcache: "put(cleaned pages, TTL 24 h)"
 pages -> svc: "2 pages (home on the start host)"
-svc -> model: "propose(records + pages)"
+svc -> model: "propose(records + README + pages)"
 model -> tf: "pages as kind=vendor-page" {class: ai-call}
 tf -> model: "pricing PAID, platforms web,\naudience USE_AI (no quote)"
 svc -> val: "validate"
-val -> svc: "pricing, platforms SELF_DECLARED VERIFIED;\naudience AI_ESTIMATED; 3 accepted > 1"
-svc -> store: "save(fingerprint of records, run 3,\nofficial-page:acme.example)"
+val -> svc: "pricing, platforms SELF_DECLARED VERIFIED;\naudience AI_ESTIMATED; 4 accepted > 2"
+svc -> store: "save(fingerprint of records + README,\nrun 2, github-readme:acme/notes\n+ official-page:acme.example)"
 store -> results: "record(run, checked)"
 svc -> pages: "markRead (after the save)"
 pages -> ledger: "record(home, pricing:\ntext hashes, 30 days)"

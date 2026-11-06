@@ -1,6 +1,10 @@
-# Flowchart: the evidence ladder inside EnrichResource.attempt, after the first run is validated.
-# Shows when it climbs, the README step, the page step with its URL checks and budgets, and which run is saved.
-# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (climb, readme, pageMaterials),
+# Flowchart: the evidence ladder inside EnrichResource.attempt: README first, then the ladder after the first run.
+# Shows the conditional README read and the fingerprint, when it climbs, the model-card step, the page step with its
+# URL checks and budgets, and which run is saved.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, checkReadme, withText,
+#   climb, modelCard, pageMaterial), backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (fingerprintFor),
+#   backend/src/main/kotlin/ai/helper2/scout/GapRound.kt (GapTargets.repository, ExtraEvidence.check),
+#   backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java (If-None-Match, github-readme-revision),
 #   backend/src/main/kotlin/ai/helper2/scout/OfficialPages.kt (FieldTargets, PageTargets, PageScope, OfficialLinks, OfficialPages),
 #   backend/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt, backend/src/main/kotlin/ai/helper2/scout/GapRound.kt (UntrustedPageText),
 #   backend/src/main/java/ai/helper2/scout/internal/TavilyCreditBudget.java, SharedCachePageLedger.java, RedisPageTextCache.java,
@@ -11,11 +15,18 @@
 
 direction: down
 
-first: "Run 1: source records only\n(model call 1)" {class: ai}
+github: "A record names its own GitHub\nrepository? (GapTargets.repository)" {class: decision}
+check: "GET README with the kept ETag\n(If-None-Match; a 304 is free)" {class: app}
+etag: "ai_cache github-readme-revision:\nETag + README hash, 30 days, no text" {class: data}
+failed: "GitHub failed or rate-limited:\nrecords alone, the run's errors say so,\nnot tried again in the attempt" {class: app}
+same: "Same fingerprint as the last judged run?\n(records + epoch + model + README hash)" {class: decision}
+unchanged: "UNCHANGED: no model call" {class: end}
+full: "304 but the records changed:\nread the README in full" {class: app}
+first: "Run 1: records + README if any\n(model call 1; README cleaned, window 4000,\nproves no claim; GitHub licence is a fact)" {class: ai}
 needs: "A target fact of the type missing\n(FieldTargets), or PARTIAL / REJECTED?" {class: decision}
-repo: "A record names its own repository\nor model (GapTargets)?" {class: decision}
-readme: "Read README or model card\n(ADR 0043), clean, window 4000" {class: app}
-run2: "Run 2: records + README\n(model call 2, gap budget)" {class: ai}
+repo: "A record names its own model?\n(model card, ADR 0043)" {class: decision}
+readme: "Read the model card\n(ADR 0043), clean, window 4000" {class: app}
+run2: "Run 2: records + README + card\n(model call 2, gap budget)" {class: ai}
 still: "Still a target fact missing,\nand a product page record\n(PageTargets: discovery-<category>, curated)?" {class: decision}
 scope: "Page allowed? https, a name not an IP,\nno user info, port 443;\nscope = registrable domain (PSL),\nexact host on shared hosts,\npath prefix on a vendor's page" {class: decision}
 seen: "Read by a saved run\nin the last 30 days?\n(URL + text hash, no text)" {class: decision}
@@ -26,12 +37,22 @@ links: "Code picks up to 3 links on the site:\npricing · plans · download · f
 more: "Tavily Extract: those pages\n(1 more credit)" {class: app}
 recheck: "Every returned URL in scope again?\n(redirects; failed_results = no text)" {class: decision}
 clean: "UntrustedPageText: 64 KB cap,\nno comments, tags, hidden elements,\nhidden characters, AI-addressed lines;\n[email], [phone]; window 6000" {class: app}
-run3: "Run 3: records + README + pages\n(model call 3, gap budget)" {class: ai}
+run3: "Run 3: records + README or card + pages\n(model call 2 or 3, gap budget)" {class: ai}
 validate: "EvidenceValidator: facts need a quote that states them;\naudience, tech level = AI_ESTIMATED;\nonly-own-page facts = SELF_DECLARED;\nsource licence wins; ≤ 3 self-declared relationships, unverified;\nsentences keep to their excerpts" {class: app}
 better: "Keeps more accepted\nitems than the best so far?" {class: decision}
-save: "Save the best run once,\nunder the fingerprint of the records\n(UNCHANGED next time)" {class: end}
+save: "Save the best run once,\nunder the fingerprint of the records\nand the README read (UNCHANGED next time)" {class: end}
 mark: "Page call ran: put the pages\nin the 30-day ledger\n(after the save only)" {class: data}
 
+github -> same: "no: records alone"
+github -> check: yes {class: hot}
+check -> etag: "200: keep ETag + hash"
+check -> failed: "403, 429, 5xx"
+check -> same: "200 or 304"
+failed -> same
+same -> unchanged: yes
+same -> full: "no, after a 304"
+same -> first: no {class: ai-call}
+full -> first: "README text" {class: ai-call}
 first -> validate
 validate -> needs
 needs -> save: no

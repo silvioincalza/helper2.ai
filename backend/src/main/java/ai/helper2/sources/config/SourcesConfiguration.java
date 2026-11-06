@@ -1,5 +1,6 @@
 package ai.helper2.sources.config;
 
+import ai.helper2.platform.cache.SharedCaches;
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
@@ -343,21 +344,28 @@ class SourcesConfiguration {
   }
 
   /**
-   * README and model-card text for the Scout's gap round (ADR 0043), with the GitHub and Hub
-   * settings and tokens.
+   * README and model-card text for the Scout's enrichment (ADR 0043, ADR 0056), with the GitHub and
+   * Hub settings and tokens. The ETag and hash of each GitHub README read go in the shared cache,
+   * so an unchanged README answers 304; without the cache every check reads in full.
    */
   @Bean
   ReadmeEvidence readmeEvidence(
-      SourcesProperties p, Clock clock, Resilience resilience, ObservationRegistry observations) {
+      SourcesProperties p,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      ObjectProvider<SharedCaches> caches) {
     SourceSettings github = p.get("github");
     SourceSettings hub = p.get("huggingface");
+    SharedCaches shared = caches.getIfAvailable();
     return ReadmeEvidence.of(
         github,
         hub,
         ObservedHttp.restClientBuilder(github.timeout(), observations),
         ObservedHttp.restClientBuilder(hub.timeout(), observations),
         resilience,
-        clock);
+        clock,
+        shared == null ? null : shared.named(ReadmeEvidence.REVISION_CACHE));
   }
 
   @Bean

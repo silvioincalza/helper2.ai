@@ -1,5 +1,6 @@
-# Sequence: an enrichment of a GitHub repository whose first run is REJECTED and whose README proves its licence.
-# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, gapRound),
+# Sequence: an enrichment of a Hugging Face model whose first run is REJECTED and whose model card proves its licence.
+# (A GitHub README goes into the first run instead: see sequence-0056-evidence-ladder.)
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, climb, modelCard),
 #   backend/src/main/kotlin/ai/helper2/scout/GapRound.kt, backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java,
 #   backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java, catalog/internal/JdbcEnrichmentResults.java.
@@ -16,32 +17,30 @@ model: SpringAiEnrichmentModel {class: app}
 tf: "Token Factory\n(reasoning model)" {class: ai}
 val: EvidenceValidator {class: app}
 readme: ReadmeEvidence {class: app}
-gh: "GitHub API" {class: ext}
+hub: "Hugging Face Hub" {class: ext}
 results: "EnrichmentResults\n(catalog)" {class: app}
 
 svc -> store: "load(resourceId)"
 store -> candidates: "candidate(resourceId)"
 candidates -> store: "source texts with source id,\nexternal id, repository link"
 store -> store: "GapTargets.select"
-store -> svc: "records, facts, text hash,\ngap target github-readme:acme/tool"
+store -> svc: "records, facts, text hash,\ngap target hf-model-card:acme/model"
 svc -> model: "propose(records)"
 model -> tf: "chat"
 tf -> model: "licence MIT, no citation"
 svc -> val: "validate"
 val -> svc: "REJECTED (nothing proven)"
-svc -> readme: "fetch(acme/tool)"
-readme -> gh: "GET /repos/acme/tool/readme (raw)"
-gh -> readme: "README"
-readme -> gh: "GET /repos/acme/tool"
-gh -> readme: "license.spdx_id = MIT"
-readme -> svc: "README text, link, licence MIT"
-svc -> svc: "ReadmeText.clean + window (4000)"
+svc -> readme: "fetch(acme/model)"
+readme -> hub: "GET /acme/model/raw/main/README.md"
+hub -> readme: "model card, front matter license: mit"
+readme -> svc: "card text, link, licence mit"
+svc -> svc: "UntrustedPageText.clean + window (4000)"
 svc -> svc: "gap budget tryAcquire()"
-svc -> model: "propose(records + README)"
+svc -> model: "propose(records + card)"
 model -> tf: "chat"
-tf -> model: "licence MIT, quote from the README"
-svc -> val: "validate (licence fact MIT)"
+tf -> model: "licence mit, quote from the card"
+svc -> val: "validate (licence fact mit)"
 val -> svc: "VALIDATED: 1 accepted > 0"
-svc -> store: "save(fingerprint of records,\ngap run, github-readme:acme/tool)"
+svc -> store: "save(fingerprint of records,\ngap run, hf-model-card:acme/model)"
 store -> results: "record(run, checked)"
-results -> results: "evidence row: README URL,\nread time, anchored to the record"
+results -> results: "evidence row: card URL,\nread time, anchored to the record"

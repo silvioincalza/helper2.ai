@@ -1172,7 +1172,7 @@
   },
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 5 November 2026",
+    "updated": "Last updated: 6 November 2026",
     "lede": "Helper2.ai collects as little as possible. You can search and ask the guide without an account. There are no ads, no analytics and no tracking cookies, and we never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
@@ -1270,6 +1270,7 @@
           "Database backups: 7 days. Anything deleted above is gone from the backups within 7 days.",
           "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource.",
           "Pages of a product's own website: the raw page is never stored. Their cleaned text: up to 24 hours, to try again. The page address and a fingerprint of its text: 30 days.",
+          "README files on GitHub: never stored. Their version tag from GitHub and a fingerprint of their text: 30 days, so we read a README again only when it changes.",
           "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: 180 days after we last retrieved them. Product pages we accepted from a web search, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then 180 days.",
           "The search index of awesome lists and their section headings: as long as we list the list and the tool, and 30 days after a list was last read."
         ]

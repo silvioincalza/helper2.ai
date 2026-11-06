@@ -87,7 +87,9 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
 
   /**
    * The source records as material, and what the sources themselves state (licence, type, open
-   * source), which the model may not overwrite. A type of OTHER says nothing, so it is no fact.
+   * source), which the model may not overwrite. A type of OTHER says nothing, so it is no fact. The
+   * GitHub repository a record names as the resource's own is where the README for the first model
+   * call comes from (ADR 0056).
    */
   @Override
   public EnrichmentMaterial load(UUID resourceId) {
@@ -124,7 +126,8 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
         sha(allText),
         gap,
         typeOf(candidate.type()),
-        PageTargets.select(records));
+        PageTargets.select(records),
+        GapTargets.repository(records));
   }
 
   /** The catalog's type; one this code does not know counts as OTHER (no target fields). */

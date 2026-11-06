@@ -124,9 +124,14 @@ Open items:
 - Watch whether the source `type`, now a source fact in enrichment, sends many proposals to CONFLICTING review
   (for example GitHub LIBRARY versus MCP_SERVER) ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md)).
 - Cross-language retrieval in vector search.
-- Gap round for resources enriched before it ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): they get one only when
-  their fingerprint changes. Either pick PARTIAL and REJECTED resources once from the backlog under the gap cap, or wait
-  for the next prompt version. Decide with `helper2.scout.gap{outcome="filled"}` after two weeks.
+- Gap round for resources enriched before it ([ADR 0043](adr/scout/0043-enrichment-gap-round.md)): a model card is read
+  only when the fingerprint changes. Either pick PARTIAL and REJECTED models once from the backlog under the gap cap, or
+  wait for the next model. Decide with `helper2.scout.gap{source="hf-model-card",outcome="filled"}` after two weeks.
+  GitHub resources need nothing: the README hash is in the fingerprint now, so each gets README first on its next
+  attempt ([ADR 0056](adr/scout/0056-evidence-ladder.md) §3).
+- README first ([ADR 0056](adr/scout/0056-evidence-ladder.md) §3): after two weeks, compare model calls per GitHub
+  resource and `helper2.scout.fields{step="readme"}` with the weeks before, and watch `helper2.scout.readme{outcome}`
+  for the share of 304s and failures.
 - Resources whose description is under 40 characters are never enriched, so they never get a gap round, even when they
   have a README. Lower the bar for them only if the gap round fills fields often.
 - Evidence ladder follow-ups ([ADR 0056](adr/scout/0056-evidence-ladder.md)):
@@ -304,7 +309,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - A scheduled run can start up to one `H2_SCOUT_TICK` (10 min) after its cron time. A renewal-thread pause longer than one lease lets another replica start a second run. ([ADR 0018](adr/scout/0018-scout-runner.md))
 - Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. ([ADR 0019](adr/scout/0019-evidence-gated-enrichment.md))
-- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
+- The gap round reads a model card once per fingerprint: a card that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README and card text never support a summary claim. ([ADR 0043](adr/scout/0043-enrichment-gap-round.md))
+- README first: every attempt of a GitHub resource makes one GitHub request, also when it ends UNCHANGED (a 304 is free). While GitHub fails or rate-limits, a resource enriched with its README is enriched again from the records alone, then again with the README when GitHub answers: two model calls that bring nothing. A README edit (a new version in the install line) enriches the resource again. Package records (npm, PyPI) do not give a repository: they link whatever their author likes. ([ADR 0056](adr/scout/0056-evidence-ladder.md))
 - Hugging Face provider models get no enrichment (the list API has no description). Tavily discovery finds consumer tools, hosting and prompt libraries, but each product waits for an admin ([ADR 0051](adr/scout/0051-tavily-discovery.md)); measure the weekly review load and the share accepted, then tune `min-score` and the categories. Course pages wait for an admin each week, and an accepted course is still added to the curated list by hand: index it on accept, like resource candidates. ([ADR 0020](adr/scout/0020-scout-collectors.md))
 - Tavily discovery follow-ups ([ADR 0051](adr/scout/0051-tavily-discovery.md)): a weekly alert on the Scout's credits (`helper2_tavily_credits_total{feature=~"scout-discovery|scout-linkedin"}`); a host deny list and at most 2 list pages per host per pass; a replay evaluation on a recorded snapshot (the search facts are now kept per record and candidate) to tune each category's `min-score`, the list-title rule and the words; drop vendor compare and alternatives pages; recognise Chrome Web Store, Firefox add-on and GPT links; shorter excerpts for press pages and no email addresses in excerpts; expire open candidates; allow only collectors that propose candidates as their source. A rejected candidate can come back once its review item is purged (180 days after the decision).
 - Discovery categories ([ADR 0051](adr/scout/0051-tavily-discovery.md)): an accepted candidate keeps only its first finder's search facts in full in `discovery` (the others are in `foundBy`). A category's first day is its place in the list, so moving a category that never ran moves its first day. The Scout checks only its own daily credit cap, not the live search's global one. The Terms describe the labels the UI shows today ("AI-written", "AI summary", "Extracted by AI"); add "AI-estimated" when a value is shown with it. The health and legal notices are on the Sources rows and the admin candidate cards, not yet on the resource page of an accepted tool.

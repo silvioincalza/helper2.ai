@@ -100,9 +100,17 @@ public final class HttpClients {
    * #getJson}.
    */
   public static String getText(Supplier<String> call, Clock clock) {
+    String body = exchange(call, clock);
+    return body == null ? "" : body;
+  }
+
+  /**
+   * Runs a call that returns anything (e.g. a response entity, to read its status and headers) with
+   * the same failure mapping as {@link #getJson}.
+   */
+  public static <T> T exchange(Supplier<T> call, Clock clock) {
     try {
-      String body = call.get();
-      return body == null ? "" : body;
+      return call.get();
     } catch (RestClientResponseException e) {
       throw mapStatus(e, clock);
     } catch (RestClientException e) {

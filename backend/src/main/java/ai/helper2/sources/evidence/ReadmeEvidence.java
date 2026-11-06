@@ -1,20 +1,28 @@
 package ai.helper2.sources.evidence;
 
+import ai.helper2.platform.cache.SharedCache;
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.ExtraText;
 import ai.helper2.scout.GapKind;
 import ai.helper2.scout.GapTarget;
+import ai.helper2.scout.ReadmeCheck;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
+import java.time.Duration;
+import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -24,6 +32,12 @@ import tools.jackson.databind.JsonNode;
  * {@link ai.helper2.scout.GapTargets} (already strict); they are passed as URI template variables,
  * so they are encoded and cannot reach another API path. Only the configured hosts are called; the
  * source token never follows a redirect to another host (ObservedHttp).
+ *
+ * <p>README first (ADR 0056): {@link #check} sends the ETag of the last read ({@code
+ * If-None-Match}). GitHub answers 304 when the README did not change, and a 304 does not count on
+ * its rate limit. For that, the shared cache ({@code ai_cache}, name {@value #REVISION_CACHE})
+ * keeps per repository only the ETag and a hash of the README, for {@link #REVISION_TTL}: never the
+ * text.
  */
 public class ReadmeEvidence implements ExtraEvidence {
 
@@ -37,26 +51,49 @@ public class ReadmeEvidence implements ExtraEvidence {
    */
   private static final Set<String> NOT_A_LICENSE = Set.of("NOASSERTION", "OTHER");
 
+  /** The shared-cache name of the README revisions: ETag and hash, never the text. */
+  public static final String REVISION_CACHE = "github-readme-revision";
+
+  /**
+   * How long a README's ETag is kept. A check inside it that finds the README unchanged costs no
+   * rate limit; after it, one full read.
+   */
+  static final Duration REVISION_TTL = Duration.ofDays(30);
+
+  private static final int NOT_MODIFIED = 304;
+
   /**
    * A redirect the transport did not follow (to another host while a token is set) arrives as a
-   * 3xx: its body is not the README.
+   * 3xx: its body is not the README. A 304 is no redirect: the README did not change.
    */
   private static final RestClient.ResponseSpec.ErrorHandler REDIRECT_REFUSED =
       (request, response) -> {
-        throw new SourceFailure.Unavailable("redirect not followed");
+        if (response.getStatusCode().value() != NOT_MODIFIED) {
+          throw new SourceFailure.Unavailable("redirect not followed");
+        }
       };
 
   private final @Nullable RestClient github;
   private final @Nullable RestClient hub;
   private final Resilience resilience;
   private final Clock clock;
+  private final @Nullable SharedCache revisions;
 
+  /**
+   * @param revisions where the ETag and hash of each README read are kept; null: every check reads
+   *     the README in full
+   */
   public ReadmeEvidence(
-      @Nullable RestClient github, @Nullable RestClient hub, Resilience resilience, Clock clock) {
+      @Nullable RestClient github,
+      @Nullable RestClient hub,
+      Resilience resilience,
+      Clock clock,
+      @Nullable SharedCache revisions) {
     this.github = github;
     this.hub = hub;
     this.resilience = resilience;
     this.clock = clock;
+    this.revisions = revisions;
   }
 
   public static ReadmeEvidence of(
@@ -65,7 +102,8 @@ public class ReadmeEvidence implements ExtraEvidence {
       RestClient.Builder githubBuilder,
       RestClient.Builder hubBuilder,
       Resilience resilience,
-      Clock clock) {
+      Clock clock,
+      @Nullable SharedCache revisions) {
     // Without a token GitHub allows 60 calls an hour: the gap round would spend them on 429s. Same
     // rule as the awesome lists.
     return new ReadmeEvidence(
@@ -74,37 +112,74 @@ public class ReadmeEvidence implements ExtraEvidence {
             : null,
         hub.enabled() ? HttpClients.client(hubBuilder, hub) : null,
         resilience,
-        clock);
+        clock,
+        revisions);
   }
 
   @Override
   public @Nullable ExtraText fetch(GapTarget target) {
-    return target.getKind() == GapKind.GITHUB_README ? github(target) : modelCard(target);
+    return target.getKind() == GapKind.GITHUB_README
+        ? github(target, readme(target, null))
+        : modelCard(target);
   }
 
-  private @Nullable ExtraText github(GapTarget t) {
+  /**
+   * A GitHub README with the ETag of the last read: on a 304 only the revision we kept, without a
+   * text. A model card is always read in full.
+   */
+  @Override
+  public @Nullable ReadmeCheck check(GapTarget target) {
+    if (target.getKind() != GapKind.GITHUB_README) {
+      ExtraText card = modelCard(target);
+      return card == null ? null : new ReadmeCheck(card.getRevisionOrHash(), card);
+    }
+    Revision known = known(target);
+    ResponseEntity<String> response = readme(target, known == null ? null : known.etag());
+    if (response != null && response.getStatusCode().value() == NOT_MODIFIED) {
+      if (known == null) {
+        throw new SourceFailure.Unavailable("not modified, but no revision kept");
+      }
+      return new ReadmeCheck(known.hash(), null);
+    }
+    ExtraText text = github(target, response);
+    return text == null ? null : new ReadmeCheck(text.getRevisionOrHash(), text);
+  }
+
+  /** The README response, or null when there is none (no token, or 404). */
+  private @Nullable ResponseEntity<String> readme(GapTarget t, @Nullable String etag) {
     if (github == null) {
       return null;
     }
-    String readme =
-        notFoundIsNull(() ->
-            resilience.call(
-                POLICY,
-                () ->
-                    HttpClients.getText(
-                        () ->
-                            github
-                                .get()
-                                .uri("/repos/{owner}/{repo}/readme", t.getOwner(), t.getName())
-                                .header("Accept", "application/vnd.github.raw+json")
-                                .attributes(ObservedHttp.maxResponseBytes(MAX_BYTES))
-                                .retrieve()
-                                .onStatus(HttpStatusCode::is3xxRedirection, REDIRECT_REFUSED)
-                                .body(String.class),
-                        clock)));
+    return notFoundIsNull(() ->
+        resilience.call(
+            POLICY,
+            () ->
+                HttpClients.exchange(
+                    () ->
+                        github
+                            .get()
+                            .uri("/repos/{owner}/{repo}/readme", t.getOwner(), t.getName())
+                            .header("Accept", "application/vnd.github.raw+json")
+                            .headers(h -> {
+                              if (etag != null) {
+                                h.setIfNoneMatch(etag);
+                              }
+                            })
+                            .attributes(ObservedHttp.maxResponseBytes(MAX_BYTES))
+                            .retrieve()
+                            .onStatus(HttpStatusCode::is3xxRedirection, REDIRECT_REFUSED)
+                            .toEntity(String.class),
+                    clock)));
+  }
+
+  /** The README text of [response] with the licence GitHub states, and its revision kept. */
+  private @Nullable ExtraText github(GapTarget t, @Nullable ResponseEntity<String> response) {
+    String readme = response == null ? null : response.getBody();
     if (readme == null || readme.isBlank()) {
       return null;
     }
+    String revision = hash(readme);
+    remember(t, response.getHeaders().getETag(), revision);
     JsonNode repo =
         notFoundIsNull(() ->
             resilience.call(
@@ -122,7 +197,44 @@ public class ReadmeEvidence implements ExtraEvidence {
     // The repository page shows whichever README the repository has (README.md, readme.rst,
     // docs/README.md...).
     return new ExtraText(
-        link("https://github.com/{o}/{r}#readme", t), clock.instant(), readme, license);
+        link("https://github.com/{o}/{r}#readme", t), clock.instant(), readme, license, revision);
+  }
+
+  /** The ETag and hash of the last read of [t]'s README, or null. */
+  private @Nullable Revision known(GapTarget t) {
+    if (revisions == null) {
+      return null;
+    }
+    String kept = revisions.get(revisionKey(t));
+    int split = kept == null ? -1 : kept.indexOf('\n');
+    return split <= 0 ? null : new Revision(kept.substring(0, split), kept.substring(split + 1));
+  }
+
+  private void remember(GapTarget t, @Nullable String etag, String revision) {
+    if (revisions != null && etag != null && !etag.isBlank() && etag.indexOf('\n') < 0) {
+      revisions.put(revisionKey(t), etag + "\n" + revision, REVISION_TTL);
+    }
+  }
+
+  private String revisionKey(GapTarget t) {
+    return revisions.key(
+        "github", t.getOwner().toLowerCase(Locale.ROOT), t.getName().toLowerCase(Locale.ROOT));
+  }
+
+  /** What is kept of one README read: the ETag GitHub sent and a hash of the text. */
+  private record Revision(String etag, String hash) {}
+
+  /** First 16 bytes of the SHA-256 of [text], hex: the README's revision in the fingerprint. */
+  static String hash(String text) {
+    try {
+      return HexFormat.of()
+          .formatHex(
+              MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)),
+              0,
+              16);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private @Nullable ExtraText modelCard(GapTarget t) {

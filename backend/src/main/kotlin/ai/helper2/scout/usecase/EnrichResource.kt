@@ -7,6 +7,7 @@ import ai.helper2.scout.EnrichmentOutcome
 import ai.helper2.scout.EnrichmentStore
 import ai.helper2.scout.EvidenceValidator
 import ai.helper2.scout.ExtraEvidence
+import ai.helper2.scout.ExtraText
 import ai.helper2.scout.FieldTargets
 import ai.helper2.scout.GapBudget
 import ai.helper2.scout.GapKind
@@ -29,18 +30,24 @@ import org.slf4j.LoggerFactory
 
 /**
  * Runs the model, validates deterministically, persists, and routes problems to review. A resource
- * whose enrichment fingerprint (source text, prompt version, model) equals that of its last judged
- * run is not sent again (UNCHANGED): a new star count or version must not cost a model call, and a
- * REJECTED answer is not asked for twice. A new prompt version or model changes the fingerprint, so
- * the resource is enriched again.
+ * whose enrichment fingerprint (source text, epoch, model, README revision) equals that of its last
+ * judged run is not sent again (UNCHANGED): a new star count or version must not cost a model call,
+ * and a REJECTED answer is not asked for twice. A new model or a changed README changes the
+ * fingerprint, so the resource is enriched again.
+ *
+ * README first (ADR 0056): when a record names the resource's own GitHub repository, its README
+ * ([extraEvidence]) goes into the first model call, and its revision into the fingerprint: a
+ * changed README enriches the resource again, an unchanged one is UNCHANGED. The read is
+ * conditional, so an unchanged README costs no GitHub rate limit. When GitHub fails, the first call
+ * reads the records alone and the run's errors say so; the README is not tried again in the
+ * attempt.
  *
  * Evidence ladder (ADR 0043, ADR 0056): when the first run leaves a target field of the type
  * unproven, or ends PARTIAL or REJECTED, the attempt climbs one or two steps, each one more model
- * call: the README or model card the resource names ([extraEvidence]), then the product's own pages
- * ([officialPages]). At most three model calls per attempt. Each step keeps the run that keeps
- * more, and the attempt saves once, under the fingerprint of the source text alone: the read text
- * is not stored, so the next run with unchanged source text is UNCHANGED, and the ladder runs once
- * per fingerprint.
+ * call: the model card the resource names, then the product's own pages ([officialPages]). At most
+ * three model calls per attempt. Each step keeps the run that keeps more, and the attempt saves
+ * once, under the fingerprint of the source text and the README's revision: no read text is stored,
+ * so the next run with the same inputs is UNCHANGED, and the ladder runs once per fingerprint.
  */
 class EnrichResource
 @JvmOverloads
@@ -67,6 +74,8 @@ constructor(
     val GAP_OUTCOMES = setOf(EnrichmentOutcome.PARTIAL, EnrichmentOutcome.REJECTED)
 
     const val PAGE_SOURCE = "official-page"
+
+    const val RECORDS_ALONE = "enriched from the records alone"
   }
 
   /** The run an attempt keeps, the step that produced it, and the extra text it read. */
@@ -74,7 +83,11 @@ constructor(
     val result: ValidationResult,
     val step: String,
     val used: List<String> = emptyList(),
-  )
+  ) {
+    /** The rung with [note] in its errors, for the run's audit. */
+    fun noting(note: String?): Rung =
+      if (note == null) this else copy(result = result.copy(errors = result.errors + note))
+  }
 
   /**
    * Class and message only (never the model's answer or the source material), capped for the log
@@ -94,11 +107,16 @@ constructor(
   private fun attempt(resourceId: UUID): EnrichmentOutcome {
     val started = clock.instant()
     val material = store.load(resourceId) ?: return EnrichmentOutcome.REJECTED
-    val fingerprint = material.fingerprintFor(model)
-    if (store.lastFingerprint(resourceId) == fingerprint) return EnrichmentOutcome.UNCHANGED
+    val checked = checkReadme(resourceId, material)
+    if (store.lastFingerprint(resourceId) == material.fingerprintFor(model, checked.revision)) {
+      return EnrichmentOutcome.UNCHANGED
+    }
+    val firstReadme = withText(resourceId, checked)
+    val readme = firstReadme.readable()
+    val fingerprint = material.fingerprintFor(model, firstReadme.revision)
     val first =
       try {
-        run(resourceId, material.input)
+        run(resourceId, withExtra(material.input, listOfNotNull(readme)))
       } catch (e: LlmUnavailable) {
         log.warn("enrichment of $resourceId: LLM unavailable (${reason(e)})")
         return saveFailure(resourceId, fingerprint, started, EnrichmentOutcome.LLM_UNAVAILABLE, e)
@@ -106,8 +124,11 @@ constructor(
         log.warn("enrichment of $resourceId failed (${reason(e)})")
         return saveFailure(resourceId, fingerprint, started, EnrichmentOutcome.FAILED, e)
       }
-    val climbed = climb(resourceId, material, Rung(first, "records"))
-    val kept = climbed.rung
+    val firstRung =
+      if (readme == null) Rung(first, "records")
+      else Rung(first, "readme", listOf(readme.target.label))
+    val climbed = climb(resourceId, material, firstRung, readme)
+    val kept = climbed.rung.noting(firstReadme.failure)
     val used = kept.used.joinToString(" + ").take(300).ifEmpty { null }
     store.save(
       resourceId,
@@ -149,26 +170,33 @@ constructor(
   }
 
   /**
-   * The ladder after the first run: the README or model card, then the product's own pages, each
-   * only while something is still unproven. Returns the rung that keeps most.
+   * The ladder after the first run: the model card, then the product's own pages, each only while
+   * something is still unproven. A GitHub README is never a step: the first run read it ([readme]),
+   * or GitHub failed and is not asked again. Returns the rung that keeps most.
    */
-  private fun climb(resourceId: UUID, material: EnrichmentMaterial, first: Rung): Climbed {
+  private fun climb(
+    resourceId: UUID,
+    material: EnrichmentMaterial,
+    first: Rung,
+    readme: Readme?,
+  ): Climbed {
     if (!needsMore(material, first.result)) return Climbed(first)
-    val readme = readme(resourceId, material)
     var best = first
-    if (readme != null) {
-      val source = readme.target.kind.label
-      val next = runWith(resourceId, material, listOf(readme.material), readme.facts, source)
-      best = better(best, next, "readme", listOf(readme.target.label), source)
+    val card = modelCard(resourceId, material)
+    if (card != null) {
+      val source = card.target.kind.label
+      val texts = listOfNotNull(readme, card)
+      val next = runWith(resourceId, material, texts, source)
+      best = better(best, next, "readme", texts.map { it.target.label }, source)
     }
     val target = material.pageTarget ?: return Climbed(best)
     if (!needsMore(material, best.result)) return Climbed(best)
     val pages = readPages(resourceId, target) ?: return Climbed(best)
-    val extra = listOfNotNull(readme?.material) + pages.map { pageMaterial(it, target) }
-    val facts = readme?.facts.orEmpty()
-    val used =
-      listOfNotNull(readme?.target?.label) + "${GapKind.OFFICIAL_PAGE.label}:${target.url.host}"
-    val next = runWith(resourceId, material, extra, facts, PAGE_SOURCE) ?: return Climbed(best)
+    val texts = listOfNotNull(readme, card)
+    val used = texts.map { it.target.label } + "${GapKind.OFFICIAL_PAGE.label}:${target.url.host}"
+    val next =
+      runWith(resourceId, material, texts, PAGE_SOURCE, pages.map { pageMaterial(it, target) })
+        ?: return Climbed(best)
     // The model read the pages: once the run is saved they go in the 30-day ledger.
     return Climbed(better(best, next, "pages", used, PAGE_SOURCE), target to pages)
   }
@@ -179,12 +207,23 @@ constructor(
     val pagesRead: Pair<PageTarget, List<OfficialPage>>? = null,
   )
 
-  /** The README or model card read for [target], and the licence its source API states. */
-  private class Readme(
-    val material: Material,
-    val target: GapTarget,
-    val facts: Map<String, String>,
-  )
+  /**
+   * [input] with [texts] next to the records. The licence the source API states is a fact, like a
+   * record's (a record's own wins; the first text's wins over a later one): text that says
+   * otherwise conflicts instead of overwriting it.
+   */
+  private fun withExtra(
+    input: EnrichmentInput,
+    texts: List<Readme>,
+    pages: List<Material> = emptyList(),
+  ): EnrichmentInput {
+    if (texts.isEmpty() && pages.isEmpty()) return input
+    val facts = texts.reversed().fold(emptyMap<String, String>()) { acc, t -> acc + t.facts }
+    return input.copy(
+      materials = input.materials + texts.map { it.material } + pages,
+      sourceFacts = facts + input.sourceFacts,
+    )
+  }
 
   /** A target fact is still missing, or the run left something unproven (ADR 0043). */
   private fun needsMore(material: EnrichmentMaterial, result: ValidationResult): Boolean =
@@ -212,34 +251,73 @@ constructor(
   private fun runWith(
     resourceId: UUID,
     material: EnrichmentMaterial,
-    extra: List<Material>,
-    facts: Map<String, String>,
+    texts: List<Readme>,
     source: String,
+    pages: List<Material> = emptyList(),
   ): ValidationResult? {
     // The cap counts model calls; reading costs none of it.
     if (!gapBudget.tryAcquire()) return skipped(source, "skipped_cap")
-    val input = material.input
-    val withExtra =
-      input.copy(
-        materials = input.materials + extra,
-        // The licence the source API states is a fact, like a record's (a record's own wins): text
-        // that says otherwise conflicts instead of overwriting it.
-        sourceFacts = facts + input.sourceFacts,
-      )
     return try {
-      run(resourceId, withExtra)
+      run(resourceId, withExtra(material.input, texts, pages))
     } catch (e: RuntimeException) {
       log.info("gap round of $resourceId ($source): model run failed (${reason(e)})")
       skipped(source, "model_failed")
     }
   }
 
-  /** The README or model card as a material that proves no claim alone, or null. */
-  private fun readme(resourceId: UUID, material: EnrichmentMaterial): Readme? {
-    val target = material.gapTarget ?: return null
+  /**
+   * The README of the resource's GitHub repository, read before the first model call (ADR 0056).
+   * The read may answer "not modified": then only the revision is known. Not under the gap cap: it
+   * makes no model call of its own.
+   */
+  private fun checkReadme(resourceId: UUID, material: EnrichmentMaterial): FirstReadme {
+    val target = material.readmeTarget ?: return FirstReadme()
+    val evidence = extraEvidence ?: return FirstReadme()
+    val check =
+      try {
+        evidence.check(target)
+      } catch (e: RuntimeException) {
+        return unread(resourceId, target, e)
+      }
+    if (check == null) return FirstReadme(target).also { readmeMetric("missing") }
+    readmeMetric(if (check.notModified) "cached" else "read")
+    return FirstReadme(target, check.revision, check.text)
+  }
+
+  /** [checked] with its text: after a 304 the call needs the README, so it is read in full. */
+  private fun withText(resourceId: UUID, checked: FirstReadme): FirstReadme {
+    val target = checked.target
+    if (target == null || checked.revision == null || checked.text != null) return checked
+    val text =
+      try {
+        extraEvidence?.fetch(target)
+      } catch (e: RuntimeException) {
+        return unread(resourceId, target, e)
+      }
+    if (text == null) return FirstReadme(target).also { readmeMetric("missing") }
+    readmeMetric("read")
+    return FirstReadme(target, text.revisionOrHash, text)
+  }
+
+  /** GitHub failed or rate-limited: the first call reads the records alone, and the run says so. */
+  private fun unread(resourceId: UUID, target: GapTarget, e: RuntimeException): FirstReadme {
+    log.info("enrichment of $resourceId: ${target.label} unavailable (${e.javaClass.simpleName})")
+    readmeMetric("failed")
+    return FirstReadme(
+      target,
+      failure = "${target.label} not read (${e.javaClass.simpleName}): $RECORDS_ALONE",
+    )
+  }
+
+  /**
+   * The model card as a material that proves no claim alone, or null. A GitHub README is never read
+   * here: the first call read it, or GitHub failed and is not asked again in the attempt.
+   */
+  private fun modelCard(resourceId: UUID, material: EnrichmentMaterial): Readme? {
+    val target = material.gapTarget?.takeIf { it.kind != GapKind.GITHUB_README } ?: return null
     val evidence = extraEvidence ?: return null
     val source = target.kind.label
-    // Turned off or spent for today: no README is read for a call that cannot be made.
+    // Turned off or spent for today: no card is read for a call that cannot be made.
     if (!gapBudget.hasRoom()) return skipped(source, "skipped_cap")
     val extra =
       try {
@@ -251,19 +329,11 @@ constructor(
         return skipped(source, "source_failed")
       }
     if (extra == null) return skipped(source, "no_text")
-    val text = UntrustedPageText.window(UntrustedPageText.clean(extra.raw))
-    if (text.isBlank()) return skipped(source, "no_text")
-    val readme =
-      Material(
-        UUID.randomUUID(),
-        extra.sourceUrl,
-        extra.retrievedAt,
-        text,
-        anchorRecordId = target.anchorRecordId,
-        supportsClaims = false,
-      )
-    return Readme(readme, target, extra.license?.let { mapOf("license" to it) }.orEmpty())
+    return readmeOf(target, extra) ?: skipped(source, "no_text")
   }
+
+  private fun readmeMetric(outcome: String) =
+    meters.counter("helper2.scout.readme", "outcome", outcome).increment()
 
   /**
    * The product's own pages, or null when none could be read. As materials they are self-declared;
@@ -337,4 +407,46 @@ constructor(
         .increment()
     }
   }
+}
+
+/** The README or model card read for [target], and the licence its source API states. */
+private class Readme(
+  val material: Material,
+  val target: GapTarget,
+  val facts: Map<String, String>,
+)
+
+/**
+ * The README read before the first model call (ADR 0056). [target] is the repository it was read
+ * for (null: the resource names none, or there is no adapter). [revision] goes into the
+ * fingerprint: null when there is no README or it could not be read. [text] is null after a 304
+ * until the call needs it. [failure] says in the run's errors why the README is missing.
+ */
+private class FirstReadme(
+  val target: GapTarget? = null,
+  val revision: String? = null,
+  val text: ExtraText? = null,
+  val failure: String? = null,
+) {
+  /** The README as material, or null when there is none or it cleans to nothing. */
+  fun readable(): Readme? {
+    val t = target ?: return null
+    return text?.let { readmeOf(t, it) }
+  }
+}
+
+/** [extra] cleaned and cut to the window, as a material that proves no claim alone; or null. */
+private fun readmeOf(target: GapTarget, extra: ExtraText): Readme? {
+  val text = UntrustedPageText.window(UntrustedPageText.clean(extra.raw))
+  if (text.isBlank()) return null
+  val material =
+    Material(
+      UUID.randomUUID(),
+      extra.sourceUrl,
+      extra.retrievedAt,
+      text,
+      anchorRecordId = target.anchorRecordId,
+      supportsClaims = false,
+    )
+  return Readme(material, target, extra.license?.let { mapOf("license" to it) }.orEmpty())
 }

@@ -22,7 +22,7 @@ Redis, PostgreSQL and the NVIDIA models on the driven side.
 | [Context](diagrams/architecture-context.svg) | The modules as boxes, who calls helper2, and what it calls. |
 | [One search](diagrams/architecture-search.svg) | The search ports and every source, cache and translator adapter behind them. |
 | [One guide question](diagrams/architecture-guide.svg) | AskGuide, the search it reuses, the evidence gate and the LLM layer's guards. |
-| [How the index grows](diagrams/architecture-index.svg) | Scout, its collectors, enrichment and its gap round (README, model card), and how the catalog stores and embeds. |
+| [How the index grows](diagrams/architecture-index.svg) | Scout, its collectors, enrichment (README first, then the model card and product pages), and how the catalog stores and embeds. |
 | [Set it up](diagrams/architecture-setup.svg) | The setup module on a resource page: run options from the registry and the README, the tool guide, its budgets and caches. |
 | [Edge and shared services](diagrams/architecture-platform.svg) | Identity, rate limits, errors and the SPA, and the platform services every module uses, with their Redis keys and tables. |
 

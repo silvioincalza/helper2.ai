@@ -30,7 +30,8 @@ class ReadmeEvidenceLiveTest {
         liveHttp(),
         liveHttp(),
         Resilience.NONE,
-        Clock.systemUTC());
+        Clock.systemUTC(),
+        null);
   }
 
   @Test

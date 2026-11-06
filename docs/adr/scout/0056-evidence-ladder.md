@@ -1,4 +1,4 @@
-# 0056 — Evidence ladder: every field from the records, the README, then the product's own pages
+# 0056 — Evidence ladder: every field from the records and the README, then the product's own pages
 
 **Status.** Accepted. **Builds on:** [0019](0019-evidence-gated-enrichment.md), [0033](../foundation/0033-resilience-policies.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md), [0043](0043-enrichment-gap-round.md), [0051](0051-tavily-discovery.md). **Amends:** [0019](0019-evidence-gated-enrichment.md) (validator rules, prompt v4), [0043](0043-enrichment-gap-round.md) (trigger, more steps).
 
@@ -23,14 +23,38 @@ are judgements: a model may estimate them, and the page says so. The description
    - reading types (articles, papers, news, events, courses): none, their facts come from their sources.
    A fact the sources state (licence, type, open source) is not missing. Audience and tech level never make it climb.
 2. **The steps.** Each step is one more model call, and each keeps the run that keeps more (as in 0043). At most three
-   model calls per attempt; the attempt saves once, under the fingerprint of the records alone.
-   - Step 1: the records (as before).
-   - Step 2: the README or model card (0043). A discovery record (`discovery-<category>`, `WebSources.isDiscovery`) whose URL is `github.com/<owner>/<repo>` now
-     counts too: a person accepted it.
+   model calls per attempt; the attempt saves once, under the fingerprint of the records and the README's revision.
+   - Step 1: the records, plus the README of the resource's own GitHub repository when a record names one (README
+     first, item 3).
+   - Step 2: the model card (0043). Only for Hugging Face models: a GitHub README is never a step, the first call
+     already read it.
    - Step 3: the product's own pages, when a record is one (`PageTargets`: `discovery-<category>` and `curated` records,
      not a registry, a repository or an article). New gap kind `OFFICIAL_PAGE` (`official-page:<host>` in
-     `enrichment_run.extra_evidence`). The model reads the records, the README if any, and the pages.
-3. **Which pages, chosen by code** (`OfficialPages`, `PageScope`, `OfficialLinks`). The model never picks a URL or a
+     `enrichment_run.extra_evidence`). The model reads the records, the README or card if any, and the pages.
+3. **README first.** A repository's README is usually its best source for licence, platforms and use case, so it goes
+   into the first model call: one call does what took two.
+   - *Which repository* (`GapTargets.repository`, the rules of 0043): a `github` or `github-awesome` record, a discovery
+     record (`discovery-<category>`) whose URL is `github.com/<owner>/<repo>` (a person accepted it), or an
+     `mcp-registry` record whose `io.github.<owner>` namespace owns the linked repository. A package record (npm, PyPI)
+     does not count: it links whatever repository its author likes. `EnrichmentMaterial.readmeTarget`.
+   - *Reading* (port `ExtraEvidence.check`, adapter `ReadmeEvidence`): `GET /repos/{owner}/{repo}/readme` with the ETag
+     of the last read (`If-None-Match`). A 304 does not count on GitHub's rate limit. The shared cache (`ai_cache`, name
+     `github-readme-revision`) keeps per repository only the ETag and a hash of the README, for 30 days: never the
+     text. On a 200 the licence comes from `GET /repos/{owner}/{repo}`, as before. No token: no README.
+   - *Fingerprint*: the records, the epoch, the model and the README's hash. A changed README enriches the resource
+     again; an unchanged one is `UNCHANGED`, with no model call. After a 304 the text is read in full only when the
+     fingerprint changed (the records changed), so the model can read it.
+   - *Not under the gap cap*: the README read makes no model call of its own. The first call counts on the
+     enrichment cap as before.
+   - *When GitHub fails or rate-limits*: the first call reads the records alone, the run's errors say
+     `github-readme:<owner>/<repo> not read (<error>): enriched from the records alone`, and the README is not tried
+     again in the attempt. The run is saved under the fingerprint of the records alone, so the next attempt with a
+     working GitHub reads the README.
+   - *Same rules as before*: the README is cleaned by `UntrustedPageText` (window 4000, masking, AI-addressed lines
+     dropped); it proves fields, never a summary claim; it is not a vendor page, so its facts stay `AI_EXTRACTED`; the
+     licence GitHub states is a source fact and wins over the README text. Only the accepted quotes are stored.
+   - *Prompt*: unchanged. The README was already `kind="readme"` in `enrich-v4`.
+4. **Which pages, chosen by code** (`OfficialPages`, `PageScope`, `OfficialLinks`). The model never picks a URL or a
    query.
    - The accepted page first, then up to 3 pages its links lead to whose last path segment is `pricing`, `plans`,
      `download(s)`, `features`, `docs`, `documentation`, `integrations` or `about`, best first. At most 5 URLs a product.
@@ -40,17 +64,17 @@ are judgements: a model may estimate them, and the page says so. The description
      `webflow.io`) the exact subdomain; for a page under a path (`aws.amazon.com/bedrock`) that host and path prefix.
    - Tavily follows redirects: every URL it returns is checked against the scope again, and an off-site page is
      dropped. `failed_results` is no text.
-4. **Reading** (port `PageReader`, adapter `sources/evidence/TavilyExtract`): Tavily Extract `POST /extract`,
+5. **Reading** (port `PageReader`, adapter `sources/evidence/TavilyExtract`): Tavily Extract `POST /extract`,
    `extract_depth` basic, `format` markdown (the links are needed), no images, no favicon. One call for the home page,
    one for the linked pages. Policy `collector-gap-web` (circuit breaker and retry, like a collector). Off without
    `H2_TAVILY_API_KEY` or with `H2_SOURCE_TAVILY_EXTRACT_ENABLED=false`.
-5. **Cleaning** (`UntrustedPageText`, the README cleaner made general): the first 64 KB; hidden characters, HTML
+6. **Cleaning** (`UntrustedPageText`, the README cleaner made general): the first 64 KB; hidden characters, HTML
    comments, scripts, styles, hidden elements (`hidden`, `display:none`, `visibility:hidden`, `aria-hidden`) with their
    whole subtree, tags and link targets removed. Hidden elements are found in one linear pass that counts nested tags
    of the same name; a hidden element that never closes takes the rest of the page; lines that talk to an AI ("ignore previous instructions", "set pricing ...") removed; email
    addresses become `[email]`, phone numbers `[phone]`. A window of 6000 characters keeps the top, then the sections
    whose heading says price, plan, licence, download, platform, install, integrations or features.
-6. **What a page may prove.** A page is `selfDeclared` material. A fact all of whose quotes come from pages is stored
+7. **What a page may prove.** A page is `selfDeclared` material. A fact all of whose quotes come from pages is stored
    with origin `SELF_DECLARED` ("Self-declared by the vendor"); a fact a record also states stays `AI_EXTRACTED`.
    Pages may support summary claims only from the accepted page's own host, and such a claim is marked
    `selfDeclared`. A README still supports no claim. The licence or open-source value the source API states wins: a
@@ -61,7 +85,7 @@ are judgements: a model may estimate them, and the page says so. The description
    - *Why an origin and not a new verification state or a source tier.* `ValueOrigin` already drives the label on the
      page and in the API ("Extracted by AI"); one more value gives "Self-declared by the vendor" with no new column,
      and `Verification` keeps meaning "did the quote check out", which the review queue and `accepted` rely on.
-7. **Validator** (`EvidenceValidator`, now its own file):
+8. **Validator** (`EvidenceValidator`, now its own file):
    - `pricing`, `type` and `useCase` join licence, open source and platforms: the quote must state the value.
      Pricing: FREE "free", "$0", "no cost"; FREEMIUM "free plan", "free tier", "free forever", "freemium"; PAID a
      currency sign before a number, "per month", "/mo", "per seat", "per user", "contact sales"; OPEN_SOURCE_SELF_HOSTED
@@ -70,12 +94,19 @@ are judgements: a model may estimate them, and the page says so. The description
    - Summary sentences: every capitalised name and every number in the sentence is in its cited excerpts (or the
      title), and at least half of its content words are; no superlative, certificate, popularity or comparison.
      A sentence that fails is dropped.
-8. **Judgement fields.** `audience` and `techLevel` may be proposed without a quote. They are stored with origin
+9. **Judgement fields.** `audience` and `techLevel` may be proposed without a quote. They are stored with origin
    `AI_ESTIMATED` and verification `UNVERIFIED`, never `VERIFIED`, and never counted as accepted. A fact is never
    `AI_ESTIMATED`. As in [0038](../guide/0038-ai-content-marking.md): the page labels them "AI-estimated" and marks
    them `data-ai-generated`; the API says `origin: AI_ESTIMATED` (OpenAPI enum `ValueOrigin`).
-9. **Budgets and cost.**
-   - Model calls 2 and 3 take the gap cap (`H2_SCOUT_GAP_DAILY_CALLS`, inside the enrichment cap).
+10. **Budgets and cost.**
+   - Model calls 2 and 3 take the gap cap (`H2_SCOUT_GAP_DAILY_CALLS`, inside the enrichment cap). The README of
+     the first call takes none.
+   - GitHub: one conditional README request per attempt of a GitHub resource, the `UNCHANGED` ones included. A 304
+     is free. What counts on the token's 5,000 requests an hour (120,000 a day): a 200 (README plus the licence call,
+     2 requests) for a new or changed README or an ETag older than 30 days, and the full read after a 304 when the
+     records changed (2 requests). The model calls bound it: at most 2 × 500 = 1,000 requests a day at the
+     enrichment cap (about 400 at the chart's 200 enrichments a run), plus 2 per README re-read after its ETag
+     expired. Under 1% of the token's daily limit, and a run spreads them over its whole length.
    - Extract credits: `helper2.scout.evidence.daily-extract-credits` (`H2_SCOUT_EVIDENCE_DAILY_EXTRACT_CREDITS`, 20).
      Each credit also counts on the global Tavily credit counter of live search ([0037](../search/0037-tavily-store-and-daily-quota.md),
      `H2_TAVILY_GLOBAL_DAILY_CREDITS`), and on `helper2.tavily.credits{feature=scout-evidence,tier=none}`. When the
@@ -90,13 +121,13 @@ are judgements: a model may estimate them, and the page says so. The description
      It is written only after the run is saved: a failed model call leaves no entry, so the page can be read again
      once the 24-hour text is gone. One plan per fingerprint: the `UNCHANGED` skip stays.
    - Products a person accepted from the review queue go first in the enrichment backlog.
-10. **Prompt.** `enrich-v4`: vendor pages are marked `kind="vendor-page"`, pricing, type and use case need the value
+11. **Prompt.** `enrich-v4`: vendor pages are marked `kind="vendor-page"`, pricing, type and use case need the value
     in the quote, a free trial is not a free plan, audience and tech level may be estimated, sentences keep to their
     excerpts. The output schema is unchanged: an estimate is a field with no citation.
-11. **Targeted re-enrichment, not the whole catalog.**
+12. **Targeted re-enrichment, not the whole catalog.**
     - The fingerprint no longer holds the prompt version. It holds a fixed epoch, `enrich-v3`, the version the stored
-      fingerprints were made with, so they all stay valid: a new prompt alone sends nothing to the model. (A new model
-      or new source text still does.) To re-enrich everything on purpose, change the epoch.
+      fingerprints were made with, so they all stay valid: a new prompt alone sends nothing to the model. (A new model,
+      new source text or a changed README still does, item 3.) To re-enrich everything on purpose, change the epoch.
     - `RecheckEnrichments` applies the new rules to what earlier runs stored, by code, with no model call: a verified
       pricing, type or use case whose quotes do not state it is set to `REJECTED` (it shows "Not stated"); a summary
       sentence that fails the claim check is dropped, with the evidence only it used.
@@ -112,12 +143,14 @@ are judgements: a model may estimate them, and the page says so. The description
     - *Why this way.* Taking the prompt out of the skip is one line, and the epoch keeps every stored fingerprint, so
       no one-time selection of "everything" is needed. A marker column per resource or a separate queue would add
       state for a job that runs once.
-12. **Observability.** Counter `helper2.scout.fields{type,field,state,step}` per target and judgement field of the
+13. **Observability.** Counter `helper2.scout.fields{type,field,state,step}` per target and judgement field of the
     kept run: `state` = `verified`, `ai_estimated`, `rejected` or `unknown`; `step` = `source`, `records`, `readme` or
-    `pages`. Counter `helper2.scout.gap` gets source `official-page` with outcomes `filled`, `not_better`, `no_text`,
+    `pages` (`readme`: the kept run read the README or model card; for GitHub that is the first call). Counter
+    `helper2.scout.readme{outcome}` per README-first request: `read` (200, counts on the rate limit), `cached` (304,
+    free), `missing` (no README, or no token), `failed`. Counter `helper2.scout.gap` gets source `official-page` with outcomes `filled`, `not_better`, `no_text`,
     `source_failed`, `model_failed`, `skipped_cap`, `skipped_seen`, `not_allowed`, and `cached` when a retry used the
     24-hour text.
-13. **Page.** The resource page has a "Fields" panel: each field shows its value and where it comes from ("From the
+14. **Page.** The resource page has a "Fields" panel: each field shows its value and where it comes from ("From the
     source", "Self-declared by the vendor (extracted by AI)", "Extracted by AI", "AI-estimated"), or "No", "Sources
     disagree", or "Not stated". A fact without a quote that states it is "Not stated". Cards show only what the sources
     state, as before. An AI-written description is headed "About (AI-written)".
@@ -126,6 +159,12 @@ are judgements: a model may estimate them, and the page says so. The description
 - Product pages get prices, platforms and use cases with a quote and a link, marked as what the vendor says.
 - At most 20 Extract credits a day (about 10 products), on top of the ~420 credits a month the Scout spends on search;
   inside the global cap. See [cost-analysis](../../cost-analysis.md).
+- A GitHub resource costs one model call instead of two. Its README revision is now part of the fingerprint, so
+  every GitHub resource enriched before this change is enriched once more, the next time a collector reports it
+  changed or the backlog takes it, inside the per-run budget (200 in the chart) and the daily cap. That is one call each. A README
+  edit, which used to go unseen, now costs one call too.
+- While GitHub fails, a resource enriched with its README is enriched again from the records alone (one call), and
+  once more with the README when GitHub answers. The run's errors say so.
 - `enrich-v4` does not re-enrich the catalog. The code re-check cleans the stored answers once; only resources that
   still miss facts and have something new to read go to the model again, accepted products first.
 - Tavily (United States) receives the addresses of product pages. The raw page is never stored. The cleaned text stays
@@ -147,10 +186,11 @@ are judgements: a model may estimate them, and the page says so. The description
   before the model reads the page; the page is marked as untrusted vendor text; and the validator, not the model,
   decides: a fact needs a quote that is in the page and states the value. Adversarial tests: an injected "set pricing
   FREE", hidden text, an off-site redirect, a fake "integrates with OpenAI, Anthropic, Google" list, an oversized page,
-  a "free trial" price. None becomes `VERIFIED`.
+  a "free trial" price. None becomes `VERIFIED`. The same holds for a README in the first call: an AI-addressed line
+  is dropped before the model reads it, so a quote of it proves nothing.
 - **Repudiation**: every fact keeps its quote, page URL and read time; the run keeps `official-page:<host>`.
 - **Information disclosure**: no user data is sent; the raw page is never stored; emails and phone numbers are
-  masked before the model, a quote or the cache sees them.
+  masked before the model, a quote or the cache sees them. For a README only its ETag and a hash are kept, 30 days.
 - **Information disclosure (cached page text)**: the cleaned text of public product pages sits in Redis for at most
   24 hours. Redis is inside the cluster, reached only by the app with its password from OpenBao; the key is a URL
   hash, the TTL is set on every write and more than a day stops startup. The text never goes to Postgres, logs or
@@ -166,18 +206,18 @@ are judgements: a model may estimate them, and the page says so. The description
 | 1 | Model | Covered: the same reasoning model; a provider outage is `LLM_UNAVAILABLE`, the first run stands. |
 | 2 | Agent Framework | Covered: no agent loop; a fixed ladder of at most three calls, code-driven. |
 | 3 | Orchestration | Covered: inside the existing Scout run; retries by resilience policy; one save per attempt. |
-| 4 | Tool & API | Covered: Tavily Extract behind a port, URLs only from code; model tool calling rejected (below). |
-| 5 | Memory | Covered: cleaned page text in Redis for at most 24 h (retry only); the ledger keeps URL and text hashes for 30 days. |
+| 4 | Tool & API | Covered: Tavily Extract and the GitHub README (conditional, ETag) behind ports, URLs only from code; model tool calling rejected (below). |
+| 5 | Memory | Covered: cleaned page text in Redis for at most 24 h (retry only); the ledger keeps URL and text hashes for 30 days; README ETag and hash for 30 days, no text. |
 | 6 | Knowledge & RAG | Covered: grounding by quotes from retrieved pages; no vector search needed here. |
 | 7 | Data | Covered: `V11` migration (origins, `summary_claim.self_declared`, `maintenance_task`); evidence anchored to its record (0034); a code re-check of stored answers. |
 | 8 | Browser & Computer Use | Covered: none; Tavily reads the page, we never run a browser. |
 | 9 | Guardrails | Covered: URL scope, cleaning, stating words, claim checks, caps on relationships, source facts win. |
-| 10 | Observability | Covered: `helper2.scout.fields`, `helper2.scout.gap`, credits counter and gauge; no page text in logs. |
+| 10 | Observability | Covered: `helper2.scout.fields`, `helper2.scout.gap`, `helper2.scout.readme`, credits counter and gauge; a GitHub failure in the run's errors; no page text in logs. |
 | 11 | Evaluation | Deferred: adversarial unit tests now; a fill-rate eval set is on the roadmap (needs real runs first). |
 | 12 | Deployment | Covered: config only (`H2_SCOUT_EVIDENCE_*`, `H2_SOURCE_TAVILY_EXTRACT_*`), on by default, off without a key. |
 | 13 | Security & Identity | Covered: Tavily key from OpenBao as before; no new secret. |
 | 14 | Human-in-the-Loop | Covered: self-declared relationships wait in the review queue; validation errors open review items. |
-| 15 | Cost & Reliability | Covered: own credit cap, global Tavily cap, gap cap, 30-day ledger, circuit breaker. |
+| 15 | Cost & Reliability | Covered: own credit cap, global Tavily cap, gap cap, 30-day ledger, circuit breaker; README first saves a model call per GitHub resource, a 304 costs no rate limit, GitHub down means records alone. |
 
 ## Alternatives considered
 - **Model tool calling** (the model asks for pages or searches) — flexible, but the model would choose what to read,
@@ -193,6 +233,12 @@ are judgements: a model may estimate them, and the page says so. The description
   enough. Only the cleaned text for a retry within a day is kept.
 - **Keep the page text only in memory** (no retry cache) — no copy at all, but a model outage after the read pays
   Tavily again, and the read ledger then had to be written at read time, losing the page for 30 days.
+- **Keep the README as step 2** — no change, but a GitHub resource costs two model calls, and the first one runs
+  without its best source.
+- **README first, fingerprint of the records alone** — no GitHub call to compute the fingerprint, but a changed
+  README is never seen.
+- **Cache the README text** (Redis or `ai_cache`) — a 304 would never need a second read, but it keeps third-party
+  text for days. The ETag and a hash are enough: the text is needed only when the records changed.
 - **Keep the prompt version in the fingerprint** — simple, but every prompt change re-enriches the whole catalog:
   days of the daily cap for resources that miss nothing.
 - **Let audience and tech level stay empty** — honest, but most products would show nothing useful; an estimate,
@@ -204,7 +250,9 @@ are judgements: a model may estimate them, and the page says so. The description
 - `backend/src/main/java/ai/helper2/scout/internal/RedisPageTextCache.java` — the 24-hour cleaned text.
 - `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `FINGERPRINT_EPOCH`.
 - `backend/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt` — stating words, `PricingWords`, `ClaimCheck`, judgement fields, self-declared rules.
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the ladder, `helper2.scout.fields`.
+- `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — README first, the ladder, `helper2.scout.fields`, `helper2.scout.readme`.
+- `backend/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `GapTargets.repository`, `ReadmeCheck`, `ExtraEvidence.check`; `Enrichment.kt` — `readmeTarget`, the README revision in the fingerprint.
+- `backend/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java` — the conditional read, the ETag and hash in `ai_cache`; `sources/support/HttpClients.java` (`exchange`).
 - `backend/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `UntrustedPageText`, `GapKind.OFFICIAL_PAGE`.
 - `backend/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
 - `backend/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java`, `PublicSuffixDomains.java`; beans in `sources/config/SourcesConfiguration.java`.
@@ -213,7 +261,7 @@ are judgements: a model may estimate them, and the page says so. The description
 - `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (origins), `JdbcEnrichmentCandidates.java` (accepted products first).
 - `api/openapi.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`.
-- Tests: `FieldTargetsTest`, `EvidenceValidatorLadderTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
+- Tests: `EnrichResourceReadmeFirstTest`, `ReadmeEvidenceTest`, `GapRoundTest`, `FieldTargetsTest`, `EvidenceValidatorLadderTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
   `TavilyExtractTest`, `PublicSuffixDomainsTest`, `TavilyCreditBudgetTest`, `RecheckEnrichmentsTest`, `RedisPageTextCacheIT`,
   `ScoutPropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `SecurityIT`, `EnrichResourceTest`, `ResourcePage.test.tsx`, `Admin.test.tsx`.
 

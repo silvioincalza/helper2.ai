@@ -49,8 +49,10 @@ data class EnrichmentInput(
 /**
  * What the store loaded for one resource: the model's input, a hash of its source text and, when
  * one of its records names its own repository or model, where the gap round may read more
- * ([gapTarget]). [type] is the catalog's type: it sets the fields the evidence ladder tries to fill
- * (ADR 0056). [pageTarget] is the product's own web page, when one of its records is one.
+ * ([gapTarget]). [readmeTarget] is the GitHub repository it names as its own: its README goes into
+ * the first model call (ADR 0056). [type] is the catalog's type: it sets the fields the evidence
+ * ladder tries to fill (ADR 0056). [pageTarget] is the product's own web page, when one of its
+ * records is one.
  */
 data class EnrichmentMaterial
 @JvmOverloads
@@ -60,16 +62,21 @@ constructor(
   val gapTarget: GapTarget? = null,
   val type: ResourceType = ResourceType.OTHER,
   val pageTarget: PageTarget? = null,
+  val readmeTarget: GapTarget? = gapTarget?.takeIf { it.kind == GapKind.GITHUB_README },
 ) {
   /**
-   * The enrichment fingerprint: the source text, the [FINGERPRINT_EPOCH] and the model. The same
-   * source text under another model is a different input, so it is enriched again. A new prompt
-   * version alone is not (ADR 0056): re-enriching the whole catalog for a wording change costs days
-   * of the daily cap. The stored answers are checked again by code instead (RecheckEnrichments),
-   * and only resources that still miss facts are sent again.
+   * The enrichment fingerprint: the source text, the [FINGERPRINT_EPOCH], the model and, when the
+   * first call read one, the README's revision. The same source text under another model is a
+   * different input, so it is enriched again; so is a changed README. A new prompt version alone is
+   * not (ADR 0056): re-enriching the whole catalog for a wording change costs days of the daily
+   * cap. The stored answers are checked again by code instead (RecheckEnrichments), and only
+   * resources that still miss facts are sent again.
    */
-  fun fingerprintFor(model: EnrichmentModel): String =
-    sha256Prefix(listOf(textHash, FINGERPRINT_EPOCH, model.model).joinToString("\u001f"))
+  @JvmOverloads
+  fun fingerprintFor(model: EnrichmentModel, readmeRevision: String? = null): String =
+    sha256Prefix(
+      listOfNotNull(textHash, FINGERPRINT_EPOCH, model.model, readmeRevision).joinToString("\u001f")
+    )
 
   companion object {
     /**

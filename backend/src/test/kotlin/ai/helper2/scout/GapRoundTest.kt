@@ -80,6 +80,43 @@ class GapRoundTest {
     assertNull(GapTargets.select(listOf(otherOwner)))
   }
 
+  /**
+   * ADR 0056: the README read before the first call comes from the same records, by the same rules.
+   */
+  @Test
+  fun `the repository for README first is found next to a model card, by the same ownership rule`() {
+    val card = record("hf-models", "acme/model", "https://huggingface.co/acme/model")
+    val own =
+      record(
+        "mcp-registry",
+        "io.github.acme/server",
+        "https://registry.example/acme",
+        "https://github.com/acme/server",
+      )
+    val borrowed =
+      record(
+        "mcp-registry",
+        "io.github.mallory/server",
+        "https://registry.example/m",
+        "https://github.com/acme/server",
+      )
+    val npm =
+      record(
+        "npm",
+        "acme-tool",
+        "https://www.npmjs.com/package/acme-tool",
+        "https://github.com/acme/tool",
+      )
+
+    assertEquals(GapKind.HF_MODEL_CARD, GapTargets.select(listOf(card, own))?.kind)
+    assertEquals(
+      GapTarget(GapKind.GITHUB_README, "acme", "server", own.id),
+      GapTargets.repository(listOf(card, own)),
+    )
+    assertNull(GapTargets.repository(listOf(card, borrowed)))
+    assertNull(GapTargets.repository(listOf(npm)), "a package links whatever repository it likes")
+  }
+
   @Test
   fun `links that could reach another API path give no target`() {
     val bad =

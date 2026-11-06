@@ -34,22 +34,48 @@ data class GapTarget(
 }
 
 /**
- * What a source adapter read for a [GapTarget]: the raw text, where a person can see it, and the
- * licence the source API states.
+ * What a source adapter read for a [GapTarget]: the raw text, where a person can see it, the
+ * licence the source API states, and the text's [revision] (a hash of it; null: the use case hashes
+ * [raw] itself).
  */
-data class ExtraText(
+data class ExtraText
+@JvmOverloads
+constructor(
   val sourceUrl: URI,
   val retrievedAt: Instant,
   val raw: String,
   val license: String?,
-)
+  val revision: String? = null,
+) {
+  /** The revision that goes into the enrichment fingerprint (ADR 0056). */
+  val revisionOrHash: String
+    get() = revision ?: sha256Prefix(raw)
+}
+
+/**
+ * What a conditional README read found (ADR 0056): the README's [revision] and, when the source
+ * sent the text, the [text]. null [text]: the source answered "not modified" (GitHub 304), so only
+ * the revision is known, from the adapter's cache.
+ */
+data class ReadmeCheck(val revision: String, val text: ExtraText?) {
+  val notModified: Boolean
+    get() = text == null
+}
 
 /**
  * Outbound port: reads the README or model card of a [GapTarget]. null when there is none; throws
  * when the source fails.
  */
 fun interface ExtraEvidence {
+  /** The whole text, always read from the source. */
   fun fetch(target: GapTarget): ExtraText?
+
+  /**
+   * A read that may answer "not modified" (README first, ADR 0056). The default reads the whole
+   * text; the GitHub adapter sends the ETag it kept, and a 304 costs no rate limit.
+   */
+  fun check(target: GapTarget): ReadmeCheck? =
+    fetch(target)?.let { ReadmeCheck(it.revisionOrHash, it) }
 }
 
 /** Outbound port: the gap round's own daily cap, inside the enrichment cap. */
@@ -109,20 +135,29 @@ object GapTargets {
    * someone else's server.
    */
   @JvmStatic
-  fun select(records: List<GapSourceRecord>): GapTarget? {
-    records
-      .firstNotNullOfOrNull { r ->
-        if (namesRepository(r.sourceId)) github(r.sourceUrl, r.id) else null
+  fun select(records: List<GapSourceRecord>): GapTarget? =
+    ownRepository(records)
+      ?: records.firstNotNullOfOrNull { r ->
+        if (r.sourceId in HF_SOURCES) hub(r.sourceUrl, r.id) else null
       }
-      ?.let {
-        return it
-      }
-    records
-      .firstNotNullOfOrNull { r -> if (r.sourceId in HF_SOURCES) hub(r.sourceUrl, r.id) else null }
-      ?.let {
-        return it
-      }
-    return records.firstNotNullOfOrNull { r ->
+      ?: ownedMcpRepository(records)
+
+  /**
+   * The GitHub repository the resource names as its own, by the same rules as [select], or null.
+   * Its README is read before the first model call (ADR 0056). A model card is not: it stays a gap
+   * step.
+   */
+  @JvmStatic
+  fun repository(records: List<GapSourceRecord>): GapTarget? =
+    ownRepository(records) ?: ownedMcpRepository(records)
+
+  private fun ownRepository(records: List<GapSourceRecord>): GapTarget? =
+    records.firstNotNullOfOrNull { r ->
+      if (namesRepository(r.sourceId)) github(r.sourceUrl, r.id) else null
+    }
+
+  private fun ownedMcpRepository(records: List<GapSourceRecord>): GapTarget? =
+    records.firstNotNullOfOrNull { r ->
       if (r.sourceId != MCP) return@firstNotNullOfOrNull null
       val namespaceOwner =
         MCP_GITHUB_NAMESPACE.find(r.externalId)?.groupValues?.get(1)
@@ -130,7 +165,6 @@ object GapTargets {
       val target = github(r.repositoryUrl ?: r.sourceUrl, r.id) ?: return@firstNotNullOfOrNull null
       target.takeIf { it.owner.equals(namespaceOwner, ignoreCase = true) }
     }
-  }
 
   private fun github(url: String, recordId: UUID): GapTarget? {
     val m = GITHUB.matchEntire(trimmed(url).removeSuffix(".git")) ?: return null

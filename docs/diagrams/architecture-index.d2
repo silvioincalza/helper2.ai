@@ -53,7 +53,7 @@ sources: "sources (collectors, gap evidence)" {
   class: group
   collectors: "McpRegistryCollector · TavilyCollector\nTavilyDiscoveryCollector × 34 categories\n(DiscoveryCollectorRegistrar) · LinkedInCollector\nCourseCollector · HuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector" {class: app}
   classifier: "SpringAiRepoClassifier\n(or Heuristic)" {class: app}
-  evidence: "ReadmeEvidence\n(README, model card)\nTavilyExtract (product pages)\nPublicSuffixDomains" {class: app}
+  evidence: "ReadmeEvidence\n(README first: ETag in ai_cache;\nmodel card)\nTavilyExtract (product pages)\nPublicSuffixDomains" {class: app}
   collectors -> classifier: "awesome-list entries" {class: ai-call}
 }
 
