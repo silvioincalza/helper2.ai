@@ -93,7 +93,8 @@ describe('monetisation (ADR 0057)', () => {
     mockApi({ 'GET /me': me({ ga4MeasurementId: 'G-TEST1234' }) });
     renderApp('/');
     const question = await screen.findByRole('region', { name: /Google Analytics/ });
-    // The home page's lazy parts finish loading inside act(), not during the slow accessibility check below.
+    // The radar loads on demand: wait for it, so it does not finish during the slow accessibility check below.
+    await screen.findByRole('list', { name: 'Some of the sources we search' });
     await settle();
     const reject = within(question).getByRole('button', { name: 'Reject' });
     const accept = within(question).getByRole('button', { name: 'Accept' });
