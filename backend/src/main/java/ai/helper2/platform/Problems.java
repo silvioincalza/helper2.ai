@@ -1,6 +1,9 @@
 package ai.helper2.platform;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 
 /**
@@ -48,6 +51,18 @@ public final class Problems {
       json.append(",\"detail\":\"").append(escape(detail)).append('"');
     }
     return json.append(",\"code\":\"").append(type.code()).append("\"}").toString();
+  }
+
+  /**
+   * Answers [type] on a response the framework would otherwise end with a bare status or its own
+   * error page (the security filters' 401 and 403): the problem as JSON, with no caching.
+   */
+  public static void write(HttpServletResponse response, ProblemType type, @Nullable String detail)
+      throws IOException {
+    response.setStatus(type.status().value());
+    response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+    response.setHeader("Cache-Control", "no-store");
+    response.getWriter().write(json(type, detail));
   }
 
   private static String escape(String text) {

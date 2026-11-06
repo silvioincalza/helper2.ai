@@ -15,7 +15,8 @@ traceable to that administrator.
 1. **Anonymous by default** (`SecurityConfiguration`). `GET` search, recent, upcoming events,
    resources, sources and `/me`, and `POST` reports and guide, are open. `/api/v1/admin/**` and `/actuator/**` need
    `ADMIN` (health is open; see [0024](0024-http-edge-protection.md) for metrics). `/api/v1/me/bookmarks`
-   and `DELETE /api/v1/me` need a signed-in user. Any other `/api/**` path is denied. Application programming interface (API) calls without a session get 401, not a redirect.
+   and `DELETE /api/v1/me` need a signed-in user. Any other `/api/**` path is denied. Application programming interface (API) calls without a session get 401, not a redirect; a refused one gets 403. Both answer the problem the contract promises
+   (`sign-in-required`, `forbidden`; [0003](../foundation/0003-contract-first-rest-api.md)), never the container's error page.
 2. **Sign-in.** OAuth2 login exists only when a client registration exists: Spring profile
    `oauth-github` with `H2_GITHUB_OAUTH_CLIENT_ID` and `H2_GITHUB_OAUTH_CLIENT_SECRET`, scope `read:user`.
    With an admin port ([0035](0035-admin-host.md)) it works on both hosts: the admin host returns to

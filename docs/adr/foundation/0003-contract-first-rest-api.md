@@ -27,8 +27,9 @@ every source has a status), and these rules must be visible in one place that bo
    `ApiProblem` with its type (`NotFoundException` and `BadRequestException` are two of them); the errors Spring answers
    on its own get a type by their status. Client mistakes are 400 with a fixed text and an unknown resource is 404;
    anything else is 500 with a fixed text, and the cause is logged, never echoed. The few places that answer before
-   Spring MVC (servlet filters, the rate-limit interceptor, the guide stream's error event) write the same problem
-   through `platform.Problems`. The codes are listed in the `Problem` schema of the contract.
+   Spring MVC (servlet filters, the rate-limit interceptor, the guide stream's error event, the security filters'
+   401 `sign-in-required` and 403 `forbidden` on `/api/**`, which says when the CSRF token is the reason) write the
+   same problem through `platform.Problems`. The codes are listed in the `Problem` schema of the contract.
 6. **Enums by wire value.** `ContractEnumConverters` binds query parameters to generated enums by their
    value (for example `unknown`), using the generated `fromValue`.
 7. **One exception: the event stream.** `POST /guide/stream` is in the contract (tag `guide-stream`,
