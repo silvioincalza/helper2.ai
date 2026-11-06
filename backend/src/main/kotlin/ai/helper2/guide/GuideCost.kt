@@ -139,17 +139,20 @@ constructor(
 
     /**
      * Whether [answer] spends one of the asker's daily questions (ADR 0017): only when the AI
-     * answered, with at least one AI pick, a comparison or an explanation. An answer with no pick
-     * ("Nothing clearly fits your need", no candidates, model down, a question back) is free.
+     * answered, with at least one AI pick, a comparison with rows or an explanation with sentences.
+     * An answer with no pick ("Nothing clearly fits your need", no candidates, model down, a
+     * question back, a comparison with every cell refused) is free.
      */
     @JvmStatic fun spendsAQuestion(answer: GuideAnswer): Boolean = answer.hasAiAnswer()
   }
 }
 
-/** The AI answered: at least one AI pick, a comparison or an explanation with sentences. */
+/**
+ * The AI answered: at least one AI pick, a comparison with rows or an explanation with sentences.
+ */
 internal fun GuideAnswer.hasAiAnswer(): Boolean =
   recommendations.any { it.aiReasoned } ||
-    comparison != null ||
+    comparison?.rows?.isNotEmpty() == true ||
     explanation?.sentences?.isNotEmpty() == true
 
 internal fun sha256Hex(text: String): String =

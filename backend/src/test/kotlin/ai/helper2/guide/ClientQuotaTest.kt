@@ -171,9 +171,11 @@ class ClientQuotaTest {
     val pick = Recommendation(result, "Self-hostable.", "Speech recognition", aiReasoned = true)
     val sentence = ExplainedSentence("Whisper transcribes speech.", "Speech recognition", result)
 
+    val row = ComparisonRow("Licence", listOf(ComparisonCell("s1", "MIT", "MIT licence")))
+
     assertTrue(ClientQuota.spendsAQuestion(noPick.copy(recommendations = listOf(pick))))
     assertTrue(
-      ClientQuota.spendsAQuestion(noPick.copy(comparison = Comparison(emptyList(), emptyList())))
+      ClientQuota.spendsAQuestion(noPick.copy(comparison = Comparison(emptyList(), listOf(row))))
     )
     assertTrue(
       ClientQuota.spendsAQuestion(noPick.copy(explanation = Explanation(listOf(sentence))))
@@ -198,6 +200,10 @@ class ClientQuotaTest {
     assertFalse(
       ClientQuota.spendsAQuestion(noPick.copy(explanation = Explanation(emptyList()))),
       "an explanation with no sentence left",
+    )
+    assertFalse(
+      ClientQuota.spendsAQuestion(noPick.copy(comparison = Comparison(emptyList(), emptyList()))),
+      "a comparison with no row left",
     )
   }
 

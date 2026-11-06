@@ -106,16 +106,17 @@ internal class QuestionReader(private val clock: Clock) {
   ): GuideIntent {
     val modelIntent = plan?.intent?.takeIf { grounded(it, text, subjects) }
     val ruleIntent = IntentRules.intentOf(text)
-    val intent =
+    val read =
       when {
-        q.drops.intent -> GuideIntent.SUGGEST
         // The planner's SUGGEST is its "nothing special": newness the user's words state still
         // counts ("new MCP servers").
         modelIntent == GuideIntent.SUGGEST && ruleIntent == GuideIntent.NEWEST -> GuideIntent.NEWEST
         else -> modelIntent ?: ruleIntent ?: GuideIntent.SUGGEST
       }
     // A period with no other intent is a question about what is new ("AI tools from last month").
-    return if (window != null && intent == GuideIntent.SUGGEST) GuideIntent.NEWEST else intent
+    val withPeriod = if (window != null && read == GuideIntent.SUGGEST) GuideIntent.NEWEST else read
+    // The user's removal applies last (ADR 0032 §2): a dropped intent stays SUGGEST, period or not.
+    return if (q.drops.intent) GuideIntent.SUGGEST else withPeriod
   }
 
   /** The planner's constraints the user stated and did not remove. */

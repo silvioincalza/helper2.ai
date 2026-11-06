@@ -2,6 +2,7 @@ package ai.helper2.guide.usecase
 
 import ai.helper2.guide.Candidate
 import ai.helper2.guide.Clarification
+import ai.helper2.guide.ClientQuota
 import ai.helper2.guide.ComparisonProposal
 import ai.helper2.guide.Drops
 import ai.helper2.guide.ExplanationProposal
@@ -10,6 +11,7 @@ import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
 import ai.helper2.guide.GuideStatus
+import ai.helper2.guide.GuideUnavailable
 import ai.helper2.guide.PlannedWindow
 import ai.helper2.guide.ProposedCell
 import ai.helper2.guide.ProposedPick
@@ -19,6 +21,7 @@ import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.RemovedSuggestion
 import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.WindowUnit
+import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.search.CachedHits
 import ai.helper2.search.NOW
 import ai.helper2.search.NoticeCode
@@ -582,6 +585,22 @@ class AskGuideIntentsTest {
   }
 
   @Test
+  fun `dropping the intent alone keeps the period but stays a suggestion`() {
+    val model =
+      Model(
+        GuideSearchPlan(
+          "AI tools",
+          intent = GuideIntent.NEWEST,
+          window = PlannedWindow(1, WindowUnit.MONTH),
+        ),
+        choose = ::pickAll,
+      )
+    val a = guide(model).ask("AI tools born last month", null, drops = Drops(intent = true))
+    assertEquals(GuideIntent.SUGGEST, a.intent)
+    assertNotNull(a.window, "the period the user kept is still understood")
+  }
+
+  @Test
   fun `a period or subjects the user never wrote are ignored, so nothing is filtered by an invented window`() {
     val model =
       Model(
@@ -700,6 +719,39 @@ class AskGuideIntentsTest {
       a.trail.removed,
     )
     assertFalse("Runs locally" in a.toString(), "the removed cell's text is kept nowhere")
+  }
+
+  @Test
+  fun `a comparison with no row left spends none of the asker's questions`() {
+    val plan =
+      GuideSearchPlan(
+        "local LLM runner",
+        intent = GuideIntent.COMPARE,
+        subjects = listOf("Ollama", "LM Studio"),
+      )
+    val unquoted =
+      Model(
+        plan,
+        compare = { s ->
+          ComparisonProposal(
+            listOf(ProposedRow("Licence", listOf(ProposedCell(s[0].key, "GPL", "GPL-3.0 only"))))
+          )
+        },
+      )
+    val down = Model(plan, compare = { throw GuideUnavailable("unavailable") })
+    val quota = ClientQuota(3, clock, QuotaKeys("test-secret", clock))
+
+    val refused =
+      AskGuide(search, unquoted, clock, quota = quota)
+        .ask("Ollama vs LM Studio", null, client = "10.0.0.1")
+    val unavailable =
+      AskGuide(search, down, clock, quota = quota)
+        .ask("Ollama vs LM Studio", null, client = "10.0.0.1")
+
+    assertEquals(GuideStatus.PARTIAL, refused.status)
+    assertTrue(assertNotNull(refused.comparison).rows.isEmpty())
+    assertEquals(GuideStatus.LLM_UNAVAILABLE, unavailable.status)
+    assertEquals(3, quota.left("10.0.0.1"))
   }
 
   @Test

@@ -58,8 +58,8 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
    **An answer with no pick, or a question that fails, does not count.** `ClientQuota.reserve` takes the question
    before the model runs, so abuse stays bounded. `AskGuide.ask` settles the reservation in one `finally`, so every
    exit is covered exactly once, and gives the question back in three cases:
-   - **no pick:** the answer has nothing from the AI (`ClientQuota.spendsAQuestion`: no AI pick, no comparison, no
-     explanation sentence). That covers "Nothing clearly fits your need", no candidates, subject not found, a model
+   - **no pick:** the answer has nothing from the AI (`ClientQuota.spendsAQuestion`: no AI pick, no comparison row,
+     no explanation sentence; a comparison whose every cell the quote gate refused is as empty as none). That covers "Nothing clearly fits your need", no candidates, subject not found, a model
      call that throws or a spent budget (both give a degraded answer), and a question back (`NEEDS_CLARIFICATION`);
    - **failed:** no answer at all: an error escapes `ask` (the stream ends with an `error` event) or the deadline
      interrupts the question (504). The interrupt flag is cleared for the give-back and set again after it;
