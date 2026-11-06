@@ -168,16 +168,22 @@ class TavilyDiscoveryCollectorTest {
     assertThat(batch.getHits().getFirst().getSourceId()).isEqualTo("discovery-self-hosted");
 
     // A home page, a pricing page (its site's home page instead) and a repository whose title says
-    // "alternative". Dropped: the topics page, the blog post, the blog host, the post slug, the
-    // publisher, the page not about AI, the low score.
+    // "alternative"; then the posts, as articles (ADR 0062): the blog post and the post slug.
+    // Dropped: the topics page, the blog host, the author's page, the page not about AI, the low
+    // score.
     assertThat(batch.getCandidates())
         .extracting(c -> c.getUrl().getValue())
         .containsExactly(
             "https://openwebui.com",
             "https://anythingllm.com",
-            "https://github.com/danny-avila/librechat");
+            "https://github.com/danny-avila/librechat",
+            "https://somecompany.ai/blog/why-we-built-an-agent",
+            "https://newsletter.ai/how-we-built-our-ai-stack");
     Candidate first = batch.getCandidates().getFirst();
     assertThat(first.getType()).isEqualTo(ResourceType.PRODUCT);
+    Candidate post = batch.getCandidates().get(3);
+    assertThat(post.getType()).isEqualTo(ResourceType.ARTICLE);
+    assertThat(post.getTitle()).isEqualTo("Why we built an AI agent");
     assertThat(first.getSnippet()).contains("runs offline");
     assertThat(batch.getCandidates().get(1).getTitle()).isEqualTo("AnythingLLM");
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
@@ -382,7 +388,7 @@ class TavilyDiscoveryCollectorTest {
             "self-hosted", ResourceType.PRODUCT, List.of("q"), List.of(), 0.4, false, false, false);
     assertThat(collector(off).getDescriptor().getEnabled()).isFalse();
     assertThat(collector(off).getDescriptor().getResourceTypes())
-        .containsExactly(ResourceType.PRODUCT);
+        .containsExactlyInAnyOrder(ResourceType.PRODUCT, ResourceType.ARTICLE);
   }
 
   @Test

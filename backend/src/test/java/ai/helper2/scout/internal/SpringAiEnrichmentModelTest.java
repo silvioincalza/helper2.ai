@@ -9,9 +9,11 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentProposal;
 import ai.helper2.scout.EvidenceValidator;
+import ai.helper2.scout.FieldsByType;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ModelAnswerInvalid;
+import ai.helper2.shared.ResourceType;
 import ai.helper2.testing.TestPolicies;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
@@ -316,7 +318,7 @@ class SpringAiEnrichmentModelTest {
         .contains("MCP_SERVER")
         .contains("- relationship kind: INTEGRATES_WITH")
         .contains("Do not output dates");
-    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v4");
+    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v5");
     assertThat(prompt)
         .contains(
             "("
@@ -324,6 +326,25 @@ class SpringAiEnrichmentModelTest {
                 + "-"
                 + EvidenceValidator.MAX_EXCERPT_CHARS
                 + " characters)");
+  }
+
+  /** The model is told the resource's type, and that writing names what it is about (ADR 0062). */
+  @Test
+  void promptCarriesTheTypeAndTheRuleForWriting() {
+    model(() -> "{}")
+        .propose(
+            new EnrichmentInput(
+                INPUT.getResourceTitle(),
+                INPUT.getMaterials(),
+                INPUT.getSourceFacts(),
+                INPUT.getKnownResources(),
+                ResourceType.NEWS));
+    String prompt = seen.get().getContents();
+    assertThat(prompt)
+        .contains("Type: NEWS")
+        .contains("relationship of kind ABOUT")
+        .contains("at most " + FieldsByType.MAX_ABOUT)
+        .contains("| ABOUT");
   }
 
   /** The model is told which material is the vendor's own page (ADR 0056). */

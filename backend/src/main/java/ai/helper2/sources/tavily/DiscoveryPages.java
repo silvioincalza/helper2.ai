@@ -18,7 +18,10 @@ import org.jspecify.annotations.Nullable;
  *       PRODUCT page, a candidate for the admin review list;
  *   <li>a list or comparison page ("10 tools for ...", "X vs Y", "alternatives to X") that is not a
  *       product's own home page or repository is a LIST page, indexed as an ARTICLE;
- *   <li>anything else (a blog post, a docs page, a publisher's page) is neither: it is dropped.
+ *   <li>a post that writes about products (a blog or news post, a publisher's article) is an
+ *       ARTICLE page, a candidate for the admin review list too (ADR 0062): its own link is kept as
+ *       an article, and its enrichment names what it is about;
+ *   <li>anything else (a docs page, a directory entry, a careers page) is none: it is dropped.
  * </ul>
  *
  * <p>The awesome-list collector uses {@link #productSite} too (ADR 0058), so a link in a list is
@@ -28,10 +31,11 @@ public final class DiscoveryPages {
 
   private DiscoveryPages() {}
 
-  /** What a result is: a list page to index or a product site to review. */
+  /** What a result is: a list page to index, or a product site or an article to review. */
   enum Shape {
     LIST,
-    PRODUCT
+    PRODUCT,
+    ARTICLE
   }
 
   /** A kept result: its shape, the URL it is kept under (a product's site) and its title. */
@@ -95,10 +99,10 @@ public final class DiscoveryPages {
           "resources");
 
   /**
-   * Writing about a product, not the product: as the first path segment (example.com/blog) or the
-   * first label of the host (blog.example.com).
+   * Places where a site writes about products (example.com/blog/..., news.example.com): a post
+   * there is an ARTICLE (ADR 0062).
    */
-  private static final Set<String> ARTICLE_PLACES =
+  private static final Set<String> WRITING_PLACES =
       Set.of(
           "blog",
           "news",
@@ -106,13 +110,17 @@ public final class DiscoveryPages {
           "articles",
           "post",
           "posts",
-          "guide",
-          "guides",
-          "learn",
-          "resources",
           "insights",
           "stories",
           "press",
+          "guide",
+          "guides",
+          "learn");
+
+  /** Places of a site that are neither the product nor writing about it. */
+  private static final Set<String> OTHER_PLACES =
+      Set.of(
+          "resources",
           "docs",
           "doc",
           "documentation",
@@ -138,8 +146,14 @@ public final class DiscoveryPages {
           "status",
           "changelog");
 
-  /** Hosts that publish about many products; a page there is never a product's own site. */
-  private static final Set<String> PUBLISHER_HOSTS =
+  /**
+   * Not a product's own page: as the first path segment (example.com/blog) or the first label of
+   * the host (blog.example.com).
+   */
+  private static final Set<String> ARTICLE_PLACES = union(WRITING_PLACES, OTHER_PLACES);
+
+  /** Hosts that publish articles about many products: a post there is an ARTICLE (ADR 0062). */
+  private static final Set<String> WRITING_HOSTS =
       Set.of(
           "medium.com",
           "dev.to",
@@ -150,6 +164,14 @@ public final class DiscoveryPages {
           "wired.com",
           "zdnet.com",
           "venturebeat.com",
+          "hashnode.dev",
+          "wordpress.com",
+          "blogspot.com",
+          "beehiiv.com");
+
+  /** Directories, reviews and wikis: they list products, and a page there is never kept. */
+  private static final Set<String> DIRECTORY_HOSTS =
+      Set.of(
           "producthunt.com",
           "huggingface.co",
           "wikipedia.org",
@@ -157,11 +179,7 @@ public final class DiscoveryPages {
           "g2.com",
           "capterra.com",
           "gartner.com",
-          "hashnode.dev",
-          "wordpress.com",
-          "blogspot.com",
           "notion.site",
-          "beehiiv.com",
           "theresanaiforthat.com",
           "futurepedia.io",
           "futuretools.io",
@@ -174,6 +192,9 @@ public final class DiscoveryPages {
           "trustpilot.com",
           "alternativeto.net",
           "saasworthy.com");
+
+  /** Hosts that publish about many products; a page there is never a product's own site. */
+  private static final Set<String> PUBLISHER_HOSTS = union(WRITING_HOSTS, DIRECTORY_HOSTS);
 
   /**
    * Pages of a site that stand for the site itself: a page one level below the home page with one
@@ -213,7 +234,38 @@ public final class DiscoveryPages {
     if (isListPage(title, url)) {
       return new Page(Shape.LIST, url, title);
     }
-    return site == null ? null : new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
+    if (site != null) {
+      return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
+    }
+    return isWritingPage(url) ? new Page(Shape.ARTICLE, url, title.strip()) : null;
+  }
+
+  /**
+   * A post that writes about products (ADR 0062): a page below a writing place (example.com/blog/x,
+   * news.example.com/x), on a host that publishes articles, or with a post's slug. Not the index of
+   * a blog, not a directory entry, nothing in a docs, careers or legal place.
+   */
+  static boolean isWritingPage(CanonicalUrl url) {
+    String host = url.getHost();
+    List<String> path = pagePath(url);
+    if (path.isEmpty() || hostIn(host, DIRECTORY_HOSTS) || host.equals("github.com")) {
+      return false;
+    }
+    List<String> lower = path.stream().map(p -> p.toLowerCase(Locale.ROOT)).toList();
+    // medium.com/@someone is an author's page, not a post.
+    if (lower.getLast().startsWith("@")
+        || lower.stream().anyMatch(OTHER_PLACES::contains)
+        || (ARTICLE_PLACES.contains(host.split("\\.")[0]) && !isWritingHost(host))) {
+      return false;
+    }
+    boolean belowWritingPlace =
+        lower.subList(0, lower.size() - 1).stream().anyMatch(WRITING_PLACES::contains);
+    return belowWritingPlace || isWritingHost(host) || POST_SLUG.matcher(lower.getLast()).matches();
+  }
+
+  /** blog.example.com, news.example.com, or a host that publishes articles about many products. */
+  private static boolean isWritingHost(String host) {
+    return WRITING_PLACES.contains(host.split("\\.")[0]) || hostIn(host, WRITING_HOSTS);
   }
 
   /**
@@ -313,7 +365,17 @@ public final class DiscoveryPages {
   }
 
   private static boolean isPublisher(String host) {
-    return PUBLISHER_HOSTS.stream().anyMatch(p -> host.equals(p) || host.endsWith("." + p));
+    return hostIn(host, PUBLISHER_HOSTS);
+  }
+
+  private static boolean hostIn(String host, Set<String> hosts) {
+    return hosts.stream().anyMatch(p -> host.equals(p) || host.endsWith("." + p));
+  }
+
+  private static Set<String> union(Set<String> a, Set<String> b) {
+    Set<String> all = new java.util.HashSet<>(a);
+    all.addAll(b);
+    return Set.copyOf(all);
   }
 
   private static List<String> segments(CanonicalUrl url) {

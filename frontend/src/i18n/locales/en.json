@@ -500,7 +500,8 @@
     "INTEGRATES_WITH": "Integrates with",
     "USES": "Uses",
     "SUPPORTS": "Supports",
-    "COMPATIBLE_WITH": "Compatible with"
+    "COMPATIBLE_WITH": "Compatible with",
+    "ABOUT": "About"
   },
   "report": {
     "title": "Report wrong or outdated info",
@@ -590,9 +591,9 @@
     "refreshFailed": "Could not refresh; showing the list from {{time}}",
     "discovery": {
       "group": "Discovery · {{family}}",
-      "lede": "Discovery categories: once a week, each one runs its own web search through Tavily to find new AI tools and articles that compare them.",
+      "lede": "Discovery categories: once a week, each one runs its own web search through Tavily to find new AI tools, articles that compare them and posts about them.",
       "lists": "List articles are added without review.",
-      "products": "Products are added only after a person checks them."
+      "products": "Products and posts about them are added only after a person checks them."
     },
     "family": {
       "prompts-and-skills": "Prompts and skills",
@@ -1008,8 +1009,8 @@
         "title": "Public data about AI resources",
         "items": [
           {
-            "text": "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products and articles that compare them: {{categories}} categories of AI tools (such as coding, writing, health and legal tools), each searched once a week, {{categorySearches}} searches in all. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you.",
-            "withoutNumbers": "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products and articles that compare them: a fixed set of categories of AI tools (such as coding, writing, health and legal tools), each searched once a week. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you."
+            "text": "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products, articles that compare them and posts about them: {{categories}} categories of AI tools (such as coding, writing, health and legal tools), each searched once a week, {{categorySearches}} searches in all. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you.",
+            "withoutNumbers": "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products, articles that compare them and posts about them: a fixed set of categories of AI tools (such as coding, writing, health and legal tools), each searched once a week. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. These searches contain no data about you."
           },
           {
             "text": "From README files and model cards we keep names of projects, organisations and authors, and short quotes of up to {{quoteChars}} characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
@@ -1017,8 +1018,8 @@
           },
           "From awesome lists on GitHub (curated lists of AI tools) we also build a search index, so a search can find a tool by the words a list uses around it. We keep only the index (word forms, not the text) and the short section heading the tool sits under, for example \"Tools > Vector databases\". We do not keep the text of the list. We also read the public awesome lists that these lists link to, up to two steps away and at most 30 more a day. When a list links to a product's own website, we keep the link, the words of the link (the product's name), the list and the section heading, so we can check the product by hand. We do not visit the linked website for this. A product found this way is shown only after we have checked it.",
           {
-            "text": "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page: up to {{articleExcerptChars}} characters for an article, up to {{productPageExcerptChars}} characters for a product page, which we use as evidence to describe the product. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
-            "withoutNumbers": "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page, longer for a product page, which we use as evidence to describe the product. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder."
+            "text": "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page: up to {{articleExcerptChars}} characters for an article, up to {{productPageExcerptChars}} characters for a product page or a post about a product, which we use as evidence to describe it. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page or a post about a product is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
+            "withoutNumbers": "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page, longer for a product page or a post about a product, which we use as evidence to describe it. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page or a post about a product is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder."
           },
           {
             "text": "From LinkedIn pages we keep the link, a title without the author's name and an excerpt of up to {{quoteChars}} characters. A LinkedIn page is shown only after we have checked it by hand. The link and the text of a post can still name its author.",

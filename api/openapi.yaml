@@ -1472,7 +1472,7 @@ components:
       type: object
       required: [kind, targetTitle, verification, evidence]
       properties:
-        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH] }
+        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH, ABOUT] }
         targetId: { type: [string, 'null'], format: uuid }
         targetTitle: { type: string }
         verification: { $ref: '#/components/schemas/Verification' }
@@ -2545,7 +2545,7 @@ components:
       type: object
       required: [kind, target, verification, origin, quotes]
       properties:
-        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH] }
+        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH, ABOUT] }
         target: { type: string, description: The name the model gave. AI-written. }
         targetId: { type: [string, 'null'], format: uuid, description: The catalog resource of that name; null when none. }
         verification: { $ref: '#/components/schemas/Verification' }

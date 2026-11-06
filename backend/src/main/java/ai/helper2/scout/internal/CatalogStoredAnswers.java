@@ -5,6 +5,7 @@ import ai.helper2.scout.usecase.StoredAnswer;
 import ai.helper2.scout.usecase.StoredAnswers;
 import ai.helper2.scout.usecase.StoredClaimAnswer;
 import ai.helper2.scout.usecase.StoredFieldAnswer;
+import ai.helper2.shared.ResourceType;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -34,6 +35,7 @@ class CatalogStoredAnswers implements StoredAnswers {
     return new StoredAnswer(
         s.resourceId(),
         s.title(),
+        typeOf(s.type()),
         s.promptVersion(),
         s.fields().stream()
             .map(f ->
@@ -43,6 +45,15 @@ class CatalogStoredAnswers implements StoredAnswers {
         s.claims().stream()
             .map(c -> new StoredClaimAnswer(c.id(), c.text(), c.excerpts()))
             .toList());
+  }
+
+  /** The catalog's type; one this code does not know counts as OTHER. */
+  private static ResourceType typeOf(String type) {
+    try {
+      return ResourceType.valueOf(type);
+    } catch (IllegalArgumentException e) {
+      return ResourceType.OTHER;
+    }
   }
 
   @Override

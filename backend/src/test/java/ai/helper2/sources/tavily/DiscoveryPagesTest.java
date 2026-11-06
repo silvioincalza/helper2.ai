@@ -66,8 +66,46 @@ class DiscoveryPagesTest {
     assertThat(list.shape()).isEqualTo(DiscoveryPages.Shape.LIST);
     assertThat(
             DiscoveryPages.classify(
-                CanonicalUrl.of("https://example.com/blog/how-we-built-it"), "How we built it"))
-        .isNull();
+                    CanonicalUrl.of("https://example.com/blog/how-we-built-it"), "How we built it")
+                .shape())
+        .isEqualTo(DiscoveryPages.Shape.ARTICLE);
+  }
+
+  /** ADR 0062: a post about a product is kept as an article, under its own link. */
+  @Test
+  void aPostAboutAProductIsAnArticle() {
+    String engadget =
+        "https://www.engadget.com/2300677/google-gemini-carbon-promises-significant-leap-in-ai-coding";
+    DiscoveryPages.Page page =
+        DiscoveryPages.classify(
+            CanonicalUrl.of(engadget), " Google Gemini Carbon promises a leap ");
+    assertThat(page.shape()).isEqualTo(DiscoveryPages.Shape.ARTICLE);
+    assertThat(page.url()).isEqualTo(CanonicalUrl.of(engadget));
+    assertThat(page.title()).isEqualTo("Google Gemini Carbon promises a leap");
+    assertThat(writing("https://blog.acme.ai/introducing-acme-two")).isTrue();
+    assertThat(writing("https://acme.ai/news/acme-two")).isTrue();
+    assertThat(writing("https://techcrunch.com/2026/11/02/acme-launches/")).isTrue();
+    assertThat(writing("https://someone.substack.com/p/claude-review")).isTrue();
+    assertThat(writing("https://cursor.com/why-we-rebuilt-our-editor")).isTrue();
+  }
+
+  @Test
+  void otherPagesAreNotArticles() {
+    // The index of a blog, a publisher's home page: no post.
+    assertThat(writing("https://cursor.com/blog")).isFalse();
+    assertThat(writing("https://someone.substack.com/")).isFalse();
+    assertThat(writing("https://medium.com/@someone")).isFalse();
+    // Docs, careers and legal pages, and directories that list products.
+    assertThat(writing("https://cursor.com/docs/agent-mode-and-tools")).isFalse();
+    assertThat(writing("https://docs.cursor.com/how-to-use-the-agent")).isFalse();
+    assertThat(writing("https://acme.ai/careers/senior-ml-engineer-zurich")).isFalse();
+    assertThat(writing("https://www.producthunt.com/posts/acme-ai-writer")).isFalse();
+    assertThat(writing("https://github.com/acme/acme-ai-writer-tool")).isFalse();
+    assertThat(writing("https://acme.ai/pricing")).isFalse();
+  }
+
+  private static boolean writing(String url) {
+    return DiscoveryPages.isWritingPage(CanonicalUrl.of(url));
   }
 
   private static String site(String url) {

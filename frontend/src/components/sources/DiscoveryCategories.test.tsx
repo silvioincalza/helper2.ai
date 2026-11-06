@@ -58,7 +58,9 @@ describe('Feature: the discovery categories on the Sources page (ADR 0051)', () 
     mockApi({ 'GET /sources': () => [...SOURCES, ...CATEGORIES] });
     renderApp('/sources');
     const note = await screen.findByText(/List articles are added without review\./);
-    expect(note).toHaveTextContent('Products are added only after a person checks them.');
+    expect(note).toHaveTextContent(
+      'Products and posts about them are added only after a person checks them.',
+    );
     // Health adds products only; coding adds list articles too.
     const health = screen.getByRole('link', { name: /^Health/ }).closest('tr')!;
     expect(health).not.toHaveTextContent('Article');

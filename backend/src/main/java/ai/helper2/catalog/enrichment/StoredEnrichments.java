@@ -30,6 +30,7 @@ public interface StoredEnrichments {
   record Stored(
       UUID resourceId,
       String title,
+      String type,
       @Nullable String promptVersion,
       List<StoredField> fields,
       List<StoredClaim> claims) {}
