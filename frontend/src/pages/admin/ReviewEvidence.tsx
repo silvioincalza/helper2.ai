@@ -7,6 +7,7 @@ import { StatusPill, type StatusTone } from '@/components/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { formatDate, safeHref } from '@/lib/format';
+import { FieldCuration } from './FieldCuration';
 import { RelationshipTarget } from './RelationshipTarget';
 
 /** A conflict needs a person most; a verified value least. The tone only repeats the word. */
@@ -140,6 +141,15 @@ function EvidenceBody({
                 </StatusPill>
               </p>
               <p className="h2-admin__ai-label">{t(`origin.${f.origin}`)}</p>
+              {item.resourceId && (
+                <FieldCuration
+                  resourceId={item.resourceId}
+                  field={f.field}
+                  value={f.value}
+                  origin={f.origin}
+                  onChanged={onChanged}
+                />
+              )}
               <Quotes quotes={f.quotes} />
             </li>
           ))}

@@ -1,6 +1,6 @@
 # 0056 — Evidence ladder: every field from the records, the README, then the product's own pages
 
-**Status.** Accepted. **Builds on:** [0019](0019-evidence-gated-enrichment.md), [0033](../foundation/0033-resilience-policies.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md), [0043](0043-enrichment-gap-round.md), [0051](0051-tavily-discovery.md). **Amends:** [0019](0019-evidence-gated-enrichment.md) (validator rules, prompt v4), [0043](0043-enrichment-gap-round.md) (trigger, more steps). **Amended by:** [0062](0062-writing-about-a-resource.md) (writing keeps only audience, tech level and use case; the re-check runs again for `enrich-v5`).
+**Status.** Accepted. **Builds on:** [0019](0019-evidence-gated-enrichment.md), [0033](../foundation/0033-resilience-policies.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md), [0043](0043-enrichment-gap-round.md), [0051](0051-tavily-discovery.md). **Amends:** [0019](0019-evidence-gated-enrichment.md) (validator rules, prompt v4), [0043](0043-enrichment-gap-round.md) (trigger, more steps). **Amended by:** [0062](0062-writing-about-a-resource.md) (writing keeps only audience, tech level and use case; the re-check runs again for `enrich-v5`), [0066](../edge/0066-curated-field.md) (a field an admin set is a stated fact; the model's value is dropped).
 
 ## Context
 A product page on Helper2 shows pricing, platforms, licence, use cases, who it is for and its technical level. Most

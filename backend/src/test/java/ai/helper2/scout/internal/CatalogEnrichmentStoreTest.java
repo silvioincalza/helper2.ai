@@ -174,6 +174,28 @@ class CatalogEnrichmentStoreTest {
     assertThat(github.getTextHash()).isEqualTo(plain.getTextHash());
   }
 
+  /** ADR 0066: what an admin set is a stated fact of the run, over the record's own value. */
+  @Test
+  void theFieldsAnAdminSetAreFactsTheModelCannotChange() {
+    EnrichmentCandidates.Candidate c = candidate("PRODUCT", true, "MIT");
+    candidates.candidate =
+        new EnrichmentCandidates.Candidate(
+            c.title(),
+            c.type(),
+            c.openSource(),
+            c.license(),
+            c.sources(),
+            Map.of("pricing", "PAID", "license", "Apache-2.0"));
+
+    EnrichmentMaterial m = store.load(ID);
+
+    assertThat(m.getInput().getSourceFacts())
+        .containsEntry("pricing", "PAID")
+        .containsEntry("license", "Apache-2.0")
+        .containsEntry("openSource", "true");
+    assertThat(m.getInput().getCuratedFields()).containsExactlyInAnyOrder("pricing", "license");
+  }
+
   @Test
   void theScoutSetsTheTextBarAndTheRetryCap() {
     store.pending(5);

@@ -21,6 +21,8 @@ import ai.helper2.shared.Verification
  * its excerpts: every name and number in it is in them, most of its words too, and it holds no
  * superlative, certificate, popularity or comparison.
  *
+ * ADR 0066: a field an admin set is not checked at all; the model's value for it is dropped.
+ *
  * ADR 0062 adds the type: an article, a news item or a paper keeps only audience, tech level and
  * use case, and names what it is about with ABOUT relationships, at most three ([FieldsByType]).
  */
@@ -286,6 +288,9 @@ class EvidenceValidator(
       val rule = allowed[f.field]
       return when {
         rule == null -> rejected(f, "$label: field not allowed")
+        // An admin set this field (ADR 0066): the model's value is not a question to review.
+        f.field in input.curatedFields ->
+          CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
         !FieldsByType.allowsField(input.type, f.field) ->
           rejected(f, "$label: not a fact of a ${input.type}, but of what it is about")
         !rule(f.value) -> rejected(f, "$label: value not allowed")

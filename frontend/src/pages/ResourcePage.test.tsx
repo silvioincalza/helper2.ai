@@ -454,6 +454,42 @@ describe('resource detail', () => {
     expect(row('techLevel')).toHaveTextContent('Not stated');
   });
 
+  it('a value an admin set wins over the sources, a conflict and the AI, and is not marked as AI (ADR 0066)', async () => {
+    const assertion = (
+      value: string,
+      origin: 'AI_EXTRACTED' | 'CURATED',
+      verification: 'VERIFIED' | 'REJECTED',
+    ) => ({ field: 'pricing', value, origin, verification, sourceId: null, evidence: [] });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({
+            pricing: 'PAID',
+            conflicts: [
+              {
+                field: 'pricing',
+                values: [
+                  { value: 'FREE', sourceId: 'github' },
+                  { value: 'PAID', sourceId: 'npm' },
+                ],
+              },
+            ],
+          }),
+          assertions: [
+            assertion('FREE', 'AI_EXTRACTED', 'REJECTED'),
+            assertion('PAID', 'CURATED', 'VERIFIED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'Fields' });
+    const pricing = document.querySelector('[data-field="pricing"] dd') as HTMLElement;
+    expect(pricing).toHaveTextContent('Paid');
+    expect(pricing).toHaveTextContent('Curated by Helper2');
+    expect(pricing).not.toHaveTextContent('Sources disagree');
+    expect(within(pricing).getByText('Paid')).not.toHaveAttribute('data-ai-generated');
+  });
+
   it('renders assertions with origin, verification and evidence excerpt', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>

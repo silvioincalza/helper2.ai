@@ -235,8 +235,8 @@ Open items:
   Show the health and legal notices on the resource page of a resource in those categories.
 - An admin UI for the curated list.
 - Writing about a resource ([ADR 0062](adr/scout/0062-writing-about-a-resource.md)), next steps:
-  - fix a field of an enriched resource: drop the value, or set a curated one (CURATED wins over the source, the
-    source over the AI);
+  - curated fields ([ADR 0066](adr/edge/0066-curated-field.md)): set platforms and use cases (labels rebuilt from the
+    records); a "back to the sources" action; let the editorial seeds keep an admin's value on the same entry;
   - on a model's or product's page, list the articles about it ("In the news").
 - Discovery hosts ([ADR 0063](adr/scout/0063-discovery-hosts.md)): show on each host how many candidates it
   kept or dropped in the last 30 days, so a wrong entry shows; let the admin move a host to the other list in one step

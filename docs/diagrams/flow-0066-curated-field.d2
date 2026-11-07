@@ -1,0 +1,37 @@
+# Flowchart: an admin sets or drops a resource's field, and what later records, runs and the page do with it.
+# Source of truth: backend/src/main/java/ai/helper2/catalog/usecase/CurateField.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/CuratedFields.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (upsertResources),
+#   backend/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt (field),
+#   frontend/src/components/results/FieldStates.tsx (stateOf).
+# Render: cd docs/diagrams && d2 fmt flow-0066-curated-field.d2 && d2 flow-0066-curated-field.d2 flow-0066-curated-field.svg
+
+...@style
+
+direction: down
+
+admin: "Admin, on an enrichment check\n(back office, VPN)" {class: person}
+action: "Set the value or\ndrop the AI value?" {class: decision}
+field: "type, pricing, license,\nopenSource, techLevel, audience;\na value the field takes?" {class: decision}
+bad: "400, nothing changes" {class: fail}
+set: "Column = value; field in\ncurated_fields; CURATED assertion;\nAI values rejected; SET_FIELD" {class: data}
+drop: "AI values of the field rejected\n(also use case, platforms);\nDROP_FIELD" {class: data}
+record: "A later record of the resource" {class: ext}
+keep: "Upsert: a curated column\nkeeps its value" {class: app}
+run: "A later enrichment run" {class: ext}
+facts: "The value is a stated fact;\nthe model's value is dropped,\nno review item" {class: app}
+page: "Resource page: curated first,\nthen a source conflict, the source,\nthe enrichment" {class: end}
+search: "Search cards, filters, ranking:\nthe column" {class: end}
+
+admin -> action
+action -> field: set {class: hot}
+field -> bad: no
+field -> set: yes {class: hot}
+action -> drop: drop
+set -> record
+record -> keep
+set -> run
+run -> facts
+set -> page: {class: hot}
+set -> search: {class: hot}
+drop -> page

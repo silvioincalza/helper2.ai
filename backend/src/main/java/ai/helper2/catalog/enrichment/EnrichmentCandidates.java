@@ -166,7 +166,19 @@ public interface EnrichmentCandidates {
       String type,
       @Nullable Boolean openSource,
       @Nullable String license,
-      List<SourceText> sources) {}
+      List<SourceText> sources,
+      /** The fields an admin set (ADR 0066), with their values: facts no run changes. */
+      Map<String, String> curated) {
+
+    public Candidate(
+        String title,
+        String type,
+        @Nullable Boolean openSource,
+        @Nullable String license,
+        List<SourceText> sources) {
+      this(title, type, openSource, license, sources, Map.of());
+    }
+  }
 
   /**
    * One source record as material: [text] is its title, a line break, and its description (empty

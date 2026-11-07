@@ -137,6 +137,8 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     if (candidate.openSource() != null) {
       facts.put("openSource", candidate.openSource().toString());
     }
+    // What an admin set wins over what any record says (ADR 0066).
+    facts.putAll(candidate.curated());
     String allText =
         String.join(
             "\n", candidate.sources().stream().map(EnrichmentCandidates.SourceText::text).toList());
@@ -149,7 +151,8 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     GapTarget gap = GapTargets.select(records);
     ResourceType type = typeOf(candidate.type());
     return new EnrichmentMaterial(
-        new EnrichmentInput(candidate.title(), materials, facts, Map.of(), type),
+        new EnrichmentInput(
+            candidate.title(), materials, facts, Map.of(), type, candidate.curated().keySet()),
         sha(allText),
         gap,
         type,
