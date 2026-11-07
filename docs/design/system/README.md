@@ -2,7 +2,7 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-`frontend/src/styles/tokens.css` has the version 4 colours, sizes and fonts under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`). Every page runs the version 4 layout; version 3 is gone. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`).
+`frontend/src/styles/tokens.css` has the version 4 colours, sizes and fonts under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`). Every page runs the version 4 layout; version 3 is gone. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
 
 ## Principles
 
@@ -10,7 +10,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Checked word for word in the source". The model's own reason carries its own "AI-written reason" label and is never styled like the quote.
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
-5. **One tech font, one reading font.** Geist Mono for the logo, headings, controls, labels, meta lines and the two home lists. Geist for running text: paragraphs, list items, quotes, descriptions.
+5. **One tech font, one reading font.** Geist Mono for machine facts: the logo, meta lines, counts, `$ helper2` commands, key hints and table cells (the two home lists, the list pages). Geist for everything a person reads or presses: running text, headings, titles, buttons, chips, tabs, links and fields.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
 7. **Nothing moves on its own for more than 5 seconds, with one exception.** No CSS animation repeats, no line prints in, no cursor blinks. The exception: the home radar, like a navigation radar. It holds still while you type in the box, stands still under reduced motion, and a signed-in user can turn it off.
 
@@ -143,8 +143,8 @@ The redesign boards in [../redesign](../redesign) and the design canvas "helper2
 | **SearchBox** | Box, **Search** (primary, ↵) and **Ask the guide** (outline, ⇧↵; a 44px icon button on a phone). No word count decides anything. Pinned on Home; in the header elsewhere. |
 | **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
 | **Radar** | See Radar. |
-| **HomeLists** | New this week, Coming up: one component, `TermList`. A `$ helper2 news · N` line (N = `total` from the API), `ls -l` columns, dashed rules, titles in Geist, the rest in Geist Mono. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), "on now" in `status-ok-ink`, `$ helper2 news --all · show all N` expands in place. Below 768px: a tablist `> new this week N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. Rows open the resource page. While a list scrolls by, its head, column names (wide) or tabs (phone) stay under the pinned box until the list ends. Loading, empty and error (with Retry) are StatePanels. |
-| **ListPages** | Sources, Saved and the back office: the heading with `$ helper2 … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
+| **HomeLists** | New this week, Coming up: one component, `TermList`. A `$ helper2 news · N` line (N = `total` from the API), `ls -l` columns, dashed rules, titles and tabs in Geist, the rest in Geist Mono. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), "on now" in `status-ok-ink`, `$ helper2 news --all · show all N` expands in place. Below 768px: a tablist `> new this week N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. Rows open the resource page. While a list scrolls by, its head, column names (wide) or tabs (phone) stay under the pinned box until the list ends. Loading, empty and error (with Retry) are StatePanels. |
+| **ListPages** | Sources, Saved and the back office: the heading in Geist with `$ helper2 … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
 | **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
 | **GuideSteps** | The streamed steps while the guide works. |
 | **ResultRow** | Meta line, title, one-line description, "From source". The whole row is a link. |
@@ -156,9 +156,9 @@ The redesign boards in [../redesign](../redesign) and the design canvas "helper2
 | **Callout** | Notice, warning, error, success: a 4px left line, a title, one sentence, one action. |
 | **ConfirmDialog** | Delete account. Focus starts on Cancel. |
 | **PhoneMenu** | Full-width menu under the header on phones. |
-| **Chip** | Example needs, filters, saved-by-type, use cases. A Geist Mono pill with the control border, 44px; the picked one is a `selected` fill. |
-| **Button** | Secondary (outline on `surface`, like Ask the guide), primary (`accent` fill, one per area), ink (sign in), ghost (outline, no fill), danger (`danger` outline; filled to confirm), icon, text (an underlined word). Geist Mono, `radius-md`, 44px; hover draws a line or ring of 3:1 or more. An external link ends with `↗`. |
-| **Field** | Inputs, selects, text areas: Geist Mono on `surface`, `border-strong`, `radius-md`, 44px. Checkboxes in `ink`. |
+| **Chip** | Example needs, filters, saved-by-type, use cases. A Geist pill with the control border, 44px on a touch screen, 32px (`chip-sm`) on the results page with a mouse; the picked one is a `selected` fill. |
+| **Button** | Secondary (outline on `surface`, like Ask the guide), primary (`accent` fill, one per area), ink (sign in), ghost (outline, no fill), danger (`danger` outline; filled to confirm), icon, text (an underlined word). Geist, `radius-md`, 44px on a touch screen, 36px (`control-sm`) on the results page with a mouse; hover draws a line or ring of 3:1 or more. An external link ends with `↗`. |
+| **Field** | Inputs, selects, text areas: Geist on `surface`, `border-strong`, `radius-md`, 44px. Checkboxes in `ink`. |
 | **AiLabel** | "AI-written", "AI-written reason", "AI summary". Geist Mono 12px, uppercase, outlined. |
 
 ### In the frontend

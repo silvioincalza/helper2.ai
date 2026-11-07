@@ -199,14 +199,16 @@ pages, Results and the resource page, and the text pages; this record says what 
     whole hours, days or months (`lib/duration.ts`), never shorter than the server keeps. What the API does not
     have stays typed: the 00:00 UTC reset, the counter lifetimes, logs, backups and usage totals.
 14. **Accessibility, and one set of controls.** The shared controls have one definition each, in `app.css` (badges,
-    the state panel and the status pill in `components/ui/ui.css`), and look the same on every page: Geist Mono, the
-    v4 radius and borders. Buttons: secondary (`.btn`, an outline on `surface`, like Ask the guide), primary
+    the state panel and the status pill in `components/ui/ui.css`), and look the same on every page: Geist, the v4
+    radius and borders. Geist Mono is only for machine facts: the logo, meta lines, counts, `$ helper2` commands, key
+    hints and table cells. Buttons: secondary (`.btn`, an outline on `surface`, like Ask the guide), primary
     (`.btn-primary`, the saffron fill), ink (`.btn-ink`, the sign-in button), ghost (`.btn-ghost`, the outline with no
     fill), danger (`.btn-danger`, a red outline; `.btn-danger-fill` to confirm), icon (`.btn-icon`) and text
-    (`.btn-text`, an underlined word). Chips (`.chip`) are pills, the picked one an ink fill. Fields are Geist Mono on
+    (`.btn-text`, an underlined word). Chips (`.chip`) are pills, the picked one an ink fill. Fields are Geist on
     `surface` with the control border; checkboxes are ink. Hover always draws a line or a ring of 3:1 or more; a
     disabled button is quiet, not faded. A contrast test checks every state in both themes
-    (`controlsContrast.test.ts`). Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
+    (`controlsContrast.test.ts`). Every control is at least 44 px on a touch screen; on the results page with a mouse
+    (pointer fine) buttons and tabs are 36 px (`control-sm`) and chips 32 px (`chip-sm`), above WCAG 2.2's 24 px. The focus ring (3 px ink outline) never looks like the
     selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
     disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
     keyboard. Text and controls meet AA in light and dark (muted 7.5:1 and 8:1, links 5.5:1 and 8.7:1, control borders

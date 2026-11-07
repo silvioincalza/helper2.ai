@@ -80,7 +80,7 @@
   background: none;
   cursor: pointer;
   color: var(--ink);
-  font: 500 0.9375rem/1.2 var(--font-mono);
+  font: 500 0.9375rem/1.2 var(--font-body);
   list-style: none;
 }
 .h2-fold-toggle::-webkit-details-marker {
@@ -153,7 +153,7 @@ details[open] > .h2-fold-toggle .icon {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  font: 400 0.875rem/1 var(--font-mono);
+  font: 400 0.875rem/1 var(--font-body);
   color: var(--muted);
 }
 /* List / Timeline: the pressed one is filled in ink, so it never looks like the focus ring. */
@@ -168,7 +168,7 @@ details[open] > .h2-fold-toggle .icon {
   align-items: center;
   min-height: var(--target-min);
   padding: 0 var(--space-3);
-  font: 400 0.875rem/1 var(--font-mono);
+  font: 400 0.875rem/1 var(--font-body);
   color: var(--ink-2);
   text-decoration: none;
 }
@@ -209,7 +209,7 @@ details[open] > .h2-fold-toggle .icon {
 .h2-type-tab {
   min-height: var(--target-min);
   padding: 0 var(--space-3);
-  font: 400 0.875rem/1 var(--font-mono);
+  font: 400 0.875rem/1 var(--font-body);
   color: var(--ink-2);
   background: transparent;
   border: 0;

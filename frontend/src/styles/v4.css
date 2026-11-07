@@ -1,10 +1,11 @@
 /*
  * Design v4 (ADR 0042): the header, the footer and Home, under `.v4`, and the page column (`.v4-wrap`). The shared
- * controls are in app.css. The tokens of tokens.css. Geist Mono for the logo, headings, controls, labels and meta
- * lines; Geist for running text.
+ * controls are in app.css. The tokens of tokens.css. Geist for everything a person reads or presses: running text,
+ * headings, buttons, chips, tabs, links and fields. Geist Mono only where a class asks for it: the logo, meta lines,
+ * counts, `$ helper2` commands, key hints and table cells (v5).
  */
 .v4 {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   color: var(--ink);
 }
 .v4 p,
@@ -15,7 +16,7 @@
 .v4 h1,
 .v4 h2,
 .v4 h3 {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   letter-spacing: -0.02em;
   color: var(--ink);
 }
@@ -114,7 +115,7 @@
   align-items: center;
   min-height: var(--target-min);
   padding: 0 var(--space-2);
-  font: 400 0.9375rem/1 var(--font-mono);
+  font: 400 0.9375rem/1 var(--font-body);
   color: var(--ink-2);
   text-decoration: none;
   border-bottom: 2px solid transparent;
@@ -225,7 +226,7 @@
   gap: 0 var(--space-5);
 }
 .v4 .v4-footer__links li {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
 }
 .v4 .v4-footer__links a {
   display: inline-flex;
@@ -273,7 +274,7 @@
 .v4 .searchbox.large .searchbox-field {
   min-height: 46px;
   padding: 11px var(--space-4);
-  font: 400 1.0625rem/1.4 var(--font-mono);
+  font: 400 1.0625rem/1.4 var(--font-body);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border-strong);

@@ -430,7 +430,7 @@
 .v4-tab {
   min-height: var(--target-min);
   padding: 0 var(--space-3);
-  font: 400 0.875rem/1 var(--font-mono);
+  font: 400 0.875rem/1 var(--font-body);
   text-transform: lowercase;
   color: var(--muted);
   background: transparent;
