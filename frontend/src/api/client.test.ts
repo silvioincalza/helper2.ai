@@ -1,6 +1,20 @@
-import { api, ApiError, deleteMyAccount, signOut } from './client';
+import { api, ApiError, csrfTokenFrom, deleteMyAccount, signOut } from './client';
 import { json, mockApi, problem } from '@/test/mockApi';
 import type { GuideStep } from './types';
+
+describe('csrfTokenFrom', () => {
+  it('reads the public site cookie', () => {
+    expect(csrfTokenFrom('a=1; XSRF-TOKEN=abc%3D123')).toBe('abc=123');
+  });
+  it('reads the back office __Host- cookie, which wins over a planted plain one', () => {
+    expect(csrfTokenFrom('__Host-XSRF-TOKEN=host')).toBe('host');
+    expect(csrfTokenFrom('XSRF-TOKEN=planted; __Host-XSRF-TOKEN=host')).toBe('host');
+  });
+  it('is undefined without either cookie', () => {
+    expect(csrfTokenFrom('SESSION=x; XSRF-TOKEN=')).toBeUndefined();
+    expect(csrfTokenFrom('')).toBeUndefined();
+  });
+});
 
 describe('api client', () => {
   it('sends the CSRF header and same-origin credentials on POST only', async () => {

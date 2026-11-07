@@ -14,13 +14,13 @@ plugins {
 tasks.named<JavaExec>("bootRun") { workingDir = rootProject.projectDir }
 
 // Contract-first (ADR 0003): controller interfaces + DTOs are generated from the app's
-// contract. While one app serves both, that is ../api/public.yaml and ../api/admin.yaml joined into
-// one file, with the types of ../api/common.yaml.
+// contract: its entry file (the app sets bundleContract.entries: ../api/public.yaml or
+// ../api/admin.yaml) joined with the parts of ../api/common.yaml it names, so the shared types keep
+// their names in both apps.
 val apiDir = rootProject.layout.projectDirectory.dir("../api")
 val contract = layout.buildDirectory.file("openapi/contract.yaml")
 val bundleContract =
   tasks.register<BundleContract>("bundleContract") {
-    entries.from(apiDir.file("public.yaml"), apiDir.file("admin.yaml"))
     referenced.from(apiDir.asFileTree.matching { include("*.yaml") })
     bundle.set(contract)
   }
@@ -59,11 +59,24 @@ tasks.named<GenerateTask>("openApiGenerate") {
   )
 }
 
-sourceSets { main { java.srcDir(generatedApiDir.map { it.dir("src/main/java") }) } }
+// The web adapters both apps serve the same way (search, sources, categories; ../common-web): one
+// source folder compiled into each app against that app's own generated contract types, which have
+// the same names in both (ADR 0069).
+val commonWebDir = rootProject.layout.projectDirectory.dir("apps/common-web/src/main/java")
+
+sourceSets {
+  main {
+    java.srcDir(generatedApiDir.map { it.dir("src/main/java") })
+    java.srcDir(commonWebDir)
+  }
+}
 
 tasks.named("compileJava") { dependsOn("openApiGenerate") }
 
 tasks.named("compileKotlin") { dependsOn("openApiGenerate") }
+
+// Boot jar only: the plain jar would be one more file in build/libs for the image to tell apart.
+tasks.named<Jar>("jar") { enabled = false }
 
 // The tests that check responses against the contract read the joined file.
 tasks.withType<Test>().configureEach {

@@ -1,0 +1,4 @@
+# The back office's tests have no public app to migrate their database (SchemaCheck).
+helper2:
+  schema:
+    migrate: true

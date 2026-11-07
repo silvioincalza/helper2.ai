@@ -1,0 +1,1223 @@
+spring:
+  application:
+    # The back office (ADR 0069): its own name on every metric, span and log line.
+    name: helper2-backoffice
+  profiles:
+    # Every external setting uses the H2_ prefix, profiles included. --spring.profiles.active still wins.
+    active: ${H2_PROFILES:}
+  config:
+    # Local secrets/settings from the repo-root .env (gitignored). Real env vars still win.
+    # Two paths: started from backend/ (Gradle, IDE) or from the repo root.
+    # Tests replace the list (build.gradle.kts): an imported .env cannot be undone by a system property.
+    import: ${helper2.dotenv-import:optional:file:../.env[.properties],optional:file:.env[.properties]}
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    # Graceful shutdown (server.shutdown): after SIGTERM, requests in flight get this long to finish, then the
+    # app stops. The chart sets it from app.shutdown.drainSeconds and gives the pod preStop + drain + 5 s (ADR 0027).
+    timeout-per-shutdown-phase: ${H2_SHUTDOWN_TIMEOUT:30s}
+  datasource:
+    url: ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}
+    username: ${H2_DATABASE_USER:helper2}
+    # No default: staging and prod set it from OpenBao. The known local password is only in the dev profile.
+    password: ${H2_DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${H2_DATABASE_POOL_SIZE:10}
+      connection-timeout: 3000
+  flyway:
+    # Validate only (SchemaCheck): the public app owns the migrations.
+    locations: classpath:db/migration
+  session:
+    data:
+      redis:
+        # Sign-in sessions, shared by every replica, apart from the public app's: a session id of the public
+        # site is never one here. Timeout and cookie: server.servlet.session below.
+        namespace: helper2:backoffice:session
+  data:
+    redis:
+      host: ${H2_REDIS_HOST:localhost}
+      port: ${H2_REDIS_PORT:6379}
+      password: ${H2_REDIS_PASSWORD:}
+      timeout: 250ms
+      connect-timeout: 500ms
+  docker:
+    compose:
+      enabled: false
+  ai:
+    model:
+      # "none" = no model: the guide falls back to search results and enrichment is skipped.
+      # NVIDIA Nemotron on Nebius Token Factory (OpenAI-compatible client) is enabled by profile `llm-nebius`.
+      chat: none
+      embedding: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+    openai:
+      chat:
+        # Bound every model call: the SDK default is a 10-minute timeout and 3 retries (up to 4 attempts).
+        # 40 s is above the slowest call measured with thinking off (repo classification, 12-14 s per batch).
+        timeout: ${H2_LLM_TIMEOUT:40s}
+        # 0: the SDK does not retry on its own, so every attempt is one of ours and is charged to a daily budget.
+        max-retries: ${H2_LLM_MAX_RETRIES:0}
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    resources:
+      # The admin web app is served by ai.helper2.admin.web.AdminWebApp only; the cache rules are the edge's.
+      add-mappings: false
+
+server:
+  port: ${H2_PORT:8080}
+  # Stop taking new connections on SIGTERM and let the requests in flight finish (spring.lifecycle above).
+  shutdown: graceful
+  # Trust X-Forwarded-* ONLY behind a proxy that always overwrites them (set H2_FORWARD_HEADERS_STRATEGY=native|framework there).
+  # Default none: otherwise clients could spoof X-Forwarded-For and bypass per-IP rate limits.
+  forward-headers-strategy: ${H2_FORWARD_HEADERS_STRATEGY:none}
+  # A redirect keeps its relative Location (/admin): never built from Host or X-Forwarded-Host.
+  tomcat:
+    use-relative-redirects: true
+  servlet:
+    session:
+      cookie:
+        # __Host-: Secure, Path=/ and no Domain, so a sibling host (the public site) cannot set it (ADR 0069).
+        # Lax, not Strict: the sign-in callback from GitHub is a cross-site navigation that must carry it.
+        name: __Host-SESSION
+        same-site: lax
+        http-only: true
+        secure: true
+        path: /
+
+management:
+  server:
+    # Empty: actuator on the app port. The cluster sets a separate port that the public Service does not route.
+    port: ${H2_MANAGEMENT_PORT:}
+  endpoints:
+    web:
+      exposure:
+        # Only what the probes and the scraper read; anything else under /actuator is not served.
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    redis:
+      # Cache is optional: its outage must not take the app out of rotation.
+      enabled: false
+  metrics:
+    distribution:
+      # Buckets, so Grafana can take p95 across a time range (a client-side percentile cannot).
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+        helper2.scout.run: true
+        helper2.llm.call: true
+        helper2.search.latency: true
+    tags:
+      application: helper2
+      environment: ${H2_ENVIRONMENT:local}
+  otlp:
+    metrics:
+      export:
+        # Metrics stay pull-based (Alloy scrapes /actuator/prometheus); the OTel starter would
+        # otherwise also push them to localhost:4318 every minute.
+        enabled: false
+  logging:
+    export:
+      otlp:
+        # Logs stay on stdout as JSON; no second copy over OTLP. traceId/spanId are in every log line written
+        # inside a request or an observed background task (ADR 0026).
+        enabled: false
+  tracing:
+    sampling:
+      probability: ${H2_TRACING_SAMPLING:1.0}
+    export:
+      # Off unless H2_TRACING_EXPORT=true, so local runs and tests do not try to reach a collector.
+      enabled: ${H2_TRACING_EXPORT:false}
+  opentelemetry:
+    resource-attributes:
+      service.name: helper2
+      deployment.environment.name: ${H2_ENVIRONMENT:local}
+    tracing:
+      export:
+        otlp:
+          # OTLP over HTTP/protobuf; in the cluster: http://alloy.observability.svc:4318/v1/traces
+          endpoint: ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+
+# Resilience policies (ADR 0033), applied in code by platform.resilience.Resilience: no annotations. One policy per
+# name; an enabled source or collector without its policy stops startup. Instances are created at startup, so each
+# has its meters (resilience4j_circuitbreaker_state, ..._not_permitted_calls) before its first call.
+#   source-<id>     circuit breaker + bulkhead, never a retry: the search deadline is the budget (SearchResources).
+#   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
+#                   timeout (TransientSourceFailure); Scout runs are background work and can wait. The discovery
+#                   categories share one: collector-discovery (ADR 0051).
+#   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
+#   db-cache        circuit breaker + bulkhead on the shared caches of model answers in PostgreSQL (SharedCaches).
+#   llm-chat        circuit breaker on every chat-model call (guide, translation, setup guide, enrichment, classifier);
+#                   only provider errors count (no connection, timeout, 429, 5xx, a rejected call), never an answer we
+#                   could not parse.
+#   llm-embed       circuit breaker on the embedding calls of search queries and guide questions.
+#   llm-embed-index circuit breaker on the background indexer's embedding calls: its own, so failed batches never
+#                   refuse a visitor's query.
+#   guide           bulkhead: guide questions at once in this replica, held per question (GuideLimits), not per call.
+resilience4j:
+  circuitbreaker:
+    configs:
+      source:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: ${H2_RESILIENCE_SOURCE_FAILURE_RATE:50}
+        # A call slower than this counts as slow; half of the window slow opens the circuit like failures do.
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_SOURCE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+        # A rate limit is not an outage: SearchResources pauses the source until Retry-After instead.
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
+      collector:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_COLLECTOR_OPEN_FOR:1m}
+        permitted-number-of-calls-in-half-open-state: 1
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
+      store:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # Redis answers in a millisecond or fails at its 250 ms command timeout: three failures are enough to stop
+        # waiting on it for the open window.
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+      model:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+    instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-live-web:
+        base-config: source
+        # Tavily answers in 2-4 s (timeout 6 s).
+        slow-call-duration-threshold: 5s
+      source-helper2-index: {base-config: source}
+      source-helper2-semantic: {base-config: source}
+      source-curated: {base-config: source}
+      collector-hf-trending: {base-config: collector}
+      collector-live-web-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
+      collector-live-web-events-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+      collector-gap-evidence: {base-config: collector}
+      collector-gap-web: {base-config: collector}
+      redis: {base-config: store}
+      llm-chat:
+        base-config: model
+        # Malformed JSON or a spent daily budget is not an outage of the provider: neither success nor failure.
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+      llm-embed: {base-config: model}
+      llm-embed-index: {base-config: model}
+      db-cache:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        # A lookup is one primary-key read in about a millisecond; a slow or failing database opens the circuit after a
+        # few calls, and every lookup is then a miss at once for the open window.
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        slow-call-duration-threshold: 250ms
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+  bulkhead:
+    configs:
+      source:
+        # Calls to one source at once in this replica; one more is SKIPPED as busy, it never waits.
+        max-concurrent-calls: ${H2_RESILIENCE_SOURCE_MAX_CONCURRENT:20}
+        max-wait-duration: 0
+      catalog:
+        # The catalog sources query Postgres: below the connection pool (H2_DATABASE_POOL_SIZE, 10), so searches
+        # never take every connection from the Scout and the admin.
+        max-concurrent-calls: ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:6}
+        max-wait-duration: 0
+    instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-live-web: {base-config: source}
+      source-helper2-index: {base-config: catalog}
+      source-helper2-semantic: {base-config: catalog}
+      source-curated: {base-config: catalog}
+      db-cache:
+        # Shared cache lookups at once in this replica, next to the catalog sources' 6: they never take the connections
+        # of the pool (H2_DATABASE_POOL_SIZE, 10) that the Scout and the admin need. One more is a miss, it never waits.
+        max-concurrent-calls: ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}
+        max-wait-duration: 0
+      guide:
+        # Questions running at once; one more is refused at once as busy (503).
+        max-concurrent-calls: ${H2_GUIDE_MAX_CONCURRENT:8}
+        max-wait-duration: 0
+  retry:
+    configs:
+      collector:
+        max-attempts: ${H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exception-predicate: ai.helper2.sources.support.TransientSourceFailure
+    instances:
+      collector-hf-trending: {base-config: collector}
+      collector-live-web-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
+      collector-live-web-events-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+      collector-gap-evidence: {base-config: collector}
+      collector-gap-web: {base-config: collector}
+
+logging:
+  structured:
+    format:
+      console: ${H2_LOG_FORMAT:logstash}
+
+helper2:
+  build:
+    # The running build (the chart passes the image tag). Cached guide answers are kept per build.
+    version: ${H2_BUILD_VERSION:local}
+  # The chat model (platform LlmProperties). No model here; the profile llm-nebius sets the provider and the models.
+  llm:
+    chat-provider: ${spring.ai.model.chat}
+    chat-model: ${spring.ai.openai.chat.model:}
+    provider-label: ""
+    reasoning-model: ""
+    fast-model: ""
+    # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
+    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
+  # The built SPA (frontend/dist, copied to static/ in the image).
+  spa:
+    # The admin web app (frontend/dist-admin), copied here in the image.
+    location: classpath:/static/admin/
+  # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
+  embedding:
+    api-key: ${H2_NVIDIA_API_KEY:}
+    base-url: ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}
+    model: ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
+    dimensions: 1024
+    # One embedding call of a search query.
+    timeout: 3s
+  catalog:
+    # Search results waiting to be written to the catalog in the background; more are dropped and counted.
+    observation-queue: 256
+    index:
+      # Runs in parallel with live sources that wait 2.5-6 s, so 3 s adds no wait in the worst case.
+      # 1.5 s was too tight: the index query took 0.8-1.1 s on prod (5.5k resources, 2026-10-26) and
+      # timed out, which drops the catalog from every search.
+      timeout: ${H2_SOURCE_INDEX_TIMEOUT:3s}
+    curated:
+      enabled: ${H2_SOURCE_CURATED_ENABLED:true}
+      timeout: 1000ms
+    semantic:
+      # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
+      timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
+      # Cosine distance cut-off (0 = same, 2 = opposite). Measured 27 Oct 2026 (ADR 0012): keyword hits for
+      # the same need 0.28-0.55, other topics 0.72-0.95, nonsense queries 0.81 at best.
+      max-distance: ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}
+      # Query vectors are shared by the replicas in Postgres this long (ADR 0012).
+      query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
+    # The background embedding indexer (helper2.embedding has the model and the key).
+    indexer:
+      # One batch call; a batch of 50 texts can take seconds, so longer than the query's timeout.
+      timeout: 30s
+      # 50 texts every 15 s = 4 requests/min, far below the API catalog's rate limit; ~25k rows in about 2 h.
+      batch: 50
+      # When the API rejects a batch (an error answer), this many of its texts go one per call in the same tick.
+      # NVIDIA failed most calls of 2+ texts with 500 "service inference failed" while every single text went
+      # through (staging, 5 Nov 2026). No published rate limit for the key: at most 1 + 5 calls per tick.
+      singles-after-failure: 5
+      initial-delay: PT30S
+      every: PT15S
+    # The categories of every resource (ADR 0053): assigned again at startup when the category words or rules in
+    # helper2.categories changed since the last time (one replica, in the background).
+    categories:
+      backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}
+  search:
+    # A source's answer is cached this long and, while it lasts, served when the source fails.
+    stale-for: ${H2_SEARCH_STALE_FOR:24h}
+    # Most results asked of each source per search.
+    per-source-limit: ${H2_SEARCH_PER_SOURCE_LIMIT:30}
+    # How long search waits for the English translation of a non-English query before running it untranslated
+    # (a plain number is milliseconds).
+    translate-timeout: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
+    # Non-English queries in English words, by the fast model (ADR 0011).
+    translation:
+      # Off: queries run as typed.
+      enabled: true
+      # Translations per UTC day; separate from the guide's cap.
+      daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+      # Translations are shared by the replicas in Postgres this long.
+      ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+  # Requests per client address; past them the answer is 429.
+  rate-limit:
+    search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:60}
+    report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
+    guide-per-minute: ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}
+    recent-per-minute: ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}
+  # Sign-in, ADMIN and the security headers (identity IdentityProperties).
+  identity:
+    # Where sign-in returns to: the admin web app on this host.
+    frontend-url: /admin
+    # /actuator/prometheus without sign-in (health is always open; nothing else is served).
+    # Only where the management port is not public.
+    metrics-public: ${H2_METRICS_PUBLIC:false}
+    # Comma-separated "registrationId:subject" entries granted ADMIN (GitHub: numeric user id, never the
+    # renameable login). OIDC providers may also use "registrationId:email" when email_verified=true.
+    admins: ${H2_ADMINS:}
+  admin:
+    # The metrics dashboard (Grafana) the back office overview links to for trends. Empty: no link.
+    grafana-url: ${H2_ADMIN_GRAFANA_URL:}
+    # The public site: a resource link on the admin host opens there.
+    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
+    # The guide's daily model-call cap as the public app runs it, stated on the Settings page (ADR 0060).
+    guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
+  # Spending limits an administrator changes at runtime (ADR 0060). Each replica checks for a change this often
+  # (5 s to 60 s); a change applies everywhere within about this long.
+  runtime-settings:
+    refresh: ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}
+  scout:
+    enabled: ${H2_SCOUT_ENABLED:false}
+    # One run a day at a fixed time (cron, UTC; ADR 0018). Each replica checks shortly after startup, then every
+    # tick; the Scout runs when the cron time after the last scheduled run has passed (or it never ran), once
+    # across replicas (ScoutConfiguration). A run starts at most one tick late; one missed while no replica was
+    # up starts at the next check. Per-collector intervals below only make a collector run less often.
+    initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
+    tick: ${H2_SCOUT_TICK:PT10M}
+    cron: ${H2_SCOUT_CRON:0 7 3 * * *}
+    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and 0061) may spend per
+    # UTC day; past it the collectors due that day are SKIPPED and try again the next day. Counted on the global
+    # credit counter too (the Sources page's web credits).
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
+    ai-deadlines:
+      # Conference files change a few times a month; one contents call + ~70 raw files per pass.
+      interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
+    mcp-registry:
+      # The registry asks aggregators to poll about hourly. The Scout itself runs once a day (cron above), so the
+      # registry is read daily; this interval only matters with a more frequent cron.
+      interval: ${H2_SCOUT_MCP_INTERVAL:PT1H}
+    # Per collector and run. 1000 lets GitHub awesome finish its daily pass (max-entries-per-pass) in one run.
+    max-items-per-run: 1000
+    # Shared by all collectors AND the backlog of not-yet-enriched resources, per scheduled run. Counts resources,
+    # not model calls: a gap round (ADR 0043) adds a second call for the same resource, so a run can make up to
+    # twice this many calls. daily-enrichment-calls is the hard cap on calls.
+    max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
+    # Enrichment model calls per UTC day, apart from the guide's cap; past it resources wait in the backlog.
+    daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}
+    # Gap rounds per UTC day (ADR 0043): a second enrichment call with the README or model card. Counted inside
+    # daily-enrichment-calls, not on top, so a value above it has no effect until that cap is raised. 0 turns the
+    # gap round off.
+    gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
+    # Evidence ladder (ADR 0056): a product's own pages, read with Tavily Extract when a run leaves a target field
+    # unproven. One Extract call (up to 5 pages, basic depth) is one credit; a product takes at most 2. Credits also
+    # count on the global Tavily cap (H2_LIVE_WEB_DAILY_CREDITS). 0 turns the page step off. A page a saved run
+    # read is not read again for page-read-ttl: for that, only its URL and a hash of its text are kept.
+    evidence:
+      daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
+      page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
+      # The cleaned text of the pages (no hidden text, emails and phone numbers masked, cut to the window), in Redis
+      # only, so a retry within the day costs no credit. At most P1D, checked at startup.
+      page-text-ttl: ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}
+    # Output cap of one enrichment call. The reasoning model's thinking tokens count against it; 2048 failed
+    # 18 of 120 runs. See SpringAiEnrichmentModel.
+    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
+    hf-trending:
+      interval: ${H2_SCOUT_HF_INTERVAL:P1D}
+      min-likes: 20
+    live-web:
+      # Each query costs 1 Tavily credit per run (search_depth basic): 7 queries every 5 days ~ 42 credits/month.
+      interval: ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen
+    courses:
+      # New AI course and certification pages (ADR 0032 section 8), sent to the admin review list, never straight to
+      # the catalog. One Tavily credit per platform and pass (search_depth basic): 10 platforms weekly ~ 43 credits/month.
+      interval: ${H2_SCOUT_COURSES_INTERVAL:P7D}
+      query: new artificial intelligence course or certification
+      # host[/path]=Platform: the search is restricted to the host; results must also be under the path.
+      platforms: >-
+        coursera.org=Coursera,
+        oreilly.com=O'Reilly,
+        edx.org=edX,
+        udemy.com=Udemy,
+        deeplearning.ai=DeepLearning.AI,
+        huggingface.co/learn=Hugging Face Learn,
+        cloud.google.com/learn=Google Cloud,
+        aws.amazon.com/certification=AWS,
+        learn.microsoft.com/en-us/credentials=Microsoft Learn,
+        nvidia.com=NVIDIA
+    linkedin:
+      # Public LinkedIn pages about AI (ADR 0061): one Tavily search per query, restricted to linkedin.com. The URL
+      # path decides the type (article, post, company or showcase page, event); profiles, jobs and learning pages are
+      # dropped. Every kept page goes to the admin review list, never straight to the catalog. One credit per query
+      # and pass (search_depth basic): 20 queries every 7 days = 20 credits a week, ~ 86 a month, all on one day.
+      # They count on the Scout's daily cap (helper2.scout.daily-credits) with discovery's; past it the
+      # pass is SKIPPED and tried again the next day. No commas inside a query.
+      interval: ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen,
+        launches new AI product,
+        AI startup announces launch,
+        introducing our new AI agent,
+        now available generative AI platform,
+        open-source AI model release announcement,
+        MCP server launch announcement,
+        AI conference,
+        AI hackathon,
+        generative AI meetup,
+        AI summit Europe,
+        LLM workshop webinar,
+        AI event Switzerland,
+        NVIDIA GTC
+    live-web-events:
+      # Upcoming AI events from the live web (ADR 0067): one Tavily search per query, then Tavily Extract reads the
+      # pages found (at most max-pages, 1 credit per 5) and the reasoning model reads each page's days. Code keeps an
+      # event only when the days are in a quote on the page and start within six months. About 4 search credits and
+      # 4 Extract credits a week, ~ 35 a month, on the Scout's daily cap. No commas inside a query.
+      interval: ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}
+      max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
+      # Model calls a UTC day to read event pages; past it a pass keeps what it read.
+      reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
+      read-max-tokens: 800
+      queries: >-
+        upcoming AI hackathons,
+        upcoming AI meetups and talks,
+        upcoming AI conferences and summits,
+        upcoming AI workshops
+    discovery:
+      # Tavily discovery (ADR 0051): what every category of helper2.categories shares. Each category is its own
+      # collector. Lists and comparisons are indexed as ARTICLE; a product's own site or GitHub repository goes to the
+      # admin review list, never straight to the catalog. search_depth advanced costs 2 credits: 39 searches every
+      # 7 days ~ 78 credits a week, ~ 335 a month. A category's first pass falls on day (its place in the list) mod 7 (UTC),
+      # so 4 or 5 categories run a day.
+      interval: ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}
+      search-depth: ${H2_SCOUT_DISCOVERY_DEPTH:advanced}
+      max-results: 10
+      # Tavily's relevance score, 0-1. Below it a result is dropped; a category can raise it (min-score).
+      min-score: 0.4
+      # Social and video sites: no product pages, no lists worth indexing. AI directories and review sites: their
+      # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051). A category adds its
+      # own (exclude-domains).
+      exclude-domains: >-
+        youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com,
+        pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai,
+        topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com,
+        trustpilot.com, alternativeto.net, saasworthy.com
+    hf-provider-orgs:
+      # Newest models of providers' official Hub organisations (one Hub call per org).
+      interval: ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}
+      orgs: meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org
+      per-org: 20
+    github-awesome:
+      interval: ${H2_SCOUT_AWESOME_INTERVAL:P1D}
+      # GitHub topic pairs; only repos named "awesome..." are kept (topic search alone returns prompt sites and apps).
+      topic-queries: >-
+        topic:awesome-list topic:llm,
+        topic:awesome topic:llm,
+        topic:awesome-list topic:artificial-intelligence,
+        topic:awesome-list topic:ai-agents,
+        topic:awesome topic:mcp,
+        topic:awesome topic:generative-ai
+      max-lists: 10
+      min-list-stars: 1000
+      # Per pass (once a day) and per Scout run (once a day): equal, so a pass ends in one run. A pass cut short by
+      # max-items-per-run resumes from an entry offset in the next run.
+      max-entries-per-pass: 1000
+      max-entries-per-run: ${H2_SCOUT_AWESOME_PER_RUN:1000}
+      min-repo-stars: 50
+      # Fast model (helper2.llm.fast-model) batch size: 25 entries took 12-14 s on Nemotron 3 Nano (2026-10-26).
+      classify-batch: 25
+      # Output cap of one classifier call, in tokens.
+      classify-max-tokens: 8192
+      # Classifier model calls per UTC day (about 8 batches per daily pass); the cap only bites when something loops.
+      classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
+      # Deep search (ADR 0058). One run reads the seed lists and the lists they link to until either budget is spent;
+      # the lists left unread wait for the next pass. A README is at most 5 MB.
+      max-run-time: ${H2_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}
+      max-readme-bytes-per-run: ${H2_SCOUT_AWESOME_MAX_README_BYTES:50MB}
+      nested:
+        # Steps from a seed list: 2 = the lists a seed links to, and the lists those link to. 0 = seeds only.
+        max-depth: ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}
+        # Nested lists tried per run (one GitHub call for the facts, one for the README), after the seeds.
+        max-lists-per-run: ${H2_SCOUT_AWESOME_NESTED_LISTS:30}
+      links:
+        # Links to product sites become review items, never indexed straight away: at most this many new items a
+        # UTC day. A link past the cap still joins a waiting item of the same site. 0 = none proposed.
+        per-day: ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}
+        # Distinct product sites kept per pass, before the daily cap.
+        max-per-pass: 500
+        # Never a product's own site, on top of discovery's exclude-domains (directories and review sites): papers,
+        # chats, notebooks, package registries, code hosts and app stores.
+        exclude-domains: >-
+          arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
+          discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,
+          kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com,
+          chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+  sources:
+    github:
+      enabled: ${H2_SOURCE_GITHUB_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 2500ms
+      cache-ttl: 30m
+    huggingface:
+      enabled: ${H2_SOURCE_HF_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 2500ms
+      cache-ttl: 30m
+    npm:
+      enabled: ${H2_SOURCE_NPM_ENABLED:true}
+      base-url: https://registry.npmjs.org
+      timeout: 2500ms
+      cache-ttl: 30m
+    arxiv:
+      enabled: ${H2_SOURCE_ARXIV_ENABLED:true}
+      base-url: https://export.arxiv.org
+      timeout: 3s
+      cache-ttl: 6h
+    live-web:
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
+      enabled: ${H2_SOURCE_LIVE_WEB_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      # Measured 2.0-4.2 s per call (26 Oct 2026); 3 s cut off real answers on prod.
+      timeout: ${H2_SOURCE_LIVE_WEB_TIMEOUT:6s}
+      cache-ttl: 30m
+    hf-trending:
+      enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 10s
+      cache-ttl: 30m
+      # Total time per call, body included (ADR 0006 §2); empty = twice the timeout.
+      deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
+    live-web-scout:
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
+      enabled: ${H2_SOURCE_LIVE_WEB_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LIVE_WEB_SCOUT_DEADLINE:}
+    course-scout:
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
+      enabled: ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
+    linkedin-scout:
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0061).
+      enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
+    live-web-events-scout:
+      # Off until set to true: Tavily's written OK for scheduled searches listed in the catalog is still to confirm
+      # (ADR 0067). Also needs H2_LIVE_WEB_API_KEY and an AI model.
+      enabled: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:false}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      # Extract waits up to 10 s on Tavily's side for up to 4 pages.
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}
+    discovery:
+      # Every discovery category (helper2.categories, ADR 0051). Disabled (reported as SKIPPED) until
+      # H2_LIVE_WEB_API_KEY is set.
+      enabled: ${H2_SOURCE_DISCOVERY_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      # search_depth advanced is slower than basic.
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_DISCOVERY_DEADLINE:}
+    page-reader:
+      # Product pages for the evidence ladder (ADR 0056). Off without H2_LIVE_WEB_API_KEY.
+      enabled: ${H2_SOURCE_PAGE_READER_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      # Basic extraction waits up to 10 s on Tavily's side; a call reads up to 4 pages.
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_PAGE_READER_DEADLINE:}
+    github-awesome:
+      # Disabled (reported as SKIPPED) until H2_GITHUB_TOKEN is set: GraphQL rejects anonymous calls.
+      enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}
+    hf-provider-orgs:
+      enabled: ${H2_SOURCE_HF_ORGS_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_HF_ORGS_DEADLINE:}
+    ai-deadlines:
+      enabled: ${H2_SOURCE_AI_DEADLINES_ENABLED:true}
+      base-url: https://api.github.com
+      # Optional: raises the contents API limit from 60 to 5,000 calls per hour.
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_AI_DEADLINES_DEADLINE:}
+    mcp-registry:
+      enabled: ${H2_SOURCE_MCP_ENABLED:true}
+      base-url: https://registry.modelcontextprotocol.io
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_MCP_DEADLINE:}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    # The same default as compose.yaml; never used outside a developer's machine.
+    password: ${H2_DATABASE_PASSWORD:helper2-local-only}
+  docker:
+    compose:
+      enabled: true
+      file: ../compose.yaml
+      lifecycle-management: start-only
+logging:
+  structured:
+    format:
+      console: ""
+server:
+  # Next to the public app (8080) on a developer's machine; the admin dev server (5174) proxies here.
+  port: ${H2_PORT:8090}
+helper2:
+  identity:
+    # The admin dev server.
+    frontend-url: http://localhost:5174/admin
+    metrics-public: true
+
+---
+# Sign-in with a GitHub OAuth App on the admin host. Register the callback per environment:
+#   local: http://localhost:5174/login/oauth2/code/github (the admin dev server); deployed: <H2_ADMIN_BASE_URL>/login/oauth2/code/github
+# GitHub's user id (numeric, never the renameable login) is the subject: H2_ADMINS=github:<id>.
+spring:
+  config:
+    activate:
+      on-profile: oauth-github
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-name: GitHub
+            client-id: ${H2_GITHUB_OAUTH_CLIENT_ID}
+            client-secret: ${H2_GITHUB_OAUTH_CLIENT_SECRET}
+            scope: read:user
+            # Pinned to the admin host (H2_ADMIN_BASE_URL, e.g. https://admin.example.org): the callback never comes
+            # from a forwarded Host. Empty: this request's own address.
+            redirect-uri: ${H2_ADMIN_BASE_URL:{baseUrl}}/login/oauth2/code/{registrationId}
+
+---
+# Nebius Token Factory (OpenAI-compatible) serving NVIDIA Nemotron open models.
+# Needs H2_NEBIUS_API_KEY (server-side only). Confirm model ids with: GET https://api.tokenfactory.nebius.com/v1/models
+#   H2_NEBIUS_REASONING_MODEL: picks tools, writes prompts, enriches metadata (Nemotron 3.5 Super by default)
+#   H2_NEBIUS_FAST_MODEL:      plans the guide's search, translates queries, classifies awesome lists (Nemotron 3.5 Lightning
+#                              by default; set it empty to use the reasoning model for these too)
+spring:
+  config:
+    activate:
+      on-profile: llm-nebius
+  ai:
+    model:
+      chat: openai
+    openai:
+      api-key: ${H2_NEBIUS_API_KEY}
+      base-url: https://api.tokenfactory.nebius.com/v1
+      chat:
+        model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
+        temperature: 0.0
+        max-tokens: 2048
+helper2:
+  llm:
+    provider-label: nebius-token-factory
+    reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
+    fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: demo
+helper2:
+  scout:
+    enabled: false
+resilience4j:
+  circuitbreaker:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+  bulkhead:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+
+---
+# Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.
+helper2:
+  # Home examples (ADR 0049): the quality check runs each example's search on one replica at a time. New and changed
+  # ones are hidden until checked, so they are checked soon; every example again each night (UTC).
+  examples:
+    pending-delay: ${H2_EXAMPLES_PENDING_DELAY:PT1M}
+    pending-every: ${H2_EXAMPLES_PENDING_EVERY:PT5M}
+    cron: ${H2_EXAMPLES_CRON:0 41 2 * * *}
+    # AI drafts (ADR 0049 §6): model calls a day (one per draft run, two when an answer cannot be read; 0 = off), and
+    # resources given to the model per run.
+    draft-calls: ${H2_EXAMPLES_DRAFT_CALLS:5}
+    draft-sources: ${H2_EXAMPLES_DRAFT_SOURCES:12}
+  retention:
+    # When the purges run (UTC); each module's purge runs on one replica (cluster lock).
+    cron: ${H2_RETENTION_CRON:0 17 3 * * *}
+    # OBSERVED resources (seen only in searches) no search has seen for this long.
+    observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
+    # Awesome-list search index rows (ADR 0055) no pass refreshed for this long: the list left the top lists.
+    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
+    # Enrichment runs; each resource's latest run and any run current rows cite stay.
+    enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
+    # Review items after they were decided or superseded.
+    resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
+    # Issue reports after their review was resolved (12 months).
+    resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
+    # Tavily NEWS and ARTICLE records after they were last retrieved.
+    web-news: ${H2_RETENTION_WEB_NEWS:P180D}
+    # Scout run records.
+    scout-runs: ${H2_RETENTION_SCOUT_RUNS:P90D}
+    # Observed and indexed events after they ended (1 year).
+    past-events: ${H2_RETENTION_PAST_EVENTS:P365D}
+    # Accounts nobody signed in to for this long, with their bookmarks (24 months).
+    inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
+    # Admin audit entries (24 months).
+    admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
+    # Runtime setting changes (ADR 0060), with who made them and why (24 months); each setting's newest change stays.
+    runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
+    # Database dumps (ADR 0027). The chart sets it from backup.retentionDays; the app only states it on /policy.
+    backups: ${H2_RETENTION_BACKUPS:P7D}
+
+---
+# Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
+helper2:
+  quota:
+    # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
+    # (OpenBao). Required while Tavily is enabled; without it the pseudonyms use a random key per process.
+    key-secret: ${H2_QUOTA_KEY_SECRET:}
+  search:
+    web:
+      # Stored result sets answer without a live call while fresh: news, courses, hackathons, conferences and
+      # events for 24 h, anything else for 48 h.
+      fresh-time-bound: ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}
+      fresh-general: ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}
+      quota:
+        # Per visitor and feature, per UTC day. Staging raises them for testing (chart app.dailyLimits).
+        guest:
+          search: ${H2_LIVE_WEB_GUEST_SEARCH:3}
+          guide: ${H2_LIVE_WEB_GUEST_GUIDE:3}
+        registered:
+          search: 10
+          guide: 10
+        # Signed-in users get the registered limits only with this on (after end-user sign-in goes live).
+        registered-tier-enabled: ${H2_LIVE_WEB_REGISTERED_TIER_ENABLED:false}
+        # Live calls a day for all of Helper2; empty = no cap.
+        global-daily-credits: ${H2_LIVE_WEB_DAILY_CREDITS:}
+  retention:
+    # Stored Tavily result sets after they were fetched.
+    live-web-results: ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}
+
+---
+# The categories of the AI world (ADR 0051): 34 categories in 7 families. Each is its own discovery collector
+# (discovery-<id>), its own dot on the Home radar and its own row on the Sources page, grouped by family.
+#   id          the catalog tag of every result the category fits; lower-case words with hyphens, at most 30 characters
+#   family      prompts-and-skills, everyday-apps, creative-and-media, business, developers, hosting-and-infra or
+#               run-it-yourself
+#   short-name  the radar label, at most 12 characters; name: the Sources page's
+#   words       put the tag on any result whose title or excerpt has one of them, whichever category found it: matched at
+#               the start of a word, hyphens count as spaces ("fine tuning platform" fits "fine-tuning platform")
+#   discovery   type: what a product its searches find becomes (a type a product page can have); queries: one Tavily
+#               search each, describing the product page in its own words, without "best" or "launched" (they pull
+#               SEO pages and news). Optional: interval, enabled, min-score, require-keyword (keep a result only when
+#               its own title or excerpt has one of this category's words), index-lists (false drops list pages),
+#               exclude-domains (added to helper2.scout.discovery.exclude-domains).
+# Startup fails on an unknown family or type, a bad id or short name, or a duplicate id. Models, datasets, MCP servers
+# and awesome lists come from their own collectors.
+helper2:
+  categories:
+    # Prompts and skills
+    - id: prompt-libraries
+      family: prompts-and-skills
+      short-name: Prompts
+      name: Prompt libraries
+      words: [prompt library, prompt libraries, prompt marketplace, prompt collection, ready to use prompts, prompt pack]
+      discovery:
+        type: PROMPT
+        queries: [free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini]
+    - id: skills-and-gpts
+      family: prompts-and-skills
+      short-name: Skills
+      name: Agent skills and GPTs
+      words: [agent skill, claude skill, skill.md, custom gpt, gpt store]
+      discovery:
+        type: SKILL
+        queries: [open-source collection of Claude Code and agent skills with SKILL.md files]
+    # Everyday apps
+    - id: ai-assistants
+      family: everyday-apps
+      short-name: Assistants
+      name: AI assistants
+      words: [personal assistant, ai companion, ai chat app, chatgpt alternative]
+      discovery:
+        type: PRODUCT
+        queries: [AI chat assistant app for web and mobile that answers questions and remembers context]
+    - id: writing
+      family: everyday-apps
+      short-name: Writing
+      name: Writing
+      words: [writing assistant, ai writer, ai writing, copywriting, paraphras, grammar checker]
+      discovery:
+        type: PRODUCT
+        queries: [AI writing assistant for emails documents and marketing copy]
+    - id: translation
+      family: everyday-apps
+      short-name: Translation
+      name: Translation
+      words: [ai translat, machine translation, document translat, translation app, real time translat]
+      discovery:
+        type: PRODUCT
+        queries: [AI translator for documents websites and conversations]
+    - id: meetings-and-transcription
+      family: everyday-apps
+      short-name: Meetings
+      name: Meetings and transcription
+      words: [meeting assistant, meeting notes, meeting summar, notetaker, note taker, transcription, transcribe,
+              speech to text]
+      discovery:
+        type: PRODUCT
+        queries: [AI notetaker that joins meetings and writes notes and action items]
+    - id: documents-and-pdf
+      family: everyday-apps
+      short-name: Documents
+      name: Documents and PDF
+      words: [chat with pdf, chat with your documents, pdf summar, document summar, ai pdf]
+      discovery:
+        type: PRODUCT
+        queries: [AI that summarises and answers questions about PDFs and documents]
+    - id: research-and-papers
+      family: everyday-apps
+      short-name: Research
+      name: Research and papers
+      words: [research assistant, literature review, research papers, scientific papers, paper summar, deep research]
+      discovery:
+        type: PRODUCT
+        queries: [AI research assistant that finds and summarises scientific papers]
+    - id: ai-search
+      family: everyday-apps
+      short-name: AI search
+      name: AI search
+      words: [ai search, ai search engine, answer engine, ai powered search]
+      discovery:
+        type: PRODUCT
+        queries: [AI search engine that answers questions with cited sources]
+    - id: browser-extensions
+      family: everyday-apps
+      short-name: Extensions
+      name: Browser extensions
+      words: [browser extension, chrome extension, firefox add on, firefox extension, extension for chrome]
+      discovery:
+        type: PRODUCT
+        queries: [AI browser extension for Chrome or Firefox]
+    - id: education-and-tutors
+      family: everyday-apps
+      short-name: Education
+      name: Education and tutors
+      words: [ai tutor, ai tutoring, homework help, homework helper, study assistant, flashcard generat, quiz generat,
+              ai teaching assistant, lesson plan generat, ai for teachers, grading assistant, ai grading]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI tutor app that explains homework step by step and makes quizzes and flashcards for students
+          - AI tools for teachers that create lesson plans and grade assignments
+        # Course platforms: their courses come from course discovery, not here.
+        exclude-domains: [coursera.org, udemy.com, edx.org, skillshare.com, udacity.com, pluralsight.com]
+    - id: health
+      family: everyday-apps
+      short-name: Health
+      name: Health
+      words: [medical scribe, ai scribe, clinical documentation, clinical notes, ambient clinical, healthcare ai,
+              ai for healthcare, medical ai, medical coding, prior authori, patient intake, symptom checker,
+              ai health assistant, ai health app]
+      discovery:
+        type: PRODUCT
+        # Tools for professionals and for patients.
+        queries:
+          - AI medical scribe that writes clinical notes from doctor and patient visits
+          - AI health app that answers health questions and tracks symptoms for patients
+        # Health searches pull general advice pages: only results that name a health tool, no list pages.
+        min-score: 0.5
+        require-keyword: true
+        index-lists: false
+        exclude-domains: [webmd.com, mayoclinic.org, clevelandclinic.org, healthline.com, medicalnewstoday.com,
+                          verywellhealth.com, medlineplus.gov, nih.gov, cdc.gov, who.int, nhs.uk, drugs.com,
+                          wikipedia.org]
+    # Creative and media
+    - id: image-generation
+      family: creative-and-media
+      short-name: Images
+      name: Image generation
+      words: [image generat, text to image, ai art generat, ai artwork, photo editor, image editing, background remov,
+              upscal]
+      discovery:
+        type: PRODUCT
+        queries: [AI image generator that creates and edits images from text prompts]
+    - id: video-generation
+      family: creative-and-media
+      short-name: Video
+      name: Video generation
+      words: [video generat, text to video, image to video, ai video, video editor, avatar video, lip sync]
+      discovery:
+        type: PRODUCT
+        queries: [AI video generator that turns text or images into video]
+    - id: voice-and-audio
+      family: creative-and-media
+      short-name: Voice, audio
+      name: Voice and audio
+      words: [text to speech, voice clon, voice generat, ai voice, speech synthesis, tts api, music generat, ai music,
+              song generat]
+      discovery:
+        type: PRODUCT
+        queries:
+          - realistic AI text to speech and voice cloning
+          - AI music generator that creates songs from a text prompt
+    - id: design-and-presentations
+      family: creative-and-media
+      short-name: Design
+      name: Design and presentations
+      words: [ai presentation, presentation maker, slide deck, pitch deck, slides generat, ui design,
+              ai website builder, website generat, logo generat, graphic design]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI presentation maker that creates slides from a prompt
+          - AI website builder and UI design generator
+    # Business
+    - id: customer-support
+      family: business
+      short-name: Support
+      name: Customer support
+      words: [customer support, customer service, helpdesk, help desk, support ticket]
+      discovery:
+        type: PRODUCT
+        queries: [AI customer support agent that answers tickets and live chat]
+    - id: voice-agents
+      family: business
+      short-name: Voice agents
+      name: Voice agents
+      words: [voice agent, phone agent, ai receptionist, conversational voice ai]
+      discovery:
+        type: AGENT
+        queries: [platform to build AI voice agents that answer phone calls]
+    - id: data-and-analytics
+      family: business
+      short-name: Data
+      name: Data and analytics
+      words: [data analysis, ai data analyst, ai analyst, text to sql, business intelligence, spreadsheet ai,
+              chat with your data]
+      discovery:
+        type: PRODUCT
+        queries: [AI data analyst that answers questions about spreadsheets and databases]
+    - id: no-code
+      family: business
+      short-name: No-code
+      name: No-code
+      words: [no code ai, no code builder, no code app, nocode, low code, workflow automation, automation builder]
+      discovery:
+        type: PRODUCT
+        queries: [no-code builder for AI apps and workflow automations]
+    - id: marketing-and-seo
+      family: business
+      short-name: Marketing
+      name: Marketing and SEO
+      words: [ai marketing, marketing ai, seo tool, seo content, seo optimi, ai seo, keyword research, ad copy,
+              ad creative, social media post, social media content, email marketing, generative engine optimi]
+      discovery:
+        type: PRODUCT
+        queries: [AI marketing platform that writes SEO blog posts and ad copy and plans social media content]
+    - id: legal
+      family: business
+      short-name: Legal
+      name: Legal
+      words: [legal ai, ai legal, ai lawyer, legal assistant, contract review, contract analy, contract drafting,
+              legal research, legal drafting, ediscovery, e discovery, clause extraction]
+      discovery:
+        type: PRODUCT
+        queries: [AI legal assistant for lawyers that reviews contracts and drafts legal documents]
+        # Legal searches pull law firms and general advice pages: only results that name a legal tool, no list pages.
+        min-score: 0.5
+        require-keyword: true
+        index-lists: false
+        exclude-domains: [law.cornell.edu, findlaw.com, justia.com, nolo.com, avvo.com, lawinsider.com, legalzoom.com,
+                          rocketlawyer.com, upcounsel.com, eur-lex.europa.eu, wikipedia.org]
+    # Developers
+    - id: coding
+      family: developers
+      short-name: Coding
+      name: Coding
+      words: [coding assistant, coding agent, code assistant, ai coding, code review, code generat, ai ide,
+              ai code editor]
+      discovery:
+        type: PRODUCT
+        queries: [AI coding agent and code editor for software developers]
+    - id: agent-platforms
+      family: developers
+      short-name: Agents
+      name: Agent platforms
+      words: [agent platform, agent builder, build ai agents, autonomous agent, multi agent]
+      discovery:
+        type: AGENT
+        queries: [platform to build deploy and run AI agents for business workflows]
+    - id: llm-frameworks
+      family: developers
+      short-name: Frameworks
+      name: LLM frameworks
+      words: [llm framework, agent framework, orchestration framework, llm library]
+      discovery:
+        type: LIBRARY
+        queries: [open-source framework or library to build LLM apps and agents]
+    - id: rag-and-vector-databases
+      family: developers
+      short-name: RAG
+      name: RAG and vector databases
+      words: [vector database, vector db, vector search, retrieval augmented, rag pipeline, rag platform,
+              document parsing, pdf parsing, pdf to markdown, ocr api, ocr model, document extraction]
+      discovery:
+        type: PRODUCT
+        queries:
+          - vector database or RAG platform for retrieval augmented generation
+          - API to parse PDFs and documents into clean text for LLMs
+    - id: llmops-and-evaluation
+      family: developers
+      short-name: LLMOps
+      name: LLMOps and evaluation
+      words: [llm observability, llmops, llm evaluation, llm evals, evals, llm tracing, llm monitoring,
+              prompt management, prompt versioning]
+      discovery:
+        type: PRODUCT
+        queries: [LLM observability evaluation and monitoring tool]
+    - id: ai-security
+      family: developers
+      short-name: AI security
+      name: AI security
+      words: [guardrail, prompt injection, llm security, ai security, ai red team, jailbreak]
+      discovery:
+        type: PRODUCT
+        queries: [AI guardrails and LLM security tool against prompt injection]
+    - id: fine-tuning
+      family: developers
+      short-name: Fine-tuning
+      name: Fine-tuning
+      words: [fine tuning platform, fine tune llm, fine tune models, finetun, lora, qlora, model training]
+      discovery:
+        type: PRODUCT
+        queries: [platform to fine-tune and train open-source LLMs]
+    # Hosting and infrastructure
+    - id: model-hosting
+      family: hosting-and-infra
+      short-name: Hosting
+      name: Model hosting
+      words: [inference api, serverless inference, model hosting, deploy models, inference platform]
+      discovery:
+        type: PRODUCT
+        queries: [serverless inference API for open-weight LLMs and image models]
+    - id: ai-cloud-and-paas
+      family: hosting-and-infra
+      short-name: AI cloud
+      name: AI cloud and PaaS
+      words: [serverless gpu, gpu cloud, gpu instances, rent gpus, deploy ai apps, ai cloud]
+      discovery:
+        type: PRODUCT
+        queries: [GPU cloud platform to deploy and scale AI apps and models]
+    - id: ai-gateways
+      family: hosting-and-infra
+      short-name: Gateways
+      name: AI gateways
+      words: [llm gateway, ai gateway, llm router, model router, llm proxy]
+      discovery:
+        type: PRODUCT
+        queries: [LLM gateway or router that gives one API for many model providers]
+    # Run it yourself
+    - id: self-hosted
+      family: run-it-yourself
+      short-name: Self-hosted
+      name: Self-hosted
+      words: [self hosted, selfhosted, on prem, docker compose, homelab]
+      discovery:
+        type: PRODUCT
+        queries: [open-source self-hosted AI app you run on your own server with Docker]
+    - id: local-ai
+      family: run-it-yourself
+      short-name: Local AI
+      name: Local AI
+      words: [run locally, runs locally, run llms locally, local llm, local ai, offline ai, works offline, on device]
+      discovery:
+        type: PRODUCT
+        queries: [desktop app to run LLMs locally and offline on your own computer]

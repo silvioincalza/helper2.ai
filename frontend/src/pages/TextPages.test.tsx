@@ -67,9 +67,10 @@ describe('mission, privacy and terms pages', () => {
       'href',
       'mailto:helper2ai@incalza.me',
     );
-    expect(screen.getByRole('region', { name: 'Cookies and browser storage' })).toHaveTextContent(
-      'XSRF-TOKEN',
-    );
+    const cookies = screen.getByRole('region', { name: 'Cookies and browser storage' });
+    expect(cookies).toHaveTextContent('XSRF-TOKEN');
+    expect(cookies).toHaveTextContent('__Host-SESSION');
+    expect(cookies).toHaveTextContent('__Host-XSRF-TOKEN');
     const recipients = screen.getByRole('region', { name: 'Who receives data' });
     expect(recipients).toHaveTextContent('Nebius Token Factory');
     expect(recipients).toHaveTextContent('Germany');
