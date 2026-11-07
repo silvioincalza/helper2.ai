@@ -128,9 +128,13 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. The deployer token
   (the platform repo) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
-  - set `postgres.image.digest` to the digest of `18.6-pgvector0.8.6-3` once CD has pushed that tag (with the
+  - set `postgres.image.digest` to the digest of `18.6-pgvector0.8.6-4` once CD has pushed that tag (with the
     Postgres exporter: one restart);
-  - **18 Nov 2026:** end of the report-only period. Look at the findings in code scanning, add the exceptions that
+  - **18 Nov 2026:** end of the report-only period. On 6 Nov code scanning held 66 open Critical or High findings
+    with a fix: all 11 Critical and almost every High in the Postgres image (Alpine `libcurl` and `brotli-libs`, and the
+    Go standard library inside `gosu`), the rest Debian `apt` and `libpcre2` in the app image. The base-image bumps
+    (Dependabot) clear what upstream has rebuilt; a `gosu` finding upstream has not rebuilt yet is an exception with
+    a review date. Then add the exceptions that
     are justified to `.grype.yaml`, then let the `scan` job fail on a Critical finding with a fix
     (`--fail-on critical` in `cd.yml`) and make it a need of `staging` there
     ([ADR 0046](adr/operations/0046-supply-chain.md)).
