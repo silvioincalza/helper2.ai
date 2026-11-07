@@ -727,6 +727,7 @@
   },
   "guide": {
     "ask": "Ask the guide",
+    "askTitle": "Ask the guide (⇧↵)",
     "answersLeft": {
       "some": "{{remaining}} of {{limit}} AI answers left today.",
       "none": "No AI answers left today. The guide shows the top search results without AI picks until {{time}} your time."

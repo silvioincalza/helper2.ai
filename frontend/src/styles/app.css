@@ -932,32 +932,26 @@ h2 {
   padding: 1px 5px;
   border: 1px solid currentColor;
 }
-/* Ask the guide: the quieter second button of the box (ADR 0042, decision 11). On a narrow box only its icon shows. */
+/* Ask the guide: the quieter second button of the box, an icon only (ADR 0042, decision 11). Its name and key are in
+   the tooltip. */
 .one-box-ask {
   justify-content: center;
   min-width: var(--target-min);
   min-height: var(--target-min);
+  padding: 0;
+  aspect-ratio: 1;
   background: var(--surface);
+}
+/* Stronger than the narrow-box rules that stretch `.searchbox.large .btn`: an icon button never grows. */
+.searchbox.large .btn.one-box-ask {
+  flex: 0 0 auto;
 }
 .one-box-ask__icon {
   flex: none;
 }
 @media (max-width: 520px) {
-  .searchbox.large .one-box-ask {
-    flex: 0 0 auto;
-    padding: 0;
-  }
   .searchbox.large .enter-key {
     display: none;
-  }
-  /* The label stays the button's accessible name; only its look goes. */
-  .one-box-ask__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
   }
 }
 .one-box.is-hero .searchbox.large {
