@@ -1,5 +1,5 @@
 # Flowchart: how the back office overview is answered (ADR 0045).
-# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
 #   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
 #   backend/libs/examples/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/pages/admin/AdminOverview.tsx,
@@ -13,7 +13,7 @@
 
 direction: down
 
-req: "GET /api/v1/admin/overview\n(admin port, ADMIN)" {class: end}
+req: "GET /api/v1/admin/overview\n(back office, ADMIN)" {class: end}
 
 uc: GetOverview {
   class: group
@@ -80,7 +80,7 @@ queue: ListEnrichmentQueue {
 
 queue_req -> queue.view
 
-act_req: "POST /api/v1/admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\n(admin port, ADMIN, CSRF)" {class: end}
+act_req: "POST /api/v1/admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\n(back office, ADMIN, CSRF)" {class: end}
 
 act: "RequeueEnrichment · SkipEnrichment · PrioritiseEnrichment\n(one transaction)" {
   class: group

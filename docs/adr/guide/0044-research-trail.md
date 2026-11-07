@@ -108,13 +108,13 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 
 ## Code
 - `api/public.yaml` — `GuideTrail`, `GuideTrailRemoved`, `GuideResponse.trail`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Guide.kt` — `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt` — `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
   `GuideValidator.Rejection.trailCheck`, `GuideValidator.removedOf`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/Question.kt` — `Question.ran`, `GuideSteps.find`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/Question.kt` — `Question.ran`, `GuideSteps.find`.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
   `AskGuide.kt` (`answerByIntent`, `similarAnswer`).
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `SHAPE`.
-- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `trail`, `AI_WRITTEN_FIELDS`.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `SHAPE`.
+- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `trail`, `AI_WRITTEN_FIELDS`.
 - `frontend/src/components/guide/GuideAnswer.tsx` — `PlannedQueries`, `RemovedList`.
 - Tests: `AskGuideTrailTest`, `AskGuideIntentsTest`, `AskGuideSimilarTest`, `GuideDtoMapperTest`, `SharedGuideAnswerStoreTest`,
   `GuideTrail.test.tsx`.

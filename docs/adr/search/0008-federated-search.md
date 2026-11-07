@@ -123,11 +123,11 @@ and how many web credits the day has used. Two sources can describe the same res
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `ResourceStore.java` —
   `DiscoveredResources`, `discoveredSince`; `V6__resource_first_discovered_idx.sql`.
 - `backend/libs/search/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
-- `backend/apps/helper2/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
+- `backend/apps/public/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
 - `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
 - `backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
   store and quota ([0037](0037-tavily-store-and-daily-quota.md)).
-- `backend/apps/helper2/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
+- `backend/apps/common-web/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
 ## Diagrams

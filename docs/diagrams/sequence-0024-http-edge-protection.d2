@@ -2,9 +2,9 @@
 # Shows the path through Cloudflare and ingress-nginx, the forwarded address, the cache headers of the SPA fallback,
 # the CSRF cookie and header, the limiter counting in Redis (shared by all replicas), and the 429.
 # Source of truth: deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java, RateLimitInterceptor.java, RateLimiter.java,
+#   backend/apps/public/src/main/java/ai/helper2/platform/SinglePageApp.java, RateLimitInterceptor.java, RateLimiter.java,
 #   RedisRateLimiter.java, ClientKey.java, platform/quota/QuotaKeys.java,
-#   backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, frontend/src/api/client.ts.
+#   backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java, frontend/src/api/client.ts.
 # Render: cd docs/diagrams && d2 fmt sequence-0024-http-edge-protection.d2 && d2 sequence-0024-http-edge-protection.d2 sequence-0024-http-edge-protection.svg
 
 ...@style

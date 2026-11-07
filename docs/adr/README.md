@@ -76,7 +76,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | # | Decision | Builds on | Diagrams |
 |---|---|---|---|
 | [0023](edge/0023-identity-and-admin.md) | Identity: anonymous-first; GitHub sign-in; ADMIN by numeric id; bookmarks and account deletion for signed-in users; admin audit trail | 0003, 0004, 0005, 0007, 0034 | [flow](../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../diagrams/sequence-0023-identity-and-admin.svg) |
-| [0035](edge/0035-admin-host.md) | Admin host: a second port for the back office, ADMIN only there, sign-in on both hosts | 0023, 0024, 0027 | [flow](../diagrams/flow-0035-admin-host.svg) · [sequence](../diagrams/sequence-0035-admin-host.svg) |
+| [0035](edge/0035-admin-host.md) | Admin host: the back office app on its own host, ADMIN only there, sign-in on both hosts | 0023, 0024, 0027 | [flow](../diagrams/flow-0035-admin-host.svg) · [sequence](../diagrams/sequence-0035-admin-host.svg) |
 | [0045](edge/0045-back-office.md) | Back office: a thin admin module, one page per part, an overview of what needs a person, budgets read from the shared counter, the evidence of a review item read through its link, bulk decisions item by item | 0002, 0017, 0018, 0023, 0035, 0037, 0038 | [flow](../diagrams/flow-0045-back-office.svg) · [sequence](../diagrams/sequence-0045-back-office.svg) |
 | [0024](edge/0024-http-edge-protection.md) | HTTP edge: rate limits (IPv6 /64), CSRF, CSP, forwarded headers, management port, SPA fallback and caching | 0001, 0005, 0007, 0023, 0033 | [flow](../diagrams/flow-0024-http-edge-protection.svg) · [sequence](../diagrams/sequence-0024-http-edge-protection.svg) |
 
@@ -105,6 +105,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0048](operations/0048-release-branches-and-version-tags.md) | Release branches and version tags on images: patch-only fixes from release/*, prod runs X.Y.Z, no rebuild | 0028, 0029, 0046 | [flow](../diagrams/flow-0048-release-branches-and-version-tags.svg) · [sequence](../diagrams/sequence-0048-release-branches-and-version-tags.svg) |
 | [0052](operations/0052-policy-endpoint.md) | Policy endpoint: GET /api/v1/policy gives the limits and retention periods the text pages state, from the configuration; one policy value per owning module, a thin policy module | 0003, 0007, 0017, 0024, 0034, 0037 | [flow](../diagrams/flow-0052-policy-endpoint.svg) · [sequence](../diagrams/sequence-0052-policy-endpoint.svg) |
 | [0060](operations/0060-runtime-settings.md) | Runtime settings: six spending limits change from the back office without a deploy; an allow-list with a maximum in code, append-only in Postgres, a snapshot per replica refreshed every 20 s, audited and undoable | 0005, 0007, 0017, 0023, 0034, 0037, 0043, 0045 | [flow](../diagrams/flow-0060-runtime-settings.svg) · [sequence](../diagrams/sequence-0060-runtime-settings.svg) |
+| [0069](operations/0069-three-deployables.md) | Three deployables: the public app and the back office as two apps and two images (the web image next); one database with one Flyway owner; the back office only on the admin host with its own strict headers, `__Host-` cookies and ADMIN; every job in one app | 0002, 0003, 0027, 0035, 0045, 0050, 0059, 0068 | [flow](../diagrams/flow-0069-three-deployables.svg) · [sequence](../diagrams/sequence-0069-three-deployables.svg) |
 
 ## Quality — [`quality/`](quality/)
 

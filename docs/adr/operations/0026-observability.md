@@ -152,14 +152,14 @@ the guide work long before that, and what makes the wait feel long is the first 
   the answer time.
 
 ## Code
-- `backend/apps/helper2/src/main/resources/application.yaml` — `management.*`, `logging.structured`, tracing settings.
+- `backend/apps/public/src/main/resources/application.yaml` — `management.*`, `logging.structured`, tracing settings.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/observability/ObservabilityConfiguration.java` — actuator filter.
 - `backend/libs/search/src/main/java/ai/helper2/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java` — model call span, timer, tokens.
-- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `helper2.guide.first_useful`.
-- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideLimits.java`, `scout/internal/ScoutConfiguration.java` (`RUN_THREADS`) —
+- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `helper2.guide.first_useful`.
+- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java`, `scout/internal/ScoutConfiguration.java` (`RUN_THREADS`) —
   trace context on the guide's threads and on a Scout run started from the admin page.
-- `backend/apps/helper2/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
+- `backend/apps/public/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/LlmConfiguration.java`, `sources/SourcesConfiguration.java` —
   translation and classifier budget gauges.

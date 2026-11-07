@@ -1,10 +1,10 @@
 # Flowchart: where an event's dates come from and which events GET /api/v1/events/upcoming lists.
-# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java (nextEdition, toHit),
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java (nextEdition, toHit),
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt (scheduledDay),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
 #   scripts/industry-events-seed.mjs, backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql,
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (countUpcomingEvents),
-#   backend/apps/helper2/src/main/java/ai/helper2/catalog/web/ResourcesController.java (listUpcomingEvents).
+#   backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourcesController.java (listUpcomingEvents).
 # Render: cd docs/diagrams && d2 fmt flow-0022-next-events.d2 && d2 flow-0022-next-events.d2 flow-0022-next-events.svg
 
 ...@style

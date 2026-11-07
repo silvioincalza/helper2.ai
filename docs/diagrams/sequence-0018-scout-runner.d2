@@ -3,13 +3,13 @@
 # RUNNING by a stopped replica, runs one due collector with its cursor and enrichments, sends a changed resource
 # the budget has no slot for back to the backlog (unless the last run already judged its text), drains
 # the backlog, records the new end time, then releases the lock.
-# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout.tryRunScheduled, runCollector,
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout.tryRunScheduled, runCollector,
 #   enrichChanged, stillToJudge, requestLaterRun, drainBacklog), EnrichResource.kt (unchanged),
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
 #   ClusterRunLock, catalogIndex),
 #   backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java (KeepAliveLockProvider),
 #   ClusterLockConfiguration.java (ShedLock, db time),
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, CatalogEnrichmentStore.java
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, CatalogEnrichmentStore.java
 #   (over the catalog port EnrichmentCandidates),
 #   ReviewQueueCandidateReview.java (CandidateReview port in scout/Ports.kt).
 # Render: cd docs/diagrams && d2 fmt sequence-0018-scout-runner.d2 && d2 sequence-0018-scout-runner.d2 sequence-0018-scout-runner.svg

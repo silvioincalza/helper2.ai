@@ -1,0 +1,70 @@
+# Flowchart: which app answers a request, which one runs a job, and what a change rebuilds (ADR 0069).
+# Source of truth: backend/settings.gradle.kts, backend/apps/public, backend/apps/backoffice, backend/apps/common-web,
+#   backend/libs/*, api/common.yaml, api/public.yaml, api/admin.yaml, deploy/Dockerfile, deploy/backoffice.Dockerfile,
+#   deploy/helm/helper2/templates/ (app.yaml, backoffice.yaml), the SchedulesIT of each app,
+#   the platform repo (Ingresses), outside this repo. The web image is the next step (roadmap).
+# Render: cd docs/diagrams && d2 fmt flow-0069-three-deployables.d2 && d2 flow-0069-three-deployables.d2 flow-0069-three-deployables.svg
+
+...@style
+
+direction: down
+
+req: "Request" {class: end}
+
+edge: Network edge {
+  class: group
+  direction: down
+  host: "Which host?" {class: decision}
+  vpn: "Client in a\nprivate range?" {class: decision}
+  e403: "403 from ingress-nginx" {class: fail}
+  host -> vpn: "admin host"
+  vpn -> e403: no
+}
+
+public: "public app\nsearch, guide, setup, pages,\nsign-in, saved items, the SPA\n(web image: next step)" {class: app}
+bo: "back office app\nadmin API, admin web app,\nScout, collectors, enrichment" {class: app}
+
+req -> edge.host
+edge.host -> public: "public host\n(Service helper2)" {class: hot}
+edge.vpn -> bo: "yes\n(Service helper2-admin)"
+
+jobs: Scheduled jobs {
+  class: group
+  direction: down
+  job: "Which job?" {class: decision}
+  pubjobs: "public app:\nguide, identity, search\nand shared-cache retention" {class: app}
+  bojobs: "back office: Scout check,\nScout, catalog and settings retention,\nhome-example check, embedding indexer,\ncategory backfill at startup" {class: app}
+  both: "every replica of both:\nruntime-settings refresh" {class: app}
+  job -> pubjobs
+  job -> bojobs
+  job -> both: "a read, no shared work"
+}
+
+build: What a change builds {
+  class: group
+  direction: down
+  change: "What changed?" {class: decision}
+  bpub: "public image\n(deploy/Dockerfile)" {class: app}
+  bbo: "back office image\n(deploy/backoffice.Dockerfile)" {class: app}
+  change -> bpub: "apps/public,\napi/public.yaml, frontend/"
+  change -> bbo: "apps/backoffice,\napi/admin.yaml, frontend/ (admin)"
+  change -> bpub: "libs/*, apps/common-web,\napi/common.yaml"
+  change -> bbo: "libs/*, apps/common-web,\napi/common.yaml"
+}
+
+boot: Back office startup {
+  class: group
+  direction: down
+  schema: "Every migration\nalready applied?" {class: decision}
+  wait: "stop; Kubernetes restarts it\nuntil the public app migrated" {class: fail}
+  serve: "serves" {class: end}
+  schema -> wait: no
+  schema -> serve: yes {class: hot}
+}
+
+db: "Postgres\n(Flyway owner: public app)" {class: data}
+redis: "Redis\n(shared budgets and quotas;\nown session namespaces)" {class: data}
+public -> db: "migrates at startup"
+bo -> boot.schema: "validates only"
+public -> redis
+bo -> redis

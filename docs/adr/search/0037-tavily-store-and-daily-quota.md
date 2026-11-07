@@ -115,10 +115,10 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 - `backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `catalog/internal/CatalogResultObserver.java` (`recordedHits`).
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`, `search/config/SearchRetentionSchedule.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/quota/` — `QuotaCounter`, `RedisQuotaCounter` (Lua), `QuotaKeys` (HMAC).
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — the metered descriptor.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
+- `backend/libs/sources/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — the metered descriptor.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
 - `backend/libs/identity/src/main/java/ai/helper2/identity/usecase/DeleteMyAccount.java` — counters deleted with the account.
-- `backend/apps/helper2/src/main/resources/application.yaml` (`helper2.search.web.*`), `db/migration/V1__schema.sql`, `api/common.yaml` (`WebSearches`).
+- `backend/apps/public/src/main/resources/application.yaml` (`helper2.search.web.*`), `db/migration/V1__schema.sql`, `api/common.yaml` (`WebSearches`).
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2LiveWebCreditsHigh`.
 
 ## Diagrams

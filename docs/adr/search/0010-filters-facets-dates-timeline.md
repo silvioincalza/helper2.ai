@@ -53,8 +53,8 @@ results by time, not only by relevance.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt` — stated dates, plausibility, `earliest`, `latest`,
   `lastChange`, conflict rule.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — which rule each date of a merged result uses.
-- `backend/apps/helper2/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
-- `backend/apps/helper2/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
+- `backend/apps/common-web/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
+- `backend/apps/common-web/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
 - `frontend/src/lib/searchState.ts` — URL state, `toApiParams`, `TIMELINE_PAGE_SIZE`.
 - `frontend/src/lib/timeline.ts`, `frontend/src/components/ResultsTimeline.tsx` — grouping by creation month.
 - `frontend/src/components/FilterPanel.tsx`, `DateFactView.tsx` — facets and date display.

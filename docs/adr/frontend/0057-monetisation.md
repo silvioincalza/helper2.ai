@@ -31,17 +31,17 @@ The constraints:
 2. **The page reads them from `GET /api/v1/me`.** A new `monetisation` object, each value null while off. Every page
    already calls `/me` once, so there is no extra request, and Home still does not read `/policy` (ADR 0042, 13). The
    running server decides, so staging and prod can differ (a separate GA4 stream for staging) and no release is needed
-   to switch a part on. On the admin port `/me` answers every value as null (`AdminHost`).
+   to switch a part on. The back office has its own `/me`, which answers every value as null ([0069](../operations/0069-three-deployables.md)).
 3. **The CSP follows the parts that are on.** `ContentSecurityPolicy.forPublicSite` starts from the strict policy and
    adds only:
    - analytics: `https://www.googletagmanager.com` to `script-src`; the Google Analytics hosts to `connect-src` and
      `img-src`, and `https://*.google.com` to `connect-src`, as Google's CSP guide lists. No `'unsafe-inline'`, no `'unsafe-eval'`: our own code writes the gtag setup.
    - ads: `media.ethicalads.io` and `server.ethicalads.io` to `script-src`, `connect-src` and `img-src`, and
      `'unsafe-inline'` to `style-src` only (the EthicalAds client writes its own `<style>`). Scripts stay strict.
-   - The admin port always sends the strict policy (`CspHeaderWriter` picks it per request), so even a bug cannot
-     load these scripts there.
-   - `GET /api/v1/me` answers every monetisation value as null on the admin port, so the admin host never shows the
-     bar, the ad or the gift links.
+   - The back office is another app, with its own fixed strict policy (`BackOfficeEdge`), so even a bug cannot load
+     these scripts there.
+   - The back office's `GET /api/v1/me` answers every monetisation value as null, and the admin web app has no bar,
+     no ad and no gift links.
 4. **Gifts: GitHub Sponsors and a Stripe Payment Link.** A Support page (`/support`) says what running the site costs
    and links to both. GitHub takes no fee; Stripe lets anyone give by card without an account. Payment happens at the
    provider. Nothing is locked for anyone, there is no badge, and nobody is asked twice. Stripe sends the giver back
@@ -113,9 +113,9 @@ The constraints:
 ## Code
 - `backend/libs/monetisation/src/main/java/ai/helper2/monetisation/` — `Monetisation`, `config/MonetisationProperties.java`,
   `config/MonetisationConfiguration.java`.
-- `backend/libs/identity/src/main/java/ai/helper2/identity/config/ContentSecurityPolicy.java` — the public CSP;
-  `CspHeaderWriter.java` sends it, or the strict one on the admin port; `platform/AdminHost.java` (answered by identity) tells other modules.
-- `backend/apps/helper2/src/main/java/ai/helper2/identity/web/MeController.java`, `api/common.yaml` — `Me.monetisation`.
+- `backend/apps/public/src/main/java/ai/helper2/identity/config/ContentSecurityPolicy.java` — the public CSP;
+  `CspHeaderWriter.java` sends it; the back office sends its own (`apps/backoffice/.../identity/config/BackOfficeEdge.java`).
+- `backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java`, `api/common.yaml` — `Me.monetisation`.
 - `frontend/src/context/MonetisationContext.tsx` (reads `/me`), `lib/consent.ts`, `lib/analytics.ts`,
   `components/AnalyticsConsent.tsx`, `components/SponsorSlot.tsx`, `pages/SupportPage.tsx`,
   `pages/SupportThanksPage.tsx`, `components/Layout.tsx` (footer), `components/results/Results.tsx` (slot).

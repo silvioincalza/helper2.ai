@@ -81,7 +81,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 - Scrape conference websites — ai-deadlines already keeps the dates, under MIT, in one format.
 
 ## Code
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/` — one package per provider: `mcp/McpRegistryCollector.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/` — one package per provider: `mcp/McpRegistryCollector.java`,
   `huggingface/HuggingFaceTrendingCollector.java`, `huggingface/HuggingFaceProviderOrgsCollector.java`,
   `tavily/TavilyCollector.java`, `tavily/CourseCollector.java`, `tavily/TavilyDiscoveryCollector.java` (one per category,
   `config/DiscoveryCollectorRegistrar.java`), `github/GitHubAwesomeCollector.java`,
@@ -90,7 +90,7 @@ A collector returns hits, which the runner indexes, and candidates, which the ru
 - `support/RunInterval.java`, `support/HttpClients.java` — shared by every collector.
 - `config/SourcesConfiguration.java` — beans; `config/CollectorProperties.java` — each collector's validated settings
   (`helper2.scout.<collector>`): intervals, queries, limits. An invalid value stops startup.
-- `backend/apps/helper2/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`.
+- `backend/apps/backoffice/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0020-scout-collectors.svg) · [sequence](../../diagrams/sequence-0020-scout-collectors.svg)

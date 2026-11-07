@@ -12,18 +12,18 @@ personal data that its owner must be able to delete. What an administrator decid
 traceable to that administrator.
 
 ## Decision
-1. **Anonymous by default** (`SecurityConfiguration`). `GET` search, recent, upcoming events,
-   resources, sources and `/me`, and `POST` reports and guide, are open. `/api/v1/admin/**` and `/actuator/**` need
-   `ADMIN` (health is open; see [0024](0024-http-edge-protection.md) for metrics). `/api/v1/me/bookmarks`
+1. **Anonymous by default** (`PublicSecurityConfiguration`). `GET` search, recent, upcoming events,
+   resources, sources and `/me`, and `POST` reports and guide, are open. `/api/v1/admin/**` is not in the public app;
+   the back office app serves it and needs `ADMIN` ([0035](0035-admin-host.md), [0069](../operations/0069-three-deployables.md)).
+   Health is open; see [0024](0024-http-edge-protection.md) for metrics. `/api/v1/me/bookmarks`
    and `DELETE /api/v1/me` need a signed-in user. Any other `/api/**` path is denied. Application programming interface (API) calls without a session get 401, not a redirect; a refused one gets 403. Both answer the problem the contract promises
    (`sign-in-required`, `forbidden`; [0003](../foundation/0003-contract-first-rest-api.md)), never the container's error page.
 2. **Sign-in.** OAuth2 login exists only when a client registration exists: Spring profile
    `oauth-github` with `H2_GITHUB_OAUTH_CLIENT_ID` and `H2_GITHUB_OAUTH_CLIENT_SECRET`, scope `read:user`.
-   With an admin port ([0035](0035-admin-host.md)) it works on both hosts: the admin host returns to
-   `<H2_FRONTEND_URL>/admin`, the public host to `<H2_FRONTEND_URL>/`; failure adds `?signin=failed`. Without one,
-   every sign-in returns to `/admin`.
-3. **ADMIN by immutable id.** `H2_ADMINS` is a comma-separated list of `registrationId:subject`; with an admin port,
-   only a sign-in on that port gets the role ([0035](0035-admin-host.md)). For GitHub the subject
+   It works on both hosts ([0035](0035-admin-host.md)): the public app returns to `<H2_FRONTEND_URL>/`, the back
+   office to `/admin`; failure adds `?signin=failed`.
+3. **ADMIN by immutable id.** `H2_ADMINS` is a comma-separated list of `registrationId:subject`; only a sign-in on
+   the back office gets the role ([0035](0035-admin-host.md)). For GitHub the subject
    is the numeric user id, never the login. An OpenID Connect (OIDC) provider may also use `registrationId:email` when
    `email_verified` is true. Roles are set at sign-in; a change to `H2_ADMINS` needs a new sign-in.
 4. **User row on sign-in.** `CurrentUser.signedIn` (on `InteractiveAuthenticationSuccessEvent`, the event the sign-in
@@ -97,11 +97,11 @@ traceable to that administrator.
 - Sessions in PostgreSQL (Spring Session JDBC) — a durable store and cleanup job for short-lived data.
 
 ## Code
-- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — access rules, OAuth2 login, roles.
+- `backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java` — access rules, OAuth2 login, roles.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — session reads and writes while Redis is down.
-- `backend/apps/helper2/src/test/java/ai/helper2/api/RedisDownIT.java` — anonymous use and sign-in with Redis unreachable.
+- `backend/apps/public/src/test/java/ai/helper2/api/RedisDownIT.java` — anonymous use and sign-in with Redis unreachable.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/internal/CurrentUser.java` — user row on sign-in, current user id.
-- `backend/apps/helper2/src/main/java/ai/helper2/identity/web/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
+- `backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java`, `guide/internal/GuideVisitorLimits.java` — the daily
   limits on `/me`.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/usecase/` — `AddBookmark`, `RemoveBookmark`, `ListBookmarks`,
@@ -111,12 +111,12 @@ traceable to that administrator.
   `admin_audit`; `identity/config/IdentityUseCaseConfiguration.java` — wiring and transactions.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/AuditTrail.java`, `AuditController.java` — the port, `/api/v1/admin/audit`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
-  `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
-- `backend/apps/helper2/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit;
+  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
+- `backend/apps/public/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit;
   `identity/internal/SignInEventIT.java` — the sign-in filter's event writes the row, the provider manager's does not.
 - `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/components/SignIn.tsx`,
   `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/admin/`.
-- `backend/apps/helper2/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`.
+- `backend/apps/public/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../../diagrams/sequence-0023-identity-and-admin.svg)

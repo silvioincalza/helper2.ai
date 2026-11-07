@@ -1,7 +1,9 @@
-# Architecture, view 1 of 6: context. helper2 as one box of modules, what calls it, and what it calls.
+# Architecture, view 1 of 6: context. helper2 as two apps over shared libraries (ADR 0069), what calls them, and
+# what they call.
 # The internals of each module are in the other views (search, guide, index, setup, platform).
 # Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
-#   backend/apps/helper2/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding).
+#   backend/settings.gradle.kts (apps and libraries),
+#   backend/apps/public/src/main/resources/application.yaml (base URLs, llm-nebius profile, helper2.embedding).
 # Render: cd docs/diagrams && d2 fmt architecture-context.d2 && d2 architecture-context.d2 architecture-context.svg
 
 ...@style
@@ -17,43 +19,53 @@ direction: right
 browser: "Browser\nReact SPA" {class: person}
 admin: "Admin\n(GitHub sign-in)" {class: person}
 
-app: "helper2 · Spring Boot 4.1 · one JVM · /api/v1" {
+app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0069)" {
   class: group
-  search: "search\nfederated search, ranking" {class: app}
-  guide: "guide\nAI guide, evidence gate" {class: app}
-  scout: "scout\nindex growth, enrichment" {class: app}
-  catalog: "catalog\nindex, resource pages, events" {class: app}
-  sources: "sources\nlive adapters, collectors" {class: app}
-  setup: "setup\nSet it up: run options, tool guide" {class: app}
-  examples: "examples\nhome examples, quality check" {class: app}
-  pages: "pages\npages for crawlers, sitemap" {class: app}
-  identity: "identity\nsign-in, bookmarks" {class: app}
-  backoffice: "admin\nback office: review, runs, overview, settings" {class: app}
-  policy: "policy\nlimits and retention\nfor the text pages" {class: app}
-  monetisation: "monetisation\ngifts, analytics, ad slot\n(settings only)" {class: app}
-  platform: "platform\nLLM layer, HTTP, edge" {class: app}
+  public: "public app · public host · /api/v1 (public.yaml)" {
+    class: group
+    guide: "guide\nAI guide, evidence gate" {class: app}
+    setup: "setup\nSet it up: run options, tool guide" {class: app}
+    pages: "pages\npages for crawlers, sitemap" {class: app}
+    policy: "policy\nlimits and retention\nfor the text pages" {class: app}
+  }
+  bo: "back office app · admin host only · /api/v1/admin (admin.yaml)" {
+    class: group
+    backoffice: "admin\nback office: review, runs, overview,\nsettings; the admin web app" {class: app}
+    scout: "scout\nindex growth, enrichment" {class: app}
+    collectors: "sources (collectors)\nScout's collectors, evidence readers" {class: app}
+  }
+  libs: "libraries · in both apps" {
+    class: group
+    search: "search\nfederated search, ranking" {class: app}
+    catalog: "catalog\nindex, resource pages, events,\nScoutPolicy" {class: app}
+    sources: "sources\nlive adapters,\ncollectors' descriptors" {class: app}
+    examples: "examples\nhome examples, quality check" {class: app}
+    identity: "identity\nsign-in, bookmarks" {class: app}
+    monetisation: "monetisation\ngifts, analytics, ad slot\n(settings only)" {class: app}
+    platform: "platform\nLLM layer, HTTP, edge" {class: app}
+  }
 
-  guide -> search: "retrieve candidates" {class: hot}
-  search -> sources: "SearchSource" {class: config}
-  search -> catalog: "SearchSource, ResultObserver" {class: config}
-  scout -> sources: "Collector, ExtraEvidence" {class: config}
-  scout -> catalog: "CatalogIndex" {class: config}
-  guide -> platform: "model calls" {class: ai-call}
-  scout -> platform: "model calls" {class: ai-call}
-  setup -> catalog: "resource detail"
-  setup -> platform: "model calls" {class: ai-call}
-  backoffice -> catalog: "review queue"
-  backoffice -> scout: "runs, backlog"
-  backoffice -> platform: "budgets today"
-  backoffice -> examples: "examples"
-  examples -> search: "check: the example's search" {class: config}
-  examples -> catalog: "expected results' titles"
-  pages -> catalog: "resource detail, indexable pages"
-  policy -> search: "SearchPolicy"
-  policy -> guide: "GuidePolicy"
-  policy -> identity: "AccountPolicy"
-  policy -> catalog: "CatalogPolicy"
-  identity -> monetisation: "GET /me, CSP origins"
+  public.guide -> libs.search: "retrieve candidates" {class: hot}
+  libs.search -> libs.sources: "SearchSource" {class: config}
+  libs.search -> libs.catalog: "SearchSource, ResultObserver" {class: config}
+  bo.scout -> bo.collectors: "Collector, ExtraEvidence" {class: config}
+  bo.scout -> libs.catalog: "CatalogIndex" {class: config}
+  public.guide -> libs.platform: "model calls" {class: ai-call}
+  bo.scout -> libs.platform: "model calls" {class: ai-call}
+  public.setup -> libs.catalog: "resource detail"
+  public.setup -> libs.platform: "model calls" {class: ai-call}
+  bo.backoffice -> libs.catalog: "review queue"
+  bo.backoffice -> bo.scout: "runs, backlog"
+  bo.backoffice -> libs.platform: "budgets today"
+  bo.backoffice -> libs.examples: "examples, the check"
+  libs.examples -> libs.search: "check: the example's search" {class: config}
+  libs.examples -> libs.catalog: "expected results' titles"
+  public.pages -> libs.catalog: "resource detail, indexable pages"
+  public.policy -> libs.search: "SearchPolicy"
+  public.policy -> public.guide: "GuidePolicy"
+  public.policy -> libs.identity: "AccountPolicy"
+  public.policy -> libs.catalog: "CatalogPolicy, ScoutPolicy"
+  libs.identity -> libs.monetisation: "GET /me, CSP origins"
 }
 
 pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
@@ -64,27 +76,27 @@ hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · 
 oauth: "github.com OAuth" {class: ext}
 thirdparty: "In the browser only:\nGoogle consent tool · AdSense (resource pages)\nGoogle Analytics · EthicalAds\nGitHub Sponsors · Stripe" {class: ext}
 
-browser -> app.search: "search" {class: hot}
-browser -> app.guide: "ask (SSE)" {class: hot}
-browser -> app.catalog: "resource, events"
-browser -> app.setup: "Set it up"
-browser -> app.examples: "home examples"
-browser -> app.policy: "policy numbers"
+browser -> app.libs.search: "search" {class: hot}
+browser -> app.public.guide: "ask (SSE)" {class: hot}
+browser -> app.libs.catalog: "resource, events"
+browser -> app.public.setup: "Set it up"
+browser -> app.libs.examples: "home examples"
+browser -> app.public.policy: "policy numbers"
 browser -> thirdparty: "page path, ad request,\nconsent, gift (ADR 0057, 0059)"
 crawler: "Crawler,\nlink preview" {class: person}
-crawler -> app.pages: "page head, sitemap.xml,\nrobots.txt"
-admin -> app.identity: "sign-in on the admin host"
-admin -> app.backoffice: "/admin"
+crawler -> app.public.pages: "page head, sitemap.xml,\nrobots.txt"
+admin -> app.bo.backoffice: "sign-in, /admin\n(admin host only)"
 
-app.catalog -> pg: JDBC
-app.scout -> pg: JDBC
-app.identity -> pg: "bookmarks, users"
-app.examples -> pg: "home_example"
-app.search -> redis: "source cache"
-app.guide -> redis: "answers"
-app.platform -> redis: "daily budget"
-app.platform -> nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
-app.catalog -> nvapi: "/embeddings" {class: ai-call}
-app.sources -> hosts: HTTPS
-app.setup -> hosts: "HTTPS: registry,\nREADMEs, model cards"
-app.identity -> oauth: "sign-in" {class: config}
+app.libs.catalog -> pg: JDBC
+app.bo.scout -> pg: JDBC
+app.libs.identity -> pg: "bookmarks, users"
+app.libs.examples -> pg: "home_example"
+app.libs.search -> redis: "source cache"
+app.public.guide -> redis: "answers"
+app.libs.platform -> redis: "daily budget"
+app.libs.platform -> nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
+app.libs.catalog -> nvapi: "/embeddings" {class: ai-call}
+app.libs.sources -> hosts: "HTTPS: live search"
+app.bo.collectors -> hosts: "HTTPS: Scout"
+app.public.setup -> hosts: "HTTPS: registry,\nREADMEs, model cards"
+app.libs.identity -> oauth: "sign-in" {class: config}

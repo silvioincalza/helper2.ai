@@ -4,8 +4,8 @@
 # counted in Redis for all replicas (in-memory fallback while Redis is down),
 # and the SPA fallback with its cache headers.
 # Source of truth: deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
-#   backend/apps/helper2/src/main/resources/application.yaml (server.*, management.*),
-#   backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java,
+#   backend/apps/public/src/main/resources/application.yaml (server.*, management.*),
+#   backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
 #   AdminHost.java (the admin host's key, ADR 0035),
 #   RedisRateLimiter.java, platform/quota/QuotaKeys.java (client pseudonym),

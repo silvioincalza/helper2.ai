@@ -22,15 +22,15 @@ checks: "Checks (check-app-env.sh, _helpers.tpl)" {
   redis -> fail: no
 }
 
-always: "Always: helper2 Deployment (RollingUpdate maxSurge 1, maxUnavailable 0,\nspread by hostname), postgres and redis StatefulSets (one replica, RWO volume;\npostgres: startup probe up to 10 min, then liveness; redis: liveness after 30 s),\nServiceAccount helper2 without token, ingress-postgres, ingress-redis" {class: app}
+always: "Always: helper2 and helper2-backoffice Deployments (RollingUpdate maxSurge 1, maxUnavailable 0,\nspread by hostname), postgres and redis StatefulSets (one replica, RWO volume;\npostgres: startup probe up to 10 min, then liveness; redis: liveness after 30 s),\nServiceAccount helper2 without token, ingress-postgres, ingress-redis" {class: app}
 
 options: Per-environment values {
   class: group
   direction: down
-  replicas: "app.replicas > 1?\n(prod 3, staging 1)" {class: decision}
+  replicas: "replicas > 1, per app?\n(public: prod 3, staging 1;\nback office: 1)" {class: decision}
   pdb: "PodDisruptionBudget\nminAvailable = replicas − 1" {class: app}
   edge: "networkPolicy.ingressController\n.namespace set?\n(hosted: ingress-nginx)" {class: decision}
-  ingress: "ingress-app allows the controller's pods\non 8080 and the admin port\n(empty: no edge traffic)" {class: app}
+  ingress: "ingress-app and ingress-backoffice\nallow the controller's pods on 8080\n(empty: no edge traffic)" {class: app}
   metrics: "networkPolicy.metricsNamespace?\n(hosted: observability)" {class: decision}
   scrape: "ingress-app allows it on 8081" {class: app}
   egress: "networkPolicy.egress.enabled?\n(default yes)" {class: decision}

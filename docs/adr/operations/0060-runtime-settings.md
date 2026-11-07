@@ -48,7 +48,7 @@ spend, and the right number changes with the day.
    and one line of help. Change → "Review changes" shows old → new → Confirm, with an optional reason. History lists
    the last 10 changes; Restore goes through the same review. The overview says how many limits are changed.
    API: `GET /api/v1/admin/runtime-settings`, `PUT /api/v1/admin/runtime-settings/{key}`,
-   `POST /api/v1/admin/runtime-settings/{key}/reset`, ADMIN only, admin port, CSRF on writes.
+   `POST /api/v1/admin/runtime-settings/{key}/reset`, ADMIN only, on the back office, CSRF on writes.
 9. **Retention.** A change is kept 24 months (`H2_RETENTION_RUNTIME_SETTINGS`); each setting's newest change stays,
    because it is the value in force. Purged daily, on one replica.
 
@@ -80,7 +80,7 @@ spend, and the right number changes with the day.
   (refresh thread, purge).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/RuntimeSettingsProperties.java`, `PlatformRetentionProperties.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V15__runtime_setting.sql`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
   `ResetRuntimeSetting.java`; `admin/web/RuntimeSettingsController.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `BudgetLedger.java`, `CallCounter.java` (limits by
   supplier); `kotlin/ai/helper2/search/WebSearch.kt` (`WebSearchQuota`), `kotlin/ai/helper2/scout/usecase/RunScout.kt`.

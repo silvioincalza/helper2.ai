@@ -68,11 +68,11 @@ decides where the extra text comes from, and the same evidence gate judges it.
 - Trust any MCP Registry link — the entry's author chooses it.
 
 ## Code
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `GapTargets`, `ReadmeText`, ports `ExtraEvidence`, `GapBudget`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the gap round.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `Material.anchorRecordId`, `supportsClaims`; claims may not cite README text.
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`; bean in `sources/config/SourcesConfiguration.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java` (gap target), `ScoutConfiguration.java` (budget).
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `GapTargets`, `ReadmeText`, ports `ExtraEvidence`, `GapBudget`.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the gap round.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `Material.anchorRecordId`, `supportsClaims`; claims may not cite README text.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`; bean in `sources/config/SourcesConfiguration.java`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java` (gap target), `ScoutConfiguration.java` (budget).
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java` — each source text with its source id, external id
   and repository link (port `catalog.enrichment.EnrichmentCandidates`).
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` — evidence with its own URL; `V2__enrichment_extra_evidence.sql`.

@@ -63,14 +63,14 @@ it against.
 - **The model's days without a quote check**: ADR 0022's rejected alternative; a model can invent a day.
 
 ## Code
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/LiveWebEventsCollector.java` — `collect`, `pagesToRead`, `readAll`, `readPage`, `eventHit`.
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`, `PageText.java`, `EventReading.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/events/EventReader.java`, `SpringAiEventReader.java`, `backend/apps/helper2/src/main/resources/prompts/sources/read-event-v1.txt`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/LiveWebEventsCollector.java` — `collect`, `pagesToRead`, `readAll`, `readPage`, `eventHit`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`, `PageText.java`, `EventReading.java`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventReader.java`, `SpringAiEventReader.java`, `backend/apps/backoffice/src/main/resources/prompts/sources/read-event-v1.txt`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt` — `EVENTS_SCOUT`, `eventDaysReadByAi`.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — `eventSources`, `statedFirst`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `refreshEventDates`.
-- `backend/apps/helper2/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`.
-- `backend/apps/helper2/src/main/java/ai/helper2/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
+- `backend/apps/common-web/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`.
+- `backend/apps/public/src/main/java/ai/helper2/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
 - `frontend/src/components/home/TermList.tsx`, `listParts.tsx`, `frontend/src/pages/EventsPage.tsx`,
   `frontend/src/components/Timeline.tsx`, `DateFactView.tsx` — the AI label.
 

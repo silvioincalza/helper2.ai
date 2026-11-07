@@ -94,11 +94,11 @@ Without a configured model the application must still work.
   `CallOptions`, `DailyBudget`, `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`,
   `UntrustedText`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
-- `backend/apps/helper2/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
+- `backend/apps/public/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
   `guide/verify-reasons.txt`, `scout/enrich-v5.txt`, `sources/classify-repos.txt`, `setup/tool-guide.txt`;
   `backend/libs/search/src/main/resources/prompts/search/translate-query.txt`.
-- `backend/apps/helper2/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
-- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
+- `backend/apps/public/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
+- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
   `sources/classifier/SpringAiRepoClassifier.java` — the adapters.
 

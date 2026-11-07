@@ -140,15 +140,15 @@ carry no AI label ([0038](../guide/0038-ai-content-marking.md)).
   counting them there needs no second store and survives a cache flush.
 
 ## Code
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/github/AwesomeCrawl.java` (nested lists, budgets), `ProductLinks.java`
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/AwesomeCrawl.java` (nested lists, budgets), `ProductLinks.java`
   (link checks), `AwesomeMetrics.java`, `AwesomeListParser.java` (`Link`, `Entry.pointsAtList`),
   `GitHubAwesomeCollector.java` (`Deep`, `candidates`, `candidate`, `repoFacts`).
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (`productSite`, now shared),
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (`productSite`, now shared),
   `sources/config/CollectorProperties.java`, `SourcesConfiguration.java`; `application.yaml`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Categories.kt` (`CategoryInput.headings`),
   `scout/Ports.kt` (`CollectedBatch.newCandidatesPerDay`, `CandidateReview.propose` with a daily cap),
   `scout/usecase/RunScout.kt`.
-- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java`, `ResourceCandidateJson.java`
+- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java`, `ResourceCandidateJson.java`
   (`awesome` in foundBy), `catalog/ReviewQueue.java` (`candidatesOpenedToday`),
   `catalog/usecase/IndexAwesomeLists.java`, `catalog/internal/AwesomeListIndex.java`, `ResourceStore.java`
   (`assignCategories`).

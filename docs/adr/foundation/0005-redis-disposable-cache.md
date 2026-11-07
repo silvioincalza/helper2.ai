@@ -75,7 +75,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
   fail-fast guard ([0033](0033-resilience-policies.md)).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
 - `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;
   `deploy/k8s/Makefile` (`chart-check`) fails when the rendered Redis has no AOF or no PVC.
 

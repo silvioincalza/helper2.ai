@@ -118,6 +118,23 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ## 2. Operations
 
+- **Service split, next steps** ([ADR 0069](adr/operations/0069-three-deployables.md)):
+  - PR 4: the `web` image (the built React app, static files only). The Ingress routes `/assets/*` to it; the public
+    app takes its HTML shell from the `web` image of the same version at deploy. Rollout order: web, public, back
+    office;
+  - PR 5: two DB roles, `h2_public` (reads the catalog, writes only what users create) and `h2_backoffice` (writes
+    the catalog, the review queue, the Scout tables and the audit trail), with the V1 squash of next/3.0;
+  - PR 5: CI and CD per component (path filters: `frontend/`, `apps/public`, `apps/backoffice`, a library change
+    builds both apps), and image signing for every image;
+  - Grafana: the dashboard and the alert rules filter on `application="helper2"`; the back office reports as
+    `helper2-backoffice` (traces, metrics, logs) and needs its own panels and alerts (Scout, collectors, enrichment
+    budgets, the embedding indexer);
+  - the back office's Settings page shows its own groups and the guide's daily cap; the public app's other guide and
+    setup settings are not there. Read them from the public app (an internal endpoint) or publish them to the
+    database at startup;
+  - a test for the rate-limit key on the admin host (the signed-in administrator, never a forwarded address): the
+    old one-app test ran on the admin port.
+
 - **Exporters.** Postgres and Redis exporters in the Helm chart, and an alert on Redis evicted keys
   (`allkeys-lru` can drop sessions, rate-limit windows and web-search counters under memory pressure).
 - **Backups:**
@@ -230,7 +247,7 @@ Open items:
   API needs a paid plan. The live web events scout ([ADR 0067](adr/scout/0067-live-web-events-scout.md)) covers part of
   this from Tavily, once Tavily confirms.
 - Categories ([ADR 0053](adr/search/0053-category-filter.md)): label 150 resources in
-  `backend/apps/helper2/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
+  `backend/apps/public/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
   ai.helper2.eval.CategoryEvalTest`; tune the words of the categories with low precision or recall; consider a model
   only for the categories where code stays below the bar. Then fold use case into category (one facet, not two).
   Show the health and legal notices on the resource page of a resource in those categories.
@@ -384,6 +401,8 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
 - A GitHub OAuth App allows only one callback URL, and each environment needs two (public host and admin host): use a GitHub App, or one OAuth App per host. A manual step, outside the repo. ([ADR 0035](adr/edge/0035-admin-host.md))
+- The back office validates the schema at startup and does not migrate: on a release with a new migration it restarts until the public app has migrated, and a migration must keep the old back office working until it is replaced. ([ADR 0069](adr/operations/0069-three-deployables.md))
+- Both apps upsert the same `source` rows at startup, from the same settings; an env Secret that differs between the two workloads would make them overwrite each other's `enabled` flag. ([ADR 0069](adr/operations/0069-three-deployables.md))
 - The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute; 1.7 to 1.9 s with 37 500 REJECTED resources and the queue decisions). A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000), and so does the out-of-retries view (1.1 to 1.6 s with 37 500 REJECTED); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
 - The catalog's backlog query reads the Scout's `enrichment_queue_control` (a listed exception in the table-owner test). If it starts to hurt, the catalog can own the table behind a port, as for the re-run request of ADR 0056. ([ADR 0045](adr/edge/0045-back-office.md) §7)
 - Privacy check (privacy-legal): the skip reason in the enrichment queue is free text, like the review note. The form says "No personal data" and the code drops control characters, but nothing stops a name. Confirm whether the Privacy page must list the skip reason, and whether it needs a retention rule (today it stays until a requeue, a new skip or the resource's delete). ([ADR 0045](adr/edge/0045-back-office.md) §7)

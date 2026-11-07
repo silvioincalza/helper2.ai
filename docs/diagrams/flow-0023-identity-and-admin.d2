@@ -1,7 +1,8 @@
 # Flowchart: who may call what, how a sign-in becomes ADMIN, where bookmarks are kept, how an account is deleted and
 # what the admin audit trail records.
-# The admin host is in ADR 0035 (flow-0035-admin-host.d2): admin port, port filter, ADMIN only on that port.
-# Source of truth: backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
+# The admin host is in ADR 0035 (flow-0035-admin-host.d2): the back office app, ADMIN only there (ADR 0069).
+#   backend/apps/backoffice/src/main/java/ai/helper2/identity/config/BackOfficeSecurityConfiguration.java (admin rules),
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
 #   backend/libs/identity/src/main/java/ai/helper2/identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports),
 #   identity/internal/JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
@@ -16,12 +17,12 @@ direction: down
 
 req: "Request to /api/**" {class: end}
 
-access: SecurityConfiguration rules {
+access: "Security rules\n(public app; admin paths: the back office app)" {
   class: group
   direction: down
   open: "Public GET (search, recent, sources,\nresources, events, me)\nor POST reports / guide?" {class: decision}
   anon: "Allowed, no account" {class: end}
-  admin: "/api/v1/admin/** or /actuator/**\n(not health)?" {class: decision}
+  admin: "/api/v1/admin/** (back office)\nor /actuator/** (not health)?" {class: decision}
   isadmin: "Session has ROLE_ADMIN?" {class: decision}
   bm: "/api/v1/me/bookmarks\nor DELETE /api/v1/me?" {class: decision}
   signed: "Signed in?" {class: decision}

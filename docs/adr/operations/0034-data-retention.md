@@ -100,8 +100,8 @@ The periods are a product decision the owner may change; changing one must not n
 ## Code
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/PurgeExpiredData.java`, `catalog/internal/CatalogRetention.java`,
   `catalog/internal/CatalogRetentionSchedule.java` — catalog rules.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
-  `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
+  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/usecase/PurgeExpiredData.java`, `identity/internal/IdentityRetentionSchedule.java`,
   `identity/Users.java`, `AuditLog.java`, `RetentionPeriods.java`, `identity/internal/JdbcUsers.java`, `JdbcAuditLog.java`
   — identity rules.
@@ -110,11 +110,11 @@ The periods are a product decision the owner may change; changing one must not n
   — search rule.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCacheRetention.java`, `SharedCacheConfiguration.java` — shared
   cache rule.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/PurgeExpiredData.kt`,
-  `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/GuideRetentionSchedule.java`, `guide/internal/JdbcSimilarQuestionIndex.java`
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/PurgeExpiredData.kt`,
+  `backend/apps/public/src/main/java/ai/helper2/guide/internal/GuideRetentionSchedule.java`, `guide/internal/JdbcSimilarQuestionIndex.java`
   — guide rule.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — foreign keys and retention indexes.
-- `backend/apps/helper2/src/main/resources/application.yaml` — `helper2.retention.*`.
+- `backend/apps/public/src/main/resources/application.yaml` — `helper2.retention.*`.
 - `frontend/src/i18n/locales/en.json` — the privacy page's periods.
 
 ## Diagrams
