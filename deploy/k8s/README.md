@@ -44,8 +44,9 @@ moved: one commit, one image.
 ## 2. Configure
 
 **`app.env`** (never commit it): copy [`app.env.example`](app.env.example) and fill in the values. It must
-contain six different passwords (`openssl rand -hex 32`; letters and digits only,
-[ADR 0070](../../docs/adr/operations/0070-app-roles.md)): `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
+contain six different passwords of 32+ characters (`openssl rand -hex 32`;
+[ADR 0070](../../docs/adr/operations/0070-app-roles.md)). The three database ones may also hold base64 characters
+(`+ / = _ -`); the three Redis ones only letters and digits: `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
 backup and the migrate Job only), `H2_DATABASE_PUBLIC_PASSWORD` and `H2_DATABASE_BACKOFFICE_PASSWORD` (each app's
 own role), `H2_REDIS_PASSWORD` (Redis' default user, the admin), and `H2_REDIS_PUBLIC_PASSWORD` and
 `H2_REDIS_BACKOFFICE_PASSWORD` (each app's own Redis user). With `redis.auth.existingSecret` (or
