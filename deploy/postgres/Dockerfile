@@ -33,5 +33,9 @@ RUN apk add --no-cache --virtual .pgvector-build build-base git \
 # It carries its own Go standard library, which the scan flags and only upstream can rebuild (ADR 0046).
 RUN rm /usr/local/bin/gosu
 
+# Alpine's fixed zlib (CVE-2026-4738, Critical) before the base image ships it: one package, so the rest of the
+# image stays what the pinned digest gives. Drop this line once the base image's own zlib is 1.4 or later.
+RUN apk upgrade --no-cache zlib
+
 # Ends as postgres (uid 70), the user the chart runs it as (runAsUser: 70), not as root.
 USER postgres
