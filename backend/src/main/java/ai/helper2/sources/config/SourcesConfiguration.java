@@ -17,6 +17,8 @@ import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
+import ai.helper2.sources.events.EventReader;
+import ai.helper2.sources.events.SpringAiEventReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
 import ai.helper2.sources.evidence.TavilyExtract;
@@ -32,6 +34,7 @@ import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.CourseCollector;
 import ai.helper2.sources.tavily.LinkedInCollector;
+import ai.helper2.sources.tavily.LiveWebEventsCollector;
 import ai.helper2.sources.tavily.ScoutTavilyCredits;
 import ai.helper2.sources.tavily.TavilyCollector;
 import ai.helper2.sources.tavily.TavilySource;
@@ -66,6 +69,7 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.ScoutCredits.class,
   CollectorProperties.Discovery.class,
   CollectorProperties.LinkedIn.class,
+  CollectorProperties.LiveWebEvents.class,
   CollectorProperties.GitHubAwesome.class,
   CollectorProperties.HfProviderOrgs.class,
   CollectorProperties.AiDeadlines.class,
@@ -247,6 +251,50 @@ class SourcesConfiguration {
         new RunInterval(c.interval()),
         c.queries(),
         credits);
+  }
+
+  /**
+   * Weekly Tavily searches for upcoming AI events; the reasoning model reads each page found and
+   * code checks its days against the page (ADR 0067). Without a model the collector is off. Its
+   * credits count on the Scout's daily cap; its model calls on their own daily cap, counted in
+   * Redis.
+   */
+  @Bean
+  LiveWebEventsCollector liveWebEventsCollector(
+      SourcesProperties p,
+      CollectorProperties.LiveWebEvents c,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      ScoutTavilyCredits credits,
+      ObjectProvider<ChatModel> chatModel,
+      LlmSettings llm,
+      CallCounter budgetCounter,
+      ModelCallMetrics metrics,
+      MeterRegistry meters) {
+    SourceSettings s = p.get(LiveWebEventsCollector.ID);
+    ChatModel model = chatModel.getIfAvailable();
+    EventReader reader = null;
+    if (llm.usable(model)) {
+      DailyBudget budget =
+          new DailyBudget(c.readerDailyCalls(), clock, "event-reader", budgetCounter);
+      Gauge.builder("helper2.scout.event-reader.budget.remaining", budget, DailyBudget::remaining)
+          .description("Event page reader model calls left under today's cap (UTC day)")
+          .register(meters);
+      reader =
+          new SpringAiEventReader(
+              model, llm.reasoningModel(), c.readMaxTokens(), budget, metrics, resilience);
+    }
+    return new LiveWebEventsCollector(
+        s,
+        collectorClient(s, observations),
+        clock,
+        resilience,
+        new RunInterval(c.interval()),
+        c.queries(),
+        c.maxPages(),
+        credits,
+        reader);
   }
 
   /** The Scout sources' daily caps for the back office's Settings page (ADR 0045). */
