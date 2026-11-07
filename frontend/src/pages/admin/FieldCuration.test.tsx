@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 
 const RESOURCE = '88888888-8888-5888-8888-888888888881';
 const check: ReviewItem = {
@@ -48,7 +48,7 @@ function oneCheck(put: () => unknown = () => undefined) {
 
 async function evidence() {
   const user = userEvent.setup();
-  renderApp('/admin/review');
+  renderAdmin('/admin/review');
   const panel = await screen.findByRole('region', { name: 'Evidence' });
   await within(panel).findByText('FREEMIUM');
   return { user, panel };

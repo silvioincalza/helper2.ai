@@ -4,7 +4,7 @@ import type { SourceInfo } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
 import { ADMIN, SOURCES, STAGING_SOURCES } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin, renderApp } from '@/test/render';
 
 const scout = STAGING_SOURCES.find((s) => s.id === 'live-web-scout')!;
 
@@ -127,7 +127,7 @@ describe('Feature: discovery categories in the back office (ADR 0051)', () => {
         total: 1,
       }),
     });
-    renderApp('/admin/review?kind=RESOURCE_CANDIDATE&category=health');
+    renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE&category=health');
     const link = await screen.findByRole('link', { name: 'Scribe' });
     const card = link.closest('dl') as HTMLElement;
     expect(card).toHaveTextContent('discovery-health, discovery-writing');
@@ -143,7 +143,7 @@ describe('Feature: discovery categories in the back office (ADR 0051)', () => {
       'GET /admin/scout-runs': () => [],
       'POST /admin/scout-runs': () => [],
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     const run = await screen.findByRole('button', { name: 'Run discovery-coding now' });
     await userEvent.click(run);
     await vi.waitFor(() =>

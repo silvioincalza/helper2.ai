@@ -1,6 +1,7 @@
 import './adminText';
-import { Link, NavLink, Outlet, useSearchParams } from 'react-router';
+import { NavLink, Outlet, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { signOut } from '@/api/client';
 import { SignIn } from '@/components/SignIn';
 import { useMe } from '@/context/MeContext';
 import { StatePanel } from '@/components/ui/StatePanel';
@@ -67,9 +68,9 @@ export default function AdminLayout() {
           level={2}
           title={t('admin.forbidden')}
           next={
-            <Link to="/" className="btn">
-              {t('notFound.home')}
-            </Link>
+            <button type="button" className="btn" onClick={() => void signOut()}>
+              {t('nav.signOut')}
+            </button>
           }
         />
       </div>

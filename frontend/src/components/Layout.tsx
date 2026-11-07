@@ -67,13 +67,11 @@ function MenuButton({ open, onToggle }: { open: boolean; onToggle: () => void })
   );
 }
 
-/** Sign in, or the account link and Sign out. The admin page has its own sign-in. */
+/** Sign in, or the account link and Sign out. */
 function Account() {
   const { t } = useTranslation();
   const { me } = useMe();
-  const { pathname } = useLocation();
-  if (!me.authenticated)
-    return pathname.startsWith('/admin') ? null : <SignInLink className="btn" />;
+  if (!me.authenticated) return <SignInLink className="btn" />;
   return (
     <span className="auth">
       <Link to="/account" className="v4-nav-link" title={t('nav.account')}>
@@ -94,7 +92,6 @@ function Account() {
  */
 function Header() {
   const { t } = useTranslation();
-  const { isAdmin } = useMe();
   const { pathname } = useLocation();
   const phone = useMediaQuery(PHONE_HEADER, false);
   const onHome = hasOwnSearchBox(pathname);
@@ -145,13 +142,6 @@ function Header() {
               </NavLink>
             </li>
           </>
-        )}
-        {isAdmin && (
-          <li>
-            <NavLink className="v4-nav-link" to="/admin">
-              {t('nav.admin')}
-            </NavLink>
-          </li>
         )}
       </ul>
     </nav>
@@ -352,15 +342,13 @@ function SignInReturn() {
   const { me, loaded } = useMe();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { pathname } = useLocation();
   const failed = params.get('signin') === 'failed';
   useEffect(() => {
     if (!loaded || (!me.authenticated && !failed)) return;
     const path = takeSignInReturn();
     if (me.authenticated && path) navigate(path, { replace: true });
   }, [loaded, me.authenticated, failed, navigate]);
-  // The admin page says it in its own words.
-  return failed && !pathname.startsWith('/admin') ? (
+  return failed ? (
     <p role="alert" className="banner banner-warn">
       {t('nav.signInFailed')}{' '}
       {me.loginProviders.length > 0 && <Link to="/signin">{t('nav.signInAgain')}</Link>}

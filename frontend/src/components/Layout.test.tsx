@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ADMIN, ANON, USER } from '@/test/fixtures';
+import { ADMIN, ANON } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { THEME_KEY } from '@/lib/theme';
@@ -78,15 +78,11 @@ describe('layout', () => {
     ).toBeInTheDocument();
   });
 
-  it('hides Admin for signed-in non-admins and shows it for admins', async () => {
-    mockApi({ 'GET /me': () => USER });
-    const first = renderApp('/');
-    await screen.findByRole('button', { name: 'Sign out' });
-    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
-    first.unmount();
+  it('has no Admin link, not even for admins: the back office is its own app on the admin host', async () => {
     mockApi({ 'GET /me': () => ADMIN });
     renderApp('/');
-    expect(await screen.findByRole('link', { name: 'Admin' })).toBeInTheDocument();
+    await screen.findByRole('button', { name: 'Sign out' });
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
   it('has skip link, landmarks and the coverage disclaimer', async () => {

@@ -1,5 +1,6 @@
 # Generated or vendored: never formatted.
 dist
+dist-admin
 node_modules
 package-lock.json
 src/api/schema.ts

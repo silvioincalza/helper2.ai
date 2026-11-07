@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 import { tagsOf } from './CandidateEditForm';
 
 const details = (over: Record<string, unknown> = {}) =>
@@ -57,7 +57,7 @@ function oneItem(put: () => unknown = () => candidate()) {
 
 async function openForm() {
   const user = userEvent.setup();
-  renderApp('/admin/review');
+  renderAdmin('/admin/review');
   const detail = await screen.findByRole('region', { name: candidate().reason });
   await user.click(await within(detail).findByRole('button', { name: 'Edit the candidate' }));
   return { user, detail };
@@ -118,7 +118,7 @@ describe('Feature: an admin fixes a resource candidate before accepting it (ADR 
       'GET /admin/review-items/*': () =>
         makeReviewEvidence(candidate(), { run: null, fields: [], validationErrors: [] }),
     });
-    renderApp('/admin/review?status=ACCEPTED');
+    renderAdmin('/admin/review?status=ACCEPTED');
     const detail = await screen.findByRole('region', { name: candidate().reason });
     await within(detail).findByText('Google Gemini Carbon promises a leap | Engadget');
     expect(within(detail).queryByRole('button', { name: 'Edit the candidate' })).toBeNull();

@@ -1,4 +1,5 @@
 node_modules
 dist
+dist-admin
 src/api/schema.ts
 src/api/admin-schema.ts

@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
 import { RUN_POLL_MS } from '@/pages/admin/ScoutRunsPage';
 
@@ -33,7 +33,7 @@ const run: ScoutRun = {
 describe('admin: sign-in and role', () => {
   it('offers GitHub sign-in to anonymous visitors without calling admin endpoints', async () => {
     const m = mockApi({ 'GET /me': () => ANON });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     // The back office loads on demand: wait for its page.
     const main = await screen.findByRole('main');
     expect(await within(main).findByRole('link', { name: 'Sign in with GitHub' })).toHaveAttribute(
@@ -46,7 +46,7 @@ describe('admin: sign-in and role', () => {
 
   it('says so when sign-in failed', async () => {
     mockApi({ 'GET /me': () => ANON });
-    renderApp('/admin?signin=failed');
+    renderAdmin('/admin?signin=failed');
     expect(await screen.findByRole('alert')).toHaveTextContent('Sign-in did not complete');
     expect(screen.getByRole('link', { name: 'Sign in with GitHub' })).toBeInTheDocument();
   });
@@ -61,7 +61,7 @@ describe('admin: sign-in and role', () => {
         ],
       }),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     await userEvent.click(await screen.findByText('Sign in'));
     expect(screen.getByRole('link', { name: 'Google' })).toHaveAttribute(
       'href',
@@ -69,11 +69,12 @@ describe('admin: sign-in and role', () => {
     );
   });
 
-  it('refuses non-admins on every part without calling admin endpoints, and offers the way home', async () => {
+  it('refuses non-admins on every part without calling admin endpoints, and offers sign out', async () => {
     const m = mockApi({ 'GET /me': () => USER });
-    renderApp('/admin/audit');
+    renderAdmin('/admin/audit');
     expect(await screen.findByRole('alert')).toHaveTextContent('administrator');
-    expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
+    // The public home is not on the admin host: the way out is signing out of this host's session.
+    expect(screen.getAllByRole('button', { name: 'Sign out' }).length).toBeGreaterThan(0);
     expect(m.calls.filter((c) => c.path.startsWith('/admin'))).toHaveLength(0);
   });
 });
@@ -119,7 +120,7 @@ describe('Feature: the overview says what needs a person now', () => {
       'GET /admin/overview': () => overview(),
       'GET /admin/review-items': () => page([]),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     const nav = await screen.findByRole('navigation', { name: 'Back office' });
     expect(within(nav).getByRole('link', { name: 'Overview' })).toHaveAttribute(
       'aria-current',
@@ -143,7 +144,7 @@ describe('Feature: the overview says what needs a person now', () => {
 
   it('Scenario: budgets say used of limit in words, off at 0, unknown when not counted; failures link to the runs', async () => {
     mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => overview() });
-    renderApp('/admin');
+    renderAdmin('/admin');
     const budgets = await screen.findByRole('table', { name: 'Model budgets today (UTC)' });
     expect(within(budgets).getByRole('row', { name: /Enrichment 120 of 500/ })).toBeInTheDocument();
     expect(within(budgets).getByRole('row', { name: /Guide Unknown/ })).toBeInTheDocument();
@@ -182,7 +183,7 @@ describe('Feature: the overview says what needs a person now', () => {
         }),
       'GET /admin/home-examples': () => [],
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     expect(
       await screen.findByRole('heading', { name: '10 home examples hidden' }),
     ).toBeInTheDocument();
@@ -214,7 +215,7 @@ describe('Feature: the overview says what needs a person now', () => {
 
   it('Scenario: with every path well served the overview gives no example warning', async () => {
     mockApi({ 'GET /me': () => ADMIN, 'GET /admin/overview': () => overview() });
-    renderApp('/admin');
+    renderAdmin('/admin');
     expect(
       await screen.findByRole('heading', { name: '0 home examples hidden' }),
     ).toBeInTheDocument();
@@ -226,7 +227,7 @@ describe('Feature: the overview says what needs a person now', () => {
       'GET /me': () => ADMIN,
       'GET /admin/overview': () => overview({ grafanaUrl: null, webCredits: null, recentRuns: [] }),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     expect(
       await screen.findByRole('row', { name: /Web search credits Not counted/ }),
     ).toBeInTheDocument();
@@ -239,7 +240,7 @@ describe('Feature: the overview says what needs a person now', () => {
       'GET /me': () => ADMIN,
       'GET /admin/overview': () => overview({ grafanaUrl: 'javascript:alert(1)' }),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     await screen.findByRole('heading', { name: '16 open review items' });
     expect(screen.queryByRole('link', { name: /Grafana/ })).not.toBeInTheDocument();
   });
@@ -250,7 +251,7 @@ describe('Feature: the overview says what needs a person now', () => {
       'GET /me': () => ADMIN,
       'GET /admin/overview': () => (fail ? problem(503, 'Service Unavailable') : overview()),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the overview.');
     fail = false;
@@ -265,7 +266,7 @@ describe('Feature: the overview says what needs a person now', () => {
       'GET /me': () => ADMIN,
       'GET /admin/overview': () => (fail ? problem(503, 'Service Unavailable') : overview()),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     const refresh = await screen.findByRole('button', { name: 'Refresh' });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     fail = true;
@@ -291,7 +292,7 @@ describe('Feature: deciding review items', () => {
         return { ...item, status };
       },
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await userEvent.click(await screen.findByRole('button', { name: /Accept/ }));
     await waitFor(() =>
       expect(m.calls.find((c) => c.method === 'PUT')?.body).toEqual({ status: 'ACCEPTED' }),
@@ -305,7 +306,7 @@ describe('Feature: deciding review items', () => {
       'GET /admin/review-items': () => page([item]),
       'PUT /admin/review-items/*': () => ({ ...item, status: 'REJECTED' }),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await userEvent.type(
       await screen.findByRole('textbox', { name: 'Note (optional)' }),
       '  price is right  ',
@@ -335,7 +336,7 @@ describe('Feature: deciding review items', () => {
           { status: 409, headers: { 'content-type': 'application/problem+json' } },
         ),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await userEvent.click(await screen.findByRole('button', { name: /Accept/ }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Not accepted, the item stays open');
@@ -354,7 +355,7 @@ describe('Feature: deciding review items', () => {
         return problem(409, 'Conflict');
       },
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await userEvent.click(await screen.findByRole('button', { name: /Accept/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent('already decided');
     expect(await screen.findByText('Nothing in this queue.')).toBeInTheDocument();
@@ -372,7 +373,7 @@ describe('Feature: deciding review items', () => {
           finish = () => r({ ...item, status: 'ACCEPTED' });
         }),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const [first, second] = await screen.findAllByRole('button', { name: /Accept/ });
     await userEvent.click(first!);
     expect(first).toHaveAttribute('aria-disabled', 'true');
@@ -393,7 +394,7 @@ describe('Feature: deciding review items', () => {
       'GET /admin/review-items': ({ url }) =>
         page([{ ...item, reason: `Item on page ${url.searchParams.get('page')}` }], 45),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     expect(await screen.findByText('Item on page 0', { selector: 'button' })).toBeInTheDocument();
     expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -414,7 +415,7 @@ describe('Feature: deciding review items', () => {
 
   it('Scenario: an unknown filter in the address falls back to the defaults', async () => {
     const m = mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => page([]) });
-    renderApp('/admin/review?status=BOGUS&kind=NOPE&page=-3');
+    renderAdmin('/admin/review?status=BOGUS&kind=NOPE&page=-3');
     await screen.findByText('Nothing in this queue.');
     expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe(
       '?status=OPEN&page=0&size=20',
@@ -427,7 +428,7 @@ describe('Feature: deciding review items', () => {
       'GET /admin/review-items': () =>
         page([{ ...item, status: 'ACCEPTED', resourceId: 'a/b c', details: 'It is free' }]),
     });
-    renderApp('/admin/review?status=ACCEPTED');
+    renderAdmin('/admin/review?status=ACCEPTED');
     const queue = await screen.findByRole('table', { name: 'Review queue' });
     const row = within(queue).getAllByRole('row')[1] as HTMLElement;
     expect(within(row).getByText('User report')).toBeInTheDocument();
@@ -446,7 +447,7 @@ describe('Feature: the back office in the terminal style', () => {
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => ({ items: [item], total: 4 }),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('table', { name: 'Review queue' });
     expect(document.querySelector('.h2-admin__part .v4-list__cmd')).toHaveTextContent(
       '$ helper2 review --open · 4',
@@ -455,7 +456,7 @@ describe('Feature: the back office in the terminal style', () => {
 
   it('Scenario: the Scout runs say `$ helper2 scouts --runs · N`, and Run now per source stays', async () => {
     mockApi({ 'GET /me': () => ADMIN, 'GET /admin/scout-runs': () => [run] });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     expect(await screen.findByRole('button', { name: 'Run github now' })).toBeInTheDocument();
     expect(document.querySelector('.h2-admin__part .v4-list__cmd')).toHaveTextContent(
       '$ helper2 scouts --runs · 1',
@@ -470,7 +471,7 @@ describe('Feature: the review queue cannot load', () => {
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => (fail ? problem(503, 'Service Unavailable') : page([item])),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the review queue.');
     fail = false;
@@ -497,7 +498,7 @@ describe('Feature: Scout runs', () => {
         runsRequested: 4,
       }),
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     expect(await screen.findByText('github')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Re-check stored answers' }));
     await waitFor(() => expect(m.callsTo('POST', '/admin/enrichment-recheck')).toHaveLength(1));
@@ -514,7 +515,7 @@ describe('Feature: Scout runs', () => {
       'GET /admin/scout-runs': () => [run],
       'POST /admin/scout-runs': () => [],
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     expect(await screen.findByText('github')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Run all now' }));
     await waitFor(() => expect(m.callsTo('POST', '/admin/scout-runs')).toHaveLength(1));
@@ -530,7 +531,7 @@ describe('Feature: Scout runs', () => {
       'GET /admin/scout-runs': () => [run, npm, older],
       'POST /admin/scout-runs': () => [],
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     // One Run now per source, on its newest run.
     expect(await screen.findAllByRole('button', { name: 'Run github now' })).toHaveLength(1);
     await userEvent.click(screen.getByRole('button', { name: 'Run npm now' }));
@@ -545,7 +546,7 @@ describe('Feature: Scout runs', () => {
       'GET /me': () => ADMIN,
       'GET /admin/scout-runs': () => [{ ...run, status: 'RUNNING' }],
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     const one = await screen.findByRole('button', { name: 'Run github now' });
     const all = screen.getByRole('button', { name: 'Run all now' });
     expect(one).toHaveAttribute('aria-disabled', 'true');
@@ -562,7 +563,7 @@ describe('Feature: Scout runs', () => {
       'GET /admin/scout-runs': () => [run],
       'POST /admin/scout-runs': () => problem(500, 'Boom'),
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     await userEvent.click(await screen.findByRole('button', { name: 'Run github now' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The action failed');
   });
@@ -573,7 +574,7 @@ describe('Feature: Scout runs', () => {
       'GET /me': () => ADMIN,
       'GET /admin/scout-runs': () => (fail ? problem(500, 'Boom') : [run]),
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the Scout runs.');
     expect(screen.queryByText('No runs yet.')).not.toBeInTheDocument();
@@ -591,7 +592,7 @@ describe('Feature: Scout runs', () => {
         'GET /admin/scout-runs': () =>
           fail ? problem(500, 'Boom') : [{ ...run, status: 'RUNNING' }],
       });
-      renderApp('/admin/runs');
+      renderAdmin('/admin/runs');
       expect(await screen.findByText('Running')).toBeInTheDocument();
       fail = true;
       await act(() => vi.advanceTimersByTimeAsync(RUN_POLL_MS));
@@ -617,7 +618,7 @@ describe('Feature: Scout runs', () => {
           return listed;
         },
       });
-      renderApp('/admin/runs');
+      renderAdmin('/admin/runs');
       await userEvent.click(await screen.findByRole('button', { name: 'Run all now' }));
       expect(await screen.findByText('Running')).toBeInTheDocument();
 
@@ -638,7 +639,7 @@ describe('Feature: Scout runs', () => {
       'GET /admin/scout-runs': () => [],
       'POST /admin/scout-runs': () => problem(409, 'Conflict'),
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     await userEvent.click(await screen.findByRole('button', { name: 'Run all now' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'A Scout run is already in progress',
@@ -655,7 +656,7 @@ describe('Feature: Scout runs', () => {
           finish = () => r([]);
         }),
     });
-    renderApp('/admin/runs');
+    renderAdmin('/admin/runs');
     const button = await screen.findByRole('button', { name: 'Run all now' });
     await userEvent.click(button);
     expect(button).toHaveAttribute('aria-disabled', 'true');
@@ -685,7 +686,7 @@ describe('Feature: the audit trail', () => {
         total: 25,
       }),
     });
-    renderApp('/admin/audit');
+    renderAdmin('/admin/audit');
     const table = await screen.findByRole('table', { name: 'Audit trail' });
     expect(within(table).getByText('Review decision')).toBeInTheDocument();
     expect(within(table).getByText('NOT_OPEN 0')).toBeInTheDocument();
@@ -699,7 +700,7 @@ describe('Feature: the audit trail', () => {
       'GET /me': () => ADMIN,
       'GET /admin/audit': () => problem(503, 'Service Unavailable'),
     });
-    renderApp('/admin/audit');
+    renderAdmin('/admin/audit');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the audit trail.');
     expect(within(alert).getByRole('button', { name: /Try again/ })).toBeInTheDocument();
@@ -712,7 +713,7 @@ describe('Feature: the overview says how many spending limits were changed at ru
       'GET /me': () => ADMIN,
       'GET /admin/overview': () => overview({ overridesActive: 2 }),
     });
-    renderApp('/admin');
+    renderAdmin('/admin');
     expect(
       await screen.findByRole('link', { name: '2 spending limits changed at runtime' }),
     ).toHaveAttribute('href', '/admin/settings');

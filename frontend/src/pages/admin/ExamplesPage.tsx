@@ -274,7 +274,7 @@ export default function ExamplesPage() {
                   <span key={x.id}>
                     {i > 0 && ' · '}
                     {x.title ? (
-                      <Link to={resourcePath(x.id, x.title)}>{x.title}</Link>
+                      <a href={resourcePath(x.id, x.title)}>{x.title}</a>
                     ) : (
                       <span>
                         {x.id} ({t('admin.examples.missing')})

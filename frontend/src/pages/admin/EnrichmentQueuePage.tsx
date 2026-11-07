@@ -1,6 +1,6 @@
 import './adminText';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/client';
@@ -161,7 +161,7 @@ export default function EnrichmentQueuePage() {
               {items.map((e) => (
                 <tr key={e.resourceId}>
                   <th scope="row">
-                    <Link to={resourcePath(e.resourceId, e.title)}>{e.title}</Link>
+                    <a href={resourcePath(e.resourceId, e.title)}>{e.title}</a>
                   </th>
                   <td>
                     <State entry={e} />

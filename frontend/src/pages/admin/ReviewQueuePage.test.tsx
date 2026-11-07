@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 
 function candidateItem(details: string) {
   return {
@@ -37,7 +37,7 @@ describe('admin: resource candidates in the review queue', () => {
           }),
         ),
     });
-    renderApp('/admin/review?kind=RESOURCE_CANDIDATE');
+    renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
     const link = await screen.findByRole('link', { name: 'Open WebUI' });
     expect(link).toHaveAttribute('href', 'https://openwebui.com/');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow');
@@ -58,7 +58,7 @@ describe('admin: resource candidates in the review queue', () => {
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => candidateItem(details),
     });
-    renderApp('/admin/review?kind=RESOURCE_CANDIDATE');
+    renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
     expect(await screen.findByText(details)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Bad' })).not.toBeInTheDocument();
   });

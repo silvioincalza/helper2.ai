@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 import type { EnrichmentQueuePage } from '@/api/types';
 
 const entry = (
@@ -38,7 +38,7 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
         next: null,
       }),
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     const table = await screen.findByRole('table', { name: 'Enrichment queue' });
     const [fresh, flaky] = within(table).getAllByRole('row').slice(1);
     expect(within(fresh!).getByRole('link', { name: 'Acme MCP' })).toHaveAttribute(
@@ -65,7 +65,7 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
           ? { items: [entry({ title: 'Second page' })], next: null }
           : { items: [entry({ title: 'First page item' })], next: 'c2' },
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     await screen.findByRole('link', { name: 'First page item' });
     await userEvent.click(screen.getByRole('button', { name: 'Next page' }));
     expect(await screen.findByRole('link', { name: 'Second page' })).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
       'GET /admin/enrichment-queue': () =>
         fail ? problem(503, 'Service Unavailable') : { items: [], next: null },
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the enrichment queue.');
     fail = false;
@@ -108,7 +108,7 @@ describe('Feature: the admin changes the order of the enrichment queue', () => {
         top = true;
       },
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     await userEvent.click(await screen.findByRole('button', { name: 'Move to top Acme MCP' }));
 
     const done = await screen.findByText(/^“Acme MCP” is at the top\./);
@@ -125,7 +125,7 @@ describe('Feature: the admin changes the order of the enrichment queue', () => {
       'GET /admin/enrichment-queue': () => ({ items: [entry()], next: null }),
       [`POST ${ACME}/skip`]: () => undefined,
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     const skip = await screen.findByRole('button', { name: 'Skip Acme MCP' });
 
     await userEvent.click(skip);
@@ -166,7 +166,7 @@ describe('Feature: the admin changes the order of the enrichment queue', () => {
           : { items: [], next: null },
       [`POST ${ACME}/requeue`]: () => undefined,
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     await screen.findByText('Nothing waits for enrichment.');
 
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Show' }), 'Skipped');
@@ -191,7 +191,7 @@ describe('Feature: the admin changes the order of the enrichment queue', () => {
       [`POST ${ACME}/prioritise`]: () =>
         problem(409, 'Not applicable', '50 resources already wait at the top.'),
     });
-    renderApp('/admin/enrichment');
+    renderAdmin('/admin/enrichment');
     await userEvent.click(await screen.findByRole('button', { name: 'Move to top Acme MCP' }));
 
     const alert = await screen.findByRole('alert');

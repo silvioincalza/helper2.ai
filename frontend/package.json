@@ -9,8 +9,9 @@
   "scripts": {
     "gen:api": "openapi-typescript ../api/public.yaml --enum-values -o src/api/schema.ts && openapi-typescript ../api/admin.yaml --enum-values -o src/api/admin-schema.ts",
     "dev": "vite",
+    "dev:admin": "vite --config vite.admin.config.ts",
     "prebuild": "npm run gen:api",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --config vite.admin.config.ts",
     "check:bundle": "node scripts/check-bundle.mjs",
     "preview": "vite preview",
     "pretypecheck": "npm run gen:api",
