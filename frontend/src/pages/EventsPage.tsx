@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { useEventsFeed, type EventRow } from '@/components/home/homeFeeds';
 import { ListState, useEventText } from '@/components/home/listParts';
 import { TermCommand } from '@/components/home/TermList';
+import { OriginLabel } from '@/components/Badges';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { aiMark } from '@/lib/aiMark';
 import { useTitle } from '@/hooks/useTitle';
 import '@/components/ui/term.css';
 import './listing.css';
@@ -131,13 +133,28 @@ export default function EventsPage() {
               const left = text.left(r, feed.now);
               return (
                 <li key={r.id} className="v4-row h2-event">
-                  <time className="h2-event__day" dateTime={r.start}>
+                  <time
+                    className="h2-event__day"
+                    dateTime={r.start}
+                    {...(r.aiRead ? aiMark() : {})}
+                  >
                     {day(r.start)}
                   </time>
                   <div className="h2-event__main">
                     <p className="h2-event__meta">
-                      {r.kind && <span className="h2-event__kind">{text.kind(r)}</span>}
-                      {text.where(r) && <span>{text.where(r)}</span>}
+                      {r.kind && (
+                        <span className="h2-event__kind" {...(r.aiRead ? aiMark() : {})}>
+                          {text.kind(r)}
+                        </span>
+                      )}
+                      {text.where(r) && (
+                        <span {...(r.aiRead ? aiMark() : {})}>{text.where(r)}</span>
+                      )}
+                      {r.aiRead && (
+                        <span className="h2-row__ai">
+                          <OriginLabel origin="AI_EXTRACTED" />
+                        </span>
+                      )}
                     </p>
                     <Link className="h2-event__title" to={r.href}>
                       {r.title}

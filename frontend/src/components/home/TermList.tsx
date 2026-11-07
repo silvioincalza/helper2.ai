@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import type { Feed } from './homeFeeds';
 import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
 import { tickerWindow, useTicker } from './ticker';
+import { OriginLabel } from '@/components/Badges';
+import { aiMark } from '@/lib/aiMark';
 
 /** One row as both layouts show it: the date or when, the type, the title and where it comes from. */
 export interface TermCells {
@@ -13,6 +15,21 @@ export interface TermCells {
   where: string;
   /** How soon, e.g. "In 2 days": under the date in a table, before `where` in a log row. */
   note?: string;
+  /** An AI model read the date, type and place (ADR 0067): they carry the AI label and mark. */
+  ai?: boolean;
+}
+
+/** [children] marked as AI output when [ai] (EU AI Act Art. 50, ADR 0038). */
+function Ai({ ai, children }: { ai?: boolean | undefined; children: ReactNode }) {
+  return ai ? <span {...aiMark()}>{children}</span> : <>{children}</>;
+}
+
+function AiLabel({ ai }: { ai?: boolean | undefined }) {
+  return ai ? (
+    <span className="h2-row__ai">
+      <OriginLabel origin="AI_EXTRACTED" />
+    </span>
+  ) : null;
 }
 
 /**
@@ -160,14 +177,19 @@ function TableRow({ cells }: { cells: TermCells }) {
   return (
     <tr className="v4-row">
       <td className="v4-cell-date">
-        {cells.when}
+        <Ai ai={cells.ai}>{cells.when}</Ai>
         {cells.note && <span className="v4-cell-note">{cells.note}</span>}
+        <AiLabel ai={cells.ai} />
       </td>
-      <td className="v4-cell-type">{cells.type}</td>
+      <td className="v4-cell-type">
+        <Ai ai={cells.ai}>{cells.type}</Ai>
+      </td>
       <td className="v4-cell-title">
         <Link to={cells.href}>{cells.title}</Link>
       </td>
-      <td className="v4-cell-meta">{cells.where}</td>
+      <td className="v4-cell-meta">
+        <Ai ai={cells.ai}>{cells.where}</Ai>
+      </td>
     </tr>
   );
 }
@@ -177,12 +199,22 @@ function LogRow({ cells }: { cells: TermCells }) {
   return (
     <li className="v4-row v4-log__row">
       <span className="v4-log__meta">
-        {cells.when} {cells.type && <span className="v4-cell-type">[{cells.type}]</span>}
+        <Ai ai={cells.ai}>{cells.when}</Ai>{' '}
+        {cells.type && (
+          <span className="v4-cell-type">
+            [<Ai ai={cells.ai}>{cells.type}</Ai>]
+          </span>
+        )}{' '}
+        <AiLabel ai={cells.ai} />
       </span>
       <Link className="v4-log__title" to={cells.href}>
         {cells.title}
       </Link>
-      {where && <span className="v4-log__where">{where}</span>}
+      {where && (
+        <span className="v4-log__where">
+          <Ai ai={cells.ai}>{where}</Ai>
+        </span>
+      )}
     </li>
   );
 }

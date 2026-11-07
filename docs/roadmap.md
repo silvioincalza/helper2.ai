@@ -227,7 +227,8 @@ Open items:
   ([ADR 0022](adr/scout/0022-next-events.md)) does not need a research pass to stay current. Candidates: Devpost and
   MLH (hackathons), Luma and Meetup (meetups, talks, workshops), Eventbrite. Each needs a terms review for public
   redisplay first, must state the days and the format (online, in person) in a form code can read, and Meetup's
-  API needs a paid plan.
+  API needs a paid plan. The live web events scout ([ADR 0067](adr/scout/0067-live-web-events-scout.md)) covers part of
+  this from Tavily, once Tavily confirms.
 - Categories ([ADR 0053](adr/search/0053-category-filter.md)): label 150 resources in
   `backend/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
   ai.helper2.eval.CategoryEvalTest`; tune the words of the categories with low precision or recall; consider a model
@@ -358,6 +359,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 - Discovery categories ([ADR 0051](adr/scout/0051-tavily-discovery.md)): an accepted candidate keeps only its first finder's search facts in full in `discovery` (the others are in `foundBy`). A category's first day is its place in the list, so moving a category that never ran moves its first day. The Scout checks only its own daily credit cap, not the live search's global one. The Terms describe the labels the UI shows today ("AI-written", "AI summary", "Extracted by AI"); add "AI-estimated" when a value is shown with it. The health and legal notices are on the Sources rows and the admin candidate cards, not yet on the resource page of an accepted tool.
 - LinkedIn via Tavily ([ADR 0061](adr/scout/0061-linkedin-via-tavily.md)): an accepted company page links to LinkedIn, not to the product's own site, until enrichment or an admin adds it; an accepted LinkedIn event has no days and is not in Next events until it is added to the curated list by hand; measure in the first weeks how many candidates a pass sends and how many are accepted, and drop a query or a page kind that brings only noise; its 20 searches fall on one day, so on that day the Scout's daily cap of 40 leaves discovery about 20 credits (stagger it or split the queries over the week if a category is skipped for the cap).
 - A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later ([ADR 0018](adr/scout/0018-scout-runner.md)).
+- Live web events scout ([ADR 0067](adr/scout/0067-live-web-events-scout.md)): off until Tavily confirms in writing that its OK covers scheduled searches whose pages we list; the gate proves the days are written on the page, not that the page is right; it reads only English month names and ISO dates; a page about several events gives none; measure in the first weeks how many pages a pass reads and how many events the gate keeps, and drop a query that brings only noise; read schema.org Event data before calling the model.
 - An event whose source gives no day is not listed; event days can be a few hours off far from UTC; conference dates are as correct as ai-deadlines; curated events need a research pass to stay current. ([ADR 0022](adr/scout/0022-next-events.md))
 
 ### AI guide

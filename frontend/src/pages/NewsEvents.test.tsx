@@ -118,4 +118,32 @@ describe('Events page', () => {
     expect(screen.queryByRole('link', { name: 'CIKM 2026' })).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
   });
+
+  it('labels the days, kind and place an AI model read, and only those', async () => {
+    mockApi({
+      'GET /events/upcoming': () => ({
+        generatedAt: '2026-11-07T09:00:00Z',
+        items: [
+          event('Zurich AI Hackathon', '2026-12-12', {
+            eventKind: 'HACKATHON',
+            location: 'Zurich, Switzerland',
+            eventOrigin: 'AI_EXTRACTED',
+          }),
+          event('NeurIPS 2026', '2026-12-06', { eventOrigin: 'SOURCE_PROVIDED' }),
+        ],
+      }),
+    });
+    const { container } = renderApp('/events');
+    const ai = (await screen.findByRole('link', { name: 'Zurich AI Hackathon' })).closest('li')!;
+    const stated = screen.getByRole('link', { name: 'NeurIPS 2026' }).closest('li')!;
+    expect(within(ai).getByText('Extracted by AI')).toBeInTheDocument();
+    expect(ai.querySelector('time[data-ai-generated="true"]')).not.toBeNull();
+    expect(within(ai).getByText('Hackathon').closest('[data-ai-generated]')).not.toBeNull();
+    expect(
+      within(ai).getByText('Zurich, Switzerland').closest('[data-ai-generated]'),
+    ).not.toBeNull();
+    expect(within(stated).queryByText('Extracted by AI')).toBeNull();
+    expect(stated.querySelector('[data-ai-generated]')).toBeNull();
+    expect(await axeViolations(container)).toEqual([]);
+  });
 });

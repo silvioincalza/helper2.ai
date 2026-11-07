@@ -1,6 +1,6 @@
 # 0022 — Next events: stated event days, ai-deadlines and curated industry and community events
 
-**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0010](../search/0010-filters-facets-dates-timeline.md), [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md) **Amended by:** [0066](../edge/0066-curated-field.md) (the event seeds replace only the fields they assert).
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0010](../search/0010-filters-facets-dates-timeline.md), [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md) **Amended by:** [0067](0067-live-web-events-scout.md) (§6: events whose days a model read on their page and code checked), [0066](../edge/0066-curated-field.md) (the event seeds replace only the fields they assert).
 
 ## Context
 The home page lists the next artificial intelligence (AI) events: research conferences, industry events and community
@@ -35,7 +35,7 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
    travel in the source record's `extra`, like `location`. ai-deadlines is a list of conferences, so its events are
    `CONFERENCE`, with no format. Industry events are `CONFERENCE`, hybrid where the page says so. The home page shows
    them as one tag, for example "Hackathon · Online".
-6. **Other events have no dates.** Tavily stores some news items as EVENT, but never with stated days, so they are never listed.
+6. **Other events have no dates.** Tavily stores some news items as EVENT, but never with stated days, so they are never listed. Amended by [0067](0067-live-web-events-scout.md): the live web events scout lists an event when a model reads its days on its page and code finds them in a quote of that page; they are labelled as AI and never win over days a source states.
 7. **Application programming interface (API).** `GET /api/v1/events/upcoming?days=&size=` (`size` 1–60, default 6): resources of type EVENT with a stated start whose
    end (or start) is on or after today 00:00 UTC, soonest first, then by title. With `days` (1–366), only events that
    start before today 00:00 UTC plus `days`; the response says that end in `until` (null without `days`). An event

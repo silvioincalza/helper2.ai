@@ -46,7 +46,8 @@ class LiveWebEventsCollectorTest {
       "# Zurich AI Builders Hackathon 2027\\n\\n**When:** 12–14 March 2027\\n\\n"
           + "This is an in-person hackathon at ETH Zurich, Switzerland.";
   static final String SUMMIT_PAGE =
-      "AI Summit Europe takes place on 20–21 January 2027 in Amsterdam.";
+      "AI Summit Europe takes place on 20–21 January 2027 in Amsterdam."
+          + " Questions: anna@summit.example or +41 44 123 45 67.";
 
   static final String EXTRACT =
       """
@@ -62,6 +63,7 @@ class LiveWebEventsCollectorTest {
       new TavilyDiscoveryCollectorTest.MapCounter();
   final QuotaKeys keys = new QuotaKeys("", SourceFixtures.CLOCK);
   final List<String> pagesRead = new ArrayList<>();
+  final List<String> textsRead = new ArrayList<>();
 
   @AfterEach
   void stop() {
@@ -83,6 +85,7 @@ class LiveWebEventsCollectorTest {
       @Override
       public Optional<EventReading> read(String title, String pageText) {
         pagesRead.add(title);
+        textsRead.add(pageText);
         return answer.apply(title);
       }
     };
@@ -214,5 +217,17 @@ class LiveWebEventsCollectorTest {
     assertThat(batch.getHits())
         .extracting(SourceHit::getTitle)
         .containsExactly("Zurich AI Builders Hackathon 2027");
+  }
+
+  @Test
+  void the_model_never_sees_an_email_address_or_a_phone_number_of_the_page() {
+    server.route("/search", FixtureServer.Reply.ok(SEARCH));
+    server.route("/extract", FixtureServer.Reply.ok(EXTRACT));
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsBoth)).collect(null, null, 500);
+
+    assertThat(textsRead.getLast())
+        .contains("[email]", "[phone]")
+        .doesNotContain("anna@summit.example", "123 45 67");
   }
 }

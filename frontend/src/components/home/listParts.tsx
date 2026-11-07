@@ -146,5 +146,6 @@ export function useEventCells(): (row: EventRow, now: number) => TermCells {
     href: row.href,
     where: text.where(row),
     note: text.left(row, now),
+    ai: row.aiRead,
   });
 }

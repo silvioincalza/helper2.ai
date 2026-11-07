@@ -214,6 +214,31 @@ describe('New this week and Coming up on a wide screen: two tables like ls -l', 
     expect(section).toBeInTheDocument();
   });
 
+  it('Coming up labels the days, kind and place an AI model read, and only those', async () => {
+    mockApi(
+      upcoming([
+        event('Zurich AI Hackathon', '2026-11-20T00:00:00Z', null, {
+          eventKind: 'HACKATHON',
+          location: 'Zurich, Switzerland',
+          eventOrigin: 'AI_EXTRACTED',
+        }),
+        event('NeurIPS 2026', '2026-12-06T00:00:00Z', null, { eventOrigin: 'SOURCE_PROVIDED' }),
+      ]),
+    );
+    renderApp('/');
+    const { table: t } = await table('Coming up');
+    await within(t).findByRole('link', { name: 'Zurich AI Hackathon' });
+    const [ai, stated] = bodyRows(t);
+    expect(within(ai!).getByText('Extracted by AI')).toBeInTheDocument();
+    expect(within(ai!).getByText('Hackathon').closest('[data-ai-generated]')).not.toBeNull();
+    expect(
+      within(ai!).getByText('Zurich, Switzerland').closest('[data-ai-generated]'),
+    ).not.toBeNull();
+    expect(ai!.querySelector('time')!.closest('[data-ai-generated]')).not.toBeNull();
+    expect(stated!.querySelector('[data-ai-generated]')).toBeNull();
+    expect(within(stated!).queryByText('Extracted by AI')).toBeNull();
+  });
+
   it('does not read the rows aloud on load: only loading, error and empty are announced', async () => {
     mockApi(upcoming([event('NeurIPS 2026', '2026-12-06T00:00:00Z')]));
     renderApp('/');

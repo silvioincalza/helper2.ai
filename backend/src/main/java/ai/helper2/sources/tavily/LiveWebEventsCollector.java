@@ -6,6 +6,7 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.PageScope;
+import ai.helper2.scout.UntrustedPageText;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
@@ -212,7 +213,10 @@ public class LiveWebEventsCollector implements Collector {
   /** One extracted page: the event the gate lets through, if any. */
   private Optional<SourceHit> readPage(JsonNode r, Map<String, SourceHit> byUrl, LocalDate today) {
     String url = HttpClients.text(r, "url");
-    String text = HttpClients.text(r, "raw_content");
+    String raw = HttpClients.text(r, "raw_content");
+    // The model and the gate see the page without hidden text, email addresses or phone numbers
+    // (as the evidence ladder, ADR 0056); quotes are checked against this text.
+    String text = raw == null ? null : UntrustedPageText.INSTANCE.clean(raw);
     CanonicalUrl canonical = url == null ? null : CanonicalUrl.of(url);
     SourceHit found = canonical == null ? null : byUrl.get(canonical.getValue());
     if (found == null || text == null || text.isBlank()) {
