@@ -1,0 +1,84 @@
+# The web image (ADR 0069): the built public web app, static files only, served by nginx (deploy/web.Dockerfile). Route
+# to the Service helper2-web exactly /assets/ (prefix), /theme.js and /favicon.svg (exact); everything else goes to
+# the Service helper2 (deploy/k8s/README.md). The public pod copies its shell from this image (app.yaml).
+{{- $web := .Values.web }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helper2-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ required "web.replicas" $web.replicas }}
+  # One new pod at a time, and an old one goes only once the new one is ready (ADR 0027).
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: helper2-web } }
+  template:
+    metadata:
+      labels: { app: helper2-web }
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: helper2-web } } }
+      # nginx-unprivileged runs as UID 101.
+      securityContext: { runAsNonRoot: true, runAsUser: 101, runAsGroup: 101, seccompProfile: { type: RuntimeDefault } }
+      # preStop sleep, then SIGQUIT: nginx ends its connections gracefully; 5 s is plenty for small files.
+      terminationGracePeriodSeconds: {{ add (int (required "web.preStopSeconds" $web.preStopSeconds)) 5 }}
+      containers:
+        - name: web
+          image: {{ include "helper2.webImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - { containerPort: 8080, name: http }
+            # /healthz for the probes only; the Service never routes it.
+            - { containerPort: 8081, name: health }
+          startupProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 2
+            failureThreshold: 15
+          readinessProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 10
+            failureThreshold: 3
+          # Serve on while the endpoints and the Ingress controller drop this pod.
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $web.preStopSeconds }} }
+          resources:
+            {{- toYaml $web.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          # The pid file and nginx's temp paths (deploy/web/nginx.conf).
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: { sizeLimit: 16Mi } }]
+{{- if gt (int $web.replicas) 1 }}
+---
+# Node drains and other voluntary evictions keep all replicas but one serving.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: helper2-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int $web.replicas) 1 }}
+  selector: { matchLabels: { app: helper2-web } }
+{{- end }}
+---
+# Only the routes /assets/ (prefix), /theme.js and /favicon.svg (exact) come here; port 8081 is never routed.
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper2-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: helper2-web }
+  ports: [{ port: 80, targetPort: http }]

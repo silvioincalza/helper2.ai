@@ -55,8 +55,8 @@ jobs:
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s postgres-image ENGINE="$ENGINE"
-      # Both apps' images (public, back office; ADR 0069), built from `git archive` of the commit (Makefile), pushed
-      # to Harbor as TAG.
+      # The three images (web, public app, back office; ADR 0069), built from `git archive` of the commit (Makefile),
+      # pushed to Harbor as TAG. Not signed yet: image signing is on the roadmap (§ 2), for every image.
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s image TAG="${GITHUB_SHA::12}" ENGINE="$ENGINE"
@@ -74,6 +74,12 @@ jobs:
           name: sbom-backoffice
           path: sbom-backoffice.cdx.json
           retention-days: 90
+      - run: make -C deploy/k8s web-sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom-web.cdx.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-web
+          path: sbom-web.cdx.json
+          retention-days: 90
       # The Postgres image of postgres.image.tag, new or not: the daily scan below sees new CVEs in it too.
       - run: make -C deploy/k8s postgres-sbom SBOM="$GITHUB_WORKSPACE/sbom-postgres.cdx.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -84,7 +90,7 @@ jobs:
 
   # Grype on the SBOMs of the images just pushed (ADR 0046), on a GitHub-hosted runner: it reads the run's artifacts,
   # never Harbor. Report-only until 18 Nov 2026: findings with a fix go to code scanning (image/app, image/postgres
-  # on main) and the job log, nothing fails. Not a need of staging yet: the gate adds `--fail-on critical` and that need.
+  # on main, likewise image/backoffice and image/web) and the job log, nothing fails. Not a need of staging yet: the gate adds `--fail-on critical` and that need.
   scan:
     needs: image
     runs-on: ubuntu-latest
@@ -106,11 +112,12 @@ jobs:
           set -euo pipefail
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom -D sboms
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-backoffice -D sboms
+          gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-web -D sboms
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-postgres -D sboms
       - name: Vulnerability scan (report-only)
         run: |
           set -euo pipefail
-          for image in app backoffice postgres; do
+          for image in app backoffice web postgres; do
             sbom=sboms/sbom-$image.cdx.json; [[ $image == app ]] && sbom=sboms/sbom.cdx.json
             echo "== $image"
             grype "sbom:$sbom" --only-fixed -o table -o "sarif=grype-$image.sarif"
@@ -127,6 +134,13 @@ jobs:
         with:
           sarif: grype-backoffice.sarif
           category: image/backoffice
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
+      - uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-web.sarif
+          category: image/web
           ref: ${{ github.ref }}
           sha: ${{ github.sha }}
       - uses: ./.github/actions/upload-sarif

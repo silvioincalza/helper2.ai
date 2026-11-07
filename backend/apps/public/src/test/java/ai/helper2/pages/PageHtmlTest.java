@@ -167,6 +167,19 @@ class PageHtmlTest {
   }
 
   @Test
+  void theShellIsReadFromAFileAndAMissingFileMeansNoTemplate() throws IOException {
+    // In the cluster: file:/shell/index.html, copied from the web image (ADR 0069).
+    Path shell = Files.writeString(dist.resolve("shell.html"), SHELL);
+    assertThat(templateAt("file:" + shell)).isTrue();
+    assertThat(templateAt("file:" + dist.resolve("missing/index.html"))).isFalse();
+  }
+
+  private static boolean templateAt(String location) {
+    PagesProperties properties = new PagesProperties("https://helper2.ai", false, location, 50_000);
+    return new PageTemplate(new DefaultResourceLoader(), properties).present();
+  }
+
+  @Test
   void everyRouteOfTheAppIsAPageTheServerKnows() throws IOException {
     List<String> lines = Files.readAllLines(Path.of("../frontend/src/routes.tsx"));
     Pattern route = Pattern.compile("path: '([^'*]+)'");

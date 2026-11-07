@@ -1,7 +1,7 @@
 # Weekly scan of what runs on prod (ADR 0046): Grype against the SBOM attached to the latest GitHub release, with a
 # fresh vulnerability database. New CVEs appear after a release; this finds them without a new build.
-# Report-only: findings go to code scanning (release/app and release/backoffice, on the release tag) and the job
-# summary.
+# Report-only: findings go to code scanning (release/app, release/backoffice and release/web, on the release tag) and
+# the job summary.
 name: image-scan
 
 on:
@@ -44,6 +44,12 @@ jobs:
             backoffice=true
           fi
           echo "backoffice=$backoffice" >> "$GITHUB_OUTPUT"
+          # The web image (ADR 0069); a release before it has none.
+          web=false
+          if gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-web-$tag.cdx.json" -O sbom-web.cdx.json; then
+            web=true
+          fi
+          echo "web=$web" >> "$GITHUB_OUTPUT"
           git fetch --quiet --force origin "refs/tags/$tag:refs/tags/$tag"
           { echo "found=true"; echo "tag=$tag"; echo "sha=$(git rev-parse "refs/tags/$tag^{commit}")"; } >> "$GITHUB_OUTPUT"
       - name: Scan (report-only)
@@ -64,6 +70,15 @@ jobs:
           grype sbom:sbom-backoffice.cdx.json --only-fixed -o table=grype-backoffice.txt -o sarif=grype-backoffice.sarif
           { echo "### Grype, back office, release $TAG (fixable only)"; echo '```'; cat grype-backoffice.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           cat grype-backoffice.txt
+      - name: Scan the web image (report-only)
+        if: steps.release.outputs.web == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          grype sbom:sbom-web.cdx.json --only-fixed -o table=grype-web.txt -o sarif=grype-web.sarif
+          { echo "### Grype, web image, release $TAG (fixable only)"; echo '```'; cat grype-web.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cat grype-web.txt
       - if: steps.release.outputs.found == 'true'
         uses: ./.github/actions/upload-sarif
         continue-on-error: true
@@ -78,5 +93,13 @@ jobs:
         with:
           sarif: grype-backoffice.sarif
           category: release/backoffice
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          sha: ${{ steps.release.outputs.sha }}
+      - if: steps.release.outputs.web == 'true'
+        uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-web.sarif
+          category: release/web
           ref: refs/tags/${{ steps.release.outputs.tag }}
           sha: ${{ steps.release.outputs.sha }}

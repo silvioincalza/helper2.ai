@@ -1,6 +1,7 @@
 # Flowchart: what Spring answers for an address the client router owns (ADR 0050).
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java,
 #   pages/usecase/RenderPage.java, pages/internal/PageTemplate.java, PageHtml.java, platform/ClientRoutes.java,
+#   deploy/helm/helper2/templates/app.yaml (the shell's init container),
 #   backend/apps/public/src/main/kotlin/ai/helper2/pages/Routes.kt, ResourcePaths.kt (Slug), PageHead.kt (IndexPolicy), Pages.kt (JsonLd).
 # Render: cd docs/diagrams && d2 fmt flow-0050-pages-for-crawlers.d2 && d2 flow-0050-pages-for-crawlers.d2 flow-0050-pages-for-crawlers.svg
 
@@ -53,8 +54,8 @@ quiet: "Fixed title\nrobots: noindex, follow" {class: data}
 escape: "Every text HTML-escaped,\nJSON-LD with \\u003c \\u003e \\u0026" {class: app}
 out: "200 + filled index.html (no-cache)\ntags marked data-h2-head;\nReact replaces the body" {class: end}
 
-built: "A built app\n(index.html) present?" {class: decision}
-spa: "SinglePageApp as before\n(development: Vite serves the UI)" {class: end}
+built: "A shell read at start?\n(file:/shell/index.html, from the\nweb image of the same tag)" {class: decision}
+spa: "nothing claimed: 404\n(development: Vite serves the UI)" {class: end}
 req -> built
 built -> spa: no
 built -> route: yes

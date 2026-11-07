@@ -1,5 +1,6 @@
-# The public app (ADR 0069): search, guide, setup, the pages and sign-in for users; the built web app embedded.
-# The back office is its own workload (backoffice.yaml).
+# The public app (ADR 0069): search, guide, setup, the pages and sign-in for users. It serves no web files: the web
+# image does (web.yaml). An init container copies the built shell (index.html) from the web image of the same tag;
+# the app writes every page into it (ADR 0050). The back office is its own workload (backoffice.yaml).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,6 +43,17 @@ spec:
       {{- $shutdown := .Values.app.shutdown }}
       # preStop sleep + graceful drain + 5 s for the JVM to exit (values.yaml app.shutdown).
       terminationGracePeriodSeconds: {{ add (int (required "app.shutdown.preStopSeconds" $shutdown.preStopSeconds)) (int (required "app.shutdown.drainSeconds" $shutdown.drainSeconds)) 5 }}
+      # The shell of the same version as the files helper2-web serves (helper2.webImage), into a read-only /shell.
+      initContainers:
+        - name: shell
+          image: {{ include "helper2.webImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [cp, /usr/share/helper2/shell/index.html, /shell/index.html]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 32Mi }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: shell, mountPath: /shell }]
       containers:
         - name: app
           image: {{ include "helper2.image" . }}
@@ -141,8 +153,9 @@ spec:
           resources:
             {{- toYaml .Values.app.resources | nindent 12 }}
           securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
-          volumeMounts: [{ name: tmp, mountPath: /tmp }]
-      volumes: [{ name: tmp, emptyDir: {} }]
+          # /shell/index.html: helper2.pages.template (H2_PAGES_TEMPLATE, default file:/shell/index.html).
+          volumeMounts: [{ name: tmp, mountPath: /tmp }, { name: shell, mountPath: /shell, readOnly: true }]
+      volumes: [{ name: tmp, emptyDir: {} }, { name: shell, emptyDir: { sizeLimit: 1Mi } }]
 {{- if gt (int .Values.app.replicas) 1 }}
 ---
 # Node drains and other voluntary evictions keep all replicas but one serving.

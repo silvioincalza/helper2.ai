@@ -64,7 +64,8 @@ spring:
       enabled: true
   web:
     resources:
-      # The SPA and its caching rules are served by ai.helper2.platform.SinglePageApp only.
+      # No static files: the web image serves the built web app (ADR 0069). The pages module writes every page into
+      # the shell (helper2.pages.template).
       add-mappings: false
 
 server:
@@ -310,9 +311,6 @@ helper2:
     fast-model: ""
     # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
     native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
-  # The built SPA (frontend/dist, copied to static/ in the image).
-  spa:
-    location: classpath:/static/
   # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
   embedding:
     api-key: ${H2_NVIDIA_API_KEY:}
@@ -820,7 +818,9 @@ helper2:
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
     # Same switch as helper2.security.noindex: robots.txt allows all and there is no sitemap.
     noindex: ${H2_NOINDEX:false}
-    template: classpath:/static/index.html
+    # The built shell (index.html) of the web image of the same version, copied into the pod at start by an init
+    # container (ADR 0069). No file (development: Vite serves the UI): the pages are not served.
+    template: ${H2_PAGES_TEMPLATE:file:/shell/index.html}
     sitemap-limit: 50000
   retention:
     # When the purges run (UTC); each module's purge runs on one replica (cluster lock).

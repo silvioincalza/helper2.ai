@@ -2,14 +2,15 @@
 # Shows the two ports, the client address, CSRF, the rate limiter keyed by handler (IPv6 by /64; on the admin
 # host by the signed-in administrator) and
 # counted in Redis for all replicas (in-memory fallback while Redis is down),
-# and the SPA fallback with its cache headers.
-# Source of truth: deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
+# the web image's files and the shell for client routes, with their cache headers.
+# Source of truth: deploy/helm/helper2/templates/app.yaml, web.yaml, networkpolicy.yaml, deploy/web/nginx.conf,
+#   deploy/web/headers.conf, backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java,
 #   backend/apps/public/src/main/resources/application.yaml (server.*, management.*),
 #   backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
 #   AdminHost.java (the admin host's key, ADR 0035),
 #   RedisRateLimiter.java, platform/quota/QuotaKeys.java (client pseudonym),
-#   InMemoryRateLimiter.java, SinglePageApp.java, platform/resilience/Resilience4jPolicies.java (policy redis).
+#   InMemoryRateLimiter.java, platform/resilience/Resilience4jPolicies.java (policy redis).
 # Render: cd docs/diagrams && d2 fmt flow-0024-http-edge-protection.d2 && d2 flow-0024-http-edge-protection.d2 flow-0024-http-edge-protection.svg
 
 ...@style
@@ -17,6 +18,23 @@
 direction: down
 
 in: "Request" {class: end}
+
+web: Web image (helper2-web, ADR 0069) {
+  class: group
+  direction: down
+  path: "Ingress: /assets/ prefix,\n/theme.js or /favicon.svg?" {class: decision}
+  method: "GET or HEAD?" {class: decision}
+  e405: "405, no-store" {class: fail}
+  found: "The file exists?" {class: decision}
+  file: "/assets: a year, immutable;\nroot files: 5 minutes, revalidated;\nCSP default-src 'none', sandbox,\nnosniff, CORP same-origin" {class: end}
+  e404w: "plain 404, no-store" {class: fail}
+  path -> method: yes
+  method -> e405: no
+  method -> found: yes
+  found -> file: yes {class: hot}
+  found -> e404w: no
+}
+
 port: "Port?" {class: decision}
 mgmt: "8081 management: only from the\nobservability namespace (NetworkPolicy);\nin no Service or Ingress" {class: config}
 metrics: "/actuator/prometheus, health" {class: end}
@@ -58,25 +76,18 @@ limit: RateLimitInterceptor {
   window -> e429: no
 }
 
-spa: SinglePageApp {
+spa: PageRoutes (the shell) {
   class: group
   direction: down
-  assets: "/assets/** file?" {class: decision}
-  immutable: "max-age 1 year,\npublic, immutable" {class: end}
-  file: "Other existing file?" {class: decision}
-  nocache: "file, no-cache" {class: end}
   route: "No extension and not api/, oauth2/,\nlogin/, actuator/, /logout?" {class: decision}
-  index: "index.html, no-cache" {class: end}
-  e404: "404" {class: fail}
-  assets -> immutable: yes
-  assets -> file: no
-  file -> nocache: yes
-  file -> route: no
+  index: "the shell with the page's head,\nno-cache" {class: end}
+  e404: "404 (the public app\nserves no files)" {class: fail}
   route -> index: yes {class: hot}
   route -> e404: no
 }
 
-in -> port
+in -> web.path
+web.path -> port: no {class: hot}
 port -> mgmt: "8081"
 mgmt -> metrics
 port -> app: "8080" {class: hot}
@@ -87,4 +98,4 @@ csrf -> e403: yes
 csrf -> auth: no {class: hot}
 auth -> api
 api -> limit.limited: yes {class: hot}
-api -> spa.assets: no
+api -> spa.route: no

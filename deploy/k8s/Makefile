@@ -6,11 +6,12 @@
 #   export KUBECONFIG=<incalza-me-infra>/.secrets/kubeconfig
 # The platform repo (incalza-me-infra) owns the namespaces, the Ingresses, DNS and the deployer RBAC.
 #
-#   make image                   build the linux/amd64 images of both apps (public, back office; ADR 0069), push them
-#                                to Harbor (robot from OpenBao helper2/kv ci/harbor)
-#   make retag VERSION=X.Y.Z     add the release tag X.Y.Z to both pushed images TAG (same digests, no rebuild)
+#   make image                   build the three linux/amd64 images (web, public app, back office; ADR 0069), push
+#                                them to Harbor (robot from OpenBao helper2/kv ci/harbor)
+#   make retag VERSION=X.Y.Z     add the release tag X.Y.Z to the three pushed images TAG (same digests, no rebuild)
 #   make sbom                    CycloneDX SBOM of the pushed public image TAG (syft), into sbom.cdx.json
 #   make backoffice-sbom         the same for the back office image TAG
+#   make web-sbom                the same for the web image TAG
 #   make postgres-sbom           the same for the Postgres image of postgres.image.tag
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging env-secret  write ENV's app.env into the Secret helper2-app-env (never through Helm)
@@ -25,6 +26,8 @@ REGISTRY := harbor-i.infra.incalza.me
 IMAGE    := $(REGISTRY)/helper2/apps/helper2
 # The back office app (deploy/backoffice.Dockerfile), always built and deployed with the same TAG.
 BO_IMAGE := $(REGISTRY)/helper2/apps/helper2-backoffice
+# The web image (deploy/web.Dockerfile): the public web app's files, and the shell the public pod copies. Same TAG.
+WEB_IMAGE := $(REGISTRY)/helper2/apps/helper2-web
 CHART    := ../helm/helper2
 # The Postgres + pgvector image tag lives in one place: postgres.image.tag in the chart's values.yaml.
 PG_REPO  := $(REGISTRY)/helper2/apps/postgres
@@ -41,7 +44,7 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-.PHONY: help credentials backup-credentials image retag sbom backoffice-sbom postgres-sbom postgres-image chart-check check-env release-ready deploy diff rollback status
+.PHONY: help credentials backup-credentials image retag sbom backoffice-sbom web-sbom postgres-sbom postgres-image chart-check check-env release-ready deploy diff rollback status
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -98,10 +101,11 @@ harbor_api() { curl -sS -K "$$work/curl.cfg" "https://$(REGISTRY)/api/v2.0/proje
 harbor_login() { printf '%s' "$$pass" | $(ENGINE) login $(REGISTRY) --username "$$user" --password-stdin >/dev/null; }
 endef
 
-# Tags are immutable: one commit, one image per app. A tag already in Harbor is never rebuilt, so a rerun of CD
-# deploys the images staging tested, not a fresh build of the same commit. Both images come from one `git archive`.
-IMAGES := apps/helper2=deploy/Dockerfile apps/helper2-backoffice=deploy/backoffice.Dockerfile
-image: ## build the linux/amd64 images of TAG (public app, back office) and push them to Harbor, unless they are there
+# Tags are immutable: one commit, one image per deployable. A tag already in Harbor is never rebuilt, so a rerun of CD
+# deploys the images staging tested, not a fresh build of the same commit. The three images come from one
+# `git archive`, built one after another.
+IMAGES := apps/helper2-web=deploy/web.Dockerfile apps/helper2=deploy/Dockerfile apps/helper2-backoffice=deploy/backoffice.Dockerfile
+image: ## build the linux/amd64 images of TAG (web, public app, back office) and push them to Harbor, unless they are there
 	@set -euo pipefail; $(HARBOR); \
 	for entry in $(IMAGES); do \
 		repo=$${entry%%=*}; dockerfile=$${entry#*=}; image=$(REGISTRY)/helper2/$$repo; \
@@ -122,11 +126,11 @@ image: ## build the linux/amd64 images of TAG (public app, back office) and push
 # tags point at one digest and nothing is rebuilt. Run again: a no-op. VERSION already on another digest: a failure
 # (Harbor's tag-immutability rule would refuse to move it anyway).
 VERSION ?=
-retag: ## add the release tag VERSION (X.Y.Z) to both pushed images TAG in Harbor: same digests, no rebuild
+retag: ## add the release tag VERSION (X.Y.Z) to the three pushed images TAG in Harbor: same digests, no rebuild
 	@set -euo pipefail; \
 	[[ "$(VERSION)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || { echo "VERSION must be X.Y.Z, got '$(VERSION)'"; exit 1; }; \
 	$(HARBOR); \
-	for repo in apps/helper2 apps/helper2-backoffice; do \
+	for repo in apps/helper2-web apps/helper2 apps/helper2-backoffice; do \
 		image=$(REGISTRY)/helper2/$$repo; \
 		want=$$(harbor_api $$repo $(TAG) -f | jq -r .digest) || { echo "$$image:$(TAG) is not in Harbor"; exit 1; }; \
 		code=$$(harbor_api $$repo $(VERSION) -o "$$work/version.json" -w "%{http_code}"); case $$code in \
@@ -151,6 +155,10 @@ sbom: ## CycloneDX SBOM of the image TAG, read from Harbor (needs syft), into SB
 # The same SBOM for the back office image of TAG (cd.yml scans it with the public app's).
 backoffice-sbom: ## CycloneDX SBOM of the back office image TAG, read from Harbor, into SBOM
 	@$(MAKE) --no-print-directory sbom IMAGE=$(BO_IMAGE)
+
+# The same SBOM for the web image of TAG (cd.yml scans it with the apps').
+web-sbom: ## CycloneDX SBOM of the web image TAG, read from Harbor, into SBOM
+	@$(MAKE) --no-print-directory sbom IMAGE=$(WEB_IMAGE)
 
 # The same SBOM for the Postgres image of postgres.image.tag (cd.yml scans it with the app's).
 postgres-sbom: ## CycloneDX SBOM of the Postgres image postgres.image.tag, read from Harbor, into SBOM
@@ -180,6 +188,7 @@ ENV_REV     = $(shell sha256sum < $(ENV)/app.env 2>/dev/null | cut -c1-16)
 REDIS_REV   = $(shell grep -E '^H2_REDIS_PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
 HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 	--set image.repository=$(IMAGE) --set image.tag=$(TAG) --set backoffice.image.repository=$(BO_IMAGE) \
+	--set web.image.repository=$(WEB_IMAGE) \
 	--set envSecret.name=$(ENV_SECRET) --set envSecret.revision=$(ENV_REV) --set envSecret.redisPasswordRevision=$(REDIS_REV)
 
 # CI runs this on every pull request; no cluster needed. Each environment's values (and prod with the
@@ -188,7 +197,7 @@ HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 # PrometheusRule is checked against its CRD schema from the CRDs-catalog, pinned to a commit, and must hold the
 # alerts of deploy/monitoring/helper2-rules.yaml (read through the chart's files/ symlink).
 CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47aba8d61919d4419dd38301536e32a94b/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
-chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service on the back office, ingress-nginx on 8080; PrometheusRule = rule file; the backup verifies its dump; the chart renders no Secret; app.env checks
+chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service on the back office, ingress-nginx on 8080; the public pod's shell from the web image; PrometheusRule = rule file; the backup verifies its dump; the chart renders no Secret; app.env checks
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
@@ -242,7 +251,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	grep -qE '^      terminationGracePeriodSeconds: 28$$' <<< "$$grace" || { echo "grace period must be preStopSeconds + drainSeconds + 5"; exit 1; }; \
 	echo "== every image but the apps' is pinned by digest (ADR 0046); postgres once postgres.image.digest is set"; \
 	imgs=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
-		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice)?:' | sort -u); \
+		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice|-web)?:' | sort -u); \
 	test -n "$$imgs" || { echo "no images rendered"; exit 1; }; \
 	if grep -v '@sha256:[0-9a-f]\{64\}' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
 	echo "== redis.auth.existingSecret: redis.auth.revision restarts Redis and the app; without it, no revision annotation"; \
@@ -255,7 +264,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	if "$${r[@]}" | grep -q 'checksum/redis-auth-revision'; then echo "chart-managed password: no revision annotation expected"; exit 1; fi; \
 	if "$${r[@]}" --set redis.auth.existingSecret=redis-auth --set redis.auth.revision=v2 >/dev/null 2>&1; then \
 		echo "redis.auth.revision=v2 must fail the render"; exit 1; fi; \
-	echo "== edge (ADR 0035, 0069): Service helper2-admin selects the back office; ingress-nginx reaches both apps on 8080 only"; \
+	echo "== edge (ADR 0035, 0069): Service helper2-admin selects the back office; ingress-nginx reaches the three workloads on 8080 only; the web pods take nothing else"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000); \
 		app=$$("$${r[@]}" --show-only templates/app.yaml); bo=$$("$${r[@]}" --show-only templates/backoffice.yaml); \
@@ -264,9 +273,20 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 			|| { echo "$$e: Service helper2-admin does not select the back office"; exit 1; }; \
 		if grep -qE 'H2_ADMIN_PORT|name: admin }|H2_SCOUT_' <<< "$$app"; then echo "$$e: the public app opens an admin port or runs the Scout"; exit 1; fi; \
 		grep -q 'name: H2_SCOUT_ENABLED' <<< "$$bo" || { echo "$$e: the back office has no Scout settings"; exit 1; }; \
-		[ "$$(grep -A5 'kubernetes.io/metadata.name: ingress-nginx' <<< "$$np" | grep -c 'ports: \[{ port: 8080, protocol: TCP }\]')" -eq 2 ] \
-			|| { echo "$$e: ingress-nginx must reach both apps on 8080 only"; exit 1; }; \
+		[ "$$(grep -A5 'kubernetes.io/metadata.name: ingress-nginx' <<< "$$np" | grep -c 'ports: \[{ port: 8080, protocol: TCP }\]')" -eq 3 ] \
+			|| { echo "$$e: ingress-nginx must reach the web pods and both apps on 8080 only"; exit 1; }; \
+		web=$$(awk '/^  name: ingress-web$$/ {p=1} p && /^---/ {exit} p' <<< "$$np"); \
+		grep -q 'podSelector: { matchLabels: { app: helper2-web } }' <<< "$$web" && [ "$$(grep -c 'port:' <<< "$$web")" -eq 1 ] \
+			|| { echo "$$e: NetworkPolicy ingress-web must let in 8080 only"; exit 1; }; \
 	done; \
+	echo "== web (ADR 0069): the public pod copies its shell from the web image the web pods run, into a read-only /shell"; \
+	r=(helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set web.image.repository=reg/helper2-web --set web.image.tag=111111111111); \
+	web=$$(helm template "$${r[@]}" --show-only templates/web.yaml | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
+	init=$$(helm template "$${r[@]}" --show-only templates/app.yaml | awk '/initContainers:/ {p=1} /^      containers:/ {p=0} p' | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
+	[ "$$web" = "image: reg/helper2-web:000000000000" ] && [ "$$web" = "$$init" ] \
+		|| { echo "the web pods ($$web) and the init container ($$init) must both run the web image tagged image.tag"; exit 1; }; \
+	app=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/app.yaml); \
+	grep -qF '{ name: shell, mountPath: /shell, readOnly: true }' <<< "$$app" || { echo "the app must mount /shell read-only"; exit 1; }; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
 	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set monitoring.prometheusRule.enabled=true --show-only templates/prometheusrule.yaml); \

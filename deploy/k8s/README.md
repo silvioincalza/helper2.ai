@@ -24,18 +24,22 @@ REGISTRY=ghcr.io/<owner>
 TAG=$(git rev-parse --short=12 HEAD)
 PG_TAG=18.6-pgvector0.8.6-5  # postgres.image.tag in the chart's values.yaml
 
+podman build --platform linux/amd64 -f deploy/web.Dockerfile -t $REGISTRY/helper2-web:$TAG .
 podman build --platform linux/amd64 -f deploy/Dockerfile -t $REGISTRY/helper2:$TAG .
 podman build --platform linux/amd64 -f deploy/backoffice.Dockerfile -t $REGISTRY/helper2-backoffice:$TAG .
 podman build --platform linux/amd64 -t $REGISTRY/helper2-postgres:$PG_TAG deploy/postgres
+podman push $REGISTRY/helper2-web:$TAG
 podman push $REGISTRY/helper2:$TAG
 podman push $REGISTRY/helper2-backoffice:$TAG
 podman push $REGISTRY/helper2-postgres:$PG_TAG
 ```
 
-Two app images, one tag ([ADR 0069](../../docs/adr/operations/0069-three-deployables.md)): `helper2` is the
-public app (search, guide, the pages, sign-in for users), `helper2-backoffice` the back office (admin, Scout,
-collectors, enrichment). Both use the same database, Redis and app.env. Docker works the same way. Tags are
-never rebuilt or moved: one commit, one image.
+Three images, one tag ([ADR 0069](../../docs/adr/operations/0069-three-deployables.md)): `helper2-web` holds the
+public web app's files (nginx) and the HTML shell, `helper2` is the public app (search, guide, the pages, sign-in
+for users), `helper2-backoffice` the back office (admin, Scout, collectors, enrichment). Each public pod copies the
+shell from `helper2-web` of the same tag when it starts, so build and push all three. Both apps use the same
+database, Redis and app.env; the web pods use none of them. Docker works the same way. Tags are never rebuilt or
+moved: one commit, one image.
 
 ## 2. Configure
 
@@ -67,6 +71,9 @@ app:
   environment: prod            # tag on metrics and spans
 image:
   repository: ghcr.io/<owner>/helper2
+web:
+  image:
+    repository: ghcr.io/<owner>/helper2-web          # always tagged image.tag, like the public app
 backoffice:
   image:
     repository: ghcr.io/<owner>/helper2-backoffice   # its tag is image.tag unless you set backoffice.image.tag
@@ -100,7 +107,19 @@ kubectl -n helper2 port-forward deploy/helper2 8081 &
 curl -s localhost:8081/actuator/health/readiness    # {"status":"UP"}
 ```
 
-Route your host to the Service `helper2`, port 80, for example:
+Route your host to two Services, both on port 80: exactly these three paths to `helper2-web`, and everything
+else to `helper2`.
+
+| Path | Path type | Service |
+|---|---|---|
+| `/assets/` | `Prefix` | `helper2-web` |
+| `/theme.js` | `Exact` | `helper2-web` |
+| `/favicon.svg` | `Exact` | `helper2-web` |
+| `/` | `Prefix` | `helper2` |
+
+The public app serves no web files, and the web pods answer 404 for anything else. A new file in
+`frontend/public` needs a new route here and in `deploy/web/nginx.conf` (the image build stops until both are
+there). For example:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -113,6 +132,9 @@ spec:
     - host: helper2.example.com
       http:
         paths:
+          - { path: /assets/, pathType: Prefix, backend: { service: { name: helper2-web, port: { number: 80 } } } }
+          - { path: /theme.js, pathType: Exact, backend: { service: { name: helper2-web, port: { number: 80 } } } }
+          - { path: /favicon.svg, pathType: Exact, backend: { service: { name: helper2-web, port: { number: 80 } } } }
           - { path: /, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
 ```
 
@@ -136,19 +158,19 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 |---|---|
 | Traces (OTLP/HTTP) | `app.tracing.export: true`, `app.tracing.endpoint`, `networkPolicy.egress.otlp.namespace` of the collector |
 | Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
-| Replicas | `app.replicas` (public app, default 3), `backoffice.replicas` (default 1) |
+| Replicas | `app.replicas` (public app, default 3), `backoffice.replicas` (default 1), `web.replicas` (default 2) |
 | Scout | `backoffice.scoutEnabled`, `backoffice.scoutCron`, `backoffice.scoutMaxEnrichments` |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |
 
-The network policy lets only the Ingress controller (`networkPolicy.ingressController`) reach the two apps,
-on port 8080. Without it, no visitor reaches the app. The app trusts `X-Forwarded-For` from
+The network policy lets only the Ingress controller (`networkPolicy.ingressController`) reach the web pods and
+the two apps, on port 8080. Without it, no visitor reaches the app. The app trusts `X-Forwarded-For` from
 that edge for its per-client rate limits.
 
 ## Operations
 
-The public app runs `app.replicas` replicas and the back office `backoffice.replicas`, each replaced one at
-a time on upgrade, with a PodDisruptionBudget when there is more than one replica. Every scheduled job runs
+The web pods run `web.replicas` replicas, the public app `app.replicas` and the back office
+`backoffice.replicas`, each replaced one at a time on upgrade, with a PodDisruptionBudget when there is more than one replica. Every scheduled job runs
 in one of the two apps: the Scout, the collectors, the embedding indexer and the catalog jobs in the back
 office, the guide, account and search retention in the public app. Each runs on one replica at a time (lock
 table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. What is still per replica:

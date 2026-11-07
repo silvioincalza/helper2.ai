@@ -101,7 +101,7 @@ jobs:
           fi
           notes=$(mktemp)
           git tag -l --format='%(contents)' "$TAG" > "$notes"
-          printf '\nImages (commit `%s`):\n- `harbor-i.infra.incalza.me/helper2/apps/helper2:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice:%s`\n' "${SHA::12}" "${TAG#v}" "${TAG#v}" >> "$notes"
+          printf '\nImages (commit `%s`):\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-web:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice:%s`\n' "${SHA::12}" "${TAG#v}" "${TAG#v}" "${TAG#v}" >> "$notes"
           gh release create "$TAG" --verify-tag --title "$TAG" --notes-file "$notes"
 
   # The release commit must have reached staging: its CD run (push to main) finished with success, so its
@@ -185,6 +185,13 @@ jobs:
             gh release upload "$TAG" "$dir/helper2-backoffice-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
           else
             echo "::warning::CD run $RUN has no back office SBOM: release $TAG has the public app's only"
+          fi
+          # The web image's SBOM (ADR 0069); a CD run before the web image has none.
+          if gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n sbom-web -D "$dir"; then
+            mv "$dir/sbom-web.cdx.json" "$dir/helper2-web-$TAG.cdx.json"
+            gh release upload "$TAG" "$dir/helper2-web-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "::warning::CD run $RUN has no web SBOM: release $TAG has none for the web image"
           fi
 
   # Only after every check above: the image of that commit, built by CD (and, from main, run on staging), goes to

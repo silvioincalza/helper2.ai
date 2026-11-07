@@ -13,15 +13,16 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    (`helper2-<env>`, Pod Security `restricted` enforced), Domain Name System (DNS) records, the Cloudflare tunnel, ingress-nginx and the Ingresses, and the
    `deployer` ServiceAccount and Role. The Helm chart `deploy/helm/helper2` owns the workloads: one release
    `helper2` per namespace, values `values-staging.yaml` / `values-prod.yaml`. The chart creates no Ingress.
-2. **Workloads.** `helper2` Deployment, `postgres` StatefulSet
+2. **Workloads.** `helper2-web`, `helper2` and `helper2-backoffice` Deployments, `postgres` StatefulSet
    (5 Gi `local-path` volume), `redis` StatefulSet (1 Gi `local-path` volume for its append-only file),
    and in prod the `pg-backup` CronJob. Both stateful workloads run one replica on a ReadWriteOnce volume from
    `volumeClaimTemplates`, with `fsGroup` so the non-root user can write it. Every container runs as non-root with
    a read-only root file system, no capabilities and the `RuntimeDefault` seccomp profile. Every pod runs as the ServiceAccount `helper2`, which has no RoleBinding,
    with `automountServiceAccountToken: false`: no workload calls the Kubernetes API, so no pod holds a token.
-3. **App replicas.** Two workloads ([0069](0069-three-deployables.md)): the public app (`helper2`, `app.replicas`: 3 on
-   prod, 1 on staging) and the back office (`helper2-backoffice`, `backoffice.replicas`, 1 by default, its own image
-   repository and resources; the tag defaults to `image.tag`). `RollingUpdate` with `maxUnavailable: 0` and
+3. **App replicas.** Three workloads ([0069](0069-three-deployables.md)): the web image (`helper2-web`, `web.replicas`:
+   2 on prod, 1 on staging; nginx, a 10 s `preStop` sleep and 15 s of grace), the public app (`helper2`, `app.replicas`:
+   3 on prod, 1 on staging) and the back office (`helper2-backoffice`, `backoffice.replicas`, 1 by default). Each has
+   its own image repository and resources; the web and back office tags default to `image.tag`. `RollingUpdate` with `maxUnavailable: 0` and
    `maxSurge: 1`: one new pod at a time, and an old pod goes only when the new one is ready. Topology spread over
    `kubernetes.io/hostname` (`ScheduleAnyway`). Above 1 replica a PodDisruptionBudget keeps `replicas - 1` available
    during node drains. A pod that leaves first sleeps 10 s in `preStop` (native `sleep` action, Kubernetes 1.30 and
@@ -36,16 +37,17 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    Role (incalza-me-infra) must allow PodDisruptionBudgets.
 4. **Edge.** The public names (`helper2.ai`, `www.helper2.ai`, `helper2.incalza.me`) are proxied by Cloudflare,
    which terminates Transport Layer Security (TLS) and sends the traffic through the platform's tunnel to
-   ingress-nginx (namespace `ingress-nginx`). The Ingress `helper2-public` routes them to the Service `helper2`,
-   port 80; on prod it also redirects `www.helper2.ai` to the apex (301, path and query kept). The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx;
+   ingress-nginx (namespace `ingress-nginx`). The Ingress `helper2-public` routes `/assets/` (prefix), `/theme.js`
+   and `/favicon.svg` (exact) to the Service `helper2-web` and everything else to the Service `helper2`, port 80; on prod it also redirects `www.helper2.ai` to the apex (301, path and query kept). The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx;
    the Ingress `helper2-admin` routes them, from the in-network ranges only, to the Service `helper2-admin`
    ([0035](../edge/0035-admin-host.md)). From ingress-nginx to the app the traffic is plain Hypertext Transfer
-   Protocol (HTTP). On any other cluster, your own Ingress or route targets the same two Services.
+   Protocol (HTTP). On any other cluster, your own Ingress or route targets the same three Services.
    Platform settings (registry, storage classes, Ingress controller, tracing, scraper) are values, set for the
    hosted environments in `values-<env>.yaml` ([deploy/k8s/README.md](../../../deploy/k8s/README.md)).
-5. **Ports.** Each app serves on 8080: the public app behind the Service `helper2`, the back office behind the Service
-   `helper2-admin` ([0035](../edge/0035-admin-host.md)). Actuator is on 8081 (`H2_MANAGEMENT_PORT`) in both.
-   Probes and the Prometheus scrape use 8081. No Service routes 8081; only the admin names reach the back office.
+5. **Ports.** Each workload serves on 8080: the web files behind the Service `helper2-web`, the public app behind the
+   Service `helper2`, the back office behind the Service `helper2-admin` ([0035](../edge/0035-admin-host.md)). Actuator
+   is on 8081 (`H2_MANAGEMENT_PORT`) in both apps; the web pods answer `/healthz` on 8081. Probes and the Prometheus
+   scrape use 8081. No Service routes 8081; only the admin names reach the back office.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
    every 10 s. Postgres and Redis have a liveness probe too (`pg_isready`; `redis-cli ping`, where LOADING
    counts as alive): two minutes without an answer (6 × 20 s) restarts a hung server. Postgres gets a startup
@@ -56,6 +58,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    - public app (`ingress-app`) and back office (`ingress-backoffice`): the Ingress controller's pods
      (`networkPolicy.ingressController`: namespace `ingress-nginx`, label `app.kubernetes.io/name=ingress-nginx`) on
      8080; namespace `observability` on 8081;
+   - web pods (`ingress-web`): the Ingress controller's pods on 8080, nothing else;
    - Postgres (`ingress-postgres`): both apps and `pg-backup` on 5432;
    - Redis (`ingress-redis`): both apps on 6379;
    - `pg-backup`: nothing.
@@ -64,7 +67,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    - both apps (`egress-app`): DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318), and the
      internet on 443 only, with the private ranges excluded;
    - `pg-backup`: DNS, Postgres, and 443 only when `backup.offsite` is on;
-   - Postgres and Redis: nothing.
+   - the web pods, Postgres and Redis: nothing.
 7. **Redis auth.** `redis.auth.enabled: true`. The password is `H2_REDIS_PASSWORD` from `helper2-app-env` (or
    `existingSecret`); it reaches `redis-server` as `requirepass` on standard input, never in the command line.
    Redis is a single-replica StatefulSet with an append-only file on its own PersistentVolumeClaim

@@ -1,8 +1,8 @@
 # Flowchart: which app answers a request, which one runs a job, and what a change rebuilds (ADR 0069).
 # Source of truth: backend/settings.gradle.kts, backend/apps/public, backend/apps/backoffice, backend/apps/common-web,
-#   backend/libs/*, api/common.yaml, api/public.yaml, api/admin.yaml, deploy/Dockerfile, deploy/backoffice.Dockerfile,
-#   deploy/helm/helper2/templates/ (app.yaml, backoffice.yaml), the SchedulesIT of each app,
-#   the platform repo (Ingresses), outside this repo. The web image is the next step (roadmap).
+#   backend/libs/*, api/common.yaml, api/public.yaml, api/admin.yaml, deploy/web.Dockerfile, deploy/web/nginx.conf,
+#   deploy/Dockerfile, deploy/backoffice.Dockerfile, deploy/helm/helper2/templates/ (web.yaml, app.yaml, backoffice.yaml),
+#   the SchedulesIT of each app, the platform repo (Ingresses), outside this repo.
 # Render: cd docs/diagrams && d2 fmt flow-0069-three-deployables.d2 && d2 flow-0069-three-deployables.d2 flow-0069-three-deployables.svg
 
 ...@style
@@ -17,15 +17,19 @@ edge: Network edge {
   host: "Which host?" {class: decision}
   vpn: "Client in a\nprivate range?" {class: decision}
   e403: "403 from ingress-nginx" {class: fail}
+  path: "Path /assets/…, /theme.js\nor /favicon.svg?" {class: decision}
   host -> vpn: "admin host"
   vpn -> e403: no
+  host -> path: "public host"
 }
 
-public: "public app\nsearch, guide, setup, pages,\nsign-in, saved items, the SPA\n(web image: next step)" {class: app}
+web: "web pods (nginx)\nthe public web app's files;\nanything else: 404" {class: app}
+public: "public app\nsearch, guide, setup, pages\n(the shell from the web image\nof the same tag), sign-in, saved items" {class: app}
 bo: "back office app\nadmin API, admin web app,\nScout, collectors, enrichment" {class: app}
 
 req -> edge.host
-edge.host -> public: "public host\n(Service helper2)" {class: hot}
+edge.path -> web: "yes\n(Service helper2-web)" {class: hot}
+edge.path -> public: "no\n(Service helper2)" {class: hot}
 edge.vpn -> bo: "yes\n(Service helper2-admin)"
 
 jobs: Scheduled jobs {
@@ -44,9 +48,11 @@ build: What a change builds {
   class: group
   direction: down
   change: "What changed?" {class: decision}
+  bweb: "web image\n(deploy/web.Dockerfile)" {class: app}
   bpub: "public image\n(deploy/Dockerfile)" {class: app}
   bbo: "back office image\n(deploy/backoffice.Dockerfile)" {class: app}
-  change -> bpub: "apps/public,\napi/public.yaml, frontend/"
+  change -> bweb: "frontend/, api/public.yaml,\ndeploy/web/"
+  change -> bpub: "apps/public,\napi/public.yaml"
   change -> bbo: "apps/backoffice,\napi/admin.yaml, frontend/ (admin)"
   change -> bpub: "libs/*, apps/common-web,\napi/common.yaml"
   change -> bbo: "libs/*, apps/common-web,\napi/common.yaml"

@@ -14,9 +14,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * The built app shell (index.html), read once at start-up and cut where the pages write (ADR 0050
- * §1). Without a built app (development: Vite serves the UI) there is no template and the pages are
- * not served. A built app without the markers stops the start-up: the pages would silently lose
- * their head.
+ * §1). In the cluster it is the web image's shell of the same version, copied into the pod by an
+ * init container (ADR 0069). Without a shell (development: Vite serves the UI) there is no template
+ * and the pages are not served. A shell without the markers stops the start-up: the pages would
+ * silently lose their head.
  */
 @Component
 public class PageTemplate {

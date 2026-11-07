@@ -1,11 +1,13 @@
 # Generic defaults for any Kubernetes cluster. Per environment: a values file of your own
 # (values-staging.yaml and values-prod.yaml are the hosted helper2.ai environments).
-# Required: image.repository, image.tag, backoffice.image.repository, postgres.image.repository and the env Secret
-# (envSecret). Two workloads (ADR 0069): the public app (Deployment and Service `helper2`) and the back office
-# (Deployment `helper2-backoffice`, Service `helper2-admin`).
-# The chart creates no Ingress. Expose the app with your own Ingress or route: the public host to the Service
-# `helper2` (port 80), and an in-network host for the back office to the Service `helper2-admin` (port 80).
-# Then set networkPolicy.ingressController, so the controller's pods may reach the app.
+# Required: image.repository, image.tag, backoffice.image.repository, web.image.repository,
+# postgres.image.repository and the env Secret (envSecret). Three workloads (ADR 0069): the web image (Deployment and
+# Service `helper2-web`), the public app (Deployment and Service `helper2`) and the back office (Deployment
+# `helper2-backoffice`, Service `helper2-admin`).
+# The chart creates no Ingress. Expose the app with your own Ingress or route. On the public host: /assets/ (prefix),
+# /theme.js and /favicon.svg (exact) to the Service `helper2-web` (port 80), everything else to the Service `helper2`
+# (port 80). An in-network host for the back office to the Service `helper2-admin` (port 80). Then set
+# networkPolicy.ingressController, so the controller's pods may reach the apps (deploy/k8s/README.md).
 #
 # Object names are fixed (helper2, postgres, redis, ...), not prefixed with the release name: one
 # release per namespace, and the names had to stay identical when Helm adopted the kustomize objects.
@@ -139,6 +141,24 @@ backoffice:
     requests: { cpu: 250m, memory: 768Mi }
     limits: { memory: 1Gi }
 
+# The web image (ADR 0069): the built public web app, static files only, served by nginx (deploy/web.Dockerfile). The
+# public pod copies its shell (index.html) from the same image and tag at start (init container), so the pages and the
+# files they name are always of one version.
+web:
+  image:
+    # Your registry, e.g. ghcr.io/<owner>/helper2-web (image built from deploy/web.Dockerfile). Required.
+    repository: ""
+    # No tag of its own: always image.tag, so the shell the public pod copies and the files the web pods serve are of
+    # the public app's version (the public app nonces every script in the shell).
+  # nginx serves small files from memory and disk: two replicas keep the site's scripts up through a node drain.
+  # Above 1: a PodDisruptionBudget keeps replicas - 1 available.
+  replicas: 2
+  # The pod keeps serving while the Service endpoints and the Ingress controller drop it (ADR 0027).
+  preStopSeconds: 10
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 64Mi }
+
 postgres:
   # postgres:18.6-alpine plus pgvector (deploy/postgres/Dockerfile), pushed to your registry. A pushed
   # tag is never rebuilt, so any change under deploy/postgres needs a new tag (CI checks this on PRs).
@@ -185,13 +205,13 @@ redis:
     limits: { memory: 192Mi }
 
 # templates/networkpolicy.yaml: ingress and egress denied for every pod in the namespace, then allowed
-# per workload. Ingress: app <- the Ingress controller on 8080 and the admin port, the metrics scraper on 8081;
-# postgres <- app and pg-backup; redis <- app; pg-backup: nothing. Egress: app -> DNS, postgres, redis, the
-# OTLP collector, HTTPS to `external`; pg-backup -> DNS, postgres, HTTPS to `external` when backup.offsite
-# is on; postgres and redis: nothing.
+# per workload. Ingress: both apps <- the Ingress controller on 8080, the metrics scraper on 8081; helper2-web <- the
+# Ingress controller on 8080; postgres <- both apps and pg-backup; redis <- both apps; pg-backup: nothing. Egress: both
+# apps -> DNS, postgres, redis, the OTLP collector, HTTPS to `external`; pg-backup -> DNS, postgres, HTTPS to
+# `external` when backup.offsite is on; helper2-web, postgres and redis: nothing.
 networkPolicy:
-  # The Ingress controller that serves your routes to the Services helper2 and helper2-admin. Its pods may reach
-  # both apps on 8080. Required to reach the app at all: empty namespace = no edge traffic.
+  # The Ingress controller that serves your routes to the Services helper2-web, helper2 and helper2-admin. Its pods
+  # may reach the three workloads on 8080. Required to reach the app at all: empty namespace = no edge traffic.
   ingressController:
     namespace: ""
     # Optional pod labels that narrow the controller pods in that namespace, e.g. app.kubernetes.io/name: ingress-nginx.
