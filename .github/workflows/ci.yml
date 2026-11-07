@@ -73,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-test-reports
-          path: backend/build/reports/tests/
+          path: backend/**/build/reports/tests/
           retention-days: 7
 
   # No image is built here: pull requests stay light. CD builds, pushes and scans the images on main (cd.yml, ADR 0046).

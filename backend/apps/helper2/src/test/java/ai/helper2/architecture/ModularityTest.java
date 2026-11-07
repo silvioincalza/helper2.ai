@@ -4,6 +4,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.Helper2Application;
+import ai.helper2.testing.BackendSources;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -186,7 +187,7 @@ class ModularityTest {
   @Test
   void tablesHaveOneOwner() throws IOException {
     Set<String> tables = new TreeSet<>();
-    try (Stream<Path> migrations = Files.list(Path.of("src/main/resources/db/migration"))) {
+    try (Stream<Path> migrations = Files.list(BackendSources.MIGRATIONS)) {
       for (Path migration :
           migrations
               .filter(m -> m.getFileName().toString().matches("V\\d+__.*\\.sql"))
@@ -210,7 +211,10 @@ class ModularityTest {
 
     List<String> foreign = new ArrayList<>();
     for (Path root :
-        List.of(Path.of("src/main/java/ai/helper2"), Path.of("src/main/kotlin/ai/helper2"))) {
+        BackendSources.mainSourceRoots().stream()
+            .map(sources -> sources.resolve("ai/helper2"))
+            .filter(Files::isDirectory)
+            .toList()) {
       try (Stream<Path> files = Files.walk(root)) {
         files
             .filter(Files::isRegularFile)

@@ -2,6 +2,7 @@ package ai.helper2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.testing.BackendSources;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -20,7 +21,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
  */
 class DiscoveryCategoriesMigrationTest {
 
-  static final Path V9 = Path.of("src/main/resources/db/migration/V9__discovery_categories.sql");
+  static final Path V9 = BackendSources.migration("V9__discovery_categories.sql");
 
   static DriverManagerDataSource dataSource;
   static JdbcClient jdbc;

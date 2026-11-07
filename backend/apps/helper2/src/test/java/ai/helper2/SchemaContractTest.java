@@ -19,6 +19,7 @@ import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.TechLevel;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+import ai.helper2.testing.BackendSources;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -49,7 +50,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
  */
 class SchemaContractTest {
 
-  static final Path SCHEMA = Path.of("src/main/resources/db/migration/V1__schema.sql");
+  static final Path SCHEMA = BackendSources.migration("V1__schema.sql");
 
   /** Tables a library owns: their columns are read by the library, not by our code. */
   static final Set<String> LIBRARY_TABLES = Set.of("flyway_schema_history", "shedlock");
@@ -231,8 +232,7 @@ class SchemaContractTest {
   void everyTableAndColumnIsUsedByTheCode() throws IOException {
     String code;
     try (Stream<Path> files =
-        Stream.concat(
-            Files.walk(Path.of("src/main/java")), Files.walk(Path.of("src/main/kotlin")))) {
+        BackendSources.mainSourceRoots().stream().flatMap(SchemaContractTest::walk)) {
       code =
           files
               .filter(Files::isRegularFile)
@@ -256,6 +256,14 @@ class SchemaContractTest {
                     .anyMatch(name -> !Pattern.compile("\\b" + name + "\\b").matcher(code).find()))
             .toList();
     assertThat(unused).isEmpty();
+  }
+
+  private static Stream<Path> walk(Path root) {
+    try {
+      return Files.walk(root);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private static String read(Path file) {
