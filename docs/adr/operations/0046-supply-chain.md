@@ -32,6 +32,10 @@ CI secrets (CVE-2026-33634).
    Then the `scan` job in `cd.yml` fails on a Critical finding that has a fix (`--fail-on critical --only-fixed`)
    and becomes a need of the staging deploy, so such an image never reaches staging, and so never prod.
 5. **Exceptions** live in `.grype.yaml`, empty today: each one names the vulnerability, the reason and a review date.
+6. **Signatures.** Every image CD pushes, and the Postgres image, is signed by digest with a key in OpenBao Transit,
+   and a deploy runs only images whose signature it checked, pinned by digest
+   ([0071](0071-ci-cd-per-component-and-image-signing.md)). An image CD did not change keeps its digest, its
+   signature and its SBOM.
 
 No runtime path: this decision runs in CI only, so it has no sequence diagram.
 
@@ -66,4 +70,5 @@ No runtime path: this decision runs in CI only, so it has no sequence diagram.
 
 ## Roadmap
 - [Fail the `scan` job in `cd.yml` on a Critical finding with a fix, from 18 Nov 2026](../../roadmap.md#2-operations).
+- Signature check in the cluster as well (admission controller, infra side): [roadmap](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

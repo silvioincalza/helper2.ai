@@ -91,6 +91,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0068](../adr/foundation/0068-backend-libraries-and-apps.md) | [flow](flow-0068-backend-libraries-and-apps.svg) | — (build only, no runtime path) | where a piece of backend code goes (an app or a library), and the build checks that keep the direction. |
 | [0069](../adr/operations/0069-three-deployables.md) | [flow](flow-0069-three-deployables.svg) | [sequence](sequence-0069-three-deployables.svg) | which workload answers a request (the web files by path) and which app runs a job, what a change rebuilds, the public pod's shell from the web image; a public page, an admin write and a Scout run end to end. |
 | [0070](../adr/operations/0070-app-roles.md) | [flow](flow-0070-app-roles.svg) | [sequence](sequence-0070-app-roles.svg) | who migrates (the migrate Job, as the owner), how an app waits for the schema, and what each app's role and Redis user reach; a deploy with a new migration from app.env to both apps serving. |
+| [0071](../adr/operations/0071-ci-cd-per-component-and-image-signing.md) | [flow](flow-0071-ci-cd-per-component-and-image-signing.svg) | [sequence](sequence-0071-ci-cd-per-component-and-image-signing.svg) | which CI jobs and image builds a change runs, an unchanged image tagged on its digest, signing with the OpenBao Transit key, the check before a deploy; a web-only push from build to the staging deploy by digest. |
 
 ## Colors
 

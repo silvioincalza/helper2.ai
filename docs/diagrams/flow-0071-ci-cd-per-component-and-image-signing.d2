@@ -1,0 +1,100 @@
+# Flowchart: what a change runs and builds, how each image is signed, and the check before a deploy (ADR 0071).
+# Source of truth: .github/scripts/changes.sh (the map), .github/workflows/ci.yml (changes, ci-ok), cd.yml (image),
+#   deploy.yml (Resolve tag), deploy/k8s/Makefile (ci-images, image, postgres-image, sign, sign-existing, verify-images,
+#   verified, HELM_ARGS),
+#   deploy/helm/helper2/templates/_helpers.tpl (helper2.atDigest).
+# Render: cd docs/diagrams && d2 fmt flow-0071-ci-cd-per-component-and-image-signing.d2 && d2 flow-0071-ci-cd-per-component-and-image-signing.d2 flow-0071-ci-cd-per-component-and-image-signing.svg
+
+...@style
+
+direction: down
+
+pr: "Pull request" {class: end}
+push: "Push to main or release/*" {class: end}
+deployrun: "deploy.yml (staging, prod,\nmanual run)" {class: end}
+
+map: "changes.sh: changed paths\n(first match wins)" {class: app}
+known: "Path in the map?" {class: decision}
+all: "Everything" {class: app}
+
+ci: ci.yml on a pull request {
+  class: group
+  grid-columns: 3
+  frontend: "frontend/ →\nfrontend job" {class: app}
+  backend: "backend/apps/*, docs/eval →\nbackend job" {class: app}
+  chart: "deploy/helm, k8s, grafana,\nmonitoring, postgres →\nchart (+ monitoring, tag check)" {class: app}
+  docs: "docs/, *.md →\ndiagrams only" {class: app}
+  skip: "Part unchanged →\njob skipped" {class: config}
+  ok: "ci-ok: a job failed\nor was cancelled?" {class: decision}
+}
+red: "Check red" {class: fail}
+green: "Check green\n(skipped is fine)" {class: end}
+
+cd: cd.yml image job (self-hosted) {
+  class: group
+  direction: down
+  rerun: "TAG in Harbor already\n(a rerun)?" {class: decision}
+  rerunok: "Signed by our key?" {class: decision}
+  rerunfail: "Run fails: never signed by CD\n(make sign-existing by hand)" {class: fail}
+  each: "For web, public, back office:\nchanged since the commit before?" {class: decision}
+  build: "make image: build from git archive,\npush TAG, digest of the push → PUSHED" {class: data}
+  from: "Image of the commit before\nin Harbor and signed by our key?" {class: decision}
+  carry: "Harbor API: add TAG\nto that image (same digest)" {class: data}
+  sign: "make sign: cosign sign exactly\nthe digests in PUSHED\n(hashivault://helper2-images)" {class: data}
+  check: "Every image of TAG\nand Postgres verifies?" {class: decision}
+  fail: "Run fails (an image pushed before\nsigning: make sign-existing by hand)" {class: fail}
+  revoke: "bao token revoke -self;\nSBOM uploads" {class: app}
+
+  rerun -> rerunok: yes
+  rerun -> each: no
+  rerunok -> rerunfail: no
+  rerunok -> check: yes
+  each -> build: yes {class: hot}
+  each -> from: no
+  from -> carry: yes
+  from -> build: "no (not signed, not there,\nor a new branch)"
+  build -> sign: {class: hot}
+  carry -> check
+  sign -> check: {class: hot}
+  check -> fail: no
+  check -> revoke: yes {class: hot}
+}
+
+verify: Before the deploy (deploy.yml, this commit's Makefile) {
+  class: group
+  direction: down
+  digest: "make verify-images: digest of each\nimage of the tag and of Postgres\n(Harbor, pull-only robot)" {class: app}
+  valid: "cosign verify --key cosign.pub:\nevery digest valid?" {class: decision}
+  stop: "Deploy stops\n(nothing changes in the cluster)" {class: fail}
+  checkout: "git checkout <commit>:\nits Makefile pins digests?" {class: decision}
+  old: "Only with rollback: true\n(Helm by tag)" {class: config}
+  again: "make diff, make deploy run\nmake verified again: digests\nonly from that check, bound to TAG" {class: app}
+  helm: "Helm with\nrepository:tag@sha256:<digest>" {class: app}
+  digest -> valid
+  valid -> stop: no
+  valid -> checkout: yes {class: hot}
+  checkout -> old: no
+  checkout -> again: yes {class: hot}
+  again -> helm: {class: hot}
+}
+
+pr -> map: {class: hot}
+push -> map: "against github.event.before"
+map -> known
+known -> all: no
+known -> ci.frontend: "yes, PR"
+known -> ci.backend: "yes, PR"
+known -> ci.chart: "yes, PR"
+known -> ci.docs: "yes, PR"
+known -> cd.rerun: "yes, push" {class: hot}
+all -> ci.ok: "PR: every job"
+all -> cd.rerun: "push: build all three"
+ci.frontend -> ci.ok
+ci.backend -> ci.ok
+ci.chart -> ci.ok
+ci.docs -> ci.ok
+ci.skip -> ci.ok
+ci.ok -> red: yes
+ci.ok -> green: no {class: hot}
+deployrun -> verify.digest: {class: hot}
+cd.revoke -> deployrun: "staging (main)" {class: hot}

@@ -34,6 +34,7 @@ backend/**/.settings/
 
 # k8s environment secrets
 deploy/k8s/*/app.env
+deploy/k8s/*/digests.env
 
 # Kotlin compiler daemon data
 .kotlin/

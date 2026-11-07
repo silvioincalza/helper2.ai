@@ -77,14 +77,16 @@ the web app rebuilt and redeployed the backend.
     `/favicon.svg` (exact) to the Service `helper2-web`, everything else to the Service `helper2`. The web pods take
     traffic from the Ingress controller on 8080 only, and reach nothing.
 
-Decided, built later: CI/CD per component (path filters, signing). The two DB roles: [0070](0070-app-roles.md).
+Built later: the two DB roles ([0070](0070-app-roles.md)); CI/CD per component and image signing
+([0071](0071-ci-cd-per-component-and-image-signing.md)).
 
 ## Consequences
 - A Scout change ships without touching the public pods, and a long crawl no longer competes with a visitor's question.
 - The back office is closed by a fourth layer: its code is not in the public image.
 - Two apps share one schema. A migration must keep the running back office working until it is replaced.
 - More to run: three images, three workloads. Still one chart, one database, one Redis.
-- A web app change still deploys all three with one tag; per-component CD comes later (roadmap).
+- A web app change deploys all three with one tag; since [0071](0071-ci-cd-per-component-and-image-signing.md)
+  only the changed images are built, the others get the new tag on their previous digest.
 - Helm rolls the three Deployments at once; the order web, public, back office is not enforced. In practice the web
   pods are ready in seconds and a public pod needs its schema check and Lingua start, so new web pods come first.
 - Known limit (roadmap): during a rollout, a page from an old public pod can name an asset hash that the new web pods
@@ -140,6 +142,5 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change.
 [flow](../../diagrams/flow-0069-three-deployables.svg) · [sequence](../../diagrams/sequence-0069-three-deployables.svg) · [architecture context](../../diagrams/architecture-context.svg) · [infrastructure](../../diagrams/infrastructure.svg)
 
 ## Roadmap
-- [roadmap § 2](../../roadmap.md#2-operations) (the previous release's assets in the web image, DB roles, CI/CD per
-  component, Grafana) and
+- [roadmap § 2](../../roadmap.md#2-operations) (the previous release's assets in the web image, DB roles, Grafana) and
   [§ 9](../../roadmap.md#9-known-limits).

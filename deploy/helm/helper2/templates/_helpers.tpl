@@ -17,24 +17,30 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "credentialsSecret.name is required: the Secret with the database and Redis passwords (make env-secret)" .Values.credentialsSecret.name }}
 {{- end }}
 
+{{/* "@sha256:<hex>" when an image's digest is set, else nothing: the deploy (make verify-images, ADR 0071) pins each
+     image to the digest it checked the signature of, as repository:tag@digest; without one, by tag (local renders). */}}
+{{- define "helper2.atDigest" -}}
+{{- with . }}{{ if not (regexMatch "^sha256:[0-9a-f]{64}$" .) }}{{ fail "an image digest must be sha256:<64 hex>" }}{{ end }}@{{ . }}{{ end }}
+{{- end }}
+
 {{/* The back office's tag: its own, or the public app's, so both deploy the same version by default. */}}
 {{- define "helper2.backofficeTag" -}}
 {{ default .Values.image.tag .Values.backoffice.image.tag }}
 {{- end }}
 
 {{- define "helper2.backofficeImage" -}}
-{{ required "backoffice.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-backoffice)" .Values.backoffice.image.repository }}:{{ required "backoffice.image.tag or image.tag is required" (include "helper2.backofficeTag" .) }}
+{{ required "backoffice.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-backoffice)" .Values.backoffice.image.repository }}:{{ required "backoffice.image.tag or image.tag is required" (include "helper2.backofficeTag" .) }}{{ include "helper2.atDigest" .Values.backoffice.image.digest }}
 {{- end }}
 
 {{/* The web image (ADR 0069): the web Deployment and the public pod's init container both name it through this helper,
      so the shell the public app writes into always comes from the same version as the files the web pods serve. Its
      tag: its own, or the public app's. */}}
 {{- define "helper2.webImage" -}}
-{{ required "web.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-web)" .Values.web.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}
+{{ required "web.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-web)" .Values.web.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}{{ include "helper2.atDigest" .Values.web.image.digest }}
 {{- end }}
 
 {{- define "helper2.image" -}}
-{{ required "image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2)" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}
+{{ required "image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2)" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}{{ include "helper2.atDigest" .Values.image.digest }}
 {{- end }}
 
 {{/* A Redis password as an env var source, by its key (H2_REDIS_PASSWORD for the default user,
@@ -60,8 +66,7 @@ H2_REDIS_{{ trimPrefix "h2_" . | upper }}_PASSWORD
 {{/* repository:tag, or repository:tag@digest when postgres.image.digest pins it. */}}
 {{- define "helper2.postgresImage" -}}
 {{- with .Values.postgres.image -}}
-{{ required "postgres.image.repository is required (Postgres + pgvector built from deploy/postgres)" .repository }}:{{ required "postgres.image.tag" .tag }}
-{{- with .digest }}{{ if not (regexMatch "^sha256:[0-9a-f]{64}$" .) }}{{ fail "postgres.image.digest must be sha256:<64 hex>" }}{{ end }}@{{ . }}{{ end }}
+{{ required "postgres.image.repository is required (Postgres + pgvector built from deploy/postgres)" .repository }}:{{ required "postgres.image.tag" .tag }}{{ include "helper2.atDigest" .digest }}
 {{- end }}
 {{- end }}
 

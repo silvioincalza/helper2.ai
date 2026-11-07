@@ -129,7 +129,7 @@ delivery: "DELIVERY (private network)" {
   class: group
   runner: "Self-hosted GitHub runner\n(one JIT job, no credentials)" {class: app}
   workstation: "Owner workstation\nmake, helm, bao" {class: person}
-  openbao: "OpenBao\nhelper2/kv: ci/<env>, ci/harbor, backup/r2\nhelper2/jwt: GitHub OIDC roles" {
+  openbao: "OpenBao\nhelper2/kv: ci/<env>, ci/harbor, ci/harbor-pull, backup/r2\nhelper2/jwt: GitHub OIDC roles\nhelper2/transit: helper2-images (signing key)" {
     shape: cylinder
     class: data
   }
@@ -137,8 +137,8 @@ delivery: "DELIVERY (private network)" {
     shape: cylinder
     class: data
   }
-  runner -> openbao: "OIDC login, kv get"
-  runner -> harbor: "push image"
+  runner -> openbao: "OIDC login, kv get,\nTransit sign (CD only)"
+  runner -> harbor: "push image and signature;\ncheck signatures before a deploy"
   workstation -> openbao: "make credentials"
 }
 

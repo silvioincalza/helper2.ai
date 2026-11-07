@@ -260,3 +260,15 @@ helper2.ai runs on this chart with [`values-staging.yaml`](../helm/helper2/value
 For the nightly guide evaluation, `values-staging.yaml` keeps guide answers one second (`app.guideCacheTtl`) and caps
 guide model calls at 300 a day (`app.dailyLimits.guideModelCalls`: a run and checks by hand)
 ([ADR 0030](../../docs/adr/quality/0030-guide-evaluation.md)); prod keeps the defaults.
+
+The hosted images are signed with a key in OpenBao Transit, and a deploy runs them only after it checked each
+signature, pinned by digest (`image.digest`, `web.image.digest`, `backoffice.image.digest`, `postgres.image.digest`;
+[ADR 0071](../../docs/adr/operations/0071-ci-cd-per-component-and-image-signing.md)). `make diff`, `env-secret` and
+`deploy` check the signatures themselves first (`make verified`, into `<env>/digests.env`) and take the digests only
+from that check. By hand, from the workstation (cosign installed, a token that reads `ci/harbor`):
+
+```bash
+make ENV=staging TAG=<tag> deploy
+```
+
+Without a digest the chart names each image by tag, so another cluster needs no signature.

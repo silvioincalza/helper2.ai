@@ -2,12 +2,20 @@
 # images are built, pushed and scanned only on main (cd.yml); a release tag reuses them (release.yml).
 # Runs on pull requests and is called by cd.yml before every deploy, so main never ships
 # a commit that did not pass here. Never add `pull_request_target`: the repo is public.
+# Per component (ADR 0071): on a pull request, the job `changes` maps the changed paths (.github/scripts/changes.sh)
+# and each job runs only when its part changed; a path the map does not know runs everything. cd.yml calls this with
+# full: true, so a push to main runs every job. The job `ci-ok` is the one check to require.
 # Third-party actions are pinned to commit SHAs (Dependabot keeps them current).
 name: ci
 
 on:
   pull_request:
   workflow_call:
+    inputs:
+      full:
+        description: run every job, whatever changed (cd.yml, on every push)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,7 +25,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Which parts the change touches: key=true|false outputs from .github/scripts/changes.sh, after its self-test.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.map.outputs.frontend }}
+      backend: ${{ steps.map.outputs.backend }}
+      chart: ${{ steps.map.outputs.chart }}
+      monitoring: ${{ steps.map.outputs.monitoring }}
+      postgres: ${{ steps.map.outputs.postgres }}
+      diagrams: ${{ steps.map.outputs.diagrams }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - run: .github/scripts/changes.sh --self-test
+      - id: map
+        env:
+          FULL: ${{ inputs.full == true || github.event_name != 'pull_request' }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ $FULL == true ]]; then
+            .github/scripts/changes.sh --all | tee -a "$GITHUB_OUTPUT"
+          else
+            .github/scripts/changes.sh "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
+          fi
+
   frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -50,6 +88,8 @@ jobs:
         continue-on-error: true
 
   backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -80,7 +120,8 @@ jobs:
   # A pushed Postgres tag is never rebuilt (make postgres-image), so a change under deploy/postgres must come with a
   # new postgres.image.tag: a git check, no build.
   postgres-tag:
-    if: github.event_name == 'pull_request'
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.postgres == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -105,6 +146,8 @@ jobs:
 
   # Lint and render the chart for staging and prod and validate it against the Kubernetes schemas.
   chart:
+    needs: changes
+    if: needs.changes.outputs.chart == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -123,6 +166,8 @@ jobs:
   # Alert rules: syntax and the unit tests in deploy/monitoring/tests. promtool from the release tarball, checked
   # against its SHA-256: `go install` cannot build it (the Prometheus module has replace directives).
   monitoring:
+    needs: changes
+    if: needs.changes.outputs.monitoring == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -143,7 +188,8 @@ jobs:
 
   # The committed SVGs must be what d2 renders from the committed sources (docs/diagrams/README.md).
   diagrams:
-    if: github.event_name == 'pull_request'
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.diagrams == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -167,3 +213,25 @@ jobs:
             echo "::error::docs/diagrams is not what d2 v0.9.0 renders: run docs/diagrams/render.sh with d2 v0.9.0 and commit the result"
             exit 1
           fi
+
+  # The one check to require on main: on a pull request green when every job above passed or was skipped (its part
+  # did not change), red when one failed or was cancelled. Called by cd.yml (a push) every job runs, so each must pass;
+  # only postgres-tag and diagrams are pull-request jobs. Never skipped itself, so a required check cannot hang.
+  ci-ok:
+    if: always()
+    needs: [changes, frontend, backend, postgres-tag, chart, monitoring, diagrams]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+          PR: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set -euo pipefail
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          bad=$(jq -r --argjson pr "$PR" '[to_entries[]
+            | select(if $pr or .key == "postgres-tag" or .key == "diagrams"
+                     then .value.result == "failure" or .value.result == "cancelled"
+                     else .value.result != "success" end)
+            | .key] | join(", ")' <<< "$NEEDS")
+          if [[ -n $bad ]]; then echo "::error::failed or cancelled: $bad"; exit 1; fi

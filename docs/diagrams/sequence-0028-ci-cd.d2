@@ -1,7 +1,7 @@
 # Sequence: the prod deploy job of a release: approval, OIDC login to OpenBao, kubeconfig and app_env,
-# tag checks, helm upgrade with rollback on failure, status, clean-up.
+# tag checks, the signature check (ADR 0071), helm upgrade by digest with rollback on failure, status, clean-up.
 # Source of truth: .github/workflows/release.yml (prod job), .github/workflows/deploy.yml,
-#   .github/actions/bao-login/action.yml, deploy/k8s/Makefile (diff, deploy, status),
+#   .github/actions/bao-login/action.yml, deploy/k8s/Makefile (verify-images, diff, deploy, status),
 #   the platform repo's deployer RBAC (prod deployer may get the staging Deployment), outside this repo.
 # Render: cd docs/diagrams && d2 fmt sequence-0028-ci-cd.d2 && d2 sequence-0028-ci-cd.d2 sequence-0028-ci-cd.svg
 
@@ -33,6 +33,7 @@ login: OpenBao login (OIDC) {
 
 tag: Resolve tag {
   runner -> runner: "tag = 12 hex chars (no ref with that name)\nor X.Y.Z (the commit of tag vX.Y.Z);\ncommit on origin/main (a version:\nor a release/* branch); prod by version:\nmake retag (0048)"
+  runner -> runner: "make verify-images (0071): digest of each\nimage in Harbor, cosign verify --key cosign.pub;\nan unsigned image stops here"
   runner -> runner: "git checkout <commit>:\nchart and image match"
   runner -> bao: "kv get ci/prod field app_env"
   bao -> runner: "prod/app.env"
@@ -40,7 +41,7 @@ tag: Resolve tag {
 
 deploy: Deploy {
   runner -> k8s: "make diff (kubectl diff)"
-  runner -> k8s: "make deploy: release-ready (a pending-* release:\nrollback to the last deployed revision), then\nhelm upgrade --install --server-side\n--wait --timeout 12m --rollback-on-failure" {class: hot}
+  runner -> k8s: "make deploy: release-ready (a pending-* release:\nrollback to the last deployed revision), then\nhelm upgrade --install --server-side\n(images by digest) --wait --timeout 12m --rollback-on-failure" {class: hot}
   k8s -> runner: "ready, or rolled back\nto the previous revision"
   runner -> site: "make status: GET / → HTTP code"
   runner -> runner: "always: rm app.env, kubeconfig"

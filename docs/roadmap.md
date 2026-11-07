@@ -128,8 +128,18 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     quota and source-cache keys, so the public app can reset a spend cap or poison the source cache. Give each app its
     own families where the code allows (the back office's caps under its own prefix), and drop `+eval` where a plain
     command does;
-  - PR 5: CI and CD per component (path filters: `frontend/`, `apps/public`, `apps/backoffice`, a library change
-    builds both apps), and image signing for every image;
+  - CI and CD per component, and image signing for every image: done
+    ([ADR 0071](adr/operations/0071-ci-cd-per-component-and-image-signing.md)). Open:
+    - before it merges: the OpenBao Transit key `helper2-images`, the policies `helper2-image-sign` (role `deploy`)
+      and `helper2-harbor-pull` (roles `deploy-staging`, `deploy-prod`), a pull-only Harbor robot in `ci/harbor-pull`,
+      then `make cosign-pub` and commit `deploy/k8s/cosign.pub` (deploy/k8s/CI.md, "Image signing"); check that
+      Harbor takes the signature (referrer or `sha256-<digest>` tag) with the tag-immutability rule on;
+    - make `ci-ok` a required status check on `main` (repo ruleset);
+    - check the signatures in the cluster too, with an admission controller (Kyverno or the Sigstore policy
+      controller), on the platform side: the deploy stays generic;
+    - the images of commits from before signing are unsigned: a rollback to one needs `make sign-existing TAG=<commit>`
+      on the workstation first, and `rollback: true` (it deploys by tag); the first CD run after the merge fails on the
+      unsigned Postgres image until `make sign-existing` signs it once;
   - Grafana: the dashboard and the alert rules filter on `application="helper2"`; the back office reports as
     `helper2-backoffice` (traces, metrics, logs) and needs its own panels and alerts (Scout, collectors, enrichment
     budgets, the embedding indexer);
@@ -154,8 +164,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - **Short-lived deployer token.** Mint it with the OpenBao Kubernetes secrets engine. The deployer token
   (the platform repo) does not expire ([ADR 0028](adr/operations/0028-ci-cd.md)).
 - **Supply chain:**
-  - set `postgres.image.digest` to the digest of `18.6-pgvector0.8.6-5` once CD has pushed that tag (with the
-    Postgres exporter: one restart);
+  - `postgres.image.digest`: the deploy now pins the digest it checked
+    ([ADR 0071](adr/operations/0071-ci-cd-per-component-and-image-signing.md)); the first such deploy restarts
+    Postgres once. Pin it in `values.yaml` too for installs outside CI;
   - **18 Nov 2026:** end of the report-only period. On 6 Nov code scanning held 66 open Critical or High findings
     with a fix. The `-4` image (upstream rebuild of 6 Nov) cleared the Alpine ones; on 7 Nov all 35 left in the
     Postgres image (3 Critical, 32 High) were the Go standard library inside `gosu`, which the `-5` image no longer
