@@ -5,6 +5,7 @@ import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
 import { RUN_POLL_MS } from '@/pages/admin/ScoutRunsPage';
+import { SIGN_IN_RETURN_KEY } from '@/lib/signInReturn';
 
 const item: ReviewItem = {
   id: '66666666-6666-5666-8666-666666666666',
@@ -76,6 +77,38 @@ describe('admin: sign-in and role', () => {
     // The public home is not on the admin host: the way out is signing out of this host's session.
     expect(screen.getAllByRole('button', { name: 'Sign out' }).length).toBeGreaterThan(0);
     expect(m.calls.filter((c) => c.path.startsWith('/admin'))).toHaveLength(0);
+  });
+});
+
+describe('admin: back to the page after sign-in', () => {
+  afterEach(() => window.sessionStorage.clear());
+
+  it('opens the stored back office page, with its filters, once the admin is signed in', async () => {
+    window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, '/admin/review?kind=USER_REPORT');
+    mockApi({ 'GET /me': () => ADMIN, 'GET /admin/review-items': () => page([]) });
+    const { router } = renderAdmin('/admin');
+    await waitFor(() =>
+      expect(router.state.location.pathname + router.state.location.search).toBe(
+        '/admin/review?kind=USER_REPORT',
+      ),
+    );
+    expect(window.sessionStorage.getItem(SIGN_IN_RETURN_KEY)).toBeNull();
+  });
+
+  it('drops the stored page after a failed sign-in', async () => {
+    window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, '/admin/review');
+    mockApi({ 'GET /me': () => ANON });
+    const { router } = renderAdmin('/admin?signin=failed');
+    await waitFor(() => expect(window.sessionStorage.getItem(SIGN_IN_RETURN_KEY)).toBeNull());
+    expect(router.state.location.pathname).toBe('/admin');
+  });
+
+  it('never opens a public page stored on another host', async () => {
+    window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, '/saved');
+    mockApi({ 'GET /me': () => ADMIN });
+    const { router } = renderAdmin('/admin');
+    await waitFor(() => expect(window.sessionStorage.getItem(SIGN_IN_RETURN_KEY)).toBeNull());
+    expect(router.state.location.pathname).toBe('/admin');
   });
 });
 

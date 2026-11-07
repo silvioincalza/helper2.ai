@@ -1,7 +1,29 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Outlet } from 'react-router';
+import { Outlet, useNavigate, useSearchParams } from 'react-router';
 import { signOut } from '@/api/client';
 import { MeProvider, useMe } from '@/context/MeContext';
+import { takeSignInReturn } from '@/lib/signInReturn';
+
+/** The back office's own pages only: a stored public path has no page on the admin host. */
+const isAdminPath = (path: string) => path === '/admin' || /^\/admin[/?#]/.test(path);
+
+/**
+ * After GitHub sends the administrator back to /admin, opens the page where they clicked "Sign in" (a deep link with
+ * its filters, ADR 0035). A failed sign-in (?signin=failed) drops the stored page; AdminLayout says so.
+ */
+function SignInReturn() {
+  const { me, loaded } = useMe();
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const failed = params.get('signin') === 'failed';
+  useEffect(() => {
+    if (!loaded || (!me.authenticated && !failed)) return;
+    const path = takeSignInReturn();
+    if (me.authenticated && path !== null && isAdminPath(path)) navigate(path, { replace: true });
+  }, [loaded, me.authenticated, failed, navigate]);
+  return null;
+}
 
 /** Sign out of the admin host's own session (ADR 0035: one session per host). */
 function SignOut() {
@@ -23,6 +45,7 @@ export function AdminShell() {
   const { t } = useTranslation();
   return (
     <MeProvider>
+      <SignInReturn />
       <a className="skip-link" href="#main">
         {t('nav.skip')}
       </a>
