@@ -24,6 +24,7 @@ import type {
 
 import { guideStreamEventValues } from './schema';
 import { SseParser } from '@/lib/sse';
+import { stampReceived } from '@/lib/sourceAge';
 
 export const API_BASE = '/api/v1';
 
@@ -247,7 +248,9 @@ export const api = {
   reportResource: (id: string, body: IssueReportRequest) =>
     request<IssueReportAccepted>('POST', `/resources/${encodeURIComponent(id)}/reports`, { body }),
   askGuideStream,
-  listSources: (signal?: AbortSignal) => request<SourceInfo[]>('GET', '/sources', { signal }),
+  /** Each source is stamped with when it arrived, so a cached answer's ages keep counting (lib/sourceAge). */
+  listSources: (signal?: AbortSignal) =>
+    request<SourceInfo[]>('GET', '/sources', { signal }).then(stampReceived),
   /** The categories search filters by (ADR 0053), in their order; the same for everyone, cached by the browser. */
   listCategories: (signal?: AbortSignal) => request<Category[]>('GET', '/categories', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),

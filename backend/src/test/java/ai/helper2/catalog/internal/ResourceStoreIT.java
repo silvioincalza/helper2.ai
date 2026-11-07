@@ -172,6 +172,27 @@ class ResourceStoreIT {
     assertThat(storedTitle(id)).isEqualTo(raw);
   }
 
+  /**
+   * #265: the sitemap builds its slug from the title it lists, so that title must be the one the
+   * resource page shows, or the sitemap address answers 301.
+   */
+  @Test
+  void theSitemapListsARawPageTitleCleanAsTheResourcePageShowsIt() {
+    String repo = "https://github.com/acme/mapped-" + run;
+    String raw = "GitHub - acme/mapped-" + run + ": An AI agent framework for everyone. · GitHub";
+    UUID id = ResourceId.of(CanonicalUrl.of(repo)).getValue();
+    store.upsert(merge(titled("live-web", repo, raw)), DataOrigin.OBSERVED, Set.of("live-web"));
+    jdbc.sql("UPDATE resource SET license = 'MIT' WHERE id = :id").param("id", id).update();
+
+    assertThat(store.indexable(List.of("LIBRARY"), 0, 100_000))
+        .filteredOn(r -> r.id().equals(id))
+        .singleElement()
+        .satisfies(r -> {
+          assertThat(r.title()).isEqualTo("acme/mapped-" + run);
+          assertThat(r.title()).isEqualTo(details.find(id).orElseThrow().card().getTitle());
+        });
+  }
+
   @Test
   void aRawPageTitleFromADiscoveryCategoryReadsBackCleanAndKeepsItsFacts() {
     String repo = "https://github.com/acme/found-" + run;

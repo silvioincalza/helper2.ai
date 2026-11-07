@@ -2,6 +2,7 @@
 # user, and the back office is not there (ADR 0035).
 # Source of truth: backend/src/main/java/ai/helper2/identity/config/AdminPortConfiguration.java (BackOfficeOffPublicPort),
 #   AdminPort.java, SecurityConfiguration.java (oauthUsers, roles, afterSignIn),
+#   platform/AdminHost.java, platform/RateLimitInterceptor.java (clientKey),
 #   frontend/src/components/SignIn.tsx, Layout.tsx (SignInReturn), frontend/src/lib/signInReturn.ts,
 #   the platform repo (helper2-admin Ingress, whitelist-source-range), outside this repo.
 # Render: cd docs/diagrams && d2 fmt sequence-0035-admin-host.d2 && d2 sequence-0035-admin-host.d2 sequence-0035-admin-host.svg
@@ -30,6 +31,9 @@ adminhost: Admin host {
   aadm -> owner: "302 /admin"
   owner -> aadm: "GET /api/v1/admin/review-items"
   aadm -> owner: "200"
+  owner -> aadm: "GET /api/v1/search?q=… (admin host)"
+  aadm -> aadm: "rate limit key admin-host-user-<login>,\nnot the forwarded address"
+  aadm -> owner: "200, or 429 over the limit"
 }
 
 publichost: Public host {
