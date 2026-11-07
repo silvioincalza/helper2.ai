@@ -25,6 +25,9 @@ RUN cd frontend/dist && found=$(ls -A | sort | tr '\n' ' ') \
 
 FROM docker.io/nginxinc/nginx-unprivileged:1.31.7-alpine-slim@sha256:a8cb0f33d51fa107c96fd2bd3a71aaf564ec131e9d2bdf8700944f0ed8b170d7
 USER root
+# Alpine's fixed zlib (CVE-2026-4738, Critical) before the base image ships it: one package, so the rest of the
+# image stays what the pinned digest gives. Drop this line once the base image's own zlib is 1.4 or later.
+RUN apk upgrade --no-cache zlib
 # Only our config: no default site, no sample pages, no entrypoint scripts (they write under /etc/nginx, which is
 # read-only in the cluster).
 RUN rm -rf /usr/share/nginx/html /etc/nginx/conf.d /docker-entrypoint.sh /docker-entrypoint.d
