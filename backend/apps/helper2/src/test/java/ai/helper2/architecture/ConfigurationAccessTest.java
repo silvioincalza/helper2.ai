@@ -8,7 +8,6 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
@@ -30,7 +29,7 @@ class ConfigurationAccessTest {
 
   private static final JavaClasses CLASSES =
       new ClassFileImporter()
-          .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+          .withImportOption(new DoNotIncludeTestFixtures())
           .importPackages("ai.helper2");
 
   @Test

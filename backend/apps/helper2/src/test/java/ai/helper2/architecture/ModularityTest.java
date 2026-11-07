@@ -7,7 +7,6 @@ import ai.helper2.Helper2Application;
 import ai.helper2.testing.BackendSources;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -29,10 +28,11 @@ import org.springframework.modulith.core.ApplicationModules;
  */
 class ModularityTest {
 
-  private static final ApplicationModules MODULES = ApplicationModules.of(Helper2Application.class);
+  private static final ApplicationModules MODULES =
+      ApplicationModules.of(Helper2Application.class, new DoNotIncludeTestFixtures());
   private static final JavaClasses CLASSES =
       new ClassFileImporter()
-          .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+          .withImportOption(new DoNotIncludeTestFixtures())
           .importPackages("ai.helper2");
 
   /**

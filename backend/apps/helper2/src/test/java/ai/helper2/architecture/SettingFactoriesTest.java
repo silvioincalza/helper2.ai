@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.platform.settings.Setting;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +18,7 @@ class SettingFactoriesTest {
 
   private static final JavaClasses CLASSES =
       new ClassFileImporter()
-          .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+          .withImportOption(new DoNotIncludeTestFixtures())
           .importPackages("ai.helper2");
 
   @Test
