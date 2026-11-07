@@ -450,6 +450,7 @@
     "selfDeclaredClaim": "From the product's own page: what the vendor says about itself.",
     "fields": "Fields",
     "field": {
+      "type": "Type",
       "pricing": "Pricing",
       "platforms": "Platforms",
       "useCase": "Use cases",

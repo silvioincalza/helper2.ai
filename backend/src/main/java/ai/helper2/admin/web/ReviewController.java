@@ -7,6 +7,8 @@ import ai.helper2.api.generated.model.AiContentMarkerDto;
 import ai.helper2.api.generated.model.CandidateEditDto;
 import ai.helper2.api.generated.model.NewResourceDto;
 import ai.helper2.api.generated.model.RelationshipTargetChangeDto;
+import ai.helper2.api.generated.model.ResourceFieldDto;
+import ai.helper2.api.generated.model.ResourceFieldValueDto;
 import ai.helper2.api.generated.model.ReviewBulkItemDto;
 import ai.helper2.api.generated.model.ReviewBulkResolutionDto;
 import ai.helper2.api.generated.model.ReviewBulkResultDto;
@@ -21,6 +23,7 @@ import ai.helper2.api.generated.model.VerificationDto;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
+import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
@@ -55,18 +58,36 @@ class ReviewController implements ReviewApi {
   private final ChangeRelationshipTarget changeTarget;
   private final EditCandidate editCandidate;
   private final ReviewQueue queue;
+  private final CurateField curateField;
 
   ReviewController(
       GetReviewEvidence evidence,
       ResolveReviewItems resolveMany,
       ChangeRelationshipTarget changeTarget,
       EditCandidate editCandidate,
-      ReviewQueue queue) {
+      ReviewQueue queue,
+      CurateField curateField) {
     this.evidence = evidence;
     this.resolveMany = resolveMany;
     this.changeTarget = changeTarget;
     this.editCandidate = editCandidate;
     this.queue = queue;
+    this.curateField = curateField;
+  }
+
+  /** ADR 0066: a resource's own value of a field, over every source and every run. */
+  @Override
+  public ResponseEntity<Void> setResourceField(
+      UUID id, ResourceFieldDto field, ResourceFieldValueDto body) {
+    curateField.set(id, field.getValue(), body.getValue(), adminId());
+    return ResponseEntity.noContent().build();
+  }
+
+  /** ADR 0066: the AI's values of a field of a resource, dropped. */
+  @Override
+  public ResponseEntity<Void> dropResourceField(UUID id, ResourceFieldDto field) {
+    curateField.drop(id, field.getValue(), adminId());
+    return ResponseEntity.noContent().build();
   }
 
   /** ADR 0065: an open resource candidate's title, type or tags, before it is accepted. */

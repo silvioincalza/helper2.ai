@@ -35,8 +35,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316518717?event=sf-physical-ai-workshop-and-meetup-2026-10-28'), 'eventDates', '2026-10-28', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -65,8 +65,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://kcl.ac.uk/events/future-skills-hackathon-thriving-in-the-age-of-genai?event=future-skills-hackathon-london-2026'), 'eventDates', '2026-11-02', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -95,8 +95,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/0205nd03?event=global-ai-krako-w-chapter-3-2026'), 'eventDates', '2026-11-03', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -131,8 +131,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://lablab.ai/ai-hackathons/vultr-hackathon?event=vultr-agent-rush-hackathon-2026'), 'eventDates', '2026-11-03/2026-11-08', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -167,8 +167,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://joinai.la/events/ai-policy-november-meetup-tefx2q?event=ai-la-ai-policy-meetup-november-2026'), 'eventDates', '2026-11-04', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -197,8 +197,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/gy2e4drg?event=smart-orchestration-multi-agent-systems-and-workflows-2026-11-04'), 'eventDates', '2026-11-04', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -233,8 +233,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/san-francisco-ai-meetup-group/events/316768298?event=visual-ai-agriculture-meetup-2026-11-05'), 'eventDates', '2026-11-05', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -269,8 +269,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://gdg.community.dev/events/details/google-gdg-accra-presents-devfest-accra-2026-workshops-day-1?event=devfest-accra-2026-workshops'), 'eventDates', '2026-11-06', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -299,8 +299,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/b01ucdc9?event=since-ai-hackathon-2026'), 'eventDates', '2026-11-06/2026-11-08', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -335,8 +335,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/t4g1zv77?event=ai-in-the-real-world-dublin-2026'), 'eventDates', '2026-11-10', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -371,8 +371,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/nyc-llm-ai/events/317122744?event=google-ai-deep-dive-ep-5-2026'), 'eventDates', '2026-11-11', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -407,8 +407,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://science.ai.cam.ac.uk/events/training-workshop-hands-on-agentic-ai-for-science?event=hands-on-agentic-ai-for-science-cambridge-2026'), 'eventDates', '2026-11-11', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -437,8 +437,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/introducing-the-ai-agents-for-ran-challenge-from-diagnosis-to-optimization?event=ai-agents-for-ran-challenge-webinar-2026'), 'eventDates', '2026-11-18', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -473,8 +473,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://info.jove.com/information-literacy-in-the-age-of-ai?event=information-literacy-in-the-age-of-ai-2026'), 'eventDates', '2026-11-18', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -503,8 +503,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/phxmobi/events/315041455?event=ai-engineering-getting-things-to-market-scottsdale-2026'), 'eventDates', '2026-11-19', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -533,8 +533,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://pirateskills.com/events/vibe-hackathon-cologne?event=vibe-hackathon-cologne-2026'), 'eventDates', '2026-11-20/2026-11-22', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -563,8 +563,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://meetup.com/atl-ai/events/314482336?event=dirty-south-atlanta-ai-meetup-november-2026'), 'eventDates', '2026-11-21', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -593,8 +593,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://hackathon.homingo.co.in?event=homingo-hackathon-2026'), 'eventDates', '2026-11-21/2026-12-19', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -629,8 +629,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/xirlve2e?event=sg-agentic-nights-november-2026'), 'eventDates', '2026-11-24', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -665,8 +665,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://luma.com/nov-vanai?event=vancouver-ai-meetup-november-2026'), 'eventDates', '2026-11-25', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -695,8 +695,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://members.brandonchamber.ca/events/details/ai-workshop-series-agentic-ai-building-and-deploying-ai-agents-3267?event=agentic-ai-workshop-brandon-2026'), 'eventDates', '2026-12-02', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -725,8 +725,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://aiforgood.itu.int/event/ai-for-good-sandbox-hackathon-united-arab-emirates?event=ai-for-good-lab-hackathon-uae-2026'), 'eventDates', '2026-12-08', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -761,8 +761,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://webdirections.org/ai-engineer/workshops?event=ai-engineer-sydney-2026-workshop-day'), 'eventDates', '2026-12-09', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -791,8 +791,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://globalai.community/e/3bpbrt9d?event=global-ai-nights-sofia-2026'), 'eventDates', '2026-12-15', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -827,8 +827,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027') AND origin = 'CURATED' AND enrichment_run_id IS NULL;
+    WHERE a.resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027') AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
+DELETE FROM field_assertion WHERE resource_id = uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027') AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ('eventDates', 'eventFormat');
 WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, 'https://eventbrite.de/e/ai-agents-hackathon-2027-tickets-1987490057263?event=ai-agents-hackathon-hamburg-2027'), 'eventDates', '2027-01-20/2027-01-21', 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -873,9 +873,9 @@ WHERE source_id = 'curated' AND fingerprint = 'community-events-v1' AND external
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
     JOIN dropped_event d ON d.resource_id = a.resource_id
-    WHERE a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
+    WHERE a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat'));
 DELETE FROM field_assertion a USING dropped_event d
-WHERE a.resource_id = d.resource_id AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL;
+WHERE a.resource_id = d.resource_id AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ('eventDates', 'eventFormat');
 DELETE FROM source_record s USING dropped_event d WHERE s.source_id = 'curated' AND s.external_id = d.external_id;
 DELETE FROM resource r USING dropped_event d
 WHERE r.id = d.resource_id AND r.data_origin = 'CURATED' AND NOT EXISTS (SELECT 1 FROM source_record o WHERE o.resource_id = r.id);

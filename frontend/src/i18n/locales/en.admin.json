@@ -135,7 +135,9 @@
         "REMOVE_DISCOVERY_HOST": "Discovery host removed",
         "CHANGE_RELATIONSHIP_TARGET": "Relationship target changed",
         "ADD_RESOURCE": "Resource added",
-        "EDIT_CANDIDATE": "Candidate edited"
+        "EDIT_CANDIDATE": "Candidate edited",
+        "SET_FIELD": "Field set by an admin",
+        "DROP_FIELD": "AI value of a field dropped"
       }
     },
     "budget": {
@@ -411,6 +413,16 @@
       "where": "The keys work only while focus is in the queue, and never while you type in a field.",
       "close": "Close",
       "x": "Pick the selected item for a bulk decision"
+    },
+    "fieldCuration": {
+      "set": "Set the value",
+      "drop": "Drop the AI value",
+      "value": "{{field}}",
+      "hint": "Your value wins over every source and every Scout run. The AI's values of this field are dropped.",
+      "save": "Save the value",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "failed": "Could not save. Try again."
     },
     "candidateEdit": {
       "open": "Edit the candidate",

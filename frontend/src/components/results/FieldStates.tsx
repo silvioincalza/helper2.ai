@@ -46,7 +46,10 @@ function fromCard(field: Field, detail: ResourceDetail): string[] {
   }
 }
 
-/** The enrichment's values of a field: verified facts first, then an estimate. Unproven facts state nothing. */
+/**
+ * The enrichment's values of a field: verified facts first, then an estimate. Unproven facts state nothing, and a
+ * rejected estimate (a reviewer's reject or an admin's drop, ADR 0066) states nothing either.
+ */
 function fromEnrichment(field: Field, assertions: Assertion[]): State {
   const mine = assertions.filter((a) => a.field === field && isAiOrigin(a.origin));
   const conflict = mine.filter((a) => a.verification === 'CONFLICTING');
@@ -55,13 +58,24 @@ function fromEnrichment(field: Field, assertions: Assertion[]): State {
     const verified = mine.filter((a) => a.origin === origin && a.verification === 'VERIFIED');
     if (verified.length) return { kind: 'values', values: verified.map((a) => a.value), origin };
   }
-  const estimated = mine.filter((a) => a.origin === 'AI_ESTIMATED');
+  const estimated = mine.filter(
+    (a) => a.origin === 'AI_ESTIMATED' && a.verification !== 'REJECTED',
+  );
   if (estimated.length)
     return { kind: 'values', values: estimated.map((a) => a.value), origin: 'AI_ESTIMATED' };
   return { kind: 'notStated' };
 }
 
+/** A value an admin set (ADR 0066): it wins over the sources and the enrichment. */
+function fromAdmin(field: Field, assertions: Assertion[]): string[] {
+  return assertions
+    .filter((a) => a.field === field && a.origin === 'CURATED' && a.verification === 'VERIFIED')
+    .map((a) => a.value);
+}
+
 function stateOf(field: Field, detail: ResourceDetail): State {
+  const curated = fromAdmin(field, detail.assertions);
+  if (curated.length) return { kind: 'values', values: curated, origin: 'CURATED' };
   const disagree = detail.card.conflicts.find((c) => c.field === (CARD_FIELD[field] ?? field));
   if (disagree) return { kind: 'conflict', values: disagree.values.map((v) => v.value) };
   const stated = fromCard(field, detail);
@@ -70,7 +84,8 @@ function stateOf(field: Field, detail: ResourceDetail): State {
 }
 
 /**
- * Every field of a resource in one of four states (ADR 0056): a value with where it comes from ("From the source",
+ * Every field of a resource in one of four states (ADR 0056): a value with where it comes from ("Curated by Helper2"
+ * when an admin set it, ADR 0066; "From the source",
  * "Self-declared by the vendor", "Extracted by AI", "AI-estimated"), "No", "Sources disagree" or "Not stated". A fact
  * is never guessed: a value the model could not prove with a quote is "Not stated". An estimate (audience, technical
  * level) is labelled and marked as AI-written (EU AI Act Art. 50, ADR 0038).

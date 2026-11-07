@@ -6,6 +6,8 @@ import type {
   ReviewEvidence,
   RelationshipTargetChange,
   CandidateEdit,
+  ResourceField,
+  ResourceFieldValue,
   ReviewResolution,
   ReviewStatus,
   ReviewKind,
@@ -80,6 +82,26 @@ export const adminApi = {
    */
   editCandidate: (id: string, body: CandidateEdit) =>
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/candidate`, { body }),
+  /** Sets a resource's own value of a field, over every source and every run (ADR 0066). 204; 400 for a bad value. */
+  setResourceField: async (id: string, field: ResourceField, body: ResourceFieldValue) => {
+    await send(
+      'PUT',
+      absolute(
+        `${API_BASE}/admin/resources/${encodeURIComponent(id)}/fields/${encodeURIComponent(field)}`,
+      ),
+      { body },
+    );
+  },
+  /** Drops the AI's values of a field of a resource (ADR 0066). 204. */
+  dropResourceField: async (id: string, field: ResourceField) => {
+    await send(
+      'POST',
+      absolute(
+        `${API_BASE}/admin/resources/${encodeURIComponent(id)}/fields/${encodeURIComponent(field)}/drop`,
+      ),
+      {},
+    );
+  },
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
       signal,

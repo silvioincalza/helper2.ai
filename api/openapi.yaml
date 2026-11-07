@@ -503,6 +503,47 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
 
+  /admin/resources/{id}/fields/{field}:
+    put:
+      tags: [review]
+      operationId: setResourceField
+      summary: Set a resource's own value of a field (ADR 0066).
+      description: >-
+        The value is written to the resource and wins over every source and every enrichment run: no record changes
+        it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel and
+        audience (400 for the others). The value must be one the field takes.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: field, in: path, required: true, schema: { $ref: '#/components/schemas/ResourceField' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceFieldValue' }
+      responses:
+        '204': { description: Set. }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /admin/resources/{id}/fields/{field}/drop:
+    post:
+      tags: [review]
+      operationId: dropResourceField
+      summary: Drop what the AI said about a field of a resource (ADR 0066).
+      description: >-
+        Rejects the field's AI-written values (extracted, self-declared, estimated); a value the sources state or an
+        admin set stays. The page then shows the source's value, or "Not stated".
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: field, in: path, required: true, schema: { $ref: '#/components/schemas/ResourceField' } }
+      responses:
+        '204': { description: Dropped (also when there was nothing to drop). }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+
   /admin/review-items/{id}/candidate:
     put:
       tags: [review]
@@ -2669,6 +2710,17 @@ components:
           maxItems: 12
           items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
 
+    ResourceField:
+      type: string
+      description: A field the enrichment fills (ADR 0056); an admin sets the first six (ADR 0066).
+      enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms]
+
+    ResourceFieldValue:
+      type: object
+      required: [value]
+      properties:
+        value: { type: string, minLength: 1, maxLength: 40 }
+
     CandidateType:
       type: string
       description: The types a resource candidate may have (ADR 0051, 0061, 0065).
@@ -2785,10 +2837,10 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE, SET_FIELD, DROP_FIELD] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id, the resource id or the setting's key; null when a run covered every source." }
         at: { type: string, format: date-time }
-        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate." }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate. SET <field> or DROPPED <field> <count> for a resource field." }
         before: { type: [string, 'null'], description: "The value before a setting change (\"default\" for the default); null for other actions." }
         after: { type: [string, 'null'], description: The value after a setting change; null for other actions. }
         reason: { type: [string, 'null'], description: Why the administrator changed a setting (optional). }

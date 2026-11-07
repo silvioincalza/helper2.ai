@@ -1,0 +1,29 @@
+# Sequence: an admin sets the pricing of a resource from its enrichment check; a later record states another price.
+# Source of truth: frontend/src/pages/admin/FieldCuration.tsx,
+#   backend/src/main/java/ai/helper2/admin/web/ReviewController.java (setResourceField),
+#   backend/src/main/java/ai/helper2/catalog/usecase/CurateField.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/CuratedFields.java,
+#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (upsert).
+# Render: cd docs/diagrams && d2 fmt sequence-0066-curated-field.d2 && d2 sequence-0066-curated-field.d2 sequence-0066-curated-field.svg
+
+...@style
+
+shape: sequence_diagram
+
+person: "Admin" {class: person}
+ui: "Back office\n(FieldCuration)" {class: app}
+api: ReviewController {class: app}
+curate: CurateField {class: app}
+db: "PostgreSQL\n(resource, field_assertion,\nadmin_audit)" {class: data}
+scout: "Scout\n(a later collector)" {class: ext}
+store: "ResourceStore\n(upsert)" {class: app}
+
+person -> ui: "Set the value: Pricing → Paid"
+ui -> api: "PUT /admin/resources/{id}/fields/pricing\n{value: PAID}"
+api -> curate: "set(id, pricing, PAID, admin)"
+curate -> db: "resource.pricing = PAID,\ncurated_fields + pricing"
+curate -> db: "CURATED VERIFIED assertion PAID;\nAI pricing values REJECTED"
+curate -> db: "SET_FIELD SET pricing"
+api -> ui: "204; the evidence is read again"
+scout -> store: "upsert(record stating FREE)"
+store -> db: "pricing kept: 'pricing' = ANY(curated_fields)"

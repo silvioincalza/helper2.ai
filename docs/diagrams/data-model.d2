@@ -83,6 +83,7 @@ catalog: "catalog: what sources said, merged into one resource" {
     last_seen_at: timestamptz
     data_origin: text
     enrichment_status: text
+    curated_fields: "text[] (ADR 0066)"
     enrichment_rerun_requested_at: timestamptz
     popularity: "numeric (trigger)"
     search_vector: "tsvector (generated)"

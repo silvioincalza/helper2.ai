@@ -20,6 +20,8 @@ const KINDS = ['CONFERENCE', 'HACKATHON', 'MEETUP', 'TALK', 'WORKSHOP'];
 const FORMATS = ['IN_PERSON', 'ONLINE', 'HYBRID'];
 // "industry" (conferences and expos) or "community" (hackathons, meetups, talks, workshops).
 const SET = process.argv[3] ?? 'industry';
+// The fields this seed asserts. It replaces only those: a value an admin curated on the same event stays (ADR 0066).
+const SEED_FIELDS = "('eventDates', 'eventFormat')";
 if (!['industry', 'community'].includes(SET)) throw new Error(`unknown set ${SET}`);
 // Marks the source records this seed writes, so removing dropped events never touches another seed's rows.
 const FINGERPRINT = `${SET}-events-v1`;
@@ -65,7 +67,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET url = EXCLUDED.url, title = EXCLUDED.t
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     data_origin = EXCLUDED.data_origin, event_starts_at = EXCLUDED.event_starts_at, event_ends_at = EXCLUDED.event_ends_at,
     modified_at = now();`);
-  out.push(`DELETE FROM resource_label WHERE resource_id = ${rid};`);
+  out.push(`DELETE FROM resource_label WHERE kind <> 'CATEGORY' AND resource_id = ${rid};`);
   out.push(`INSERT INTO resource_label (resource_id, kind, value) VALUES (${rid}, 'TAG', ${q(TAG)}) ON CONFLICT DO NOTHING;`);
   out.push(`INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title, description, type,
                            source_event_starts_at, source_event_ends_at, retrieved_at, fingerprint, extra)
@@ -80,8 +82,8 @@ ON CONFLICT (source_id, external_id) DO UPDATE SET resource_id = EXCLUDED.resour
     retrieved_at = EXCLUDED.retrieved_at, fingerprint = EXCLUDED.fingerprint, extra = EXCLUDED.extra;`);
   out.push(`DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
-    WHERE a.resource_id = ${rid} AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
-DELETE FROM field_assertion WHERE resource_id = ${rid} AND origin = 'CURATED' AND enrichment_run_id IS NULL;`);
+    WHERE a.resource_id = ${rid} AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ${SEED_FIELDS});
+DELETE FROM field_assertion WHERE resource_id = ${rid} AND origin = 'CURATED' AND enrichment_run_id IS NULL AND field IN ${SEED_FIELDS};`);
   out.push(`WITH a AS (INSERT INTO field_assertion (id, resource_id, field, value, origin, verification)
              VALUES (gen_random_uuid(), ${rid}, 'eventDates', ${q(end ? `${e.startDate}/${e.endDate}` : e.startDate)}, 'CURATED', 'VERIFIED') RETURNING id),
      ev AS (INSERT INTO evidence (id, source_url, retrieved_at, excerpt)
@@ -109,9 +111,9 @@ WHERE source_id = 'curated' AND fingerprint = ${q(FINGERPRINT)} AND external_id 
 DELETE FROM evidence WHERE id IN (
     SELECT j.evidence_id FROM field_assertion_evidence j JOIN field_assertion a ON a.id = j.assertion_id
     JOIN dropped_event d ON d.resource_id = a.resource_id
-    WHERE a.origin = 'CURATED' AND a.enrichment_run_id IS NULL);
+    WHERE a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ${SEED_FIELDS});
 DELETE FROM field_assertion a USING dropped_event d
-WHERE a.resource_id = d.resource_id AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL;
+WHERE a.resource_id = d.resource_id AND a.origin = 'CURATED' AND a.enrichment_run_id IS NULL AND a.field IN ${SEED_FIELDS};
 DELETE FROM source_record s USING dropped_event d WHERE s.source_id = 'curated' AND s.external_id = d.external_id;
 DELETE FROM resource r USING dropped_event d
 WHERE r.id = d.resource_id AND r.data_origin = 'CURATED' AND NOT EXISTS (SELECT 1 FROM source_record o WHERE o.resource_id = r.id);

@@ -48,6 +48,11 @@ constructor(
   val knownResources: Map<String, UUID> = emptyMap(),
   /** The catalog's type: writing (ADR 0062) keeps fewer fields and names its subjects. */
   val type: ResourceType = ResourceType.OTHER,
+  /**
+   * Fields an admin set (ADR 0066): their values are in [sourceFacts], and a model value for them
+   * is dropped without a review item.
+   */
+  val curatedFields: Set<String> = emptySet(),
 )
 
 /**

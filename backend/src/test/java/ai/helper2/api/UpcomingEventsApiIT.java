@@ -68,7 +68,8 @@ class UpcomingEventsApiIT extends ApiTestBase {
         EventFormat.ONLINE,
         h.getFacts(),
         h.getCategories(),
-        null);
+        null,
+        h.getCuratedFields());
   }
 
   @Test

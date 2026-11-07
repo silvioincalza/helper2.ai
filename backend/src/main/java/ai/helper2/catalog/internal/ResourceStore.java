@@ -100,7 +100,9 @@ public class ResourceStore {
       Set<String> useCases,
       Set<String> platforms,
       Set<String> categories,
-      List<PopularityMetric> popularity) {
+      List<PopularityMetric> popularity,
+      /** The fields an admin set (ADR 0066): their column wins over every source record. */
+      Set<String> curatedFields) {
 
     ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
       return new ResourceRow(
@@ -128,7 +130,8 @@ public class ResourceStore {
           labels.getOrDefault("USE_CASE", Set.of()),
           labels.getOrDefault("PLATFORM", Set.of()),
           labels.getOrDefault("CATEGORY", Set.of()),
-          metrics);
+          metrics,
+          curatedFields);
     }
 
     /**
@@ -164,7 +167,8 @@ public class ResourceStore {
               useCases,
               platforms,
               categories,
-              popularity);
+              popularity,
+              curatedFields);
     }
   }
 
@@ -308,6 +312,10 @@ public class ResourceStore {
     return changed;
   }
 
+  /**
+   * A row of a higher data origin keeps its values; a field an admin curated (ADR 0066) keeps its
+   * value whatever the origin of the record.
+   */
   private void upsertResources(List<Object[]> args) {
     String rank = ORIGIN_RANK.formatted("resource.data_origin");
     String newRank = ORIGIN_RANK.formatted("EXCLUDED.data_origin");
@@ -325,12 +333,12 @@ public class ResourceStore {
             title = CASE WHEN %1$s THEN resource.title ELSE EXCLUDED.title END,
             description = CASE WHEN %1$s THEN resource.description ELSE coalesce(EXCLUDED.description, resource.description) END,
             description_origin = CASE WHEN %1$s OR EXCLUDED.description IS NULL THEN resource.description_origin ELSE EXCLUDED.description_origin END,
-            type = CASE WHEN %1$s THEN resource.type ELSE EXCLUDED.type END,
-            audience = CASE WHEN %1$s THEN resource.audience ELSE EXCLUDED.audience END,
-            tech_level = coalesce(resource.tech_level, EXCLUDED.tech_level),
-            license = CASE WHEN %1$s THEN resource.license ELSE EXCLUDED.license END,
-            pricing = CASE WHEN %1$s THEN resource.pricing ELSE EXCLUDED.pricing END,
-            open_source = CASE WHEN %1$s THEN resource.open_source ELSE EXCLUDED.open_source END,
+            type = CASE WHEN 'type' = ANY(resource.curated_fields) OR %1$s THEN resource.type ELSE EXCLUDED.type END,
+            audience = CASE WHEN 'audience' = ANY(resource.curated_fields) OR %1$s THEN resource.audience ELSE EXCLUDED.audience END,
+            tech_level = CASE WHEN 'techLevel' = ANY(resource.curated_fields) THEN resource.tech_level ELSE coalesce(resource.tech_level, EXCLUDED.tech_level) END,
+            license = CASE WHEN 'license' = ANY(resource.curated_fields) OR %1$s THEN resource.license ELSE EXCLUDED.license END,
+            pricing = CASE WHEN 'pricing' = ANY(resource.curated_fields) OR %1$s THEN resource.pricing ELSE EXCLUDED.pricing END,
+            open_source = CASE WHEN 'openSource' = ANY(resource.curated_fields) OR %1$s THEN resource.open_source ELSE EXCLUDED.open_source END,
             published_at = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_at ELSE EXCLUDED.published_at END,
             published_precision = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_precision ELSE EXCLUDED.published_precision END,
             published_source_id = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_source_id ELSE EXCLUDED.published_source_id END,
@@ -1463,7 +1471,8 @@ public class ResourceStore {
         Set.of(),
         Set.of(),
         Set.of(),
-        List.of());
+        List.of(),
+        Set.of((String[]) rs.getArray("curated_fields").getArray()));
   }
 
   /**

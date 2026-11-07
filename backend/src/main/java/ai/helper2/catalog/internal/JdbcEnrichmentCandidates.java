@@ -351,12 +351,29 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
     if (sources.isEmpty()) {
       return null;
     }
-    record Resource(String title, String type, @Nullable Boolean openSource) {}
+    record Resource(
+        String title, String type, @Nullable Boolean openSource, Map<String, String> curated) {}
     Resource resource =
-        jdbc.sql("SELECT title, type, open_source FROM resource WHERE id = :id")
+        jdbc.sql(
+                """
+                SELECT title, type, open_source, curated_fields, pricing, license, tech_level, audience
+                FROM resource WHERE id = :id
+                """)
             .param("id", id)
             .query((rs, i) ->
-                new Resource(rs.getString(1), rs.getString(2), (Boolean) rs.getObject(3)))
+                new Resource(
+                    rs.getString(1),
+                    rs.getString(2),
+                    (Boolean) rs.getObject(3),
+                    curated(
+                        (String[]) rs.getArray(4).getArray(),
+                        Map.of(
+                            "type", rs.getString(2),
+                            "openSource", String.valueOf(rs.getObject(3)),
+                            "pricing", String.valueOf(rs.getString(5)),
+                            "license", String.valueOf(rs.getString(6)),
+                            "techLevel", String.valueOf(rs.getString(7)),
+                            "audience", rs.getString(8)))))
             .single();
     String license =
         jdbc.sql(
@@ -366,7 +383,24 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
             .optional()
             .orElse(null);
     return new Candidate(
-        resource.title(), resource.type(), resource.openSource(), license, sources);
+        resource.title(),
+        resource.type(),
+        resource.openSource(),
+        license,
+        sources,
+        resource.curated());
+  }
+
+  /** The values of the fields an admin set (ADR 0066), from the resource's own columns. */
+  private static Map<String, String> curated(String[] fields, Map<String, String> columns) {
+    Map<String, String> curated = new java.util.TreeMap<>();
+    for (String f : fields) {
+      String v = columns.get(f);
+      if (v != null && !"null".equals(v)) {
+        curated.put(f, v);
+      }
+    }
+    return Map.copyOf(curated);
   }
 
   @Override

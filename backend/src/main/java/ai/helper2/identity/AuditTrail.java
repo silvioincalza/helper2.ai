@@ -30,7 +30,10 @@ public interface AuditTrail {
     CHANGE_RELATIONSHIP_TARGET,
     ADD_RESOURCE,
     // An admin's edit of a resource candidate (V21, ADR 0065).
-    EDIT_CANDIDATE
+    EDIT_CANDIDATE,
+    // A resource's own field set or the AI's value dropped (V22, ADR 0066).
+    SET_FIELD,
+    DROP_FIELD
   }
 
   /**

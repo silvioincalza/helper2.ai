@@ -171,6 +171,11 @@ constructor(
    * (ADR 0055), not by its own text.
    */
   val foundIn: ListMatch? = null,
+  /**
+   * The fields an admin set on this resource (ADR 0066); empty for every live source. The merged
+   * result takes this hit's value of each of them over what the other sources say.
+   */
+  val curatedFields: Set<String> = emptySet(),
 ) {
   /** The same hit at [rank] in its source's ranking. */
   fun withRank(rank: Int): SourceHit = copy(rank = rank)
@@ -360,4 +365,29 @@ data class MergedResult(
    */
   fun withIdentity(id: ResourceId, canonicalUrl: CanonicalUrl): MergedResult =
     copy(id = id, canonicalUrl = canonicalUrl)
+
+  /**
+   * The same result with the values an admin set (ADR 0066): each field in [fields] takes the
+   * stored value over what the sources say, and its source conflict is dropped.
+   */
+  fun withCurated(
+    fields: Set<String>,
+    type: ResourceType,
+    audience: Audience,
+    techLevel: TechLevel?,
+    license: String?,
+    pricing: Pricing?,
+    openSource: Boolean?,
+  ): MergedResult {
+    if (fields.isEmpty()) return this
+    return copy(
+      type = if ("type" in fields) type else this.type,
+      audience = if ("audience" in fields) audience else this.audience,
+      techLevel = if ("techLevel" in fields) techLevel else this.techLevel,
+      license = if ("license" in fields) license else this.license,
+      pricing = if ("pricing" in fields) pricing else this.pricing,
+      openSource = if ("openSource" in fields) openSource else this.openSource,
+      conflicts = conflicts.filterNot { it.field in fields },
+    )
+  }
 }

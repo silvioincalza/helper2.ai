@@ -137,7 +137,8 @@ public class CatalogSearchSource implements SearchSource {
         h.getEventFormat(),
         h.getFacts(),
         h.getCategories(),
-        match);
+        match,
+        h.getCuratedFields());
   }
 
   /**
@@ -184,7 +185,10 @@ public class CatalogSearchSource implements SearchSource {
               null,
               Map.of(),
               // Assigned by the catalog (ADR 0053), so a search can filter and count them.
-              r.categories()));
+              r.categories(),
+              null,
+              // An admin's value wins over the other sources' in the merge (ADR 0066).
+              r.curatedFields()));
     }
     return hits;
   }

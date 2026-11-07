@@ -201,4 +201,32 @@ class EvidenceValidatorWritingTest {
       ResourceType.entries.filter(FieldsByType::isWriting).toSet(),
     )
   }
+
+  /** ADR 0066: the model's value of a field an admin set is dropped, with no error to review. */
+  @Test
+  fun `a field an admin set is not a question for the model`() {
+    val r =
+      validator.validate(
+        input(ResourceType.PRODUCT).copy(curatedFields = setOf("pricing")),
+        EnrichmentProposal(
+          fields =
+            listOf(
+              ProposedField(
+                "pricing",
+                "FREEMIUM",
+                cite("It comes with a free plan for developers"),
+              ),
+              ProposedField(
+                "useCase",
+                "coding",
+                cite("top benchmark scores in key areas like cybersecurity and coding"),
+              ),
+            )
+        ),
+      )
+    assertEquals(Verification.REJECTED, r.fields.first { it.field == "pricing" }.verification)
+    assertEquals(Verification.VERIFIED, r.fields.first { it.field == "useCase" }.verification)
+    assertTrue(r.errors.none { "pricing" in it }, r.errors.toString())
+    assertEquals(EnrichmentOutcome.VALIDATED, r.outcome)
+  }
 }

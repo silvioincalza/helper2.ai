@@ -1,6 +1,6 @@
 # 0022 — Next events: stated event days, ai-deadlines and curated industry and community events
 
-**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0010](../search/0010-filters-facets-dates-timeline.md), [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md)
+**Status.** Accepted. **Builds on:** [0004](../foundation/0004-persistence-and-provenance.md), [0010](../search/0010-filters-facets-dates-timeline.md), [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md) **Amended by:** [0066](../edge/0066-curated-field.md) (the event seeds replace only the fields they assert).
 
 ## Context
 The home page lists the next artificial intelligence (AI) events: research conferences, industry events and community
