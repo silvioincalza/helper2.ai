@@ -90,42 +90,21 @@ got through and publishes nothing.
 
 CD signs every image it pushes with a key in OpenBao Transit, and a deploy checks each signature before Helm runs
 ([ADR 0071](../../docs/adr/operations/0071-ci-cd-per-component-and-image-signing.md)). The private key never leaves
-OpenBao; [`cosign.pub`](cosign.pub) is its public half. Once, before the change that brings signing is merged, with
-an operator token (the policies and roles live in incalza-me-infra: put them there, the commands show what they do):
+OpenBao; [`cosign.pub`](cosign.pub) is its public half.
+
+The platform repo (incalza-me-infra) sets it up, from `tenants.yml` (`helper2.ci.signing`,
+`helper2.harbor.pull_robot`, `helper2.ci.environment_reads`), with `make bao-tenants` (playbook 33):
+
+- the Transit engine `helper2/transit` with the key `helper2-images` (ECDSA P-256, not exportable, no plaintext
+  backup);
+- read on that key and sign with it, nothing else, in the policies `helper2-deploy` (role `deploy`, the CD image
+  job) and `helper2-write` (role `helper2-operator`, the workstation);
+- the pull-only Harbor robot `robot$helper2+github-pull` (repository pull, artifact read) in `helper2/kv`
+  `ci/harbor-pull`, read by the roles `deploy-staging` and `deploy-prod`.
+
+Then, once, the public key into this repo (OIDC login as `helper2-operator`), and commit it:
 
 ```bash
-# 1. The Transit engine and the key (ECDSA P-256, not exportable).
-bao secrets enable -path=helper2/transit transit
-bao write -f helper2/transit/keys/helper2-images type=ecdsa-p256
-
-# 2. Sign rights for CD: read the key's public half, sign with it. Nothing else.
-bao policy write helper2-image-sign - <<'EOF'
-path "helper2/transit/keys/helper2-images" {
-  capabilities = ["read"]
-}
-path "helper2/transit/sign/helper2-images" {
-  capabilities = ["update"]
-}
-path "helper2/transit/sign/helper2-images/*" {
-  capabilities = ["update"]
-}
-EOF
-
-# 3. A pull-only Harbor robot for the deploy jobs (project helper2: repository pull, artifact read), in ci/harbor-pull.
-bao kv put -mount=helper2/kv ci/harbor-pull harbor_user='robot$helper2+pull' harbor_password=<secret>
-bao policy write helper2-harbor-pull - <<'EOF'
-path "helper2/kv/data/ci/harbor-pull" {
-  capabilities = ["read"]
-}
-EOF
-
-# 4. Add the policies to the roles; keep the policies they have (read them first).
-bao read -field=token_policies auth/helper2/jwt/role/deploy
-bao write auth/helper2/jwt/role/deploy token_policies=<current>,helper2-image-sign
-bao write auth/helper2/jwt/role/deploy-staging token_policies=<current>,helper2-harbor-pull
-bao write auth/helper2/jwt/role/deploy-prod token_policies=<current>,helper2-harbor-pull
-
-# 5. The public key into the repo (needs read on the key: the operator token), then commit deploy/k8s/cosign.pub.
 make -C deploy/k8s cosign-pub
 ```
 
@@ -135,8 +114,8 @@ then fails on the Postgres image, which was pushed before signing. That one, and
 are signed by hand on the workstation, never from a workflow:
 
 ```bash
-# The operator token needs helper2-image-sign for this, and only for this (add the policy to the operator role, or
-# log in with a token that has it). Without BAO_TOKEN the target logs in with OIDC as helper2-operator.
+# Needs sign rights on helper2-images: helper2-operator has them (policy helper2-write). Without BAO_TOKEN the
+# target logs in with OIDC as helper2-operator.
 make -C deploy/k8s sign-existing TAG=<12-char commit or X.Y.Z>     # also the Postgres image of postgres.image.tag
 ```
 

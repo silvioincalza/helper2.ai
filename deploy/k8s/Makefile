@@ -566,7 +566,7 @@ sign: ## CD: sign exactly the digests in PUSHED (pushed by this run), then check
 # Workstation only, never from a workflow (chart-check fails if one names it): signs the images of TAG and the Postgres
 # image of PG_TAG that have no signature at all, after showing their digests and a confirmation (or CONFIRM=yes).
 # For the images pushed before signing: the current Postgres image once, and an old tag before a rollback to it. Sign
-# only what CD built: check the digests against that commit's CD run first. Needs a token with helper2-image-sign.
+# only what CD built: check the digests against that commit's CD run first. Needs sign rights on helper2-images (helper2-operator, policy helper2-write).
 CONFIRM ?=
 sign-existing: ## workstation only: sign the unsigned images of TAG and of PG_TAG, after a confirmation (or CONFIRM=yes)
 	@set -euo pipefail; \
