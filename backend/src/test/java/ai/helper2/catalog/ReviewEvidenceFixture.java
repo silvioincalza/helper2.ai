@@ -1,5 +1,7 @@
 package ai.helper2.catalog;
 
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.ResourceId;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
@@ -16,7 +18,11 @@ public final class ReviewEvidenceFixture {
   public static final String SOURCE = "aa-review-evidence";
   public static final Instant T0 = Instant.parse("2026-11-01T10:00:00Z");
 
-  public final UUID resource = UUID.randomUUID();
+  /** Canonical URL of the resource; its id is derived from it, as the catalog does. */
+  public final String url =
+      CanonicalUrl.of("https://review-evidence.example/" + UUID.randomUUID()).getValue();
+
+  public final UUID resource = ResourceId.of(CanonicalUrl.of(url)).getValue();
   public final UUID run = UUID.randomUUID();
   public final UUID validationItem = UUID.randomUUID();
   public final UUID relationshipItem = UUID.randomUUID();
@@ -38,7 +44,6 @@ public final class ReviewEvidenceFixture {
             """)
         .param("id", SOURCE)
         .update();
-    String url = "https://review-evidence.example/" + resource;
     jdbc.sql(
             """
             INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience, data_origin)

@@ -105,6 +105,15 @@ public class ResourceCards {
         card.withIdentity(id, canonical)
             .withDiscovered(DateFact.observed(row.firstDiscoveredAt()))
             // The categories the catalog assigned (ADR 0053), the ones search filters by.
-            .withCategories(row.categories()));
+            .withCategories(row.categories())
+            // An admin's value wins over every record (ADR 0066).
+            .withCurated(
+                row.curatedFields(),
+                row.type(),
+                row.audience(),
+                row.techLevel(),
+                row.license(),
+                row.pricing(),
+                row.openSource()));
   }
 }

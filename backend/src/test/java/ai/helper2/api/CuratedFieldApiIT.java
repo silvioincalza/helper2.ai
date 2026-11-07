@@ -103,7 +103,7 @@ class CuratedFieldApiIT extends ApiTestBase {
 
   /** A later record of the resource that states another price and type. */
   void indexAnotherRecord() {
-    String url = "https://review-evidence.example/" + fixture.resource;
+    String url = fixture.url;
     SourceHit hit =
         new SourceHit(
             ReviewEvidenceFixture.SOURCE,

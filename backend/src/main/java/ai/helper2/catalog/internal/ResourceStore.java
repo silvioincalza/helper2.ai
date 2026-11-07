@@ -100,7 +100,9 @@ public class ResourceStore {
       Set<String> useCases,
       Set<String> platforms,
       Set<String> categories,
-      List<PopularityMetric> popularity) {
+      List<PopularityMetric> popularity,
+      /** The fields an admin set (ADR 0066): their column wins over every source record. */
+      Set<String> curatedFields) {
 
     ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
       return new ResourceRow(
@@ -128,7 +130,8 @@ public class ResourceStore {
           labels.getOrDefault("USE_CASE", Set.of()),
           labels.getOrDefault("PLATFORM", Set.of()),
           labels.getOrDefault("CATEGORY", Set.of()),
-          metrics);
+          metrics,
+          curatedFields);
     }
 
     /**
@@ -164,7 +167,8 @@ public class ResourceStore {
               useCases,
               platforms,
               categories,
-              popularity);
+              popularity,
+              curatedFields);
     }
   }
 
@@ -1467,7 +1471,8 @@ public class ResourceStore {
         Set.of(),
         Set.of(),
         Set.of(),
-        List.of());
+        List.of(),
+        Set.of((String[]) rs.getArray("curated_fields").getArray()));
   }
 
   /**

@@ -98,6 +98,36 @@ class ResultMergerTest {
   }
 
   @Test
+  fun `a curated field takes the admin's value and drops its conflict, other fields stay the sources'`() {
+    val merged =
+      merger
+        .merge(
+          listOf(
+            hit("github", "https://github.com/a/x", license = "MIT"),
+            hit("npm", "https://github.com/a/x", license = "Apache-2.0"),
+          ),
+          contexts("github", "npm"),
+        )
+        .single()
+
+    val curated =
+      merged.withCurated(
+        setOf("license"),
+        ResourceType.MODEL,
+        merged.audience,
+        null,
+        "BSD-3-Clause",
+        null,
+        null,
+      )
+
+    assertEquals("BSD-3-Clause", curated.license)
+    assertTrue(curated.conflicts.none { it.field == "license" })
+    assertEquals(ResourceType.LIBRARY, curated.type)
+    assertEquals(setOf("MIT", "Apache-2.0"), curated.assertedLicenses)
+  }
+
+  @Test
   fun `equivalent license spellings are not a conflict`() {
     val merged =
       merger
