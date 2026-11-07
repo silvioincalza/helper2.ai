@@ -1,4 +1,4 @@
-import ai.helper2.build.BundleContract
+import ai.helper2.buildlogic.BundleContract
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 // A runnable Spring Boot app: the backend conventions, the boot jar, and the controller interfaces
