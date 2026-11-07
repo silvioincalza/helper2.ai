@@ -188,9 +188,10 @@ constructor(
       // model read (ADR 0067) count only when no other source states any.
       eventStart = DateFact.earliest(eventSources(group).map { it.eventStart }),
       eventEnd = DateFact.latest(eventSources(group).map { it.eventEnd }),
-      location = statedFirst(ordered).firstNotNullOfOrNull { it.location },
-      eventKind = statedFirst(ordered).firstNotNullOfOrNull { it.eventKind },
-      eventFormat = statedFirst(ordered).firstNotNullOfOrNull { it.eventFormat },
+      // Kind, format and place come from the same hits as the days, so one origin covers them all.
+      location = eventFacts(ordered, group).firstNotNullOfOrNull { it.location },
+      eventKind = eventFacts(ordered, group).firstNotNullOfOrNull { it.eventKind },
+      eventFormat = eventFacts(ordered, group).firstNotNullOfOrNull { it.eventFormat },
       categories = categoriesOf(primary.title, group, tags, type),
     )
   }
@@ -203,9 +204,10 @@ constructor(
     return stated.ifEmpty { group }
   }
 
-  /** [hits] with those whose event facts an AI model read last. */
-  private fun statedFirst(hits: List<SourceHit>): List<SourceHit> = hits.sortedBy {
-    WebSources.eventDaysReadByAi(it.sourceId)
+  /** [ordered] restricted to the hits whose event days count ([eventSources]). */
+  private fun eventFacts(ordered: List<SourceHit>, group: List<SourceHit>): List<SourceHit> {
+    val counted = eventSources(group).toSet()
+    return ordered.filter { it in counted }
   }
 
   /**

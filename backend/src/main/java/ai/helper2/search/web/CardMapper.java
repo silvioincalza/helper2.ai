@@ -80,6 +80,7 @@ public final class CardMapper {
                 r.getType() == ai.helper2.shared.ResourceType.EVENT && r.getEventFormat() != null
                     ? EventFormatDto.fromValue(r.getEventFormat().name())
                     : null)
+            .eventOrigin(eventOrigin(r))
             .freshness(FreshnessDto.fromValue(r.getFreshness().name()));
     r.getSources()
         .forEach(s ->
@@ -144,5 +145,19 @@ public final class CardMapper {
   /** Web searches left today; null when unknown. */
   public static WebSearchesDto webSearches(WebSearchesLeft left) {
     return left == null ? null : new WebSearchesDto(left.getLimit(), left.getRemaining());
+  }
+
+  /**
+   * AI_EXTRACTED when the event's start comes from days an AI model read (ADR 0067), else
+   * SOURCE_PROVIDED; null for a resource that is no event or has no stated start.
+   */
+  static ValueOriginDto eventOrigin(MergedResult r) {
+    if (r.getType() != ai.helper2.shared.ResourceType.EVENT
+        || r.getEventStart().getStatus() == ai.helper2.shared.DateStatus.UNKNOWN) {
+      return null;
+    }
+    return ai.helper2.shared.WebSources.eventDaysReadByAi(r.getEventStart().getSourceId())
+        ? ValueOriginDto.AI_EXTRACTED
+        : ValueOriginDto.SOURCE_PROVIDED;
   }
 }
