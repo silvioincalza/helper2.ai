@@ -503,6 +503,35 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
 
+  /admin/review-items/{id}/candidate:
+    put:
+      tags: [review]
+      operationId: editCandidate
+      summary: Fix an open resource candidate's title, type or tags before accepting it (ADR 0065).
+      description: >-
+        At least one of the three; what is left out stays as the collector wrote it. The type may be any candidate type,
+        not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
+        `not-applicable` for an item that is not a resource candidate, `already-decided` for one no longer open,
+        `version-conflict` when the candidate changed since it was read (reload, then edit again).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CandidateEdit' }
+      responses:
+        '200':
+          description: The item with its new details.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewItem' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+
   /admin/review-items/{id}/relationship-target:
     put:
       tags: [review]
@@ -2620,6 +2649,23 @@ components:
             pricing); it stays open.
           enum: [RESOLVED, NOT_OPEN, NOT_FOUND, NOT_ALLOWED]
 
+    CandidateEdit:
+      type: object
+      description: At least one; null leaves it as it is.
+      properties:
+        title: { type: [string, 'null'], minLength: 1, maxLength: 300 }
+        type:
+          oneOf: [{ $ref: '#/components/schemas/CandidateType' }, { type: 'null' }]
+        tags:
+          type: [array, 'null']
+          maxItems: 12
+          items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+
+    CandidateType:
+      type: string
+      description: The types a resource candidate may have (ADR 0051, 0061, 0065).
+      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT]
+
     RelationshipTargetChange:
       type: object
       description: Exactly one of the three.
@@ -2731,10 +2777,10 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id, the resource id or the setting's key; null when a run covered every source." }
         at: { type: string, format: date-time }
-        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list." }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate." }
         before: { type: [string, 'null'], description: "The value before a setting change (\"default\" for the default); null for other actions." }
         after: { type: [string, 'null'], description: The value after a setting change; null for other actions. }
         reason: { type: [string, 'null'], description: Why the administrator changed a setting (optional). }

@@ -3,7 +3,6 @@ package ai.helper2.scout.internal;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CandidateReview;
-import ai.helper2.scout.usecase.AcceptedCandidate;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.shared.ResourceType;
 import java.util.List;
@@ -108,25 +107,16 @@ class ReviewQueueCandidateReview implements CandidateReview {
             return;
           }
           try {
-            queue.updateCandidate(item.id(), capped(mergedReason(merged)), merged);
+            // Compared with what was read: an admin's edit saved meanwhile stays (ADR 0065).
+            if (!queue.updateCandidate(
+                item.id(), item.details(), capped(json.reason(merged)), merged)) {
+              log.info("{}: candidate {} changed meanwhile, not merged", sourceId, item.id());
+            }
           } catch (InvalidCandidate e) {
             // A stored item that is not a whole candidate stays as it is, for the admin to decide.
             log.warn("{}: candidate {} not merged: {}", sourceId, item.id(), e.getMessage());
           }
         });
-  }
-
-  /** The reason line of a merged candidate: its type, tags and every collector that found it. */
-  private String mergedReason(String details) {
-    AcceptedCandidate c = json.read(details);
-    String tags = c.getTags().isEmpty() ? "" : " (" + String.join(", ", c.getTags()) + ")";
-    return "New "
-        + c.getType().name()
-        + tags
-        + " found by "
-        + String.join(", ", json.finders(details))
-        + ": "
-        + c.getTitle();
   }
 
   /** "New PRODUCT (local-ai, self-hosted) found by discovery-local-ai: Open WebUI". */

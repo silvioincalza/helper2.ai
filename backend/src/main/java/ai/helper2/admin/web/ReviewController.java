@@ -4,6 +4,7 @@ import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.api.generated.ReviewApi;
 import ai.helper2.api.generated.model.AiContentMarkerDto;
+import ai.helper2.api.generated.model.CandidateEditDto;
 import ai.helper2.api.generated.model.NewResourceDto;
 import ai.helper2.api.generated.model.RelationshipTargetChangeDto;
 import ai.helper2.api.generated.model.ReviewBulkItemDto;
@@ -11,6 +12,7 @@ import ai.helper2.api.generated.model.ReviewBulkResolutionDto;
 import ai.helper2.api.generated.model.ReviewBulkResultDto;
 import ai.helper2.api.generated.model.ReviewEvidenceDto;
 import ai.helper2.api.generated.model.ReviewFieldDto;
+import ai.helper2.api.generated.model.ReviewItemDto;
 import ai.helper2.api.generated.model.ReviewQuoteDto;
 import ai.helper2.api.generated.model.ReviewRelationshipDto;
 import ai.helper2.api.generated.model.ReviewRunDto;
@@ -19,12 +21,17 @@ import ai.helper2.api.generated.model.VerificationDto;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
+import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
+import ai.helper2.platform.ProblemType;
+import ai.helper2.scout.usecase.CandidateEdit;
+import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +40,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The review queue's evidence view, bulk decisions and relationship targets (ADMIN only, admin
- * port; ADR 0045, 0064).
+ * The review queue's evidence view, bulk decisions, relationship targets and candidate edits (ADMIN
+ * only, admin port; ADR 0045, 0064, 0065).
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -46,14 +53,47 @@ class ReviewController implements ReviewApi {
   private final GetReviewEvidence evidence;
   private final ResolveReviewItems resolveMany;
   private final ChangeRelationshipTarget changeTarget;
+  private final EditCandidate editCandidate;
+  private final ReviewQueue queue;
 
   ReviewController(
       GetReviewEvidence evidence,
       ResolveReviewItems resolveMany,
-      ChangeRelationshipTarget changeTarget) {
+      ChangeRelationshipTarget changeTarget,
+      EditCandidate editCandidate,
+      ReviewQueue queue) {
     this.evidence = evidence;
     this.resolveMany = resolveMany;
     this.changeTarget = changeTarget;
+    this.editCandidate = editCandidate;
+    this.queue = queue;
+  }
+
+  /** ADR 0065: an open resource candidate's title, type or tags, before it is accepted. */
+  @Override
+  public ResponseEntity<ReviewItemDto> editCandidate(UUID id, CandidateEditDto body) {
+    CandidateEdit change =
+        new CandidateEdit(
+            body.getTitle(),
+            body.getType() == null ? null : ResourceType.valueOf(body.getType().getValue()),
+            body.getTags() == null ? null : Set.copyOf(body.getTags()));
+    switch (editCandidate.edit(id, change, adminId())) {
+      case EditCandidate.Outcome.Edited e -> {}
+      case EditCandidate.Outcome.NotFound n ->
+          throw new NotFoundException("Review item not found.");
+      case EditCandidate.Outcome.NotOpen n ->
+          throw new ApiProblem(ProblemType.ALREADY_DECIDED, "The item is no longer open.");
+      case EditCandidate.Outcome.NotACandidate n ->
+          throw new ApiProblem(ProblemType.NOT_APPLICABLE, "The item is not a resource candidate.");
+      case EditCandidate.Outcome.ChangedMeanwhile c ->
+          throw new ApiProblem(
+              ProblemType.VERSION_CONFLICT,
+              "The candidate changed since you read it. Reload it, then edit again.");
+      case EditCandidate.Outcome.Invalid i -> throw new BadRequestException(i.getReason());
+    }
+    return ResponseEntity.ok(
+        AdminController.dto(
+            queue.find(id).orElseThrow(() -> new NotFoundException("Review item not found."))));
   }
 
   /** ADR 0064: exactly one of a catalog resource, a resource to add, or a new name. */

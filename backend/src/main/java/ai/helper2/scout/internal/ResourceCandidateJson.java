@@ -3,6 +3,7 @@ package ai.helper2.scout.internal;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.usecase.AcceptedCandidate;
 import ai.helper2.scout.usecase.CandidateDetails;
+import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebSources;
@@ -33,9 +34,16 @@ import tools.jackson.databind.node.ObjectNode;
  * awesome: {list, section}}} for an awesome list, ADR 0058). Version 1 (no version, no foundBy) is
  * still read. When a second collector finds an OPEN candidate, {@link #merge} joins it in: the tags
  * are joined, the most specific type is kept, and the collector is added to foundBy.
+ *
+ * <p>An admin's edit (ADR 0065, {@link #edit}) replaces the title, type or tags and lists them in
+ * {@code edited}. A later merge leaves those fields as the admin wrote them, and an edited type
+ * need not be one a finder declares.
  */
 @Component
 class ResourceCandidateJson implements CandidateDetails {
+
+  /** The fields an admin changed (ADR 0065). */
+  static final String EDITED = "edited";
 
   /** The longest title the catalog accepts; a longer one is cut, so the item can be accepted. */
   static final int MAX_TITLE = 300;
@@ -92,9 +100,13 @@ class ResourceCandidateJson implements CandidateDetails {
       }
     }
     foundBy.add(json.<JsonNode>valueToTree(finder(sourceId, c)));
-    d.putPOJO("tags", List.copyOf(mergedTags(d, foundBy, c)));
+    Set<String> edited = edited(d);
+    if (!edited.contains("tags")) {
+      d.putPOJO("tags", List.copyOf(mergedTags(d, foundBy, c)));
+    }
     ResourceType type = typeOrNull(d.path("type").asString(null));
-    if (type == null || c.getType().getSpecificity() < type.getSpecificity()) {
+    if (!edited.contains("type")
+        && (type == null || c.getType().getSpecificity() < type.getSpecificity())) {
       d.put("type", c.getType().name());
     }
     d.put("version", VERSION);
@@ -121,6 +133,58 @@ class ResourceCandidateJson implements CandidateDetails {
         .collect(Collectors.toCollection(TreeSet::new));
   }
 
+  /**
+   * [details] with the admin's [change] (ADR 0065): each given field replaced and listed in {@code
+   * edited}. Throws {@link InvalidCandidate} when [details] is not a candidate.
+   */
+  String edit(@Nullable String details, CandidateEdit change) {
+    ObjectNode d;
+    try {
+      JsonNode read = json.readTree(details == null ? "" : details);
+      if (!(read instanceof ObjectNode object)) {
+        throw new InvalidCandidate("the candidate is not a JSON object");
+      }
+      d = object;
+    } catch (JacksonException e) {
+      throw new InvalidCandidate("the candidate is not JSON");
+    }
+    Set<String> edited = new TreeSet<>(edited(d));
+    if (change.getTitle() != null) {
+      d.put("title", change.getTitle());
+      edited.add("title");
+    }
+    if (change.getType() != null) {
+      d.put("type", change.getType().name());
+      edited.add("type");
+    }
+    if (change.getTags() != null) {
+      d.putPOJO("tags", change.getTags().stream().sorted().toList());
+      edited.add("tags");
+    }
+    d.putPOJO(EDITED, List.copyOf(edited));
+    read(json.writeValueAsString(d));
+    return json.writeValueAsString(d);
+  }
+
+  /** The reason line of a candidate: its type, tags and every collector that found it. */
+  String reason(String details) {
+    AcceptedCandidate c = read(details);
+    String tags = c.getTags().isEmpty() ? "" : " (" + String.join(", ", c.getTags()) + ")";
+    return "New "
+        + c.getType().name()
+        + tags
+        + " found by "
+        + String.join(", ", finders(details))
+        + ": "
+        + c.getTitle();
+  }
+
+  private static Set<String> edited(JsonNode d) {
+    Set<String> fields = new TreeSet<>();
+    d.path(EDITED).forEach(f -> fields.add(f.asString("")));
+    return fields;
+  }
+
   /** The collectors that found the candidate in [details], first finder first. */
   List<String> finders(@Nullable String details) {
     try {
@@ -144,7 +208,8 @@ class ResourceCandidateJson implements CandidateDetails {
           type(text(d, "type")),
           tags,
           facts(d, tags),
-          finders(d));
+          finders(d),
+          edited(d).contains("type"));
     } catch (JacksonException e) {
       throw new InvalidCandidate("the candidate is not JSON");
     }
@@ -194,6 +259,11 @@ class ResourceCandidateJson implements CandidateDetails {
     }
     facts.put("categories", tags.stream().sorted().toList());
     facts.put("foundBy", json.treeToValue(foundBy, List.class));
+    Set<String> edited = edited(d);
+    if (!edited.isEmpty()) {
+      // What an admin changed before accepting (ADR 0065); who did it is in the audit trail.
+      facts.put(EDITED, List.copyOf(edited));
+    }
     return facts;
   }
 

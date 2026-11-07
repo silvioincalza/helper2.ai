@@ -400,7 +400,7 @@ export default function ReviewQueuePage() {
               {t(`admin.kind.${selected.kind}`)}
               {selected.resourceTitle ? ` · ${selected.resourceTitle}` : ''}
             </p>
-            <ItemDetails item={selected} />
+            <ItemDetails item={selected} onChanged={items.reload} />
             {selected.status === 'OPEN' ? (
               <div className="h2-admin__decide">
                 <label className="h2-admin__note">

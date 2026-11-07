@@ -236,7 +236,6 @@ Open items:
   Show the health and legal notices on the resource page of a resource in those categories.
 - An admin UI for the curated list.
 - Writing about a resource ([ADR 0062](adr/scout/0062-writing-about-a-resource.md)), next steps:
-  - edit a resource candidate before accepting it: type, title, tags, what it is about;
   - fix a field of an enriched resource: drop the value, or set a curated one (CURATED wins over the source, the
     source over the AI);
   - on a model's or product's page, list the articles about it ("In the news").

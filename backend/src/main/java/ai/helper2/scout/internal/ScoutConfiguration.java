@@ -47,6 +47,7 @@ import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.UnitOfWork;
 import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.CatalogLookup;
+import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ManageDiscoveryHosts;
@@ -413,6 +414,12 @@ class ScoutConfiguration {
       Clock clock) {
     CatalogLookup lookup = url -> queue.inCatalog(url.getValue());
     return new IndexAcceptedCandidate(collectors, index, lookup, details, clock);
+  }
+
+  /** An admin's edit of a resource candidate before accepting it (ADR 0065). */
+  @Bean
+  EditCandidate editCandidate(ReviewQueueCandidateItems items, AuditTrail audit) {
+    return new EditCandidate(items, audit);
   }
 
   @Bean

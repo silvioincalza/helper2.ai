@@ -2,12 +2,24 @@ import './adminText';
 import { useTranslation } from 'react-i18next';
 import type { ReviewItem } from '@/api/types';
 import { CATEGORY_NOTICES, CategoryNotice } from '@/components/sources/DiscoveryCategories';
+import { CandidateEditForm } from './CandidateEditForm';
 
-/** What an item says by its kind: a drafted example, a resource candidate, or its details as plain text. */
-export function ItemDetails({ item }: { item: ReviewItem }) {
+/**
+ * What an item says by its kind: a drafted example, a resource candidate, or its details as plain text. [onChanged]
+ * reloads the list after an edit of an open candidate (ADR 0065).
+ */
+export function ItemDetails({ item, onChanged }: { item: ReviewItem; onChanged?: () => void }) {
   if (item.kind === 'EXAMPLE_CANDIDATE') return <DraftedExample details={item.details} />;
   if (item.kind === 'RESOURCE_CANDIDATE')
-    return <ResourceCandidate details={item.details} categories={item.categories ?? []} />;
+    return (
+      <ResourceCandidate
+        details={item.details}
+        categories={item.categories ?? []}
+        edit={
+          item.status === 'OPEN' && onChanged ? { itemId: item.id, onSaved: onChanged } : undefined
+        }
+      />
+    );
   return item.details ? <p className="h2-admin__details">{item.details}</p> : null;
 }
 
@@ -60,9 +72,11 @@ function parseDraft(details: string | null | undefined): Draft | null {
 function ResourceCandidate({
   details,
   categories,
+  edit,
 }: {
   details: string | null | undefined;
   categories: string[];
+  edit?: { itemId: string; onSaved: () => void } | undefined;
 }) {
   const { t } = useTranslation();
   const candidate = parseCandidate(details);
@@ -102,7 +116,26 @@ function ResourceCandidate({
           <CategoryNotice category={c} />
         </dd>
       ))}
+      {candidate.edited.length > 0 && (
+        <dd className="h2-admin__draft-note">
+          {t('admin.review.candidate.edited', {
+            fields: candidate.edited.map((f) => t(`admin.candidateEdit.fields.${f}`)).join(', '),
+          })}
+        </dd>
+      )}
       <dd className="h2-admin__draft-note">{t('admin.review.candidate.note')}</dd>
+      {edit && (
+        <dd>
+          <CandidateEditForm
+            key={details ?? ''}
+            itemId={edit.itemId}
+            title={candidate.title}
+            type={candidate.type}
+            tags={candidate.tags}
+            onSaved={edit.onSaved}
+          />
+        </dd>
+      )}
     </dl>
   );
 }
@@ -115,6 +148,8 @@ interface Candidate {
   snippet: string | undefined;
   /** The collectors that found it (version 2); version 1 names only `sourceId`. */
   foundBy: string[];
+  /** The fields an admin changed (ADR 0065). */
+  edited: string[];
 }
 
 const textsOf = (v: unknown): string[] =>
@@ -149,6 +184,7 @@ function parseCandidate(details: string | null | undefined): Candidate | null {
           tags: textsOf(d.tags),
           snippet: typeof d.snippet === 'string' ? d.snippet : undefined,
           foundBy: findersOf(d),
+          edited: textsOf((d as { edited?: unknown }).edited),
         }
       : null;
   } catch {
