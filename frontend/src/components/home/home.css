@@ -572,3 +572,25 @@
     justify-content: flex-start;
   }
 }
+
+/* The home lists as a news ticker (ticker.ts): the box clips the row that comes in at the bottom; after each step the
+   rows start one row lower and slide up into place. Under reduced motion the list never steps (useRadarStill). */
+.v4-ticker {
+  overflow: hidden;
+}
+.v4-ticker .is-sliding {
+  animation: v4-tick 700ms ease-out;
+}
+@keyframes v4-tick {
+  from {
+    transform: translateY(var(--tick-step, 0px));
+  }
+  to {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v4-ticker .is-sliding {
+    animation: none;
+  }
+}

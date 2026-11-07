@@ -179,11 +179,17 @@ pages, Results and the resource page, and the text pages; this record says what 
     back and that search still works), from `limits.guideQuestions` on GET /me, read again after each answer
     (`GuideAnswersLeft`, UJ-2). When the guide has no model the field is null, nothing is spent, and the line is not
     shown.
-12. **Nothing moves on its own for more than 5 seconds, with one exception.** No CSS animation repeats: the loading
+12. **Nothing moves on its own for more than 5 seconds, with two exceptions.** No CSS animation repeats: the loading
     lines pulse three times and stop. Under reduced motion nothing moves, and nothing folds with an animation. A test
     fails on any CSS or inline animation that repeats for ever. The exception is the radar (decision 4). It moves by a
     JavaScript clock, not a CSS animation; it holds still while the search box has focus, stands still under reduced
-    motion, and a signed-in user can turn it off.
+    motion, and a signed-in user can turn it off. The second exception is the home lists, New this week and Coming
+    up, as a news ticker (v5, `components/home/ticker.ts`): when a list has more rows than it shows, one row leaves at
+    the top every 5 seconds and the next comes in at the bottom, with a 700 ms slide. It holds still while the pointer
+    is over it or the focus is in it, after a tap on it (a second tap starts it again), while it is off screen or the
+    tab is hidden, under reduced motion and when the radar's motion switch is off. "Show all" opens the whole list,
+    still. There is no Play/Pause button, by choice: hover, focus and tap are the pause (WCAG 2.2.2). The trade-off:
+    a visitor has to find the tap; a keyboard user pauses it by moving into it.
 13. **Every number comes from data.** The radar legend's "5-10 of N sources at a time" counts the enabled external
     sources of GET /sources, the same sources the radar shows (13 on staging; not shown before the answer); the dot
     names say the response time or the age of the last check; the list counts are `total` on GET /recent and GET
