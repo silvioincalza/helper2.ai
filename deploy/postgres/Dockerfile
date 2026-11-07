@@ -3,7 +3,7 @@
 # to the Debian-based pgvector/pgvector image would change the C library and need a REINDEX.
 # Built and pushed by `make -C deploy/k8s postgres-image`, under postgres.image.tag of the Helm chart's
 # values.yaml, and only when that tag is not in Harbor yet. Any change here needs a new tag there.
-# Pinned by the digest of its multi-arch index (ADR 0033); Dependabot updates tag and digest together.
+# Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
 FROM docker.io/library/postgres:18.6-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
 
 # The source is pinned twice: the tag must resolve to this commit, and the files must hash to this
@@ -30,7 +30,7 @@ RUN apk add --no-cache --virtual .pgvector-build build-base git \
     && apk del .pgvector-build
 
 # No gosu: the entrypoint calls it only to switch from root to postgres, and the image never starts as root.
-# It carries its own Go standard library, which the scan flags and only upstream can rebuild (ADR 0033).
+# It carries its own Go standard library, which the scan flags and only upstream can rebuild (ADR 0046).
 RUN rm /usr/local/bin/gosu
 
 # Ends as postgres (uid 70), the user the chart runs it as (runAsUser: 70), not as root.

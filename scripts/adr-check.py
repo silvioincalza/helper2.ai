@@ -8,7 +8,8 @@
   exactly one diagram.
 - A link to a part of a merged record (`#part-0045`) finds its `<a id="part-0045">`.
 
-Not checked: the applied migrations (V*.sql keep their old numbers until PR 1b of the reset), the rendered SVGs
+Not checked: the applied migrations (V*.sql keep their old numbers until PR 1b of the reset), the Postgres image's
+build files (deploy/postgres: a change there needs a new image tag), the rendered SVGs
 (the diagrams job compares them with their .d2), docs/adr/RENUMBER.md and the two ADR scripts, which name old numbers
 on purpose. "was ADR 0045" names an old number on purpose too.
 
@@ -24,6 +25,9 @@ import sys
 import tempfile
 
 MIGRATIONS = re.compile(r"^backend/libs/schema/src/main/resources/db/migration/V\d+__[^/]*\.sql$")
+# The Postgres image's build files: a change there needs a new postgres.image.tag (the postgres-tag check), so a
+# rebuild, a new digest and a signature. They keep their old numbers until the next real Postgres tag.
+FROZEN = re.compile(r"^deploy/postgres/")
 SKIPPED = {"docs/adr/RENUMBER.md", "scripts/adr-renumber.py", "scripts/adr-check.py"}
 HAND_DRAWN_SVG = "docs/diagrams/hexagonal-architecture.svg"
 
@@ -54,7 +58,7 @@ def files_of(root: str) -> list[str]:
 
 
 def checked(path: str) -> bool:
-    if path in SKIPPED or MIGRATIONS.match(path):
+    if path in SKIPPED or MIGRATIONS.match(path) or FROZEN.match(path):
         return False
     return not path.endswith(".svg") or path == HAND_DRAWN_SVG
 
@@ -171,6 +175,7 @@ def self_test() -> None:
         "[ranking](docs/adr/search/0002-ranking.md#part-0009) · flow-0001 · flow-0002-ranking.svg\n"
         "sha256:0000111122223333 port 8081 version 2024 0099-notes.md\n",
         "backend/libs/schema/src/main/resources/db/migration/V1__schema.sql": "-- ADR 0099 stays until 1b\n",
+        "deploy/postgres/Dockerfile": "# ADR 0099 stays until the next Postgres tag\n",
         "docs/adr/RENUMBER.md": "| 0099 | ADR 0099 |\n",
     }
     cases = {

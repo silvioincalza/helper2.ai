@@ -11,6 +11,9 @@ This file is the mapping. `scripts/adr-renumber.py` reads it and rewrites the re
 - The applied migrations (`backend/libs/schema/src/main/resources/db/migration/V*.sql`) keep the old numbers in their
   comments: changing them changes their Flyway checksums. PR 1b replaces them with one V1. The repeatable seeds
   (`R__*.sql`) are rewritten: they are idempotent, and a changed one only runs again.
+- The Postgres image's build files (`deploy/postgres/`) keep their old numbers too: any change there needs a new
+  `postgres.image.tag` (CI's postgres-tag check), so a rebuild, a new digest and a signature, for a comment. They move
+  with the next real Postgres tag.
 - `ADR 0026 (part was 0045) §7` is a section of an old record inside a merged one. Inside a merged record,
   "the part that was ADR 0045" points at its own part.
 - Only for `next/3.0`. On `main` the changed comments of the seeds would make staging and prod run them again, and

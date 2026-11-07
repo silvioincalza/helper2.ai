@@ -12,7 +12,8 @@ a new one (old 0008 is new 0009, old 0009 is new 0012) never moves twice. It rew
 - bare numbers, but only in the ADRs themselves and in the .d2 sources, where every four-digit number from 0001 to
   0071 is an ADR.
 
-It never touches the applied migrations (V*.sql): their Flyway checksums would change. PR 1b replaces them.
+It never touches the applied migrations (V*.sql): their Flyway checksums would change. PR 1b replaces them. Nor the
+Postgres image's build files (deploy/postgres): a change there needs a new image tag, a rebuild and a signature.
 
 A merged record becomes one file: a short header, then each old record under `## Part: was ADR NNNN — <title>`,
 its headings one level down. Both README indexes are written again from the new files and the old rows.
@@ -34,6 +35,9 @@ DIAGRAMS = "docs/diagrams"
 ADR_README = "docs/adr/README.md"
 DIAGRAMS_README = "docs/diagrams/README.md"
 MIGRATIONS = re.compile(r"^backend/libs/schema/src/main/resources/db/migration/V\d+__[^/]*\.sql$")
+# The Postgres image's build files: a change there needs a new postgres.image.tag (the postgres-tag check), so a
+# rebuild, a new digest and a signature. They keep their old numbers until the next real Postgres tag.
+FROZEN = re.compile(r"^deploy/postgres/")
 NOT_REWRITTEN = {MAPPING, "scripts/adr-renumber.py", "scripts/adr-check.py"}
 # The one SVG drawn by hand. Every other SVG is rendered from its .d2 by docs/diagrams/render.sh.
 HAND_DRAWN_SVG = "docs/diagrams/hexagonal-architecture.svg"
@@ -530,7 +534,7 @@ class Tree:
     def build_rest(self, files: list[str]) -> None:
         handled = set(self.writes) | self.removes
         for path in files:
-            if path in handled or path in NOT_REWRITTEN or MIGRATIONS.match(path):
+            if path in handled or path in NOT_REWRITTEN or MIGRATIONS.match(path) or FROZEN.match(path):
                 continue
             if path.endswith(".svg") and path != HAND_DRAWN_SVG:
                 continue
