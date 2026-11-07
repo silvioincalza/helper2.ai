@@ -78,12 +78,14 @@ jobs:
             [[ $TAG == "$next" ]] || { echo "::error::$TAG is on $source: a release branch raises the patch only, after $prev comes $next"; exit 1; }
           fi
           echo "$TAG comes from $source"
-          # One version, four files (ADR 0029), all at the tagged commit.
+          # One version, six files (ADR 0029), all at the tagged commit.
           gradle=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
           npm=$(git show "$sha:frontend/package.json" | jq -r .version)
           chart=$(git show "$sha:deploy/helm/helper2/Chart.yaml" | yq .version)
-          api=$(git show "$sha:api/openapi.yaml" | yq .info.version)
-          for v in "build.gradle.kts=$gradle" "package.json=$npm" "Chart.yaml=$chart" "openapi.yaml=$api"; do
+          public=$(git show "$sha:api/public.yaml" | yq .info.version)
+          admin=$(git show "$sha:api/admin.yaml" | yq .info.version)
+          common=$(git show "$sha:api/common.yaml" | yq .info.version)
+          for v in "build.gradle.kts=$gradle" "package.json=$npm" "Chart.yaml=$chart" "public.yaml=$public" "admin.yaml=$admin" "common.yaml=$common"; do
             [[ ${v#*=} == "$version" ]] || { echo "::error::${v%%=*} has version ${v#*=}, the tag says $version"; exit 1; }
           done
           { echo "sha=$sha"; echo "commit=${sha::12}"; echo "version=$version"; echo "source=$source"; } >> "$GITHUB_OUTPUT"

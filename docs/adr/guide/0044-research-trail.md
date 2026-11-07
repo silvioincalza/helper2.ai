@@ -107,7 +107,7 @@ Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAns
 - **Keep the queries on a reused answer, marked as another person's** — they are still someone else's words.
 
 ## Code
-- `api/openapi.yaml` — `GuideTrail`, `GuideTrailRemoved`, `GuideResponse.trail`.
+- `api/public.yaml` — `GuideTrail`, `GuideTrailRemoved`, `GuideResponse.trail`.
 - `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Guide.kt` — `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
   `GuideValidator.Rejection.trailCheck`, `GuideValidator.removedOf`.
 - `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/Question.kt` — `Question.ran`, `GuideSteps.find`.

@@ -71,7 +71,7 @@ audit keeps 100 characters a value. A list of hosts does not fit there.
   `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/JdbcDiscoveryHostStore.java`, `ScoutConfiguration.java`.
 - `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (built from `HostLists`),
   `TavilyDiscoveryCollector.java`, `sources/github/GitHubAwesomeCollector.java`, `ProductLinks.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/openapi.yaml`
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
   (`DiscoveryHosts`, `DiscoveryHostEntry`, `DiscoveryHostAdd`, `DiscoveryHostRemove`).
 - `backend/libs/schema/src/main/resources/db/migration/V17__discovery_host.sql`; `identity/AuditTrail.java` (the two actions).
 - `frontend/src/pages/admin/DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`.

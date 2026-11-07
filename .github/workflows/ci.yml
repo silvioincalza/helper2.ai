@@ -31,7 +31,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
-      # The schema is generated from ../api/openapi.yaml (git-ignored); lint/typecheck/build regenerate it too.
+      # The schemas are generated from ../api/public.yaml and admin.yaml (git-ignored); lint/typecheck/build regenerate it too.
       - run: npm run gen:api
       # Code format (Prettier): fails on any unformatted file.
       - run: npm run format:check

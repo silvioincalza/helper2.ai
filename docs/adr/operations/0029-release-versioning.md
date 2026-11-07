@@ -12,8 +12,9 @@ and the Helm chart. A published version must always mean the same code, so it ca
    patch number (v1.0.0, v1.0.1, v1.0.2, …). A change that breaks an application programming interface (API) client,
    or a migration that drops or rewrites data, is the only reason for a new major version; the minor number is not
    used. v1.0.0 is the baseline; nothing older is kept or referenced.
-2. **One version, four files.** `backend/build.gradle.kts` (`version`), `frontend/package.json` (`version`),
-   `deploy/helm/helper2/Chart.yaml` (`version`) and `api/openapi.yaml` (`info.version`) change together, in the
+2. **One version, six files.** `backend/build.gradle.kts` (`version`), `frontend/package.json` (`version`),
+   `deploy/helm/helper2/Chart.yaml` (`version`) and `api/public.yaml`, `api/admin.yaml`, `api/common.yaml`
+   (`info.version`) change together, in the
    release commit. The chart has
    no `appVersion`: on prod the running image tag is the version (`X.Y.Z`, [0048](0048-release-branches-and-version-tags.md)).
 3. **Version in the site footer.** Vite injects `package.json`'s version as `__APP_VERSION__`; `Layout.tsx`
@@ -54,7 +55,7 @@ and the Helm chart. A published version must always mean the same code, so it ca
 
 ## Code
 - `.github/workflows/release.yml` — tag checks, GitHub release, prod deploy (calls `deploy.yml`).
-- `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml`, `api/openapi.yaml` (`info.version`) — the version.
+- `backend/build.gradle.kts`, `frontend/package.json`, `deploy/helm/helper2/Chart.yaml`, `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/components/Layout.tsx` — version in the footer.
 - `deploy/k8s/Makefile` (`image`, `retag`) — commit tags never rebuilt; the version tag on a release's image.
 - `deploy/k8s/CI.md` (Releases) — how to tag a release.

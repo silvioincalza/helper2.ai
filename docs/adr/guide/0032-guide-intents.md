@@ -339,7 +339,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - `backend/apps/helper2/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
   `sources/npm/NpmSource.java`, `sources/tavily/CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`COURSE`, `COURSE_CANDIDATE`, `review_item.candidate_url`), `R__courses.sql`.
-- `api/openapi.yaml` — request, response, status, stream events.
+- `api/public.yaml` — request, response, status, stream events.
 - `frontend/src/components/guide/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.
 
 ## Diagrams

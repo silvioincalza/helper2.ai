@@ -15,7 +15,8 @@ import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Validates real API responses against the OpenAPI 3.1 component schemas (which are JSON Schema
- * 2020-12). This is what makes the contract binding on the backend, not just on generated types.
+ * 2020-12) of the joined contract (bundleContract: public.yaml and admin.yaml with common.yaml).
+ * This is what makes the contract binding on the backend, not just on generated types.
  */
 final class ContractValidator {
 
@@ -23,7 +24,9 @@ final class ContractValidator {
   private static final JsonNode SPEC =
       YAMLMapper.builder()
           .build()
-          .readTree(new File(System.getProperty("openapi.spec", "../api/openapi.yaml")));
+          .readTree(
+              new File(
+                  System.getProperty("openapi.spec", "apps/helper2/build/openapi/contract.yaml")));
   private static final SchemaRegistry REGISTRY =
       SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
 

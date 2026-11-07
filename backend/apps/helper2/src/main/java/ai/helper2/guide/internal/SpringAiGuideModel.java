@@ -278,7 +278,7 @@ class SpringAiGuideModel implements GuideModel {
   }
 
   /**
-   * Longest clarification answer sent to the model: the API's own limit (openapi.yaml,
+   * Longest clarification answer sent to the model: the API's own limit (public.yaml,
    * GuideRequest.clarification).
    */
   static final int MAX_ANSWER_CHARS = 300;
@@ -662,7 +662,7 @@ class SpringAiGuideModel implements GuideModel {
   }
 
   /**
-   * Longest need sent to a model: the API's own limit for a question (openapi.yaml,
+   * Longest need sent to a model: the API's own limit for a question (public.yaml,
    * GuideRequest.request).
    */
   static final int MAX_NEED_CHARS = 500;

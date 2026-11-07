@@ -71,7 +71,7 @@ to the text.
 - **Only the visible labels** — meets Art. 50(1), not Art. 50(2).
 
 ## Code
-- `api/openapi.yaml` — `AiContentMarker`, `GuideResponse.aiContent`, `QueryInterpretation.translatedQuery`.
+- `api/common.yaml, api/public.yaml` — `AiContentMarker`, `GuideResponse.aiContent`, `QueryInterpretation.translatedQuery`.
 - `backend/.../guide/web/GuideDtoMapper.java` — builds the marker.
 - `backend/.../search/web/SearchController.java` — `translatedQuery` apart from the word-list terms
   (`AnalyzedQuery.translation`, `lexiconTerms`).

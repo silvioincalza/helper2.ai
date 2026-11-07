@@ -27,7 +27,7 @@ Redis, PostgreSQL and the NVIDIA models on the driven side.
 | [Edge and shared services](diagrams/architecture-platform.svg) | Identity, rate limits, errors and the SPA, and the platform services every module uses, with their Redis keys and tables. |
 
 - Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](adr/foundation/0002-modular-monolith-hexagonal.md).
-- The API is contract-first: controller interfaces and frontend types are generated from `api/openapi.yaml`:
+- The API is contract-first: controller interfaces and frontend types are generated from `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`:
   [ADR 0003](adr/foundation/0003-contract-first-rest-api.md).
 
 ## Infrastructure
