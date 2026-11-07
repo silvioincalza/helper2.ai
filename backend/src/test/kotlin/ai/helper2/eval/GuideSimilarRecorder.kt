@@ -42,8 +42,11 @@ class GuideSimilarRecorder {
     val questions = GuideSimilarEvaluation.questions(GuideSimilarEvaluation.set())
     val vectors =
       questions
-        .chunked(16)
-        .flatMap { batch -> batch.zip(embedder.embed(batch, Embedder.Kind.QUERY)) }
+        // One question per call: NVIDIA fails most calls of 2+ texts with 500 "service inference
+        // failed", while every single text goes through (7 Nov 2026, as the indexer saw on 5 Nov).
+        .map { question ->
+          question to embedder.embed(listOf(question), Embedder.Kind.QUERY).single()
+        }
         .associate { (text, vector) -> text to RecordedVectors.encode(vector) }
         .toSortedMap()
     EvalFiles.json
