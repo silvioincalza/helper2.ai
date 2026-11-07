@@ -69,7 +69,7 @@ the same thing again. A value a source states could not be fixed at all.
   `JdbcEnrichmentCandidates.java`, `catalog/enrichment/EnrichmentCandidates.java` (the curated values).
 - `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`,
   `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`ResourceField`,
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`ResourceField`,
   `ResourceFieldValue`, audit actions).
 - `backend/libs/schema/src/main/resources/db/migration/V22__curated_fields.sql`; `scripts/industry-events-seed.mjs` and the two
   event seeds it writes.

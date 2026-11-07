@@ -84,7 +84,7 @@ product.
 - `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt`,
   `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (the stored type).
 - `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java`, `TavilyDiscoveryCollector.java`.
-- `backend/libs/schema/src/main/resources/db/migration/V16__relationship_about.sql`; `api/openapi.yaml` (kind ABOUT).
+- `backend/libs/schema/src/main/resources/db/migration/V16__relationship_about.sql`; `api/public.yaml` (kind ABOUT).
 - Tests: `EvidenceValidatorWritingTest`, `RecheckEnrichmentsTest`, `SpringAiEnrichmentModelTest`,
   `DiscoveryPagesTest`, `TavilyDiscoveryCollectorTest`.
 - Diagrams: [flow](../../diagrams/flow-0062-writing-about-a-resource.svg) · [sequence](../../diagrams/sequence-0062-writing-about-a-resource.svg).

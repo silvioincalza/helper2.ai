@@ -10,7 +10,7 @@ as scope creep.
 - `backend/` — Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin, Gradle multi-project:
   shared code in `libs/`, the runnable app in `apps/helper2`, plugins and versions in `build-logic/`
 - `frontend/` — React 19, Vite, TypeScript, Vitest
-- `api/openapi.yaml` — contract first (OpenAPI 3.1); the frontend generates types from it
+- `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — contract first (OpenAPI 3.1); backend and frontend generate from them
 - PostgreSQL 18 (full-text + pgvector), Redis 8 (disposable cache)
 - `deploy/` — Helm charts for staging and prod
 - `docs/adr/<category>/` — one ADR per decision; `docs/roadmap.md` — every open TODO

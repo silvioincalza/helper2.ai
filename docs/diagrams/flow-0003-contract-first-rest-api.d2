@@ -1,6 +1,6 @@
-# Flowchart: a change to the contract, from api/openapi.yaml to a green build: the generated server interfaces and
+# Flowchart: a change to the contract, from api/public.yaml, admin.yaml or common.yaml to a green build: the generated server interfaces and
 # DTOs, the generated TypeScript types, and the response checks in the API integration tests.
-# Source of truth: api/openapi.yaml, backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts (openApiGenerate, compileJava/compileKotlin dependsOn,
+# Source of truth: api/*.yaml, backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts (bundleContract, openApiGenerate, compileJava/compileKotlin dependsOn,
 #   Test systemProperty openapi.spec), frontend/package.json (gen:api, prebuild, pretypecheck, prelint, pretest),
 #   backend/apps/helper2/src/test/java/ai/helper2/api/ContractValidator.java, GuideApiIT.java,
 #   backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
@@ -10,15 +10,19 @@
 
 direction: down
 
-change: "Edit api/openapi.yaml\n(OpenAPI 3.1.0, servers /api/v1)" {class: person}
+change: "Edit api/public.yaml, admin.yaml\nor common.yaml\n(OpenAPI 3.1.0, servers /api/v1)" {class: person}
 
 backend: Backend (Gradle) {
   class: group
   direction: down
+  bundle: "bundleContract: one file,\none meaning per name?" {class: decision}
+  e_bundle: "Build stops:\nsame name, two meanings" {class: fail}
   gen: "openApiGenerate (spring, interfaceOnly,\nuseSpringBoot4, useJackson3, useTags)\n→ build/generated/openapi" {class: app}
   types: "Interfaces ai.helper2.api.generated (SearchApi …)\nDTOs ai.helper2.api.generated.model (*Dto)" {class: data}
   compile: "compileJava / compileKotlin:\ncontrollers implement the interfaces?" {class: decision}
   e_compile: "Compile error\n(same pull request)" {class: fail}
+  bundle -> e_bundle: no
+  bundle -> gen: yes
   gen -> types -> compile
   compile -> e_compile: no
 }
@@ -27,7 +31,7 @@ frontend: Frontend (npm) {
   class: group
   direction: down
   pre: "prebuild, pretypecheck,\nprelint, pretest" {class: app}
-  ts: "gen:api: openapi-typescript --enum-values\n→ src/api/schema.ts\n(types + enum values, not committed)" {class: data}
+  ts: "gen:api: openapi-typescript --enum-values\n→ src/api/schema.ts, admin-schema.ts\n(types + enum values, not committed)" {class: data}
   tsc: "tsc --noEmit:\nclient.ts and pages fit the types?" {class: decision}
   e_tsc: "Type error" {class: fail}
   pre -> ts -> tsc
@@ -53,7 +57,7 @@ tests: API integration tests (*ApiIT) {
 
 green: "Build green: both sides\nmatch the one contract" {class: end}
 
-change -> backend.gen: {class: hot}
+change -> backend.bundle: {class: hot}
 change -> frontend.pre: {class: hot}
 backend.compile -> tests.call: yes {class: hot}
 frontend.tsc -> green: yes

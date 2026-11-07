@@ -87,7 +87,7 @@ spend, and the right number changes with the day.
 - Declarations: `guide/internal/GuideConfiguration.java`, `search/internal/TranslationConfiguration.java`,
   `search/config/SearchConfiguration.java`, `scout/internal/ScoutConfiguration.java`.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/AuditTrail.java`, `identity/internal/AuditLog.java` (before, after, reason).
-- `api/openapi.yaml` — `RuntimeSettings`, `RuntimeSettingState`, `RuntimeSettingChange`, `RuntimeSettingReset`;
+- `api/admin.yaml` — `RuntimeSettings`, `RuntimeSettingState`, `RuntimeSettingChange`, `RuntimeSettingReset`;
   `AuditEntry` and `AdminOverview` fields.
 - `frontend/src/pages/admin/RuntimeSettingsPanel.tsx`, `SettingsPage.tsx`, `AdminOverview.tsx`, `AuditPage.tsx`.
 - Tests: `platform/settings/RuntimeSettingTest.java`, `RuntimeSettingsTest.java`, `JdbcRuntimeSettingStoreIT.java`,

@@ -64,7 +64,7 @@ platform: "platform (open module)" {
 }
 
 shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
-api: "api (open)\ngenerated from api/openapi.yaml" {class: app}
+api: "api (open)\ngenerated from api/public.yaml\n+ admin.yaml + common.yaml" {class: app}
 
 redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nhelper2:session:*" {shape: cylinder; class: data}
 pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · runtime_setting" {shape: cylinder; class: data}
