@@ -1,18 +1,18 @@
 # Architecture, view 6 of 6: the edge and the shared services. Identity, the request edge (rate limits, errors, SPA),
 # and the platform services every module uses: llm, http, resilience, quota, shared cache and cluster locks.
 # With the Redis keys and Postgres tables each one owns, and GitHub OAuth for the back office.
-# Source of truth: backend/src/main/java/ai/helper2/platform/package-info.java (open module),
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/package-info.java (open module),
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
 #   SinglePageApp.java, ClusterLockConfiguration.java (shedlock),
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
 #   platform/settings/* (RuntimeSettings, JdbcRuntimeSettingStore: runtime_setting; ADR 0060),
-#   backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, SessionConfiguration.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, SessionConfiguration.java,
 #   AdminPortConfiguration.java, ContentSecurityPolicy.java, CspHeaderWriter.java, platform/CspNonce.java (ADR 0059),
 #   identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
 #   identity/Users.java, Bookmarks.java, AuditLog.java, RetentionPeriods.java (ports), identity/config/IdentityUseCaseConfiguration.java,
-#   backend/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
+#   backend/apps/helper2/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
 # Render: cd docs/diagrams && d2 fmt architecture-platform.d2 && d2 architecture-platform.d2 architecture-platform.svg
 
 ...@style

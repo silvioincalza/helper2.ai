@@ -1,7 +1,7 @@
 # Flowchart: may a class depend on another class? The rules ModularityTest checks on every build, in the order a
 # dependency meets them, and the module dependencies that pass them today (open modules left out: everyone may use them).
-# Source of truth: backend/src/test/java/ai/helper2/architecture/ModularityTest.java,
-#   backend/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
+# Source of truth: backend/apps/helper2/src/test/java/ai/helper2/architecture/ModularityTest.java,
+#   backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
 #   .../catalog/usecase/package-info.java, .../search/web/CardMapper.java (@NamedInterface("cards")).
 # Render: cd docs/diagrams && d2 fmt flow-0002-modular-monolith-hexagonal.d2 && d2 flow-0002-modular-monolith-hexagonal.d2 flow-0002-modular-monolith-hexagonal.svg
 

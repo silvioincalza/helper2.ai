@@ -249,24 +249,24 @@ are candidates in the admin review list.
   credits, and a copy of the page we would have to keep and justify; the excerpt is enough to decide.
 
 ## Code
-- `backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java` — one category's searches and
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java` — one category's searches and
   what is kept; `DiscoveryPages.java` — list or product, by URL and title; `DiscoveryCategory.java`,
   `DiscoveryFamily.java`; `ScoutTavilyCredits.java` — credits and the daily cap.
-- `backend/src/main/java/ai/helper2/sources/config/DiscoveryCollectorRegistrar.java` — one bean per category;
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/config/DiscoveryCollectorRegistrar.java` — one bean per category;
   `CategoryProperties.java` — the checked entries; `CollectorProperties.java` (`Discovery`),
   `SourcesConfiguration.java`; the categories in `application.yaml` (`helper2.categories`).
-- `backend/src/main/java/ai/helper2/sources/support/RunInterval.java` — `staggered`, `nextDueDay`.
-- `backend/src/main/kotlin/ai/helper2/shared/WebSources.kt` — the web sources.
-- `backend/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
-- `backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — `RESOURCE_CANDIDATE` items and
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/support/RunInterval.java` — `staggered`, `nextDueDay`.
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt` — the web sources.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — `RESOURCE_CANDIDATE` items and
   the merge; `ResourceCandidateJson.java` — the candidate JSON v2, written, merged and read.
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — accepting a candidate; ports
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — accepting a candidate; ports
   `CandidateDetails`, `CatalogLookup`.
-- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` — open candidate, update, category filter;
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` — open candidate, update, category filter;
   `ResourceStore.java` (`extra`), `CatalogRetention.java`.
-- `backend/src/main/resources/db/migration/V8__resource_candidate.sql`, `V9__discovery_categories.sql`;
+- `backend/libs/schema/src/main/resources/db/migration/V8__resource_candidate.sql`, `V9__discovery_categories.sql`;
   `R__curated_seed.sql` — the directories, linked, not copied.
-- `backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` — accept = index, then decide.
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` — accept = index, then decide.
 - `frontend/src/components/sources/Sources.tsx` (family row groups), `DiscoveryCategories.tsx` (the notices),
   `frontend/src/components/home/radarLayout.ts`
   (`placeDot`), `radarRotation.ts` (groups), `HomeRadar.tsx`, `frontend/src/pages/admin/ReviewQueuePage.tsx`,

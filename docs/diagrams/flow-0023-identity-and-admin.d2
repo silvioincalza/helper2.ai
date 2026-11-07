@@ -1,13 +1,13 @@
 # Flowchart: who may call what, how a sign-in becomes ADMIN, where bookmarks are kept, how an account is deleted and
 # what the admin audit trail records.
 # The admin host is in ADR 0035 (flow-0035-admin-host.d2): admin port, port filter, ADMIN only on that port.
-# Source of truth: backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
-#   backend/src/main/java/ai/helper2/identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports),
+# Source of truth: backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports),
 #   identity/internal/JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
-#   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
 #   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/pages/admin/,
-#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account),
-#   backend/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me).
+#   backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account),
+#   backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me).
 # Render: cd docs/diagrams && d2 fmt flow-0023-identity-and-admin.d2 && d2 flow-0023-identity-and-admin.d2 flow-0023-identity-and-admin.svg
 
 ...@style

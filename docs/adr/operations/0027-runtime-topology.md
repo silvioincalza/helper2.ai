@@ -109,7 +109,7 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 - `deploy/helm/helper2/templates/app.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`,
   `networkpolicy.yaml`, `serviceaccount.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
 - incalza-me-infra (outside this repo) — namespace, DNS, tunnel, ingress-nginx and the Ingresses, deployer.
-- `backend/src/main/resources/application.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`.
+- `backend/apps/helper2/src/main/resources/application.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`.
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 
 ## Diagrams

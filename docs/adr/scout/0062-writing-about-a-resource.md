@@ -75,16 +75,16 @@ product.
   the value.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/scout/FieldsByType.kt` — writing types, their fields, ABOUT.
-- `backend/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt` — fields and kinds by type, the ABOUT cap.
-- `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`EnrichmentInput.type`),
-  `backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`.
-- `backend/src/main/resources/prompts/scout/enrich-v5.txt`,
-  `backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`.
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt`,
-  `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (the stored type).
-- `backend/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java`, `TavilyDiscoveryCollector.java`.
-- `backend/src/main/resources/db/migration/V16__relationship_about.sql`; `api/openapi.yaml` (kind ABOUT).
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/FieldsByType.kt` — writing types, their fields, ABOUT.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt` — fields and kinds by type, the ABOUT cap.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`EnrichmentInput.type`),
+  `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`.
+- `backend/apps/helper2/src/main/resources/prompts/scout/enrich-v5.txt`,
+  `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt`,
+  `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (the stored type).
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java`, `TavilyDiscoveryCollector.java`.
+- `backend/libs/schema/src/main/resources/db/migration/V16__relationship_about.sql`; `api/openapi.yaml` (kind ABOUT).
 - Tests: `EvidenceValidatorWritingTest`, `RecheckEnrichmentsTest`, `SpringAiEnrichmentModelTest`,
   `DiscoveryPagesTest`, `TavilyDiscoveryCollectorTest`.
 - Diagrams: [flow](../../diagrams/flow-0062-writing-about-a-resource.svg) · [sequence](../../diagrams/sequence-0062-writing-about-a-resource.svg).

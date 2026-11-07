@@ -1,13 +1,13 @@
 # Flowchart: one model call through the shared LLM layer, from the caller to a usable answer or a fallback.
 # Shows the "model configured?" check, the llm-chat circuit, the daily budget taken before each attempt, the bounded provider call
 # (timeout, SDK retry off by default), the error categories and the clean-up of the answer before the validators see it.
-# Source of truth: backend/src/main/java/ai/helper2/platform/llm/ (LlmSettings, DailyBudget, RedisCallCounter,
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/llm/ (LlmSettings, DailyBudget, RedisCallCounter,
 #   CallOptions, ModelCallMetrics, ModelErrors, ModelAnswers, UntrustedText, LlmPolicies),
-#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (llm-chat circuit),
-#   backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call), search/internal/SpringAiQueryTranslator.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (llm-chat circuit),
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call), search/internal/SpringAiQueryTranslator.java,
 #   setup/internal/SpringAiToolGuideModel.java, scout/internal/SpringAiEnrichmentModel.java,
 #   sources/classifier/SpringAiRepoClassifier.java (same steps, own budget),
-#   backend/src/main/resources/application.yaml (spring.ai.openai.chat.timeout / max-retries).
+#   backend/apps/helper2/src/main/resources/application.yaml (spring.ai.openai.chat.timeout / max-retries).
 # Render: cd docs/diagrams && d2 fmt flow-0014-llm-integration.d2 && d2 flow-0014-llm-integration.d2 flow-0014-llm-integration.svg
 
 ...@style

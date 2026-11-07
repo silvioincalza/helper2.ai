@@ -49,12 +49,12 @@ results by time, not only by relevance.
 - Timeline from the server — a second endpoint for the same data; the sort `NEWEST` already gives the order.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/search/Filtering.kt` — filters, facets, sort, `UNKNOWN`.
-- `backend/src/main/kotlin/ai/helper2/shared/DateFact.kt` — stated dates, plausibility, `earliest`, `latest`,
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Filtering.kt` — filters, facets, sort, `UNKNOWN`.
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt` — stated dates, plausibility, `earliest`, `latest`,
   `lastChange`, conflict rule.
-- `backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — which rule each date of a merged result uses.
-- `backend/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
-- `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — which rule each date of a merged result uses.
+- `backend/apps/helper2/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
+- `backend/apps/helper2/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
 - `frontend/src/lib/searchState.ts` — URL state, `toApiParams`, `TIMELINE_PAGE_SIZE`.
 - `frontend/src/lib/timeline.ts`, `frontend/src/components/ResultsTimeline.tsx` — grouping by creation month.
 - `frontend/src/components/FilterPanel.tsx`, `DateFactView.tsx` — facets and date display.

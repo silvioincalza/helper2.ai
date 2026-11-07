@@ -69,13 +69,13 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - RDB snapshots instead of AOF — a restart loses everything since the last snapshot, minutes of counts.
 
 ## Code
-- `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
-- `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
-- `backend/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
+- `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
   fail-fast guard ([0033](0033-resilience-policies.md)).
-- `backend/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
-- `backend/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
-- `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
 - `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;
   `deploy/k8s/Makefile` (`chart-check`) fails when the rendered Redis has no AOF or no PVC.
 

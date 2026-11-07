@@ -57,15 +57,15 @@ A translation costs a model call and time, and it must not slow down sources tha
   TTL and size bound to reason about.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt` — detection rules.
-- `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `startTranslation`, `awaitTranslation`, `withTranslation`, early and late sources.
-- `backend/src/main/kotlin/ai/helper2/search/Ports.kt` — `QueryTranslator`.
-- `backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`, `TranslationConfiguration.java` — model
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt` — detection rules.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `startTranslation`, `awaitTranslation`, `withTranslation`, early and late sources.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt` — `QueryTranslator`.
+- `backend/libs/search/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`, `TranslationConfiguration.java` — model
   call, budget, cache key.
-- `backend/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `JdbcSharedCache.java` — the shared cache.
-- `backend/src/main/resources/prompts/search/translate-query.txt` — the prompt.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — language stemmer in the index query.
-- `backend/src/main/resources/db/migration/V1__schema.sql` — `h2_ts_config`, `search_vector`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `JdbcSharedCache.java` — the shared cache.
+- `backend/libs/search/src/main/resources/prompts/search/translate-query.txt` — the prompt.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — language stemmer in the index query.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `h2_ts_config`, `search_vector`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0011-language-aware-search.svg) · [sequence](../../diagrams/sequence-0011-language-aware-search.svg)

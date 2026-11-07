@@ -16,7 +16,7 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 3. **Frontend.** A single-page application (SPA): React 19.3.1, React Router 8.5.0, i18next, built with
    Vite 8.3.5 and TypeScript 6.0.3. Node.js 26 in the build image (`engines: >=24`).
 4. **One artifact.** `deploy/Dockerfile` has three stages: Node builds the SPA, the JDK stage copies it into
-   `backend/src/main/resources/static` and runs `bootJar`, the runtime stage is `eclipse-temurin:25-jre`
+   `backend/apps/helper2/src/main/resources/static` and runs `bootJar`, the runtime stage is `eclipse-temurin:25-jre`
    as user 10001. The SPA and `/api/v1` come from the same origin, so there is no Cross-Origin Resource
    Sharing (CORS) setup.
 5. **SPA serving.** `platform.SinglePageApp` is the only static handler (`spring.web.resources.add-mappings: false`):
@@ -42,11 +42,11 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 - Spring WebFlux — reactive code is harder to read; virtual threads give the same concurrency here.
 
 ## Code
-- `backend/build.gradle.kts`, `backend/settings.gradle.kts` — versions, toolchain, plugins.
+- `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts`, `backend/*/*/build.gradle.kts` — projects, versions, toolchain, plugins.
 - `frontend/package.json`, `frontend/vite.config.ts` — frontend versions, dev proxy, version constant.
 - `deploy/Dockerfile` — three-stage build, Java Runtime Environment (JRE), JVM flags.
-- `backend/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA routes and caching.
-- `backend/src/main/resources/application.yaml` — virtual threads, static mappings off.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA routes and caching.
+- `backend/apps/helper2/src/main/resources/application.yaml` — virtual threads, static mappings off.
 - `compose.yaml` — local Postgres and Redis.
 
 ## Diagrams

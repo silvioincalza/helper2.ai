@@ -26,7 +26,7 @@ Without a configured model the application must still work.
    (`NvidiaOnly`): the application does not start when a chat model id sent through the OpenAI-compatible client
    (`spring.ai.openai.chat.model`, `helper2.llm.fast-model`, `helper2.llm.reasoning-model`) or the embedding model id
    ([0012](../search/0012-vector-search-pgvector.md)) does not start with `nvidia/`; the error names the property.
-3. **Prompts on the classpath.** `backend/src/main/resources/prompts/**.txt`, rendered by `PromptTemplate` with
+3. **Prompts on the classpath.** `backend/{libs,apps}/*/src/main/resources/prompts/**.txt`, rendered by `PromptTemplate` with
    `{{name}}` placeholders. Rendering is strict: a missing value or an unused value is an error. Limits the code
    enforces (quote length, allowed values) are passed in, so prompt and validator use the same numbers.
 4. **Every call is bounded.** `CallOptions`: temperature 0, explicit model id, a token limit per call (choose and
@@ -90,15 +90,15 @@ Without a configured model the application must still work.
 - Spring AI's `PromptTemplate` — its `{name}` syntax collides with the JSON examples in the prompts.
 
 ## Code
-- `backend/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `NvidiaOnly`, `LlmPolicies`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `NvidiaOnly`, `LlmPolicies`,
   `CallOptions`, `DailyBudget`, `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`,
   `UntrustedText`.
-- `backend/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
-- `backend/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
-  `guide/verify-reasons.txt`, `search/translate-query.txt`, `scout/enrich-v5.txt`, `sources/classify-repos.txt`,
-  `setup/tool-guide.txt`.
-- `backend/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
-- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
+- `backend/apps/helper2/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
+  `guide/verify-reasons.txt`, `scout/enrich-v5.txt`, `sources/classify-repos.txt`, `setup/tool-guide.txt`;
+  `backend/libs/search/src/main/resources/prompts/search/translate-query.txt`.
+- `backend/apps/helper2/src/main/resources/application.yaml` — profile `llm-nebius`, timeout, retries, budgets.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
   `sources/classifier/SpringAiRepoClassifier.java` — the adapters.
 

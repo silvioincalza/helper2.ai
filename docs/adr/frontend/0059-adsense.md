@@ -100,11 +100,11 @@ Google Analytics, EthicalAds). They run in our origin with full access to the pa
 - **Google's automatic TCF mode for GA4** — no code, but cookieless pings after a "no".
 
 ## Code
-- `backend/src/main/java/ai/helper2/monetisation/` — `Monetisation.adsenseClient`, `adsenseSlot`, `adsenseOn()`,
+- `backend/libs/monetisation/src/main/java/ai/helper2/monetisation/` — `Monetisation.adsenseClient`, `adsenseSlot`, `adsenseOn()`,
   `adsTxt()`, `config/MonetisationProperties.java`.
-- `backend/src/main/java/ai/helper2/platform/CspNonce.java`; `identity/config/ContentSecurityPolicy.java` (`ADSENSE`),
+- `backend/libs/platform/src/main/java/ai/helper2/platform/CspNonce.java`; `identity/config/ContentSecurityPolicy.java` (`ADSENSE`),
   `CspHeaderWriter.java`; `identity/web/MeController.java` (`Me.monetisation`).
-- `backend/src/main/java/ai/helper2/pages/internal/PageHtml.java` (the tag, the nonce), `pages/web/PageRoutes.java`,
+- `backend/apps/helper2/src/main/java/ai/helper2/pages/internal/PageHtml.java` (the tag, the nonce), `pages/web/PageRoutes.java`,
   `pages/web/CrawlerFiles.java` (`/ads.txt`).
 - `frontend/src/lib/googleConsent.ts`, `components/AnalyticsConsent.tsx`, `components/AdSenseSlot.tsx`,
   `pages/ResourcePage.tsx`, `components/Layout.tsx` (footer).

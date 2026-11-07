@@ -121,16 +121,16 @@ The guards run in this order. Values are defaults; each has an `H2_` variable.
 - Queue extra questions instead of 503 — a queue hides overload and makes every user wait longer.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `ClientQuota`, `GuideAnswerCache`, `GuideAnswerStore`;
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `ClientQuota`, `GuideAnswerCache`, `GuideAnswerStore`;
   `SimilarQuestions.kt` ([0041](0041-guide-answer-cache.md)).
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide.ask` (order of the guards, config hash, single-flight).
-- `backend/src/main/java/ai/helper2/guide/web/GuideLimits.java` — slot in the `guide` bulkhead and deadline.
-- `backend/src/main/kotlin/ai/helper2/guide/AnswerLimits.kt` — comparison and explanation limits in the config hash.
-- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — keep-alive comments.
-- `backend/src/main/java/ai/helper2/platform/ClientKey.java` — the client key for the rate limits and the quota.
-- `backend/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `RedisCallCounter.java` — the count and its give-back.
-- `backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `GuideConfiguration.java`.
-- `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java`.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide.ask` (order of the guards, config hash, single-flight).
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideLimits.java` — slot in the `guide` bulkhead and deadline.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/AnswerLimits.kt` — comparison and explanation limits in the config hash.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — keep-alive comments.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` — the client key for the rate limits and the quota.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `RedisCallCounter.java` — the count and its give-back.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `GuideConfiguration.java`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0017-guide-cost-guard.svg) · [sequence](../../diagrams/sequence-0017-guide-cost-guard.svg)

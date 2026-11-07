@@ -2,9 +2,9 @@
 # Shows the llm-chat circuit, the budget unit taken in Redis inside it, the per-attempt observation with the prompt
 # version, the provider call and the answer clean-up. SpringAiQueryTranslator, SpringAiToolGuideModel,
 # SpringAiEnrichmentModel and SpringAiRepoClassifier follow the same steps with their own budget name and step tag.
-# Source of truth: backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, call),
-#   backend/src/main/java/ai/helper2/platform/llm/ (DailyBudget, RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
-#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java.
+# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, call),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/ (DailyBudget, RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0014-llm-integration.d2 && d2 sequence-0014-llm-integration.d2 sequence-0014-llm-integration.svg
 
 ...@style

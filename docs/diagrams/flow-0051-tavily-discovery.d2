@@ -1,14 +1,14 @@
 # Flowchart: one discovery category's pass, from its searches to the catalog or the review list, and an admin's
 # decision on a candidate.
-# Source of truth: backend/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java (collect,
-#   searchAll, keep, matchedWords, candidateTags), backend/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java (classify,
-#   isListPage, productSite, siteTitle), backend/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
-#   backend/src/main/java/ai/helper2/sources/support/RunInterval.java (staggered),
-#   backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (keepPassOpen),
-#   backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
-#   backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (merge, mergedTags),
-#   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt,
-#   backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java.
+# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java (collect,
+#   searchAll, keep, matchedWords, candidateTags), backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java (classify,
+#   isListPage, productSite, siteTitle), backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
+#   backend/apps/helper2/src/main/java/ai/helper2/sources/support/RunInterval.java (staggered),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (keepPassOpen),
+#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (merge, mergedTags),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt,
+#   backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ResolveReview.java.
 # Render: cd docs/diagrams && ./render.sh
 
 ...@style

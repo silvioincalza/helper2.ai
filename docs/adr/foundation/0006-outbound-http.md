@@ -111,17 +111,17 @@ state what happened.
 - arXiv pace failing open while Redis is down — each replica would call arXiv on its own pace, against its terms.
 
 ## Code
-- `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — pooled client, timeouts, redirects,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — pooled client, timeouts, redirects,
   body cap, User-Agent, observation and `uri` tag.
-- `backend/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping, per-item guard.
-- `backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java` — one builder per source and collector;
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping, per-item guard.
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java` — one builder per source and collector;
   collectors get their deadline (`collectorClient`). `sources/support/SourceSettings.java` — `deadline`.
-- `backend/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`, `platform/resilience/RedisOutboundThrottle.java` —
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`, `platform/resilience/RedisOutboundThrottle.java` —
   one arXiv call every 3 seconds across replicas.
-- `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` (`Run.collect`) — deadlines and outcomes.
-- `backend/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`) — failure types.
-- `backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java` — embedding client on `ObservedHttp`.
-- `backend/src/test/java/ai/helper2/sources/*/*LiveTest.java`, `.github/workflows/live.yml` — the weekly live check.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` (`Run.collect`) — deadlines and outcomes.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`) — failure types.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java` — embedding client on `ObservedHttp`.
+- `backend/apps/helper2/src/test/java/ai/helper2/sources/*/*LiveTest.java`, `.github/workflows/live.yml` — the weekly live check.
 
 ## Diagrams
 [flow](../../diagrams/flow-0006-outbound-http.svg) · [sequence](../../diagrams/sequence-0006-outbound-http.svg)

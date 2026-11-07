@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Turns a dated events research file (dates read from each event's own site, with the excerpt that states
 // them) into a repeatable, idempotent Flyway seed, so no date is typed by hand. One file per set:
-//   node scripts/industry-events-seed.mjs docs/research/industry-events-2026-10-27.json industry > backend/src/main/resources/db/migration/R__industry_events.sql
-//   node scripts/industry-events-seed.mjs docs/research/community-events-2026-10-27.json community > backend/src/main/resources/db/migration/R__community_events.sql
+//   node scripts/industry-events-seed.mjs docs/research/industry-events-2026-10-27.json industry > backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql
+//   node scripts/industry-events-seed.mjs docs/research/community-events-2026-10-27.json community > backend/libs/schema/src/main/resources/db/migration/R__community_events.sql
 import { readFileSync } from 'node:fs';
 
 const NS = '6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'; // same UUIDv5 namespace as ai.helper2.shared.ResourceId

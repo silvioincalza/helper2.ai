@@ -12,7 +12,7 @@ cd backend && ./gradlew test            # unit + integration (Postgres 18, Redis
                                          # --tests '*GuideSimilarRecorder' records the similar-question embeddings (ADR 0041)
 ./gradlew evalTest                      # offline replay and metrics over the recorded snapshots; skips without them
 ./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest  # category precision and recall on the labels in
-                                         # src/test/resources/eval/categories-labelled.csv (ADR 0053); skips without rows
+                                         # apps/helper2/src/test/resources/eval/categories-labelled.csv (ADR 0053); skips without rows
 ./gradlew perfTest                      # opt-in latency tests on a seeded catalog (@Tag("perf")), p50/p95/p99 in build/perf/
 # alert rules (promtool from the Prometheus release)
 promtool check rules deploy/monitoring/helper2-rules.yaml

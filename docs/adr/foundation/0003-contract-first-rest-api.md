@@ -54,12 +54,12 @@ every source has a status), and these rules must be visible in one place that bo
 
 ## Code
 - `api/openapi.yaml` — the contract.
-- `backend/build.gradle.kts` (task `openApiGenerate`) — server generation settings.
-- `backend/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
-- `backend/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
-- `backend/src/main/java/ai/helper2/platform/ContractEnumConverters.java` — enum binding.
-- `backend/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.
-- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — the stream, events named by `GuideStreamEventDto`.
+- `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` (task `openApiGenerate`) — server generation settings.
+- `backend/apps/helper2/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
+- `backend/apps/helper2/src/main/java/ai/helper2/platform/ContractEnumConverters.java` — enum binding.
+- `backend/apps/helper2/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — the stream, events named by `GuideStreamEventDto`.
 - `frontend/package.json` (script `gen:api`), `frontend/src/api/client.ts` — generated types, `ApiError`, step events from the contract.
 
 ## Diagrams

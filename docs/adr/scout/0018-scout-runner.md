@@ -141,25 +141,25 @@ at the same time. Prod runs 3 replicas ([0027](../operations/0027-runtime-topolo
 - Kubernetes Lease or leader election — needs API access for the app, and does not work outside the cluster.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
   `closeInterruptedRuns`), `EnrichmentBudget`,
   `ScoutCursor`, `ScheduledRun`, ports (`ScheduledRunStore`, `RunCalendar` in `Scout.kt`).
-- `backend/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
-- `backend/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
-- `backend/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `CronRunCalendar`, `scoutRunLock`, `ClusterRunLock`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `CronRunCalendar`, `scoutRunLock`, `ClusterRunLock`,
   `RUN_THREADS`, `closeInterruptedScoutRuns`.
-- `backend/src/main/java/ai/helper2/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and
+- `backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and
   `scout_schedule` in `V1__schema.sql`.
-- `backend/src/test/kotlin/ai/helper2/scout/internal/ScoutRunLockIT.kt` — two replicas, one run; one scheduled run per
+- `backend/apps/helper2/src/test/kotlin/ai/helper2/scout/internal/ScoutRunLockIT.kt` — two replicas, one run; one scheduled run per
   period; a tick that meets an admin run runs at the next tick; the lease is renewed while a run lives; runs left
   `RUNNING` are closed at startup.
-- `backend/src/test/java/ai/helper2/scout/internal/CronRunCalendarTest.java` — fixed start time, UTC, no drift.
-- `backend/src/test/java/ai/helper2/scout/ScoutPipelineIT.java` — 202 with the `RUNNING` row, polled to its end; 409
+- `backend/apps/helper2/src/test/java/ai/helper2/scout/internal/CronRunCalendarTest.java` — fixed start time, UTC, no drift.
+- `backend/apps/helper2/src/test/java/ai/helper2/scout/ScoutPipelineIT.java` — 202 with the `RUNNING` row, polled to its end; 409
   while another replica holds the lock.
 - `frontend/src/pages/admin/ScoutRunsPage.tsx` — "Run now", polling of the run listing.
-- `backend/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
-- `backend/src/main/java/ai/helper2/admin/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
-- `backend/src/main/java/ai/helper2/sources/support/RunInterval.java`.
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/support/RunInterval.java`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0018-scout-runner.svg) · [sequence](../../diagrams/sequence-0018-scout-runner.svg)

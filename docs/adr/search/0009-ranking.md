@@ -45,11 +45,11 @@ The index query must also stay well inside its 3 s timeout on the production cat
 - A learned ranking model — there is no labeled data to train or check it.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
-- `backend/src/main/kotlin/ai/helper2/search/Ranking.kt` — fusion, boosts, bounded popularity.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `searchSql`, `search`, `withFacts`, `popularity`.
-- `backend/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
-- `backend/src/main/resources/db/migration/V1__schema.sql` — `search_vector`, trigram index, popularity trigger.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ranking.kt` — fusion, boosts, bounded popularity.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `searchSql`, `search`, `withFacts`, `popularity`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `search_vector`, trigram index, popularity trigger.
 
 ## Diagrams
 [flow](../../diagrams/flow-0009-ranking.svg) · [sequence](../../diagrams/sequence-0009-ranking.svg)

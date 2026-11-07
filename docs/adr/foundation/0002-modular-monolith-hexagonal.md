@@ -82,16 +82,16 @@ internals. Microservices would add network calls and deploys without a scaling n
   code read well in Java.
 
 ## Code
-- `backend/src/main/java/ai/helper2/*/package-info.java` — module declarations.
-- `backend/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon rules.
-- `backend/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
+- `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
+- `backend/apps/helper2/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon rules.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.
-- `backend/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog,RetentionPeriods}.java`, `.../admin/ExampleDrafts.java`
+- `backend/libs/identity/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog,RetentionPeriods}.java`, `.../admin/ExampleDrafts.java`
   — ports of the Java use cases; `.../identity/config/IdentityUseCaseConfiguration.java`,
   `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.
-- `backend/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`, `backend/src/main/java/ai/helper2/{catalog,identity,admin}/usecase/`
+- `backend/{libs,apps}/*/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`, `backend/{libs,apps}/*/src/main/java/ai/helper2/{catalog,identity,admin}/usecase/`
   — use cases; `.../{search,catalog}/usecase/package-info.java` — named interfaces.
-- `backend/src/main/java/ai/helper2/search/{web,cache,config}`, `.../guide/{web,internal}`,
+- `backend/{libs,apps}/*/src/main/java/ai/helper2/search/{web,cache,config}`, `.../guide/{web,internal}`,
   `.../scout/{web,internal}`, `.../catalog/internal`, `.../sources/*` — adapters.
 
 ## Diagrams

@@ -1,7 +1,7 @@
 # Sequence: a browser opens a deep link on the hosted site, loads the SPA and calls the API on the same origin;
 # then the same calls in local development, where Vite serves the UI and proxies the server paths.
-# Source of truth: backend/src/main/java/ai/helper2/platform/SinglePageApp.java, frontend/vite.config.ts (server.proxy),
-#   backend/src/main/resources/application.yaml (spring.threads.virtual.enabled), deploy/Dockerfile, compose.yaml.
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java, frontend/vite.config.ts (server.proxy),
+#   backend/apps/helper2/src/main/resources/application.yaml (spring.threads.virtual.enabled), deploy/Dockerfile, compose.yaml.
 # Render: cd docs/diagrams && d2 fmt sequence-0001-stack-and-runtime.d2 && d2 sequence-0001-stack-and-runtime.d2 sequence-0001-stack-and-runtime.svg
 
 ...@style

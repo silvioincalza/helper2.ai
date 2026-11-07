@@ -65,15 +65,15 @@ audit keeps 100 characters a value. A list of hosts does not fit there.
   the lists, and one more thread to run.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`, `HostLists`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`, `HostLists`,
   `DiscoveryHostStore`, `HostNames`.
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/ManageDiscoveryHosts.kt`;
-  `backend/src/main/java/ai/helper2/scout/internal/JdbcDiscoveryHostStore.java`, `ScoutConfiguration.java`.
-- `backend/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (built from `HostLists`),
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/ManageDiscoveryHosts.kt`;
+  `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/JdbcDiscoveryHostStore.java`, `ScoutConfiguration.java`.
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (built from `HostLists`),
   `TavilyDiscoveryCollector.java`, `sources/github/GitHubAwesomeCollector.java`, `ProductLinks.java`.
-- `backend/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/openapi.yaml`
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/openapi.yaml`
   (`DiscoveryHosts`, `DiscoveryHostEntry`, `DiscoveryHostAdd`, `DiscoveryHostRemove`).
-- `backend/src/main/resources/db/migration/V17__discovery_host.sql`; `identity/AuditTrail.java` (the two actions).
+- `backend/libs/schema/src/main/resources/db/migration/V17__discovery_host.sql`; `identity/AuditTrail.java` (the two actions).
 - `frontend/src/pages/admin/DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`.
 - Tests: `ManageDiscoveryHostsTest`, `JdbcDiscoveryHostStoreIT` (the seed), `DiscoveryHostsApiIT`, `DiscoveryPagesTest`,
   `TavilyDiscoveryCollectorTest`, `DiscoveryHostsPanel.test.tsx`.

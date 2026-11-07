@@ -1,11 +1,11 @@
 # Sequence: a paraphrase of a cached guide question. The exact key misses, the plan runs, and the answer of the
 # near twin is reused without a search.
-# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
-#   backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache), SimilarQuestions.kt,
-#   backend/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java (embedder adapter),
-#   backend/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
-#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
-#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
+# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache), SimilarQuestions.kt,
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java (embedder adapter),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0041-guide-answer-cache.d2 && d2 sequence-0041-guide-answer-cache.d2 sequence-0041-guide-answer-cache.svg
 
 ...@style

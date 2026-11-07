@@ -57,14 +57,14 @@ not instants. Helper2 never invents a date ([0004](../foundation/0004-persistenc
 - Call ai-deadlines live per page view — slower and dependent on GitHub; the Scout reads it once a day.
 
 ## Code
-- `backend/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java` — `nextEdition`, `toHit`.
-- `backend/src/main/kotlin/ai/helper2/shared/DateFact.kt` — `scheduledDay`.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `refreshEventDates`, `upcomingEvents`.
-- `backend/src/main/java/ai/helper2/catalog/usecase/ListUpcomingEvents.java`, `catalog/web/ResourcesController.java` — `listUpcomingEvents`.
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java` — `nextEdition`, `toHit`.
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt` — `scheduledDay`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `refreshEventDates`, `upcomingEvents`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ListUpcomingEvents.java`, `catalog/web/ResourcesController.java` — `listUpcomingEvents`.
 - `scripts/industry-events-seed.mjs`, `docs/research/industry-events-2026-10-27.json`,
-  `docs/research/community-events-2026-10-27.json`, `backend/src/main/resources/db/migration/R__industry_events.sql`,
+  `docs/research/community-events-2026-10-27.json`, `backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql`,
   `R__community_events.sql`.
-- `backend/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `EventKind`, `EventFormat`.
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `EventKind`, `EventFormat`.
 - `frontend/src/components/home/EventsBoard.tsx`.
 
 ## Diagrams

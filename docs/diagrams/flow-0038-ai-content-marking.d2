@@ -3,9 +3,9 @@
 # origins that already say AI_SUMMARY or AI_EXTRACTED, the search's translation of a non-English query
 # (interpretation.translatedQuery, apart from the word-list terms), the setup guide's step instructions, and the page
 # attributes and labels that follow from them. Quotes, titles, links and the setup guide's commands stay unmarked.
-# Source of truth: backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (aiContent, AI_WRITTEN_FIELDS),
-#   backend/src/main/java/ai/helper2/search/web/SearchController.java (translatedQuery),
-#   backend/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt (AnalyzedQuery.translation, lexiconTerms),
+# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (aiContent, AI_WRITTEN_FIELDS),
+#   backend/apps/helper2/src/main/java/ai/helper2/search/web/SearchController.java (translatedQuery),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt (AnalyzedQuery.translation, lexiconTerms),
 #   api/openapi.yaml (AiContentMarker, GuideResponse.aiContent, ValueOrigin, QueryInterpretation.translatedQuery,
 #   ToolGuide.model), frontend/src/lib/aiMark.ts, frontend/src/components/guide/GuideAnswer.tsx, Clarify.tsx,
 #   frontend/src/components/results/Results.tsx, Resource.tsx, ResultsTimeline.tsx,

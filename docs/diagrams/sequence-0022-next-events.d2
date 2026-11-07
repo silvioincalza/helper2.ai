@@ -1,8 +1,8 @@
 # Sequence: the ai-deadlines collector stores a conference's next edition, then the home page lists it.
-# Source of truth: backend/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
-#   backend/src/main/java/ai/helper2/catalog/usecase/IndexResources.java (index), usecase/ListUpcomingEvents.java, ResourceCards.java,
-#   backend/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/home/EventsBoard.tsx.
+# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexResources.java (index), usecase/ListUpcomingEvents.java, ResourceCards.java,
+#   backend/apps/helper2/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/home/EventsBoard.tsx.
 #   Shown with days=90, as the v4 Home asks; today's EventsBoard asks size=60 without days and keeps 90 days itself.
 # Render: cd docs/diagrams && d2 fmt sequence-0022-next-events.d2 && d2 sequence-0022-next-events.d2 sequence-0022-next-events.svg
 

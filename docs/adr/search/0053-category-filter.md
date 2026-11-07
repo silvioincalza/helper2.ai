@@ -71,7 +71,7 @@ them assigned by code first, and measured on labelled items before a model is ev
     only in those categories. The subject searches of a comparison or an explanation do not: a named thing must be
     found wherever it is. The filter is part of the answer cache key, and a question with a filter never reuses a
     similar question's answer ([0041](../guide/0041-guide-answer-cache.md)).
-12. **Measured first.** `backend/src/test/resources/eval/categories-labelled.csv` holds the labels a person gives (150
+12. **Measured first.** `backend/apps/helper2/src/test/resources/eval/categories-labelled.csv` holds the labels a person gives (150
     items, to do). `./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest` prints precision and recall per
     category and writes `build/eval/categories.md`. It is skipped while the file has no rows.
 
@@ -137,19 +137,19 @@ them assigned by code first, and measured on labelled items before a model is ev
   YAML list is already checked at startup.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/shared/Categories.kt` — `Category`, `CategoryCatalog`, `CategoryInput`,
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Categories.kt` — `Category`, `CategoryCatalog`, `CategoryInput`,
   `CategoryMatcher`; `CategoryWords.kt` — the words and their patterns (moved from `DiscoveryCategory.Keywords`).
-- `backend/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`, `platform/CategoryConfiguration.java`.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` (`assignCategories`, `refreshCategories`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`, `platform/CategoryConfiguration.java`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` (`assignCategories`, `refreshCategories`,
   `resourceIdsAfter`, `marker`, `mark`), `CatalogSearchSource.java`, `ResourceCards.java`,
   `CategoryBackfillAtStartup.java`; `catalog/usecase/BackfillCategories.java`; `catalog/config/CatalogProperties.java`
   (`categories.backfill-at-startup`).
-- `backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
   facet), `Model.kt` (`SourceHit.categories`, `MergedResult.categories`).
-- `backend/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
+- `backend/apps/helper2/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
   `CardMapper.java`; `admin/web/AdminController.java`; `guide/web/GuideStreamController.java`;
-  `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
-- `backend/src/main/resources/db/migration/V12__resource_categories.sql`; the `R__` seeds keep `CATEGORY` labels.
+  `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
+- `backend/libs/schema/src/main/resources/db/migration/V12__resource_categories.sql`; the `R__` seeds keep `CATEGORY` labels.
 - `frontend/src/components/CategoryFacet.tsx`, `FilterPanel.tsx`, `ActiveFilters.tsx`,
   `components/results/CategoryLinks.tsx`, `Resource.tsx`, `Results.tsx`, `hooks/useCategories.ts`,
   `hooks/useGuideStream.ts`, `lib/searchState.ts`, `pages/admin/CategoryBackfill.tsx`.

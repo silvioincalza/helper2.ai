@@ -230,7 +230,7 @@ Open items:
   API needs a paid plan. The live web events scout ([ADR 0067](adr/scout/0067-live-web-events-scout.md)) covers part of
   this from Tavily, once Tavily confirms.
 - Categories ([ADR 0053](adr/search/0053-category-filter.md)): label 150 resources in
-  `backend/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
+  `backend/apps/helper2/src/test/resources/eval/categories-labelled.csv` and run `./gradlew evalTest --tests
   ai.helper2.eval.CategoryEvalTest`; tune the words of the categories with low precision or recall; consider a model
   only for the categories where code stays below the bar. Then fold use case into category (one facet, not two).
   Show the health and legal notices on the resource page of a resource in those categories.

@@ -108,18 +108,18 @@ the search down.
 - `UNLOGGED` table for `ai_cache` — faster writes, but emptied after a crash and left out of the backups.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
-- `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
-- `backend/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
-- `backend/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — upserts, origin rank, labels, moved
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — upserts, origin rank, labels, moved
   reports, orphan deletion.
-- `backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `IssueReports.java`,
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `IssueReports.java`,
   `ReviewDecisions.java` — enrichment results, user reports and review decisions.
-- `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
-- `backend/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema and seeds.
-- `backend/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
-- `backend/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema and seeds.
+- `backend/apps/helper2/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,
   `SharedCacheRetention.java`, `SharedCacheConfiguration.java` — the shared caches and their purge.
 - `deploy/k8s/RESET-DATABASE.md` — empty database for an in-place edit of `V1__schema.sql`.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.

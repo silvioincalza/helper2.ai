@@ -65,15 +65,15 @@ The type was also locked to the finders: a discovery category declares only its 
   safe without one. The only lock is the short one of an accept, for the length of its transaction.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt`; `IndexAcceptedCandidate.kt`
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt`; `IndexAcceptedCandidate.kt`
   (`CandidateRules`, `typeChosenByAdmin`).
-- `backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`edit`, `merge`, `read`, `reason`),
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`edit`, `merge`, `read`, `reason`),
   `ReviewQueueCandidateItems.java`, `ReviewQueueCandidateReview.java`, `ScoutConfiguration.java`.
-- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
-  `backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
-- `backend/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`CandidateEdit`,
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
+  `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`CandidateEdit`,
   `CandidateType`, audit action).
-- `backend/src/main/resources/db/migration/V21__candidate_edit.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V21__candidate_edit.sql`.
 - `frontend/src/pages/admin/CandidateEditForm.tsx`, `ReviewItemDetails.tsx`, `ReviewQueuePage.tsx`.
 - Tests: `EditCandidateTest`, `ResourceCandidateJsonTest`, `IndexAcceptedCandidateTest`, `CandidateEditApiIT`,
   `CandidateEditForm.test.tsx`.

@@ -3,11 +3,11 @@
 # Shows the conditional activation, the cluster lock embedding-indexer (one batch per period across all
 # replicas), the batch selection, the pause after a rate limit, the query-vector
 # cache, the distance cut-off and the fusion by rank.
-# Source of truth: backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (VectorSearch, IndexerSchedule),
-#   backend/src/main/java/ai/helper2/platform/ClusterLock.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexer.java, NvidiaEmbedder.java, ResourceStore.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java, QueryVectorCache.java,
-#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
+# Source of truth: backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (VectorSearch, IndexerSchedule),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexer.java, NvidiaEmbedder.java, ResourceStore.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java, QueryVectorCache.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt flow-0012-vector-search-pgvector.d2 && d2 flow-0012-vector-search-pgvector.d2 flow-0012-vector-search-pgvector.svg
 
 ...@style

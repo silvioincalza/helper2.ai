@@ -75,18 +75,18 @@ spend, and the right number changes with the day.
 - A row per setting, updated in place — simpler reads, but the history and the undo need a second table.
 
 ## Code
-- `backend/src/main/java/ai/helper2/platform/settings/` — `RuntimeSetting.java` (the allow-list), `RuntimeSettings.java`
+- `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `RuntimeSetting.java` (the allow-list), `RuntimeSettings.java`
   (the snapshot), `RuntimeSettingStore.java`, `JdbcRuntimeSettingStore.java`, `RuntimeSettingsConfiguration.java`
   (refresh thread, purge).
-- `backend/src/main/java/ai/helper2/platform/config/RuntimeSettingsProperties.java`, `PlatformRetentionProperties.java`.
-- `backend/src/main/resources/db/migration/V15__runtime_setting.sql`.
-- `backend/src/main/java/ai/helper2/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/config/RuntimeSettingsProperties.java`, `PlatformRetentionProperties.java`.
+- `backend/libs/schema/src/main/resources/db/migration/V15__runtime_setting.sql`.
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
   `ResetRuntimeSetting.java`; `admin/web/RuntimeSettingsController.java`.
-- `backend/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `BudgetLedger.java`, `CallCounter.java` (limits by
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `BudgetLedger.java`, `CallCounter.java` (limits by
   supplier); `kotlin/ai/helper2/search/WebSearch.kt` (`WebSearchQuota`), `kotlin/ai/helper2/scout/usecase/RunScout.kt`.
 - Declarations: `guide/internal/GuideConfiguration.java`, `search/internal/TranslationConfiguration.java`,
   `search/config/SearchConfiguration.java`, `scout/internal/ScoutConfiguration.java`.
-- `backend/src/main/java/ai/helper2/identity/AuditTrail.java`, `identity/internal/AuditLog.java` (before, after, reason).
+- `backend/libs/identity/src/main/java/ai/helper2/identity/AuditTrail.java`, `identity/internal/AuditLog.java` (before, after, reason).
 - `api/openapi.yaml` — `RuntimeSettings`, `RuntimeSettingState`, `RuntimeSettingChange`, `RuntimeSettingReset`;
   `AuditEntry` and `AdminOverview` fields.
 - `frontend/src/pages/admin/RuntimeSettingsPanel.tsx`, `SettingsPage.tsx`, `AdminOverview.tsx`, `AuditPage.tsx`.
