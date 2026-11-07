@@ -20,6 +20,7 @@ All diagrams: [docs/diagrams](../diagrams/README.md).
 | [0006](foundation/0006-outbound-http.md) | Outbound HTTP: Apache HttpClient 5 behind RestClient; timeouts; safe redirects; bounded bodies; error mapping | 0002, 0005, 0033 | [flow](../diagrams/flow-0006-outbound-http.svg) · [sequence](../diagrams/sequence-0006-outbound-http.svg) |
 | [0007](foundation/0007-configuration-and-secrets.md) | Configuration and secrets: every external variable uses the H2_ prefix; secrets only in OpenBao (helper2/kv ci/<env> app_env); profiles | 0001 | [flow](../diagrams/flow-0007-configuration-and-secrets.svg) · [sequence](../diagrams/sequence-0007-configuration-and-secrets.svg) |
 | [0033](foundation/0033-resilience-policies.md) | Resilience policies (Resilience4j): circuit breakers, bulkheads and retries by name | 0002, 0005, 0006, 0008, 0026 | [flow](../diagrams/flow-0033-resilience-policies.svg) · [sequence](../diagrams/sequence-0033-resilience-policies.svg) |
+| [0068](foundation/0068-backend-libraries-and-apps.md) | The backend as libraries and apps: one Gradle project per shared library, the app on top; dependencies point one way; convention plugins in build-logic | 0002, 0003, 0047 | [flow](../diagrams/flow-0068-backend-libraries-and-apps.svg) · — (build only, no runtime path) |
 
 ## Search — [`search/`](search/)
 
