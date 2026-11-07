@@ -131,7 +131,7 @@ public class LinkedInCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "LinkedIn (sent to review)",
+            "LinkedIn live web (sent to review)",
             "LinkedIn",
             true,
             SourceMode.INDEXED,
