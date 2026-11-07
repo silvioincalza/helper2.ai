@@ -12,6 +12,7 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
+import ai.helper2.shared.WebSources;
 import ai.helper2.sources.events.EventQuoteGate;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
@@ -48,7 +49,7 @@ import tools.jackson.databind.JsonNode;
  */
 public class LiveWebEventsCollector implements Collector {
 
-  public static final String ID = "live-web-events-scout";
+  public static final String ID = WebSources.EVENTS_SCOUT;
 
   /** Circuit breaker and retry of this collector's calls (ADR 0033). */
   static final String POLICY = "collector-" + ID;

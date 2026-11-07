@@ -775,7 +775,7 @@ public class ResourceStore {
 
   /**
    * resource.event_* follow the records: earliest stated start, latest stated end (null when none
-   * states one).
+   * states one). Days an AI model read (ADR 0067) count only when no other record states a start.
    */
   private void refreshEventDates(Collection<UUID> resourceIds) {
     if (resourceIds.isEmpty()) {
@@ -784,12 +784,21 @@ public class ResourceStore {
     jdbc.sql(
             """
             UPDATE resource r SET event_starts_at = s.starts, event_ends_at = s.ends
-            FROM (SELECT resource_id, min(source_event_starts_at) AS starts, max(source_event_ends_at) AS ends
-                  FROM source_record WHERE resource_id = ANY(:ids) GROUP BY resource_id) s
+            FROM (SELECT resource_id,
+                         CASE WHEN count(stated_start) > 0 THEN min(stated_start)
+                              ELSE min(source_event_starts_at) END AS starts,
+                         CASE WHEN count(stated_start) > 0 THEN max(stated_end)
+                              ELSE max(source_event_ends_at) END AS ends
+                  FROM (SELECT resource_id, source_event_starts_at, source_event_ends_at,
+                               CASE WHEN source_id <> :aiRead THEN source_event_starts_at END AS stated_start,
+                               CASE WHEN source_id <> :aiRead THEN source_event_ends_at END AS stated_end
+                        FROM source_record WHERE resource_id = ANY(:ids)) rec
+                  GROUP BY resource_id) s
             WHERE r.id = s.resource_id AND r.type = 'EVENT'
               AND (r.event_starts_at IS DISTINCT FROM s.starts OR r.event_ends_at IS DISTINCT FROM s.ends)
             """)
         .param("ids", resourceIds.toArray(UUID[]::new))
+        .param("aiRead", WebSources.EVENTS_SCOUT)
         .update();
   }
 

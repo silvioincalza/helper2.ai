@@ -102,7 +102,7 @@ class ResourceStoreIT {
         new SourceDescriptor(
             id,
             id,
-            id,
+            id.length() <= 12 ? id : id.substring(0, 12),
             true,
             SourceMode.LIVE,
             URI.create("https://" + id + ".example"),
@@ -558,5 +558,66 @@ class ResourceStoreIT {
             null);
 
     assertThat(rows).extracting(ResourceRow::canonicalUrl).contains(repo);
+  }
+
+  private SourceHit eventFrom(String source, String url, String start, String end) {
+    SourceHit h = titled(source, url, "AI Summit " + run);
+    return new SourceHit(
+        source,
+        source + ":" + url,
+        h.getUrl(),
+        h.getCanonicalUrl(),
+        null,
+        h.getTitle(),
+        null,
+        ValueOrigin.SOURCE_PROVIDED,
+        ResourceType.EVENT,
+        Audience.BUILD_WITH_AI,
+        null,
+        Set.of(),
+        Set.of(),
+        null,
+        null,
+        Set.of(),
+        null,
+        DateFact.unknown(),
+        DateFact.unknown(),
+        List.of(),
+        now,
+        0,
+        DateFact.scheduledDay(java.time.LocalDate.parse(start), source),
+        DateFact.scheduledDay(java.time.LocalDate.parse(end), source));
+  }
+
+  @Test
+  void stored_event_days_are_a_sources_own_when_any_states_them_not_the_ones_a_model_read() {
+    String url = "https://summit-" + run + ".example/2027";
+    String scout = ai.helper2.shared.WebSources.EVENTS_SCOUT;
+    Map<String, SourceContext> contexts =
+        Map.of("ai-deadlines", context("ai-deadlines"), scout, context(scout));
+    store.upsert(
+        new ResultMerger()
+            .merge(List.of(eventFrom(scout, url, "2027-03-10", "2027-03-20")), contexts),
+        DataOrigin.OBSERVED,
+        Set.of(scout));
+    assertThat(eventDays(url)).containsExactly("2027-03-10", "2027-03-20");
+
+    store.upsert(
+        new ResultMerger()
+            .merge(List.of(eventFrom("ai-deadlines", url, "2027-03-12", "2027-03-14")), contexts),
+        DataOrigin.OBSERVED,
+        Set.of("ai-deadlines"));
+
+    assertThat(eventDays(url)).containsExactly("2027-03-12", "2027-03-14");
+  }
+
+  private List<String> eventDays(String url) {
+    return jdbc.sql(
+            "SELECT to_char(event_starts_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS s,"
+                + " to_char(event_ends_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS e"
+                + " FROM resource WHERE canonical_url = :url")
+        .param("url", CanonicalUrl.of(url).getValue())
+        .query((rs, i) -> List.of(rs.getString("s"), rs.getString("e")))
+        .single();
   }
 }
