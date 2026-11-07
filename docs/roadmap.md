@@ -132,6 +132,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - the back office's Settings page shows its own groups and the guide's daily cap; the public app's other guide and
     setup settings are not there. Read them from the public app (an internal endpoint) or publish them to the
     database at startup;
+  - the back office overview's budgets lack the setup guide's (`tool-guide`): declare it there as the guide's;
+  - set `backoffice.adminBaseUrl` (`H2_ADMIN_BASE_URL`) in the hosted values, so the sign-in callback is pinned to
+    the admin host instead of the request's address;
   - a test for the rate-limit key on the admin host (the signed-in administrator, never a forwarded address): the
     old one-app test ran on the admin port.
 
