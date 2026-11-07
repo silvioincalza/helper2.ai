@@ -13,6 +13,13 @@
 #   make backoffice-sbom         the same for the back office image TAG
 #   make web-sbom                the same for the web image TAG
 #   make postgres-sbom           the same for the Postgres image of postgres.image.tag
+#   make ci-images FROM=<commit> BUILD="web public backoffice" PUSHED=<file>
+#                                CD per component (ADR 0071): build the components in BUILD, give the others TAG on
+#                                the signed image of FROM (same digest); the digests pushed go to PUSHED
+#   make sign PUSHED=<file>      CD: sign exactly the digests this run pushed (OpenBao Transit), then check TAG's images
+#   make sign-existing TAG=<tag> workstation only, with a confirmation: sign images pushed before signing
+#   make verify-images           digest of each image of TAG and of the Postgres image, signature checked against
+#                                cosign.pub; diff, env-secret and deploy run it themselves and deploy by digest
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging env-secret  write ENV's app.env into the Secrets helper2-credentials (the passwords) and
 #                                helper2-app-env (the rest), never through Helm (ADR 0070)
@@ -90,12 +97,14 @@ backup-credentials: ## write ENV's off-site backup Secret (pg-backup-offsite) fr
 		| kubectl apply -f - >/dev/null; \
 	echo "wrote $(NS)/pg-backup-offsite from helper2/kv backup/r2"
 
-# Shell prelude of the image targets: the Harbor robot from OpenBao (helper2/kv ci/harbor) in a curl
+# The Harbor robot's entry in OpenBao: ci/harbor (push, for CD); deploy.yml reads ci/harbor-pull (pull only) to verify.
+HARBOR_KV ?= ci/harbor
+# Shell prelude of the image targets: the Harbor robot from OpenBao (helper2/kv HARBOR_KV) in a curl
 # config (never in argv), `harbor_api <repository> <tag> [curl args]` on Harbor's artifact API (status
 # 200 = the tag exists, 404 = it does not), and `harbor_login` for the image engine.
 define HARBOR
 work=$$(mktemp -d); trap 'rm -rf "$$work"' EXIT; \
-creds=$$(bao kv get -mount=helper2/kv -format=json ci/harbor); \
+creds=$$(bao kv get -mount=helper2/kv -format=json $(HARBOR_KV)); \
 user=$$(jq -r .data.data.harbor_user <<<"$$creds"); pass=$$(jq -r .data.data.harbor_password <<<"$$creds"); \
 printf 'user = "%s:%s"\n' "$$user" "$$pass" > "$$work/curl.cfg"; \
 harbor_api() { curl -sS -K "$$work/curl.cfg" "https://$(REGISTRY)/api/v2.0/projects/helper2/repositories/$${1//\//%252F}/artifacts/$$2" "$${@:3}"; }; \
@@ -119,7 +128,7 @@ image: ## build the linux/amd64 images of TAG (web, public app, back office) and
 			mkdir "$$work/src"; git -C $(ROOT) archive $(TAG) | tar -x -C "$$work/src"; harbor_login; \
 		fi; \
 		$(ENGINE) build --platform linux/amd64 -f "$$work/src/$$dockerfile" -t $$image:$(TAG) "$$work/src"; \
-		$(ENGINE) push $$image:$(TAG); \
+		$(ENGINE) push $(PUSH_DIGEST) $$image:$(TAG); $(call record_push,$$repo,$(TAG)) \
 		echo "pushed $$image:$(TAG)"; \
 	done
 
@@ -176,7 +185,7 @@ postgres-image: ## build Postgres + pgvector (deploy/postgres) and push it to Ha
 		200) echo "$(PG_REPO):$(PG_TAG) is in Harbor already, not rebuilt (a new image needs a new postgres.image.tag)";; \
 		404) harbor_login; \
 			$(ENGINE) build --platform linux/amd64 -t $(PG_REPO):$(PG_TAG) $(ROOT)/deploy/postgres; \
-			$(ENGINE) push $(PG_REPO):$(PG_TAG); \
+			$(ENGINE) push $(PUSH_DIGEST) $(PG_REPO):$(PG_TAG); $(call record_push,apps/postgres,$(PG_TAG)) \
 			echo "pushed $(PG_REPO):$(PG_TAG)";; \
 		*) echo "Harbor answered HTTP $$code for $(PG_REPO):$(PG_TAG)"; exit 1;; \
 	esac; \
@@ -435,3 +444,228 @@ status: ## ENV's pods (READY = the readiness probe) and the public site
 	kubectl -n $(NS) get pods -o wide
 	@# Actuator health is on the management port (8081), which the Services and the Ingresses never route.
 	curl -s -o /dev/null -w "https://$(HOST)/ -> %{http_code}\n" https://$(HOST)/
+
+# --- CD per component, signing and verification (ADR 0071) ---------------------------------------------------------
+
+.PHONY: ci-images sign sign-existing verify-images verified cosign-pub chart-check-digests
+
+# PUSHED, an absolute path: `make image` and `make postgres-image` append repository@digest of every image they push,
+# taken from the push itself (podman --digestfile) and checked against Harbor right after. `make sign` signs those
+# digests and nothing else, so an image someone else put in Harbor never gets our signature.
+PUSHED ?=
+PUSH_DIGEST = $(if $(PUSHED),--digestfile "$$work/pushed.digest")
+record_push = $(if $(PUSHED),pushed=$$(cat "$$work/pushed.digest"); have=$$(harbor_api $(1) $(2) -f | jq -er .digest); [[ $$have == "$$pushed" ]] || { echo "$(1):$(2) is $$have in Harbor and not $$pushed as pushed"; exit 1; }; echo "$(1)@$$pushed" >> "$(PUSHED)";)
+
+# CD per component: every push gives all three images the tag TAG, so the three always share one tag (the public pod
+# copies its shell from the web image of image.tag). A component in BUILD (from .github/scripts/changes.sh) is built
+# with `make image`. Any other gets TAG on the image of FROM, the commit CD ran before: the same digest, no build, and
+# so the same signature. Carried only when that digest verifies with cosign.pub; built when FROM is empty, its image is
+# not in Harbor (its run failed), or it is not signed by our key (the first run after signing came in). A TAG already
+# in Harbor (a rerun) must verify: an unsigned one fails the run, it is never signed here.
+BUILD ?= web public backoffice
+FROM  ?=
+COMPONENTS := web=apps/helper2-web=deploy/web.Dockerfile public=apps/helper2=deploy/Dockerfile \
+		backoffice=apps/helper2-backoffice=deploy/backoffice.Dockerfile
+ci-images: ## CD per component: build the components in BUILD, give the others TAG on the signed image of FROM
+	@set -euo pipefail; \
+	[[ -z "$(FROM)" || "$(FROM)" =~ ^[0-9a-f]{12}$$ ]] || { echo "FROM must be a 12-char commit, got '$(FROM)'"; exit 1; }; \
+	[[ "$(PUSHED)" == /* ]] || { echo "PUSHED must be an absolute path: the digests this run pushes, for make sign"; exit 1; }; \
+	for name in $(BUILD); do [[ " web public backoffice " == *" $$name "* ]] || { echo "BUILD: unknown component $$name"; exit 1; }; done; \
+	$(HARBOR); $(COSIGN); \
+	build=""; \
+	for entry in $(COMPONENTS); do \
+		name=$${entry%%=*}; image_entry=$${entry#*=}; repo=$${image_entry%%=*}; image=$(REGISTRY)/helper2/$$repo; \
+		code=$$(harbor_api $$repo $(TAG) -o "$$work/tag.json" -w "%{http_code}"); case $$code in \
+			200) digest=$$(jq -er .digest "$$work/tag.json"); \
+				verify $$image@$$digest || { cat "$$work/verify.log"; \
+					echo "$$image:$(TAG) ($$digest) is in Harbor but not signed by cosign.pub. CD signs only what it pushes itself."; \
+					echo "Check where it came from; if CD built it, sign it from the workstation: make sign-existing TAG=$(TAG)"; exit 1; }; \
+				echo "$$image:$(TAG) is in Harbor already, signed ($$digest)"; continue;; \
+			404) ;; \
+			*) echo "Harbor answered HTTP $$code for $$image:$(TAG)"; exit 1;; \
+		esac; \
+		if [[ " $(BUILD) " == *" $$name "* ]]; then echo "$$name changed: build"; build="$$build $$image_entry"; continue; fi; \
+		if [ -z "$(FROM)" ]; then echo "$$name: no earlier commit to carry from: build"; build="$$build $$image_entry"; continue; fi; \
+		code=$$(harbor_api $$repo $(FROM) -o "$$work/from.json" -w "%{http_code}"); case $$code in \
+			200) digest=$$(jq -er .digest "$$work/from.json"); \
+				if verify $$image@$$digest; then \
+					jq -n --arg name "$(TAG)" '{name: $$name}' \
+						| harbor_api $$repo $(FROM)/tags -f -X POST -H 'Content-Type: application/json' --data-binary @- -o /dev/null; \
+					echo "$$name unchanged: tagged $$image:$(FROM) as $(TAG) ($$digest, signed)"; \
+				else \
+					echo "$$name: $$image:$(FROM) ($$digest) has no valid signature by cosign.pub: build"; build="$$build $$image_entry"; \
+				fi;; \
+			404) echo "$$name: $$image:$(FROM) is not in Harbor: build"; build="$$build $$image_entry";; \
+			*) echo "Harbor answered HTTP $$code for $$image:$(FROM)"; exit 1;; \
+		esac; \
+	done; \
+	if [ -n "$$build" ]; then $(MAKE) --no-print-directory image TAG=$(TAG) ENGINE=$(ENGINE) IMAGES="$$build" PUSHED="$(PUSHED)"; fi
+
+# Signatures: cosign with the key in OpenBao Transit (COSIGN_KEY, mount TRANSIT_MOUNT). The key never leaves OpenBao;
+# cosign.pub is its public half, committed. No transparency log: cosign-signing-config.json names no service, and
+# verify skips the log. The trust is the key.
+COSIGN_KEY     ?= hashivault://helper2-images
+TRANSIT_MOUNT  ?= helper2/transit
+COSIGN_PUB     := $(abspath cosign.pub)
+SIGNING_CONFIG := $(abspath cosign-signing-config.json)
+# After $(HARBOR): cosign logs in to Harbor with the same robot, into a config in $$work (gone with the trap);
+# `digest_of <repository> <tag>` reads a tag's digest from Harbor; `verify <image@digest>` checks it against
+# cosign.pub (exit 10: no signature at all).
+define COSIGN
+grep -q 'BEGIN PUBLIC KEY' $(COSIGN_PUB) || { echo "$(COSIGN_PUB) holds no public key yet: make cosign-pub"; exit 1; }; \
+export DOCKER_CONFIG="$$work/docker"; \
+printf '%s' "$$pass" | cosign login $(REGISTRY) --username "$$user" --password-stdin >/dev/null 2>"$$work/login.log" \
+	|| { cat "$$work/login.log"; echo "cosign login to $(REGISTRY) failed"; exit 1; }; \
+digest_of() { harbor_api "$$1" "$$2" -f | jq -er .digest; }; \
+verify() { cosign verify --key $(COSIGN_PUB) --insecure-ignore-tlog=true "$$1" </dev/null >/dev/null 2>"$$work/verify.log"; }
+endef
+# Before cosign talks to Transit: the token of bao-login (CD) or of an operator login (workstation, OIDC when BAO_TOKEN
+# is not set), handed to cosign as VAULT_ADDR and VAULT_TOKEN. Every other VAULT_ variable is dropped first, so a
+# setting of the machine (or a token helper, ~/.vault-token) never wins.
+define TRANSIT
+if [ -z "$${BAO_TOKEN:-}" ] && [ -z "$${GITHUB_ACTIONS:-}" ]; then \
+	BAO_TOKEN=$$(bao login -method=oidc -path=oidc -token-only role=helper2-operator); \
+fi; \
+[ -n "$${BAO_ADDR:-}" ] && [ -n "$${BAO_TOKEN:-}" ] || { echo "BAO_ADDR and BAO_TOKEN must be set to sign"; exit 1; }; \
+for v in $$(env | sed -n 's/^\(VAULT_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$$v"; done; \
+export VAULT_ADDR="$$BAO_ADDR" VAULT_TOKEN="$$BAO_TOKEN" TRANSIT_SECRET_ENGINE_PATH=$(TRANSIT_MOUNT); \
+if [ -n "$${BAO_CACERT:-}" ]; then export VAULT_CACERT="$$BAO_CACERT"; fi
+endef
+cosign_sign = cosign sign --yes --signing-config $(SIGNING_CONFIG) --key $(COSIGN_KEY) $(1) </dev/null >/dev/null
+
+# CD: signs exactly the digests in PUSHED, the images this run built and pushed (and the Postgres image when its tag was
+# new). Then every image of TAG and the Postgres image must verify: a carried image is signed already; an image pushed
+# before signing (the current Postgres image, once) fails here and points at sign-existing.
+SIGNED_REFS = apps/helper2-web:$(TAG) apps/helper2:$(TAG) apps/helper2-backoffice:$(TAG) apps/postgres:$(PG_TAG)
+sign: ## CD: sign exactly the digests in PUSHED (pushed by this run), then check every image of TAG and the Postgres image
+	@set -euo pipefail; \
+	test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
+	[[ "$(PUSHED)" == /* ]] || { echo "PUSHED must be the absolute path that ci-images and postgres-image wrote"; exit 1; }; \
+	$(HARBOR); $(COSIGN); $(TRANSIT); \
+	touch "$(PUSHED)"; \
+	while IFS= read -r line <&3; do \
+		[[ $$line =~ ^apps/(helper2|helper2-web|helper2-backoffice|postgres)@sha256:[0-9a-f]{64}$$ ]] \
+			|| { echo "PUSHED holds '$$line', not repository@digest of one of our images"; exit 1; }; \
+		image=$(REGISTRY)/helper2/$$line; \
+		rc=0; verify $$image || rc=$$?; case $$rc in \
+			0) echo "$$line is signed already";; \
+			10) $(call cosign_sign,$$image); \
+				verify $$image || { cat "$$work/verify.log"; echo "$$line: signed, but the signature does not verify with cosign.pub"; exit 1; }; \
+				echo "signed $$line (pushed by this run)";; \
+			*) cat "$$work/verify.log"; echo "$$line: cosign verify failed (exit $$rc), not a missing signature: not signed"; exit 1;; \
+		esac; \
+	done 3< "$(PUSHED)"; \
+	$(MAKE) --no-print-directory verify-images TAG=$(TAG) DIGESTS=/dev/null
+
+# Workstation only, never from a workflow (chart-check fails if one names it): signs the images of TAG and the Postgres
+# image of PG_TAG that have no signature at all, after showing their digests and a confirmation (or CONFIRM=yes).
+# For the images pushed before signing: the current Postgres image once, and an old tag before a rollback to it. Sign
+# only what CD built: check the digests against that commit's CD run first. Needs a token with helper2-image-sign.
+CONFIRM ?=
+sign-existing: ## workstation only: sign the unsigned images of TAG and of PG_TAG, after a confirmation (or CONFIRM=yes)
+	@set -euo pipefail; \
+	[ -z "$${GITHUB_ACTIONS:-}" ] && [ -z "$${CI:-}" ] || { echo "sign-existing is for the operator's workstation, never for CI"; exit 1; }; \
+	[[ "$(TAG)" =~ ^[0-9a-f]{12}$$ || "$(TAG)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || { echo "TAG must be a 12-char commit or X.Y.Z, got '$(TAG)'"; exit 1; }; \
+	test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
+	$(HARBOR); $(COSIGN); \
+	todo=""; \
+	for ref in $(SIGNED_REFS); do \
+		repo=$${ref%%:*}; tag=$${ref#*:}; \
+		digest=$$(digest_of $$repo $$tag) || { echo "$(REGISTRY)/helper2/$$ref is not in Harbor"; exit 1; }; \
+		image=$(REGISTRY)/helper2/$$repo@$$digest; \
+		rc=0; verify $$image || rc=$$?; case $$rc in \
+			0) echo "$$ref ($$digest): signed already";; \
+			10) echo "$$ref ($$digest): no signature"; todo="$$todo $$image";; \
+			*) cat "$$work/verify.log"; echo "$$ref: cosign verify failed (exit $$rc), not a missing signature: not signed"; exit 1;; \
+		esac; \
+	done; \
+	[ -n "$$todo" ] || { echo "nothing to sign"; exit 0; }; \
+	echo "To sign with $(COSIGN_KEY):"; printf '  %s\n' $$todo; \
+	if [ "$(CONFIRM)" != yes ]; then \
+		[ -t 0 ] || { echo "no terminal to confirm on: check the digests, then run again with CONFIRM=yes"; exit 1; }; \
+		read -r -p "Sign these? Only images CD built (check the digests in the commit's CD run). [y/N] " answer; \
+		[[ $$answer == [yY] ]] || { echo "nothing signed"; exit 1; }; \
+	fi; \
+	$(TRANSIT); \
+	for image in $$todo; do \
+		$(call cosign_sign,$$image); \
+		verify $$image || { cat "$$work/verify.log"; echo "$$image: signed, but the signature does not verify with cosign.pub"; exit 1; }; \
+		echo "signed $$image"; \
+	done
+
+# The digest of each image of TAG and of the Postgres image in Harbor, and its signature checked against cosign.pub.
+# One failure fails. Writes APP_DIGEST, BO_DIGEST, WEB_DIGEST and PG_DIGEST to DIGESTS. deploy.yml runs it with its own
+# commit's Makefile before it checks out the target commit, and diff, env-secret and deploy run it again (`verified`).
+DIGESTS ?= /dev/stdout
+verify-images: ## digest of each image of TAG and of the Postgres image, signature checked against cosign.pub, into DIGESTS
+	@set -euo pipefail; \
+	test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
+	$(HARBOR); $(COSIGN); \
+	out=""; \
+	for entry in WEB_DIGEST=apps/helper2-web:$(TAG) APP_DIGEST=apps/helper2:$(TAG) BO_DIGEST=apps/helper2-backoffice:$(TAG) \
+		PG_DIGEST=apps/postgres:$(PG_TAG); do \
+		key=$${entry%%=*}; ref=$${entry#*=}; repo=$${ref%%:*}; tag=$${ref#*:}; \
+		digest=$$(digest_of $$repo $$tag) || { echo "$(REGISTRY)/helper2/$$ref is not in Harbor" >&2; exit 1; }; \
+		verify $(REGISTRY)/helper2/$$repo@$$digest || { cat "$$work/verify.log" >&2; \
+			echo "::error::$$ref ($$digest) has no valid signature by cosign.pub. An image from before signing: make sign-existing TAG=$$tag on the workstation (deploy/k8s/CI.md)" >&2; exit 1; }; \
+		echo "$$ref ($$digest): signature verified" >&2; \
+		out="$$out$$key=$$digest"$$'\n'; \
+	done; \
+	printf '%s' "$$out" >> $(DIGESTS)
+
+# diff, env-secret and deploy check the signatures themselves: `verified` runs verify-images into VERIFIED, bound to TAG,
+# and HELM_ARGS takes the four digests only from that file. A file of another TAG, or none, stops the target. The
+# lines are separate so that `make -n` runs nothing but the verify-images dry run.
+VERIFIED ?= $(ENV)/digests.env
+verified:
+	@rm -f "$(VERIFIED)" "$(VERIFIED).new"; mkdir -p "$(dir $(VERIFIED))"
+	@$(MAKE) --no-print-directory verify-images TAG=$(TAG) DIGESTS="$(abspath $(VERIFIED)).new"
+	@echo "TAG=$(TAG)" >> "$(VERIFIED).new"; mv -f "$(VERIFIED).new" "$(VERIFIED)"
+diff env-secret: verified
+verified_digest = $(shell sed -n 's/^$(1)=//p' $(VERIFIED) 2>/dev/null)
+need_digest = $(if $(and $(filter TAG=$(TAG),$(shell cat $(VERIFIED) 2>/dev/null)),$(filter sha256:%,$(call verified_digest,$(1)))),--set $(2)=$(call verified_digest,$(1)),$(error $(1): no signature check for TAG $(TAG) in $(VERIFIED). Run make verified (ADR 0071)))
+HELM_ARGS += $(call need_digest,APP_DIGEST,image.digest) $(call need_digest,BO_DIGEST,backoffice.image.digest) \
+	$(call need_digest,WEB_DIGEST,web.image.digest) $(call need_digest,PG_DIGEST,postgres.image.digest)
+
+# The public half of the Transit key, once (and after a key rotation): commit the new cosign.pub.
+cosign-pub: ## write cosign.pub from the OpenBao Transit key (needs read on its keys/ path)
+	@set -euo pipefail; $(TRANSIT); \
+	cosign public-key --key $(COSIGN_KEY) > $(COSIGN_PUB).new; \
+	grep -q 'BEGIN PUBLIC KEY' $(COSIGN_PUB).new; mv $(COSIGN_PUB).new $(COSIGN_PUB); \
+	echo "wrote $(COSIGN_PUB) from $(COSIGN_KEY) (mount $(TRANSIT_MOUNT)): commit it"
+
+# Part of chart-check: the deploy renders every app image as repository:tag@digest (the digests verify-images checked),
+# the web pods and the public pod's init container the same web image, a bad digest fails the render, diff takes its
+# digests only from a signature check of its own TAG, and no workflow calls sign-existing.
+chart-check: chart-check-digests
+chart-check-digests:
+	@set -euo pipefail; \
+	echo "== digests (ADR 0071): with the four digests set, every image is repository:tag@digest; the web pods and the init container run the same one"; \
+	d() { printf 'sha256:%064d' "$$1"; }; \
+	r=(helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set image.digest=$$(d 1) \
+		--set web.image.digest=$$(d 2) --set backoffice.image.digest=$$(d 3) --set postgres.image.digest=$$(d 4)); \
+	imgs=$$(helm template "$${r[@]}" | grep -E '^ *image: ' | sed 's/^ *image: //' | sort -u); \
+	for want in "$(IMAGE):000000000000@$$(d 1)" "$(WEB_IMAGE):000000000000@$$(d 2)" "$(BO_IMAGE):000000000000@$$(d 3)" "$(PG_REPO):$(PG_TAG)@$$(d 4)"; do \
+		grep -qxF "$$want" <<< "$$imgs" || { echo "not rendered: $$want"; echo "$$imgs"; exit 1; }; \
+	done; \
+	if grep -v '@sha256:[0-9a-f]\{64\}$$' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
+	web=$$(helm template "$${r[@]}" --show-only templates/web.yaml | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
+	init=$$(helm template "$${r[@]}" --show-only templates/app.yaml | awk '/initContainers:/ {p=1} /^      containers:/ {p=0} p' | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
+	[ "$$web" = "image: $(WEB_IMAGE):000000000000@$$(d 2)" ] && [ "$$web" = "$$init" ] \
+		|| { echo "the web pods ($$web) and the init container ($$init) must both run the web image tag@digest"; exit 1; }; \
+	for v in image.digest web.image.digest backoffice.image.digest postgres.image.digest; do \
+		if helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set $$v=sha256:abc >/dev/null 2>&1; then \
+			echo "$$v=sha256:abc must fail the render"; exit 1; fi; \
+	done; \
+	echo "== diff, env-secret and deploy take the digests only from their own signature check (verified), bound to TAG"; \
+	v=$$(mktemp); trap 'rm -f "$$v"' EXIT; \
+	dry() { $(MAKE) --no-print-directory -s -n diff ENV=staging TAG=000000000000 VERIFIED="$$v" APP_DIGEST=$$(d 9) 2>&1 || true; }; \
+	grep -q 'APP_DIGEST: no signature check for TAG 000000000000' <<< "$$(dry)" || { echo "make diff ran without a signature check: $$(dry)"; exit 1; }; \
+	printf 'WEB_DIGEST=%s\nAPP_DIGEST=%s\nBO_DIGEST=%s\nPG_DIGEST=%s\nTAG=111111111111\n' $$(d 2) $$(d 1) $$(d 3) $$(d 4) > "$$v"; \
+	grep -q 'no signature check for TAG 000000000000' <<< "$$(dry)" || { echo "make diff took the digests checked for another TAG"; exit 1; }; \
+	sed -i.bak 's/^TAG=.*/TAG=000000000000/' "$$v"; rm -f "$$v.bak"; \
+	grep -qF -- "--set image.digest=$$(d 1) --set backoffice.image.digest=$$(d 3)" <<< "$$(dry)" \
+		|| { echo "make diff does not pass the checked digests to Helm (or took APP_DIGEST from the environment): $$(dry)"; exit 1; }; \
+	grep -q 'verify-images' <<< "$$(dry)" || { echo "make diff does not run verify-images first"; exit 1; }; \
+	echo "== sign-existing (workstation only) is called by no workflow"; \
+	if grep -rn 'sign-existing' $(ROOT)/.github; then echo "a workflow names make sign-existing: it is for the operator's workstation only"; exit 1; fi

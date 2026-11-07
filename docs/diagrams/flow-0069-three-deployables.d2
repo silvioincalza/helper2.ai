@@ -51,11 +51,11 @@ build: What a change builds {
   bweb: "web image\n(deploy/web.Dockerfile)" {class: app}
   bpub: "public image\n(deploy/Dockerfile)" {class: app}
   bbo: "back office image\n(deploy/backoffice.Dockerfile)" {class: app}
-  change -> bweb: "frontend/, api/public.yaml,\ndeploy/web/"
-  change -> bpub: "apps/public,\napi/public.yaml"
-  change -> bbo: "apps/backoffice,\napi/admin.yaml, frontend/ (admin)"
-  change -> bpub: "libs/*, apps/common-web,\napi/common.yaml"
-  change -> bbo: "libs/*, apps/common-web,\napi/common.yaml"
+  change -> bweb: "frontend/, deploy/web/,\nweb.Dockerfile"
+  change -> bpub: "apps/public,\ndeploy/Dockerfile"
+  change -> bbo: "apps/backoffice, frontend/,\nbackoffice.Dockerfile"
+  rule: "changes.sh (0071): api/, libs/*, apps/common-web,\nthe Gradle files and any unknown path build\nall three; an unchanged image gets the new tag\non its previous digest, no build" {class: config}
+  rule -> change
 }
 
 boot: App startup (both apps, ADR 0070) {

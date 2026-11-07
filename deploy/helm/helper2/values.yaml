@@ -19,6 +19,9 @@ image:
   # Required. Tags are never rebuilt or moved (one commit, one image), so a node may reuse what it
   # already pulled.
   tag: ""
+  # Optional, "sha256:<hex>" of that tag: the pods run repository:tag@digest. The hosted deploy sets it to the digest
+  # whose signature it checked (make verify-images, ADR 0071); empty = by tag.
+  digest: ""
   pullPolicy: IfNotPresent
 
 # The app's settings and secrets (the H2_ keys of <env>/app.env) are in two Secrets the chart does not
@@ -128,6 +131,8 @@ backoffice:
     repository: ""
     # Empty = image.tag: both apps deploy the same version.
     tag: ""
+    # Optional, "sha256:<hex>", like image.digest.
+    digest: ""
   # One replica is enough for one administrator. The Scout and the indexer run on one replica at a time anyway
   # (ShedLock). Above 1: a PodDisruptionBudget keeps replicas - 1 available.
   replicas: 1
@@ -164,6 +169,9 @@ web:
     repository: ""
     # No tag of its own: always image.tag, so the shell the public pod copies and the files the web pods serve are of
     # the public app's version (the public app nonces every script in the shell).
+    # Optional, "sha256:<hex>" of the web image of image.tag, like image.digest: the web pods and the init container both
+    # run it.
+    digest: ""
   # nginx serves small files from memory and disk: two replicas keep the site's scripts up through a node drain.
   # Above 1: a PodDisruptionBudget keeps replicas - 1 available.
   replicas: 2

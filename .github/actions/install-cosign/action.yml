@@ -1,0 +1,23 @@
+# cosign (Sigstore, Apache-2.0) to sign the images in CD and check their signatures before a deploy (ADR 0071). No
+# third-party action (sigstore/cosign-installer): like Syft in install-scanners, the linux_amd64 release binary,
+# checked against its SHA-256. The value is the release's cosign_checksums.txt entry for cosign-linux-amd64, the same
+# as the digest GitHub shows for that asset (github.com/sigstore/cosign/releases/tag/v3.1.4).
+# Bump the version together with its SHA-256. Dependabot does not see this pin.
+name: install-cosign
+description: Install pinned cosign into RUNNER_TEMP/cosign
+runs:
+  using: composite
+  steps:
+    - name: Install cosign
+      shell: bash
+      env:
+        COSIGN_VERSION: 3.1.4
+        COSIGN_SHA256: 424e2c97d0b45fd7a6b608a87f090f35633f4c23ece5f092d48bba11aaf4bbfa
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/cosign"; mkdir -p "$dir"
+        curl -fsSLo "$dir/cosign" "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-amd64"
+        echo "${COSIGN_SHA256}  $dir/cosign" | sha256sum -c -
+        chmod +x "$dir/cosign"
+        [[ $("$dir/cosign" version 2>&1) == *"v${COSIGN_VERSION}"* ]]
+        echo "$dir" >> "$GITHUB_PATH"

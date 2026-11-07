@@ -1,6 +1,6 @@
-# CD: every push to main runs CI, builds the image once and deploys staging. A push to a release/* branch
-# runs CI and builds the image only (ADR 0048). Prod is not deployed from here: a release tag vX.Y.Z does that
-# (release.yml), under the version tag. Manual runs redeploy or roll back a given tag.
+# CD: every push to main runs all of CI, builds the images of the components that changed, signs them and deploys
+# staging. A push to a release/* branch runs CI and does the images only (ADR 0048). Prod is not deployed from here: a
+# release tag vX.Y.Z does that (release.yml), under the version tag. Manual runs redeploy or roll back a given tag.
 # No pull_request trigger here: self-hosted jobs must never run fork code (the repo is public).
 name: cd
 
@@ -34,6 +34,8 @@ jobs:
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
+    with:
+      full: true
 
   image:
     needs: ci
@@ -46,42 +48,79 @@ jobs:
       group: image-${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The diff against the commit pushed before (changes.sh) needs the history.
+          fetch-depth: 0
+      # The tools first, so no third-party step runs while the OpenBao token below may sign.
+      - uses: ./.github/actions/install-cosign
+      - uses: ./.github/actions/install-scanners
+      # The token may read ci/harbor and sign with the Transit key (ADR 0071). It is revoked right after the signing
+      # step; the uploads come after that.
       - uses: ./.github/actions/bao-login
         with:
           addr: ${{ vars.BAO_ADDR }}
           audience: ${{ vars.BAO_AUDIENCE }}
           role: deploy
-      # Postgres + pgvector (ADR 0012): built and pushed only when postgres.image.tag is not in Harbor yet.
+      # Postgres + pgvector (ADR 0012): built and pushed only when postgres.image.tag is not in Harbor yet. Its digest
+      # goes to the list of what this run pushed, for the signing step.
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
-        run: make -C deploy/k8s postgres-image ENGINE="$ENGINE"
-      # The three images (web, public app, back office; ADR 0069), built from `git archive` of the commit (Makefile),
-      # pushed to Harbor as TAG. Not signed yet: image signing is on the roadmap (§ 2), for every image.
+        run: make -C deploy/k8s postgres-image ENGINE="$ENGINE" PUSHED="$RUNNER_TEMP/pushed.txt"
+      # Per component (ADR 0071): what changed since the commit pushed before. A new branch (no commit before) or a
+      # base not in the clone gives everything.
+      - name: Changed components
+        id: changes
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          .github/scripts/changes.sh "$BEFORE" HEAD > "$RUNNER_TEMP/changes.env"
+          build=$(awk -F= '$2 == "true" && ($1 == "web" || $1 == "public" || $1 == "backoffice") {print $1}' "$RUNNER_TEMP/changes.env" | xargs)
+          from=""
+          [[ $BEFORE =~ ^0+$ ]] || from=${BEFORE::12}
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "from=$from" >> "$GITHUB_OUTPUT"
+          echo "Images built: ${build:-none}; the others carry the signed image of ${from:-nothing} (ADR 0071)" >> "$GITHUB_STEP_SUMMARY"
+      # The three images (web, public app, back office; ADR 0069) all get TAG: a changed one is built from `git archive`
+      # of the commit and pushed, an unchanged one gets TAG on the image of the commit before (same digest, Harbor API),
+      # only when that image is signed by our key. Otherwise it is built. The digests pushed go to pushed.txt.
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
-        run: make -C deploy/k8s image TAG="${GITHUB_SHA::12}" ENGINE="$ENGINE"
-      # SBOM of each pushed image (ADR 0046), read from Harbor; release.yml attaches them to the GitHub release.
-      - uses: ./.github/actions/install-scanners
-      - run: make -C deploy/k8s sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom.cdx.json"
+          BUILD: ${{ steps.changes.outputs.build }}
+          FROM: ${{ steps.changes.outputs.from }}
+        run: make -C deploy/k8s ci-images TAG="${GITHUB_SHA::12}" FROM="$FROM" BUILD="$BUILD" ENGINE="$ENGINE" PUSHED="$RUNNER_TEMP/pushed.txt"
+      # SBOM of each image (ADR 0046), read from Harbor; release.yml attaches them to the GitHub release. The Postgres
+      # image of postgres.image.tag, new or not: the daily scan sees new CVEs in it too. Uploaded after the revocation.
+      - run: |
+          set -euo pipefail
+          make -C deploy/k8s sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom.cdx.json"
+          make -C deploy/k8s backoffice-sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom-backoffice.cdx.json"
+          make -C deploy/k8s web-sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom-web.cdx.json"
+          make -C deploy/k8s postgres-sbom SBOM="$GITHUB_WORKSPACE/sbom-postgres.cdx.json"
+      # Signs exactly the digests this run pushed (pushed.txt), with the OpenBao Transit key; then every image of TAG and
+      # the Postgres image must verify. An image pushed before signing fails here: it is signed by hand, never by CD.
+      - run: make -C deploy/k8s sign TAG="${GITHUB_SHA::12}" PUSHED="$RUNNER_TEMP/pushed.txt"
+      # The token may sign: revoke it now, also when a step above failed, and blank it for the steps below.
+      - name: Revoke the OpenBao token
+        if: always()
+        run: |
+          if [ -n "${BAO_TOKEN:-}" ]; then bao token revoke -self >/dev/null || echo "::warning::could not revoke the OpenBao token"; fi
+          echo "BAO_TOKEN=" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom
           path: sbom.cdx.json
           retention-days: 90
-      - run: make -C deploy/k8s backoffice-sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom-backoffice.cdx.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom-backoffice
           path: sbom-backoffice.cdx.json
           retention-days: 90
-      - run: make -C deploy/k8s web-sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom-web.cdx.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom-web
           path: sbom-web.cdx.json
           retention-days: 90
-      # The Postgres image of postgres.image.tag, new or not: the daily scan below sees new CVEs in it too.
-      - run: make -C deploy/k8s postgres-sbom SBOM="$GITHUB_WORKSPACE/sbom-postgres.cdx.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom-postgres

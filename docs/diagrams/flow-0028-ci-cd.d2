@@ -1,7 +1,8 @@
-# Flowchart: from a pull request to prod. PR checks on GitHub-hosted runners; on main, CI again, one
-# image build on the self-hosted runner, staging. Prod only from a release tag, after the approval.
-# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, deploy/k8s/Makefile (image,
-#   postgres-image, chart-check, diff, deploy, status), deploy/k8s/CI.md.
+# Flowchart: from a pull request to prod. PR checks on GitHub-hosted runners, per changed part (ADR 0071); on main,
+# all of CI again, the changed images built and every image signed on the self-hosted runner, staging. Prod only from
+# a release tag, after the approval.
+# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, deploy/k8s/Makefile (ci-images, image,
+#   sign, verify-images, postgres-image, chart-check, diff, deploy, status), deploy/k8s/CI.md.
 # Render: cd docs/diagrams && d2 fmt flow-0028-ci-cd.d2 && d2 flow-0028-ci-cd.d2 flow-0028-ci-cd.svg
 
 ...@style
@@ -11,7 +12,7 @@ direction: down
 dev: Developer {class: person}
 pr: "Pull request" {class: end}
 
-checks: ci.yml (GitHub-hosted, on every PR) {
+checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed, 0071)" {
   class: group
   grid-columns: 3
   frontend: "frontend:\nformat, lint, knip, typecheck,\nVitest, build, bundle size,\nnpm audit" {class: app}
@@ -22,20 +23,20 @@ checks: ci.yml (GitHub-hosted, on every PR) {
   d2: "PR only: diagrams\nre-rendered = committed?" {class: app}
 }
 
-green: "All checks green?" {class: decision}
+green: "ci-ok green?\n(skipped is fine)" {class: decision}
 fix: "Fix and push again" {class: fail}
 merge: "Merge to main" {class: app}
 
 cd: cd.yml (push to main or release/*) {
   class: group
   direction: down
-  ci: "ci.yml again\n(frontend, backend, chart)" {class: app}
-  build: "image job (self-hosted):\nbao-login role deploy\nmake postgres-image, make image" {class: app}
-  exists: "Tag already\nin Harbor?" {class: decision}
-  reuse: "Not rebuilt" {class: app}
-  push: "Build from git archive,\npush TAG = commit[0:12]" {class: data}
+  ci: "ci.yml again, every job\n(full: true)" {class: app}
+  build: "image job (self-hosted):\nbao-login role deploy\nmake postgres-image, make ci-images" {class: app}
+  exists: "Component changed?\n(changes.sh, 0071)" {class: decision}
+  reuse: "Tag TAG added to the image\nof the commit before (same digest)" {class: app}
+  push: "Build from git archive,\npush TAG = commit[0:12];\nmake sign (OpenBao Transit)" {class: data}
   scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0046, report-only)" {class: app}
-  staging: "deploy.yml env staging:\ndiff, deploy, status" {class: app}
+  staging: "deploy.yml env staging:\nverify signatures (0071),\ndiff, deploy by digest, status" {class: app}
   ok: "Staging rollout\nhealthy?" {class: decision}
   rollback: "helm --rollback-on-failure:\nback to the last deployed revision" {class: fail}
   branch: "Push to main?" {class: decision}
@@ -44,8 +45,8 @@ cd: cd.yml (push to main or release/*) {
 
   ci -> build: {class: hot}
   build -> exists
-  exists -> reuse: yes
-  exists -> push: no {class: hot}
+  exists -> reuse: no
+  exists -> push: yes {class: hot}
   build -> scan: "SBOM artifacts"
   reuse -> branch
   push -> branch: {class: hot}

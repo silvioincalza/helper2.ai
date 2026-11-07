@@ -1,0 +1,2 @@
+Not created yet: the public half of the OpenBao Transit key helper2-images.
+Create the key (CI.md, "Image signing"), then run `make cosign-pub` here and commit this file.

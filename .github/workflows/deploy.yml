@@ -66,6 +66,9 @@ jobs:
           audience: ${{ vars.BAO_AUDIENCE }}
           role: deploy-${{ inputs.environment }}
 
+      # The signatures are checked before the deploy (ADR 0071), with this commit's Makefile and cosign.pub.
+      - uses: ./.github/actions/install-cosign
+
       # Cluster access comes only from the env's OpenBao entry, so the prod approval gates prod access.
       # The runner itself holds no kube credentials.
       - name: Kubeconfig from OpenBao
@@ -89,6 +92,8 @@ jobs:
             # The prod deployer may `get` this one Deployment in staging and nothing else (rbac.tf).
             image=$(kubectl -n helper2-staging get deployment helper2 \
               -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}')
+            # repository:tag or repository:tag@sha256:<digest> (ADR 0071): the tag sits before the digest.
+            image=${image%@*}
             tag=${image##*:}
           fi
           tag=${tag:-${GITHUB_SHA::12}}
@@ -129,6 +134,7 @@ jobs:
           # older commit when approved (3 Nov 2026, prod). Older than what runs = rollback: true only.
           running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
+          running=${running%@*}
           running=${running##*:}
           # Commits of main and of a release branch can diverge (ADR 0048): then neither is an ancestor of the other,
           # and only two release versions say which is newer; with a commit tag on either side it takes rollback: true.
@@ -156,8 +162,26 @@ jobs:
             [[ $sha == "$RELEASE_COMMIT" ]] || { echo "::error::v$tag now names $sha, release.yml checked $RELEASE_COMMIT"; exit 1; }
             make retag TAG="${sha::12}" VERSION="$tag"
           fi
+          # Every image of the tag and the Postgres image of that commit: digest from Harbor, signature checked against
+          # cosign.pub (ADR 0071), with this commit's Makefile, before the checkout below, so an older commit's images
+          # are checked too. An unsigned image stops the deploy here (an image from before signing is signed by hand
+          # on the workstation, CI.md "Image signing"). The pull-only robot (ci/harbor-pull) is enough. The Postgres tag is the target
+          # commit's, read as the Makefile reads PG_TAG (no yq on the runner).
+          pg_tag=$(git show "$sha:deploy/helm/helper2/values.yaml" \
+            | awk '/^postgres:/ {p=1; next} p && /^[^ #]/ {exit} p && $1 == "tag:" {print $2; exit}')
+          make verify-images TAG="$tag" PG_TAG="$pg_tag" HARBOR_KV=ci/harbor-pull DIGESTS=/dev/null
           # Chart and image from the same commit, so an old image never runs with a newer chart.
           git checkout --quiet --detach "$sha"
+          # The target commit's diff, env-secret and deploy check the signatures again and deploy by digest. A commit
+          # from before that (no digests in its chart or Makefile) deploys by tag: only as a deliberate rollback.
+          if ! grep -q 'need_digest' Makefile || ! grep -q 'helper2.atDigest' ../helm/helper2/templates/_helpers.tpl; then
+            if [[ $ROLLBACK != true ]]; then
+              echo "::error::$tag predates the deploy by digest (ADR 0071): deploying it needs rollback: true"; exit 1
+            fi
+            echo "::warning::$tag predates the deploy by digest: its signatures were checked above, Helm deploys it by tag"
+          fi
+          # The target Makefile reads Harbor with the pull-only robot.
+          echo "HARBOR_KV=ci/harbor-pull" >> "$GITHUB_ENV"
           echo "TAG=$tag" >> "$GITHUB_ENV"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Deploying $tag (commit ${sha::12}) to $ENV" >> "$GITHUB_STEP_SUMMARY"
@@ -193,4 +217,4 @@ jobs:
 
       - name: Clean up
         if: always()
-        run: rm -f "$ENV/app.env" "${KUBECONFIG:-}"
+        run: rm -f "$ENV/app.env" "$ENV/digests.env" "${KUBECONFIG:-}"
