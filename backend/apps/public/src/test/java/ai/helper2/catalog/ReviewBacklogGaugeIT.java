@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
+import ai.helper2.testing.AsBackOffice;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 /** The review backlog gauge counts the items waiting for a person: OPEN ones only. */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class ReviewBacklogGaugeIT {
 
   @Autowired JdbcClient jdbc;

@@ -64,12 +64,19 @@ spec:
             # spring.lifecycle.timeout-per-shutdown-phase: how long requests in flight get after SIGTERM.
             - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
             - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
-            - { name: H2_DATABASE_USER, value: helper2 }
+            # Its own role, never the owner (ADR 0070): rows only, no DDL. The migrate Job opens its login.
+            - { name: H2_DATABASE_USER, value: h2_public }
+            - name: H2_DATABASE_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PUBLIC_PASSWORD } }
             - { name: H2_REDIS_HOST, value: redis }
             {{- if .Values.redis.auth.enabled }}
-            # spring.data.redis.password
+            # Its own Redis ACL user (files/redis-users.acl): its keys and commands only.
+            - { name: H2_REDIS_USER, value: h2_public }
             - name: H2_REDIS_PASSWORD
-              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list . "H2_REDIS_PUBLIC_PASSWORD") }} }
+            {{- else }}
+            # No Redis auth: empty, so an H2_REDIS_PASSWORD left in the env Secret never reaches the app.
+            - { name: H2_REDIS_PASSWORD, value: "" }
             {{- end }}
             # The running build: cached guide answers are kept per build, so a deploy is seen at once.
             - { name: H2_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
@@ -132,7 +139,7 @@ spec:
           ports:
             - { containerPort: 8080, name: http }
             - { containerPort: 8081, name: management }
-          # Startup runs Flyway and loads the Lingua language models: up to periodSeconds x
+          # Startup checks the schema (waiting for the migrate Job) and loads the Lingua models: up to periodSeconds x
           # failureThreshold (app.startupSeconds) before the kubelet restarts the container. Liveness
           # and readiness only start once this has passed, so neither needs an initial delay.
           startupProbe:

@@ -44,17 +44,25 @@ moved: one commit, one image.
 ## 2. Configure
 
 **`app.env`** (never commit it): copy [`app.env.example`](app.env.example) and fill in the values. It must
-contain `H2_DATABASE_PASSWORD` and `H2_REDIS_PASSWORD` (`openssl rand -hex 32`; letters and digits only).
-With `redis.auth.existingSecret` (or `redis.auth.enabled=false`), Redis does not read app.env: check it with
-`--no-redis-password`. `make env-secret` picks the flag from the rendered chart.
-It goes into a Secret that the chart does not create, so no value is kept in Helm's release history.
-Check it, then create or update the Secret:
+contain six different passwords (`openssl rand -hex 32`; letters and digits only,
+[ADR 0070](../../docs/adr/operations/0070-app-roles.md)): `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
+backup and the migrate Job only), `H2_DATABASE_PUBLIC_PASSWORD` and `H2_DATABASE_BACKOFFICE_PASSWORD` (each app's
+own role), `H2_REDIS_PASSWORD` (Redis' default user, the admin), and `H2_REDIS_PUBLIC_PASSWORD` and
+`H2_REDIS_BACKOFFICE_PASSWORD` (each app's own Redis user). With `redis.auth.existingSecret` (or
+`redis.auth.enabled=false`), Redis does not read app.env: check it with `--no-redis-password`. `make env-secret`
+picks the flag from the rendered chart.
+It goes into two Secrets that the chart does not create, so no value is kept in Helm's release history: the
+passwords into `helper2-credentials`, which no workload loads whole, and the rest into `helper2-app-env`, which
+both apps load. Check it, then create or update both:
 
 ```bash
 deploy/k8s/check-app-env.sh app.env
 kubectl create namespace helper2
-kubectl -n helper2 create secret generic helper2-app-env --from-env-file=app.env --dry-run=client -o yaml \
-  | kubectl -n helper2 apply --server-side --field-manager=helper2-env-secret -f -
+pw='^H2_(DATABASE|REDIS)(_PUBLIC|_BACKOFFICE)?_PASSWORD='
+kubectl -n helper2 create secret generic helper2-credentials --from-env-file=<(grep -E "$pw" app.env) \
+  --dry-run=client -o yaml | kubectl -n helper2 apply --server-side --field-manager=helper2-env-secret -f -
+kubectl -n helper2 create secret generic helper2-app-env --from-env-file=<(grep -vE "$pw" app.env) \
+  --dry-run=client -o yaml | kubectl -n helper2 apply --server-side --field-manager=helper2-env-secret -f -
 ```
 
 The chart cannot see the Secret change. Pass a new `envSecret.revision` (for example a hash of app.env) to
@@ -95,8 +103,8 @@ Every value and its default is described in [`values.yaml`](../helm/helper2/valu
 helm upgrade --install helper2 deploy/helm/helper2 -n helper2 \
   -f my-values.yaml --set image.tag=$TAG \
   --set envSecret.revision=$(sha256sum < app.env | cut -c1-16) \
-  --set envSecret.redisPasswordRevision=$(grep ^H2_REDIS_PASSWORD= app.env | sha256sum | cut -c1-16) \
-  --wait --timeout 12m --history-max 3
+  --set envSecret.redisPasswordRevision=$(grep -E '^H2_REDIS_(PUBLIC_|BACKOFFICE_)?PASSWORD=' app.env | sha256sum | cut -c1-16) \
+  --wait --wait-for-jobs --timeout 12m --history-max 3
 ```
 
 Check that it works:
@@ -145,8 +153,10 @@ never from the public host. The public app has no admin code and answers 404 on 
 back office on that host: its GitHub App (or OAuth app) needs the callback
 `https://<admin host>/login/oauth2/code/github`.
 
-Then open `https://<host>`. The public app migrates the database at startup; the back office only checks the
-schema, so on a release with a new migration it waits (restarts) until the public app has migrated. The
+Then open `https://<host>`. Each release runs the Job `helper2-migrate-<revision>` from the public image: it
+migrates the database as the owner and opens both apps' logins. Neither app migrates: each one connects as its own
+role and waits at startup, up to 4 minutes, until the Job is done. `--wait-for-jobs` makes the release fail when
+the Job does. The
 Scout runs in the back office: it starts about 20 seconds after startup and fills the catalog over the next
 hours.
 

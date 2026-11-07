@@ -8,6 +8,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +22,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.data.redis.serializer.SerializationException;
 import org.springframework.http.MediaType;
+import org.springframework.security.jackson.SecurityJacksonModules;
 import org.springframework.session.Session;
 import org.springframework.session.SessionRepository;
 import org.springframework.session.data.redis.RedisSessionRepository;
 import org.springframework.session.web.http.SessionRepositoryFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 
 /**
  * Sign-in sessions are kept in Redis (spring.session.data.redis), so a signed-in admin is
@@ -40,9 +50,46 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *       ?signin=failed}, and anything else gets a 503, instead of a server error that fails again
  *       on the error page.
  * </ul>
+ *
+ * <p>Sessions are stored as JSON (ADR 0070), never with Java serialization: whoever can write a
+ * session key could otherwise make the app run code while it reads the session. Only the types of
+ * Spring Security's Jackson modules (the signed-in user, its roles, the sign-in request) are read
+ * back.
  */
 @Configuration(proxyBeanMethods = false)
 class SessionConfiguration {
+
+  /** The serializer Spring Session uses for every session attribute (its bean name). */
+  @Bean
+  static RedisSerializer<Object> springSessionDefaultRedisSerializer() {
+    ClassLoader loader = SessionConfiguration.class.getClassLoader();
+    JsonMapper json =
+        JsonMapper.builder()
+            .addModules(SecurityJacksonModules.getModules(loader, attributeValues()))
+            .build();
+    return new GenericJacksonJsonRedisSerializer(json);
+  }
+
+  /**
+   * The plain values a provider's user attributes hold (GitHub: numeric id, flags, nested objects
+   * and lists), on top of Spring Security's own types. Exactly these classes, never their
+   * subclasses: a subclass of a map or a list elsewhere on the classpath could run code when read.
+   */
+  private static final Set<Class<?>> ATTRIBUTE_VALUES =
+      Set.of(
+          String.class,
+          Long.class,
+          Integer.class,
+          Double.class,
+          Boolean.class,
+          ArrayList.class,
+          LinkedHashMap.class,
+          HashMap.class);
+
+  private static BasicPolymorphicTypeValidator.Builder attributeValues() {
+    return BasicPolymorphicTypeValidator.builder()
+        .allowIfSubType((context, type) -> ATTRIBUTE_VALUES.contains(type));
+  }
 
   @Bean
   static BeanPostProcessor failSoftSessionReads(ObjectProvider<Resilience> resilience) {
@@ -72,6 +119,8 @@ class SessionConfiguration {
    */
   static final class FailSoftSessionRepository<S extends Session> implements SessionRepository<S> {
 
+    private static final Logger log = LoggerFactory.getLogger(FailSoftSessionRepository.class);
+
     private final SessionRepository<S> delegate;
     private final Resilience resilience;
 
@@ -95,6 +144,11 @@ class SessionConfiguration {
       try {
         return resilience.call("redis", () -> delegate.findById(id));
       } catch (RuntimeException e) {
+        if (unreadable(e)) {
+          // Not an outage: the stored session has a type the JSON reader does not allow. The user
+          // is signed out; say so, or every sign-in would end like this without a trace.
+          log.warn("Session could not be read, served as anonymous: {}", e.toString());
+        }
         return null;
       }
     }
@@ -102,6 +156,15 @@ class SessionConfiguration {
     @Override
     public void deleteById(String id) {
       delegate.deleteById(id);
+    }
+
+    private static boolean unreadable(Throwable e) {
+      for (Throwable t = e; t != null; t = t.getCause()) {
+        if (t instanceof SerializationException) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 

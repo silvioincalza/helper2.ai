@@ -19,6 +19,7 @@ import ai.helper2.search.hit
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
+import ai.helper2.testing.AsBackOffice
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -35,6 +36,7 @@ import org.springframework.jdbc.core.simple.JdbcClient
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration::class)
+@AsBackOffice
 class AwesomeListSearchIT {
 
   @Autowired lateinit var indexResources: IndexResources

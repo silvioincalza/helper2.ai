@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.shared.ResourceType;
 import com.jayway.jsonpath.JsonPath;
@@ -270,7 +271,9 @@ class SearchApiIT extends ApiTestBase {
                 0)));
     mvc.perform(get("/api/v1/search").param("q", "my secret query")).andExpect(status().isOk());
     // Something was cached (else this test proves nothing), and no key carries the user's words.
-    assertThat(redis.keys("*")).isNotEmpty().noneMatch(k -> k.contains("secret"));
+    assertThat(TestcontainersConfiguration.adminRedis().keys("*"))
+        .isNotEmpty()
+        .noneMatch(k -> k.contains("secret"));
   }
 
   @Test

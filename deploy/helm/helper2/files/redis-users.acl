@@ -1,0 +1,9 @@
+# The Redis ACL users of the two apps (ADR 0070): one line per user, its name and then its rules.
+# The chart puts each into the Redis config as `user <name> on ><password> <rules>`, the password from
+# H2_REDIS_PUBLIC_PASSWORD or H2_REDIS_BACKOFFICE_PASSWORD; the backend tests start Redis from this file,
+# so a key or command the code needs and this file lacks fails a test (NOPERM).
+#   keys: both apps' rate limits, budgets, quotas, outbound limits and source caches; then each app's
+#   own cache and sign-in sessions. Commands: exactly the ones the code sends, scripts included
+#   (Redis checks the commands and keys inside EVAL too). The default user stays the admin (probes, redis-cli).
+h2_public resetkeys resetchannels ~h2:v1:rate:* ~h2:v1:budget:* ~h2:v1:quota:* ~h2:v1:outbound:* ~h2:v1:src:* ~h2:v1:setup:fetches:* ~h2:v1:session:public:* -@all +hello +client|setinfo +ping +info +get +set +del +exists +incr +incrby +decr +expire +pexpire +pexpireat +ttl +pttl +hget +hgetall +hset +hmset +hdel +hincrby +sadd +sismember +scard +rename +eval +evalsha +script|load
+h2_backoffice resetkeys resetchannels ~h2:v1:rate:* ~h2:v1:budget:* ~h2:v1:quota:* ~h2:v1:outbound:* ~h2:v1:src:* ~h2:v1:scout:page-text:* ~h2:v1:session:backoffice:* -@all +hello +client|setinfo +ping +info +get +set +del +exists +incr +incrby +decr +expire +pexpire +pexpireat +ttl +pttl +hget +hgetall +hset +hmset +hdel +hincrby +sadd +sismember +scard +rename +eval +evalsha +script|load

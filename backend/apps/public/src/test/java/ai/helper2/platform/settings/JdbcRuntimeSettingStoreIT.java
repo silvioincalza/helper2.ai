@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.testing.AsBackOffice;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class JdbcRuntimeSettingStoreIT {
 
   static final Instant AT = Instant.parse("2026-11-05T10:00:00Z");

@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.helper2.examples.usecase.AddHomeExample;
 import ai.helper2.shared.AudiencePath;
+import ai.helper2.testing.AsBackOffice;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
  * check expects, cached for everyone. The back office adds them (HomeExamplesApiIT there); here the
  * catalog use case it calls stands in for it.
  */
+@AsBackOffice
 class HomeExamplesPoolApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;

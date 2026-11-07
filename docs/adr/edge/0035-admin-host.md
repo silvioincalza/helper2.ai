@@ -35,7 +35,7 @@ reaches the cluster with an address from the platform's private ranges.
    opened again after the return to `/`.
 6. **Cookies of each host.** The public cookies are host-only (`SESSION`, `XSRF-TOKEN`, no `Domain`). The back office
    uses `__Host-SESSION` and `__Host-XSRF-TOKEN`: Secure, `Path=/`, no `Domain`, so no sibling host can set them. Its
-   sessions are in their own Redis namespace (`helper2:backoffice:session`), so a public session id is never one there.
+   sessions are in their own Redis namespace (`h2:v1:session:backoffice`), so a public session id is never one there.
 7. **The edge decides who reaches the admin host.** The chart ships the Service `helper2-admin` (port 80 → the back
    office pods). The platform repo (outside this repo) routes the admin host to it with the Ingress `helper2-admin`
    on ingress-nginx: an allow-list of the private ranges, a DNS-only record to the ingress IP and a DNS-01

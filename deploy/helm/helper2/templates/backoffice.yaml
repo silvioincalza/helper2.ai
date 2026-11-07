@@ -45,11 +45,19 @@ spec:
             - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
             - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
             - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
-            - { name: H2_DATABASE_USER, value: helper2 }
+            # Its own role, never the owner (ADR 0070): rows only, no DDL. The migrate Job opens its login.
+            - { name: H2_DATABASE_USER, value: h2_backoffice }
+            - name: H2_DATABASE_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_BACKOFFICE_PASSWORD } }
             - { name: H2_REDIS_HOST, value: redis }
             {{- if .Values.redis.auth.enabled }}
+            # Its own Redis ACL user (files/redis-users.acl): its keys and commands only.
+            - { name: H2_REDIS_USER, value: h2_backoffice }
             - name: H2_REDIS_PASSWORD
-              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list . "H2_REDIS_BACKOFFICE_PASSWORD") }} }
+            {{- else }}
+            # No Redis auth: empty, so an H2_REDIS_PASSWORD left in the env Secret never reaches the app.
+            - { name: H2_REDIS_PASSWORD, value: "" }
             {{- end }}
             - { name: H2_BUILD_VERSION, value: {{ include "helper2.backofficeTag" . | quote }} }
             {{- with $bo.grafanaUrl }}
@@ -90,7 +98,7 @@ spec:
           ports:
             - { containerPort: 8080, name: http }
             - { containerPort: 8081, name: management }
-          # Startup validates the schema (the public app migrates it) and loads the Lingua models.
+          # Startup checks the schema (waiting for the migrate Job, ADR 0070) and loads the Lingua models.
           startupProbe:
             httpGet: { path: /actuator/health/liveness, port: management }
             periodSeconds: 5

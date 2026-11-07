@@ -134,7 +134,10 @@ class SchemaMigrationTest {
     assertThat(popularity(a)).isZero();
     assertThat(popularity(b)).isEqualTo(1.0);
 
-    jdbc.sql("DELETE FROM source_record WHERE id = :id").param("id", rec).update();
+    TestcontainersConfiguration.ownerJdbc()
+        .sql("DELETE FROM source_record WHERE id = :id")
+        .param("id", rec)
+        .update();
     assertThat(popularity(b)).isZero();
   }
 

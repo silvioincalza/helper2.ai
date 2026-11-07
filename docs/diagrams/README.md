@@ -16,7 +16,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [architecture-setup](architecture-setup.svg) | "Set it up" on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
 | [architecture-platform](architecture-platform.svg) | The edge and the shared services: identity, rate limits, errors, the SPA, and platform llm, http, resilience, quota, shared cache and locks, with their Redis keys and tables. |
 | [data-model](data-model.svg) | Data model: every PostgreSQL table from the versioned migrations with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0034); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
-| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), Redis auth, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
+| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), the migrate Job, each app's database role and Redis user, the two Secrets, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (off today). |
 
 ## Per ADR
 
@@ -89,7 +89,8 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0067](../adr/scout/0067-live-web-events-scout.md) | [flow](flow-0067-live-web-events-scout.svg) | [sequence](sequence-0067-live-web-events-scout.svg) | one weekly pass of the events scout: searches, Extract, the model's reading, the code gate, the merge with a source's days, and the AI label. |
 | [0066](../adr/edge/0066-curated-field.md) | [flow](flow-0066-curated-field.svg) | [sequence](sequence-0066-curated-field.svg) | how an admin sets or drops a field of a resource, and what later records, runs and the page do with it. |
 | [0068](../adr/foundation/0068-backend-libraries-and-apps.md) | [flow](flow-0068-backend-libraries-and-apps.svg) | — (build only, no runtime path) | where a piece of backend code goes (an app or a library), and the build checks that keep the direction. |
-| [0069](../adr/operations/0069-three-deployables.md) | [flow](flow-0069-three-deployables.svg) | [sequence](sequence-0069-three-deployables.svg) | which workload answers a request (the web files by path) and which app runs a job, what a change rebuilds, the public pod's shell from the web image, the back office waiting for the public app's migrations; a public page, an admin write and a Scout run end to end. |
+| [0069](../adr/operations/0069-three-deployables.md) | [flow](flow-0069-three-deployables.svg) | [sequence](sequence-0069-three-deployables.svg) | which workload answers a request (the web files by path) and which app runs a job, what a change rebuilds, the public pod's shell from the web image; a public page, an admin write and a Scout run end to end. |
+| [0070](../adr/operations/0070-app-roles.md) | [flow](flow-0070-app-roles.svg) | [sequence](sequence-0070-app-roles.svg) | who migrates (the migrate Job, as the owner), how an app waits for the schema, and what each app's role and Redis user reach; a deploy with a new migration from app.env to both apps serving. |
 
 ## Colors
 

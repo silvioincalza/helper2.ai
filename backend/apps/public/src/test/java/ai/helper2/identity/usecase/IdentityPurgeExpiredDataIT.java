@@ -100,7 +100,10 @@ class IdentityPurgeExpiredDataIT {
   void auditEntriesCannotBeChanged() {
     UUID entry = auditEntry(NOW);
     assertThatThrownBy(() ->
-            jdbc.sql("UPDATE admin_audit SET outcome = 'BUSY' WHERE id = :id")
+            // As the owner: the app's role may not update it at all; the trigger stops even the
+            // owner.
+            TestcontainersConfiguration.ownerJdbc()
+                .sql("UPDATE admin_audit SET outcome = 'BUSY' WHERE id = :id")
                 .param("id", entry)
                 .update())
         .isInstanceOf(DataAccessException.class)

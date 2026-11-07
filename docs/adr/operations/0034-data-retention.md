@@ -41,7 +41,7 @@ The periods are a product decision the owner may change; changing one must not n
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a keyed hash of the address and the day ([0017](../guide/0017-guide-cost-guard.md)), and the random ids of the questions given back to them | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by a keyed hash of the client address and the day ([0024](../edge/0024-http-edge-protection.md)) | 1 minute or 1 hour (the window) | Redis TTL |
    | Redis `h2:v1:quota:*` | daily web searches per feature: guests under an HMAC of the address and the day, signed-in users under their id; the global count ([0037](../search/0037-tavily-store-and-daily-quota.md)) | 24 h after the first count | Redis TTL, `DeleteMyAccount` |
-   | Redis `helper2:session:*` | sign-in sessions | 30 minutes idle | Spring Session expiry |
+   | Redis `h2:v1:session:public:*`, `h2:v1:session:backoffice:*` | sign-in sessions (JSON, ADR 0070) | 30 minutes idle | Spring Session expiry |
    | In-memory caches (setup materials and registry specs) | copies of the above | 1 h; bounded entries; lost on restart | TTL and size bound |
    | Browser `localStorage` | language, theme, chosen AI client, bookmarks while signed out | until the user clears it; bookmarks move to the account at sign-in | the user's browser |
    | Logs (Loki), traces (Tempo), metrics (Prometheus) | technical logs with addresses, traces, meters | 90 days | [0026](0026-observability.md) |

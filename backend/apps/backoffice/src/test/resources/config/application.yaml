@@ -1,4 +1,5 @@
-# The back office's tests have no public app to migrate their database (SchemaCheck).
+# The tests connect as the back office does in a deployment (ADR 0070): its database role and its Redis
+# ACL user (TestcontainersConfiguration), so a missing grant or Redis permission fails a test.
 helper2:
-  schema:
-    migrate: true
+  test:
+    client: h2_backoffice

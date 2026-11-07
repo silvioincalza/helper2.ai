@@ -1,6 +1,7 @@
 package ai.helper2.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
 import java.net.URI;
@@ -333,8 +334,13 @@ class BackOfficeEdgeIT {
             Base64.getDecoder()
                 .decode(cookie.substring("__Host-SESSION=".length(), cookie.indexOf(';'))));
     // Its own namespace: a public session id is never one here (S1).
-    assertThat(redis.hasKey("helper2:backoffice:session:sessions:" + id)).isTrue();
-    assertThat(redis.hasKey("helper2:session:sessions:" + id)).isFalse();
+    assertThat(redis.hasKey("h2:v1:session:backoffice:sessions:" + id)).isTrue();
+    assertThat(
+            TestcontainersConfiguration.adminRedis().hasKey("h2:v1:session:public:sessions:" + id))
+        .isFalse();
+    // ...and its Redis user cannot reach the public app's sessions at all (ADR 0070).
+    assertThatThrownBy(() -> redis.hasKey("h2:v1:session:public:sessions:" + id))
+        .hasStackTraceContaining("NOPERM");
   }
 
   @Test

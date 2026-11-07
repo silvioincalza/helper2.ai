@@ -15,10 +15,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+// The seeds are repeatable migrations: the owner runs them (the migrate step), so the test does
+// too.
+@TestPropertySource(properties = TestcontainersConfiguration.CLIENT + "=owner")
 class CuratedSeedTest {
 
   @Autowired JdbcClient jdbc;

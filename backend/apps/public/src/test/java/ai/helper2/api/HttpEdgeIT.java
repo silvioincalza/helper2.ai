@@ -57,7 +57,8 @@ class HttpEdgeIT {
    */
   @BeforeEach
   void resetRateLimits() {
-    redis.delete(redis.keys("h2:v1:rate:*"));
+    TestcontainersConfiguration.adminRedis()
+        .delete(TestcontainersConfiguration.adminRedis().keys("h2:v1:rate:*"));
   }
 
   final HttpClient http = HttpClient.newHttpClient();
@@ -181,7 +182,8 @@ class HttpEdgeIT {
 
   @Test
   void anonymousRequestsNeverCreateASession() throws Exception {
-    java.util.Set<String> before = redis.keys("helper2:session:*");
+    java.util.Set<String> before =
+        TestcontainersConfiguration.adminRedis().keys("h2:v1:session:public:*");
     java.util.List<HttpResponse<String>> responses =
         java.util.List.of(
             send(HttpRequest.newBuilder(uri("/api/v1/search?q=session"))),
@@ -194,7 +196,8 @@ class HttpEdgeIT {
         .extracting(HttpResponse::statusCode)
         .containsExactly(200, 200, 200, 401, 404);
     assertThat(responses).allSatisfy(r -> assertThat(sessionCookies(r)).isEmpty());
-    assertThat(redis.keys("helper2:session:*")).isEqualTo(before);
+    assertThat(TestcontainersConfiguration.adminRedis().keys("h2:v1:session:public:*"))
+        .isEqualTo(before);
   }
 
   @Test
@@ -210,7 +213,7 @@ class HttpEdgeIT {
         new String(
             java.util.Base64.getDecoder()
                 .decode(cookie.substring("SESSION=".length(), cookie.indexOf(';'))));
-    String key = "helper2:session:sessions:" + id;
+    String key = "h2:v1:session:public:sessions:" + id;
     assertThat(redis.hasKey(key)).isTrue();
     // server.servlet.session.timeout: 30 minutes by default.
     assertThat(redis.getExpire(key)).isBetween(25 * 60L, 35 * 60L);
