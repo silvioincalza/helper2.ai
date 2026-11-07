@@ -25,9 +25,9 @@ Helper2.ai is a product, built and run by Silvio Incalza. The only instance is *
 
 | Where | Model role | What code enforces |
 |---|---|---|
-| **AI guide** (`POST /api/v1/guide/stream`) | 1. **Nemotron Nano** turns the need, in any language, into search terms and hard requirements.<br>2. Federated search retrieves up to 24 real candidates.<br>3. **Nemotron 3 Super** picks at most 3 of them, with a quote and a reason.<br>4. A second Super call checks each reason against its quote. | A pick must name a retrieved candidate (keys `c1…c24`, so ids can't be invented). Its quote must appear word for word in that candidate's text (≥ 40 characters and 6 words, or the whole text). Rejected suggestions are counted and shown. |
+| **AI guide** (`POST /api/v1/guide/stream`) | 1. **Nemotron 3.5 Lightning** turns the need, in any language, into search terms and hard requirements.<br>2. Federated search retrieves up to 24 real candidates.<br>3. **Nemotron 3.5 Super** picks at most 3 of them, with a quote and a reason.<br>4. A second Super call checks each reason against its quote. | A pick must name a retrieved candidate (keys `c1…c24`, so ids can't be invented). Its quote must appear word for word in that candidate's text (≥ 40 characters and 6 words, or the whole text). Rejected suggestions are counted and shown. |
 | **AI Resource Scout** (background) | Super proposes metadata, relationships and a summary for newly indexed resources. | Every claim must cite retrieved evidence with an exact excerpt. Model dates are never accepted. Disagreement with a source goes to human review. |
-| **Search** | Nano translates non-English queries; NVIDIA `nemotron-3.5-embed-1b` embeddings power vector search. | Daily caps; translation is disclosed as a query expansion. |
+| **Search** | Lightning translates non-English queries; NVIDIA `nemotron-3.5-embed-1b` embeddings power vector search. | Daily caps; translation is disclosed as a query expansion. |
 
 - Calls go through Spring AI's OpenAI-compatible client, base URL `https://api.tokenfactory.nebius.com/v1` (the `/v1` is required).
 - Every answer records the provider and model ids; the page shows them.
@@ -85,7 +85,7 @@ cd frontend && npm ci && npm run dev    # http://localhost:5173, proxies /api, /
 ```
 
 - Without `llm-nebius` or a key, everything runs and the guide answers in degraded mode.
-- Model ids: list them with `curl -s https://api.tokenfactory.nebius.com/v1/models -H "Authorization: Bearer $H2_NEBIUS_API_KEY"`, then set `H2_NEBIUS_REASONING_MODEL` (default `nvidia/nemotron-3-super-120b-a12b`) and `H2_NEBIUS_FAST_MODEL` (default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`; empty = the reasoning model does its work too).
+- Model ids: list them with `curl -s https://api.tokenfactory.nebius.com/v1/models -H "Authorization: Bearer $H2_NEBIUS_API_KEY"`, then set `H2_NEBIUS_REASONING_MODEL` (default `nvidia/Nemotron-3.5-Super-VL`) and `H2_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; empty = the reasoning model does its work too).
 - Fixture data instead of real sources: profiles `demo,dev` (labeled DEMO everywhere).
 - Sign-in: a GitHub OAuth App with profile `oauth-github` (`H2_GITHUB_OAUTH_CLIENT_ID`/`_SECRET`, callback `http://localhost:5173/login/oauth2/code/github`). Put your numeric GitHub id in `H2_ADMINS=github:<id>` to open the admin page.
 

@@ -774,8 +774,8 @@ spring:
 ---
 # Nebius Token Factory (OpenAI-compatible) serving NVIDIA Nemotron open models.
 # Needs H2_NEBIUS_API_KEY (server-side only). Confirm model ids with: GET https://api.tokenfactory.nebius.com/v1/models
-#   H2_NEBIUS_REASONING_MODEL: picks tools, writes prompts, enriches metadata (Nemotron 3 Super by default)
-#   H2_NEBIUS_FAST_MODEL:      plans the guide's search, translates queries, classifies awesome lists (Nemotron 3 Nano
+#   H2_NEBIUS_REASONING_MODEL: picks tools, writes prompts, enriches metadata (Nemotron 3.5 Super by default)
+#   H2_NEBIUS_FAST_MODEL:      plans the guide's search, translates queries, classifies awesome lists (Nemotron 3.5 Lightning
 #                              by default; set it empty to use the reasoning model for these too)
 spring:
   config:
@@ -788,14 +788,14 @@ spring:
       api-key: ${H2_NEBIUS_API_KEY}
       base-url: https://api.tokenfactory.nebius.com/v1
       chat:
-        model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
+        model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
         temperature: 0.0
         max-tokens: 2048
 helper2:
   llm:
     provider-label: nebius-token-factory
-    reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/nemotron-3-super-120b-a12b}
-    fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B}
+    reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
+    fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}
 
 ---
 spring:

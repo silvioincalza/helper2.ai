@@ -34,10 +34,10 @@ class LlmPropertiesBindingTest {
                 .isEqualTo(
                     new LlmProperties(
                         "openai",
-                        "nvidia/nemotron-3-super-120b-a12b",
+                        "nvidia/Nemotron-3.5-Super-VL",
                         "nebius-token-factory",
-                        "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B",
-                        "nvidia/nemotron-3-super-120b-a12b",
+                        "nvidia/Nemotron-3_5-Lightning",
+                        "nvidia/Nemotron-3.5-Super-VL",
                         true)));
   }
 

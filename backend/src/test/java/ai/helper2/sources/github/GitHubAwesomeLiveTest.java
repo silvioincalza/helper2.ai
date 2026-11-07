@@ -33,7 +33,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 class GitHubAwesomeLiveTest {
 
   static final String NANO =
-      System.getenv().getOrDefault("H2_NEBIUS_FAST_MODEL", "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B");
+      System.getenv().getOrDefault("H2_NEBIUS_FAST_MODEL", "nvidia/Nemotron-3_5-Lightning");
 
   @Test
   void oneListThroughTheWholePipelineWithTheFastModel() {
