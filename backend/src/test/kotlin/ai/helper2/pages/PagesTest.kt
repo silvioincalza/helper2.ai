@@ -145,12 +145,18 @@ class PagesTest {
     assertNull(pages.of(PageKind.SAVED).canonicalPath)
     assertEquals(Robots.NOINDEX, pages.of(PageKind.ADMIN_PAGE).robots)
     assertEquals(Robots.NOINDEX, pages.pageNotFound().robots)
+    assertEquals("/events", pages.of(PageKind.EVENTS).canonicalPath)
+    assertEquals(Robots.INDEX, pages.of(PageKind.EVENTS).robots)
+    // News waits for the web-search provider's written OK before it is indexed.
+    assertEquals(Robots.NOINDEX_FOLLOW, pages.of(PageKind.NEWS).robots)
   }
 
   @Test
   fun `addresses map to pages, a bad id or an unknown path does not`() {
     assertEquals(PageAddress.Page(PageKind.HOME), PageAddress.of("/"))
     assertEquals(PageAddress.Page(PageKind.SOURCES), PageAddress.of("/sources"))
+    assertEquals(PageAddress.Page(PageKind.NEWS), PageAddress.of("/news"))
+    assertEquals(PageAddress.Page(PageKind.EVENTS), PageAddress.of("/events"))
     assertEquals(PageAddress.Page(PageKind.ADMIN_PAGE), PageAddress.of("/admin/review"))
     assertEquals(PageAddress.Resource(id.toString(), id), PageAddress.of("/resource/$id"))
     assertEquals(PageAddress.Resource("nope", null), PageAddress.of("/resource/nope"))

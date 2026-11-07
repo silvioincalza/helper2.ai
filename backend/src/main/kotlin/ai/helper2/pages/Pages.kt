@@ -30,6 +30,16 @@ class Pages(private val base: String) {
           "Every source Helper2.ai searches, how it reaches you, and whether it answers right now.",
           "/sources",
         )
+      PageKind.EVENTS ->
+        listed(
+          "AI events",
+          "Conferences, hackathons, meetups, talks and workshops on AI in the next year, with the " +
+            "dates their sources state.",
+          "/events",
+        )
+      // Not indexed until the web-search provider confirms in writing that its headlines may be
+      // shown on a page of their own (legal/2026-10-31-lawyer-brief.md).
+      PageKind.NEWS -> unlisted("AI news")
       PageKind.MISSION ->
         listed(
           "Our mission",

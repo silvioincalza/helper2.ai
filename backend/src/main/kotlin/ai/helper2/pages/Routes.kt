@@ -8,6 +8,8 @@ enum class PageKind(val pattern: String) {
   SEARCH("search"),
   RESOURCE("resource/:id/:slug?"),
   SAVED("saved"),
+  NEWS("news"),
+  EVENTS("events"),
   SOURCES("sources"),
   ACCOUNT("account"),
   MISSION("mission"),

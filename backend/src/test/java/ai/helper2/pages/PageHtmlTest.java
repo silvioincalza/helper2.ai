@@ -168,15 +168,19 @@ class PageHtmlTest {
 
   @Test
   void everyRouteOfTheAppIsAPageTheServerKnows() throws IOException {
-    String routes = Files.readString(Path.of("../frontend/src/routes.tsx"));
+    List<String> lines = Files.readAllLines(Path.of("../frontend/src/routes.tsx"));
+    Pattern route = Pattern.compile("path: '([^'*]+)'");
     List<String> paths =
-        Pattern.compile("path: '([^'*]+)'").matcher(routes).results().map(m -> m.group(1)).toList();
-    assertThat(paths).contains("resource/:id/:slug?", "sources", "review");
-    for (String path : paths) {
-      String concrete = path.replace(":id", ID.toString()).replace(":slug?", "a-slug");
-      boolean known =
-          PageAddress.Companion.of(concrete) != PageAddress.Unknown.INSTANCE
-              || PageAddress.Companion.of("admin/" + concrete) != PageAddress.Unknown.INSTANCE;
+        lines.stream().flatMap(l -> route.matcher(l).results().map(m -> m.group(1))).toList();
+    assertThat(paths).contains("resource/:id/:slug?", "sources", "review", "news", "events");
+    for (String line : lines) {
+      var m = route.matcher(line);
+      if (!m.find()) continue;
+      String concrete = m.group(1).replace(":id", ID.toString()).replace(":slug?", "a-slug");
+      // Only a back-office page lives under /admin: any other path must be a page of its own.
+      String address = line.contains("@/pages/admin/") ? "admin/" + concrete : concrete;
+      String path = m.group(1);
+      boolean known = PageAddress.Companion.of(address) != PageAddress.Unknown.INSTANCE;
       assertThat(known)
           .as("routes.tsx path '%s' is a page the server knows (ADR 0050)", path)
           .isTrue();
