@@ -533,6 +533,7 @@ if [ -z "$${BAO_TOKEN:-}" ] && [ -z "$${GITHUB_ACTIONS:-}" ]; then \
 	BAO_TOKEN=$$(bao login -method=oidc -path=oidc -token-only role=helper2-operator); \
 fi; \
 [ -n "$${BAO_ADDR:-}" ] && [ -n "$${BAO_TOKEN:-}" ] || { echo "BAO_ADDR and BAO_TOKEN must be set to sign"; exit 1; }; \
+export BAO_TOKEN; \
 for v in $$(env | sed -n 's/^\(VAULT_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$$v"; done; \
 export VAULT_ADDR="$$BAO_ADDR" VAULT_TOKEN="$$BAO_TOKEN" TRANSIT_SECRET_ENGINE_PATH=$(TRANSIT_MOUNT); \
 if [ -n "$${BAO_CACERT:-}" ]; then export VAULT_CACERT="$$BAO_CACERT"; fi
@@ -573,7 +574,7 @@ sign-existing: ## workstation only: sign the unsigned images of TAG and of PG_TA
 	[ -z "$${GITHUB_ACTIONS:-}" ] && [ -z "$${CI:-}" ] || { echo "sign-existing is for the operator's workstation, never for CI"; exit 1; }; \
 	[[ "$(TAG)" =~ ^[0-9a-f]{12}$$ || "$(TAG)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || { echo "TAG must be a 12-char commit or X.Y.Z, got '$(TAG)'"; exit 1; }; \
 	test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
-	$(HARBOR); $(COSIGN); \
+	$(TRANSIT); $(HARBOR); $(COSIGN); \
 	todo=""; \
 	for ref in $(SIGNED_REFS); do \
 		repo=$${ref%%:*}; tag=$${ref#*:}; \
@@ -592,7 +593,6 @@ sign-existing: ## workstation only: sign the unsigned images of TAG and of PG_TA
 		read -r -p "Sign these? Only images CD built (check the digests in the commit's CD run). [y/N] " answer; \
 		[[ $$answer == [yY] ]] || { echo "nothing signed"; exit 1; }; \
 	fi; \
-	$(TRANSIT); \
 	for image in $$todo; do \
 		$(call cosign_sign,$$image); \
 		verify $$image || { cat "$$work/verify.log"; echo "$$image: signed, but the signature does not verify with cosign.pub"; exit 1; }; \
