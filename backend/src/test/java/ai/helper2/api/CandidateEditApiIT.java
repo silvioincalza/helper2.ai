@@ -42,9 +42,12 @@ class CandidateEditApiIT extends ApiTestBase {
           .authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
   UUID item;
 
+  /** The candidate as proposed: what the admin sees, and sends back as expectedDetails. */
+  String details;
+
   @BeforeEach
   void propose() {
-    String details =
+    details =
         "{\"version\":2,\"sourceId\":\"discovery-self-hosted\",\"url\":\""
             + url
             + "\",\"title\":\"Google Gemini Carbon promises a leap | Engadget\",\"type\":\"PRODUCT\","
@@ -67,7 +70,15 @@ class CandidateEditApiIT extends ApiTestBase {
     jdbc.sql("DELETE FROM resource WHERE canonical_url = :u").param("u", url).update();
   }
 
-  ResultActions edit(UUID id, String body) throws Exception {
+  /** An edit of [fields] (a JSON object) of the details the admin saw. */
+  ResultActions edit(UUID id, String fields) throws Exception {
+    return edit(id, details, fields);
+  }
+
+  ResultActions edit(UUID id, String seen, String fields) throws Exception {
+    String expected =
+        "{\"expectedDetails\":\"" + seen.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    String body = fields.equals("{}") ? expected + "}" : expected + "," + fields.substring(1);
     return mvc.perform(
         put("/api/v1/admin/review-items/" + id + "/candidate")
             .with(admin)
@@ -147,6 +158,20 @@ class CandidateEditApiIT extends ApiTestBase {
                 .query(String.class)
                 .single())
         .isEqualTo(before);
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
+  void anEditOfDetailsThatChangedSinceTheyWereShownIsRefused() throws Exception {
+    edit(item, details.replace("Engadget", "The Verge"), "{\"title\":\"x\"}")
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.code").value("version-conflict"));
+    assertThat(
+            jdbc.sql("SELECT details FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo(details);
     assertThat(audit()).isEmpty();
   }
 

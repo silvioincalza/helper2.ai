@@ -21,7 +21,8 @@ import org.jspecify.annotations.Nullable;
  * refused example (a duplicate, a rule, an unreadable draft) is an {@link ApiProblem}: the item
  * stays open, and the refused add stays in the audit trail (no rollback for it). Accepting a
  * resource candidate (RESOURCE_CANDIDATE, ADR 0051) first indexes it the same way; an unreadable
- * candidate is refused and the item stays open.
+ * candidate is refused and the item stays open. An accepted item's row is locked first, so its
+ * details cannot change between the read and the decision (ADR 0065).
  */
 public class ResolveReview {
 
@@ -58,6 +59,10 @@ public class ResolveReview {
       String adminId,
       @Nullable String note,
       @Nullable UUID batch) {
+    if (decision == ReviewQueue.Status.ACCEPTED) {
+      // What is indexed is what is decided: an edit or a merge meanwhile waits (ADR 0065).
+      queue.lock(id);
+    }
     Optional<ReviewQueue.Item> accepted =
         queue
             .find(id)

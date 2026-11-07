@@ -2,6 +2,7 @@ package ai.helper2.scout.usecase
 
 import ai.helper2.identity.AuditTrail
 import ai.helper2.scout.Candidate
+import ai.helper2.scout.UnitOfWork
 import ai.helper2.shared.ResourceType
 import java.util.UUID
 
@@ -33,10 +34,15 @@ interface CandidateItems {
  * An admin fixes a resource candidate before accepting it (ADR 0065): its title, its type (any
  * candidate type, not only the ones its finders declare) or its tags. The item stays open. The
  * edited fields are marked in the details, so a collector that finds the page again joins in
- * without undoing them, and accepting the item indexes what the admin wrote. A change saved by
- * someone else between the read and the write wins: this edit then saves nothing.
+ * without undoing them, and accepting the item indexes what the admin wrote. The edit applies only
+ * to the details the admin saw ([expectedDetails]): a change saved by someone else since then wins,
+ * and this edit saves nothing. The new details and the audit entry are saved together.
  */
-class EditCandidate(private val items: CandidateItems, private val audit: AuditTrail) {
+class EditCandidate(
+  private val items: CandidateItems,
+  private val audit: AuditTrail,
+  private val unitOfWork: UnitOfWork,
+) {
 
   sealed interface Outcome {
     data object Edited : Outcome
@@ -52,10 +58,11 @@ class EditCandidate(private val items: CandidateItems, private val audit: AuditT
     data class Invalid(val reason: String) : Outcome
   }
 
-  fun edit(itemId: UUID, change: CandidateEdit, by: String): Outcome {
+  fun edit(itemId: UUID, expectedDetails: String?, change: CandidateEdit, by: String): Outcome {
     val item = items.find(itemId) ?: return Outcome.NotFound
     if (!item.open) return Outcome.NotOpen
     if (!item.resourceCandidate) return Outcome.NotACandidate
+    if (item.details != expectedDetails) return Outcome.ChangedMeanwhile
     val checked =
       try {
         checked(change)
@@ -68,14 +75,23 @@ class EditCandidate(private val items: CandidateItems, private val audit: AuditT
       } catch (e: InvalidCandidate) {
         return Outcome.Invalid("The candidate cannot be read.")
       }
-    if (!items.replace(itemId, item.details, edited)) return Outcome.ChangedMeanwhile
-    audit.record(
-      by,
-      AuditTrail.Action.EDIT_CANDIDATE,
-      itemId.toString(),
-      "EDITED ${fields(checked)}",
-    )
-    return Outcome.Edited
+    return save(itemId, item.details, edited, fields(checked), by)
+  }
+
+  /** The new details and their audit entry, in one transaction. */
+  private fun save(
+    itemId: UUID,
+    oldDetails: String?,
+    newDetails: String,
+    fields: String,
+    by: String,
+  ): Outcome = unitOfWork.run {
+    if (items.replace(itemId, oldDetails, newDetails)) {
+      audit.record(by, AuditTrail.Action.EDIT_CANDIDATE, itemId.toString(), "EDITED $fields")
+      Outcome.Edited
+    } else {
+      Outcome.ChangedMeanwhile
+    }
   }
 
   private fun checked(change: CandidateEdit): CandidateEdit {
