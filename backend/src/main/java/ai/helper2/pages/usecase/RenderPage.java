@@ -13,6 +13,7 @@ import ai.helper2.pages.ResourceView;
 import ai.helper2.pages.config.PagesProperties;
 import ai.helper2.search.MergedResult;
 import ai.helper2.shared.Verification;
+import ai.helper2.shared.WebSources;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +95,13 @@ public class RenderPage {
     return slug == null ? "/resource/" + id : "/resource/" + id + "/" + slug;
   }
 
-  private static ResourceView view(ResourceDetail detail) {
+  /**
+   * Event days an AI model read (ADR 0067) are left out, with the place: a server page's facts and
+   * its schema.org data cannot carry the AI label (ADR 0038). The app shows them with it.
+   */
+  static ResourceView view(ResourceDetail detail) {
     MergedResult card = detail.card();
+    boolean aiRead = WebSources.eventDaysReadByAi(card.getEventStart().getSourceId());
     return new ResourceView(
         card.getId().getValue(),
         card.getTitle(),
@@ -107,9 +113,9 @@ public class RenderPage {
         card.getPricing(),
         card.getPlatforms(),
         card.getPublished().getValue(),
-        card.getEventStart().getValue(),
-        card.getEventEnd().getValue(),
-        card.getLocation(),
+        aiRead ? null : card.getEventStart().getValue(),
+        aiRead ? null : card.getEventEnd().getValue(),
+        aiRead ? null : card.getLocation(),
         card.getSources().stream().map(s -> new Link(s.getSourceName(), s.getUrl())).toList(),
         related(detail.relationships()));
   }
