@@ -190,6 +190,25 @@
     "moreTypes": "More",
     "pick": "Guide pick #{{rank}}",
     "checkedQuote": "Checked word for word in the source",
+    "sourceLine": {
+      "answered": "{{ok}} of {{total}} sources answered",
+      "live_one": "{{count}} live, {{ms}} ms",
+      "live_other": "{{count}} live, slowest {{ms}} ms",
+      "liveOnly_one": "{{count}} live",
+      "liveOnly_other": "{{count}} live",
+      "cached_one": "{{count}} from the cache",
+      "cached_other": "{{count}} from the cache",
+      "details": "Details"
+    },
+    "keys": {
+      "title": "Keyboard keys",
+      "move": { "key": "j k", "does": "next or previous result" },
+      "open": { "key": "Enter", "does": "open the result" },
+      "box": { "key": "/", "does": "go to the search box" },
+      "ask": { "key": "g", "does": "ask the guide the same words" },
+      "help": { "key": "?", "does": "show or hide this list" },
+      "note": "The keys work while the focus is in the results, for example after Tab or a click on a result's line."
+    },
     "from": "From {{sources}}",
     "foundIn": "Found in {{list}} under {{heading}}",
     "foundInList": "Found in {{list}}",
@@ -1311,7 +1330,11 @@
     "none": "No pick: no result had a sentence that proves it",
     "understood": "Understood as {{parts}}",
     "askWithout": "Ask without",
-    "rephrase": "Rephrase"
+    "rephrase": "Rephrase",
+    "command": "helper2 guide",
+    "commandCount_one": "helper2 guide --picks {{count}}",
+    "commandCount_other": "helper2 guide --picks {{count}}",
+    "chosenBy": "Chosen by {{model}}"
   },
   "sourceTile": {
     "label": "Sources searched",

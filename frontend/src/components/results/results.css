@@ -382,8 +382,8 @@ details[open] > .h2-fold-toggle .icon {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: var(--space-5) 0;
+  gap: var(--space-2);
+  padding: 1.75rem 0;
   /* A pick chip jumps here: below the sticky header. */
   scroll-margin-top: calc(var(--header-height) + var(--space-4));
 }
@@ -411,8 +411,8 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-row__title {
   align-self: flex-start;
-  font: 500 1.3125rem/1.3 var(--font-body);
-  letter-spacing: -0.02em;
+  font: 600 1.25rem/1.3 var(--font-body);
+  letter-spacing: -0.01em;
   color: var(--ink);
   text-decoration: none;
 }
@@ -436,6 +436,7 @@ details[open] > .h2-fold-toggle .icon {
 }
 .h2-results .h2-row__text,
 .h2-results .h2-row__reason {
+  max-width: 68ch; /* about 68 characters a line: easier to read than the full column */
   font: 400 1rem/1.6 var(--font-body);
   color: var(--ink-2);
 }
@@ -452,6 +453,34 @@ details[open] > .h2-fold-toggle .icon {
   background: var(--proof-mark);
 }
 .h2-results .h2-row__reason {
+  font-size: 0.9375rem;
+  color: var(--ink);
+}
+.h2-results .h2-row__from {
+  margin-top: var(--space-1);
+  font-size: 0.75rem;
+}
+/* The checked quote under the reason (v5): a light box; the checked words carry a highlighter line, not a full fill. */
+.h2-row__proof {
+  max-width: 68ch;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--proof-bg);
+}
+.h2-results .h2-row__proof .h2-row__text {
+  font-size: 0.9375rem;
+}
+.h2-row__proof mark {
+  padding: 0;
+  background: linear-gradient(transparent 55%, var(--proof-mark) 55%);
+}
+.h2-results .h2-row__proof .h2-row__checked {
+  margin-top: var(--space-1);
+  font-size: 0.75rem;
+}
+/* The search words, in bold where they stand (searchTerms). */
+.h2-hit {
+  font-weight: 600;
   color: var(--ink);
 }
 .h2-results .h2-row__checked {
@@ -661,4 +690,240 @@ details[open] > .h2-fold-toggle .icon {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0 var(--space-5);
+}
+
+/* ===== v5: the guide's picks as a small terminal ===== */
+.h2-results .h2-picks {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  color: var(--term-text);
+  background: var(--term-bg);
+  border: 1px solid var(--term-line);
+  border-radius: var(--radius-lg);
+}
+/* While the guide reads, the box keeps the height of three picks with their reasons, so the list does not move. */
+.h2-results .h2-picks.is-reading {
+  min-height: 13rem;
+}
+.h2-results .h2-picks.is-none {
+  min-height: 0;
+}
+.h2-results .h2-picks :focus-visible {
+  outline-color: var(--term-text);
+}
+.h2-picks__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--term-bar);
+}
+.h2-results .h2-picks__title {
+  font: 500 0.75rem/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--term-muted);
+}
+.h2-picks__cmd {
+  font: 400 0.8125rem/1.4 var(--font-mono);
+  color: var(--term-text);
+}
+.h2-picks__cmd .h2-prompt {
+  color: var(--term-tag);
+}
+.h2-results .h2-picks__ai {
+  margin-left: auto;
+  color: var(--term-tag);
+  border-color: var(--term-tag);
+}
+.h2-results .h2-picks__line {
+  padding: var(--space-3) var(--space-4);
+  color: var(--term-text);
+}
+.h2-results .h2-picks__next {
+  padding: 0 var(--space-4) var(--space-3);
+}
+.h2-results .h2-picks__next .h2-row__ai {
+  color: var(--term-muted);
+}
+.h2-results .h2-picks__list {
+  padding: var(--space-1) var(--space-4);
+}
+.h2-results .h2-picks__chips {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+}
+.h2-pick + .h2-pick {
+  border-top: 1px solid var(--term-line);
+}
+.h2-pick {
+  padding: var(--space-3) 0;
+}
+.h2-results .h2-pick-chip {
+  min-height: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--term-text);
+  font: 600 1rem/1.4 var(--font-body);
+  white-space: normal;
+}
+.h2-results .h2-pick-chip:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.h2-results .h2-pick-chip b {
+  min-width: 2rem;
+  color: var(--term-tag);
+}
+.h2-pick__reason {
+  margin: var(--space-1) 0 0 calc(2rem + var(--space-2));
+  max-width: 68ch;
+  font: 400 0.875rem/1.55 var(--font-body);
+  color: var(--term-muted);
+}
+.h2-picks__model {
+  margin: 0;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--term-line);
+  font: 400 0.75rem/1.4 var(--font-mono);
+  color: var(--term-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ===== v5: more room between the box and its picks, and the list ===== */
+.h2-results .h2-all {
+  margin-top: var(--space-4);
+}
+
+/* ===== v5: one line under the box with the sources ===== */
+.h2-results .h2-source-line {
+  margin: 0; /* inline text, not flex: flex items would drop the spaces around the separators */
+  font: 400 0.75rem/1.6 var(--font-mono);
+  color: var(--muted);
+}
+.h2-source-line__dot {
+  display: inline-block;
+  vertical-align: 0.05em;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--space-2);
+  border-radius: 50%;
+  background: var(--status-ok);
+}
+.h2-source-line a {
+  color: var(--ink-2);
+  text-underline-offset: 3px;
+}
+
+/* ===== v5: keyboard keys, for a mouse and keyboard only ===== */
+.h2-results__keys {
+  display: contents;
+}
+.h2-keys {
+  margin-top: var(--space-5);
+}
+.h2-keys__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-2) 0 0;
+  font: 400 0.8125rem/1.6 var(--font-body);
+  color: var(--ink-2);
+}
+.h2-keys kbd {
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  font: 500 0.75rem/1.4 var(--font-mono);
+  color: var(--ink);
+}
+.h2-keys__note {
+  margin: var(--space-2) 0 0;
+  font: 400 0.75rem/1.5 var(--font-body);
+  color: var(--muted);
+}
+@media (hover: none), (pointer: coarse) {
+  .h2-keys {
+    display: none;
+  }
+}
+
+/* ===== v5: smaller controls with a mouse; 44px stays on touch screens ===== */
+.h2-results .h2-all__tools .btn,
+.h2-results .h2-view a,
+.h2-results .h2-type-tab,
+.h2-results .h2-fold-toggle,
+.h2-results .h2-more,
+.h2-results .h2-sort select,
+.h2-results .h2-hints .chip {
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+@media (hover: hover) and (pointer: fine) {
+  .h2-results .h2-all__tools .btn,
+  .h2-results .h2-view a,
+  .h2-results .h2-type-tab,
+  .h2-results .h2-fold-toggle,
+  .h2-results .h2-more,
+  .h2-results .h2-sort select {
+    min-height: var(--control-sm);
+    font-size: 0.875rem;
+  }
+  .h2-results .h2-all__tools .btn,
+  .h2-results .h2-more {
+    padding: 0 0.875rem;
+    border-radius: var(--radius-sm);
+  }
+  .h2-results .h2-hints .chip {
+    min-height: var(--chip-sm);
+    padding: 0 var(--space-3);
+    font-size: 0.8125rem;
+  }
+  .h2-results .h2-results__full-slot {
+    min-height: var(--control-sm);
+  }
+}
+
+/* A phone: the picks stay one row of chips that scrolls sideways (the reasons are in the rows below). */
+@media (max-width: 720px) {
+  .h2-results .h2-picks.is-reading {
+    min-height: 110px;
+  }
+  .h2-results .h2-picks__chips {
+    flex-direction: row;
+    gap: var(--space-2);
+    padding: 3px;
+    position: relative; /* clips positioned children too (see .v4-scroll) */
+    overflow-x: auto;
+  }
+  .h2-pick + .h2-pick {
+    border-top: 0;
+  }
+  .h2-pick {
+    padding: var(--space-2) 0;
+  }
+  .h2-results .h2-pick-chip {
+    min-height: var(--target-min);
+    max-width: min(18rem, 75vw);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--term-control);
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+  }
+  .h2-results .h2-pick-chip b {
+    min-width: 0;
+  }
+  .h2-pick__reason {
+    display: none;
+  }
+  /* The command is decoration; on a phone the title and the AI label keep one line. */
+  .h2-picks__cmd {
+    display: none;
+  }
 }

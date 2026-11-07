@@ -26,7 +26,8 @@ import { toFromResults } from '@/components/results/fromResults';
  * rephrase. How the guide decided stays folded under the bar. A pick with a row in the list ([anchored]) jumps to it;
  * any other pick, and every pick on the timeline (it has no rows to jump to), opens its own page, with the pick and the
  * way back, as a row does. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches
- * left" while the guide reads.
+ * left" while the guide reads. Each pick shows the guide's reason under its title (AI-written: marked, ADR 0038), so the
+ * picks read on their own before the list.
  */
 export function GuidePicks({
   stream,
@@ -52,9 +53,9 @@ export function GuidePicks({
           {state.kind === 'none' ? (
             answer?.model != null && <NoPickNext answer={answer} onRefine={refine} />
           ) : (
-            <ul className="h2-picks__chips">
+            <ol className="h2-picks__chips">
               {picks.map((p) => (
-                <li key={p.resourceId}>
+                <li key={p.resourceId} className="h2-pick">
                   {anchored.has(p.resourceId) ? (
                     <a
                       className="h2-pick-chip"
@@ -73,9 +74,14 @@ export function GuidePicks({
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
                     </Link>
                   )}
+                  {p.reason && p.reasonCheck !== 'REMOVED' && (
+                    <p className="h2-pick__reason" {...aiMark()}>
+                      {p.reason}
+                    </p>
+                  )}
                 </li>
               ))}
-            </ul>
+            </ol>
           )}
         </PicksBar>
       )}
@@ -110,7 +116,11 @@ export function GuidePicks({
 function picksState(stream: GuideStream, pickCount: number, t: TFunction): PicksState {
   if (!stream.busy) {
     if (pickCount > 0)
-      return { kind: 'picks', model: stream.answer?.model?.reasoningModel ?? null };
+      return {
+        kind: 'picks',
+        model: stream.answer?.model?.reasoningModel ?? null,
+        count: pickCount,
+      };
     return { kind: 'none', reason: stream.answer ? noPickReason(stream.answer, t) : undefined };
   }
   const { reading, candidates } = progressOf(stream.steps);

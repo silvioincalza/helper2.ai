@@ -40,6 +40,22 @@ footer, Home, Results (list and timeline), the resource page, Sources, Saved, th
 The mockups load `Geist.woff2` and `GeistMono.woff2` from their own folder, which the repo does not hold; without
 them they show the system fonts.
 
+### Results v5 (7 Nov 2026)
+
+- Easier to read: more space in a row (28px above and below, 8px between lines), text up to about 68 characters a line.
+- With a mouse, the controls are smaller: buttons, tabs, the view switch and the sort 36px (`control-sm`), chips 32px
+  (`chip-sm`). On a touch screen they stay 44px. Buttons, tabs and chips on this page are in Geist; Geist Mono stays for
+  the meta lines, counts, `$ helper2` lines and key hints. Search and Ask the guide in the box are in Geist too.
+- The guide's picks are a small terminal: `$ helper2 guide --picks N`, each pick with its reason (AI-written), and the
+  model that chose them. On a phone the picks stay one row of chips; the reasons are in the rows.
+- In a picked row the reason comes first, then the checked quote in a light box, with a highlighter line under the
+  checked words.
+- One line under the box with the sources: "9 of 9 sources answered · 3 live, slowest 244 ms · 6 from the cache ·
+  Details". Not shown when some sources did not answer: the coverage line says it.
+- The search words are in bold in the description (never in the title, AI text or a quote).
+- Keys, while the focus is in the results: j and k move, Enter opens, / goes to the box, g asks the guide, ? lists the
+  keys. Only in the results, so a one-letter key never fires by accident (WCAG 2.1.4).
+
 ### Radar (5 Nov 2026)
 
 - No line above the title. The title is one `h1` on two lines: "helper2.ai" in accent ink, then "The metasearch for the AI universe."

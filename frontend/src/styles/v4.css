@@ -298,7 +298,7 @@
 .v4 .searchbox.large .btn-primary {
   min-height: 46px;
   padding: 0 var(--space-5);
-  font: 600 1rem/1 var(--font-mono);
+  font: 600 0.9375rem/1 var(--font-body);
   color: var(--on-accent);
   background: var(--accent);
   border: 1px solid var(--accent);
@@ -314,11 +314,12 @@
 .v4 .searchbox.large .searchbox-slash {
   display: none;
 }
-/* Ask the guide: an outline button, quieter than Search. */
+/* Ask the guide: an outline button, quieter than Search. Actions are in Geist (v5): Geist Mono stays for labels and
+   key hints, and its wide letters made the two buttons look big. */
 .v4 .searchbox.large .one-box-ask {
   min-height: 46px;
   padding: 0 var(--space-4);
-  font: 600 1rem/1 var(--font-mono);
+  font: 500 0.9375rem/1 var(--font-body);
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border-strong);

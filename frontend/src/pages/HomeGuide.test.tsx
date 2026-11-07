@@ -106,12 +106,13 @@ describe('guide on the one page', () => {
 
     await answered();
     const reasons = screen.getAllByText('Lets an agent run read-only SQL against Postgres.');
-    // In the row, labelled on screen and marked in the HTML.
-    expect(reasons).toHaveLength(1);
-    for (const r of reasons) {
-      expect(r).toHaveAttribute('data-ai-generated', 'true');
-      expect(r.previousElementSibling).toHaveTextContent('AI-written');
-    }
+    // Under the pick in the picks bar (labelled once, on the bar) and in the row (labelled next to it); marked in both.
+    expect(reasons).toHaveLength(2);
+    for (const r of reasons) expect(r).toHaveAttribute('data-ai-generated', 'true');
+    const bar = screen.getByRole('region', { name: 'Guide picks' });
+    expect(within(bar).getByText('AI-written')).toBeInTheDocument();
+    const inRow = reasons.find((r) => r.closest('.h2-row'));
+    expect(inRow?.previousElementSibling).toHaveTextContent('AI-written');
     const trace = document.querySelector('.guide-answer');
     expect(trace).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
     expect(trace).toHaveAttribute('data-ai-models', 'nvidia/nemotron-nano nvidia/nemotron-3-super');
