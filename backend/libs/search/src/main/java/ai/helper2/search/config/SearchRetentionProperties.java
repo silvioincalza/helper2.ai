@@ -13,4 +13,4 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties("helper2.retention")
-record SearchRetentionProperties(@NotNull Duration liveWebResults) {}
+public record SearchRetentionProperties(@NotNull Duration liveWebResults) {}

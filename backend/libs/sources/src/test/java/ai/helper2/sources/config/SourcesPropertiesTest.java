@@ -18,7 +18,7 @@ class SourcesPropertiesTest {
   void theDeadlineIsTwiceTheTimeoutUnlessSet() {
     Duration ttl = Duration.ofMinutes(30);
     var properties =
-        new SourcesConfiguration.SourcesProperties(
+        new SourcesProperties(
             Map.of(
                 "plain",
                     new SourceSettings(true, "https://x.example", "", Duration.ofSeconds(10), ttl),
@@ -38,7 +38,7 @@ class SourcesPropertiesTest {
   @Test
   void aSourceWithoutItsSettingsStopsStartupWithTheKey() {
     var properties =
-        new SourcesConfiguration.SourcesProperties(
+        new SourcesProperties(
             Map.of(
                 "no-ttl",
                 new SourceSettings(true, "https://x.example", "", Duration.ofSeconds(1), null)));

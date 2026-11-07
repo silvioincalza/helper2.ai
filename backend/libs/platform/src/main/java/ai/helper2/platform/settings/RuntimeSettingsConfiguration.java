@@ -1,8 +1,5 @@
 package ai.helper2.platform.settings;
 
-import ai.helper2.platform.ClusterLock;
-import ai.helper2.platform.ClusterLocks;
-import ai.helper2.platform.config.PlatformRetentionProperties;
 import ai.helper2.platform.config.RuntimeSettingsProperties;
 import java.time.Clock;
 import java.time.Duration;
@@ -14,11 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * The runtime settings (ADR 0060): the store, the snapshot every module reads, its refresh on its
- * own thread, and the daily purge of old changes on one replica at a time.
+ * own thread. The daily purge of old changes is scheduled by the app that runs it.
  */
 @Configuration(proxyBeanMethods = false)
 class RuntimeSettingsConfiguration {
@@ -52,19 +48,6 @@ class RuntimeSettingsConfiguration {
   @Bean(initMethod = "start", destroyMethod = "stop")
   Refresh runtimeSettingsRefresh(RuntimeSettings runtimeSettings) {
     return new Refresh(runtimeSettings);
-  }
-
-  @Bean
-  Purge runtimeSettingsPurge(
-      RuntimeSettingStore runtimeSettingStore,
-      Clock clock,
-      ClusterLocks locks,
-      PlatformRetentionProperties retention) {
-    return new Purge(
-        runtimeSettingStore,
-        clock,
-        retention.runtimeSettings(),
-        locks.keptAlive("retention-runtime-settings", Duration.ofMinutes(1)));
   }
 
   /**
@@ -104,33 +87,6 @@ class RuntimeSettingsConfiguration {
         }
       } catch (RuntimeException e) {
         log.warn("runtime settings refresh failed: {}", e.getClass().getSimpleName());
-      }
-    }
-  }
-
-  /** Changes older than the retention, except each setting's newest (ADR 0034). */
-  static final class Purge {
-    private final RuntimeSettingStore store;
-    private final Clock clock;
-    private final Duration keep;
-    private final ClusterLock lock;
-
-    Purge(RuntimeSettingStore store, Clock clock, Duration keep, ClusterLock lock) {
-      this.store = store;
-      this.clock = clock;
-      this.keep = keep;
-      this.lock = lock;
-    }
-
-    @Scheduled(cron = "${helper2.retention.cron}", zone = "UTC")
-    void run() {
-      try {
-        lock.tryRun(() -> {
-          int deleted = store.deleteBefore(clock.instant().minus(keep));
-          log.info("runtime setting changes purged: {}", deleted);
-        });
-      } catch (RuntimeException e) {
-        log.warn("runtime settings retention failed: {}", e.getClass().getSimpleName());
       }
     }
   }

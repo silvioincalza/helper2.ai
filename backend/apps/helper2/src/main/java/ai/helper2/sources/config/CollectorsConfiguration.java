@@ -7,14 +7,12 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
-import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
-import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
 import ai.helper2.sources.events.EventReader;
@@ -23,13 +21,9 @@ import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
 import ai.helper2.sources.evidence.TavilyExtract;
 import ai.helper2.sources.github.GitHubAwesomeCollector;
-import ai.helper2.sources.github.GitHubSource;
-import ai.helper2.sources.huggingface.HuggingFaceModelsSource;
 import ai.helper2.sources.huggingface.HuggingFaceProviderOrgsCollector;
-import ai.helper2.sources.huggingface.HuggingFaceSpacesSource;
 import ai.helper2.sources.huggingface.HuggingFaceTrendingCollector;
 import ai.helper2.sources.mcp.McpRegistryCollector;
-import ai.helper2.sources.npm.NpmSource;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.CourseCollector;
@@ -37,32 +31,30 @@ import ai.helper2.sources.tavily.LinkedInCollector;
 import ai.helper2.sources.tavily.LiveWebEventsCollector;
 import ai.helper2.sources.tavily.ScoutTavilyCredits;
 import ai.helper2.sources.tavily.TavilyCollector;
-import ai.helper2.sources.tavily.TavilySource;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.client.RestClient;
 
+/**
+ * The Scout's collectors and the evidence readers (ADR 0018, 0043, 0056): the back office runs
+ * them. The live search sources are the sources library's ({@code LiveSourcesConfiguration}).
+ */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({
-  SourcesConfiguration.SourcesProperties.class,
+  SourcesProperties.class,
   CollectorProperties.HfTrending.class,
   CollectorProperties.LiveWebScout.class,
   CollectorProperties.Courses.class,
@@ -77,34 +69,9 @@ import org.springframework.web.client.RestClient;
 })
 @Profile("!demo")
 @Import(DiscoveryCollectorRegistrar.class)
-class SourcesConfiguration {
+class CollectorsConfiguration {
 
-  private static final Logger log = LoggerFactory.getLogger(SourcesConfiguration.class);
-
-  /**
-   * Every source and collector under {@code helper2.sources.<id>}. The defaults are in
-   * application.yaml; only the deadline is derived here (twice the timeout when empty).
-   */
-  @Validated
-  @ConfigurationProperties("helper2")
-  record SourcesProperties(@NotNull Map<String, @Valid SourceSettings> sources) {
-    SourceSettings get(String key) {
-      SourceSettings s = sources.get(key);
-      if (s == null) {
-        throw new IllegalStateException("missing helper2.sources." + key);
-      }
-      if (s.cacheTtl() == null) {
-        throw new IllegalStateException("missing helper2.sources." + key + ".cache-ttl");
-      }
-      return new SourceSettings(
-          s.enabled(),
-          s.baseUrl(),
-          s.token(),
-          s.timeout(),
-          s.cacheTtl(),
-          s.deadline() == null ? s.timeout().multipliedBy(2) : s.deadline());
-    }
-  }
+  private static final Logger log = LoggerFactory.getLogger(CollectorsConfiguration.class);
 
   /**
    * A Scout collector's client: its calls may take up to the source's deadline in all
@@ -113,51 +80,6 @@ class SourcesConfiguration {
    */
   static RestClient.Builder collectorClient(SourceSettings s, ObservationRegistry observations) {
     return ObservedHttp.restClientBuilder(s.timeout(), s.deadline(), observations);
-  }
-
-  @Bean
-  GitHubSource gitHubSource(SourcesProperties p, Clock clock, ObservationRegistry observations) {
-    SourceSettings s = p.get("github");
-    return new GitHubSource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
-  }
-
-  @Bean
-  HuggingFaceModelsSource huggingFaceModelsSource(
-      SourcesProperties p, Clock clock, ObservationRegistry observations) {
-    SourceSettings s = p.get("huggingface");
-    return new HuggingFaceModelsSource(
-        s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
-  }
-
-  @Bean
-  HuggingFaceSpacesSource huggingFaceSpacesSource(
-      SourcesProperties p, Clock clock, ObservationRegistry observations) {
-    SourceSettings s = p.get("huggingface");
-    return new HuggingFaceSpacesSource(
-        s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
-  }
-
-  @Bean
-  NpmSource npmSource(SourcesProperties p, Clock clock, ObservationRegistry observations) {
-    SourceSettings s = p.get("npm");
-    return new NpmSource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
-  }
-
-  @Bean
-  ArxivSource arxivSource(
-      SourcesProperties p,
-      Clock clock,
-      ObservationRegistry observations,
-      OutboundThrottle throttle) {
-    SourceSettings s = p.get("arxiv");
-    return new ArxivSource(
-        s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock, throttle);
-  }
-
-  @Bean
-  TavilySource tavilySource(SourcesProperties p, Clock clock, ObservationRegistry observations) {
-    SourceSettings s = p.get("live-web");
-    return new TavilySource(s, ObservedHttp.restClientBuilder(s.timeout(), observations), clock);
   }
 
   @Bean

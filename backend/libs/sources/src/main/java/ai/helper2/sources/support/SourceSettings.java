@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 /**
  * Per-source configuration. Tokens are server-side only and never logged. [deadline] is the total
  * time a Scout collector's call may take (ADR 0006 §2); search sources use their [timeout] as the
- * deadline. Null until {@code SourcesConfiguration} fills it (default: twice the timeout).
+ * deadline. Null until {@code SourcesProperties} fills it (default: twice the timeout).
  */
 public record SourceSettings(
     boolean enabled,

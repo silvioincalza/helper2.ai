@@ -21,6 +21,7 @@ include(
   ":libs:search",
   ":libs:catalog",
   ":libs:examples",
+  ":libs:sources",
   ":libs:schema",
   ":apps:helper2",
 )

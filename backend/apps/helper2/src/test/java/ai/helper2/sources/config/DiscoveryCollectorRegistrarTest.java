@@ -39,10 +39,7 @@ import org.springframework.context.annotation.Import;
 class DiscoveryCollectorRegistrarTest {
 
   @Configuration(proxyBeanMethods = false)
-  @EnableConfigurationProperties({
-    SourcesConfiguration.SourcesProperties.class,
-    CollectorProperties.Discovery.class
-  })
+  @EnableConfigurationProperties({SourcesProperties.class, CollectorProperties.Discovery.class})
   @Import(DiscoveryCollectorRegistrar.class)
   static class Registration {
     @Bean

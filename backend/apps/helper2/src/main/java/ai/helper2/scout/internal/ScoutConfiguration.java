@@ -42,7 +42,6 @@ import ai.helper2.scout.RunCalendar;
 import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
-import ai.helper2.scout.ScoutPolicy;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.UnitOfWork;
 import ai.helper2.scout.config.ScoutProperties;
@@ -136,21 +135,6 @@ class ScoutConfiguration {
         dailyCalls);
     return new SpringAiEnrichmentModel(
         model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics, resilience);
-  }
-
-  /** The Tavily search source keeps this much of an article (sources' own literal, ADR 0037). */
-  static final int ARTICLE_EXCERPT_CHARS = 400;
-
-  /** The Scout's numbers the Privacy page states (ADR 0052). */
-  @Bean
-  ScoutPolicy scoutPolicy(ScoutProperties scout) {
-    return new ScoutPolicy(
-        scout.evidence().pageTextTtl(),
-        scout.evidence().pageReadTtl(),
-        OfficialPages.MAX_LINKED_PAGES + 1,
-        EvidenceValidator.MAX_EXCERPT_CHARS,
-        ARTICLE_EXCERPT_CHARS,
-        ResourceCandidateJson.MAX_SNIPPET);
   }
 
   /** The Scout's settings for the back office's Settings page (ADR 0045). */

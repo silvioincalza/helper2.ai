@@ -1,5 +1,6 @@
 package ai.helper2.scout
 
+import ai.helper2.catalog.ScoutPolicy
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.Verification
 import ai.helper2.shared.WebSources
@@ -335,7 +336,7 @@ constructor(
 ) {
 
   companion object {
-    const val MAX_LINKED_PAGES = 3
+    const val MAX_LINKED_PAGES = ScoutPolicy.LINKED_PAGES
     const val MAX_URLS = 5
   }
 

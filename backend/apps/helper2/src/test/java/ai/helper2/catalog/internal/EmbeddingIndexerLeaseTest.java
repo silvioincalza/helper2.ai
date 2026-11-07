@@ -17,9 +17,9 @@ class EmbeddingIndexerLeaseTest {
   void theLeaseCoversTheBatchAndEverySingleTextAfterAFailure() {
     Duration timeout = Duration.ofSeconds(30);
 
-    assertThat(CatalogConfiguration.VectorSearch.tickWorstCase(timeout, 0))
+    assertThat(EmbeddingIndexerSchedule.tickWorstCase(timeout, 0))
         .isEqualTo(Duration.ofSeconds(150));
-    assertThat(CatalogConfiguration.VectorSearch.tickWorstCase(timeout, 5))
+    assertThat(EmbeddingIndexerSchedule.tickWorstCase(timeout, 5))
         .isEqualTo(Duration.ofMinutes(10));
   }
 }

@@ -1,5 +1,6 @@
 package ai.helper2.scout
 
+import ai.helper2.catalog.ScoutPolicy
 import ai.helper2.shared.Audience
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
@@ -38,7 +39,7 @@ class EvidenceValidator(
      * nothing.
      */
     const val MIN_EXCERPT_CHARS = 20
-    const val MAX_EXCERPT_CHARS = 300
+    const val MAX_EXCERPT_CHARS = ScoutPolicy.QUOTE_CHARS
 
     /** Summary claims kept per run; the prompt asks for the same number. */
     const val MAX_SUMMARY_CLAIMS = 3

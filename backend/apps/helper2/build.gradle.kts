@@ -12,6 +12,7 @@ dependencies {
   implementation(project(":libs:search"))
   implementation(project(":libs:catalog"))
   implementation(project(":libs:examples"))
+  implementation(project(":libs:sources"))
   runtimeOnly(project(":libs:schema"))
 
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
@@ -60,4 +61,5 @@ dependencies {
 
   testImplementation(testFixtures(project(":libs:platform")))
   testImplementation(testFixtures(project(":libs:search")))
+  testImplementation(testFixtures(project(":libs:sources")))
 }

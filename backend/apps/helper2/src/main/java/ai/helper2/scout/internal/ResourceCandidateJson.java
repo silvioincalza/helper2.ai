@@ -1,5 +1,6 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.catalog.ScoutPolicy;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.usecase.AcceptedCandidate;
 import ai.helper2.scout.usecase.CandidateDetails;
@@ -49,7 +50,7 @@ class ResourceCandidateJson implements CandidateDetails {
   static final int MAX_TITLE = 300;
 
   /** Tavily's excerpt as evidence for the enrichment: up to 2,400 characters (ADR 0051). */
-  static final int MAX_SNIPPET = 2400;
+  static final int MAX_SNIPPET = ScoutPolicy.PRODUCT_PAGE_EXCERPT_CHARS;
 
   static final int VERSION = 2;
 

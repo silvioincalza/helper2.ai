@@ -2,7 +2,6 @@ package ai.helper2.sources.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.helper2.sources.config.SourcesConfiguration.SourcesProperties;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.ConfigBinding;
 import java.time.Duration;

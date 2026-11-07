@@ -60,12 +60,12 @@ class DiscoveryCollectorRegistrar implements BeanRegistrar {
   }
 
   private static TavilyDiscoveryCollector collector(BeanRegistry.SupplierContext ctx, String id) {
-    SourceSettings s = ctx.bean(SourcesConfiguration.SourcesProperties.class).get(SETTINGS);
+    SourceSettings s = ctx.bean(SourcesProperties.class).get(SETTINGS);
     CollectorProperties.Discovery d = ctx.bean(CollectorProperties.Discovery.class);
     Categories categories = ctx.bean(Categories.class);
     return new TavilyDiscoveryCollector(
         s,
-        SourcesConfiguration.collectorClient(s, ctx.bean(ObservationRegistry.class)),
+        CollectorsConfiguration.collectorClient(s, ctx.bean(ObservationRegistry.class)),
         ctx.bean(Clock.class),
         ctx.bean(Resilience.class),
         new TavilyDiscoveryCollector.Search(d.searchDepth(), d.maxResults()),
