@@ -6,6 +6,7 @@ import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { displayHost } from '@/lib/format';
 import { locateQuote } from '@/lib/locateQuote';
 import { resourcePath } from '@/lib/searchState';
+import { withSearchTerms } from '@/lib/searchTerms';
 import type { GuidePick } from '@/lib/selection';
 import { toFromResults } from './fromResults';
 import { ResultDate } from './ResultDate';
@@ -19,16 +20,21 @@ export const rowAnchor = (id: string) => `result-${id}`;
  * to come back to and, for a pick, the guide's reason and checked quote. A pick shows its reason (AI-written: labelled
  * and marked) and its quote, highlighted in the source's own words. A result found only by the words of an awesome
  * list around it says where (ADR 0055): the list's own words, not AI-written, so no AI label. Nothing in the row is
- * selected or opens in place.
+ * selected or opens in place. On a pick the reason comes first, then the quote that proves it. The search words are in
+ * bold in the source's own description ([terms]), never in the title (it is the link's name), in AI-written text or in a
+ * checked quote.
  */
 export function ResultRow({
   card,
   pick,
   stale,
+  terms = [],
 }: {
   card: ResultCard;
   pick: GuidePick | undefined;
   stale: ReadonlySet<string>;
+  /** The search words to put in bold (searchTerms). */
+  terms?: readonly string[];
 }) {
   const { t } = useTranslation();
   const location = useLocation();
@@ -51,13 +57,13 @@ export function ResultRow({
       >
         {card.title}
       </Link>
-      <RowText card={card} pick={pick} />
       {pick?.reason && pick.reasonCheck !== 'REMOVED' && (
         <p className="h2-row__reason">
           <span className="h2-row__ai">{t('picks.aiWritten')}</span>{' '}
           <span {...aiMark()}>{pick.reason}</span>
         </p>
       )}
+      <RowText card={card} pick={pick} terms={terms} />
       {card.foundIn && (
         <p className="h2-row__found">
           {card.foundIn.headingPath
@@ -83,7 +89,15 @@ export function ResultRow({
  * checked sentence is highlighted where it stands in that text, or shown on its own when it is not there (it came
  * from the title).
  */
-function RowText({ card, pick }: { card: ResultCard; pick: GuidePick | undefined }) {
+function RowText({
+  card,
+  pick,
+  terms,
+}: {
+  card: ResultCard;
+  pick: GuidePick | undefined;
+  terms: readonly string[];
+}) {
   const { t } = useTranslation();
   const text = card.description ?? '';
   if (text && isAiOrigin(card.descriptionOrigin))
@@ -95,10 +109,11 @@ function RowText({ card, pick }: { card: ResultCard; pick: GuidePick | undefined
         <span {...aiMark()}>{text}</span>
       </p>
     );
-  if (!pick?.quote) return text ? <p className="h2-row__text is-clamped">{text}</p> : null;
+  if (!pick?.quote)
+    return text ? <p className="h2-row__text is-clamped">{withSearchTerms(text, terms)}</p> : null;
   const at = locateQuote(text, pick.quote);
   return (
-    <>
+    <div className="h2-row__proof">
       <p className="h2-row__text">
         {at ? (
           <>
@@ -119,6 +134,6 @@ function RowText({ card, pick }: { card: ResultCard; pick: GuidePick | undefined
         <span aria-hidden="true">✓ </span>
         {t('results.checkedQuote')}
       </p>
-    </>
+    </div>
   );
 }

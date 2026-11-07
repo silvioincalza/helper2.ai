@@ -108,7 +108,7 @@ function EventWhen({ row, now }: { row: EventRow; now: number }) {
   ) : null;
 }
 
-function useEventText() {
+export function useEventText() {
   const { t, i18n } = useTranslation();
   return {
     kind: (row: EventRow) => (row.kind ? t(`events.kind.${row.kind}`) : ''),

@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { Feed } from './homeFeeds';
 import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
+import { tickerWindow, useTicker } from './ticker';
 
 /** One row as both layouts show it: the date or when, the type, the title and where it comes from. */
 export interface TermCells {
@@ -18,7 +19,9 @@ export interface TermCells {
  * New this week and Coming up share this one list (ADR 0042, decision 5), in the terminal style: a
  * `$ helper2 news · N` line, `ls -l` columns with dashed rules, titles in Geist and the rest in Geist Mono. `table` on
  * a wide screen (four columns with headers), `log` on a phone (inside a tab: the `$` line, then one row per item). Loading,
- * empty and error come from ListState. Nothing in it moves.
+ * empty and error come from ListState. With more rows than it shows, the list moves like a news ticker (useTicker):
+ * one row leaves at the top every few seconds and the next comes in at the bottom; hover, focus or a tap holds it.
+ * "Show all" opens the whole list, still.
  */
 export function TermList<Row extends { id: string }>({
   id,
@@ -41,7 +44,12 @@ export function TermList<Row extends { id: string }>({
   columns: string[];
   cells: (row: Row, now: number) => TermCells;
 }) {
-  const { all, toggle, shown } = useFirstRows(feed.rows);
+  const { all, toggle, shown: first } = useFirstRows(feed.rows);
+  const box = useRef<HTMLDivElement>(null);
+  const ticker = useTicker(box, !all && feed.rows.length > FIRST_ROWS);
+  const shown = ticker.offset > 0 ? tickerWindow(feed.rows, ticker.offset, FIRST_ROWS) : first;
+  const slide = ticker.offset > 0 ? 'is-sliding' : undefined;
+  const slideStyle = { '--tick-step': `${ticker.step}px` } as CSSProperties;
   const listId = `${id}-${layout}`;
   const labelledBy = layout === 'table' ? `${id}-h` : id;
   const body =
@@ -56,14 +64,20 @@ export function TermList<Row extends { id: string }>({
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody key={ticker.offset} className={slide} style={slideStyle}>
           {shown.map((row) => (
             <TableRow key={row.id} cells={cells(row, feed.now)} />
           ))}
         </tbody>
       </table>
     ) : (
-      <ul id={listId} className="plain-list v4-log" aria-labelledby={labelledBy}>
+      <ul
+        key={ticker.offset}
+        id={listId}
+        className={slide ? `plain-list v4-log ${slide}` : 'plain-list v4-log'}
+        style={slideStyle}
+        aria-labelledby={labelledBy}
+      >
         {shown.map((row) => (
           <LogRow key={row.id} cells={cells(row, feed.now)} />
         ))}
@@ -74,7 +88,10 @@ export function TermList<Row extends { id: string }>({
       <ListState feed={feed} errorText={errorText} emptyText={emptyText} />
       {feed.rows.length > 0 && (
         <>
-          {body}
+          {/* The ticker's box: hover, focus or a tap inside holds it (a link still opens on a tap). */}
+          <div ref={box} className="v4-ticker" {...ticker.handlers}>
+            {body}
+          </div>
           {feed.rows.length > FIRST_ROWS && (
             <ShowAll
               command={command}

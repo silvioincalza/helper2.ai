@@ -16,7 +16,7 @@
 }
 .v4 .h2-sources__step h3 {
   margin: 0;
-  font: 600 0.9375rem/1.35 var(--font-mono);
+  font: 600 0.9375rem/1.35 var(--font-body);
   letter-spacing: 0;
 }
 .h2-sources__step p {

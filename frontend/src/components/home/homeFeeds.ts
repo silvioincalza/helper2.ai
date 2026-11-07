@@ -140,11 +140,14 @@ export function useNewsFeed(): Feed<NewsRow> {
   };
 }
 
-/** Coming up: the next three months, soonest first, only events whose source states the dates. */
-export function useEventsFeed(): Feed<EventRow> {
-  const feed = useApi<UpcomingEventsResponse>(`next-events?days=${EVENTS_DAYS}`, (signal) =>
+/**
+ * Coming up: the next [days] (three months on Home, a year on the Events page), soonest first, only events whose
+ * source states the dates; as many as the API gives (60).
+ */
+export function useEventsFeed(days = EVENTS_DAYS): Feed<EventRow> {
+  const feed = useApi<UpcomingEventsResponse>(`next-events?days=${days}`, (signal) =>
     api.listUpcomingEvents(
-      new URLSearchParams({ days: String(EVENTS_DAYS), size: String(EVENTS_SIZE) }),
+      new URLSearchParams({ days: String(days), size: String(EVENTS_SIZE) }),
       signal,
     ),
   );
@@ -155,6 +158,31 @@ export function useEventsFeed(): Feed<EventRow> {
     rows,
     total: listTotal(feed.data, rows.length),
     now,
+    loading: feed.loading,
+    error: feed.error !== undefined,
+    reload: feed.reload,
+  };
+}
+
+/**
+ * The News page: the last week of AI news in Helper2's own index (GET /recent, type NEWS), newest first. Headlines,
+ * site and date only: no excerpt is shown until the web-search provider confirms in writing that we may show one
+ * (docs/sources.md). A row opens the resource page, which links to the article.
+ */
+export function useAiNewsFeed(): Feed<NewsRow> {
+  const params = new URLSearchParams({
+    days: String(NEWS_DAYS),
+    size: String(NEWS_SIZE),
+    type: 'NEWS',
+  });
+  const feed = useApi<RecentResponse>(`news?${params.toString()}`, (signal) =>
+    api.listRecent(params, signal),
+  );
+  const rows = (feed.data?.items ?? []).map(toNewsRow);
+  return {
+    rows,
+    total: listTotal(feed.data, rows.length),
+    now: Date.parse(feed.data?.generatedAt ?? ''),
     loading: feed.loading,
     error: feed.error !== undefined,
     reload: feed.reload,

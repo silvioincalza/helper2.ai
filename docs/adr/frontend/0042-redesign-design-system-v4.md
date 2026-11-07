@@ -179,11 +179,17 @@ pages, Results and the resource page, and the text pages; this record says what 
     back and that search still works), from `limits.guideQuestions` on GET /me, read again after each answer
     (`GuideAnswersLeft`, UJ-2). When the guide has no model the field is null, nothing is spent, and the line is not
     shown.
-12. **Nothing moves on its own for more than 5 seconds, with one exception.** No CSS animation repeats: the loading
+12. **Nothing moves on its own for more than 5 seconds, with two exceptions.** No CSS animation repeats: the loading
     lines pulse three times and stop. Under reduced motion nothing moves, and nothing folds with an animation. A test
     fails on any CSS or inline animation that repeats for ever. The exception is the radar (decision 4). It moves by a
     JavaScript clock, not a CSS animation; it holds still while the search box has focus, stands still under reduced
-    motion, and a signed-in user can turn it off.
+    motion, and a signed-in user can turn it off. The second exception is the home lists, New this week and Coming
+    up, as a news ticker (v5, `components/home/ticker.ts`): when a list has more rows than it shows, one row leaves at
+    the top every 5 seconds and the next comes in at the bottom, with a 700 ms slide. It holds still while the pointer
+    is over it or the focus is in it, after a tap on it (a second tap starts it again), while it is off screen or the
+    tab is hidden, under reduced motion and when the radar's motion switch is off. "Show all" opens the whole list,
+    still. There is no Play/Pause button, by choice: hover, focus and tap are the pause (WCAG 2.2.2). The trade-off:
+    a visitor has to find the tap; a keyboard user pauses it by moving into it.
 13. **Every number comes from data.** The radar legend's "5-10 of N sources at a time" counts the enabled external
     sources of GET /sources, the same sources the radar shows (13 on staging; not shown before the answer); the dot
     names say the response time or the age of the last check; the list counts are `total` on GET /recent and GET
@@ -199,14 +205,16 @@ pages, Results and the resource page, and the text pages; this record says what 
     whole hours, days or months (`lib/duration.ts`), never shorter than the server keeps. What the API does not
     have stays typed: the 00:00 UTC reset, the counter lifetimes, logs, backups and usage totals.
 14. **Accessibility, and one set of controls.** The shared controls have one definition each, in `app.css` (badges,
-    the state panel and the status pill in `components/ui/ui.css`), and look the same on every page: Geist Mono, the
-    v4 radius and borders. Buttons: secondary (`.btn`, an outline on `surface`, like Ask the guide), primary
+    the state panel and the status pill in `components/ui/ui.css`), and look the same on every page: Geist, the v4
+    radius and borders. Geist Mono is only for machine facts: the logo, meta lines, counts, `$ helper2` commands, key
+    hints and table cells. Buttons: secondary (`.btn`, an outline on `surface`, like Ask the guide), primary
     (`.btn-primary`, the saffron fill), ink (`.btn-ink`, the sign-in button), ghost (`.btn-ghost`, the outline with no
     fill), danger (`.btn-danger`, a red outline; `.btn-danger-fill` to confirm), icon (`.btn-icon`) and text
-    (`.btn-text`, an underlined word). Chips (`.chip`) are pills, the picked one an ink fill. Fields are Geist Mono on
+    (`.btn-text`, an underlined word). Chips (`.chip`) are pills, the picked one an ink fill. Fields are Geist on
     `surface` with the control border; checkboxes are ink. Hover always draws a line or a ring of 3:1 or more; a
     disabled button is quiet, not faded. A contrast test checks every state in both themes
-    (`controlsContrast.test.ts`). Every control is at least 44 px. The focus ring (3 px ink outline) never looks like the
+    (`controlsContrast.test.ts`). Every control is at least 44 px on a touch screen; on the results page with a mouse
+    (pointer fine) buttons and tabs are 36 px (`control-sm`) and chips 32 px (`chip-sm`), above WCAG 2.2's 24 px. The focus ring (3 px ink outline) never looks like the
     selected line (saffron underline in the header, an ink folder tab in the tabs). The Search button is never
     disabled: with nothing to send it puts the cursor in the box. Key hints (`/`, `↵`) show only where there is a
     keyboard. Text and controls meet AA in light and dark (muted 7.5:1 and 8:1, links 5.5:1 and 8.7:1, control borders

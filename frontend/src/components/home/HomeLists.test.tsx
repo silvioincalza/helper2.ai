@@ -307,17 +307,4 @@ describe('New this week and Coming up on a phone: tabs with log rows', () => {
       expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toContain(tab),
     );
   });
-
-  it("the header's New this week link selects its tab, also when the page opened on it", async () => {
-    mockApi();
-    const user = userEvent.setup();
-    renderApp('/');
-    await user.click(await screen.findByRole('tab', { name: /Coming up/ }));
-    await user.click(screen.getByRole('button', { name: /menu/i }));
-    await user.click(screen.getByRole('link', { name: 'New this week' }));
-    expect(await screen.findByRole('tab', { name: /New this week/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-  });
 });

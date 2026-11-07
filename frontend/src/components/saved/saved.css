@@ -71,7 +71,7 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--target-min);
-  font: 400 0.875rem/1 var(--font-mono);
+  font: 400 0.875rem/1 var(--font-body);
 }
 @media (max-width: 560px) {
   .h2-saved__row {

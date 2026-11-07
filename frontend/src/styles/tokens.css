@@ -94,6 +94,9 @@
   --radius-pill: 999px;
   --radius: var(--radius-md);
   --target-min: 44px;
+  /* The results page with a mouse (pointer fine, v5): smaller controls, still above WCAG 2.2's 24px (2.5.8). */
+  --control-sm: 36px;
+  --chip-sm: 32px;
   --box-height: 60px;
   --content-wide: 1088px;
   --reading-max: 808px;

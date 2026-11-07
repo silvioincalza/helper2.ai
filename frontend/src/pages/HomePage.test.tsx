@@ -41,31 +41,29 @@ describe('one box', () => {
     expect(m.callsTo('POST', '/guide/stream')).toHaveLength(0);
   });
 
-  it('shows the key of each button: ↵ on Search, ⇧↵ on Ask the guide', async () => {
+  it('shows the key of each button: ↵ on Search, ⇧↵ in the tooltip of Ask the guide', async () => {
     mockApi();
     renderApp('/');
     expect(screen.getByRole('button', { name: 'Search' }).querySelector('kbd')).toHaveTextContent(
       /^↵$/,
     );
-    expect(
-      screen.getByRole('button', { name: 'Ask the guide' }).querySelector('kbd'),
-    ).toHaveTextContent(/^⇧↵$/);
+    expect(screen.getByRole('button', { name: 'Ask the guide' })).toHaveAttribute(
+      'title',
+      'Ask the guide (⇧↵)',
+    );
     await settle();
   });
 
-  it('on a phone, Ask the guide is an icon button with its accessible name and a tooltip', async () => {
+  it('Ask the guide is an icon button with its accessible name and a tooltip, on every screen', async () => {
     mockApi();
     renderApp('/');
     const guide = screen.getByRole('button', { name: 'Ask the guide' });
-    expect(guide).toHaveAttribute('title', 'Ask the guide');
+    expect(guide).toHaveTextContent('');
     expect(guide.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
-    // The narrow box hides the label and the key hint and keeps a 44 px target.
+    // A square target of at least 44 px, whatever the width of the box.
     const css = readFileSync(join(process.cwd(), 'src/styles/app.css'), 'utf8');
     expect(css).toMatch(
       /\.one-box-ask \{[^}]*min-width: var\(--target-min\);[^}]*min-height: var\(--target-min\);/,
-    );
-    expect(css).toMatch(
-      /@media \(max-width: 520px\) \{[^@]*\.searchbox\.large \.enter-key \{\s*display: none;[^@]*\.one-box-ask__label \{[^}]*clip: rect\(0, 0, 0, 0\);/,
     );
     await settle();
   });

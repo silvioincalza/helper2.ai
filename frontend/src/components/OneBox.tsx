@@ -268,16 +268,22 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
             /
           </kbd>
         )}
-        {/* Two buttons for any length of text. A new question replaces one still being answered. Each shows its key:
-            ↵ on Search, ⇧↵ on Ask the guide (CSS hides key hints on touch devices and on a narrow box, where Ask the
-            guide is an icon button). */}
+        {/* Two buttons for any length of text. A new question replaces one still being answered. Search shows its
+            key ↵ (CSS hides key hints on touch devices). Ask the guide is an icon button: its name and its key ⇧↵ are
+            in the tooltip. */}
         <button type="submit" className="btn btn-primary">
           {t('search.submit')}
           <kbd className="enter-key" aria-hidden="true">
             ↵
           </kbd>
         </button>
-        <button type="button" className="btn one-box-ask" title={t('guide.ask')} onClick={ask}>
+        <button
+          type="button"
+          className="btn one-box-ask"
+          aria-label={t('guide.ask')}
+          title={t('guide.askTitle')}
+          onClick={ask}
+        >
           <svg
             className="one-box-ask__icon"
             width="20"
@@ -291,10 +297,6 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           >
             <path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" />
           </svg>
-          <span className="one-box-ask__label">{t('guide.ask')}</span>
-          <kbd className="enter-key" aria-hidden="true">
-            ⇧↵
-          </kbd>
         </button>
       </form>
       {hint && (

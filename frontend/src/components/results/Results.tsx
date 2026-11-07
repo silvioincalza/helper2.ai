@@ -34,12 +34,15 @@ import {
   type SearchState,
 } from '@/lib/searchState';
 import { missedSources, retryCanHelp } from '@/lib/coverage';
+import { searchTerms } from '@/lib/searchTerms';
 import { AudienceChoice } from './AudienceChoice';
 import { CoverageLine } from './CoverageLine';
 import { FiltersPanel } from './FiltersPanel';
 import { useMorePages } from './morePages';
+import { ResultKeys } from './ResultKeys';
 import { ResultRow } from './ResultRow';
 import { ResultsSkeleton } from './ResultsSkeleton';
+import { SourceLine } from './SourceLine';
 import { TypeTabs } from './TypeTabs';
 import './results.css';
 
@@ -87,7 +90,8 @@ export function Results() {
     (search.error !== undefined || (search.data != null && searchedNothing(search.data)));
 
   return (
-    <>
+    <ResultKeys>
+      {shown && !failed && <SourceLine res={shown} />}
       {asked && (
         <GuidePicks
           stream={stream}
@@ -135,7 +139,7 @@ export function Results() {
           />
         </div>
       )}
-    </>
+    </ResultKeys>
   );
 }
 
@@ -160,6 +164,7 @@ function ResultsBody({
   const { t } = useTranslation();
   const categories = useCategories();
   const byId = useMemo(() => picksById(picks), [picks]);
+  const terms = useMemo(() => searchTerms(state.q), [state.q]);
   const activeType = state.filters.type.length === 1 ? state.filters.type[0]! : null;
   const setType = (type: string | null) =>
     update(patchState(state, { filters: { ...state.filters, type: type ? [type] : [] } }));
@@ -288,7 +293,7 @@ function ResultsBody({
           ) : (
             <ul className="plain-list h2-list" aria-label={t('results.title')}>
               {more.cards.map((c) => (
-                <ResultRow key={c.id} card={c} pick={byId.get(c.id)} stale={stale} />
+                <ResultRow key={c.id} card={c} pick={byId.get(c.id)} stale={stale} terms={terms} />
               ))}
             </ul>
           )}
