@@ -93,7 +93,8 @@ abstract class ApiTestBase {
     FAKE_CALLS.set(0);
     // Rate-limit counts are in the Redis that every test context shares: each test starts from
     // zero.
-    rateLimitRedis.delete(rateLimitRedis.keys("h2:v1:rate:*"));
+    TestcontainersConfiguration.adminRedis()
+        .delete(TestcontainersConfiguration.adminRedis().keys("h2:v1:rate:*"));
   }
 
   @FunctionalInterface

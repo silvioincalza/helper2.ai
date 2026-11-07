@@ -23,13 +23,13 @@ dependencies {
   implementation(project(":libs:catalog"))
   implementation(project(":libs:examples"))
   implementation(project(":libs:sources"))
-  runtimeOnly(project(":libs:schema"))
+  implementation(project(":libs:schema"))
 
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-jdbc")
-  // Flyway validates only: the public app owns the migrations (ADR 0069).
+  // Flyway validates only: the migrate step of the public image migrates (ADR 0070).
   implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.springframework.boot:spring-boot-starter-data-redis")
   // Sign-in sessions in Redis (own namespace), so a signed-in admin is recognised by every replica.

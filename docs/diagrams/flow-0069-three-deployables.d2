@@ -58,19 +58,20 @@ build: What a change builds {
   change -> bbo: "libs/*, apps/common-web,\napi/common.yaml"
 }
 
-boot: Back office startup {
+boot: App startup (both apps, ADR 0070) {
   class: group
   direction: down
   schema: "Every migration\nalready applied?" {class: decision}
-  wait: "stop; Kubernetes restarts it\nuntil the public app migrated" {class: fail}
+  wait: "wait for the migrate Job\n(up to 4 min)" {class: app}
   serve: "serves" {class: end}
   schema -> wait: no
+  wait -> schema: "every 5 s"
   schema -> serve: yes {class: hot}
 }
 
-db: "Postgres\n(Flyway owner: public app)" {class: data}
+db: "Postgres\n(migrated by the migrate Job,\nADR 0070)" {class: data}
 redis: "Redis\n(shared budgets and quotas;\nown session namespaces)" {class: data}
-public -> db: "migrates at startup"
+public -> boot.schema: "validates only"
 bo -> boot.schema: "validates only"
 public -> redis
 bo -> redis

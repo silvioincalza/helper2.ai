@@ -14,9 +14,10 @@
 #   make web-sbom                the same for the web image TAG
 #   make postgres-sbom           the same for the Postgres image of postgres.image.tag
 #   make ENV=staging diff        what the next deploy would change
-#   make ENV=staging env-secret  write ENV's app.env into the Secret helper2-app-env (never through Helm)
-#   make ENV=staging deploy      env-secret, then helm upgrade --install (chart ../helm/helper2) with TAG, wait,
-#                                roll back on failure
+#   make ENV=staging env-secret  write ENV's app.env into the Secrets helper2-credentials (the passwords) and
+#                                helper2-app-env (the rest), never through Helm (ADR 0070)
+#   make ENV=staging deploy      env-secret, then helm upgrade --install (chart ../helm/helper2) with TAG, wait
+#                                for the migrate Job and the apps, roll back on failure
 #   make ENV=staging rollback    last deployed helm revision (not a failed or interrupted one)
 # Promote to prod = the same TAG: make ENV=prod TAG=<tag already on staging> deploy
 
@@ -72,7 +73,7 @@ credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao f
 		--token="$$(jq -r .data.token <<<"$$sec" | base64 -d)" >/dev/null; \
 	KUBECONFIG=$$kc kubectl config set-context ci --cluster=incalzame --user=deployer --namespace=$(NS) >/dev/null; \
 	KUBECONFIG=$$kc kubectl config use-context ci >/dev/null; \
-	for v in "create deployments" "create secrets" "patch secrets/helper2-app-env"; do \
+	for v in "create deployments" "create jobs" "delete jobs" "get jobs" "list jobs" "watch jobs" "create secrets" "patch secrets/helper2-app-env" "patch secrets/helper2-credentials"; do \
 		KUBECONFIG=$$kc kubectl auth can-i $$v -n $(NS) | grep -qx yes || { echo "deployer may not $$v"; exit 1; }; \
 	done; \
 	bao kv put -mount=helper2/kv ci/$(ENV) kubeconfig=@$$kc app_env=@$(ENV)/app.env >/dev/null; \
@@ -181,15 +182,24 @@ postgres-image: ## build Postgres + pgvector (deploy/postgres) and push it to Ha
 	esac; \
 	echo "$(PG_REPO):$(PG_TAG) digest: $$(harbor_api apps/postgres $(PG_TAG) -f | jq -r .digest)"
 
-# The env Secret (ADR 0007): app.env goes to the cluster with kubectl, never through Helm, so no value is kept
-# in the release history. Helm gets only hashes, which restart the app (any change) and Redis (a new password).
-ENV_SECRET := helper2-app-env
+# The env Secrets (ADR 0007, 0070): app.env goes to the cluster with kubectl, never through Helm, so no value is
+# kept in the release history. The passwords go to their own Secret, which no workload loads whole: each names
+# only its own keys. Helm gets only hashes, which restart the apps (any change) and Redis (a new Redis password).
+ENV_SECRET   := helper2-app-env
+CREDS_SECRET := helper2-credentials
+CREDENTIALS  := H2_DATABASE_PASSWORD|H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_REDIS_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD
+# One release only (the first with ADR 0070): the owner's and Redis' default password stay in helper2-app-env
+# too, so a failed upgrade that rolls back to the old chart (Postgres, Redis and pg-backup reading them from
+# helper2-app-env) still finds them. Both app templates set these two names under env:, which wins over envFrom,
+# so no app process sees them. In the release after, take CREDENTIALS instead of NOT_IN_APP_ENV below.
+NOT_IN_APP_ENV := H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD
 ENV_REV     = $(shell sha256sum < $(ENV)/app.env 2>/dev/null | cut -c1-16)
-REDIS_REV   = $(shell grep -E '^H2_REDIS_PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
+REDIS_REV   = $(shell grep -E '^H2_REDIS_(PUBLIC_|BACKOFFICE_)?PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
 HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 	--set image.repository=$(IMAGE) --set image.tag=$(TAG) --set backoffice.image.repository=$(BO_IMAGE) \
 	--set web.image.repository=$(WEB_IMAGE) \
-	--set envSecret.name=$(ENV_SECRET) --set envSecret.revision=$(ENV_REV) --set envSecret.redisPasswordRevision=$(REDIS_REV)
+	--set envSecret.name=$(ENV_SECRET) --set credentialsSecret.name=$(CREDS_SECRET) \
+	--set envSecret.revision=$(ENV_REV) --set envSecret.redisPasswordRevision=$(REDIS_REV)
 
 # CI runs this on every pull request; no cluster needed. Each environment's values (and prod with the
 # off-site backup and the PrometheusRule on) with a fixture app.env, linted and checked against the Kubernetes
@@ -200,15 +210,50 @@ CRD_SCHEMAS := https://raw.githubusercontent.com/datreeio/CRDs-catalog/3eb90d47a
 chart-check: ## helm lint + helm template | kubeconform, for staging and prod; Redis AOF + PVC; preStop, drain and grace period; images pinned by digest; redis.auth.revision restarts; daily limits only where set; admin Service on the back office, ingress-nginx on 8080; the public pod's shell from the web image; PrometheusRule = rule file; the backup verifies its dump; the chart renders no Secret; app.env checks
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
-	printf 'H2_DATABASE_PASSWORD=ci\nH2_REDIS_PASSWORD=00000000000000000000000000000000\n' > "$$env"; \
-	echo "== app.env: a key outside ^H2_[A-Z0-9_]+$$, no database password or a short Redis password fails"; \
+	printf '%s\n' H2_DATABASE_PASSWORD=33333333333333333333333333333333 H2_DATABASE_PUBLIC_PASSWORD=44444444444444444444444444444444 \
+		H2_DATABASE_BACKOFFICE_PASSWORD=55555555555555555555555555555555 \
+		H2_REDIS_PASSWORD=00000000000000000000000000000000 H2_REDIS_PUBLIC_PASSWORD=11111111111111111111111111111111 \
+		H2_REDIS_BACKOFFICE_PASSWORD=22222222222222222222222222222222 > "$$env"; \
+	echo "== app.env: a key outside ^H2_[A-Z0-9_]+$$, a missing or shared database password or a short or shared Redis password fails"; \
 	./check-app-env.sh "$$env"; \
-	for b in 'NEBIUS_API_KEY=stale' 'H2_REDIS_PASSWORD=0000000000000000' 'H2_DATABASE_PASSWORD=ci' 'H2_X=trailing ' ' H2_X=indented' 'H2_X'; do \
+	for b in 'NEBIUS_API_KEY=stale' 'H2_REDIS_PASSWORD=0000000000000000' 'H2_DATABASE_PASSWORD=33333333333333333333333333333333' 'H2_X=trailing ' ' H2_X=indented' 'H2_X'; do \
 		{ cat "$$env"; echo "$$b"; } > "$$bad"; \
 		if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with $$b"; exit 1; fi; \
 	done; \
 	grep -v DATABASE "$$env" > "$$bad"; \
 	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed without H2_DATABASE_PASSWORD"; exit 1; fi; \
+	for k in H2_DATABASE_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD; do \
+		grep -v "^$$k=" "$$env" > "$$bad"; \
+		if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed without $$k"; exit 1; fi; \
+	done; \
+	sed 's/^H2_DATABASE_PUBLIC_PASSWORD=.*/H2_DATABASE_PUBLIC_PASSWORD=33333333333333333333333333333333/' "$$env" > "$$bad"; \
+	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with the owner's password on h2_public"; exit 1; fi; \
+	sed 's/^H2_DATABASE_BACKOFFICE_PASSWORD=.*/H2_DATABASE_BACKOFFICE_PASSWORD=short-and-not-hex/' "$$env" > "$$bad"; \
+	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with a short database password"; exit 1; fi; \
+	echo "== ADR 0070: no app holds the owner's or Redis' default password; only Postgres, pg-backup and the migrate Job get the owner's"; \
+	for e in prod staging; do \
+		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set backup.enabled=true); \
+		for t in app backoffice; do \
+			out=$$("$${r[@]}" --show-only templates/$$t.yaml); \
+			if grep -qE 'key: H2_(DATABASE|REDIS)_PASSWORD \}' <<< "$$out"; then echo "$$e $$t: holds the owner's or Redis' default password"; exit 1; fi; \
+			grep -qE 'name: H2_DATABASE_USER, value: h2_(public|backoffice) \}' <<< "$$out" || { echo "$$e $$t: not its own database role"; exit 1; }; \
+			grep -qE 'name: H2_REDIS_USER, value: h2_(public|backoffice) \}' <<< "$$out" || { echo "$$e $$t: not its own Redis user"; exit 1; }; \
+			if grep -q 'secretRef: { name: helper2-credentials }' <<< "$$out"; then echo "$$e $$t: loads the credentials Secret whole"; exit 1; fi; \
+		done; \
+		owners=$$("$${r[@]}" | grep -cE 'key: H2_DATABASE_PASSWORD \}' || true); \
+		[ "$$owners" -eq 3 ] || { echo "$$e: the owner's password goes to $$owners places, want 3 (postgres, pg-backup, migrate)"; exit 1; }; \
+		job=$$("$${r[@]}" --show-only templates/migrate.yaml); \
+		grep -q 'args: \[migrate\]' <<< "$$job" || { echo "$$e: the migrate Job does not run the migrate step"; exit 1; }; \
+		if grep -q 'envFrom' <<< "$$job"; then echo "$$e: the migrate Job loads a whole Secret"; exit 1; fi; \
+		[ "$$("$${r[@]}" --show-only templates/redis.yaml | grep -cE '^ +user h2_(public|backoffice) on >[$$]H2_REDIS_(PUBLIC|BACKOFFICE)_PASSWORD ')" -eq 2 ] \
+			|| { echo "$$e: Redis must define the two ACL users of files/redis-users.acl"; exit 1; }; \
+		"$${r[@]}" --show-only templates/redis.yaml | grep -qF 'for v in "$$REDISCLI_AUTH" "$$H2_REDIS_PUBLIC_PASSWORD" "$$H2_REDIS_BACKOFFICE_PASSWORD"; do' \
+			|| { echo "$$e: Redis must refuse a password that is empty or not letters and digits before it starts"; exit 1; }; \
+		for a in "" "--set redis.auth.enabled=false"; do \
+			"$${r[@]}" $$a | ./check-env-overrides.sh $(ENV_SECRET) \
+				|| { echo "$$e $$a: a container loads $(ENV_SECRET) without overriding both passwords"; exit 1; }; \
+		done; \
+	done; \
 	echo "== the chart renders no Secret: app.env never sits in Helm's release history"; \
 	if helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 | grep -q '^kind: Secret$$'; then \
 		echo "the chart renders a Secret"; exit 1; fi; \
@@ -345,23 +390,28 @@ release-ready:
 # --force-conflicts: Helm is the only owner. Fields last written by kubectl (kustomize era, or a manual
 # `kubectl edit`) would otherwise block server-side apply, e.g. the image on the first new tag.
 # 12m: the app's replicas are replaced one after another, each only once the previous one is ready.
+# --wait-for-jobs: the release succeeds only once the migrate Job has (ADR 0070); a failed Job rolls it back.
 # --history-max 3: enough to roll back; older revisions are deleted.
 deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV to TAG (default: current commit), wait, roll back on failure
-	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --timeout 12m --rollback-on-failure --history-max 3
+	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --wait-for-jobs --timeout 12m --rollback-on-failure --history-max 3
 
 # Server-side apply under its own field manager: a key removed from app.env is removed from the Secret too.
 # The pods read it at start only; deploy passes its hash to Helm, so a change restarts them.
 # H2_REDIS_PASSWORD is required only when the rendered chart reads it from this Secret: not with
 # redis.auth.existingSecret, and not with redis.auth.enabled=false.
-env-secret: check-env ## write ENV's app.env into the Secret helper2-app-env (checked first by check-app-env.sh)
+env-secret: check-env ## write ENV's app.env into the Secrets helper2-credentials and helper2-app-env (checked first by check-app-env.sh)
 	@set -euo pipefail; \
 	rendered=$$(helm template $(HELM_ARGS)); \
 	redis_flag=--no-redis-password; \
-	if grep -qF 'secretKeyRef: { name: $(ENV_SECRET), key: H2_REDIS_PASSWORD }' <<< "$$rendered"; then redis_flag=; fi; \
+	if grep -qF 'secretKeyRef: { name: $(CREDS_SECRET), key: H2_REDIS_PASSWORD }' <<< "$$rendered"; then redis_flag=; fi; \
 	./check-app-env.sh $(ENV)/app.env $$redis_flag; \
-	kubectl -n $(NS) create secret generic $(ENV_SECRET) --from-env-file=$(ENV)/app.env --dry-run=client -o yaml \
+	kubectl -n $(NS) create secret generic $(CREDS_SECRET) --dry-run=client -o yaml \
+		--from-env-file=<(grep -E '^($(CREDENTIALS))=' $(ENV)/app.env) \
 		| kubectl -n $(NS) apply --server-side --field-manager=helper2-env-secret -f - >/dev/null; \
-	echo "wrote $(NS)/$(ENV_SECRET) from $(ENV)/app.env (revision $(ENV_REV))"
+	kubectl -n $(NS) create secret generic $(ENV_SECRET) --dry-run=client -o yaml \
+		--from-env-file=<(grep -vE '^($(NOT_IN_APP_ENV))=' $(ENV)/app.env) \
+		| kubectl -n $(NS) apply --server-side --field-manager=helper2-env-secret -f - >/dev/null; \
+	echo "wrote $(NS)/$(CREDS_SECRET) and $(NS)/$(ENV_SECRET) from $(ENV)/app.env (revision $(ENV_REV))"
 
 # kubectl diff exits 1 when there are changes (the usual case before a deploy) and >1 on an error
 # (auth, API, invalid manifest): only 1 is tolerated. The chart is rendered first, so a render error

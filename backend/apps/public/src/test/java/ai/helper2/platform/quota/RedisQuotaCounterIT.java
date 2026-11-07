@@ -45,7 +45,7 @@ class RedisQuotaCounterIT {
   }
 
   private static String key() {
-    return "test:quota:" + UUID.randomUUID();
+    return "h2:v1:quota:test:" + UUID.randomUUID();
   }
 
   @Test

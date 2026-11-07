@@ -10,6 +10,7 @@ import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.catalog.internal.ResourceStore.EmbeddingTask;
 import ai.helper2.catalog.internal.ResourceStore.ResourceRow;
+import ai.helper2.testing.AsBackOffice;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class ResourceEmbeddingTest {
 
   static final int DIM = 1024;

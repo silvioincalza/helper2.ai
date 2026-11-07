@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.config.CatalogRetentionProperties;
 import ai.helper2.catalog.internal.CatalogRetention;
+import ai.helper2.testing.AsBackOffice;
 import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
@@ -24,6 +25,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class CatalogPurgeExpiredDataIT {
 
   static final Instant NOW = Instant.parse("2000-07-01T00:00:00Z");

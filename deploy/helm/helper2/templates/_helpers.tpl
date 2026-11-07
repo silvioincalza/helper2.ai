@@ -10,6 +10,13 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "envSecret.name is required: the Secret with the H2_ keys of app.env (make env-secret)" .Values.envSecret.name }}
 {{- end }}
 
+{{/* The Secret with the credentials (ADR 0070): the database owner's and each app's passwords, Redis' default
+     user's and each app user's. Written by make env-secret from the same app.env; no app loads it whole, each
+     workload names only its own keys. */}}
+{{- define "helper2.credentialsSecret" -}}
+{{ required "credentialsSecret.name is required: the Secret with the database and Redis passwords (make env-secret)" .Values.credentialsSecret.name }}
+{{- end }}
+
 {{/* The back office's tag: its own, or the public app's, so both deploy the same version by default. */}}
 {{- define "helper2.backofficeTag" -}}
 {{ default .Values.image.tag .Values.backoffice.image.tag }}
@@ -30,15 +37,24 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2)" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}
 {{- end }}
 
-{{/* The Redis password as an env var source: redis.auth.existingSecret, or H2_REDIS_PASSWORD of the env Secret. */}}
+{{/* A Redis password as an env var source, by its key (H2_REDIS_PASSWORD for the default user,
+     H2_REDIS_PUBLIC_PASSWORD, H2_REDIS_BACKOFFICE_PASSWORD for the apps' ACL users): from redis.auth.existingSecret,
+     or from the credentials Secret. Call with (list $ "<key>"). With existingSecret, the default user's key is
+     redis.auth.existingSecretKey. */}}
 {{- define "helper2.redisPasswordFrom" -}}
-{{- with .Values.redis.auth -}}
+{{- $root := index . 0 -}}{{- $key := index . 1 -}}
+{{- with $root.Values.redis.auth -}}
 {{- if .existingSecret -}}
-secretKeyRef: { name: {{ .existingSecret }}, key: {{ required "redis.auth.existingSecretKey" .existingSecretKey }} }
+secretKeyRef: { name: {{ .existingSecret }}, key: {{ ternary (required "redis.auth.existingSecretKey" .existingSecretKey) $key (eq $key "H2_REDIS_PASSWORD") }} }
 {{- else -}}
-secretKeyRef: { name: {{ include "helper2.envSecret" $ }}, key: H2_REDIS_PASSWORD }
+secretKeyRef: { name: {{ include "helper2.credentialsSecret" $root }}, key: {{ $key }} }
 {{- end -}}
 {{- end -}}
+{{- end }}
+
+{{/* The key of an app's Redis ACL user password: h2_public -> H2_REDIS_PUBLIC_PASSWORD. */}}
+{{- define "helper2.redisUserPasswordKey" -}}
+H2_REDIS_{{ trimPrefix "h2_" . | upper }}_PASSWORD
 {{- end }}
 
 {{/* repository:tag, or repository:tag@digest when postgres.image.digest pins it. */}}

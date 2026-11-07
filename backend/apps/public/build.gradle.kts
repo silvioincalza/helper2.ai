@@ -2,8 +2,9 @@ import ai.helper2.buildlogic.BundleContract
 
 // The public app (ADR 0069): search, guide, setup, the catalog pages, sign-in for users, saved
 // items,
-// news, events and the policy, with their schedules. It owns the Flyway migrations. No back office
-// code, no admin routes.
+// news, events and the policy, with their schedules. Its image also runs the migrate step
+// (`migrate`, ADR 0070); the app itself only checks the schema. No back office code, no admin
+// routes.
 plugins { id("helper2.spring-app") }
 
 // The boot jar is helper2-public-<version>.jar.
@@ -27,7 +28,7 @@ dependencies {
   implementation(project(":libs:catalog"))
   implementation(project(":libs:examples"))
   implementation(project(":libs:sources"))
-  runtimeOnly(project(":libs:schema"))
+  implementation(project(":libs:schema"))
 
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
   implementation("org.springframework.boot:spring-boot-starter-validation")

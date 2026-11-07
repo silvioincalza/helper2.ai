@@ -89,7 +89,9 @@ class RedisRateLimiterIT {
     assertThat(a.key("2001:db8:7:8::1")).doesNotContain("2001").doesNotContain("20010db8");
     assertThat(a.key("203.0.113.8")).as("another client").isNotEqualTo(today);
     assertThat(a.acquire("203.0.113.7")).isZero();
-    assertThat(redis.keys(RedisRateLimiter.KEY_PREFIX + name + ":*"))
+    assertThat(
+            TestcontainersConfiguration.adminRedis()
+                .keys(RedisRateLimiter.KEY_PREFIX + name + ":*"))
         .containsExactly(today)
         .noneMatch(k -> k.contains("203.0.113"));
 

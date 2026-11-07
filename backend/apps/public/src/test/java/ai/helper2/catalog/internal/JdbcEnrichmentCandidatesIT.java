@@ -11,6 +11,7 @@ import ai.helper2.catalog.enrichment.EnrichmentCandidates.Standing;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.State;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.View;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Waiting;
+import ai.helper2.testing.AsBackOffice;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class JdbcEnrichmentCandidatesIT {
 
   static final int MIN_TEXT = 40;

@@ -45,7 +45,8 @@ class ForwardedHeadersNativeIT {
    */
   @BeforeEach
   void resetRateLimits() {
-    redis.delete(redis.keys("h2:v1:rate:*"));
+    TestcontainersConfiguration.adminRedis()
+        .delete(TestcontainersConfiguration.adminRedis().keys("h2:v1:rate:*"));
   }
 
   final HttpClient http = HttpClient.newHttpClient();

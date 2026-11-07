@@ -23,7 +23,7 @@ spec:
             - { name: POSTGRES_DB, value: helper2 }
             - { name: POSTGRES_USER, value: helper2 }
             - name: POSTGRES_PASSWORD
-              valueFrom: { secretKeyRef: { name: {{ include "helper2.envSecret" . }}, key: H2_DATABASE_PASSWORD } }
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PASSWORD } }
           ports: [{ containerPort: 5432, name: pg }]
           readinessProbe:
             exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }

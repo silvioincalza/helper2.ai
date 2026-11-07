@@ -121,8 +121,13 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 - **Service split, next steps** ([ADR 0069](adr/operations/0069-three-deployables.md)):
   - keep the previous release's assets in the web image: during a rollout a page from an old public pod can name an
     asset hash the new web pods no longer have, and Helm does not enforce the order web, public, back office;
-  - PR 5: two DB roles, `h2_public` (reads the catalog, writes only what users create) and `h2_backoffice` (writes
-    the catalog, the review queue, the Scout tables and the audit trail), with the V1 squash of next/3.0;
+  - a non-superuser owner ([ADR 0070](adr/operations/0070-app-roles.md)): `POSTGRES_USER=helper2` is a superuser, so
+    the migrate Job's image could reach `COPY ... TO PROGRAM`. Keep a superuser only for the database's init, and let
+    the owner own the database and its tables without superuser;
+  - a narrower Redis split ([ADR 0070](adr/operations/0070-app-roles.md)): both apps share the rate-limit, budget,
+    quota and source-cache keys, so the public app can reset a spend cap or poison the source cache. Give each app its
+    own families where the code allows (the back office's caps under its own prefix), and drop `+eval` where a plain
+    command does;
   - PR 5: CI and CD per component (path filters: `frontend/`, `apps/public`, `apps/backoffice`, a library change
     builds both apps), and image signing for every image;
   - Grafana: the dashboard and the alert rules filter on `application="helper2"`; the back office reports as
@@ -132,11 +137,12 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     setup settings are not there. Read them from the public app (an internal endpoint) or publish them to the
     database at startup;
   - the back office overview's budgets lack the setup guide's (`tool-guide`): declare it there as the guide's;
-  - Redis users per app (ACL): both apps share one Redis password, so a public pod could write the back office's
-    sessions (`helper2:backoffice:session:*`). Give each app its own user with access to its own keys only, and
-    serialise sessions as JSON instead of Java serialisation;
-  - an env Secret per app: both workloads read the whole `helper2-app-env`, so the public pod holds the back
-    office's keys (the Scout's sources) and the other way round;
+  - the release after ADR 0070's: drop the owner's and Redis' default password from `helper2-app-env` (Makefile
+    `NOT_IN_APP_ENV` -> `CREDENTIALS`). They stay there for one release only, so a rollback to the old chart still
+    starts Postgres and Redis;
+  - an env Secret per app: the passwords have their own Secret ([ADR 0070](adr/operations/0070-app-roles.md)), but
+    both workloads still read the rest of `helper2-app-env`, so the public pod holds the back office's keys (the
+    Scout's sources) and the other way round;
 
 - **Exporters.** Postgres and Redis exporters in the Helm chart, and an alert on Redis evicted keys
   (`allkeys-lru` can drop sessions, rate-limit windows and web-search counters under memory pressure).
@@ -404,7 +410,7 @@ Fix an item or accept it; when it no longer holds, remove it.
 
 - Roles live in the session: removing an admin takes effect at the next sign-in; a Redis outage signs the admin out. ([ADR 0023](adr/edge/0023-identity-and-admin.md))
 - A GitHub OAuth App allows only one callback URL, and each environment needs two (public host and admin host): use a GitHub App, or one OAuth App per host. A manual step, outside the repo. ([ADR 0035](adr/edge/0035-admin-host.md))
-- The back office validates the schema at startup and does not migrate: on a release with a new migration it restarts until the public app has migrated, and a migration must keep the old back office working until it is replaced. ([ADR 0069](adr/operations/0069-three-deployables.md))
+- Neither app migrates: the migrate Job does, and each app waits up to 4 minutes for it at startup. A migration must keep the old pods of both apps working until they are replaced. A new role password takes effect when the Job runs, a moment before the pods restart: an old pod opening a new connection in between is refused. ([ADR 0070](adr/operations/0070-app-roles.md))
 - Both apps upsert the same `source` rows at startup, from the same settings; an env Secret that differs between the two workloads would make them overwrite each other's `enabled` flag. ([ADR 0069](adr/operations/0069-three-deployables.md))
 - The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute; 1.7 to 1.9 s with 37 500 REJECTED resources and the queue decisions). A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000), and so does the out-of-retries view (1.1 to 1.6 s with 37 500 REJECTED); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed. ([ADR 0045](adr/edge/0045-back-office.md))
 - The catalog's backlog query reads the Scout's `enrichment_queue_control` (a listed exception in the table-owner test). If it starts to hurt, the catalog can own the table behind a port, as for the re-run request of ADR 0056. ([ADR 0045](adr/edge/0045-back-office.md) §7)

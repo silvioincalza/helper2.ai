@@ -34,21 +34,49 @@ spec:
       containers:
         - name: redis
           image: {{ .Values.redis.image }}
-          # AOF only (no RDB snapshots), fsync every second; still a bounded LRU cache. requirepass comes
-          # in as config on stdin (`redis-server -`), not in argv; REDISCLI_AUTH also lets the probe's
-          # redis-cli authenticate.
+          # AOF only (no RDB snapshots), fsync every second; still a bounded LRU cache. requirepass and the
+          # apps' ACL users come in as config on stdin (`redis-server -`), not in argv; REDISCLI_AUTH also
+          # lets the probe's redis-cli authenticate.
           command: ["/bin/sh", "-ec"]
           args:
             - |
+              {{- if .Values.redis.auth.enabled }}
+              # The passwords land unquoted in the config (requirepass, the ACL lines): refuse an empty one or one with
+              # anything but letters and digits. check-app-env.sh checks app.env; this also covers redis.auth.existingSecret.
+              for v in "$REDISCLI_AUTH"
+              {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}
+              {{- $line = trim $line }}
+              {{- if and $line (not (hasPrefix "#" $line)) }} "${{ include "helper2.redisUserPasswordKey" (first (splitList " " $line)) }}"{{ end }}
+              {{- end }}; do
+                case $v in ''|*[!A-Za-z0-9]*) echo "a Redis password is empty or has characters other than letters and digits" >&2; exit 1;; esac
+              done
+              {{- end }}
               exec redis-server - --dir /data --save "" --appendonly yes --appendfsync everysec --maxmemory {{ .Values.redis.maxMemory }} --maxmemory-policy allkeys-lru <<EOF
               {{- if .Values.redis.auth.enabled }}
               requirepass $REDISCLI_AUTH
+              {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}
+              {{- $line = trim $line }}
+              {{- if and $line (not (hasPrefix "#" $line)) }}
+              {{- $user := splitn " " 2 $line }}
+              user {{ $user._0 }} on >${{ include "helper2.redisUserPasswordKey" $user._0 }} {{ $user._1 }}
+              {{- end }}
+              {{- end }}
               {{- end }}
               EOF
           {{- if .Values.redis.auth.enabled }}
           env:
+            # The default user: the admin (probes, redis-cli). The apps connect as their own ACL users
+            # (files/redis-users.acl, ADR 0070).
             - name: REDISCLI_AUTH
-              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list . "H2_REDIS_PASSWORD") }} }
+            {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}
+            {{- $line = trim $line }}
+            {{- if and $line (not (hasPrefix "#" $line)) }}
+            {{- $key := include "helper2.redisUserPasswordKey" (first (splitList " " $line)) }}
+            - name: {{ $key }}
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list $ $key) }} }
+            {{- end }}
+            {{- end }}
           {{- end }}
           ports: [{ containerPort: 6379, name: redis }]
           # Not ready while the AOF loads (PING answers LOADING).

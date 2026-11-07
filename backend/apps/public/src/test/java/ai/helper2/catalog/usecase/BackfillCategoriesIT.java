@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.shared.CategoryCatalog;
+import ai.helper2.testing.AsBackOffice;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 /** The category backfill (ADR 0053) against real PostgreSQL. */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class BackfillCategoriesIT {
 
   @Autowired BackfillCategories backfill;

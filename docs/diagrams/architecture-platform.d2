@@ -68,7 +68,7 @@ platform: "platform (open module)" {
 shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nLanguageDetector · Vocabulary" {class: app}
 api: "api (open)\ngenerated per app: public.yaml or\nadmin.yaml, + common.yaml" {class: app}
 
-redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nhelper2:session:* · helper2:backoffice:session:*" {shape: cylinder; class: data}
+redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nh2:v1:session:public:* · h2:v1:session:backoffice:*" {shape: cylinder; class: data}
 pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · runtime_setting" {shape: cylinder; class: data}
 oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
 
@@ -92,7 +92,7 @@ modules -> api: "controller interfaces, DTOs"
 identity.usecase -> platform.quota: "delete counters\nwith the account"
 
 edge.rate -> redis: "h2:v1:rate:*"
-identity.session -> redis: "helper2:session:* · helper2:backoffice:session:*"
+identity.session -> redis: "h2:v1:session:public:* · h2:v1:session:backoffice:*"
 platform.llm -> redis: "h2:v1:budget:*"
 platform.resilience -> redis: "h2:v1:outbound:*"
 platform.quota -> redis: "h2:v1:quota:*"

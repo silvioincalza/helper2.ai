@@ -70,7 +70,7 @@ traceable to that administrator.
    them through the `VisitorLimits` port, which the guide implements (`GuideVisitorLimits`): the same counters that
    enforce the limits, by `ClientKey` and, when signed in, the user id. Reading never counts. The response carries
    only numbers, never the address, its hash or the id.
-9. **Sessions in Redis** (Spring Session Data Redis, namespace `helper2:session`), so every replica knows a signed-in
+9. **Sessions in Redis** (Spring Session Data Redis, namespace `h2:v1:session:public`), so every replica knows a signed-in
    admin. Timeout and cookie stay under `server.servlet.session`. Only sign-in creates a session: the saved-request
    cache is off (`NullRequestCache`), so an anonymous request never writes one. While Redis is down
    (`SessionConfiguration`): a request with a session cookie is served as anonymous (session reads run under the

@@ -7,6 +7,7 @@ import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
+import ai.helper2.testing.AsBackOffice;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@AsBackOffice
 class CourseCandidateReviewTest {
 
   static final String URL = "https://coursera.org/learn/test-candidate-course";

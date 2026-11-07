@@ -35,7 +35,9 @@ class JdbcSourceOutcomesIT {
 
   @AfterEach
   void clean() {
-    jdbc.sql("DELETE FROM source WHERE id LIKE 'aa-outcomes-%'").update();
+    TestcontainersConfiguration.ownerJdbc()
+        .sql("DELETE FROM source WHERE id LIKE 'aa-outcomes-%'")
+        .update();
   }
 
   @Test

@@ -27,10 +27,9 @@ the web app rebuilt and redeployed the backend.
      `backend/apps/common-web`, compiled into each app against its own generated contract types.
 3. **One contract per app.** The public app generates its controllers from `api/public.yaml`, the back office from
    `api/admin.yaml`, each with the parts of `api/common.yaml` it names; the shared types keep their names in both.
-4. **One database, one Flyway owner.** Both apps use the same Postgres and Redis. The public app runs the migrations.
-   The back office only validates at startup: on a release with a new migration it waits, restarted by Kubernetes,
-   until the public app has migrated. Rollout order: public, then back office. Daily budgets and quotas stay in the
-   shared Redis, so they hold across both apps. Two DB roles (`h2_public`, `h2_backoffice`) come later (roadmap).
+4. **One database, one Flyway owner.** Both apps use the same Postgres and Redis. The migrate step of the public image
+   runs the migrations in its own Job, and each app connects as its own role and only checks the schema
+   ([0070](0070-app-roles.md)). Daily budgets and quotas stay in the shared Redis, so they hold across both apps.
 5. **The back office only on the admin host** ([0035](../edge/0035-admin-host.md)). The Deployment `helper2-backoffice`
    (one replica by default) sits behind the Service `helper2-admin`; the public Deployment opens no admin port. On
    every response, errors included, the back office sends:
@@ -78,7 +77,7 @@ the web app rebuilt and redeployed the backend.
     `/favicon.svg` (exact) to the Service `helper2-web`, everything else to the Service `helper2`. The web pods take
     traffic from the Ingress controller on 8080 only, and reach nothing.
 
-Decided, built later: the two DB roles, and CI/CD per component (path filters, signing).
+Decided, built later: CI/CD per component (path filters, signing). The two DB roles: [0070](0070-app-roles.md).
 
 ## Consequences
 - A Scout change ships without touching the public pods, and a long crawl no longer competes with a visitor's question.
@@ -87,12 +86,12 @@ Decided, built later: the two DB roles, and CI/CD per component (path filters, s
 - More to run: three images, three workloads. Still one chart, one database, one Redis.
 - A web app change still deploys all three with one tag; per-component CD comes later (roadmap).
 - Helm rolls the three Deployments at once; the order web, public, back office is not enforced. In practice the web
-  pods are ready in seconds and a public pod needs its Flyway and Lingua start, so new web pods come first.
+  pods are ready in seconds and a public pod needs its schema check and Lingua start, so new web pods come first.
 - Known limit (roadmap): during a rollout, a page from an old public pod can name an asset hash that the new web pods
   no longer have (a 404 for that script until the visitor reloads), and a page from a new public pod can, for a few
   seconds, name a hash that only the new web pods have. Fix: keep the previous release's assets in the web image.
-- Known limits (roadmap): both apps share one Redis password, so a public pod could write the back office's
-  sessions; and both workloads read the whole env Secret.
+- Each app has its own database role and Redis user, and the passwords their own Secret ([0070](0070-app-roles.md)).
+  Known limit (roadmap): both workloads still read the rest of the env Secret.
 - The Settings page shows the back office's groups and the guide's cap; the public app's other guide and setup
   settings are no longer there (roadmap).
 - Dashboards and alerts that filter on `application="helper2"` see the public app only; the back office reports as

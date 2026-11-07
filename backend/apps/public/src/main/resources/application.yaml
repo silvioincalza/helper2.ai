@@ -25,16 +25,21 @@ spring:
       maximum-pool-size: ${H2_DATABASE_POOL_SIZE:10}
       connection-timeout: 3000
   flyway:
+    # Validate only (SchemaCheck): the migrate step of this image migrates (ADR 0070).
     locations: classpath:db/migration
   session:
     data:
       redis:
         # Sign-in sessions, shared by every replica. Timeout and cookie: server.servlet.session below.
-        namespace: helper2:session
+        # JSON, not Java serialization (ADR 0070), under a namespace the old format never used: sessions kept
+        # before it are never read, so everyone signs in again once. The app's Redis ACL user reaches only it.
+        namespace: h2:v1:session:public
   data:
     redis:
       host: ${H2_REDIS_HOST:localhost}
       port: ${H2_REDIS_PORT:6379}
+      # The app's own ACL user (ADR 0070); empty = Redis' default user, as in local development.
+      username: ${H2_REDIS_USER:}
       password: ${H2_REDIS_PASSWORD:}
       timeout: 250ms
       connect-timeout: 500ms
@@ -710,6 +715,26 @@ helper2:
       cache-ttl: 30m
       deadline: ${H2_SOURCE_MCP_DEADLINE:}
 
+---
+# The schema (ADR 0070): in a deployment the migrate step (a Kubernetes Job, as the owner) migrates and the
+# app only checks, as its own role, waiting up to `wait-for` for the Job. Local development migrates itself.
+helper2:
+  schema:
+    migrate: ${H2_SCHEMA_MIGRATE:false}
+    wait-for: ${H2_SCHEMA_WAIT:PT4M}
+  # The migrate step only (MigrateStep, `java -jar app.jar migrate`): the password of each app's role.
+  logins:
+    h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
+    h2_backoffice: ${H2_DATABASE_BACKOFFICE_PASSWORD:}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+helper2:
+  schema:
+    # The dev profile connects as the owner (compose.yaml) and migrates, as before the migrate step.
+    migrate: ${H2_SCHEMA_MIGRATE:true}
 ---
 spring:
   config:

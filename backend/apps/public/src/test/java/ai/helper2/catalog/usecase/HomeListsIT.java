@@ -178,7 +178,8 @@ class HomeListsIT {
     withoutRecords =
         upsert(hit("github", "https://github.com/acme/empty-" + run, null, 0)).getFirst();
     publish(withoutRecords, 21);
-    jdbc.sql("DELETE FROM source_record WHERE resource_id = :id")
+    TestcontainersConfiguration.ownerJdbc()
+        .sql("DELETE FROM source_record WHERE resource_id = :id")
         .param("id", withoutRecords)
         .update();
   }

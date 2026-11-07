@@ -21,10 +21,9 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
-# The app's settings and secrets (the H2_ keys of <env>/app.env) are in a Secret the chart does not
-# create, so no value is ever kept in Helm's release history. `make env-secret` writes it from app.env
-# (CI reads app.env from OpenBao). It holds H2_DATABASE_PASSWORD and, unless redis.auth.existingSecret
-# is set, H2_REDIS_PASSWORD.
+# The app's settings and secrets (the H2_ keys of <env>/app.env) are in two Secrets the chart does not
+# create, so no value is ever kept in Helm's release history. `make env-secret` writes both from app.env
+# (CI reads app.env from OpenBao). This one holds every key but the passwords below; both apps load it whole.
 envSecret:
   name: helper2-app-env
   # The chart cannot see that Secret change: a new revision restarts the app. make deploy passes a
@@ -33,6 +32,21 @@ envSecret:
   # The same for Redis, which reads its password at start only: make deploy passes a hash of
   # H2_REDIS_PASSWORD. Only used without redis.auth.existingSecret.
   redisPasswordRevision: ""
+# The passwords (ADR 0070), apart from the settings: the database owner's (H2_DATABASE_PASSWORD) and each app
+# role's (H2_DATABASE_PUBLIC_PASSWORD, H2_DATABASE_BACKOFFICE_PASSWORD), and, unless redis.auth.existingSecret
+# is set, Redis' default user's (H2_REDIS_PASSWORD) and each app user's (H2_REDIS_PUBLIC_PASSWORD,
+# H2_REDIS_BACKOFFICE_PASSWORD). No workload loads it whole: each one names only its own keys. Only Postgres,
+# pg-backup and the migrate Job get the owner's password.
+credentialsSecret:
+  name: helper2-credentials
+# The migrate step (templates/migrate.yaml): a Job of the public image, once per release, that migrates the
+# schema as the owner and opens the apps' logins. The apps wait for it (H2_SCHEMA_WAIT, 4 minutes).
+migrate:
+  backoffLimit: 2
+  deadlineSeconds: 600
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 512Mi }
 
 app:
   springProfiles: llm-nebius
@@ -49,7 +63,7 @@ app:
   shutdown:
     preStopSeconds: 10
     drainSeconds: 30
-  # Longest allowed startup (Flyway migrations, Lingua models) before the startup probe restarts the
+  # Longest allowed startup (the schema check, which waits up to 4 minutes for the migrate Job, and the Lingua models) before the startup probe restarts the
   # container; the back office uses the same. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and
   # all of them must be ready within the `helm --wait` timeout (12m in the hosted deploy).
   startupSeconds: 300
@@ -189,10 +203,11 @@ redis:
   # these needs a new StatefulSet. Empty storageClassName = the cluster's default storage class.
   storageClassName: ""
   storage: 1Gi
-  # requirepass, from a Secret. Default: the key H2_REDIS_PASSWORD of the env Secret, i.e. a line
-  # H2_REDIS_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: it goes into the
-  # Redis config as is). Or existingSecret: another Secret. The app gets the same value as
-  # H2_REDIS_PASSWORD (spring.data.redis.password).
+  # requirepass (the default user, the admin) and the apps' ACL users (files/redis-users.acl, ADR 0070), from a
+  # Secret. Default: the credentials Secret, i.e. lines H2_REDIS_PASSWORD, H2_REDIS_PUBLIC_PASSWORD and
+  # H2_REDIS_BACKOFFICE_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: they go into
+  # the Redis config as is). Or existingSecret: another Secret with the same three keys (the default user's under
+  # existingSecretKey). Each app connects as its own user (H2_REDIS_USER, H2_REDIS_PASSWORD).
   auth:
     enabled: true
     existingSecret: ""
@@ -206,9 +221,10 @@ redis:
 
 # templates/networkpolicy.yaml: ingress and egress denied for every pod in the namespace, then allowed
 # per workload. Ingress: both apps <- the Ingress controller on 8080, the metrics scraper on 8081; helper2-web <- the
-# Ingress controller on 8080; postgres <- both apps and pg-backup; redis <- both apps; pg-backup: nothing. Egress: both
-# apps -> DNS, postgres, redis, the OTLP collector, HTTPS to `external`; pg-backup -> DNS, postgres, HTTPS to
-# `external` when backup.offsite is on; helper2-web, postgres and redis: nothing.
+# Ingress controller on 8080; postgres <- both apps, pg-backup and the migrate Job (templates/migrate.yaml); redis <-
+# both apps; pg-backup: nothing. Egress: both apps -> DNS, postgres, redis, the OTLP collector, HTTPS to `external`;
+# the migrate Job -> DNS, postgres; pg-backup -> DNS, postgres, HTTPS to `external` when backup.offsite is on;
+# helper2-web, postgres and redis: nothing.
 networkPolicy:
   # The Ingress controller that serves your routes to the Services helper2-web, helper2 and helper2-admin. Its pods
   # may reach the three workloads on 8080. Required to reach the app at all: empty namespace = no edge traffic.

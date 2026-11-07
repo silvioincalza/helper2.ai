@@ -44,7 +44,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    ([0004](0004-persistence-and-provenance.md)): they are backed up, survive a Redis restart and cost no Redis memory.
 7. **Shared state for the replicas.** Prod runs 3 replicas ([0027](../operations/0027-runtime-topology.md)). The same Redis also
    holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](../edge/0024-http-edge-protection.md)), the sign-in
-   sessions (namespace `helper2:session`, [0023](../edge/0023-identity-and-admin.md)) and the daily web-search counters
+   sessions (namespace `h2:v1:session:public`, [0023](../edge/0023-identity-and-admin.md)) and the daily web-search counters
    (`h2:v1:quota:*`, [0037](../search/0037-tavily-store-and-daily-quota.md)), so every replica sees them. Rate limits and
    sessions have their own fallback while Redis is down; the web-search quota allows no live call then.
 

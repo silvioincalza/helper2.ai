@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Checks an app.env before it becomes the env Secret: KEY=value lines from column 0 and # comments only,
 # every key matches ^H2_[A-Z0-9_]+$ (the only names the app reads, so a misspelt or unprefixed key fails
-# here), no line ends in a space or tab (kubectl keeps it in the value), H2_DATABASE_PASSWORD is set, and
-# H2_REDIS_PASSWORD has 32+ letters and digits (it goes into the Redis config as is, and its hash is
-# public in the pod annotations). Usage: check-app-env.sh <app.env> [--no-redis-password] (with redis.auth.existingSecret).
+# here), no line ends in a space or tab (kubectl keeps it in the value), the database owner's and both app
+# roles' passwords have 32+ letters and digits and differ (ADR 0070), and the three Redis passwords (default user, h2_public,
+# h2_backoffice) have 32+ letters and digits and differ (they go into the Redis config as is, and their hash
+# is public in the pod annotations). Usage: check-app-env.sh <app.env> [--no-redis-password] (with redis.auth.existingSecret).
 set -euo pipefail
 
 file=${1:?usage: check-app-env.sh <app.env> [--no-redis-password]}
@@ -26,8 +27,23 @@ while IFS= read -r line || [ -n "$line" ]; do
   seen[$key]=${l#*=}
 done < "$file"
 
-[ -n "${seen[H2_DATABASE_PASSWORD]:-}" ] || fail "H2_DATABASE_PASSWORD is missing"
+# Each password is its own: one leaked app password must not open the owner or the other app.
+distinct() {
+  local key other
+  for key in "$@"; do
+    for other in "$@"; do
+      [ "$key" = "$other" ] || [ "${seen[$key]}" != "${seen[$other]}" ] || fail "$key and $other must differ"
+    done
+  done
+}
+
+for key in H2_DATABASE_PASSWORD H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_BACKOFFICE_PASSWORD; do
+  [[ ${seen[$key]:-} =~ ^[A-Za-z0-9]{32,}$ ]] || fail "$key needs 32+ letters and digits (openssl rand -hex 32)"
+done
+distinct H2_DATABASE_PASSWORD H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_BACKOFFICE_PASSWORD
 if [ "$redis" != "--no-redis-password" ]; then
-  [[ ${seen[H2_REDIS_PASSWORD]:-} =~ ^[A-Za-z0-9]{32,}$ ]] \
-    || fail "H2_REDIS_PASSWORD needs 32+ letters and digits (openssl rand -hex 32)"
+  for key in H2_REDIS_PASSWORD H2_REDIS_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD; do
+    [[ ${seen[$key]:-} =~ ^[A-Za-z0-9]{32,}$ ]] || fail "$key needs 32+ letters and digits (openssl rand -hex 32)"
+  done
+  distinct H2_REDIS_PASSWORD H2_REDIS_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD
 fi
