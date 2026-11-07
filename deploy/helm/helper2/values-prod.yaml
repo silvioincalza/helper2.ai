@@ -40,6 +40,8 @@ app:
 backoffice:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
+  # The sign-in callback is pinned to the admin host (ADR 0035, 0069).
+  adminBaseUrl: https://admin.helper2.ai
   # Scout: one run a day at 03:07 UTC (the first start runs at once), up to 200 resources enriched per run.
   scoutCron: "0 7 3 * * *"
 backup:

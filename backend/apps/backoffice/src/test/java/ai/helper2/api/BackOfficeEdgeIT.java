@@ -140,6 +140,25 @@ class BackOfficeEdgeIT {
   }
 
   @Test
+  void theActuatorTakesNoWriteAndARefusedAssetIsNeverCached() throws Exception {
+    HttpResponse<String> actuatorWrite =
+        send(
+            HttpRequest.newBuilder(uri("/actuator/loggers/ai.helper2"))
+                .header("Origin", origin())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"configuredLevel\":\"TRACE\"}")));
+    assertThat(actuatorWrite.statusCode()).isEqualTo(404);
+    hasTheHeaders(actuatorWrite, "no-store");
+    HttpResponse<String> assetWrite =
+        send(
+            HttpRequest.newBuilder(uri("/admin/assets/admin.js"))
+                .header("Origin", origin())
+                .POST(HttpRequest.BodyPublishers.noBody()));
+    assertThat(assetWrite.statusCode()).isEqualTo(404);
+    hasTheHeaders(assetWrite, "no-store");
+  }
+
+  @Test
   void anythingElseIsAPlainNotFoundWithTheHeaders() throws Exception {
     for (String path :
         List.of(

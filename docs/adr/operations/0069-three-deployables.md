@@ -67,6 +67,8 @@ Decided, built later: the `web` image with the public app's HTML shell taken fro
 - The back office is closed by a fourth layer: its code is not in the public image.
 - Two apps share one schema. A migration must keep the running back office working until it is replaced.
 - More to run: two images, two workloads. Still one chart, one database, one Redis.
+- Known limits (roadmap): both apps share one Redis password, so a public pod could write the back office's
+  sessions; and both workloads read the whole env Secret.
 - The Settings page shows the back office's groups and the guide's cap; the public app's other guide and setup
   settings are no longer there (roadmap).
 - Dashboards and alerts that filter on `application="helper2"` see the public app only; the back office reports as

@@ -45,6 +45,8 @@ app:
 backoffice:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
+  # The sign-in callback is pinned to the admin host (ADR 0035, 0069).
+  adminBaseUrl: https://helper2-admin.incalza.me
   # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.
   # Search and the AI guide still work; staging's catalog stays as last indexed.
   scoutEnabled: false

@@ -66,13 +66,15 @@ final class BackOfficeEdge extends OncePerRequestFilter {
       throws ServletException, IOException {
     String path = path(request);
     HEADERS.forEach(response::setHeader);
-    response.setHeader("Cache-Control", cacheControl(path));
     if (!answers(request.getMethod(), path)) {
+      // A refusal is never cached, not even on an asset path.
+      response.setHeader("Cache-Control", NO_STORE);
       response.setStatus(HttpServletResponse.SC_NOT_FOUND);
       response.setContentType("application/problem+json");
       response.getWriter().write(NOT_FOUND);
       return;
     }
+    response.setHeader("Cache-Control", cacheControl(path));
     chain.doFilter(request, new FixedCacheControl(response));
   }
 
@@ -86,11 +88,13 @@ final class BackOfficeEdge extends OncePerRequestFilter {
 
   static boolean answers(String method, String path) {
     boolean read = "GET".equals(method) || "HEAD".equals(method);
-    if (under(path, "/api/v1/admin") || under(path, "/actuator")) {
+    if (under(path, "/api/v1/admin")) {
       return true;
     }
     if (read) {
+      // The actuator is read-only here: health and metrics, no write endpoint.
       return path.equals("/")
+          || under(path, "/actuator")
           || under(path, "/admin")
           || under(path, "/resource")
           || ADMIN_READS.contains(path)
