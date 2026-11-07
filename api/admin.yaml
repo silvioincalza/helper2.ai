@@ -1,0 +1,1268 @@
+openapi: 3.1.0
+info:
+  title: Helper2.ai back office API
+  version: 2.0.0
+  summary: Federated metasearch for AI resources, with explicit provenance and source status.
+  description: |
+    Back office API (ADR 0035, 0045): served by the back office app on the in-network admin host only. Shared
+    types live in common.yaml.
+
+    Contract-first REST API for Helper2.ai. This file is the source of truth:
+    the Spring backend generates its controller interfaces and DTOs from it, and the
+    React frontend generates its TypeScript types from it.
+
+    Honesty rules encoded in the contract:
+    * Every search response lists every configured source and what happened to it.
+    * Every date is a `DateFact`, which can say "unknown"; nothing is invented.
+    * Every field value carries an `origin` (source-provided, AI-extracted, curated, ...).
+    * Relationships and AI-extracted facts carry a `verification` status and evidence.
+  license:
+    name: Apache 2.0
+    identifier: Apache-2.0
+servers:
+  - url: /api/v1
+tags:
+  - name: search
+  - name: sources
+  - name: categories
+  - name: me
+  - name: admin
+  - name: review
+  - name: audit
+  - name: overview
+  - name: enrichment-queue
+  - name: settings
+  - name: runtime-settings
+  - name: discovery-hosts
+  - name: examples-admin
+
+paths:
+  /search:
+    $ref: './common.yaml#/paths/~1search'
+  /sources:
+    $ref: './common.yaml#/paths/~1sources'
+  /categories:
+    $ref: './common.yaml#/paths/~1categories'
+  /me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: Current session. Anonymous use is fully supported.
+      responses:
+        '200':
+          description: Session info.
+          content:
+            application/json:
+              schema: { $ref: './common.yaml#/components/schemas/Me' }
+  /admin/review-items:
+    get:
+      tags: [admin]
+      operationId: listReviewItems
+      parameters:
+        - { name: status, in: query, description: Omit for every status., schema: { $ref: '#/components/schemas/ReviewStatus' } }
+        - { name: kind, in: query, description: Omit for every kind., schema: { $ref: '#/components/schemas/ReviewKind' } }
+        - name: category
+          in: query
+          description: >-
+            Only resource candidates in this discovery category (its id, e.g. `coding`); omit for every item.
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: One page of the human review queue, newest first, filtered by status and kind.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewItemPage' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-items/{id}/resolution:
+    put:
+      tags: [admin]
+      operationId: resolveReviewItem
+      description: >-
+        409 when the item is no longer OPEN (another decision, a double click, or a newer enrichment run superseded
+        it): nothing changes, and the audit trail records NOT_OPEN.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewResolution' }
+      responses:
+        '200':
+          description: Resolved item.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewItem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-items/resolutions:
+    post:
+      tags: [review]
+      operationId: resolveReviewItems
+      summary: Decide several review items at once (ADR 0045).
+      description: >-
+        Each item is decided in its own transaction, the way one decision is, and writes its own audit entry; the
+        outcome carries the batch, e.g. `ACCEPTED bulk:<batch>`. Rejecting works for every kind. Accepting works only
+        for an enrichment check whose run has no CONFLICTING licence, open source or pricing; any other item is
+        NOT_ALLOWED and stays open. An item already decided is NOT_OPEN, an unknown one NOT_FOUND. Decisions are final.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewBulkResolution' }
+      responses:
+        '200':
+          description: One outcome per item, in the order sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewBulkResult' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-items/{id}/evidence:
+    get:
+      tags: [review]
+      operationId: getReviewEvidence
+      summary: What a review item is about, with the quotes behind it (ADR 0045).
+      description: >-
+        Read through the item's link, never from its details. An item from an enrichment run: the run, its validation
+        errors and the fields it stored, each with at most 5 quotes, CONFLICTING first. A relationship candidate: the
+        run and the relationship, with at most 5 quotes. Any other item: the item only. Field values and the
+        relationship are AI-written (`aiContent`); quotes come from the sources. The run of a decided or superseded
+        item can have no fields left: a newer run replaced them.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The item and its evidence.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewEvidence' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/resources/{id}/fields/{field}:
+    put:
+      tags: [review]
+      operationId: setResourceField
+      summary: Set a resource's own value of a field (ADR 0066).
+      description: >-
+        The value is written to the resource and wins over every source and every enrichment run: no record changes
+        it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel and
+        audience (400 for the others). The value must be one the field takes.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: field, in: path, required: true, schema: { $ref: '#/components/schemas/ResourceField' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceFieldValue' }
+      responses:
+        '204': { description: Set. }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/resources/{id}/fields/{field}/drop:
+    post:
+      tags: [review]
+      operationId: dropResourceField
+      summary: Drop what the AI said about a field of a resource (ADR 0066).
+      description: >-
+        Rejects the field's AI-written values (extracted, self-declared, estimated); a value the sources state or an
+        admin set stays. The page then shows the source's value, or "Not stated".
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: field, in: path, required: true, schema: { $ref: '#/components/schemas/ResourceField' } }
+      responses:
+        '204': { description: Dropped (also when there was nothing to drop). }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-items/{id}/candidate:
+    put:
+      tags: [review]
+      operationId: editCandidate
+      summary: Fix an open resource candidate's title, type or tags before accepting it (ADR 0065).
+      description: >-
+        At least one of the three; what is left out stays as the collector wrote it. The type may be any candidate type,
+        not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
+        `not-applicable` for an item that is not a resource candidate, `already-decided` for one no longer open,
+        `version-conflict` when the candidate changed since it was shown (`expectedDetails`; reload, then edit
+        again).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CandidateEdit' }
+      responses:
+        '200':
+          description: The item with its new details.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewItem' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-items/{id}/relationship-target:
+    put:
+      tags: [review]
+      operationId: changeRelationshipTarget
+      summary: Point an open relationship candidate at the right resource (ADR 0064).
+      description: >-
+        Exactly one of `resourceId` (a catalog resource), `newResource` (a resource to add: its name, official https
+        address and type; an address the catalog already has gives that resource, never a second one) or `title` (a
+        new name, not linked). The target then is a person's choice: its targetOrigin becomes CURATED. The origin stays
+        the model's, since the kind is still AI-written. The item stays
+        open: accepting it makes the link VERIFIED. 409 when the item is no longer open, is not a relationship
+        candidate, or another relationship of the resource already has that target.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RelationshipTargetChange' }
+      responses:
+        '200':
+          description: The item and its evidence, with the new target.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewEvidence' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/scout-runs:
+    get:
+      tags: [admin]
+      operationId: listScoutRuns
+      responses:
+        '200':
+          description: Recent AI Resource Scout runs.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+    post:
+      tags: [admin]
+      operationId: startScoutRun
+      summary: Start collection for one source (or all) now.
+      description: >-
+        Answers as soon as the run holds the cluster-wide Scout run lock; the run then collects in the background.
+        Poll GET /admin/scout-runs for its progress.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ScoutRunRequest' }
+      responses:
+        '202':
+          description: >-
+            Run started: one record per selected collector, RUNNING (SKIPPED when the collector is disabled). The ids
+            match the records listed by GET /admin/scout-runs.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404':
+          description: No collector has the given sourceId; nothing starts.
+          content:
+            application/problem+json:
+              schema: { $ref: './common.yaml#/components/schemas/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/enrichment-recheck:
+    post:
+      tags: [admin]
+      operationId: recheckEnrichments
+      summary: Re-check the stored enrichment answers by code, with no model call (ADR 0056).
+      description: >-
+        Rejects a verified pricing, type or use case whose quotes do not state it, drops summary sentences that fail
+        the claim check, and puts back in the enrichment backlog the resources that still miss a fact and have more
+        to read. Idempotent: a second call changes nothing. Runs once by itself after the first start.
+      responses:
+        '200':
+          description: What the re-check did.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentRecheck' }
+  /admin/category-backfill:
+    post:
+      tags: [admin]
+      operationId: backfillCategories
+      summary: Assign the categories of every resource again.
+      description: >-
+        Answers at once; the backfill then runs in the background on one replica, in batches (ADR 0053). It is
+        idempotent. Counts go to the metric `helper2.categories.backfill.resources` and the log.
+      responses:
+        '202': { description: Started (skipped when another replica is already running it). }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/overview:
+    get:
+      tags: [overview]
+      operationId: getAdminOverview
+      summary: What needs a person now, for the back office landing page.
+      description: >-
+        Open review items per kind, the enrichment backlog, today's model budgets and web credits, the recent Scout
+        runs and the failed ones of the last 24 hours, and the home examples shown and hidden. Counts only, no personal data. Computed at most once a minute
+        (generatedAt says when).
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminOverview' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/enrichment-queue:
+    get:
+      tags: [enrichment-queue]
+      operationId: listEnrichmentQueue
+      summary: The enrichment backlog, in the order the Scout takes it.
+      description: >-
+        WAITING (the default): the ones an admin moved to the top first, then never-run resources, then
+        model-unavailable and failed ones with retries left, each part newest discovery first. SKIPPED: the ones an
+        admin skipped, the latest skip first. OUT_OF_RETRIES: the ones whose failed runs reached the cap, newest
+        discovery first. Paged by cursor: pass `next` from the
+        previous page as `after`, with the same view.
+      parameters:
+        - { name: view, in: query, schema: { $ref: '#/components/schemas/EnrichmentQueueView' } }
+        - { name: after, in: query, description: The previous page's next cursor; omit for the first page., schema: { type: string, maxLength: 200 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: One page of the backlog.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentQueuePage' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/enrichment-queue/{resourceId}/requeue:
+    post:
+      tags: [enrichment-queue]
+      operationId: requeueEnrichment
+      summary: Put a skipped resource, or one out of retries, back into the enrichment queue.
+      description: >-
+        Undoes a skip. For a resource out of retries, only the failed runs from now on count against the cap. The
+        resource takes its own place again; the daily enrichment cap still applies. 409 not-applicable when the
+        resource is neither skipped nor out of retries. Every call is in the audit trail (REQUEUE_ENRICHMENT).
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Requeued. }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/enrichment-queue/{resourceId}/skip:
+    post:
+      tags: [enrichment-queue]
+      operationId: skipEnrichment
+      summary: Take a waiting resource out of the enrichment queue until it is requeued.
+      description: >-
+        Drops a move to the top. 409 not-applicable when the resource does not wait or is already skipped. Every call
+        is in the audit trail (SKIP_ENRICHMENT).
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnrichmentSkip' }
+      responses:
+        '204': { description: Skipped. }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/enrichment-queue/{resourceId}/prioritise:
+    post:
+      tags: [enrichment-queue]
+      operationId: prioritiseEnrichment
+      summary: Move a waiting resource to the top of the enrichment queue until its next run.
+      description: >-
+        The Scout takes it in its next batch, within the daily enrichment cap: the order changes, the number of model
+        calls does not. At most 50 resources wait at the top. 409 not-applicable when the resource does not wait, is
+        already at the top, or the top is full. Every call is in the audit trail (PRIORITISE_ENRICHMENT).
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Moved to the top. }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/audit:
+    get:
+      tags: [audit]
+      operationId: listAuditEntries
+      summary: What administrators did, newest first.
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: One page of the admin audit trail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEntryPage' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/config:
+    get:
+      tags: [settings]
+      operationId: getEffectiveConfig
+      summary: The settings the app runs with now, read-only.
+      description: >-
+        Grouped by module, each read from the module's typed settings: model ids per use, prompt versions, the guide's
+        configuration hash, daily budgets and caps, the Scout's schedule and the sources that are on. An allow-list:
+        never a secret, a key, a credential in a URL or a secret's path. Fixed until the next restart.
+      responses:
+        '200':
+          description: Every group, in page order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EffectiveConfig' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/runtime-settings:
+    get:
+      tags: [runtime-settings]
+      operationId: listRuntimeSettings
+      summary: The spending limits an administrator may change at runtime, with their history.
+      description: >-
+        Each setting of the allow-list (ADR 0060): the value applied now, the default (the H2_ variable), the allowed
+        range, its version and its last changes. The value a replica applies can be up to one refresh interval
+        (20 s by default) behind.
+      responses:
+        '200':
+          description: Every runtime setting, in a fixed order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettings' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/runtime-settings/{key}:
+    parameters:
+      - { name: key, in: path, required: true, schema: { type: string, maxLength: 100 } }
+    put:
+      tags: [runtime-settings]
+      operationId: changeRuntimeSetting
+      summary: Set a runtime setting's value.
+      description: >-
+        400 when the value is outside 0 to the setting's maximum. 404 for a key that is not in the allow-list. 409
+        when the version is not the setting's newest (someone changed it first). Recorded in the audit trail with
+        the value before and after.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuntimeSettingChange' }
+      responses:
+        '200':
+          description: Changed; this replica applies it now, the others within one refresh interval.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettingState' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/runtime-settings/{key}/reset:
+    parameters:
+      - { name: key, in: path, required: true, schema: { type: string, maxLength: 100 } }
+    post:
+      tags: [runtime-settings]
+      operationId: resetRuntimeSetting
+      summary: Back to the default (the H2_ variable).
+      description: >-
+        Appends a change with no value. 404 for a key that is not in the allow-list; 409 when the version is not the
+        setting's newest.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RuntimeSettingReset' }
+      responses:
+        '200':
+          description: Back to the default.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeSettingState' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/discovery-hosts:
+    get:
+      tags: [discovery-hosts]
+      operationId: listDiscoveryHosts
+      summary: The hosts discovery knows by name, with who added each and why.
+      description: >-
+        WRITING hosts publish articles about many products (a post there is an ARTICLE candidate); DIRECTORY hosts
+        list products (a page there is never kept). Discovery reads the lists at the start of each run (ADR 0063).
+      responses:
+        '200':
+          description: Every host, by kind and name.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiscoveryHosts' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+    post:
+      tags: [discovery-hosts]
+      operationId: addDiscoveryHost
+      summary: Add a host to one list.
+      description: >-
+        The host is kept in lower case, without "www." and a trailing dot. 400 when it is not a host name, when it
+        would match too much (a top-level domain, "co.uk", an IP address), for github.com, for a reason that is not
+        one plain line, and when the lists are full (500 hosts). 409 when the host is in a list already, of either
+        kind. Recorded in the audit trail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiscoveryHostAdd' }
+      responses:
+        '201':
+          description: Added; the next discovery run uses it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiscoveryHostEntry' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/discovery-hosts/{host}/remove:
+    parameters:
+      - { name: host, in: path, required: true, schema: { type: string, maxLength: 260 } }
+    post:
+      tags: [discovery-hosts]
+      operationId: removeDiscoveryHost
+      summary: Remove a host from its list.
+      description: 404 when the host is in no list. Recorded in the audit trail with the list it was in.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiscoveryHostRemove' }
+      responses:
+        '204': { description: Removed; the next discovery run no longer uses it. }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/home-examples:
+    get:
+      tags: [examples-admin]
+      operationId: listAdminHomeExamples
+      summary: Every home example, with its last check.
+      parameters:
+        - { name: outcome, in: query, schema: { $ref: '#/components/schemas/ExampleCheckOutcome' } }
+      responses:
+        '200':
+          description: Newest change first.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/AdminHomeExample' } }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+    post:
+      tags: [examples-admin]
+      operationId: addHomeExample
+      summary: Add an example; it waits for its first check (PENDING).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HomeExampleInput' }
+      responses:
+        '201':
+          description: Added.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminHomeExample' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/home-examples/drafts:
+    post:
+      tags: [examples-admin]
+      operationId: draftHomeExamples
+      summary: Ask a model to draft examples for well-known catalog resources; each draft waits in the review queue.
+      description: >-
+        One model call from the drafts' own daily budget. A draft is kept only when it follows the example rules,
+        names one of the resources it was given, and does not repeat an example. 503 unavailable when no model is
+        configured, the budget is used up or the model cannot answer.
+      responses:
+        '202':
+          description: Drafts opened in the review queue (kind EXAMPLE_CANDIDATE).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExampleDrafts' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '503': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/home-examples/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      tags: [examples-admin]
+      operationId: changeHomeExample
+      summary: Change, pause or activate an example.
+      description: >-
+        409 when the version is not the stored one (someone changed it first) or when another example has the same
+        label or query. A change of the query, path or expected results sends the example back to PENDING.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HomeExampleChange' }
+      responses:
+        '200':
+          description: Changed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminHomeExample' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+    delete:
+      tags: [examples-admin]
+      operationId: removeHomeExample
+      summary: Remove an example.
+      responses:
+        '204': { description: 'Removed, or already gone.' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+components:
+  schemas:
+    HomeExampleInput:
+      type: object
+      required: [label, query, path, expectedResourceIds]
+      properties:
+        label: { type: string, minLength: 2, maxLength: 32 }
+        query: { type: string, minLength: 3, maxLength: 200 }
+        path: { $ref: './common.yaml#/components/schemas/AudiencePath' }
+        expectedResourceIds:
+          type: array
+          minItems: 1
+          maxItems: 3
+          description: Catalog resource ids that are a right answer; the quality check looks for them in the top 3.
+          items: { type: string, format: uuid }
+
+    HomeExampleChange:
+      type: object
+      required: [label, query, path, expectedResourceIds, status, version]
+      properties:
+        label: { type: string, minLength: 2, maxLength: 32 }
+        query: { type: string, minLength: 3, maxLength: 200 }
+        path: { $ref: './common.yaml#/components/schemas/AudiencePath' }
+        expectedResourceIds: { type: array, minItems: 1, maxItems: 3, items: { type: string, format: uuid } }
+        status: { $ref: '#/components/schemas/ExampleStatus' }
+        version: { type: integer, minimum: 0, description: The version the change was made on. }
+
+    ExampleDrafts:
+      type: object
+      required: [drafted, model]
+      properties:
+        drafted: { type: integer, minimum: 0, description: Drafts opened in the review queue. }
+        model: { type: string }
+
+    ExampleStatus: { type: string, enum: [ACTIVE, PAUSED] }
+
+    ExampleCheckOutcome:
+      type: string
+      enum: [PENDING, PASS, WEAK, FAIL]
+      description: >-
+        PASS: an expected result in the top 3 of the example's own search (shown). WEAK: in the top 4 to 10. FAIL: not
+        in the top 10. PENDING: not checked since its last change. Only PASS is shown.
+
+    AdminHomeExample:
+      type: object
+      required: [id, label, query, path, status, origin, expected, check, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string }
+        query: { type: string }
+        path: { $ref: './common.yaml#/components/schemas/AudiencePath' }
+        status: { $ref: '#/components/schemas/ExampleStatus' }
+        origin: { type: string, enum: [BUILT_IN, CURATED, AI_DRAFTED] }
+        model: { type: [string, 'null'], description: The model that drafted it (AI_DRAFTED only). }
+        expected:
+          type: array
+          items: { $ref: '#/components/schemas/ExpectedResource' }
+        check: { $ref: '#/components/schemas/ExampleCheck' }
+        version: { type: integer }
+        updatedAt: { type: string, format: date-time }
+
+    ExpectedResource:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: [string, 'null'], description: null when the catalog no longer has it. }
+
+    ExampleCheck:
+      type: object
+      required: [outcome]
+      properties:
+        outcome: { $ref: '#/components/schemas/ExampleCheckOutcome' }
+        bestRank: { type: [integer, 'null'], minimum: 1, description: Best rank of an expected result; null when none was found. }
+        resultCount: { type: [integer, 'null'], minimum: 0 }
+        checkedAt: { type: [string, 'null'], format: date-time }
+
+    ReviewStatus:
+      type: string
+      description: SUPERSEDED is set by a newer enrichment run of the same resource, never by a person.
+      enum: [OPEN, ACCEPTED, REJECTED, SUPERSEDED]
+
+    ReviewKind:
+      type: string
+      description: >-
+        COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
+        EXAMPLE_CANDIDATE is a home example a model drafted for the resource (the draft as JSON in details: label,
+        query, path, model); accepting it adds the example. RESOURCE_CANDIDATE is a product page found by the Scout's
+        discovery and not yet in the catalog (no resource; the candidate as JSON in details: sourceId, url,
+        title, type, tags, snippet); accepting it indexes it, unless another source listed the page
+        meanwhile.
+      enum: [ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, COURSE_CANDIDATE, EXAMPLE_CANDIDATE,
+        RESOURCE_CANDIDATE]
+
+    AdminOverview:
+      type: object
+      required: [generatedAt, openReviewItems, enrichmentBacklog, budgets, recentRuns, failedRunsLast24h, homeExamples, overridesActive]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        openReviewItems:
+          type: array
+          description: Every kind, 0 when none waits.
+          items: { $ref: '#/components/schemas/ReviewKindCount' }
+        enrichmentBacklog: { type: integer, minimum: 0, description: Resources waiting for enrichment (the Scout takes them by its own order). }
+        budgets:
+          type: array
+          description: Every daily model budget, by name.
+          items: { $ref: '#/components/schemas/BudgetToday' }
+        webCredits:
+          oneOf: [{ $ref: './common.yaml#/components/schemas/WebCredits' }, { type: 'null' }]
+          description: Live web search calls today; null when the metered source is off or its counter cannot answer.
+        recentRuns:
+          type: array
+          description: The last Scout runs, newest first (at most 10).
+          items: { $ref: '#/components/schemas/ScoutRun' }
+        failedRunsLast24h: { type: integer, minimum: 0 }
+        homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
+        overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0060). }
+        grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
+
+    HomeExampleCounts:
+      type: object
+      description: >-
+        The home examples of every locale (ADR 0049). Shown: ACTIVE and the check is PASS. Hidden: ACTIVE and the
+        check is WEAK, FAIL or PENDING. Paused: PAUSED, whatever the check.
+      required: [shown, hidden, paused]
+      properties:
+        shown:
+          type: array
+          description: Every path, 0 when none is shown.
+          items: { $ref: '#/components/schemas/ExamplePathCount' }
+        hidden:
+          type: array
+          description: WEAK, FAIL and PENDING, 0 when none; never PASS.
+          items: { $ref: '#/components/schemas/ExampleOutcomeCount' }
+        paused: { type: integer, minimum: 0 }
+
+    ExamplePathCount:
+      type: object
+      required: [path, count]
+      properties:
+        path: { $ref: './common.yaml#/components/schemas/AudiencePath' }
+        count: { type: integer, minimum: 0 }
+
+    ExampleOutcomeCount:
+      type: object
+      required: [outcome, count]
+      properties:
+        outcome: { $ref: '#/components/schemas/ExampleCheckOutcome' }
+        count: { type: integer, minimum: 0 }
+
+    EffectiveConfig:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items: { $ref: '#/components/schemas/ConfigGroup' }
+
+    ConfigGroup:
+      type: object
+      required: [id, title, settings]
+      properties:
+        id: { type: string, description: "A stable id: models, guide, search, scout, ..." }
+        title: { type: string }
+        settings:
+          type: array
+          items: { $ref: '#/components/schemas/ConfigSetting' }
+
+    ConfigSetting:
+      type: object
+      required: [key, label, kind, value, unit, variable]
+      properties:
+        key: { type: string, description: "A stable id, <group>.<name>." }
+        label: { type: string }
+        kind:
+          type: string
+          description: >-
+            How to read value. COUNT and CAP are whole numbers (CAP null = no cap); FLAG is true or false; DURATION is
+            seconds; MODEL and VERSION are null when there is none; SCHEDULE is a Spring cron, UTC; NAMES are
+            comma-separated.
+          enum: [COUNT, CAP, FLAG, DURATION, MODEL, VERSION, SCHEDULE, NAMES]
+        value:
+          type: [string, 'null']
+          maxLength: 500
+          description: "\"(hidden)\" when the value has a quote, an @ or more than 500 characters."
+        unit: { type: [string, 'null'], description: "The unit of a COUNT or CAP: calls a day, tokens, ..." }
+        variable: { type: [string, 'null'], description: The H2_ variable that sets it; null when the code or the chart fixes it. }
+
+    RuntimeSettings:
+      type: object
+      required: [overridesActive, settings]
+      properties:
+        overridesActive: { type: integer, minimum: 0, description: Settings whose value is not the default now. }
+        settings:
+          type: array
+          items: { $ref: '#/components/schemas/RuntimeSettingState' }
+
+    RuntimeSettingState:
+      type: object
+      required: [key, label, unit, help, min, max, variable, defaultValue, value, overridden, inUse, version, history]
+      properties:
+        key: { type: string, description: The setting's key on the Settings page (ConfigSetting.key). }
+        label: { type: string }
+        unit: { type: string, description: "calls a day, calls a run, credits a day" }
+        help: { type: string, description: One line on what the setting does and what 0 means. }
+        min: { type: integer, minimum: 0, description: Always 0; 0 turns the use off. }
+        max: { type: integer, minimum: 0, description: The absolute maximum, in code; more needs a pull request. }
+        variable: { type: string, description: The H2_ variable whose value is the default. }
+        defaultValue: { type: [integer, 'null'], minimum: 0, description: The H2_ value; null = no cap, or the setting is not used on this replica. }
+        value: { type: [integer, 'null'], minimum: 0, description: The value applied now; null = no cap. }
+        overridden: { type: boolean, description: True when an administrator set the value; false when the default applies. }
+        inUse: { type: boolean, description: False when no module of this replica uses the setting (the feature is off); a change is kept and applies when it is on. }
+        version: { type: integer, minimum: 0, description: The setting's newest change; send it back with a change. 0 = never changed. }
+        history:
+          type: array
+          description: The last changes, newest first (at most 10).
+          items: { $ref: '#/components/schemas/RuntimeSettingHistoryEntry' }
+
+    RuntimeSettingHistoryEntry:
+      type: object
+      required: [version, value, changedBy, changedAt, reason]
+      properties:
+        version: { type: integer, minimum: 1 }
+        value: { type: [integer, 'null'], minimum: 0, description: The value set; null = back to the default. }
+        changedBy: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
+        changedAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'] }
+
+    RuntimeSettingChange:
+      type: object
+      required: [value, version]
+      properties:
+        value: { type: integer, minimum: 0, description: "0 to the setting's max; 0 turns the use off." }
+        version: { type: integer, minimum: 0, description: The version the change was made on. }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    RuntimeSettingReset:
+      type: object
+      required: [version]
+      properties:
+        version: { type: integer, minimum: 0, description: The version the reset was made on. }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    DiscoveryHostKind:
+      type: string
+      enum: [WRITING, DIRECTORY]
+      description: WRITING publishes articles about many products; DIRECTORY lists products.
+
+    DiscoveryHostEntry:
+      type: object
+      required: [host, kind, addedBy, addedAt]
+      properties:
+        host: { type: string, maxLength: 253 }
+        kind: { $ref: '#/components/schemas/DiscoveryHostKind' }
+        addedBy: { type: string, description: 'The administrator (provider subject), or "migration" for the first lists.' }
+        addedAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'], maxLength: 500 }
+
+    DiscoveryHosts:
+      type: object
+      required: [hosts, max]
+      properties:
+        hosts:
+          type: array
+          items: { $ref: '#/components/schemas/DiscoveryHostEntry' }
+        max: { type: integer, description: The most hosts the two lists hold together. }
+
+    DiscoveryHostAdd:
+      type: object
+      required: [host, kind]
+      properties:
+        host: { type: string, maxLength: 260, description: 'A host name such as "techcrunch.com"; no scheme or path.' }
+        kind: { $ref: '#/components/schemas/DiscoveryHostKind' }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    DiscoveryHostRemove:
+      type: object
+      properties:
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    EnrichmentQueuePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/EnrichmentQueueEntry' }
+        next: { type: [string, 'null'], description: The cursor of the next page; null on the last page. }
+
+    EnrichmentQueueView:
+      type: string
+      description: "WAITING: the backlog in the Scout's order. SKIPPED: skipped by an admin. OUT_OF_RETRIES: failed runs reached the cap."
+      enum: [WAITING, SKIPPED, OUT_OF_RETRIES]
+      default: WAITING
+
+    EnrichmentSkip:
+      type: object
+      properties:
+        reason: { type: [string, 'null'], maxLength: 200, description: Why the resource is skipped; optional. }
+
+    EnrichmentQueueEntry:
+      type: object
+      required: [resourceId, title, state, firstDiscoveredAt, failedRuns]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        state:
+          type: string
+          description: "PRIORITISED: moved to the top by an admin. WAITING: in its own part. SKIPPED: skipped by an admin. OUT_OF_RETRIES: failed runs reached the cap."
+          enum: [PRIORITISED, WAITING, SKIPPED, OUT_OF_RETRIES]
+        waiting:
+          type: [string, 'null']
+          description: "Why it waits; null when it does not (SKIPPED, OUT_OF_RETRIES). NEW: never enriched. MODEL_UNAVAILABLE: the last run found no model. RETRY: the last run FAILED and retries are left."
+          enum: [NEW, MODEL_UNAVAILABLE, RETRY, null]
+        skippedAt: { type: [string, 'null'], format: date-time, description: When it was skipped; null unless SKIPPED. }
+        skipReason: { type: [string, 'null'], description: The reason given when it was skipped. }
+        firstDiscoveredAt: { type: string, format: date-time }
+        failedRuns: { type: integer, minimum: 0, description: Failed runs since an admin last requeued it; the number the cap is checked against. }
+        lastOutcome: { type: [string, 'null'], enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED, null] }
+        lastRunAt: { type: [string, 'null'], format: date-time }
+
+    ReviewKindCount:
+      type: object
+      required: [kind, count]
+      properties:
+        kind: { $ref: '#/components/schemas/ReviewKind' }
+        count: { type: integer, minimum: 0 }
+
+    BudgetToday:
+      type: object
+      required: [name, dailyLimit]
+      properties:
+        name: { type: string, description: "guide, translation, enrichment, enrichment-gap, classifier, tool-guide, ..." }
+        dailyLimit: { type: integer, description: Model calls a UTC day; 0 turns the use off. }
+        usedToday: { type: [integer, 'null'], minimum: 0, description: Calls counted today across every replica; null when the shared counter cannot answer. }
+
+    ReviewItemPage:
+      type: object
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/ReviewItem' } }
+        total: { type: integer, description: Items with the requested status and kind, across all pages. }
+
+    ReviewItem:
+      type: object
+      required: [id, kind, status, reason, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: '#/components/schemas/ReviewKind' }
+        status: { $ref: '#/components/schemas/ReviewStatus' }
+        resourceId: { type: [string, 'null'], format: uuid }
+        resourceTitle: { type: [string, 'null'] }
+        reason: { type: string }
+        details: { type: [string, 'null'] }
+        categories:
+          type: array
+          items: { type: string }
+          description: >-
+            The discovery categories of a resource candidate (its tags, e.g. `coding`, `self-hosted`); empty for every
+            other kind.
+        createdAt: { type: string, format: date-time }
+        resolvedAt: { type: [string, 'null'], format: date-time }
+        resolvedBy: { type: [string, 'null'] }
+
+    ReviewBulkResolution:
+      type: object
+      required: [ids, status]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: >-
+            Each id once. A repeated id is refused with 400. The list is not declared uniqueItems on purpose: a set would
+            drop the repeat before the server sees it.
+          items: { type: string, format: uuid }
+        status: { type: string, enum: [ACCEPTED, REJECTED] }
+        note: { type: [string, 'null'], maxLength: 1000 }
+
+    ReviewBulkResult:
+      type: object
+      required: [batch, items]
+      properties:
+        batch: { type: string, format: uuid, description: The id in the audit entries of this batch (`bulk:<batch>`). }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ReviewBulkItem' }
+
+    ReviewBulkItem:
+      type: object
+      required: [id, outcome]
+      properties:
+        id: { type: string, format: uuid }
+        outcome:
+          type: string
+          description: >-
+            RESOLVED: decided now. NOT_OPEN: already decided. NOT_FOUND: no such item. NOT_ALLOWED: this item cannot be
+            accepted in bulk (it adds to the catalog or publishes, or its run has a conflict on licence, open source or
+            pricing); it stays open.
+          enum: [RESOLVED, NOT_OPEN, NOT_FOUND, NOT_ALLOWED]
+
+    CandidateEdit:
+      type: object
+      description: At least one of title, type and tags; null leaves it as it is.
+      required: [expectedDetails]
+      properties:
+        expectedDetails:
+          type: [string, 'null']
+          description: >-
+            The item's `details` as the admin saw them, unchanged. The edit applies only to these: when the candidate
+            changed since (a collector found the page again, another admin edited it), it is refused with 409
+            `version-conflict`.
+        title: { type: [string, 'null'], minLength: 1, maxLength: 300 }
+        type:
+          oneOf: [{ $ref: '#/components/schemas/CandidateType' }, { type: 'null' }]
+        tags:
+          type: [array, 'null']
+          maxItems: 12
+          items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+
+    ResourceField:
+      type: string
+      description: A field the enrichment fills (ADR 0056); an admin sets the first six (ADR 0066).
+      enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms]
+
+    ResourceFieldValue:
+      type: object
+      required: [value]
+      properties:
+        value: { type: string, minLength: 1, maxLength: 40 }
+
+    CandidateType:
+      type: string
+      description: The types a resource candidate may have (ADR 0051, 0061, 0065).
+      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT]
+
+    RelationshipTargetChange:
+      type: object
+      description: Exactly one of the three.
+      properties:
+        resourceId: { type: [string, 'null'], format: uuid }
+        newResource:
+          oneOf: [{ $ref: '#/components/schemas/NewResource' }, { type: 'null' }]
+        title: { type: [string, 'null'], minLength: 1, maxLength: 120 }
+
+    NewResource:
+      type: object
+      required: [title, url, type]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 300 }
+        url: { type: string, maxLength: 2000, description: The official https address. }
+        type: { type: string, enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET] }
+
+    ReviewEvidence:
+      type: object
+      required: [item, validationErrors, fields]
+      properties:
+        item: { $ref: '#/components/schemas/ReviewItem' }
+        run:
+          oneOf: [{ $ref: '#/components/schemas/ReviewRun' }, { type: 'null' }]
+          description: The enrichment run the item links to; null for items with no run.
+        validationErrors:
+          type: array
+          maxItems: 50
+          items: { type: string }
+          description: What the code check refused in the run, in its words. Each error can quote the refused model output, so aiContent lists it as AI-written. Empty for a relationship candidate.
+        fields:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/ReviewField' }
+          description: The fields the run stored, CONFLICTING first, then UNVERIFIED, VERIFIED and REJECTED. Empty for a relationship candidate.
+        relationship:
+          oneOf: [{ $ref: '#/components/schemas/ReviewRelationship' }, { type: 'null' }]
+          description: The relationship a relationship candidate is about; null for every other kind.
+        aiContent:
+          oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
+          description: Present when the evidence holds AI-written values (ADR 0038).
+
+    ReviewRun:
+      type: object
+      required: [id, provider, model, promptVersion, outcome, startedAt]
+      properties:
+        id: { type: string, format: uuid }
+        provider: { type: string }
+        model: { type: string }
+        promptVersion: { type: string }
+        outcome: { type: string, enum: [VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE, FAILED] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        extraEvidence:
+          type: [string, 'null']
+          description: The README or model card the run read in its gap round (ADR 0043), e.g. `github-readme:owner/name`.
+
+    ReviewField:
+      type: object
+      required: [field, value, origin, verification, quotes]
+      properties:
+        field: { type: string }
+        value: { type: string, description: AI-written. }
+        origin: { $ref: './common.yaml#/components/schemas/ValueOrigin' }
+        verification: { $ref: './common.yaml#/components/schemas/Verification' }
+        quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
+
+    ReviewRelationship:
+      type: object
+      required: [kind, target, verification, origin, quotes]
+      properties:
+        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH, ABOUT] }
+        target: { type: string, description: The name the model gave (AI-written), or the one an admin chose. }
+        targetId: { type: [string, 'null'], format: uuid, description: The catalog resource of that name; null when none. }
+        verification: { $ref: './common.yaml#/components/schemas/Verification' }
+        origin: { $ref: './common.yaml#/components/schemas/ValueOrigin' }
+        targetOrigin:
+          description: CURATED when an admin chose the target (ADR 0064); the target then is not AI-written. Null otherwise.
+          oneOf: [{ $ref: './common.yaml#/components/schemas/ValueOrigin' }, { type: 'null' }]
+        quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
+
+    ReviewQuote:
+      type: object
+      required: [sourceUrl, retrievedAt]
+      description: Copied from a source, not AI-written.
+      properties:
+        excerpt: { type: [string, 'null'], maxLength: 500 }
+        sourceUrl: { type: string, description: As the source gave it; a page shows it as a link only when it is http(s). }
+        sourceId: { type: [string, 'null'], description: The source the quote was read from; null for a page the run read itself. }
+        retrievedAt: { type: string, format: date-time }
+
+    ReviewResolution:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ACCEPTED, REJECTED] }
+        note: { type: [string, 'null'], maxLength: 1000 }
+
+    AuditEntryPage:
+      type: object
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }
+        total: { type: integer, description: Entries across all pages. }
+
+    AuditEntry:
+      type: object
+      required: [id, adminId, action, at, outcome]
+      properties:
+        id: { type: string, format: uuid }
+        adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE, SET_FIELD, DROP_FIELD] }
+        targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id, the resource id or the setting's key; null when a run covered every source." }
+        at: { type: string, format: date-time }
+        outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate. SET <field> or DROPPED <field> <count> for a resource field." }
+        before: { type: [string, 'null'], description: "The value before a setting change (\"default\" for the default); null for other actions." }
+        after: { type: [string, 'null'], description: The value after a setting change; null for other actions. }
+        reason: { type: [string, 'null'], description: Why the administrator changed a setting (optional). }
+
+    EnrichmentRecheck:
+      type: object
+      description: Counts only (ADR 0056).
+      required: [checked, fieldsRejected, claimsDropped, runsRequested]
+      properties:
+        checked: { type: integer, minimum: 0, description: Resources whose stored answer was checked. }
+        fieldsRejected: { type: integer, minimum: 0, description: Verified pricing, type or use case values whose quotes do not state them. }
+        claimsDropped: { type: integer, minimum: 0, description: Summary sentences that failed the claim check. }
+        runsRequested: { type: integer, minimum: 0, description: Resources put back in the enrichment backlog. }
+
+    ScoutRunRequest:
+      type: object
+      properties:
+        sourceId: { type: [string, 'null'], description: Omit to run every enabled collector. }
+
+    ScoutRun:
+      type: object
+      required: [id, sourceId, status, startedAt, itemsSeen, itemsChanged]
+      properties:
+        id: { type: string, format: uuid }
+        sourceId: { type: string }
+        status: { type: string, enum: [RUNNING, SUCCEEDED, FAILED, SKIPPED] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        itemsSeen: { type: integer }
+        itemsChanged: { type: integer }
+        enrichmentsQueued: { type: integer }
+        message: { type: [string, 'null'] }

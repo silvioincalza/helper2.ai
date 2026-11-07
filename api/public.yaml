@@ -1,0 +1,1014 @@
+openapi: 3.1.0
+info:
+  title: Helper2.ai public API
+  version: 2.0.0
+  summary: Federated metasearch for AI resources, with explicit provenance and source status.
+  description: |
+    Public API: served by the public app. Shared types live in common.yaml; the back office API is admin.yaml.
+
+    Contract-first REST API for Helper2.ai. This file is the source of truth:
+    the Spring backend generates its controller interfaces and DTOs from it, and the
+    React frontend generates its TypeScript types from it.
+
+    Honesty rules encoded in the contract:
+    * Every search response lists every configured source and what happened to it.
+    * Every date is a `DateFact`, which can say "unknown"; nothing is invented.
+    * Every field value carries an `origin` (source-provided, AI-extracted, curated, ...).
+    * Relationships and AI-extracted facts carry a `verification` status and evidence.
+  license:
+    name: Apache 2.0
+    identifier: Apache-2.0
+servers:
+  - url: /api/v1
+tags:
+  - name: search
+  - name: resources
+  - name: guide-stream
+  - name: setup
+  - name: sources
+  - name: categories
+  - name: me
+  - name: examples
+  - name: policy
+
+paths:
+  /search:
+    $ref: './common.yaml#/paths/~1search'
+  /recent:
+    get:
+      tags: [resources]
+      operationId: listRecent
+      summary: Newest resources in the Helper2 index, by the publication date their source states.
+      description: |
+        For the home page "Today" list. Only resources whose source states a publication date, from
+        `days` ago up to now, newest first; never Helper2's discovery date. Served from the index, so it
+        does not call live sources.
+      parameters:
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 30, default: 14 } }
+        - { name: type, in: query, schema: { type: array, maxItems: 20, items: { $ref: './common.yaml#/components/schemas/ResourceType' } }, style: form, explode: true }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 12 } }
+      responses:
+        '200':
+          description: Newest resources (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RecentResponse' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+  /events/upcoming:
+    get:
+      tags: [resources]
+      operationId: listUpcomingEvents
+      summary: Next AI events (conferences and industry events), soonest first.
+      description: |
+        For the home page "Coming up" list. Only EVENTs whose source states when they take place and
+        that have not ended yet; an event without a stated date is never listed. With `days`, only events
+        that start before the end of that window (counted from the start of today, UTC); an event already
+        running is listed until it ends. Served from the index.
+      parameters:
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 366 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 6 } }
+      responses:
+        '200':
+          description: Upcoming events (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UpcomingEventsResponse' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+  /resources/{id}:
+    get:
+      tags: [resources]
+      operationId: getResource
+      summary: Resource detail with provenance, evidence and relationships.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Resource detail.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceDetail' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /resources/{id}/setup:
+    get:
+      tags: [setup]
+      operationId: getResourceSetup
+      summary: How to install, configure and connect this resource to AI tools, from its source data only.
+      description: |
+        The setup facts come only from the resource's own source records, fetched at request time with their
+        retrieval time: for an MCP server, its entry in the Official MCP Registry (remote URL or package,
+        transport, environment variables). Each AI client's snippet is generated from those facts with the
+        format that client's own documentation states (`docsUrl`). A client that cannot use an option is
+        listed with the reason instead of a snippet. Nothing is invented: when the sources state no setup
+        data, `options` is empty and the answer says so.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Setup guide (possibly without options when the sources state none).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SetupGuide' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+        '503': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /resources/{id}/guide:
+    post:
+      tags: [setup]
+      operationId: askResourceGuide
+      summary: Step-by-step guide for one tool from its own documentation.
+      description: |
+        Reads the tool's own documents (GitHub README, npm package README, Hugging Face model or Space card) from
+        fixed hosts. A model may only pick and order passages from them; a deterministic check keeps a step only
+        when its quote is found in the cited document and its command is whole lines of one code block (or one
+        inline code span) of that document, exactly as written. The answer is the full guide (requirements,
+        install, configure, use, connect) and is the same for every visitor. POST because it can call a model: it
+        shares the guide's rate limit and has its own daily cap. `status` says when there is nothing to show and why.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Guide (possibly without steps; see status).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ToolGuide' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /resources/{id}/reports:
+    post:
+      tags: [resources]
+      operationId: reportResource
+      summary: Report wrong or outdated information. Goes to the human review queue.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IssueReportRequest' }
+      responses:
+        '202':
+          description: Accepted for review.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IssueReportAccepted' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /guide/stream:
+    post:
+      # Own tag: the stream is a hand-written SseEmitter handler (the generator has no SseEmitter return type).
+      tags: [guide-stream]
+      operationId: askGuideStream
+      summary: Ask the AI guide which catalog resources fit a need, and receive each step as a server-sent event while it works.
+      description: |
+        Retrieval first, AI second. The request is turned into search terms (fast model), real
+        candidates are retrieved with the normal federated search, and the reasoning model may only
+        choose among those candidates. A deterministic validator drops any recommendation that was
+        not a candidate or whose quote does not appear in the candidate's own text. Without a model
+        the guide degrades to the top search results with status LLM_UNAVAILABLE.
+
+        The answer comes as `text/event-stream` so the client can show real progress. Events, in this order (a step that does not happen is skipped; nothing is invented). The event
+        names are the values of `GuideStreamEvent`:
+
+        | event | data | when |
+        |---|---|---|
+        | `planned` | `GuideStreamPlanned` | the fast model turned the need into search terms |
+        | `understood` | `GuideStreamUnderstood` | how the question was read: intent, subjects, period (also without a model, from fixed rules) |
+        | `clarify` | `GuideClarification` | the question is too vague, or its one subject names different kinds of resource; it is followed only by `answer` (status NEEDS_CLARIFICATION) |
+        | `retrieved` | `GuideStreamRetrieved` | federated search returned the candidates |
+        | `chosen` | `GuideStreamChosen` | the reasoning model proposed its picks |
+        | `validated` | `GuideStreamValidated` | the validator kept or rejected each pick |
+        | `checked` | `GuideStreamChecked` | a second model call checked each kept pick's reason against its quote |
+        | `answer` | `GuideResponse` | always last on success |
+        | `error` | `Problem` | always last on failure |
+
+        A cached answer is sent as a single `answer` event. There is no retry on the server: a client
+        must not reconnect automatically, because each question costs model calls. When too many
+        questions are running, the stream is one `error` event with status 503; past the deadline the
+        question is cancelled and the last event is an `error` with status 504. Shares the rate limit
+        of `POST /resources/{id}/guide`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GuideRequest' }
+      responses:
+        '200':
+          description: Stream of guide events; see the table above for each event's data schema.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /sources:
+    $ref: './common.yaml#/paths/~1sources'
+  /categories:
+    $ref: './common.yaml#/paths/~1categories'
+  /me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: Current session. Anonymous use is fully supported.
+      responses:
+        '200':
+          description: Session info.
+          content:
+            application/json:
+              schema: { $ref: './common.yaml#/components/schemas/Me' }
+    delete:
+      tags: [me]
+      operationId: deleteMyAccount
+      summary: Delete the signed-in user's account and bookmarks, and end the session.
+      description: >-
+        Needs the X-XSRF-TOKEN header. Issue reports the user sent stay, without the reporter. Signing in again
+        creates a new, empty account.
+      responses:
+        '204': { description: Account deleted and signed out. }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /me/preferences:
+    patch:
+      tags: [me]
+      operationId: changePreferences
+      summary: Change the signed-in user's display settings. Fields left out stay as they are.
+      description: Needs the X-XSRF-TOKEN header. The settings live with the account and go when it is deleted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PreferencesChange' }
+      responses:
+        '200':
+          description: The settings after the change.
+          content:
+            application/json:
+              schema: { $ref: './common.yaml#/components/schemas/Preferences' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /me/bookmarks:
+    get:
+      tags: [me]
+      operationId: listBookmarks
+      responses:
+        '200':
+          description: Server-side bookmarks of the signed-in user.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Bookmark' } }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+    post:
+      tags: [me]
+      operationId: mergeLocalBookmarks
+      summary: Merge the bookmarks kept in the browser into the account, right after sign-in.
+      description: >-
+        Idempotent: a resource already saved keeps its first savedAt. All or nothing: an invalid URL, or more than 500
+        bookmarks in the account afterwards, refuses the whole request with 400.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 200
+              items: { $ref: '#/components/schemas/BookmarkRequest' }
+      responses:
+        '200':
+          description: Full bookmark list after merge.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Bookmark' } }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /me/bookmarks/{resourceId}:
+    put:
+      tags: [me]
+      operationId: addBookmark
+      summary: Save one resource. Saving it again changes nothing (the first savedAt stays).
+      description: An account keeps at most 500 bookmarks; one more is refused with 400.
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookmarkRequest' }
+      responses:
+        '200':
+          description: The saved bookmark.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Bookmark' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+    delete:
+      tags: [me]
+      operationId: deleteBookmark
+      parameters:
+        - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Removed (idempotent). }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /home/examples:
+    get:
+      tags: [examples]
+      operationId: listHomeExamples
+      summary: The example searches the home page picks from.
+      description: >-
+        The examples that may be shown (active, and their last quality check passed), at most 50. The page picks two
+        per path at random. Admin text only, no personal data; the same answer for everyone, cached for 5 minutes.
+      parameters:
+        - { name: lang, in: query, schema: { type: string, pattern: '^[a-z]{2}$', default: en } }
+      responses:
+        '200':
+          description: The served pool.
+          headers:
+            Cache-Control: { schema: { type: string }, description: 'public, max-age=300' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HomeExamplePool' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /policy:
+    get:
+      tags: [policy]
+      operationId: getPolicy
+      summary: The limits and retention periods the Mission, Privacy and Terms pages state.
+      description: >-
+        Read from the running configuration (ADR 0052), so the text pages show the numbers the code applies. The same
+        answer for everyone, no personal data; cached for 5 minutes. Rate-limited like the other public reads.
+      responses:
+        '200':
+          description: The current limits and retention periods.
+          headers:
+            Cache-Control: { schema: { type: string }, description: 'public, max-age=300' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Policy' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
+
+components:
+  schemas:
+    Policy:
+      type: object
+      description: >-
+        What Helper2.ai allows and keeps, as configured. Periods are in seconds; the pages round them to hours, days or
+        months. Daily limits reset at 00:00 UTC.
+      required: [guide, dailyLimits, retention, sources]
+      properties:
+        guide:
+          type: object
+          required: [maxCandidates, maxPicks]
+          properties:
+            maxCandidates: { type: integer, minimum: 1, description: "Search results the guide's model chooses from (`H2_GUIDE_MAX_CANDIDATES`, ADR 0015)." }
+            maxPicks: { type: integer, minimum: 1, description: Most picks in one guide answer (ADR 0015). }
+        dailyLimits:
+          type: object
+          required: [guideQuestions, freeAnswers, webSearches]
+          properties:
+            guideQuestions:
+              type: integer
+              minimum: 0
+              description: >-
+                Fresh guide questions per client address and UTC day (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0017). An
+                answer from the cache costs none.
+            freeAnswers:
+              type: integer
+              minimum: 0
+              description: >-
+                Answers with no pick, and questions that fail, a client address gets a day without spending a question
+                (`H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, ADR 0017).
+            webSearches:
+              type: object
+              description: Live web searches per visitor, feature and UTC day (ADR 0037).
+              required: [guest, registered]
+              properties:
+                guest: { $ref: '#/components/schemas/WebSearchLimits' }
+                registered:
+                  oneOf: [{ $ref: '#/components/schemas/WebSearchLimits' }, { type: 'null' }]
+                  description: The limits of a signed-in user; null while the registered tier is off (everyone gets the guest limits).
+        retention:
+          type: object
+          description: How long each store keeps what it keeps (ADR 0034), in seconds.
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
+          properties:
+            webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0037)." }
+            guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0017)." }
+            webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`H2_RETENTION_WEB_NEWS`)." }
+            pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
+            listIndexSeconds: { type: integer, format: int64, minimum: 0, description: "The search index of an awesome list, after the list was last read (`H2_RETENTION_LIST_INDEX`)." }
+            pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
+            pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
+            backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_BACKUP_RETENTION_DAYS`, from the chart's `backup.retentionDays`, ADR 0027)." }
+            cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
+            cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
+            translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`H2_SEARCH_TRANSLATION_TTL`)." }
+            queryVectorsSeconds: { type: integer, format: int64, minimum: 0, description: "Search vectors used to search by meaning (`H2_SEARCH_QUERY_VECTOR_TTL`)." }
+            storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_LIVE_WEB_RESULTS`)." }
+            inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
+            handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
+            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
+            runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0060). Each setting's newest change stays while it applies." }
+        sources:
+          type: object
+          description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0051).
+          required: [categories, categorySearches, quoteChars, articleExcerptChars, productPageExcerptChars, productPages, errorLogChars]
+          properties:
+            categories: { type: integer, minimum: 0, description: Categories of AI tools searched for once a week (`helper2.categories`). }
+            categorySearches: { type: integer, minimum: 0, description: Web searches those categories make in all, once a week. }
+            quoteChars: { type: integer, minimum: 1, description: Longest quote the Scout keeps from a page (fixed in code, ADR 0051). }
+            articleExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of an article found by web search (fixed in code). }
+            productPageExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of a product page found by web search (fixed in code). }
+            productPages: { type: integer, minimum: 1, description: "Most pages of a product's own website read for one product (fixed in code)." }
+            errorLogChars: { type: integer, minimum: 1, description: Longest piece of an NVIDIA error answer kept in the logs (fixed in code). }
+
+    WebSearchLimits:
+      type: object
+      required: [search, guide]
+      properties:
+        search: { type: integer, minimum: 0 }
+        guide: { type: integer, minimum: 0 }
+
+    HomeExamplePool:
+      type: object
+      required: [examples]
+      properties:
+        examples: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/HomeExample' } }
+        ai:
+          oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
+          description: Present when an example was drafted by a model; those carry aiDrafted true.
+
+    HomeExample:
+      type: object
+      required: [id, label, query, path, aiDrafted]
+      properties:
+        id: { type: string, format: uuid }
+        label: { type: string, minLength: 2, maxLength: 32, description: The text on the chip. }
+        query: { type: string, minLength: 3, maxLength: 200, description: What the example searches. }
+        path: { $ref: './common.yaml#/components/schemas/AudiencePath' }
+        aiDrafted: { type: boolean, description: "A model drafted the label and query, and a person accepted them (ADR 0049 §6). Labelled in the UI." }
+
+    Evidence:
+      type: object
+      required: [id, sourceUrl, retrievedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sourceUrl: { type: string, format: uri }
+        retrievedAt: { type: string, format: date-time }
+        excerpt: { type: [string, 'null'], description: Short excerpt, stored within source terms. }
+
+    Assertion:
+      type: object
+      required: [field, value, origin, verification, evidence]
+      properties:
+        field: { type: string }
+        value: { type: string }
+        origin: { $ref: './common.yaml#/components/schemas/ValueOrigin' }
+        verification: { $ref: './common.yaml#/components/schemas/Verification' }
+        sourceId: { type: [string, 'null'] }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+
+    Relationship:
+      type: object
+      required: [kind, targetTitle, verification, evidence]
+      properties:
+        kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH, ABOUT] }
+        targetId: { type: [string, 'null'], format: uuid }
+        targetTitle: { type: string }
+        verification: { $ref: './common.yaml#/components/schemas/Verification' }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+        origin:
+          $ref: './common.yaml#/components/schemas/ValueOrigin'
+          description: AI_EXTRACTED, or SELF_DECLARED when only the product's own page names the target (ADR 0056).
+
+    SummaryClaim:
+      type: object
+      required: [text, evidence]
+      properties:
+        text: { type: string }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+        selfDeclared:
+          type: boolean
+          description: True when the claim cites the product's own web page, so it is what the vendor says (ADR 0056).
+
+    AiSummary:
+      type: object
+      required: [claims, model, promptVersion, generatedAt]
+      properties:
+        claims: { type: array, items: { $ref: '#/components/schemas/SummaryClaim' } }
+        model: { type: string }
+        promptVersion: { type: string }
+        generatedAt: { type: string, format: date-time }
+
+    SourceRecordInfo:
+      type: object
+      required: [sourceId, externalId, url, retrievedAt, fingerprint]
+      properties:
+        sourceId: { type: string }
+        externalId: { type: string }
+        url: { type: string, format: uri }
+        retrievedAt: { type: string, format: date-time }
+        fingerprint: { type: string }
+
+    RecentResponse:
+      type: object
+      required: [items, total, since, generatedAt]
+      properties:
+        items: { type: array, items: { $ref: './common.yaml#/components/schemas/ResultCard' } }
+        total:
+          type: integer
+          minimum: 0
+          description: >-
+            Resources in the window (and types) in all, of which `items` holds the first `size`; for "Show all N".
+            A resource whose records no longer merge is counted but not shown, so `items` can be shorter.
+        since: { type: string, format: date-time, description: Oldest publication date included. }
+        generatedAt: { type: string, format: date-time }
+
+    UpcomingEventsResponse:
+      type: object
+      required: [items, total, generatedAt]
+      properties:
+        items: { type: array, items: { $ref: './common.yaml#/components/schemas/ResultCard' } }
+        total:
+          type: integer
+          minimum: 0
+          description: >-
+            Upcoming events (in the `days` window, when given) in all, of which `items` holds the first `size`; for
+            "Show all N".
+        until:
+          type: [string, 'null']
+          format: date-time
+          description: End of the `days` window (exclusive); null without `days`.
+        generatedAt: { type: string, format: date-time }
+
+    ResourceDetail:
+      type: object
+      required: [card, assertions, relationships, sourceRecords, enrichmentStatus]
+      properties:
+        card: { $ref: './common.yaml#/components/schemas/ResultCard' }
+        assertions: { type: array, items: { $ref: '#/components/schemas/Assertion' } }
+        relationships: { type: array, items: { $ref: '#/components/schemas/Relationship' } }
+        summary: { oneOf: [{ $ref: '#/components/schemas/AiSummary' }, { type: 'null' }] }
+        sourceRecords: { type: array, items: { $ref: '#/components/schemas/SourceRecordInfo' } }
+        enrichmentStatus: { type: string, enum: [NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE] }
+
+    SetupGuide:
+      type: object
+      required: [resourceId, title, options, clients, sources]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        version: { type: [string, 'null'], description: Version the setup facts are for, as the source states it. }
+        options:
+          type: array
+          description: Ways to run the resource, as its source states them; empty when the sources state none.
+          items: { $ref: '#/components/schemas/SetupOption' }
+        clients:
+          type: array
+          description: One entry per AI client, in a fixed order; empty when there are no options.
+          items: { $ref: '#/components/schemas/SetupClient' }
+        sources:
+          type: array
+          description: Where the setup facts were read, with when.
+          items:
+            type: object
+            required: [sourceId, url, retrievedAt]
+            properties:
+              sourceId: { type: string }
+              url: { type: string, format: uri }
+              retrievedAt: { type: string, format: date-time }
+
+    SetupOption:
+      type: object
+      required: [id, kind, transport, label, settings]
+      properties:
+        id: { type: string, description: Stable within this answer; snippets refer to it. }
+        kind: { type: string, enum: [REMOTE, PACKAGE, COMMAND] }
+        transport: { type: string, enum: [STREAMABLE_HTTP, SSE, STDIO] }
+        label: { type: string, description: 'For example "Hosted server" or "npm package @scope/name".' }
+        url: { type: [string, 'null'], format: uri, description: REMOTE only. }
+        registryType: { type: [string, 'null'], description: 'PACKAGE only: npm, pypi or oci, as the registry states it.' }
+        identifier: { type: [string, 'null'], description: PACKAGE only. }
+        runtime: { type: [string, 'null'], description: 'PACKAGE only: the program that launches it (npx, uvx, docker).' }
+        requires: { type: [string, 'null'], description: 'What must be installed first, e.g. "Node.js (for npx)".' }
+        settings:
+          type: array
+          description: Environment variables (STDIO) or headers (REMOTE) the source declares.
+          items: { $ref: '#/components/schemas/SetupSetting' }
+
+    SetupSetting:
+      type: object
+      required: [name, kind, required, secret]
+      properties:
+        name: { type: string }
+        kind: { type: string, enum: [ENV, HEADER] }
+        description: { type: [string, 'null'] }
+        required: { type: boolean }
+        secret: { type: boolean, description: Shown as a placeholder; a value is never filled in. }
+        value: { type: [string, 'null'], description: 'The value or default the source publishes (never a secret''s), as it appears in the snippets.' }
+
+    SetupClient:
+      type: object
+      required: [id, name, docsUrl, snippets]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        docsUrl: { type: string, format: uri, description: The client's own documentation the snippet format follows. }
+        snippets:
+          type: array
+          items:
+            type: object
+            required: [optionId, supported]
+            properties:
+              optionId: { type: string }
+              supported: { type: boolean }
+              where: { type: [string, 'null'], description: 'Where it goes: a terminal, or a config file path.' }
+              language: { type: [string, 'null'], description: 'shell, json, jsonc, toml or yaml.' }
+              text: { type: [string, 'null'], description: Ready to paste; secrets are placeholders. }
+              note: { type: [string, 'null'], description: Why it is not supported, or what to do after pasting. }
+
+    ToolGuide:
+      type: object
+      required: [resourceId, title, status, sections, documents, rejected, generatedAt]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        status:
+          type: string
+          enum: [OK, NO_STEPS, NO_MATERIAL, LLM_UNAVAILABLE]
+          description: 'OK: steps passed the checks. NO_STEPS: documents read, nothing passed. NO_MATERIAL: no document to read. LLM_UNAVAILABLE: no model now (see unavailable).'
+        unavailable: { type: [string, 'null'], description: 'With LLM_UNAVAILABLE: "budget" (today''s model calls are used up) or "error".' }
+        sections:
+          type: array
+          items:
+            type: object
+            required: [kind, steps]
+            properties:
+              kind: { type: string, enum: [REQUIREMENTS, INSTALL, CONFIGURE, USE, CONNECT] }
+              steps:
+                type: array
+                items:
+                  type: object
+                  required: [text, quote, source, caution]
+                  properties:
+                    text: { type: string, description: AI-written instruction (labelled as AI in the UI). }
+                    quote: { type: string, description: Passage of the cited document that supports the step, checked. }
+                    source: { type: string, description: Key of the document in documents. }
+                    code:
+                      oneOf:
+                        - type: 'null'
+                        - type: object
+                          required: [text]
+                          properties:
+                            language: { type: [string, 'null'] }
+                            text: { type: string, description: Copied from one code block of the document, checked. }
+                    caution: { type: boolean, description: 'The command pipes a download into a shell, uses sudo or deletes recursively.' }
+        documents:
+          type: array
+          items:
+            type: object
+            required: [key, kind, url, retrievedAt]
+            properties:
+              key: { type: string }
+              kind: { type: string, enum: [README, PACKAGE_README, MODEL_CARD] }
+              url: { type: string, format: uri }
+              retrievedAt: { type: string, format: date-time }
+        model: { type: [string, 'null'] }
+        rejected: { type: integer, description: Proposed steps the checks removed. }
+        generatedAt: { type: string, format: date-time }
+
+    IssueReportRequest:
+      type: object
+      required: [kind, message]
+      properties:
+        kind: { type: string, enum: [WRONG, OUTDATED, BROKEN_LINK, OTHER] }
+        field: { type: [string, 'null'], maxLength: 60 }
+        message: { type: string, minLength: 5, maxLength: 2000 }
+
+    IssueReportAccepted:
+      type: object
+      required: [reportId]
+      properties:
+        reportId: { type: string, format: uuid }
+
+    GuideRequest:
+      type: object
+      required: [request]
+      properties:
+        request: { type: string, minLength: 3, maxLength: 500, description: The need in plain words, any language. }
+        path: { oneOf: [{ $ref: './common.yaml#/components/schemas/AudiencePath' }, { type: 'null' }] }
+        clarification:
+          type: [string, 'null']
+          maxLength: 300
+          description: |
+            The user's answer to a NEEDS_CLARIFICATION answer (a chosen option or free text); "" means "search
+            anyway". A request with this field is never asked back again.
+        drop:
+          type: array
+          maxItems: 8
+          description: |
+            Parts of the reading the user removed from "Understood as": "intent" (answer as a plain suggestion),
+            "window" (ignore the period) or "constraint:<text>". Applied by code; never sent to a model.
+          items: { type: string, maxLength: 80 }
+        categories:
+          type: array
+          maxItems: 40
+          description: >-
+            The category filter active on the results page (ids from GET /categories, or `unknown`). The guide picks
+            only among results in one of them (ADR 0053). Applied by code; never sent to a model. Unknown ids are a 400.
+          items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 }
+
+    GuideRecommendation:
+      type: object
+      required: [resourceId, title, url, type, reason, quote, sourceIds, aiReasoned]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        url: { type: string, format: uri }
+        type: { $ref: './common.yaml#/components/schemas/ResourceType' }
+        reason: { type: string, description: AI-written explanation (labelled as AI in the UI). }
+        quote: { type: string, description: Exact text from the resource's own description that supports the reason. }
+        description:
+          type: [string, 'null']
+          description: The resource's own description, the text the quote was checked against, so a client can show the quote in context.
+        sourceIds: { type: array, items: { type: string } }
+        compatibleWith:
+          type: array
+          description: |
+            AI tools this pick works with, by the same disclosed rules as ResultCard.compatibleWith. Never model-generated.
+            The server always sends it, `[]` when no rule matched; an answer cached by a client before the field existed
+            may lack it.
+          items: { $ref: './common.yaml#/components/schemas/CompatibilityFlag' }
+        aiReasoned:
+          type: boolean
+          description: True when the model chose this pick and it passed the evidence check; false for a plain top search result shown because no AI pick survived.
+        checks:
+          type: array
+          description: One entry per constraint in GuideResponse.constraints, in the same order.
+          items: { $ref: '#/components/schemas/GuideCheck' }
+        reasonCheck:
+          type: string
+          enum: [SUPPORTED, REMOVED, NOT_CHECKED]
+          default: NOT_CHECKED
+          description: |
+            Outcome of a second model call that compares `reason` with the quote, the resource's own text
+            and the confirmed checks. SUPPORTED: no claim beyond that evidence was found (a model check, not a
+            proof). REMOVED: it found one, so `reason` is empty. NOT_CHECKED: no check ran (no model, budget,
+            failure) or this is a fallback result.
+
+    GuideCheck:
+      type: object
+      required: [constraint, status]
+      properties:
+        constraint: { type: string, description: 'A requirement the user stated, in a few words (e.g. "free", "self-hosted").' }
+        status:
+          type: string
+          enum: [CONFIRMED, NOT_CONFIRMED]
+          description: CONFIRMED only when the quote appears word for word in the resource's own text. NOT_CONFIRMED means the source does not show it, not that it is false.
+        quote: { type: [string, 'null'], description: 'Exact text from the resource that shows the constraint is met, or for licence constraints the licence the source states (e.g. "License: MIT (stated by GitHub)").' }
+
+    GuidePrompt:
+      type: object
+      required: [text, basedOn]
+      properties:
+        text: { type: string, description: AI-generated prompt the user can copy. }
+        basedOn:
+          type: array
+          description: Catalog prompts this was adapted from; never empty, because a prompt not adapted from a catalog prompt is not shown.
+          items:
+            type: object
+            required: [resourceId, title]
+            properties:
+              resourceId: { type: string, format: uuid }
+              title: { type: string }
+
+    GuideModelInfo:
+      type: object
+      required: [provider, fastModel, reasoningModel]
+      properties:
+        provider: { type: string }
+        fastModel: { type: string }
+        reasoningModel: { type: string }
+
+    GuideResponse:
+      type: object
+      required: [status, searchQuery, recommendations, candidatesConsidered, sources, notices, generatedAt]
+      properties:
+        status:
+          type: string
+          enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION]
+          description: NEEDS_CLARIFICATION = the question was too vague to search (no search ran), or its one subject matches different kinds of resource (a search ran); see `clarification`.
+        searchQuery: { type: string, description: "Search terms actually used to retrieve candidates. Empty on an answer reused from a similar question (ADR 0041, 0044): the planner wrote them from another asker's words." }
+        recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
+        prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
+        model: { oneOf: [{ $ref: '#/components/schemas/GuideModelInfo' }, { type: 'null' }] }
+        aiContent: { oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }] }
+        candidatesConsidered: { type: integer }
+        rejected: { type: integer, description: AI suggestions dropped by the validator. }
+        constraints:
+          type: array
+          description: Requirements the planning model read from the need; each recommendation is checked against them.
+          items: { type: string }
+        sources: { type: array, items: { $ref: './common.yaml#/components/schemas/SourceStatus' } }
+        notices: { type: array, items: { $ref: './common.yaml#/components/schemas/Notice' } }
+        generatedAt: { type: string, format: date-time }
+        intent: { $ref: '#/components/schemas/GuideIntent' }
+        subjects: { type: array, items: { type: string }, description: Named things the question is about, as written. }
+        window: { oneOf: [{ $ref: '#/components/schemas/GuideWindow' }, { type: 'null' }] }
+        clarification: { oneOf: [{ $ref: '#/components/schemas/GuideClarification' }, { type: 'null' }] }
+        comparison: { oneOf: [{ $ref: '#/components/schemas/GuideComparison' }, { type: 'null' }] }
+        explanation: { oneOf: [{ $ref: '#/components/schemas/GuideExplanation' }, { type: 'null' }] }
+        webSearches: { oneOf: [{ $ref: './common.yaml#/components/schemas/WebSearches' }, { type: 'null' }] }
+        trail: { $ref: '#/components/schemas/GuideTrail' }
+
+    GuideTrail:
+      type: object
+      required: [queries, removed]
+      description: >-
+        The research trail (ADR 0044): the searches the guide ran and the suggestions its checks removed. Never the
+        removed AI reason, raw model output or the prompt.
+      properties:
+        queries:
+          type: array
+          maxItems: 3
+          description: >-
+            AI-written search queries actually run (the planned query, the web query). Empty when the planner did not
+            run, and on an answer reused from a similar question (ADR 0041): those came from another asker's words.
+          items: { type: string, maxLength: 200 }
+        removed:
+          type: array
+          maxItems: 12
+          description: >-
+            One per suggestion a check removed, in the order proposed: a pick, a comparison cell or an explanation
+            sentence. Named by the source it quoted (a comparison: its subject), never by the removed text.
+          items: { $ref: '#/components/schemas/GuideTrailRemoved' }
+
+    GuideTrailRemoved:
+      type: object
+      required: [title, check]
+      properties:
+        title: { type: string, maxLength: 200, description: "The title of the candidate, compared subject or quoted source, from its source." }
+        check:
+          type: string
+          enum: [QUOTE_NOT_FOUND, REASON_NOT_SUPPORTED, CONSTRAINT_NOT_MET]
+          description: >-
+            Which check removed it. QUOTE_NOT_FOUND = its quote is not in the source's text (or too short or too
+            long); REASON_NOT_SUPPORTED = its reason was empty, too long, held a link, or the second model call found
+            a claim the source does not show; CONSTRAINT_NOT_MET = a kind or period the question rules out.
+
+    GuideIntent:
+      type: string
+      enum: [SUGGEST, NEWEST, ALTERNATIVES, COMPARE, HOW_TO, WHAT_IS, WHEN, LEARN]
+      description: What kind of answer the question asks for (ADR 0032). SUGGEST is the default.
+
+    GuideWindow:
+      type: object
+      required: [from, to]
+      description: The period the question names, resolved from today (UTC, inclusive). A month is 30 days.
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+
+    GuideClarification:
+      type: object
+      required: [question, options]
+      properties:
+        question: { type: string, maxLength: 120 }
+        options: { type: array, minItems: 2, maxItems: 4, items: { type: string, maxLength: 40 } }
+
+    GuideComparison:
+      type: object
+      required: [subjects, rows]
+      properties:
+        subjects:
+          type: array
+          items:
+            type: object
+            required: [key, name]
+            properties:
+              key: { type: string }
+              name: { type: string, description: The name as the user wrote it. }
+              resourceId: { type: [string, 'null'], format: uuid, description: The subject's own entry; null when not found in our sources. }
+              title: { type: [string, 'null'] }
+              url: { type: [string, 'null'], format: uri }
+        rows:
+          type: array
+          items:
+            type: object
+            required: [aspect, cells]
+            properties:
+              aspect: { type: string }
+              cells:
+                type: array
+                description: One per subject, in the order of `subjects`.
+                items:
+                  type: object
+                  required: [subjectKey]
+                  properties:
+                    subjectKey: { type: string }
+                    text: { type: [string, 'null'], description: AI-written; null when the subject's own text does not state it. }
+                    quote: { type: [string, 'null'], description: Exact text from that subject's own description. }
+                    reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
+
+    GuideExplanation:
+      type: object
+      required: [sentences]
+      properties:
+        sentences:
+          type: array
+          items:
+            type: object
+            required: [text, quote, resourceId, title, url]
+            properties:
+              text: { type: string, description: AI-written sentence. }
+              quote: { type: string, description: Exact text from the resource below that supports the sentence. }
+              resourceId: { type: string, format: uuid }
+              title: { type: string }
+              url: { type: string, format: uri }
+              reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
+
+    GuideStreamEvent:
+      type: string
+      description: The name of each server-sent event of `POST /guide/stream`; its data schema is in that operation's table.
+      enum: [planned, understood, clarify, retrieved, chosen, validated, checked, answer, error]
+
+    GuideStreamUnderstood:
+      type: object
+      required: [intent, subjects]
+      properties:
+        intent: { $ref: '#/components/schemas/GuideIntent' }
+        subjects: { type: array, items: { type: string } }
+        window: { oneOf: [{ $ref: '#/components/schemas/GuideWindow' }, { type: 'null' }] }
+
+    GuideStreamPlanned:
+      type: object
+      required: [searchQuery, constraints]
+      properties:
+        searchQuery: { type: string, description: Search terms the fast model wrote (qualifiers removed). }
+        constraints: { type: array, items: { type: string }, description: Requirements read from the need. }
+        model: { type: string, description: The fast model's id. }
+
+    GuideStreamRetrieved:
+      type: object
+      required: [candidates, sources]
+      properties:
+        candidates: { type: integer, description: Real search results the reasoning model may choose from. }
+        sources: { type: array, items: { $ref: './common.yaml#/components/schemas/SourceStatus' } }
+
+    GuideStreamChosen:
+      type: object
+      required: [proposed]
+      properties:
+        proposed: { type: integer, description: Picks the reasoning model proposed, before validation. }
+        model: { type: string, description: The reasoning model's id. }
+
+    GuideStreamValidated:
+      type: object
+      required: [kept, rejected]
+      properties:
+        kept: { type: integer }
+        rejected: { type: integer }
+
+    GuideStreamChecked:
+      type: object
+      required: [supported, removed, notChecked]
+      properties:
+        supported: { type: integer, description: Reasons the check found supported by the quote. }
+        removed: { type: integer, description: Reasons removed because the check found an unsupported claim. }
+        notChecked: { type: integer, description: Reasons without a verdict (the check failed or was not answered). }
+
+    PreferencesChange:
+      type: object
+      properties:
+        radarMotion: { type: boolean }
+
+    BookmarkRequest:
+      type: object
+      required: [resourceId, title, url]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string, maxLength: 300 }
+        url: { type: string, format: uri, description: "http(s) only, max 2000 chars (validated server-side)." }
+        type: { oneOf: [{ $ref: './common.yaml#/components/schemas/ResourceType' }, { type: 'null' }] }
+
+    Bookmark:
+      type: object
+      required: [resourceId, title, url, savedAt]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        url: { type: string, format: uri }
+        type: { oneOf: [{ $ref: './common.yaml#/components/schemas/ResourceType' }, { type: 'null' }] }
+        savedAt: { type: string, format: date-time }

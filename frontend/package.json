@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "gen:api": "openapi-typescript ../api/openapi.yaml --enum-values -o src/api/schema.ts",
+    "gen:api": "openapi-typescript ../api/public.yaml --enum-values -o src/api/schema.ts && openapi-typescript ../api/admin.yaml --enum-values -o src/api/admin-schema.ts",
     "dev": "vite",
     "prebuild": "npm run gen:api",
     "build": "tsc --noEmit && vite build",
