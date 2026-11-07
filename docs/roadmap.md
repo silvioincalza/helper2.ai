@@ -33,11 +33,11 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   the hosted endpoint, what NVIDIA does with the text (the trial terms let it improve its models, §3.3(iv)), how long it
   keeps it (§2.3, §2.4), where the endpoint runs, and whether a data processing agreement with standard contractual
   clauses is part of it. Then update the Embeddings sentence on the Privacy page.
-- Confirm with Nebius where `nvidia/nemotron-3-super-120b-a12b` is served; the Privacy page says guide questions are
-  processed in the European Union. The Nebius Token Factory model catalog (read 6 Nov 2026) lists the model in
-  `us-central1` (Kansas City, US) only; Nemotron 3 Nano is in `eu-north1` (Finland). The choose and reason-check calls
-  use the reasoning model (`H2_NEBIUS_REASONING_MODEL` on prod, in OpenBao). If it runs in the US: Nebius Inc. is
-  DPF-certified EU-US only, not Swiss-US, so the Swiss transfer needs the SCCs of the Nebius DPA, and the page changes.
+- Get in writing from Nebius where `nvidia/Nemotron-3.5-Super-VL` and `nvidia/Nemotron-3_5-Lightning` are served,
+  and that the Nebius DPA with its standard contractual clauses covers the US calls. The model catalog (read
+  7 Nov 2026) lists the reasoning model in `us-north1` (US) and the fast model in `eu-north1` (Finland); the Privacy
+  page says so. Nebius Inc. is DPF-certified EU-US only, not Swiss-US, so the Swiss transfer rests on those clauses: a
+  lawyer checks the Privacy sentence on transfers before the release.
 - Review each source's terms again for commercial use.
 - Monetisation ([ADR 0057](adr/frontend/0057-monetisation.md)), before a setting is filled on prod:
   - Manual: create the GA4 property (EU data), retention 2 months; in enhanced measurement turn off "Page changes based

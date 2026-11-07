@@ -17,8 +17,11 @@ Without a configured model the application must still work.
    which depends on no feature module.
 2. **One provider.** Profile `llm-nebius`: Nebius Token Factory (`https://api.tokenfactory.nebius.com/v1`) serving
    NVIDIA Nemotron models only. `H2_NEBIUS_API_KEY`, `H2_NEBIUS_REASONING_MODEL` (default
-   `nvidia/nemotron-3-super-120b-a12b`), `H2_NEBIUS_FAST_MODEL` (default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`; it
-   plans the guide's search, translates queries and classifies awesome lists). `LlmSettings` holds the fallbacks:
+   `nvidia/Nemotron-3.5-Super-VL`), `H2_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; it
+   plans the guide's search, translates queries and classifies awesome lists). These replace Nemotron 3 Super and
+   Nemotron 3 Nano, which Token Factory retires on 9 Nov 2026; same prices, same API (JSON schema output, thinking
+   off through `chat_template_kwargs`). The reasoning model is served in `us-north1` (US), the fast model in
+   `eu-north1` (Finland). `LlmSettings` holds the fallbacks:
    an empty fast model means the reasoning model does these calls too. NVIDIA-only is checked at startup
    (`NvidiaOnly`): the application does not start when a chat model id sent through the OpenAI-compatible client
    (`spring.ai.openai.chat.model`, `helper2.llm.fast-model`, `helper2.llm.reasoning-model`) or the embedding model id
