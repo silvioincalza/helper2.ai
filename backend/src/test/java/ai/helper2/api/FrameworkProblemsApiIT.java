@@ -34,7 +34,7 @@ class FrameworkProblemsApiIT extends ApiTestBase {
   void aBodyOfTheWrongMediaTypeIsATypedUnsupportedMediaType() throws Exception {
     mvc.perform(
             post("/api/v1/resources/00000000-0000-0000-0000-000000000000/reports")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.TEXT_PLAIN)
                 .content("wrong"))
         .andExpect(status().isUnsupportedMediaType())

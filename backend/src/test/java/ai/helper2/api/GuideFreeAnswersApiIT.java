@@ -135,7 +135,7 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
     String ip = "10.9.0.4";
     MODEL_DOWN.set(true);
 
-    GuideAnswers.ask(mvc, body("translate a menu into Japanese"), csrf(), from(ip))
+    GuideAnswers.ask(mvc, body("translate a menu into Japanese"), csrf().asHeader(), from(ip))
         .value("$.status", "LLM_UNAVAILABLE");
 
     assertThat(left(ip)).isEqualTo(3);
@@ -154,7 +154,7 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
   }
 
   private void askWithoutPick(String ip, String question) throws Exception {
-    String json = GuideAnswers.ask(mvc, body(question), csrf(), from(ip)).json();
+    String json = GuideAnswers.ask(mvc, body(question), csrf().asHeader(), from(ip)).json();
     assertThat(JsonPath.<List<?>>read(json, "$.recommendations[?(@.aiReasoned == true)]"))
         .isEmpty();
     assertThat(JsonPath.<List<?>>read(json, "$.notices[?(@.code == 'GUIDE_DAILY_QUOTA')]"))
@@ -162,7 +162,7 @@ class GuideFreeAnswersApiIT extends ApiTestBase {
   }
 
   private void askWithPick(String ip, String question) throws Exception {
-    GuideAnswers.ask(mvc, body(question), csrf(), from(ip))
+    GuideAnswers.ask(mvc, body(question), csrf().asHeader(), from(ip))
         .value("$.recommendations[0].aiReasoned", true);
   }
 

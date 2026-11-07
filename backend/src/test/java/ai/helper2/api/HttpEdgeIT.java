@@ -301,6 +301,89 @@ class HttpEdgeIT {
         HttpResponse.BodyHandlers.ofString());
   }
 
+  /** The CSRF cookie the admin host's GET /api/v1/me writes, as a browser on that host keeps it. */
+  String csrfTokenAt(int at) throws Exception {
+    String cookie =
+        getAt(at, "/api/v1/me").headers().allValues("Set-Cookie").stream()
+            .filter(c -> c.startsWith("XSRF-TOKEN="))
+            .findFirst()
+            .orElseThrow();
+    return cookie.substring("XSRF-TOKEN=".length(), cookie.indexOf(';'));
+  }
+
+  /** A body-less admin write (ADR 0035 §8): what a form from another page of the site can send. */
+  HttpResponse<String> adminWrite(HttpRequest.Builder b) throws Exception {
+    return noRedirects.send(
+        b.uri(URI.create("http://localhost:" + ADMIN_PORT + "/api/v1/admin/category-backfill"))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build(),
+        HttpResponse.BodyHandlers.ofString());
+  }
+
+  @Test
+  void anAdminWriteWithoutTheAdminHostsOriginIsRefusedBeforeAnythingElse() throws Exception {
+    String token = csrfTokenAt(ADMIN_PORT);
+    HttpRequest.Builder valid =
+        HttpRequest.newBuilder()
+            .header("Cookie", "XSRF-TOKEN=" + token)
+            .header("X-XSRF-TOKEN", token);
+    HttpResponse<String> noOrigin = adminWrite(valid.copy());
+    assertThat(noOrigin.statusCode()).isEqualTo(403);
+    assertThat(noOrigin.body()).contains("must come from the admin host");
+    HttpResponse<String> publicSite =
+        adminWrite(valid.copy().header("Origin", "https://helper2.ai"));
+    assertThat(publicSite.statusCode()).isEqualTo(403);
+    assertThat(publicSite.body()).contains("must come from the admin host");
+    // Its own Origin passes the check; the next gate is the sign-in.
+    HttpResponse<String> sameHost =
+        adminWrite(valid.copy().header("Origin", "http://localhost:" + ADMIN_PORT));
+    assertThat(sameHost.statusCode()).as(sameHost.body()).isEqualTo(401);
+  }
+
+  @Test
+  void theCsrfTokenCountsOnlyInTheHeaderNeverAsAFormField() throws Exception {
+    String token = csrfTokenAt(ADMIN_PORT);
+    HttpResponse<String> form =
+        noRedirects.send(
+            HttpRequest.newBuilder(
+                    URI.create(
+                        "http://localhost:" + ADMIN_PORT + "/api/v1/admin/category-backfill"))
+                .header("Origin", "http://localhost:" + ADMIN_PORT)
+                .header("Cookie", "XSRF-TOKEN=" + token)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString("_csrf=" + token))
+                .build(),
+            HttpResponse.BodyHandlers.ofString());
+    assertThat(form.statusCode()).isEqualTo(403);
+    assertThat(form.body()).contains("CSRF token");
+  }
+
+  @Test
+  void noGeneratedSignInOrSignOutPageWritesTheCsrfTokenIntoHtml() throws Exception {
+    for (int at : new int[] {port, ADMIN_PORT}) {
+      for (String path : java.util.List.of("/login", "/logout")) {
+        HttpResponse<String> r = getAt(at, path);
+        assertThat(r.body()).as(at + path).doesNotContain("_csrf").doesNotContain("<form");
+      }
+    }
+  }
+
+  @Test
+  void thePublicPortNeedsNoOriginForItsWrites() throws Exception {
+    String token = csrfTokenAt(port);
+    HttpResponse<String> report =
+        send(
+            HttpRequest.newBuilder(
+                    uri("/api/v1/resources/00000000-0000-0000-0000-000000000000/reports"))
+                .header("Content-Type", "application/json")
+                .header("Cookie", "XSRF-TOKEN=" + token)
+                .header("X-XSRF-TOKEN", token)
+                .POST(
+                    HttpRequest.BodyPublishers.ofString(
+                        "{\"kind\":\"WRONG\",\"message\":\"definitely wrong\"}")));
+    assertThat(report.statusCode()).as(report.body()).isEqualTo(404);
+  }
+
   @Test
   void thePublicPortHasNoBackOffice() throws Exception {
     HttpResponse<String> audit = getAt(port, "/api/v1/admin/audit");

@@ -40,6 +40,14 @@ reaches the cluster with an address from the platform's private ranges.
    only to the Service `helper2`. No public name reaches the admin port.
 7. **Network policy.** Only the ingress controller's pods (`networkPolicy.ingressController`) may reach the app:
    the public port and the admin port.
+8. **A write on the admin host comes from the admin host.** The public site and the admin host are the same site for
+   the browser (`helper2.ai`, `admin.helper2.ai`), so a `SameSite` cookie does not keep them apart, and a page of the
+   public site could plant a CSRF cookie for the whole domain. Two checks close that:
+   - On the admin port, a POST, PUT, PATCH or DELETE must carry an `Origin` that names the host the request went to
+     (`SameOriginWrites`, before the CSRF check). No Origin, `null` or another host: 403 problem.
+   - The CSRF token counts only in the `X-XSRF-TOKEN` header, on both ports, never as a `_csrf` form field. A form
+     from another page cannot set a header, and a script on another origin cannot send one without CORS, which the
+     app does not allow.
 
 | Host                                                  | Port | Back office | Sign-in                  | ADMIN            |
 |-------------------------------------------------------|------|-------------|--------------------------|------------------|
@@ -48,7 +56,8 @@ reaches the cluster with an address from the platform's private ranges.
 
 ## Consequences
 - The back office is closed at three layers: the network edge, the port filter and the role. Each one alone keeps
-  it closed.
+  it closed. Its writes need the admin host's own Origin and the token in a header, so a page elsewhere on the
+  site cannot make a signed-in admin's browser write.
 - No rate limit keyed on an address on the admin host. There is no Cloudflare in front of it, so a forwarded address
   there could be the client's own choice; a counter keyed on it would be the client's to steer. The limits still
   hold there: the key is the signed-in administrator's GitHub login, and one shared key for whoever is not signed

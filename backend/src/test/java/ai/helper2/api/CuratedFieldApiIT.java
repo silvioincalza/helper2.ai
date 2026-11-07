@@ -71,7 +71,7 @@ class CuratedFieldApiIT extends ApiTestBase {
     return mvc.perform(
         put("/api/v1/admin/resources/" + resource + "/fields/" + field)
             .with(admin)
-            .with(csrf())
+            .with(csrf().asHeader())
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"value\":\"" + value + "\"}"));
   }
@@ -184,7 +184,7 @@ class CuratedFieldApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/admin/resources/" + fixture.resource + "/fields/license/drop")
                 .with(admin)
-                .with(csrf()))
+                .with(csrf().asHeader()))
         .andExpect(status().isNoContent());
 
     assertThat(assertions("license")).containsExactly("AI_EXTRACTED REJECTED MIT");
@@ -208,12 +208,13 @@ class CuratedFieldApiIT extends ApiTestBase {
   void onlyAdminsSetAFieldAndOnlyWithTheCsrfToken() throws Exception {
     String path = "/api/v1/admin/resources/" + fixture.resource + "/fields/pricing";
     String body = "{\"value\":\"PAID\"}";
-    mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            put(path).with(csrf().asHeader()).contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isUnauthorized());
     mvc.perform(
             put(path)
                 .with(oauth2Login())
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden());

@@ -68,7 +68,7 @@ class RelationshipTargetApiIT extends ApiTestBase {
     return mvc.perform(
         put("/api/v1/admin/review-items/" + item + "/relationship-target")
             .with(admin)
-            .with(csrf())
+            .with(csrf().asHeader())
             .contentType(MediaType.APPLICATION_JSON)
             .content(body));
   }
@@ -113,7 +113,7 @@ class RelationshipTargetApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + fixture.relationshipItem + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk());
@@ -269,12 +269,13 @@ class RelationshipTargetApiIT extends ApiTestBase {
   void onlyAdminsChangeATargetAndOnlyWithTheCsrfToken() throws Exception {
     String url = "/api/v1/admin/review-items/" + fixture.relationshipItem + "/relationship-target";
     String body = "{\"title\":\"LangChain\"}";
-    mvc.perform(put(url).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            put(url).with(csrf().asHeader()).contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isUnauthorized());
     mvc.perform(
             put(url)
                 .with(oauth2Login())
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden());

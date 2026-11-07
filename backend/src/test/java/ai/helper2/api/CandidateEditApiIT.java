@@ -82,7 +82,7 @@ class CandidateEditApiIT extends ApiTestBase {
     return mvc.perform(
         put("/api/v1/admin/review-items/" + id + "/candidate")
             .with(admin)
-            .with(csrf())
+            .with(csrf().asHeader())
             .contentType(MediaType.APPLICATION_JSON)
             .content(body));
   }
@@ -117,7 +117,7 @@ class CandidateEditApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk());
@@ -191,12 +191,13 @@ class CandidateEditApiIT extends ApiTestBase {
   void onlyAdminsEditAndOnlyWithTheCsrfToken() throws Exception {
     String path = "/api/v1/admin/review-items/" + item + "/candidate";
     String body = "{\"title\":\"x\"}";
-    mvc.perform(put(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            put(path).with(csrf().asHeader()).contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isUnauthorized());
     mvc.perform(
             put(path)
                 .with(oauth2Login())
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden());

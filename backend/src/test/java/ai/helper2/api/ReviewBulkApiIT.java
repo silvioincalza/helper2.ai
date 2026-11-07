@@ -70,8 +70,8 @@ class ReviewBulkApiIT extends ApiTestBase {
   @Test
   void onlyAdminsWithTheCsrfTokenDecide() throws Exception {
     List<UUID> one = List.of(fixture.reportItem);
-    mvc.perform(bulk("REJECTED", one).with(csrf())).andExpect(status().isUnauthorized());
-    mvc.perform(bulk("REJECTED", one).with(oauth2Login()).with(csrf()))
+    mvc.perform(bulk("REJECTED", one).with(csrf().asHeader())).andExpect(status().isUnauthorized());
+    mvc.perform(bulk("REJECTED", one).with(oauth2Login()).with(csrf().asHeader()))
         .andExpect(status().isForbidden());
     mvc.perform(bulk("REJECTED", one).with(ADMIN)).andExpect(status().isForbidden());
     assertThat(itemStatus(fixture.reportItem)).isEqualTo("OPEN");
@@ -79,11 +79,12 @@ class ReviewBulkApiIT extends ApiTestBase {
 
   @Test
   void noItemsOrMoreThanOneHundredIsABadRequest() throws Exception {
-    mvc.perform(bulk("REJECTED", List.of()).with(ADMIN).with(csrf()))
+    mvc.perform(bulk("REJECTED", List.of()).with(ADMIN).with(csrf().asHeader()))
         .andExpect(status().isBadRequest());
     List<UUID> many = IntStream.range(0, 101).mapToObj(i -> UUID.randomUUID()).toList();
-    mvc.perform(bulk("REJECTED", many).with(ADMIN).with(csrf())).andExpect(status().isBadRequest());
-    mvc.perform(bulk("OPEN", List.of(fixture.reportItem)).with(ADMIN).with(csrf()))
+    mvc.perform(bulk("REJECTED", many).with(ADMIN).with(csrf().asHeader()))
+        .andExpect(status().isBadRequest());
+    mvc.perform(bulk("OPEN", List.of(fixture.reportItem)).with(ADMIN).with(csrf().asHeader()))
         .andExpect(status().isBadRequest());
   }
 
@@ -91,7 +92,7 @@ class ReviewBulkApiIT extends ApiTestBase {
   void aRepeatedIdIsABadRequestAndDecidesNothing() throws Exception {
     List<UUID> twice = List.of(fixture.reportItem, fixture.reportItem);
 
-    mvc.perform(bulk("REJECTED", twice).with(ADMIN).with(csrf()))
+    mvc.perform(bulk("REJECTED", twice).with(ADMIN).with(csrf().asHeader()))
         .andExpect(status().isBadRequest());
 
     assertThat(itemStatus(fixture.reportItem)).isEqualTo("OPEN");
@@ -113,7 +114,7 @@ class ReviewBulkApiIT extends ApiTestBase {
             unknown);
 
     String body =
-        mvc.perform(bulk("ACCEPTED", ids).with(ADMIN).with(csrf()))
+        mvc.perform(bulk("ACCEPTED", ids).with(ADMIN).with(csrf().asHeader()))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
@@ -141,13 +142,14 @@ class ReviewBulkApiIT extends ApiTestBase {
     List<UUID> ids = List.of(fixture.validationItem, fixture.relationshipItem, fixture.reportItem);
 
     String first =
-        mvc.perform(bulk("REJECTED", ids).with(ADMIN).with(csrf()))
+        mvc.perform(bulk("REJECTED", ids).with(ADMIN).with(csrf().asHeader()))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             .getContentAsString();
     String again =
-        mvc.perform(bulk("REJECTED", List.of(fixture.reportItem)).with(ADMIN).with(csrf()))
+        mvc.perform(
+                bulk("REJECTED", List.of(fixture.reportItem)).with(ADMIN).with(csrf().asHeader()))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()

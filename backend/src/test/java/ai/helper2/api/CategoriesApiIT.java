@@ -105,7 +105,7 @@ class CategoriesApiIT extends ApiTestBase {
   void theGuideRefusesAnUnknownCategoryBeforeAnyModelWork() throws Exception {
     mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType("application/json")
                 .content(
                     """
@@ -119,7 +119,7 @@ class CategoriesApiIT extends ApiTestBase {
     String adminId = "categories-" + UUID.randomUUID();
     mvc.perform(
             post("/api/v1/admin/category-backfill")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(
                     oauth2Login()
                         .attributes(a -> a.put("sub", adminId))
@@ -149,7 +149,7 @@ class CategoriesApiIT extends ApiTestBase {
 
   @Test
   void aGuestCannotStartTheBackfill() throws Exception {
-    mvc.perform(post("/api/v1/admin/category-backfill").with(csrf()))
+    mvc.perform(post("/api/v1/admin/category-backfill").with(csrf().asHeader()))
         .andExpect(status().isUnauthorized());
   }
 }

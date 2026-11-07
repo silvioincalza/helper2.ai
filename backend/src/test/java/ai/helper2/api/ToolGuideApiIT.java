@@ -69,7 +69,7 @@ class ToolGuideApiIT extends ApiTestBase {
   void withoutAModelTheGuideSaysSoAndKeepsTheDocuments() throws Exception {
     UUID id = seed("https://github.com/acme/readme-mcp", "readme-mcp");
     String body =
-        mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf()))
+        mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf().asHeader()))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
@@ -84,7 +84,7 @@ class ToolGuideApiIT extends ApiTestBase {
   void noDocumentsIsNoMaterial_withoutCsrfIs403() throws Exception {
     UUID id = seed("https://example.com/plain-product", "plain-product");
     String body =
-        mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf()))
+        mvc.perform(post("/api/v1/resources/{id}/guide", id).with(csrf().asHeader()))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()

@@ -57,7 +57,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/runtime-settings/" + GAP)
                 .with(oauth2Login())
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change(5, 0, null)))
         .andExpect(status().isForbidden());
@@ -96,7 +96,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
         mvc.perform(
                 put("/api/v1/admin/runtime-settings/" + GAP)
                     .with(admin)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(change(7, version(), "load test")))
             .andExpect(status().isOk())
@@ -146,7 +146,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/runtime-settings/" + GAP)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change(max + 1, version(), null)))
         .andExpect(status().isBadRequest())
@@ -154,7 +154,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/runtime-settings/" + GAP)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change(-1, version(), null)))
         .andExpect(status().isBadRequest());
@@ -169,7 +169,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
       mvc.perform(
               put("/api/v1/admin/runtime-settings/" + GAP)
                   .with(admin)
-                  .with(csrf())
+                  .with(csrf().asHeader())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(change(10, version(), reason)))
           .andExpect(status().isBadRequest())
@@ -177,7 +177,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
       mvc.perform(
               post("/api/v1/admin/runtime-settings/" + GAP + "/reset")
                   .with(admin)
-                  .with(csrf())
+                  .with(csrf().asHeader())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("{\"version\":%d,\"reason\":\"%s\"}".formatted(version(), reason)))
           .andExpect(status().isBadRequest());
@@ -191,7 +191,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/runtime-settings/models.reasoning")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change(1, 0, null)))
         .andExpect(status().isNotFound());
@@ -203,14 +203,14 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/runtime-settings/" + GAP)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change(9, seen, null)))
         .andExpect(status().isOk());
     mvc.perform(
             put("/api/v1/admin/runtime-settings/" + GAP)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change(11, seen, null)))
         .andExpect(status().isConflict())
@@ -220,7 +220,7 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
         mvc.perform(
                 post("/api/v1/admin/runtime-settings/" + GAP + "/reset")
                     .with(admin)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"version\":" + version() + "}"))
             .andExpect(status().isOk())

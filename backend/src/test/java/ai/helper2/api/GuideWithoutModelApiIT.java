@@ -28,7 +28,8 @@ class GuideWithoutModelApiIT extends ApiTestBase {
                 0)));
 
     String json =
-        GuideAnswers.ask(mvc, "{\"request\":\"translate documents without a model\"}", csrf())
+        GuideAnswers.ask(
+                mvc, "{\"request\":\"translate documents without a model\"}", csrf().asHeader())
             .value("$.status", "LLM_UNAVAILABLE")
             .doesNotExist("$.model")
             .doesNotExist("$.aiContent")
