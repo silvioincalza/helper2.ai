@@ -33,8 +33,10 @@ class EmbeddingIndexerSchedule {
    * replica embed the same resources. At least: 90 % of the period, so a replica whose schedule
    * fires a little later skips that period instead of embedding a second batch in it.
    */
+  // Not named embeddingIndexerSchedule: that is this configuration's own bean name, and a second
+  // bean of that name stopped the back office at start whenever an embedding key was set.
   @Bean(initMethod = "start", destroyMethod = "stop")
-  IndexerSchedule embeddingIndexerSchedule(
+  IndexerSchedule indexerSchedule(
       EmbeddingIndexer indexer, LockingTaskExecutor locks, CatalogProperties catalog) {
     Duration indexTimeout = catalog.indexer().timeout();
     Duration initialDelay = catalog.indexer().initialDelay();
