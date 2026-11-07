@@ -71,7 +71,7 @@ class DiscoveryHostsApiIT extends ApiTestBase {
         mvc.perform(
                 post(BASE)
                     .with(admin)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         "{\"host\":\"https://WWW."
@@ -87,7 +87,7 @@ class DiscoveryHostsApiIT extends ApiTestBase {
         mvc.perform(
                 post(BASE)
                     .with(admin)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         "{\"host\":\"WWW."
@@ -105,7 +105,7 @@ class DiscoveryHostsApiIT extends ApiTestBase {
     mvc.perform(
             post(BASE)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"host\":\"" + HOST + "\",\"kind\":\"DIRECTORY\"}"))
         .andExpect(status().isConflict())
@@ -114,11 +114,11 @@ class DiscoveryHostsApiIT extends ApiTestBase {
     mvc.perform(
             post(BASE + "/" + HOST + "/remove")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\":\"not news\"}"))
         .andExpect(status().isNoContent());
-    mvc.perform(post(BASE + "/" + HOST + "/remove").with(admin).with(csrf()))
+    mvc.perform(post(BASE + "/" + HOST + "/remove").with(admin).with(csrf().asHeader()))
         .andExpect(status().isNotFound());
 
     assertThat(store.all()).noneMatch(h -> h.getHost().equals(HOST));
@@ -135,12 +135,16 @@ class DiscoveryHostsApiIT extends ApiTestBase {
     String body = "{\"host\":\"" + HOST + "\",\"kind\":\"" + HostKind.WRITING + "\"}";
     mvc.perform(get(BASE)).andExpect(status().isUnauthorized());
     mvc.perform(get(BASE).with(oauth2Login())).andExpect(status().isForbidden());
-    mvc.perform(post(BASE).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(body))
+    mvc.perform(
+            post(BASE)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
         .andExpect(status().isUnauthorized());
     mvc.perform(
             post(BASE)
                 .with(oauth2Login())
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
         .andExpect(status().isForbidden());

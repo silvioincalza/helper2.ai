@@ -58,7 +58,7 @@ class AccountApiIT extends ApiTestBase {
                 .content(bookmark(id, "https://example.com")))
         .andExpect(status().isForbidden());
     mvc.perform(delete("/api/v1/me").with(user)).andExpect(status().isForbidden());
-    mvc.perform(delete("/api/v1/me").with(csrf())).andExpect(status().isUnauthorized());
+    mvc.perform(delete("/api/v1/me").with(csrf().asHeader())).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -76,7 +76,7 @@ class AccountApiIT extends ApiTestBase {
         mvc.perform(
                 patch("/api/v1/me/preferences")
                     .with(user)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"radarMotion\":false}"))
             .andExpect(status().isOk())
@@ -91,7 +91,7 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             patch("/api/v1/me/preferences")
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
         .andExpect(jsonPath("$.radarMotion").value(false));
@@ -102,7 +102,7 @@ class AccountApiIT extends ApiTestBase {
     String off = "{\"radarMotion\":false}";
     mvc.perform(
             patch("/api/v1/me/preferences")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(off))
         .andExpect(status().isUnauthorized());
@@ -121,7 +121,7 @@ class AccountApiIT extends ApiTestBase {
         mvc.perform(
                 put("/api/v1/me/bookmarks/" + id)
                     .with(user)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(bookmark(id, "https://example.com")))
             .andExpect(status().isOk())
@@ -132,15 +132,15 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/me/bookmarks/" + id)
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookmark(id, "https://example.com")))
         .andExpect(status().isOk());
     mvc.perform(get("/api/v1/me/bookmarks").with(user)).andExpect(jsonPath("$.length()").value(1));
 
-    mvc.perform(delete("/api/v1/me/bookmarks/" + id).with(user).with(csrf()))
+    mvc.perform(delete("/api/v1/me/bookmarks/" + id).with(user).with(csrf().asHeader()))
         .andExpect(status().isNoContent());
-    mvc.perform(delete("/api/v1/me/bookmarks/" + id).with(user).with(csrf()))
+    mvc.perform(delete("/api/v1/me/bookmarks/" + id).with(user).with(csrf().asHeader()))
         .andExpect(status().isNoContent());
     mvc.perform(get("/api/v1/me/bookmarks").with(user)).andExpect(jsonPath("$.length()").value(0));
   }
@@ -151,14 +151,14 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/me/bookmarks/" + id)
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookmark(id, "javascript:alert(1)")))
         .andExpect(status().isBadRequest());
     mvc.perform(
             put("/api/v1/me/bookmarks/" + UUID.randomUUID())
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookmark(id, "https://example.com")))
         .andExpect(status().isBadRequest());
@@ -170,7 +170,7 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/me/bookmarks")
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[" + one + "]"))
         .andExpect(status().isOk())
@@ -178,7 +178,7 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/me/bookmarks")
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[" + one + "]"))
         .andExpect(jsonPath("$.length()").value(1));
@@ -186,7 +186,7 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/me/bookmarks")
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "["
@@ -210,7 +210,7 @@ class AccountApiIT extends ApiTestBase {
           mvc.perform(
               post("/api/v1/me/bookmarks")
                   .with(user)
-                  .with(csrf())
+                  .with(csrf().asHeader())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(body.toString()));
       result.andExpect(batch < 2 ? status().isOk() : status().isBadRequest());
@@ -221,7 +221,7 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/me/bookmarks/" + one)
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookmark(one, "https://example.com")))
         .andExpect(status().isOk());
@@ -235,7 +235,7 @@ class AccountApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/me/bookmarks/" + saved)
                 .with(user)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(bookmark(saved, "https://example.com")))
         .andExpect(status().isOk());
@@ -243,7 +243,7 @@ class AccountApiIT extends ApiTestBase {
         mvc.perform(
                 post("/api/v1/resources/" + deepl + "/reports")
                     .with(user)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"kind\":\"WRONG\",\"message\":\"Wrong licence here\"}"))
             .andExpect(status().isAccepted())
@@ -259,7 +259,8 @@ class AccountApiIT extends ApiTestBase {
             .single();
     quotaKeys.userKeys(userId).forEach(k -> rateLimitRedis.opsForHash().put(k, "search", "2"));
 
-    mvc.perform(delete("/api/v1/me").with(user).with(csrf())).andExpect(status().isNoContent());
+    mvc.perform(delete("/api/v1/me").with(user).with(csrf().asHeader()))
+        .andExpect(status().isNoContent());
 
     assertThat(quotaKeys.userKeys(userId)).noneMatch(rateLimitRedis::hasKey);
     assertThat(rows("SELECT count(*) FROM app_user WHERE subject = :s")).isZero();

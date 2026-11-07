@@ -72,7 +72,7 @@ class HomeExamplesApiIT extends ApiTestBase {
         mvc.perform(
                 post("/api/v1/admin/home-examples")
                     .with(admin)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(input(label, query, List.of(deepl()))))
             .andExpect(status().isCreated())
@@ -126,7 +126,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/admin/home-examples")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(input("added " + tag, "another query " + tag, List.of(deepl()))))
         .andExpect(status().isConflict())
@@ -135,7 +135,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/admin/home-examples")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(input("Web " + tag, "see www.example.com " + tag, List.of(deepl()))))
         .andExpect(status().isBadRequest())
@@ -145,7 +145,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/admin/home-examples")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     input("Unknown " + tag, "unknown result " + tag, List.of(UUID.randomUUID()))))
@@ -170,7 +170,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/home-examples/" + id)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change.formatted(tag, tag, deepl(), 0)))
         .andExpect(status().isOk())
@@ -180,7 +180,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/home-examples/" + id)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(change.formatted(tag, tag, deepl(), 0)))
         .andExpect(status().isConflict())
@@ -209,7 +209,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/home-examples/" + id)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     change(
@@ -233,7 +233,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/home-examples/" + id)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     change("Gone " + tag, "translate a recipe " + tag, List.of(gone), "PAUSED", 0)))
@@ -244,7 +244,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/home-examples/" + id)
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     change(
@@ -263,7 +263,7 @@ class HomeExamplesApiIT extends ApiTestBase {
   void removingIsRecordedAndRemovingAgainIsNotAnError() throws Exception {
     String id = added("Removed " + tag, "translate a sign " + tag).get("id").asString();
     for (int i = 0; i < 2; i++) {
-      mvc.perform(delete("/api/v1/admin/home-examples/" + id).with(admin).with(csrf()))
+      mvc.perform(delete("/api/v1/admin/home-examples/" + id).with(admin).with(csrf().asHeader()))
           .andExpect(status().isNoContent());
     }
     assertThat(audit("REMOVE_HOME_EXAMPLE")).containsExactlyInAnyOrder("REMOVED", "NOT_FOUND");
@@ -281,7 +281,7 @@ class HomeExamplesApiIT extends ApiTestBase {
 
   @Test
   void withoutAModelADraftRunIsUnavailableAndAudited() throws Exception {
-    mvc.perform(post("/api/v1/admin/home-examples/drafts").with(admin).with(csrf()))
+    mvc.perform(post("/api/v1/admin/home-examples/drafts").with(admin).with(csrf().asHeader()))
         .andExpect(status().isServiceUnavailable())
         .andExpect(jsonPath("$.code").value("unavailable"));
     assertThat(audit("DRAFT_HOME_EXAMPLES")).containsExactly("NO_MODEL");
@@ -302,7 +302,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk());
@@ -397,7 +397,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isConflict())
@@ -418,7 +418,7 @@ class HomeExamplesApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isBadRequest())

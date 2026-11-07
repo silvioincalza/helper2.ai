@@ -47,7 +47,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST: it writes it on `GET /api/v1/me`, which the SPA calls when it starts,
    and nowhere else. A `Set-Cookie` on a static file or a public cacheable GET would stop Cloudflare from caching it.
-   A POST that comes without the cookie gets 403 and a fresh cookie.
+   A POST that comes without the cookie gets 403 and a fresh cookie. The token counts only in the header, never as a
+   `_csrf` form field; on the admin host a write also needs that host's own `Origin` ([0035](0035-admin-host.md) §8).
 6. **Headers.** Content Security Policy (CSP): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;
    connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`.
    `Referrer-Policy: strict-origin-when-cross-origin`. `Permissions-Policy: camera=(), microphone=(), geolocation=(),

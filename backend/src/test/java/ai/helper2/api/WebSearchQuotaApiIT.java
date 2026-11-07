@@ -129,7 +129,7 @@ class WebSearchQuotaApiIT extends ApiTestBase {
         GuideAnswers.ask(
                 mvc,
                 "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}",
-                csrf(),
+                csrf().asHeader(),
                 visitor)
             .value("$.webSearches.limit", 3)
             .value("$.webSearches.remaining", 2)
@@ -170,7 +170,7 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     GuideAnswers.ask(
         mvc,
         "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}",
-        csrf(),
+        csrf().asHeader(),
         visitor);
 
     String after = me();

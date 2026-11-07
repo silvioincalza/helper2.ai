@@ -271,7 +271,7 @@ class ScoutPipelineIT {
         mvc.perform(
                 post("/api/v1/admin/scout-runs")
                     .with(admin)
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{\"sourceId\":\"mcp-registry\"}"))
             .andExpect(status().isAccepted())
@@ -333,7 +333,7 @@ class ScoutPipelineIT {
       mvc.perform(
               post("/api/v1/admin/scout-runs")
                   .with(admin)
-                  .with(csrf())
+                  .with(csrf().asHeader())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content("{\"sourceId\":\"mcp-registry\"}"))
           .andExpect(status().isConflict());

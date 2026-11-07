@@ -51,7 +51,7 @@ class AdminAuditApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"REJECTED\"}"))
         .andExpect(status().isOk());
@@ -60,7 +60,7 @@ class AdminAuditApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isConflict());
@@ -80,7 +80,7 @@ class AdminAuditApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + missing + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isNotFound());
@@ -95,7 +95,7 @@ class AdminAuditApiIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk());

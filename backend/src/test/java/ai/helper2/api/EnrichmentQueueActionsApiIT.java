@@ -97,7 +97,7 @@ class EnrichmentQueueActionsApiIT extends ApiTestBase {
   }
 
   ResultActions act(UUID id, String action) throws Exception {
-    return mvc.perform(post(BASE + id + "/" + action).with(admin).with(csrf()));
+    return mvc.perform(post(BASE + id + "/" + action).with(admin).with(csrf().asHeader()));
   }
 
   /** The entry of [id] in [view], page by page, or null; every page matches the contract. */
@@ -148,8 +148,9 @@ class EnrichmentQueueActionsApiIT extends ApiTestBase {
   void onlyAdminsActAndOnlyWithTheCsrfToken() throws Exception {
     UUID id = resource("NOT_RUN");
     for (String action : List.of("requeue", "skip", "prioritise")) {
-      mvc.perform(post(BASE + id + "/" + action).with(csrf())).andExpect(status().isUnauthorized());
-      mvc.perform(post(BASE + id + "/" + action).with(oauth2Login()).with(csrf()))
+      mvc.perform(post(BASE + id + "/" + action).with(csrf().asHeader()))
+          .andExpect(status().isUnauthorized());
+      mvc.perform(post(BASE + id + "/" + action).with(oauth2Login()).with(csrf().asHeader()))
           .andExpect(status().isForbidden());
       mvc.perform(post(BASE + id + "/" + action).with(admin)).andExpect(status().isForbidden());
       mvc.perform(get(BASE + id + "/" + action).with(admin))
@@ -183,7 +184,7 @@ class EnrichmentQueueActionsApiIT extends ApiTestBase {
     mvc.perform(
             post(BASE + id + "/skip")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\":\"Not an AI tool\"}"))
         .andExpect(status().isNoContent());
@@ -262,7 +263,7 @@ class EnrichmentQueueActionsApiIT extends ApiTestBase {
     mvc.perform(
             post(BASE + id + "/skip")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"reason\":\"" + "x".repeat(201) + "\"}"))
         .andExpect(status().isBadRequest());

@@ -37,12 +37,13 @@ class SecurityIT extends ApiTestBase {
   /** ADR 0056: only an administrator re-checks the stored enrichment answers; counts only. */
   @Test
   void anAdminRechecksStoredEnrichmentAnswers() throws Exception {
-    mvc.perform(post("/api/v1/admin/enrichment-recheck").with(oauth2Login()).with(csrf()))
+    mvc.perform(
+            post("/api/v1/admin/enrichment-recheck").with(oauth2Login()).with(csrf().asHeader()))
         .andExpect(status().isForbidden());
     mvc.perform(
             post("/api/v1/admin/enrichment-recheck")
                 .with(oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN")))
-                .with(csrf()))
+                .with(csrf().asHeader()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.checked").isNumber())
         .andExpect(jsonPath("$.fieldsRejected").isNumber())
@@ -71,7 +72,8 @@ class SecurityIT extends ApiTestBase {
   @Test
   void unknownApiPathsAreDenied() throws Exception {
     mvc.perform(get("/api/v1/does-not-exist")).andExpect(status().isUnauthorized());
-    mvc.perform(put("/api/v1/sources").with(csrf())).andExpect(status().isUnauthorized());
+    mvc.perform(put("/api/v1/sources").with(csrf().asHeader()))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test

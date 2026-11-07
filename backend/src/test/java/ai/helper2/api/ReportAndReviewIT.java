@@ -29,7 +29,7 @@ class ReportAndReviewIT extends ApiTestBase {
     String accepted =
         mvc.perform(
                 post("/api/v1/resources/" + deepl + "/reports")
-                    .with(csrf())
+                    .with(csrf().asHeader())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(
                         "{\"kind\":\"OUTDATED\",\"field\":\"description\",\"message\":\"Now also does voice translation\"}"))
@@ -57,7 +57,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + ids.getFirst() + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\",\"note\":\"ok\"}"))
         .andExpect(status().isOk())
@@ -92,7 +92,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk())
@@ -125,7 +125,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + bad + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isBadRequest());
@@ -198,7 +198,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk());
@@ -255,7 +255,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + item + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
         .andExpect(status().isOk())
@@ -290,7 +290,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             put("/api/v1/admin/review-items/" + oldest + "/resolution")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"REJECTED\"}"))
         .andExpect(status().isOk())
@@ -301,19 +301,19 @@ class ReportAndReviewIT extends ApiTestBase {
   void reportValidation() throws Exception {
     mvc.perform(
             post("/api/v1/resources/" + deepl + "/reports")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"kind\":\"WRONG\",\"message\":\"no\"}"))
         .andExpect(status().isBadRequest());
     mvc.perform(
             post("/api/v1/resources/" + deepl + "/reports")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"kind\":\"NOT_A_KIND\",\"message\":\"long enough\"}"))
         .andExpect(status().isBadRequest());
     mvc.perform(
             post("/api/v1/resources/" + UUID.randomUUID() + "/reports")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"kind\":\"WRONG\",\"message\":\"long enough\"}"))
         .andExpect(status().isNotFound());
@@ -325,7 +325,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/admin/scout-runs")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
         .andExpect(status().isAccepted())
@@ -341,7 +341,7 @@ class ReportAndReviewIT extends ApiTestBase {
     mvc.perform(
             post("/api/v1/admin/scout-runs")
                 .with(admin)
-                .with(csrf())
+                .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"sourceId\":\"nope\"}"))
         .andExpect(status().isNotFound())

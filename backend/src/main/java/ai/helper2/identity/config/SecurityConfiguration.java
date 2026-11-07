@@ -14,6 +14,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.DefaultLoginPageConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -33,7 +34,6 @@ import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
-import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -136,6 +136,9 @@ class SecurityConfiguration {
                 .csrfTokenRequestHandler(new DeferredSpaCsrfTokenRequestHandler()))
         .addFilterAfter(
             new CsrfCookieFilter(), org.springframework.security.web.csrf.CsrfFilter.class)
+        // On the admin host a write must carry the admin host's own Origin (ADR 0035 §8).
+        .addFilterBefore(
+            new SameOriginWrites(adminPort), org.springframework.security.web.csrf.CsrfFilter.class)
         // A refused API request gets the problem the contract promises, not a bare 401 or the
         // container's error page (which echoes the path and a timestamp) for a 403.
         .exceptionHandling(e ->
@@ -175,6 +178,9 @@ class SecurityConfiguration {
                   u.userService(oauthUsers(adminSet, onAdminPort))
                       .oidcUserService(oidcUsers(adminSet, onAdminPort))));
     }
+    // No generated /login or /logout page: the SPA has its own sign-in and signs out with a POST,
+    // and the generated pages would write the CSRF token into HTML (ADR 0035 §8).
+    http.removeConfigurer(DefaultLoginPageConfigurer.class);
     return http.build();
   }
 
@@ -254,28 +260,29 @@ class SecurityConfiguration {
   }
 
   /**
-   * Checks a token as Spring's SPA handler does: the raw cookie value when it comes in the {@code
-   * X-XSRF-TOKEN} header (what the SPA sends), the masked value when it comes as a form parameter.
-   * Unlike that handler it never loads the token itself, so a response only gets the cookie when
-   * something asks for the token.
+   * Checks the raw cookie value in the {@code X-XSRF-TOKEN} header, the only place the SPA puts it
+   * (ADR 0035 §8). Never a form parameter: a form from another page of the same site can send one,
+   * with a cookie that page planted for the whole domain, but it cannot set a header. The token is
+   * never written into a page, so it needs no per-response mask (BREACH): the request attribute
+   * holds the raw value, the same the cookie and the header carry. Unlike Spring's SPA handler it
+   * never loads the token itself, so a response only gets the cookie when something asks for it.
    */
   static final class DeferredSpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
     private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();
-    private final CsrfTokenRequestHandler xor = new XorCsrfTokenRequestAttributeHandler();
 
     @Override
     public void handle(
         jakarta.servlet.http.HttpServletRequest request,
         jakarta.servlet.http.HttpServletResponse response,
         Supplier<CsrfToken> csrfToken) {
-      xor.handle(request, response, csrfToken);
+      plain.handle(request, response, csrfToken);
     }
 
     @Override
     public String resolveCsrfTokenValue(
         jakarta.servlet.http.HttpServletRequest request, CsrfToken csrfToken) {
       String header = request.getHeader(csrfToken.getHeaderName());
-      return (StringUtils.hasText(header) ? plain : xor).resolveCsrfTokenValue(request, csrfToken);
+      return StringUtils.hasText(header) ? header : null;
     }
   }
 

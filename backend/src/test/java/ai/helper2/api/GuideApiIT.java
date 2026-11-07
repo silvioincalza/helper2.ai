@@ -154,7 +154,8 @@ class GuideApiIT extends ApiTestBase {
   @Test
   void recommendationsAreValidatedAndEachCallUsesTheRightModel() throws Exception {
     String json =
-        GuideAnswers.ask(mvc, body("traduci un documento in tedesco"), csrf(), from("10.0.0.1"))
+        GuideAnswers.ask(
+                mvc, body("traduci un documento in tedesco"), csrf().asHeader(), from("10.0.0.1"))
             .value("$.status", "PARTIAL")
             .value("$.searchQuery", "document translation")
             .value("$.recommendations.length()", 1)
@@ -187,7 +188,8 @@ class GuideApiIT extends ApiTestBase {
   @Test
   void aRepeatedQuestionIsServedFromTheCacheWithoutModelCalls() throws Exception {
     for (int i = 0; i < 2; i++) {
-      GuideAnswers.ask(mvc, body("translate my contract to French"), csrf(), from("10.0.0.2"))
+      GuideAnswers.ask(
+              mvc, body("translate my contract to French"), csrf().asHeader(), from("10.0.0.2"))
           .value("$.recommendations[0].aiReasoned", true);
     }
     assertThat(MODELS_CALLED).containsExactly("fake-nano", "fake-super", "fake-super");
@@ -198,7 +200,7 @@ class GuideApiIT extends ApiTestBase {
     String question = "translate a rental agreement to Portuguese";
     Set<String> before = keys();
 
-    GuideAnswers.ask(mvc, body(question), csrf(), from("10.0.0.7"))
+    GuideAnswers.ask(mvc, body(question), csrf().asHeader(), from("10.0.0.7"))
         .value("$.recommendations[0].aiReasoned", true);
 
     Set<String> added = new java.util.HashSet<>(keys());
@@ -235,13 +237,17 @@ class GuideApiIT extends ApiTestBase {
   @Test
   void pastItsDailyQuotaAClientGetsSearchResultsInsteadOfAnError() throws Exception {
     for (String ip : List.of("2001:db8:0:7::1", "2001:db8:0:7::2")) {
-      GuideAnswers.ask(mvc, body("quota question from " + ip), csrf(), from(ip))
+      GuideAnswers.ask(mvc, body("quota question from " + ip), csrf().asHeader(), from(ip))
           .value("$.recommendations[0].aiReasoned", true);
     }
     int callsBefore = MODELS_CALLED.size();
 
     String json =
-        GuideAnswers.ask(mvc, body("one quota question too many"), csrf(), from("2001:db8:0:7::3"))
+        GuideAnswers.ask(
+                mvc,
+                body("one quota question too many"),
+                csrf().asHeader(),
+                from("2001:db8:0:7::3"))
             .value("$.status", "LLM_UNAVAILABLE")
             .value("$.recommendations[0].aiReasoned", false)
             .exists("$.notices[?(@.code == 'GUIDE_DAILY_QUOTA')]")
@@ -249,7 +255,8 @@ class GuideApiIT extends ApiTestBase {
 
     ContractValidator.assertMatches("GuideResponse", json);
     assertThat(MODELS_CALLED).hasSize(callsBefore);
-    GuideAnswers.ask(mvc, body("one quota question too many"), csrf(), from("2001:db8:0:8::1"))
+    GuideAnswers.ask(
+            mvc, body("one quota question too many"), csrf().asHeader(), from("2001:db8:0:8::1"))
         .value("$.recommendations[0].aiReasoned", true);
   }
 
@@ -261,7 +268,7 @@ class GuideApiIT extends ApiTestBase {
     assertThat(JsonPath.<Integer>read(before, "$.limits.guideQuestions.remaining")).isEqualTo(2);
     assertThat(JsonPath.<Integer>read(me(ip), "$.limits.guideQuestions.remaining")).isEqualTo(2);
 
-    GuideAnswers.ask(mvc, body("questions left for " + ip), csrf(), from(ip))
+    GuideAnswers.ask(mvc, body("questions left for " + ip), csrf().asHeader(), from(ip))
         .value("$.recommendations[0].aiReasoned", true);
 
     assertThat(JsonPath.<Integer>read(me(ip), "$.limits.guideQuestions.remaining")).isEqualTo(1);
@@ -284,7 +291,11 @@ class GuideApiIT extends ApiTestBase {
       throw new IllegalStateException("provider down");
     });
     String json =
-        GuideAnswers.ask(mvc, body("translate a user manual to Spanish"), csrf(), from("10.0.0.3"))
+        GuideAnswers.ask(
+                mvc,
+                body("translate a user manual to Spanish"),
+                csrf().asHeader(),
+                from("10.0.0.3"))
             .value("$.status", "LLM_UNAVAILABLE")
             .value("$.recommendations[0].aiReasoned", false)
             .json();
@@ -315,7 +326,7 @@ class GuideApiIT extends ApiTestBase {
         GuideAnswers.ask(
                 mvc,
                 body("flaggedsrv quuxconnector MCP server to build an agent"),
-                csrf(),
+                csrf().asHeader(),
                 from("10.0.0.31"))
             .value(
                 "$.recommendations[*].aiReasoned",
@@ -341,7 +352,7 @@ class GuideApiIT extends ApiTestBase {
   private MvcResult start(String ip, String question) throws Exception {
     return mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(from(ip))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body(question)))
@@ -483,14 +494,14 @@ class GuideApiIT extends ApiTestBase {
   void streamRejectsAQuestionOutsideTheContractBeforeStreaming() throws Exception {
     mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(from("10.0.1.5"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"request\":\"hi\"}"))
         .andExpect(status().isBadRequest());
     mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(from("10.0.1.5"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"request\":\"" + "x".repeat(501) + "\"}"))
@@ -506,7 +517,7 @@ class GuideApiIT extends ApiTestBase {
   void guideRejectsARequestThatIsTooShortOnceStrippedWith400() throws Exception {
     mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(from("10.0.1.9"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"request\":\"   a   \"}"))
@@ -521,7 +532,7 @@ class GuideApiIT extends ApiTestBase {
     }
     mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(from("10.0.1.6"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body("charged once question 3")))
@@ -538,16 +549,17 @@ class GuideApiIT extends ApiTestBase {
         .andExpect(status().isForbidden());
 
     for (int i = 0; i < 3; i++) {
-      GuideAnswers.ask(mvc, body("rate limited question " + i), csrf(), from("10.0.0.5"));
+      GuideAnswers.ask(
+          mvc, body("rate limited question " + i), csrf().asHeader(), from("10.0.0.5"));
     }
     mvc.perform(
             post("/api/v1/guide/stream")
-                .with(csrf())
+                .with(csrf().asHeader())
                 .with(from("10.0.0.5"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body("rate limited question 3")))
         .andExpect(status().isTooManyRequests());
-    GuideAnswers.ask(mvc, body("another client"), csrf(), from("10.0.0.6"));
+    GuideAnswers.ask(mvc, body("another client"), csrf().asHeader(), from("10.0.0.6"));
   }
 
   @Test
@@ -566,7 +578,7 @@ class GuideApiIT extends ApiTestBase {
         GuideAnswers.ask(
                 mvc,
                 "{\"request\":\"alternatives to Frobnicator\",\"path\":\"USE_AI\"}",
-                csrf(),
+                csrf().asHeader(),
                 from("10.0.9.9"))
             .value(
                 "$.notices[?(@.code == 'GUIDE_SUBJECT_NOT_FOUND')].subject",
@@ -666,7 +678,7 @@ class GuideApiIT extends ApiTestBase {
   }
 
   private String askJson(String ip, String json) throws Exception {
-    return GuideAnswers.ask(mvc, json, csrf(), from(ip)).json();
+    return GuideAnswers.ask(mvc, json, csrf().asHeader(), from(ip)).json();
   }
 
   @Test
@@ -698,7 +710,7 @@ class GuideApiIT extends ApiTestBase {
             "\"question\":\"Which Gemini do you mean?\"",
             "\"Gemini (model)\"",
             " (tool)\"");
-    GuideAnswers.ask(mvc, question, csrf(), from("10.0.9.2"))
+    GuideAnswers.ask(mvc, question, csrf().asHeader(), from("10.0.9.2"))
         .value(
             "$.aiContent.fields",
             org.hamcrest.Matchers.hasItems("clarification.question", "clarification.options[]"))
