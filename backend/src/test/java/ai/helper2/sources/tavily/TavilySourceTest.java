@@ -138,6 +138,45 @@ class TavilySourceTest {
   }
 
   @Test
+  void aPageOnTavilysOwnSiteIsNotAResultItIsNoPublishersArticle() {
+    // Seen for "rag": Tavily's profile of the German company RAG AG, titled "rag", ranked second.
+    JsonNode result =
+        JsonMapper.builder()
+            .build()
+            .readTree(
+                """
+                {"url":"https://tavily.com/knowledge/company/RDbdtfJgpC3W","title":"rag",
+                 "content":"# RAG Aktiengesellschaft ID: RDbdtfJgpC3W Website: www.rag.de"}\
+                """);
+
+    assertThat(TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0)).isNull();
+    assertThat(
+            TavilySource.toHit(
+                result.deepCopy(),
+                "live-web",
+                SourceFixtures.CLOCK.instant(),
+                0,
+                ResourceType.ARTICLE,
+                Set.of()))
+        .isNull();
+  }
+
+  @Test
+  void aPublisherWhoseHostOnlyContainsTavilyIsKept() {
+    JsonNode result =
+        JsonMapper.builder()
+            .build()
+            .readTree(
+                """
+                {"url":"https://nottavily.com/blog/llm-agents","title":"How LLM agents search the web",
+                 "content":"An article about AI agents and LLM web search."}\
+                """);
+
+    assertThat(TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0))
+        .isNotNull();
+  }
+
+  @Test
   void aTypeTheCallerGivesIsKeptWhateverTheTitleSays() {
     JsonNode result =
         JsonMapper.builder()
