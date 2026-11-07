@@ -17,7 +17,6 @@
     "main": "Main",
     "menu": "Menu",
     "home": "Helper2.ai home",
-    "news": "News",
     "events": "Events",
     "saved": "Saved",
     "sources": "Sources",
@@ -837,17 +836,6 @@
     "allKinds": "All",
     "empty": "No events with stated dates in the next year.",
     "noneForFilter": "No event matches these filters."
-  },
-  "newsPage": {
-    "title": "AI news",
-    "lede": "The last week of AI news found by our web search. Headlines and sites only: open a story to read it at its source.",
-    "bySite": "Site",
-    "allSites": "All sites",
-    "top": "Top stories",
-    "latest": "Latest",
-    "earlier": "Earlier this week",
-    "error": "Could not load the news.",
-    "empty": "No AI news in the last week."
   },
   "events": {
     "error": "Could not load the next events.",

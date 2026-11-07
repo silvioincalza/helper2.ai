@@ -112,19 +112,13 @@ function Header() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
-  // News and Events are pages (v5), with the same names on a phone and a wide screen.
-  const lists = { news: t('nav.news'), events: t('nav.events') };
+  // Events is a page (v5), with the same name on a phone and a wide screen.
   const nav = (
     <nav aria-label={t('nav.main')} className="v4-nav">
       <ul className="plain-list">
         <li>
-          <NavLink className="v4-nav-link" to="/news">
-            {lists.news}
-          </NavLink>
-        </li>
-        <li>
           <NavLink className="v4-nav-link" to="/events">
-            {lists.events}
+            {t('nav.events')}
           </NavLink>
         </li>
         <li>

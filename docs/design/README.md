@@ -56,12 +56,11 @@ them they show the system fonts.
 - Keys, while the focus is in the results: j and k move, Enter opens, / goes to the box, g asks the guide, ? lists the
   keys. Only in the results, so a one-letter key never fires by accident (WCAG 2.1.4).
 
-### News and Events pages (7 Nov 2026)
+### Events page (7 Nov 2026)
 
-- The header's News and Events open their own pages, `/news` and `/events` (before, they jumped to the Home lists).
-- News: a newspaper front page. The date line, "AI news" over `$ helper2 news --7d · N`, site chips, one lead
-  headline, two under it, a Latest column, then the rest of the week in three columns. Headlines, site and date only:
-  no excerpt until the web-search provider confirms in writing that we may show one. Nothing on it is AI-written.
+- The header's Events opens its own page, `/events` (before, it jumped to the Home list).
+- No News page: AI news comes only from the web search (Tavily), and its headlines are not shown on a page of their
+  own. Search still finds them.
 - Events: the next year, grouped by month. A date column, the kind in accent ink, the title, where, and a pill
   ("On now", "Today", "In 2 days"). Kind and format chips, only with the values the events have. A row opens the
   resource page.

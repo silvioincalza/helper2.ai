@@ -22,7 +22,7 @@ describe('layout', () => {
       within(nav)
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['News', 'Events', 'Saved']);
+    ).toEqual(['Events', 'Saved']);
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe('layout', () => {
       within(nav)
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['News', 'Events', 'Saved', 'Sources', 'Mission']);
+    ).toEqual(['Events', 'Saved', 'Sources', 'Mission']);
     expect(await within(panel).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
     expect(within(panel).getByRole('button', { name: 'Dark theme' })).toBeInTheDocument();
     await user.keyboard('{Escape}');

@@ -29,7 +29,7 @@ pages, Results and the resource page, and the text pages; this record says what 
    fonts under plain names, from `docs/design/system/tokens.json`: `--font-mono` (Geist Mono), `--font-body` (Geist),
    `--font-code` (the system monospace), `--box-height` (60 px, 50 px on a phone), `--header-height` (74 px, 65 px on
    a phone). Every page sits in the header's column (`.v4-wrap`); Home spans the full width.
-3. **Header and footer.** The header: the logo (mark, wordmark, "AI on your radar"), News, Events, Saved, Sign in or
+3. **Header and footer.** The header: the logo (mark, wordmark, "AI on your radar"), Events, Saved, Sign in or
    the account. Up to 720 px: the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources,
    Mission, Sign in and the theme; Escape closes it. On the pages without their own box, the box sits in the header.
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,

@@ -56,7 +56,6 @@ export const routes: RouteObject[] = [
           // download.
           { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) },
           // The News and Events pages (v5): on demand too.
-          { path: 'news', lazy: page(() => import('@/pages/NewsPage')) },
           { path: 'events', lazy: page(() => import('@/pages/EventsPage')) },
           { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
           { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },

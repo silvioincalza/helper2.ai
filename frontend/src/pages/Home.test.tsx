@@ -121,11 +121,12 @@ describe('home (design v4)', () => {
     vi.restoreAllMocks();
   });
 
-  it('the header links to the News and Events pages; the two lists keep their ids', async () => {
+  it('the header links to the Events page and not to a News page; the two lists keep their ids', async () => {
     mockApi();
     renderApp('/');
     const nav = await screen.findByRole('navigation', { name: 'Main' });
-    expect(within(nav).getByRole('link', { name: 'News' })).toHaveAttribute('href', '/news');
+    // AI news comes only from the web search (Tavily): its headlines are not shown on a page of their own.
+    expect(within(nav).queryByRole('link', { name: 'News' })).toBeNull();
     expect(within(nav).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/events');
     expect((await list('New this week')).id).toBe('news');
     expect((await list('Coming up')).id).toBe('events');
