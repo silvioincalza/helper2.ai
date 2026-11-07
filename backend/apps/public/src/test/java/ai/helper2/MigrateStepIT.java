@@ -82,9 +82,9 @@ class MigrateStepIT {
                   "--spring.datasource.url=" + url,
                   "--spring.datasource.username=" + POSTGRES.getUsername(),
                   "--spring.datasource.password=" + POSTGRES.getPassword(),
-                  "--helper2.schema.logins.h2_public=" + TestcontainersConfiguration.TEST_PASSWORD
+                  "--H2_DATABASE_PUBLIC_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD
                 }))
-        .hasMessageContaining("Passwords are needed for exactly [h2_backoffice, h2_public]");
+        .hasMessageContaining("No password for h2_backoffice");
   }
 
   /**
@@ -135,9 +135,11 @@ class MigrateStepIT {
             "--spring.datasource.url=" + url,
             "--spring.datasource.username=" + POSTGRES.getUsername(),
             "--spring.datasource.password=" + POSTGRES.getPassword(),
-            // The same passwords as every other test context: the roles are cluster-wide.
-            "--helper2.schema.logins.h2_public=" + TestcontainersConfiguration.TEST_PASSWORD,
-            "--helper2.schema.logins.h2_backoffice=" + TestcontainersConfiguration.TEST_PASSWORD
+            // The same passwords as every other test context: the roles are cluster-wide. Given as
+            // the
+            // Job gives them (H2_ names), so the mapping in application.yaml is tested too.
+            "--H2_DATABASE_PUBLIC_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD,
+            "--H2_DATABASE_BACKOFFICE_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD
           });
     } catch (java.sql.SQLException e) {
       throw new IllegalStateException(e);

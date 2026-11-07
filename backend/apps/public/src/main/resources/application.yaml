@@ -722,10 +722,10 @@ helper2:
   schema:
     migrate: ${H2_SCHEMA_MIGRATE:false}
     wait-for: ${H2_SCHEMA_WAIT:PT4M}
-  # The migrate step only (MigrateStep, `java -jar app.jar migrate`): the password of each app's role.
-  logins:
-    h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
-    h2_backoffice: ${H2_DATABASE_BACKOFFICE_PASSWORD:}
+    # The migrate step only (MigrateStep, `java -jar app.jar migrate`): the password of each app's role.
+    logins:
+      h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
+      h2_backoffice: ${H2_DATABASE_BACKOFFICE_PASSWORD:}
 ---
 spring:
   config:

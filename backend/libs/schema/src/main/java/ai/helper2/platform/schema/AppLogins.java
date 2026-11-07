@@ -24,6 +24,10 @@ public final class AppLogins {
 
   /** Each role of {@link #ROLES} with its password; every one of them is required. */
   public static void open(DataSource owner, Map<String, String> passwords) throws SQLException {
+    if (passwords == null) {
+      throw new IllegalArgumentException(
+          "No passwords for " + ROLES.stream().sorted().toList() + " (helper2.schema.logins)");
+    }
     if (!passwords.keySet().equals(ROLES)) {
       throw new IllegalArgumentException(
           "Passwords are needed for exactly "
