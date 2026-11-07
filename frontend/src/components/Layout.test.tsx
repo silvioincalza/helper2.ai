@@ -50,24 +50,18 @@ describe('layout', () => {
     await user.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(panel).toHaveClass('is-open');
-    // The menu holds New this week, Coming up, Saved, Sources, Mission, Sign in and the theme.
+    // The menu holds News, Events, Saved, Sources, Mission, Sign in and the theme.
     const nav = within(panel).getByRole('navigation', { name: 'Main' });
     expect(
       within(nav)
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['New this week', 'Coming up', 'Saved', 'Sources', 'Mission']);
+    ).toEqual(['News', 'Events', 'Saved', 'Sources', 'Mission']);
     expect(await within(panel).findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
     expect(within(panel).getByRole('button', { name: 'Dark theme' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveFocus();
-
-    // A link to a list on the home page keeps the pathname; it closes the menu anyway.
-    await user.click(button);
-    await user.click(within(panel).getByRole('link', { name: 'Coming up' }));
-    expect(button).toHaveAttribute('aria-expanded', 'false');
-    expect(panel).not.toHaveClass('is-open');
 
     await user.click(button);
     await user.click(within(panel).getByRole('link', { name: 'Saved' }));

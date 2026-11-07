@@ -121,12 +121,12 @@ describe('home (design v4)', () => {
     vi.restoreAllMocks();
   });
 
-  it('the header links to the two lists', async () => {
+  it('the header links to the News and Events pages; the two lists keep their ids', async () => {
     mockApi();
     renderApp('/');
     const nav = await screen.findByRole('navigation', { name: 'Main' });
-    expect(within(nav).getByRole('link', { name: 'News' })).toHaveAttribute('href', '/#news');
-    expect(within(nav).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/#events');
+    expect(within(nav).getByRole('link', { name: 'News' })).toHaveAttribute('href', '/news');
+    expect(within(nav).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/events');
     expect((await list('New this week')).id).toBe('news');
     expect((await list('Coming up')).id).toBe('events');
   });

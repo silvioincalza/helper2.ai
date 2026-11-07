@@ -55,6 +55,9 @@ export const routes: RouteObject[] = [
           // Few visits start on the saved, sources, account or sign-in page: they load on demand, outside the first
           // download.
           { path: 'saved', lazy: page(() => import('@/pages/SavedPage')) },
+          // The News and Events pages (v5): on demand too.
+          { path: 'news', lazy: page(() => import('@/pages/NewsPage')) },
+          { path: 'events', lazy: page(() => import('@/pages/EventsPage')) },
           { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
           { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
           { path: 'signin', lazy: page(() => import('@/pages/SignInPage')) },

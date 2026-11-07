@@ -1,0 +1,195 @@
+/* The Events and News pages (v5): list pages in the terminal style of term.css, with their own layouts. */
+.h2-listing__lede {
+  max-width: 68ch;
+  margin: var(--space-2) 0 0;
+  font: 400 1rem/1.6 var(--font-body);
+  color: var(--ink-2);
+}
+.h2-listing__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.h2-listing__none {
+  margin: var(--space-5) 0;
+  color: var(--muted);
+}
+
+/* ===== Events: month groups, a date column, a countdown pill ===== */
+.h2-listing__month {
+  margin-top: var(--space-6);
+}
+.v4 .h2-listing__month-h {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--ink);
+  font: 600 1.25rem/1.3 var(--font-body);
+}
+.h2-event {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-4);
+  align-items: baseline;
+  padding: var(--space-4) 0;
+  border-bottom: 1px dashed var(--border-strong);
+}
+.h2-event__day {
+  font: 500 0.875rem/1.4 var(--font-mono);
+  color: var(--ink);
+}
+.v4 .h2-event__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  margin: 0 0 var(--space-1);
+  font: 400 0.8125rem/1.4 var(--font-mono);
+  color: var(--muted);
+}
+.h2-event__kind {
+  color: var(--accent-ink);
+}
+.v4 .h2-event__title {
+  font: 600 1.0625rem/1.35 var(--font-body);
+  color: var(--ink);
+  text-decoration: none;
+}
+.v4 .h2-event__title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.h2-event__left {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+.h2-event__until {
+  font: 400 0.75rem/1.4 var(--font-mono);
+  color: var(--muted);
+}
+
+/* ===== News: a front page. Lead story, two under it, a Latest column; the rest of the week in three columns ===== */
+.h2-news__date {
+  margin: 0 0 var(--space-2);
+  font: 500 0.8125rem/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.h2-news__front {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 3px double var(--ink);
+}
+.h2-news__second {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-strong);
+}
+.h2-news__latest {
+  padding-left: var(--space-5);
+  border-left: 1px solid var(--border-strong);
+}
+.v4 .h2-news__section-h {
+  margin: 0 0 var(--space-2);
+  font: 600 0.8125rem/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.h2-news__earlier {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--ink);
+}
+.h2-news__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 var(--space-5);
+}
+.h2-story {
+  padding: var(--space-3) 0;
+}
+.h2-story.is-small + .h2-story.is-small {
+  border-top: 1px dashed var(--border-strong);
+}
+.h2-news__grid .h2-story.is-small {
+  border-top: 1px dashed var(--border-strong);
+}
+.v4 .h2-story__h {
+  margin: 0;
+  font-family: var(--font-body);
+  letter-spacing: -0.01em;
+}
+.h2-story__h a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.h2-story__h a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.v4 .h2-story.is-lead .h2-story__h {
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+.v4 .h2-story.is-second .h2-story__h {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.v4 .h2-story.is-small .h2-story__h {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.v4 .h2-story__by {
+  margin: var(--space-1) 0 0;
+  font: 400 0.75rem/1.4 var(--font-mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .h2-news__front {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .h2-news__latest {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--ink);
+    padding-top: var(--space-4);
+  }
+  .h2-news__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .h2-news__second,
+  .h2-news__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .h2-event {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .h2-event__day {
+    grid-column: 1 / -1;
+  }
+  .h2-listing__filters .chips {
+    position: relative;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .h2-listing__filters .chips > * {
+    flex: none;
+  }
+}

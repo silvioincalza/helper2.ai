@@ -112,23 +112,20 @@ function Header() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
-  // A hash link keeps the pathname, so it closes the menu itself.
-  const close = () => setOpenOn(null);
-  const lists = phone
-    ? { news: t('board.news.title'), events: t('board.events.title') }
-    : { news: t('nav.news'), events: t('nav.events') };
+  // News and Events are pages (v5), with the same names on a phone and a wide screen.
+  const lists = { news: t('nav.news'), events: t('nav.events') };
   const nav = (
     <nav aria-label={t('nav.main')} className="v4-nav">
       <ul className="plain-list">
         <li>
-          <Link className="v4-nav-link" to={{ pathname: '/', hash: 'news' }} onClick={close}>
+          <NavLink className="v4-nav-link" to="/news">
             {lists.news}
-          </Link>
+          </NavLink>
         </li>
         <li>
-          <Link className="v4-nav-link" to={{ pathname: '/', hash: 'events' }} onClick={close}>
+          <NavLink className="v4-nav-link" to="/events">
             {lists.events}
-          </Link>
+          </NavLink>
         </li>
         <li>
           <NavLink className="v4-nav-link" to="/saved">
