@@ -157,21 +157,22 @@ public class LiveWebEventsCollector implements Collector {
    * [limit]. A search that fails alone is skipped; when half or more fail, the pass fails.
    */
   private List<SourceHit> pagesToRead(Instant now, int limit) {
-    Map<String, SourceHit> byUrl = new LinkedHashMap<>();
+    List<List<SourceHit>> perQuery = new ArrayList<>();
     RuntimeException lastFailure = null;
     int failed = 0;
     for (String query : queries) {
       try {
         JsonNode root = post("/search", searchBody(query));
         credits.spent(root, SEARCH_DEPTH);
+        List<SourceHit> found = new ArrayList<>();
         for (JsonNode r : root.path("results")) {
           SourceHit hit =
-              TavilySource.toHit(r, ID, now, byUrl.size(), ResourceType.EVENT, Set.of());
+              TavilySource.toHit(r, ID, now, found.size(), ResourceType.EVENT, Set.of());
           if (hit != null && PageScope.plainUrlProblem(hit.getUrl()) == null) {
-            byUrl.putIfAbsent(
-                hit.getCanonicalUrl().getValue(), hit.withFacts(Map.of("query", query)));
+            found.add(hit.withFacts(Map.of("query", query)));
           }
         }
+        perQuery.add(found);
       } catch (RuntimeException e) {
         log.warn("{}: a search failed: {}", ID, e.getClass().getSimpleName());
         lastFailure = e;
@@ -181,7 +182,25 @@ public class LiveWebEventsCollector implements Collector {
     if (lastFailure != null && failed * 2 >= queries.size()) {
       throw lastFailure;
     }
-    return byUrl.values().stream().limit(limit).toList();
+    return interleaved(perQuery, limit);
+  }
+
+  /**
+   * Each query's first page, then each one's second, and so on, once per URL, at most [limit]:
+   * every kind of event gets its share of the pages read, not only the first queries.
+   */
+  static List<SourceHit> interleaved(List<List<SourceHit>> perQuery, int limit) {
+    Map<String, SourceHit> byUrl = new LinkedHashMap<>();
+    int longest = perQuery.stream().mapToInt(List::size).max().orElse(0);
+    for (int rank = 0; rank < longest && byUrl.size() < limit; rank++) {
+      for (List<SourceHit> found : perQuery) {
+        if (rank < found.size() && byUrl.size() < limit) {
+          SourceHit hit = found.get(rank);
+          byUrl.putIfAbsent(hit.getCanonicalUrl().getValue(), hit);
+        }
+      }
+    }
+    return List.copyOf(byUrl.values());
   }
 
   /** Reads the pages a few at a time; stops when the credit cap is reached or the model is out. */

@@ -232,4 +232,48 @@ class LiveWebEventsCollectorTest {
         .contains("[email]", "[phone]")
         .doesNotContain("anna@summit.example", "123 45 67");
   }
+
+  static SourceHit page(String url) {
+    return new SourceHit(
+        LiveWebEventsCollector.ID,
+        url,
+        java.net.URI.create(url),
+        ai.helper2.shared.CanonicalUrl.of(url),
+        null,
+        "AI event",
+        null,
+        ai.helper2.shared.ValueOrigin.SOURCE_PROVIDED,
+        ResourceType.EVENT,
+        ai.helper2.shared.Audience.BOTH,
+        null,
+        java.util.Set.of(),
+        java.util.Set.of(),
+        null,
+        null,
+        java.util.Set.of(),
+        null,
+        ai.helper2.shared.DateFact.unknown(),
+        ai.helper2.shared.DateFact.unknown(),
+        List.of(),
+        SourceFixtures.CLOCK.instant(),
+        0);
+  }
+
+  @Test
+  void every_query_gets_its_share_of_the_pages_read() {
+    List<SourceHit> hackathons =
+        List.of(
+            page("https://h.example/1"), page("https://h.example/2"), page("https://h.example/3"));
+    List<SourceHit> workshops =
+        List.of(
+            page("https://w.example/1"), page("https://h.example/2"), page("https://w.example/3"));
+
+    assertThat(LiveWebEventsCollector.interleaved(List.of(hackathons, workshops), 4))
+        .extracting(h -> h.getCanonicalUrl().getValue())
+        .containsExactly(
+            "https://h.example/1",
+            "https://w.example/1",
+            "https://h.example/2",
+            "https://h.example/3");
+  }
 }
