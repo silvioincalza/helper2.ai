@@ -44,7 +44,7 @@ function loadClient(onReady: () => void) {
 }
 
 /**
- * The one ad slot of a results page (ADR 0057; EthicalAds allows one ad per page). It sits above the results, in a
+ * The one ad slot of a results page (ADR 0030; EthicalAds allows one ad per page). It sits above the results, in a
  * box of fixed height, so nothing moves when the ad comes or does not. While a search runs it also shows the
  * progress bar and why there is an ad. It never holds the results back: they replace the bar the moment they come.
  * A new search empties the box and asks for a new ad. Off while the server has no publisher ID.

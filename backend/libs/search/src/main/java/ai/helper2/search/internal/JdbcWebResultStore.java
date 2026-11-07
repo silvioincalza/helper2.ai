@@ -18,7 +18,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * {@link WebResultStore} in {@code live_web_query_result} (ADR 0037). The key is an HMAC of the
+ * {@link WebResultStore} in {@code live_web_query_result} (ADR 0014). The key is an HMAC of the
  * source id and the query ({@link QuotaKeys#queryKey}), so no query text is stored. A set holds the
  * resource ids of its hits' own URLs; the hits come back from the catalog's source records ({@link
  * ResultObserver#recordedHits}), which every live search writes in the background. A set with a hit

@@ -21,7 +21,7 @@ class GapRoundTest {
     )
   }
 
-  /** ADR 0056: an accepted product from any discovery category that is a repository. */
+  /** ADR 0023: an accepted product from any discovery category that is a repository. */
   @Test
   fun `a discovery record that is a repository gives its README, whatever its category`() {
     val r =

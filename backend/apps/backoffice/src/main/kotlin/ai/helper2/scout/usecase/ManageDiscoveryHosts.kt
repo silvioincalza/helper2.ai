@@ -9,7 +9,7 @@ import ai.helper2.scout.UnitOfWork
 import java.time.Clock
 
 /**
- * An administrator adds a host to one of discovery's lists, or removes it (ADR 0063). Each action
+ * An administrator adds a host to one of discovery's lists, or removes it (ADR 0022). Each action
  * is an audit entry with the host as its target, committed with the change. The next discovery run
  * reads the lists as they are then; a run already going keeps the lists it started with.
  */

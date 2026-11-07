@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * The guide's two bounds, shared by the JSON and the streamed endpoint: a question runs only with a
- * place in the {@code guide} bulkhead ({@code H2_GUIDE_MAX_CONCURRENT}, ADR 0033), and each has a
+ * place in the {@code guide} bulkhead ({@code H2_GUIDE_MAX_CONCURRENT}, ADR 0006), and each has a
  * deadline ({@code helper2.guide.question-deadline}) after which its worker is interrupted.
  * Questions run on virtual threads that carry the request's trace, so the guide spans stay under
  * the HTTP request span.
@@ -98,7 +98,7 @@ class GuideLimits implements DisposableBean {
       return false;
     }
     // The deadline callback carries the request's trace too, so its log line has the ids (ADR
-    // 0026).
+    // 0031).
     CompletableFuture.delayedExecutor(deadline.toMillis(), TimeUnit.MILLISECONDS)
         .execute(
             traceOnly

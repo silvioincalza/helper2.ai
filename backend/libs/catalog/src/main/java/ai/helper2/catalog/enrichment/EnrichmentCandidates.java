@@ -19,8 +19,9 @@ public interface EnrichmentCandidates {
    * with fewer than [maxFailed] FAILED runs since an admin last requeued it. Only indexed, observed
    * and curated resources with at least one source description of [minText] characters or accepted
    * by a person from the review queue, and none an admin skipped. The ones an admin moved to the
-   * top first (ADR 0045 §7), then products a person accepted from the review queue (ADR 0056), then
-   * never-run resources, then the rest, each part newest discoveries first; at most [limit].
+   * top first (ADR 0026 (part was 0045) §7), then products a person accepted from the review queue
+   * (ADR 0023), then never-run resources, then the rest, each part newest discoveries first; at
+   * most [limit].
    */
   List<UUID> pending(int limit, int minText, int maxFailed);
 
@@ -136,8 +137,8 @@ public interface EnrichmentCandidates {
 
   /**
    * The subset of [ids] with a source description of at least [minText] characters and not skipped
-   * by an admin (ADR 0045 §7), in the given order. A collector's changed resources go through it,
-   * so a skip holds there too.
+   * by an admin (ADR 0026 (part was 0045) §7), in the given order. A collector's changed resources
+   * go through it, so a skip holds there too.
    */
   List<UUID> withEnoughText(List<UUID> ids, int minText);
 
@@ -147,7 +148,7 @@ public interface EnrichmentCandidates {
   /**
    * Input fingerprint of the latest run that judged the model's answer (not LLM_UNAVAILABLE, not
    * FAILED) that started after the last re-run request ({@link StoredEnrichments#requestRun}, ADR
-   * 0056); null when none.
+   * 0023); null when none.
    */
   @Nullable String lastJudgedFingerprint(UUID id);
 
@@ -167,7 +168,7 @@ public interface EnrichmentCandidates {
       @Nullable Boolean openSource,
       @Nullable String license,
       List<SourceText> sources,
-      /** The fields an admin set (ADR 0066), with their values: facts no run changes. */
+      /** The fields an admin set (ADR 0026), with their values: facts no run changes. */
       Map<String, String> curated) {
 
     public Candidate(
@@ -184,7 +185,7 @@ public interface EnrichmentCandidates {
    * One source record as material: [text] is its title, a line break, and its description (empty
    * when none). [sourceId], [externalId] and [repositoryUrl] say where the record came from and
    * which repository it names, so the Scout can pick the README or model card for its gap round
-   * (ADR 0043).
+   * (ADR 0023).
    */
   record SourceText(
       UUID recordId,

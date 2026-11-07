@@ -45,7 +45,7 @@ public record ResourceDetail(
     }
   }
 
-  /** [selfDeclared]: the claim cites the product's own page (ADR 0056). */
+  /** [selfDeclared]: the claim cites the product's own page (ADR 0023). */
   public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {
     public SummaryClaim(String text, List<Evidence> evidence) {
       this(text, evidence, false);

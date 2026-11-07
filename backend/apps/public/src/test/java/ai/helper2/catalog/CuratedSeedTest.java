@@ -199,8 +199,8 @@ class CuratedSeedTest {
   }
 
   /**
-   * ADR 0032 §8: every course card has its platform, and credential and format come from a fixed
-   * tag vocabulary.
+   * ADR 0016 (part was 0032) §8: every course card has its platform, and credential and format come
+   * from a fixed tag vocabulary.
    */
   @Test
   void coursesSeedFillsTheCardFromExistingFields() {

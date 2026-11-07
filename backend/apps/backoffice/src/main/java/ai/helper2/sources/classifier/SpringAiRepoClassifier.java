@@ -30,7 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
  * SpringAiGuideModel). Measured 2026-10-26 on 25 real entries: 12-14 s per batch, 25/25 answered,
  * non-AI repos of a Node.js list rejected. Nemotron 3.5 Lightning spent all 4096 tokens reasoning
  * and answered nothing. Each batch takes one call from a daily budget inside the {@code llm-chat}
- * circuit (ADR 0033); when the budget is spent or the circuit is open the call fails with
+ * circuit (ADR 0006); when the budget is spent or the circuit is open the call fails with
  * LlmUnavailable and the collector classifies with its keyword heuristic instead. Calls are timed
  * and their tokens counted with step=classify (ModelCallMetrics).
  */

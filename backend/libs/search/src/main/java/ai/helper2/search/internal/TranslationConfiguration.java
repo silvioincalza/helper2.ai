@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The query translation of search (ADR 0011): an adapter of the search module's QueryTranslator
+ * The query translation of search (ADR 0010): an adapter of the search module's QueryTranslator
  * port.
  */
 @Configuration(proxyBeanMethods = false)
@@ -50,7 +50,7 @@ class TranslationConfiguration {
       SearchProperties search) {
     SearchProperties.Translation settings = search.translation();
     int dailyTranslations = settings.dailyCalls();
-    // Declared even when off, so the Settings page knows the default (ADR 0060).
+    // Declared even when off, so the Settings page knows the default (ADR 0007).
     IntSupplier limit =
         runtime.declare(RuntimeSetting.SEARCH_DAILY_TRANSLATIONS, dailyTranslations);
     ChatModel model = chatModel.getIfAvailable();

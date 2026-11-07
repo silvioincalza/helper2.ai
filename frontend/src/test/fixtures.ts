@@ -267,7 +267,7 @@ const LIMITS: Me['limits'] = {
   resetsAt: '2026-10-23T00:00:00Z',
 };
 
-/** Every monetisation part off (ADR 0057), as with empty settings. */
+/** Every monetisation part off (ADR 0030), as with empty settings. */
 const MONETISATION_OFF: Me['monetisation'] = {
   githubSponsorsUrl: null,
   stripePaymentUrl: null,
@@ -319,7 +319,7 @@ export function makeRecent(over: Partial<RecentResponse> = {}): RecentResponse {
   };
 }
 
-/** GET /policy with the defaults of application.yaml (ADR 0052). */
+/** GET /policy with the defaults of application.yaml (ADR 0029). */
 export const POLICY: Policy = {
   guide: { maxCandidates: 24, maxPicks: 3 },
   dailyLimits: {
@@ -358,7 +358,7 @@ export const POLICY: Policy = {
 };
 
 /**
- * GET /admin/review-items/{id}/evidence for [item] (ADR 0045): a run with a conflicting pricing quoted twice and a
+ * GET /admin/review-items/{id}/evidence for [item] (ADR 0026): a run with a conflicting pricing quoted twice and a
  * verified licence; no relationship.
  */
 export function makeReviewEvidence(
@@ -419,7 +419,7 @@ export function makeReviewEvidence(
   };
 }
 
-/** A few categories as GET /categories answers them (ADR 0053), in the configured order. */
+/** A few categories as GET /categories answers them (ADR 0013), in the configured order. */
 export const CATEGORIES: Category[] = [
   { id: 'writing', name: 'Writing', shortName: 'Writing', family: 'everyday-apps' },
   { id: 'translation', name: 'Translation', shortName: 'Translation', family: 'everyday-apps' },

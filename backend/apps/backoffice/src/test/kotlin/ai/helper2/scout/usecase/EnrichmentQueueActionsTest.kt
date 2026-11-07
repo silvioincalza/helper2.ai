@@ -17,7 +17,10 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-/** Requeue, skip and prioritise (ADR 0045 §7): what each changes, and the audit entry of each. */
+/**
+ * Requeue, skip and prioritise (ADR 0026 (part was 0045) §7): what each changes, and the audit
+ * entry of each.
+ */
 class EnrichmentQueueActionsTest {
 
   private val now = Instant.parse("2026-11-05T10:00:00Z")

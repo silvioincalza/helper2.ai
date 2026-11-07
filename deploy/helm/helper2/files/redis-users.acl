@@ -1,4 +1,4 @@
-# The Redis ACL users of the two apps (ADR 0070): one line per user, its name and then its rules.
+# The Redis ACL users of the two apps (ADR 0004): one line per user, its name and then its rules.
 # The chart puts each into the Redis config as `user <name> on ><password> <rules>`, the password from
 # H2_REDIS_PUBLIC_PASSWORD or H2_REDIS_BACKOFFICE_PASSWORD; the backend tests start Redis from this file,
 # so a key or command the code needs and this file lacks fails a test (NOPERM).

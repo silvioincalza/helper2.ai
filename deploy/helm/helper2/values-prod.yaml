@@ -11,7 +11,7 @@ redis:
 networkPolicy:
   # The platform's ingress-nginx serves the Ingresses (incalza-me-infra terraform/k8s/helper2.tf): public host ->
   # Service helper2-web for /assets/, /theme.js and /favicon.svg, Service helper2 for the rest; in-network admin
-  # host -> Service helper2-admin, the back office (ADR 0035, 0069).
+  # host -> Service helper2-admin, the back office (ADR 0024, 0032).
   ingressController:
     namespace: ingress-nginx
     podLabels: { app.kubernetes.io/name: ingress-nginx }
@@ -20,16 +20,16 @@ networkPolicy:
     otlp:
       namespace: observability
 app:
-  # Sign-in (ADR 0023/0035): GitHub App helper2-prod. H2_GITHUB_OAUTH_CLIENT_ID, H2_GITHUB_OAUTH_CLIENT_SECRET and
+  # Sign-in (ADR 0024): GitHub App helper2-prod. H2_GITHUB_OAUTH_CLIENT_ID, H2_GITHUB_OAUTH_CLIENT_SECRET and
   # H2_ADMINS are in app_env; without them the app does not start.
   springProfiles: llm-nebius,oauth-github
-  # Reuse a cached answer for a near-identical guide question (ADR 0041, measured on the evaluation set).
+  # Reuse a cached answer for a near-identical guide question (ADR 0017, measured on the evaluation set).
   guideSimilarThreshold: 0.96
   tracing:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
   environment: prod
-  # Google AdSense (ADR 0059): the site check tag and /ads.txt on helper2.ai. Not a secret: every page shows it.
+  # Google AdSense (ADR 0030): the site check tag and /ads.txt on helper2.ai. Not a secret: every page shows it.
   monetisation:
     adsenseClient: ca-pub-4688630163076563
   replicas: 3
@@ -44,7 +44,7 @@ web:
 backoffice:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
-  # The sign-in callback is pinned to the admin host (ADR 0035, 0069).
+  # The sign-in callback is pinned to the admin host (ADR 0024, 0032).
   adminBaseUrl: https://admin.helper2.ai
   # Scout: one run a day at 03:07 UTC (the first start runs at once), up to 200 resources enriched per run.
   scoutCron: "0 7 3 * * *"

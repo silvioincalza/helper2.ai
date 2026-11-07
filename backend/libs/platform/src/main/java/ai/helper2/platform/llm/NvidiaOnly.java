@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * NVIDIA-only (ADR 0014): every model id the application sends to a provider names an NVIDIA model
+ * NVIDIA-only (ADR 0008): every model id the application sends to a provider names an NVIDIA model
  * ({@code nvidia/...}). Checked once at startup, so a wrong id in the environment stops the deploy
  * instead of calling another vendor's model. The chat ids are checked when the OpenAI-compatible
  * client is the chat provider (the only client that reaches a provider); the embedding id when

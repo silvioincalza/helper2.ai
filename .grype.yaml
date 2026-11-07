@@ -1,4 +1,4 @@
-# Grype settings for the image scans in CI and the weekly release scan (ADR 0046). Grype reads this file from the
+# Grype settings for the image scans in CI and the weekly release scan (ADR 0033). Grype reads this file from the
 # repository root.
 #
 # Exceptions. Add one only when a finding does not apply to helper2 (the code path is never used, the fix breaks the

@@ -13,11 +13,11 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
 /**
- * The built app shell (index.html), read once at start-up and cut where the pages write (ADR 0050
- * §1). In the cluster it is the web image's shell of the same version, copied into the pod by an
- * init container (ADR 0069). Without a shell (development: Vite serves the UI) there is no template
- * and the pages are not served. A shell without the markers stops the start-up: the pages would
- * silently lose their head.
+ * The built app shell (index.html), read once at start-up and cut where the pages write (ADR 0029
+ * (part was 0050) §1). In the cluster it is the web image's shell of the same version, copied into
+ * the pod by an init container (ADR 0032). Without a shell (development: Vite serves the UI) there
+ * is no template and the pages are not served. A shell without the markers stops the start-up: the
+ * pages would silently lose their head.
  */
 @Component
 public class PageTemplate {
@@ -43,7 +43,7 @@ public class PageTemplate {
 
   /**
    * The shell with [title], [head] (tags before the head's end) and [body] (inside #root). Every
-   * script and module preload of the shell itself carries [nonce] (ADR 0059); the filled parts do
+   * script and module preload of the shell itself carries [nonce] (ADR 0030); the filled parts do
    * not, so a script that slipped through the escaping would still be refused by the CSP.
    */
   public String fill(String title, String head, String body, String nonce) {
@@ -70,7 +70,7 @@ public class PageTemplate {
     int root = html.indexOf(ROOT);
     if (!title.find() || headEnd < title.end() || root < headEnd) {
       throw new IllegalStateException(
-          "The built index.html has no <title>, </head> or " + ROOT + " in that order (ADR 0050)");
+          "The built index.html has no <title>, </head> or " + ROOT + " in that order (ADR 0029)");
     }
     String rootOpen = "<div id=\"root\">";
     return new Parts(

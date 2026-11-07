@@ -8,8 +8,8 @@
 #   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask),
 #   backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
 #   backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, GuideConfiguration.java.
-#   Normalised keys and the reuse of a similar question's answer: flow-0041.
-#   The searches of a question take the asker's daily web searches (flow-0037), not drawn here.
+#   Normalised keys and the reuse of a similar question's answer: flow-0017-guide-answer-cache.
+#   The searches of a question take the asker's daily web searches (flow-0014-tavily-store-and-quota), not drawn here.
 # Render: cd docs/diagrams && d2 fmt flow-0017-guide-cost-guard.d2 && d2 flow-0017-guide-cost-guard.d2 flow-0017-guide-cost-guard.svg
 
 ...@style
@@ -21,14 +21,14 @@ rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared with the too
 r429: "429 Too Many Requests\n+ Retry-After" {class: fail}
 slot: "GuideLimits: free slot in\nthe guide bulkhead?\n(H2_GUIDE_MAX_CONCURRENT 8)" {class: decision}
 busy: "503 Guide busy\n(error event on the stream)" {class: fail}
-key: "Cache key: SHA-256 of normalised\ntext | path | config hash (ADR 0041)" {class: app}
+key: "Cache key: SHA-256 of normalised\ntext | path | config hash (ADR 0017)" {class: app}
 cache: "Answer cache hit?\n(shared cache guide-answer,\nPostgreSQL)" {class: decision}
 cached: "Cached answer\n(same generatedAt)" {class: end}
 flight: "Same key already\nbeing answered?" {class: decision}
 shared: "Wait for that answer\n(single-flight; the stream\ngets only :keep-alive)" {class: end}
 quota: "ClientQuota.reserve: fresh question\nleft today for this ClientKey?\n(H2_GUIDE_CLIENT_DAILY_QUESTIONS 30)" {class: decision}
 searchOnly: "Search-only answer\n+ notice GUIDE_DAILY_QUOTA" {class: end}
-run: "Plan; a similar question's\ncached answer (ADR 0041), or\nsearch → choose → validate →\nreason check" {class: ai}
+run: "Plan; a similar question's\ncached answer (ADR 0017), or\nsearch → choose → validate →\nreason check" {class: ai}
 circuit: "llm-chat circuit closed?\n(each model attempt)" {class: decision}
 budget: "Global daily budget unit\nbefore each model attempt?\n(H2_GUIDE_DAILY_MODEL_CALLS 600)" {class: decision}
 degraded: "Degraded answer\n(top search results)" {class: fail}
@@ -39,7 +39,7 @@ spends: "AI pick, comparison or\nexplanation in the answer?" {class: decision}
 free: "Free answers left today?\n(no pick, failed and shared\nshare one cap)\n(H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS,\ndefault the daily questions)" {class: decision}
 giveBack: "Give the question back, once\nper reservation, never below 0\n(model calls stay in the global cap)" {class: data}
 cacheable: "Cacheable? AI pick, no reason\nNOT_CHECKED, web results it used\nstill fresh" {class: decision}
-store: "Store in the shared cache for\nmin(24 h, freshness left of its\nweb results, ADR 0037)" {class: data}
+store: "Store in the shared cache for\nmin(24 h, freshness left of its\nweb results, ADR 0014)" {class: data}
 answer: "Last event: the answer,\nor the error or timeout" {class: end}
 
 ask -> rate

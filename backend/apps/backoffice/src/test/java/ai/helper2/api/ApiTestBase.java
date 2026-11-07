@@ -53,7 +53,7 @@ import org.springframework.test.web.servlet.MockMvc;
       "helper2.sources.github-awesome.enabled=false",
       "helper2.sources.hf-provider-orgs.enabled=false",
       "helper2.sources.ai-deadlines.enabled=false",
-      // The fake source's policy (ADR 0033): a bulkhead only, so no circuit opened by one test's
+      // The fake source's policy (ADR 0006): a bulkhead only, so no circuit opened by one test's
       // failures skips it in the next.
       "resilience4j.bulkhead.instances.source-fake-live.base-config=source",
       "helper2.rate-limit.search-per-minute=10000",
@@ -80,7 +80,7 @@ abstract class ApiTestBase {
   @Autowired ai.helper2.catalog.usecase.GetResourceDetail resourceDetail;
 
   /**
-   * A resource as its public page shows it. The page is the public app's (ADR 0069): the back
+   * A resource as its public page shows it. The page is the public app's (ADR 0032): the back
    * office's tests read it through the same catalog use case.
    */
   ai.helper2.catalog.ResourceDetail detail(String id) {

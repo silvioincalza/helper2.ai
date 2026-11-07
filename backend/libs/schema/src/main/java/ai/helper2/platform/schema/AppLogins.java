@@ -9,7 +9,7 @@ import javax.sql.DataSource;
 import org.postgresql.PGConnection;
 
 /**
- * Opens the login of each app's role (ADR 0070): V23 creates the roles without one, the migrate
+ * Opens the login of each app's role (ADR 0004): V23 creates the roles without one, the migrate
  * step gives them LOGIN and their password, as the owner. The driver hashes the password (SCRAM)
  * before it is sent: the plaintext never reaches the server. The SCRAM verifier does, in an ALTER
  * ROLE statement, so it can appear in the server log when log_statement is ddl or all. Run on every

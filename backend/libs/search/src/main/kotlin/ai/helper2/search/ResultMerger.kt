@@ -32,7 +32,7 @@ class ResultMerger
 constructor(
   private val analyzer: QueryAnalyzer = QueryAnalyzer(),
   /**
-   * Assigns the categories of a merged result (ADR 0053), so live web results can be filtered by
+   * Assigns the categories of a merged result (ADR 0013), so live web results can be filtered by
    * them too; [CategoryMatcher.NONE] keeps only the categories the hits carry.
    */
   private val categories: CategoryMatcher = CategoryMatcher.NONE,
@@ -44,7 +44,7 @@ constructor(
   }
 
   /**
-   * [merged] with the values an admin set (ADR 0066), carried by the catalog's hit: each curated
+   * [merged] with the values an admin set (ADR 0026), carried by the catalog's hit: each curated
    * field wins over the other sources and is no longer a conflict.
    */
   private fun withCurated(merged: MergedResult, group: List<SourceHit>): MergedResult {
@@ -185,7 +185,7 @@ constructor(
       conflicts = conflicts,
       hits = ordered,
       // Different start or end days from two sources are CONFLICTING, as for published. Days an AI
-      // model read (ADR 0067) count only when no other source states any.
+      // model read (ADR 0021) count only when no other source states any.
       eventStart = DateFact.earliest(eventSources(group).map { it.eventStart }),
       eventEnd = DateFact.latest(eventSources(group).map { it.eventEnd }),
       // Kind, format and place come from the same hits as the days, so one origin covers them all.

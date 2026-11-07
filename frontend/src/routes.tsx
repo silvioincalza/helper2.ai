@@ -18,7 +18,7 @@ const page =
   });
 
 /**
- * A text page that states numbers from GET /policy (ADR 0042 decision 13): its chunk and the numbers load side by
+ * A text page that states numbers from GET /policy (ADR 0028 (part was 0042) decision 13): its chunk and the numbers load side by
  * side, and the page opens once both are in, or after a short wait, so it usually shows the numbers without a shift.
  * The read lives in its own chunk, outside the first download.
  */
@@ -47,9 +47,9 @@ export const routes: RouteObject[] = [
         errorElement: <RouteError />,
         children: [
           { index: true, element: <HomePage /> },
-          // Results live on /search (ADR 0040, 3).
+          // Results live on /search (ADR 0028 (part was 0040), 3).
           { path: 'search', element: <HomePage /> },
-          // The readable address (ADR 0050): one route, so replacing a missing or old slug once the resource is
+          // The readable address (ADR 0029): one route, so replacing a missing or old slug once the resource is
           // loaded keeps the page mounted.
           { path: 'resource/:id/:slug?', element: <ResourcePage /> },
           // Few visits start on the saved, sources, account or sign-in page: they load on demand, outside the first
@@ -65,7 +65,7 @@ export const routes: RouteObject[] = [
           { path: 'mission', lazy: textPage(() => import('@/pages/MissionPage')) },
           { path: 'privacy', lazy: textPage(() => import('@/pages/PrivacyPage')) },
           { path: 'terms', lazy: textPage(() => import('@/pages/TermsPage')) },
-          // Few visits: loaded on demand too (ADR 0057).
+          // Few visits: loaded on demand too (ADR 0030).
           { path: 'support', lazy: page(() => import('@/pages/SupportPage')) },
           { path: 'support/thanks', lazy: page(() => import('@/pages/SupportThanksPage')) },
           { path: '*', lazy: page(() => import('@/pages/NotFoundPage')) },

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-/** The allow-list of runtime settings (ADR 0060): what may change, and within which bounds. */
+/** The allow-list of runtime settings (ADR 0007): what may change, and within which bounds. */
 class RuntimeSettingTest {
 
   @Test

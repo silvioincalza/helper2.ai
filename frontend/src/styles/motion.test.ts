@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 /**
- * No CSS animation repeats for ever (ADR 0042, decision 12; WCAG 2.2.2): each one ends within 5 seconds. The Home
+ * No CSS animation repeats for ever (ADR 0028 (part was 0042), decision 12; WCAG 2.2.2): each one ends within 5 seconds. The Home
  * radar is the one thing that keeps moving, and it moves by a JavaScript clock that stops on focus, under reduced
  * motion and with the account setting off (HomeRadar.test.tsx). Every stylesheet, and every inline style in a
  * component, is read as text.

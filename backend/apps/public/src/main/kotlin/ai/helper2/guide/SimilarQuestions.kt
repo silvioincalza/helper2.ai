@@ -7,7 +7,7 @@ import kotlin.math.sqrt
 import org.slf4j.LoggerFactory
 
 /**
- * How a question was read, as far as the reading decides the answer (ADR 0041). Two questions with
+ * How a question was read, as far as the reading decides the answer (ADR 0017). Two questions with
  * equal keys get the same retrieval and the same answer rules; only their wording can differ. The
  * planned search query is left out on purpose: two wordings of one need are planned with different
  * words, and the question embedding covers it.
@@ -51,7 +51,7 @@ data class ReadingKey(
 }
 
 /**
- * Outbound port: the question embedding, with the model search uses (ADR 0012). Throws when it
+ * Outbound port: the question embedding, with the model search uses (ADR 0011). Throws when it
  * cannot embed.
  */
 fun interface QuestionEmbedder {
@@ -64,7 +64,7 @@ fun interface QuestionEmbedder {
  */
 class IndexedQuestion(val answerKey: String, val vector: FloatArray, val expiresAt: Instant)
 
-/** Outbound port: indexed questions past their expiry (ADR 0034). */
+/** Outbound port: indexed questions past their expiry (ADR 0035). */
 fun interface SimilarQuestionRetention {
   /** Deletes the indexed questions that expired before [cutoff]; returns how many. */
   fun deleteExpiredBefore(cutoff: Instant): Int
@@ -75,7 +75,7 @@ data class Neighbour(val answerKey: String, val similarity: Double)
 
 /**
  * Outbound port: the questions of each reading group whose answers are cached (PostgreSQL and
- * pgvector, ADR 0041). Disposable like the answer cache: an unavailable index finds nothing and
+ * pgvector, ADR 0017). Disposable like the answer cache: an unavailable index finds nothing and
  * forgets what it is given, never an error.
  */
 interface SimilarQuestionIndex {
@@ -90,7 +90,7 @@ interface SimilarQuestionIndex {
 }
 
 /**
- * Reuse of a cached answer for a question worded differently but read the same way (ADR 0041). Only
+ * Reuse of a cached answer for a question worded differently but read the same way (ADR 0017). Only
  * after the exact cache key missed and the planner read the question: the reading is the one the
  * fresh answer would use, so no model call is added to decide. A stored question matches when it is
  * in the same group (same embedding model, guide config, audience path and [ReadingKey]) and its

@@ -12,10 +12,10 @@ import java.util.UUID
 
 /**
  * One piece of retrieved source material the model may cite. A source record is its own anchor.
- * Extra text read in the gap round (ADR 0043) has its own evidence id, belongs to the record it was
+ * Extra text read in the gap round (ADR 0023) has its own evidence id, belongs to the record it was
  * read for ([anchorRecordId]), and may support fields and relationships but not summary claims
  * ([supportsClaims]): a claim is the model's own sentence, and a README is written by anyone. A
- * page of the product's own site (ADR 0056) is [selfDeclared]: what it proves is what the vendor
+ * page of the product's own site (ADR 0023) is [selfDeclared]: what it proves is what the vendor
  * says about itself.
  */
 data class Material
@@ -46,10 +46,10 @@ constructor(
    * are proposed.
    */
   val knownResources: Map<String, UUID> = emptyMap(),
-  /** The catalog's type: writing (ADR 0062) keeps fewer fields and names its subjects. */
+  /** The catalog's type: writing (ADR 0023) keeps fewer fields and names its subjects. */
   val type: ResourceType = ResourceType.OTHER,
   /**
-   * Fields an admin set (ADR 0066): their values are in [sourceFacts], and a model value for them
+   * Fields an admin set (ADR 0026): their values are in [sourceFacts], and a model value for them
    * is dropped without a review item.
    */
   val curatedFields: Set<String> = emptySet(),
@@ -59,7 +59,7 @@ constructor(
  * What the store loaded for one resource: the model's input, a hash of its source text and, when
  * one of its records names its own repository or model, where the gap round may read more
  * ([gapTarget]). [type] is the catalog's type: it sets the fields the evidence ladder tries to fill
- * (ADR 0056). [pageTarget] is the product's own web page, when one of its records is one.
+ * (ADR 0023). [pageTarget] is the product's own web page, when one of its records is one.
  */
 data class EnrichmentMaterial
 @JvmOverloads
@@ -73,7 +73,7 @@ constructor(
   /**
    * The enrichment fingerprint: the source text, the [FINGERPRINT_EPOCH] and the model. The same
    * source text under another model is a different input, so it is enriched again. A new prompt
-   * version alone is not (ADR 0056): re-enriching the whole catalog for a wording change costs days
+   * version alone is not (ADR 0023): re-enriching the whole catalog for a wording change costs days
    * of the daily cap. The stored answers are checked again by code instead (RecheckEnrichments),
    * and only resources that still miss facts are sent again.
    */
@@ -174,7 +174,7 @@ constructor(
 /**
  * A field the validator judged. [origin] is AI_EXTRACTED for a fact a quote states, SELF_DECLARED
  * when only the product's own pages state it, and AI_ESTIMATED for a judgement field (audience,
- * tech level) the model may estimate without a quote (ADR 0056). A fact is never AI_ESTIMATED.
+ * tech level) the model may estimate without a quote (ADR 0023). A fact is never AI_ESTIMATED.
  */
 data class CheckedField
 @JvmOverloads

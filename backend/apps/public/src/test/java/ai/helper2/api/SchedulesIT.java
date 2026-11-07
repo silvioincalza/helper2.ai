@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.config.ScheduledTaskHolder;
 
 /**
- * Every job runs in exactly one app (ADR 0069): these are the public app's. The back office's
+ * Every job runs in exactly one app (ADR 0032): these are the public app's. The back office's
  * SchedulesIT lists its own, and no job is in both. Each replica's runtime-settings refresh is a
  * thread of the platform library in both apps: it reads, it does no shared work.
  */

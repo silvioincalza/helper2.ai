@@ -1,11 +1,11 @@
 # 0005 — Redis as a disposable cache: source responses, fresh/stale windows, circuit breaker, counters
 
-**Status.** Accepted. **Builds on:** [0002](0002-modular-monolith-hexagonal.md), [0004](0004-persistence-and-provenance.md), [0033](0033-resilience-policies.md)
+**Status.** Accepted. **Builds on:** [0002](0002-modular-monolith-libraries-and-apps.md), [0004](0004-persistence-schema-and-app-roles.md), [0006](0006-outbound-calls-and-resilience.md)
 
 ## Context
 Live sources are slow (seconds) and rate-limited. The daily model budgets must survive a restart. All of this
 is short-lived data: losing it costs time or money,
-never correctness. PostgreSQL ([0004](0004-persistence-and-provenance.md)) stays the only system of record,
+never correctness. PostgreSQL ([0004](0004-persistence-schema-and-app-roles.md)) stays the only system of record,
 so the cache must be optional: when Redis is down, the app still works, only slower.
 
 ## Decision
@@ -18,7 +18,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    (6379), `H2_REDIS_PASSWORD`; command timeout 250 ms, connect timeout 500 ms. The Redis health
    indicator is off, so a Redis outage never takes the app out of the readiness rotation.
 2. **Source responses.** `RedisSearchCache` implements the `SearchCache` port for sources in `LIVE` mode, except a
-   metered source (Tavily), whose result sets live in PostgreSQL ([0037](../search/0037-tavily-store-and-daily-quota.md)).
+   metered source (Tavily), whose result sets live in PostgreSQL ([0014](../search/0014-tavily-store-and-daily-quota.md)).
    Key `h2:v1:src:{sourceId}:{hash}`; the hash covers the normalized query, the expansions, the limit and,
    for sources that read it, the guide's web query and the date window. No raw query text is stored in a key. Values use the
    versioned `SourceHitCodec`; an unknown version is a miss.
@@ -27,25 +27,25 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    When the live call fails, times out, is rate-limited, is in cooldown or is refused by the source's open circuit,
    an entry inside that window is served as `STALE_CACHE`, with the failure stated in the source status.
 4. **Circuit breaker.** Every Redis call of the search cache, the budget counter, the web-search quota, the rate
-   limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0033](0033-resilience-policies.md)):
+   limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0006](0006-outbound-calls-and-resilience.md)):
    once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`H2_RESILIENCE_REDIS_OPEN_FOR`)
    and callers get their fallback at once, without a Redis call. Then 2 trial calls decide whether it closes again.
    A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
-   read that fails or is refused finds no session ([0023](../edge/0023-identity-and-admin.md)).
+   read that fails or is refused finds no session ([0024](../edge/0024-identity-and-admin-host.md)).
 5. **Daily counters.** `RedisCallCounter` counts model calls per budget and day in Coordinated Universal Time (UTC):
    `h2:v1:budget:{name}:{day}`, kept 2 days. One Lua script runs `INCR` only below the budget's limit and, on the first count,
    `PEXPIRE`, so a counter key is never left without an expiry and a refused call adds nothing. Names: `guide`, `translation`, `enrichment`, `classifier`,
-   and `guide-client:{pseudonym}` for the per-client guide quota (a keyed hash of the client and the day, [0017](../guide/0017-guide-cost-guard.md)).
+   and `guide-client:{pseudonym}` for the per-client guide quota (a keyed hash of the client and the day, [0017](../guide/0017-guide-cost-guard-and-answer-cache.md)).
    A count given back for an answer with no pick also writes `h2:v1:budget:{name}:{day}:given-back`, a set of random
    question ids that expires with the count, in the same script. On an error, or while the `redis` circuit is open,
    `DailyBudget` counts in memory.
 6. **Model answers are not in Redis.** Query translations, query vectors, setup guide answers and guide answers
-   ([0041](../guide/0041-guide-answer-cache.md)) are kept on disk in the PostgreSQL table `ai_cache`
-   ([0004](0004-persistence-and-provenance.md)): they are backed up, survive a Redis restart and cost no Redis memory.
-7. **Shared state for the replicas.** Prod runs 3 replicas ([0027](../operations/0027-runtime-topology.md)). The same Redis also
-   holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0024](../edge/0024-http-edge-protection.md)), the sign-in
-   sessions (namespace `h2:v1:session:public`, [0023](../edge/0023-identity-and-admin.md)) and the daily web-search counters
-   (`h2:v1:quota:*`, [0037](../search/0037-tavily-store-and-daily-quota.md)), so every replica sees them. Rate limits and
+   ([0017](../guide/0017-guide-cost-guard-and-answer-cache.md)) are kept on disk in the PostgreSQL table `ai_cache`
+   ([0004](0004-persistence-schema-and-app-roles.md)): they are backed up, survive a Redis restart and cost no Redis memory.
+7. **Shared state for the replicas.** Prod runs 3 replicas ([0032](../operations/0032-runtime-topology.md)). The same Redis also
+   holds the rate-limit windows (`h2:v1:rate:{limiter}:{client}`, [0025](../edge/0025-http-edge-protection.md)), the sign-in
+   sessions (namespace `h2:v1:session:public`, [0024](../edge/0024-identity-and-admin-host.md)) and the daily web-search counters
+   (`h2:v1:quota:*`, [0014](../search/0014-tavily-store-and-daily-quota.md)), so every replica sees them. Rate limits and
    sessions have their own fallback while Redis is down; the web-search quota allows no live call then.
 
 ## Consequences
@@ -72,7 +72,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
-  fail-fast guard ([0033](0033-resilience-policies.md)).
+  fail-fast guard ([0006](0006-outbound-calls-and-resilience.md)).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.

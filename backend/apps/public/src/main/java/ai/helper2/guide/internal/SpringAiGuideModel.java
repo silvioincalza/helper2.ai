@@ -47,7 +47,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
  * plans the search; a reasoning model (e.g. Nemotron 3 Super) chooses among real candidates, then
  * checks each kept reason. All use structured output; GuideValidator still decides what is shown.
  * Every attempt, retries included, takes one call from the daily budget (ADR 0017), and runs under
- * the {@code llm-chat} circuit (ADR 0033).
+ * the {@code llm-chat} circuit (ADR 0006).
  */
 class SpringAiGuideModel implements GuideModel {
 
@@ -81,7 +81,7 @@ class SpringAiGuideModel implements GuideModel {
                 "reasonTargetChars", REASON_TARGET_CHARS));
   }
 
-  /** The comparer's instructions (ADR 0032), with the limits AskGuide enforces. */
+  /** The comparer's instructions (ADR 0016), with the limits AskGuide enforces. */
   static String compareSystem() {
     AnswerLimits limits = AnswerLimits.DEFAULT;
     return PromptTemplate.fromClasspath("guide/compare.txt")
@@ -96,7 +96,7 @@ class SpringAiGuideModel implements GuideModel {
   }
 
   /**
-   * The explainer's instructions (ADR 0032), with the limits AskGuide and GuideValidator enforce.
+   * The explainer's instructions (ADR 0016), with the limits AskGuide and GuideValidator enforce.
    */
   static String explainSystem() {
     AnswerLimits limits = AnswerLimits.DEFAULT;

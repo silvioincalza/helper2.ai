@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 /**
- * The snapshot each replica applies (ADR 0060): read again only when the refresh interval has
+ * The snapshot each replica applies (ADR 0007): read again only when the refresh interval has
  * passed and the store's version changed; a budget picks up a new limit then.
  */
 class RuntimeSettingsTest {

@@ -91,7 +91,7 @@ fun interface CatalogIndex {
 }
 
 /**
- * Outbound port: the catalog's search index of curated lists (ADR 0055). Replaces, for each list,
+ * Outbound port: the catalog's search index of curated lists (ADR 0010). Replaces, for each list,
  * what an earlier pass indexed; entries and lists not in the catalog are left out.
  */
 fun interface ListIndex {
@@ -143,7 +143,7 @@ interface EnrichmentBacklog {
   /**
    * Puts [resourceId] back among the resources that still need enrichment, for a later run: a
    * changed resource the run had no slot left for. Its unchanged fingerprint does not skip it (ADR
-   * 0056).
+   * 0023).
    */
   fun requestRun(resourceId: UUID)
 }
@@ -157,8 +157,8 @@ interface UnitOfWork {
 }
 
 /**
- * Outbound port: an admin's decisions on the enrichment queue (ADR 0045 §7), kept by the Scout.
- * Each one changes the order only; it never calls the model by itself.
+ * Outbound port: an admin's decisions on the enrichment queue (ADR 0026 (part was 0045) §7), kept
+ * by the Scout. Each one changes the order only; it never calls the model by itself.
  */
 interface EnrichmentQueueControl {
   /**

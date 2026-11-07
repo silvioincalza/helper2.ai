@@ -1,0 +1,48 @@
+# Sequence: the prod deploy job of a release: approval, OIDC login to OpenBao, kubeconfig and app_env,
+# tag checks, the signature check (ADR 0033), helm upgrade by digest with rollback on failure, status, clean-up.
+# Source of truth: .github/workflows/release.yml (prod job), .github/workflows/deploy.yml,
+#   .github/actions/bao-login/action.yml, deploy/k8s/Makefile (verify-images, diff, deploy, status),
+#   the platform repo's deployer RBAC (prod deployer may get the staging Deployment), outside this repo.
+# Render: cd docs/diagrams && d2 fmt sequence-0033-ci-cd.d2 && d2 sequence-0033-ci-cd.d2 sequence-0033-ci-cd.svg
+
+...@style
+
+shape: sequence_diagram
+
+reviewer: Prod reviewer {class: person}
+gha: "GitHub Actions\n(release.yml)" {class: ext}
+runner: "Self-hosted runner\n(one JIT job)" {class: app}
+bao: OpenBao {class: data}
+k8s: Kubernetes API {class: ext}
+site: "https://helper2.ai" {class: ext}
+
+approval: Approval {
+  gha -> reviewer: "release vX.Y.Z checked and published;\njob prod waits on environment prod"
+  reviewer -> gha: "approve"
+  gha -> runner: "run deploy.yml\n(environment prod, tag = the release version X.Y.Z)" {class: hot}
+}
+
+login: OpenBao login (OIDC) {
+  runner -> gha: "request OIDC token\n(audience = BAO_AUDIENCE)"
+  gha -> runner: "JWT, sub ...:environment:prod"
+  runner -> bao: "auth/helper2/jwt/login role=deploy-prod"
+  bao -> runner: "token (can read ci/prod only)"
+  runner -> bao: "kv get ci/prod field kubeconfig"
+  bao -> runner: "prod deployer kubeconfig"
+}
+
+tag: Resolve tag {
+  runner -> runner: "tag = 12 hex chars (no ref with that name)\nor X.Y.Z (the commit of tag vX.Y.Z);\ncommit on origin/main (a version:\nor a release/* branch); prod by version:\nmake retag (0034)"
+  runner -> runner: "make verify-images (0033): digest of each\nimage in Harbor, cosign verify --key cosign.pub;\nan unsigned image stops here"
+  runner -> runner: "git checkout <commit>:\nchart and image match"
+  runner -> bao: "kv get ci/prod field app_env"
+  bao -> runner: "prod/app.env"
+}
+
+deploy: Deploy {
+  runner -> k8s: "make diff (kubectl diff)"
+  runner -> k8s: "make deploy: release-ready (a pending-* release:\nrollback to the last deployed revision), then\nhelm upgrade --install --server-side\n(images by digest) --wait --timeout 12m --rollback-on-failure" {class: hot}
+  k8s -> runner: "ready, or rolled back\nto the previous revision"
+  runner -> site: "make status: GET / → HTTP code"
+  runner -> runner: "always: rm app.env, kubeconfig"
+}

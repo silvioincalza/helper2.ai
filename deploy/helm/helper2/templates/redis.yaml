@@ -66,7 +66,7 @@ spec:
           {{- if .Values.redis.auth.enabled }}
           env:
             # The default user: the admin (probes, redis-cli). The apps connect as their own ACL users
-            # (files/redis-users.acl, ADR 0070).
+            # (files/redis-users.acl, ADR 0004).
             - name: REDISCLI_AUTH
               valueFrom: { {{ include "helper2.redisPasswordFrom" (list . "H2_REDIS_PASSWORD") }} }
             {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}

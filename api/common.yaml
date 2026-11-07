@@ -40,7 +40,7 @@ paths:
         - name: category
           in: query
           description: >-
-            Category ids from GET /categories (ADR 0053), or `unknown` for results with no category yet. A result in any
+            Category ids from GET /categories (ADR 0013), or `unknown` for results with no category yet. A result in any
             of them is kept (OR); with the other filters it is AND. An id that is not a category is a 400.
           schema: { type: array, maxItems: 40, items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 } }
           style: form
@@ -80,7 +80,7 @@ paths:
       operationId: listCategories
       summary: The categories of the AI world search can filter by, in the order people see them.
       description: >-
-        Read from the running configuration (`helper2.categories`, ADR 0051, 0053). The same answer for everyone, no
+        Read from the running configuration (`helper2.categories`, ADR 0022, 0013). The same answer for everyone, no
         personal data; cached for an hour and validated by its ETag. Rate-limited like the other public reads.
       responses:
         '200':
@@ -166,8 +166,8 @@ components:
         AI Resource Scout from retrieved material and validated against evidence.
         AI_SUMMARY = generated text built only from validated claims. AI_ESTIMATED = a judgement
         (audience, tech level) an AI model made without a quote that states it: AI-generated, never
-        a verified fact (ADR 0056). SELF_DECLARED = extracted by AI from a quote of the product's
-        own web page only, so it is what the vendor says about itself (ADR 0056). CURATED = written
+        a verified fact (ADR 0023). SELF_DECLARED = extracted by AI from a quote of the product's
+        own web page only, so it is what the vendor says about itself (ADR 0023). CURATED = written
         by the Helper2 editorial seed (not live). COMMUNITY = user submission. DEMO = fixture data.
       enum: [SOURCE_PROVIDED, AI_EXTRACTED, AI_SUMMARY, AI_ESTIMATED, SELF_DECLARED, CURATED, COMMUNITY, DEMO]
     Verification:
@@ -289,7 +289,7 @@ components:
           type: array
           description: >-
             Ids of the categories it belongs to (GET /categories), in their order; empty when it has none yet. Assigned
-            by code from its title, what its sources wrote, its tags, type and the collectors that found it (ADR 0053).
+            by code from its title, what its sources wrote, its tags, type and the collectors that found it (ADR 0013).
             Never model-generated.
           items: { type: string }
         location: { type: [string, 'null'], description: "EVENT only: city and country as the source states it." }
@@ -299,12 +299,12 @@ components:
           oneOf: [{ $ref: '#/components/schemas/ValueOrigin' }, { type: 'null' }]
           description: >-
             EVENT only: who says the event's days, kind, format and place. AI_EXTRACTED: an AI model read them on the
-            event's page and code checked them against the page's own words (ADR 0067); shown with the AI label.
+            event's page and code checked them against the page's own words (ADR 0021); shown with the AI label.
             SOURCE_PROVIDED: a source states them. Null when no source states a start.
         foundIn:
           description: >-
             Set when the result was found only by the words an awesome list uses around it (its entry line and its
-            section heading), not by its own text (ADR 0055). The list's own words, not AI-written. Null when any source
+            section heading), not by its own text (ADR 0010). The list's own words, not AI-written. Null when any source
             matched the result directly.
           oneOf: [{ $ref: '#/components/schemas/ListMatch' }, { type: 'null' }]
 
@@ -393,7 +393,7 @@ components:
         category:
           type: array
           description: >-
-            Category ids (ADR 0053) with their counts over the whole merged result set, every filter applied but the
+            Category ids (ADR 0013) with their counts over the whole merged result set, every filter applied but the
             category's own; `unknown` counts the results with no category yet.
           items: { $ref: '#/components/schemas/FacetValue' }
 
@@ -407,26 +407,26 @@ components:
             GUIDE_DAILY_QUOTA (guide only) = this client's AI answers for the UTC day are used up; the answer is search results only.
             GUIDE_SUBJECT_NOT_FOUND (guide only) = a thing the question names (to compare, to find alternatives to, to date) is not in our sources.
           enum: [CACHE_UNAVAILABLE, INDEX_UNAVAILABLE, QUERY_EXPANDED, ALL_SOURCES_FAILED, GUIDE_DAILY_QUOTA, GUIDE_SUBJECT_NOT_FOUND]
-        message: { type: string, description: "Plain-language text in our own words, except QUERY_EXPANDED: its list of terms can hold a model translation of the query (ADR 0011). Model-written parts of other notices are their own fields (subject, query)." }
+        message: { type: string, description: "Plain-language text in our own words, except QUERY_EXPANDED: its list of terms can hold a model translation of the query (ADR 0010). Model-written parts of other notices are their own fields (subject, query)." }
         subject:
           type: [string, 'null']
           description: |
             GUIDE_SUBJECT_NOT_FOUND only: the name that was not found, as the planner read it from the question.
-            AI-written (`notices[].subject` in `GuideResponse.aiContent.fields`, ADR 0038). Null on other codes and on a
+            AI-written (`notices[].subject` in `GuideResponse.aiContent.fields`, ADR 0018). Null on other codes and on a
             not-found date.
         query:
           type: [string, 'null']
           description: |
             GUIDE_SUBJECT_NOT_FOUND only: the planner's search the guide shows tools for instead (alternatives). AI-written
             (`notices[].query` in `GuideResponse.aiContent.fields`). Null on a comparison and on an answer reused from a
-            similar question (ADR 0041): it came from another asker's words.
+            similar question (ADR 0017): it came from another asker's words.
 
     QueryInterpretation:
       type: object
       description: |
         How the query was read. `expandedTerms` and `detectedUseCases` are deterministic (non-AI): equivalents and use
         cases from a fixed EN/IT lexicon, so English-only sources can match non-English queries. `translatedQuery` is
-        the one AI-written part (ADR 0011, 0038).
+        the one AI-written part (ADR 0010, 0018).
       required: [expandedTerms, detectedUseCases]
       properties:
         expandedTerms: { type: array, items: { type: string }, description: From the fixed lexicon only; never the translation. }
@@ -460,7 +460,7 @@ components:
       type: object
       description: |
         Live web searches this visitor has left today for this feature; search and the guide count apart
-        (ADR 0037). Resets at 00:00 UTC. Results already stored cost none. Null when no web source is enabled or the
+        (ADR 0014). Resets at 00:00 UTC. Results already stored cost none. Null when no web source is enabled or the
         count cannot be read.
       required: [limit, remaining]
       properties:
@@ -471,7 +471,7 @@ components:
       type: object
       required: [aiGenerated, provider, models, fields, policy]
       description: |
-        Machine-readable marking of AI-written text (EU AI Act Art. 50(2), ADR 0038). Present only when a model wrote
+        Machine-readable marking of AI-written text (EU AI Act Art. 50(2), ADR 0018). Present only when a model wrote
         text in this response. `fields` lists the fields a model wrote; every other field is source text or computed.
       properties:
         aiGenerated: { type: boolean, description: Always true. }
@@ -552,7 +552,7 @@ components:
 
     Category:
       type: object
-      description: One category of the AI world (ADR 0051, 0053). Our own fixed words, from the configuration.
+      description: One category of the AI world (ADR 0022, 0013). Our own fixed words, from the configuration.
       required: [id, name, shortName, family]
       properties:
         id: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', description: The value of the search's `category` filter. }
@@ -586,7 +586,7 @@ components:
         dailyCap:
           type: [integer, 'null']
           format: int64
-          description: The global daily cap (`H2_LIVE_WEB_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0060); null only without a runtime setting.
+          description: The global daily cap (`H2_LIVE_WEB_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0007); null only without a runtime setting.
 
     Me:
       type: object
@@ -613,7 +613,7 @@ components:
     Monetisation:
       type: object
       description: >-
-        How the site funds itself (ADR 0057), as configured. Each value is null while that part is off (no link, no
+        How the site funds itself (ADR 0030), as configured. Each value is null while that part is off (no link, no
         script), and all are null on the admin host. Read with GET /me, which every page already calls.
       required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher, adsenseClient, adsenseSlot]
       properties:
@@ -624,9 +624,9 @@ components:
         adsenseClient:
           type: [string, 'null']
           description: >-
-            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0059). Null unless the ad unit is set too:
+            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0030). Null unless the ad unit is set too:
             then the page loads Google's consent tool and shows the slot on resource pages.
-        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0059)." }
+        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0030)." }
 
     Preferences:
       type: object
@@ -655,7 +655,7 @@ components:
             then always answers from search only and spends nothing.
         webSearches:
           type: object
-          description: Live web searches per feature (ADR 0037), the same numbers as `webSearches` on a search or guide answer.
+          description: Live web searches per feature (ADR 0014), the same numbers as `webSearches` on a search or guide answer.
           required: [search, guide]
           properties:
             search: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }

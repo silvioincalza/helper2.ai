@@ -52,7 +52,7 @@ class IdentityPropertiesBindingTest {
         });
   }
 
-  /** ADMIN is the back office's (ADR 0069): the public app reads no allow-list, whatever is set. */
+  /** ADMIN is the back office's (ADR 0032): the public app reads no allow-list, whatever is set. */
   @Test
   void thePublicAppHasNoAdmins() {
     context

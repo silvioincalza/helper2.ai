@@ -15,8 +15,9 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * The setup guide's settings, from {@code helper2.setup}. The defaults and the {@code H2_}
- * variables are in application.yaml (ADR 0007 point 8); the hosts and the registry repeat the
- * sources' keys there, so the setup guide reads the same hosts without reading the sources' prefix.
+ * variables are in application.yaml (ADR 0007 (part was 0007) point 8); the hosts and the registry
+ * repeat the sources' keys there, so the setup guide reads the same hosts without reading the
+ * sources' prefix.
  *
  * @param documentTimeout per document fetch
  * @param npmReadmeBaseUrl where npm READMEs are read (jsDelivr)

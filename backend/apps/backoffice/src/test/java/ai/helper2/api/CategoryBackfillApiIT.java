@@ -13,8 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-/** Categories as a search filter (ADR 0053): the list, the filter, the facet and the backfill. */
-/** An administrator assigns the categories of the whole catalog again (ADR 0053). */
+/** Categories as a search filter (ADR 0013): the list, the filter, the facet and the backfill. */
+/** An administrator assigns the categories of the whole catalog again (ADR 0013). */
 class CategoryBackfillApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;

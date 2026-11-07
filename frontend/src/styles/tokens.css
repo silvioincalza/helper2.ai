@@ -1,5 +1,5 @@
 /*
- * Helper2.ai design system v4 (docs/design/system/tokens.json, ADR 0042): warm paper, deep indigo ink, one saffron
+ * Helper2.ai design system v4 (docs/design/system/tokens.json, ADR 0028): warm paper, deep indigo ink, one saffron
  * accent. Geist Mono for the interface, Geist for running text and titles, the system monospace for code.
  * Light on :root, dark under [data-theme="dark"] (public/theme.js sets it from the saved choice; light is the default). Saffron is a fill, never small text on paper (2.9:1):
  * text on it is indigo, and saffron-coloured text uses --accent-ink.

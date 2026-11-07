@@ -28,7 +28,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Public LinkedIn pages about AI (ADR 0061): articles, posts, company and showcase pages, events.
+ * Public LinkedIn pages about AI (ADR 0021): articles, posts, company and showcase pages, events.
  * LinkedIn has no search API and forbids scraping, so we never call LinkedIn: one Tavily search per
  * fixed query, restricted to linkedin.com with include_domains, on a weekly interval (one credit
  * per query and pass, search_depth basic). The URL path alone decides what a page is; personal
@@ -37,7 +37,7 @@ import tools.jackson.databind.JsonNode;
  * carry no author name, and excerpts are short. A pass asks only for pages published since the
  * previous complete pass (start_date), or the last month on the first.
  *
- * <p>Built as the discovery collectors are (ADR 0051): every search counts its credits on the
+ * <p>Built as the discovery collectors are (ADR 0022): every search counts its credits on the
  * global counter and the Scout's daily cap ({@link ScoutTavilyCredits}, feature {@value #FEATURE});
  * past the cap the collector skips. A search that fails alone is logged and skipped; when half or
  * more fail, the pass fails and its checkpoint stays. Docs:
@@ -49,7 +49,7 @@ public class LinkedInCollector implements Collector {
 
   static final String ID = CollectorDescriptors.LINKEDIN;
 
-  /** Circuit breaker and retry of this collector's calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector's calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   /** The tag every accepted page gets, so search can filter LinkedIn pages. */
@@ -162,7 +162,7 @@ public class LinkedInCollector implements Collector {
 
   /**
    * Every query, merged by URL. A search that fails alone is skipped, so the paid ones are kept;
-   * when half or more fail, the pass fails and its checkpoint stays (as discovery, ADR 0051).
+   * when half or more fail, the pass fails and its checkpoint stays (as discovery, ADR 0022).
    */
   private Map<String, Candidate> searchAll(@Nullable String since, int perQuery) {
     Map<String, Candidate> byUrl = new LinkedHashMap<>();

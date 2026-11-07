@@ -42,7 +42,7 @@ const view = (answer: GuideResponse) =>
     </MemoryRouter>,
   );
 
-describe('research trail (ADR 0044)', () => {
+describe('research trail (ADR 0018)', () => {
   it('lists each query the guide wrote, marked and labelled AI-written', () => {
     view(base);
     const queries = within(

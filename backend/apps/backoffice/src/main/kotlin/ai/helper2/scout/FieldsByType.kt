@@ -3,7 +3,7 @@ package ai.helper2.scout
 import ai.helper2.shared.ResourceType
 
 /**
- * What an enrichment may say about a resource of a type (ADR 0062). An article, a news item or a
+ * What an enrichment may say about a resource of a type (ADR 0023). An article, a news item or a
  * paper is writing about other resources: the price, licence or platforms it quotes are facts of
  * the model or product it talks about, not of the page. So writing keeps only who it is for, how
  * technical it is and its topic, and it names what it is about with an ABOUT relationship. Every

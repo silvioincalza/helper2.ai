@@ -24,7 +24,8 @@ import org.springframework.core.io.DefaultResourceLoader;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The page's HTML: written into the shell, and safe whatever a source's text says (ADR 0050 §4).
+ * The page's HTML: written into the shell, and safe whatever a source's text says (ADR 0029 (part
+ * was 0050) §4).
  */
 class PageHtmlTest {
 
@@ -156,7 +157,7 @@ class PageHtmlTest {
   void aShellWithoutTheMarkersStopsTheStart() {
     assertThatThrownBy(() -> html("<html><head></head><body><div id=\"app\"></div></body></html>"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("ADR 0050");
+        .hasMessageContaining("ADR 0029");
   }
 
   @Test
@@ -168,7 +169,7 @@ class PageHtmlTest {
 
   @Test
   void theShellIsReadFromAFileAndAMissingFileMeansNoTemplate() throws IOException {
-    // In the cluster: file:/shell/index.html, copied from the web image (ADR 0069).
+    // In the cluster: file:/shell/index.html, copied from the web image (ADR 0032).
     Path shell = Files.writeString(dist.resolve("shell.html"), SHELL);
     assertThat(templateAt("file:" + shell)).isTrue();
     assertThat(templateAt("file:" + dist.resolve("missing/index.html"))).isFalse();
@@ -190,12 +191,12 @@ class PageHtmlTest {
       var m = route.matcher(line);
       if (!m.find()) continue;
       String concrete = m.group(1).replace(":id", ID.toString()).replace(":slug?", "a-slug");
-      // The back office is its own web app (ADR 0069): every route here is a public page.
+      // The back office is its own web app (ADR 0032): every route here is a public page.
       String address = concrete;
       String path = m.group(1);
       boolean known = PageAddress.Companion.of(address) != PageAddress.Unknown.INSTANCE;
       assertThat(known)
-          .as("routes.tsx path '%s' is a page the server knows (ADR 0050)", path)
+          .as("routes.tsx path '%s' is a page the server knows (ADR 0029)", path)
           .isTrue();
     }
   }

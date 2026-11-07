@@ -1,5 +1,5 @@
 /**
- * Google's certified consent tool (Privacy & messaging, IAB TCF), used while AdSense is on (ADR 0059). It asks
+ * Google's certified consent tool (Privacy & messaging, IAB TCF), used while AdSense is on (ADR 0030). It asks
  * visitors where the EU, EEA, UK or Swiss rules apply, for AdSense and Google Analytics together. Google Analytics
  * does not read the answer itself here: the page reads it from the TCF API and loads GA only after a yes, so after a
  * "no" nothing is sent at all (Google's automatic mode would still send cookieless pings).

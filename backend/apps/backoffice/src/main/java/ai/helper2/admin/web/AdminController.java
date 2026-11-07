@@ -59,7 +59,7 @@ class AdminController implements AdminApi {
     this.backfill = backfill;
   }
 
-  /** Re-checks stored enrichment answers by code (ADR 0056); counts only. */
+  /** Re-checks stored enrichment answers by code (ADR 0023); counts only. */
   @Override
   public ResponseEntity<EnrichmentRecheckDto> recheckEnrichments() {
     RecheckResult r = recheck.runByAdmin(adminId());

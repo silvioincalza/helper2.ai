@@ -15,7 +15,7 @@ export function openConsentSettings() {
 }
 
 /**
- * Google Analytics only after a yes (ADR 0057). While analytics is off on the server, nothing shows and nothing
+ * Google Analytics only after a yes (ADR 0030). While analytics is off on the server, nothing shows and nothing
  * loads. The banner never covers the search box, and search works before the visitor answers. "Reject" and
  * "Accept" are the same size and style. Nothing loads on the back office.
  */
@@ -25,7 +25,7 @@ export function AnalyticsConsent() {
 }
 
 /**
- * While AdSense is on (ADR 0059): Google's consent tool asks, for AdSense and Google Analytics together, where the
+ * While AdSense is on (ADR 0030): Google's consent tool asks, for AdSense and Google Analytics together, where the
  * EU, EEA, UK or Swiss rules apply. GA loads after a yes, and without a question where the rules do not apply; a
  * "no", or a later withdrawal, turns it off. Nothing loads on the back office. Google draws the question.
  */
@@ -63,7 +63,7 @@ function GoogleConsent({ client }: { client: string }) {
   return null;
 }
 
-/** Our own question, while only Google Analytics is on (ADR 0057). */
+/** Our own question, while only Google Analytics is on (ADR 0030). */
 function OwnConsentBar() {
   const { t } = useTranslation();
   const { ga4MeasurementId } = useMonetisation();

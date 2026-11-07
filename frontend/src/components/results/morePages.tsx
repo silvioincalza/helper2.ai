@@ -14,7 +14,7 @@ interface PageState {
 }
 
 /**
- * The pages after the first, for "Show more" (ADR 0042, decision 7). The first page is the results view's own
+ * The pages after the first, for "Show more" (ADR 0028 (part was 0042), decision 7). The first page is the results view's own
  * search; `page` in the URL says how many more pages show under it, so Back and a reload come back to the same list.
  * Each page is its own GET /search through useApi, so a page already loaded comes from the recent-answers cache on
  * Back, without a request and without moving the list. On Back the hook mounts again with no page in yet: a page in

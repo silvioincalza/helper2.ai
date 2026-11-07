@@ -1,0 +1,54 @@
+# Flowchart: what a public page loads for Google AdSense and the consent tool (ADR 0030).
+# Source of truth: backend/libs/monetisation/src/main/java/ai/helper2/monetisation/Monetisation.java,
+#   identity/config/ContentSecurityPolicy.java, CspHeaderWriter.java, pages/internal/PageHtml.java,
+#   pages/web/CrawlerFiles.java, frontend/src/lib/googleConsent.ts, components/AnalyticsConsent.tsx,
+#   components/AdSenseSlot.tsx, components/Layout.tsx (Privacy choices).
+# Render: cd docs/diagrams && d2 fmt flow-0030-adsense.d2 && d2 flow-0030-adsense.d2 flow-0030-adsense.svg
+
+...@style
+
+direction: down
+
+req: "A public request" {class: end}
+pub: "Publisher set?" {class: decision}
+plain: "As before:\nno tag, /ads.txt 404" {class: data}
+check: "Site check tag on every page,\n/ads.txt names Google" {class: hot}
+unit: "Ad unit set too?" {class: decision}
+strict: "CSP of ADR 0030,\nour own analytics bar" {class: data}
+nonce: "Nonce CSP for the whole public site;\nGoogle's consent tool on every page" {class: hot}
+
+ga: {
+  class: group
+  direction: down
+  applies: "gdprApplies?" {class: decision}
+  yes: "Purposes 1 + 8 and\nvendor 755 consented?" {class: decision}
+  mode: "Consent mode:\nanalytics storage?" {class: decision}
+  wait: "Wait for\nCONSENT_MODE_DATA_READY" {class: data}
+  load: "Load Google Analytics" {class: hot}
+  off: "ga-disable, delete _ga cookies" {class: data}
+  applies -> load: no
+  applies -> yes: yes
+  yes -> mode: yes
+  yes -> off: no
+  mode -> load: "1 granted,\n3 not applicable"
+  mode -> off: "2 denied,\n4 not configured"
+  mode -> wait: "0 or no data yet"
+  wait -> mode: "read again"
+}
+blocked: "Tool blocked: no analytics" {class: fail}
+
+page: "Resource page?" {class: decision}
+slot: "One AdSense box, Sponsored" {class: hot}
+noslot: "No AdSense on this page" {class: data}
+
+req -> pub
+pub -> plain: no
+pub -> check: yes
+check -> unit
+unit -> strict: no
+unit -> nonce: yes
+nonce -> ga.applies: "TCF answer"
+nonce -> blocked: "no TCF API"
+nonce -> page
+page -> slot: yes
+page -> noslot: no

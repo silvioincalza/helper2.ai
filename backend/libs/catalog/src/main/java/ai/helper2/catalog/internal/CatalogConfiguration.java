@@ -41,7 +41,7 @@ class CatalogConfiguration {
   /** The same index searched by meaning. */
   static final String SEMANTIC_SOURCE = "helper2-semantic";
 
-  /** The catalog's numbers for GET /api/v1/policy (ADR 0052). */
+  /** The catalog's numbers for GET /api/v1/policy (ADR 0029). */
   @Bean
   CatalogPolicy catalogPolicy(CatalogProperties catalog, CatalogRetentionProperties retention) {
     return new CatalogPolicy(
@@ -53,7 +53,7 @@ class CatalogConfiguration {
         NvidiaEmbedder.MAX_REASON);
   }
 
-  /** The Scout's numbers the Privacy page states (ADR 0052). */
+  /** The Scout's numbers the Privacy page states (ADR 0029). */
   @Bean
   ScoutPolicy scoutPolicy(ScoutEvidenceProperties evidence) {
     return ScoutPolicy.of(evidence.pageTextTtl(), evidence.pageReadTtl());
@@ -128,7 +128,7 @@ class CatalogConfiguration {
             null,
             "Editorial seed written by the Helper2 team; not live data. Dates are unknown unless sourced.",
             // The seed is products; an admin adds models and other tools from the review list (ADR
-            // 0064).
+            // 0026).
             EnumSet.copyOf(CuratedTypes.TYPES),
             timeout,
             Duration.ZERO,

@@ -15,7 +15,7 @@ enum class Robots(val content: String) {
 }
 
 /**
- * What the server writes into the app shell for one address (ADR 0050). [canonicalPath] is joined
+ * What the server writes into the app shell for one address (ADR 0029). [canonicalPath] is joined
  * to the public host by the adapter. Texts are plain: the adapter escapes them.
  */
 data class PageHead(
@@ -65,7 +65,7 @@ data class ResourceView(
 ) {
   /**
    * The description when a source (or a person) wrote it. An AI-written one never goes into a meta
-   * tag or JSON-LD: they cannot carry the AI label (ADR 0038).
+   * tag or JSON-LD: they cannot carry the AI label (ADR 0018).
    */
   val sourceDescription: String?
     get() =
@@ -87,8 +87,8 @@ data class ResourceView(
 }
 
 /**
- * Which resource pages are worth a search engine's index (ADR 0050 §5). The sitemap query in the
- * catalog applies the same rule; an integration test keeps the two in line.
+ * Which resource pages are worth a search engine's index (ADR 0029 (part was 0050) §5). The sitemap
+ * query in the catalog applies the same rule; an integration test keeps the two in line.
  */
 object IndexPolicy {
   val INDEXED_TYPES =

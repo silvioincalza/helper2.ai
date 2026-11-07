@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 
-/** Search and the catalog read the same category list the discovery collectors run (ADR 0053). */
+/** Search and the catalog read the same category list the discovery collectors run (ADR 0013). */
 class CategoriesPropertiesBindingTest {
 
   @Configuration(proxyBeanMethods = false)

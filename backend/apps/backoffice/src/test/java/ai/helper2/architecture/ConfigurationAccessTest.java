@@ -20,7 +20,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
 
 /**
- * Typed settings (ADR 0007 point 8): the code reads configuration only through
+ * Typed settings (ADR 0007 (part was 0007) point 8): the code reads configuration only through
  * {@code @ConfigurationProperties} records. No {@code @Value} on a field, method or parameter, and
  * no {@code Environment.getProperty}. {@code @Scheduled} and {@code @ConditionalOnProperty}
  * placeholders are not {@code @Value} and stay allowed.

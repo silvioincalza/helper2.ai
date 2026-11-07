@@ -1,4 +1,4 @@
-# The migrate step (ADR 0070): Flyway migrates as the owner, then the apps' roles get their login and
+# The migrate step (ADR 0004): Flyway migrates as the owner, then the apps' roles get their login and
 # password, and the Job ends. The only workload with the owner's password; both apps connect as their own
 # role and only check the schema, waiting (helper2.schema.wait-for) while this Job runs. A plain Job, not a
 # Helm hook: a pre-install hook would run before Postgres exists, and on the first upgrade its NetworkPolicy

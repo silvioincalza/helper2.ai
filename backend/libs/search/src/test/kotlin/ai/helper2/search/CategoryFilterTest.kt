@@ -9,7 +9,7 @@ import ai.helper2.shared.ValueOrigin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** A person filters search results by category (ADR 0053), live web results included. */
+/** A person filters search results by category (ADR 0013), live web results included. */
 class CategoryFilterTest {
 
   private val matcher =

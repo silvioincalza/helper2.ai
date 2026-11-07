@@ -1,5 +1,5 @@
 {{- /*
-Alert rules for the Prometheus Operator. The rules are deploy/monitoring/helper2-rules.yaml (ADR 0026), read
+Alert rules for the Prometheus Operator. The rules are deploy/monitoring/helper2-rules.yaml (ADR 0031), read
 through the symlink files/helper2-rules.yaml: one source for a plain Prometheus and for the operator.
 */}}
 {{- if .Values.monitoring.prometheusRule.enabled }}

@@ -2,7 +2,7 @@
 # Checks an app.env before it becomes the env Secret: KEY=value lines from column 0 and # comments only,
 # every key matches ^H2_[A-Z0-9_]+$ (the only names the app reads, so a misspelt or unprefixed key fails
 # here), no line ends in a space or tab (kubectl keeps it in the value), the database owner's and both app
-# roles' passwords have 32+ characters of base64 or base64url (letters, digits, + / = _ -) and differ (ADR 0070:
+# roles' passwords have 32+ characters of base64 or base64url (letters, digits, + / = _ -) and differ (ADR 0004:
 # no space or quote, so they pass through env, JDBC and libpq unchanged), and the three Redis passwords (default
 # user, h2_public, h2_backoffice) have 32+ letters and digits only and differ (they go into the Redis ACL line
 # as is, where a space or a symbol could add rules, and their hash

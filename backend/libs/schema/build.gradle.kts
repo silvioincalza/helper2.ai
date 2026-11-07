@@ -1,4 +1,4 @@
-// The Flyway migrations (classpath db/migration) and how the apps apply them (ADR 0070): the
+// The Flyway migrations (classpath db/migration) and how the apps apply them (ADR 0004): the
 // migrate step of the public image (a Kubernetes Job in a deployment) migrates as the owner and
 // opens the apps' logins; each app only checks the schema, as its own role. Applied files are
 // byte-frozen: Flyway checks their checksums.

@@ -83,7 +83,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
             // The numbers of the text pages: one read per page view, as cheap as the home reads.
             "getPolicy",
             limiter("policy", limits.recentPerMinute(), Duration.ofMinutes(1)),
-            // The category list (ADR 0053): one read per results page, then cached by the browser.
+            // The category list (ADR 0013): one read per results page, then cached by the browser.
             "listCategories",
             limiter("categories", limits.recentPerMinute(), Duration.ofMinutes(1)));
   }
@@ -130,7 +130,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
   /**
    * Who the limit counts for. On the public host, the client address: it honours X-Forwarded-For
    * only when H2_FORWARD_HEADERS_STRATEGY is set behind a trusted proxy. On the admin host there is
-   * no Cloudflare in front, so a forwarded address could be the client's own choice (ADR 0035): the
+   * no Cloudflare in front, so a forwarded address could be the client's own choice (ADR 0024): the
    * key is the signed-in administrator, and one shared key for whoever is not signed in yet. The
    * limit still holds there, but nothing a client sends can reset it.
    */

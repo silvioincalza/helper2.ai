@@ -5,7 +5,7 @@ import java.util.UUID
 
 /**
  * The readable part of a resource address: its title in lower case, ASCII letters and digits joined
- * by hyphens, at most [MAX] characters cut at a hyphen (ADR 0050). The id stays the key; the slug
+ * by hyphens, at most [MAX] characters cut at a hyphen (ADR 0029). The id stays the key; the slug
  * is computed from the title on every request, so a renamed resource gets a new one and the old
  * address answers 301. `frontend/src/lib/slug.ts` computes the same slug.
  */

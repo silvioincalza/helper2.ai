@@ -18,7 +18,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 
 /**
- * Translates a non-English search query into English search terms with the fast model (ADR 0011).
+ * Translates a non-English search query into English search terms with the fast model (ADR 0010).
  * Every call is charged to its own daily budget, not the guide's: search allows far more requests
  * per client than the guide. When the budget is spent, the model fails or the {@code llm-chat}
  * circuit is open, the answer is null and search runs untranslated. Answers are shared by every

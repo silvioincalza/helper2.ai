@@ -51,7 +51,7 @@ import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
  *       on the error page.
  * </ul>
  *
- * <p>Sessions are stored as JSON (ADR 0070), never with Java serialization: whoever can write a
+ * <p>Sessions are stored as JSON (ADR 0004), never with Java serialization: whoever can write a
  * session key could otherwise make the app run code while it reads the session. Only the types of
  * Spring Security's Jackson modules (the signed-in user, its roles, the sign-in request) are read
  * back.
@@ -114,7 +114,7 @@ class SessionConfiguration {
   }
 
   /**
-   * Reads run under the {@code redis} policy (ADR 0033) and answer "no session" while the store
+   * Reads run under the {@code redis} policy (ADR 0006) and answer "no session" while the store
    * fails or its circuit is open; writes still fail.
    */
   static final class FailSoftSessionRepository<S extends Session> implements SessionRepository<S> {

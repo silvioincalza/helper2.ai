@@ -18,7 +18,7 @@ type Notice =
   | { kind: 'failed' };
 
 /**
- * The hosts discovery knows by name (ADR 0063, UJ-9). A post on a writing site is proposed as an
+ * The hosts discovery knows by name (ADR 0022, UJ-9). A post on a writing site is proposed as an
  * article; a page on a directory is never kept. The admin adds a host with a reason, or removes one
  * after a review; the next discovery run uses the lists as they are then.
  */

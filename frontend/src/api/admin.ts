@@ -34,7 +34,7 @@ import { absolute, API_BASE, request, send } from './client';
 
 /**
  * The back office's calls. Only the lazy admin pages import this module, so the admin API stays out of
- * the JavaScript a public page loads (ADR 0045).
+ * the JavaScript a public page loads (ADR 0026).
  */
 export const adminApi = {
   listReviewItems: (
@@ -62,12 +62,12 @@ export const adminApi = {
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, {
       body,
     }),
-  /** Decides up to 100 items, each on its own; one outcome per item, in the order sent (ADR 0045). */
+  /** Decides up to 100 items, each on its own; one outcome per item, in the order sent (ADR 0026). */
   resolveReviewItems: (body: ReviewBulkResolution) =>
     request<ReviewBulkResult>('POST', '/admin/review-items/resolutions', { body }),
-  /** What a review item is about: its run or relationship, with the quotes behind them (ADR 0045). 404 for no item. */
+  /** What a review item is about: its run or relationship, with the quotes behind them (ADR 0026). 404 for no item. */
   /**
-   * Points an open relationship candidate at a catalog resource, a resource added now, or another name (ADR 0064).
+   * Points an open relationship candidate at a catalog resource, a resource added now, or another name (ADR 0026).
    * The item stays open. 400 for an unusable value, 409 when the item is decided or not a relationship candidate.
    */
   changeRelationshipTarget: (id: string, body: RelationshipTargetChange) =>
@@ -77,12 +77,12 @@ export const adminApi = {
       { body },
     ),
   /**
-   * Fixes an open resource candidate's title, type or tags before it is accepted (ADR 0065). 400 for an unusable
+   * Fixes an open resource candidate's title, type or tags before it is accepted (ADR 0026). 400 for an unusable
    * value, 409 when the item is decided, is not a candidate, or changed since it was read.
    */
   editCandidate: (id: string, body: CandidateEdit) =>
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/candidate`, { body }),
-  /** Sets a resource's own value of a field, over every source and every run (ADR 0066). 204; 400 for a bad value. */
+  /** Sets a resource's own value of a field, over every source and every run (ADR 0026). 204; 400 for a bad value. */
   setResourceField: async (id: string, field: ResourceField, body: ResourceFieldValue) => {
     await send(
       'PUT',
@@ -92,7 +92,7 @@ export const adminApi = {
       { body },
     );
   },
-  /** Drops the AI's values of a field of a resource (ADR 0066). 204. */
+  /** Drops the AI's values of a field of a resource (ADR 0026). 204. */
   dropResourceField: async (id: string, field: ResourceField) => {
     await send(
       'POST',
@@ -108,7 +108,7 @@ export const adminApi = {
     }),
   listScoutRuns: (signal?: AbortSignal) =>
     request<ScoutRun[]>('GET', '/admin/scout-runs', { signal }),
-  /** Starts assigning every resource's categories again, in the background (ADR 0053). */
+  /** Starts assigning every resource's categories again, in the background (ADR 0013). */
   backfillCategories: async (): Promise<void> => {
     // 202 with no body.
     await send('POST', absolute(`${API_BASE}/admin/category-backfill`), {});
@@ -116,7 +116,7 @@ export const adminApi = {
   /** Answers at once with the started run's records (RUNNING); follow them with listScoutRuns. 409 while a run holds the lock. */
   startScoutRun: (sourceId?: string) =>
     request<ScoutRun[]>('POST', '/admin/scout-runs', { body: sourceId ? { sourceId } : {} }),
-  /** Re-checks the stored enrichment answers by code (ADR 0056). */
+  /** Re-checks the stored enrichment answers by code (ADR 0023). */
   recheckEnrichments: () => request<EnrichmentRecheck>('POST', '/admin/enrichment-recheck'),
   /** Counts for the back office landing page; the server computes them at most once a minute. */
   getAdminOverview: (signal?: AbortSignal) =>

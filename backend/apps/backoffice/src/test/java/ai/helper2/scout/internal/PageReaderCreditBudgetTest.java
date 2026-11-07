@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** Extract credits take the page step's own cap and the global Tavily credits (ADR 0056). */
+/** Extract credits take the page step's own cap and the global Tavily credits (ADR 0023). */
 class PageReaderCreditBudgetTest {
 
   final Clock clock = Clock.fixed(Instant.parse("2026-11-05T10:00:00Z"), ZoneOffset.UTC);

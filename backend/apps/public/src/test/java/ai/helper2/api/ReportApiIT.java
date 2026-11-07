@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 /**
- * A visitor reports an issue with a resource (ADR 0035): accepted with the contract's answer, or a
+ * A visitor reports an issue with a resource (ADR 0024): accepted with the contract's answer, or a
  * plain bad request. The back office reviews it (ReportAndReviewIT there).
  */
 class ReportApiIT extends ApiTestBase {

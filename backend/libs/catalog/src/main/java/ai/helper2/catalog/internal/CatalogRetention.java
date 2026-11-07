@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 /**
- * The catalog's retention deletes (ADR 0034). Each method deletes what its rule names, older than
+ * The catalog's retention deletes (ADR 0035). Each method deletes what its rule names, older than
  * the cutoff it is given, and returns how many rows it deleted. Child rows go by their foreign keys
  * (ON DELETE CASCADE or SET NULL).
  *
@@ -51,8 +51,8 @@ public class CatalogRetention {
 
   /**
    * The NEWS and ARTICLE records of web sources ({@link WebSources}: Tavily's live search, the
-   * Scout's Tavily queries, the discovery categories' list pages, ADR 0051, and accepted LinkedIn
-   * posts and articles, ADR 0061) last retrieved before [cutoff], then the observed or indexed
+   * Scout's Tavily queries, the discovery categories' list pages, ADR 0022, and accepted LinkedIn
+   * posts and articles, ADR 0021) last retrieved before [cutoff], then the observed or indexed
    * resources they leave without any record. A product accepted from discovery or LinkedIn stays
    * while it is listed. Returns the records deleted.
    */
@@ -85,7 +85,7 @@ public class CatalogRetention {
   }
 
   /**
-   * Awesome-list search index rows (ADR 0055) that no pass refreshed since [cutoff]: the list left
+   * Awesome-list search index rows (ADR 0010) that no pass refreshed since [cutoff]: the list left
    * the lists the collector reads. Returns the rows deleted, entries and lists together.
    */
   public int deleteListIndexUpdatedBefore(Instant cutoff) {

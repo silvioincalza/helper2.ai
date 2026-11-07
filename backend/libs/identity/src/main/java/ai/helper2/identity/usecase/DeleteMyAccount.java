@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A signed-in user deletes their account: the app_user row and, with it, every bookmark, then the
- * user's daily web-search counters (ADR 0037). Issue reports they sent stay, without a reporter
+ * user's daily web-search counters (ADR 0014). Issue reports they sent stay, without a reporter
  * (the reviewer still needs them). The caller ends the session. While Redis is down the counters
  * stay until they expire, within a day.
  */

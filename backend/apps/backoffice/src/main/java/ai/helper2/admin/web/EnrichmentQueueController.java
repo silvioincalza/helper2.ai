@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * /api/v1/admin/enrichment-queue (ADMIN only, admin port): the queue page by page, and the admin's
- * actions on one resource (requeue, skip, prioritise; ADR 0045 §7).
+ * actions on one resource (requeue, skip, prioritise; ADR 0026 (part was 0045) §7).
  */
 @RestController
 @RequestMapping("/api/v1")

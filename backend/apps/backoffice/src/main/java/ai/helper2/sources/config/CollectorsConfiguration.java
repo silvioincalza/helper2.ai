@@ -49,8 +49,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestClient;
 
 /**
- * The Scout's collectors and the evidence readers (ADR 0018, 0043, 0056): the back office runs
- * them. The live search sources are the sources library's ({@code LiveSourcesConfiguration}).
+ * The Scout's collectors and the evidence readers (ADR 0020, 0023): the back office runs them. The
+ * live search sources are the sources library's ({@code LiveSourcesConfiguration}).
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({
@@ -118,7 +118,7 @@ class CollectorsConfiguration {
 
   /**
    * Weekly Tavily searches on learning platforms; what it finds goes to the admin review list (ADR
-   * 0032 §8).
+   * 0016 (part was 0032) §8).
    */
   @Bean
   CourseCollector courseCollector(
@@ -140,7 +140,7 @@ class CollectorsConfiguration {
 
   /**
    * The Tavily credits the Scout's searches spend (discovery and LinkedIn), counted with the live
-   * search's and capped per UTC day (ADR 0051). The discovery collectors themselves are registered
+   * search's and capped per UTC day (ADR 0022). The discovery collectors themselves are registered
    * per category by {@link DiscoveryCollectorRegistrar}.
    */
   @Bean
@@ -154,7 +154,7 @@ class CollectorsConfiguration {
 
   /**
    * Weekly Tavily searches restricted to linkedin.com; every page it keeps goes to the admin review
-   * list (ADR 0061). Its credits count on the Scout's daily cap, as discovery's.
+   * list (ADR 0021). Its credits count on the Scout's daily cap, as discovery's.
    */
   @Bean
   LinkedInCollector linkedInCollector(
@@ -177,7 +177,7 @@ class CollectorsConfiguration {
 
   /**
    * Weekly Tavily searches for upcoming AI events; the reasoning model reads each page found and
-   * code checks its days against the page (ADR 0067). Without a model the collector is off. Its
+   * code checks its days against the page (ADR 0021). Without a model the collector is off. Its
    * credits count on the Scout's daily cap; its model calls on their own daily cap, counted in
    * Redis.
    */
@@ -219,7 +219,7 @@ class CollectorsConfiguration {
         reader);
   }
 
-  /** The Scout sources' daily caps for the back office's Settings page (ADR 0045). */
+  /** The Scout sources' daily caps for the back office's Settings page (ADR 0026). */
   @Bean
   SettingsGroup scoutSourceSettings(
       CollectorProperties.ScoutCredits credits, CollectorProperties.GitHubAwesome awesome) {
@@ -302,7 +302,7 @@ class CollectorsConfiguration {
   }
 
   /**
-   * Deep search (ADR 0058): a product link is skipped on discovery's excluded domains too, so a
+   * Deep search (ADR 0022): a product link is skipped on discovery's excluded domains too, so a
    * list and a search keep the same sites out.
    */
   private static GitHubAwesomeCollector.Deep deep(
@@ -350,7 +350,7 @@ class CollectorsConfiguration {
   }
 
   /**
-   * A product's own pages for the Scout's evidence ladder (ADR 0056): Tavily Extract. Off (not
+   * A product's own pages for the Scout's evidence ladder (ADR 0023): Tavily Extract. Off (not
    * available) without H2_LIVE_WEB_API_KEY.
    */
   @Bean
@@ -367,7 +367,7 @@ class CollectorsConfiguration {
   }
 
   /**
-   * README and model-card text for the Scout's gap round (ADR 0043), with the GitHub and Hub
+   * README and model-card text for the Scout's gap round (ADR 0023), with the GitHub and Hub
    * settings and tokens.
    */
   @Bean

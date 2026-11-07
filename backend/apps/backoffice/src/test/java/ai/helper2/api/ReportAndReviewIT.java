@@ -25,7 +25,7 @@ class ReportAndReviewIT extends ApiTestBase {
   final String deepl = ResourceId.of(CanonicalUrl.of("https://deepl.com/translator")).toString();
 
   /**
-   * A visitor's report (sent to the public app, ADR 0069) opens a review item here. The report is
+   * A visitor's report (sent to the public app, ADR 0032) opens a review item here. The report is
    * made through the same catalog use case the public app's endpoint calls.
    */
   @Test

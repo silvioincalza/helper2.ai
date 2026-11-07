@@ -1,4 +1,4 @@
-# The Grype vulnerability database, cached for the day (ADR 0046): one download per day across jobs, a fresh one the
+# The Grype vulnerability database, cached for the day (ADR 0033): one download per day across jobs, a fresh one the
 # next day. The download is retried once; Grype then runs with auto-update off, so a scan never downloads it again.
 name: grype-db
 description: Restore or download today's Grype database

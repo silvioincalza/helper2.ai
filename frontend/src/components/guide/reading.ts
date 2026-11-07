@@ -16,7 +16,7 @@ interface ReadingPart {
   label: string;
   /** What ✕ removes when asking again; absent when the part cannot be removed. */
   drop?: string | undefined;
-  /** The planner wrote the label (ADR 0038). Intent and period labels are our own text; subjects are the user's words. */
+  /** The planner wrote the label (ADR 0018). Intent and period labels are our own text; subjects are the user's words. */
   ai?: boolean;
 }
 

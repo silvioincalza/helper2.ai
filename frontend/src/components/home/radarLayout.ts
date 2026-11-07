@@ -2,7 +2,7 @@ import type { SourceInfo } from '@/api/types';
 import { newThisWeek } from '@/lib/v4Fields';
 
 /**
- * Where the Home radar's dots go (ADR 0042). Full circles centred on the hero, the title in the middle. The radar shows a
+ * Where the Home radar's dots go (ADR 0028). Full circles centred on the hero, the title in the middle. The radar shows a
  * few external sources at a time; each is placed when it comes on (`placeDot`), clear of the ones already shown,
  * starting from its own point, so it tends to come back to the same spot. Pure functions: the component measures, this
  * module places.
@@ -150,7 +150,7 @@ function* anywhere(f: RadarFrame): Generator<Slot> {
 }
 
 /**
- * The spot of a source that comes onto the radar now (ADR 0042), clear of the dots already on it (`placed`): live
+ * The spot of a source that comes onto the radar now (ADR 0028), clear of the dots already on it (`placed`): live
  * sources on the two inner circles, the others on the two outer ones. It starts from the source's own point on one of
  * its circles, so a source comes back to the same spot while that is free, then moves along the circle to the nearest
  * free point, then to the other circle of its pair, then to the other pair, then anywhere in the hero. Only a few dots

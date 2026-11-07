@@ -13,7 +13,7 @@ import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * The migrate step of the public image (ADR 0070): {@code java -jar app.jar migrate}. A deployment
+ * The migrate step of the public image (ADR 0004): {@code java -jar app.jar migrate}. A deployment
  * runs it as a Kubernetes Job, the only workload with the owner's password: Flyway migrates as the
  * owner, then {@link AppLogins} opens the apps' logins, and the process exits.
  *

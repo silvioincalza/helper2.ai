@@ -79,7 +79,7 @@ function fill(t: TFunction, key: string, parts: Record<string, ReactNode>): Reac
 
 /**
  * "X was not found in our sources; showing tools for: Y". The sentence is ours; the name and the search are the
- * planner's words, so each is marked AI-written and the line carries the label (ADR 0038). The server's message is
+ * planner's words, so each is marked AI-written and the line carries the label (ADR 0018). The server's message is
  * never shown. No subject: a date that was not found, and the line says it without the names.
  */
 function SubjectNotFound({ notice, model }: { notice: Notice; model?: string | undefined }) {
@@ -118,7 +118,7 @@ export function foldNoticeExclusions(answer: GuideResponse, kept: number): Notic
 }
 
 /**
- * The research trail's queries (ADR 0044): the planner's words, each marked AI-written. None on an answer reused from
+ * The research trail's queries (ADR 0018): the planner's words, each marked AI-written. None on an answer reused from
  * a similar question: they came from another asker's words, so not even the answer's own search query is shown then.
  */
 function PlannedQueries({ queries, model }: { queries: string[]; model: string }) {
@@ -261,7 +261,7 @@ export function GuideAnswer({
           {t('guide.considered', { n: answer.candidatesConsidered })}
         </p>
       )}
-      {/* Without the steps, the search notices follow the one line; never inside an AI-marked element (ADR 0038). */}
+      {/* Without the steps, the search notices follow the one line; never inside an AI-marked element (ADR 0018). */}
       {!answer.model && searchNotices}
 
       {/* With no pick the bar already says why; with picks, this says how the check went. */}

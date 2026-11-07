@@ -57,7 +57,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * ADR 0032: each intent's retrieval and answer, with a scripted model and a recording source. Today
+ * ADR 0016: each intent's retrieval and answer, with a scripted model and a recording source. Today
  * is 2026-10-22.
  */
 class AskGuideIntentsTest {

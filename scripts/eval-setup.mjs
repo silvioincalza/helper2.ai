@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Runs the fixed setup resource set against a running backend and writes docs/evaluation-setup.md (ADR 0031).
+// Runs the fixed setup resource set against a running backend and writes docs/evaluation-setup.md (ADR 0019).
 // Usage: node scripts/eval-setup.mjs [baseUrl]   (default http://localhost:8080; Node 18+)
 //
 // For each resource of docs/eval/setup-resources.json (a URL; its id is the backend's ResourceId of that URL):

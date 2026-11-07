@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * An admin points an open relationship candidate at the right resource (ADR 0064): one already in
+ * An admin points an open relationship candidate at the right resource (ADR 0026): one already in
  * the catalog, one added now ({@link AddCuratedResource}), or no resource under another name. The
  * item stays open; accepting it makes the link VERIFIED. One transaction: a change that is refused
  * adds no resource. Each change is in the audit trail, and so is a resource added for it.

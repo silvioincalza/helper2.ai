@@ -20,7 +20,7 @@ import org.springframework.core.env.Environment;
 
 /**
  * The Scout's collectors as the public site lists them (GET /api/v1/sources, the Home radar): their
- * descriptors only. The collectors run in the back office (ADR 0069); the descriptors come from the
+ * descriptors only. The collectors run in the back office (ADR 0032); the descriptors come from the
  * same library factories and settings there and here, so both apps state the same sources and write
  * the same {@code source} rows. Each is a bean of its own, as the collectors are in the back
  * office: the search module lists every {@link DescribedSource}.
@@ -110,7 +110,7 @@ class ScoutSourceDescriptors {
   }
 
   /**
-   * One discovery category per entry of {@code helper2.categories} (ADR 0051), named as in the back
+   * One discovery category per entry of {@code helper2.categories} (ADR 0022), named as in the back
    * office ({@code discovery-<id>}), read before any bean exists as the back office's registrar
    * does.
    */

@@ -14,8 +14,8 @@ const PAGE_SIZE = 20;
 const COMMAND = 'helper2 audit';
 
 /**
- * What administrators did, newest first (ADR 0023, 7): read-only, paged, the page in the address. A table in the
- * terminal style (ADR 0042), `$ helper2 audit · N` with N every entry on the server.
+ * What administrators did, newest first (ADR 0024 (part was 0023), 7): read-only, paged, the page in the address. A table in the
+ * terminal style (ADR 0028), `$ helper2 audit · N` with N every entry on the server.
  */
 export default function AuditPage() {
   const { t, i18n } = useTranslation();

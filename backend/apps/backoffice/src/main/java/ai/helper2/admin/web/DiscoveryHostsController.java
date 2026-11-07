@@ -21,7 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Discovery's host lists (ADR 0063), ADMIN only, admin port. */
+/** Discovery's host lists (ADR 0022), ADMIN only, admin port. */
 @RestController
 @RequestMapping("/api/v1")
 class DiscoveryHostsController implements DiscoveryHostsApi {

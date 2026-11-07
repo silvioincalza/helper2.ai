@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
- * Opt-in: the real GitHub README and Hugging Face model-card endpoints of the gap round (ADR 0043).
+ * Opt-in: the real GitHub README and Hugging Face model-card endpoints of the gap round (ADR 0023).
  * ./gradlew liveTest The model card is read with H2_HF_TOKEN when it is set, as on prod: a redirect
  * of the raw path to another host would be refused then (ObservedHttp), and every model card would
  * fail.

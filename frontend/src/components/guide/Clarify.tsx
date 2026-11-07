@@ -17,7 +17,7 @@ export function Clarify({
   const { t } = useTranslation();
   const [other, setOther] = useState('');
   // The planner wrote the question and the options; the labels, the free-text field and its buttons are ours.
-  // One "AI-written" label for the group, on screen next to the question (ADR 0038).
+  // One "AI-written" label for the group, on screen next to the question (ADR 0018).
   const model = aiContent?.models[0];
   return (
     <section

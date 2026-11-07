@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * The AI guide's settings, from {@code helper2.guide}. The defaults and the {@code H2_} variables
- * are in application.yaml (ADR 0007 point 8).
+ * are in application.yaml (ADR 0007 (part was 0007) point 8).
  *
  * @param dailyModelCalls global model-call cap per UTC day (ADR 0017); 0 disables the model
  * @param clientDailyQuestions fresh questions per client per UTC day
@@ -21,11 +21,11 @@ import org.springframework.validation.annotation.Validated;
  * @param questionDeadline a question is cancelled after this long
  * @param heartbeat how often the streamed guide sends a keep-alive comment
  * @param cacheTtl how long answers stay in the shared cache
- * @param similarThreshold reuse a similar question's answer at this cosine or closer (ADR 0041);
+ * @param similarThreshold reuse a similar question's answer at this cosine or closer (ADR 0017);
  *     null (empty) = off
- * @param maxCandidates how many results the reasoning model chooses from (ADR 0015)
+ * @param maxCandidates how many results the reasoning model chooses from (ADR 0016)
  * @param chooseMaxTokens output cap of the choose call
- * @param thinking the model's thinking per call (ADR 0014)
+ * @param thinking the model's thinking per call (ADR 0008)
  */
 @Validated
 @ConfigurationProperties("helper2.guide")

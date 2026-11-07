@@ -115,7 +115,8 @@ internal class QuestionReader(private val clock: Clock) {
       }
     // A period with no other intent is a question about what is new ("AI tools from last month").
     val withPeriod = if (window != null && read == GuideIntent.SUGGEST) GuideIntent.NEWEST else read
-    // The user's removal applies last (ADR 0032 §2): a dropped intent stays SUGGEST, period or not.
+    // The user's removal applies last (ADR 0016 (part was 0032) §2): a dropped intent stays
+    // SUGGEST, period or not.
     return if (q.drops.intent) GuideIntent.SUGGEST else withPeriod
   }
 
@@ -129,9 +130,10 @@ internal class QuestionReader(private val clock: Clock) {
   private class PlanCall(val plan: GuideSearchPlan?, val failed: Boolean)
 
   /**
-   * The subject checked for namesakes (ADR 0032 §3): the one grounded subject of a question about
-   * that thing itself, read by the planner (its question back is AI-written), and never once the
-   * user answered a question back or named the kind of thing they mean ("the Gemini model").
+   * The subject checked for namesakes (ADR 0016 (part was 0032) §3): the one grounded subject of a
+   * question about that thing itself, read by the planner (its question back is AI-written), and
+   * never once the user answered a question back or named the kind of thing they mean ("the Gemini
+   * model").
    */
   private fun askBackSubject(
     q: Question,
@@ -173,8 +175,8 @@ internal class QuestionReader(private val clock: Clock) {
 
   /**
    * The planner's question back, kept only when the question really is too vague to search (ADR
-   * 0032 §3): never after the user answered one, and never when a subject, words that name one, or
-   * a period can drive the search.
+   * 0016 (part was 0032) §3): never after the user answered one, and never when a subject, words
+   * that name one, or a period can drive the search.
    */
   fun clarificationOf(q: Question, r: Reading): Clarification? {
     val asked = r.plan?.clarify ?: return null

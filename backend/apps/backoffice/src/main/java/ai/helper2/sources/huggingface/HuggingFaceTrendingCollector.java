@@ -28,7 +28,7 @@ public class HuggingFaceTrendingCollector implements Collector {
 
   static final String ID = CollectorDescriptors.HF_TRENDING;
 
-  /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector\'s calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   private static final int MAX_PAGE = 100;

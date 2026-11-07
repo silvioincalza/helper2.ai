@@ -9,7 +9,7 @@ import {
   trackPage,
 } from './analytics';
 
-describe('analytics (ADR 0057)', () => {
+describe('analytics (ADR 0030)', () => {
   afterEach(() => {
     document.getElementById('h2-ga4')?.remove();
     delete window.gtag;

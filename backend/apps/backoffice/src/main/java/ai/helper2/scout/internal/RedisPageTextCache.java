@@ -20,7 +20,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The cleaned text of a product's pages (ADR 0056), in Redis only, under a SHA-256 of the accepted
+ * The cleaned text of a product's pages (ADR 0023), in Redis only, under a SHA-256 of the accepted
  * page's URL, for at most {@link #MAX_TTL}. Only so that a retry within the day costs no Tavily
  * credit. The text is what {@code UntrustedPageText} left (no hidden text, emails and phone numbers
  * masked, cut to the window), never the raw page. Disposable: when Redis cannot answer, the pages

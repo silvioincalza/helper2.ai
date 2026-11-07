@@ -13,7 +13,7 @@ export interface Categories {
 }
 
 /**
- * The categories search filters by (GET /categories, ADR 0053). Our own fixed words from the configuration, the same for
+ * The categories search filters by (GET /categories, ADR 0013). Our own fixed words from the configuration, the same for
  * everyone: one request per page view, then the browser's cache and the recent-answers cache.
  */
 export function useCategories(): Categories {

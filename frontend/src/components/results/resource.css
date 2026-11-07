@@ -1,4 +1,4 @@
-/* Resource page (ADR 0042, decision 8): one column, v4 fonts and tokens; the tables in the terminal style. */
+/* Resource page (ADR 0028 (part was 0042), decision 8): one column, v4 fonts and tokens; the tables in the terminal style. */
 .h2-res {
   display: flex;
   flex-direction: column;
@@ -236,7 +236,7 @@
   }
 }
 
-/* The resource's categories (ADR 0053): links to the search filtered by each. */
+/* The resource's categories (ADR 0013): links to the search filtered by each. */
 .h2-res__categories {
   gap: var(--space-2);
   margin-bottom: var(--space-2);

@@ -52,7 +52,7 @@ class ClientQuotaTest {
     assertEquals(2, quota.clientsInMemory)
   }
 
-  /** A budget per client is never listed: its name comes from the client's address (ADR 0045). */
+  /** A budget per client is never listed: its name comes from the client's address (ADR 0026). */
   @Test
   fun `no client budget is declared for the back office`() {
     val declared = mutableListOf<String>()

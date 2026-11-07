@@ -19,10 +19,10 @@ export interface TocEntry {
 }
 
 /**
- * A text page (ADR 0040, in design v4 by ADR 0042): the head ([head]: h1, date, lede, contact), the `<i18nKey>`
+ * A text page (ADR 0028, in design v4 by ADR 0028): the head ([head]: h1, date, lede, contact), the `<i18nKey>`
  * sections in a readable column, then [after]. "On this page" links to every section and to [afterToc]: a list
  * beside the text on a wide screen, a collapsible list under the head on a phone. The text itself comes from the
- * locale file, unchanged. A page that states numbers passes [values] from GET /policy (ADR 0042 decision 13); when
+ * locale file, unchanged. A page that states numbers passes [values] from GET /policy (ADR 0028 (part was 0042) decision 13); when
  * they cannot be read ([numbersUnavailable]), one line under the head says the page states them without numbers.
  */
 export function TextPage({

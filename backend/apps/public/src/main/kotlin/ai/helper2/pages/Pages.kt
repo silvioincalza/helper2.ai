@@ -5,12 +5,16 @@ import ai.helper2.shared.ResourceType
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-/** The head of every page the server knows (ADR 0050 §2-3). [base] is the public host. */
+/**
+ * The head of every page the server knows (ADR 0029 (part was 0050) §2-3). [base] is the public
+ * host.
+ */
 class Pages(private val base: String) {
 
   fun home(): PageHead =
     PageHead(
-      // The Home's own title and lede (ADR 0042, decision 4), so the search result and the page say
+      // The Home's own title and lede (ADR 0028 (part was 0042), decision 4), so the search result
+      // and the page say
       // the same.
       title = "Helper2.ai: the metasearch for the AI universe",
       description =
@@ -223,7 +227,8 @@ class Pages(private val base: String) {
 }
 
 /**
- * schema.org data by resource type (ADR 0050 §3). Only facts the page shows; no AI-written text.
+ * schema.org data by resource type (ADR 0029 (part was 0050) §3). Only facts the page shows; no
+ * AI-written text.
  */
 object JsonLd {
   fun of(r: ResourceView, url: String): Map<String, Any?>? {

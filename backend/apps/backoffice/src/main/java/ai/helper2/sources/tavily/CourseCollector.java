@@ -25,20 +25,20 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * New AI courses and certifications (ADR 0032 §8, Source 3): one Tavily search per learning
- * platform, restricted to its domain with include_domains, on a weekly interval (one API credit per
- * platform and pass, search_depth basic). A result is kept only when it is on the platform's host
- * and path, about AI, and reads like a course or certification page. Kept pages are the batch's
- * candidates, which the Scout sends to the admin review list; the batch has no hits, so nothing
- * this collector finds reaches the catalog without a person accepting it. A pass asks only for
- * pages published since the previous complete pass (start_date), or the last month on the first.
- * Docs: https://docs.tavily.com/documentation/api-reference/endpoint/search
+ * New AI courses and certifications (ADR 0016 (part was 0032) §8, Source 3): one Tavily search per
+ * learning platform, restricted to its domain with include_domains, on a weekly interval (one API
+ * credit per platform and pass, search_depth basic). A result is kept only when it is on the
+ * platform's host and path, about AI, and reads like a course or certification page. Kept pages are
+ * the batch's candidates, which the Scout sends to the admin review list; the batch has no hits, so
+ * nothing this collector finds reaches the catalog without a person accepting it. A pass asks only
+ * for pages published since the previous complete pass (start_date), or the last month on the
+ * first. Docs: https://docs.tavily.com/documentation/api-reference/endpoint/search
  */
 public class CourseCollector implements Collector {
 
   static final String ID = CollectorDescriptors.COURSES;
 
-  /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector\'s calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   private static final int MAX_RESULTS_PER_PLATFORM = 10;

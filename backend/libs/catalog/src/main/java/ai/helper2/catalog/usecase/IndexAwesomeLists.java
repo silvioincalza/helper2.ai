@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * The Scout indexes what awesome lists say around their entries (ADR 0055): each list's index is
+ * The Scout indexes what awesome lists say around their entries (ADR 0010): each list's index is
  * replaced on its own, so one list that fails does not keep the others stale. Then the categories
- * of the list's entries are assigned again, because their section headings count (ADR 0058).
+ * of the list's entries are assigned again, because their section headings count (ADR 0022).
  */
 @Service
 public class IndexAwesomeLists {

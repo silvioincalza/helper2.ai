@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-/** GET /api/v1/policy: the numbers of the text pages, from the configuration (ADR 0052). */
+/** GET /api/v1/policy: the numbers of the text pages, from the configuration (ADR 0029). */
 class PolicyApiIT extends ApiTestBase {
 
   private static MockHttpServletRequestBuilder policy(String address) {

@@ -65,13 +65,13 @@ import org.slf4j.LoggerFactory
  * timeout and reported latency count from its own start, so translation never eats into a source's
  * budget.
  *
- * Each call runs under the source's policy `source-<id>` ([Resilience], ADR 0033): a circuit
+ * Each call runs under the source's policy `source-<id>` ([Resilience], ADR 0006): a circuit
  * breaker and a bulkhead, never a retry (the deadline is the budget). A call the policy refuses
  * does not reach the source and is SKIPPED ([SkipReason.CIRCUIT_OPEN], [SkipReason.BUSY]), with a
  * stale cache entry when one exists. Every enabled source must have a policy: a missing one fails
  * at construction, so at startup.
  *
- * A metered source (Tavily, ADR 0037) answers store first: a result set in [webResults] that is
+ * A metered source (Tavily, ADR 0014) answers store first: a result set in [webResults] that is
  * fresh for the request's [IntentClass] ([webFreshness]) is served with no live call and no quota
  * used. Otherwise one web search is taken from the asker's daily [quota] before the live call; over
  * the limit, or when the quota cannot be read, the source is SKIPPED ([SkipReason.DAILY_LIMIT],

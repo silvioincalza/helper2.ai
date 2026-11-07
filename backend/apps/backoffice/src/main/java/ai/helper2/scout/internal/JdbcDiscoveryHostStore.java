@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 /**
- * Discovery's host lists, one row per host in discovery_host (ADR 0063). The Scout owns the table
+ * Discovery's host lists, one row per host in discovery_host (ADR 0022). The Scout owns the table
  * and is its only writer; the collectors read it once per run.
  */
 @Component

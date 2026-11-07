@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What a discovery result is, by its URL and title only (ADR 0051), never by a model:
+ * What a discovery result is, by its URL and title only (ADR 0022), never by a model:
  *
  * <ul>
  *   <li>a product's own site (its home page, or one level below it) or a GitHub repository is a
@@ -20,17 +20,17 @@ import org.jspecify.annotations.Nullable;
  *   <li>a list or comparison page ("10 tools for ...", "X vs Y", "alternatives to X") that is not a
  *       product's own home page or repository is a LIST page, indexed as an ARTICLE;
  *   <li>a post that writes about products (a blog or news post, a publisher's article) is an
- *       ARTICLE page, a candidate for the admin review list too (ADR 0062): its own link is kept as
+ *       ARTICLE page, a candidate for the admin review list too (ADR 0023): its own link is kept as
  *       an article, and its enrichment names what it is about;
  *   <li>anything else (a docs page, a directory entry, a careers page) is none: it is dropped.
  * </ul>
  *
- * <p>The awesome-list collector uses {@link #productSite} too (ADR 0058), so a link in a list is
+ * <p>The awesome-list collector uses {@link #productSite} too (ADR 0022), so a link in a list is
  * kept by the same rules as a search result.
  */
 public final class DiscoveryPages {
 
-  /** Hosts that publish articles about many products: a post there is an ARTICLE (ADR 0062). */
+  /** Hosts that publish articles about many products: a post there is an ARTICLE (ADR 0023). */
   private final Set<String> writingHosts;
 
   /** Directories, reviews and wikis: they list products, and a page there is never kept. */
@@ -40,7 +40,7 @@ public final class DiscoveryPages {
   private final Set<String> publisherHosts;
 
   /**
-   * The rules with the host lists of one run (ADR 0063): an admin keeps them in the back office,
+   * The rules with the host lists of one run (ADR 0022): an admin keeps them in the back office,
    * and each run reads them once.
    */
   public DiscoveryPages(HostLists hosts) {
@@ -118,7 +118,7 @@ public final class DiscoveryPages {
 
   /**
    * Places where a site writes about products (example.com/blog/..., news.example.com): a post
-   * there is an ARTICLE (ADR 0062).
+   * there is an ARTICLE (ADR 0023).
    */
   private static final Set<String> WRITING_PLACES =
       Set.of(
@@ -215,7 +215,7 @@ public final class DiscoveryPages {
   }
 
   /**
-   * A post that writes about products (ADR 0062): a page below a writing place (example.com/blog/x,
+   * A post that writes about products (ADR 0023): a page below a writing place (example.com/blog/x,
    * news.example.com/x), on a host that publishes articles, or with a post's slug. Not the index of
    * a blog, not a directory entry, nothing in a docs, careers or legal place.
    */

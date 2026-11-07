@@ -10,7 +10,7 @@ interface Fact {
 }
 
 /**
- * Use and Build facts of a result (ADR 0040, 4): a fact no source states says "Not stated", never a guess. A fact the
+ * Use and Build facts of a result (ADR 0028 (part was 0040), 4): a fact no source states says "Not stated", never a guess. A fact the
  * sources disagree on (the merge leaves it empty and records a conflict) says so, with each value and its source.
  * Shared by the results preview and the resource page; [groupTag] keeps the heading levels right in each.
  */

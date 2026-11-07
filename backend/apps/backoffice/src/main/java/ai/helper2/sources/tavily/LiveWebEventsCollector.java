@@ -38,7 +38,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Upcoming AI events from the live web (ADR 0067): weekly Tavily searches for AI hackathons,
+ * Upcoming AI events from the live web (ADR 0021): weekly Tavily searches for AI hackathons,
  * meetups and talks, conferences and workshops; each page found is read with Tavily Extract, a
  * model reads its days, kind, format and place with the words that state them, and {@link
  * EventQuoteGate} decides what is published. An event is listed only when code finds its days in a
@@ -50,7 +50,7 @@ public class LiveWebEventsCollector implements Collector {
 
   public static final String ID = WebSources.EVENTS_SCOUT;
 
-  /** Circuit breaker and retry of this collector's calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector's calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   static final String SEARCH_DEPTH = "basic";
@@ -222,7 +222,7 @@ public class LiveWebEventsCollector implements Collector {
     String url = HttpClients.text(r, "url");
     String raw = HttpClients.text(r, "raw_content");
     // The model and the gate see the page without hidden text, email addresses or phone numbers
-    // (as the evidence ladder, ADR 0056); quotes are checked against this text.
+    // (as the evidence ladder, ADR 0023); quotes are checked against this text.
     String text = raw == null ? null : UntrustedPageText.INSTANCE.clean(raw);
     CanonicalUrl canonical = url == null ? null : CanonicalUrl.of(url);
     SourceHit found = canonical == null ? null : byUrl.get(canonical.getValue());

@@ -36,7 +36,7 @@ public class McpRegistryCollector implements Collector {
 
   private static final String META = "io.modelcontextprotocol.registry/official";
 
-  /** Circuit breaker and retry of this collector's calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector's calls (ADR 0006). */
   static final String POLICY = "collector-mcp-registry";
 
   private final RestClient http;

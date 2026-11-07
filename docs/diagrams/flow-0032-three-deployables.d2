@@ -1,0 +1,77 @@
+# Flowchart: which app answers a request, which one runs a job, and what a change rebuilds (ADR 0032).
+# Source of truth: backend/settings.gradle.kts, backend/apps/public, backend/apps/backoffice, backend/apps/common-web,
+#   backend/libs/*, api/common.yaml, api/public.yaml, api/admin.yaml, deploy/web.Dockerfile, deploy/web/nginx.conf,
+#   deploy/Dockerfile, deploy/backoffice.Dockerfile, deploy/helm/helper2/templates/ (web.yaml, app.yaml, backoffice.yaml),
+#   the SchedulesIT of each app, the platform repo (Ingresses), outside this repo.
+# Render: cd docs/diagrams && d2 fmt flow-0032-three-deployables.d2 && d2 flow-0032-three-deployables.d2 flow-0032-three-deployables.svg
+
+...@style
+
+direction: down
+
+req: "Request" {class: end}
+
+edge: Network edge {
+  class: group
+  direction: down
+  host: "Which host?" {class: decision}
+  vpn: "Client in a\nprivate range?" {class: decision}
+  e403: "403 from ingress-nginx" {class: fail}
+  path: "Path /assets/…, /theme.js\nor /favicon.svg?" {class: decision}
+  host -> vpn: "admin host"
+  vpn -> e403: no
+  host -> path: "public host"
+}
+
+web: "web pods (nginx)\nthe public web app's files;\nanything else: 404" {class: app}
+public: "public app\nsearch, guide, setup, pages\n(the shell from the web image\nof the same tag), sign-in, saved items" {class: app}
+bo: "back office app\nadmin API, admin web app,\nScout, collectors, enrichment" {class: app}
+
+req -> edge.host
+edge.path -> web: "yes\n(Service helper2-web)" {class: hot}
+edge.path -> public: "no\n(Service helper2)" {class: hot}
+edge.vpn -> bo: "yes\n(Service helper2-admin)"
+
+jobs: Scheduled jobs {
+  class: group
+  direction: down
+  job: "Which job?" {class: decision}
+  pubjobs: "public app:\nguide, identity, search\nand shared-cache retention" {class: app}
+  bojobs: "back office: Scout check,\nScout, catalog and settings retention,\nhome-example check, embedding indexer,\ncategory backfill at startup" {class: app}
+  both: "every replica of both:\nruntime-settings refresh" {class: app}
+  job -> pubjobs
+  job -> bojobs
+  job -> both: "a read, no shared work"
+}
+
+build: What a change builds {
+  class: group
+  direction: down
+  change: "What changed?" {class: decision}
+  bweb: "web image\n(deploy/web.Dockerfile)" {class: app}
+  bpub: "public image\n(deploy/Dockerfile)" {class: app}
+  bbo: "back office image\n(deploy/backoffice.Dockerfile)" {class: app}
+  change -> bweb: "frontend/, deploy/web/,\nweb.Dockerfile"
+  change -> bpub: "apps/public,\ndeploy/Dockerfile"
+  change -> bbo: "apps/backoffice, frontend/,\nbackoffice.Dockerfile"
+  rule: "changes.sh (0033): api/, libs/*, apps/common-web,\nthe Gradle files and any unknown path build\nall three; an unchanged image gets the new tag\non its previous digest, no build" {class: config}
+  rule -> change
+}
+
+boot: App startup (both apps, ADR 0004) {
+  class: group
+  direction: down
+  schema: "Every migration\nalready applied?" {class: decision}
+  wait: "wait for the migrate Job\n(up to 4 min)" {class: app}
+  serve: "serves" {class: end}
+  schema -> wait: no
+  wait -> schema: "every 5 s"
+  schema -> serve: yes {class: hot}
+}
+
+db: "Postgres\n(migrated by the migrate Job,\nADR 0004)" {class: data}
+redis: "Redis\n(shared budgets and quotas;\nown session namespaces)" {class: data}
+public -> boot.schema: "validates only"
+bo -> boot.schema: "validates only"
+public -> redis
+bo -> redis

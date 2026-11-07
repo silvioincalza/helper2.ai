@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * The offline evaluation of similar-question reuse (ADR 0041) on docs/eval/guide-similar.json and
+ * The offline evaluation of similar-question reuse (ADR 0017) on docs/eval/guide-similar.json and
  * its recorded embeddings. Part of every build: the table of the ADR is what this test computes, so
  * a new recording, a changed pair or a changed matching rule shows up here first.
  */

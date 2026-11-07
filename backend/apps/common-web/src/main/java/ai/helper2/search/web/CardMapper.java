@@ -148,7 +148,7 @@ public final class CardMapper {
   }
 
   /**
-   * AI_EXTRACTED when the event's start comes from days an AI model read (ADR 0067), else
+   * AI_EXTRACTED when the event's start comes from days an AI model read (ADR 0021), else
    * SOURCE_PROVIDED; null for a resource that is no event or has no stated start.
    */
   static ValueOriginDto eventOrigin(MergedResult r) {

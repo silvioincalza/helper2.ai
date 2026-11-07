@@ -10,7 +10,7 @@ const isAdminPath = (path: string) => path === '/admin' || /^\/admin[/?#]/.test(
 
 /**
  * After GitHub sends the administrator back to /admin, opens the page where they clicked "Sign in" (a deep link with
- * its filters, ADR 0035). A failed sign-in (?signin=failed) drops the stored page; AdminLayout says so.
+ * its filters, ADR 0024). A failed sign-in (?signin=failed) drops the stored page; AdminLayout says so.
  */
 function SignInReturn() {
   const { me, loaded } = useMe();
@@ -25,7 +25,7 @@ function SignInReturn() {
   return null;
 }
 
-/** Sign out of the admin host's own session (ADR 0035: one session per host). */
+/** Sign out of the admin host's own session (ADR 0024: one session per host). */
 function SignOut() {
   const { t } = useTranslation();
   const { me } = useMe();
@@ -38,7 +38,7 @@ function SignOut() {
 }
 
 /**
- * The back office web app's page frame (ADR 0069): a skip link and the main landmark, without the public site's header,
+ * The back office web app's page frame (ADR 0032): a skip link and the main landmark, without the public site's header,
  * footer, consent banner or ads.
  */
 export function AdminShell() {

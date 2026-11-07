@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * Latency of the index query with search inside awesome lists (ADR 0055), on a catalog of 25 000
+ * Latency of the index query with search inside awesome lists (ADR 0010), on a catalog of 25 000
  * resources: first with the list index empty (the query as before, the list arms find nothing),
  * then with 50 lists of 300 entries each (15 000 entry rows). 200 calls per query after a warm-up;
  * p50/p95/p99 and the EXPLAIN ANALYZE plan go to stdout and build/perf/awesome-list-search.txt. Run

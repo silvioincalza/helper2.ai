@@ -14,7 +14,7 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.module.kotlin.KotlinModule;
 
 /**
- * Guide answers in the shared cache {@code guide-answer} (ADR 0041), on disk and shared by every
+ * Guide answers in the shared cache {@code guide-answer} (ADR 0017), on disk and shared by every
  * replica. The guide's key is already a hash of the question; the stored key also holds the running
  * build ({@code H2_BUILD_VERSION}), so a release reads only its own answers and a deploy that
  * changes how the guide reads or answers is seen at once.

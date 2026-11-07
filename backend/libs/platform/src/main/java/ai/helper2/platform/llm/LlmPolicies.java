@@ -1,7 +1,7 @@
 package ai.helper2.platform.llm;
 
 /**
- * The resilience policies of model calls (ADR 0033): one circuit per kind of model the application
+ * The resilience policies of model calls (ADR 0006): one circuit per kind of model the application
  * calls.
  */
 public final class LlmPolicies {

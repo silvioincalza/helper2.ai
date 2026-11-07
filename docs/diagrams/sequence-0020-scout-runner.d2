@@ -1,0 +1,72 @@
+# Sequence: one scheduled Scout run on one replica: the tick takes the cluster lock scout-run (a 2-minute lease kept
+# alive while the run lives), checks the end of the last scheduled run (table scout_schedule), closes run rows left
+# RUNNING by a stopped replica, runs one due collector with its cursor and enrichments, sends a changed resource
+# the budget has no slot for back to the backlog (unless the last run already judged its text), drains
+# the backlog, records the new end time, then releases the lock.
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout.tryRunScheduled, runCollector,
+#   enrichChanged, stillToJudge, requestLaterRun, drainBacklog), EnrichResource.kt (unchanged),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, scoutRunLock,
+#   ClusterRunLock, catalogIndex),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java (KeepAliveLockProvider),
+#   ClusterLockConfiguration.java (ShedLock, db time),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java, CatalogEnrichmentStore.java
+#   (over the catalog port EnrichmentCandidates),
+#   ReviewQueueCandidateReview.java (CandidateReview port in scout/Ports.kt).
+# Render: cd docs/diagrams && d2 fmt sequence-0020-scout-runner.d2 && d2 sequence-0020-scout-runner.d2 sequence-0020-scout-runner.svg
+
+...@style
+
+shape: sequence_diagram
+
+sched: ScoutSchedule {class: config}
+lock: "ClusterLock\n(ShedLock JDBC)" {class: app}
+pg: "PostgreSQL\ntables shedlock,\nscout_schedule" {class: data}
+runner: RunScout {class: app}
+store: JdbcScoutStore {class: app}
+col: "Collector\n(e.g. McpRegistryCollector)" {class: app}
+ext: "Source API" {class: ext}
+index: "CatalogIndex\n(IndexResources)" {class: app}
+review: "CandidateReview\n(ReviewQueueCandidateReview)" {class: app}
+backlog: "CatalogEnrichmentStore\n(catalog::enrichment)" {class: app}
+enrich: EnrichResource {class: app}
+
+sched -> runner: "tick: tryRunScheduled(cron calendar)\n(first after 20 s, then every H2_SCOUT_TICK)"
+runner -> lock: "RunLock.runExclusively\n(ClusterRunLock: \"scout-run\")"
+lock -> pg: "take \"scout-run\" where lock_until <= db now\n(lease 2 min; extended every minute\nwhile the run lives)"
+pg -> lock: "taken (another replica's\ntick would get BUSY here)"
+lock -> runner: "due check + runAll"
+runner -> store: "lastScheduledRunEnd()"
+store -> pg: "SELECT last_ended_at\nFROM scout_schedule"
+store -> runner: "cron time after last end\nhas passed (else NOT_DUE)"
+runner -> store: "markInterrupted(now)"
+store -> pg: "rows still RUNNING\n(stopped replica) → FAILED"
+runner -> runner: "EnrichmentBudget(20)"
+runner -> store: "save(RUNNING) per collector"
+runner -> store: "cursor(sourceId)"
+store -> runner: "checkpoint, resumeCursor,\npassStartedAt"
+runner -> col: "collect(cursor, 1000)"
+col -> col: "RunInterval.allowsPass?"
+col -> ext: "GET …?updated_since=checkpoint" {class: hot}
+ext -> col: "items + nextCursor"
+col -> runner: "CollectedBatch(hits, nextCursor,\ncheckpoint, candidates)"
+runner -> index: "index(merged hits, sourceId)"
+index -> runner: "changed resource ids"
+runner -> review: "propose(sourceId, candidates)\n(only when the batch has some)"
+review -> runner: "review items opened"
+runner -> store: "saveCursor(new checkpoint\nor resumeCursor)"
+runner -> backlog: "eligible(changed ids)"
+backlog -> runner: "ids with description ≥ 40 chars"
+runner -> enrich: "enrich(id) while budget left\n(ADR 0023)" {class: ai-call}
+enrich -> runner: "EnrichmentOutcome"
+runner -> enrich: "unchanged(id): a changed id\nthe budget has no slot for\n(stored fingerprint only, no model call)"
+enrich -> runner: "false: the text is new\n(true: not requested, the model\nwould see the same text again)"
+runner -> backlog: "requestRun(id): NOT_RUN with the\nrequest time; a later run takes it"
+runner -> store: "save(SUCCEEDED, seen,\nchanged, queued)"
+runner -> backlog: "pending(budget left + attempted)"
+backlog -> runner: "resources still to enrich"
+runner -> enrich: "enrich(id) one at a time, budget allowing;\nUNCHANGED gives its slot back" {class: ai-call}
+runner -> store: "scheduledRunEnded(now)"
+store -> pg: "upsert scout_schedule\nlast_ended_at = now"
+runner -> lock: "RAN"
+lock -> pg: "release \"scout-run\"\n(lock_until = db now)"
+lock -> sched: "RAN"

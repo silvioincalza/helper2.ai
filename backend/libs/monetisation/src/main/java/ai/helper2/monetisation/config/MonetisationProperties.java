@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Monetisation settings (ADR 0057). Each one empty means that part is off. Links must be https; the
+ * Monetisation settings (ADR 0030). Each one empty means that part is off. Links must be https; the
  * IDs have the shape their vendor gives them, so a typo fails at startup, not in a visitor's
  * browser.
  *
@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
  * @param stripePaymentUrl {@code H2_SUPPORT_STRIPE_PAYMENT_URL}
  * @param ga4MeasurementId {@code H2_ANALYTICS_GA4_MEASUREMENT_ID}, e.g. G-ABC123XYZ9
  * @param ethicalAdsPublisher {@code H2_ADS_ETHICALADS_PUBLISHER}
- * @param adsenseClient {@code H2_ADS_ADSENSE_CLIENT}, e.g. ca-pub-1234567890123456 (ADR 0059)
+ * @param adsenseClient {@code H2_ADS_ADSENSE_CLIENT}, e.g. ca-pub-1234567890123456 (ADR 0030)
  * @param adsenseSlot {@code H2_ADS_ADSENSE_SLOT}, the ad unit ID, e.g. 1234567890
  */
 @Validated

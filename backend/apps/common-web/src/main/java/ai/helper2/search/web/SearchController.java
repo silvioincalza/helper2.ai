@@ -270,7 +270,7 @@ class SearchController implements SearchApi, SourcesApi {
         get.apply("category"));
   }
 
-  /** The category filter, each id checked against the configured categories (ADR 0053). */
+  /** The category filter, each id checked against the configured categories (ADR 0013). */
   private Set<String> categoryFilter(@Nullable List<String> category) {
     Set<String> selected = set(category, Function.identity());
     List<String> unknown = categories.notFilterValues(selected);

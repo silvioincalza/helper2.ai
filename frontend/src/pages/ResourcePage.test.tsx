@@ -347,7 +347,7 @@ describe('resource detail', () => {
     expect(screen.getByText('No verified relationships.')).toBeInTheDocument();
   });
 
-  it('labels and marks relationships extracted by AI, verified or not, and not those a source states (ADR 0038)', async () => {
+  it('labels and marks relationships extracted by AI, verified or not, and not those a source states (ADR 0018)', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>
         makeDetail({
@@ -371,7 +371,7 @@ describe('resource detail', () => {
     expect(slack.querySelector('[data-ai-generated]')).toBeNull();
   });
 
-  it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0038)', async () => {
+  it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0018)', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>
         makeDetail({
@@ -407,7 +407,7 @@ describe('resource detail', () => {
     );
   });
 
-  it('shows every field as a value with its origin, "No", "Sources disagree" or "Not stated" (ADR 0056)', async () => {
+  it('shows every field as a value with its origin, "No", "Sources disagree" or "Not stated" (ADR 0023)', async () => {
     const assertion = (
       field: string,
       value: string,
@@ -454,7 +454,7 @@ describe('resource detail', () => {
     expect(row('techLevel')).toHaveTextContent('Not stated');
   });
 
-  it('a value an admin set wins over the sources, a conflict and the AI, and is not marked as AI (ADR 0066)', async () => {
+  it('a value an admin set wins over the sources, a conflict and the AI, and is not marked as AI (ADR 0026)', async () => {
     const assertion = (
       value: string,
       origin: 'AI_EXTRACTED' | 'CURATED',
@@ -490,7 +490,7 @@ describe('resource detail', () => {
     expect(within(pricing).getByText('Paid')).not.toHaveAttribute('data-ai-generated');
   });
 
-  it('an estimate an admin dropped is no longer shown (ADR 0066)', async () => {
+  it('an estimate an admin dropped is no longer shown (ADR 0026)', async () => {
     const estimate = (field: string, value: string, verification: 'UNVERIFIED' | 'REJECTED') => ({
       field,
       value,

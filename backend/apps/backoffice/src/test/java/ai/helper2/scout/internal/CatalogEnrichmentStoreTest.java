@@ -174,7 +174,7 @@ class CatalogEnrichmentStoreTest {
     assertThat(github.getTextHash()).isEqualTo(plain.getTextHash());
   }
 
-  /** ADR 0066: what an admin set is a stated fact of the run, over the record's own value. */
+  /** ADR 0026: what an admin set is a stated fact of the run, over the record's own value. */
   @Test
   void theFieldsAnAdminSetAreFactsTheModelCannotChange() {
     EnrichmentCandidates.Candidate c = candidate("PRODUCT", true, "MIT");

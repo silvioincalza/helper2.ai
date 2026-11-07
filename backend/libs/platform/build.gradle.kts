@@ -27,6 +27,6 @@ dependencies {
   testFixturesApi("org.testcontainers:testcontainers-junit-jupiter")
   testFixturesApi("org.testcontainers:testcontainers-postgresql")
   testFixturesApi("net.ttddyy:datasource-proxy:1.11.1")
-  // The shared containers migrate once as the owner and open the apps' logins (ADR 0070).
+  // The shared containers migrate once as the owner and open the apps' logins (ADR 0004).
   testFixturesApi(project(":libs:schema"))
 }

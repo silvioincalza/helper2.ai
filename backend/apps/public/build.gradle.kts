@@ -1,9 +1,9 @@
 import ai.helper2.buildlogic.BundleContract
 
-// The public app (ADR 0069): search, guide, setup, the catalog pages, sign-in for users, saved
+// The public app (ADR 0032): search, guide, setup, the catalog pages, sign-in for users, saved
 // items,
 // news, events and the policy, with their schedules. Its image also runs the migrate step
-// (`migrate`, ADR 0070); the app itself only checks the schema. No back office code, no admin
+// (`migrate`, ADR 0004); the app itself only checks the schema. No back office code, no admin
 // routes.
 plugins { id("helper2.spring-app") }
 
@@ -55,7 +55,7 @@ dependencies {
   implementation("tools.jackson.module:jackson-module-kotlin")
   // Language of queries and catalog text, for the matching Postgres stemmer (LanguageDetector).
   implementation("com.github.pemistahl:lingua:1.2.2")
-  // Circuit breakers, bulkheads and retries as named policies (ADR 0033), built from the registries
+  // Circuit breakers, bulkheads and retries as named policies (ADR 0006), built from the registries
   // in code.
   // The 2.4.0 BOM shipped without the Spring Boot 4 module at first: its version is pinned here.
   implementation(

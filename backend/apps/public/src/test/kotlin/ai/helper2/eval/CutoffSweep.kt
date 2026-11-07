@@ -16,7 +16,7 @@ data class CutoffPoint(
 /**
  * Replays the semantic source's cutoff on recorded nearest neighbours (closest first, no cutoff):
  * at each candidate distance, which results would have been returned and how good they are (ADR
- * 0012, SC-7).
+ * 0011, SC-7).
  */
 object CutoffSweep {
 

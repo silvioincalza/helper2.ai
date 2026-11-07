@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * The runtime settings (ADR 0060): the store, the snapshot every module reads, its refresh on its
+ * The runtime settings (ADR 0007): the store, the snapshot every module reads, its refresh on its
  * own thread. The daily purge of old changes is scheduled by the app that runs it.
  */
 @Configuration(proxyBeanMethods = false)
@@ -52,7 +52,7 @@ class RuntimeSettingsConfiguration {
 
   /**
    * Its own thread, not @Scheduled: with virtual threads Spring runs every fixed-delay task on one
-   * scheduler thread, and a long task there would hold the refresh back (ADR 0045, the indexer).
+   * scheduler thread, and a long task there would hold the refresh back (ADR 0026, the indexer).
    */
   static final class Refresh {
     private final RuntimeSettings settings;

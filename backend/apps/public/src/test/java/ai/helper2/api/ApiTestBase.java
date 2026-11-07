@@ -43,14 +43,14 @@ import org.springframework.test.web.servlet.MockMvc;
       "helper2.sources.mcp-registry.enabled=false",
       "helper2.sources.arxiv.enabled=false",
       "helper2.sources.live-web.enabled=false",
-      // The fake source's policy (ADR 0033): a bulkhead only, so no circuit opened by one test's
+      // The fake source's policy (ADR 0006): a bulkhead only, so no circuit opened by one test's
       // failures skips it in the next.
       "resilience4j.bulkhead.instances.source-fake-live.base-config=source",
       "helper2.rate-limit.search-per-minute=10000",
       "helper2.rate-limit.report-per-hour=10000",
       "helper2.identity.admins=test:admin-subject",
       "logging.structured.format.console=",
-      // A built app shell for the pages module (ADR 0050); here so PagesIT shares this context.
+      // A built app shell for the pages module (ADR 0029); here so PagesIT shares this context.
       "helper2.pages.template=classpath:/pages/index.html",
     })
 @AutoConfigureMockMvc

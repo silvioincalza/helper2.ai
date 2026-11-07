@@ -76,7 +76,7 @@ function loadPool(lang: string, signal: AbortSignal): Promise<HomeExamplePool | 
 }
 
 /**
- * **Try:** under the home box (ADR 0049, 4): two examples for people who use AI, two for builders, from the served
+ * **Try:** under the home box (ADR 0015, 4): two examples for people who use AI, two for builders, from the served
  * pool, or from the built-in list when the pool is not there in time. While it waits, the row holds the built-in
  * pick, hidden, so nothing moves when the chips appear. A click searches with the example's words and path; it does
  * not ask the guide (it would spend a daily answer).

@@ -46,7 +46,7 @@ describe('ProofQuote', () => {
     expect(container.querySelector('mark')).toHaveTextContent('Postgres MCP');
   });
 
-  it('is never marked AI-written: it is the source’s own text (ADR 0038)', () => {
+  it('is never marked AI-written: it is the source’s own text (ADR 0018)', () => {
     const { container } = render(<ProofQuote text={text} quote="MIT licensed" source="GitHub" />);
     expect(container.querySelector('[data-ai-generated]')).toBeNull();
   });
@@ -122,7 +122,7 @@ describe('PicksBar', () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
-  it('shows the picks under an AI-written label, marked machine-readable (ADR 0038)', async () => {
+  it('shows the picks under an AI-written label, marked machine-readable (ADR 0018)', async () => {
     const { container } = render(
       <PicksBar state={{ kind: 'picks', model: 'nvidia/nemotron-3-super' }}>
         <ol>
@@ -132,7 +132,7 @@ describe('PicksBar', () => {
     );
     const bar = screen.getByRole('region', { name: 'Guide picks' });
     expect(within(bar).getByText('AI-written')).toBeInTheDocument();
-    // The chips are source titles: labelled on screen, never marked as AI-written (ADR 0038).
+    // The chips are source titles: labelled on screen, never marked as AI-written (ADR 0018).
     expect(within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]')).toBeNull();
     expect(within(bar).queryByRole('status')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);

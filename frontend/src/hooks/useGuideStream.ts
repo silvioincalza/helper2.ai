@@ -45,7 +45,7 @@ function guideRequest(
   const body: GuideRequest = { request: question };
   if (clarification !== undefined && clarification !== null) body.clarification = clarification;
   if (drop.length) body.drop = drop;
-  // The page's category filter: the guide picks only in those categories (ADR 0053).
+  // The page's category filter: the guide picks only in those categories (ADR 0013).
   if (categories.length) body.categories = categories;
   return body;
 }

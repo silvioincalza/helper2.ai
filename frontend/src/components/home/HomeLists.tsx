@@ -5,13 +5,13 @@ import { useEventsFeed, useNewsFeed, type EventRow, type Feed, type NewsRow } fr
 import { useEventCells, useNewsCells } from './listParts';
 import { TermList } from './TermList';
 
-/** Below this width the two tables become tabs (ADR 0042): a table with four columns does not fit a phone. */
+/** Below this width the two tables become tabs (ADR 0028): a table with four columns does not fit a phone. */
 const PHONE_LISTS = '(max-width: 767px)';
 /** The tabs load only on a phone; the data is already on its way meanwhile. */
 const ListTabs = lazy(() => import('./HomeTabs'));
 
 /**
- * New this week and Coming up (ADR 0042, decision 5), both as one TermList. On a wide screen two tables side by side,
+ * New this week and Coming up (ADR 0028 (part was 0042), decision 5), both as one TermList. On a wide screen two tables side by side,
  * like `ls -l`: DATE · TYPE · TITLE · SOURCE and WHEN · TYPE · EVENT · WHERE. On a phone one panel with two tabs and
  * log rows. The
  * ids `news` and `events` are the targets of the header links (/#news, /#events).

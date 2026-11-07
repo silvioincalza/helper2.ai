@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AddHomeExample {
 
-  /** The UI ships in English only (ADR 0049): every example is stored for this locale. */
+  /** The UI ships in English only (ADR 0015): every example is stored for this locale. */
   public static final String LOCALE = "en";
 
   private final HomeExamples examples;

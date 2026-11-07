@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * The settings an administrator may change at runtime (ADR 0060): a few spending limits, and
+ * The settings an administrator may change at runtime (ADR 0007): a few spending limits, and
  * nothing else. The allow-list is this enum: a secret, an admin list, a model id, a prompt, a token
  * limit, a ranking weight, a rate limit or a per-visitor quota has no constant here, so it cannot
  * be changed from the back office.

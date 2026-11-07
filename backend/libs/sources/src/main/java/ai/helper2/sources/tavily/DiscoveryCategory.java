@@ -11,12 +11,12 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * One category of the AI world (ADR 0051): its own discovery collector, its own dot on the Home
+ * One category of the AI world (ADR 0022): its own discovery collector, its own dot on the Home
  * radar and its own row on the Sources page. A product its searches find becomes {@code type}; its
  * id is the catalog tag of every result it fits (the ones its searches found, and any result whose
  * title or excerpt has one of its words). The options are already resolved: the interval and the
  * score floor fall back to the global discovery settings, and the excluded domains include the
- * global list. The words are {@link CategoryWords}, shared with search (ADR 0053).
+ * global list. The words are {@link CategoryWords}, shared with search (ADR 0013).
  *
  * @param requireKeyword keep a result only when its own title or excerpt has one of this category's
  *     words (health, legal: their searches pull general advice pages)

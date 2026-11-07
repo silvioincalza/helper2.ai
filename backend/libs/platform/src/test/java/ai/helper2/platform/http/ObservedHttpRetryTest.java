@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.client.HttpServerErrorException;
 
 /**
- * The client sends each request once: retries are the caller's resilience policy (ADR 0033), never
+ * The client sends each request once: retries are the caller's resilience policy (ADR 0006), never
  * hidden in the client.
  */
 class ObservedHttpRetryTest {

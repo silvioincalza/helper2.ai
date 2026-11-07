@@ -23,7 +23,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * PUT /admin/review-items/{id}/candidate (ADR 0065): an admin fixes a resource candidate's title,
+ * PUT /admin/review-items/{id}/candidate (ADR 0026): an admin fixes a resource candidate's title,
  * type and tags; accepting it indexes what the admin wrote, with a type its finder does not
  * declare.
  */

@@ -14,7 +14,7 @@ export function renderApp(entry = '/') {
   return { router, ...utils, params: () => new URLSearchParams(router.state.location.search) };
 }
 
-/** A fresh page load of the back office web app (ADR 0069): its own routes, as on the admin host. */
+/** A fresh page load of the back office web app (ADR 0032): its own routes, as on the admin host. */
 export function renderAdmin(entry = '/admin') {
   clearApiCache();
   clearPolicyCache();

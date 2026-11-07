@@ -44,7 +44,7 @@ constructor(
 ) {
   /**
    * Counted like any budget, never listed: a name per client must not reach the back office (ADR
-   * 0045).
+   * 0026).
    */
   private val counter: CallCounter = counter.unlisted()
 
@@ -160,7 +160,7 @@ internal fun sha256Hex(text: String): String =
     .formatHex(MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8)))
 
 /**
- * Where guide answers are kept (the shared cache in PostgreSQL, ADR 0041): on disk and shared by
+ * Where guide answers are kept (the shared cache in PostgreSQL, ADR 0017): on disk and shared by
  * every replica, so a restart does not throw away answers that cost three model calls each. An
  * unavailable store or an unreadable entry is a miss, never an error.
  */
@@ -192,7 +192,7 @@ class GuideAnswerCache(
 
   /**
    * Caches [answer] under [key] until [ttl] after its generatedAt, also when it is an older answer
-   * reused for a similar question (ADR 0041): a copy never outlives the original. Returns when it
+   * reused for a similar question (ADR 0017): a copy never outlives the original. Returns when it
    * expires; null when the answer is not cached.
    */
   fun put(key: String, answer: GuideAnswer): Instant? {

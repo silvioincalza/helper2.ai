@@ -87,7 +87,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('Feature: the radar works like a navigation radar (ADR 0042, decision 4)', () => {
+describe('Feature: the radar works like a navigation radar (ADR 0028 (part was 0042), decision 4)', () => {
   it('Scenario: it starts with 5 sources, one after another', () => {
     render(<Page />);
     expect(shown()).toHaveLength(0);

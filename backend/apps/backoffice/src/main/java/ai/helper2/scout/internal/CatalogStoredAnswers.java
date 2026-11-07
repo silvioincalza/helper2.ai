@@ -12,7 +12,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * The Scout's view of stored enrichment answers for a re-check (ADR 0056); the catalog owns the
+ * The Scout's view of stored enrichment answers for a re-check (ADR 0023); the catalog owns the
  * SQL.
  */
 @Component

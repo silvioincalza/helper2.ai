@@ -23,7 +23,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The AI-content marker (ADR 0038): present whenever a model wrote text in the answer, naming only
+ * The AI-content marker (ADR 0018): present whenever a model wrote text in the answer, naming only
  * the models that did. "Works with" flags on every pick (ADR 0013), from the same rules as the
  * result cards.
  */

@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Neither app migrates in a deployment (ADR 0070): the migrate step (a Kubernetes Job, as the
+ * Neither app migrates in a deployment (ADR 0004): the migrate step (a Kubernetes Job, as the
  * owner) does, and each app checks at startup, as its own role, that the database has every
  * migration it was built with. In a release with a new migration the app starts while the Job still
  * runs: it waits, up to {@code helper2.schema.wait-for}, while migrations are only missing or the
@@ -84,7 +84,7 @@ public class SchemaCheck {
                 + waitingFor
                 + " after "
                 + schema.waitFor()
-                + ": did the migrate Job run? (ADR 0070)");
+                + ": did the migrate Job run? (ADR 0004)");
       }
       log.info("Waiting for the migrate step: {}", waitingFor);
       sleeper.sleep(schema.retryEvery());

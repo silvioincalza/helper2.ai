@@ -30,8 +30,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * POST /admin/enrichment-queue/{id}/requeue|skip|prioritise (ADR 0045 §7): ADMIN only with CSRF,
- * 404 and 409 in the contract's shape, the new state in the queue views, one audit row per call.
+ * POST /admin/enrichment-queue/{id}/requeue|skip|prioritise (ADR 0026 (part was 0045) §7): ADMIN
+ * only with CSRF, 404 and 409 in the contract's shape, the new state in the queue views, one audit
+ * row per call.
  */
 class EnrichmentQueueActionsApiIT extends ApiTestBase {
 

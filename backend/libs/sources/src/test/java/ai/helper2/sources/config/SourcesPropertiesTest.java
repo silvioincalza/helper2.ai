@@ -9,8 +9,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * A collector's deadline (ADR 0006 §2): twice its timeout unless H2_SOURCE_<ID>_DEADLINE says
- * otherwise.
+ * A collector's deadline (ADR 0006 (part was 0006) §2): twice its timeout unless
+ * H2_SOURCE_<ID>_DEADLINE says otherwise.
  */
 class SourcesPropertiesTest {
 

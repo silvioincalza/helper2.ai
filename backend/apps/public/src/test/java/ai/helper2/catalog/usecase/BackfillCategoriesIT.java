@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** The category backfill (ADR 0053) against real PostgreSQL. */
+/** The category backfill (ADR 0013) against real PostgreSQL. */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 @AsBackOffice

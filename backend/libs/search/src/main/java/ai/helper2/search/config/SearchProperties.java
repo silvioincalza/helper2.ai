@@ -12,14 +12,14 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * The search module's settings, from {@code helper2.search}. The defaults and the {@code H2_}
- * variables are in application.yaml (ADR 0007 point 8).
+ * variables are in application.yaml (ADR 0007 (part was 0007) point 8).
  *
  * @param staleFor how long a source's answer is cached and served when the source fails
  * @param perSourceLimit most results asked of each source per search
  * @param translateTimeout how long search waits for the English translation; a plain number is
  *     milliseconds
- * @param translation the query translation (ADR 0011)
- * @param web the metered web search (Tavily, ADR 0037)
+ * @param translation the query translation (ADR 0010)
+ * @param web the metered web search (Tavily, ADR 0014)
  */
 @Validated
 @ConfigurationProperties("helper2.search")

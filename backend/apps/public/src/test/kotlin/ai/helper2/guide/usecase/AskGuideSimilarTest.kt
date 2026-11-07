@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 
 /**
  * A question worded differently but read the same way gets the cached answer of its near twin (ADR
- * 0041).
+ * 0017).
  */
 class AskGuideSimilarTest {
 
@@ -54,7 +54,7 @@ class AskGuideSimilarTest {
 
   @AfterTest fun shutdown() = executor.shutdownNow().let {}
 
-  /** A metered web source, so the test sees the asker's daily web searches (ADR 0037). */
+  /** A metered web source, so the test sees the asker's daily web searches (ADR 0014). */
   private val webCalls = AtomicInteger()
   private val web =
     object : SearchSource {
@@ -111,7 +111,7 @@ class AskGuideSimilarTest {
     )
 
   /**
-   * Plans "free" only when the question says it, as the grounding of ADR 0032 keeps it; counts
+   * Plans "free" only when the question says it, as the grounding of ADR 0016 keeps it; counts
    * every call.
    */
   private class Model : GuideModel {
@@ -367,7 +367,7 @@ class AskGuideSimilarTest {
 
     assertTrue(
       reused.modelUsed && reused.recommendations.all { it.aiReasoned },
-      "the AI marking of ADR 0038 comes with the answer",
+      "the AI marking of ADR 0018 comes with the answer",
     )
     assertEquals(3, reused.webSearches!!.remaining, "a guest's three web searches, untouched")
     assertEquals(1, webCalls.get())

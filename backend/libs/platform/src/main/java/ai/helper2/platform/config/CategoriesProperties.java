@@ -9,8 +9,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * The categories of the AI world as search and the catalog read them (ADR 0053), from the same
- * {@code helper2.categories} list the discovery collectors are registered from (ADR 0051). Only
+ * The categories of the AI world as search and the catalog read them (ADR 0013), from the same
+ * {@code helper2.categories} list the discovery collectors are registered from (ADR 0022). Only
  * what a match and a filter need is bound here: the id, the names, the family, the words, the
  * discovery type and require-keyword. The collectors' own checks of the list stay in the sources
  * module; this one fails startup on a bad id or two categories with one id ({@link

@@ -10,14 +10,14 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "envSecret.name is required: the Secret with the H2_ keys of app.env (make env-secret)" .Values.envSecret.name }}
 {{- end }}
 
-{{/* The Secret with the credentials (ADR 0070): the database owner's and each app's passwords, Redis' default
+{{/* The Secret with the credentials (ADR 0004): the database owner's and each app's passwords, Redis' default
      user's and each app user's. Written by make env-secret from the same app.env; no app loads it whole, each
      workload names only its own keys. */}}
 {{- define "helper2.credentialsSecret" -}}
 {{ required "credentialsSecret.name is required: the Secret with the database and Redis passwords (make env-secret)" .Values.credentialsSecret.name }}
 {{- end }}
 
-{{/* "@sha256:<hex>" when an image's digest is set, else nothing: the deploy (make verify-images, ADR 0071) pins each
+{{/* "@sha256:<hex>" when an image's digest is set, else nothing: the deploy (make verify-images, ADR 0033) pins each
      image to the digest it checked the signature of, as repository:tag@digest; without one, by tag (local renders). */}}
 {{- define "helper2.atDigest" -}}
 {{- with . }}{{ if not (regexMatch "^sha256:[0-9a-f]{64}$" .) }}{{ fail "an image digest must be sha256:<64 hex>" }}{{ end }}@{{ . }}{{ end }}
@@ -32,7 +32,7 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "backoffice.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-backoffice)" .Values.backoffice.image.repository }}:{{ required "backoffice.image.tag or image.tag is required" (include "helper2.backofficeTag" .) }}{{ include "helper2.atDigest" .Values.backoffice.image.digest }}
 {{- end }}
 
-{{/* The web image (ADR 0069): the web Deployment and the public pod's init container both name it through this helper,
+{{/* The web image (ADR 0032): the web Deployment and the public pod's init container both name it through this helper,
      so the shell the public app writes into always comes from the same version as the files the web pods serve. Its
      tag: its own, or the public app's. */}}
 {{- define "helper2.webImage" -}}

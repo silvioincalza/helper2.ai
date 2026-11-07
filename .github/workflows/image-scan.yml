@@ -1,4 +1,4 @@
-# Weekly scan of what runs on prod (ADR 0046): Grype against the SBOM attached to the latest GitHub release, with a
+# Weekly scan of what runs on prod (ADR 0033): Grype against the SBOM attached to the latest GitHub release, with a
 # fresh vulnerability database. New CVEs appear after a release; this finds them without a new build.
 # Report-only: findings go to code scanning (release/app, release/backoffice and release/web, on the release tag) and
 # the job summary.
@@ -35,16 +35,16 @@ jobs:
           set -euo pipefail
           tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
           if ! gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-$tag.cdx.json" -O sbom.cdx.json; then
-            echo "::warning::release $tag has no SBOM (published before ADR 0046): nothing to scan"
+            echo "::warning::release $tag has no SBOM (published before ADR 0033): nothing to scan"
             echo "found=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
-          # The back office image (ADR 0069); a release before the split has none.
+          # The back office image (ADR 0032); a release before the split has none.
           backoffice=false
           if gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-backoffice-$tag.cdx.json" -O sbom-backoffice.cdx.json; then
             backoffice=true
           fi
           echo "backoffice=$backoffice" >> "$GITHUB_OUTPUT"
-          # The web image (ADR 0069); a release before it has none.
+          # The web image (ADR 0032); a release before it has none.
           web=false
           if gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-web-$tag.cdx.json" -O sbom-web.cdx.json; then
             web=true

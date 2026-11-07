@@ -1,4 +1,4 @@
-# cosign (Sigstore, Apache-2.0) to sign the images in CD and check their signatures before a deploy (ADR 0071). No
+# cosign (Sigstore, Apache-2.0) to sign the images in CD and check their signatures before a deploy (ADR 0033). No
 # third-party action (sigstore/cosign-installer): like Syft in install-scanners, the linux_amd64 release binary,
 # checked against its SHA-256. The value is the release's cosign_checksums.txt entry for cosign-linux-amd64, the same
 # as the digest GitHub shows for that asset (github.com/sigstore/cosign/releases/tag/v3.1.4).

@@ -34,7 +34,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
  * Spring AI adapter for the tool guide: one structured-output call with the tool's documents (the
  * useful sections of long READMEs, see {@link Markdown#relevant}). ToolGuideValidator decides what
  * is shown. Every attempt takes one call from the tool guide's own daily budget, inside the {@code
- * llm-chat} circuit (ADR 0033).
+ * llm-chat} circuit (ADR 0006).
  */
 class SpringAiToolGuideModel implements ToolGuideModel {
 

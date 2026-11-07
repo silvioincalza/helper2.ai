@@ -5,7 +5,7 @@ import { CATEGORIES, makeCard, makeDetail, makeSearch } from '@/test/fixtures';
 import { mockApi, problem, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 
-/** Categories as a search filter (ADR 0053), as a person uses them. */
+/** Categories as a search filter (ADR 0013), as a person uses them. */
 const search = () =>
   makeSearch({
     facets: {

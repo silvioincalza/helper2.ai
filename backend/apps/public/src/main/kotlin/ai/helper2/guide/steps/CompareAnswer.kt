@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
 
 /**
- * COMPARE (ADR 0032): each subject's own entry, aspect rows from one model call, every cell quoted.
+ * COMPARE (ADR 0016): each subject's own entry, aspect rows from one model call, every cell quoted.
  */
 internal class CompareAnswer(
   private val steps: GuideSteps,
@@ -96,7 +96,7 @@ internal class CompareAnswer(
     present: List<Candidate>,
   ): GuideAnswer {
     val fallback = present.firstOrNull()?.result?.title ?: r.query
-    // The name is the planner's: a field of its own, so the page marks it AI-written (ADR 0038).
+    // The name is the planner's: a field of its own, so the page marks it AI-written (ADR 0018).
     val notices =
       subjects
         .filter { it.result == null }
@@ -195,7 +195,7 @@ internal class CompareAnswer(
     val ok = cell != null && c != null && check == null
     if (cell != null && !ok) gate.rejected++
     // The trail names the subject whose cell was removed, never the cell or its aspect
-    // (ADR 0044).
+    // (ADR 0018).
     if (c != null && check != null) gate.removed += RemovedSuggestion(c.result.title, check)
     return if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim())
     else ComparisonCell(s.key, null, null)

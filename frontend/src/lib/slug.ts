@@ -1,4 +1,4 @@
-/** Longest slug, cut at a hyphen. The backend's `Slug.MAX` (ADR 0050). */
+/** Longest slug, cut at a hyphen. The backend's `Slug.MAX` (ADR 0029). */
 const MAX = 60;
 
 /**

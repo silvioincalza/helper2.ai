@@ -21,7 +21,7 @@ const PARTS = [
 ] as const;
 
 /**
- * The admin back office (ADR 0023, ADR 0035): sign-in and the ADMIN check once for every part, then a sub-navigation
+ * The admin back office (ADR 0024): sign-in and the ADMIN check once for every part, then a sub-navigation
  * and the part on its own route, so every view has a link (the overview links into a filtered queue). No admin
  * endpoint is called before the role is known.
  */

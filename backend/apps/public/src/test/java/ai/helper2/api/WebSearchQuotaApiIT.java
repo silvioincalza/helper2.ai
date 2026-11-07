@@ -32,7 +32,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
- * Daily web searches (ADR 0037) as a visitor sees them: a metered web source stands in for Tavily.
+ * Daily web searches (ADR 0014) as a visitor sees them: a metered web source stands in for Tavily.
  * Each test asks from its own address, so its counters start at zero.
  */
 @TestPropertySource(
@@ -188,7 +188,7 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     ContractValidator.assertArrayMatches("SourceInfo", body);
     assertThat(read(body, "$[?(@.id == 'fake-web')].webCredits.dailyCap"))
         .asList()
-        .as("no H2_ value: the runtime setting's code maximum (ADR 0060)")
+        .as("no H2_ value: the runtime setting's code maximum (ADR 0007)")
         .containsExactly((int) RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS.max());
     assertThat(read(body, "$[?(@.id == 'fake-live')].webCredits")).asList().containsOnlyNulls();
     return (Number)

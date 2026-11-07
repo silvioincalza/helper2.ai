@@ -9,7 +9,7 @@ week and Coming up as two `ls -l` tables (tabs on phones). Every page, its state
 private canvas.
 Snapshot: [`redesign/`](redesign) (one `.dc.html` per board,
 `canvas.json` lays them out). The rules are in the design system, version 4: [system/README.md](system/README.md).
-The code moves to it page by page ([ADR 0042](../adr/frontend/0042-redesign-design-system-v4.md)): the header, the
+The code moves to it page by page ([ADR 0028](../adr/frontend/0028-design-system.md)): the header, the
 footer, Home, Results (list and timeline), the resource page, Sources, Saved, the back office and the text pages
 (Mission, Privacy, Terms, Not found, Sign in, Account) are built; the boards below are the reference.
 

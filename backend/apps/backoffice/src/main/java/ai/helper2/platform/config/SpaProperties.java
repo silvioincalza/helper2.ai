@@ -6,7 +6,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * Where the back office serves the admin web app from, from {@code helper2.spa}. The public app
- * serves no web files: the {@code web} image does (ADR 0069).
+ * serves no web files: the {@code web} image does (ADR 0032).
  */
 @Validated
 @ConfigurationProperties("helper2.spa")

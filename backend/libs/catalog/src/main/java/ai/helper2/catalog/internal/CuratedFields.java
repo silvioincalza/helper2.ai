@@ -5,7 +5,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 /**
- * A resource's fields an admin set (ADR 0066): the value in the resource's column, the field in
+ * A resource's fields an admin set (ADR 0026): the value in the resource's column, the field in
  * {@code curated_fields}, and a CURATED field assertion that says where the value came from. Call
  * inside a transaction.
  */
@@ -67,7 +67,7 @@ public class CuratedFields {
         .single();
   }
 
-  /** The AI's values of [field], rejected as the code re-check does (ADR 0056). */
+  /** The AI's values of [field], rejected as the code re-check does (ADR 0023). */
   public int rejectAiValues(UUID resourceId, String field) {
     return jdbc.sql(
             """

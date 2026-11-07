@@ -5,9 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * The public site's Content Security Policy (ADR 0024, 6; ADR 0057). It starts from the strict
+ * The public site's Content Security Policy (ADR 0025, 6; ADR 0030). It starts from the strict
  * policy and adds the origins of a monetisation part only while that part is on. The back office
- * sends its own fixed policy, without them (ADR 0069).
+ * sends its own fixed policy, without them (ADR 0032).
  */
 final class ContentSecurityPolicy {
 
@@ -33,7 +33,7 @@ final class ContentSecurityPolicy {
   static final String NONCE = "{nonce}";
 
   /**
-   * Google AdSense supports only a strict nonce policy, not an allowlist (ADR 0059): scripts run by
+   * Google AdSense supports only a strict nonce policy, not an allowlist (ADR 0030): scripts run by
    * nonce, and what they load runs too ('strict-dynamic'). 'unsafe-inline', https: and http: only
    * for browsers that know no nonce; they ignore the rest. Frames, images and requests go to any
    * https origin, because the ad's origins change.

@@ -21,7 +21,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 
 /**
- * GET and POST /admin/discovery-hosts, POST /admin/discovery-hosts/{host}/remove (ADR 0063): ADMIN
+ * GET and POST /admin/discovery-hosts, POST /admin/discovery-hosts/{host}/remove (ADR 0022): ADMIN
  * only with CSRF, the contract's shapes, one audit row per change.
  */
 class DiscoveryHostsApiIT extends ApiTestBase {

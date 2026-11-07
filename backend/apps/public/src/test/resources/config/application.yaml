@@ -1,4 +1,4 @@
-# The tests connect as the public app does in a deployment (ADR 0070): its database role and its Redis ACL
+# The tests connect as the public app does in a deployment (ADR 0004): its database role and its Redis ACL
 # user (TestcontainersConfiguration), so a missing grant or Redis permission fails a test.
 helper2:
   test:

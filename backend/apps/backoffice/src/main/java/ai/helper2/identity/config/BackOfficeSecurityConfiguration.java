@@ -21,7 +21,7 @@ import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
- * The back office's security (ADR 0035, 0069). The whole app is the admin host: every request is
+ * The back office's security (ADR 0024, 0032). The whole app is the admin host: every request is
  * the owner's, so every write must come from the admin host's own pages (Origin, then the CSRF
  * header), the cookies are {@code __Host-} cookies that a sibling host cannot set, and a sign-in of
  * an allow-listed account carries ADMIN. The headers and the cache rules are {@link
@@ -80,7 +80,8 @@ class BackOfficeSecurityConfiguration {
             c.csrfTokenRepository(csrfCookies())
                 .csrfTokenRequestHandler(new HeaderOnlyCsrfTokenHandler()))
         .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
-        // Every write must carry this host's own Origin, before the CSRF check (ADR 0035 §8).
+        // Every write must carry this host's own Origin, before the CSRF check (ADR 0024 (part was
+        // 0035) §8).
         .addFilterBefore(new SameOriginWrites(), CsrfFilter.class)
         .logout(l ->
             l.logoutUrl("/logout")

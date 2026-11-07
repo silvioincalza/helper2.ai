@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.simple.JdbcClient
 
 /**
- * Search inside awesome lists (ADR 0055): the index writes and the catalog search, on PostgreSQL.
+ * Search inside awesome lists (ADR 0010): the index writes and the catalog search, on PostgreSQL.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration::class)
@@ -144,7 +144,7 @@ class AwesomeListSearchIT {
       .filterNotNull()
 
   @Test
-  fun `a section heading of the list gives the entry its category (ADR 0058)`() {
+  fun `a section heading of the list gives the entry its category (ADR 0022)`() {
     catalog()
     assertEquals(emptyList(), categories(listed))
 

@@ -5,7 +5,7 @@ import type { EventRow, Feed, NewsRow } from './homeFeeds';
 import { useEventCells, useNewsCells, type ListId } from './listParts';
 import { TermList, type TermCells } from './TermList';
 
-/** Phone: one panel with two tabs, `> new this week N | coming up N`, and TermList log rows (ADR 0042, decision 5).
+/** Phone: one panel with two tabs, `> new this week N | coming up N`, and TermList log rows (ADR 0028 (part was 0042), decision 5).
  * Loaded only on a phone. */
 
 const LISTS: readonly ListId[] = ['news', 'events'];

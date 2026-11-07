@@ -16,7 +16,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
 /**
- * What each app's database role may do on every table (ADR 0070, V23), as the database reports it.
+ * What each app's database role may do on every table (ADR 0004, V23), as the database reports it.
  * Every table of the schema must have its row in {@link #PUBLIC_APP}: a new table fails here until
  * it is classified, and a grant that differs from the row fails too. The app tests, which connect
  * as these roles, show that the rows are enough for the code.

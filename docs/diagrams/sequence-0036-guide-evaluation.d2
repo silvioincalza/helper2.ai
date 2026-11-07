@@ -1,0 +1,51 @@
+# Sequence: one run of scripts/eval-guide.mjs against a backend under test: the CSRF token, one guide question per
+# step with its model calls, the pool search for a question with no answer, the stored record read back for --intents,
+# and the report written at the end.
+# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (csrfToken, postJson, sleep),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv,
+#   .github/workflows/guide-eval.yml (the nightly run on staging).
+# Render: cd docs/diagrams && d2 fmt sequence-0036-guide-evaluation.d2 && d2 sequence-0036-guide-evaluation.d2 sequence-0036-guide-evaluation.svg
+
+...@style
+
+shape: sequence_diagram
+
+gha: "GitHub Actions\nguide-eval.yml\n(GitHub-hosted, nightly)" {class: ext}
+script: "eval-guide.mjs\n(Node)" {class: person}
+files: "docs/eval/*.json,\nguide-qrels.tsv" {class: data}
+api: "helper2 staging /api/v1\n(H2_GUIDE_CACHE_TTL=PT1S)" {class: app}
+guide: AskGuide {class: app}
+model: "Nemotron\n(Token Factory)" {class: ai}
+out: "docs/evaluation*.md,\neval-data/guide-pool.tsv,\nguide-runs.json" {class: data}
+
+start: Start {
+  gha -> script: "01:41 UTC: node scripts/eval-guide.mjs\nthe staging URL --core --min-pass 0.5\n(then again with --adversarial)"
+  script -> files: "read the question set and judgements"
+  script -> api: "GET /api/v1/me"
+  api -> script: "Set-Cookie XSRF-TOKEN"
+}
+
+each: "Each question (7 s apart, below 10 per minute; --repeat n: the set n times)" {
+  script -> script: "wait while 25 live GitHub searches\nfell in the last 60 s"
+  script -> api: "POST /api/v1/guide/stream {request}\nx-xsrf-token + cookie" {class: hot}
+  api -> guide: "answer(request)"
+  guide -> model: "plan" {class: ai-call}
+  guide -> guide: "federated search, evidence gate"
+  guide -> model: "choose" {class: ai-call}
+  guide -> model: "verify (reason check)" {class: ai-call}
+  guide -> api: "GuideAnswer"
+  api -> script: "200 JSON: status, picks, notices,\nsources, searchQuery, generatedAt" {class: hot}
+  script -> script: "log each source's status; count live\nGitHub calls; GUIDE_DAILY_QUOTA or 3x\nLLM_UNAVAILABLE? stop, exit 1, report\nunchanged; older generatedAt? mark cached"
+  script -> api: "no answer: GET /api/v1/search\n?q=<searchQuery>&size=24 (pool)"
+  api -> script: "24 results and their sources"
+  script -> api: "--intents: GET /api/v1/resources/{id}\n(stored dates and type of each pick)"
+  api -> script: "ResourceDetail"
+}
+
+end: Report {
+  script -> out: "raw answers to eval-data/guide-runs.json\n(--rescore rebuilds the report from it)"
+  script -> script: "go / no-go figures: answer rate, P@3,\nrelevant candidates, p90, 429s, flips"
+  script -> out: "rewrite the report (hand-written notes kept);\nungraded picks and candidates to guide-pool.tsv" {class: hot}
+  script -> gha: "exit 0, or 1 below --min-pass\n(adversarial: on any failed case)"
+  gha -> out: "upload the reports as an artifact\n(retention 30 days)"
+}

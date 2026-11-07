@@ -3,7 +3,7 @@ package ai.helper2.sources.tavily;
 import java.util.Locale;
 
 /**
- * The seven families the 34 discovery categories are grouped in (ADR 0051), for the Sources page.
+ * The seven families the 34 discovery categories are grouped in (ADR 0022), for the Sources page.
  * The id is what the API sends ("everyday-apps").
  */
 public enum DiscoveryFamily {

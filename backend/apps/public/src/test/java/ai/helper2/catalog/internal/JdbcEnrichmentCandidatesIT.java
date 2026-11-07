@@ -208,8 +208,8 @@ class JdbcEnrichmentCandidatesIT {
   }
 
   /**
-   * ADR 0045 §7: one order for the next batch, the page and the count. Prioritised first (before
-   * the never-run part), skipped absent, each resource once.
+   * ADR 0026 (part was 0045) §7: one order for the next batch, the page and the count. Prioritised
+   * first (before the never-run part), skipped absent, each resource once.
    */
   @Test
   void prioritisedComeFirstSkippedAreAbsentAndEveryReadKeepsOneOrder() {
@@ -377,7 +377,10 @@ class JdbcEnrichmentCandidatesIT {
     assertThat(candidates.withEnoughText(List.of(), MIN_TEXT)).isEmpty();
   }
 
-  /** ADR 0045 §7: a skip holds when a collector sees new text, not only in the backlog. */
+  /**
+   * ADR 0026 (part was 0045) §7: a skip holds when a collector sees new text, not only in the
+   * backlog.
+   */
   @Test
   void aSkippedResourceIsNotEnrichedWhenItsTextChanges() {
     UUID kept = withText("Kept", "INDEXED", "NOT_RUN", T0);
@@ -462,7 +465,7 @@ class JdbcEnrichmentCandidatesIT {
   }
 
   /**
-   * ADR 0056 with the backlog index of ADR 0045 (#219): an accepted product comes first even when
+   * ADR 0023 with the backlog index of ADR 0026 (#219): an accepted product comes first even when
    * it is older than the newest [limit] resources of its part.
    */
   @Test
@@ -483,7 +486,7 @@ class JdbcEnrichmentCandidatesIT {
         .param("url", url)
         .update();
     try {
-      // Other tests accept products too (they wait without source text, ADR 0058), so the head of
+      // Other tests accept products too (they wait without source text, ADR 0022), so the head of
       // the batch is shared: the accepted product comes before the newer never-run one.
       List<UUID> batch = candidates.pending(Integer.MAX_VALUE, MIN_TEXT, MAX_FAILED);
       assertThat(batch).contains(accepted, newer);
@@ -499,7 +502,7 @@ class JdbcEnrichmentCandidatesIT {
   }
 
   /**
-   * ADR 0058: a product linked from an awesome list keeps no snippet, so it has no source text.
+   * ADR 0022: a product linked from an awesome list keeps no snippet, so it has no source text.
    * Once a person accepts it, it still waits for enrichment: the ladder reads its page. The count
    * and the queue follow the same rule.
    */
@@ -535,7 +538,7 @@ class JdbcEnrichmentCandidatesIT {
     }
   }
 
-  /** ADR 0056: a re-run request makes the earlier judged runs stop counting, a later run counts. */
+  /** ADR 0023: a re-run request makes the earlier judged runs stop counting, a later run counts. */
   @Test
   void aRerunRequestHidesEarlierJudgedRunsUntilTheNextRun() {
     UUID id = withText("Rerun", "INDEXED", "VALIDATED", T0);

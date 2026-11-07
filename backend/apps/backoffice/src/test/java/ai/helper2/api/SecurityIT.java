@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-/** Who may do what on the back office (ADR 0035, 0069). */
+/** Who may do what on the back office (ADR 0024, 0032). */
 class SecurityIT extends ApiTestBase {
 
   @Test
@@ -45,7 +45,7 @@ class SecurityIT extends ApiTestBase {
         .andExpect(status().isOk());
   }
 
-  /** ADR 0056: only an administrator re-checks the stored enrichment answers; counts only. */
+  /** ADR 0023: only an administrator re-checks the stored enrichment answers; counts only. */
   @Test
   void anAdminRechecksStoredEnrichmentAnswers() throws Exception {
     mvc.perform(

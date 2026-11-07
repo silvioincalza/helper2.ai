@@ -19,7 +19,7 @@ fun interface ExampleSearch {
 }
 
 /**
- * The quality check (ADR 0049): an example is a promise that its click gives a right answer at
+ * The quality check (ADR 0015): an example is a promise that its click gives a right answer at
  * once. It is shown only when an expected resource is in the top [SHOWN_WITHIN].
  */
 object ExampleCheck {

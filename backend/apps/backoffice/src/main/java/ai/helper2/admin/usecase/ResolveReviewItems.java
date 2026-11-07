@@ -12,7 +12,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An administrator decides several review items at once (ADR 0045). Each item goes through the
+ * An administrator decides several review items at once (ADR 0026). Each item goes through the
  * one-item decision ({@link ResolveReview}) in its own transaction, so each writes its own audit
  * entry, marked with the batch; one item that fails does not undo the others. An item the bulk rule
  * refuses ({@link BulkDecisionRule}) stays open and is recorded as NOT_ALLOWED. Not transactional

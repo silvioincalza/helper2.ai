@@ -44,7 +44,7 @@ internal fun readingFilter(r: Reading) =
 
 /**
  * The not-found notices' messages: our own words only; the name and the query travel apart (ADR
- * 0038).
+ * 0018).
  */
 internal const val NOT_FOUND_ALTERNATIVES =
   "The name in the question was not found in our sources; showing tools for the planned search instead."
@@ -199,7 +199,7 @@ internal class PickAnswer(
 
   private fun subjectNotFound(name: String, r: Reading): List<Notice> {
     // The name and the query are the planner's words: fields of their own, so the page marks them
-    // AI-written (ADR 0038). Only a query the planner wrote: without one, r.query is the user's own
+    // AI-written (ADR 0018). Only a query the planner wrote: without one, r.query is the user's own
     // text, which must not be marked AI-written.
     val plannedQuery =
       r.plan?.let { PlannedQueries.searchQueryOf(it.searchQuery) }?.ifBlank { null }
@@ -316,7 +316,7 @@ internal class PickAnswer(
       SearchRequest(
         text = retrieval.text,
         path = q.path,
-        // The page's category filter, when the question came with one (ADR 0053).
+        // The page's category filter, when the question came with one (ADR 0013).
         filters = retrieval.filters.copy(categories = retrieval.filters.categories + q.categories),
         sort = retrieval.sort,
         size = maxCandidates,

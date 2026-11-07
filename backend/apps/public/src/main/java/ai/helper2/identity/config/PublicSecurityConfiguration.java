@@ -32,7 +32,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * The public site's security (ADR 0024, 0069). Anonymous use is the default: search, details,
+ * The public site's security (ADR 0025, 0032). Anonymous use is the default: search, details,
  * sources and reports need no account. Sign-in (OAuth2/OIDC, any configured provider) adds
  * server-side bookmarks and lets the user delete the account. The public app has no back office: it
  * never grants ADMIN, and {@code /admin} and {@code /api/v1/admin} answer 404 here, as any unknown
@@ -44,7 +44,7 @@ class PublicSecurityConfiguration {
   /**
    * Strict CSP that still lets the same-origin SPA run (no inline scripts, no third-party origins).
    * The public site adds the origins of the monetisation parts that are on ({@link
-   * ContentSecurityPolicy}, ADR 0057).
+   * ContentSecurityPolicy}, ADR 0030).
    */
   static final String CSP =
       "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
@@ -137,7 +137,7 @@ class PublicSecurityConfiguration {
     WebSecurity.apiProblems(http);
     if (registrations.getIfAvailable() != null) {
       // End users sign in here, with this host's own callback ({baseUrl}). Never ADMIN: that role
-      // exists only on the back office (ADR 0035, 0069).
+      // exists only on the back office (ADR 0024, 0032).
       http.oauth2Login(o ->
           o.successHandler((req, res, auth) -> res.sendRedirect(pages.signedIn()))
               .failureHandler((req, res, e) -> res.sendRedirect(pages.failed()))
@@ -146,7 +146,7 @@ class PublicSecurityConfiguration {
                       .oidcUserService(WebSecurity.oidcUsers(admins, false))));
     }
     // No generated /login or /logout page: the SPA has its own sign-in and signs out with a POST,
-    // and the generated pages would write the CSRF token into HTML (ADR 0035 §8).
+    // and the generated pages would write the CSRF token into HTML (ADR 0024 (part was 0035) §8).
     http.removeConfigurer(DefaultLoginPageConfigurer.class);
     return http.build();
   }

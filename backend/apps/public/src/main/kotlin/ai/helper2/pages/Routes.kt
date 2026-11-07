@@ -2,7 +2,7 @@ package ai.helper2.pages
 
 import java.util.UUID
 
-/** The pages of the app the server knows (ADR 0050). One list: routes.tsx is checked against it. */
+/** The pages of the app the server knows (ADR 0029). One list: routes.tsx is checked against it. */
 enum class PageKind(val pattern: String) {
   HOME(""),
   SEARCH("search"),

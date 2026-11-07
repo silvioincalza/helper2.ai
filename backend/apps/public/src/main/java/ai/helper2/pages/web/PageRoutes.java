@@ -17,11 +17,11 @@ import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 /**
- * Every GET (and HEAD) of an address the client router owns (ADR 0050 §1-2): the shell with the
- * page's head, its status, or a 301. An address with a file extension or a server prefix is never
- * claimed, so robots.txt and the API are as before; the web app's files are the web image's (ADR
- * 0069). Without a shell (development: Vite serves the UI) nothing is claimed and such an address
- * is a 404.
+ * Every GET (and HEAD) of an address the client router owns (ADR 0029 (part was 0050) §1-2): the
+ * shell with the page's head, its status, or a 301. An address with a file extension or a server
+ * prefix is never claimed, so robots.txt and the API are as before; the web app's files are the web
+ * image's (ADR 0032). Without a shell (development: Vite serves the UI) nothing is claimed and such
+ * an address is a 404.
  */
 @Configuration(proxyBeanMethods = false)
 class PageRoutes {
@@ -41,7 +41,7 @@ class PageRoutes {
   }
 
   /**
-   * no-cache as before; no-store while AdSense is on (ADR 0059): the page carries this request's
+   * no-cache as before; no-store while AdSense is on (ADR 0030): the page carries this request's
    * CSP nonce, so no cache may give it to anyone else.
    */
   static CacheControl cacheControl(Monetisation monetisation) {

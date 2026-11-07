@@ -31,7 +31,7 @@ updates:
       actions: { patterns: ["*"] }
 
   # Base images of deploy/Dockerfile, deploy/backoffice.Dockerfile, deploy/web.Dockerfile and deploy/postgres/Dockerfile,
-  # and the images in the chart's values.yaml (Redis, rclone), all pinned by digest (ADR 0046). The web and the back
+  # and the images in the chart's values.yaml (Redis, rclone), all pinned by digest (ADR 0033). The web and the back
   # office image build with the same Node image, the two apps run on the same JDK and JRE: one update PR changes every
   # file that names it. nginx (the web image's runtime) is its own PR. A change under deploy/postgres also needs a new
   # postgres.image.tag in the chart's values.yaml (CI fails the PR until it has one).
@@ -39,7 +39,7 @@ updates:
     directories: [/deploy, /deploy/postgres, /deploy/helm/helper2]
     schedule: { interval: weekly, day: monday }
     groups:
-      # The web, the public and the back office image move together (ADR 0069).
+      # The web, the public and the back office image move together (ADR 0032).
       app-images: { patterns: ["*eclipse-temurin*", "*node*"] }
     ignore:
       # A Postgres major needs pg_upgrade or dump/restore of the data directory, never a base-image bump.

@@ -7,7 +7,7 @@ import java.util.Base64;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Query vectors shared by every replica (ADR 0012): the guide's example questions and pagination
+ * Query vectors shared by every replica (ADR 0011): the guide's example questions and pagination
  * would otherwise spend the embedding API's rate limit on the same text, once per replica. Keyed by
  * a hash of the embedding model and the normalised query, kept for {@code ttl}; the value is the
  * vector's floats in Base64. An entry of another size or that does not read is a miss.

@@ -12,7 +12,7 @@ import org.springframework.data.redis.core.script.RedisScript;
  * {@link QuotaCounter} in Redis hashes. The check and the count of the own and the global counter
  * run in one Lua script, so concurrent requests on any replica never pass a limit, and a key gets
  * its one-day expiry with its first count. Every call runs under the {@code redis} policy (ADR
- * 0033) and throws when Redis cannot answer or the circuit is open.
+ * 0006) and throws when Redis cannot answer or the circuit is open.
  */
 public final class RedisQuotaCounter implements QuotaCounter {
 

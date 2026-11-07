@@ -44,7 +44,7 @@ function SettingValue({
 }
 
 /**
- * The settings the app runs with now (ADR 0045), grouped by module, read-only. Each row: the setting
+ * The settings the app runs with now (ADR 0026), grouped by module, read-only. Each row: the setting
  * in words, its value, and the variable that sets it. The server never sends a secret.
  */
 export default function SettingsPage() {

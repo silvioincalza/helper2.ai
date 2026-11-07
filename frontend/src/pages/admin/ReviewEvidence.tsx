@@ -19,9 +19,9 @@ const VERIFICATION_TONE: Record<Verification, StatusTone> = {
 };
 
 /**
- * What a review item is about (ADR 0045): the run or the relationship it links to, read from the server for the
+ * What a review item is about (ADR 0026): the run or the relationship it links to, read from the server for the
  * selected item only. Values a model wrote carry their origin in words ("Extracted by AI") and are marked in the
- * HTML (ADR 0038). The validation errors embed text the model wrote, so they carry the same label and mark. Quotes
+ * HTML (ADR 0018). The validation errors embed text the model wrote, so they carry the same label and mark. Quotes
  * come from the sources: they say so and are not marked. Every text is plain React text.
  */
 export function ReviewEvidencePanel({ itemId }: { itemId: string }) {
@@ -106,7 +106,7 @@ function EvidenceBody({
       {relationship && (
         <div className="h2-admin__field">
           <p className="h2-admin__field-head">
-            {/* The kind is the model's; a target a person chose is not (ADR 0064). */}
+            {/* The kind is the model's; a target a person chose is not (ADR 0026). */}
             <span {...aiMark(run?.model)}>{t(`relationship.${relationship.kind}`)}</span>{' '}
             <span {...(targetCurated ? {} : aiMark(run?.model))}>{relationship.target}</span>{' '}
             <StatusPill tone={VERIFICATION_TONE[relationship.verification]}>

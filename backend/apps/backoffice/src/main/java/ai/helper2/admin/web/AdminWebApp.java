@@ -26,7 +26,7 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * Serves the admin web app (frontend/dist-admin, built under /admin/ and copied to
- * classpath:static/admin/ in the image; ADR 0069). Controllers are matched first, so this only sees
+ * classpath:static/admin/ in the image; ADR 0032). Controllers are matched first, so this only sees
  * what no API route claimed. The cache rules are the edge's (identity's BackOfficeEdge).
  *
  * <ul>

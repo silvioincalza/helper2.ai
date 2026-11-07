@@ -36,7 +36,7 @@ constructor(
   /** Born on or before this day; strict like [publishedAfter]. */
   val publishedBefore: LocalDate? = null,
   /**
-   * Category ids (ADR 0053): a result in any of them is kept; [UNKNOWN] keeps results with no
+   * Category ids (ADR 0013): a result in any of them is kept; [UNKNOWN] keeps results with no
    * category yet.
    */
   val categories: Set<String> = emptySet(),

@@ -13,7 +13,7 @@ import java.util.Set;
 
 /**
  * What the Scout's collectors are, as the Sources page and the catalog's source rows state it (ADR
- * 0069). The collectors run in the back office; the public app lists them too (GET
+ * 0032). The collectors run in the back office; the public app lists them too (GET
  * /api/v1/sources). Both build the descriptors here, from the same settings, so the two apps state
  * the same names, terms and on/off state, and both write the same rows of the {@code source} table
  * at startup.
@@ -212,7 +212,7 @@ public final class CollectorDescriptors {
         60);
   }
 
-  /** One discovery category (ADR 0051): its own source, with its own dot on the Home radar. */
+  /** One discovery category (ADR 0022): its own source, with its own dot on the Home radar. */
   public static SourceDescriptor discovery(SourceSettings settings, DiscoveryCategory category) {
     boolean enabled = settings.enabled() && category.enabled();
     return new SourceDescriptor(

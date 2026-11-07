@@ -19,7 +19,7 @@ import './resource.css';
 import { OpenButton } from './OpenButton';
 
 /**
- * Resource page (ADR 0042, decision 8): one column. The back link, the title, the date line (type · host · the same date as
+ * Resource page (ADR 0028 (part was 0042), decision 8): one column. The back link, the title, the date line (type · host · the same date as
  * the result row), one primary button (Open) with Save and, for what you install or run, Set it up. Then why the guide
  * picked it (when it came from a pick), the source's own text with the checked sentence, the facts, its dates, where
  * the information comes from (folded) and the detail sections ([children]).
@@ -29,7 +29,7 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
   const { from, pick } = fromResults(useLocation().state);
   const card = d.card;
   const host = displayHost(card.url);
-  // A model wrote it: labelled and marked, never headed "From the source" nor shown as a checked quote (ADR 0038).
+  // A model wrote it: labelled and marked, never headed "From the source" nor shown as a checked quote (ADR 0018).
   const aiDescription = !!card.description && isAiOrigin(card.descriptionOrigin);
   const quote = pick?.quote ?? null;
   return (
@@ -146,7 +146,7 @@ function BackLink({ from }: { from: string | undefined }) {
 
 /**
  * Why the guide picked it, when the page was opened from a pick: the rank, the reason (AI-written: labelled and
- * marked, ADR 0038) with what the second model call made of it, and the requirements checked against the source.
+ * marked, ADR 0018) with what the second model call made of it, and the requirements checked against the source.
  * A reason that call removed is not shown; the line says why.
  */
 function WhyPicked({ pick }: { pick: PickForPage }) {

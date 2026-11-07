@@ -50,7 +50,7 @@ import './results.css';
 const PHONE = '(max-width: 720px)';
 
 /**
- * Results view (ADR 0042, decision 7), loaded on demand under the page's h1 and box (HomePage): the guide's picks bar when a
+ * Results view (ADR 0028 (part was 0042), decision 7), loaded on demand under the page's h1 and box (HomePage): the guide's picks bar when a
  * question is asked, then one column of results. A row opens the resource page; Back comes back to the same place.
  * The guide's picks stay where the search put them, each marked with its rank, its reason and its quote, so nothing
  * moves when the answer comes. The sources that answered are at the bottom.
@@ -84,7 +84,7 @@ export function Results() {
     state.q ? api.search(apiParams, signal) : Promise.resolve(null),
   );
   const shown = search.loading ? (search.previous ?? undefined) : (search.data ?? undefined);
-  // No ad on an error state (ADR 0057, 6): a failed request, or an answer where no source could search.
+  // No ad on an error state (ADR 0030 (part was 0057), 6): a failed request, or an answer where no source could search.
   const failed =
     !search.loading &&
     (search.error !== undefined || (search.data != null && searchedNothing(search.data)));
@@ -101,7 +101,7 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
-      {/* The one ad slot, above the results and never next to the guide's answer (ADR 0057). */}
+      {/* The one ad slot, above the results and never next to the guide's answer (ADR 0030). */}
       {!asked && state.q && !failed && <SponsorSlot query={key} loading={search.loading} />}
       {/* The skeleton only on the first load; later the last results stay, dimmed, under one status line. */}
       {search.loading &&
@@ -461,7 +461,7 @@ function ListHead({
 }
 
 /**
- * "Also searched for": the model's English translation of the query, labelled and marked AI-written (ADR 0038),
+ * "Also searched for": the model's English translation of the query, labelled and marked AI-written (ADR 0018),
  * then the terms from the fixed word list, which alone carry the "not AI" note.
  */
 function AlsoSearched({ interpretation }: { interpretation: SearchResponse['interpretation'] }) {

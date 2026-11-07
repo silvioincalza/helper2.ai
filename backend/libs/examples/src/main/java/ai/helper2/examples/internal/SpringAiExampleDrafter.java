@@ -29,7 +29,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
 
 /**
- * Spring AI adapter for example drafts (ADR 0049 §6): one structured-output call with public facts
+ * Spring AI adapter for example drafts (ADR 0015 §6): one structured-output call with public facts
  * about catalog resources, inside the {@code llm-chat} circuit, one unit of the drafts' own daily
  * budget per attempt. DraftRules decides what a person sees.
  */

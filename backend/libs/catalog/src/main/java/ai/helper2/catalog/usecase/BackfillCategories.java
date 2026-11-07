@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Assigns the categories of every resource in the catalog again (ADR 0053), in batches of {@link
+ * Assigns the categories of every resource in the catalog again (ADR 0013), in batches of {@link
  * #BATCH} resources, each batch its own transaction. New and changed resources get theirs when they
  * are indexed; this is for the ones indexed before, and for a change of the category words.
  *

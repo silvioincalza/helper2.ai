@@ -1,4 +1,4 @@
-/* The one ad slot (ADR 0057). A fixed height: the results never move when the ad arrives or stays empty. */
+/* The one ad slot (ADR 0030). A fixed height: the results never move when the ad arrives or stays empty. */
 .h2-sponsor {
   margin: 0 0 1rem;
   padding: var(--space-3) var(--space-4);
@@ -28,7 +28,7 @@
   background: var(--border);
   margin: 0 0 0.5rem;
 }
-/* Fills over the longest source deadline (6 s, ADR 0008); the results replace it as soon as they come. */
+/* Fills over the longest source deadline (6 s, ADR 0009); the results replace it as soon as they come. */
 .h2-sponsor__bar {
   display: block;
   height: 100%;
@@ -54,7 +54,7 @@
 .h2-sponsor__ad {
   min-height: 6rem;
 }
-/* The AdSense box on resource pages (ADR 0059): the height AdSense's responsive unit needs, held before it loads. */
+/* The AdSense box on resource pages (ADR 0030): the height AdSense's responsive unit needs, held before it loads. */
 .h2-adsense {
   min-height: 18rem;
 }

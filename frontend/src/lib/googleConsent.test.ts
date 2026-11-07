@@ -7,7 +7,7 @@ const YES = {
   vendor: { consents: { 755: true } },
 };
 
-describe("Google's consent tool (ADR 0059)", () => {
+describe("Google's consent tool (ADR 0030)", () => {
   afterEach(() => {
     delete window.__tcfapi;
     delete window.googlefc;

@@ -24,15 +24,15 @@ constructor(
   val type: ResourceType,
   /** The categories it belongs to, as catalog tags. */
   val tags: Set<String> = emptySet(),
-  /** What the collectors that found it said (ADR 0051): kept in the record's extra, never shown. */
+  /** What the collectors that found it said (ADR 0022): kept in the record's extra, never shown. */
   val facts: Map<String, Any> = emptyMap(),
   /** Every collector that found it, first finder first; empty for a candidate of one finder. */
   val finders: List<String> = emptyList(),
-  /** An admin set the type before accepting (ADR 0065): it need not be one a finder declares. */
+  /** An admin set the type before accepting (ADR 0026): it need not be one a finder declares. */
   val typeChosenByAdmin: Boolean = false,
 )
 
-/** What a candidate may be: its longest title, its tags' shape, its types (ADR 0051, 0065). */
+/** What a candidate may be: its longest title, its tags' shape, its types (ADR 0022, 0026). */
 object CandidateRules {
   const val MAX_TITLE = 300
 
@@ -78,15 +78,15 @@ fun interface CatalogLookup {
 }
 
 /**
- * An admin accepted a resource candidate (ADR 0051): it is indexed as a record of the collector
+ * An admin accepted a resource candidate (ADR 0022): it is indexed as a record of the collector
  * that found it, with the collector's own title and excerpt, so it is catalogued like everything
  * the Scout collects. It has no enrichment yet: the next Scout run takes it from the backlog. The
  * values are checked again here, because the review item is stored text. When several categories
  * found it, it is one record, of the first collector that found it, with every category as a tag
  * and every finder in its extra (foundBy): the same page and excerpt once, not once per category.
- * Its type must be one a collector that found it declares (ADR 0061): LinkedIn may propose
+ * Its type must be one a collector that found it declares (ADR 0021): LinkedIn may propose
  * articles, posts and events, a discovery category only its products. A type an admin set before
- * accepting may be any candidate type (ADR 0065).
+ * accepting may be any candidate type (ADR 0026).
  */
 class IndexAcceptedCandidate(
   collectors: List<Collector>,
@@ -99,7 +99,7 @@ class IndexAcceptedCandidate(
   private val merger = ResultMerger()
 
   private companion object {
-    /** Tavily's excerpt as evidence for the enrichment (ADR 0051). */
+    /** Tavily's excerpt as evidence for the enrichment (ADR 0022). */
     const val MAX_SNIPPET = 2400
   }
 

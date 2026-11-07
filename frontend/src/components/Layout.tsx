@@ -85,7 +85,7 @@ function Account() {
 }
 
 /**
- * The header in design v4 (ADR 0042): logo with tagline, then News, Events, Saved and Sign in. On a phone (up to
+ * The header in design v4 (ADR 0028): logo with tagline, then News, Events, Saved and Sign in. On a phone (up to
  * 720 px) the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources, Mission, Sign in and the
  * theme. Escape closes it and gives focus back to the button; moving to another page closes it. Search is the home
  * page; on the other pages (not Results, which has its own) the box sits in the header.
@@ -216,7 +216,7 @@ function OutLink({ href, label, children }: { href: string; label: string; child
  * The footer in design v4 (Main board): the logo, one row of links (the pages, the code, the release, the theme),
  * then one line: what is searched, who and where. "Support" is there while a way to give is on; "Privacy choices"
  * (Google's consent tool) while AdSense is on, else
- * "Cookie settings" while analytics is on (ADR 0057).
+ * "Cookie settings" while analytics is on (ADR 0030).
  */
 function Footer() {
   const { t } = useTranslation();
@@ -292,7 +292,7 @@ function Footer() {
           </li>
         </ul>
       </div>
-      {/* No claim about ads (ADR 0059, replaces ADR 0057, 7): the Privacy page says which ads and when. Where it is run
+      {/* No claim about ads (ADR 0030, replaces ADR 0030 (part was 0057), 7): the Privacy page says which ads and when. Where it is run
           and hosted, as the Privacy page states it (Hosting: Germany). */}
       <p className="v4-wrap v4-footer__line">
         {t('footer.coverage')} {t('footer.copyright', { year: new Date().getFullYear() })}
@@ -334,7 +334,7 @@ function sameResource(a: string, b: string): boolean {
 }
 
 /**
- * After GitHub sends a signed-in visitor back, goes to the page where they clicked "Sign in" (ADR 0035). A failed
+ * After GitHub sends a signed-in visitor back, goes to the page where they clicked "Sign in" (ADR 0024). A failed
  * sign-in (?signin=failed) drops the stored page, says so and links to the sign-in page.
  */
 function SignInReturn() {

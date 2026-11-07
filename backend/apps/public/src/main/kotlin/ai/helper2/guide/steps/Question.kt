@@ -41,7 +41,7 @@ internal class Question(
   val drops: Drops,
   val asker: Asker?,
   /**
-   * The category filter of the page the question was asked from (ADR 0053): the picks come only
+   * The category filter of the page the question was asked from (ADR 0013): the picks come only
    * from results in one of them. Empty: any.
    */
   val categories: Set<String> = emptySet(),
@@ -82,13 +82,13 @@ internal class Question(
     if (!query.isNullOrBlank()) queries += query
   }
 
-  /** The planner-written queries run, in order: the research trail's (ADR 0044). */
+  /** The planner-written queries run, in order: the research trail's (ADR 0018). */
   @Synchronized fun queriesRun(): List<String> = queries.toList()
 }
 
 /**
  * Set while answering, for the question metric (the status alone cannot tell a spent budget from an
- * outage) and for the similar-question index (ADR 0041): the question's probe, and whether the
+ * outage) and for the similar-question index (ADR 0017): the question's probe, and whether the
  * answer is a near twin's.
  */
 internal class Asked(var budgetExhausted: Boolean = false) {
@@ -173,7 +173,7 @@ internal class GuideSteps(
       }
     val outcome = search.search(request.copy(asker = q.asker, intentClass = intentClass))
     outcome.webFreshUntil?.let(q::webResultsFreshUntil)
-    // The research trail (ADR 0044) lists only the planner's words that a search really sent: the
+    // The research trail (ADR 0018) lists only the planner's words that a search really sent: the
     // planned query when [planned] says the text is it, the web query when a source that reads it
     // was not skipped. A blank planned query falls back to the asker's own text (QuestionReader):
     // that is not AI-written.
@@ -200,9 +200,9 @@ internal fun failure(e: RuntimeException) =
   (e as? GuideUnavailable)?.category ?: e.javaClass.simpleName
 
 /**
- * The question back (ADR 0032 §3), after the plan call and at most the question's own search: no
- * other model call, no choose, no reason check. AI-written like every clarification: the plan call
- * ran.
+ * The question back (ADR 0016 (part was 0032) §3), after the plan call and at most the question's
+ * own search: no other model call, no choose, no reason check. AI-written like every clarification:
+ * the plan call ran.
  */
 internal fun askBack(
   clock: Clock,

@@ -14,9 +14,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
 
 /**
- * A total deadline per call (ADR 0006 §2): the response timeout applies per read, so a body that
- * arrives a byte at a time never trips it. The deadline counts from the start of the call and stops
- * the read once it has passed.
+ * A total deadline per call (ADR 0006 (part was 0006) §2): the response timeout applies per read,
+ * so a body that arrives a byte at a time never trips it. The deadline counts from the start of the
+ * call and stops the read once it has passed.
  */
 class ObservedHttpDeadlineTest {
 

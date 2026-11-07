@@ -26,30 +26,30 @@ import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The details of a RESOURCE_CANDIDATE review item (ADR 0051), written when a collector proposes the
+ * The details of a RESOURCE_CANDIDATE review item (ADR 0022), written when a collector proposes the
  * page and read when an admin accepts it: one place for both, so the two cannot drift apart.
  *
  * <p>Version 2 fields: {@code version}, {@code sourceId} (the first collector that found it), url,
  * title, type, tags, snippet when there is one, and {@code foundBy}: one entry per collector that
  * found it, with what it knew ({@code {sourceId, discovery}} for a search, {@code {sourceId,
- * awesome: {list, section}}} for an awesome list, ADR 0058). Version 1 (no version, no foundBy) is
+ * awesome: {list, section}}} for an awesome list, ADR 0022). Version 1 (no version, no foundBy) is
  * still read. When a second collector finds an OPEN candidate, {@link #merge} joins it in: the tags
  * are joined, the most specific type is kept, and the collector is added to foundBy.
  *
- * <p>An admin's edit (ADR 0065, {@link #edit}) replaces the title, type or tags and lists them in
+ * <p>An admin's edit (ADR 0026, {@link #edit}) replaces the title, type or tags and lists them in
  * {@code edited}. A later merge leaves those fields as the admin wrote them, and an edited type
  * need not be one a finder declares.
  */
 @Component
 class ResourceCandidateJson implements CandidateDetails {
 
-  /** The fields an admin changed (ADR 0065). */
+  /** The fields an admin changed (ADR 0026). */
   static final String EDITED = "edited";
 
   /** The longest title the catalog accepts; a longer one is cut, so the item can be accepted. */
   static final int MAX_TITLE = 300;
 
-  /** Tavily's excerpt as evidence for the enrichment: up to 2,400 characters (ADR 0051). */
+  /** Tavily's excerpt as evidence for the enrichment: up to 2,400 characters (ADR 0022). */
   static final int MAX_SNIPPET = ScoutPolicy.PRODUCT_PAGE_EXCERPT_CHARS;
 
   static final int VERSION = 2;
@@ -135,7 +135,7 @@ class ResourceCandidateJson implements CandidateDetails {
   }
 
   /**
-   * [details] with the admin's [change] (ADR 0065): each given field replaced and listed in {@code
+   * [details] with the admin's [change] (ADR 0026): each given field replaced and listed in {@code
    * edited}. Throws {@link InvalidCandidate} when [details] is not a candidate.
    */
   String edit(@Nullable String details, CandidateEdit change) {
@@ -227,7 +227,7 @@ class ResourceCandidateJson implements CandidateDetails {
 
   /**
    * One foundBy entry: the collector and what it knew: what its search said ({@code discovery}), or
-   * the awesome list and section it was linked from ({@code awesome}, ADR 0058).
+   * the awesome list and section it was linked from ({@code awesome}, ADR 0022).
    */
   private static Map<String, Object> finder(String sourceId, Candidate c) {
     Map<String, Object> f = new LinkedHashMap<>();
@@ -262,7 +262,7 @@ class ResourceCandidateJson implements CandidateDetails {
     facts.put("foundBy", json.treeToValue(foundBy, List.class));
     Set<String> edited = edited(d);
     if (!edited.isEmpty()) {
-      // What an admin changed before accepting (ADR 0065); who did it is in the audit trail.
+      // What an admin changed before accepting (ADR 0026); who did it is in the audit trail.
       facts.put(EDITED, List.copyOf(edited));
     }
     return facts;

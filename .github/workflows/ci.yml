@@ -2,7 +2,7 @@
 # images are built, pushed and scanned only on main (cd.yml); a release tag reuses them (release.yml).
 # Runs on pull requests and is called by cd.yml before every deploy, so main never ships
 # a commit that did not pass here. Never add `pull_request_target`: the repo is public.
-# Per component (ADR 0071): on a pull request, the job `changes` maps the changed paths (.github/scripts/changes.sh)
+# Per component (ADR 0033): on a pull request, the job `changes` maps the changed paths (.github/scripts/changes.sh)
 # and each job runs only when its part changed; a path the map does not know runs everything. cd.yml calls this with
 # full: true, so a push to main runs every job. The job `ci-ok` is the one check to require.
 # Third-party actions are pinned to commit SHAs (Dependabot keeps them current).
@@ -41,6 +41,13 @@ jobs:
         with:
           fetch-depth: 0
       - run: .github/scripts/changes.sh --self-test
+      # Every ADR reference, in code, deploy files and docs, points at a record that exists: an old number fails
+      # (scripts/adr-check.py, docs/adr/RENUMBER.md). Here, not in the diagrams job: a code-only change runs it too.
+      - name: ADR references
+        run: |
+          set -euo pipefail
+          python3 scripts/adr-check.py --self-test
+          python3 scripts/adr-check.py
       - id: map
         env:
           FULL: ${{ inputs.full == true || github.event_name != 'pull_request' }}
@@ -74,13 +81,13 @@ jobs:
       # Code format (Prettier): fails on any unformatted file.
       - run: npm run format:check
       - run: npm run lint
-      # Dead code (knip, ADR 0054): fails on any unused file, export, type or dependency.
+      # Dead code (knip, ADR 0037): fails on any unused file, export, type or dependency.
       - run: npm run knip
       - run: npm run typecheck
       - run: npx vitest run
       - run: npm run build
       - run: npm run check:bundle
-      # Known vulnerabilities (ADR 0054): a High or Critical one in a library the browser gets fails the job.
+      # Known vulnerabilities (ADR 0037): a High or Critical one in a library the browser gets fails the job.
       - run: npm audit --omit=dev --audit-level=high
       # Every library, the build and test tools too: a report in the log, never a failure.
       - name: npm audit (report only)
@@ -116,7 +123,7 @@ jobs:
           path: backend/**/build/reports/tests/
           retention-days: 7
 
-  # No image is built here: pull requests stay light. CD builds, pushes and scans the images on main (cd.yml, ADR 0046).
+  # No image is built here: pull requests stay light. CD builds, pushes and scans the images on main (cd.yml, ADR 0033).
   # A pushed Postgres tag is never rebuilt (make postgres-image), so a change under deploy/postgres must come with a
   # new postgres.image.tag: a git check, no build.
   postgres-tag:

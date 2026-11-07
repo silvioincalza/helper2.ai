@@ -3,7 +3,7 @@ package ai.helper2.sources.github;
 import java.util.regex.Pattern;
 
 /**
- * One line of Markdown as plain words for a search index (ADR 0055): link text stays, everything
+ * One line of Markdown as plain words for a search index (ADR 0010): link text stays, everything
  * that is not a word a person would search for goes. Images and badges, HTML tags and entities,
  * URLs, Markdown markers, control characters and bidirectional or zero-width characters are
  * removed, so nothing hidden or executable reaches the index.

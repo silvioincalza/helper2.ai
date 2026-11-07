@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Identity's retention rules (ADR 0034): accounts nobody signed in to for [inactiveAccounts] go
+ * Identity's retention rules (ADR 0035): accounts nobody signed in to for [inactiveAccounts] go
  * with their bookmarks (issue reports stay, without a reporter); admin audit entries older than
  * [adminAudit] are deleted.
  */

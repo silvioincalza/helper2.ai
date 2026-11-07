@@ -13,7 +13,7 @@ import type { Categories } from '@/hooks/useCategories';
 import { CategoryFacet } from './CategoryFacet';
 import { Term, type GlossaryKey } from './Term';
 
-/** The Category facet has its own component (grouped by family, ADR 0053). */
+/** The Category facet has its own component (grouped by family, ADR 0013). */
 type FacetKey = Exclude<MultiKey, 'category'> | 'openSource';
 
 /** One order for everyone: what kind of resource first, then what it costs and how it may be used. */

@@ -14,7 +14,7 @@ import java.util.Set;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * The admin host's edge (ADR 0035, 0069): which paths answer, the security headers and the cache
+ * The admin host's edge (ADR 0024, 0032): which paths answer, the security headers and the cache
  * rule of every response, written before anything else runs, so a refusal, a redirect and an error
  * carry them too.
  *

@@ -35,7 +35,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** The back office's Examples part (ADR 0049): the examples the home page picks from. */
+/** The back office's Examples part (ADR 0015): the examples the home page picks from. */
 @RestController
 @RequestMapping("/api/v1")
 class HomeExamplesAdminController implements ExamplesAdminApi {

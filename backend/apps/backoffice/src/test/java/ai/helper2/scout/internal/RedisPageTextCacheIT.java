@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 
-/** ADR 0056: the cleaned page text lives in Redis only, under a URL hash, for at most a day. */
+/** ADR 0023: the cleaned page text lives in Redis only, under a URL hash, for at most a day. */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class RedisPageTextCacheIT {

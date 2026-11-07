@@ -135,7 +135,7 @@ tests:
               description: "The catalog misses new resources from hf-trending since its last successful run."
               runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
 
-  # Discovery categories (ADR 0051): weekly, so 8 days is the limit. Two categories stop at 1h, one keeps succeeding.
+  # Discovery categories (ADR 0022): weekly, so 8 days is the limit. Two categories stop at 1h, one keeps succeeding.
   # The per-source rule never fires for them; one alert lists both.
   - interval: 1h
     input_series:
@@ -163,7 +163,7 @@ tests:
               description: "No new products or list articles from: discovery-coding discovery-legal "
               runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
 
-  # LinkedIn (ADR 0061): weekly, so 8 days is the limit, as course-scout. Quiet at 3 days, fires past 8.
+  # LinkedIn (ADR 0021): weekly, so 8 days is the limit, as course-scout. Quiet at 3 days, fires past 8.
   - interval: 1h
     input_series:
       - series: 'helper2_scout_last_success{application="helper2", environment="prod", source="linkedin-scout"}'
@@ -508,7 +508,7 @@ tests:
             exp_annotations:
               summary: "Volume data-postgres-0 has less than 20% free (helper2-prod)."
               description: "15% free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
-              runbook: "kubectl -n helper2-prod get pvc data-postgres-0; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0034)."
+              runbook: "kubectl -n helper2-prod get pvc data-postgres-0; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0035)."
           - exp_labels:
               severity: warning
               namespace: helper2-prod
@@ -516,7 +516,7 @@ tests:
             exp_annotations:
               summary: "Volume pg-backup has less than 20% free (helper2-prod)."
               description: "5% free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
-              runbook: "kubectl -n helper2-prod get pvc pg-backup; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0034)."
+              runbook: "kubectl -n helper2-prod get pvc pg-backup; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0035)."
       - eval_time: 6m
         alertname: Helper2VolumeFull
         exp_alerts:
@@ -643,7 +643,7 @@ tests:
               name: source-npm
             exp_annotations:
               summary: "Circuit source-npm has not closed for 5 minutes (prod)."
-              description: "The resilience policy source-npm keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+              description: "The resilience policy source-npm keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
               runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
 
   # Not permitted: 2 refused calls a minute for 15 minutes fire; one refused call now and then does not.

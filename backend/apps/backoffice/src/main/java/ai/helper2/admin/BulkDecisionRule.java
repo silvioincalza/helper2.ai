@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Which review items one decision may settle in bulk (ADR 0045). Rejecting is safe for every kind:
+ * Which review items one decision may settle in bulk (ADR 0026). Rejecting is safe for every kind:
  * nothing is added or shown. Accepting is safe only for an enrichment check whose run has no
  * conflict on a field people decide by (licence, open source, pricing): every other kind adds to
  * the catalog, verifies a relationship, publishes an example or closes a user's report, so a person

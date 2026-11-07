@@ -10,9 +10,9 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.Test;
 
 /**
- * The back office shows a setting only through one factory per kind of value (ADR 0045 point 7). A
- * record's constructor must be public, so this rule keeps {@code new Setting(} inside {@link
- * Setting}: a module cannot build a setting that skips the factories.
+ * The back office shows a setting only through one factory per kind of value (ADR 0026 (part was
+ * 0045) point 7). A record's constructor must be public, so this rule keeps {@code new Setting(}
+ * inside {@link Setting}: a module cannot build a setting that skips the factories.
  */
 class SettingFactoriesTest {
 

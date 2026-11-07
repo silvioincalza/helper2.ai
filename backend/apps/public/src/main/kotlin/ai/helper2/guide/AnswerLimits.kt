@@ -1,7 +1,7 @@
 package ai.helper2.guide
 
 /**
- * How much of a comparison and an explanation an answer keeps (ADR 0032). The compare and explain
+ * How much of a comparison and an explanation an answer keeps (ADR 0016). The compare and explain
  * prompts ask for these limits and AskGuide enforces them; they are part of the answer cache key,
  * so new limits never serve answers kept under the old ones.
  */

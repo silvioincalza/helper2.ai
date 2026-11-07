@@ -63,7 +63,7 @@ async function openForm() {
   return { user, detail };
 }
 
-describe('Feature: an admin fixes a resource candidate before accepting it (ADR 0065)', () => {
+describe('Feature: an admin fixes a resource candidate before accepting it (ADR 0026)', () => {
   it('Scenario: only what changed is sent, and the list shows the new values', async () => {
     const api = oneItem();
     const { user, detail } = await openForm();

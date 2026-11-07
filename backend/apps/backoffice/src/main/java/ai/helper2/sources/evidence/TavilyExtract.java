@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The evidence ladder's page reader (ADR 0056): Tavily Extract, {@code POST /extract}, basic depth,
+ * The evidence ladder's page reader (ADR 0023): Tavily Extract, {@code POST /extract}, basic depth,
  * markdown, no images. Docs: https://docs.tavily.com/documentation/api-reference/endpoint/extract —
  * one credit per 5 pages read. The URLs come from the Scout's code ({@code OfficialPages}), never
  * from a model. A page in {@code failed_results} is a page with no text. Tavily follows redirects:

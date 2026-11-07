@@ -1,6 +1,6 @@
 /**
  * Where to go back after sign-in: the page the visitor was on when they clicked "Sign in". GitHub returns to "/" on
- * the public host (ADR 0035), so the path waits in sessionStorage (this tab only) and is removed as soon as it is used.
+ * the public host (ADR 0024), so the path waits in sessionStorage (this tab only) and is removed as soon as it is used.
  * Only a path on this site is followed: never "//host" or a full URL, so the key cannot redirect anywhere else.
  */
 export const SIGN_IN_RETURN_KEY = 'h2.signInReturn';

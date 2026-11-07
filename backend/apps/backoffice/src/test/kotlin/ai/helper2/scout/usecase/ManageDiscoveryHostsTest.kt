@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
-/** Discovery's host lists in the back office (ADR 0063): what is refused, and the audit entries. */
+/** Discovery's host lists in the back office (ADR 0022): what is refused, and the audit entries. */
 class ManageDiscoveryHostsTest {
 
   private val now = Instant.parse("2026-11-06T22:00:00Z")

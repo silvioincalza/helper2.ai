@@ -26,7 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Deep search in awesome lists (ADR 0058): nested lists, product links, section categories. */
+/** Deep search in awesome lists (ADR 0022): nested lists, product links, section categories. */
 class GitHubAwesomeDeepSearchTest {
 
   static final String SEED_README =

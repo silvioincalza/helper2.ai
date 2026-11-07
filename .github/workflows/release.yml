@@ -1,4 +1,4 @@
-# Release (ADR 0029, 0048): pushing an annotated tag vX.Y.Z on a commit of main, or of a release/* branch, publishes
+# Release (ADR 0034): pushing an annotated tag vX.Y.Z on a commit of main, or of a release/* branch, publishes
 # the GitHub release, adds the tag X.Y.Z to that commit's image in Harbor (same digest, no rebuild), then deploys
 # X.Y.Z to prod after the approval on the `prod` environment. This is the only automatic way to prod: a push to
 # main reaches staging only, a push to release/* only builds the image (cd.yml).
@@ -63,7 +63,7 @@ jobs:
           git fetch --quiet --force origin "refs/tags/$TAG:refs/tags/$TAG"
           [[ $(git cat-file -t "refs/tags/$TAG") == tag ]] || { echo "::error::$TAG must be an annotated tag"; exit 1; }
           sha=$(git rev-parse "refs/tags/$TAG^{commit}")
-          # Main, or a release branch (ADR 0048).
+          # Main, or a release branch (ADR 0034).
           git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
           if git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
             source=main
@@ -78,7 +78,7 @@ jobs:
             [[ $TAG == "$next" ]] || { echo "::error::$TAG is on $source: a release branch raises the patch only, after $prev comes $next"; exit 1; }
           fi
           echo "$TAG comes from $source"
-          # One version, six files (ADR 0029), all at the tagged commit.
+          # One version, six files (ADR 0034), all at the tagged commit.
           gradle=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
           npm=$(git show "$sha:frontend/package.json" | jq -r .version)
           chart=$(git show "$sha:deploy/helm/helper2/Chart.yaml" | yq .version)
@@ -120,7 +120,7 @@ jobs:
       run: ${{ steps.wait.outputs.run }}
     steps:
       # From main: the run built the image and passed staging. From a release branch: the run built the image only;
-      # staging never ran it (ADR 0048), and the log says so.
+      # staging never ran it (ADR 0034), and the log says so.
       - name: Wait for the commit's CD run
         id: wait
         run: |
@@ -155,7 +155,7 @@ jobs:
           done
           echo "::error::the CD run of $SHA did not finish in 40 minutes"; exit 1
 
-  # The SBOM of the image that goes to prod (ADR 0046): the one CD made when it pushed that image, attached to the
+  # The SBOM of the image that goes to prod (ADR 0033): the one CD made when it pushed that image, attached to the
   # release. Public: it lists packages and versions, no data. A CD run from before SBOMs has none: a warning only.
   sbom:
     needs: [release, staged]
@@ -174,19 +174,19 @@ jobs:
           set -euo pipefail
           dir=$(mktemp -d)
           if ! gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n sbom -D "$dir"; then
-            echo "::warning::CD run $RUN has no SBOM artifact (expired after 90 days, or older than ADR 0046): release $TAG has none"
+            echo "::warning::CD run $RUN has no SBOM artifact (expired after 90 days, or older than ADR 0033): release $TAG has none"
             exit 0
           fi
           mv "$dir/sbom.cdx.json" "$dir/helper2-$TAG.cdx.json"
           gh release upload "$TAG" "$dir/helper2-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
-          # The back office image's SBOM (ADR 0069); a CD run before the split has none.
+          # The back office image's SBOM (ADR 0032); a CD run before the split has none.
           if gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n sbom-backoffice -D "$dir"; then
             mv "$dir/sbom-backoffice.cdx.json" "$dir/helper2-backoffice-$TAG.cdx.json"
             gh release upload "$TAG" "$dir/helper2-backoffice-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
           else
             echo "::warning::CD run $RUN has no back office SBOM: release $TAG has the public app's only"
           fi
-          # The web image's SBOM (ADR 0069); a CD run before the web image has none.
+          # The web image's SBOM (ADR 0032); a CD run before the web image has none.
           if gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n sbom-web -D "$dir"; then
             mv "$dir/sbom-web.cdx.json" "$dir/helper2-web-$TAG.cdx.json"
             gh release upload "$TAG" "$dir/helper2-web-$TAG.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
@@ -196,7 +196,7 @@ jobs:
 
   # Only after every check above: the image of that commit, built by CD (and, from main, run on staging), goes to
   # prod under its version tag. deploy.yml adds the tag X.Y.Z to that image in Harbor after the prod approval
-  # (ADR 0048), so no job reaches Harbor's credentials from a tag push before a reviewer said yes.
+  # (ADR 0034), so no job reaches Harbor's credentials from a tag push before a reviewer said yes.
   prod:
     needs: [release, staged]
     uses: ./.github/workflows/deploy.yml

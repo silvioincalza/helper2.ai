@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Registrable domains from the Public Suffix List that ships with Apache HttpClient 5, already a
- * dependency (ADR 0056: no new library). Both sections count, ICANN and private, so a shared host
+ * dependency (ADR 0023: no new library). Both sections count, ICANN and private, so a shared host
  * such as {@code github.io} or {@code vercel.app} is a suffix: {@code acme.github.io} is its own
  * site, not part of {@code github.io}.
  */

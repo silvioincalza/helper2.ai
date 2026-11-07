@@ -11,7 +11,7 @@ function categorySearch(id: string, name: string): string {
 }
 
 /**
- * A resource's categories (ADR 0053), each a link to the search filtered by it. Assigned by code from public source data,
+ * A resource's categories (ADR 0013), each a link to the search filtered by it. Assigned by code from public source data,
  * so no AI label. Nothing is shown when it has none, or while the names are not loaded (the ids alone mean little).
  */
 export function CategoryLinks({ ids }: { ids: string[] }) {

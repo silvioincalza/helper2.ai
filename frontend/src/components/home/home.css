@@ -1,4 +1,4 @@
-/* Home in design v4 (ADR 0042): title and radar, the pinned search box, New this week and Coming up, what helper2
+/* Home in design v4 (ADR 0028): title and radar, the pinned search box, New this week and Coming up, what helper2
    does. The v4 tokens of tokens.css. Every CSS animation runs a fixed number of times and ends within 5 s; the radar moves by
    a JavaScript clock. */
 
@@ -62,7 +62,7 @@
   color: var(--ink-2);
 }
 
-/* The radar (ADR 0042, decision 4), like a navigation radar: full rings around the title, a beam that turns once
+/* The radar (ADR 0028 (part was 0042), decision 4), like a navigation radar: full rings around the title, a beam that turns once
    every 5 s, and dots painted as the beam passes them. One JavaScript clock (requestAnimationFrame, HomeRadar.tsx) turns
    the beam and sets each dot's --o (opacity), --pop (scale) and --glow; no CSS animation repeats. */
 .v4-radar {

@@ -22,7 +22,7 @@ function adminFallback(): Plugin {
 }
 
 /**
- * The back office web app (ADR 0069): built apart from the public app, into dist-admin/, under /admin/ so its files
+ * The back office web app (ADR 0032): built apart from the public app, into dist-admin/, under /admin/ so its files
  * never share a path with the public assets. The back office app serves it on the admin host only.
  */
 export default mergeConfig(

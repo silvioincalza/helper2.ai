@@ -1,6 +1,6 @@
 # Reset the database to the single V1 schema
 
-The schema is one migration, `V1__schema.sql` ([ADR 0004](../../docs/adr/foundation/0004-persistence-and-provenance.md)).
+The schema is one migration, `V1__schema.sql` ([ADR 0004](../../docs/adr/foundation/0004-persistence-schema-and-app-roles.md)).
 A database that ran the older `V1`, `V2` and `V3` cannot take it: Flyway sees a different `V1` checksum and two
 applied migrations it no longer has, and refuses to start. So each environment gets an empty database once,
 right before it first runs this schema. After that, migrations are forward-only.
@@ -23,7 +23,7 @@ the new one is ready (`maxUnavailable: 0`), so the old pods keep serving. `make 
 and deploy again with `make ENV=prod TAG=<commit> deploy`.
 
 The reviewer of the `prod` environment approves the prod deploy of a release
-([ADR 0029](../../docs/adr/operations/0029-release-versioning.md)). For this release, approve only inside the
+([ADR 0034](../../docs/adr/operations/0034-releases-and-versions.md)). For this release, approve only inside the
 maintenance window of part 2, after step 2.4.
 
 ## 1. Staging
@@ -98,7 +98,7 @@ Then, in one window:
    ```
 
    The dumps hold personal data (accounts, reports). Keep the workstation copy only until the checks pass, then
-   delete it; the volume copy goes after 7 days ([ADR 0034](../../docs/adr/operations/0034-data-retention.md)).
+   delete it; the volume copy goes after 7 days ([ADR 0035](../../docs/adr/operations/0035-data-retention.md)).
 
 3. Scale the app to 0. The site is down from here until step 6.
 
@@ -162,7 +162,7 @@ after startup; rerun the `resource` count after an hour to see the catalog grow.
 ## After the reset
 
 Migrations are forward-only from here: a schema change is a new `V2__…`, never an edit of `V1__schema.sql`
-([ADR 0004](../../docs/adr/foundation/0004-persistence-and-provenance.md)).
+([ADR 0004](../../docs/adr/foundation/0004-persistence-schema-and-app-roles.md)).
 
 ## A migration edited after staging ran it
 

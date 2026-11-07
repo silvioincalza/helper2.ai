@@ -5,7 +5,7 @@ import { useMonetisation } from '@/context/MonetisationContext';
 import '@/pages/text.css';
 
 /**
- * Support helper2 (ADR 0057, UJ-11): what running the site costs, and two ways to give. Payment happens at the
+ * Support helper2 (ADR 0030, UJ-11): what running the site costs, and two ways to give. Payment happens at the
  * provider; nothing on helper2 is locked for anyone, and nobody is asked twice.
  */
 export default function SupportPage() {

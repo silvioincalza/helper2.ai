@@ -24,7 +24,7 @@ import org.springframework.modulith.core.ApplicationModules;
 
 /**
  * Architecture rules of the public app as tests: module boundaries (Spring Modulith), hexagonal
- * direction (ArchUnit), no back office code (ADR 0069), and one owner per table.
+ * direction (ArchUnit), no back office code (ADR 0032), and one owner per table.
  */
 class ModularityTest {
 
@@ -59,7 +59,7 @@ class ModularityTest {
     MODULES.verify();
   }
 
-  /** The back office is another app (ADR 0069): none of its code ships in the public one. */
+  /** The back office is another app (ADR 0032): none of its code ships in the public one. */
   @Test
   void noBackOfficeCode() {
     assertThat(MODULES.stream().map(m -> m.getBasePackage().getName()))
@@ -170,7 +170,7 @@ class ModularityTest {
   /**
    * Known exception, as "table module". The catalog's backlog query reads the Scout's
    * enrichment_queue_control, read only, so the Scout's next batch, the queue page and the count
-   * keep one rule (ADR 0045 §7, BacklogRule).
+   * keep one rule (ADR 0026 (part was 0045) §7, BacklogRule).
    */
   private static final Set<String> SHARED_TABLES = Set.of("enrichment_queue_control catalog");
 

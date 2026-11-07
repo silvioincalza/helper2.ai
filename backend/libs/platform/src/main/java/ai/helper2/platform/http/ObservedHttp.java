@@ -45,7 +45,7 @@ import org.springframework.web.client.RestClient;
 public final class ObservedHttp {
 
   /**
-   * Names the release: the boot jar's manifest carries the build version (ADR 0029); "dev" when run
+   * Names the release: the boot jar's manifest carries the build version (ADR 0034); "dev" when run
    * from classes.
    */
   public static final String USER_AGENT =
@@ -327,7 +327,7 @@ public final class ObservedHttp {
   /**
    * Pooled Apache client: {@code timeout} as connect and response timeout, {@code poolWait} for a
    * free connection; redirects either followed without an https-to-http downgrade, or not followed
-   * at all. Each request is sent once: retries are the caller's resilience policy (ADR 0033), so
+   * at all. Each request is sent once: retries are the caller's resilience policy (ADR 0006), so
    * they are counted and bounded there.
    */
   public static HttpComponentsClientHttpRequestFactory requestFactory(

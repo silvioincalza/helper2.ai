@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.function.Predicate;
 
 /**
- * What a collector policy retries (resilience4j.retry.configs.collector, ADR 0033): a 503 or a
+ * What a collector policy retries (resilience4j.retry.configs.collector, ADR 0006): a 503 or a
  * network error or timeout ({@link SourceFailure.Unavailable#getTransient()}), and a rate limit
  * (429) that asks for at most {@link #LONGEST_PAUSE} or names no pause. A longer pause (GitHub's
  * hourly reset) is not worth waiting for in a run.

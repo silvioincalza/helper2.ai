@@ -1,4 +1,4 @@
-# Architecture, view 1 of 6: context. helper2 as two apps over shared libraries (ADR 0069), what calls them, and
+# Architecture, view 1 of 6: context. helper2 as two apps over shared libraries (ADR 0032), what calls them, and
 # what they call.
 # The internals of each module are in the other views (search, guide, index, setup, platform).
 # Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
@@ -19,7 +19,7 @@ direction: right
 browser: "Browser\nReact SPA" {class: person}
 admin: "Admin\n(GitHub sign-in)" {class: person}
 
-app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0069)" {
+app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0032)" {
   class: group
   public: "public app · public host · /api/v1 (public.yaml)" {
     class: group
@@ -82,7 +82,7 @@ browser -> app.libs.catalog: "resource, events"
 browser -> app.public.setup: "Set it up"
 browser -> app.libs.examples: "home examples"
 browser -> app.public.policy: "policy numbers"
-browser -> thirdparty: "page path, ad request,\nconsent, gift (ADR 0057, 0059)"
+browser -> thirdparty: "page path, ad request,\nconsent, gift (ADR 0030)"
 crawler: "Crawler,\nlink preview" {class: person}
 crawler -> app.public.pages: "page head, sitemap.xml,\nrobots.txt"
 admin -> app.bo.backoffice: "sign-in, /admin\n(admin host only)"

@@ -24,7 +24,7 @@ function RelList({ items }: { items: Relationship[] }) {
   return (
     <ul className="plain-list rel-list">
       {items.map((r, i) => {
-        // A link a model read from the text is AI-written: labelled, and marked in the HTML (ADR 0038).
+        // A link a model read from the text is AI-written: labelled, and marked in the HTML (ADR 0018).
         const ai = r.origin !== undefined && isAiOrigin(r.origin);
         return (
           <li key={`${r.kind}-${r.targetTitle}-${i}`}>
@@ -58,7 +58,7 @@ export default function ResourcePage() {
 }
 
 /**
- * Once the resource is here, the address bar shows its readable address (ADR 0050): a bare id, an old slug or a
+ * Once the resource is here, the address bar shows its readable address (ADR 0029): a bare id, an old slug or a
  * merged id is replaced, as the server's 301 does for a page load. The history entry is replaced, not added.
  */
 function useReadableAddress(d: ResourceDetail | undefined) {

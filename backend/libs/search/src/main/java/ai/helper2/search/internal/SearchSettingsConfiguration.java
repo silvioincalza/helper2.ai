@@ -14,7 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Search's settings for the back office's Settings page (ADR 0045). */
+/** Search's settings for the back office's Settings page (ADR 0026). */
 @Configuration(proxyBeanMethods = false)
 class SearchSettingsConfiguration {
 

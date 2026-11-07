@@ -16,7 +16,7 @@ function useReturnPath(): string {
 }
 
 /**
- * The sign-in page (design v4, ADR 0042; sign-in by ADR 0035): why to sign in, then one button per provider the site
+ * The sign-in page (design v4, ADR 0028; sign-in by ADR 0024): why to sign in, then one button per provider the site
  * offers (`loginProviders` on GET /me). A provider that is not configured is not shown. With none, the page says so;
  * signed in, it links to the account. A failed sign-in comes back with ?signin=failed, which the layout reports.
  */

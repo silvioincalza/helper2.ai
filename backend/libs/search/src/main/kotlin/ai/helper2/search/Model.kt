@@ -24,7 +24,7 @@ data class SourceDescriptor
 constructor(
   val id: String,
   val name: String,
-  /** A name of at most [SHORT_NAME_MAX] characters, for the Home radar (ADR 0008). */
+  /** A name of at most [SHORT_NAME_MAX] characters, for the Home radar (ADR 0009). */
   val shortName: String,
   /**
    * False for helper2's own sources (its index, its search by meaning, its curated list); true for
@@ -64,13 +64,13 @@ constructor(
    */
   val browses: Boolean = false,
   /**
-   * True when each live call costs provider credits (Tavily, ADR 0037): its results are kept in a
+   * True when each live call costs provider credits (Tavily, ADR 0014): its results are kept in a
    * [WebResultStore] instead of the [SearchCache], and a live call goes out only inside the asker's
    * daily [WebSearchQuota].
    */
   val metered: Boolean = false,
   /**
-   * The family a discovery category belongs to ("developers", ADR 0051), so the Sources page can
+   * The family a discovery category belongs to ("developers", ADR 0022), so the Sources page can
    * group them; null for every other source.
    */
   val family: String? = null,
@@ -106,7 +106,7 @@ data class PopularityMetric(
 )
 
 /**
- * Where a resource was found inside an awesome list (ADR 0055): the list's title and the heading
+ * Where a resource was found inside an awesome list (ADR 0010): the list's title and the heading
  * path of the entry ("Tools > Vector databases"). Both are the list's own words, not AI-written.
  */
 data class ListMatch(val listTitle: String, val headingPath: String)
@@ -157,22 +157,22 @@ constructor(
   val eventFormat: EventFormat? = null,
   /**
    * What the collector knew when it found the hit, kept with its record and never shown (e.g. the
-   * discovery search that found it, ADR 0051): JSON-ready values under top-level keys of
+   * discovery search that found it, ADR 0022): JSON-ready values under top-level keys of
    * `source_record.extra`. Not part of the record's fingerprint.
    */
   val facts: Map<String, Any> = emptyMap(),
   /**
-   * The categories the catalog assigned to this resource (ADR 0053); empty for every live source,
+   * The categories the catalog assigned to this resource (ADR 0013); empty for every live source,
    * whose hits get theirs when they are merged.
    */
   val categories: Set<String> = emptySet(),
   /**
    * Set when the Helper2 index found this resource only by the words of an awesome list around it
-   * (ADR 0055), not by its own text.
+   * (ADR 0010), not by its own text.
    */
   val foundIn: ListMatch? = null,
   /**
-   * The fields an admin set on this resource (ADR 0066); empty for every live source. The merged
+   * The fields an admin set on this resource (ADR 0026); empty for every live source. The merged
    * result takes this hit's value of each of them over what the other sources say.
    */
   val curatedFields: Set<String> = emptySet(),
@@ -331,7 +331,7 @@ data class MergedResult(
   val eventKind: EventKind? = null,
   val eventFormat: EventFormat? = null,
   /**
-   * The categories of the AI world it belongs to (ADR 0053), in the configured order: assigned by
+   * The categories of the AI world it belongs to (ADR 0013), in the configured order: assigned by
    * code from its title, description, tags, type and finders, never by a model. Empty: no category
    * yet.
    */
@@ -344,7 +344,7 @@ data class MergedResult(
     get() = hits.mapNotNull { it.license }.toSet()
 
   /**
-   * Where the result was found when every source found it only inside an awesome list (ADR 0055);
+   * Where the result was found when every source found it only inside an awesome list (ADR 0010);
    * null as soon as one source matched it directly.
    */
   val foundIn: ListMatch?
@@ -367,7 +367,7 @@ data class MergedResult(
     copy(id = id, canonicalUrl = canonicalUrl)
 
   /**
-   * The same result with the values an admin set (ADR 0066): each field in [fields] takes the
+   * The same result with the values an admin set (ADR 0026): each field in [fields] takes the
    * stored value over what the sources say, and its source conflict is dropped.
    */
   fun withCurated(

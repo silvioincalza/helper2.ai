@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * The shared caches' retention (ADR 0034): an entry is deleted once it expired. Reads already
+ * The shared caches' retention (ADR 0035): an entry is deleted once it expired. Reads already
  * ignore it, so the purge only frees the space; it runs without the lookups' statement timeout.
  */
 public final class SharedCacheRetention {

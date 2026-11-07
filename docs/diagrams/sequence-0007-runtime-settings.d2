@@ -1,0 +1,37 @@
+# Sequence: the owner lowers the guide's daily model calls, and every replica applies it (ADR 0007).
+# Source of truth: frontend/src/pages/admin/RuntimeSettingsPanel.tsx,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/RuntimeSettingsController.java, admin/usecase/ChangeRuntimeSetting.java,
+#   platform/settings/JdbcRuntimeSettingStore.java, RuntimeSettings.java, RuntimeSettingsConfiguration.java,
+#   identity/internal/AuditLog.java, platform/llm/DailyBudget.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0007-runtime-settings.d2 && d2 sequence-0007-runtime-settings.d2 sequence-0007-runtime-settings.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(admin host)" {class: person}
+spa: "Settings page" {class: app}
+a: "Replica A\n(admin module)" {class: app}
+db: PostgreSQL {class: data}
+b: "Replica B" {class: app}
+
+review: Review {
+  owner -> spa: "Change: 600 → 50, reason" {class: hot}
+  spa -> owner: "Review changes:\n600 calls a day → 50 calls a day"
+  owner -> spa: "Confirm change"
+}
+
+save: Save {
+  spa -> a: "PUT /api/v1/admin/runtime-settings/guide.dailyModelCalls\n{value 50, version 0, reason}"
+  a -> db: "pg_advisory_xact_lock; newest version = 0?"
+  a -> db: "INSERT runtime_setting; INSERT admin_audit\n(CHANGE_SETTING, default 600 → 50)"
+  a -> a: "after commit: snapshot version 8"
+  a -> spa: "200 {value 50, overridden, version 8}"
+  spa -> owner: "Saved: now 50 calls a day."
+}
+
+apply: Other replicas {
+  b -> db: "every 20 s: SELECT max(version)"
+  b -> db: "changed: newest row per setting"
+  b -> b: "new snapshot: guide budget reads 50"
+}

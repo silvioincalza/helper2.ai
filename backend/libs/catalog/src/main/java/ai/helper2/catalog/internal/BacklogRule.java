@@ -2,8 +2,8 @@ package ai.helper2.catalog.internal;
 
 /**
  * The enrichment backlog rule as SQL fragments over a resource {@code r}: one rule for the Scout's
- * next batch, the back office queue and its count (ADR 0045 §6, §7). Parameters: {@code :minText},
- * {@code :maxFailed}.
+ * next batch, the back office queue and its count (ADR 0026 (part was 0045) §6, §7). Parameters:
+ * {@code :minText}, {@code :maxFailed}.
  *
  * <p>The admin's decisions are rows of {@code enrichment_queue_control}. The Scout owns that table
  * and is its only writer; these fragments only read it, so the order the Scout takes and the order
@@ -13,7 +13,7 @@ final class BacklogRule {
 
   private BacklogRule() {}
 
-  /** A product a person accepted from the review queue (ADR 0056). */
+  /** A product a person accepted from the review queue (ADR 0023). */
   private static final String ACCEPTED =
       """
       EXISTS (SELECT 1 FROM review_item i
@@ -31,8 +31,8 @@ final class BacklogRule {
   /**
    * Resources the Scout may enrich: indexed, observed or curated, with enough source text or
    * accepted by a person. An accepted product may have no source text at all (one linked from an
-   * awesome list keeps no snippet, ADR 0058); the evidence ladder reads its own page instead (ADR
-   * 0056).
+   * awesome list keeps no snippet, ADR 0022); the evidence ladder reads its own page instead (ADR
+   * 0023).
    */
   private static final String ELIGIBLE =
       "r.data_origin IN ('INDEXED', 'OBSERVED', 'CURATED') AND ("

@@ -11,7 +11,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * The validator rules of ADR 0056: stating words for pricing, type and use case; judgement fields
+ * The validator rules of ADR 0023: stating words for pricing, type and use case; judgement fields
  * as AI-estimated; self-declared facts and relationships from a vendor's page; and summary
  * sentences that keep to their excerpts.
  */

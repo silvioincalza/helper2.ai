@@ -328,7 +328,7 @@ class SpringAiEnrichmentModelTest {
                 + " characters)");
   }
 
-  /** The model is told the resource's type, and that writing names what it is about (ADR 0062). */
+  /** The model is told the resource's type, and that writing names what it is about (ADR 0023). */
   @Test
   void promptCarriesTheTypeAndTheRuleForWriting() {
     model(() -> "{}")
@@ -347,7 +347,7 @@ class SpringAiEnrichmentModelTest {
         .contains("| ABOUT");
   }
 
-  /** The model is told which material is the vendor's own page (ADR 0056). */
+  /** The model is told which material is the vendor's own page (ADR 0023). */
   @Test
   void eachMaterialSaysWhatItIs() {
     java.util.UUID id = java.util.UUID.randomUUID();

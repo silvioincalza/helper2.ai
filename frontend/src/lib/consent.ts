@@ -1,5 +1,5 @@
 /**
- * The visitor's answer to the analytics question (ADR 0057), kept in this browser only. Nothing is asked again
+ * The visitor's answer to the analytics question (ADR 0030), kept in this browser only. Nothing is asked again
  * until the purposes change (a new VERSION). Storage that throws (private mode, blocked) reads as "not answered".
  */
 export const CONSENT_KEY = 'h2.consent';

@@ -3,7 +3,7 @@ package ai.helper2.scout
 import java.time.Instant
 
 /**
- * The host lists V17 seeds (ADR 0063), for tests of the discovery rules. JdbcDiscoveryHostStoreIT
+ * The host lists V17 seeds (ADR 0022), for tests of the discovery rules. JdbcDiscoveryHostStoreIT
  * checks that the migration seeds exactly these.
  */
 object SeedDiscoveryHosts {

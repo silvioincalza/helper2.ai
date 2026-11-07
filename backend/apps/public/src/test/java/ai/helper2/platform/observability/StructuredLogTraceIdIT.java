@@ -38,7 +38,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * ADR 0026, decision 1: with tracing on (export off), every log line written inside a request, on
+ * ADR 0031, decision 1: with tracing on (export off), every log line written inside a request, on
  * the request thread or on the search executor, and inside a scheduled job, carries {@code traceId}
  * and {@code spanId} in the logstash JSON format; the lines of one request share its trace id.
  *

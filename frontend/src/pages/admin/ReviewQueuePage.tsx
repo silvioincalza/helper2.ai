@@ -72,9 +72,9 @@ function nextAfter(list: ReviewItem[], id: string): string | undefined {
 
 /**
  * The review queue (UJ-9): a list and the selected item next to it (stacked on a narrow screen), in the terminal
- * style (ADR 0042), `$ helper2 review --open · N` with N the matching items on the server. Status, kind and page live
+ * style (ADR 0028), `$ helper2 review --open · N` with N the matching items on the server. Status, kind and page live
  * in the address, so the overview can link into a filtered queue and Back works. The selected item shows its details,
- * its evidence (ADR 0045) and the decision, with an optional note. Keys work only while focus is in the queue
+ * its evidence (ADR 0026) and the decision, with an optional note. Keys work only while focus is in the queue
  * (WCAG 2.1.4): j and k move, x picks, a accepts, r rejects, n goes to the note, ? lists them. A focused checkbox
  * selects its row, so a key typed on it acts on that row. After a decision the
  * next item is selected and takes focus, and a polite status says what is left. Picked open items can be decided
@@ -108,7 +108,7 @@ export default function ReviewQueuePage() {
     { cache: false },
   );
   const { retry, focusRef: heading } = useRetry(items.reload, items.loading);
-  // The discovery categories, for the category filter (ADR 0051); none while the list cannot load.
+  // The discovery categories, for the category filter (ADR 0022); none while the list cannot load.
   const sources = useApi('sources', (s) => api.listSources(s));
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const list = items.data?.items ?? [];

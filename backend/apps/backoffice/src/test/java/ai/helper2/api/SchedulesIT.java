@@ -10,7 +10,7 @@ import org.springframework.scheduling.config.ScheduledTaskHolder;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * Every job runs in exactly one app (ADR 0069): these are the back office's. The public app's
+ * Every job runs in exactly one app (ADR 0032): these are the back office's. The public app's
  * SchedulesIT lists its own, and no job is in both. The Scout's daily check is on here, far in the
  * future, so it is listed without running.
  */

@@ -79,7 +79,7 @@ class ScoutPropertiesBindingTest {
         });
   }
 
-  /** ADR 0056: the cleaned page text is kept for a retry within the day, never longer. */
+  /** ADR 0023: the cleaned page text is kept for a retry within the day, never longer. */
   @Test
   void aPageTextTtlOverADayStopsStartup() {
     context

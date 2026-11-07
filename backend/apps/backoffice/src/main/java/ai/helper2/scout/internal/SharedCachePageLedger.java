@@ -6,7 +6,7 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * The pages the evidence ladder read lately (ADR 0056), in the shared cache table: the key is a
+ * The pages the evidence ladder read lately (ADR 0023), in the shared cache table: the key is a
  * hash of the URL, the value a hash of the page text. Never the text itself. A page read once is
  * not read, or paid for, again until the entry expires, also after a restart. The cache is
  * disposable: when it cannot answer, the page counts as not seen and may be read again.

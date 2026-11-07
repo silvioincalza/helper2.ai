@@ -12,10 +12,11 @@ import java.util.Set;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * A write must come from a page of the host it is sent to (ADR 0035 §8). The back office uses it on
- * every write: the public site and the admin host are the same site for the browser, so SameSite
- * cookies do not keep them apart; the Origin header does. A write with no Origin, or another one,
- * is refused before the CSRF check. Browsers send Origin on every POST, PUT, PATCH and DELETE.
+ * A write must come from a page of the host it is sent to (ADR 0024 (part was 0035) §8). The back
+ * office uses it on every write: the public site and the admin host are the same site for the
+ * browser, so SameSite cookies do not keep them apart; the Origin header does. A write with no
+ * Origin, or another one, is refused before the CSRF check. Browsers send Origin on every POST,
+ * PUT, PATCH and DELETE.
  */
 public final class SameOriginWrites extends OncePerRequestFilter {
 

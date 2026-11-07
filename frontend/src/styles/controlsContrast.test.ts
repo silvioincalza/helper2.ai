@@ -1,7 +1,7 @@
 import { THEMES, tokenContrast } from '@/test/contrast';
 
 /**
- * The shared controls of app.css (ADR 0042, decision 14) in every state, both themes: the text on a control is
+ * The shared controls of app.css (ADR 0028 (part was 0042), decision 14) in every state, both themes: the text on a control is
  * 4.5:1 or more (WCAG 1.4.3), and what marks the control, its hover, its focus and its selected state is 3:1 or more
  * against what is around it (WCAG 1.4.11).
  */

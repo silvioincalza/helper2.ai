@@ -29,7 +29,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * The parts both apps' security filter chains share (ADR 0069). Each app builds its own chain: the
+ * The parts both apps' security filter chains share (ADR 0032). Each app builds its own chain: the
  * public app's in apps/public, the back office's in apps/backoffice. Anonymous use is the default
  * on the public site; sign-in (OAuth2/OIDC, any configured provider) adds server-side bookmarks.
  * ADMIN comes from an explicit allow-list, "registrationId:subject" (GitHub: numeric id, never the
@@ -81,7 +81,7 @@ public final class WebSecurity {
 
   /**
    * The signed-in user with ROLE_USER, and ROLE_ADMIN when [grantsAdmin] and the user is on the
-   * allow-list. Only the back office grants ADMIN; the public app never does (ADR 0035, 0069).
+   * allow-list. Only the back office grants ADMIN; the public app never does (ADR 0024, 0032).
    */
   public static OAuth2UserService<OAuth2UserRequest, OAuth2User> oauthUsers(
       Set<String> admins, boolean grantsAdmin) {
@@ -137,12 +137,12 @@ public final class WebSecurity {
 
   /**
    * Checks the raw cookie value in the {@code X-XSRF-TOKEN} header, the only place the web apps put
-   * it (ADR 0035 §8). Never a form parameter: a form from another page of the same site can send
-   * one, with a cookie that page planted for the whole domain, but it cannot set a header. The
-   * token is never written into a page, so it needs no per-response mask (BREACH): the request
-   * attribute holds the raw value, the same the cookie and the header carry. Unlike Spring's SPA
-   * handler it never loads the token itself, so a response only gets the cookie when something asks
-   * for it.
+   * it (ADR 0024 (part was 0035) §8). Never a form parameter: a form from another page of the same
+   * site can send one, with a cookie that page planted for the whole domain, but it cannot set a
+   * header. The token is never written into a page, so it needs no per-response mask (BREACH): the
+   * request attribute holds the raw value, the same the cookie and the header carry. Unlike
+   * Spring's SPA handler it never loads the token itself, so a response only gets the cookie when
+   * something asks for it.
    */
   public static final class HeaderOnlyCsrfTokenHandler implements CsrfTokenRequestHandler {
     private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();

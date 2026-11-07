@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Collector proposals become review items: an admin decides them, nothing reaches the catalog
- * before. A COURSE page is a COURSE_CANDIDATE (ADR 0032 §8) with readable details. Any other type
- * is a RESOURCE_CANDIDATE (ADR 0051) whose details are the candidate as JSON ({@link
+ * before. A COURSE page is a COURSE_CANDIDATE (ADR 0016 (part was 0032) §8) with readable details.
+ * Any other type is a RESOURCE_CANDIDATE (ADR 0022) whose details are the candidate as JSON ({@link
  * ResourceCandidateJson}), so accepting it can index it.
  */
 @Component
@@ -38,7 +38,7 @@ class ReviewQueueCandidateReview implements CandidateReview {
   }
 
   /**
-   * Past the daily cap (ADR 0058) a candidate opens nothing new; it still joins the OPEN item of
+   * Past the daily cap (ADR 0022) a candidate opens nothing new; it still joins the OPEN item of
    * its URL, so a page two collectors found stays one item.
    */
   @Override
@@ -94,7 +94,7 @@ class ReviewQueueCandidateReview implements CandidateReview {
   }
 
   /**
-   * Another category found a page that already waits OPEN (ADR 0051): one item for the page, with
+   * Another category found a page that already waits OPEN (ADR 0022): one item for the page, with
    * the categories joined, the most specific type, and this collector among its finders. A decided
    * page, or one this collector found before, stays as it is.
    */
@@ -107,7 +107,7 @@ class ReviewQueueCandidateReview implements CandidateReview {
             return;
           }
           try {
-            // Compared with what was read: an admin's edit saved meanwhile stays (ADR 0065).
+            // Compared with what was read: an admin's edit saved meanwhile stays (ADR 0026).
             if (!queue.updateCandidate(
                 item.id(), item.details(), capped(json.reason(merged)), merged)) {
               log.info("{}: candidate {} changed meanwhile, not merged", sourceId, item.id());

@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 
 /** Identity's settings bind from application.yaml, with and without the dev profile. */
-/** The back office's sign-in settings bind from its own application.yaml (ADR 0069). */
+/** The back office's sign-in settings bind from its own application.yaml (ADR 0032). */
 class IdentityPropertiesBindingTest {
 
   @Configuration(proxyBeanMethods = false)

@@ -42,7 +42,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * A source whose live calls cost credits (Tavily, ADR 0037): store first, then a live call inside
+ * A source whose live calls cost credits (Tavily, ADR 0014): store first, then a live call inside
  * the daily quota.
  */
 class MeteredSourceTest {

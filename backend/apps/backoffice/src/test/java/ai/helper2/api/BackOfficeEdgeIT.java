@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
- * The admin host's edge over real HTTP (ADR 0035, 0069): which paths answer, the headers and cache
+ * The admin host's edge over real HTTP (ADR 0024, 0032): which paths answer, the headers and cache
  * rule of every response, the redirects, the {@code __Host-} cookies, the Origin and CSRF gates on
  * writes, and where a sign-in returns. A built admin web app stands in from the test resources
  * (static/admin). A sign-in provider "test" has its callback pinned to the admin host.
@@ -253,7 +253,10 @@ class BackOfficeEdgeIT {
     assertThat(me.headers().allValues("Set-Cookie")).noneMatch(c -> c.startsWith("XSRF-TOKEN="));
   }
 
-  /** A body-less admin write (ADR 0035 §8): what a form from another page of the site can send. */
+  /**
+   * A body-less admin write (ADR 0024 (part was 0035) §8): what a form from another page of the
+   * site can send.
+   */
   HttpResponse<String> adminWrite(HttpRequest.Builder b) throws Exception {
     return send(
         b.uri(uri("/api/v1/admin/category-backfill")).POST(HttpRequest.BodyPublishers.noBody()));
@@ -338,7 +341,7 @@ class BackOfficeEdgeIT {
     assertThat(
             TestcontainersConfiguration.adminRedis().hasKey("h2:v1:session:public:sessions:" + id))
         .isFalse();
-    // ...and its Redis user cannot reach the public app's sessions at all (ADR 0070).
+    // ...and its Redis user cannot reach the public app's sessions at all (ADR 0004).
     assertThatThrownBy(() -> redis.hasKey("h2:v1:session:public:sessions:" + id))
         .hasStackTraceContaining("NOPERM");
   }

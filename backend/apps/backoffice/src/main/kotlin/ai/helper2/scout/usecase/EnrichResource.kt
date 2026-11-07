@@ -34,9 +34,9 @@ import org.slf4j.LoggerFactory
  * REJECTED answer is not asked for twice. A new prompt version or model changes the fingerprint, so
  * the resource is enriched again.
  *
- * Evidence ladder (ADR 0043, ADR 0056): when the first run leaves a target field of the type
- * unproven, or ends PARTIAL or REJECTED, the attempt climbs one or two steps, each one more model
- * call: the README or model card the resource names ([extraEvidence]), then the product's own pages
+ * Evidence ladder (ADR 0023): when the first run leaves a target field of the type unproven, or
+ * ends PARTIAL or REJECTED, the attempt climbs one or two steps, each one more model call: the
+ * README or model card the resource names ([extraEvidence]), then the product's own pages
  * ([officialPages]). At most three model calls per attempt. Each step keeps the run that keeps
  * more, and the attempt saves once, under the fingerprint of the source text alone: the read text
  * is not stored, so the next run with unchanged source text is UNCHANGED, and the ladder runs once
@@ -195,7 +195,7 @@ constructor(
     val facts: Map<String, String>,
   )
 
-  /** A target fact is still missing, or the run left something unproven (ADR 0043). */
+  /** A target fact is still missing, or the run left something unproven (ADR 0023). */
   private fun needsMore(material: EnrichmentMaterial, result: ValidationResult): Boolean =
     result.outcome in GAP_OUTCOMES ||
       FieldTargets.missing(material.type, material.input.sourceFacts, result).isNotEmpty()

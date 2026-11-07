@@ -7,11 +7,11 @@
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
-#   platform/settings/* (RuntimeSettings, JdbcRuntimeSettingStore: runtime_setting; ADR 0060),
+#   platform/settings/* (RuntimeSettings, JdbcRuntimeSettingStore: runtime_setting; ADR 0007),
 #   backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java, ContentSecurityPolicy.java,
 #   CspHeaderWriter.java, backend/apps/backoffice/src/main/java/ai/helper2/identity/config/BackOfficeSecurityConfiguration.java,
 #   BackOfficeEdge.java, backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java, SameOriginWrites.java,
-#   SessionConfiguration.java, platform/CspNonce.java (ADR 0059),
+#   SessionConfiguration.java, platform/CspNonce.java (ADR 0030),
 #   identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
 #   identity/Users.java, Bookmarks.java, AuditLog.java, RetentionPeriods.java (ports), identity/config/IdentityUseCaseConfiguration.java,
 #   backend/apps/{public,backoffice}/src/main/resources/application.yaml (spring.session.data.redis.namespace, oauth-github profile).
@@ -39,7 +39,7 @@ edge: "Request edge (platform)" {
 
 identity: "identity (Java)" {
   class: group
-  sec: "PublicSecurityConfiguration (never ADMIN)\nBackOfficeSecurityConfiguration (ADMIN allow-list)\nWebSecurity · SameOriginWrites: CSRF, Origin\n(identity.config, ADR 0069)" {class: app}
+  sec: "PublicSecurityConfiguration (never ADMIN)\nBackOfficeSecurityConfiguration (ADMIN allow-list)\nWebSecurity · SameOriginWrites: CSRF, Origin\n(identity.config, ADR 0032)" {class: app}
   csp: "CspHeaderWriter · ContentSecurityPolicy\npublic app: strict CSP; with AdSense on:\nnonce CSP (CspNonce per request);\nBackOfficeEdge: fixed strict CSP, headers, routes" {class: app}
   sec -> csp
   session: "SessionConfiguration\nfail-soft session store\n(identity.config)" {class: app}
@@ -76,7 +76,7 @@ browser -> edge.spa: "pages, assets"
 browser -> edge.rate: "/api/v1/*" {class: hot}
 edge.rate -> modules: {class: hot}
 browser -> identity.me: "/me, bookmarks, monetisation"
-google: "In the browser only (ADR 0059):\nGoogle consent tool · AdSense\n(resource pages) · Google Analytics" {class: ext}
+google: "In the browser only (ADR 0030):\nGoogle consent tool · AdSense\n(resource pages) · Google Analytics" {class: ext}
 browser -> google: "TCF answer, one ad,\npage path" {class: config}
 admin -> identity.sec: "/admin"
 identity.sec -> oauth: "sign-in" {class: config}

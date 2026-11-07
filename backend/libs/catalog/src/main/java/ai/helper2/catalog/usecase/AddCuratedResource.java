@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
- * An admin adds the model or product a relationship is about, from the review list (ADR 0064): its
+ * An admin adds the model or product a relationship is about, from the review list (ADR 0026): its
  * name, its official https address and its type. It becomes a record of the curated source, with no
  * description, and the next Scout run enriches it from its own pages. An address the catalog
  * already has gives that resource, never a second one.

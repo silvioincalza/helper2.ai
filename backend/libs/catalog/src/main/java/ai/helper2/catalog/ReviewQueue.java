@@ -21,15 +21,18 @@ public class ReviewQueue {
     ENRICHMENT_VALIDATION,
     RELATIONSHIP_CANDIDATE,
     USER_REPORT,
-    /** A page a collector proposes for the catalog (ADR 0032 §8): no resource yet, only its URL. */
+    /**
+     * A page a collector proposes for the catalog (ADR 0016 (part was 0032) §8): no resource yet,
+     * only its URL.
+     */
     COURSE_CANDIDATE,
     /**
-     * A product page a discovery collector proposes (ADR 0051): no resource yet; details are the
+     * A product page a discovery collector proposes (ADR 0022): no resource yet; details are the
      * candidate as JSON. Accepting it indexes it.
      */
     RESOURCE_CANDIDATE,
     /**
-     * A home example a model drafted for a catalog resource (ADR 0049 §6): the resource is its
+     * A home example a model drafted for a catalog resource (ADR 0015 §6): the resource is its
      * expected result, the draft is in details. Accepting it adds the example.
      */
     EXAMPLE_CANDIDATE
@@ -90,7 +93,7 @@ public class ReviewQueue {
   /**
    * Closes the resource's OPEN items about earlier enrichment runs as SUPERSEDED by [runId]: a
    * person decides only what the newest run says. An item whose relationship target an admin chose
-   * stays open (ADR 0064): that relationship outlives the run, so it must stay decidable.
+   * stays open (ADR 0026): that relationship outlives the run, so it must stay decidable.
    */
   public void supersedeEnrichmentItems(UUID resourceId, UUID runId) {
     jdbc.sql(
@@ -140,7 +143,7 @@ public class ReviewQueue {
 
   /**
    * Replaces the reason and details of an OPEN candidate item that still holds [oldDetails]
-   * (another collector found the same page, ADR 0051; an admin edited it, ADR 0065). Returns false
+   * (another collector found the same page, ADR 0022; an admin edited it, ADR 0026). Returns false
    * when it is no longer OPEN or someone changed it since it was read.
    */
   public boolean updateCandidate(
@@ -161,7 +164,7 @@ public class ReviewQueue {
 
   /**
    * Candidate items of [kind] that [sourceId] opened (it found them first) since the start of the
-   * current UTC day, by the database clock: for a collector's daily cap (ADR 0058).
+   * current UTC day, by the database clock: for a collector's daily cap (ADR 0022).
    */
   public int candidatesOpenedToday(Kind kind, String sourceId) {
     return jdbc.sql(
@@ -222,7 +225,7 @@ public class ReviewQueue {
 
   /**
    * As above; with [category], only resource candidates with that category among their tags (ADR
-   * 0051).
+   * 0022).
    */
   public Page list(Status status, Kind kind, String category, int page, int size) {
     String wantedStatus = status == null ? null : status.name();
@@ -288,7 +291,7 @@ public class ReviewQueue {
 
   /**
    * Locks the item's row until the current transaction ends, so an accepted item is indexed from
-   * the details it is decided with: an admin's edit or a collector's merge (ADR 0065) waits, then
+   * the details it is decided with: an admin's edit or a collector's merge (ADR 0026) waits, then
    * finds the item no longer open. A no-op outside a transaction.
    */
   public void lock(UUID id) {

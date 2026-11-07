@@ -32,7 +32,7 @@ import org.testcontainers.utility.DockerImageName;
  * they pile up until the container VM runs out of resources. Tests isolate data themselves (unique
  * queries/ids), so sharing is safe.
  *
- * <p>As in a deployment (ADR 0070): the schema is migrated once here, as the owner (the container's
+ * <p>As in a deployment (ADR 0004): the schema is migrated once here, as the owner (the container's
  * superuser), and the apps' roles get their logins ({@link AppLogins}); Redis has the apps' ACL
  * users of the chart (deploy/helm/helper2/files/redis-users.acl). A test context connects as {@code
  * helper2.test.client}: {@code h2_public} or {@code h2_backoffice} (each app's test config), so a

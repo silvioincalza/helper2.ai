@@ -24,7 +24,7 @@ function view(answer: GuideResponse, onRefine = vi.fn()) {
   return onRefine;
 }
 
-describe('GuideAnswer intents (ADR 0032)', () => {
+describe('GuideAnswer intents (ADR 0016)', () => {
   it('asks the question back with options, free text and search anyway', async () => {
     const onRefine = view({
       ...base,
@@ -66,7 +66,7 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     expect(onRefine).toHaveBeenLastCalledWith({ drop: ['constraint:free'] });
   });
 
-  it('labels the model-written question back on screen and marks it and its options, not our label (ADR 0038)', () => {
+  it('labels the model-written question back on screen and marks it and its options, not our label (ADR 0018)', () => {
     view({
       ...base,
       status: 'NEEDS_CLARIFICATION',
@@ -79,7 +79,7 @@ describe('GuideAnswer intents (ADR 0032)', () => {
     expect(screen.getByText('coding')).toHaveAttribute('data-ai-generated', 'true');
   });
 
-  it('marks requirements read by the model as AI-generated, and the period it computed in code not (ADR 0038)', () => {
+  it('marks requirements read by the model as AI-generated, and the period it computed in code not (ADR 0018)', () => {
     view({ ...base, window: { from: '2026-09-28', to: '2026-10-28' }, constraints: ['free'] });
     expect(screen.getByText('free')).toHaveAttribute('data-ai-generated', 'true');
     expect(
@@ -156,7 +156,7 @@ describe('GuideAnswer intents (ADR 0032)', () => {
   });
 });
 
-describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), ADR 0038)', () => {
+describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), ADR 0018)', () => {
   const planner: GuideResponse['aiContent'] = {
     aiGenerated: true,
     provider: 'nebius-token-factory',
@@ -233,7 +233,7 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
     });
     const terms = screen.getByText('AI tools');
     expect(terms).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
-    // Only the terms are marked; "Searched the catalog for:" is ours (ADR 0038).
+    // Only the terms are marked; "Searched the catalog for:" is ours (ADR 0018).
     expect(terms.parentElement).not.toHaveAttribute('data-ai-generated');
     expect(terms.parentElement?.nextElementSibling).toHaveTextContent('AI-written');
   });

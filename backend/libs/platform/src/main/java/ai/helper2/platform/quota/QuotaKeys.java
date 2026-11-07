@@ -13,7 +13,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Names of the daily quota counters and of the stored web result sets (ADR 0037), and the pseudonym
+ * Names of the daily quota counters and of the stored web result sets (ADR 0014), and the pseudonym
  * of a client for the rate limits and the guide's daily quota, from {@code H2_QUOTA_KEY_SECRET}.
  *
  * <ul>
@@ -34,7 +34,7 @@ public final class QuotaKeys {
   /** The field of {@link #global} that counts the Tavily credits of the day, live and Scout. */
   public static final String CREDITS = "credits";
 
-  /** The field of {@link #global} that counts the Scout's own Tavily credits (ADR 0051). */
+  /** The field of {@link #global} that counts the Scout's own Tavily credits (ADR 0022). */
   public static final String SCOUT_CREDITS = "scout-credits";
 
   private static final String PREFIX = "h2:v1:quota:";

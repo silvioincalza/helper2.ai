@@ -23,13 +23,13 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** The model that drafts home examples, with its own daily budget (ADR 0049 §6). */
+/** The model that drafts home examples, with its own daily budget (ADR 0015 §6). */
 @Configuration(proxyBeanMethods = false)
 class ExamplesConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(ExamplesConfiguration.class);
 
-  /** The example drafts' settings for the back office's Settings page (ADR 0045). */
+  /** The example drafts' settings for the back office's Settings page (ADR 0026). */
   @Bean
   SettingsGroup exampleSettings(
       ExamplesProperties examples, LlmSettings llm, ObjectProvider<ChatModel> chatModel) {

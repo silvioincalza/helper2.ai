@@ -2,7 +2,7 @@ package ai.helper2.identity;
 
 import java.time.Duration;
 
-/** How long identity keeps its data (ADR 0034). */
+/** How long identity keeps its data (ADR 0035). */
 public interface RetentionPeriods {
 
   /** An account nobody signed in to for this long goes, with its bookmarks. */

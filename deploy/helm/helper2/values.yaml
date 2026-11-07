@@ -1,7 +1,7 @@
 # Generic defaults for any Kubernetes cluster. Per environment: a values file of your own
 # (values-staging.yaml and values-prod.yaml are the hosted helper2.ai environments).
 # Required: image.repository, image.tag, backoffice.image.repository, web.image.repository,
-# postgres.image.repository and the env Secret (envSecret). Three workloads (ADR 0069): the web image (Deployment and
+# postgres.image.repository and the env Secret (envSecret). Three workloads (ADR 0032): the web image (Deployment and
 # Service `helper2-web`), the public app (Deployment and Service `helper2`) and the back office (Deployment
 # `helper2-backoffice`, Service `helper2-admin`).
 # The chart creates no Ingress. Expose the app with your own Ingress or route. On the public host: /assets/ (prefix),
@@ -20,7 +20,7 @@ image:
   # already pulled.
   tag: ""
   # Optional, "sha256:<hex>" of that tag: the pods run repository:tag@digest. The hosted deploy sets it to the digest
-  # whose signature it checked (make verify-images, ADR 0071); empty = by tag.
+  # whose signature it checked (make verify-images, ADR 0033); empty = by tag.
   digest: ""
   pullPolicy: IfNotPresent
 
@@ -35,7 +35,7 @@ envSecret:
   # The same for Redis, which reads its password at start only: make deploy passes a hash of
   # H2_REDIS_PASSWORD. Only used without redis.auth.existingSecret.
   redisPasswordRevision: ""
-# The passwords (ADR 0070), apart from the settings: the database owner's (H2_DATABASE_PASSWORD) and each app
+# The passwords (ADR 0004), apart from the settings: the database owner's (H2_DATABASE_PASSWORD) and each app
 # role's (H2_DATABASE_PUBLIC_PASSWORD, H2_DATABASE_BACKOFFICE_PASSWORD), and, unless redis.auth.existingSecret
 # is set, Redis' default user's (H2_REDIS_PASSWORD) and each app user's (H2_REDIS_PUBLIC_PASSWORD,
 # H2_REDIS_BACKOFFICE_PASSWORD). No workload loads it whole: each one names only its own keys. Only Postgres,
@@ -59,7 +59,7 @@ app:
   # back office (2 x 10 during its deploy) and the pools of pods still terminating (at worst one more pod), 70, under
   # Postgres' default max_connections of 100 (backup and psql need a few more).
   replicas: 3
-  # Rolling update and shutdown of a pod (ADR 0027). preStopSeconds: the pod keeps serving while the Service
+  # Rolling update and shutdown of a pod (ADR 0032). preStopSeconds: the pod keeps serving while the Service
   # endpoints and the Ingress controller drop it (native preStop sleep, Kubernetes 1.30 and later). Then SIGTERM:
   # the app takes no new connections and requests in flight get drainSeconds (H2_SHUTDOWN_TIMEOUT). The pod's
   # terminationGracePeriodSeconds is preStopSeconds + drainSeconds + 5.
@@ -70,8 +70,8 @@ app:
   # container; the back office uses the same. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and
   # all of them must be ready within the `helm --wait` timeout (12m in the hosted deploy).
   startupSeconds: 300
-  # Daily limits, per UTC day. The two site-wide caps go to the back office too, so its settings page states them. Per visitor: live web searches per feature (ADR 0037) and fresh guide questions
-  # (ADR 0015); past them the visitor still gets stored results and search results. For the whole site: live web
+  # Daily limits, per UTC day. The two site-wide caps go to the back office too, so its settings page states them. Per visitor: live web searches per feature (ADR 0014) and fresh guide questions
+  # (ADR 0016); past them the visitor still gets stored results and search results. For the whole site: live web
   # searches and guide model calls (ADR 0017). Unset (null) = the app's own default (3, 3, 30, no site cap, 600) or
   # the value in the env Secret; a value here wins over the Secret, so set each one in one place only.
   dailyLimits:
@@ -81,12 +81,12 @@ app:
     guideQuestions: null
     webSearchCredits: null
     guideModelCalls: null
-  # How long a guide answer is kept (H2_GUIDE_CACHE_TTL, ISO-8601 duration; ADR 0041). Unset = 24 hours.
+  # How long a guide answer is kept (H2_GUIDE_CACHE_TTL, ISO-8601 duration; ADR 0017). Unset = 24 hours.
   guideCacheTtl: null
   # Reuse the cached answer of a near-identical guide question at this cosine or above
-  # (H2_GUIDE_SIMILAR_THRESHOLD; ADR 0041). Unset = off. 0.96 is the measured threshold.
+  # (H2_GUIDE_SIMILAR_THRESHOLD; ADR 0017). Unset = off. 0.96 is the measured threshold.
   guideSimilarThreshold: null
-  # Monetisation (ADR 0057). Each part is off while empty: no link, no script, no CSP origin. Not secrets: the
+  # Monetisation (ADR 0030). Each part is off while empty: no link, no script, no CSP origin. Not secrets: the
   # browser sees them. Use a separate GA4 stream for staging, never the prod one.
   monetisation:
     # Support page links (H2_SUPPORT_GITHUB_SPONSORS_URL, H2_SUPPORT_STRIPE_PAYMENT_URL; https only).
@@ -96,9 +96,9 @@ app:
     ga4MeasurementId: ""
     # EthicalAds publisher ID of the one ad slot (H2_ADS_ETHICALADS_PUBLISHER).
     ethicalAdsPublisher: ""
-    # Google AdSense publisher, ca-pub-... (H2_ADS_ADSENSE_CLIENT; ADR 0059): the site check tag and /ads.txt.
+    # Google AdSense publisher, ca-pub-... (H2_ADS_ADSENSE_CLIENT; ADR 0030): the site check tag and /ads.txt.
     adsenseClient: ""
-    # AdSense ad unit ID (H2_ADS_ADSENSE_SLOT; ADR 0059). With adsenseClient it turns on the slot on resource pages,
+    # AdSense ad unit ID (H2_ADS_ADSENSE_SLOT; ADR 0030). With adsenseClient it turns on the slot on resource pages,
     # Google's consent tool and the nonce CSP on the whole public site.
     adsenseSlot: ""
   # prod | staging, set per environment; the `environment` tag on metrics and spans.
@@ -107,7 +107,7 @@ app:
   # true for staging, so it never competes with the live site.
   noindex: false
   # The public host every canonical link and sitemap address names, without a trailing slash (H2_PUBLIC_BASE_URL;
-  # ADR 0050). Empty = the app's default, https://helper2.ai. Keep it on the live host for staging too. The back
+  # ADR 0029). Empty = the app's default, https://helper2.ai. Keep it on the live host for staging too. The back
   # office sends /resource/... there.
   publicBaseUrl: ""
   # OTLP traces. Off by default; set export: true and your collector's endpoint, and
@@ -122,8 +122,8 @@ app:
     limits: { memory: 1Gi }
 
 
-# The back office app (ADR 0069): admin, Scout, collectors, enrichment and the catalog jobs. Only the in-network
-# host reaches it (Service helper2-admin, ADR 0035). It shares app.springProfiles, app.shutdown, app.startupSeconds,
+# The back office app (ADR 0032): admin, Scout, collectors, enrichment and the catalog jobs. Only the in-network
+# host reaches it (Service helper2-admin, ADR 0024). It shares app.springProfiles, app.shutdown, app.startupSeconds,
 # app.environment, app.tracing and the env Secret with the public app.
 backoffice:
   image:
@@ -139,9 +139,9 @@ backoffice:
   # The admin host's own origin, e.g. https://admin.example.org, without a trailing slash (H2_ADMIN_BASE_URL): the
   # sign-in callback is pinned to it. Empty = taken from the request.
   adminBaseUrl: ""
-  # The metrics dashboard the overview links to for trends (H2_ADMIN_GRAFANA_URL; ADR 0045). Empty = no link.
+  # The metrics dashboard the overview links to for trends (H2_ADMIN_GRAFANA_URL; ADR 0026). Empty = no link.
   grafanaUrl: ""
-  # Scout = scheduled collection + LLM enrichment, once a day at a fixed time (scoutCron, UTC, ADR 0018).
+  # Scout = scheduled collection + LLM enrichment, once a day at a fixed time (scoutCron, UTC, ADR 0020).
   # Each replica checks shortly after startup (scoutInitialDelay), then every 10 minutes (H2_SCOUT_TICK);
   # the Scout runs when the cron time after the last scheduled run has passed (or it never ran): one run per
   # cron time in total, whatever the number of replicas, and a deploy does not add one. Each collector also
@@ -151,7 +151,7 @@ backoffice:
   # 03:07 UTC: a quiet hour, after the nightly home-examples check (02:41). Off the full hour, when the
   # providers are busiest. The retention purge (03:17) may run at the same time; it touches other rows.
   scoutCron: "0 7 3 * * *"
-  # At most this many resources enriched per run (shared with the backlog). A gap round (ADR 0043) can add a
+  # At most this many resources enriched per run (shared with the backlog). A gap round (ADR 0023) can add a
   # second Nemotron call for the same resource, so a run makes at most twice this many calls. The hard cap is
   # per UTC day (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 500, of which up to 400 gap rounds), so a large
   # backlog after a fresh database is spread over several days.
@@ -160,7 +160,7 @@ backoffice:
     requests: { cpu: 250m, memory: 768Mi }
     limits: { memory: 1Gi }
 
-# The web image (ADR 0069): the built public web app, static files only, served by nginx (deploy/web.Dockerfile). The
+# The web image (ADR 0032): the built public web app, static files only, served by nginx (deploy/web.Dockerfile). The
 # public pod copies its shell (index.html) from the same image and tag at start (init container), so the pages and the
 # files they name are always of one version.
 web:
@@ -175,7 +175,7 @@ web:
   # nginx serves small files from memory and disk: two replicas keep the site's scripts up through a node drain.
   # Above 1: a PodDisruptionBudget keeps replicas - 1 available.
   replicas: 2
-  # The pod keeps serving while the Service endpoints and the Ingress controller drop it (ADR 0027).
+  # The pod keeps serving while the Service endpoints and the Ingress controller drop it (ADR 0032).
   preStopSeconds: 10
   resources:
     requests: { cpu: 10m, memory: 16Mi }
@@ -204,14 +204,14 @@ postgres:
     limits: { memory: 1Gi }
 
 redis:
-  # Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
+  # Pinned by the digest of its multi-arch index (ADR 0033); Dependabot updates tag and digest together.
   image: docker.io/library/redis:8.10.2-alpine@sha256:9f8d2d789b9a1d1e3f283f979aa9cbf393373806472e1ccd460e2f9c869b833b
   maxMemory: 128mb
   # The AOF volume (append-only file, fsync every second). volumeClaimTemplates are immutable: changing
   # these needs a new StatefulSet. Empty storageClassName = the cluster's default storage class.
   storageClassName: ""
   storage: 1Gi
-  # requirepass (the default user, the admin) and the apps' ACL users (files/redis-users.acl, ADR 0070), from a
+  # requirepass (the default user, the admin) and the apps' ACL users (files/redis-users.acl, ADR 0004), from a
   # Secret. Default: the credentials Secret, i.e. lines H2_REDIS_PASSWORD, H2_REDIS_PUBLIC_PASSWORD and
   # H2_REDIS_BACKOFFICE_PASSWORD=<openssl rand -hex 32> in <env>/app.env (letters and digits only: they go into
   # the Redis config as is). Or existingSecret: another Secret with the same three keys (the default user's under
@@ -273,7 +273,7 @@ backup:
   # is its lifecycle rule. Needs networkPolicy.egress.external to allow the endpoint.
   offsite:
     enabled: false
-    # Pinned by the digest of its multi-arch index (ADR 0046); Dependabot updates tag and digest together.
+    # Pinned by the digest of its multi-arch index (ADR 0033); Dependabot updates tag and digest together.
     image: docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
     # e.g. https://<account-id>.r2.cloudflarestorage.com
     endpoint: ""
@@ -283,7 +283,7 @@ backup:
     # only), created outside the chart.
     secret: pg-backup-offsite
 
-# Alert rules (deploy/monitoring/helper2-rules.yaml, ADR 0026) as a PrometheusRule for the Prometheus
+# Alert rules (deploy/monitoring/helper2-rules.yaml, ADR 0031) as a PrometheusRule for the Prometheus
 # Operator. Off by default: the CRD exists only where the operator runs. Without it, load the rule file into
 # Prometheus directly (rule_files).
 monitoring:

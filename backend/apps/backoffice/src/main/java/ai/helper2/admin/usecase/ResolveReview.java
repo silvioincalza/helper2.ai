@@ -16,13 +16,13 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An administrator decides a review item. Accepting a drafted example (EXAMPLE_CANDIDATE, ADR 0049
+ * An administrator decides a review item. Accepting a drafted example (EXAMPLE_CANDIDATE, ADR 0015
  * §6) first adds it, AI_DRAFTED with its model, then records the decision, in one transaction. A
  * refused example (a duplicate, a rule, an unreadable draft) is an {@link ApiProblem}: the item
  * stays open, and the refused add stays in the audit trail (no rollback for it). Accepting a
- * resource candidate (RESOURCE_CANDIDATE, ADR 0051) first indexes it the same way; an unreadable
+ * resource candidate (RESOURCE_CANDIDATE, ADR 0022) first indexes it the same way; an unreadable
  * candidate is refused and the item stays open. An accepted item's row is locked first, so its
- * details cannot change between the read and the decision (ADR 0065).
+ * details cannot change between the read and the decision (ADR 0026).
  */
 public class ResolveReview {
 
@@ -60,7 +60,7 @@ public class ResolveReview {
       @Nullable String note,
       @Nullable UUID batch) {
     if (decision == ReviewQueue.Status.ACCEPTED) {
-      // What is indexed is what is decided: an edit or a merge meanwhile waits (ADR 0065).
+      // What is indexed is what is decided: an edit or a merge meanwhile waits (ADR 0026).
       queue.lock(id);
     }
     Optional<ReviewQueue.Item> accepted =

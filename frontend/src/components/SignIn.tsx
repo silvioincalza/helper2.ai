@@ -10,7 +10,7 @@ export interface SignInFrom {
 }
 
 /**
- * "Sign in" in the header: opens the sign-in page (design v4, ADR 0042), which says why and lists the ways to sign
+ * "Sign in" in the header: opens the sign-in page (design v4, ADR 0028), which says why and lists the ways to sign
  * in. It carries the current page, so the visitor comes back to it. Nothing when the site offers no provider or the
  * visitor is signed in.
  */
@@ -29,7 +29,7 @@ export function SignInLink({ className }: { className?: string }) {
 
 /**
  * Sign-in for the configured providers, as direct links: on the Saved page for visitors, on the admin page for the
- * owner (ADR 0035). Nothing when the site offers no provider or the visitor is signed in. The current page is
+ * owner (ADR 0024). Nothing when the site offers no provider or the visitor is signed in. The current page is
  * remembered, so the visitor comes back to it.
  */
 export function SignIn({ className = 'btn btn-primary' }: { className?: string }) {

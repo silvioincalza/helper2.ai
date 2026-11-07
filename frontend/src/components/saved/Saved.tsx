@@ -14,7 +14,7 @@ import '@/components/ui/term.css';
 import './saved.css';
 
 /**
- * Saved page (ADR 0040, design v4 in ADR 0042): `$ helper2 saved · N` next to the title, who keeps the list, type
+ * Saved page (ADR 0028, design v4 in ADR 0028): `$ helper2 saved · N` next to the title, who keeps the list, type
  * chips when there is more than one type, then one row per saved resource in the terminal style (type, host, saved
  * date in Geist Mono, the title in Geist, the original link, Remove). Loading, the sync error and the empty list are
  * TermList's states. A saved item keeps no quote, so the row shows none.

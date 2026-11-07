@@ -61,7 +61,7 @@ tasks.named<GenerateTask>("openApiGenerate") {
 
 // The web adapters both apps serve the same way (search, sources, categories; ../common-web): one
 // source folder compiled into each app against that app's own generated contract types, which have
-// the same names in both (ADR 0069).
+// the same names in both (ADR 0032).
 val commonWebDir = rootProject.layout.projectDirectory.dir("apps/common-web/src/main/java")
 
 sourceSets {

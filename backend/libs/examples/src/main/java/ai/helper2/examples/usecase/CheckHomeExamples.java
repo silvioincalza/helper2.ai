@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * The quality check (ADR 0049): each example runs its own search, without web search, and is shown
+ * The quality check (ADR 0015): each example runs its own search, without web search, and is shown
  * only when an expected result is in the top 3. A degraded search keeps the last result. One
  * example failing to search never stops the others.
  */

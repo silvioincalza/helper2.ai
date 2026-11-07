@@ -3,7 +3,7 @@ import { useMe } from '@/context/MeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 /**
- * The radar stands still (ADR 0042): under reduced motion, and for a signed-in user who turned "Radar motion" off on
+ * The radar stands still (ADR 0028): under reduced motion, and for a signed-in user who turned "Radar motion" off on
  * the account page (`preferences.radarMotion` on GET /me). No rotation, the dots at full opacity, one set stays.
  */
 export function useRadarStill(): boolean {

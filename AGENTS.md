@@ -8,7 +8,7 @@ as scope creep.
 ## Stack and layout
 
 - `backend/` — Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin, Gradle multi-project:
-  shared code in `libs/`, two apps in `apps/public` and `apps/backoffice` (ADR 0069), plugins and versions
+  shared code in `libs/`, two apps in `apps/public` and `apps/backoffice` (ADR 0032), plugins and versions
   in `build-logic/`
 - `frontend/` — React 19, Vite, TypeScript, Vitest
 - `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — contract first (OpenAPI 3.1); backend and frontend generate from them
@@ -38,7 +38,7 @@ Run the relevant tests before calling a change done.
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
 - Configuration only through `@ConfigurationProperties` records (one per module or concern); no `@Value`, no
   `Environment.getProperty` (ADR 0007).
-- Code format (ADR 0047): Google style for the backend, google-java-format for Java and ktfmt
+- Code format (ADR 0037): Google style for the backend, google-java-format for Java and ktfmt
   Google style for Kotlin, through Spotless; Prettier for the frontend. Run `./gradlew spotlessApply`
   and `npm run format` before a commit; CI fails on unformatted code.
 - Clean code: a use case reads top-down as the business action. Small methods with one level of

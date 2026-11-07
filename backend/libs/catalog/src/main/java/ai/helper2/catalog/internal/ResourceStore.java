@@ -101,7 +101,7 @@ public class ResourceStore {
       Set<String> platforms,
       Set<String> categories,
       List<PopularityMetric> popularity,
-      /** The fields an admin set (ADR 0066): their column wins over every source record. */
+      /** The fields an admin set (ADR 0026): their column wins over every source record. */
       Set<String> curatedFields) {
 
     ResourceRow withFacts(Map<String, Set<String>> labels, List<PopularityMetric> metrics) {
@@ -313,7 +313,7 @@ public class ResourceStore {
   }
 
   /**
-   * A row of a higher data origin keeps its values; a field an admin curated (ADR 0066) keeps its
+   * A row of a higher data origin keeps its values; a field an admin curated (ADR 0026) keeps its
    * value whatever the origin of the record.
    */
   private void upsertResources(List<Object[]> args) {
@@ -522,13 +522,13 @@ public class ResourceStore {
 
   /**
    * Every resource whose page is worth a search engine's index, newest change first, at most
-   * [limit]. The same rule as pages.IndexPolicy (ADR 0050 §5): a description a source or a person
-   * wrote; a prompt with at least [promptMin] characters of it; one of [types] with a licence,
-   * pricing, a date or a relationship.
+   * [limit]. The same rule as pages.IndexPolicy (ADR 0029 (part was 0050) §5): a description a
+   * source or a person wrote; a prompt with at least [promptMin] characters of it; one of [types]
+   * with a licence, pricing, a date or a relationship.
    */
   /**
    * The resources a sitemap lists, newest first. Each title is the one the resource page shows, so
-   * the sitemap's address is the page's own and not a 301 to it (ADR 0050): a page title from web
+   * the sitemap's address is the page's own and not a 301 to it (ADR 0029): a page title from web
    * sources is cleaned at read time, as {@link #findResource} does.
    */
   public List<Indexable> indexable(Collection<String> types, int promptMin, int limit) {
@@ -648,7 +648,7 @@ public class ResourceStore {
   }
 
   /**
-   * Assigns the categories of [resourceIds] again (ADR 0053), in one transaction; returns how many
+   * Assigns the categories of [resourceIds] again (ADR 0013), in one transaction; returns how many
    * of them have at least one. Idempotent: the same records give the same categories.
    */
   @Transactional
@@ -661,7 +661,7 @@ public class ResourceStore {
    * sources wrote (never an AI-written description), every tag of every record (not only the 20
    * kept as TAG labels), its type, the collectors that found it (each record's source and the
    * finders an accepted candidate keeps in foundBy), and the heading paths of the awesome lists
-   * that link it (ADR 0058).
+   * that link it (ADR 0022).
    */
   private int assignCategories(Collection<UUID> resourceIds) {
     if (resourceIds.isEmpty()) {
@@ -775,7 +775,7 @@ public class ResourceStore {
 
   /**
    * resource.event_* follow the records: earliest stated start, latest stated end (null when none
-   * states one). Days an AI model read (ADR 0067) count only when no other record states a start.
+   * states one). Days an AI model read (ADR 0021) count only when no other record states a start.
    */
   private void refreshEventDates(Collection<UUID> resourceIds) {
     if (resourceIds.isEmpty()) {
@@ -968,7 +968,7 @@ public class ResourceStore {
     // twice, so it is materialized, and a condition on a CTE column is a join filter that no index
     // can serve.
     //
-    // Search inside awesome lists (ADR 0055): a row the resource's own text does not match can
+    // Search inside awesome lists (ADR 0010): a row the resource's own text does not match can
     // still match by the words a list uses around it (awesome_list_entry) or, for a list, by its
     // headings (awesome_list), both on their own GIN index. Such a list-only row counts half: half
     // of every-word (+1) and half its popularity, no text score. So a direct every-word match
@@ -1060,7 +1060,7 @@ public class ResourceStore {
 
   /**
    * A row of {@link #searchFound}: [foundIn] says where the row was found when only an awesome
-   * list's words matched it (ADR 0055); null for a direct match, or for a list found by its
+   * list's words matched it (ADR 0010); null for a direct match, or for a list found by its
    * headings.
    */
   public record Found(ResourceRow row, @Nullable ListMatch foundIn) {}
@@ -1625,7 +1625,7 @@ public class ResourceStore {
           .put("value", m.getValue())
           .put("asOf", m.getAsOf().toString());
     }
-    // The collector's own facts (ADR 0051 discovery metadata); never over a field above.
+    // The collector's own facts (ADR 0022 discovery metadata); never over a field above.
     h.getFacts()
         .forEach((key, value) -> {
           if (!n.has(key)) {

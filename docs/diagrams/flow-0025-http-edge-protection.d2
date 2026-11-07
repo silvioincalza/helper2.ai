@@ -1,0 +1,101 @@
+# Flowchart: the checks a request meets at the HTTP edge of the app, in order.
+# Shows the two ports, the client address, CSRF, the rate limiter keyed by handler (IPv6 by /64; on the admin
+# host by the signed-in administrator) and
+# counted in Redis for all replicas (in-memory fallback while Redis is down),
+# the web image's files and the shell for client routes, with their cache headers.
+# Source of truth: deploy/helm/helper2/templates/app.yaml, web.yaml, networkpolicy.yaml, deploy/web/nginx.conf,
+#   deploy/web/headers.conf, backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java,
+#   backend/apps/public/src/main/resources/application.yaml (server.*, management.*),
+#   backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
+#   AdminHost.java (the admin host's key, ADR 0024),
+#   RedisRateLimiter.java, platform/quota/QuotaKeys.java (client pseudonym),
+#   InMemoryRateLimiter.java, platform/resilience/Resilience4jPolicies.java (policy redis).
+# Render: cd docs/diagrams && d2 fmt flow-0025-http-edge-protection.d2 && d2 flow-0025-http-edge-protection.d2 flow-0025-http-edge-protection.svg
+
+...@style
+
+direction: down
+
+in: "Request" {class: end}
+
+web: Web image (helper2-web, ADR 0032) {
+  class: group
+  direction: down
+  path: "Ingress: /assets/ prefix,\n/theme.js or /favicon.svg?" {class: decision}
+  method: "GET or HEAD?" {class: decision}
+  e405: "405, no-store" {class: fail}
+  found: "The file exists?" {class: decision}
+  file: "/assets: a year, immutable;\nroot files: 5 minutes, revalidated;\nCSP default-src 'none', sandbox,\nnosniff, CORP same-origin" {class: end}
+  e404w: "plain 404, no-store" {class: fail}
+  path -> method: yes
+  method -> e405: no
+  method -> found: yes
+  found -> file: yes {class: hot}
+  found -> e404w: no
+}
+
+port: "Port?" {class: decision}
+mgmt: "8081 management: only from the\nobservability namespace (NetworkPolicy);\nin no Service or Ingress" {class: config}
+metrics: "/actuator/prometheus, health" {class: end}
+
+app: "8080 app (from the Ingress\ncontroller only)" {class: app}
+addr: "remoteAddr: X-Forwarded-For used only when\nH2_FORWARD_HEADERS_STRATEGY=native\n(default none)" {class: app}
+headers: "Response headers: CSP 'self' only,\nReferrer-Policy strict-origin-when-cross-origin,\nPermissions-Policy (no camera, mic,\nlocation, payment, USB)" {class: app}
+
+csrf: "Not GET and no matching\nX-XSRF-TOKEN header?" {class: decision}
+e403: "403" {class: fail}
+auth: "Access rules (ADR 0024)" {class: app}
+api: "Path under /api/**?" {class: decision}
+
+limit: RateLimitInterceptor {
+  class: group
+  direction: down
+  limited: "Handler is search, reportResource,\naskGuideStream, askResourceGuide\nor listRecent?\n(async re-dispatch not charged)" {class: decision}
+  host: "On the admin host?\n(AdminHost, ADR 0024)" {class: decision}
+  adminkey: "Key: admin-host-user-<login>,\nor the shared admin-host key\nbefore sign-in (no address:\nno Cloudflare in front)" {class: app}
+  key: "ClientKey: IPv4, or IPv6 /64\n(zone id dropped,\nIPv4-mapped → IPv4)\n→ QuotaKeys.client: HMAC of the\nUTC day, no address in Redis" {class: app}
+  breaker: "redis circuit lets it through?\n(open 30 s after half of\nthe last calls failed)" {class: decision}
+  redis: "Redis Lua: INCR h2:v1:rate:<limiter>:<pseudonym>,\nPEXPIRE window on count 1; PTTL" {class: data}
+  memory: "InMemoryRateLimiter (this replica,\n≤ 50,000 clients kept);\nhelper2.rate-limit.fallback + 1" {class: app}
+  window: "Count in fixed window\n≤ limit?" {class: decision}
+  e429: "429 problem+json,\nRetry-After = window time left" {class: fail}
+  pass: "Controller" {class: end}
+  limited -> pass: no
+  limited -> host: yes
+  host -> key: no {class: hot}
+  host -> adminkey: yes
+  key -> breaker
+  adminkey -> breaker
+  breaker -> redis: yes {class: hot}
+  breaker -> memory: no
+  redis -> window: ok {class: hot}
+  redis -> memory: "error (counted by the circuit)"
+  memory -> window
+  window -> pass: yes {class: hot}
+  window -> e429: no
+}
+
+spa: PageRoutes (the shell) {
+  class: group
+  direction: down
+  route: "No extension and not api/, oauth2/,\nlogin/, actuator/, /logout?" {class: decision}
+  index: "the shell with the page's head,\nno-cache" {class: end}
+  e404: "404 (the public app\nserves no files)" {class: fail}
+  route -> index: yes {class: hot}
+  route -> e404: no
+}
+
+in -> web.path
+web.path -> port: no {class: hot}
+port -> mgmt: "8081"
+mgmt -> metrics
+port -> app: "8080" {class: hot}
+app -> addr: {class: hot}
+addr -> headers
+headers -> csrf
+csrf -> e403: yes
+csrf -> auth: no {class: hot}
+auth -> api
+api -> limit.limited: yes {class: hot}
+api -> spa.route: no

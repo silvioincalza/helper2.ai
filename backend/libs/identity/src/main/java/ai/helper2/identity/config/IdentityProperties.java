@@ -8,7 +8,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * Sign-in, ADMIN and the security headers, from {@code helper2.identity}. The defaults and the
- * {@code H2_} variables are in application.yaml (ADR 0007 point 8).
+ * {@code H2_} variables are in application.yaml (ADR 0007 (part was 0007) point 8).
  *
  * @param frontendUrl where a sign-in on the public site returns to (the web app)
  * @param admins "registrationId:subject" (or "registrationId:email") entries granted ADMIN on the

@@ -1,0 +1,102 @@
+# Flowchart: the redesign (design system v4) from the home page to the guide. Home loads the sources once for the
+# radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
+# search opens the results; the guide runs only when asked (Ask the guide, or Shift+Enter).
+# Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarLayout.ts, radarRotation.ts, radarClock.ts,
+#   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, ticker.ts, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer),
+#   pages/HomePage.tsx, components/results/Results.tsx, ResultRow.tsx, ResultsSkeleton.tsx, Resource.tsx.
+# Source of truth: docs/adr/frontend/0028-design-system.md, docs/design/system/README.md.
+# Render: cd docs/diagrams && d2 fmt flow-0028-redesign.d2 && d2 flow-0028-redesign.d2 flow-0028-redesign.svg
+
+...@style
+
+direction: down
+
+open: "Open /" {class: app}
+home: Home {
+  class: group
+  direction: down
+  hero: "Title inside full rings,\na beam that turns every 5 s" {class: app}
+  sources: "GET /api/v1/sources\n(N enabled external = the legend count,\na fixed spot per source)" {class: ext}
+  fields: "newThisWeek a number?\n(lib/v4Fields.ts)" {class: decision}
+  sized: "Dot size = new this week" {class: app}
+  plain: "Default dot size" {class: app}
+  still: "Reduced motion, or\nsigned in with motion off?" {class: decision}
+  one: "Beam still, a fixed\nrandom set of 7 at full opacity" {class: app}
+  held: "Search box has focus?" {class: decision}
+  wait: "Clock stops:\nbeam and dots hold still" {class: app}
+  next: "Clock runs: every 1.6 s the next\nsource of the queue comes (up to 10)\nor the oldest leaves (down to 5)" {class: app}
+  paint: "Beam passes a dot:\npop, glow, fade to 0.22" {class: app}
+  bar: "Search box, pinned\nunder the header" {class: app}
+  wide: "Wider than 767 px?" {class: decision}
+  tables: "TermList as two tables, ls -l\n(helper2 news · N line, Show all in place)" {class: app}
+  tabs: "TermList in tabs:\n> new this week N | coming up N\n(log rows)" {class: app}
+  feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
+  measure: "ResizeObserver measures\nthe pinned box (--pinned-h)" {class: app}
+  stick: "While a list scrolls by: its head\n(and column names or tabs) stays under\nthe pinned box until the list ends" {class: app}
+  more: "A list has more rows\nthan it shows?" {class: decision}
+  fixed: "Rows stand still" {class: app}
+  hold: "Reduced motion, motion off,\npointer over it, focus in it, tapped,\noff screen or tab hidden?" {class: decision}
+  hold_still: "Ticker holds still\n(a second tap starts it again)" {class: app}
+  tick: "Every 5 s one row leaves at the top,\nthe next comes in at the bottom\n(slides up 700 ms, clipped, wraps round)" {class: app}
+  hero -> sources -> fields
+  fields -> sized: yes
+  fields -> plain: no
+  sources -> still
+  still -> one: yes
+  still -> held: no
+  held -> wait: yes
+  held -> next: no
+  next -> paint
+  wait -> held: focus leaves
+  hero -> bar -> wide
+  wide -> tables: yes
+  wide -> tabs: no
+  tables -> feeds
+  tabs -> feeds
+  bar -> measure -> stick
+  tables -> stick
+  tabs -> stick
+  feeds -> more
+  more -> fixed: no
+  more -> hold: yes
+  hold -> hold_still: yes
+  hold -> tick: no
+  tick -> hold: next step
+  hold_still -> hold: hold ends
+}
+phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
+fold: "Title folds away,\nbox stays pinned" {class: app}
+search: "Search: /search?q=…\nGET /api/v1/search" {class: ext}
+loaded: "Results view loaded?\n(on demand)" {class: decision}
+skeleton: "Skeleton rows under\nthe h1 and the box" {class: app}
+list: "One column: All results ·\n\$ helper2 search · N,\nrows, filters, coverage" {class: app}
+resource: "Resource page;\nBack keeps the place" {class: end}
+question: "Asked the guide?\n(button or Shift+Enter)" {class: decision}
+guide: "POST /api/v1/guide/stream (SSE)" {class: ext}
+outcome: "Outcome?" {class: decision}
+picks: "Up to 3 picks, marked in their rows:\nAI-written reason (labelled),\nchecked quote" {class: end}
+clarify: "Needs one more detail" {class: end}
+nopick: "No pick: Ask without … / Rephrase" {class: end}
+noai: "Model not available:\ntop 3 by score, no AI label" {class: end}
+fail: "Busy, timeout, stalled,\ndaily AI answers used" {class: fail}
+done: "Results only" {class: end}
+
+open -> home.hero
+home.bar -> phone
+phone -> fold: yes
+phone -> search: no, a search
+fold -> search: a search
+search -> loaded
+loaded -> skeleton: no
+skeleton -> list: chunk arrives
+loaded -> list: yes
+list -> resource: a row
+list -> question
+question -> guide: yes {class: hot}
+question -> done: no
+guide -> outcome
+outcome -> picks: picks
+outcome -> clarify: clarify
+outcome -> nopick: none fits
+outcome -> noai: LLM_UNAVAILABLE
+outcome -> fail: 503 / 504 / quota

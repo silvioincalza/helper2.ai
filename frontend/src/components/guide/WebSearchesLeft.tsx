@@ -4,7 +4,7 @@ import { Icon } from '@/components/Icon';
 
 type WebSearches = SearchResponse['webSearches'];
 
-/** Visitors get 3 or 10 a day (ADR 0037); a limit this high is a test environment's ceiling (staging). */
+/** Visitors get 3 or 10 a day (ADR 0014); a limit this high is a test environment's ceiling (staging). */
 const TEST_CEILING = 100;
 
 /** True when the count will be said once the feature has used a web search: the limit is known and a real one. */
@@ -19,7 +19,7 @@ function resetTime(now = new Date()): string {
 }
 
 /**
- * Live web searches left today for one feature (ADR 0037): search and the guide count apart. Said from the
+ * Live web searches left today for one feature (ADR 0014): search and the guide count apart. Said from the
  * first one used, because the limit is small; nothing before that, and nothing when the count is unknown (null).
  * A limit of [TEST_CEILING] or more is a test environment's ceiling, not a limit a visitor plans around: the count is
  * not said, only that none is left.

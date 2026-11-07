@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.simple.JdbcClient
 
 /**
- * The similar-question index on the real PostgreSQL with pgvector (ADR 0041): nearest live question
+ * The similar-question index on the real PostgreSQL with pgvector (ADR 0017): nearest live question
  * by cosine within a group, one row per answer key, and the daily purge. Keys and groups are
  * random, so tests share the database safely; the clock of the purge is fixed in 2000, before any
  * question other tests index.

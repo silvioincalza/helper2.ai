@@ -9,7 +9,7 @@ function serverTag(html: string) {
   document.head.append(tpl.content);
 }
 
-describe('the head the server wrote for crawlers (ADR 0050)', () => {
+describe('the head the server wrote for crawlers (ADR 0029)', () => {
   afterEach(() => document.head.querySelectorAll('[data-h2-head]').forEach((el) => el.remove()));
 
   it('stays on the page the visitor landed on and goes at the first move to another page', async () => {

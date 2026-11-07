@@ -196,7 +196,7 @@ class CatalogEnrichmentStoreIT {
   }
 
   /**
-   * ADR 0056: an AI-estimated judgement, a self-declared fact, a self-declared relationship and a
+   * ADR 0023: an AI-estimated judgement, a self-declared fact, a self-declared relationship and a
    * self-declared claim keep their origin through the database to the detail page.
    */
   @Test
@@ -257,7 +257,7 @@ class CatalogEnrichmentStoreIT {
   }
 
   /**
-   * ADR 0056: a re-check by code reads the stored answer, rejects a field, drops a claim and puts
+   * ADR 0023: a re-check by code reads the stored answer, rejects a field, drops a claim and puts
    * the resource back in the backlog past its unchanged fingerprint.
    */
   @Test
@@ -324,7 +324,7 @@ class CatalogEnrichmentStoreIT {
     }
   }
 
-  /** ADR 0056: a product a person accepted from the review queue is enriched first. */
+  /** ADR 0023: a product a person accepted from the review queue is enriched first. */
   @Test
   void anAcceptedCandidateComesFirstInTheBacklog() {
     String url =
@@ -524,7 +524,7 @@ class CatalogEnrichmentStoreIT {
   /**
    * Three fields, three relationships and three summary claims, with evidence shared between owners
    * and kinds, evidence from two records retrieved on different days, and README evidence (ADR
-   * 0043) read two days ago.
+   * 0023) read two days ago.
    */
   private void saveFullRun() {
     List<CheckedCitation> shared = cites(record, "Works with Claude Desktop");
@@ -590,7 +590,7 @@ class CatalogEnrichmentStoreIT {
     assertThat(excerpts(detail.assertions().get(0).evidence())).containsExactly("MIT old", "MIT");
     assertThat(excerpts(detail.assertions().get(1).evidence()))
         .containsExactly("Free for everyone", "Free");
-    // README evidence keeps its own place and read time on the detail page (ADR 0043), in the same
+    // README evidence keeps its own place and read time on the detail page (ADR 0023), in the same
     // batched query.
     ResourceDetail.Evidence readme = detail.assertions().get(1).evidence().getFirst();
     assertThat(readme.sourceUrl()).isEqualTo(README);

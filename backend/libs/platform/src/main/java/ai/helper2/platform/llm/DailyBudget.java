@@ -17,7 +17,7 @@ import java.util.function.IntSupplier;
  * When the counter fails, the count continues in memory from the last value it returned: an outage
  * can only allow more calls, never block the model by mistake.
  *
- * <p>The limit is read through a supplier on every call, so a runtime setting (ADR 0060) applies at
+ * <p>The limit is read through a supplier on every call, so a runtime setting (ADR 0007) applies at
  * once, without a restart. A limit lowered below today's count refuses the next calls.
  */
 public final class DailyBudget {

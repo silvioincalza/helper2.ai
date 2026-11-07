@@ -31,7 +31,7 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 
 /**
- * Deep search in awesome lists (ADR 0058), end to end on PostgreSQL: a Scout run of the collector
+ * Deep search in awesome lists (ADR 0022), end to end on PostgreSQL: a Scout run of the collector
  * against a fixture GitHub indexes a nested list with its entries and their section categories, and
  * turns a link to a product site into one review item, merged with the discovery candidate that
  * already waits for the same site.

@@ -20,7 +20,7 @@ const live = (over: Partial<SourceInfo> = {}): SourceInfo => ({
   ...over,
 });
 
-describe('the radar (ADR 0042): which sources and how they look', () => {
+describe('the radar (ADR 0028): which sources and how they look', () => {
   it('shows only the enabled external sources: 13 of the 16 on staging', () => {
     expect(external).toHaveLength(13);
     expect(external.map((s) => s.id)).not.toContain('helper2-index');
@@ -44,7 +44,7 @@ describe('the radar (ADR 0042): which sources and how they look', () => {
   });
 });
 
-/** The 34 discovery categories as GET /sources lists them (ADR 0051): one source each, with its family. */
+/** The 34 discovery categories as GET /sources lists them (ADR 0022): one source each, with its family. */
 const CATEGORIES: [string, string, NonNullable<SourceInfo['family']>][] = [
   ['prompt-libraries', 'Prompts', 'prompts-and-skills'],
   ['skills-and-gpts', 'Skills', 'prompts-and-skills'],

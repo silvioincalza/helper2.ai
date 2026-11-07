@@ -140,7 +140,7 @@ function RadarArt({ f, beam }: { f: RadarFrame; beam: RefObject<SVGGElement | nu
 }
 
 /**
- * The radar on Home (ADR 0042, decision 4), like a navigation radar: full rings around the title and a beam that turns
+ * The radar on Home (ADR 0028 (part was 0042), decision 4), like a navigation radar: full rings around the title and a beam that turns
  * once every 5 s. Only external sources, 5 to 10 at a time and every one in turn, each placed where there is room
  * when it comes on. A dot is painted when the beam passes it (radarClock.ts); one source comes or goes every 1.6 s
  * (radarRotation.ts). The beam and the dots run on one clock, which stops while the search box has focus. Under

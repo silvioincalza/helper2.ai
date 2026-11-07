@@ -7,7 +7,7 @@ import { CandidateEditForm } from './CandidateEditForm';
 
 /**
  * What an item says by its kind: a drafted example, a resource candidate, or its details as plain text. [onChanged]
- * reloads the list after an edit of an open candidate (ADR 0065).
+ * reloads the list after an edit of an open candidate (ADR 0026).
  */
 export function ItemDetails({ item, onChanged }: { item: ReviewItem; onChanged?: () => void }) {
   if (item.kind === 'EXAMPLE_CANDIDATE') return <DraftedExample details={item.details} />;
@@ -67,7 +67,7 @@ function parseDraft(details: string | null | undefined): Draft | null {
 }
 
 /**
- * A product page a discovery category found (ADR 0051): the details are the candidate as JSON. Every collector that
+ * A product page a discovery category found (ADR 0022): the details are the candidate as JSON. Every collector that
  * found the page is named; health and legal candidates carry their notice.
  */
 function ResourceCandidate({
@@ -150,7 +150,7 @@ interface Candidate {
   snippet: string | undefined;
   /** The collectors that found it (version 2); version 1 names only `sourceId`. */
   foundBy: string[];
-  /** The fields an admin changed (ADR 0065). */
+  /** The fields an admin changed (ADR 0026). */
   edited: string[];
 }
 

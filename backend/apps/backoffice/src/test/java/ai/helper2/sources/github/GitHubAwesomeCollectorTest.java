@@ -116,7 +116,7 @@ class GitHubAwesomeCollectorTest {
         SeedDiscoveryHosts.store());
   }
 
-  /** Deep search as configured by default (ADR 0058). */
+  /** Deep search as configured by default (ADR 0022). */
   static final GitHubAwesomeCollector.Deep DEEP =
       new GitHubAwesomeCollector.Deep(
           2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
@@ -127,7 +127,7 @@ class GitHubAwesomeCollectorTest {
     server.route("/graphql", FixtureServer.Reply.ok(GRAPHQL));
   }
 
-  /** The hits of the list's entries, without the list itself (ADR 0055). */
+  /** The hits of the list's entries, without the list itself (ADR 0010). */
   static List<SourceHit> entryHits(CollectedBatch batch) {
     return batch.getHits().stream()
         .filter(h -> !h.getTags().contains(GitHubAwesomeCollector.LIST_TAG))

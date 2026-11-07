@@ -7,7 +7,7 @@ import org.springframework.scheduling.support.CronExpression;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * When the daily purges run (ADR 0034), from {@code helper2.retention.cron}, UTC. The {@code
+ * When the daily purges run (ADR 0035), from {@code helper2.retention.cron}, UTC. The {@code
  * Scheduled} methods of each module read the same key; this record makes a bad expression stop
  * startup with its name. Each module binds its own retention periods under the same prefix.
  */

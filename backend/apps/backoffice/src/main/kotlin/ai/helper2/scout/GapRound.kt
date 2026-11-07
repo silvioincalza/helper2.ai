@@ -7,9 +7,9 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * The gap round (ADR 0043): when an enrichment leaves fields unproven, one more pass with more text
+ * The gap round (ADR 0023): when an enrichment leaves fields unproven, one more pass with more text
  * from the resource's own source (its GitHub README or its Hugging Face model card). Code decides
- * where that text comes from; the model never picks a URL. ADR 0056 adds the product's own pages
+ * where that text comes from; the model never picks a URL. ADR 0023 adds the product's own pages
  * ([OFFICIAL_PAGE], see OfficialPages.kt).
  */
 enum class GapKind(val label: String) {
@@ -79,7 +79,7 @@ object GapTargets {
 
   /**
    * True when [sourceId]'s record URL can be a repository: a GitHub source, or a product page a
-   * person accepted from any discovery category (ADR 0051, ADR 0056) that is a repository.
+   * person accepted from any discovery category (ADR 0022, ADR 0023) that is a repository.
    */
   private fun namesRepository(sourceId: String): Boolean =
     sourceId in GITHUB_SOURCES || WebSources.isDiscovery(sourceId)
@@ -153,7 +153,7 @@ object GapTargets {
  * Third-party text (a README, a model card, a product page) before a model or a validator sees it.
  * It is written by anyone: what a reader does not see (HTML comments, hidden elements, zero-width
  * or direction characters, Unicode tags) must not reach the model or a stored quote either. Email
- * addresses and phone numbers are masked (ADR 0043, ADR 0056).
+ * addresses and phone numbers are masked (ADR 0023).
  */
 object UntrustedPageText {
 
@@ -163,7 +163,7 @@ object UntrustedPageText {
   const val MAX_CHARS = 4000
 
   /**
-   * Characters we keep from one product page (ADR 0056): pricing and platform sections are often
+   * Characters we keep from one product page (ADR 0023): pricing and platform sections are often
    * below a long hero, so a page gets more than a README.
    */
   const val MAX_PAGE_CHARS = 6000

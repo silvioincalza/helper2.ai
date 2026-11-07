@@ -42,7 +42,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.request
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 /**
- * The guide's latency target (ADR 0026): `helper2.guide.first_useful{intent}`, the time from the
+ * The guide's latency target (ADR 0031): `helper2.guide.first_useful{intent}`, the time from the
  * request to the first event that shows the asker something real — `retrieved` (the results the
  * guide reads) or `clarify` (the question back).
  */

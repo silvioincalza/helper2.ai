@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
-/** Who a rate limit counts for (ADR 0035): on the admin host, never an address the client sends. */
+/** Who a rate limit counts for (ADR 0024): on the admin host, never an address the client sends. */
 class RateLimitKeyTest {
 
   private static MockHttpServletRequest from(String address, String forwardedFor) {

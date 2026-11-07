@@ -77,7 +77,7 @@ class DiscoveryPagesTest {
         .isEqualTo(DiscoveryPages.Shape.ARTICLE);
   }
 
-  /** ADR 0062: a post about a product is kept as an article, under its own link. */
+  /** ADR 0023: a post about a product is kept as an article, under its own link. */
   @Test
   void aPostAboutAProductIsAnArticle() {
     String engadget =

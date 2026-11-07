@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reads rendered manifests (helm template) on stdin. Every manifest whose containers load the env Secret <name> whole
 # (envFrom) must set H2_DATABASE_PASSWORD and H2_REDIS_PASSWORD under env: at least once per such container, so the
-# owner's and Redis' default password, which the env Secret may still hold (ADR 0070, one release), never reach a
+# owner's and Redis' default password, which the env Secret may still hold (ADR 0004, one release), never reach a
 # process: a value under env: wins over envFrom. Usage: helm template ... | check-env-overrides.sh <name>
 set -euo pipefail
 secret=${1:?usage: check-env-overrides.sh <env Secret name>}

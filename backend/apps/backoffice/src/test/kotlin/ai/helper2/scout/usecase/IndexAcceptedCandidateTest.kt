@@ -129,7 +129,7 @@ class IndexAcceptedCandidateTest {
     assertEquals(0, catalog.indexed.size)
   }
 
-  /** ADR 0065: the admin said what the page is; it is still a candidate type, never a course. */
+  /** ADR 0026: the admin said what the page is; it is still a candidate type, never a course. */
   @Test
   fun `a type an admin chose need not be declared, but must be a candidate type`() {
     accept.index(candidate(type = ResourceType.EVENT).copy(typeChosenByAdmin = true))

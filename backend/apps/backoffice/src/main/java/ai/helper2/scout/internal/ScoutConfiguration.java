@@ -137,7 +137,7 @@ class ScoutConfiguration {
         model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics, resilience);
   }
 
-  /** The Scout's settings for the back office's Settings page (ADR 0045). */
+  /** The Scout's settings for the back office's Settings page (ADR 0026). */
   @Bean
   SettingsGroup scoutSettings(
       ScoutProperties scout, EnrichmentModel enrichmentModel, List<Collector> collectors) {
@@ -208,7 +208,7 @@ class ScoutConfiguration {
     return indexResources::index;
   }
 
-  /** The catalog's search index of awesome lists (ADR 0055). */
+  /** The catalog's search index of awesome lists (ADR 0010). */
   @Bean
   ListIndex listIndex(IndexAwesomeLists indexAwesomeLists) {
     return lists ->
@@ -308,7 +308,7 @@ class ScoutConfiguration {
   }
 
   /**
-   * The evidence ladder's page step (ADR 0056), or null when it is off: no reader (demo profile),
+   * The evidence ladder's page step (ADR 0023), or null when it is off: no reader (demo profile),
    * no Tavily key, or no credits a day. Its credits have their own daily cap and count on the
    * global Tavily cap; the pages read lately are kept by URL and hash in the shared cache.
    */
@@ -352,7 +352,7 @@ class ScoutConfiguration {
   }
 
   /**
-   * The cleaned text of product pages for a retry within the day (ADR 0056): Redis only, for
+   * The cleaned text of product pages for a retry within the day (ADR 0023): Redis only, for
    * page-text-ttl (at most a day). Without Redis, nothing is kept and a retry reads again.
    */
   static PageTextCache pageTextCache(
@@ -366,9 +366,9 @@ class ScoutConfiguration {
   }
 
   /**
-   * The gap round's own daily cap (ADR 0043), counted like the others so a restart does not reset
+   * The gap round's own daily cap (ADR 0023), counted like the others so a restart does not reset
    * the day. Its calls also count on the enrichment cap, so this is a share of it, not more. 0
-   * turns the gap round off; the limit is a runtime setting (ADR 0060), read on every call.
+   * turns the gap round off; the limit is a runtime setting (ADR 0007), read on every call.
    */
   static GapBudget gapBudget(
       IntSupplier dailyCalls, Clock clock, CallCounter counter, MeterRegistry meters) {
@@ -400,7 +400,7 @@ class ScoutConfiguration {
     return new IndexAcceptedCandidate(collectors, index, lookup, details, clock);
   }
 
-  /** An admin's edit of a resource candidate before accepting it (ADR 0065). */
+  /** An admin's edit of a resource candidate before accepting it (ADR 0026). */
   @Bean
   EditCandidate editCandidate(
       ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork scoutUnitOfWork) {
@@ -424,7 +424,7 @@ class ScoutConfiguration {
     };
   }
 
-  /** The admin's actions on the enrichment queue (ADR 0045 §7). */
+  /** The admin's actions on the enrichment queue (ADR 0026 (part was 0045) §7). */
   @Bean
   RequeueEnrichment requeueEnrichment(
       EnrichmentBacklog backlog,
@@ -445,7 +445,7 @@ class ScoutConfiguration {
     return new SkipEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
   }
 
-  /** The admin's changes to discovery's host lists (ADR 0063). */
+  /** The admin's changes to discovery's host lists (ADR 0022). */
   @Bean
   ManageDiscoveryHosts manageDiscoveryHosts(
       DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
@@ -463,7 +463,7 @@ class ScoutConfiguration {
   }
 
   /**
-   * Re-checks stored enrichment answers by code (ADR 0056): once after the first start with it,
+   * Re-checks stored enrichment answers by code (ADR 0023): once after the first start with it,
    * then whenever an admin asks. Resources go back to the backlog only when a model is configured.
    */
   @Bean
@@ -508,7 +508,7 @@ class ScoutConfiguration {
   /**
    * A run started from the admin page collects on its own virtual thread; the request answers at
    * once. The thread carries the request's observation, so its log lines have the request's trace
-   * and span ids (ADR 0026).
+   * and span ids (ADR 0031).
    */
   static final Executor RUN_THREADS =
       task -> Thread.ofVirtual().name("scout-run").start(RUN_CONTEXT.captureAll().wrap(task));

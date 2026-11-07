@@ -1,0 +1,52 @@
+# Flowchart: which push builds an image, which tag it gets, and how a release from main or from a release branch
+# reaches prod under its version (ADR 0034).
+# Source of truth: .github/workflows/cd.yml (on push, staging), release.yml (check step, staged, prod),
+#   deploy.yml (Resolve tag, with make retag), deploy/k8s/Makefile (image, retag).
+# Render: cd docs/diagrams && d2 fmt flow-0034-release-branches-and-version-tags.d2 && d2 flow-0034-release-branches-and-version-tags.d2 flow-0034-release-branches-and-version-tags.svg
+
+...@style
+
+direction: down
+
+pr: "Pull request (any base)" {class: end}
+light: "ci.yml: checks only,\nno image" {class: app}
+
+push: "Push to main or release/*\n(cd.yml)" {class: end}
+image: "make image: helper2:<commit[0:12]>\n(skipped when Harbor has it)" {class: data}
+scan: "scan job: Grype on the SBOMs (0033)" {class: app}
+ismain: "Branch main?" {class: decision}
+staging: "Staging deploys the commit" {class: app}
+noenv: "No deploy: image only" {class: end}
+
+tag: "Release tag vX.Y.Z pushed\n(release.yml)" {class: end}
+onmain: "Commit on main?" {class: decision}
+onbranch: "Commit on a\nrelease/* branch?" {class: decision}
+patch: "Next patch after the\nrelease just below?" {class: decision}
+fail: "Fail: no release,\nno deploy" {class: fail}
+staged: "Commit's CD run passed?\n(main: staging passed;\nrelease/*: warning, no staging)" {class: decision}
+retag: "make retag: Harbor adds X.Y.Z\nto the commit's image\n(same digest; same digest again = no-op)" {class: data}
+approve: "Prod approval" {class: decision}
+resolve: "deploy.yml: X.Y.Z → commit of vX.Y.Z,\non main or release/*? (a commit tag:\nmain only); not older than what runs?" {class: decision}
+prod: "Prod runs helper2:X.Y.Z" {class: end}
+
+pr -> light
+
+push -> image: {class: hot}
+image -> scan
+image -> ismain: {class: hot}
+ismain -> staging: yes {class: hot}
+ismain -> noenv: no
+
+tag -> onmain: {class: hot}
+onmain -> staged: yes {class: hot}
+onmain -> onbranch: no
+onbranch -> fail: no
+onbranch -> patch: yes
+patch -> fail: no
+patch -> staged: yes
+staged -> fail: no
+staged -> approve: yes {class: hot}
+approve -> resolve: yes {class: hot}
+resolve -> fail: no
+resolve -> retag: yes {class: hot}
+retag -> prod: {class: hot}

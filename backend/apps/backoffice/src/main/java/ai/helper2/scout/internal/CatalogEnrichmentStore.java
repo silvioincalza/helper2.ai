@@ -73,7 +73,7 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
    * Never enriched, enriched while no LLM was available, or whose last attempt FAILED (stored as
    * REJECTED) with retries left. Only resources with a source description, or accepted by a person:
    * a bare title gives the model nothing worth citing, so it would only produce REJECTED runs,
-   * unless the evidence ladder can read the product's own page (ADR 0056, ADR 0058). Newest
+   * unless the evidence ladder can read the product's own page (ADR 0023, ADR 0022). Newest
    * discoveries first.
    */
   @Override
@@ -137,7 +137,7 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
     if (candidate.openSource() != null) {
       facts.put("openSource", candidate.openSource().toString());
     }
-    // What an admin set wins over what any record says (ADR 0066).
+    // What an admin set wins over what any record says (ADR 0026).
     facts.putAll(candidate.curated());
     String allText =
         String.join(

@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
- * The categories of application.yaml become one discovery collector each (ADR 0051), and a bad
+ * The categories of application.yaml become one discovery collector each (ADR 0022), and a bad
  * entry stops startup with the category it is in.
  */
 class DiscoveryCollectorRegistrarTest {

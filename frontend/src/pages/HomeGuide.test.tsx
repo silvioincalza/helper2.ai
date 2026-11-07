@@ -600,7 +600,7 @@ describe('guide on the one page', () => {
   });
 });
 
-/** The user chooses the guide (ADR 0017, ADR 0025, UJ-2): Enter always searches; Shift+Enter or the button asks. */
+/** The user chooses the guide (ADR 0017, ADR 0027, UJ-2): Enter always searches; Shift+Enter or the button asks. */
 describe('the guide runs when the user asks for it', () => {
   const results = async () => within(await screen.findByRole('list', { name: 'Search results' }));
 

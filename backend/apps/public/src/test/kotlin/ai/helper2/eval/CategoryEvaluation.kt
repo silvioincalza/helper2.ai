@@ -25,7 +25,7 @@ data class CategoryScore(
 }
 
 /**
- * The CategoryMatcher measured against labels a person gave (ADR 0053): per category, how many of
+ * The CategoryMatcher measured against labels a person gave (ADR 0013): per category, how many of
  * the categories it gives are right (precision) and how many of the right ones it finds (recall).
  * Categories are assigned by code first; a model would be considered only where these numbers say
  * code is not enough.

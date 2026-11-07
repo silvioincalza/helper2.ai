@@ -11,7 +11,7 @@ import org.springframework.modulith.core.ApplicationModules;
 
 /**
  * Architecture rules of the back office app as tests: module boundaries (Spring Modulith),
- * hexagonal direction (ArchUnit), and none of the public site's own modules (ADR 0069). The table
+ * hexagonal direction (ArchUnit), and none of the public site's own modules (ADR 0032). The table
  * owners are checked once, in the public app's ModularityTest.
  */
 class ModularityTest {
@@ -106,7 +106,7 @@ class ModularityTest {
         .check(CLASSES);
   }
 
-  /** The guide, the setup guide and the SEO pages are the public app's (ADR 0069). */
+  /** The guide, the setup guide and the SEO pages are the public app's (ADR 0032). */
   @Test
   void noPublicSiteModules() {
     assertThat(MODULES.stream().map(m -> m.getBasePackage().getName()))

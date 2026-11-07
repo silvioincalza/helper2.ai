@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * The HMAC key of the daily quota counters (ADR 0037), from {@code helper2.quota}. It may be empty
+ * The HMAC key of the daily quota counters (ADR 0014), from {@code helper2.quota}. It may be empty
  * here: the search module stops startup when a metered source is enabled without it.
  */
 @Validated

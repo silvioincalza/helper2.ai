@@ -20,7 +20,7 @@ const KINDS = ['CONFERENCE', 'HACKATHON', 'MEETUP', 'TALK', 'WORKSHOP'];
 const FORMATS = ['IN_PERSON', 'ONLINE', 'HYBRID'];
 // "industry" (conferences and expos) or "community" (hackathons, meetups, talks, workshops).
 const SET = process.argv[3] ?? 'industry';
-// The fields this seed asserts. It replaces only those: a value an admin curated on the same event stays (ADR 0066).
+// The fields this seed asserts. It replaces only those: a value an admin curated on the same event stays (ADR 0026).
 const SEED_FIELDS = "('eventDates', 'eventFormat')";
 if (!['industry', 'community'].includes(SET)) throw new Error(`unknown set ${SET}`);
 // Marks the source records this seed writes, so removing dropped events never touches another seed's rows.

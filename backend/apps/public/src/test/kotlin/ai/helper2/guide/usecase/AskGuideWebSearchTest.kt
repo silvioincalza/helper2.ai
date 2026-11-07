@@ -43,7 +43,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * The guide under the daily web searches (ADR 0037): one per question, its own count, freshness by
+ * The guide under the daily web searches (ADR 0014): one per question, its own count, freshness by
  * intent.
  */
 class AskGuideWebSearchTest {

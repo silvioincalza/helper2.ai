@@ -6,7 +6,7 @@ import java.time.Duration
 import org.slf4j.LoggerFactory
 
 /**
- * The search module's retention rule (ADR 0034): stored web result sets are deleted [webResults]
+ * The search module's retention rule (ADR 0035): stored web result sets are deleted [webResults]
  * after they were fetched.
  */
 class PurgeExpiredData(

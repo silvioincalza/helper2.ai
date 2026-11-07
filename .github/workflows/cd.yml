@@ -1,5 +1,5 @@
 # CD: every push to main runs all of CI, builds the images of the components that changed, signs them and deploys
-# staging. A push to a release/* branch runs CI and does the images only (ADR 0048). Prod is not deployed from here: a
+# staging. A push to a release/* branch runs CI and does the images only (ADR 0034). Prod is not deployed from here: a
 # release tag vX.Y.Z does that (release.yml), under the version tag. Manual runs redeploy or roll back a given tag.
 # No pull_request trigger here: self-hosted jobs must never run fork code (the repo is public).
 name: cd
@@ -14,7 +14,7 @@ on:
         type: choice
         options: [staging, prod]
         # Staging by default: a run started without a thought lands where it does no harm. Prod needs the
-        # choice and the required reviewer of the prod environment (ADR 0028).
+        # choice and the required reviewer of the prod environment (ADR 0033).
         default: staging
       tag:
         description: 12-char commit already built, or a release version X.Y.Z. Empty = HEAD of main for staging, what staging runs for prod
@@ -54,19 +54,19 @@ jobs:
       # The tools first, so no third-party step runs while the OpenBao token below may sign.
       - uses: ./.github/actions/install-cosign
       - uses: ./.github/actions/install-scanners
-      # The token may read ci/harbor and sign with the Transit key (ADR 0071). It is revoked right after the signing
+      # The token may read ci/harbor and sign with the Transit key (ADR 0033). It is revoked right after the signing
       # step; the uploads come after that.
       - uses: ./.github/actions/bao-login
         with:
           addr: ${{ vars.BAO_ADDR }}
           audience: ${{ vars.BAO_AUDIENCE }}
           role: deploy
-      # Postgres + pgvector (ADR 0012): built and pushed only when postgres.image.tag is not in Harbor yet. Its digest
+      # Postgres + pgvector (ADR 0011): built and pushed only when postgres.image.tag is not in Harbor yet. Its digest
       # goes to the list of what this run pushed, for the signing step.
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s postgres-image ENGINE="$ENGINE" PUSHED="$RUNNER_TEMP/pushed.txt"
-      # Per component (ADR 0071): what changed since the commit pushed before. A new branch (no commit before) or a
+      # Per component (ADR 0033): what changed since the commit pushed before. A new branch (no commit before) or a
       # base not in the clone gives everything.
       - name: Changed components
         id: changes
@@ -80,8 +80,8 @@ jobs:
           [[ $BEFORE =~ ^0+$ ]] || from=${BEFORE::12}
           echo "build=$build" >> "$GITHUB_OUTPUT"
           echo "from=$from" >> "$GITHUB_OUTPUT"
-          echo "Images built: ${build:-none}; the others carry the signed image of ${from:-nothing} (ADR 0071)" >> "$GITHUB_STEP_SUMMARY"
-      # The three images (web, public app, back office; ADR 0069) all get TAG: a changed one is built from `git archive`
+          echo "Images built: ${build:-none}; the others carry the signed image of ${from:-nothing} (ADR 0033)" >> "$GITHUB_STEP_SUMMARY"
+      # The three images (web, public app, back office; ADR 0032) all get TAG: a changed one is built from `git archive`
       # of the commit and pushed, an unchanged one gets TAG on the image of the commit before (same digest, Harbor API),
       # only when that image is signed by our key. Otherwise it is built. The digests pushed go to pushed.txt.
       - env:
@@ -89,7 +89,7 @@ jobs:
           BUILD: ${{ steps.changes.outputs.build }}
           FROM: ${{ steps.changes.outputs.from }}
         run: make -C deploy/k8s ci-images TAG="${GITHUB_SHA::12}" FROM="$FROM" BUILD="$BUILD" ENGINE="$ENGINE" PUSHED="$RUNNER_TEMP/pushed.txt"
-      # SBOM of each image (ADR 0046), read from Harbor; release.yml attaches them to the GitHub release. The Postgres
+      # SBOM of each image (ADR 0033), read from Harbor; release.yml attaches them to the GitHub release. The Postgres
       # image of postgres.image.tag, new or not: the daily scan sees new CVEs in it too. Uploaded after the revocation.
       - run: |
           set -euo pipefail
@@ -127,7 +127,7 @@ jobs:
           path: sbom-postgres.cdx.json
           retention-days: 90
 
-  # Grype on the SBOMs of the images just pushed (ADR 0046), on a GitHub-hosted runner: it reads the run's artifacts,
+  # Grype on the SBOMs of the images just pushed (ADR 0033), on a GitHub-hosted runner: it reads the run's artifacts,
   # never Harbor. Report-only until 18 Nov 2026: findings with a fix go to code scanning (image/app, image/postgres
   # on main, likewise image/backoffice and image/web) and the job log, nothing fails. Not a need of staging yet: the gate adds `--fail-on critical` and that need.
   scan:
@@ -190,7 +190,7 @@ jobs:
           ref: ${{ github.ref }}
           sha: ${{ github.sha }}
 
-  # Main only: a release branch never deploys staging (ADR 0048).
+  # Main only: a release branch never deploys staging (ADR 0034).
   staging:
     if: github.ref == 'refs/heads/main'
     needs: image
