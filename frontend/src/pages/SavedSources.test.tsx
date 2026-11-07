@@ -248,7 +248,7 @@ describe('Feature: the sources page', () => {
   it("Scenario: only the metered source shows today's web credits, with or without a daily cap", async () => {
     mockApi({ 'GET /sources': () => HEALTH_SOURCES });
     const first = renderApp('/sources');
-    const liveWeb = await rowOf(/Live web \(AI news\)/);
+    const liveWeb = await rowOf(/Live web search/);
     expect(within(liveWeb).getByText(/Web credits today/)).toHaveTextContent(
       'Web credits today: 312 of 1,000 (all visitors)',
     );
@@ -261,7 +261,7 @@ describe('Feature: the sources page', () => {
         ),
     });
     renderApp('/sources');
-    const again = await rowOf(/Live web \(AI news\)/);
+    const again = await rowOf(/Live web search/);
     expect(within(again).getByText(/Web credits today/)).toHaveTextContent(
       'Web credits today: 312 (no daily cap)',
     );
@@ -273,7 +273,7 @@ describe('Feature: the sources page', () => {
         HEALTH_SOURCES.map((s) => (s.id === 'live-web' ? { ...s, webCredits: null } : s)),
     });
     renderApp('/sources');
-    const liveWeb = await rowOf(/Live web \(AI news\)/);
+    const liveWeb = await rowOf(/Live web search/);
     expect(within(liveWeb).getByText(/Web credits today/)).toHaveTextContent(
       'Not available right now',
     );

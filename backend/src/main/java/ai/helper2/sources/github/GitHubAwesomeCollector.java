@@ -159,7 +159,7 @@ public class GitHubAwesomeCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "GitHub awesome lists (AI)",
+            "GitHub Awesome lists",
             "Awesome",
             true,
             SourceMode.INDEXED,

@@ -116,8 +116,8 @@ public class AiDeadlinesCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "AI conference dates (huggingface/ai-deadlines)",
-            "Deadlines",
+            "AI conference deadlines",
+            "Conferences",
             true,
             SourceMode.INDEXED,
             URI.create("https://github.com/huggingface/ai-deadlines"),

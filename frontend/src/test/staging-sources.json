@@ -101,7 +101,7 @@
   },
   {
     "id": "live-web",
-    "name": "Live web (AI news)",
+    "name": "Live web search",
     "shortName": "Web",
     "external": true,
     "mode": "LIVE",
@@ -121,7 +121,7 @@
   },
   {
     "id": "curated",
-    "name": "Helper2 curated list",
+    "name": "Hand-picked list",
     "shortName": "Curated",
     "external": false,
     "mode": "CURATED",
@@ -141,7 +141,7 @@
   },
   {
     "id": "helper2-index",
-    "name": "Helper2 index",
+    "name": "Helper2.ai catalog",
     "shortName": "Index",
     "external": false,
     "mode": "INDEXED",
@@ -161,7 +161,7 @@
   },
   {
     "id": "helper2-semantic",
-    "name": "Helper2 index (by meaning)",
+    "name": "Helper2.ai catalog, by meaning",
     "shortName": "Meaning",
     "external": false,
     "mode": "INDEXED",
@@ -201,8 +201,8 @@
   },
   {
     "id": "hf-trending",
-    "name": "Hugging Face trending models",
-    "shortName": "HF trend",
+    "name": "Hugging Face trending",
+    "shortName": "HF trending",
     "external": true,
     "mode": "INDEXED",
     "enabled": true,
@@ -221,8 +221,8 @@
   },
   {
     "id": "live-web-scout",
-    "name": "Live web scout (AI news)",
-    "shortName": "Web scout",
+    "name": "AI news",
+    "shortName": "News",
     "external": true,
     "mode": "INDEXED",
     "enabled": true,
@@ -241,7 +241,7 @@
   },
   {
     "id": "github-awesome",
-    "name": "GitHub awesome lists (AI)",
+    "name": "GitHub Awesome lists",
     "shortName": "Awesome",
     "external": true,
     "mode": "INDEXED",
@@ -261,8 +261,8 @@
   },
   {
     "id": "hf-provider-orgs",
-    "name": "Hugging Face provider organisations",
-    "shortName": "HF orgs",
+    "name": "Hugging Face model makers",
+    "shortName": "HF makers",
     "external": true,
     "mode": "INDEXED",
     "enabled": true,
@@ -281,8 +281,8 @@
   },
   {
     "id": "ai-deadlines",
-    "name": "AI conference dates (huggingface/ai-deadlines)",
-    "shortName": "Deadlines",
+    "name": "AI conference deadlines",
+    "shortName": "Conferences",
     "external": true,
     "mode": "INDEXED",
     "enabled": true,
@@ -301,7 +301,7 @@
   },
   {
     "id": "course-scout",
-    "name": "Course discovery (sent to review)",
+    "name": "Courses and certifications",
     "shortName": "Courses",
     "external": true,
     "mode": "INDEXED",
