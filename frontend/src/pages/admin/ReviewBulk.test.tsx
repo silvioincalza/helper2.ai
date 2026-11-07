@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReviewBulkResult, ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 
 const item = (n: number, over: Partial<ReviewItem> = {}): ReviewItem => ({
   id: `66666666-6666-5666-8666-66666666666${n}`,
@@ -50,7 +50,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
       }),
       'GET /admin/review-items/*': () => makeReviewEvidence(item(1)),
     });
-    renderApp('/admin/review?status=ACCEPTED');
+    renderAdmin('/admin/review?status=ACCEPTED');
     await screen.findByRole('region', { name: 'Item 1' });
     expect(screen.getAllByRole('checkbox')).toHaveLength(1);
     expect(screen.queryByRole('group', { name: 'Bulk decision' })).not.toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
 
   it('Scenario: Accept asks first, repeats the count by kind, and Cancel leaves everything as it was', async () => {
     const m = queue();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(box(2));
@@ -87,7 +87,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
 
   it('Scenario: confirmed, each item is decided; the one refused stays picked and the line says why', async () => {
     const m = queue({ [item(3).id]: 'NOT_ALLOWED' });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(box(2));
@@ -110,7 +110,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
 
   it('Scenario: several reasons are counted', async () => {
     queue({ [item(1).id]: 'NOT_OPEN', [item(3).id]: 'NOT_ALLOWED' });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(box(2));
@@ -126,7 +126,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
 
   it('Scenario: Reject with a note decides every kind; when all are done the bar goes', async () => {
     const m = queue();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(box(3));
@@ -152,7 +152,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
       'GET /admin/review-items/*': () => makeReviewEvidence(item(1)),
       'POST /admin/review-items/resolutions': () => problem(500, 'Server error'),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(within(bar()).getByRole('button', { name: 'Reject' }));
@@ -174,7 +174,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
         return problem(500, 'Server error');
       },
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(box(2));
@@ -193,7 +193,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
 
   it('Scenario: a key typed on the box of another row acts on that row, not on the selected one', async () => {
     const m = queue();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     act(() => box(2).focus());
     await userEvent.keyboard('x');
@@ -207,7 +207,7 @@ describe('Feature: deciding several review items at once (ADR 0045)', () => {
 
   it('Scenario: a new filter clears the picked items; Clear does too', async () => {
     queue();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(box(1));
     await userEvent.click(within(bar()).getByRole('button', { name: 'Clear' }));

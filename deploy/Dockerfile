@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.7
-# JVM image: builds the SPA, embeds it as static resources, runs on a JRE 25.
+# The public app (ADR 0069): builds the web app, embeds frontend/dist as static resources, runs on a JRE 25.
+# The back office has its own image: backoffice.Dockerfile.
 # Build stages run on the build machine's own architecture (fast on Apple silicon); only the
 # runtime stage is the target platform, e.g. --platform linux/amd64 for the cluster.
 # Base images are pinned by the digest of their multi-arch index (ADR 0046): a moved tag cannot change a build.
@@ -16,8 +17,8 @@ FROM --platform=$BUILDPLATFORM docker.io/library/eclipse-temurin:25-jdk@sha256:8
 WORKDIR /src
 COPY api ./api
 COPY backend ./backend
-COPY --from=web /src/frontend/dist ./backend/apps/helper2/src/main/resources/static
-RUN cd backend && ./gradlew --no-daemon :apps:helper2:bootJar -x test && cp apps/helper2/build/libs/*.jar /app.jar
+COPY --from=web /src/frontend/dist ./backend/apps/public/src/main/resources/static
+RUN cd backend && ./gradlew --no-daemon :apps:public:bootJar -x test && cp apps/public/build/libs/*.jar /app.jar
 
 FROM docker.io/library/eclipse-temurin:25-jre@sha256:ecdc0adb37bde1a281c4d245a3cd535004b1fc8322d560f5b09463b248c81df0
 RUN useradd --system --uid 10001 helper2

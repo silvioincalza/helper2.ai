@@ -1,6 +1,7 @@
 import './adminText';
 import { useTranslation } from 'react-i18next';
 import type { ReviewItem } from '@/api/types';
+import { safeHref } from '@/lib/format';
 import { CATEGORY_NOTICES, CategoryNotice } from '@/components/sources/DiscoveryCategories';
 import { CandidateEditForm } from './CandidateEditForm';
 
@@ -86,7 +87,7 @@ function ResourceCandidate({
     <dl className="h2-admin__details h2-admin__draft">
       <dt>{t('admin.review.candidate.page')}</dt>
       <dd>
-        <a href={candidate.url} target="_blank" rel="noopener noreferrer nofollow">
+        <a href={safeHref(candidate.url)} target="_blank" rel="noopener noreferrer nofollow">
           {candidate.title}
         </a>{' '}
         <span className="muted">{candidate.url}</span>

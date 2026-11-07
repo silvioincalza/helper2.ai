@@ -58,8 +58,8 @@ AdSense brings three constraints:
    `/index.html` (the shell without nonces) redirects to `/`. The policy:
    `script-src 'nonce-…' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`, `object-src 'none'`,
    `base-uri 'none'`, frames, images and requests to any https origin, `frame-ancestors 'none'`. Scripts our bundle
-   adds (Google's tags, GA4, EthicalAds) run through `'strict-dynamic'`. The admin port keeps the strict policy of
-   0024.
+   adds (Google's tags, GA4, EthicalAds) run through `'strict-dynamic'`. The back office is another app and keeps its
+   own fixed strict policy (0024, [0069](../operations/0069-three-deployables.md)).
 7. **The footer makes no claim about ads.** The Privacy page says which ads, where and when.
 
 ## Threat model (STRIDE)
@@ -87,8 +87,8 @@ Google Analytics, EthicalAds). They run in our origin with full access to the pa
 - If the consent tool is blocked, Europe and the rest are the same: no analytics.
 - Which TCF purposes GA4 needs is our reading (1 and 8), not a Google statement: on the lawyer list.
 - `no-store` turns off the browser's back/forward cache for the shell while AdSense is on.
-- The site check tag is also on the admin host's pages: it is public (`ads.txt` shows the same ID), so it is not
-  filtered there.
+- The admin web app is its own build without the site check tag or any Google script
+  ([0069](../operations/0069-three-deployables.md)).
 
 ## Alternatives considered
 - **A nonce CSP on resource pages only** — does not work in a single-page app: the CSP of the first page stays.
@@ -104,7 +104,7 @@ Google Analytics, EthicalAds). They run in our origin with full access to the pa
   `adsTxt()`, `config/MonetisationProperties.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/CspNonce.java`; `identity/config/ContentSecurityPolicy.java` (`ADSENSE`),
   `CspHeaderWriter.java`; `identity/web/MeController.java` (`Me.monetisation`).
-- `backend/apps/helper2/src/main/java/ai/helper2/pages/internal/PageHtml.java` (the tag, the nonce), `pages/web/PageRoutes.java`,
+- `backend/apps/public/src/main/java/ai/helper2/pages/internal/PageHtml.java` (the tag, the nonce), `pages/web/PageRoutes.java`,
   `pages/web/CrawlerFiles.java` (`/ads.txt`).
 - `frontend/src/lib/googleConsent.ts`, `components/AnalyticsConsent.tsx`, `components/AdSenseSlot.tsx`,
   `pages/ResourcePage.tsx`, `components/Layout.tsx` (footer).

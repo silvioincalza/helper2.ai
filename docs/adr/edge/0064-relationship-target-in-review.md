@@ -71,7 +71,7 @@ catalog at all: a new model the article is about.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/RelationshipTargets.java`, `CuratedTypes.java`,
   `ResourceStore.java` (`atUrl`), `CatalogConfiguration.java` (the curated source's types).
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml`
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml`
   (`RelationshipTargetChange`, `NewResource`, audit actions).
 - `backend/libs/schema/src/main/resources/db/migration/V19__relationship_target.sql`.
 - `frontend/src/pages/admin/RelationshipTarget.tsx`, `ReviewEvidence.tsx`.

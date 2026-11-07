@@ -1,9 +1,9 @@
 # Sequence: a news item about a new model is enriched; the model names the subject, the validator keeps the article's
 # own fields and sends the unknown subject to review.
-# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt,
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java (load),
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java (propose, enrich-v5),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt,
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java (load),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java (propose, enrich-v5),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt,
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (save).
 # Render: cd docs/diagrams && d2 fmt sequence-0062-writing-about-a-resource.d2 && d2 sequence-0062-writing-about-a-resource.d2 sequence-0062-writing-about-a-resource.svg
 

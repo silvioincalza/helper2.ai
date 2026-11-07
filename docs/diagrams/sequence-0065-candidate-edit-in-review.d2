@@ -1,12 +1,12 @@
 # Sequence: a news post a discovery category proposed as a PRODUCT is edited to NEWS, then accepted.
 # Source of truth: frontend/src/pages/admin/CandidateEditForm.tsx,
-#   backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java (editCandidate),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt,
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateItems.java,
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
-#   backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ResolveReview.java (lock, then index),
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java (editCandidate),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateItems.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java (lock, then index),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java (lock),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
 # Render: cd docs/diagrams && d2 fmt sequence-0065-candidate-edit-in-review.d2 && d2 sequence-0065-candidate-edit-in-review.d2 sequence-0065-candidate-edit-in-review.svg
 
 ...@style

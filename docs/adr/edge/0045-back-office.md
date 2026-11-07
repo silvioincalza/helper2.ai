@@ -1,6 +1,6 @@
 # 0045 — Back office: a thin admin module, one page per part, an overview of what needs a person
 
-**Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0017](../guide/0017-guide-cost-guard.md), [0018](../scout/0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0035](0035-admin-host.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md) **Amended by:** [0064](0064-relationship-target-in-review.md) (the target of a relationship candidate), [0065](0065-candidate-edit-in-review.md) (editing a resource candidate), [0066](0066-curated-field.md) (setting or dropping a resource's field).
+**Status.** Accepted. **Builds on:** [0002](../foundation/0002-modular-monolith-hexagonal.md), [0017](../guide/0017-guide-cost-guard.md), [0018](../scout/0018-scout-runner.md), [0023](0023-identity-and-admin.md), [0035](0035-admin-host.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0038](../guide/0038-ai-content-marking.md) **Amended by:** [0069](../operations/0069-three-deployables.md) (the back office is its own app and web app), [0064](0064-relationship-target-in-review.md) (the target of a relationship candidate), [0065](0065-candidate-edit-in-review.md) (editing a resource candidate), [0066](0066-curated-field.md) (setting or dropping a resource's field).
 
 ## Context
 The back office was one page: the review queue and the Scout runs. To see if something was wrong I had to scroll and
@@ -45,7 +45,7 @@ them without each module growing an admin corner.
    gives up after 5 seconds. The queue is admin-only and shows catalog data, no personal data; a cursor
    that is not one of ours (wrong shape, a time outside what the database holds) is a 400.
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
-   (ADMIN, admin port) answers what an item is about. A review item already links to its enrichment run and, for a
+   (ADMIN, back office) answers what an item is about. A review item already links to its enrichment run and, for a
    relationship candidate, to its relationship (`enrichment_run_id`, `relationship_id`). The view follows that link;
    it never parses `details`, which stays text. An item from a run: the run (model, prompt version, outcome, when it
    finished, the README or model card of its gap round), the run's validation errors, and the fields the run stored,
@@ -66,7 +66,7 @@ them without each module growing an admin corner.
    (`aria-keyshortcuts`). A held key does not repeat: one press is one decision. Decisions stay final: there is no
    undo.
 8. **Acting on the queue: requeue, skip, move to the top.** On `/admin/enrichment` each row has its actions, sent as
-   `POST /api/v1/admin/enrichment-queue/{id}/requeue|skip|prioritise` (admin port, ADMIN, CSRF). An action changes the
+   `POST /api/v1/admin/enrichment-queue/{id}/requeue|skip|prioritise` (back office, ADMIN, CSRF). An action changes the
    order only. It never calls the model, and the daily enrichment limit stays the same.
    - **Move to top** puts a waiting resource before every other part, the accepted products included. It holds until
      the resource's next run starts. At most 50 wait at the top: with no limit, the order would be whatever I clicked
@@ -128,8 +128,9 @@ them without each module growing an admin corner.
 ## Consequences
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
 - The public JavaScript does not carry the back office: its pages, its API calls (`api/admin.ts`) and its copy
-  (`en.admin.json`) load only when an admin page opens. `api/adminBundle.test.ts` keeps the shared client and the
-  public translations free of them. The server refuses every admin call without ADMIN anyway.
+  (`en.admin.json`) are only in the admin web app, and the public app has no admin route at all.
+  `api/adminBundle.test.ts` keeps the shared client and the public translations free of them. The back office refuses
+  every admin call without ADMIN anyway.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.
 - A budget that is never built (no model configured), or one that counts only in memory, is not listed.
@@ -177,12 +178,12 @@ them without each module growing an admin corner.
 - An undo for bulk decisions — a decision can publish or verify at once; an undo would have to reverse that. Decisions
   stay final, and the confirm dialog says so.
 - Settings from Spring's `Environment` or `/actuator/env` — every key with no work, but a deny-list: a new secret
-  shows until someone masks it, and the actuator lives on the management port, not the admin port.
+  shows until someone masks it, and the actuator lives on the management port, not on the admin host.
 - The back office reads every module's config record — fewer types, but the records are internal to their module
   (Spring Modulith), like for the policy endpoint.
 
 ## Code
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `usecase/GetOverview.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java`,
   `usecase/ResolveReview.java`, `ExampleDrafts.java` and `internal/JsonExampleDrafts.java` (the drafted example in a
@@ -195,7 +196,7 @@ them without each module growing an admin corner.
 - `backend/libs/schema/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
-- Queue actions: `V14__enrichment_queue_control.sql`; `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
+- Queue actions: `V14__enrichment_queue_control.sql`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
   (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
@@ -204,9 +205,9 @@ them without each module growing an admin corner.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
 - `backend/libs/examples/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/examples/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
   `catalog/ReviewEvidence.java`, `catalog/internal/JdbcReviewEvidence.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
   `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
   `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`,

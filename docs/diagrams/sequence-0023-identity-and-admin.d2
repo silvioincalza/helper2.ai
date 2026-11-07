@@ -1,7 +1,7 @@
 # Sequence: the owner signs in on /admin with GitHub, gets ADMIN by numeric id, local bookmarks move to the account,
 # a review decision is audited, and a signed-in user deletes their account.
 # Only possible where profile oauth-github is active (off unless set for the environment).
-# Source of truth: backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
 #   backend/libs/identity/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
 #   backend/libs/identity/src/main/java/ai/helper2/identity/Users.java, Bookmarks.java, AuditLog.java (ports),
 #   identity/internal/JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
@@ -19,7 +19,7 @@ shape: sequence_diagram
 
 owner: Owner {class: person}
 spa: "admin pages /\nMeContext" {class: app}
-sec: "Spring Security\n(SecurityConfiguration)" {class: app}
+sec: "Spring Security\n(PublicSecurityConfiguration)" {class: app}
 gh: GitHub {class: ext}
 cu: CurrentUser {class: app}
 users: Users {class: app}

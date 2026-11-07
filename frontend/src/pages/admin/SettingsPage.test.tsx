@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { ADMIN } from '@/test/fixtures';
 import { axeViolations } from '@/test/a11y';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 import type { EffectiveConfig, RuntimeSettingState, RuntimeSettings } from '@/api/types';
 
 const CONFIG: EffectiveConfig = {
@@ -144,7 +144,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(GUIDE, CREDITS),
     });
-    const { container } = renderApp('/admin/settings');
+    const { container } = renderAdmin('/admin/settings');
 
     const models = await screen.findByRole('table', { name: 'Models' });
     expect(
@@ -190,7 +190,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
       'GET /admin/config': () => (fail ? problem(503, 'Service Unavailable') : CONFIG),
       'GET /admin/runtime-settings': () => runtime(GUIDE),
     });
-    renderApp('/admin/settings');
+    renderAdmin('/admin/settings');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the settings.');
     fail = false;
@@ -210,7 +210,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(GUIDE, CREDITS),
     });
-    renderApp('/admin/settings');
+    renderAdmin('/admin/settings');
     await screen.findByRole('table', { name: 'Spending limits you can change' });
     const guide = limitRow(GUIDE_LABEL);
     expect(within(guide).getAllByText('600 calls a day'), 'now and the default').toHaveLength(2);
@@ -240,7 +240,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
         return state;
       },
     });
-    renderApp('/admin/settings');
+    renderAdmin('/admin/settings');
     await userEvent.click(await screen.findByRole('button', { name: `Change: ${GUIDE_LABEL}` }));
     const input = screen.getByRole('spinbutton', { name: `New value for ${GUIDE_LABEL}` });
     await userEvent.clear(input);
@@ -272,7 +272,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
       'GET /admin/config': () => CONFIG,
       'GET /admin/runtime-settings': () => runtime(GUIDE),
     });
-    renderApp('/admin/settings');
+    renderAdmin('/admin/settings');
     await userEvent.click(await screen.findByRole('button', { name: `Change: ${GUIDE_LABEL}` }));
     const input = screen.getByRole('spinbutton', { name: `New value for ${GUIDE_LABEL}` });
     await userEvent.clear(input);
@@ -297,7 +297,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
           : runtime({ ...GUIDE, value: 10, overridden: true, version: 9 }),
       'PUT /admin/runtime-settings/guide.dailyModelCalls': versionConflict,
     });
-    renderApp('/admin/settings');
+    renderAdmin('/admin/settings');
     await userEvent.click(await screen.findByRole('button', { name: `Change: ${GUIDE_LABEL}` }));
     await userEvent.click(screen.getByRole('button', { name: 'Review changes' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirm change' }));
@@ -322,7 +322,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
         overridden: false,
       }),
     });
-    const { container } = renderApp('/admin/settings');
+    const { container } = renderAdmin('/admin/settings');
     await userEvent.click(await screen.findByText('History (2)'));
     expect(screen.getByText(/120 credits a day · by 12345/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /^Restore 80 credits a day from/ }));

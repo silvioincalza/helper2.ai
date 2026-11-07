@@ -15,11 +15,13 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
    calls stay blocking and simple; there is no reactive stack.
 3. **Frontend.** A single-page application (SPA): React 19.3.1, React Router 8.5.0, i18next, built with
    Vite 8.3.5 and TypeScript 6.0.3. Node.js 26 in the build image (`engines: >=24`).
-4. **One artifact.** `deploy/Dockerfile` has three stages: Node builds the SPA, the JDK stage copies it into
-   `backend/apps/helper2/src/main/resources/static` and runs `bootJar`, the runtime stage is `eclipse-temurin:25-jre`
-   as user 10001. The SPA and `/api/v1` come from the same origin, so there is no Cross-Origin Resource
+4. **One artifact per app.** `deploy/Dockerfile` has three stages: Node builds the SPA, the JDK stage copies it into
+   `backend/apps/public/src/main/resources/static` and runs `:apps:public:bootJar`, the runtime stage is
+   `eclipse-temurin:25-jre` as user 10001. `deploy/backoffice.Dockerfile` does the same for the back office, with
+   the admin web app (`dist-admin`) in `backend/apps/backoffice/src/main/resources/static/admin`
+   ([0069](../operations/0069-three-deployables.md)). The SPA and `/api/v1` come from the same origin, so there is no Cross-Origin Resource
    Sharing (CORS) setup.
-5. **SPA serving.** `platform.SinglePageApp` is the only static handler (`spring.web.resources.add-mappings: false`):
+5. **SPA serving.** In the public app, `platform.SinglePageApp` is the only static handler (`spring.web.resources.add-mappings: false`):
    `/assets/**` is cached for 365 days as immutable; any other path without a file extension, outside
    `/api`, `/oauth2`, `/login`, `/logout` and `/actuator`, returns `index.html` with `no-cache`.
 6. **Java Virtual Machine (JVM) flags.** `-XX:MaxRAMPercentage=60` (heap is 60% of the container limit) and
@@ -45,8 +47,8 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 - `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts`, `backend/*/*/build.gradle.kts` — projects, versions, toolchain, plugins.
 - `frontend/package.json`, `frontend/vite.config.ts` — frontend versions, dev proxy, version constant.
 - `deploy/Dockerfile` — three-stage build, Java Runtime Environment (JRE), JVM flags.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA routes and caching.
-- `backend/apps/helper2/src/main/resources/application.yaml` — virtual threads, static mappings off.
+- `backend/apps/public/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA routes and caching.
+- `backend/apps/public/src/main/resources/application.yaml` — virtual threads, static mappings off.
 - `compose.yaml` — local Postgres and Redis.
 
 ## Diagrams

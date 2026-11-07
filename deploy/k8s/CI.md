@@ -3,11 +3,11 @@
 | Workflow | Trigger | Runner | Does |
 |---|---|---|---|
 | [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` | GitHub-hosted | frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`). PRs only: app image build (no push), Postgres image build + tag-bump check when `deploy/postgres` changes, SBOM (Syft) and Grype scan of each built image to code scanning, report-only ([ADR 0046](../../docs/adr/operations/0046-supply-chain.md)), D2 diagrams re-rendered with d2 v0.9.0 and diffed |
-| [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | CI → `make postgres-image` + `make image` (each only if its tag is not in the registry yet) → `make sbom` (artifact `sbom`, 90 days) → staging. Never prod on its own |
+| [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | CI → `make postgres-image` + `make image` (the public and the back office image, each only if its tag is not in the registry yet) → `make sbom` + `make backoffice-sbom` (artifacts `sbom`, `sbom-backoffice`, 90 days) → Grype on each → staging. Never prod on its own |
 | [`deploy.yml`](../../.github/workflows/deploy.yml) | called by `cd` and `release` only | self-hosted | `make diff`, `make deploy`, `make status` for one env |
 | [`guide-eval.yml`](../../.github/workflows/guide-eval.yml) | nightly 01:41 UTC, manual | GitHub-hosted | `scripts/eval-guide.mjs` (fails below 10 of 20 passed) and `--adversarial` (fails on any case) against staging, never prod; reports kept 30 days as an artifact. No secret. Not called by CI or CD: a failure never blocks a deploy ([ADR 0030](../../docs/adr/quality/0030-guide-evaluation.md)) |
 | [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0029); publishes the GitHub release → waits for the commit's CD run to pass staging → attaches that run's SBOM to the release; **approval** → prod, the tag's commit |
-| [`image-scan.yml`](../../.github/workflows/image-scan.yml) | Monday 05:17 UTC, manual | GitHub-hosted | Grype with a fresh database against the SBOM of the latest release; code scanning and job summary, report-only ([ADR 0046](../../docs/adr/operations/0046-supply-chain.md)) |
+| [`image-scan.yml`](../../.github/workflows/image-scan.yml) | Monday 05:17 UTC, manual | GitHub-hosted | Grype with a fresh database against the SBOMs of the latest release (public app and back office); code scanning and job summary, report-only ([ADR 0046](../../docs/adr/operations/0046-supply-chain.md)) |
 
 Third-party actions are pinned to commit SHAs with the version as a comment;
 [Dependabot](../../.github/dependabot.yml) bumps them weekly, along with Gradle, npm and the Dockerfiles' base images.
@@ -73,7 +73,7 @@ change, rerun `make ENV=<env> credentials`; the next deploy restarts the app wit
 
 **Releases** — tag the release commit on `main`: `git tag -a v1.0.3 -m "<notes>" <commit>; git push origin v1.0.3`.
 The push publishes the GitHub release and starts the prod deploy of `1.0.3`, which waits for the approval; after it,
-the deploy job adds the tag `1.0.3` to the commit's image in Harbor (same digest) and deploys it.
+the deploy job adds the tag `1.0.3` to the commit's two images in Harbor (same digests) and deploys them.
 
 **Fix releases from a release branch** (ADR 0048) — branch from the release tag (`git switch -c release/1.0 v1.0.3`,
 push it), merge the fix into it by pull request, then tag the next patch on it (`v1.0.4` when `v1.0.3` is the release

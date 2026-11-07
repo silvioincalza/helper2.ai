@@ -3,11 +3,11 @@
 # → global daily budget (taken before each model attempt) → an answer with no AI pick, a failed or timed-out
 #   question, or a shared answer gives its question back (AskGuide.settle, in one finally).
 # Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, ClientKey.java,
-#   backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideLimits.java (guide bulkhead), GuideStreamController.java (keep-alive),
-#   backend/apps/helper2/src/main/resources/application.yaml (resilience4j.bulkhead.instances.guide, llm-chat circuit),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
-#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, GuideConfiguration.java.
+#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java (guide bulkhead), GuideStreamController.java (keep-alive),
+#   backend/apps/public/src/main/resources/application.yaml (resilience4j.bulkhead.instances.guide, llm-chat circuit),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, GuideConfiguration.java.
 #   Normalised keys and the reuse of a similar question's answer: flow-0041.
 #   The searches of a question take the asker's daily web searches (flow-0037), not drawn here.
 # Render: cd docs/diagrams && d2 fmt flow-0017-guide-cost-guard.d2 && d2 flow-0017-guide-cost-guard.d2 flow-0017-guide-cost-guard.svg

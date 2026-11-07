@@ -42,11 +42,11 @@ language; a model can, but its answer is a judgment, not a proof.
 - One call per pick — more calls and latency for the same result.
 
 ## Code
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/ReasonCheckStep.kt` — `verdicts`; `guide/Guide.kt` — `ReasonClaim`, `ReasonCheck`.
-- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — `verifyReasons`.
-- `backend/apps/helper2/src/main/resources/prompts/guide/verify-reasons.txt` — the checker's instructions.
-- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `checked` event.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `GuideAnswerCache.isCacheable`.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/ReasonCheckStep.kt` — `verdicts`; `guide/Guide.kt` — `ReasonClaim`, `ReasonCheck`.
+- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — `verifyReasons`.
+- `backend/apps/public/src/main/resources/prompts/guide/verify-reasons.txt` — the checker's instructions.
+- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `checked` event.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `GuideAnswerCache.isCacheable`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0016-guide-reason-check.svg) · [sequence](../../diagrams/sequence-0016-guide-reason-check.svg)

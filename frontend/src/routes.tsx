@@ -61,21 +61,6 @@ export const routes: RouteObject[] = [
           { path: 'sources', lazy: page(() => import('@/pages/SourcesPage')) },
           { path: 'account', lazy: page(() => import('@/pages/AccountPage')) },
           { path: 'signin', lazy: page(() => import('@/pages/SignInPage')) },
-          {
-            // The back office (ADR 0023, ADR 0035): one guard, a part per route. Loaded on demand, so a visitor's
-            // bundle never carries it.
-            path: 'admin',
-            lazy: page(() => import('@/pages/admin/AdminLayout')),
-            children: [
-              { index: true, lazy: page(() => import('@/pages/admin/AdminOverview')) },
-              { path: 'review', lazy: page(() => import('@/pages/admin/ReviewQueuePage')) },
-              { path: 'runs', lazy: page(() => import('@/pages/admin/ScoutRunsPage')) },
-              { path: 'enrichment', lazy: page(() => import('@/pages/admin/EnrichmentQueuePage')) },
-              { path: 'examples', lazy: page(() => import('@/pages/admin/ExamplesPage')) },
-              { path: 'audit', lazy: page(() => import('@/pages/admin/AuditPage')) },
-              { path: 'settings', lazy: page(() => import('@/pages/admin/SettingsPage')) },
-            ],
-          },
           // The text pages are prose read once in a while: on demand too, so the first download stays small.
           { path: 'mission', lazy: textPage(() => import('@/pages/MissionPage')) },
           { path: 'privacy', lazy: textPage(() => import('@/pages/PrivacyPage')) },

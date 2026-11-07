@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { decide } from '@/lib/googleConsent';
 import { axeViolations } from '@/test/a11y';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp, settle } from '@/test/render';
+import { renderAdmin, renderApp, settle } from '@/test/render';
 import { CONSENT_KEY } from '@/lib/consent';
 import { ANON, makeDetail, makeSearch } from '@/test/fixtures';
 
@@ -161,7 +161,7 @@ describe('monetisation (ADR 0057)', () => {
       JSON.stringify({ v: 1, analytics: true, at: '2026-11-05T00:00:00Z' }),
     );
     mockApi({ 'GET /me': me({ ga4MeasurementId: 'G-TEST1234' }) });
-    renderApp('/admin');
+    renderAdmin('/admin');
     await settle();
     expect(banner()).not.toBeInTheDocument();
     expect(document.getElementById('h2-ga4')).toBeNull();

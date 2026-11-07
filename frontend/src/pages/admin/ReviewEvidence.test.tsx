@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 
 const item = (n: number, over: Partial<ReviewItem> = {}): ReviewItem => ({
   id: `66666666-6666-5666-8666-66666666666${n}`,
@@ -37,7 +37,7 @@ function threeItems(extra: Parameters<typeof mockApi>[0] = {}) {
 describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
   it('Scenario: the first item is selected and shows its run, the refused values and the conflict first', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const detail = await screen.findByRole('region', { name: 'Item 1' });
     expect(rowButton('Item 1')).toHaveAttribute('aria-current', 'true');
     const evidence = await within(detail).findByRole('region', { name: 'Evidence' });
@@ -59,7 +59,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
 
   it('Scenario: values a model wrote are labelled and marked as AI; quotes are not', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const evidence = await screen.findByRole('region', { name: 'Evidence' });
     const value = await within(evidence).findByText('FREE');
     expect(value).toHaveAttribute('data-ai-generated', 'true');
@@ -72,7 +72,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
 
   it('Scenario: the refused values quote the model, so they say so and are marked as AI', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const evidence = await screen.findByRole('region', { name: 'Evidence' });
     const error = await within(evidence).findByText('pricing: the quotes disagree');
     expect(error.closest('ul')).toHaveAttribute('data-ai-generated', 'true');
@@ -84,7 +84,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
 
   it('Scenario: a source link opens only for http(s), safely; any other address stays text', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const evidence = await screen.findByRole('region', { name: 'Evidence' });
     const link = await within(evidence).findByRole('link', { name: 'github' });
     expect(link).toHaveAttribute('href', 'https://acme.example/pricing');
@@ -112,7 +112,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
           },
         }),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const evidence = await screen.findByRole('region', { name: 'Evidence' });
     const kind = await within(evidence).findByText('Integrates with');
     expect(kind).toHaveAttribute('data-ai-generated', 'true');
@@ -140,7 +140,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
             );
         }),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     expect(await screen.findByText('Loading the evidence…')).toBeInTheDocument();
     // The request reaches the server a few ticks after the panel shows it loads.
     await waitFor(() => expect(answer).toBeDefined());
@@ -161,7 +161,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
       'GET /admin/review-items/*': () =>
         fail ? problem(500, 'Server error') : makeReviewEvidence(one),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Could not load the evidence.');
     fail = false;
@@ -171,7 +171,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
 
   it('Scenario: clicking a row selects it and shows its evidence', async () => {
     const m = threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(rowButton('Item 2'));
     expect(await screen.findByRole('region', { name: 'Item 2' })).toBeInTheDocument();
@@ -184,7 +184,7 @@ describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
 describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the queue)', () => {
   it('Scenario: j and k move the selection and the focus', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     rowButton('Item 1').focus();
     await userEvent.keyboard('j');
@@ -208,7 +208,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
         return { ...item(2), status: 'ACCEPTED' };
       },
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     await userEvent.click(rowButton('Item 2'));
     await userEvent.keyboard('a');
@@ -224,7 +224,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
     const m = threeItems({
       'PUT /admin/review-items/*': () => ({ ...item(1), status: 'REJECTED' }),
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     rowButton('Item 1').focus();
     await userEvent.keyboard('n');
@@ -247,7 +247,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
 
   it('Scenario: a held a decides nothing', async () => {
     const m = threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     rowButton('Item 1').focus();
     fireEvent.keyDown(rowButton('Item 1'), { key: 'a', repeat: true });
@@ -258,7 +258,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
 
   it('Scenario: keys outside the queue do nothing', async () => {
     const m = threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     screen.getByRole('combobox', { name: 'Status' }).focus();
     await userEvent.keyboard('j');
@@ -270,7 +270,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
 
   it('Scenario: ? lists the keys in a dialog; Escape closes it and focus goes back', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     rowButton('Item 1').focus();
     await userEvent.keyboard('?');
@@ -284,7 +284,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
 
   it('Scenario: every control names its key', async () => {
     threeItems();
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     expect(screen.getByRole('button', { name: /^Accept/ })).toHaveAttribute(
       'aria-keyshortcuts',
@@ -316,7 +316,7 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
         return { ...item(1), status: 'ACCEPTED' };
       },
     });
-    renderApp('/admin/review');
+    renderAdmin('/admin/review');
     await screen.findByRole('region', { name: 'Item 1' });
     rowButton('Item 1').focus();
     await userEvent.keyboard('a');

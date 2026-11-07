@@ -55,17 +55,24 @@ jobs:
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s postgres-image ENGINE="$ENGINE"
-      # Built from `git archive` of the commit (Makefile), pushed to Harbor as TAG.
+      # Both apps' images (public, back office; ADR 0069), built from `git archive` of the commit (Makefile), pushed
+      # to Harbor as TAG.
       - env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s image TAG="${GITHUB_SHA::12}" ENGINE="$ENGINE"
-      # SBOM of the pushed image (ADR 0046), read from Harbor; release.yml attaches it to the GitHub release.
+      # SBOM of each pushed image (ADR 0046), read from Harbor; release.yml attaches them to the GitHub release.
       - uses: ./.github/actions/install-scanners
       - run: make -C deploy/k8s sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom.cdx.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom
           path: sbom.cdx.json
+          retention-days: 90
+      - run: make -C deploy/k8s backoffice-sbom TAG="${GITHUB_SHA::12}" SBOM="$GITHUB_WORKSPACE/sbom-backoffice.cdx.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-backoffice
+          path: sbom-backoffice.cdx.json
           retention-days: 90
       # The Postgres image of postgres.image.tag, new or not: the daily scan below sees new CVEs in it too.
       - run: make -C deploy/k8s postgres-sbom SBOM="$GITHUB_WORKSPACE/sbom-postgres.cdx.json"
@@ -98,12 +105,13 @@ jobs:
         run: |
           set -euo pipefail
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom -D sboms
+          gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-backoffice -D sboms
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-postgres -D sboms
       - name: Vulnerability scan (report-only)
         run: |
           set -euo pipefail
-          for image in app postgres; do
-            sbom=sboms/sbom.cdx.json; [[ $image == postgres ]] && sbom=sboms/sbom-postgres.cdx.json
+          for image in app backoffice postgres; do
+            sbom=sboms/sbom-$image.cdx.json; [[ $image == app ]] && sbom=sboms/sbom.cdx.json
             echo "== $image"
             grype "sbom:$sbom" --only-fixed -o table -o "sarif=grype-$image.sarif"
           done
@@ -112,6 +120,13 @@ jobs:
         with:
           sarif: grype-app.sarif
           category: image/app
+          ref: ${{ github.ref }}
+          sha: ${{ github.sha }}
+      - uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-backoffice.sarif
+          category: image/backoffice
           ref: ${{ github.ref }}
           sha: ${{ github.sha }}
       - uses: ./.github/actions/upload-sarif

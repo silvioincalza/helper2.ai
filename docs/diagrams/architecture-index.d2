@@ -1,12 +1,14 @@
 # Architecture, view 4 of 6: how the index grows. Scout runs collectors, enriches with evidence, and the catalog stores and embeds.
-# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
+# All of it runs in the back office app (ADR 0069); the catalog is a library both apps use, and the embedding indexer's
+#   schedule is backend/apps/backoffice/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexerSchedule.java.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
 #   scout/GapRound.kt (gap round ports, ADR 0043), scout/OfficialPages.kt (evidence ladder ports, ADR 0056),
-#   backend/apps/helper2/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java (collectors, ReadmeEvidence, TavilyExtract),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/config/CollectorsConfiguration.java (collectors, ReadmeEvidence, TavilyExtract),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults, SourceOutcomes: the Scout's way in),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
 #   catalog/usecase/IndexAwesomeLists.java, catalog/internal/AwesomeListIndex.java (ADR 0055),
 #   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java,
 #   admin/ExampleDrafts.java, admin/internal/JsonExampleDrafts.java, admin/config/AdminUseCaseConfiguration.java.

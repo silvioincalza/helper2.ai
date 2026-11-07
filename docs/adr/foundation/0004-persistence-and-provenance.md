@@ -118,7 +118,7 @@ the search down.
   `ReviewDecisions.java` — enrichment results, user reports and review decisions.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema and seeds.
-- `backend/apps/helper2/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
+- `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,
   `SharedCacheRetention.java`, `SharedCacheConfiguration.java` — the shared caches and their purge.
 - `deploy/k8s/RESET-DATABASE.md` — empty database for an in-place edit of `V1__schema.sql`.

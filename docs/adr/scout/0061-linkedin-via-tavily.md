@@ -112,13 +112,13 @@ page title and in the URL.
   company page is often the first trace of a new product.
 
 ## Code
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/LinkedInCollector.java` — the searches, the path rules, titles and
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/LinkedInCollector.java` — the searches, the path rules, titles and
   excerpts.
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`LinkedIn`), `SourcesConfiguration.java`;
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`LinkedIn`), `SourcesConfiguration.java`;
   the queries in `application.yaml` (`helper2.scout.linkedin`).
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java` — the credits, with the feature
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java` — the credits, with the feature
   `scout-linkedin`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — the type check per finder;
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — the type check per finder;
   `ResourceCandidateJson` reads the finders.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt` — `linkedin-scout` in `FIXED` (titles, retention).
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2LiveWebCreditsHigh`.

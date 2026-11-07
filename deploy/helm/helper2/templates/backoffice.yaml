@@ -1,0 +1,138 @@
+# The back office app (ADR 0069): the admin web app and API, the Scout, the collectors, the enrichment and the
+# catalog jobs. Its own image (deploy/backoffice.Dockerfile), reached only through the Service helper2-admin.
+{{- $bo := .Values.backoffice }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helper2-backoffice
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ required "backoffice.replicas" $bo.replicas }}
+  # One new pod at a time, and an old one goes only once the new one is ready (ADR 0027).
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: helper2-backoffice } }
+  template:
+    metadata:
+      labels: { app: helper2-backoffice }
+      annotations:
+        {{- with .Values.envSecret.revision }}
+        # A new revision of the env Secret (a new app.env) restarts the back office too.
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.redis.auth.enabled .Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" . }}
+        {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: helper2-backoffice } } }
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      {{- $shutdown := .Values.app.shutdown }}
+      terminationGracePeriodSeconds: {{ add (int (required "app.shutdown.preStopSeconds" $shutdown.preStopSeconds)) (int (required "app.shutdown.drainSeconds" $shutdown.drainSeconds)) 5 }}
+      containers:
+        - name: backoffice
+          image: {{ include "helper2.backofficeImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom: [{ secretRef: { name: {{ include "helper2.envSecret" . }} } }]
+          env:
+            - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
+            - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
+            - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
+            - { name: H2_DATABASE_USER, value: helper2 }
+            - { name: H2_REDIS_HOST, value: redis }
+            {{- if .Values.redis.auth.enabled }}
+            - name: H2_REDIS_PASSWORD
+              valueFrom: { {{ include "helper2.redisPasswordFrom" . }} }
+            {{- end }}
+            - { name: H2_BUILD_VERSION, value: {{ include "helper2.backofficeTag" . | quote }} }
+            {{- with $bo.grafanaUrl }}
+            # The metrics dashboard the overview links to for trends (ADR 0045). Empty = no link.
+            - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with $bo.adminBaseUrl }}
+            # The admin host's own origin: the sign-in callback is pinned to it, never built from the request.
+            - { name: H2_ADMIN_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.publicBaseUrl }}
+            # The public site: /resource/... on the admin host redirects there.
+            - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            - { name: H2_SCOUT_ENABLED, value: {{ $bo.scoutEnabled | toString | quote }} }
+            - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "backoffice.scoutInitialDelay" $bo.scoutInitialDelay | quote }} }
+            - { name: H2_SCOUT_CRON, value: {{ required "backoffice.scoutCron" $bo.scoutCron | quote }} }
+            - { name: H2_SCOUT_MAX_ENRICHMENTS, value: {{ $bo.scoutMaxEnrichments | toString | quote }} }
+            {{- /* The site-wide caps, so the back office's settings page states what the public app applies. */}}
+            {{- $limits := .Values.app.dailyLimits }}
+            {{- range $name, $value := dict "H2_LIVE_WEB_DAILY_CREDITS" $limits.webSearchCredits "H2_GUIDE_DAILY_MODEL_CALLS" $limits.guideModelCalls }}
+            {{- if not (kindIs "invalid" $value) }}
+            - { name: {{ $name }}, value: {{ $value | toString | quote }} }
+            {{- end }}
+            {{- end }}
+            - { name: H2_RETENTION_BACKUPS, value: {{ printf "P%dD" (int .Values.backup.retentionDays) | quote }} }
+            - { name: H2_COOKIE_SECURE, value: "true" }
+            # Only the Ingress controller reaches this pod (NetworkPolicy); it sets X-Forwarded-For.
+            - { name: H2_FORWARD_HEADERS_STRATEGY, value: native }
+            - { name: H2_LOG_FORMAT, value: logstash }
+            - { name: H2_ENVIRONMENT, value: {{ required "app.environment" .Values.app.environment | quote }} }
+            - { name: H2_TRACING_EXPORT, value: {{ .Values.app.tracing.export | toString | quote }} }
+            - { name: H2_TRACING_SAMPLING, value: {{ .Values.app.tracing.sampling | toString | quote }} }
+            - { name: H2_OTLP_TRACES_ENDPOINT, value: {{ .Values.app.tracing.endpoint | quote }} }
+            # Actuator on its own port, which no Service routes.
+            - { name: H2_MANAGEMENT_PORT, value: "8081" }
+            - { name: H2_METRICS_PUBLIC, value: "true" }
+          ports:
+            - { containerPort: 8080, name: http }
+            - { containerPort: 8081, name: management }
+          # Startup validates the schema (the public app migrates it) and loads the Lingua models.
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: {{ div (required "app.startupSeconds" .Values.app.startupSeconds) 5 }}
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $shutdown.preStopSeconds }} }
+          resources:
+            {{- toYaml $bo.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+{{- if gt (int $bo.replicas) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: helper2-backoffice
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int $bo.replicas) 1 }}
+  selector: { matchLabels: { app: helper2-backoffice } }
+{{- end }}
+---
+# The back office (ADR 0035, 0069). Route only an in-network host here (an Ingress with a source allow-list, or a
+# VPN): never the public edge.
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper2-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: helper2-backoffice }
+  ports: [{ port: 80, targetPort: http }]

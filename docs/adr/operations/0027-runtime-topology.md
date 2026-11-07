@@ -19,7 +19,9 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    `volumeClaimTemplates`, with `fsGroup` so the non-root user can write it. Every container runs as non-root with
    a read-only root file system, no capabilities and the `RuntimeDefault` seccomp profile. Every pod runs as the ServiceAccount `helper2`, which has no RoleBinding,
    with `automountServiceAccountToken: false`: no workload calls the Kubernetes API, so no pod holds a token.
-3. **App replicas.** `app.replicas`: 3 on prod, 1 on staging. `RollingUpdate` with `maxUnavailable: 0` and
+3. **App replicas.** Two workloads ([0069](0069-three-deployables.md)): the public app (`helper2`, `app.replicas`: 3 on
+   prod, 1 on staging) and the back office (`helper2-backoffice`, `backoffice.replicas`, 1 by default, its own image
+   repository and resources; the tag defaults to `image.tag`). `RollingUpdate` with `maxUnavailable: 0` and
    `maxSurge: 1`: one new pod at a time, and an old pod goes only when the new one is ready. Topology spread over
    `kubernetes.io/hostname` (`ScheduleAnyway`). Above 1 replica a PodDisruptionBudget keeps `replicas - 1` available
    during node drains. A pod that leaves first sleeps 10 s in `preStop` (native `sleep` action, Kubernetes 1.30 and
@@ -41,9 +43,9 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    Protocol (HTTP). On any other cluster, your own Ingress or route targets the same two Services.
    Platform settings (registry, storage classes, Ingress controller, tracing, scraper) are values, set for the
    hosted environments in `values-<env>.yaml` ([deploy/k8s/README.md](../../../deploy/k8s/README.md)).
-5. **Ports.** The app serves the site and API on 8080 (Service `helper2`), the back office on 8082 (Service
-   `helper2-admin`, `app.adminPort`, [0035](../edge/0035-admin-host.md)) and Actuator on 8081 (`H2_MANAGEMENT_PORT`).
-   Probes and the Prometheus scrape use 8081. No Service routes 8081; only the admin names reach 8082.
+5. **Ports.** Each app serves on 8080: the public app behind the Service `helper2`, the back office behind the Service
+   `helper2-admin` ([0035](../edge/0035-admin-host.md)). Actuator is on 8081 (`H2_MANAGEMENT_PORT`) in both.
+   Probes and the Prometheus scrape use 8081. No Service routes 8081; only the admin names reach the back office.
    Startup probe: every 5 s, up to `app.startupSeconds` (300 s); then readiness every 5 s and liveness
    every 10 s. Postgres and Redis have a liveness probe too (`pg_isready`; `redis-cli ping`, where LOADING
    counts as alive): two minutes without an answer (6 × 20 s) restarts a hung server. Postgres gets a startup
@@ -51,15 +53,15 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    and a restart then would start the recovery over. Redis gets 30 s before its first check.
 6. **Network policy.** One policy per workload and direction, each naming only the peers that workload needs.
    Ingress is denied by default, then allowed per workload:
-   - app (`ingress-app`): the Ingress controller's pods (`networkPolicy.ingressController`: namespace
-     `ingress-nginx`, label `app.kubernetes.io/name=ingress-nginx`) on 8080 and 8082; namespace `observability`
-     on 8081;
-   - Postgres (`ingress-postgres`): the app and `pg-backup` on 5432;
-   - Redis (`ingress-redis`): the app on 6379;
+   - public app (`ingress-app`) and back office (`ingress-backoffice`): the Ingress controller's pods
+     (`networkPolicy.ingressController`: namespace `ingress-nginx`, label `app.kubernetes.io/name=ingress-nginx`) on
+     8080; namespace `observability` on 8081;
+   - Postgres (`ingress-postgres`): both apps and `pg-backup` on 5432;
+   - Redis (`ingress-redis`): both apps on 6379;
    - `pg-backup`: nothing.
 
    Egress is denied by default, then allowed per workload:
-   - app: DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318), and the
+   - both apps (`egress-app`): DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318), and the
      internet on 443 only, with the private ranges excluded;
    - `pg-backup`: DNS, Postgres, and 443 only when `backup.offsite` is on;
    - Postgres and Redis: nothing.
@@ -76,13 +78,13 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
    run has succeeded for 36 hours (a suspended CronJob, a Pod stuck Pending, a missed start). With
    `backup.offsite.enabled`, rclone then copies new dumps to Cloudflare R2 (it never deletes there; the bucket's
    lifecycle rule sets retention).
-9. **Per environment.** The chart runs the Scout once a day at 03:07 UTC (`app.scoutCron`, so each collector runs at
-   most once a day; each replica checks every 10 minutes, `H2_SCOUT_TICK` default, and a restart does not add a run) with at most 200 enrichments per run (`app.scoutMaxEnrichments`); the daily enrichment cap
+9. **Per environment.** The back office runs the Scout once a day at 03:07 UTC (`backoffice.scoutCron`, so each collector runs at
+   most once a day; each replica checks every 10 minutes, `H2_SCOUT_TICK` default, and a restart does not add a run) with at most 200 enrichments per run (`backoffice.scoutMaxEnrichments`); the daily enrichment cap
    (500) still applies. Staging has the Scout off and no backup.
 
 ## Consequences
 - Visitors reach the app only through Cloudflare and ingress-nginx; the back office only from the in-network
-  ranges. No other pod reaches the app's site or admin port.
+  ranges. No other pod reaches either app.
 - A compromised app pod can reach only the internet on 443, its own database and cache, and the trace collector,
   and holds no Kubernetes API credential.
 - A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. On staging too, a
@@ -106,10 +108,10 @@ network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout,
 
 ## Code
 - `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
-- `deploy/helm/helper2/templates/app.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`,
+- `deploy/helm/helper2/templates/app.yaml`, `backoffice.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`,
   `networkpolicy.yaml`, `serviceaccount.yaml`, `secret.yaml`, `_helpers.tpl` — workloads and policies.
 - incalza-me-infra (outside this repo) — namespace, DNS, tunnel, ingress-nginx and the Ingresses, deployer.
-- `backend/apps/helper2/src/main/resources/application.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`.
+- `backend/apps/public/src/main/resources/application.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`.
 - `deploy/k8s/Makefile`, `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 
 ## Diagrams

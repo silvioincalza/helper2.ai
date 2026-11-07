@@ -12,7 +12,7 @@ class NoindexHeaderTest {
   @Test
   void writesNoindexOnEveryResponse() {
     MockHttpServletResponse res = new MockHttpServletResponse();
-    SecurityConfiguration.NOINDEX.writeHeaders(new MockHttpServletRequest(), res);
+    WebSecurity.NOINDEX.writeHeaders(new MockHttpServletRequest(), res);
     assertThat(res.getHeader("X-Robots-Tag")).isEqualTo("noindex, nofollow");
   }
 }

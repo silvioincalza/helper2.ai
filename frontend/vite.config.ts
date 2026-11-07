@@ -15,9 +15,14 @@ const PRELOADED_FONTS = /^assets\/geist(-mono)?-latin-wght-normal-[\w-]+\.woff2$
  * CSP to allow (font-src 'self').
  */
 function preloadFonts(): Plugin {
+  // The public app builds under /, the back office web app under /admin/ (vite.admin.config.ts).
+  let base = '/';
   return {
     name: 'helper2-preload-fonts',
     apply: 'build',
+    configResolved: (config) => {
+      base = config.base;
+    },
     transformIndexHtml: {
       order: 'post',
       handler: (_html, ctx) =>
@@ -28,7 +33,7 @@ function preloadFonts(): Plugin {
             tag: 'link',
             attrs: {
               rel: 'preload',
-              href: `/${file}`,
+              href: `${base}${file}`,
               as: 'font',
               type: 'font/woff2',
               crossorigin: '',

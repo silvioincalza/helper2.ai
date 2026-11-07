@@ -1,6 +1,8 @@
 # Generic defaults for any Kubernetes cluster. Per environment: a values file of your own
 # (values-staging.yaml and values-prod.yaml are the hosted helper2.ai environments).
-# Required: image.repository, image.tag, postgres.image.repository and the env Secret (envSecret).
+# Required: image.repository, image.tag, backoffice.image.repository, postgres.image.repository and the env Secret
+# (envSecret). Two workloads (ADR 0069): the public app (Deployment and Service `helper2`) and the back office
+# (Deployment `helper2-backoffice`, Service `helper2-admin`).
 # The chart creates no Ingress. Expose the app with your own Ingress or route: the public host to the Service
 # `helper2` (port 80), and an in-network host for the back office to the Service `helper2-admin` (port 80).
 # Then set networkPolicy.ingressController, so the controller's pods may reach the app.
@@ -8,6 +10,7 @@
 # Object names are fixed (helper2, postgres, redis, ...), not prefixed with the release name: one
 # release per namespace, and the names had to stay identical when Helm adopted the kustomize objects.
 
+# The public app's image.
 image:
   # Your registry, e.g. ghcr.io/<owner>/helper2 (image built from deploy/Dockerfile). Required.
   repository: ""
@@ -31,11 +34,11 @@ envSecret:
 
 app:
   springProfiles: llm-nebius
-  # The Scout and the embedding indexer run on one replica at a time (ShedLock in Postgres); rate limits
+  # The public app's replicas. Its retention jobs run on one replica at a time (ShedLock in Postgres); rate limits
   # and sign-in sessions are in Redis. Above 1: a PodDisruptionBudget keeps replicas - 1 available.
   # Postgres connections: (replicas + 1) x H2_DATABASE_POOL_SIZE (10) = 40 at 3 replicas during a deploy, plus the
-  # pools of pods still terminating (up to shutdown.drainSeconds; at worst one more pod, 50), under Postgres' default
-  # max_connections of 100 (backup and psql need a few more).
+  # back office (2 x 10 during its deploy) and the pools of pods still terminating (at worst one more pod), 70, under
+  # Postgres' default max_connections of 100 (backup and psql need a few more).
   replicas: 3
   # Rolling update and shutdown of a pod (ADR 0027). preStopSeconds: the pod keeps serving while the Service
   # endpoints and the Ingress controller drop it (native preStop sleep, Kubernetes 1.30 and later). Then SIGTERM:
@@ -44,26 +47,11 @@ app:
   shutdown:
     preStopSeconds: 10
     drainSeconds: 30
-  # Scout = scheduled collection + LLM enrichment, once a day at a fixed time (scoutCron, UTC, ADR 0018).
-  # Each replica checks shortly after startup (scoutInitialDelay), then every 10 minutes (H2_SCOUT_TICK);
-  # the Scout runs when the cron time after the last scheduled run has passed (or it never ran): one run per
-  # cron time in total, whatever the number of replicas, and a deploy does not add one. Each collector also
-  # keeps its own interval, so every collector runs at most once a day.
-  scoutEnabled: true
-  scoutInitialDelay: PT20S
-  # 03:07 UTC: a quiet hour, after the nightly home-examples check (02:41). Off the full hour, when the
-  # providers are busiest. The retention purge (03:17) may run at the same time; it touches other rows.
-  scoutCron: "0 7 3 * * *"
-  # At most this many resources enriched per run (shared with the backlog). A gap round (ADR 0043) can add a
-  # second Nemotron call for the same resource, so a run makes at most twice this many calls. The hard cap is
-  # per UTC day (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 500, of which up to 400 gap rounds), so a large
-  # backlog after a fresh database is spread over several days.
-  scoutMaxEnrichments: 200
   # Longest allowed startup (Flyway migrations, Lingua models) before the startup probe restarts the
-  # container. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and
+  # container; the back office uses the same. A multiple of 5 (the probe period). A deploy starts the replicas one after another, and
   # all of them must be ready within the `helm --wait` timeout (12m in the hosted deploy).
   startupSeconds: 300
-  # Daily limits, per UTC day. Per visitor: live web searches per feature (ADR 0037) and fresh guide questions
+  # Daily limits, per UTC day. The two site-wide caps go to the back office too, so its settings page states them. Per visitor: live web searches per feature (ADR 0037) and fresh guide questions
   # (ADR 0015); past them the visitor still gets stored results and search results. For the whole site: live web
   # searches and guide model calls (ADR 0017). Unset (null) = the app's own default (3, 3, 30, no site cap, 600) or
   # the value in the env Secret; a value here wins over the Secret, so set each one in one place only.
@@ -79,11 +67,6 @@ app:
   # Reuse the cached answer of a near-identical guide question at this cosine or above
   # (H2_GUIDE_SIMILAR_THRESHOLD; ADR 0041). Unset = off. 0.96 is the measured threshold.
   guideSimilarThreshold: null
-  # Second port for the back office (ADR 0035): /admin, /api/v1/admin/** and the ADMIN role only there, behind the
-  # Service helper2-admin. Route it only from an in-network host. 0 = one port for everything (admin on the public host).
-  adminPort: 8082
-  # The metrics dashboard the back office overview links to for trends (H2_ADMIN_GRAFANA_URL; ADR 0045). Empty = no link.
-  adminGrafanaUrl: ""
   # Monetisation (ADR 0057). Each part is off while empty: no link, no script, no CSP origin. Not secrets: the
   # browser sees them. Use a separate GA4 stream for staging, never the prod one.
   monetisation:
@@ -105,7 +88,8 @@ app:
   # true for staging, so it never competes with the live site.
   noindex: false
   # The public host every canonical link and sitemap address names, without a trailing slash (H2_PUBLIC_BASE_URL;
-  # ADR 0050). Empty = the app's default, https://helper2.ai. Keep it on the live host for staging too.
+  # ADR 0050). Empty = the app's default, https://helper2.ai. Keep it on the live host for staging too. The back
+  # office sends /resource/... there.
   publicBaseUrl: ""
   # OTLP traces. Off by default; set export: true and your collector's endpoint, and
   # networkPolicy.egress.otlp.namespace so the app may reach it.
@@ -114,6 +98,43 @@ app:
     # Traffic is low; probes and scrapes are not traced (ObservabilityConfiguration).
     sampling: 1.0
     endpoint: ""
+  resources:
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { memory: 1Gi }
+
+
+# The back office app (ADR 0069): admin, Scout, collectors, enrichment and the catalog jobs. Only the in-network
+# host reaches it (Service helper2-admin, ADR 0035). It shares app.springProfiles, app.shutdown, app.startupSeconds,
+# app.environment, app.tracing and the env Secret with the public app.
+backoffice:
+  image:
+    # Your registry, e.g. ghcr.io/<owner>/helper2-backoffice (image built from deploy/backoffice.Dockerfile). Required.
+    repository: ""
+    # Empty = image.tag: both apps deploy the same version.
+    tag: ""
+  # One replica is enough for one administrator. The Scout and the indexer run on one replica at a time anyway
+  # (ShedLock). Above 1: a PodDisruptionBudget keeps replicas - 1 available.
+  replicas: 1
+  # The admin host's own origin, e.g. https://admin.example.org, without a trailing slash (H2_ADMIN_BASE_URL): the
+  # sign-in callback is pinned to it. Empty = taken from the request.
+  adminBaseUrl: ""
+  # The metrics dashboard the overview links to for trends (H2_ADMIN_GRAFANA_URL; ADR 0045). Empty = no link.
+  grafanaUrl: ""
+  # Scout = scheduled collection + LLM enrichment, once a day at a fixed time (scoutCron, UTC, ADR 0018).
+  # Each replica checks shortly after startup (scoutInitialDelay), then every 10 minutes (H2_SCOUT_TICK);
+  # the Scout runs when the cron time after the last scheduled run has passed (or it never ran): one run per
+  # cron time in total, whatever the number of replicas, and a deploy does not add one. Each collector also
+  # keeps its own interval, so every collector runs at most once a day.
+  scoutEnabled: true
+  scoutInitialDelay: PT20S
+  # 03:07 UTC: a quiet hour, after the nightly home-examples check (02:41). Off the full hour, when the
+  # providers are busiest. The retention purge (03:17) may run at the same time; it touches other rows.
+  scoutCron: "0 7 3 * * *"
+  # At most this many resources enriched per run (shared with the backlog). A gap round (ADR 0043) can add a
+  # second Nemotron call for the same resource, so a run makes at most twice this many calls. The hard cap is
+  # per UTC day (H2_SCOUT_DAILY_ENRICHMENT_CALLS, default 500, of which up to 400 gap rounds), so a large
+  # backlog after a fresh database is spread over several days.
+  scoutMaxEnrichments: 200
   resources:
     requests: { cpu: 250m, memory: 768Mi }
     limits: { memory: 1Gi }
@@ -170,7 +191,7 @@ redis:
 # is on; postgres and redis: nothing.
 networkPolicy:
   # The Ingress controller that serves your routes to the Services helper2 and helper2-admin. Its pods may reach
-  # the app on 8080 and on app.adminPort. Required to reach the app at all: empty namespace = no edge traffic.
+  # both apps on 8080. Required to reach the app at all: empty namespace = no edge traffic.
   ingressController:
     namespace: ""
     # Optional pod labels that narrow the controller pods in that namespace, e.g. app.kubernetes.io/name: ingress-nginx.

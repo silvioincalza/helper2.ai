@@ -112,7 +112,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     if (limiter == null) {
       return true;
     }
-    long wait = limiter.acquire(clientKey(req));
+    long wait = limiter.acquire(clientKey(req, adminHost.currentRequestOnAdminHost()));
     if (wait == 0) {
       return true;
     }
@@ -134,8 +134,8 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
    * key is the signed-in administrator, and one shared key for whoever is not signed in yet. The
    * limit still holds there, but nothing a client sends can reset it.
    */
-  private String clientKey(HttpServletRequest req) {
-    if (!adminHost.currentRequestOnAdminHost()) {
+  static String clientKey(HttpServletRequest req, boolean onAdminHost) {
+    if (!onAdminHost) {
       return req.getRemoteAddr();
     }
     Principal user = req.getUserPrincipal();

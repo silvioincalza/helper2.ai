@@ -52,7 +52,7 @@ class AdminAllowListTest {
     return rolesFor(admins, true);
   }
 
-  private static Set<String> rolesFor(Set<String> admins, boolean onAdminPort) {
+  private static Set<String> rolesFor(Set<String> admins, boolean grantsAdmin) {
     // The provider defaults Spring Boot uses for "github": user-name attribute "id".
     ClientRegistration github =
         CommonOAuth2Provider.GITHUB
@@ -67,7 +67,7 @@ class AdminAllowListTest {
             "token",
             Instant.now(),
             Instant.now().plusSeconds(60));
-    return SecurityConfiguration.oauthUsers(admins, () -> onAdminPort)
+    return WebSecurity.oauthUsers(admins, grantsAdmin)
         .loadUser(new OAuth2UserRequest(github, token))
         .getAuthorities()
         .stream()
@@ -93,32 +93,22 @@ class AdminAllowListTest {
   }
 
   @Test
-  void anAdminWhoSignsInOnThePublicPortIsAPlainUserThere() {
-    // ADR 0035: ADMIN only on a session made on the admin port, so a stolen public session is never
-    // an admin one.
+  void anAdminWhoSignsInOnThePublicSiteIsAPlainUserThere() {
+    // ADR 0035, 0069: ADMIN only on a session made on the back office, so a stolen public session
+    // is never an admin one.
     assertThat(rolesFor(Set.of("github:12345"), false))
         .contains("ROLE_USER")
         .doesNotContain("ROLE_ADMIN");
   }
 
   @Test
-  void anAllowListedEmailGrantsAdminOnlyOnTheAdminPort() {
+  void anAllowListedEmailGrantsAdminOnlyOnTheBackOffice() {
     Set<String> admins = Set.of("oidc:owner@example.org");
-    assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", true))
+    assertThat(WebSecurity.roles(admins, "oidc", "subject-1", "owner@example.org", true))
         .extracting(GrantedAuthority::getAuthority)
         .contains("ROLE_ADMIN");
-    assertThat(SecurityConfiguration.roles(admins, "oidc", "subject-1", "owner@example.org", false))
+    assertThat(WebSecurity.roles(admins, "oidc", "subject-1", "owner@example.org", false))
         .extracting(GrantedAuthority::getAuthority)
         .containsExactly("ROLE_USER");
-  }
-
-  @Test
-  void signInReturnsToTheBackOfficeOnTheAdminPortAndToTheSiteOnThePublicPort() {
-    assertThat(SecurityConfiguration.afterSignIn("/", true)).isEqualTo("/admin");
-    assertThat(SecurityConfiguration.afterSignIn("/", false)).isEqualTo("/");
-    assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", true))
-        .isEqualTo("http://localhost:5173/admin");
-    assertThat(SecurityConfiguration.afterSignIn("http://localhost:5173", false))
-        .isEqualTo("http://localhost:5173/");
   }
 }

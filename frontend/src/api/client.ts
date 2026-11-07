@@ -45,10 +45,21 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The CSRF token from the cookies: `__Host-XSRF-TOKEN` on the back office (a cookie no sibling host can set, ADR 0069),
+ * `XSRF-TOKEN` on the public site. The `__Host-` one wins, so a cookie another host of the site planted never counts.
+ */
+export function csrfTokenFrom(cookies: string): string | undefined {
+  for (const name of ['__Host-XSRF-TOKEN', 'XSRF-TOKEN']) {
+    const m = new RegExp(`(?:^|;\\s*)${name}=([^;]*)`).exec(cookies);
+    if (m?.[1]) return decodeURIComponent(m[1]);
+  }
+  return undefined;
+}
+
 function readCsrfToken(): string | undefined {
   try {
-    const m = /(?:^|;\s*)XSRF-TOKEN=([^;]*)/.exec(document.cookie);
-    return m?.[1] ? decodeURIComponent(m[1]) : undefined;
+    return csrfTokenFrom(document.cookie);
   } catch {
     return undefined;
   }

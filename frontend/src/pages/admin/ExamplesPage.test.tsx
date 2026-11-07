@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { AdminHomeExample } from '@/api/types';
 import { ADMIN, makeCard, makeSearch } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 
 const DEEPL = '11111111-1111-5111-8111-111111111111';
 
@@ -40,7 +40,7 @@ describe('admin: home examples', () => {
         }),
       ],
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     const rows = within(await list()).getAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('Shown · expected result at #2');
     expect(rows[0]).toHaveTextContent('DeepL Translator');
@@ -54,7 +54,7 @@ describe('admin: home examples', () => {
 
   it('keeps the check filter in the address and asks only for those', async () => {
     const m = mockApi({ 'GET /me': () => ADMIN, 'GET /admin/home-examples': () => [] });
-    const { params } = renderApp('/admin/examples');
+    const { params } = renderAdmin('/admin/examples');
     await screen.findByText('No examples here.');
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Check' }), 'Hidden');
     await waitFor(() => expect(params().get('outcome')).toBe('FAIL'));
@@ -75,7 +75,7 @@ describe('admin: home examples', () => {
         makeSearch({ results: [makeCard({ id: DEEPL, title: 'DeepL Translator' })] }),
       'POST /admin/home-examples': () => json(example(), 201),
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     await screen.findByText('No examples here.');
     await userEvent.type(screen.getByRole('textbox', { name: /Label on the chip/ }), 'Translate');
     await userEvent.type(
@@ -111,7 +111,7 @@ describe('admin: home examples', () => {
           { status: 400, headers: { 'content-type': 'application/problem+json' } },
         ),
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     await userEvent.click(
       within(await list()).getByRole('button', { name: 'Pause Translate documents' }),
     );
@@ -134,7 +134,7 @@ describe('admin: home examples', () => {
           { status: 409, headers: { 'content-type': 'application/problem+json' } },
         ),
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     await userEvent.click(
       within(await list()).getByRole('button', { name: 'Pause Translate documents' }),
     );
@@ -157,7 +157,7 @@ describe('admin: home examples', () => {
         );
       },
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     await userEvent.click(
       within(await list()).getByRole('button', { name: 'Edit Translate documents' }),
     );
@@ -181,7 +181,7 @@ describe('admin: home examples', () => {
       'DELETE /admin/home-examples/22222222-2222-5222-8222-222222222222': () =>
         new Response(null, { status: 204 }),
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     const l = await list();
     await userEvent.click(within(l).getByRole('button', { name: 'Remove Translate documents' }));
     expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
@@ -198,7 +198,7 @@ describe('admin: home examples', () => {
 
   it('is not shown, and not asked, without the admin role', async () => {
     const m = mockApi({ 'GET /me': () => ({ ...ADMIN, roles: ['USER'] }) });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     expect(
       await screen.findByText('You need an administrator account to see this page.'),
     ).toBeInTheDocument();
@@ -210,7 +210,7 @@ describe('admin: home examples', () => {
       'GET /admin/home-examples': () => [example()],
       'POST /admin/home-examples/drafts': () => json({ drafted: 3, model: 'nemotron' }, 202),
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     await list();
     await userEvent.click(screen.getByRole('button', { name: 'Draft examples with AI' }));
     expect(await screen.findByText(/3 drafts wait in the Review queue/)).toBeInTheDocument();
@@ -235,7 +235,7 @@ describe('admin: home examples', () => {
           { status: 503, headers: { 'content-type': 'application/problem+json' } },
         ),
     });
-    renderApp('/admin/examples');
+    renderAdmin('/admin/examples');
     await list();
     await userEvent.click(screen.getByRole('button', { name: 'Draft examples with AI' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -267,7 +267,7 @@ describe('admin: home examples', () => {
         total: 1,
       }),
     });
-    renderApp('/admin/review?kind=EXAMPLE_CANDIDATE');
+    renderAdmin('/admin/review?kind=EXAMPLE_CANDIDATE');
     const draft = (await screen.findByText('Searches')).closest('dl') as HTMLElement;
     expect(draft).toHaveAttribute('data-ai-generated', 'true');
     expect(draft).toHaveTextContent('translate documents');

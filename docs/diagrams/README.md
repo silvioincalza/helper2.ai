@@ -58,7 +58,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0046](../adr/operations/0046-supply-chain.md) | [flow](flow-0046-supply-chain.svg) | — (CI only, no runtime path) | the SBOM and the Grype scan on main, on a release and every week. |
 | [0048](../adr/operations/0048-release-branches-and-version-tags.md) | [flow](flow-0048-release-branches-and-version-tags.svg) | [sequence](sequence-0048-release-branches-and-version-tags.svg) | which push builds an image and with which tag, and a fix released from a release branch to prod under its version. |
 | [0049](../adr/search/0049-home-examples.md) | [flow](flow-0049-home-examples.svg) | [sequence](sequence-0049-home-examples.svg) | how an example gets on the home page: the rules of an admin write, the quality check (top 3 of its own search, no web), and the pick in the browser. |
-| [0035](../adr/edge/0035-admin-host.md) | [flow](flow-0035-admin-host.svg) | [sequence](sequence-0035-admin-host.svg) | which port and host answer the back office, and how a sign-in gets ADMIN only on the admin port. |
+| [0035](../adr/edge/0035-admin-host.md) | [flow](flow-0035-admin-host.svg) | [sequence](sequence-0035-admin-host.svg) | which app and host answer the back office, and how a sign-in gets ADMIN only on the admin port. |
 | [0036](../adr/quality/0036-search-evaluation-harness.md) | [flow](flow-0036-search-evaluation-harness.svg) | [sequence](sequence-0036-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
 | [0047](../adr/quality/0047-code-format.md) | [flow](flow-0047-code-format.svg) | — (build and CI only, no runtime path) | which files Spotless and Prettier format with which formatter, and the spotlessCheck and format:check gates in CI. |
 | [0054](../adr/quality/0054-dead-code-and-dependency-audit.md) | [flow](flow-0054-dead-code-and-dependency-audit.svg) | — (build and CI only, no runtime path) | the two knip runs (whole project, then production code and its dependencies) and the npm audit gate in the frontend CI job. |
@@ -89,6 +89,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0067](../adr/scout/0067-live-web-events-scout.md) | [flow](flow-0067-live-web-events-scout.svg) | [sequence](sequence-0067-live-web-events-scout.svg) | one weekly pass of the events scout: searches, Extract, the model's reading, the code gate, the merge with a source's days, and the AI label. |
 | [0066](../adr/edge/0066-curated-field.md) | [flow](flow-0066-curated-field.svg) | [sequence](sequence-0066-curated-field.svg) | how an admin sets or drops a field of a resource, and what later records, runs and the page do with it. |
 | [0068](../adr/foundation/0068-backend-libraries-and-apps.md) | [flow](flow-0068-backend-libraries-and-apps.svg) | — (build only, no runtime path) | where a piece of backend code goes (an app or a library), and the build checks that keep the direction. |
+| [0069](../adr/operations/0069-three-deployables.md) | [flow](flow-0069-three-deployables.svg) | [sequence](sequence-0069-three-deployables.svg) | which app answers a request and runs a job, what a change rebuilds, the back office waiting for the public app's migrations; a public page, an admin write and a Scout run end to end. |
 
 ## Colors
 

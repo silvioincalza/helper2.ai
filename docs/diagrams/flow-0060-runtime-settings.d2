@@ -1,5 +1,5 @@
 # Flowchart: how a runtime setting is changed and applied (ADR 0060).
-# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ChangeRuntimeSetting.java, ResetRuntimeSetting.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ChangeRuntimeSetting.java, ResetRuntimeSetting.java,
 #   admin/web/RuntimeSettingsController.java, platform/settings/RuntimeSetting.java, RuntimeSettings.java,
 #   JdbcRuntimeSettingStore.java, RuntimeSettingsConfiguration.java, platform/llm/DailyBudget.java,
 #   frontend/src/pages/admin/RuntimeSettingsPanel.tsx.
@@ -9,7 +9,7 @@
 
 direction: down
 
-req: "PUT /api/v1/admin/runtime-settings/{key}\n(admin port, ADMIN, CSRF)" {class: end}
+req: "PUT /api/v1/admin/runtime-settings/{key}\n(back office, ADMIN, CSRF)" {class: end}
 
 change: ChangeRuntimeSetting {
   class: group

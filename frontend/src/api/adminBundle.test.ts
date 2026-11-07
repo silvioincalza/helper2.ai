@@ -12,3 +12,12 @@ describe('the public bundle', () => {
     expect(en).not.toHaveProperty('admin');
   });
 });
+
+// The back office is its own web app (ADR 0069): the public routes do not know it.
+describe('the public routes', () => {
+  it('have no back office route', async () => {
+    const { routes } = await import('@/routes');
+    const paths = JSON.stringify(routes, (key, value) => (key === 'element' ? undefined : value));
+    expect(paths).not.toMatch(/"path":"admin/);
+  });
+});

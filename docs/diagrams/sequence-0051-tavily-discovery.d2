@@ -1,14 +1,14 @@
 # Sequence: the self-hosted category finds an app, the local-ai category finds it too a day later, and an admin
 # accepts it.
-# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/sources/config/DiscoveryCollectorRegistrar.java,
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, proposeCandidates),
-#   backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java,
-#   backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
-#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/config/DiscoveryCollectorRegistrar.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, proposeCandidates),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/TavilyDiscoveryCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/ScoutTavilyCredits.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java (proposeCandidate, openCandidate, updateCandidate),
-#   backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
 # Render: cd docs/diagrams && ./render.sh
 
 ...@style

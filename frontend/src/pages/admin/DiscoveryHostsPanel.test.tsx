@@ -4,7 +4,7 @@ import type { DiscoveryHostEntry, DiscoveryHosts } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
 import { ADMIN } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
-import { renderApp, settle } from '@/test/render';
+import { renderAdmin, settle } from '@/test/render';
 
 const entry = (
   host: string,
@@ -43,7 +43,7 @@ function open(handlers: Parameters<typeof mockApi>[0]) {
     'GET /admin/runtime-settings': () => ({ overridesActive: 0, settings: [] }),
     ...handlers,
   });
-  return { api, ...renderApp('/admin/settings') };
+  return { api, ...renderAdmin('/admin/settings') };
 }
 
 describe('Feature: an admin manages the hosts discovery knows by name (ADR 0063)', () => {

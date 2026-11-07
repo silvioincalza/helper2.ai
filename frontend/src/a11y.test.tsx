@@ -16,7 +16,7 @@ import {
 } from '@/test/fixtures';
 import { mockViewport } from '@/test/viewport';
 import { mockApi, sse } from '@/test/mockApi';
-import { renderApp, settle } from '@/test/render';
+import { renderAdmin, renderApp, settle } from '@/test/render';
 import { clearApiCache } from '@/hooks/useApi';
 
 const ID = '11111111-1111-5111-8111-111111111111';
@@ -376,12 +376,12 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await settle();
     expect(await axeViolations(s.container)).toEqual([]);
     s.unmount();
-    const ov = renderApp('/admin');
+    const ov = renderAdmin('/admin');
     await within(await screen.findByRole('main')).findByText('Failed');
     await settle();
     expect(await axeViolations(ov.container)).toEqual([]);
     ov.unmount();
-    const review = renderApp('/admin/review');
+    const review = renderAdmin('/admin/review');
     await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'button' });
     // The evidence of the selected item, then the keys help dialog over it.
     await screen.findByText('Free for everyone.');
@@ -396,15 +396,15 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await screen.findByRole('dialog', { name: 'Reject 1 item?' });
     expect(await axeViolations(review.container)).toEqual([]);
     review.unmount();
-    const runs = renderApp('/admin/runs');
+    const runs = renderAdmin('/admin/runs');
     await within(await screen.findByRole('main')).findByText('Failed');
     expect(await axeViolations(runs.container)).toEqual([]);
     runs.unmount();
-    const examples = renderApp('/admin/examples');
+    const examples = renderAdmin('/admin/examples');
     await within(await screen.findByRole('main')).findByText('Shown · expected result at #2');
     expect(await axeViolations(examples.container)).toEqual([]);
     examples.unmount();
-    const enrichment = renderApp('/admin/enrichment');
+    const enrichment = renderAdmin('/admin/enrichment');
     await within(await screen.findByRole('main')).findByRole('link', { name: 'Acme MCP' });
     expect(await axeViolations(enrichment.container)).toEqual([]);
     // The skip confirm, with its reason field, open in the row.
@@ -412,7 +412,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     await screen.findByRole('textbox', { name: 'Reason (optional)' });
     expect(await axeViolations(enrichment.container)).toEqual([]);
     enrichment.unmount();
-    const audit = renderApp('/admin/audit');
+    const audit = renderAdmin('/admin/audit');
     await within(await screen.findByRole('main')).findByText('Review decision');
     expect(await axeViolations(audit.container)).toEqual([]);
   });
@@ -476,7 +476,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           mockViewport(width);
           for (const { path, me, ready, row } of pages) {
             mockApi({ ...api, 'GET /me': me });
-            const view = renderApp(path);
+            const view = path.startsWith('/admin') ? renderAdmin(path) : renderApp(path);
             await screen.findByRole('heading', { name: ready });
             await within(await screen.findByRole('main')).findAllByText(row);
             await settle();
@@ -507,7 +507,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           mockViewport(width);
           for (const { path, me, ready } of pages) {
             mockApi({ 'GET /me': me });
-            const view = renderApp(path);
+            const view = path.startsWith('/admin') ? renderAdmin(path) : renderApp(path);
             await screen.findByRole('heading', { name: ready });
             await settle();
             expect(await axeViolations(view.container)).toEqual([]);

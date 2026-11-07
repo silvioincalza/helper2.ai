@@ -31,7 +31,7 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
    | `/resource/{id}`, unknown or not a UUID | 404 | noindex | "Resource not found" |
    | `/`, `/sources`, `/mission`, `/privacy`, `/terms` | 200 | index | fixed title and description per page |
    | `/search`, `/?q=…`, `/saved`, `/account` | 200 | noindex, follow | fixed title |
-   | `/admin/**` (admin host only) | as today | noindex | fixed title |
+   | `/admin/**` | 404 here: the back office app serves it on the admin host ([0069](../operations/0069-three-deployables.md)), always `noindex` | — | — |
    | any other address without a file extension | 404 | noindex | "Page not found" |
 
    The 404 pages still carry the app, so a person sees the same "not found" page as today. The pages the server knows
@@ -125,14 +125,14 @@ touched.
   link previews still see an empty page.
 
 ## Code
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt` (`PageHead`,
+- `backend/apps/public/src/main/kotlin/ai/helper2/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt` (`PageHead`,
   `ResourceView`, `IndexPolicy`), `Pages.kt` (the head of each page, `JsonLd`).
-- `backend/apps/helper2/src/main/java/ai/helper2/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`, `internal/PageTemplate`,
+- `backend/apps/public/src/main/java/ai/helper2/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`, `internal/PageTemplate`,
   `internal/PageHtml` (the escaping), `web/PageRoutes`, `web/CrawlerFiles`, `config/PagesProperties`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
   `catalog/internal/ResourceStore.indexable`.
 - `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`).
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/pages/ResourcePaths.kt` (`Slug`, `resourcePath`); `frontend/src/lib/slug.ts`,
+- `backend/apps/public/src/main/kotlin/ai/helper2/pages/ResourcePaths.kt` (`Slug`, `resourcePath`); `frontend/src/lib/slug.ts`,
   `frontend/src/lib/searchState.ts` (`resourcePath`), `frontend/src/pages/ResourcePage.tsx` (the address replaced).
 - Tests: `pages/PagesTest.kt` (slug list), `pages/PageHtmlTest.java`, `api/PagesIT.java`, `frontend/src/lib/head.test.tsx`, `frontend/src/lib/slug.test.ts` (same slug list).
 

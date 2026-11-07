@@ -144,13 +144,13 @@ and a snippet copied into an AI client's config file runs on the user's machine.
   rules. Eight clients cover the large majority of MCP users.
 
 ## Code
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/setup/` — domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
+- `backend/apps/public/src/main/kotlin/ai/helper2/setup/` — domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
   `RunOptionRules.kt`, `Formats.kt`, `Materials.kt`, `ToolGuideAnswer.kt`, `ToolGuidePorts.kt`,
   `ToolGuideValidator.kt`, `ToolGuides.kt`.
-- `backend/apps/helper2/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `GetToolGuide`.
-- `backend/apps/helper2/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
+- `backend/apps/public/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `GetToolGuide`.
+- `backend/apps/public/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
   `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `SharedToolGuideCache`, `SetupConfiguration`.
-- `backend/apps/helper2/src/main/java/ai/helper2/setup/web/SetupController.java`, `backend/apps/helper2/src/main/resources/prompts/setup/tool-guide.txt`,
+- `backend/apps/public/src/main/java/ai/helper2/setup/web/SetupController.java`, `backend/apps/public/src/main/resources/prompts/setup/tool-guide.txt`,
   `frontend/src/components/SetupGuide.tsx`.
 
 ## Diagrams

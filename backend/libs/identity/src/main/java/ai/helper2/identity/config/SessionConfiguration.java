@@ -27,8 +27,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Sign-in sessions are kept in Redis (spring.session.data.redis), so a signed-in admin is
- * recognised by every replica. Only sign-in creates one (SecurityConfiguration): anonymous use
- * never reads or writes a session.
+ * recognised by every replica. Only sign-in creates one (each app's security configuration):
+ * anonymous use never reads or writes a session.
  *
  * <p>While Redis is unavailable:
  *
@@ -36,7 +36,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *   <li>reading a session finds none, so a request with a session cookie is served as anonymous
  *       instead of failing (Spring MVC looks the session up on every such request);
  *   <li>saving one fails, so sign-in fails: the filter just outside Spring Session's sends the
- *       sign-in flow back to where the sign-in started (admin page or site, per port) with {@code
+ *       sign-in flow back to the app's sign-in page ({@link SignInPages}) with {@code
  *       ?signin=failed}, and anything else gets a 503, instead of a server error that fails again
  *       on the error page.
  * </ul>
@@ -58,14 +58,10 @@ class SessionConfiguration {
   }
 
   @Bean
-  FilterRegistrationBean<SessionStoreFailureFilter> sessionStoreFailureFilter(
-      IdentityProperties identity, AdminPort adminPort) {
-    String frontendUrl = identity.frontendUrl();
+  FilterRegistrationBean<SessionStoreFailureFilter> sessionStoreFailureFilter(SignInPages pages) {
+    String failed = pages.failed();
     FilterRegistrationBean<SessionStoreFailureFilter> registration =
-        new FilterRegistrationBean<>(
-            new SessionStoreFailureFilter(req ->
-                SecurityConfiguration.afterSignIn(frontendUrl, adminPort.admits(req))
-                    + "?signin=failed"));
+        new FilterRegistrationBean<>(new SessionStoreFailureFilter(req -> failed));
     registration.setOrder(SessionRepositoryFilter.DEFAULT_ORDER - 1);
     return registration;
   }
@@ -113,7 +109,7 @@ class SessionConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(SessionStoreFailureFilter.class);
 
-    /** Where a failed sign-in returns, per port (ADR 0035). */
+    /** Where a failed sign-in returns (the app's {@link SignInPages}). */
     private final java.util.function.Function<HttpServletRequest, String> signInFailed;
 
     SessionStoreFailureFilter(

@@ -48,19 +48,30 @@ must load the app on a direct visit, and a new release must reach browsers at on
    sure the cookie exists before the first POST: it writes it on `GET /api/v1/me`, which the SPA calls when it starts,
    and nowhere else. A `Set-Cookie` on a static file or a public cacheable GET would stop Cloudflare from caching it.
    A POST that comes without the cookie gets 403 and a fresh cookie. The token counts only in the header, never as a
-   `_csrf` form field; on the admin host a write also needs that host's own `Origin` ([0035](0035-admin-host.md) §8).
+   `_csrf` form field. On the back office ([0069](../operations/0069-three-deployables.md)) the cookie is
+   `__Host-XSRF-TOKEN` (Secure, `Path=/`, `SameSite=Strict`, no `Domain`), `client.ts` reads either name, and every
+   write also needs that host's own `Origin` ([0035](0035-admin-host.md) §9).
 6. **Headers.** Content Security Policy (CSP): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;
    connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`.
    `Referrer-Policy: strict-origin-when-cross-origin`. `Permissions-Policy: camera=(), microphone=(), geolocation=(),
    payment=(), usb=()`: the site uses none of them. The theme script is a file (`public/theme.js`), not inline.
+   This is the public app's policy; it adds the origins of the monetisation parts that are on, or the nonce policy
+   ([0057](../frontend/0057-monetisation.md), [0059](../frontend/0059-adsense.md)). The back office sends its own fixed
+   policy on every response, never with a nonce or a third-party origin (`BackOfficeEdge`, ADR
+   [0069](../operations/0069-three-deployables.md)): the one above with `base-uri 'none'`, `frame-src 'none'` and
+   `worker-src 'none'`, plus `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, COOP and CORP `same-origin`,
+   `X-Robots-Tag: noindex, nofollow` and HSTS.
 7. **Session cookie**: `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
-   The session itself is in Redis ([0023](0023-identity-and-admin.md)).
+   The session itself is in Redis ([0023](0023-identity-and-admin.md)). The back office's is `__Host-SESSION`, always
+   Secure, in its own Redis namespace.
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
    it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the actuator serves only health and prometheus, and health is the one open to all. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (`SinglePageApp`, rules in [0001](../foundation/0001-stack-and-runtime.md)): hashed assets are cached
    for one year, `index.html` and other files are `no-cache`, so a new release reaches browsers at once. Search and guide
-   answers are `no-store`.
+   answers are `no-store`. On the back office (`AdminWebApp`, `BackOfficeEdge`): `/admin/assets/**` is
+   `private, max-age=31536000, immutable`, the app's other files `no-cache`, and pages, the API, redirects and errors
+   `no-store`, whatever a controller sets.
 
 ## Consequences
 - One client cannot drain the search or guide budget by itself; rotating IPv6 addresses inside a /64 does not help.
@@ -86,9 +97,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java` — limits, 429.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` — the client key (IPv6 by /64).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/RedisRateLimiter.java`, `InMemoryRateLimiter.java` — Redis count, fallback.
-- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
-- `backend/apps/helper2/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
+- `backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
+- `backend/apps/backoffice/src/main/java/ai/helper2/identity/config/BackOfficeSecurityConfiguration.java`, `BackOfficeEdge.java`,
+  `admin/web/AdminWebApp.java` — the back office's CSRF cookie, headers, cache rules and routes.
+- `backend/apps/public/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
+- `backend/apps/public/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
 - `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the app's ingress policy.
 - `frontend/src/api/client.ts`, `frontend/public/theme.js` — CSRF header, CSP-safe theme script.
 

@@ -12,24 +12,18 @@ import java.util.Set;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * On the admin host, a write must come from a page of the admin host itself (ADR 0035 §8). The
- * public site and the admin host are the same site for the browser, so SameSite cookies do not keep
- * them apart; the Origin header does. A write with no Origin, or another one, is refused before the
- * CSRF check. Browsers send Origin on every POST, PUT, PATCH and DELETE.
+ * A write must come from a page of the host it is sent to (ADR 0035 §8). The back office uses it on
+ * every write: the public site and the admin host are the same site for the browser, so SameSite
+ * cookies do not keep them apart; the Origin header does. A write with no Origin, or another one,
+ * is refused before the CSRF check. Browsers send Origin on every POST, PUT, PATCH and DELETE.
  */
-final class SameOriginWrites extends OncePerRequestFilter {
+public final class SameOriginWrites extends OncePerRequestFilter {
 
   private static final Set<String> SAFE = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
 
-  private final AdminPort adminPort;
-
-  SameOriginWrites(AdminPort adminPort) {
-    this.adminPort = adminPort;
-  }
-
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    return SAFE.contains(request.getMethod()) || !adminPort.onAdminHost(request);
+    return SAFE.contains(request.getMethod());
   }
 
   @Override

@@ -29,7 +29,7 @@ audit keeps 100 characters a value. A list of hosts does not fit there.
 5. **The page.** On `/admin/settings`, below the spending limits: the two lists, each host with who added it, when
    and why. Add: host, list, optional reason. Remove: a review that says what changes, then Confirm, with an
    optional reason. To move a host to the other list, remove it, then add it. API: `GET /api/v1/admin/discovery-hosts`,
-   `POST /api/v1/admin/discovery-hosts`, `POST /api/v1/admin/discovery-hosts/{host}/remove`; ADMIN only, admin port,
+   `POST /api/v1/admin/discovery-hosts`, `POST /api/v1/admin/discovery-hosts/{host}/remove`; ADMIN only, on the back office,
    CSRF on writes.
 6. **Audited.** Each add and each remove is an `admin_audit` row in the same transaction: `ADD_DISCOVERY_HOST` or
    `REMOVE_DISCOVERY_HOST`, the host as target, the outcome (ADDED, ALREADY_LISTED, FULL, REMOVED, NOT_FOUND), the
@@ -65,13 +65,13 @@ audit keeps 100 characters a value. A list of hosts does not fit there.
   the lists, and one more thread to run.
 
 ## Code
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`, `HostLists`,
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`, `HostLists`,
   `DiscoveryHostStore`, `HostNames`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/ManageDiscoveryHosts.kt`;
-  `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/JdbcDiscoveryHostStore.java`, `ScoutConfiguration.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (built from `HostLists`),
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ManageDiscoveryHosts.kt`;
+  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/JdbcDiscoveryHostStore.java`, `ScoutConfiguration.java`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java` (built from `HostLists`),
   `TavilyDiscoveryCollector.java`, `sources/github/GitHubAwesomeCollector.java`, `ProductLinks.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
   (`DiscoveryHosts`, `DiscoveryHostEntry`, `DiscoveryHostAdd`, `DiscoveryHostRemove`).
 - `backend/libs/schema/src/main/resources/db/migration/V17__discovery_host.sql`; `identity/AuditTrail.java` (the two actions).
 - `frontend/src/pages/admin/DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`.

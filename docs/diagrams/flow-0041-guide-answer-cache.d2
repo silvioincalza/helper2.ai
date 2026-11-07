@@ -1,9 +1,9 @@
 # Flowchart: how a guide question finds a cached answer: the exact key of its normalised text, then, once planned,
 # the answer of a similar question read the same way.
-# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
-#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
-#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
+# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
 #   GuideConfiguration.java (similarQuestions, H2_GUIDE_SIMILAR_THRESHOLD), GuideRetentionSchedule.java,
 #   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (ai_cache, guide_similar_question),
 #   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.

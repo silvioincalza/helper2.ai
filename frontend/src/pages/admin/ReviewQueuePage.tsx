@@ -1,6 +1,6 @@
 import './adminText';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { api, ApiError } from '@/api/client';
@@ -352,12 +352,12 @@ export default function ReviewQueuePage() {
                       <td className="v4-nowrap">{t(`admin.kind.${it.kind}`)}</td>
                       <td>
                         {it.resourceId ? (
-                          <Link
+                          <a
                             className="v4-title"
-                            to={resourcePath(it.resourceId, it.resourceTitle)}
+                            href={resourcePath(it.resourceId, it.resourceTitle)}
                           >
                             {it.resourceTitle ?? it.resourceId}
-                          </Link>
+                          </a>
                         ) : (
                           '—'
                         )}

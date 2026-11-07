@@ -12,10 +12,11 @@ That code must exist once, and an app must not be able to reach into the other's
 1. **Libraries and apps.** `backend/` is a Gradle multi-project. A library (`backend/libs/<name>`) holds a bounded
    context's domain, use cases and driven adapters (database, Redis, model calls). An app (`backend/apps/<name>`)
    holds the driving adapters (HTTP controllers, schedules), the generated contract and the wiring, and builds the
-   boot jar. Today there is one app, `apps/helper2`.
+   boot jar. There are two apps, `apps/public` and `apps/backoffice` ([0069](../operations/0069-three-deployables.md)).
 2. **The libraries.** `kernel` (shared value types, was `shared`), `platform` (LLM client, resilience, cache, settings,
    quotas), `monetisation`, `identity`, `search`, `catalog`, `examples`, and `schema` (the Flyway migrations, resources
-   only). A module goes into a library only when more than one app needs it; the rest stays in its app.
+   only), and `sources` (the live search sources and the collectors' descriptors). A module goes into a library only
+   when more than one app needs it; the rest stays in its app.
 3. **Dependencies point one way.** A library never depends on an app. Between libraries: kernel ← platform ← search
    ← catalog; identity ← platform, monetisation; catalog and examples use identity's `AuditTrail`. Gradle refuses a
    cycle at configuration time, so a wrong direction fails before any test runs. `ModularityTest` still checks the
@@ -37,8 +38,10 @@ No runtime path: the boot jar holds the same classes and resources as before, so
 ## Consequences
 - The two apps of the next step take only the libraries they need, and neither can import the other's code.
 - A change in a library rebuilds and retests every app that uses it.
-- A schedule that sits in a library today (catalog, identity and search retention, the catalog indexer, the shared
-  cache and runtime settings refresh) moves to its app when there are two.
+- A library declares no schedule: each app declares the jobs it runs (catalog, identity, search and shared-cache
+  retention, the runtime-settings purge, the embedding indexer, the category backfill), so every job runs in one app
+  ([0069](../operations/0069-three-deployables.md)). Only the per-replica runtime-settings refresh stays in the
+  platform library.
 - More build files to read: one `build.gradle.kts` per project, three convention plugins.
 
 ## Considered
@@ -51,7 +54,7 @@ No runtime path: the boot jar holds the same classes and resources as before, so
 - `backend/settings.gradle.kts` — the projects.
 - `backend/build-logic/build.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.*.gradle.kts` — the conventions.
 - `backend/build.gradle.kts` — the version (ADR 0029) and `checkNoRootSources`.
-- `backend/libs/*/build.gradle.kts`, `backend/apps/helper2/build.gradle.kts` — each project's dependencies.
-- `deploy/Dockerfile` — builds `:apps:helper2:bootJar`.
+- `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts` — each project's dependencies.
+- `deploy/Dockerfile`, `deploy/backoffice.Dockerfile` — build `:apps:public:bootJar` and `:apps:backoffice:bootJar`.
 
 Diagram: [flow](../../diagrams/flow-0068-backend-libraries-and-apps.svg).

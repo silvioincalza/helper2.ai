@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReviewEvidence, ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
-import { renderApp } from '@/test/render';
+import { renderAdmin } from '@/test/render';
 
 const candidate = (over: Partial<ReviewItem> = {}): ReviewItem => ({
   id: '66666666-6666-5666-8666-666666666661',
@@ -70,7 +70,7 @@ const PUT_PATH = '/admin/review-items/66666666-6666-5666-8666-666666666661/relat
 
 async function openForm() {
   const user = userEvent.setup();
-  renderApp('/admin/review');
+  renderAdmin('/admin/review');
   const panel = await screen.findByRole('region', { name: 'Evidence' });
   await user.click(await within(panel).findByRole('button', { name: 'Change the target' }));
   return { user, panel };
@@ -146,7 +146,7 @@ describe('Feature: an admin points a relationship candidate at the right resourc
 
   it('Scenario: a decided candidate has no target to change', async () => {
     oneItem(candidate({ status: 'ACCEPTED', resolvedAt: '2026-11-02T07:00:00Z' }));
-    renderApp('/admin/review?status=ACCEPTED');
+    renderAdmin('/admin/review?status=ACCEPTED');
     const panel = await screen.findByRole('region', { name: 'Evidence' });
     await within(panel).findByText('Gemini 4 Carbon');
     expect(within(panel).queryByRole('button', { name: 'Change the target' })).toBeNull();

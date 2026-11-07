@@ -127,16 +127,16 @@ OWASP LLM Top 10: no model reads or writes this text. The classifier gets the se
   resource's own and could not be explained or retired per list.
 
 ## Code
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/github/AwesomeListParser.java` (entries, heading paths, headings, caps),
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/AwesomeListParser.java` (entries, heading paths, headings, caps),
   `MarkdownText.java` (cleaning), `GitHubAwesomeCollector.java` (`read`, `searchText`, `listHits`).
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Ports.kt` (`ListText`, `ListEntryText`, `CollectedBatch.lists`),
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` (`ListText`, `ListEntryText`, `CollectedBatch.lists`),
   `Scout.kt` (`ListIndex`), `usecase/RunScout.kt` (`indexListsQuietly`),
-  `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`listIndex`).
+  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`listIndex`).
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `usecase/IndexAwesomeLists.java`,
   `internal/AwesomeListIndex.java`, `internal/ResourceStore.java` (`searchSql`, `searchFound`),
   `internal/CatalogSearchSource.java`, `internal/CatalogRetention.java` (`deleteListIndexUpdatedBefore`).
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `SourceHit.foundIn`, `MergedResult.foundIn`),
-  `backend/apps/helper2/src/main/java/ai/helper2/search/web/CardMapper.java`, `search/cache/SourceHitCodec.java`.
+  `backend/apps/common-web/src/main/java/ai/helper2/search/web/CardMapper.java`, `search/cache/SourceHitCodec.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V13__awesome_list_search.sql`; `api/common.yaml` (`ResultCard.foundIn`,
   `ListMatch`).
 - `frontend/src/components/results/ResultRow.tsx`, `results.css`; `frontend/src/i18n/locales/en.json`

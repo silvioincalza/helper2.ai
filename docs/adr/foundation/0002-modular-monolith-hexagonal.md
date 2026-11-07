@@ -83,7 +83,7 @@ internals. Microservices would add network calls and deploys without a scaling n
 
 ## Code
 - `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
-- `backend/apps/helper2/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon rules.
+- `backend/apps/public/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon rules.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.
 - `backend/libs/identity/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog,RetentionPeriods}.java`, `.../admin/ExampleDrafts.java`

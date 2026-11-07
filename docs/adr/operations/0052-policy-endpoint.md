@@ -40,8 +40,10 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
    page rounds seconds to hours, days or months.
 3. **Each module publishes its own numbers.** The module that owns a setting builds one small value from its
    `@ConfigurationProperties` records at startup, in its base package: `search.SearchPolicy`, `guide.GuidePolicy`,
-   `identity.AccountPolicy`, `catalog.CatalogPolicy`, `scout.ScoutPolicy`. The config records stay internal to their
-   module. The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
+   `identity.AccountPolicy`, `catalog.CatalogPolicy`, `catalog.ScoutPolicy`. The config records stay internal to their
+   module. The Scout runs in the back office and this endpoint in the public app, so the Scout's numbers live in the
+   catalog library, with the limits the Scout's code reads, and the public app binds the two retention periods
+   (`helper2.scout.evidence`) from the same `H2_` variables ([0069](0069-three-deployables.md)). The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
    from the platform directly: they belong to no module.
 4. **A thin `policy` module serves them.** Like the back office, it composes other modules and owns no table; no module
    depends on it. `policy.web.PolicyController` maps the five values to the contract. There is no use case: the
@@ -50,7 +52,7 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
    with a restart, so 5 minutes of a stale number after a deploy is acceptable. No ETag: the body is a few hundred
    bytes, and no endpoint of the API has one yet. The `policy` limiter allows `H2_RATE_LIMIT_RECENT_PER_MINUTE`
    requests per client address and minute, like the other public reads.
-6. **Public in the security chain.** `/api/v1/policy` is in the `permitAll` list of `SecurityConfiguration`. It is
+6. **Public in the security chain.** `/api/v1/policy` is in the `permitAll` list of the public app's `PublicSecurityConfiguration`. It is
    not a page, so the pages for crawlers do not use it.
 
 ## Consequences
@@ -75,20 +77,20 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
 
 ## Code
 - `api/public.yaml` — `GET /policy`, schemas `Policy` and `WebSearchLimits`.
-- `backend/apps/helper2/src/main/java/ai/helper2/policy/` — the module and `web/PolicyController.java`.
+- `backend/apps/public/src/main/java/ai/helper2/policy/` — the module and `web/PolicyController.java`.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
   `backend/libs/identity/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
-  `scout/ScoutPolicy.java` — the values; built in `search/config/SearchConfiguration.java`,
-  `guide/internal/GuideConfiguration.java`, `identity/config/IdentityPolicyConfiguration.java`,
-  `catalog/internal/CatalogConfiguration.java`, `scout/internal/ScoutConfiguration.java`.
+  `catalog/ScoutPolicy.java`, `catalog/config/ScoutEvidenceProperties.java` — the values; built in
+  `search/config/SearchConfiguration.java`, `guide/internal/GuideConfiguration.java`,
+  `identity/config/IdentityPolicyConfiguration.java`, `catalog/internal/CatalogConfiguration.java` (also `ScoutPolicy`).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
   `H2_RETENTION_BACKUPS`, set by `deploy/helm/helper2/templates/app.yaml` from `backup.retentionDays`),
   `platform/config/CategoriesProperties.java` (`discoverySearches`), `platform/quota/RedisQuotaCounter.java` and
   `platform/llm/RedisCallCounter.java` (`KEEP`) — the platform's numbers.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
-- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — the public path.
-- `backend/apps/helper2/src/test/java/ai/helper2/policy/web/PolicyControllerTest.java` — every number comes from its module.
-- `backend/apps/helper2/src/test/java/ai/helper2/api/PolicyApiIT.java` — contract, cache header, values from configuration, rate limit.
+- `backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java` — the public path.
+- `backend/apps/public/src/test/java/ai/helper2/policy/web/PolicyControllerTest.java` — every number comes from its module.
+- `backend/apps/public/src/test/java/ai/helper2/api/PolicyApiIT.java` — contract, cache header, values from configuration, rate limit.
 
 ## Diagrams
 [flow](../../diagrams/flow-0052-policy-endpoint.svg) · [sequence](../../diagrams/sequence-0052-policy-endpoint.svg)

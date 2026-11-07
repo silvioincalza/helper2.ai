@@ -201,17 +201,17 @@ are judgements: a model may estimate them, and the page says so. The description
   labelled, is more helpful and is never presented as a fact.
 
 ## Code
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/OfficialPages.kt` — `FieldTargets`, `PageTargets`, `PageScope`, `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`, `DomainRoots`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt` — the code re-check, port `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java`, `catalog/enrichment/StoredEnrichments.java` (implemented by `JdbcEnrichmentResults`); `admin/web/AdminController.java`; `frontend/src/pages/admin/ScoutRunsPage.tsx`.
-- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/RedisPageTextCache.java` — the 24-hour cleaned text.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `FINGERPRINT_EPOCH`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt` — stating words, `PricingWords`, `ClaimCheck`, judgement fields, self-declared rules.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the ladder, `helper2.scout.fields`.
-- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `UntrustedPageText`, `GapKind.OFFICIAL_PAGE`.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/OfficialPages.kt` — `FieldTargets`, `PageTargets`, `PageScope`, `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`, `DomainRoots`.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt` — the code re-check, port `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java`, `catalog/enrichment/StoredEnrichments.java` (implemented by `JdbcEnrichmentResults`); `admin/web/AdminController.java`; `frontend/src/pages/admin/ScoutRunsPage.tsx`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/RedisPageTextCache.java` — the 24-hour cleaned text.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `FINGERPRINT_EPOCH`.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt` — stating words, `PricingWords`, `ClaimCheck`, judgement fields, self-declared rules.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the ladder, `helper2.scout.fields`.
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `UntrustedPageText`, `GapKind.OFFICIAL_PAGE`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
-- `backend/apps/helper2/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java`, `PublicSuffixDomains.java`; beans in `sources/config/SourcesConfiguration.java`.
-- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
-- `backend/apps/helper2/src/main/resources/prompts/scout/enrich-v4.txt`, `db/migration/V11__evidence_ladder_origins.sql`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java`, `PublicSuffixDomains.java`; beans in `sources/config/SourcesConfiguration.java`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
+- `backend/apps/backoffice/src/main/resources/prompts/scout/enrich-v5.txt`, `db/migration/V11__evidence_ladder_origins.sql`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (origins), `JdbcEnrichmentCandidates.java` (accepted products first).
 - `api/common.yaml, api/public.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`.

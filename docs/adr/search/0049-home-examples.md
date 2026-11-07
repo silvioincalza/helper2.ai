@@ -113,7 +113,7 @@ same for every visitor.
   `SearchExampleSearch`, `CatalogResourceTitles`, `HomeExampleCheckSchedule`, `SpringAiExampleDrafter`,
   `CatalogDraftSources`, `ExamplesConfiguration`), `web/HomeExamplesController.java`; the prompt
   `backend/libs/examples/src/main/resources/prompts/examples/draft.txt`.
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java`
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java`
   (accept adds the drafted example), `admin/usecase/GetOverview.java` and `admin/web/OverviewController.java` (the
   counts on the overview), `catalog/usecase/ListWellKnownResources.java`.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
