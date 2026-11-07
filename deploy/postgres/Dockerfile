@@ -29,5 +29,9 @@ RUN apk add --no-cache --virtual .pgvector-build build-base git \
     && rm -rf /tmp/pgvector \
     && apk del .pgvector-build
 
+# No gosu: the entrypoint calls it only to switch from root to postgres, and the image never starts as root.
+# It carries its own Go standard library, which the scan flags and only upstream can rebuild (ADR 0046).
+RUN rm /usr/local/bin/gosu
+
 # Ends as postgres (uid 70), the user the chart runs it as (runAsUser: 70), not as root.
 USER postgres
