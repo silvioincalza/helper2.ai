@@ -213,7 +213,7 @@ are judgements: a model may estimate them, and the page says so. The description
 - `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
 - `backend/apps/helper2/src/main/resources/prompts/scout/enrich-v4.txt`, `db/migration/V11__evidence_ladder_origins.sql`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (origins), `JdbcEnrichmentCandidates.java` (accepted products first).
-- `api/openapi.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
+- `api/common.yaml, api/public.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`.
 - Tests: `FieldTargetsTest`, `EvidenceValidatorLadderTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
   `TavilyExtractTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`, `RedisPageTextCacheIT`,

@@ -47,7 +47,7 @@ must also remove the flag.
 - `backend/apps/helper2/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
 - `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `replaceLabels`, `MAX_TAGS`.
-- `api/openapi.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`, `GuideRecommendation.compatibleWith`.
+- `api/common.yaml, api/public.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`, `GuideRecommendation.compatibleWith`.
 - `frontend/src/components/results/ResultFacts.tsx` — "Works with" in the Build facts of the preview and the resource page; the reason as tooltip and screen-reader text.
 
 ## Diagrams

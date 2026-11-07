@@ -75,7 +75,7 @@ show progress, and every claim on the page must be traceable to a real result.
 - `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan and choose calls.
 - `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
 - `backend/apps/helper2/src/main/resources/prompts/guide/plan.txt`, `choose.txt`.
-- `api/openapi.yaml` — `/guide`, `/guide/stream` (tag `guide-stream`), `GuideStream*` schemas.
+- `api/public.yaml` — `/guide`, `/guide/stream` (tag `guide-stream`), `GuideStream*` schemas.
 
 ## Diagrams
 [flow](../../diagrams/flow-0015-ai-guide-evidence-gate.svg) · [sequence](../../diagrams/sequence-0015-ai-guide-evidence-gate.svg)

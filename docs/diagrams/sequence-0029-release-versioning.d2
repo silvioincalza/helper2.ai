@@ -16,7 +16,7 @@ prod: "Prod deploy\n(deploy.yml, self-hosted)" {class: app}
 visitor: "Visitor\n(site footer)" {class: person}
 
 tag: Release vX.Y.Z {
-  owner -> owner: "bump the version in build.gradle.kts,\npackage.json, Chart.yaml, openapi.yaml\n(release commit, merged to main)"
+  owner -> owner: "bump the version in build.gradle.kts,\npackage.json, Chart.yaml,\npublic.yaml, admin.yaml, common.yaml\n(release commit, merged to main)"
   owner -> github: "git push origin vX.Y.Z\n(annotated tag on a commit of main\nor of a release/* branch, 0048)" {class: hot}
   github -> runner: "push event: tag v*,\nbefore, forced, deleted" {class: hot}
   runner -> runner: "deleted, forced or a previous\nvalue? fail: tags are immutable"

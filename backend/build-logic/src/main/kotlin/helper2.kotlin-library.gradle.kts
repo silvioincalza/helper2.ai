@@ -106,9 +106,6 @@ tasks.named<Jar>("jar") {
   }
 }
 
-// The OpenAPI contract, for the tests that check controllers and DTOs against it.
-val openApiSpec = rootProject.layout.projectDirectory.file("../api/openapi.yaml")
-
 // Testcontainers on Podman (macOS): if DOCKER_HOST is unset and a Podman machine is running, point
 // Testcontainers at its socket and disable Ryuk (unsupported on rootless Podman). Docker users are
 // unaffected.
@@ -134,7 +131,6 @@ tasks.withType<Test>().configureEach {
   // the test context cache, and CI ran out of memory twice (5 Nov 2026: #169, then main after the
   // config PRs). 2 GB leaves room for Postgres and Redis on a 7 GB GitHub runner.
   maxHeapSize = "2g"
-  systemProperty("openapi.spec", openApiSpec.asFile.absolutePath)
   // Hermetic tests: never pick up a developer's .env (keys, sources, ports).
   // spring.config.import="" alone did not stop it: application.yaml's own import still loaded
   // ../.env.

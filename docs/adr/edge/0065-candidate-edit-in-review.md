@@ -71,7 +71,7 @@ The type was also locked to the finders: a discovery category declares only its 
   `ReviewQueueCandidateItems.java`, `ReviewQueueCandidateReview.java`, `ScoutConfiguration.java`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
   `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
-- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`CandidateEdit`,
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`CandidateEdit`,
   `CandidateType`, audit action).
 - `backend/libs/schema/src/main/resources/db/migration/V21__candidate_edit.sql`.
 - `frontend/src/pages/admin/CandidateEditForm.tsx`, `ReviewItemDetails.tsx`, `ReviewQueuePage.tsx`.

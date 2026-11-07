@@ -8,18 +8,26 @@ types on both sides drift apart quietly. The application programming interface (
 every source has a status), and these rules must be visible in one place that both sides read.
 
 ## Decision
-1. **One contract.** `api/openapi.yaml` (OpenAPI 3.1.0, `servers: /api/v1`) is the source of truth for every
-   Representational State Transfer (REST) endpoint and schema. Code follows the file, not the other way around.
-2. **Server side generated.** The Gradle task `openApiGenerate` (generator `spring`, `interfaceOnly`,
+1. **One contract, three files.** The contract (OpenAPI 3.1.0, `servers: /api/v1`) is the source of truth for every
+   Representational State Transfer (REST) endpoint and schema. Code follows the files, not the other way around.
+   `api/public.yaml` holds the public API, `api/admin.yaml` the back office API (`/admin/**`), and `api/common.yaml`
+   the types both use and the read-only paths the back office web app calls too (`/search`, `/sources`,
+   `/categories`), referenced from both files. `admin.yaml` has its own `GET /me`: the public `/me` also deletes
+   the account. A schema or a path has one meaning: `BundleContract` stops the build when two files define the same
+   name differently.
+2. **Server side generated.** `bundleContract` joins the files the app serves into one
+   (`build/openapi/contract.yaml`, the components of `common.yaml` copied in under their own names); the Gradle task
+   `openApiGenerate` (generator `spring`, `interfaceOnly`,
    `useSpringBoot4`, `useJackson3`, `useTags`) writes controller interfaces to `ai.helper2.api.generated` and
    Data Transfer Objects (DTOs, suffix `Dto`) to `ai.helper2.api.generated.model`. It runs before every
    Java and Kotlin compile. Controllers implement these interfaces (for example `MeController implements MeApi`).
-3. **Client side generated.** `npm run gen:api` runs `openapi-typescript --enum-values` and writes
-   `frontend/src/api/schema.ts` (not committed): the types, plus one array of values per enum, so client code that
+3. **Client side generated.** `npm run gen:api` runs `openapi-typescript --enum-values` on `public.yaml` and
+   `admin.yaml` and writes `frontend/src/api/schema.ts` and `admin-schema.ts` (not committed): the types, plus one array of values per enum, so client code that
    needs an enum's values at run time reads them from the contract too. Lint, typecheck, test and build regenerate
    it first.
 4. **Responses checked against the contract.** API integration tests validate real response bodies against
-   the component schemas with a JavaScript Object Notation (JSON) Schema 2020-12 validator (`ContractValidator`).
+   the component schemas of the joined contract with a JavaScript Object Notation (JSON) Schema 2020-12 validator
+   (`ContractValidator`).
 5. **Errors as problem+json, with Spring's own `ProblemDetail`.** `platform.ApiExceptionHandler` answers with Request for
    Comments (RFC) 9457 problem details (`application/problem+json`, `spring.mvc.problemdetails.enabled`). Every problem
    has a type from `platform.ProblemType`: the `type` URI `https://helper2.ai/problems/<code>` and the same stable
@@ -53,8 +61,9 @@ every source has a status), and these rules must be visible in one place that bo
 - Hand-written TypeScript types — they drift; nothing fails when they do.
 
 ## Code
-- `api/openapi.yaml` — the contract.
-- `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` (task `openApiGenerate`) — server generation settings.
+- `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — the contract.
+- `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` (tasks `bundleContract`, `openApiGenerate`) — server generation settings.
+- `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/BundleContract.kt` — joins the files, one meaning per name.
 - `backend/apps/helper2/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
 - `backend/apps/helper2/src/main/java/ai/helper2/platform/ContractEnumConverters.java` — enum binding.

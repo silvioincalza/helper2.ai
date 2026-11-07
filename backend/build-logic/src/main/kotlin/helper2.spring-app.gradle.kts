@@ -1,3 +1,4 @@
+import ai.helper2.buildlogic.BundleContract
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 // A runnable Spring Boot app: the backend conventions, the boot jar, and the controller interfaces
@@ -12,13 +13,23 @@ plugins {
 // dev profile starts ../compose.yaml, both relative to the working directory.
 tasks.named<JavaExec>("bootRun") { workingDir = rootProject.projectDir }
 
-// Contract-first: controller interfaces + DTOs are generated from ../api/openapi.yaml.
-val openApiSpec = rootProject.layout.projectDirectory.file("../api/openapi.yaml")
+// Contract-first (ADR 0003): controller interfaces + DTOs are generated from the app's
+// contract. While one app serves both, that is ../api/public.yaml and ../api/admin.yaml joined into
+// one file, with the types of ../api/common.yaml.
+val apiDir = rootProject.layout.projectDirectory.dir("../api")
+val contract = layout.buildDirectory.file("openapi/contract.yaml")
+val bundleContract =
+  tasks.register<BundleContract>("bundleContract") {
+    entries.from(apiDir.file("public.yaml"), apiDir.file("admin.yaml"))
+    referenced.from(apiDir.asFileTree.matching { include("*.yaml") })
+    bundle.set(contract)
+  }
 val generatedApiDir = layout.buildDirectory.dir("generated/openapi")
 
 tasks.named<GenerateTask>("openApiGenerate") {
+  dependsOn(bundleContract)
   generatorName.set("spring")
-  inputSpec.set(openApiSpec.asFile.path)
+  inputSpec.set(contract.get().asFile.path)
   outputDir.set(generatedApiDir.get().asFile.path)
   apiPackage.set("ai.helper2.api.generated")
   modelPackage.set("ai.helper2.api.generated.model")
@@ -53,3 +64,9 @@ sourceSets { main { java.srcDir(generatedApiDir.map { it.dir("src/main/java") })
 tasks.named("compileJava") { dependsOn("openApiGenerate") }
 
 tasks.named("compileKotlin") { dependsOn("openApiGenerate") }
+
+// The tests that check responses against the contract read the joined file.
+tasks.withType<Test>().configureEach {
+  dependsOn(bundleContract)
+  systemProperty("openapi.spec", contract.get().asFile.absolutePath)
+}

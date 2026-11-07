@@ -74,7 +74,7 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
   the values of the running cluster.
 
 ## Code
-- `api/openapi.yaml` — `GET /policy`, schemas `Policy` and `WebSearchLimits`.
+- `api/public.yaml` — `GET /policy`, schemas `Policy` and `WebSearchLimits`.
 - `backend/apps/helper2/src/main/java/ai/helper2/policy/` — the module and `web/PolicyController.java`.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
   `backend/libs/identity/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
