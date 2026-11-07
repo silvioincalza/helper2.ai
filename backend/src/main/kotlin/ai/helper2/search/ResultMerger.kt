@@ -38,7 +38,24 @@ constructor(
 
   fun merge(hits: List<SourceHit>, contexts: Map<String, SourceContext>): List<MergedResult> {
     val joining = joiningRepositories(hits)
-    return group(hits, joining).map { mergeGroup(it, contexts) }
+    return group(hits, joining).map { withCurated(mergeGroup(it, contexts), it) }
+  }
+
+  /**
+   * [merged] with the values an admin set (ADR 0066), carried by the catalog's hit: each curated
+   * field wins over the other sources and is no longer a conflict.
+   */
+  private fun withCurated(merged: MergedResult, group: List<SourceHit>): MergedResult {
+    val curated = group.firstOrNull { it.curatedFields.isNotEmpty() } ?: return merged
+    return merged.withCurated(
+      curated.curatedFields,
+      curated.type,
+      curated.audience,
+      curated.techLevel,
+      curated.license,
+      curated.pricing,
+      curated.openSource,
+    )
   }
 
   /**

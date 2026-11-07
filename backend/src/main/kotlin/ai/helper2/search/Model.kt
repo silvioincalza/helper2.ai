@@ -171,6 +171,11 @@ constructor(
    * (ADR 0055), not by its own text.
    */
   val foundIn: ListMatch? = null,
+  /**
+   * The fields an admin set on this resource (ADR 0066); empty for every live source. The merged
+   * result takes this hit's value of each of them over what the other sources say.
+   */
+  val curatedFields: Set<String> = emptySet(),
 ) {
   /** The same hit at [rank] in its source's ranking. */
   fun withRank(rank: Int): SourceHit = copy(rank = rank)

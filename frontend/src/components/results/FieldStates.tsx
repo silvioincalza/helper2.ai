@@ -46,7 +46,10 @@ function fromCard(field: Field, detail: ResourceDetail): string[] {
   }
 }
 
-/** The enrichment's values of a field: verified facts first, then an estimate. Unproven facts state nothing. */
+/**
+ * The enrichment's values of a field: verified facts first, then an estimate. Unproven facts state nothing, and a
+ * rejected estimate (a reviewer's reject or an admin's drop, ADR 0066) states nothing either.
+ */
 function fromEnrichment(field: Field, assertions: Assertion[]): State {
   const mine = assertions.filter((a) => a.field === field && isAiOrigin(a.origin));
   const conflict = mine.filter((a) => a.verification === 'CONFLICTING');
@@ -55,7 +58,9 @@ function fromEnrichment(field: Field, assertions: Assertion[]): State {
     const verified = mine.filter((a) => a.origin === origin && a.verification === 'VERIFIED');
     if (verified.length) return { kind: 'values', values: verified.map((a) => a.value), origin };
   }
-  const estimated = mine.filter((a) => a.origin === 'AI_ESTIMATED');
+  const estimated = mine.filter(
+    (a) => a.origin === 'AI_ESTIMATED' && a.verification !== 'REJECTED',
+  );
   if (estimated.length)
     return { kind: 'values', values: estimated.map((a) => a.value), origin: 'AI_ESTIMATED' };
   return { kind: 'notStated' };

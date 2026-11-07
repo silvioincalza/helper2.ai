@@ -490,6 +490,33 @@ describe('resource detail', () => {
     expect(within(pricing).getByText('Paid')).not.toHaveAttribute('data-ai-generated');
   });
 
+  it('an estimate an admin dropped is no longer shown (ADR 0066)', async () => {
+    const estimate = (field: string, value: string, verification: 'UNVERIFIED' | 'REJECTED') => ({
+      field,
+      value,
+      origin: 'AI_ESTIMATED' as const,
+      verification,
+      sourceId: null,
+      evidence: [],
+    });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({ techLevel: null }),
+          assertions: [
+            estimate('audience', 'USE_AI', 'REJECTED'),
+            estimate('techLevel', 'ADVANCED', 'REJECTED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'Fields' });
+    const row = (field: string) =>
+      document.querySelector(`[data-field="${field}"] dd`) as HTMLElement;
+    expect(row('audience')).toHaveTextContent('Not stated');
+    expect(row('techLevel')).toHaveTextContent('Not stated');
+  });
+
   it('renders assertions with origin, verification and evidence excerpt', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>
