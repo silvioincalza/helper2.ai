@@ -21,7 +21,7 @@ class ManageDiscoveryHosts(
 ) {
 
   companion object {
-    /** The same bound as the database check on discovery_host.reason (V17). */
+    /** The same bound as the database check on discovery_host.reason (V1). */
     const val MAX_REASON = 500
 
     /** Enough for every host a person would name; more is a mistake or a script. */

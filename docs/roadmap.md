@@ -118,6 +118,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 
 ## 2. Operations
 
+- **First release reset, the databases** ([ADR 0004](adr/foundation/0004-persistence-schema-and-app-roles.md)): v3.0.0
+  has one `V1__schema.sql`, and a database that ran V1 to V23 of v2 refuses it (checksum, unknown applied
+  migrations). Replace `deploy/k8s/RESET-DATABASE.md` with the cutover runbook (PR 11 of the reset): recreate
+  staging and prod empty, and locally `podman compose down -v`. After the v3.0.0 tag, migrations are forward-only.
 - **Service split, next steps** ([ADR 0032](adr/operations/0032-runtime-topology.md)):
   - keep the previous release's assets in the web image: during a rollout a page from an old public pod can name an
     asset hash the new web pods no longer have, and Helm does not enforce the order web, public, back office;
@@ -167,12 +171,10 @@ Items are grouped by the order in which they matter. Inside a group, the first i
   - `postgres.image.digest`: the deploy now pins the digest it checked
     ([ADR 0033](adr/operations/0033-ci-cd-and-supply-chain.md)); the first such deploy restarts
     Postgres once. Pin it in `values.yaml` too for installs outside CI;
-  - **18 Nov 2026:** end of the report-only period. On 6 Nov code scanning held 66 open Critical or High findings
-    with a fix. The `-4` image (upstream rebuild of 6 Nov) cleared the Alpine ones; on 7 Nov all 35 left in the
-    Postgres image (3 Critical, 32 High) were the Go standard library inside `gosu`, which the `-5` image no longer
-    has. The app image holds 6 High (Debian `apt` and `libpcre2`), no Critical. Check the scan of `-5`, add any
-    exception that is justified to `.grype.yaml`, then let the `scan` job fail on a Critical finding with a fix
-    (`--fail-on critical` in `cd.yml`) and make it a need of `staging` there
+  - The `scan` job fails on a Critical finding with a fix and staging needs it (first release reset). On 7 Nov code
+    scanning still held one open Critical with a fix in the Postgres image and one in the web image (zlib,
+    CVE-2026-4738): fix them (a new base image) or add a justified exception to `.grype.yaml` before the first push of
+    `next/3.0` to `main`, or that staging deploy stops at the scan
     ([ADR 0033](adr/operations/0033-ci-cd-and-supply-chain.md)).
 - **Release branches** ([ADR 0034](adr/operations/0034-releases-and-versions.md)):
   - before the change merges (every release needs it): let the OpenBao role `deploy-prod` read `ci/harbor`, check

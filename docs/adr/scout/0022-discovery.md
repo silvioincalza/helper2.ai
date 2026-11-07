@@ -124,7 +124,7 @@ are candidates in the admin review list.
    A list page keeps Tavily's 400-character excerpt, the one shown in search. A product candidate keeps the whole
    excerpt, up to 2,400 characters, as evidence for its enrichment. `SourceHit.facts` carries these values to the
    catalog, outside the record's fingerprint, so a new `searchedAt` does not count as a change.
-8. **Candidates wait for a person.** A product is a `RESOURCE_CANDIDATE` review item (migration `V8`). Its details
+8. **Candidates wait for a person.** A product is a `RESOURCE_CANDIDATE` review item. Its details
    are the candidate as JSON, version 2 (`ResourceCandidateJson`): source (the first collector that found it), URL,
    title, type, tags, excerpt, and `foundBy`: one entry per collector that found it, with what its search said.
    Version 1 (without `foundBy`) is still read. The page is proposed once per URL, and never when the catalog already
@@ -182,13 +182,9 @@ are candidates in the admin review list.
       and what is kept from them.
 14. **Alerts.** `Helper2ScoutCollectorStale` leaves out `discovery-*`. One rule, `Helper2DiscoveryStale`, fires once
     per environment when any category has had no success for more than 8 days, and lists them.
-15. **Migration `V9`.** The records of the old single `tavily-discovery` collector move to `discovery-<first tag that
-    is a category>` (or `discovery-ai-assistants` when none is), with their `categories`; open candidates name their
-    new collector the same way; the old source goes with its cursor and run history. A resource that still names the
-    old source after retention deleted its discovery record (another record, a review item or a report kept it)
-    moves to `discovery-ai-assistants`, so the delete of the old source does not hit `ON DELETE RESTRICT`. No
-    compatibility with the old id is kept. V9 was fixed in place before prod ran it; staging needs its new checksum
-    set by hand ([RESET-DATABASE.md](../../../deploy/k8s/RESET-DATABASE.md#a-migration-edited-after-staging-ran-it)).
+15. **No old collector.** There is no `tavily-discovery` source: every database of v3.0.0 starts empty from the single
+    `V1__schema.sql`, so no record of the old single collector is left to move. No compatibility with the old id is
+    kept.
 
 ### Consequences
 - The catalog grows in the areas no registry covers. No product enters it from the open web without a person; list
@@ -270,7 +266,7 @@ are candidates in the admin review list.
   `CandidateDetails`, `CatalogLookup`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` — open candidate, update, category filter;
   `ResourceStore.java` (`extra`), `CatalogRetention.java`.
-- `backend/libs/schema/src/main/resources/db/migration/V8__resource_candidate.sql`, `V9__discovery_categories.sql`;
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `RESOURCE_CANDIDATE` review kind);
   `R__curated_seed.sql` — the directories, linked, not copied.
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` — accept = index, then decide.
 - `frontend/src/components/sources/Sources.tsx` (family row groups), `DiscoveryCategories.tsx` (the notices),
@@ -470,8 +466,8 @@ The runtime settings ([0007](../foundation/0007-configuration-secrets-and-settin
 audit keeps 100 characters a value. A list of hosts does not fit there.
 
 ### Decision
-1. **A table of hosts.** `discovery_host` (V17): one row per host, its kind (WRITING or DIRECTORY), who added it,
-   when and why. The host is the key, so a host is in one list only. V17 seeds the lists that were in code. The Scout
+1. **A table of hosts.** `discovery_host` (`V1__schema.sql`): one row per host, its kind (WRITING or DIRECTORY), who added it,
+   when and why. The host is the key, so a host is in one list only. V1 seeds the lists that were in code. The Scout
    owns the table (`scout.DiscoveryHostStore`, `JdbcDiscoveryHostStore`).
 2. **Read once per run.** Tavily discovery and the awesome-list collector read both lists at the start of each run
    and build their `DiscoveryPages` from them. A change applies at the next run; a run already going keeps the lists
@@ -530,7 +526,7 @@ audit keeps 100 characters a value. A list of hosts does not fit there.
   `TavilyDiscoveryCollector.java`, `sources/github/GitHubAwesomeCollector.java`, `ProductLinks.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
   (`DiscoveryHosts`, `DiscoveryHostEntry`, `DiscoveryHostAdd`, `DiscoveryHostRemove`).
-- `backend/libs/schema/src/main/resources/db/migration/V17__discovery_host.sql`; `identity/AuditTrail.java` (the two actions).
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`discovery_host` and its seed rows); `identity/AuditTrail.java` (the two actions).
 - `frontend/src/pages/admin/DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`.
 - Tests: `ManageDiscoveryHostsTest`, `JdbcDiscoveryHostStoreIT` (the seed), `DiscoveryHostsApiIT`, `DiscoveryPagesTest`,
   `TavilyDiscoveryCollectorTest`, `DiscoveryHostsPanel.test.tsx`.

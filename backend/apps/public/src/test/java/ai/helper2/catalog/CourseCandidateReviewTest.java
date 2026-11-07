@@ -18,8 +18,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * V3 migration (ADR 0016 (part was 0032) §8): COURSE is a resource type, and course pages Scout
- * finds wait in review, once per URL.
+ * The schema (ADR 0016 (part was 0032) §8): COURSE is a resource type, and course pages Scout finds
+ * wait in review, once per URL.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)

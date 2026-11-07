@@ -55,6 +55,12 @@ public class TestcontainersConfiguration {
   static final String TEST_PASSWORD = "test-only-0123456789abcdef0123456789abcdef";
 
   /**
+   * The database's encoding and locale, as the chart and compose.yaml create it; V1 refuses any
+   * other (ADR 0004 §5).
+   */
+  public static final String POSTGRES_INITDB_ARGS = "--encoding=UTF8 --locale=en_US.utf8";
+
+  /**
    * Every cached Spring test context keeps its own pool (H2_DATABASE_POOL_SIZE, 10) on this one
    * container, and Spring keeps up to 32 contexts: Postgres' default of 100 connections runs out
    * ("too many clients already").
@@ -62,6 +68,7 @@ public class TestcontainersConfiguration {
   public static final PostgreSQLContainer POSTGRES =
       new PostgreSQLContainer(
               DockerImageName.parse(POSTGRES_IMAGE).asCompatibleSubstituteFor("postgres"))
+          .withEnv("POSTGRES_INITDB_ARGS", POSTGRES_INITDB_ARGS)
           .withCommand("postgres", "-c", "max_connections=400");
 
   public static final GenericContainer<?> REDIS =

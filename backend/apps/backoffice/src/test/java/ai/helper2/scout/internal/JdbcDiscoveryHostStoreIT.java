@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
-/** Discovery's host lists in Postgres (ADR 0022): the seed of V17, add and remove. */
+/** Discovery's host lists in Postgres (ADR 0022): the seed of V1, add and remove. */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class JdbcDiscoveryHostStoreIT {

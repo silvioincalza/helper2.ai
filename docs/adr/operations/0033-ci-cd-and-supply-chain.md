@@ -34,8 +34,8 @@ never run where deploy credentials exist, and GitHub must hold no long-lived sec
    the self-hosted runner runs `make postgres-image` and `make ci-images`: the images of the components that changed
    are built and pushed, the others get the new tag on their previous digest, and `make sign` signs every new digest
    ([the part that was ADR 0071](#part-0071)). The image tag is the first 12 characters of the commit,
-   built from `git archive`. A `scan` job on a GitHub-hosted runner then scans the SBOMs of the images
-   ([the part that was ADR 0046](#part-0046)).
+   built from `git archive`. A `scan` job on a GitHub-hosted runner then scans the SBOMs of the images, and staging
+   waits for it ([the part that was ADR 0046](#part-0046)).
 3. **Staging on every push, prod on a release.** `deploy.yml` (reusable, `workflow_call` only) checks the
    signature of every image (`make verify-images`, [the part that was ADR 0071](#part-0071)), then runs
    `make diff`, `make deploy` (images by digest), `make status` for one GitHub environment. `cd.yml` calls it for `staging` after each push to
@@ -100,7 +100,7 @@ never run where deploy credentials exist, and GitHub must hold no long-lived sec
 
 <a id="part-0046"></a>
 
-## Part: was ADR 0046 — Supply chain: base images pinned by digest, an SBOM per image, a vulnerability scan, report-only first
+## Part: was ADR 0046 — Supply chain: base images pinned by digest, an SBOM per image, a vulnerability scan that stops a Critical with a fix
 
 **Status.** Accepted. **Builds on:** [0032](0032-runtime-topology.md), [the part that was ADR 0028](#part-0028), [0034](0034-releases-and-versions.md)
 
@@ -130,9 +130,12 @@ CI secrets (CVE-2026-33634).
      `helper2-vX.Y.Z.cdx.json`. It is public: it lists packages and versions, no data.
    - Weekly (`image-scan.yml`, Monday): Grype with a fresh database against the SBOM of the latest release, so a CVE
      published after a release is found without a new build. Category `release/app`, on the release tag.
-4. **Report-only first.** Until 18 Nov 2026 nothing fails a build: two weeks to see the findings and the noise.
-   Then the `scan` job in `cd.yml` fails on a Critical finding that has a fix (`--fail-on critical --only-fixed`)
-   and becomes a need of the staging deploy, so such an image never reaches staging, and so never prod.
+4. **A Critical finding with a fix stops the deploy.** The `scan` job in `cd.yml` scans every image and uploads its
+   findings first, then fails when any image has a Critical finding that has a fix (`--only-fixed --fail-on
+   critical`; Grype exits 2 for it, and any other exit is an error of the scan itself). The staging deploy needs the
+   job, so such an image never reaches staging, and so never prod: a release needs the CD run of its commit to have
+   succeeded. The first release reset switched this on (it was report-only until 18 Nov 2026). The weekly scan
+   (`image-scan.yml`) stays report-only: it reads what already runs, and has nothing to stop.
 5. **Exceptions** live in `.grype.yaml`, empty today: each one names the vulnerability, the reason and a review date.
 6. **Signatures.** Every image CD pushes, and the Postgres image, is signed by digest with a key in OpenBao Transit,
    and a deploy runs only images whose signature it checked, pinned by digest
@@ -147,7 +150,9 @@ No runtime path: this decision runs in CI only, so it has no sequence diagram.
   or within a week for what already runs. The pull request itself does not show it: the price of light PRs.
 - A moved base-image tag cannot change a build: a new digest arrives as a Dependabot pull request.
 - The `scan` job on `main` takes a few minutes: Grype is built from source (about 2 minutes) and its database is
-  downloaded once a day. It runs beside the staging deploy, not before it, while the scan is report-only.
+  downloaded once a day. Staging waits for it.
+- A new Critical with a fix in a base image or a library stops the staging deploy until it is fixed, or until
+  `.grype.yaml` holds an exception with its reason and a review date.
 - A broken `deploy/Dockerfile` is found on `main` (the CD `image` job fails, staging keeps its version), not on the
   pull request.
 - The scanner versions are pinned by hand: Dependabot does not see them.
@@ -157,6 +162,9 @@ No runtime path: this decision runs in CI only, so it has no sequence diagram.
   Grype plus a separate SBOM tool keeps the SBOM usable by any scanner.
 - Docker Scout — needs a Docker account and sends the image metadata to Docker.
 - Fail on Critical from day one — with no baseline, the first week of pull requests would be blocked by old findings.
+  Two weeks of reports came first; the first release reset turned the gate on.
+- Fail on High as well — the Debian `apt` and `libpcre2` findings of the app image would block every deploy for
+  packages the app does not call; High findings stay in code scanning.
 - Scan in the cluster (an operator) — more to run for a one-person team; the weekly job covers what runs.
 
 ### Code
@@ -171,7 +179,6 @@ No runtime path: this decision runs in CI only, so it has no sequence diagram.
 [flow](../../diagrams/flow-0033-supply-chain.svg)
 
 ### Roadmap
-- [Fail the `scan` job in `cd.yml` on a Critical finding with a fix, from 18 Nov 2026](../../roadmap.md#2-operations).
 - Signature check in the cluster as well (admission controller, infra side): [roadmap](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).
 

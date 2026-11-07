@@ -150,8 +150,8 @@ We want categories that every resource can have, whatever source found it, and t
 them assigned by code first, and measured on labelled items before a model is ever considered.
 
 ### Decision
-1. **A label kind of its own.** A resource's categories are `resource_label` rows of kind `CATEGORY` (migration
-   `V11`), apart from `TAG`. They do not count in the 20 tags. A resource can have several.
+1. **A label kind of its own.** A resource's categories are `resource_label` rows of kind `CATEGORY` (`V1__schema.sql`),
+   apart from `TAG`. They do not count in the 20 tags. A resource can have several.
 2. **The categories come from one list.** `helper2.categories` in `application.yaml` stays the one list
    ([0022](../scout/0022-discovery.md)). Search and the catalog read it through `CategoriesProperties`
    (platform) into a `CategoryCatalog` (shared kernel): id, name, short name, family, words, require-keyword and the
@@ -251,7 +251,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 | 4 | Tool & API | Covered: `GET /categories`, `?category=`, `GuideRequest.categories`, admin backfill, in the contract. |
 | 5 | Memory | Covered: the filter is in the URL; the guide's cache key includes it. |
 | 6 | Knowledge & RAG | Covered: retrieval filters by category before the guide chooses; no re-ranking change. |
-| 7 | Data | Covered: `CATEGORY` labels (V11), `catalog_marker`; provenance is the records the matcher read. |
+| 7 | Data | Covered: `CATEGORY` labels, `catalog_marker` (V1); provenance is the records the matcher read. |
 | 8 | Browser & Computer Use | Deferred: not used. |
 | 9 | Guardrails | Covered: ids checked against the list (400); require-keyword categories; no AI text read. |
 | 10 | Observability | Covered: backfill metric and log line; no user text logged. |
@@ -286,7 +286,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 - `backend/apps/common-web/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
   `CardMapper.java`; `admin/web/AdminController.java`; `guide/web/GuideStreamController.java`;
   `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
-- `backend/libs/schema/src/main/resources/db/migration/V12__resource_categories.sql`; the `R__` seeds keep `CATEGORY` labels.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`CATEGORY` labels, `catalog_marker`); the `R__` seeds keep `CATEGORY` labels.
 - `frontend/src/components/CategoryFacet.tsx`, `FilterPanel.tsx`, `ActiveFilters.tsx`,
   `components/results/CategoryLinks.tsx`, `Resource.tsx`, `Results.tsx`, `hooks/useCategories.ts`,
   `hooks/useGuideStream.ts`, `lib/searchState.ts`, `pages/admin/CategoryBackfill.tsx`.

@@ -8,9 +8,11 @@ This file is the mapping. `scripts/adr-renumber.py` reads it and rewrites the re
 - A merged record is, for now, the old records one after the other, each under `## Part: was ADR NNNN`. Its context
   PR of the reset writes the merged text (the column "Texts merged in"); PR 13 does the ones no context PR owns.
 - 0038 ("First release reset") is not created here. PR 13 writes it, or makes it a section of 0034.
-- The applied migrations (`backend/libs/schema/src/main/resources/db/migration/V*.sql`) keep the old numbers in their
-  comments: changing them changes their Flyway checksums. PR 1b replaces them with one V1. The repeatable seeds
-  (`R__*.sql`) are rewritten: they are idempotent, and a changed one only runs again.
+- The applied migrations (`backend/libs/schema/src/main/resources/db/migration/V*.sql`) kept the old numbers in their
+  comments: changing them changes their Flyway checksums. PR 1b replaced them with one `V1__schema.sql` that cites the
+  new numbers, and `adr-check.py` checks it like any file. `adr-renumber.py` still skips V*.sql, so the check below,
+  run on the tree before 1a, gives the 1a change. The repeatable seeds (`R__*.sql`) are rewritten: they are
+  idempotent, and a changed one only runs again.
 - The Postgres image's build files (`deploy/postgres/`) keep their old numbers too: any change there needs a new
   `postgres.image.tag` (CI's postgres-tag check), so a rebuild, a new digest and a signature, for a comment. They move
   with the next real Postgres tag.
@@ -139,8 +141,8 @@ hand.
 | 0064 | `docs/adr/edge/0064-relationship-target-in-review.md` | 0026 | edge | `0026-back-office-and-review.md` | 0045, 0065, 0066 |  |
 | 0065 | `docs/adr/edge/0065-candidate-edit-in-review.md` | 0026 | edge | `0026-back-office-and-review.md` | 0045, 0064, 0066 |  |
 | 0066 | `docs/adr/edge/0066-curated-field.md` | 0026 | edge | `0026-back-office-and-review.md` | 0045, 0064, 0065 |  |
-| 0067 | `docs/adr/scout/0067-live-web-events-scout.md` | 0021 | scout | `0021-collectors-and-events.md` | 0020, 0022, 0061 | Proposed in 1a, to confirm. An events collector: it feeds the same events list as 0022 and amends 0022 §6. |
-| 0068 | `docs/adr/foundation/0068-backend-libraries-and-apps.md` | 0002 | foundation | `0002-modular-monolith-libraries-and-apps.md` | 0002 | Proposed in 1a, to confirm. The module map: libraries and apps are how the modules of 0002 are built. |
-| 0069 | `docs/adr/operations/0069-three-deployables.md` | 0032 | operations | `0032-runtime-topology.md` | 0027 | Proposed in 1a, to confirm. What runs where: three images, Deployments and hosts, as 0027 describes the chart. |
-| 0070 | `docs/adr/operations/0070-app-roles.md` | 0004 | foundation | `0004-persistence-schema-and-app-roles.md` | 0004 | Proposed in 1a, to confirm. The roles and grants live in the schema migration and AppRolesGrantsIT, which 1b rewrites with 0004. |
-| 0071 | `docs/adr/operations/0071-ci-cd-per-component-and-image-signing.md` | 0033 | operations | `0033-ci-cd-and-supply-chain.md` | 0028, 0046 | Proposed in 1a, to confirm. CI and CD per component and image signing extend 0028 and 0046. |
+| 0067 | `docs/adr/scout/0067-live-web-events-scout.md` | 0021 | scout | `0021-collectors-and-events.md` | 0020, 0022, 0061 | Confirmed by Silvio, 7 Nov 2026. An events collector: it feeds the same events list as 0022 and amends 0022 §6. |
+| 0068 | `docs/adr/foundation/0068-backend-libraries-and-apps.md` | 0002 | foundation | `0002-modular-monolith-libraries-and-apps.md` | 0002 | Confirmed by Silvio, 7 Nov 2026. The module map: libraries and apps are how the modules of 0002 are built. |
+| 0069 | `docs/adr/operations/0069-three-deployables.md` | 0032 | operations | `0032-runtime-topology.md` | 0027 | Confirmed by Silvio, 7 Nov 2026. What runs where: three images, Deployments and hosts, as 0027 describes the chart. |
+| 0070 | `docs/adr/operations/0070-app-roles.md` | 0004 | foundation | `0004-persistence-schema-and-app-roles.md` | 0004 | Confirmed by Silvio, 7 Nov 2026. The roles and grants live in the schema migration and AppRolesGrantsIT, which 1b rewrites with 0004. |
+| 0071 | `docs/adr/operations/0071-ci-cd-per-component-and-image-signing.md` | 0033 | operations | `0033-ci-cd-and-supply-chain.md` | 0028, 0046 | Confirmed by Silvio, 7 Nov 2026. CI and CD per component and image signing extend 0028 and 0046. |

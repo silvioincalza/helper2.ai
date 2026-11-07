@@ -1,21 +1,45 @@
 -- Helper2.ai schema. PostgreSQL is the system of record. Seed data lives in the repeatable R__ migrations.
--- This file is the whole schema (ADR 0004 §5). Every foreign key states what a delete of its target does
--- (ADR 0034): CASCADE for the facts of a row, SET NULL for links that outlive their target, RESTRICT or
--- NO ACTION for rows that must never go while something cites them.
+-- This file is the whole schema of v3.0.0 (ADR 0004 §5), one section per context, in an order that creates every
+-- table before the tables that point at it. Every foreign key states what a delete of its target does (ADR 0035):
+-- CASCADE for the facts of a row, SET NULL for links that outlive their target, RESTRICT or NO ACTION for rows that
+-- must never go while something cites them. From the v3.0.0 tag on, this file is never edited again: a change is a
+-- new migration (V2__...), forward-only.
 -- Timestamp semantics: every *_at column is timestamptz (UTC instants).
 --   source_published_at / source_updated_at : what the SOURCE says (nullable = unknown, never guessed)
 --   first_discovered_at                     : when Helper2 first saw the resource (always known)
 --   retrieved_at                            : when Helper2 fetched the source material
 --   created_at / modified_at                : row bookkeeping only, never shown as resource dates
 
+-- ===== Foundation: locale, extensions, shared functions =====
+
+-- The locale is pinned. The text search parser and pg_trgm split words by the database's character type, and lower()
+-- and the ordering of text follow it, so a database made with another one would index the catalog differently from
+-- the one search was measured on (en_US.utf8). The chart, compose and the test containers create the database with
+-- UTF8 and en_US.utf8 (POSTGRES_INITDB_ARGS); a database made otherwise stops the migration here.
+DO $$
+DECLARE
+    db pg_database%ROWTYPE;
+BEGIN
+    SELECT * INTO db FROM pg_database WHERE datname = current_database();
+    IF pg_encoding_to_char(db.encoding) <> 'UTF8'
+       OR lower(replace(db.datctype, '-', '')) <> 'en_us.utf8'
+       OR lower(replace(db.datcollate, '-', '')) <> 'en_us.utf8' THEN
+        RAISE EXCEPTION 'the database must be UTF8 with LC_CTYPE and LC_COLLATE en_US.utf8, not % with %/%',
+            pg_encoding_to_char(db.encoding), db.datctype, db.datcollate;
+    END IF;
+END
+$$;
+
 CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- uuid_generate_v5 reproduces ai.helper2.shared.ResourceId in SQL (seeds, source_record identity index).
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
--- Vector search (ADR 0012).
+-- Vector search (ADR 0011).
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- unaccent() is STABLE; generated columns need IMMUTABLE. Pinning the dictionary makes this safe.
+-- The SQL functions get no SET search_path: it would stop their inlining into the generated column and every search.
+-- They name their schema instead, and the SQL-standard bodies (RETURN) are bound when they are created.
 CREATE FUNCTION h2_unaccent(text) RETURNS text
     LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
     AS $$ SELECT public.unaccent('public.unaccent'::regdictionary, $1) $$;
@@ -39,6 +63,94 @@ CREATE FUNCTION h2_ts_config(code text) RETURNS regconfig
         WHEN 'ta' THEN 'pg_catalog.tamil'::regconfig      WHEN 'tr' THEN 'pg_catalog.turkish'::regconfig
         ELSE 'pg_catalog.simple'::regconfig
     END;
+
+-- The trigger of the append-only tables (admin_audit, runtime_setting). Every plpgsql function sets its search_path:
+-- pg_dump and pg_restore run with an empty one, and a function that relies on the caller's would break a restore.
+CREATE FUNCTION h2_append_only() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path = public, pg_catalog
+    AS $$
+BEGIN
+    RAISE EXCEPTION '% is append-only', TG_TABLE_NAME;
+END;
+$$;
+
+-- ===== Platform: shared model answers, one run at a time =====
+
+-- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers, guide answers.
+-- key_hash is a SHA-256 of the entry's parts (model, prompt version, normalised query...); the query text is never
+-- stored. A read ignores an expired row; the daily shared-cache purge deletes it (ADR 0035).
+CREATE TABLE ai_cache (
+    cache_name text        NOT NULL,
+    key_hash   bytea       NOT NULL,
+    value      text        NOT NULL,
+    expires_at timestamptz NOT NULL,
+    PRIMARY KEY (cache_name, key_hash)
+);
+CREATE INDEX ai_cache_expires_idx ON ai_cache (expires_at);
+
+-- ShedLock: work that must run on one replica at a time (Scout run, embedding indexer).
+-- timestamp without time zone, as ShedLock's Postgres statements compare with timezone('utc', CURRENT_TIMESTAMP).
+CREATE TABLE shedlock (
+    name       varchar(64)  PRIMARY KEY,
+    lock_until timestamp    NOT NULL,
+    locked_at  timestamp    NOT NULL,
+    locked_by  varchar(255) NOT NULL
+);
+
+-- ===== Identity: users, saved items, the audit trail =====
+
+-- Users who signed in via OAuth2. Anonymous use needs no row. Only what sign-in needs: the provider's immutable
+-- subject (GitHub: the numeric id), a name to show, and the last sign-in, which retention reads (ADR 0035).
+-- radar_motion is a display setting: whether the Home radar moves between its sources (ADR 0028). It lives in the
+-- row, so deleting the account or its retention purge removes it too.
+CREATE TABLE app_user (
+    id                uuid PRIMARY KEY,
+    provider          text        NOT NULL,
+    subject           text        NOT NULL,
+    display_name      text,
+    last_signed_in_at timestamptz NOT NULL DEFAULT now(),
+    radar_motion      boolean     NOT NULL DEFAULT true,
+    UNIQUE (provider, subject)
+);
+CREATE INDEX app_user_last_signed_in_idx ON app_user (last_signed_in_at);
+
+-- Bookmarks keep a small snapshot so they render even if a live result was never indexed.
+CREATE TABLE bookmark (
+    user_id     uuid        NOT NULL REFERENCES app_user (id) ON DELETE CASCADE,
+    resource_id uuid        NOT NULL,
+    title       text        NOT NULL,
+    url         text        NOT NULL,
+    type        text,
+    saved_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, resource_id)
+);
+
+-- What administrators did, one row per admin action (ADR 0024): append-only, deleted only by retention (ADR 0035).
+-- admin_id is the provider subject (GitHub: the numeric id), never an app_user reference, so the trail outlives
+-- the account. The action list is AuditTrail.Action, and SchemaContractTest keeps the two equal: a new admin action
+-- needs a migration that changes this check. A setting change says the value before and after, and why (ADR 0007).
+CREATE TABLE admin_audit (
+    id           uuid PRIMARY KEY,
+    admin_id     text        NOT NULL,
+    action       text        NOT NULL CHECK (action IN
+        ('RESOLVE_REVIEW_ITEM', 'START_SCOUT_RUN', 'ADD_HOME_EXAMPLE', 'CHANGE_HOME_EXAMPLE', 'REMOVE_HOME_EXAMPLE',
+         'DRAFT_HOME_EXAMPLES', 'RECHECK_ENRICHMENT', 'REQUEUE_ENRICHMENT', 'SKIP_ENRICHMENT', 'PRIORITISE_ENRICHMENT',
+         'BACKFILL_CATEGORIES', 'CHANGE_SETTING', 'ADD_DISCOVERY_HOST', 'REMOVE_DISCOVERY_HOST',
+         'CHANGE_RELATIONSHIP_TARGET', 'ADD_RESOURCE', 'EDIT_CANDIDATE', 'SET_FIELD', 'DROP_FIELD')),
+    target_id    text,
+    at           timestamptz NOT NULL DEFAULT now(),
+    outcome      text        NOT NULL,
+    before_value text CHECK (before_value IS NULL OR length(before_value) <= 100),
+    after_value  text CHECK (after_value IS NULL OR length(after_value) <= 100),
+    reason       text CHECK (reason IS NULL OR length(reason) <= 500)
+);
+CREATE INDEX admin_audit_at_idx ON admin_audit (at DESC);
+
+CREATE TRIGGER admin_audit_append_only BEFORE UPDATE ON admin_audit
+    FOR EACH ROW EXECUTE FUNCTION h2_append_only();
+
+-- ===== Catalog: sources, resources, their records, evidence and enrichment, reports and the review queue =====
 
 -- Disclosed source registry (mirrors configuration; kept for FKs and health history).
 CREATE TABLE source (
@@ -87,12 +199,12 @@ CREATE TABLE resource (
     data_origin          text        NOT NULL CHECK (data_origin IN ('OBSERVED','INDEXED','CURATED','DEMO')),
     enrichment_status    text        NOT NULL DEFAULT 'NOT_RUN' CHECK (enrichment_status IN ('NOT_RUN','VALIDATED','PARTIAL','REJECTED','LLM_UNAVAILABLE')),
     -- Strongest popularity metric of the resource's source records, log-scaled per kind to 0..1.
-    -- Kept current by the source_record_popularity trigger, so ranking reads a column (ADR 0009).
+    -- Kept current by the source_record_popularity trigger, so ranking reads a column (ADR 0012).
     popularity           numeric     NOT NULL DEFAULT 0,
     created_at           timestamptz NOT NULL DEFAULT now(),
     modified_at          timestamptz NOT NULL DEFAULT now(),
     CHECK ((published_at IS NULL) = (published_precision = 'UNKNOWN')),
-    -- Language-aware full-text search (ADR 0011): 'simple' on the title (names match exactly, any language),
+    -- Language-aware full-text search (ADR 0010): 'simple' on the title (names match exactly, any language),
     -- English on title + description for every row, and the row's own stemmer when that is not English.
     search_vector tsvector GENERATED ALWAYS AS (
         setweight(to_tsvector('simple', h2_unaccent(coalesce(title, ''))), 'A') ||
@@ -100,7 +212,16 @@ CREATE TABLE resource (
         CASE WHEN language IN ('en', 'simple') THEN ''::tsvector
              ELSE setweight(to_tsvector(h2_ts_config(language), h2_unaccent(coalesce(title, '') || ' ' || coalesce(description, ''))), 'B')
         END
-    ) STORED
+    ) STORED,
+    -- When a code re-check asked for a new enrichment run (ADR 0023): runs judged before it no longer skip the
+    -- resource as UNCHANGED; the next run after it does again.
+    enrichment_rerun_requested_at timestamptz,
+    -- The fields an admin set to the resource's own value (ADR 0026): the value is in the resource's column, and the
+    -- field is listed here, so no source's record and no enrichment run changes it. A CURATED field_assertion says
+    -- where it came from. Only fields with a column of their own; platforms and use cases are labels rebuilt from the
+    -- records.
+    curated_fields       text[]      NOT NULL DEFAULT '{}'
+        CHECK (curated_fields <@ ARRAY['type', 'pricing', 'license', 'openSource', 'techLevel', 'audience']::text[])
 );
 CREATE INDEX resource_search_idx ON resource USING gin (search_vector);
 -- Serves the trigram branch of ResourceStore.search (lower(title) % query).
@@ -110,14 +231,26 @@ CREATE INDEX resource_updated_idx ON resource (updated_at DESC NULLS LAST);
 CREATE INDEX resource_published_idx ON resource (published_at DESC) WHERE published_at IS NOT NULL;
 CREATE INDEX resource_origin_idx ON resource (data_origin);
 CREATE INDEX resource_event_idx ON resource (event_starts_at) WHERE type = 'EVENT' AND event_starts_at IS NOT NULL;
--- Retention (ADR 0034): observed resources nobody has seen for a while.
+-- Retention (ADR 0035): observed resources nobody has seen for a while.
 CREATE INDEX resource_observed_seen_idx ON resource (last_seen_at) WHERE data_origin = 'OBSERVED';
+-- GET /sources counts per source the resources first discovered in the last 7 days, on every Home load (ADR 0028).
+-- Without it the count reads the whole resource table (60 000 rows: 34 ms median); with it only the week's rows (19 ms).
+CREATE INDEX resource_first_discovered_idx ON resource (first_discovered_at);
+-- The enrichment backlog (the Scout's next resources, the back office queue and its count) reads only resources that
+-- may still need a run, newest first. Measured on synthetic data (250 000 resources): the next 20 took 1.4 s with a
+-- sort over the whole table, and take under 1 ms with this index and the query in two parts; the count goes from
+-- 1.3 s to 0.65 s. At 60 000 resources: 250 ms to under 1 ms, and 200 ms to 115 ms.
+CREATE INDEX resource_enrichment_backlog_idx ON resource (first_discovered_at DESC, id DESC)
+    WHERE enrichment_status IN ('NOT_RUN', 'LLM_UNAVAILABLE', 'REJECTED')
+      AND data_origin IN ('INDEXED', 'OBSERVED', 'CURATED');
 
--- Tags, use cases and platforms: one normalized table keyed by kind. Rebuilt from the resource's source
--- records on every catalog upsert, so labels never outlive the source data that stated them.
+-- Tags, use cases, platforms and categories: one normalized table keyed by kind. Rebuilt from the resource's source
+-- records on every catalog upsert, so labels never outlive the source data that stated them. Categories (ADR 0013)
+-- are labels of their own kind, apart from the tags: tags are capped at 20 per resource and categories must not take
+-- that room. Code assigns them (CategoryMatcher) on every catalog upsert and in the backfill.
 CREATE TABLE resource_label (
     resource_id uuid NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
-    kind        text NOT NULL CHECK (kind IN ('TAG', 'USE_CASE', 'PLATFORM')),
+    kind        text NOT NULL CHECK (kind IN ('TAG', 'USE_CASE', 'PLATFORM', 'CATEGORY')),
     value       text NOT NULL CHECK (length(value) BETWEEN 1 AND 60),
     PRIMARY KEY (resource_id, kind, value)
 );
@@ -176,8 +309,12 @@ CREATE FUNCTION h2_popularity_values(extra jsonb) RETURNS jsonb
         FROM jsonb_array_elements(coalesce(extra -> 'popularity', '[]'::jsonb)) p
     );
 
+-- It calls the two functions above by name, so it sets its search_path: a load with pg_restore (empty search_path)
+-- stopped at the first source_record before it did.
 CREATE FUNCTION h2_refresh_popularity() RETURNS trigger
-    LANGUAGE plpgsql AS $$
+    LANGUAGE plpgsql
+    SET search_path = public, pg_catalog
+    AS $$
 BEGIN
     -- Most upserts rewrite a record whose metrics did not change: skip those, and never rewrite a resource
     -- row whose popularity stays the same.
@@ -203,7 +340,7 @@ CREATE TRIGGER source_record_popularity
     AFTER INSERT OR DELETE OR UPDATE OF resource_id, extra ON source_record
     FOR EACH ROW EXECUTE FUNCTION h2_refresh_popularity();
 
--- Vector search (ADR 0012): one embedding per resource and model, in its own table so `SELECT r.*` on
+-- Vector search (ADR 0011): one embedding per resource and model, in its own table so `SELECT r.*` on
 -- resource stays as it is. Derived data: the indexer fills and refreshes it from resource (text_hash = md5
 -- of the embedded text), and it is safe to truncate.
 CREATE TABLE resource_embedding (
@@ -228,7 +365,9 @@ CREATE TABLE evidence (
 );
 CREATE INDEX evidence_source_record_idx ON evidence (source_record_id) WHERE source_record_id IS NOT NULL;
 
--- Enrichment runs (AI Resource Scout). Kept while current rows cite them, plus the latest per resource (ADR 0034).
+-- Enrichment runs (AI Resource Scout). Kept while current rows cite them, plus the latest per resource (ADR 0035).
+-- extra_evidence: the README or model card a run read in its gap round ("github-readme:owner/name"), else null
+-- (ADR 0023).
 CREATE TABLE enrichment_run (
     id                uuid PRIMARY KEY,
     resource_id       uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
@@ -239,11 +378,14 @@ CREATE TABLE enrichment_run (
     started_at        timestamptz NOT NULL,
     finished_at       timestamptz,
     outcome           text        NOT NULL CHECK (outcome IN ('VALIDATED','PARTIAL','REJECTED','LLM_UNAVAILABLE','FAILED')),
-    validation_errors jsonb       NOT NULL DEFAULT '[]'::jsonb
+    validation_errors jsonb       NOT NULL DEFAULT '[]'::jsonb,
+    extra_evidence    text CHECK (length(extra_evidence) <= 300)
 );
 CREATE INDEX enrichment_run_resource_idx ON enrichment_run (resource_id, started_at DESC);
 
--- Field-level assertions not covered by source records: AI-extracted values (Scout) and curated ones (seeds).
+-- Field-level assertions not covered by source records: AI-extracted values (Scout) and curated ones (seeds, admins).
+-- The evidence ladder (ADR 0023): AI_ESTIMATED is a judgement field (audience, tech level) the model estimated
+-- without a quote; SELF_DECLARED is a fact that only the product's own pages state.
 -- A row that cites an enrichment run keeps it: NO ACTION, checked at the end of the statement, so a resource
 -- delete that cascades to both the run and the rows citing it goes through.
 CREATE TABLE field_assertion (
@@ -251,7 +393,7 @@ CREATE TABLE field_assertion (
     resource_id       uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
     field             text        NOT NULL,
     value             text        NOT NULL,
-    origin            text        NOT NULL CHECK (origin IN ('AI_EXTRACTED','CURATED')),
+    origin            text        NOT NULL CHECK (origin IN ('AI_EXTRACTED','AI_ESTIMATED','SELF_DECLARED','CURATED')),
     verification      text        NOT NULL CHECK (verification IN ('VERIFIED','UNVERIFIED','CONFLICTING','REJECTED')),
     enrichment_run_id uuid REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     created_at        timestamptz NOT NULL DEFAULT now()
@@ -267,16 +409,21 @@ CREATE TABLE field_assertion_evidence (
 CREATE INDEX field_assertion_evidence_evidence_idx ON field_assertion_evidence (evidence_id);
 
 -- Resource relationships, all extracted by the Scout. Verified only with evidence; candidates go to review.
+-- ABOUT: an article, a news item or a paper names the models and products it is about, from the article to its
+-- subject (ADR 0023); the validator keeps the kinds apart by type. A relationship that only the product's own pages
+-- state is SELF_DECLARED. target_origin is CURATED when an admin pointed the candidate at the right resource
+-- (ADR 0026); the origin stays the model's, since the kind is still AI-written.
 CREATE TABLE relationship (
     id                uuid PRIMARY KEY,
     from_resource_id  uuid NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
     to_resource_id    uuid REFERENCES resource (id) ON DELETE SET NULL,
     to_title          text NOT NULL,
-    kind              text NOT NULL CHECK (kind IN ('INTEGRATES_WITH','USES','SUPPORTS','COMPATIBLE_WITH')),
+    kind              text NOT NULL CHECK (kind IN ('INTEGRATES_WITH', 'USES', 'SUPPORTS', 'COMPATIBLE_WITH', 'ABOUT')),
     verification      text NOT NULL CHECK (verification IN ('VERIFIED','UNVERIFIED','CONFLICTING','REJECTED')),
-    origin            text NOT NULL CHECK (origin IN ('AI_EXTRACTED')),
+    origin            text NOT NULL CHECK (origin IN ('AI_EXTRACTED', 'SELF_DECLARED')),
     enrichment_run_id uuid REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     created_at        timestamptz NOT NULL DEFAULT now(),
+    target_origin     text CHECK (target_origin IN ('CURATED')),
     UNIQUE (from_resource_id, kind, to_title)
 );
 CREATE INDEX relationship_to_resource_idx ON relationship (to_resource_id) WHERE to_resource_id IS NOT NULL;
@@ -289,13 +436,15 @@ CREATE TABLE relationship_evidence (
 );
 CREATE INDEX relationship_evidence_evidence_idx ON relationship_evidence (evidence_id);
 
--- AI summary: only claims that passed validation, each with evidence.
+-- AI summary: only claims that passed validation, each with evidence. A claim that cites only the product's own
+-- pages is self-declared (ADR 0023).
 CREATE TABLE summary_claim (
     id                uuid PRIMARY KEY,
     resource_id       uuid NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
     enrichment_run_id uuid NOT NULL REFERENCES enrichment_run (id) ON DELETE NO ACTION,
     position          int  NOT NULL,
     text              text NOT NULL CHECK (length(text) <= 400),
+    self_declared     boolean NOT NULL DEFAULT false,
     UNIQUE (enrichment_run_id, position)
 );
 CREATE INDEX summary_claim_resource_idx ON summary_claim (resource_id);
@@ -307,27 +456,42 @@ CREATE TABLE summary_claim_evidence (
 );
 CREATE INDEX summary_claim_evidence_evidence_idx ON summary_claim_evidence (evidence_id);
 
--- Users who signed in via OAuth2. Anonymous use needs no row. Only what sign-in needs: the provider's immutable
--- subject (GitHub: the numeric id), a name to show, and the last sign-in, which retention reads (ADR 0034).
-CREATE TABLE app_user (
-    id                uuid PRIMARY KEY,
-    provider          text        NOT NULL,
-    subject           text        NOT NULL,
-    display_name      text,
-    last_signed_in_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE (provider, subject)
-);
-CREATE INDEX app_user_last_signed_in_idx ON app_user (last_signed_in_at);
+-- Search inside awesome lists (ADR 0010). A search also finds a resource by the words a list uses around it (its entry
+-- line and its heading path), and a list by its headings. Only tsvectors are kept: the README text is never stored.
+-- heading_path is the one piece of list text kept as text ("Tools > Vector databases", at most 200 characters), for
+-- "Found in <list> under <heading>". Both tables are derived data: the awesome-list collector replaces a list's rows on
+-- every pass, and they go with the list or the resource (ON DELETE CASCADE), or when no pass refreshed them for
+-- H2_RETENTION_LIST_INDEX (ADR 0035).
 
--- Bookmarks keep a small snapshot so they render even if a live result was never indexed.
-CREATE TABLE bookmark (
-    user_id     uuid        NOT NULL REFERENCES app_user (id) ON DELETE CASCADE,
-    resource_id uuid        NOT NULL,
-    title       text        NOT NULL,
-    url         text        NOT NULL,
-    type        text,
-    saved_at    timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (user_id, resource_id)
+-- One row per (list, entry). Entry words weigh A, heading words B.
+CREATE TABLE awesome_list_entry (
+    list_id       uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
+    resource_id   uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
+    heading_path  text        NOT NULL CHECK (length(heading_path) <= 200),
+    search_vector tsvector    NOT NULL,
+    updated_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (list_id, resource_id),
+    CHECK (list_id <> resource_id)
+);
+CREATE INDEX awesome_list_entry_search_idx ON awesome_list_entry USING gin (search_vector);
+CREATE INDEX awesome_list_entry_resource_idx ON awesome_list_entry (resource_id);
+CREATE INDEX awesome_list_entry_updated_idx ON awesome_list_entry (updated_at);
+
+-- One row per list: its headings, so a list is found by the topics it covers.
+CREATE TABLE awesome_list (
+    list_id       uuid PRIMARY KEY REFERENCES resource (id) ON DELETE CASCADE,
+    search_vector tsvector    NOT NULL,
+    updated_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX awesome_list_search_idx ON awesome_list USING gin (search_vector);
+CREATE INDEX awesome_list_updated_idx ON awesome_list (updated_at);
+
+-- One-off catalog jobs that run once per configuration: the category backfill (ADR 0013) writes the fingerprint of
+-- the category words and rules it assigned with, so it runs again only when they change.
+CREATE TABLE catalog_marker (
+    name       text PRIMARY KEY,
+    value      text        NOT NULL,
+    updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- User reports about wrong/outdated info.
@@ -343,13 +507,15 @@ CREATE TABLE issue_report (
 CREATE INDEX issue_report_resource_idx ON issue_report (resource_id);
 CREATE INDEX issue_report_reporter_idx ON issue_report (reporter_user_id) WHERE reporter_user_id IS NOT NULL;
 
--- Human review queue. A COURSE_CANDIDATE is a course page the Scout's collector found (ADR 0032): it has no
--- resource yet, so the item keeps the page's canonical URL, one item per URL ever, so a rejected page is not
--- proposed again.
+-- Human review queue. A candidate has no resource yet, so the item keeps the page's canonical URL, one item per URL
+-- ever, so a rejected page is not proposed again: COURSE_CANDIDATE, a course page the Scout's collector found
+-- (ADR 0016); RESOURCE_CANDIDATE, a product page the discovery collectors found (ADR 0022); EXAMPLE_CANDIDATE, an
+-- AI-drafted home example (ADR 0015 §6). A model that contradicts a source opens an ENRICHMENT_VALIDATION item.
 CREATE TABLE review_item (
     id                uuid PRIMARY KEY,
     kind              text        NOT NULL CHECK (kind IN
-        ('ENRICHMENT_VALIDATION','SOURCE_CONFLICT','RELATIONSHIP_CANDIDATE','USER_REPORT','COURSE_CANDIDATE')),
+        ('ENRICHMENT_VALIDATION','RELATIONSHIP_CANDIDATE','USER_REPORT','COURSE_CANDIDATE','EXAMPLE_CANDIDATE',
+         'RESOURCE_CANDIDATE')),
     -- SUPERSEDED: closed by a newer enrichment run of the same resource, not by a person.
     status            text        NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','ACCEPTED','REJECTED','SUPERSEDED')),
     resource_id       uuid REFERENCES resource (id) ON DELETE CASCADE,
@@ -374,70 +540,22 @@ CREATE INDEX review_item_relationship_idx ON review_item (relationship_id) WHERE
 CREATE UNIQUE INDEX review_item_candidate_idx ON review_item (kind, candidate_url) WHERE candidate_url IS NOT NULL;
 CREATE INDEX review_item_resolved_idx ON review_item (resolved_at) WHERE status <> 'OPEN';
 
--- What administrators did, one row per admin action (ADR 0023): append-only, deleted only by retention (ADR 0034).
--- admin_id is the provider subject (GitHub: the numeric id), never an app_user reference, so the trail outlives
--- the account.
-CREATE TABLE admin_audit (
-    id        uuid PRIMARY KEY,
-    admin_id  text        NOT NULL,
-    action    text        NOT NULL CHECK (action IN ('RESOLVE_REVIEW_ITEM', 'START_SCOUT_RUN')),
-    target_id text,
-    at        timestamptz NOT NULL DEFAULT now(),
-    outcome   text        NOT NULL
-);
-CREATE INDEX admin_audit_at_idx ON admin_audit (at DESC);
+-- ===== Search: live web results kept per query =====
 
-CREATE FUNCTION h2_append_only() RETURNS trigger
-    LANGUAGE plpgsql AS $$
-BEGIN
-    RAISE EXCEPTION '% is append-only', TG_TABLE_NAME;
-END;
-$$;
-
-CREATE TRIGGER admin_audit_append_only BEFORE UPDATE ON admin_audit
-    FOR EACH ROW EXECUTE FUNCTION h2_append_only();
-
--- Tavily result sets by query (ADR 0037): a search answers from here while the set is fresh (24 h time-bound, 48 h
+-- Live web result sets by query (ADR 0014): a search answers from here while the set is fresh (24 h time-bound, 48 h
 -- general), without a live call. query_key is an HMAC-SHA256 of the normalised query (H2_QUOTA_KEY_SECRET); the text is
--- never stored. result_ids are the resource ids of the hits' own URLs, in Tavily's order; the hits themselves are the
--- catalog's source records. Deleted 7 days after fetched_at (search purge, ADR 0034).
-CREATE TABLE tavily_query_result (
+-- never stored. result_ids are the resource ids of the hits' own URLs, in the provider's order; the hits themselves are
+-- the catalog's source records. Deleted 7 days after fetched_at (search purge, ADR 0035).
+CREATE TABLE live_web_query_result (
     query_key    bytea       NOT NULL,
     intent_class text        NOT NULL CHECK (intent_class IN ('TIME_BOUND','GENERAL')),
     fetched_at   timestamptz NOT NULL,
     result_ids   uuid[]      NOT NULL,
     PRIMARY KEY (query_key, intent_class)
 );
-CREATE INDEX tavily_query_result_fetched_idx ON tavily_query_result (fetched_at);
+CREATE INDEX live_web_query_result_fetched_idx ON live_web_query_result (fetched_at);
 
--- Model answers shared by every replica (ADR 0005): query translations, query vectors, setup guide answers, guide answers.
--- key_hash is a SHA-256 of the entry's parts (model, prompt version, normalised query...); the query text is never
--- stored. A read ignores an expired row; the daily shared-cache purge deletes it (ADR 0034).
-CREATE TABLE ai_cache (
-    cache_name text        NOT NULL,
-    key_hash   bytea       NOT NULL,
-    value      text        NOT NULL,
-    expires_at timestamptz NOT NULL,
-    PRIMARY KEY (cache_name, key_hash)
-);
-CREATE INDEX ai_cache_expires_idx ON ai_cache (expires_at);
-
--- ===== Guide similar-question index (ADR 0041) =====
--- Questions of cached guide answers (ai_cache, cache guide-answer), for reuse by a near-identical question read the same
--- way (H2_GUIDE_SIMILAR_THRESHOLD). answer_key is the guide answer's cache key, a SHA-256 of the normalised question,
--- path, config, clarification and removed parts; the question text is never stored. group_key is the SHA-256 of the
--- embedding model, config hash, audience path and reading (intent, subjects, constraints, window); embedding is the
--- query embedding of the normalised question, the model of resource_embedding. A row lives as long as its answer
--- (expires_at); the guide purge deletes it after (ADR 0034). A group holds a few rows: exact cosine search.
-CREATE TABLE guide_similar_question (
-    answer_key text         PRIMARY KEY CHECK (answer_key ~ '^[0-9a-f]{64}$'),
-    group_key  text         NOT NULL,
-    embedding  vector(1024) NOT NULL,
-    expires_at timestamptz  NOT NULL
-);
-CREATE INDEX guide_similar_question_group_idx ON guide_similar_question (group_key, expires_at);
-CREATE INDEX guide_similar_question_expires_idx ON guide_similar_question (expires_at);
--- ===== end guide similar-question index =====
+-- ===== Scout: checkpoints, runs, the schedule, the enrichment queue, discovery hosts =====
 
 -- Scout collection checkpoints and run history: they go with their source.
 CREATE TABLE source_cursor (
@@ -466,11 +584,241 @@ CREATE TABLE scout_schedule (
     last_ended_at timestamptz NOT NULL
 );
 
--- ShedLock: work that must run on one replica at a time (Scout run, embedding indexer).
--- timestamp without time zone, as ShedLock's Postgres statements compare with timezone('utc', CURRENT_TIMESTAMP).
-CREATE TABLE shedlock (
-    name       varchar(64)  PRIMARY KEY,
-    lock_until timestamp    NOT NULL,
-    locked_at  timestamp    NOT NULL,
-    locked_by  varchar(255) NOT NULL
+-- One-time maintenance tasks, claimed once across replicas (the first re-check of stored enrichment answers,
+-- ADR 0023).
+CREATE TABLE maintenance_task (
+    name    text        PRIMARY KEY CHECK (length(name) <= 100),
+    done_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- What an admin decided about a resource in the enrichment queue (ADR 0026 (part was 0045) §7). The Scout owns this
+-- table and is the only writer; the catalog's backlog query reads it, so the Scout's next batch, the queue page and the
+-- count keep one rule. One row per resource that an admin touched, gone with the resource.
+--   prioritised_at:    moved to the top; it holds until the resource's next run starts.
+--   skipped_at:        out of the backlog until an admin requeues it; skip_reason is optional.
+--   failures_reset_at: requeued after its retries ran out; only FAILED runs after it count against the cap.
+-- Who did it, and when, is in admin_audit.
+CREATE TABLE enrichment_queue_control (
+    resource_id       uuid        PRIMARY KEY REFERENCES resource (id) ON DELETE CASCADE,
+    prioritised_at    timestamptz,
+    skipped_at        timestamptz,
+    skip_reason       text        CHECK (length(skip_reason) <= 200),
+    failures_reset_at timestamptz,
+    updated_at        timestamptz NOT NULL DEFAULT now(),
+    CHECK (prioritised_at IS NULL OR skipped_at IS NULL),
+    CHECK (skip_reason IS NULL OR skipped_at IS NOT NULL)
+);
+
+-- The prioritised part of the backlog starts from these rows (at most 50 hold at a time); the other parts look a
+-- resource up by its primary key.
+CREATE INDEX enrichment_queue_control_prioritised_idx ON enrichment_queue_control (prioritised_at)
+    WHERE prioritised_at IS NOT NULL;
+-- The skipped view: the latest skip first, page by page.
+CREATE INDEX enrichment_queue_control_skipped_idx ON enrichment_queue_control (skipped_at DESC, resource_id DESC)
+    WHERE skipped_at IS NOT NULL;
+
+-- The hosts discovery knows by name (ADR 0022): WRITING hosts publish articles about many products (a post there is an
+-- ARTICLE candidate), DIRECTORY hosts list products (a page there is never kept). An admin adds and removes them in
+-- the back office; each change is an admin_audit row. One row per host: a host is one kind or the other, never both.
+CREATE TABLE discovery_host (
+    host       text        PRIMARY KEY CHECK (length(host) BETWEEN 3 AND 253 AND host = lower(host)),
+    kind       text        NOT NULL CHECK (kind IN ('WRITING', 'DIRECTORY')),
+    added_by   text        NOT NULL,
+    added_at   timestamptz NOT NULL,
+    reason     text        CHECK (reason IS NULL OR length(reason) <= 500)
+);
+
+-- The lists that start every database (DiscoveryPages had them in code, ADR 0023).
+INSERT INTO discovery_host (host, kind, added_by, added_at) VALUES
+    ('medium.com', 'WRITING', 'migration', now()),
+    ('dev.to', 'WRITING', 'migration', now()),
+    ('substack.com', 'WRITING', 'migration', now()),
+    ('forbes.com', 'WRITING', 'migration', now()),
+    ('techcrunch.com', 'WRITING', 'migration', now()),
+    ('theverge.com', 'WRITING', 'migration', now()),
+    ('wired.com', 'WRITING', 'migration', now()),
+    ('zdnet.com', 'WRITING', 'migration', now()),
+    ('venturebeat.com', 'WRITING', 'migration', now()),
+    ('hashnode.dev', 'WRITING', 'migration', now()),
+    ('wordpress.com', 'WRITING', 'migration', now()),
+    ('blogspot.com', 'WRITING', 'migration', now()),
+    ('beehiiv.com', 'WRITING', 'migration', now()),
+    ('producthunt.com', 'DIRECTORY', 'migration', now()),
+    ('huggingface.co', 'DIRECTORY', 'migration', now()),
+    ('wikipedia.org', 'DIRECTORY', 'migration', now()),
+    ('news.ycombinator.com', 'DIRECTORY', 'migration', now()),
+    ('g2.com', 'DIRECTORY', 'migration', now()),
+    ('capterra.com', 'DIRECTORY', 'migration', now()),
+    ('gartner.com', 'DIRECTORY', 'migration', now()),
+    ('notion.site', 'DIRECTORY', 'migration', now()),
+    ('theresanaiforthat.com', 'DIRECTORY', 'migration', now()),
+    ('futurepedia.io', 'DIRECTORY', 'migration', now()),
+    ('futuretools.io', 'DIRECTORY', 'migration', now()),
+    ('toolify.ai', 'DIRECTORY', 'migration', now()),
+    ('topai.tools', 'DIRECTORY', 'migration', now()),
+    ('aitools.fyi', 'DIRECTORY', 'migration', now()),
+    ('getapp.com', 'DIRECTORY', 'migration', now()),
+    ('softwareadvice.com', 'DIRECTORY', 'migration', now()),
+    ('trustradius.com', 'DIRECTORY', 'migration', now()),
+    ('trustpilot.com', 'DIRECTORY', 'migration', now()),
+    ('alternativeto.net', 'DIRECTORY', 'migration', now()),
+    ('saasworthy.com', 'DIRECTORY', 'migration', now());
+
+-- ===== Guide: the similar-question index =====
+
+-- Questions of cached guide answers (ai_cache, cache guide-answer, ADR 0017), for reuse by a near-identical question
+-- read the same way (H2_GUIDE_SIMILAR_THRESHOLD). answer_key is the guide answer's cache key, a SHA-256 of the
+-- normalised question, path, config, clarification and removed parts; the question text is never stored. group_key is
+-- the SHA-256 of the embedding model, config hash, audience path and reading (intent, subjects, constraints, window);
+-- embedding is the query embedding of the normalised question, the model of resource_embedding. A row lives as long as
+-- its answer (expires_at); the guide purge deletes it after (ADR 0035). A group holds a few rows: exact cosine search.
+-- The setup guide has no table of its own: its answers are in ai_cache (tool-guide).
+CREATE TABLE guide_similar_question (
+    answer_key text         PRIMARY KEY CHECK (answer_key ~ '^[0-9a-f]{64}$'),
+    group_key  text         NOT NULL,
+    embedding  vector(1024) NOT NULL,
+    expires_at timestamptz  NOT NULL
+);
+CREATE INDEX guide_similar_question_group_idx ON guide_similar_question (group_key, expires_at);
+CREATE INDEX guide_similar_question_expires_idx ON guide_similar_question (expires_at);
+
+-- ===== Examples: the example searches under the home search box =====
+
+-- The example searches under the home search box (ADR 0015). The home page picks 2 + 2 at random from the served
+-- ones: ACTIVE, and (once checked) an expected resource in the top 3 of the example's own search.
+-- expected_resource_ids are catalog resource ids (UUIDv5 of the canonical URL, ai.helper2.shared.ResourceId), kept
+-- without a foreign key: a resource that leaves the catalog makes the check fail, it does not delete the example.
+-- AI_DRAFTED examples wait in the review queue as EXAMPLE_CANDIDATE (ADR 0015 §6).
+CREATE TABLE home_example (
+    id                    uuid PRIMARY KEY,
+    label                 text        NOT NULL CHECK (length(label) BETWEEN 2 AND 32),
+    query                 text        NOT NULL CHECK (length(query) BETWEEN 3 AND 200),
+    path                  text        NOT NULL CHECK (path IN ('USE_AI', 'BUILD_WITH_AI')),
+    locale                text        NOT NULL DEFAULT 'en' CHECK (locale ~ '^[a-z]{2}$'),
+    status                text        NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'PAUSED')),
+    expected_resource_ids uuid[]      NOT NULL CHECK (cardinality(expected_resource_ids) BETWEEN 1 AND 3),
+    origin                text        NOT NULL CHECK (origin IN ('BUILT_IN', 'CURATED', 'AI_DRAFTED')),
+    model                 text,
+    check_outcome         text        NOT NULL DEFAULT 'PENDING' CHECK (check_outcome IN ('PENDING', 'PASS', 'WEAK', 'FAIL')),
+    check_best_rank       integer     CHECK (check_best_rank > 0),
+    check_result_count    integer     CHECK (check_result_count >= 0),
+    checked_at            timestamptz,
+    version               integer     NOT NULL DEFAULT 0,
+    created_at            timestamptz NOT NULL DEFAULT now(),
+    updated_at            timestamptz NOT NULL DEFAULT now(),
+    CHECK ((origin = 'AI_DRAFTED') = (model IS NOT NULL))
+);
+-- One example per text and locale, whatever the case: the texts are stored normalised (NFC, single spaces).
+CREATE UNIQUE INDEX home_example_label_idx ON home_example (locale, lower(label));
+CREATE UNIQUE INDEX home_example_query_idx ON home_example (locale, lower(query));
+
+-- The built-in pool (frontend/src/lib/examples.ts), checked on staging on 5 Nov 2026. Each expected resource is the
+-- result that made the example pass, by its canonical URL (ai.helper2.shared.CanonicalUrl: lower case, no www).
+INSERT INTO home_example (id, label, query, path, expected_resource_ids, origin)
+SELECT gen_random_uuid(), s.label, s.query, s.path,
+       ARRAY(SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, u) FROM unnest(s.urls) AS u),
+       'BUILT_IN'
+FROM (VALUES
+    ('Summarise research papers', 'summarise research papers', 'USE_AI', '{https://elicit.com}'::text[]),
+    ('Take meeting notes', 'take meeting notes', 'USE_AI', '{https://otter.ai}'),
+    ('Make images from text', 'make images from text', 'USE_AI', '{https://midjourney.com,https://canva.com/magic,https://firefly.adobe.com}'),
+    ('Remove a photo background', 'remove image background', 'USE_AI', '{https://huggingface.co/spaces/openskyml/remove-background-on-image}'),
+    ('Edit videos with AI', 'edit videos with AI', 'USE_AI', '{https://runwayml.com}'),
+    ('Postgres MCP server', 'postgres mcp server', 'BUILD_WITH_AI', '{https://npmjs.com/package/@microsoft/postgres-mcp,https://npmjs.com/package/enhanced-postgres-mcp-server}'),
+    ('Vector database', 'vector database', 'BUILD_WITH_AI', '{https://github.com/milvus-io/milvus,https://github.com/qdrant/qdrant,https://github.com/weaviate/weaviate}'),
+    ('Agent framework', 'agent framework', 'BUILD_WITH_AI', '{https://github.com/microsoft/agent-framework}'),
+    ('Run LLMs locally', 'run llms locally', 'BUILD_WITH_AI', '{https://github.com/llamaedge/llamaedge,https://github.com/nomic-ai/gpt4all}'),
+    ('RAG framework', 'rag framework', 'BUILD_WITH_AI', '{https://github.com/hkuds/rag-anything}'),
+    ('AI coding assistant', 'AI coding assistant', 'BUILD_WITH_AI', '{https://github.com/github/copilotforxcode,https://npmjs.com/package/@qwen-code/qwen-code}')
+) AS s (label, query, path, urls);
+
+-- ===== Back office settings: runtime settings =====
+
+-- Runtime settings (ADR 0007): a few spending limits an administrator changes from the back office without a deploy.
+-- Append-only: the current value of a setting is its newest row; a row with no value means "back to the default"
+-- (the H2_ variable). The version grows with every change of any setting; a setting's version is its newest row's.
+-- Rows are never updated (trigger); past their retention they are deleted, except each setting's newest.
+CREATE TABLE runtime_setting (
+    version    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       text        NOT NULL CHECK (length(name) BETWEEN 1 AND 100),
+    value      bigint      CHECK (value IS NULL OR value >= 0),
+    changed_by text        NOT NULL,
+    changed_at timestamptz NOT NULL,
+    reason     text        CHECK (reason IS NULL OR length(reason) <= 500)
+);
+
+CREATE INDEX runtime_setting_name_idx ON runtime_setting (name, version DESC);
+
+CREATE TRIGGER runtime_setting_append_only BEFORE UPDATE ON runtime_setting
+    FOR EACH ROW EXECUTE FUNCTION h2_append_only();
+
+-- ===== App roles: one database role per app (last, after every table) =====
+
+-- One database role per app (ADR 0004 §9). The owner (the user Flyway runs as: helper2 in the chart) keeps the tables
+-- and runs the migrations; the public app connects as h2_public and the back office as h2_backoffice. Neither gets
+-- DDL, TRUNCATE, REFERENCES or TRIGGER, and both only read the migration history.
+-- This block comes after every CREATE TABLE: the grants ON ALL TABLES reach only the tables that exist.
+-- Roles are cluster-wide, so they are created only when missing. They get no login here: the migrate step opens it
+-- with each app's password (AppLogins), never written in a migration.
+DO $$
+DECLARE
+  role_name text;
+BEGIN
+  FOREACH role_name IN ARRAY ARRAY['h2_public', 'h2_backoffice'] LOOP
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = role_name) THEN
+      EXECUTE format('CREATE ROLE %I NOLOGIN', role_name);
+    END IF;
+    -- Also for a role that existed already (someone made it by hand): never more than an app needs.
+    EXECUTE format('ALTER ROLE %I NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT', role_name);
+    EXECUTE format('GRANT CONNECT ON DATABASE %I TO %I', current_database(), role_name);
+  END LOOP;
+END
+$$;
+
+-- No role but the owner creates objects in the schema or temporary tables (PostgreSQL 15+ already keeps CREATE on
+-- public from PUBLIC; said again so a database made otherwise is the same). The apps use neither.
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+DO $$
+BEGIN
+  EXECUTE format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC', current_database());
+END
+$$;
+
+GRANT USAGE ON SCHEMA public TO h2_public, h2_backoffice;
+
+-- Both read every table, but the public app not the Scout's and the enrichment's bookkeeping, which only the back
+-- office reads.
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO h2_public, h2_backoffice;
+REVOKE SELECT ON scout_run, scout_schedule, source_cursor, discovery_host, enrichment_queue_control, maintenance_task
+  FROM h2_public;
+
+-- The public app writes only what a visit, a sign-in, a report or its own jobs write (every table is classified in
+-- AppRolesGrantsIT):
+--   resource, resource_label, source_record   the live results it observes (ResourceStore.upsert: upserts, labels,
+--                                             categories, event dates, orphans deleted);
+--   source                                    its sources at startup and their last outcome;
+--   issue_report, review_item                 a user's report (ReportIssue), moved when its resource is merged;
+--   live_web_query_result                     the live web results kept per query (JdbcWebResultStore), and purged;
+--   app_user, bookmark, admin_audit           sign-in, saved items, account deletion, identity retention;
+--   guide_similar_question, ai_cache          the guide's similar questions and the shared cache, and their purges;
+--   shedlock                                  one run at a time of its jobs.
+-- Foreign-key cascades run as the owner, so a delete here needs no grant on the tables it cascades to.
+GRANT INSERT, UPDATE, DELETE ON resource, resource_label, live_web_query_result, app_user, guide_similar_question,
+  ai_cache TO h2_public;
+GRANT INSERT, UPDATE ON source, source_record, issue_report, review_item, shedlock TO h2_public;
+GRANT INSERT, DELETE ON bookmark, admin_audit TO h2_public;
+
+-- The back office writes the catalog, the review queue, the Scout's tables, the settings and the audit trail: rows on
+-- every table, and the settings' identity sequence.
+GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO h2_backoffice;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO h2_backoffice;
+
+-- The apps only check the migration history (SchemaCheck): they read it and never change it.
+REVOKE INSERT, UPDATE, DELETE ON ${flyway:table} FROM h2_public, h2_backoffice;
+
+-- Tables and sequences later migrations create (default privileges of the user running them, the owner): both apps
+-- read a new table, only the back office writes it. A new table the public app writes needs its own
+-- GRANT ... TO h2_public in the migration that creates it, and its row in AppRolesGrantsIT.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO h2_public, h2_backoffice;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT INSERT, UPDATE, DELETE ON TABLES TO h2_backoffice;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO h2_backoffice;

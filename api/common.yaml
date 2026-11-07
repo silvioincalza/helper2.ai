@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Helper2.ai shared API types
-  version: 2.0.0
+  version: 3.0.0
   description: Types and read-only paths used by both public.yaml and admin.yaml.
   license:
     name: Apache 2.0

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Helper2.ai back office API
-  version: 2.0.0
+  version: 3.0.0
   summary: Federated metasearch for AI resources, with explicit provenance and source status.
   description: |
     Back office API (ADR 0024, 0026): served by the back office app on the in-network admin host only. Shared

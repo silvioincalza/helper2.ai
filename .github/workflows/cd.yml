@@ -128,8 +128,9 @@ jobs:
           retention-days: 90
 
   # Grype on the SBOMs of the images just pushed (ADR 0033), on a GitHub-hosted runner: it reads the run's artifacts,
-  # never Harbor. Report-only until 18 Nov 2026: findings with a fix go to code scanning (image/app, image/postgres
-  # on main, likewise image/backoffice and image/web) and the job log, nothing fails. Not a need of staging yet: the gate adds `--fail-on critical` and that need.
+  # never Harbor. Findings with a fix go to code scanning (image/app, image/backoffice, image/web, image/postgres) and
+  # the job log. A Critical finding with a fix in any image fails the job, after the uploads, and staging needs this
+  # job: such an image is never deployed. An exception goes to .grype.yaml, with its reason and a review date.
   scan:
     needs: image
     runs-on: ubuntu-latest
@@ -153,14 +154,25 @@ jobs:
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-backoffice -D sboms
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-web -D sboms
           gh run download "$GITHUB_RUN_ID" -R "$GITHUB_REPOSITORY" -n sbom-postgres -D sboms
-      - name: Vulnerability scan (report-only)
+      # Every image is scanned and reported before the job fails, so one Critical does not hide the others. Grype
+      # exits 2 when a finding reaches --fail-on; any other failure (a broken SBOM, no database) stops here.
+      - name: Vulnerability scan (fails on a Critical finding with a fix)
+        id: grype
         run: |
           set -euo pipefail
+          critical=()
           for image in app backoffice web postgres; do
             sbom=sboms/sbom-$image.cdx.json; [[ $image == app ]] && sbom=sboms/sbom.cdx.json
             echo "== $image"
-            grype "sbom:$sbom" --only-fixed -o table -o "sarif=grype-$image.sarif"
+            status=0
+            grype "sbom:$sbom" --only-fixed --fail-on critical -o table -o "sarif=grype-$image.sarif" || status=$?
+            case $status in
+              0) ;;
+              2) critical+=("$image") ;;
+              *) echo "::error::grype failed on $image (exit $status)"; exit "$status" ;;
+            esac
           done
+          echo "critical=${critical[*]}" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/upload-sarif
         continue-on-error: true
         with:
@@ -189,11 +201,18 @@ jobs:
           category: image/postgres
           ref: ${{ github.ref }}
           sha: ${{ github.sha }}
+      - name: Fail on a Critical finding with a fix
+        if: steps.grype.outputs.critical != ''
+        env:
+          CRITICAL: ${{ steps.grype.outputs.critical }}
+        run: |
+          echo "::error::a Critical vulnerability with a fix in: $CRITICAL (see the scan step, or code scanning)"
+          exit 1
 
   # Main only: a release branch never deploys staging (ADR 0034).
   staging:
     if: github.ref == 'refs/heads/main'
-    needs: image
+    needs: [image, scan]
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read

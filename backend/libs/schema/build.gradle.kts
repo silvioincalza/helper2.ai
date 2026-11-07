@@ -11,3 +11,21 @@ dependencies {
   // PGConnection.alterUserPassword: the password is hashed (SCRAM) before it leaves the client.
   implementation("org.postgresql:postgresql")
 }
+
+// The squash gate of the first release (ADR 0004 §5, SquashEquivalenceIT): the old chain V1..V23,
+// read from git, and the single V1 build the same database. It needs the git history, so it is not
+// part of test: ./gradlew :libs:schema:squashCheck [-Ph2.squash.old-ref=<commit>]
+tasks.named<Test>("test") { useJUnitPlatform { excludeTags("squash") } }
+
+tasks.register<Test>("squashCheck") {
+  description = "Runs @Tag(\"squash\"): the old migration chain against the single V1."
+  group = "verification"
+  testClassesDirs = sourceSets["test"].output.classesDirs
+  classpath = sourceSets["test"].runtimeClasspath
+  useJUnitPlatform { includeTags("squash") }
+  providers.gradleProperty("h2.squash.old-ref").orNull?.let {
+    systemProperty("h2.squash.old-ref", it)
+  }
+  testLogging { showStandardStreams = true }
+  outputs.upToDateWhen { false }
+}

@@ -145,7 +145,7 @@ spend, and the right number changes with the day.
    day. So "Reset to default" never removes the global Tavily cap. The other choice, refusing a reset when the
    default is empty, still leaves no cap on a fresh install and makes "reset" mean two things; the code maximum is the
    safer of the two.
-3. **Postgres, append-only.** Table `runtime_setting` (V15): one row per change, with the value, who, when and an
+3. **Postgres, append-only.** Table `runtime_setting` (`V1__schema.sql`): one row per change, with the value, who, when and an
    optional reason. The current value is the newest row; "Reset to default" appends a row with no value. A trigger
    refuses every UPDATE. Not Redis: Redis is a disposable cache ([0005](0005-redis-disposable-cache.md)),
    and a lost override would raise a limit without anyone knowing.
@@ -162,10 +162,9 @@ spend, and the right number changes with the day.
    and the insert across replicas.
 7. **Audited.** Each change, reset, refused value and conflict is a `CHANGE_SETTING` row in `admin_audit`, in the same
    transaction, with the value before and after and the reason. The reason is one plain line: a control or format
-   character (line break, zero-width or bidirectional mark) is a 400, and nothing is stored. V15 adds `before_value`,
-   `after_value` and `reason`, and re-creates the action check with every action of V12 (`BACKFILL_CATEGORIES`
-   included), the enrichment queue actions of V14 (`REQUEUE_ENRICHMENT`, `SKIP_ENRICHMENT`, `PRIORITISE_ENRICHMENT`)
-   and `CHANGE_SETTING`. V14 runs first: Flyway refuses a lower version after a higher one.
+   character (line break, zero-width or bidirectional mark) is a 400, and nothing is stored. `admin_audit` has
+   `before_value`, `after_value` and `reason`, and its action check lists `CHANGE_SETTING` with every other admin
+   action (`V1__schema.sql`).
 8. **The page.** `/admin/settings` lists the limits first: the value now, the default, the allowed range with the unit
    and one line of help. Change → "Review changes" shows old → new → Confirm, with an optional reason. History lists
    the last 10 changes; Restore goes through the same review. The overview says how many limits are changed.
@@ -201,7 +200,7 @@ spend, and the right number changes with the day.
   (the snapshot), `RuntimeSettingStore.java`, `JdbcRuntimeSettingStore.java`, `RuntimeSettingsConfiguration.java`
   (refresh thread, purge).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/RuntimeSettingsProperties.java`, `PlatformRetentionProperties.java`.
-- `backend/libs/schema/src/main/resources/db/migration/V15__runtime_setting.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`runtime_setting`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
   `ResetRuntimeSetting.java`; `admin/web/RuntimeSettingsController.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `BudgetLedger.java`, `CallCounter.java` (limits by

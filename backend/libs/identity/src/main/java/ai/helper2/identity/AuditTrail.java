@@ -18,20 +18,20 @@ public interface AuditTrail {
     DRAFT_HOME_EXAMPLES,
     RECHECK_ENRICHMENT,
     BACKFILL_CATEGORIES,
-    // The enrichment queue actions (V14): listed here so the enum matches the check of V15.
+    // The enrichment queue actions. The check on admin_audit.action in V1 lists the same values.
     REQUEUE_ENRICHMENT,
     SKIP_ENRICHMENT,
     PRIORITISE_ENRICHMENT,
     CHANGE_SETTING,
-    // Discovery's host lists (V17, ADR 0022).
+    // Discovery's host lists (ADR 0022).
     ADD_DISCOVERY_HOST,
     REMOVE_DISCOVERY_HOST,
-    // A relationship candidate's target, and a resource added for it (V19, ADR 0026).
+    // A relationship candidate's target, and a resource added for it (ADR 0026).
     CHANGE_RELATIONSHIP_TARGET,
     ADD_RESOURCE,
-    // An admin's edit of a resource candidate (V21, ADR 0026).
+    // An admin's edit of a resource candidate (ADR 0026).
     EDIT_CANDIDATE,
-    // A resource's own field set or the AI's value dropped (V22, ADR 0026).
+    // A resource's own field set or the AI's value dropped (ADR 0026).
     SET_FIELD,
     DROP_FIELD
   }

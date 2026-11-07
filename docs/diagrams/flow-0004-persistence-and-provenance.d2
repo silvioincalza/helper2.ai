@@ -1,5 +1,6 @@
 # Flowchart: the schema at startup, then how one search reads discovery dates and records what it saw,
-# off the request path. Startup: Flyway applies the one versioned migration and the repeatable seeds.
+# off the request path. Startup: Flyway applies the one versioned migration (it checks the locale first) and the
+# repeatable seeds.
 # Shows the batched date read, the live-only filter, the bounded queue (drop when full) and the
 # background upsert with origin rank, record fingerprints, reports moved with their records, orphan clean-up,
 # labels and event dates.
@@ -21,12 +22,15 @@ startup: App startup (Flyway) {
   direction: down
   history: "Applied migrations match\nthe files? (checksums)" {class: decision}
   refuse: "Refuse to start;\nthe deploy rolls back" {class: fail}
-  v1: "Empty database:\napply V1__schema.sql\n(the whole schema)" {class: data}
+  locale: "Database UTF8 with\nlocale en_US.utf8?" {class: decision}
+  v1: "Empty database:\napply V1__schema.sql\n(the whole schema,\nthe app roles last)" {class: data}
   seeds: "Apply each R__ seed\nthat changed (upserts)" {class: data}
   up: "App serves" {class: end}
 
   history -> refuse: no
-  history -> v1: "yes, V1 not applied yet"
+  history -> locale: "yes, V1 not applied yet"
+  locale -> v1: yes
+  locale -> refuse: "no: V1 stops"
   history -> seeds: "yes, V1 applied"
   v1 -> seeds
   seeds -> up

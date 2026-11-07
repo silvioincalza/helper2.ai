@@ -556,9 +556,9 @@ class JdbcEnrichmentCandidatesIT {
 
   /**
    * The two backlog parts read resources newest first through an index, not the whole table. On a
-   * small test database the planner may take the plain discovery index (V6) instead of the partial
-   * backlog index (#219): both give the order, and the choice depends on the statistics other tests
-   * leave behind, so either one passes.
+   * small test database the planner may take the plain discovery index
+   * (resource_first_discovered_idx) instead of the partial backlog index (#219): both give the
+   * order, and the choice depends on the statistics other tests leave behind, so either one passes.
    */
   @Test
   void theNextBatchReadsTheBacklogIndex() {

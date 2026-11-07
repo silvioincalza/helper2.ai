@@ -1,5 +1,5 @@
 # Flowchart: who migrates, how an app waits for the schema, and what each app may reach in Postgres and Redis (ADR 0004).
-# Source of truth: backend/libs/schema (MigrateStep, AppLogins, SchemaCheck, V23__app_roles.sql),
+# Source of truth: backend/libs/schema (MigrateStep, AppLogins, SchemaCheck, V1__schema.sql: its last section, the app roles),
 #   backend/apps/public/src/main/java/ai/helper2/PublicApplication.java, backend/libs/identity (SessionConfiguration),
 #   deploy/helm/helper2/templates/ (migrate.yaml, app.yaml, backoffice.yaml, redis.yaml),
 #   deploy/helm/helper2/files/redis-users.acl, deploy/k8s/Makefile (env-secret, deploy), deploy/k8s/check-app-env.sh.
@@ -16,7 +16,7 @@ mode: "First argument\n`migrate`?" {class: decision}
 step: Migrate step (Job, owner) {
   class: group
   direction: down
-  flyway: "Flyway migrate\nas the owner (V23: roles\nNOLOGIN, row grants)" {class: app}
+  flyway: "Flyway migrate\nas the owner (V1, last:\nroles NOLOGIN, row grants)" {class: app}
   pw: "Both role passwords\nset?" {class: decision}
   logins: "AppLogins: LOGIN +\nSCRAM password per role" {class: app}
   done: "exit 0" {class: end}
@@ -53,7 +53,7 @@ app: App startup (its own role) {
 reach: What each app reaches {
   class: group
   direction: right
-  pg: "Postgres: grants per table (V23):\npublic app writes the rows a visit,\nsign-in or report needs; back office\nall rows. No DDL, TRUNCATE, temp tables;\nhistory read only" {class: data}
+  pg: "Postgres: grants per table (V1):\npublic app writes the rows a visit,\nsign-in or report needs; back office\nall rows. No DDL, TRUNCATE, temp tables;\nhistory read only" {class: data}
   redis: "Redis: shared counters and caches,\nits own cache and sessions (JSON),\nthe exact commands of\nredis-users.acl" {class: data}
 }
 

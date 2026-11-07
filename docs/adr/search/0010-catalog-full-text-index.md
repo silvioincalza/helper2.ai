@@ -185,7 +185,7 @@ OWASP LLM Top 10: no model reads or writes this text. The classifier gets the se
 | Orchestration | Covered: part of the Scout pass, after the hits; a failure is logged and the next pass rebuilds. |
 | Tool & API | Covered: the same GitHub calls as before (the search answer now also gives the list's facts). |
 | Knowledge & RAG | Covered: full-text recall from list words, ranked below direct matches. Embeddings of list text are deferred (see alternatives). |
-| Data | Covered: V12, two derived tables, FK cascade, retention rule; no text column. |
+| Data | Covered: two derived tables in V1, FK cascade, retention rule; no text column. |
 | Guardrails | Covered: cleaning, caps, bind parameters, half weight. |
 | Observability | Covered: a log line per pass (lists, entries written); a failed list is logged by URL and exception class only. |
 | Evaluation | Gap, deferred: the labelled search set ([0036](../quality/0036-evaluation.md)) has no grades yet; measure recall and nDCG with and without list words once it has (roadmap). |
@@ -222,7 +222,7 @@ OWASP LLM Top 10: no model reads or writes this text. The classifier gets the se
   `internal/CatalogSearchSource.java`, `internal/CatalogRetention.java` (`deleteListIndexUpdatedBefore`).
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `SourceHit.foundIn`, `MergedResult.foundIn`),
   `backend/apps/common-web/src/main/java/ai/helper2/search/web/CardMapper.java`, `search/cache/SourceHitCodec.java`.
-- `backend/libs/schema/src/main/resources/db/migration/V13__awesome_list_search.sql`; `api/common.yaml` (`ResultCard.foundIn`,
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`awesome_list`, `awesome_list_entry`); `api/common.yaml` (`ResultCard.foundIn`,
   `ListMatch`).
 - `frontend/src/components/results/ResultRow.tsx`, `results.css`; `frontend/src/i18n/locales/en.json`
   (`results.foundIn`, the Privacy page).
