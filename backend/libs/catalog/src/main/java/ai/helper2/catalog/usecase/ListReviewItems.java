@@ -22,7 +22,7 @@ public class ListReviewItems {
   /** The largest page the back office may ask for. */
   public static final int MAX_PAGE_SIZE = 100;
 
-  /** A category id, as a discovery category's tag (ADR 0051). */
+  /** A category id, as a discovery category's tag (ADR 0022). */
   private static final Pattern CATEGORY = Pattern.compile("[a-z0-9]+(-[a-z0-9]+)*");
 
   public ReviewQueue.Page list(

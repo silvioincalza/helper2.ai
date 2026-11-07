@@ -20,7 +20,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-/** WHEN (ADR 0032): dates from records, never from a model. */
+/** WHEN (ADR 0016): dates from records, never from a model. */
 internal class DateAnswer(
   private val steps: GuideSteps,
   private val maxCandidates: Int,

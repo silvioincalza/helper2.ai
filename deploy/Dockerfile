@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.7
-# The public app (ADR 0069): the API and the pages, on a JRE 25. No web files: the web image serves them
+# The public app (ADR 0032): the API and the pages, on a JRE 25. No web files: the web image serves them
 # (web.Dockerfile), and the pod gets the built shell from it at start (init container, deploy/helm/helper2).
 # The back office has its own image: backoffice.Dockerfile.
 # The build stage runs on the build machine's own architecture (fast on Apple silicon); only the
 # runtime stage is the target platform, e.g. --platform linux/amd64 for the cluster.
-# Base images are pinned by the digest of their multi-arch index (ADR 0046): a moved tag cannot change a build.
+# Base images are pinned by the digest of their multi-arch index (ADR 0033): a moved tag cannot change a build.
 # Dependabot updates tag and digest together.
 FROM --platform=$BUILDPLATFORM docker.io/library/eclipse-temurin:25-jdk@sha256:83f4a7fc27df94dcc7b8de04d14cbbba8da14406f921e966969c3b09000aa507 AS app
 WORKDIR /src

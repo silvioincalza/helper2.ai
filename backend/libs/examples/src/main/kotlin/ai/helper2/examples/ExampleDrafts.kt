@@ -50,7 +50,7 @@ class DraftsUnavailable(val reason: Reason) : RuntimeException(reason.name) {
 }
 
 /**
- * The rules a model's proposal must pass before a person sees it (ADR 0049 §6): grounded (it names
+ * The rules a model's proposal must pass before a person sees it (ADR 0015 §6): grounded (it names
  * a resource it was given, which becomes its expected result), the same text rules as an admin's
  * example, one per resource, and no repeat of an example or of another draft (one waiting for
  * review included).

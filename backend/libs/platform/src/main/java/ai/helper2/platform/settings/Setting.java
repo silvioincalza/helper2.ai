@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * One setting the back office shows read-only (ADR 0045): what the app runs with now. Built only
+ * One setting the back office shows read-only (ADR 0026): what the app runs with now. Built only
  * through the factories below, one per kind of value, so a module lists each setting by hand from
  * its typed record. A secret has no factory: there is no way to show one by mistake. A value the
  * page cannot show safely is replaced by {@value #HIDDEN} and logged by key, never by value: a

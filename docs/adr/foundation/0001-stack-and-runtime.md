@@ -15,7 +15,7 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
    calls stay blocking and simple; there is no reactive stack.
 3. **Frontend.** A single-page application (SPA): React 19.3.1, React Router 8.5.0, i18next, built with
    Vite 8.3.5 and TypeScript 6.0.3. Node.js 26 in the build image (`engines: >=24`).
-4. **One image per deployable** ([0069](../operations/0069-three-deployables.md)). `deploy/web.Dockerfile`: Node builds
+4. **One image per deployable** ([0032](../operations/0032-runtime-topology.md)). `deploy/web.Dockerfile`: Node builds
    the public SPA, nginx (`nginx-unprivileged`, alpine-slim) serves its files as user 101. `deploy/Dockerfile`: the JDK
    stage runs `:apps:public:bootJar`, the runtime stage is `eclipse-temurin:25-jre` as user 10001; the jar holds no
    web files. `deploy/backoffice.Dockerfile` builds the back office with the admin web app (`dist-admin`) in
@@ -25,7 +25,7 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
    `/favicon.svg` (5 minutes, then revalidated); any other address there is a plain 404, never `index.html`. The public
    app has no static handler (`spring.web.resources.add-mappings: false`): every path the client router owns (no file
    extension, outside `/api`, `/oauth2`, `/login`, `/logout` and `/actuator`) is the shell, `index.html`, written by
-   the pages module with `no-cache` ([0050](../frontend/0050-pages-for-crawlers.md)). The shell comes from the web
+   the pages module with `no-cache` ([0029](../frontend/0029-site-pages-and-policy.md)). The shell comes from the web
    image of the same tag.
 6. **Java Virtual Machine (JVM) flags.** `-XX:MaxRAMPercentage=60` (heap is 60% of the container limit) and
    `-XX:+ExitOnOutOfMemoryError` (the pod restarts instead of running broken).
@@ -34,12 +34,12 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 
 ## Consequences
 - One image holds the API and the user interface (UI). A deploy changes both at once, and they can never be out of step.
-- The site footer shows the release version from `package.json` (see [0029](../operations/0029-release-versioning.md)).
+- The site footer shows the release version from `package.json` (see [0034](../operations/0034-releases-and-versions.md)).
 - Request code stays plain and blocking; virtual threads give the concurrency.
 
 ## Alternatives considered
 - GraalVM native image — not used. Ahead-of-time processing makes every build slower, and the
-  structured-output records would need reflection hints. A few JVM replicas (3 on prod, [0027](../operations/0027-runtime-topology.md)) are enough for this load.
+  structured-output records would need reflection hints. A few JVM replicas (3 on prod, [0032](../operations/0032-runtime-topology.md)) are enough for this load.
 - Separate frontend container, or the SPA on a content delivery network (CDN) — a second deploy and CORS
   for no gain at this size.
 - Server-side rendering (Next.js) — a Node runtime in production only for search engine optimization
@@ -61,5 +61,5 @@ The modules are in the [context view](../../diagrams/architecture-context.svg); 
 
 ## Roadmap
 - Search engine support (robots.txt, sitemap, metadata for detail pages): [roadmap](../../roadmap.md#product-and-legal).
-- The open supply-chain steps ([0046](../operations/0046-supply-chain.md)): [roadmap](../../roadmap.md#2-operations).
+- The open supply-chain steps ([0033](../operations/0033-ci-cd-and-supply-chain.md)): [roadmap](../../roadmap.md#2-operations).
 - Known limits: [roadmap § 9](../../roadmap.md#9-known-limits).

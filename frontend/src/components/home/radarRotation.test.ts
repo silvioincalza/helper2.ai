@@ -39,7 +39,7 @@ function arrivals(cycles: Cycle[]): string[] {
   return out;
 }
 
-describe('the radar cycle (ADR 0042): always 5 to 10 sources, the oldest leaves first', () => {
+describe('the radar cycle (ADR 0028): always 5 to 10 sources, the oldest leaves first', () => {
   it('starts with 5 sources, one after another, quicker than the later steps', () => {
     const counts = run(5).map((c) => c.shown.length);
     expect(counts).toEqual([1, 2, 3, 4, 5]);

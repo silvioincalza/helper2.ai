@@ -30,7 +30,7 @@ public class TavilyCollector implements Collector {
 
   static final String ID = CollectorDescriptors.LIVE_WEB_SCOUT;
 
-  /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector\'s calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   private static final int MAX_RESULTS_PER_QUERY = 20;

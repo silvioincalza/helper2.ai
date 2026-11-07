@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
 /**
  * The catalog's settings, from {@code helper2.catalog}: its own search sources (index, curated,
  * semantic), the background writer of observed results and the embedding indexer. The defaults and
- * the {@code H2_} variables are in application.yaml (ADR 0007 point 8).
+ * the {@code H2_} variables are in application.yaml (ADR 0007 (part was 0007) point 8).
  *
  * @param observationQueue search results waiting to be written in the background
  */
@@ -28,7 +28,7 @@ public record CatalogProperties(
     @Valid @NotNull Categories categories) {
 
   /**
-   * The categories of the catalog's resources (ADR 0053).
+   * The categories of the catalog's resources (ADR 0013).
    *
    * @param backfillAtStartup assign them again at startup when the category words or rules changed
    */
@@ -41,7 +41,7 @@ public record CatalogProperties(
   public record Curated(boolean enabled, @NotNull Duration timeout) {}
 
   /**
-   * Vector search (ADR 0012), on only with an embedding key.
+   * Vector search (ADR 0011), on only with an embedding key.
    *
    * @param maxDistance cosine distance cut-off: 0 = same, 2 = opposite
    * @param queryVectorTtl how long query vectors are shared by the replicas

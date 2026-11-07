@@ -36,7 +36,7 @@ type Credits =
   | { kind: 'unavailable' };
 
 /**
- * Today's web credits of the whole cluster, only for an enabled metered source (`metered`, ADR 0037); null for every
+ * Today's web credits of the whole cluster, only for an enabled metered source (`metered`, ADR 0014); null for every
  * other source. On a metered source a null `webCredits` means the count cannot be read. A missing `metered` (an answer
  * from a replica not yet updated, during a rollout) counts as not metered.
  */

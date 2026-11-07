@@ -17,9 +17,9 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * The settings of each Scout collector, bound from {@code helper2.scout.<collector>}. The defaults
- * and the environment variables are in application.yaml only (ADR 0007 point 8). A missing or
- * invalid value stops startup with the name of the property. Lists are trimmed and blank entries
- * dropped, so folded YAML lists can span lines.
+ * and the environment variables are in application.yaml only (ADR 0007 (part was 0007) point 8). A
+ * missing or invalid value stops startup with the name of the property. Lists are trimmed and blank
+ * entries dropped, so folded YAML lists can span lines.
  */
 final class CollectorProperties {
 
@@ -63,7 +63,7 @@ final class CollectorProperties {
     }
   }
 
-  /** LinkedIn via Tavily (ADR 0061): one search per query on linkedin.com, all sent to review. */
+  /** LinkedIn via Tavily (ADR 0021): one search per query on linkedin.com, all sent to review. */
   @Validated
   @ConfigurationProperties("helper2.scout.linkedin")
   record LinkedIn(@NotNull Duration interval, @NotNull List<String> queries) implements Scheduled {
@@ -74,7 +74,7 @@ final class CollectorProperties {
   }
 
   /**
-   * Upcoming AI events from the live web (ADR 0067): Tavily searches, Extract of at most [maxPages]
+   * Upcoming AI events from the live web (ADR 0021): Tavily searches, Extract of at most [maxPages]
    * pages a pass, and at most [readerDailyCalls] model calls a UTC day to read them.
    */
   @Validated
@@ -93,15 +93,15 @@ final class CollectorProperties {
   }
 
   /**
-   * The Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and
-   * 0061) may spend per UTC day, shared by all of them.
+   * The Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0022 and
+   * 0021) may spend per UTC day, shared by all of them.
    */
   @Validated
   @ConfigurationProperties("helper2.scout")
   record ScoutCredits(@PositiveOrZero long dailyCredits) {}
 
   /**
-   * Tavily discovery (ADR 0051): what every category's collector shares. A category's own options
+   * Tavily discovery (ADR 0022): what every category's collector shares. A category's own options
    * (helper2.categories) override the interval and the score floor and add to the excluded domains.
    */
   @Validated
@@ -120,7 +120,7 @@ final class CollectorProperties {
   }
 
   /**
-   * GitHub awesome lists (ADR 0020, 0055) and their deep search (ADR 0058): how a run reads them,
+   * GitHub awesome lists (ADR 0021, 0010) and their deep search (ADR 0022): how a run reads them,
    * how far it follows nested lists and how many product links it proposes for review.
    */
   @Validated

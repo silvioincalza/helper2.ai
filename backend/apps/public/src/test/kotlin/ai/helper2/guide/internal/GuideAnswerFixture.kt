@@ -84,7 +84,7 @@ object GuideAnswerFixture {
             listOf(
               ProposedPick(whisper, "Self-hostable.", "Speech recognition model you can self-host"),
               // Rejected: its quote is not in the text, so the answer carries a research trail
-              // entry (ADR 0044).
+              // entry (ADR 0018).
               ProposedPick(
                 prompt,
                 "A prompt.",

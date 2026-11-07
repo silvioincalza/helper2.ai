@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { TermCommand } from '@/components/home/TermList';
 
 /**
- * A back-office part's heading in the terminal style (ADR 0042): the title, then `$ helper2 review --open · 4`, with
+ * A back-office part's heading in the terminal style (ADR 0028): the title, then `$ helper2 review --open · 4`, with
  * the count from the API (none while it loads, or when the part has no count). The heading takes focus after Try
  * again ([headingRef], see useRetry).
  */

@@ -19,7 +19,7 @@ const COMMAND = 'helper2 status';
 const HIDING: readonly ExampleCheckOutcome[] = ['WEAK', 'FAIL', 'PENDING'];
 
 /**
- * The landing page (UJ-9, ADR 0045): what needs a person now. Every number links to the view that acts on it. Counts
+ * The landing page (UJ-9, ADR 0026): what needs a person now. Every number links to the view that acts on it. Counts
  * only; trends live in Grafana. The server computes the overview at most once a minute, so Refresh is cheap.
  */
 export default function AdminOverview() {
@@ -190,7 +190,7 @@ function OverviewParts({
 }
 
 /**
- * How many home examples are hidden now, per check and paused (ADR 0049), each a link to the Examples page filtered by
+ * How many home examples are hidden now, per check and paused (ADR 0015), each a link to the Examples page filtered by
  * that check. A path with fewer shown than the home page picks gets the same warning as the Examples page.
  */
 function HomeExampleCounts({ counts }: { counts: Overview['homeExamples'] }) {

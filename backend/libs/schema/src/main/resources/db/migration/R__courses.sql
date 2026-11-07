@@ -1,4 +1,4 @@
--- Curated AI courses and certifications (ADR 0032 §8, Source 1). Repeatable and idempotent: Flyway re-runs it
+-- Curated AI courses and certifications (ADR 0016 (part was 0032) §8, Source 1). Repeatable and idempotent: Flyway re-runs it
 -- whenever this file changes; rows are upserted and courses removed from this list are removed from the catalog.
 -- Every URL is the provider's own page, opened on 2026-10-28 (HTTP 200 and the expected title; Udemy and O'Reilly
 -- video pages block scripted clients, so those were confirmed through their indexed listings on the same day).

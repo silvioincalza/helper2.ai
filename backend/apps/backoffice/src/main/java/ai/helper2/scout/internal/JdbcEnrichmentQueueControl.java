@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * The admin's decisions on the enrichment queue, one row per resource in enrichment_queue_control
- * (ADR 0045 §7). The Scout owns the table and is its only writer; the catalog's backlog query reads
- * it.
+ * (ADR 0026 (part was 0045) §7). The Scout owns the table and is its only writer; the catalog's
+ * backlog query reads it.
  */
 @Component
 class JdbcEnrichmentQueueControl implements EnrichmentQueueControl {

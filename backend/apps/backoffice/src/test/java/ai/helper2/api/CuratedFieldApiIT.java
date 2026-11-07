@@ -39,7 +39,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * PUT /admin/resources/{id}/fields/{field} and POST …/drop (ADR 0066): an admin's value wins over
+ * PUT /admin/resources/{id}/fields/{field} and POST …/drop (ADR 0026): an admin's value wins over
  * the AI and over a later record; dropping removes only the AI's values.
  */
 class CuratedFieldApiIT extends ApiTestBase {

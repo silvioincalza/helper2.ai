@@ -10,7 +10,7 @@ import java.util.UUID
 import java.util.function.Supplier
 
 /*
- * Web search with credits (Tavily, ADR 0037): store first, then a live call inside the asker's daily quota.
+ * Web search with credits (Tavily, ADR 0014): store first, then a live call inside the asker's daily quota.
  */
 
 /** What the user is doing: each feature has its own daily web searches. */
@@ -149,7 +149,7 @@ data class WebFreshness(
 }
 
 /**
- * Daily web searches per visitor and feature (ADR 0037). A guest is counted under an HMAC of the
+ * Daily web searches per visitor and feature (ADR 0014). A guest is counted under an HMAC of the
  * client address and the day, a signed-in user (only with [registeredTier] on) under the user id.
  * Every live call also counts on one global daily counter for all of Helper2, the credits of the
  * day; with [globalDailyCredits] set, it is capped. Check and count run in one step in [counter],
@@ -163,7 +163,7 @@ constructor(
   private val keys: QuotaKeys,
   private val limits: DailyLimits = DailyLimits(),
   private val registeredTier: Boolean = false,
-  /** Read on every call: a runtime setting (ADR 0060). Null = no cap. */
+  /** Read on every call: a runtime setting (ADR 0007). Null = no cap. */
   private val globalDailyCredits: Supplier<Long?> = Supplier { null },
 ) {
   fun tierOf(asker: Asker): QuotaTier =

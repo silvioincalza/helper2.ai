@@ -10,7 +10,7 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * Redis adapter for the search cache port.
  *
- * <p>Failure behaviour: every Redis call runs under the {@code redis} policy (ADR 0033); a Redis
+ * <p>Failure behaviour: every Redis call runs under the {@code redis} policy (ADR 0006); a Redis
  * error, or the circuit refusing the call while it is open, fails at once with "cache unavailable",
  * so a cache outage never adds per-source latency. The orchestrator turns failures into a
  * CACHE_UNAVAILABLE notice and queries sources live.

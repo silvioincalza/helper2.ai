@@ -10,7 +10,7 @@ import { adminRoutes } from './routes';
 import '@/styles/tokens.css';
 import '@/styles/app.css';
 
-// The back office web app (ADR 0069): no analytics, no ads, no consent banner, none of the public pages.
+// The back office web app (ADR 0032): no analytics, no ads, no consent banner, none of the public pages.
 claimReloadedPage();
 const router = createBrowserRouter(adminRoutes);
 followNavigation(router);

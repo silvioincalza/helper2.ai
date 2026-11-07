@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * POST /admin/review-items/resolutions: ADMIN only with the CSRF token, at most 100 items, one
- * outcome and one audit entry per item, bulk accept only where it is safe (ADR 0045).
+ * outcome and one audit entry per item, bulk accept only where it is safe (ADR 0026).
  */
 class ReviewBulkApiIT extends ApiTestBase {
 

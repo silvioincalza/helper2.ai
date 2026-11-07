@@ -37,7 +37,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
-/** The home examples (ADR 0049): the public pool, and the back office's add, change and remove. */
+/** The home examples (ADR 0015): the public pool, and the back office's add, change and remove. */
 class HomeExamplesApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
@@ -96,7 +96,7 @@ class HomeExamplesApiIT extends ApiTestBase {
   }
 
   /**
-   * The home page (the public app's, ADR 0069) gets only the examples that passed the check: read
+   * The home page (the public app's, ADR 0032) gets only the examples that passed the check: read
    * through the same use case its endpoint calls. The endpoint's own answer is checked there
    * (HomeExamplesPoolApiIT).
    */

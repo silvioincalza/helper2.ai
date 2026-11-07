@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { SourceInfo } from '@/api/types';
 
-/** Categories with a notice of their own on their row and on their candidates (health, legal; ADR 0051). */
+/** Categories with a notice of their own on their row and on their candidates (health, legal; ADR 0022). */
 export const CATEGORY_NOTICES: Record<string, 'health' | 'legal'> = {
   health: 'health',
   legal: 'legal',

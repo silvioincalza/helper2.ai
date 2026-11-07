@@ -4,7 +4,7 @@ import java.util.Locale
 import java.util.regex.Pattern
 
 /**
- * A category's words (ADR 0051, 0053), each matched at the start of a word in lower case, with
+ * A category's words (ADR 0022, 0013), each matched at the start of a word in lower case, with
  * hyphens and underscores read as spaces ("fine tuning platform" fits "Fine-Tuning platform",
  * "lora" does not fit "flora"). The patterns are compiled once. The discovery collectors tag their
  * results with them, and [CategoryMatcher] assigns categories with the same patterns.

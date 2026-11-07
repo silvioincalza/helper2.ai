@@ -32,7 +32,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * The research trail (ADR 0044): the planner's queries actually run, and each suggestion a check
+ * The research trail (ADR 0018): the planner's queries actually run, and each suggestion a check
  * removed, by code.
  */
 class AskGuideTrailTest {

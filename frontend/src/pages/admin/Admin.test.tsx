@@ -520,7 +520,7 @@ describe('Feature: the review queue cannot load', () => {
 });
 
 describe('Feature: Scout runs', () => {
-  it('Scenario: re-check stored answers runs the code check and shows the counts (ADR 0056)', async () => {
+  it('Scenario: re-check stored answers runs the code check and shows the counts (ADR 0023)', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/scout-runs': () => [run],

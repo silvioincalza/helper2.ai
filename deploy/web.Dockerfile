@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1.7
-# The web image (ADR 0069): the built public web app, static files only, served by nginx. It serves /assets/* and the
+# The web image (ADR 0032): the built public web app, static files only, served by nginx. It serves /assets/* and the
 # root files of frontend/public (theme.js, favicon.svg); anything else is a 404, never index.html. The built shell
 # (index.html) sits outside the served folder, at /usr/share/helper2/shell/index.html: an init container of the
-# public pod copies it from the web image of the same tag, and the public app writes every page into it (ADR 0050).
+# public pod copies it from the web image of the same tag, and the public app writes every page into it (ADR 0029).
 # The admin web app is the back office image's (backoffice.Dockerfile).
 # The build stage runs on the build machine's own architecture (fast on Apple silicon); only the runtime stage is the
 # target platform, e.g. --platform linux/amd64 for the cluster.
-# Base images are pinned by the digest of their multi-arch index (ADR 0046): a moved tag cannot change a build.
+# Base images are pinned by the digest of their multi-arch index (ADR 0033): a moved tag cannot change a build.
 # Dependabot updates tag and digest together.
 FROM --platform=$BUILDPLATFORM docker.io/library/node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS web
 WORKDIR /src

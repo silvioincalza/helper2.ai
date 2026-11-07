@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-/** NVIDIA-only (ADR 0014): the application does not start with a model id of another vendor. */
+/** NVIDIA-only (ADR 0008): the application does not start with a model id of another vendor. */
 class NvidiaOnlyTest {
 
   static final String SUPER = "nvidia/nemotron-3-super-120b-a12b";

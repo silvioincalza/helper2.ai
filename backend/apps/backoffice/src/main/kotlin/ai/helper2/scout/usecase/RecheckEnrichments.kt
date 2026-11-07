@@ -62,13 +62,13 @@ data class RecheckResult(
 )
 
 /**
- * Re-checks the stored enrichment answers by code, with no model call (ADR 0056). A new prompt
+ * Re-checks the stored enrichment answers by code, with no model call (ADR 0023). A new prompt
  * version does not re-enrich the catalog (the fingerprint leaves it out); this applies the new
  * rules to what earlier runs stored instead:
  * - a verified pricing, type or use case whose quotes do not state the value is rejected (it shows
  *   "Not stated");
  * - a field an article, a news item or a paper does not keep (pricing, licence, platforms, open
- *   source, type: facts of what it is about, ADR 0062) is rejected, whatever its verification;
+ *   source, type: facts of what it is about, ADR 0023) is rejected, whatever its verification;
  * - a summary claim that fails the claim check (names and numbers in its excerpts, enough of its
  *   words, no superlative, certificate, popularity or comparison) is dropped;
  * - a resource that still misses a target fact of its type (FieldTargets), has more to read (a
@@ -93,7 +93,7 @@ constructor(
   private val log = LoggerFactory.getLogger(RecheckEnrichments::class.java)
 
   companion object {
-    /** The marker of the first re-check, the one the prompt enrich-v5 needs (ADR 0062). */
+    /** The marker of the first re-check, the one the prompt enrich-v5 needs (ADR 0023). */
     const val TASK = "recheck-enrichment-enrich-v5"
     const val BATCH = 200
     private val AI_FACTS = setOf(ValueOrigin.AI_EXTRACTED, ValueOrigin.SELF_DECLARED)
@@ -148,14 +148,14 @@ constructor(
     return RecheckResult(1, rejected, gone, if (rerun) 1 else 0)
   }
 
-  /** A verified AI fact whose quotes do not state its value under the ADR 0056 rules. */
+  /** A verified AI fact whose quotes do not state its value under the ADR 0023 rules. */
   private fun failsTheNewRules(f: StoredFieldAnswer): Boolean =
     f.verification == Verification.VERIFIED &&
       f.origin in AI_FACTS &&
       f.field in EvidenceRules.NEWLY_STATED &&
       f.excerpts.none { EvidenceRules.statesValue(it, f.field, f.value) }
 
-  /** An AI field writing does not keep (ADR 0062): a fact of what it is about, not of the page. */
+  /** An AI field writing does not keep (ADR 0023): a fact of what it is about, not of the page. */
   private fun notKeptBy(type: ResourceType, f: StoredFieldAnswer): Boolean =
     f.verification != Verification.REJECTED &&
       f.origin != ValueOrigin.CURATED &&

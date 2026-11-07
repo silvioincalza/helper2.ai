@@ -1,0 +1,33 @@
+# Sequence: a visitor opens the Privacy page, the page reads the numbers from the API (ADR 0029).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/policy/web/PolicyController.java,
+#   platform/RateLimitInterceptor.java, identity/config/PublicSecurityConfiguration.java,
+#   search/config/SearchConfiguration.java, guide/internal/GuideConfiguration.java,
+#   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java,
+#   scout/internal/ScoutConfiguration.java, platform/config/PlatformRetentionProperties.java;
+#   frontend/src/routes.tsx (textPage), hooks/usePolicy.ts, components/TextSections.tsx, lib/duration.ts.
+# Render: cd docs/diagrams && d2 fmt sequence-0029-policy-endpoint.d2 && d2 sequence-0029-policy-endpoint.d2 sequence-0029-policy-endpoint.svg
+
+...@style
+
+shape: sequence_diagram
+
+visitor: "Visitor\n(Mission, Privacy, Terms)" {class: person}
+edge: "Cloudflare,\ningress-nginx" {class: ext}
+api: "helper2\n(policy)" {class: app}
+redis: Redis {class: data}
+modules: "search, guide, identity,\ncatalog, scout, platform\n(config at startup)" {class: config}
+
+boot: "Startup" {
+  modules -> api: "SearchPolicy, GuidePolicy,\nAccountPolicy, CatalogPolicy, ScoutPolicy,\nPlatformRetentionProperties, CategoriesProperties"
+}
+
+read: "Read" {
+  visitor -> visitor: "open a text page: load its chunk\nand the numbers side by side\n(once per session)"
+  visitor -> edge: "GET /api/v1/policy"
+  edge -> api: "GET /api/v1/policy"
+  api -> redis: "rate window of the client\n(keyed hash of the address and the day)"
+  redis -> api: "under the limit"
+  api -> api: "map the four values\nto the Policy DTO"
+  api -> visitor: "200 Policy\n(public, max-age=300)" {class: hot}
+  visitor -> visitor: "open the page with the numbers,\nor after 500 ms with the sentences\nwithout numbers; on an error, one line says so"
+}

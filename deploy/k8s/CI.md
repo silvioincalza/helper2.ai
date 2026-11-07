@@ -2,12 +2,12 @@
 
 | Workflow | Trigger | Runner | Does |
 |---|---|---|---|
-| [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` (`full: true`) | GitHub-hosted | job `changes` maps the changed paths ([`changes.sh`](../../.github/scripts/changes.sh), [ADR 0071](../../docs/adr/operations/0071-ci-cd-per-component-and-image-signing.md)); each job runs when its part changed: frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`); promtool. PRs only: Postgres tag-bump check when `deploy/postgres` changes, D2 diagrams re-rendered with d2 v0.9.0 and diffed. `ci-ok`: one check, red when a job failed or was cancelled |
+| [`ci.yml`](../../.github/workflows/ci.yml) | pull request, called by `cd` (`full: true`) | GitHub-hosted | job `changes` maps the changed paths ([`changes.sh`](../../.github/scripts/changes.sh), [ADR 0033](../../docs/adr/operations/0033-ci-cd-and-supply-chain.md)); each job runs when its part changed: frontend lint, typecheck, vitest, build; backend `gradlew test` (Testcontainers); `make chart-check` (helm lint, `helm template \| kubeconform`); promtool. PRs only: Postgres tag-bump check when `deploy/postgres` changes, D2 diagrams re-rendered with d2 v0.9.0 and diffed. `ci-ok`: one check, red when a job failed or was cancelled |
 | [`cd.yml`](../../.github/workflows/cd.yml) | push to `main`, manual | self-hosted | all of CI → `make postgres-image` + `make ci-images` (a changed image is built, an unchanged one gets the new tag on the signed image of the commit before; the digests pushed are recorded) → `make sbom` + `make backoffice-sbom` + `make web-sbom` + `make postgres-sbom` → `make sign` (exactly the digests this run pushed, OpenBao Transit; then every image must verify) → token revoked → artifacts `sbom`, `sbom-backoffice`, `sbom-web`, `sbom-postgres` (90 days) → Grype on each → staging. Never prod on its own |
 | [`deploy.yml`](../../.github/workflows/deploy.yml) | called by `cd` and `release` only | self-hosted | `make verify-images` (each image's signature, by digest; before the target checkout), `make diff` and `make deploy` (they check again and deploy by digest; a commit from before digests only with `rollback`), `make status` for one env |
-| [`guide-eval.yml`](../../.github/workflows/guide-eval.yml) | nightly 01:41 UTC, manual | GitHub-hosted | `scripts/eval-guide.mjs` (fails below 10 of 20 passed) and `--adversarial` (fails on any case) against staging, never prod; reports kept 30 days as an artifact. No secret. Not called by CI or CD: a failure never blocks a deploy ([ADR 0030](../../docs/adr/quality/0030-guide-evaluation.md)) |
-| [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0029); publishes the GitHub release → waits for the commit's CD run to pass staging → attaches that run's SBOM to the release; **approval** → prod, the tag's commit |
-| [`image-scan.yml`](../../.github/workflows/image-scan.yml) | Monday 05:17 UTC, manual | GitHub-hosted | Grype with a fresh database against the SBOMs of the latest release (public app, back office and web image); code scanning and job summary, report-only ([ADR 0046](../../docs/adr/operations/0046-supply-chain.md)) |
+| [`guide-eval.yml`](../../.github/workflows/guide-eval.yml) | nightly 01:41 UTC, manual | GitHub-hosted | `scripts/eval-guide.mjs` (fails below 10 of 20 passed) and `--adversarial` (fails on any case) against staging, never prod; reports kept 30 days as an artifact. No secret. Not called by CI or CD: a failure never blocks a deploy ([ADR 0036](../../docs/adr/quality/0036-evaluation.md)) |
+| [`release.yml`](../../.github/workflows/release.yml) | push of a `v*` tag | GitHub-hosted | refuses a moved or deleted tag; checks annotated, on `main`, same version in the four files (ADR 0034); publishes the GitHub release → waits for the commit's CD run to pass staging → attaches that run's SBOM to the release; **approval** → prod, the tag's commit |
+| [`image-scan.yml`](../../.github/workflows/image-scan.yml) | Monday 05:17 UTC, manual | GitHub-hosted | Grype with a fresh database against the SBOMs of the latest release (public app, back office and web image); code scanning and job summary, report-only ([ADR 0033](../../docs/adr/operations/0033-ci-cd-and-supply-chain.md)) |
 
 Third-party actions are pinned to commit SHAs with the version as a comment;
 [Dependabot](../../.github/dependabot.yml) bumps them weekly, along with Gradle, npm and the Dockerfiles' base images.
@@ -76,7 +76,7 @@ change, rerun `make ENV=<env> credentials`; the next deploy restarts the app wit
 The push publishes the GitHub release and starts the prod deploy of `1.0.3`, which waits for the approval; after it,
 the deploy job adds the tag `1.0.3` to the commit's three images in Harbor (same digests) and deploys them.
 
-**Fix releases from a release branch** (ADR 0048) — branch from the release tag (`git switch -c release/1.0 v1.0.3`,
+**Fix releases from a release branch** (ADR 0034) — branch from the release tag (`git switch -c release/1.0 v1.0.3`,
 push it), merge the fix into it by pull request, then tag the next patch on it (`v1.0.4` when `v1.0.3` is the release
 just below). CD builds the image of each push to `release/*` and deploys no staging: the release goes to prod without
 a staging run, after the approval. Merge the fix into `main` too. Setup, once: a branch ruleset on `release/*` like
@@ -89,7 +89,7 @@ got through and publishes nothing.
 ## Image signing
 
 CD signs every image it pushes with a key in OpenBao Transit, and a deploy checks each signature before Helm runs
-([ADR 0071](../../docs/adr/operations/0071-ci-cd-per-component-and-image-signing.md)). The private key never leaves
+([ADR 0033](../../docs/adr/operations/0033-ci-cd-and-supply-chain.md)). The private key never leaves
 OpenBao; [`cosign.pub`](cosign.pub) is its public half.
 
 The platform repo (incalza-me-infra) sets it up, from `tenants.yml` (`helper2.ci.signing`,

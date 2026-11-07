@@ -29,7 +29,7 @@ public class HuggingFaceProviderOrgsCollector implements Collector {
 
   static final String ID = CollectorDescriptors.HF_PROVIDER_ORGS;
 
-  /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector\'s calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   private final RestClient http;

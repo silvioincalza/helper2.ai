@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * GET /admin/review-items/{id}/evidence: ADMIN only, the contract's shape, the run read through the
- * item's link (ADR 0045), and the AI-written values marked (ADR 0038).
+ * item's link (ADR 0026), and the AI-written values marked (ADR 0018).
  */
 class ReviewEvidenceApiIT extends ApiTestBase {
 

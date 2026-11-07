@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-/** The back office (ADR 0069): admin, Scout and the catalog's jobs, on the admin host only. */
+/** The back office (ADR 0032): admin, Scout and the catalog's jobs, on the admin host only. */
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @EnableScheduling

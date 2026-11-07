@@ -16,14 +16,14 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 
 /**
- * One {@link TavilyDiscoveryCollector} bean per entry of {@code helper2.categories} (ADR 0051),
+ * One {@link TavilyDiscoveryCollector} bean per entry of {@code helper2.categories} (ADR 0022),
  * named {@code discovery-<id>}: each category is its own collector, with its own cursor, run record
  * and dot on the Home radar.
  *
  * <p>How many beans there are depends on the configuration, so the list is read here, before any
  * bean exists, through Spring Boot's {@link Binder} on the {@link Environment}: the one place that
  * does not take its settings as a {@code @ConfigurationProperties} bean (an exception to ADR 0007,
- * recorded in ADR 0051). The entries are checked while they bind ({@link CategoryProperties}); the
+ * recorded in ADR 0022). The entries are checked while they bind ({@link CategoryProperties}); the
  * beans themselves are built from the bound beans as usual (the shared settings {@code
  * helper2.sources.discovery} and {@code helper2.scout.discovery}).
  */

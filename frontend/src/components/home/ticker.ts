@@ -12,7 +12,7 @@ export function tickerWindow<Row>(rows: readonly Row[], offset: number, count: n
 }
 
 /**
- * The home lists as a news ticker (ADR 0042, principle 7, second exception): when a list has more rows than it shows,
+ * The home lists as a news ticker (ADR 0028, principle 7, second exception): when a list has more rows than it shows,
  * one row leaves at the top every 5 s and the next comes in at the bottom, like a station board. It holds still:
  * while the pointer is over it or the focus is in it, after a tap on it (a second tap starts it again), while it is off
  * screen or the tab is hidden, under reduced motion and for a signed-in user who turned motion off on the account

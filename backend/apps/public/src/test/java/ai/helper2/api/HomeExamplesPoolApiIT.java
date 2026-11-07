@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * GET /api/v1/home/examples (ADR 0049): only the examples that passed the check, without what the
+ * GET /api/v1/home/examples (ADR 0015): only the examples that passed the check, without what the
  * check expects, cached for everyone. The back office adds them (HomeExamplesApiIT there); here the
  * catalog use case it calls stands in for it.
  */

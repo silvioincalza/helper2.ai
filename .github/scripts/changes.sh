@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# What a change touches (ADR 0071): which CI jobs run on a pull request, and which images CD builds on a push. The one
+# What a change touches (ADR 0033): which CI jobs run on a pull request, and which images CD builds on a push. The one
 # place that maps paths to components; ci.yml and cd.yml both call it.
 #
 #   changes.sh <base> <head>   git diff --name-only --no-renames -z <base> <head>, then the map below. --no-renames: a
@@ -132,7 +132,7 @@ deploy/grafana/helper2.json|chart
 deploy/monitoring/helper2-rules.yaml|monitoring chart
 deploy/postgres/Dockerfile|postgres chart
 docs/adr/README.md|diagrams
-docs/diagrams/flow-0028-ci-cd.d2|diagrams
+docs/diagrams/flow-0033-ci-cd.d2|diagrams
 deploy/k8s/README.md|diagrams
 frontend/README.md|frontend web backoffice
 backend/apps/public/src/main/resources/x.md|backend public

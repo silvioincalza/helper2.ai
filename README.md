@@ -32,9 +32,9 @@ Helper2.ai is a product, built and run by Silvio Incalza. The only instance is *
 - Calls go through Spring AI's OpenAI-compatible client, base URL `https://api.tokenfactory.nebius.com/v1` (the `/v1` is required).
 - Every answer records the provider and model ids; the page shows them.
 - No key, provider down or credits exhausted: the guide shows the top real search results (`LLM_UNAVAILABLE`), and search keeps working.
-- Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0017](docs/adr/guide/0017-guide-cost-guard.md)).
+- Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0017](docs/adr/guide/0017-guide-cost-guard-and-answer-cache.md)).
 - **Tavily** adds web results to search and to the guide (only with `H2_LIVE_WEB_API_KEY`). A stored answer is reused
-  first, and each visitor gets a few live web searches a day ([ADR 0037](docs/adr/search/0037-tavily-store-and-daily-quota.md)).
+  first, and each visitor gets a few live web searches a day ([ADR 0014](docs/adr/search/0014-tavily-store-and-daily-quota.md)).
 
 Feedback on Token Factory and Nemotron: [docs/hackathon/feedback.md](docs/hackathon/feedback.md).
 
@@ -55,7 +55,7 @@ Latest evaluation ([docs/evaluation.md](docs/evaluation.md), 29 Oct 2026, live d
 - **A new question takes a few seconds**: three model calls plus a federated search. A repeated question is instant
   from the cache.
 - **Results can be cached or partial** when a source hits its rate limit; the source panel says so.
-- **English UI.** Queries work in any language ([ADR 0011](docs/adr/search/0011-language-aware-search.md)).
+- **English UI.** Queries work in any language ([ADR 0010](docs/adr/search/0010-catalog-full-text-index.md)).
 
 Every known limit, with its ADR: [roadmap § 9](docs/roadmap.md#9-known-limits).
 

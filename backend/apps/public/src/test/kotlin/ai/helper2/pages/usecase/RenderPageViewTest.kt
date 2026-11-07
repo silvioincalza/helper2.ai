@@ -12,7 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/** A server page shows only event facts it can show without the AI label (ADR 0038, 0067). */
+/** A server page shows only event facts it can show without the AI label (ADR 0018, 0021). */
 class RenderPageViewTest {
 
   private fun view(source: String) =

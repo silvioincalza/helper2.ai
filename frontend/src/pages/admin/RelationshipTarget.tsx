@@ -31,7 +31,7 @@ function errorOf(e: unknown, t: (k: string) => string): string {
 }
 
 /**
- * ADR 0064: an admin points an open relationship candidate at the right resource: one found in the catalog, one added
+ * ADR 0026: an admin points an open relationship candidate at the right resource: one found in the catalog, one added
  * now (name, official https address, type), or no resource under another name. The item stays open; [onChanged]
  * gets nothing back but reloads the evidence. Closed until asked for, so the evidence stays the first thing shown.
  */

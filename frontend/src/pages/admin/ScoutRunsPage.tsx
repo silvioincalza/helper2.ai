@@ -33,7 +33,7 @@ function firstRunPerSource(runs: ScoutRun[]): Set<string> {
 }
 
 /**
- * The Scout runs as a table in the terminal style (ADR 0042), `$ helper2 scouts --runs · N` with N the runs listed, Run all now and Run now for one source. A started run is followed on the listing until
+ * The Scout runs as a table in the terminal style (ADR 0028), `$ helper2 scouts --runs · N` with N the runs listed, Run all now and Run now for one source. A started run is followed on the listing until
  * no run is RUNNING. One run holds the cluster-wide lock at a time, so every start waits while one is pending or running.
  */
 export default function ScoutRunsPage() {
@@ -75,7 +75,7 @@ export default function ScoutRunsPage() {
     }
   };
 
-  /** Re-checks the stored enrichment answers by code (ADR 0056): no model call, counts only. */
+  /** Re-checks the stored enrichment answers by code (ADR 0023): no model call, counts only. */
   const recheckAnswers = async () => {
     if (recheck === 'busy') return;
     setRecheck('busy');

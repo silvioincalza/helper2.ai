@@ -46,7 +46,7 @@ export class ApiError extends Error {
 }
 
 /**
- * The CSRF token from the cookies: `__Host-XSRF-TOKEN` on the back office (a cookie no sibling host can set, ADR 0069),
+ * The CSRF token from the cookies: `__Host-XSRF-TOKEN` on the back office (a cookie no sibling host can set, ADR 0032),
  * `XSRF-TOKEN` on the public site. The `__Host-` one wins, so a cookie another host of the site planted never counts.
  */
 export function csrfTokenFrom(cookies: string): string | undefined {
@@ -135,7 +135,7 @@ export async function send(method: string, url: string, opts: RequestOptions): P
 
 /**
  * One JSON call to the API. Exported for reads that live in a page chunk and stay out of the first download (the text
- * pages' GET /policy, ADR 0042 decision 13); everything else goes through [api].
+ * pages' GET /policy, ADR 0028 (part was 0042) decision 13); everything else goes through [api].
  */
 export async function request<T>(
   method: string,
@@ -244,7 +244,7 @@ export const api = {
     request<RecentResponse>('GET', '/recent', { query, signal }),
   listUpcomingEvents: (query: URLSearchParams, signal?: AbortSignal) =>
     request<UpcomingEventsResponse>('GET', '/events/upcoming', { query, signal }),
-  /** The examples the home page picks from (ADR 0049): the same for everyone, cached for 5 minutes. */
+  /** The examples the home page picks from (ADR 0015): the same for everyone, cached for 5 minutes. */
   listHomeExamples: (lang: string, signal?: AbortSignal) =>
     request<HomeExamplePool>('GET', '/home/examples', {
       query: new URLSearchParams({ lang }),
@@ -262,7 +262,7 @@ export const api = {
   /** Each source is stamped with when it arrived, so a cached answer's ages keep counting (lib/sourceAge). */
   listSources: (signal?: AbortSignal) =>
     request<SourceInfo[]>('GET', '/sources', { signal }).then(stampReceived),
-  /** The categories search filters by (ADR 0053), in their order; the same for everyone, cached by the browser. */
+  /** The categories search filters by (ADR 0013), in their order; the same for everyone, cached by the browser. */
   listCategories: (signal?: AbortSignal) => request<Category[]>('GET', '/categories', { signal }),
   getMe: (signal?: AbortSignal) => request<Me>('GET', '/me', { signal }),
   /** A signed-in user's display settings; fields left out stay as they are. */

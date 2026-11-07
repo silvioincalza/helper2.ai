@@ -3,7 +3,7 @@ package ai.helper2.sources.events;
 import java.util.Optional;
 
 /**
- * Outbound port: a model that reads one event page (ADR 0067). What it says is checked by {@link
+ * Outbound port: a model that reads one event page (ADR 0021). What it says is checked by {@link
  * EventQuoteGate} before anything is published.
  */
 public interface EventReader {

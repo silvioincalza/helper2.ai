@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.Locale
 
 /**
- * The hosts discovery knows by name (ADR 0063). A WRITING host publishes articles about many
+ * The hosts discovery knows by name (ADR 0022). A WRITING host publishes articles about many
  * products: a post there is an ARTICLE candidate. A DIRECTORY host lists products: a page there is
  * never kept. An admin adds and removes them in the back office.
  */

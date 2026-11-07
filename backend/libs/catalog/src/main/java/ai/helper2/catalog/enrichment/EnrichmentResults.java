@@ -18,7 +18,7 @@ public interface EnrichmentResults {
   /**
    * One run. [outcome] is VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE or FAILED; [errors] are the
    * validation errors, or the failure. [extraEvidence] names the README or model card the run read
-   * (ADR 0043), else null.
+   * (ADR 0023), else null.
    */
   record Run(
       UUID resourceId,
@@ -33,7 +33,7 @@ public interface EnrichmentResults {
 
   /**
    * A passage that supports a fact. Without [sourceUrl] it is a passage of the source record; with
-   * it, a passage of text read for that record (its README or model card, ADR 0043), at [sourceUrl]
+   * it, a passage of text read for that record (its README or model card, ADR 0023), at [sourceUrl]
    * on [retrievedAt]. The record anchors it either way, so it goes when the record goes.
    */
   record Citation(
@@ -44,7 +44,7 @@ public interface EnrichmentResults {
 
   /**
    * [origin] is AI_EXTRACTED, SELF_DECLARED (only the product's own pages state it) or AI_ESTIMATED
-   * (a judgement the model made without a quote; ADR 0056).
+   * (a judgement the model made without a quote; ADR 0023).
    */
   record Field(
       String field,
@@ -78,7 +78,7 @@ public interface EnrichmentResults {
     }
   }
 
-  /** [selfDeclared]: the claim cites the product's own page (ADR 0056). */
+  /** [selfDeclared]: the claim cites the product's own page (ADR 0023). */
   record Claim(String text, List<Citation> citations, boolean selfDeclared) {
     public Claim(String text, List<Citation> citations) {
       this(text, citations, false);

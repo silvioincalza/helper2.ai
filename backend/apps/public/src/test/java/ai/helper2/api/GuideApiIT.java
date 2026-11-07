@@ -45,7 +45,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 /**
  * POST /api/v1/guide/stream end to end with a scripted ChatModel (no network): plan → federated
  * search → choose → validator, against real PostgreSQL and Redis; and the questions back and event
- * dates of ADR 0032.
+ * dates of ADR 0016.
  */
 @TestPropertySource(
     properties = {
@@ -596,7 +596,8 @@ class GuideApiIT extends ApiTestBase {
         .noneMatch(m -> m.contains("Frobnicator") || m.contains("document translation"));
   }
 
-  // ADR 0032 §3 and §5: an ambiguous name asked back once, and a WHEN question about an event over
+  // ADR 0016 (part was 0032) §3 and §5: an ambiguous name asked back once, and a WHEN question
+  // about an event over
   // events only. Dates come from records, so the plan call is the only model call.
 
   private static final Pattern NEED = Pattern.compile("<need>\\n(.*?)\\n</need>", Pattern.DOTALL);

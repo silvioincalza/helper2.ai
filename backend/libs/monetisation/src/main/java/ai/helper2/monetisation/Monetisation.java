@@ -4,14 +4,14 @@ import java.net.URI;
 import java.util.Optional;
 
 /**
- * What the site offers to fund itself, as configured (ADR 0057). An empty part is off: no link, no
+ * What the site offers to fund itself, as configured (ADR 0030). An empty part is off: no link, no
  * script, no CSP origin.
  *
  * @param githubSponsors the GitHub Sponsors page the Support page links to
  * @param stripePayment the Stripe Payment Link the Support page links to
  * @param ga4MeasurementId the Google Analytics 4 stream, loaded only after the visitor accepts
  * @param ethicalAdsPublisher the EthicalAds publisher ID of the one ad slot
- * @param adsenseClient the Google AdSense publisher ({@code ca-pub-...}, ADR 0059): the site
+ * @param adsenseClient the Google AdSense publisher ({@code ca-pub-...}, ADR 0030): the site
  *     verification tag and ads.txt
  * @param adsenseSlot the AdSense ad unit of the slot on resource pages; with the publisher, it
  *     turns on the slot, Google's consent tool and the nonce CSP
@@ -42,7 +42,7 @@ public record Monetisation(
   }
 
   /**
-   * AdSense serves ads: the publisher and the ad unit are both set (ADR 0059). The publisher alone
+   * AdSense serves ads: the publisher and the ad unit are both set (ADR 0030). The publisher alone
    * only answers Google's site check.
    */
   public boolean adsenseOn() {

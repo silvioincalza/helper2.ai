@@ -11,7 +11,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
-/** Which admin action applies to a resource in the enrichment queue (ADR 0045 §7). */
+/**
+ * Which admin action applies to a resource in the enrichment queue (ADR 0026 (part was 0045) §7).
+ */
 class QueuePlaceTest {
 
   private val waiting =

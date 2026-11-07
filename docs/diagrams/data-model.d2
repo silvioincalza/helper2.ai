@@ -1,12 +1,12 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
-# Source of truth: backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 §5),
-#   V2__enrichment_extra_evidence.sql (ADR 0043), V3__review_item_drop_source_conflict.sql (review kinds),
-#   V4__home_example.sql (ADR 0049), V10__resource_enrichment_backlog_idx.sql (ADR 0045), V11__evidence_ladder_origins.sql (ADR 0056: origins, maintenance_task),
-#   V12__resource_categories.sql (CATEGORY labels, catalog_marker; ADR 0053),
-#   V13__awesome_list_search.sql (ADR 0055), V14__enrichment_queue_control.sql (ADR 0045 §7),
-#   V15__runtime_setting.sql (ADR 0060: runtime_setting, admin_audit before/after/reason),
-#   V17__discovery_host.sql (ADR 0063: discovery_host, two admin_audit actions).
-#   Delete rules on the lines: ADR 0034. Seeds (R__ migrations) add rows, no tables.
+# Source of truth: backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 (part was 0004) §5),
+#   V2__enrichment_extra_evidence.sql (ADR 0023), V3__review_item_drop_source_conflict.sql (review kinds),
+#   V4__home_example.sql (ADR 0015), V10__resource_enrichment_backlog_idx.sql (ADR 0026), V11__evidence_ladder_origins.sql (ADR 0023: origins, maintenance_task),
+#   V12__resource_categories.sql (CATEGORY labels, catalog_marker; ADR 0013),
+#   V13__awesome_list_search.sql (ADR 0010), V14__enrichment_queue_control.sql (ADR 0026 (part was 0045) §7),
+#   V15__runtime_setting.sql (ADR 0007: runtime_setting, admin_audit before/after/reason),
+#   V17__discovery_host.sql (ADR 0022: discovery_host, two admin_audit actions).
+#   Delete rules on the lines: ADR 0035. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
 
@@ -83,7 +83,7 @@ catalog: "catalog: what sources said, merged into one resource" {
     last_seen_at: timestamptz
     data_origin: text
     enrichment_status: text
-    curated_fields: "text[] (ADR 0066)"
+    curated_fields: "text[] (ADR 0026)"
     enrichment_rerun_requested_at: timestamptz
     popularity: "numeric (trigger)"
     search_vector: "tsvector (generated)"
@@ -356,7 +356,7 @@ people: "people and review" {
   }
 }
 
-settings: "runtime settings (ADR 0060): append-only, newest row wins" {
+settings: "runtime settings (ADR 0007): append-only, newest row wins" {
   class: group
   runtime_setting: {
     class: table

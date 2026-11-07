@@ -1,4 +1,4 @@
-# Sends a SARIF report to GitHub code scanning with the REST API (no third-party action, ADR 0046). The category
+# Sends a SARIF report to GitHub code scanning with the REST API (no third-party action, ADR 0033). The category
 # keeps the reports of different images apart on the same ref. The job needs `permissions: security-events: write`;
 # a pull request from a fork has a read-only token, so callers mark this step continue-on-error (report-only).
 name: upload-sarif

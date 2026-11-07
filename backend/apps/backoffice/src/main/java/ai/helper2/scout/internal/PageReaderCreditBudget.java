@@ -8,9 +8,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Tavily Extract credits for the evidence ladder (ADR 0056). Each credit takes one unit of the page
+ * Tavily Extract credits for the evidence ladder (ADR 0023). Each credit takes one unit of the page
  * step's own daily cap, then one of the global Tavily credits every live search counts on (ADR
- * 0037), so the Scout cannot spend what visitors need. When the global counter cannot answer, no
+ * 0014), so the Scout cannot spend what visitors need. When the global counter cannot answer, no
  * page is read: credits are not spent unguarded. Counted as {@code
  * helper2.live-web.credits{feature=scout-evidence,tier=none}}, like a live search.
  */

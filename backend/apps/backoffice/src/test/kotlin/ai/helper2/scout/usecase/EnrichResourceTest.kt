@@ -79,7 +79,7 @@ class EnrichResourceTest {
     assertEquals(1, model.calls)
   }
 
-  /** ADR 0056: a wording change alone does not re-enrich the catalog. */
+  /** ADR 0023: a wording change alone does not re-enrich the catalog. */
   @Test
   fun `a new prompt version alone does not reprocess unchanged text`() {
     val store = MemoryStore(material.fingerprintFor(CountingModel(promptVersion = "enrich-v3")))

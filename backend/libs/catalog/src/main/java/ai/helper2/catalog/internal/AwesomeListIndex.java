@@ -11,7 +11,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 
 /**
- * The search index of awesome lists (ADR 0055): per list, one tsvector per entry (entry words A,
+ * The search index of awesome lists (ADR 0010): per list, one tsvector per entry (entry words A,
  * heading words B) with its heading path, and one tsvector of the list's headings. The text comes
  * in as bind parameters and becomes a tsvector inside PostgreSQL; it is never written to a column,
  * never logged. Only the heading path is kept as text. English stemming, like a resource's

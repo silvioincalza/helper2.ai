@@ -13,7 +13,7 @@ export function Timeline({
 }: {
   timeline: ResultCard['timeline'];
   compact?: boolean;
-  /** AI_EXTRACTED: an AI model read the event's days on its page (ADR 0067); they carry the AI label. */
+  /** AI_EXTRACTED: an AI model read the event's days on its page (ADR 0021); they carry the AI label. */
   eventOrigin?: ResultCard['eventOrigin'];
 }) {
   const { t } = useTranslation();

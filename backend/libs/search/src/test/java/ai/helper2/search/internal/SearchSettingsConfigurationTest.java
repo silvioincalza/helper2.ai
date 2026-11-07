@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** The Settings page shows what search does, not only what a property asks for (ADR 0045). */
+/** The Settings page shows what search does, not only what a property asks for (ADR 0026). */
 class SearchSettingsConfigurationTest {
 
   private static final SearchProperties TRANSLATION_ON =

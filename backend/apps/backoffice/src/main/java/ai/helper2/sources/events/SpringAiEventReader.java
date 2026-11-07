@@ -26,8 +26,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Reads one event page with the reasoning model, thinking off, the schema described in the prompt
- * (ADR 0067). Each page takes one call from a daily budget inside the {@code llm-chat} circuit (ADR
- * 0033); timed and counted with step=read-event. The page is cut to {@link #MAX_PAGE_CHARS} and
+ * (ADR 0021). Each page takes one call from a daily budget inside the {@code llm-chat} circuit (ADR
+ * 0006); timed and counted with step=read-event. The page is cut to {@link #MAX_PAGE_CHARS} and
  * cannot close the page block. Lenient on wrapping text, strict on content: an unknown kind or
  * format, or a date that is not YYYY-MM-DD, becomes null.
  */

@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The categories of the AI world, bound from {@code helper2.categories} (ADR 0051): one list entry
+ * The categories of the AI world, bound from {@code helper2.categories} (ADR 0022): one list entry
  * per category, each its own discovery collector. The entries are read by {@link
  * DiscoveryCollectorRegistrar} before any bean exists, so they are checked here, in code: startup
  * fails on an unknown family or type, an id that is not a tag or longer than 30 characters, a short

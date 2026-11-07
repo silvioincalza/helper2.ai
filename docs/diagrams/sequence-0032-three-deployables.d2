@@ -1,0 +1,52 @@
+# Sequence: a visitor opens a resource page; the owner opens the review queue on the admin host; a Scout run writes
+# the catalog the public app then reads (ADR 0032).
+# Source of truth: backend/apps/public (pages, PageTemplate, PublicSecurityConfiguration),
+#   backend/apps/backoffice (BackOfficeEdge, admin web app, scout), backend/libs/schema (SchemaCheck), backend/libs/catalog,
+#   deploy/web.Dockerfile, deploy/web/nginx.conf, deploy/helm/helper2/templates/ (web.yaml, app.yaml with its init
+#   container, backoffice.yaml), the platform repo (Ingresses), outside this repo.
+# Render: cd docs/diagrams && d2 fmt sequence-0032-three-deployables.d2 && d2 sequence-0032-three-deployables.d2 sequence-0032-three-deployables.svg
+
+...@style
+
+shape: sequence_diagram
+
+visitor: Visitor {class: person}
+owner: "Owner\n(on the VPN)" {class: person}
+nginx: ingress-nginx {class: app}
+web: "web pods" {class: app}
+public: public app {class: app}
+bo: back office app {class: app}
+db: Postgres {class: data}
+
+start: Public pod start {
+  public -> web: "init container: the web image of the same tag\ncp the shell to /shell/index.html (read-only in the app)"
+  public -> public: "PageTemplate reads file:/shell/index.html once"
+}
+
+page: Public page {
+  visitor -> nginx: "GET /resources/{id}" {class: hot}
+  nginx -> public: "public host" {class: hot}
+  public -> db: "read resource"
+  public -> visitor: "HTML: shell, head, body, CSP nonce"
+  visitor -> nginx: "GET /assets/app-<hash>.js"
+  nginx -> web: "/assets/ prefix"
+  web -> visitor: "the file, immutable for a year"
+}
+
+backoffice: Back office {
+  owner -> nginx: "GET admin host /admin"
+  nginx -> bo: "private address: allowed"
+  bo -> owner: "admin web app, strict CSP, no-store"
+  owner -> bo: "GET /api/v1/me: __Host-XSRF-TOKEN"
+  owner -> bo: "PUT /api/v1/admin/review-items/{id}/resolution\n(Origin, X-XSRF-TOKEN, __Host-SESSION)"
+  bo -> db: "write review and catalog"
+  owner -> bo: "GET /resource/{id}/{slug}"
+  bo -> owner: "302 to the public site"
+}
+
+scout: Scout run {
+  bo -> bo: "daily check, ShedLock: one replica"
+  bo -> db: "index accepted candidates"
+  visitor -> public: "next search"
+  public -> db: "reads the new rows"
+}

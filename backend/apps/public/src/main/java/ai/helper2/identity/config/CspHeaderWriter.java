@@ -6,8 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.web.header.HeaderWriter;
 
 /**
- * The public site's Content Security Policy per request (ADR 0057): the origins of the monetisation
- * parts that are on, or the AdSense nonce policy with this request's nonce (ADR 0059).
+ * The public site's Content Security Policy per request (ADR 0030): the origins of the monetisation
+ * parts that are on, or the AdSense nonce policy with this request's nonce (ADR 0030).
  */
 final class CspHeaderWriter implements HeaderWriter {
 

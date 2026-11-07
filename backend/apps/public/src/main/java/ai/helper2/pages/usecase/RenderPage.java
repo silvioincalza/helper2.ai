@@ -23,8 +23,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
- * What the server answers for an address of the app (ADR 0050 §2): the head to write into the shell
- * and the status, or a redirect for a resource whose id moved.
+ * What the server answers for an address of the app (ADR 0029 (part was 0050) §2): the head to
+ * write into the shell and the status, or a redirect for a resource whose id moved.
  */
 @Service
 public class RenderPage {
@@ -75,7 +75,7 @@ public class RenderPage {
 
   /**
    * One address per resource: a merged id, a missing slug or an old one (the title changed) moves
-   * to the current address with a 301 (ADR 0050).
+   * to the current address with a 301 (ADR 0029).
    */
   private Page resource(@Nullable UUID id, @Nullable String slug) {
     Optional<ResourceDetail> detail = id == null ? Optional.empty() : details.find(id);
@@ -96,8 +96,8 @@ public class RenderPage {
   }
 
   /**
-   * Event days an AI model read (ADR 0067) are left out, with the place: a server page's facts and
-   * its schema.org data cannot carry the AI label (ADR 0038). The app shows them with it.
+   * Event days an AI model read (ADR 0021) are left out, with the place: a server page's facts and
+   * its schema.org data cannot carry the AI label (ADR 0018). The app shows them with it.
    */
   static ResourceView view(ResourceDetail detail) {
     MergedResult card = detail.card();

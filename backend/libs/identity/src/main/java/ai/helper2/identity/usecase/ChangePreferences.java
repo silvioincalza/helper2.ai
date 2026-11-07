@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A signed-in user changes their display settings. A setting left out stays as it is; today the
- * only one is whether the Home radar moves between its sources (ADR 0042).
+ * only one is whether the Home radar moves between its sources (ADR 0028).
  */
 public class ChangePreferences {
 

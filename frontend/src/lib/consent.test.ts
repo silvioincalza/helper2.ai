@@ -1,6 +1,6 @@
 import { CONSENT_KEY, readConsent, writeConsent } from './consent';
 
-describe('consent (ADR 0057)', () => {
+describe('consent (ADR 0030)', () => {
   it('is unanswered until the visitor answers', () => {
     expect(readConsent()).toBeUndefined();
   });

@@ -3,7 +3,7 @@ package ai.helper2.platform.quota;
 import java.util.Collection;
 
 /**
- * Daily counters every replica shares (ADR 0037): a count is one field of a key, and a key expires
+ * Daily counters every replica shares (ADR 0014): a count is one field of a key, and a key expires
  * one day after its first count. {@link QuotaKeys} names the keys. Every method throws when the
  * store cannot answer; the caller decides what that means.
  */
@@ -36,7 +36,7 @@ public interface QuotaCounter {
 
   /**
    * Adds {@code amount} to {@code counter} without a limit: work already done, such as the Scout's
-   * Tavily credits (ADR 0051). The key expires one day after its first count, as with {@link
+   * Tavily credits (ADR 0022). The key expires one day after its first count, as with {@link
    * #take}.
    */
   void add(Counter counter, long amount);

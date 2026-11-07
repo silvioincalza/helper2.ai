@@ -54,7 +54,7 @@ async function evidence() {
   return { user, panel };
 }
 
-describe('Feature: an admin fixes a field of a resource from its enrichment check (ADR 0066)', () => {
+describe('Feature: an admin fixes a field of a resource from its enrichment check (ADR 0026)', () => {
   it('Scenario: the admin sets the price, which wins over every source and run', async () => {
     const api = oneCheck();
     const { user, panel } = await evidence();

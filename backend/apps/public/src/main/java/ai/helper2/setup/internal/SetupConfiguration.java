@@ -100,7 +100,7 @@ class SetupConfiguration {
     return new SetupGuides(specs, readme);
   }
 
-  /** The setup guide's settings for the back office's Settings page (ADR 0045). */
+  /** The setup guide's settings for the back office's Settings page (ADR 0026). */
   @Bean
   SettingsGroup setupSettings(
       SetupProperties setup, LlmSettings llm, ObjectProvider<ChatModel> chatModel) {

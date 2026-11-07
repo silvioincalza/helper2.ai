@@ -1,0 +1,70 @@
+# Flowchart: which app answers a request for the back office, and when a sign-in gets ADMIN (ADR 0024, 0032).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java (NoBackOfficeHere),
+#   backend/apps/backoffice/src/main/java/ai/helper2/identity/config/BackOfficeSecurityConfiguration.java, BackOfficeEdge.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java (roles, header-only CSRF), SameOriginWrites.java,
+#   deploy/helm/helper2/templates/backoffice.yaml (Service helper2-admin), networkpolicy.yaml,
+#   the platform repo (Ingresses, allow-list), outside this repo.
+# Render: cd docs/diagrams && d2 fmt flow-0024-admin-host.d2 && d2 flow-0024-admin-host.d2 flow-0024-admin-host.svg
+
+...@style
+
+direction: down
+
+req: "Request" {class: end}
+
+edge: Network edge {
+  class: group
+  direction: down
+  host: "Which host?" {class: decision}
+  allow: "Client in a\nprivate range?" {class: decision}
+  e403: "403 from ingress-nginx" {class: fail}
+  host -> allow: "admin host"
+}
+
+public: Public app {
+  class: group
+  direction: down
+  bo: "Back office path?\n/admin, /api/v1/admin/**\n(decoded, normalised)" {class: decision}
+  e404: "404, before session\nand security" {class: fail}
+  sec: "Security rules\n(ADR 0024), never ADMIN" {class: app}
+  bo -> e404: yes
+  bo -> sec: no {class: hot}
+}
+
+backoffice: Back office app {
+  class: group
+  direction: down
+  own: "One of its own paths?\n/admin/**, /api/v1/admin/**, /me,\nsign-in, POST /logout" {class: decision}
+  e404b: "404, every header,\nno path echoed" {class: fail}
+  write: "Write (POST, PUT,\nPATCH, DELETE)?" {class: decision}
+  origin: "Origin names\nthe admin host?" {class: decision}
+  e403o: "403, before\nthe CSRF check" {class: fail}
+  sec: "Security rules,\nheader-only CSRF\n(__Host-XSRF-TOKEN)" {class: app}
+  own -> e404b: no
+  own -> write: yes {class: hot}
+  write -> sec: no
+  write -> origin: yes
+  origin -> e403o: no
+  origin -> sec: yes {class: hot}
+}
+
+signin: Sign-in {
+  class: group
+  direction: down
+  where: "Which app?" {class: decision}
+  listed: "Id in H2_ADMINS?" {class: decision}
+  user: "ROLE_USER,\nback to /" {class: end}
+  bouser: "ROLE_USER,\nback to /admin\n(forbidden pages)" {class: end}
+  adm: "ROLE_USER + ROLE_ADMIN,\nback to /admin" {class: end}
+  where -> user: public
+  where -> listed: back office
+  listed -> adm: yes
+  listed -> bouser: no
+}
+
+req -> edge.host
+edge.host -> public.bo: "public host\n(Cloudflare, ingress-nginx)" {class: hot}
+edge.allow -> backoffice.own: yes
+edge.allow -> edge.e403: no
+public.sec -> signin.where: "GitHub sign-in\ncompleted"
+backoffice.sec -> signin.where: "GitHub sign-in\n(pinned callback)"

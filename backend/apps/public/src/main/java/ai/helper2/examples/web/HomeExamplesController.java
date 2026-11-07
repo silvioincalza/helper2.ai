@@ -57,7 +57,7 @@ class HomeExamplesController implements ExamplesApi {
   }
 
   /**
-   * EU AI Act Art. 50 (ADR 0038, ADR 0049 §6): when a model drafted an example a person then
+   * EU AI Act Art. 50 (ADR 0018, ADR 0015 §6): when a model drafted an example a person then
    * accepted, the pool says so, machine-readable. Null when no example was drafted.
    */
   private @Nullable AiContentMarkerDto marker(List<HomeExample> served) {

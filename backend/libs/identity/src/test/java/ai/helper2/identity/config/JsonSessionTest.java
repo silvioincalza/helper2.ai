@@ -23,7 +23,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import tools.jackson.databind.exc.InvalidTypeIdException;
 
 /**
- * Sessions are JSON (ADR 0070): what sign-in puts in a session reads back as the same user and
+ * Sessions are JSON (ADR 0004): what sign-in puts in a session reads back as the same user and
  * roles, and a type outside Spring Security's own is refused instead of being instantiated.
  */
 class JsonSessionTest {

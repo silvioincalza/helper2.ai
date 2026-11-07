@@ -1,10 +1,10 @@
 import ai.helper2.buildlogic.BundleContract
 
-// The back office app (ADR 0069): the admin API and the admin web app, the Scout, its collectors
+// The back office app (ADR 0032): the admin API and the admin web app, the Scout, its collectors
 // and
 // enrichment, the home-example check and the catalog's jobs. Served only on the in-network admin
 // host
-// (ADR 0035).
+// (ADR 0024).
 plugins { id("helper2.spring-app") }
 
 // The boot jar is helper2-backoffice-<version>.jar.
@@ -29,7 +29,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
   implementation("org.springframework.boot:spring-boot-starter-jdbc")
-  // Flyway validates only: the migrate step of the public image migrates (ADR 0070).
+  // Flyway validates only: the migrate step of the public image migrates (ADR 0004).
   implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.springframework.boot:spring-boot-starter-data-redis")
   // Sign-in sessions in Redis (own namespace), so a signed-in admin is recognised by every replica.
@@ -54,7 +54,7 @@ dependencies {
   // Parses the YAML conference files of huggingface/ai-deadlines (version from the Spring Boot
   // BOM).
   implementation("org.yaml:snakeyaml")
-  // Circuit breakers, bulkheads and retries as named policies (ADR 0033), built from the registries
+  // Circuit breakers, bulkheads and retries as named policies (ADR 0006), built from the registries
   // in code.
   // The 2.4.0 BOM shipped without the Spring Boot 4 module at first: its version is pinned here.
   implementation(

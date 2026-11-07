@@ -11,9 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * robots.txt, sitemap.xml (ADR 0050 §6) and ads.txt (ADR 0059). With noindex on (staging)
- * robots.txt allows all: a crawler must fetch a page to see its X-Robots-Tag; and there is no
- * sitemap.
+ * robots.txt, sitemap.xml (ADR 0029 (part was 0050) §6) and ads.txt (ADR 0030). With noindex on
+ * (staging) robots.txt allows all: a crawler must fetch a page to see its X-Robots-Tag; and there
+ * is no sitemap.
  */
 @RestController
 class CrawlerFiles {
@@ -29,12 +29,12 @@ class CrawlerFiles {
   }
 
   /**
-   * ads.txt (ADR 0059): the sellers authorised to sell ads on this site, here Google for the
+   * ads.txt (ADR 0030): the sellers authorised to sell ads on this site, here Google for the
    * AdSense publisher. 404 while AdSense is off.
    */
   /**
    * The built shell has no nonces on its scripts; served as a file under the AdSense CSP it would
-   * be a blank page. Its address is the home page (ADR 0059).
+   * be a blank page. Its address is the home page (ADR 0030).
    */
   @GetMapping("/index.html")
   ResponseEntity<Void> indexHtml() {

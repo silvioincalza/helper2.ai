@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * The back office's GitHub sign-in callback (ADR 0069): pinned to the admin host when
+ * The back office's GitHub sign-in callback (ADR 0032): pinned to the admin host when
  * H2_ADMIN_BASE_URL is set, this request's own address ({baseUrl}) while it is not.
  */
 class SignInCallbackBindingTest {

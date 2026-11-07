@@ -26,7 +26,7 @@ import org.springframework.web.client.RestClientResponseException;
  * https://docs.nvidia.com/nim/nemo-retriever/embedding/latest/use-the-api-openai.html Nemotron 3.5
  * Embed accepts any dimension from 128 to 2048 (Matryoshka: first N values, re-normalised); the
  * schema stores 1024, under the 2000 limit of a pgvector HNSW index. Every call runs under the
- * circuit it is given (ADR 0033: llm-embed for queries, llm-embed-index for the indexer): while the
+ * circuit it is given (ADR 0006: llm-embed for queries, llm-embed-index for the indexer): while the
  * API is down, embeddings fail at once instead of after their timeout.
  */
 public class NvidiaEmbedder implements Embedder {
@@ -67,7 +67,8 @@ public class NvidiaEmbedder implements Embedder {
     // Buffered, so the request carries a Content-Length: a streamed (chunked) body of 50 texts made
     // the API catalog hang until the read timeout, while one short query went through (27 Oct
     // 2026).
-    // Its timeout is also the call's total deadline (ADR 0006 §2, 11). The deadline sits under the
+    // Its timeout is also the call's total deadline (ADR 0006 (part was 0006) §2, 11). The deadline
+    // sits under the
     // buffering, so the buffered read of the response is the read it stops.
     var factory =
         new BufferingClientHttpRequestFactory(

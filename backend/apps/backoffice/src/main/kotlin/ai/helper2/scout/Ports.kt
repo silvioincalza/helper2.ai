@@ -27,7 +27,7 @@ constructor(
   /** Why the collector did not call its source ([notDue] only); null: its run interval. */
   val skipReason: String? = null,
   /**
-   * Search text of the curated lists this pass read (ADR 0055): turned into a search index of their
+   * Search text of the curated lists this pass read (ADR 0010): turned into a search index of their
    * entries, never stored as text.
    */
   val lists: List<ListText> = emptyList(),
@@ -38,7 +38,7 @@ constructor(
   val deferred: Boolean = false,
   /**
    * At most this many new review items a UTC day from this collector's [candidates]; past it a
-   * candidate only joins an OPEN item of its URL (ADR 0058). null: no daily cap.
+   * candidate only joins an OPEN item of its URL (ADR 0022). null: no daily cap.
    */
   val newCandidatesPerDay: Int? = null,
 ) {
@@ -91,16 +91,16 @@ constructor(
   val platform: String?,
   /**
    * What the page would be in the catalog. COURSE pages wait as course candidates; any other type
-   * waits as a resource candidate, which an admin's acceptance indexes (ADR 0051).
+   * waits as a resource candidate, which an admin's acceptance indexes (ADR 0022).
    */
   val type: ResourceType = ResourceType.COURSE,
   /**
    * Catalog tags the page gets when it is accepted: the categories it belongs to, at most
-   * [MAX_TAGS] (ADR 0051).
+   * [MAX_TAGS] (ADR 0022).
    */
   val tags: Set<String> = emptySet(),
   /**
-   * What the collector knew when it found the page (the discovery search, ADR 0051), kept with the
+   * What the collector knew when it found the page (the discovery search, ADR 0022), kept with the
    * review item and, once accepted, with the record ([ai.helper2.search.SourceHit.facts]).
    */
   val facts: Map<String, Any> = emptyMap(),
@@ -112,9 +112,9 @@ constructor(
 }
 
 /**
- * Outbound port: the admin review list for collector proposals (ADR 0019 review queue, ADR 0032
- * §8). A RESOURCE_CANDIDATE whose URL already waits OPEN is merged into the waiting item (ADR
- * 0051): two categories that find the same product make one item.
+ * Outbound port: the admin review list for collector proposals (ADR 0023 review queue, ADR 0016
+ * (part was 0032) §8). A RESOURCE_CANDIDATE whose URL already waits OPEN is merged into the waiting
+ * item (ADR 0022): two categories that find the same product make one item.
  */
 fun interface CandidateReview {
   /**
@@ -126,7 +126,7 @@ fun interface CandidateReview {
 
   /**
    * As [propose], opening at most [newPerDay] items for [sourceId] in the current UTC day, counting
-   * the ones opened earlier that day (ADR 0058). Past the cap a candidate still joins the OPEN item
+   * the ones opened earlier that day (ADR 0022). Past the cap a candidate still joins the OPEN item
    * of its URL. null: no cap.
    */
   fun propose(sourceId: String, candidates: List<Candidate>, newPerDay: Int?): Int =
@@ -135,7 +135,7 @@ fun interface CandidateReview {
 
 /**
  * What one curated list (an awesome list) says around its entries, for search inside the list (ADR
- * 0055). Plain words, already cleaned and capped by the collector. The catalog keeps only a
+ * 0010). Plain words, already cleaned and capped by the collector. The catalog keeps only a
  * tsvector of them and the heading paths; the text itself is never stored.
  *
  * @property url the list's own page, a resource of the same pass

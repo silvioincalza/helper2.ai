@@ -8,7 +8,7 @@ import { renderAdmin, renderApp } from '@/test/render';
 
 const scout = STAGING_SOURCES.find((s) => s.id === 'live-web-scout')!;
 
-/** A discovery category as GET /sources lists it (ADR 0051). */
+/** A discovery category as GET /sources lists it (ADR 0022). */
 function category(
   id: string,
   name: string,
@@ -34,7 +34,7 @@ const CATEGORIES = [
   category('writing', 'Writing', 'everyday-apps'),
 ];
 
-describe('Feature: the discovery categories on the Sources page (ADR 0051)', () => {
+describe('Feature: the discovery categories on the Sources page (ADR 0022)', () => {
   it('Scenario: after the other sources, a group of rows per family, in the families’ order', async () => {
     mockApi({ 'GET /sources': () => [...SOURCES, ...CATEGORIES] });
     renderApp('/sources');
@@ -99,7 +99,7 @@ describe('Feature: the discovery categories on the Sources page (ADR 0051)', () 
   });
 });
 
-describe('Feature: discovery categories in the back office (ADR 0051)', () => {
+describe('Feature: discovery categories in the back office (ADR 0022)', () => {
   it('Scenario: the review queue filters by category and names every collector that found a page', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,

@@ -49,8 +49,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 class AdminUseCaseConfiguration {
 
   /**
-   * The guide runs in the public app (ADR 0069); its daily model-call cap is a runtime setting the
-   * owner changes here (ADR 0060). It is declared here with the same H2_ default, so the Settings
+   * The guide runs in the public app (ADR 0032); its daily model-call cap is a runtime setting the
+   * owner changes here (ADR 0007). It is declared here with the same H2_ default, so the Settings
    * page, the runtime settings and the overview's budgets state it, read from the shared Redis
    * count.
    */

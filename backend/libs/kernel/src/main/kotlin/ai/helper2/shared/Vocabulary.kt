@@ -16,8 +16,8 @@ enum class ResourceType {
   NEWS,
   EVENT,
   /**
-   * A course or a certification (ADR 0032 §8): neither a tool type nor a reading type. Its platform
-   * is a PLATFORM label; credential and format are tags (see R__courses.sql).
+   * A course or a certification (ADR 0016 (part was 0032) §8): neither a tool type nor a reading
+   * type. Its platform is a PLATFORM label; credential and format are tags (see R__courses.sql).
    */
   COURSE,
   OTHER;
@@ -114,12 +114,12 @@ enum class ValueOrigin {
   AI_EXTRACTED,
   AI_SUMMARY,
   /**
-   * A judgement (audience, tech level) the model estimated without a quote (ADR 0056). Never a
+   * A judgement (audience, tech level) the model estimated without a quote (ADR 0023). Never a
    * fact.
    */
   AI_ESTIMATED,
   /**
-   * Extracted by AI from a quote of the product's own page only: what the vendor says (ADR 0056).
+   * Extracted by AI from a quote of the product's own page only: what the vendor says (ADR 0023).
    */
   SELF_DECLARED,
   CURATED,

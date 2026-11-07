@@ -46,7 +46,7 @@ platform: "platform.llm" {
 
 redis: "Redis\nh2:v1:budget:*" {shape: cylinder; class: data}
 pg: "PostgreSQL + pgvector\nai_cache (guide-answer)\nguide_similar_question" {shape: cylinder; class: data}
-embed: "NVIDIA API catalog\nnemotron-3.5-embed-1b\n(similar questions, ADR 0041)" {class: ai}
+embed: "NVIDIA API catalog\nnemotron-3.5-embed-1b\n(similar questions, ADR 0017)" {class: ai}
 nebius: "Nebius Token Factory\nNano: plan\nSuper: choose, reason check" {class: ai}
 
 browser -> guide.ctl: "ask (SSE)" {class: hot}

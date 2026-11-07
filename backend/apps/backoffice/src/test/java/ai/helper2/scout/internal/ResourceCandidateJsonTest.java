@@ -160,7 +160,7 @@ class ResourceCandidateJsonTest {
         .isInstanceOf(InvalidCandidate.class);
   }
 
-  /** ADR 0065: what an admin changed is marked, kept by a later finder, and read on accept. */
+  /** ADR 0026: what an admin changed is marked, kept by a later finder, and read on accept. */
   @Test
   void anAdminsEditIsMarkedAndAFinderThatComesLaterKeepsIt() {
     String found = json.write("discovery-self-hosted", candidate("Pricing | Open WebUI"));

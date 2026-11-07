@@ -1,0 +1,59 @@
+# Sequence: the design from the home page to a question on the results page, the guide picks and a shared link.
+# Shows results shown before the guide answers (the guide runs only when asked: Shift+Enter or its button), the
+# reserved picks bar, the SSE answer that moves the picks to the top of the list in one update (the result the user
+# opened stays selected), the selected result written to the URL with replace, and a shared link that opens the same
+# result.
+# Source of truth: docs/adr/frontend/0028-design-system.md, docs/adr/guide/0016-guide-pipeline.md (guide stream),
+#   frontend/src/pages/Home.tsx, components/home/NewsBoard.tsx, EventsBoard.tsx, components/OneBox.tsx,
+#   components/results/Results.tsx, hooks/useGuideStream.ts, components/ui/PicksBar.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0028-frontend-design.d2 && d2 sequence-0028-frontend-design.d2 sequence-0028-frontend-design.svg
+
+...@style
+
+shape: sequence_diagram
+
+user: User {class: person}
+home: "Home page\n(headline, box, lists)" {class: app}
+feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming" {class: ext}
+page: "Results page\n(list, preview, picks bar)" {class: app}
+history: "Browser history" {class: data}
+search: "GET /api/v1/search" {class: ext}
+guide: "POST /api/v1/guide/stream\n(SSE)" {class: ext}
+
+landing: Home {
+  user -> home: "/"
+  home -> feeds: "news of the last 7 days,\nevents of the next 3 months"
+  feeds -> home: "rows"
+  home -> user: "headline, box, the two lists,\nwhat helper2 does"
+  user -> home: "types a question, clicks Ask the guide"
+  home -> page: "navigate /search?q=…" {class: hot}
+}
+
+search_first: Results first {
+  user -> page: "/search?q=an MCP server for my Postgres database\n&ask=… (asked with the button)"
+  page -> search: "search"
+  search -> page: "results"
+  page -> user: "list at once; picks bar reserved:\n\"Guide is reading 14 candidates…\"" {class: hot}
+  page -> guide: "ask the guide (a question only;\na name search makes no call)"
+}
+
+reading: While the guide works {
+  user -> page: "click row 4"
+  page -> history: "replace ?q=…&id=spec"
+  page -> user: "preview of row 4"
+}
+
+answer: Guide answers {
+  guide -> page: "picks #1 #2 #3 with checked quotes"
+  page -> user: "bar shows the picks (AI-written);\npicks move to the top in one update;\nrow 4 stays selected (its id is in the URL)" {class: hot}
+  user -> page: "tap chip #1"
+  page -> history: "replace ?q=…&id=pg"
+  page -> user: "preview of pick #1"
+}
+
+share: Shared link {
+  user -> page: "opens /search?q=…&id=pg"
+  page -> search: "search"
+  search -> page: "results"
+  page -> user: "same result selected"
+}

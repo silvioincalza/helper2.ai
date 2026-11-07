@@ -21,7 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** The runtime settings (ADR 0060), ADMIN only, admin port. */
+/** The runtime settings (ADR 0007), ADMIN only, admin port. */
 @RestController
 @RequestMapping("/api/v1")
 class RuntimeSettingsController implements RuntimeSettingsApi {

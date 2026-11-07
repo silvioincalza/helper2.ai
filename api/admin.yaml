@@ -4,7 +4,7 @@ info:
   version: 2.0.0
   summary: Federated metasearch for AI resources, with explicit provenance and source status.
   description: |
-    Back office API (ADR 0035, 0045): served by the back office app on the in-network admin host only. Shared
+    Back office API (ADR 0024, 0026): served by the back office app on the in-network admin host only. Shared
     types live in common.yaml.
 
     Contract-first REST API for Helper2.ai. This file is the source of truth:
@@ -107,7 +107,7 @@ paths:
     post:
       tags: [review]
       operationId: resolveReviewItems
-      summary: Decide several review items at once (ADR 0045).
+      summary: Decide several review items at once (ADR 0026).
       description: >-
         Each item is decided in its own transaction, the way one decision is, and writes its own audit entry; the
         outcome carries the batch, e.g. `ACCEPTED bulk:<batch>`. Rejecting works for every kind. Accepting works only
@@ -132,7 +132,7 @@ paths:
     get:
       tags: [review]
       operationId: getReviewEvidence
-      summary: What a review item is about, with the quotes behind it (ADR 0045).
+      summary: What a review item is about, with the quotes behind it (ADR 0026).
       description: >-
         Read through the item's link, never from its details. An item from an enrichment run: the run, its validation
         errors and the fields it stored, each with at most 5 quotes, CONFLICTING first. A relationship candidate: the
@@ -156,7 +156,7 @@ paths:
     put:
       tags: [review]
       operationId: setResourceField
-      summary: Set a resource's own value of a field (ADR 0066).
+      summary: Set a resource's own value of a field (ADR 0026).
       description: >-
         The value is written to the resource and wins over every source and every enrichment run: no record changes
         it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel and
@@ -180,7 +180,7 @@ paths:
     post:
       tags: [review]
       operationId: dropResourceField
-      summary: Drop what the AI said about a field of a resource (ADR 0066).
+      summary: Drop what the AI said about a field of a resource (ADR 0026).
       description: >-
         Rejects the field's AI-written values (extracted, self-declared, estimated); a value the sources state or an
         admin set stays. The page then shows the source's value, or "Not stated".
@@ -197,7 +197,7 @@ paths:
     put:
       tags: [review]
       operationId: editCandidate
-      summary: Fix an open resource candidate's title, type or tags before accepting it (ADR 0065).
+      summary: Fix an open resource candidate's title, type or tags before accepting it (ADR 0026).
       description: >-
         At least one of the three; what is left out stays as the collector wrote it. The type may be any candidate type,
         not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
@@ -227,7 +227,7 @@ paths:
     put:
       tags: [review]
       operationId: changeRelationshipTarget
-      summary: Point an open relationship candidate at the right resource (ADR 0064).
+      summary: Point an open relationship candidate at the right resource (ADR 0026).
       description: >-
         Exactly one of `resourceId` (a catalog resource), `newResource` (a resource to add: its name, official https
         address and type; an address the catalog already has gives that resource, never a second one) or `title` (a
@@ -298,7 +298,7 @@ paths:
     post:
       tags: [admin]
       operationId: recheckEnrichments
-      summary: Re-check the stored enrichment answers by code, with no model call (ADR 0056).
+      summary: Re-check the stored enrichment answers by code, with no model call (ADR 0023).
       description: >-
         Rejects a verified pricing, type or use case whose quotes do not state it, drops summary sentences that fail
         the claim check, and puts back in the enrichment backlog the resources that still miss a fact and have more
@@ -315,7 +315,7 @@ paths:
       operationId: backfillCategories
       summary: Assign the categories of every resource again.
       description: >-
-        Answers at once; the backfill then runs in the background on one replica, in batches (ADR 0053). It is
+        Answers at once; the backfill then runs in the background on one replica, in batches (ADR 0013). It is
         idempotent. Counts go to the metric `helper2.categories.backfill.resources` and the log.
       responses:
         '202': { description: Started (skipped when another replica is already running it). }
@@ -466,7 +466,7 @@ paths:
       operationId: listRuntimeSettings
       summary: The spending limits an administrator may change at runtime, with their history.
       description: >-
-        Each setting of the allow-list (ADR 0060): the value applied now, the default (the H2_ variable), the allowed
+        Each setting of the allow-list (ADR 0007): the value applied now, the default (the H2_ variable), the allowed
         range, its version and its last changes. The value a replica applies can be up to one refresh interval
         (20 s by default) behind.
       responses:
@@ -540,7 +540,7 @@ paths:
       summary: The hosts discovery knows by name, with who added each and why.
       description: >-
         WRITING hosts publish articles about many products (a post there is an ARTICLE candidate); DIRECTORY hosts
-        list products (a page there is never kept). Discovery reads the lists at the start of each run (ADR 0063).
+        list products (a page there is never kept). Discovery reads the lists at the start of each run (ADR 0022).
       responses:
         '200':
           description: Every host, by kind and name.
@@ -799,13 +799,13 @@ components:
           items: { $ref: '#/components/schemas/ScoutRun' }
         failedRunsLast24h: { type: integer, minimum: 0 }
         homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
-        overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0060). }
+        overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0007). }
         grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
 
     HomeExampleCounts:
       type: object
       description: >-
-        The home examples of every locale (ADR 0049). Shown: ACTIVE and the check is PASS. Hidden: ACTIVE and the
+        The home examples of every locale (ADR 0015). Shown: ACTIVE and the check is PASS. Hidden: ACTIVE and the
         check is WEAK, FAIL or PENDING. Paused: PAUSED, whatever the check.
       required: [shown, hidden, paused]
       properties:
@@ -1105,7 +1105,7 @@ components:
 
     ResourceField:
       type: string
-      description: A field the enrichment fills (ADR 0056); an admin sets the first six (ADR 0066).
+      description: A field the enrichment fills (ADR 0023); an admin sets the first six (ADR 0026).
       enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms]
 
     ResourceFieldValue:
@@ -1116,7 +1116,7 @@ components:
 
     CandidateType:
       type: string
-      description: The types a resource candidate may have (ADR 0051, 0061, 0065).
+      description: The types a resource candidate may have (ADR 0022, 0021, 0026).
       enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT]
 
     RelationshipTargetChange:
@@ -1159,7 +1159,7 @@ components:
           description: The relationship a relationship candidate is about; null for every other kind.
         aiContent:
           oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
-          description: Present when the evidence holds AI-written values (ADR 0038).
+          description: Present when the evidence holds AI-written values (ADR 0018).
 
     ReviewRun:
       type: object
@@ -1174,7 +1174,7 @@ components:
         finishedAt: { type: [string, 'null'], format: date-time }
         extraEvidence:
           type: [string, 'null']
-          description: The README or model card the run read in its gap round (ADR 0043), e.g. `github-readme:owner/name`.
+          description: The README or model card the run read in its gap round (ADR 0023), e.g. `github-readme:owner/name`.
 
     ReviewField:
       type: object
@@ -1196,7 +1196,7 @@ components:
         verification: { $ref: './common.yaml#/components/schemas/Verification' }
         origin: { $ref: './common.yaml#/components/schemas/ValueOrigin' }
         targetOrigin:
-          description: CURATED when an admin chose the target (ADR 0064); the target then is not AI-written. Null otherwise.
+          description: CURATED when an admin chose the target (ADR 0026); the target then is not AI-written. Null otherwise.
           oneOf: [{ $ref: './common.yaml#/components/schemas/ValueOrigin' }, { type: 'null' }]
         quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
 
@@ -1240,7 +1240,7 @@ components:
 
     EnrichmentRecheck:
       type: object
-      description: Counts only (ADR 0056).
+      description: Counts only (ADR 0023).
       required: [checked, fieldsRejected, claimsDropped, runsRequested]
       properties:
         checked: { type: integer, minimum: 0, description: Resources whose stored answer was checked. }

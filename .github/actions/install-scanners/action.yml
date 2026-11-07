@@ -1,4 +1,4 @@
-# Syft (SBOM) and Grype (vulnerability scan) for the supply-chain checks (ADR 0046). No third-party action: a
+# Syft (SBOM) and Grype (vulnerability scan) for the supply-chain checks (ADR 0033). No third-party action: a
 # moved tag of a scanner action ran attacker code in March 2026 (CVE-2026-33634).
 # - Syft: the linux_amd64 release tarball, checked against its SHA-256 (from the release's checksums, as published in
 #   anchore's goreleaser Homebrew tap), like promtool in ci.yml.

@@ -34,7 +34,7 @@ import tools.jackson.databind.JsonNode;
  * Tavily web search (topic "news") for AI news, articles and events. Docs:
  * https://docs.tavily.com/documentation/api-reference/endpoint/search — needs H2_LIVE_WEB_API_KEY;
  * without a key the source is disabled and reported as SKIPPED. One credit per call: the source is
- * metered (ADR 0037). published_date is Tavily's own estimate and stays unknown when Tavily has
+ * metered (ADR 0014). published_date is Tavily's own estimate and stays unknown when Tavily has
  * none. Event dates are never inferred. Titles are page titles, cleaned by {@link WebPageTitle};
  * the relevance gate and the event check read the title as Tavily sent it.
  */
@@ -64,7 +64,7 @@ public class TavilySource implements SearchSource {
             "Web results found by a live web search; each links to the original publisher.",
             EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
             // Metered: each call costs a credit, so searches read stored result sets first, with
-            // their own freshness, and call live only inside the daily quota (ADR 0037); the
+            // their own freshness, and call live only inside the daily quota (ADR 0014); the
             // per-source cache TTL does not apply.
             settings.timeout(),
             Duration.ZERO,

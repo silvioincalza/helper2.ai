@@ -25,7 +25,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
 /**
  * A real sign-in reaches the accounts through the event the sign-in filter publishes, with the
- * session's token. The row and its last sign-in are what retention reads (ADR 0034).
+ * session's token. The row and its last sign-in are what retention reads (ADR 0035).
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)

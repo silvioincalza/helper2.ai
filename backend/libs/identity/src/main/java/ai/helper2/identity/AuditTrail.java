@@ -3,7 +3,7 @@ package ai.helper2.identity;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Outbound port: what an administrator did (ADR 0023). Every admin use case records its action
+ * Outbound port: what an administrator did (ADR 0024). Every admin use case records its action
  * here, in the same transaction as the change it makes, so the trail never claims a change that was
  * rolled back. Append-only.
  */
@@ -23,15 +23,15 @@ public interface AuditTrail {
     SKIP_ENRICHMENT,
     PRIORITISE_ENRICHMENT,
     CHANGE_SETTING,
-    // Discovery's host lists (V17, ADR 0063).
+    // Discovery's host lists (V17, ADR 0022).
     ADD_DISCOVERY_HOST,
     REMOVE_DISCOVERY_HOST,
-    // A relationship candidate's target, and a resource added for it (V19, ADR 0064).
+    // A relationship candidate's target, and a resource added for it (V19, ADR 0026).
     CHANGE_RELATIONSHIP_TARGET,
     ADD_RESOURCE,
-    // An admin's edit of a resource candidate (V21, ADR 0065).
+    // An admin's edit of a resource candidate (V21, ADR 0026).
     EDIT_CANDIDATE,
-    // A resource's own field set or the AI's value dropped (V22, ADR 0066).
+    // A resource's own field set or the AI's value dropped (V22, ADR 0026).
     SET_FIELD,
     DROP_FIELD
   }
@@ -51,7 +51,7 @@ public interface AuditTrail {
   void record(String adminId, Action action, @Nullable String targetId, String outcome);
 
   /**
-   * The same, with the value before and after the change (a runtime setting, ADR 0060). A trail
+   * The same, with the value before and after the change (a runtime setting, ADR 0007). A trail
    * that keeps no values records the action only.
    */
   default void record(

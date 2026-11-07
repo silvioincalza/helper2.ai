@@ -12,9 +12,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
- * The sitemap (ADR 0050 §6): the indexed static pages, then every index-worthy resource page with
- * the day it last changed. Built at most once an hour and kept in memory: a crawler asking often
- * costs one query an hour.
+ * The sitemap (ADR 0029 (part was 0050) §6): the indexed static pages, then every index-worthy
+ * resource page with the day it last changed. Built at most once an hour and kept in memory: a
+ * crawler asking often costs one query an hour.
  */
 @Service
 public class ListSitemap {

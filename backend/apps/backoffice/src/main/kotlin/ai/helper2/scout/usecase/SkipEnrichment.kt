@@ -10,9 +10,9 @@ import java.util.UUID
 
 /**
  * An administrator takes a waiting resource out of the enrichment queue until it is requeued (ADR
- * 0045 §7), with an optional reason of at most [MAX_REASON] characters. A move to the top is
- * dropped. The audit entry's outcome is SKIPPED, or why the action did not apply; it commits with
- * the change.
+ * 0026 (part was 0045) §7), with an optional reason of at most [MAX_REASON] characters. A move to
+ * the top is dropped. The audit entry's outcome is SKIPPED, or why the action did not apply; it
+ * commits with the change.
  */
 class SkipEnrichment(
   private val backlog: EnrichmentBacklog,

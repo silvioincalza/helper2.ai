@@ -1,5 +1,5 @@
 /*
- * Design v4 (ADR 0042): the header, the footer and Home, under `.v4`, and the page column (`.v4-wrap`). The shared
+ * Design v4 (ADR 0028): the header, the footer and Home, under `.v4`, and the page column (`.v4-wrap`). The shared
  * controls are in app.css. The tokens of tokens.css. Geist for everything a person reads or presses: running text,
  * headings, buttons, chips, tabs, links and fields. Geist Mono only where a class asks for it: the logo, meta lines,
  * counts, `$ helper2` commands, key hints and table cells (v5).
@@ -354,7 +354,7 @@
   }
 }
 
-/* Nothing moves under reduced motion (ADR 0042, decision 12). */
+/* Nothing moves under reduced motion (ADR 0028 (part was 0042), decision 12). */
 @media (prefers-reduced-motion: reduce) {
   .v4 *,
   .v4 *::before,

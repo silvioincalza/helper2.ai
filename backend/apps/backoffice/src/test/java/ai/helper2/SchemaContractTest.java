@@ -41,7 +41,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * The schema as the code needs it (ADR 0004, ADR 0034): every foreign key deletes as retention
+ * The schema as the code needs it (ADR 0004, ADR 0035): every foreign key deletes as retention
  * needs, every foreign key a delete follows is indexed, every CHECK list is the domain vocabulary
  * it stores, and every table and column is used.
  *
@@ -94,13 +94,14 @@ class SchemaContractTest {
                     // A source's checkpoint and run history go with it.
                     Map.entry("source_cursor.source_id", "source CASCADE"),
                     Map.entry("scout_run.source_id", "source CASCADE"),
-                    // An admin's queue decision on a resource goes with it (ADR 0045 §7).
+                    // An admin's queue decision on a resource goes with it (ADR 0026 (part was
+                    // 0045) §7).
                     Map.entry("enrichment_queue_control.resource_id", "resource CASCADE"),
                     // The facts of a resource live as long as the resource.
                     Map.entry("resource_label.resource_id", "resource CASCADE"),
                     Map.entry("source_record.resource_id", "resource CASCADE"),
                     Map.entry("resource_embedding.resource_id", "resource CASCADE"),
-                    // The awesome-list search index goes with the list or the entry (ADR 0055).
+                    // The awesome-list search index goes with the list or the entry (ADR 0010).
                     Map.entry("awesome_list_entry.list_id", "resource CASCADE"),
                     Map.entry("awesome_list_entry.resource_id", "resource CASCADE"),
                     Map.entry("awesome_list.list_id", "resource CASCADE"),
@@ -176,7 +177,7 @@ class SchemaContractTest {
     expected.put("resource.pricing", names(Pricing.values()));
     expected.put("resource.published_precision", names(DatePrecision.values()));
     expected.put("resource.data_origin", names(ResourceStore.DataOrigin.values()));
-    // An estimate or a vendor's own claim is a field value, never a description (ADR 0056).
+    // An estimate or a vendor's own claim is a field value, never a description (ADR 0023).
     expected.put(
         "resource.description_origin",
         without(without(names(ValueOrigin.values()), "AI_ESTIMATED"), "SELF_DECLARED"));
@@ -189,8 +190,8 @@ class SchemaContractTest {
     expected.put("enrichment_run.outcome", without(names(EnrichmentOutcome.values()), "UNCHANGED"));
     expected.put("field_assertion.verification", names(Verification.values()));
     // The Scout writes AI-extracted, AI-estimated and self-declared values and relationships (ADR
-    // 0056); the seeds write curated values. A relationship target an admin chose is curated (ADR
-    // 0064).
+    // 0023); the seeds write curated values. A relationship target an admin chose is curated (ADR
+    // 0026).
     expected.put(
         "field_assertion.origin",
         Set.of("AI_EXTRACTED", "AI_ESTIMATED", "SELF_DECLARED", "CURATED"));

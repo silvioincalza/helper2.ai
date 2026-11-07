@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The categories search can filter by (ADR 0053), in the configured order. They change only with a
+ * The categories search can filter by (ADR 0013), in the configured order. They change only with a
  * restart, so the list is built once, cached by the browser for an hour and validated by its ETag
  * (Spring answers 304 when If-None-Match matches).
  */

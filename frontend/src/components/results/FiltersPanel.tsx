@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next';
 
 /**
- * Where the filters open (ADR 0042, decision 7). On a wide screen, in place under the list's heading. On a phone, a drawer
+ * Where the filters open (ADR 0028 (part was 0042), decision 7). On a wide screen, in place under the list's heading. On a phone, a drawer
  * over the page: a modal dialog with its heading, Close, and "Show N results" at the bottom (N from the API, as the
  * filters change the search at once). Escape and Close give focus back to the Filters button. Where the browser has
  * no modal dialog (tests), the dialog opens without one.

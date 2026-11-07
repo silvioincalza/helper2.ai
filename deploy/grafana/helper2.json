@@ -1414,7 +1414,7 @@
       "type": "timeseries",
       "id": 24,
       "title": "Answer cache hit ratio",
-      "description": "Share of guide questions answered from the cache: exact key, or a similar question read the same way (ADR 0041).",
+      "description": "Share of guide questions answered from the cache: exact key, or a similar question read the same way (ADR 0017).",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1759,7 +1759,7 @@
       "type": "timeseries",
       "id": 59,
       "title": "Time to first useful event by intent",
-      "description": "helper2.guide.first_useful: from the stream request to its first retrieved or clarify event (ADR 0026). Targets: p50 3 s, p95 8 s (alert Helper2GuideFirstUsefulSlow). Cached and shared answers are not timed.",
+      "description": "helper2.guide.first_useful: from the stream request to its first retrieved or clarify event (ADR 0031). Targets: p50 3 s, p95 8 s (alert Helper2GuideFirstUsefulSlow). Cached and shared answers are not timed.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"

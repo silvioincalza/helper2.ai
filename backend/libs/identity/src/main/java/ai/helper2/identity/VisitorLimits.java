@@ -4,7 +4,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Outbound port: what a visitor can still do today (ADR 0042, GET /me). Implemented by the guide,
+ * Outbound port: what a visitor can still do today (ADR 0028, GET /me). Implemented by the guide,
  * which owns the daily questions and reaches the web-search quota through search. Reads the
  * counters that enforce the limits and never counts. The client key and the user id only select the
  * counters; nothing returned identifies the visitor.

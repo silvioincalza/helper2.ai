@@ -31,7 +31,7 @@ function stateOf(s: SourceInfo): DotTone {
 const GLYPH: Record<DotTone, string> = { answering: '✓', warn: '!', failed: '×', idle: '○' };
 
 /**
- * Sources page (ADR 0040, design v4 in ADR 0042): how a search works, then every source as one table in the terminal
+ * Sources page (ADR 0028, design v4 in ADR 0028): how a search works, then every source as one table in the terminal
  * style, `$ helper2 sources --all · N` with N from GET /sources. Same short names and status colours as the Home
  * radar; the table also lists helper2's own sources, which the radar leaves out. Each row: the source, its last check
  * in words, the mode, what it covers, when it was checked and how fast, new this week, its terms and attribution. A
@@ -57,7 +57,7 @@ export function Sources() {
   const all = list ?? [];
   const modes = sourceModeValues.filter((m) => all.some((s) => s.mode === m));
   const shown = mode ? all.filter((s) => s.mode === mode) : all;
-  // The discovery categories (ADR 0051) come after the other sources, a group of rows per family.
+  // The discovery categories (ADR 0022) come after the other sources, a group of rows per family.
   const others = shown.filter((s) => !s.family);
   const families = sourceFamilyValues.filter((f) => shown.some((s) => s.family === f));
   const count = (st: DotTone) => all.filter((s) => stateOf(s) === st).length;

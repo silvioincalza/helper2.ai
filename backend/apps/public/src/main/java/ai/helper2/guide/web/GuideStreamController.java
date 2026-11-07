@@ -66,7 +66,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * and an asker who joined an identical question already running gets no step events at all. The
  * comments come from one shared scheduler thread.
  *
- * <p>The guide's latency target is the time to the first useful event (ADR 0026): from the request
+ * <p>The guide's latency target is the time to the first useful event (ADR 0031): from the request
  * to the first {@code retrieved} (the results the guide reads) or {@code clarify} (the question
  * back), timed once per question as {@code helper2.guide.first_useful{intent}}. A cached or shared
  * answer has no step events and is not timed.
@@ -196,7 +196,7 @@ class GuideStreamController implements DisposableBean {
   }
 
   /**
-   * The category filter of the results page the question is asked from (ADR 0053), each id checked
+   * The category filter of the results page the question is asked from (ADR 0013), each id checked
    * against the configured categories.
    */
   Set<String> categories(GuideRequestDto body) {

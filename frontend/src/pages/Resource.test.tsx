@@ -123,7 +123,7 @@ describe('the resource page', () => {
     expect(screen.queryByText('No description available.')).not.toBeInTheDocument();
   });
 
-  it('an AI-written description is labelled and marked, and never headed "From the source" (ADR 0038)', async () => {
+  it('an AI-written description is labelled and marked, and never headed "From the source" (ADR 0018)', async () => {
     const ai = { ...PG, description: 'A short summary.', descriptionOrigin: 'AI_SUMMARY' as const };
     mockApi({ [`GET /resources/${PG.id}`]: () => makeDetail({ card: ai }) });
     renderApp(`/resource/${PG.id}`);

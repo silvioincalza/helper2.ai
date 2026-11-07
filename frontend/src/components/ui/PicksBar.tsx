@@ -12,11 +12,11 @@ export type PicksState =
   | { kind: 'picks'; model?: string | null; count?: number };
 
 /**
- * The box above the result list that holds the guide's picks (ADR 0040, 6). It is there from the first render with
+ * The box above the result list that holds the guide's picks (ADR 0028 (part was 0040), 6). It is there from the first render with
  * its height reserved, so nothing below it moves when the answer arrives; with no pick it shrinks to one line.
  * The waiting and no-pick lines are a status, so a screen reader hears each change once: how the question was read,
  * then how many results the guide reads. The picks ([children]) sit under an AI-written label on screen. They are
- * source titles, so they carry no machine-readable mark (ADR 0038): only the guide's reasons do, in the rows. With no
+ * source titles, so they carry no machine-readable mark (ADR 0018): only the guide's reasons do, in the rows. With no
  * pick, [children] are the next steps, after the line. [titleRef] lets Try again move focus to the heading.
  * In every state the bar is a small terminal (v5): a title row with `$ helper2 guide --picks N` (decoration, hidden from
  * screen readers), then the line or the picks, then the model that chose them.

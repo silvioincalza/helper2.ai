@@ -12,7 +12,7 @@ function visibleNotices(notices: readonly Notice[], exclude: readonly NoticeCode
 /**
  * A search's notices, one line each: an icon, the tone for screen readers, and the text localized by code (the
  * server's message when there is no key). Nothing when no notice is left. The text is from the server, never from a
- * model: keep this list outside elements marked as AI-written (ADR 0038).
+ * model: keep this list outside elements marked as AI-written (ADR 0018).
  */
 export function NoticeList({
   notices,

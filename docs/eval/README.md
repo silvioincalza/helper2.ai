@@ -6,19 +6,19 @@ its relevance part with a message.
 
 | File | What | Read by |
 |---|---|---|
-| `search-queries.json` | 111 search queries in 11 groups: 80 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 20 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0036](../adr/quality/0036-search-evaluation-harness.md)) | `./gradlew evalRecord`, `evalTest` |
-| `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0012, 0036) | same |
+| `search-queries.json` | 111 search queries in 11 groups: 80 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 20 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0036](../adr/quality/0036-evaluation.md)) | `./gradlew evalRecord`, `evalTest` |
+| `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0011, 0036) | same |
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
 | `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on (not recorded yet: step 5) | `evalTest` |
-| `guide-queries.json` | 50 guide questions: 20 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0030](../adr/quality/0030-guide-evaluation.md)) | `scripts/eval-guide.mjs` (`--core`: the 20) |
-| `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0032](../adr/guide/0032-guide-intents.md) §10) | `scripts/eval-guide.mjs --intents` |
+| `guide-queries.json` | 50 guide questions: 20 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0036](../adr/quality/0036-evaluation.md)) | `scripts/eval-guide.mjs` (`--core`: the 20) |
+| `guide-intents.json` | 16 intent cases and 6 ask-back cases with pass rules ([ADR 0016 (part was 0032)](../adr/guide/0016-guide-pipeline.md) §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 8 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
-| `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0041](../adr/guide/0041-guide-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
+| `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0017](../adr/guide/0017-guide-cost-guard-and-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
 | `guide-similar-vectors.json` | the query embeddings of those questions, recorded once | written by `./gradlew evalRecord --tests '*GuideSimilarRecorder'` |
 | `classifier-labels.tsv` | items labelled AI-related or not, for `Classification.isAiRelated` | `ClassificationLabelsTest` |
-| `setup-resources.json` | 15 resources for the setup guide ([ADR 0031](../adr/guide/0031-setup-guide.md)) | `scripts/eval-setup.mjs` |
+| `setup-resources.json` | 15 resources for the setup guide ([ADR 0019](../adr/guide/0019-setup-guide.md)) | `scripts/eval-setup.mjs` |
 
 Snapshots, judging pools, TREC files and reports are third-party data and stay in `backend/eval-data/` (git-ignored).
 
@@ -55,7 +55,7 @@ relevant result: a 0 for each pooled result is the label.
    `./gradlew evalTest` fails when nDCG@10 drops more than 0.005 below it.
 6. **Compare a change.** Run `evalTest` before and after; the report has per-source ablations with a 95 % paired
    bootstrap interval. TREC files (`baseline.run`, `without-<source>.run`, `search.qrels`) work with
-   `ranx` or `trec_eval` for any other comparison. Accept per ADR 0036 §6. A change that brings new results into the
+   `ranx` or `trec_eval` for any other comparison. Accept per ADR 0036 (part was 0036) §6. A change that brings new results into the
    top 20 extends the pool: judge them before comparing.
 
 ## Home examples (`home-example`)

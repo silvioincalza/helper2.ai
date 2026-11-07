@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class PublicApplication {
 
-  /** The app, or with {@code migrate} the migrate step of a deployment (ADR 0070). */
+  /** The app, or with {@code migrate} the migrate step of a deployment (ADR 0004). */
   public static void main(String[] args) throws Exception {
     if (MigrateStep.requested(args)) {
       MigrateStep.run(args);

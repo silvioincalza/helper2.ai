@@ -51,7 +51,7 @@ fun interface ResultObserver {
 }
 
 /**
- * Outbound port: the result set a metered web source returned for a query (ADR 0037), by source,
+ * Outbound port: the result set a metered web source returned for a query (ADR 0014), by source,
  * query and [IntentClass]. The adapter keys it by an HMAC of [query]; the text itself is never
  * stored. A set whose hits are no longer all in the catalog is not found. May throw.
  */
@@ -86,7 +86,7 @@ interface WebResultStore {
   }
 }
 
-/** Outbound port: stored web result sets past their retention (ADR 0034). */
+/** Outbound port: stored web result sets past their retention (ADR 0035). */
 fun interface WebResultRetention {
   /** Deletes the result sets fetched before [cutoff]; returns how many. */
   fun deleteFetchedBefore(cutoff: Instant): Int
@@ -103,7 +103,7 @@ fun interface RecordedOutcomes {
 
 /**
  * Outbound port: per source, how many catalog resources it brought that Helper2 first discovered at
- * or after a time (ADR 0042: the radar's "new this week"). Implemented by the catalog. A source
+ * or after a time (ADR 0028: the radar's "new this week"). Implemented by the catalog. A source
  * that brought none is absent; a source mapped to null has no count of its own. May throw; the
  * Sources page then shows no count.
  */

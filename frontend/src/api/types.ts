@@ -3,7 +3,7 @@ import type { components, operations } from './schema';
 
 /** Public API types (api/public.yaml). */
 type S = components['schemas'];
-/** Back office types (api/admin.yaml), used only by the lazy admin pages (ADR 0045). */
+/** Back office types (api/admin.yaml), used only by the lazy admin pages (ADR 0026). */
 type A = AdminComponents['schemas'];
 
 /** Query parameters of GET /search, from the contract. */

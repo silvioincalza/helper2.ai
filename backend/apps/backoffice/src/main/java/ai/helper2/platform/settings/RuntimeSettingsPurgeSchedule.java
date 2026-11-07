@@ -11,8 +11,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Deletes runtime setting changes older than the retention, except each setting's newest (ADR 0034,
- * 0060), once a day (helper2.retention.cron, UTC), on one replica at a time.
+ * Deletes runtime setting changes older than the retention, except each setting's newest (ADR 0035,
+ * 0007), once a day (helper2.retention.cron, UTC), on one replica at a time.
  */
 @Component
 class RuntimeSettingsPurgeSchedule {

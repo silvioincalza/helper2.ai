@@ -24,7 +24,7 @@ function loadAdSense(client: string, doc: Document = document) {
 }
 
 /**
- * The one AdSense ad of a resource page (ADR 0059), marked "Sponsored", in a box of fixed height so nothing moves.
+ * The one AdSense ad of a resource page (ADR 0030), marked "Sponsored", in a box of fixed height so nothing moves.
  * A resource page has no search words in its address. Off while the server has no publisher and ad unit. A new
  * resource mounts a new box (the page is keyed by id), and each box asks AdSense for one ad. Whether the ad is
  * personalised is Google's call from the visitor's answer in its consent tool.
@@ -47,7 +47,7 @@ export function AdSenseSlot() {
       // A box that already has its ad (a second effect run in development): nothing to do.
     }
     // The script stays loaded in the app after this page: it asks for no ad elsewhere (a search address holds the
-    // search words). Auto ads and overlay formats stay off in the AdSense account (ADR 0059).
+    // search words). Auto ads and overlay formats stay off in the AdSense account (ADR 0030).
     return () => {
       queue.pauseAdRequests = 1;
     };

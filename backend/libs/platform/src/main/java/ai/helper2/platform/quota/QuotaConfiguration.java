@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
-/** The daily quota counters and their key names (ADR 0037). */
+/** The daily quota counters and their key names (ADR 0014). */
 @Configuration(proxyBeanMethods = false)
 class QuotaConfiguration {
 

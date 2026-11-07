@@ -1,4 +1,4 @@
-# The web image (ADR 0069): the built public web app, static files only, served by nginx (deploy/web.Dockerfile). Route
+# The web image (ADR 0032): the built public web app, static files only, served by nginx (deploy/web.Dockerfile). Route
 # to the Service helper2-web exactly /assets/ (prefix), /theme.js and /favicon.svg (exact); everything else goes to
 # the Service helper2 (deploy/k8s/README.md). The public pod copies its shell from this image (app.yaml).
 {{- $web := .Values.web }}
@@ -11,7 +11,7 @@ metadata:
     {{- include "helper2.labels" . | nindent 4 }}
 spec:
   replicas: {{ required "web.replicas" $web.replicas }}
-  # One new pod at a time, and an old one goes only once the new one is ready (ADR 0027).
+  # One new pod at a time, and an old one goes only once the new one is ready (ADR 0032).
   strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
   selector: { matchLabels: { app: helper2-web } }
   template:

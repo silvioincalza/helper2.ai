@@ -11,7 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * ADR 0062: an article, a news item or a paper is writing about other resources. Its facts are who
+ * ADR 0023: an article, a news item or a paper is writing about other resources. Its facts are who
  * it is for, how technical it is and its topic; the pricing or licence it quotes belong to what it
  * is about, which it links to with ABOUT.
  */
@@ -202,7 +202,7 @@ class EvidenceValidatorWritingTest {
     )
   }
 
-  /** ADR 0066: the model's value of a field an admin set is dropped, with no error to review. */
+  /** ADR 0026: the model's value of a field an admin set is dropped, with no error to review. */
   @Test
   fun `a field an admin set is not a question for the model`() {
     val r =

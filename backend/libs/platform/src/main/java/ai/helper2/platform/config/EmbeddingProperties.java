@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * The embedding model of vector search (ADR 0012), from {@code helper2.embedding}. An empty key
+ * The embedding model of vector search (ADR 0011), from {@code helper2.embedding}. An empty key
  * means keyword search only.
  */
 @Validated

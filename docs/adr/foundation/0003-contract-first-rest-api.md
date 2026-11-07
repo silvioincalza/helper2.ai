@@ -1,6 +1,6 @@
 # 0003 — Contract-first REST with OpenAPI 3.1; generated server interfaces and TypeScript types; problem+json
 
-**Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-hexagonal.md)
+**Status.** Accepted. **Builds on:** [0001](0001-stack-and-runtime.md), [0002](0002-modular-monolith-libraries-and-apps.md)
 
 ## Context
 The backend (Java and Kotlin) and the frontend (TypeScript) change in the same pull request. Hand-written

@@ -504,7 +504,7 @@ describe('results: one column, a row opens the resource page', () => {
     const { params } = renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
     const bar = await screen.findByRole('region', { name: 'Guide picks' });
     const button = await within(bar).findByRole('button', { name: 'Ask without “free”' });
-    // The requirement is the planner's text: marked in the HTML, labelled once on screen (ADR 0038).
+    // The requirement is the planner's text: marked in the HTML, labelled once on screen (ADR 0018).
     expect(within(button).getByText('free')).toHaveAttribute('data-ai-generated', 'true');
     expect(within(bar).getByText('Read by AI')).toBeInTheDocument();
     await userEvent.click(button);

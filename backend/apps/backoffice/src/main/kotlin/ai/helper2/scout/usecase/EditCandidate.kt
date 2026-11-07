@@ -31,7 +31,7 @@ interface CandidateItems {
 }
 
 /**
- * An admin fixes a resource candidate before accepting it (ADR 0065): its title, its type (any
+ * An admin fixes a resource candidate before accepting it (ADR 0026): its title, its type (any
  * candidate type, not only the ones its finders declare) or its tags. The item stays open. The
  * edited fields are marked in the details, so a collector that finds the page again joins in
  * without undoing them, and accepting the item indexes what the admin wrote. The edit applies only

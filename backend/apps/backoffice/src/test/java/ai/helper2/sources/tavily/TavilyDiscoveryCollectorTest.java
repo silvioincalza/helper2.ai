@@ -198,7 +198,7 @@ class TavilyDiscoveryCollectorTest {
     assertThat(batch.getHits().getFirst().getSourceId()).isEqualTo("discovery-self-hosted");
 
     // A home page, a pricing page (its site's home page instead) and a repository whose title says
-    // "alternative"; then the posts, as articles (ADR 0062): the blog post and the post slug.
+    // "alternative"; then the posts, as articles (ADR 0023): the blog post and the post slug.
     // Dropped: the topics page, the blog host, the author's page, the page not about AI, the low
     // score.
     assertThat(batch.getCandidates())

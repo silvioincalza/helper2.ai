@@ -47,8 +47,8 @@ function DateFactValue({ fact }: { fact: DateFact }) {
 }
 
 /**
- * One date with its label. [aiRead]: an AI model read it on the source's page (ADR 0067): the value carries the AI
- * label and the machine-readable mark (ADR 0038).
+ * One date with its label. [aiRead]: an AI model read it on the source's page (ADR 0021): the value carries the AI
+ * label and the machine-readable mark (ADR 0018).
  */
 export function DateFactRow({
   label,

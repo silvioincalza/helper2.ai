@@ -9,7 +9,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The enrichment queue page by page (ADR 0045): the backlog in the order the Scout takes it, or the
+ * The enrichment queue page by page (ADR 0026): the backlog in the order the Scout takes it, or the
  * resources an admin skipped, or the ones out of retries. Acting on a resource is a use case of its
  * own (RequeueEnrichment, SkipEnrichment, PrioritiseEnrichment).
  */

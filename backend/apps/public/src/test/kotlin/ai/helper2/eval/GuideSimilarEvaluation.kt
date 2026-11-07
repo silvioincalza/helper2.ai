@@ -13,7 +13,7 @@ import java.util.Base64
 import tools.jackson.module.kotlin.readValue
 
 /**
- * One question of docs/eval/guide-similar.json, with the reading a correct plan gives it (ADR 0032
+ * One question of docs/eval/guide-similar.json, with the reading a correct plan gives it (ADR 0016
  * grounding).
  */
 data class SimilarCase(val text: String, val reading: LabelledReading)
@@ -101,7 +101,7 @@ data class SimilarPoint(
 }
 
 /**
- * The offline evaluation of similar-question reuse (ADR 0041). A pair is reused when the cosine of
+ * The offline evaluation of similar-question reuse (ADR 0017). A pair is reused when the cosine of
  * its recorded embeddings is at least the threshold and, with [withReading], its two readings are
  * equal: the production rule. Without the reading the sweep shows what the embedding alone would
  * let through.

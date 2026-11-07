@@ -40,7 +40,7 @@ function queue(outcomes: Record<string, ReviewBulkResult['items'][number]['outco
   });
 }
 
-describe('Feature: deciding several review items at once (ADR 0045)', () => {
+describe('Feature: deciding several review items at once (ADR 0026)', () => {
   it('Scenario: each open row has a box; x picks the selected item; the bar counts', async () => {
     mockApi({
       'GET /me': () => ADMIN,

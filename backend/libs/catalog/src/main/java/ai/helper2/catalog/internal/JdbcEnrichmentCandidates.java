@@ -40,11 +40,11 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   }
 
   /**
-   * The ones an admin moved to the top first (ADR 0045 §7), then products a person accepted from
-   * the review queue (ADR 0056): someone chose them, so they should not wait behind the daily
-   * collector intake. Then never-run resources, then the rest, each part newest first. Four parts,
-   * each with its own LIMIT: the prioritised ones are read from the few control rows, the accepted
-   * ones from the few ACCEPTED review items, the other two in index order
+   * The ones an admin moved to the top first (ADR 0026 (part was 0045) §7), then products a person
+   * accepted from the review queue (ADR 0023): someone chose them, so they should not wait behind
+   * the daily collector intake. Then never-run resources, then the rest, each part newest first.
+   * Four parts, each with its own LIMIT: the prioritised ones are read from the few control rows,
+   * the accepted ones from the few ACCEPTED review items, the other two in index order
    * (resource_enrichment_backlog_idx), so the next batch never sorts the whole table. A resource in
    * two parts counts once, in the first.
    */
@@ -93,7 +93,7 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
    * Longest a backlog read (next batch, a queue page, the count) may run: one slow plan must not
    * hold the Scout or a page. The worst page, no row of the second part due for a retry, walks
    * every REJECTED resource: 0.4 s at 250 000 synthetic resources. The out-of-retries view walks
-   * them too: 1.1 to 1.6 s with 37 500 REJECTED resources (ADR 0045 §7).
+   * them too: 1.1 to 1.6 s with 37 500 REJECTED resources (ADR 0026 (part was 0045) §7).
    */
   static final int COUNT_TIMEOUT_SECONDS = 5;
 
@@ -391,7 +391,7 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
         resource.curated());
   }
 
-  /** The values of the fields an admin set (ADR 0066), from the resource's own columns. */
+  /** The values of the fields an admin set (ADR 0026), from the resource's own columns. */
   private static Map<String, String> curated(String[] fields, Map<String, String> columns) {
     Map<String, String> curated = new java.util.TreeMap<>();
     for (String f : fields) {

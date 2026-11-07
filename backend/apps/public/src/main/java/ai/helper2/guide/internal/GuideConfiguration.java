@@ -49,7 +49,7 @@ class GuideConfiguration {
   static final int INDEX_DIMENSIONS = 1024;
 
   /**
-   * Guide answers in the shared cache (ADR 0041): they survive restarts and serve every replica,
+   * Guide answers in the shared cache (ADR 0017): they survive restarts and serve every replica,
    * per build.
    */
   @Bean
@@ -69,7 +69,7 @@ class GuideConfiguration {
 
   /**
    * Daily model-call cap of the guide (ADR 0017); every provider attempt takes one call. A runtime
-   * setting (ADR 0060): the H2_ value is its default.
+   * setting (ADR 0007): the H2_ value is its default.
    */
   @Bean
   DailyBudget guideBudget(
@@ -91,8 +91,8 @@ class GuideConfiguration {
   }
 
   /**
-   * Reuse of a similar question's answer (ADR 0041): on only with a threshold, the question
-   * embedder of vector search (ADR 0012), whose vectors fit the index's column. Unset threshold:
+   * Reuse of a similar question's answer (ADR 0017): on only with a threshold, the question
+   * embedder of vector search (ADR 0011), whose vectors fit the index's column. Unset threshold:
    * off, no question is embedded.
    */
   static SimilarQuestions similarQuestions(
@@ -121,7 +121,7 @@ class GuideConfiguration {
         clock);
   }
 
-  /** The guide's numbers for GET /api/v1/policy (ADR 0052). */
+  /** The guide's numbers for GET /api/v1/policy (ADR 0029). */
   @Bean
   GuidePolicy guidePolicy(GuideProperties settings) {
     return new GuidePolicy(
@@ -219,7 +219,7 @@ class GuideConfiguration {
             settings.similarThreshold(), embedder.getIfAvailable(), similarQuestionIndex, clock));
   }
 
-  /** The guide's settings for the back office's Settings page (ADR 0045). */
+  /** The guide's settings for the back office's Settings page (ADR 0026). */
   @Bean
   SettingsGroup guideSettings(GuideProperties settings, LlmSettings llm, AskGuide guideService) {
     return guideSettingsGroup(

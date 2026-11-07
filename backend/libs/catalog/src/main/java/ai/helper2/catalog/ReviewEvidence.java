@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Query port of the catalog: what a review item is about, read through the item's link to its
- * enrichment run or relationship (ADR 0045). Never read from the item's details.
+ * enrichment run or relationship (ADR 0026). Never read from the item's details.
  */
 public interface ReviewEvidence {
 
@@ -74,7 +74,7 @@ public interface ReviewEvidence {
 
   /**
    * A relationship a run proposed, with at most {@link #MAX_QUOTES} quotes. [origin] is the kind's;
-   * [targetCurated] is true when an admin chose the target (ADR 0064).
+   * [targetCurated] is true when an admin chose the target (ADR 0026).
    */
   record Relationship(
       String kind,

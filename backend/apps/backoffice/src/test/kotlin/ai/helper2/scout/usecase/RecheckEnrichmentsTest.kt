@@ -20,7 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** ADR 0056: stored answers are checked again by code; only gaps go back to the model. */
+/** ADR 0023: stored answers are checked again by code; only gaps go back to the model. */
 class RecheckEnrichmentsTest {
 
   private val withPage = UUID.fromString("00000000-0000-0000-0000-000000000001")

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** Categories as a search filter (ADR 0053): the list, the filter, the facet and the backfill. */
+/** Categories as a search filter (ADR 0013): the list, the filter, the facet and the backfill. */
 class CategoriesApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;

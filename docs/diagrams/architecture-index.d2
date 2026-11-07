@@ -1,22 +1,22 @@
 # Architecture, view 4 of 6: how the index grows. Scout runs collectors, enriches with evidence, and the catalog stores and embeds.
-# All of it runs in the back office app (ADR 0069); the catalog is a library both apps use, and the embedding indexer's
+# All of it runs in the back office app (ADR 0032); the catalog is a library both apps use, and the embedding indexer's
 #   schedule is backend/apps/backoffice/src/main/java/ai/helper2/catalog/internal/EmbeddingIndexerSchedule.java.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
-#   scout/GapRound.kt (gap round ports, ADR 0043), scout/OfficialPages.kt (evidence ladder ports, ADR 0056),
+#   scout/GapRound.kt (gap round ports, ADR 0023), scout/OfficialPages.kt (evidence ladder ports, ADR 0023),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/config/CollectorsConfiguration.java (collectors, ReadmeEvidence, TavilyExtract),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults, SourceOutcomes: the Scout's way in),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
-#   catalog/usecase/IndexAwesomeLists.java, catalog/internal/AwesomeListIndex.java (ADR 0055),
+#   catalog/usecase/IndexAwesomeLists.java, catalog/internal/AwesomeListIndex.java (ADR 0010),
 #   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java,
 #   admin/ExampleDrafts.java, admin/internal/JsonExampleDrafts.java, admin/config/AdminUseCaseConfiguration.java.
 #   scout/EnrichmentQueue.kt, scout/usecase/{Requeue,Skip,Prioritise}Enrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
-#   catalog/internal/BacklogRule.java, admin/web/EnrichmentQueueController.java (enrichment queue actions, ADR 0045 §7).
+#   catalog/internal/BacklogRule.java, admin/web/EnrichmentQueueController.java (enrichment queue actions, ADR 0026 (part was 0045) §7).
 #   scout/DiscoveryHosts.kt, scout/usecase/ManageDiscoveryHosts.kt, scout/internal/JdbcDiscoveryHostStore.java,
-#   admin/web/DiscoveryHostsController.java, sources/tavily/DiscoveryPages.java (discovery hosts, ADR 0063).
-#   admin/usecase/GetReviewEvidence.java, catalog/ReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java (evidence view, ADR 0045 §7).
+#   admin/web/DiscoveryHostsController.java, sources/tavily/DiscoveryPages.java (discovery hosts, ADR 0022).
+#   admin/usecase/GetReviewEvidence.java, catalog/ReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java (evidence view, ADR 0026 (part was 0045) §7).
 # Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
 
 ...@style
@@ -34,10 +34,10 @@ admin: "Admin" {class: person}
 scout: "scout (Kotlin domain)" {
   class: group
   core: "RunScout · EnrichResource\nEvidenceValidator · FieldTargets\nGapTargets · PageTargets\nOfficialPages · UntrustedPageText\n(evidence ladder)" {class: app}
-  accept: "IndexAcceptedCandidate\n(accept a resource candidate,\nADR 0051)" {class: app}
-  queue: "RequeueEnrichment · SkipEnrichment\nPrioritiseEnrichment · QueuePlace\n(enrichment queue actions,\nADR 0045 §7)" {class: app}
+  accept: "IndexAcceptedCandidate\n(accept a resource candidate,\nADR 0022)" {class: app}
+  queue: "RequeueEnrichment · SkipEnrichment\nPrioritiseEnrichment · QueuePlace\n(enrichment queue actions,\nADR 0026 (part was 0045) §7)" {class: app}
   p_queue: "EnrichmentQueueControl\nUnitOfWork" {class: port}
-  hostlists: "ManageDiscoveryHosts\nHostNames\n(discovery hosts, ADR 0063)" {class: app}
+  hostlists: "ManageDiscoveryHosts\nHostNames\n(discovery hosts, ADR 0022)" {class: app}
   p_hosts: "DiscoveryHostStore\n(HostLists per run)" {class: port}
   hostlists -> p_hosts
   queue -> p_queue
@@ -50,7 +50,7 @@ scout: "scout (Kotlin domain)" {
   json -> p_candidates: implements {class: config}
   p_collector: Collector {class: port}
   p_extra: "ExtraEvidence · GapBudget\nPageReader · ExtractBudget\nPageLedger · PageTextCache\nDomainRoots · StoredAnswers" {class: port}
-  p_index: "CatalogIndex\nListIndex (ADR 0055)" {class: port}
+  p_index: "CatalogIndex\nListIndex (ADR 0010)" {class: port}
   p_enrich: EnrichmentModel {class: port}
   p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
   model: "SpringAiEnrichmentModel" {class: app}
@@ -58,7 +58,7 @@ scout: "scout (Kotlin domain)" {
   jdbc -> p_queue: implements {class: config}
   jdbc -> p_hosts: implements {class: config}
   core -> p_collector
-  core -> p_extra: "evidence ladder\n(ADR 0043, 0056)"
+  core -> p_extra: "evidence ladder\n(ADR 0023)"
   core -> p_index
   core -> p_enrich: {class: ai-call}
   core -> p_stores

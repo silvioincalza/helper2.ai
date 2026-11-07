@@ -1,4 +1,4 @@
-# The back office app (ADR 0069): the admin web app and API, the Scout, the collectors, the enrichment and the
+# The back office app (ADR 0032): the admin web app and API, the Scout, the collectors, the enrichment and the
 # catalog jobs. Its own image (deploy/backoffice.Dockerfile), reached only through the Service helper2-admin.
 {{- $bo := .Values.backoffice }}
 apiVersion: apps/v1
@@ -10,7 +10,7 @@ metadata:
     {{- include "helper2.labels" . | nindent 4 }}
 spec:
   replicas: {{ required "backoffice.replicas" $bo.replicas }}
-  # One new pod at a time, and an old one goes only once the new one is ready (ADR 0027).
+  # One new pod at a time, and an old one goes only once the new one is ready (ADR 0032).
   strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
   selector: { matchLabels: { app: helper2-backoffice } }
   template:
@@ -45,7 +45,7 @@ spec:
             - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
             - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
             - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
-            # Its own role, never the owner (ADR 0070): rows only, no DDL. The migrate Job opens its login.
+            # Its own role, never the owner (ADR 0004): rows only, no DDL. The migrate Job opens its login.
             - { name: H2_DATABASE_USER, value: h2_backoffice }
             - name: H2_DATABASE_PASSWORD
               valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_BACKOFFICE_PASSWORD } }
@@ -61,7 +61,7 @@ spec:
             {{- end }}
             - { name: H2_BUILD_VERSION, value: {{ include "helper2.backofficeTag" . | quote }} }
             {{- with $bo.grafanaUrl }}
-            # The metrics dashboard the overview links to for trends (ADR 0045). Empty = no link.
+            # The metrics dashboard the overview links to for trends (ADR 0026). Empty = no link.
             - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
             {{- end }}
             {{- with $bo.adminBaseUrl }}
@@ -98,7 +98,7 @@ spec:
           ports:
             - { containerPort: 8080, name: http }
             - { containerPort: 8081, name: management }
-          # Startup checks the schema (waiting for the migrate Job, ADR 0070) and loads the Lingua models.
+          # Startup checks the schema (waiting for the migrate Job, ADR 0004) and loads the Lingua models.
           startupProbe:
             httpGet: { path: /actuator/health/liveness, port: management }
             periodSeconds: 5
@@ -132,7 +132,7 @@ spec:
   selector: { matchLabels: { app: helper2-backoffice } }
 {{- end }}
 ---
-# The back office (ADR 0035, 0069). Route only an in-network host here (an Ingress with a source allow-list, or a
+# The back office (ADR 0024, 0032). Route only an in-network host here (an Ingress with a source allow-list, or a
 # VPN): never the public edge.
 apiVersion: v1
 kind: Service

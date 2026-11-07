@@ -2,7 +2,7 @@ package ai.helper2.setup
 
 /**
  * Deterministic gate between the model and the user (same principle as the guide's GuideValidator,
- * ADR 0015): a step survives only when its quote is in the cited document and its command is copied
+ * ADR 0016): a step survives only when its quote is in the cited document and its command is copied
  * from it exactly. Commands are compared case-sensitively (`-y` is not `-Y`), whitespace collapsed,
  * a leading `$ ` or `> ` prompt ignored; all lines of a command must come from one fenced block, so
  * a model cannot shorten or splice commands.

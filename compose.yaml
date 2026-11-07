@@ -35,7 +35,7 @@ services:
       H2_DATABASE_USER: ${H2_DATABASE_USER:-helper2}
       H2_DATABASE_PASSWORD: ${H2_DATABASE_PASSWORD:-helper2-local-only}
       H2_REDIS_HOST: redis
-      # It connects as the owner and migrates itself; a deployment runs the migrate Job instead (ADR 0070).
+      # It connects as the owner and migrates itself; a deployment runs the migrate Job instead (ADR 0004).
       H2_SCHEMA_MIGRATE: "true"
       H2_NVIDIA_API_KEY: ${H2_NVIDIA_API_KEY:-}
     ports: ["8080:8080"]

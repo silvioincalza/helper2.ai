@@ -39,7 +39,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The evidence ladder (ADR 0056) end to end inside the use case, with a model that believes
+ * The evidence ladder (ADR 0023) end to end inside the use case, with a model that believes
  * whatever the page says. Each hostile page asserts that nothing it does not state becomes
  * VERIFIED.
  */

@@ -65,7 +65,7 @@ function useScrollState(bar: RefObject<HTMLDivElement | null>) {
 }
 
 /**
- * Home page (ADR 0042, design v4): what the site is, the radar of its sources around the title, the search box pinned
+ * Home page (ADR 0028, design v4): what the site is, the radar of its sources around the title, the search box pinned
  * under the header, then New this week and Coming up. What helper2 does follows as a quiet strip. The box and the
  * examples open the results on /search. The header's links land on the lists (#news, #events).
  */

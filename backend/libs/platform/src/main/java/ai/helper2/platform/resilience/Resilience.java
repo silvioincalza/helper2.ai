@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Runs work under a named resilience policy (circuit breaker, bulkhead, retry; ADR 0033). The
+ * Runs work under a named resilience policy (circuit breaker, bulkhead, retry; ADR 0006). The
  * policy names are configured, not coded: {@code source-<id>}, {@code collector-<id>}, {@code
  * redis}, {@code llm-chat}, {@code llm-embed}, {@code guide}. A call the policy does not let
  * through throws {@link CallRefused} without running the work; any other exception is the work's

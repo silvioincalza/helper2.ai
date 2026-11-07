@@ -5,7 +5,7 @@ import java.time.Clock
 import java.time.Duration
 import org.slf4j.LoggerFactory
 
-/** The Scout's retention rule (ADR 0034): run records older than [scoutRuns] are deleted. */
+/** The Scout's retention rule (ADR 0035): run records older than [scoutRuns] are deleted. */
 class PurgeExpiredData(
   private val history: RunHistoryRetention,
   private val clock: Clock,

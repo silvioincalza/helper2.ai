@@ -8,7 +8,7 @@ import java.util.Set;
 public final class CuratedTypes {
 
   /**
-   * Things a relationship points at (ADR 0064): tools and models, not writing, events or courses.
+   * Things a relationship points at (ADR 0026): tools and models, not writing, events or courses.
    */
   public static final Set<ResourceType> TYPES =
       Set.copyOf(

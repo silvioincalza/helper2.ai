@@ -2,8 +2,8 @@ package ai.helper2.shared
 
 /**
  * The sources whose records are web pages found by a web search (Tavily): the live source, the
- * Scout's Tavily queries, course discovery, every discovery category (ADR 0051) and LinkedIn via
- * Tavily (ADR 0061) and the events scout (ADR 0067). One place for the page titles
+ * Scout's Tavily queries, course discovery, every discovery category (ADR 0022) and LinkedIn via
+ * Tavily (ADR 0021) and the events scout (ADR 0021). One place for the page titles
  * ([WebPageTitle.forSource]) and the retention of web news and articles.
  */
 object WebSources {
@@ -15,7 +15,7 @@ object WebSources {
 
   /**
    * Upcoming AI events whose days, kind, format and place an AI model read on the event's page,
-   * checked by code against the page (ADR 0067).
+   * checked by code against the page (ADR 0021).
    */
   const val EVENTS_SCOUT = "live-web-events-scout"
 
@@ -25,7 +25,7 @@ object WebSources {
     listOf("live-web", "live-web-scout", "course-scout", "linkedin-scout", EVENTS_SCOUT)
 
   /**
-   * True when an AI model read [sourceId]'s event days: they are AI-extracted (ADR 0067), shown
+   * True when an AI model read [sourceId]'s event days: they are AI-extracted (ADR 0021), shown
    * with an AI label and never preferred over days another source states.
    */
   @JvmStatic fun eventDaysReadByAi(sourceId: String?): Boolean = sourceId == EVENTS_SCOUT

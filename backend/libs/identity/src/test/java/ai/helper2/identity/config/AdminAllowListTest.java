@@ -94,7 +94,7 @@ class AdminAllowListTest {
 
   @Test
   void anAdminWhoSignsInOnThePublicSiteIsAPlainUserThere() {
-    // ADR 0035, 0069: ADMIN only on a session made on the back office, so a stolen public session
+    // ADR 0024, 0032: ADMIN only on a session made on the back office, so a stolen public session
     // is never an admin one.
     assertThat(rolesFor(Set.of("github:12345"), false))
         .contains("ROLE_USER")

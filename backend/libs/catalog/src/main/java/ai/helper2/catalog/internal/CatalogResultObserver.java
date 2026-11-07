@@ -26,8 +26,8 @@ import org.springframework.stereotype.Component;
  * The catalog seen from search. Implements the search module's {@link ResultObserver}: every
  * resource seen in a live search is recorded so Helper2 can state when it was first discovered, and
  * detail pages work for live results, and the hits a source gave can be read back for a stored web
- * result set (ADR 0037). Also {@link RecordedOutcomes}: the Scout's last run outcome per source,
- * and {@link DiscoveredResources}: what each source brought this week (ADR 0042).
+ * result set (ADR 0014). Also {@link RecordedOutcomes}: the Scout's last run outcome per source,
+ * and {@link DiscoveredResources}: what each source brought this week (ADR 0028).
  *
  * <p>Recording is asynchronous ({@link ObservationQueue}), so a search costs one batched read of
  * discovery dates and no writes. The trade-off: a resource seen for the first time has no discovery

@@ -6,7 +6,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 /**
- * The target of the relationship an open review item is about (ADR 0064): a person points it at a
+ * The target of the relationship an open review item is about (ADR 0026): a person points it at a
  * catalog resource, or gives it another name. The item row is locked first, so a decision made at
  * the same time waits for the change or makes it fail.
  */

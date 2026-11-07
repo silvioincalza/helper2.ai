@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Which links of an awesome list point at a product's own site (ADR 0058), by code only. A link is
+ * Which links of an awesome list point at a product's own site (ADR 0022), by code only. A link is
  * kept when it is a plain https address of a public name and the product's home page or its
  * one-level page ({@link DiscoveryPages#productSite}, the rules discovery uses). Everything else is
  * skipped with a reason: another scheme, an IP address, user info, a port, a private or reserved
@@ -198,7 +198,7 @@ final class ProductLinks {
         && Arrays.stream(host.split("\\.")).allMatch(l -> NUMERIC_LABEL.matcher(l).matches());
   }
 
-  /** The scout's rules for any page it may read (ADR 0056): a name, no user info, no port. */
+  /** The scout's rules for any page it may read (ADR 0023): a name, no user info, no port. */
   private static @Nullable Skip plainProblem(URI uri) {
     String problem = PageScope.plainUrlProblem(uri);
     if (problem == null) {

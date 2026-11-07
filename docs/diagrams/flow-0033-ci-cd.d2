@@ -1,0 +1,98 @@
+# Flowchart: from a pull request to prod. PR checks on GitHub-hosted runners, per changed part (ADR 0033); on main,
+# all of CI again, the changed images built and every image signed on the self-hosted runner, staging. Prod only from
+# a release tag, after the approval.
+# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, deploy/k8s/Makefile (ci-images, image,
+#   sign, verify-images, postgres-image, chart-check, diff, deploy, status), deploy/k8s/CI.md.
+# Render: cd docs/diagrams && d2 fmt flow-0033-ci-cd.d2 && d2 flow-0033-ci-cd.d2 flow-0033-ci-cd.svg
+
+...@style
+
+direction: down
+
+dev: Developer {class: person}
+pr: "Pull request" {class: end}
+
+checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed, 0033)" {
+  class: group
+  grid-columns: 3
+  frontend: "frontend:\nformat, lint, knip, typecheck,\nVitest, build, bundle size,\nnpm audit" {class: app}
+  backend: "backend:\nspotlessCheck, gradlew test\n(Testcontainers)" {class: app}
+  chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
+  pg: "PR only: deploy/postgres changed\n→ tag bumped? (git, no build)" {class: app}
+  monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}
+  d2: "PR only: diagrams\nre-rendered = committed?" {class: app}
+}
+
+green: "ci-ok green?\n(skipped is fine)" {class: decision}
+fix: "Fix and push again" {class: fail}
+merge: "Merge to main" {class: app}
+
+cd: cd.yml (push to main or release/*) {
+  class: group
+  direction: down
+  ci: "ci.yml again, every job\n(full: true)" {class: app}
+  build: "image job (self-hosted):\nbao-login role deploy\nmake postgres-image, make ci-images" {class: app}
+  exists: "Component changed?\n(changes.sh, 0033)" {class: decision}
+  reuse: "Tag TAG added to the image\nof the commit before (same digest)" {class: app}
+  push: "Build from git archive,\npush TAG = commit[0:12];\nmake sign (OpenBao Transit)" {class: data}
+  scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0033, report-only)" {class: app}
+  staging: "deploy.yml env staging:\nverify signatures (0033),\ndiff, deploy by digest, status" {class: app}
+  ok: "Staging rollout\nhealthy?" {class: decision}
+  rollback: "helm --rollback-on-failure:\nback to the last deployed revision" {class: fail}
+  branch: "Push to main?" {class: decision}
+  imageonly: "release/* (0034): image only,\nno staging" {class: end}
+  done: "Staging runs the commit;\nprod unchanged" {class: end}
+
+  ci -> build: {class: hot}
+  build -> exists
+  exists -> reuse: no
+  exists -> push: yes {class: hot}
+  build -> scan: "SBOM artifacts"
+  reuse -> branch
+  push -> branch: {class: hot}
+  branch -> staging: yes {class: hot}
+  branch -> imageonly: no
+  staging -> ok
+  ok -> rollback: no
+  ok -> done: yes {class: hot}
+}
+
+release: release.yml (push of a tag vX.Y.Z) {
+  class: group
+  direction: down
+  checks: "Release checks (0034):\nnot moved, annotated, on main\nor release/* (next patch),\nfour versions" {class: app}
+  valid: "All pass?" {class: decision}
+  refused: "Fail: no release,\nno deploy" {class: fail}
+  publish: "GitHub release\npublished" {class: app}
+  staged: "CD run of the commit\npassed? (from main:\nstaging too; waits)" {class: decision}
+  blocked: "Fail: no prod deploy" {class: fail}
+  retag: "retag: Harbor adds X.Y.Z\nto the commit's image\n(same digest)" {class: data}
+  approve: "Prod reviewer\napproves?" {class: decision}
+  wait: "Prod waits\n(not deployed)" {class: end}
+  prod: "deploy.yml env prod:\nimage X.Y.Z\n(built by CD, never rebuilt)" {class: app}
+  live: "helper2.ai runs the release" {class: end}
+
+  checks -> valid
+  valid -> refused: no
+  valid -> publish: yes {class: hot}
+  publish -> staged: {class: hot}
+  staged -> blocked: no
+  staged -> approve: yes {class: hot}
+  approve -> wait: no
+  approve -> retag: yes {class: hot}
+  retag -> prod: {class: hot}
+  prod -> live: {class: hot}
+}
+
+tagger: "Owner tags a commit of main\nor release/* vX.Y.Z" {class: person}
+
+manual: "Manual run (workflow_dispatch):\nenvironment + tag;\nprod with empty tag = promote\nwhat staging runs" {class: config}
+
+dev -> pr: {class: hot}
+pr -> checks: {class: hot}
+checks -> green
+green -> fix: no
+green -> merge: yes {class: hot}
+merge -> cd.ci: {class: hot}
+tagger -> release.checks: {class: hot}
+manual -> release.prod: "or any env" {class: config}

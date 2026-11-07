@@ -13,7 +13,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * {@link SimilarQuestionIndex} in {@code guide_similar_question} (ADR 0041), embeddings in a
+ * {@link SimilarQuestionIndex} in {@code guide_similar_question} (ADR 0017), embeddings in a
  * pgvector column. A group holds a few rows, so the search is an exact scan of the group's live
  * rows by cosine distance ({@code <=>}): no approximate index to tune at this size. A row lives as
  * long as its answer in the shared cache ({@code expires_at}); the guide purge deletes it after.

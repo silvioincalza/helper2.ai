@@ -1,0 +1,31 @@
+# Sequence: a news item about a new model is enriched; the model names the subject, the validator keeps the article's
+# own fields and sends the unknown subject to review.
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java (load),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java (propose, enrich-v5),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (save).
+# Render: cd docs/diagrams && d2 fmt sequence-0023-writing-about-a-resource.d2 && d2 sequence-0023-writing-about-a-resource.d2 sequence-0023-writing-about-a-resource.svg
+
+...@style
+
+shape: sequence_diagram
+
+enrich: EnrichResource {class: app}
+store: "CatalogEnrichmentStore\n(catalog)" {class: data}
+model: "SpringAiEnrichmentModel\n(Nemotron)" {class: ext}
+validator: EvidenceValidator {class: app}
+results: "JdbcEnrichmentResults\n(relationship, review_item)" {class: data}
+
+enrich -> store: "load(resource id)"
+store -> enrich: "EnrichmentInput: title, material,\nsource facts, type NEWS"
+enrich -> model: "propose(input)"
+model -> model: "enrich-v5: \"Type: NEWS\";\nwriting gives audience, techLevel,\nuseCase and ABOUT"
+model -> enrich: "fields: useCase coding, pricing FREEMIUM;\nABOUT \"Gemini 4 Carbon\""
+enrich -> store: "resourcesTitled([\"Gemini 4 Carbon\"])"
+store -> enrich: "none"
+enrich -> validator: "validate(input, proposal)"
+validator -> validator: "pricing: not a fact of a NEWS → REJECTED;\nuseCase: quote states it → VERIFIED;\nABOUT: quote names it, unknown → UNVERIFIED"
+validator -> enrich: "PARTIAL"
+enrich -> results: "save(run, fields, ABOUT relationship)"
+results -> results: "RELATIONSHIP_CANDIDATE review item\nfor ABOUT \"Gemini 4 Carbon\""

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration
 
 /**
  * The category matcher against the labels in `src/test/resources/eval/categories-labelled.csv` (ADR
- * 0053): `./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest`. Prints precision and recall
+ * 0013): `./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest`. Prints precision and recall
  * per category and writes them to build/eval/categories.md. Skipped while the file has no labelled
  * rows.
  */

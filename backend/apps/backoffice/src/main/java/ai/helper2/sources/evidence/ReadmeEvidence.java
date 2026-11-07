@@ -19,7 +19,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The gap round's text (ADR 0043): a GitHub repository's README and the licence GitHub states for
+ * The gap round's text (ADR 0023): a GitHub repository's README and the licence GitHub states for
  * it, or a Hugging Face model's card and the licence its card data states. Owner and name come from
  * {@link ai.helper2.scout.GapTargets} (already strict); they are passed as URI template variables,
  * so they are encoded and cannot reach another API path. Only the configured hosts are called; the

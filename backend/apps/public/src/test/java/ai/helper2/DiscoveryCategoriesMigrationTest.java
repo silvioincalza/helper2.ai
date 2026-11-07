@@ -15,7 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * V9 (ADR 0051): the records and open candidates of the old single tavily-discovery collector move
+ * V9 (ADR 0022): the records and open candidates of the old single tavily-discovery collector move
  * to the collector of their first category. The schema is migrated already, so the test puts rows
  * of the old collector back and runs the migration's script again on them.
  */

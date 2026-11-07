@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 
-/** The shell's location binds from application.yaml and H2_PAGES_TEMPLATE (ADR 0050, 0069). */
+/** The shell's location binds from application.yaml and H2_PAGES_TEMPLATE (ADR 0029, 0032). */
 class PagesPropertiesBindingTest {
 
   @Configuration(proxyBeanMethods = false)

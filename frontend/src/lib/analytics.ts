@@ -1,5 +1,5 @@
 /**
- * Google Analytics 4, only after the visitor accepts (ADR 0057). What reaches Google is the page path and a fixed
+ * Google Analytics 4, only after the visitor accepts (ADR 0030). What reaches Google is the page path and a fixed
  * page name: never the search words, the guide question or the page title (which holds the search words), never on
  * the back office. Google signals and ad personalisation are off.
  */

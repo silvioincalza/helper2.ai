@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * An admin fixes a resource's own field (ADR 0066): sets its value, or drops what the AI said.
+ * An admin fixes a resource's own field (ADR 0026): sets its value, or drops what the AI said.
  *
  * <p>A set value is written to the resource's column and the field is listed in {@code
  * curated_fields}: no source's record changes it (ResourceStore's upsert), and no enrichment run
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
  * field assertion says where the value came from. Only fields with a column of their own.
  *
  * <p>Setting a value also rejects the AI's values of the field. Dropping rejects only them, as the
- * code re-check does (ADR 0056); a value the sources state, or one an admin set, stays.
+ * code re-check does (ADR 0023); a value the sources state, or one an admin set, stays.
  */
 @Service
 public class CurateField {

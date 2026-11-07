@@ -12,7 +12,7 @@ dependencyResolutionManagement { repositories { mavenCentral() } }
 
 rootProject.name = "helper2-backend"
 
-// Shared code in libraries, two runnable apps (ADR 0068, 0069). A library never depends on an app.
+// Shared code in libraries, two runnable apps (ADR 0002, 0032). A library never depends on an app.
 include(
   ":libs:kernel",
   ":libs:platform",

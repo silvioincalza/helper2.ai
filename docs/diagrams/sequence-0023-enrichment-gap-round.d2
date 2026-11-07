@@ -1,0 +1,47 @@
+# Sequence: an enrichment of a GitHub repository whose first run is REJECTED and whose README proves its licence.
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (attempt, gapRound),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt, backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
+#   catalog/internal/JdbcEnrichmentCandidates.java, catalog/internal/JdbcEnrichmentResults.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0023-enrichment-gap-round.d2 && d2 sequence-0023-enrichment-gap-round.d2 sequence-0023-enrichment-gap-round.svg
+
+...@style
+
+shape: sequence_diagram
+
+svc: EnrichResource {class: app}
+store: CatalogEnrichmentStore {class: app}
+candidates: "EnrichmentCandidates\n(catalog)" {class: app}
+model: SpringAiEnrichmentModel {class: app}
+tf: "Token Factory\n(reasoning model)" {class: ai}
+val: EvidenceValidator {class: app}
+readme: ReadmeEvidence {class: app}
+gh: "GitHub API" {class: ext}
+results: "EnrichmentResults\n(catalog)" {class: app}
+
+svc -> store: "load(resourceId)"
+store -> candidates: "candidate(resourceId)"
+candidates -> store: "source texts with source id,\nexternal id, repository link"
+store -> store: "GapTargets.select"
+store -> svc: "records, facts, text hash,\ngap target github-readme:acme/tool"
+svc -> model: "propose(records)"
+model -> tf: "chat"
+tf -> model: "licence MIT, no citation"
+svc -> val: "validate"
+val -> svc: "REJECTED (nothing proven)"
+svc -> readme: "fetch(acme/tool)"
+readme -> gh: "GET /repos/acme/tool/readme (raw)"
+gh -> readme: "README"
+readme -> gh: "GET /repos/acme/tool"
+gh -> readme: "license.spdx_id = MIT"
+readme -> svc: "README text, link, licence MIT"
+svc -> svc: "ReadmeText.clean + window (4000)"
+svc -> svc: "gap budget tryAcquire()"
+svc -> model: "propose(records + README)"
+model -> tf: "chat"
+tf -> model: "licence MIT, quote from the README"
+svc -> val: "validate (licence fact MIT)"
+val -> svc: "VALIDATED: 1 accepted > 0"
+svc -> store: "save(fingerprint of records,\ngap run, github-readme:acme/tool)"
+store -> results: "record(run, checked)"
+results -> results: "evidence row: README URL,\nread time, anchored to the record"

@@ -6,7 +6,7 @@ const ROWS = [0, 1, 2, 3];
 /**
  * The results list before it can show: while the results view loads, and while the first search runs. Rows of the
  * list's shape under a heading line, a screen tall, so nothing below moves when the rows come (CLS). The lines pulse
- * three times and stop (ADR 0042, decision 12). One status line says what is happening.
+ * three times and stop (ADR 0028 (part was 0042), decision 12). One status line says what is happening.
  */
 export function ResultsSkeleton() {
   const { t } = useTranslation();

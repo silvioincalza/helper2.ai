@@ -1,6 +1,6 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0042](../../adr/frontend/0042-redesign-design-system-v4.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
+The design system for every part of Helper2.ai: the search box, results, the AI guide, New this week and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Version 4, from the November 2026 redesign ([ADR 0028](../../adr/frontend/0028-design-system.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
 `frontend/src/styles/tokens.css` has the version 4 colours, sizes and fonts under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`). Every page runs the version 4 layout; version 3 is gone. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`pages/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
 
@@ -163,7 +163,7 @@ The redesign boards in [../redesign](../redesign) and the design canvas "helper2
 
 ### In the frontend
 
-The shared parts are React components in `frontend/src/components/ui/` (ADR 0040). Where the code name differs:
+The shared parts are React components in `frontend/src/components/ui/` (ADR 0028). Where the code name differs:
 
 | Design system | Code today |
 |---|---|

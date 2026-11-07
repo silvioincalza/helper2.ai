@@ -6,7 +6,7 @@ import pkg from './package.json' with { type: 'json' };
 
 const target = 'http://localhost:8080';
 
-/** The Latin files of the two variable fonts (ADR 0042): the only font files an English page needs. */
+/** The Latin files of the two variable fonts (ADR 0028): the only font files an English page needs. */
 const PRELOADED_FONTS = /^assets\/geist(-mono)?-latin-wght-normal-[\w-]+\.woff2$/;
 
 /**
@@ -46,7 +46,7 @@ function preloadFonts(): Plugin {
 
 export default defineConfig({
   plugins: [react(), preloadFonts()],
-  // One version for the whole release (ADR 0029): package.json is the frontend's copy of it.
+  // One version for the whole release (ADR 0034): package.json is the frontend's copy of it.
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: {

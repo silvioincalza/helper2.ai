@@ -5,7 +5,7 @@ import java.time.Clock
 import org.slf4j.LoggerFactory
 
 /**
- * The guide module's retention rule (ADR 0034): indexed questions are deleted once expired. The
+ * The guide module's retention rule (ADR 0035): indexed questions are deleted once expired. The
  * answers themselves are in the shared cache, which has its own purge.
  */
 class PurgeExpiredData(private val retention: SimilarQuestionRetention, private val clock: Clock) {

@@ -76,7 +76,7 @@ async function openForm() {
   return { user, panel };
 }
 
-describe('Feature: an admin points a relationship candidate at the right resource (ADR 0064)', () => {
+describe('Feature: an admin points a relationship candidate at the right resource (ADR 0026)', () => {
   it('Scenario: the target found in the catalog replaces the name the model gave', async () => {
     const api = oneItem(candidate());
     const { user, panel } = await openForm();

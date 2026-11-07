@@ -544,7 +544,7 @@ describe('search results', () => {
     await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
   });
 
-  it('labels and marks the AI translation of the query; the "not AI" note covers only the word-list terms (ADR 0038)', async () => {
+  it('labels and marks the AI translation of the query; the "not AI" note covers only the word-list terms (ADR 0018)', async () => {
     mockApi({
       'GET /search': () =>
         makeSearch({

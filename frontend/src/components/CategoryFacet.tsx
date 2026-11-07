@@ -16,7 +16,7 @@ interface Props {
 }
 
 /**
- * The Category facet of the Filters panel (ADR 0053): one group per family, in the configured order, each category with
+ * The Category facet of the Filters panel (ADR 0013): one group per family, in the configured order, each category with
  * the number of results in it, then "No category yet". Only categories with results, or already selected, are listed, so
  * no choice leads to an empty page. Categories are assigned by code from public source data, not by a model, so they
  * carry no AI label.

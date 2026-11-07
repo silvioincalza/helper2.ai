@@ -24,7 +24,7 @@ data class AnalyzedQuery(
   val synonyms: List<String> = emptyList(),
   /**
    * The model's English translation of a non-English query, searched first and also the first of
-   * [expandedTerms]; null when none came back. AI-written (ADR 0011, 0038).
+   * [expandedTerms]; null when none came back. AI-written (ADR 0010, 0018).
    */
   val translation: String? = null,
 ) {

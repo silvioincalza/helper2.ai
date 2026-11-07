@@ -191,7 +191,7 @@ class HttpEdgeIT {
             send(HttpRequest.newBuilder(uri("/api/v1/recent"))),
             send(HttpRequest.newBuilder(uri("/api/v1/me/bookmarks"))),
             send(HttpRequest.newBuilder(uri("/api/v1/admin/review-items"))));
-    // The back office is another app (ADR 0069): 404, still without a session.
+    // The back office is another app (ADR 0032): 404, still without a session.
     assertThat(responses)
         .extracting(HttpResponse::statusCode)
         .containsExactly(200, 200, 200, 401, 404);
@@ -256,7 +256,7 @@ class HttpEdgeIT {
         .containsOnly(429);
   }
 
-  // ── The back office is another app (ADR 0069) ──
+  // ── The back office is another app (ADR 0032) ──
 
   final HttpClient noRedirects =
       HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();

@@ -1,0 +1,47 @@
+# Flowchart: where a piece of backend code goes, and what the build checks (ADR 0002).
+# Source of truth: backend/settings.gradle.kts, backend/build.gradle.kts (checkNoRootSources),
+#   backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts, helper2.spring-app.gradle.kts,
+#   backend/libs/*/build.gradle.kts, backend/apps/public/build.gradle.kts, backend/apps/backoffice/build.gradle.kts,
+#   backend/apps/public/src/test/java/ai/helper2/architecture/ModularityTest.java.
+# Render: cd docs/diagrams && d2 fmt flow-0002-backend-libraries-and-apps.d2 && d2 flow-0002-backend-libraries-and-apps.d2 flow-0002-backend-libraries-and-apps.svg
+
+...@style
+
+direction: down
+
+code: "New or moved code" {class: person}
+
+place: Where it goes {
+  class: group
+  direction: down
+  driving: "A controller, a schedule,\nthe generated contract,\nthe wiring?" {class: decision}
+  shared: "Needed by more\nthan one app?" {class: decision}
+  app: "apps/<app>\n(boot jar)" {class: app}
+  lib: "libs/<context>\ndomain, use cases,\ndriven adapters" {class: data}
+  driving -> app: yes
+  driving -> shared: no
+  shared -> lib: yes {class: hot}
+  shared -> app: no
+}
+
+checks: Build checks {
+  class: group
+  direction: down
+  root: "File in backend/src/?" {class: decision}
+  e_root: "checkNoRootSources:\nbuild stops" {class: fail}
+  dir: "Library depends\non an app, or a cycle?" {class: decision}
+  e_dir: "Gradle refuses\nthe dependency" {class: fail}
+  mod: "ModularityTest:\nmodules use only\npublic APIs?" {class: decision}
+  e_mod: "Test fails" {class: fail}
+  ok: "Green build" {class: end}
+  root -> e_root: yes
+  root -> dir: no
+  dir -> e_dir: yes
+  dir -> mod: no
+  mod -> e_mod: no
+  mod -> ok: yes {class: hot}
+}
+
+code -> place.driving
+place.app -> checks.root
+place.lib -> checks.root

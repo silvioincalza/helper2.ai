@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * The catalog's retention rules (ADR 0034), each with its own period (helper2.retention.*). Review
+ * The catalog's retention rules (ADR 0035), each with its own period (helper2.retention.*). Review
  * items and issue reports go first, so a resource they alone kept is deleted in the same purge.
  */
 @Service("catalogPurgeExpiredData")

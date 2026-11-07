@@ -27,7 +27,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * An administrator asks a model to draft examples (ADR 0049 §6). The model gets public facts about
+ * An administrator asks a model to draft examples (ADR 0015 §6). The model gets public facts about
  * well-known catalog resources that no example expects and no waiting draft is about; each draft
  * that passes {@link DraftRules} waits in the review queue as EXAMPLE_CANDIDATE. Nothing reaches
  * the home page before a person accepts it and the quality check passes it.

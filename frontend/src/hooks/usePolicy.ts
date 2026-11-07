@@ -6,7 +6,7 @@ import type { Policy, WebSearchLimits } from '@/api/types';
 import { formatDuration } from '@/lib/duration';
 
 /**
- * The numbers the Mission, Privacy and Terms pages state, from GET /policy (ADR 0042 decision 13, ADR 0052). Read
+ * The numbers the Mission, Privacy and Terms pages state, from GET /policy (ADR 0028 (part was 0042) decision 13, ADR 0029). Read
  * once per session: the values change only when the server restarts. Only the text pages import this module, so the
  * read stays out of the first download.
  */

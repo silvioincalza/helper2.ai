@@ -47,7 +47,7 @@ constructor(
   val window: PlannedWindow? = null,
   /**
    * The planner's question back; code keeps it only for a vague question or an ambiguous subject
-   * (ADR 0032 §3).
+   * (ADR 0016 (part was 0032) §3).
    */
   val clarify: Clarification? = null,
 )
@@ -212,7 +212,7 @@ interface GuideModel {
   /**
    * [choose] with thinking on when [think]: a broad "what is new" question has no subject to match,
    * so picking needs judgment (with thinking off, Nemotron 3 Super returned no pick at all, 28 Oct
-   * 2026; ADR 0032).
+   * 2026; ADR 0016).
    */
   fun choose(
     request: String,
@@ -326,7 +326,7 @@ constructor(
 data class GuidePromptOut(val text: String, val basedOn: List<MergedResult>)
 
 /**
- * Which check removed a suggestion, in the research trail (ADR 0044). A code, never the model's
+ * Which check removed a suggestion, in the research trail (ADR 0018). A code, never the model's
  * words.
  */
 enum class TrailCheck {
@@ -342,7 +342,7 @@ enum class TrailCheck {
 data class RemovedSuggestion(val title: String, val check: TrailCheck)
 
 /**
- * The research trail (ADR 0044): the AI-written search queries actually run, and the suggestions
+ * The research trail (ADR 0018): the AI-written search queries actually run, and the suggestions
  * the checks removed. It never holds a removed AI reason, raw model output or the prompt. Built
  * through [of], which caps it.
  */
@@ -351,7 +351,7 @@ data class ResearchTrail(
   val removed: List<RemovedSuggestion> = emptyList(),
 ) {
   /**
-   * Without the queries: for an answer reused from another asker's question (ADR 0041), whose words
+   * Without the queries: for an answer reused from another asker's question (ADR 0017), whose words
    * they came from.
    */
   fun withoutQueries() = copy(queries = emptyList())
@@ -422,10 +422,10 @@ data class GuideAnswer(
   /**
    * The planner's reading is in this answer (search query, requirements, question back), even when
    * the answering call then failed and [modelUsed] is false. Drives the AI-content marker (ADR
-   * 0038), not the cache.
+   * 0018), not the cache.
    */
   val planned: Boolean = false,
-  /** The searches run and the suggestions removed (ADR 0044). */
+  /** The searches run and the suggestions removed (ADR 0018). */
   val trail: ResearchTrail = ResearchTrail.EMPTY,
 )
 
@@ -499,7 +499,7 @@ class GuideValidator(
     PROMPT_INVALID;
 
     /**
-     * The check this rejection means in the research trail (ADR 0044); null when no check failed
+     * The check this rejection means in the research trail (ADR 0018); null when no check failed
      * (an unknown candidate, a duplicate, no room, the prompt).
      */
     val trailCheck: TrailCheck?

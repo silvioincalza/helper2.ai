@@ -72,8 +72,8 @@ class SearchConfiguration {
   }
 
   /**
-   * The daily web searches (ADR 0037); an empty global cap means none. The global cap is a runtime
-   * setting (ADR 0060): the H2_ value is its default.
+   * The daily web searches (ADR 0014); an empty global cap means none. The global cap is a runtime
+   * setting (ADR 0007): the H2_ value is its default.
    */
   @Bean
   WebSearchQuota webSearchQuota(
@@ -92,7 +92,7 @@ class SearchConfiguration {
             RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS, quota.globalDailyCredits()));
   }
 
-  /** Search's numbers for GET /api/v1/policy (ADR 0052). */
+  /** Search's numbers for GET /api/v1/policy (ADR 0029). */
   @Bean
   SearchPolicy searchPolicy(SearchProperties search, SearchRetentionProperties retention) {
     SearchProperties.Quota quota = search.web().quota();

@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Identity's retention periods (ADR 0034), from the shared {@code helper2.retention} prefix. Each
+ * Identity's retention periods (ADR 0035), from the shared {@code helper2.retention} prefix. Each
  * module binds only its own periods there.
  */
 @Validated

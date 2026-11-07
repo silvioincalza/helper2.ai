@@ -1,8 +1,8 @@
 package ai.helper2.platform;
 
 /**
- * pgvector text form of an embedding, for {@code CAST(:v AS vector)}: catalog vectors (ADR 0012)
- * and guide questions (ADR 0041).
+ * pgvector text form of an embedding, for {@code CAST(:v AS vector)}: catalog vectors (ADR 0011)
+ * and guide questions (ADR 0017).
  */
 public final class PgVectors {
 

@@ -61,7 +61,7 @@ public class AiDeadlinesCollector implements Collector {
 
   static final String ID = CollectorDescriptors.AI_DEADLINES;
 
-  /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector\'s calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   static final String CONFERENCES_PATH =

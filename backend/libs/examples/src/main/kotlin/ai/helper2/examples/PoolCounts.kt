@@ -3,7 +3,7 @@ package ai.helper2.examples
 import ai.helper2.shared.AudiencePath
 
 /**
- * How many examples the home page may show per path, and how many it hides and why (ADR 0049). An
+ * How many examples the home page may show per path, and how many it hides and why (ADR 0015). An
  * example is shown when it is ACTIVE and its check is PASS. A paused example counts as paused,
  * whatever its check; an active one that is not PASS counts under its check (WEAK, FAIL, PENDING).
  */

@@ -11,7 +11,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** ADR 0065: an admin fixes a resource candidate's title, type or tags before accepting it. */
+/** ADR 0026: an admin fixes a resource candidate's title, type or tags before accepting it. */
 class EditCandidateTest {
 
   private val id = UUID.fromString("00000000-0000-0000-0000-0000000000c1")

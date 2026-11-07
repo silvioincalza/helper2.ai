@@ -4,7 +4,7 @@ import './ui.css';
 /**
  * The proof for a result: the source's own [text] with the sentence the guide checked ([quote]) highlighted, and the
  * [source] that published it. Shown alone when the text does not hold the quote (it came from the title).
- * The source's words, not AI-written: never marked as AI content (ADR 0038).
+ * The source's words, not AI-written: never marked as AI content (ADR 0018).
  */
 export function ProofQuote({
   text,

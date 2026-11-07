@@ -23,7 +23,7 @@ type Result =
   { ok: true; action: Action; title: string } | { ok: false; detail?: string | undefined };
 
 /**
- * The enrichment queue (ADR 0045, UJ-9): the backlog in the order the Scout takes it, or the skipped resources, or
+ * The enrichment queue (ADR 0026, UJ-9): the backlog in the order the Scout takes it, or the skipped resources, or
  * the ones out of retries. Each row can be moved to the top, skipped or requeued; an action changes the order only,
  * never the daily cap. The view and the server's cursor live in the address, so Back returns to the previous page.
  * One action at a time; after it, focus goes to the result, since the row may have left the view.

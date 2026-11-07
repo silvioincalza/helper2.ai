@@ -16,7 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * A Scout run started from the admin page logs with the trace id of the request that started it
- * (ADR 0026).
+ * (ADR 0031).
  */
 class ScoutRunThreadsTest {
 

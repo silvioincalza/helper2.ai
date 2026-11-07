@@ -29,7 +29,7 @@ class SecurityIT extends ApiTestBase {
         .andExpect(status().isUnauthorized());
   }
 
-  /** The back office is another app (ADR 0069): its paths are unknown here. */
+  /** The back office is another app (ADR 0032): its paths are unknown here. */
   @Test
   void theBackOfficeIsNotHere() throws Exception {
     mvc.perform(get("/api/v1/admin/review-items")).andExpect(status().isNotFound());

@@ -10,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * When the quality check of the home examples runs (ADR 0049), bound from {@code helper2.examples}
+ * When the quality check of the home examples runs (ADR 0015), bound from {@code helper2.examples}
  * (defaults and H2_ names in application.yaml). The check schedule reads these keys as
  * placeholders.
  *

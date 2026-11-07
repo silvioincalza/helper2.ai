@@ -71,7 +71,7 @@ const CONFIG: EffectiveConfig = {
   ],
 };
 
-/** The discovery host lists of the same page (ADR 0063): empty, so they add nothing to these scenarios. */
+/** The discovery host lists of the same page (ADR 0022): empty, so they add nothing to these scenarios. */
 const NO_HOSTS = { 'GET /admin/discovery-hosts': () => ({ max: 500, hosts: [] }) };
 
 const GUIDE: RuntimeSettingState = {

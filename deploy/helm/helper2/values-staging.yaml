@@ -11,7 +11,7 @@ redis:
 networkPolicy:
   # The platform's ingress-nginx serves the Ingresses (incalza-me-infra terraform/k8s/helper2.tf): public host ->
   # Service helper2-web for /assets/, /theme.js and /favicon.svg, Service helper2 for the rest; in-network admin
-  # host -> Service helper2-admin, the back office (ADR 0035, 0069).
+  # host -> Service helper2-admin, the back office (ADR 0024, 0032).
   ingressController:
     namespace: ingress-nginx
     podLabels: { app.kubernetes.io/name: ingress-nginx }
@@ -20,7 +20,7 @@ networkPolicy:
     otlp:
       namespace: observability
 app:
-  # Sign-in (ADR 0023/0035): GitHub App helper2-staging. Needs H2_GITHUB_OAUTH_CLIENT_ID,
+  # Sign-in (ADR 0024): GitHub App helper2-staging. Needs H2_GITHUB_OAUTH_CLIENT_ID,
   # H2_GITHUB_OAUTH_CLIENT_SECRET and H2_ADMINS in app_env, or the app does not start.
   springProfiles: llm-nebius,oauth-github
   tracing:
@@ -33,7 +33,7 @@ app:
   replicas: 1
   # No per-visitor limits on staging, so a test is never cut off by its own earlier tests. Staging is public, so
   # the whole site keeps a cap on live web searches (the Tavily plan may be shared with prod) and on guide model
-  # calls: 300 a day, the nightly guide evaluation (at most 150 with retries, ADR 0030) and room for checks by hand.
+  # calls: 300 a day, the nightly guide evaluation (at most 150 with retries, ADR 0036) and room for checks by hand.
   dailyLimits:
     webSearches:
       search: 1000
@@ -41,7 +41,7 @@ app:
     guideQuestions: 1000
     webSearchCredits: "150"
     guideModelCalls: 300
-  # The nightly guide evaluation measures fresh answers: a guide answer expires after one second (ADR 0030).
+  # The nightly guide evaluation measures fresh answers: a guide answer expires after one second (ADR 0036).
   guideCacheTtl: PT1S
 web:
   image:
@@ -51,7 +51,7 @@ web:
 backoffice:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
-  # The sign-in callback is pinned to the admin host (ADR 0035, 0069).
+  # The sign-in callback is pinned to the admin host (ADR 0024, 0032).
   adminBaseUrl: https://helper2-admin.incalza.me
   # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.
   # Search and the AI guide still work; staging's catalog stays as last indexed.

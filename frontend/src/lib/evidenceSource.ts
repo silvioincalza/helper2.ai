@@ -1,5 +1,5 @@
 /**
- * What a piece of evidence quotes, when it is a README or a model card read in the Scout's gap round (ADR 0043):
+ * What a piece of evidence quotes, when it is a README or a model card read in the Scout's gap round (ADR 0023):
  * the repository or model it belongs to. Quoting needs the source and its owner named, not only a link.
  */
 type EvidenceSource = { kind: 'readme' | 'modelCard'; name: string };

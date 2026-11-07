@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * GET /api/v1/me on the back office: who is signed in, with which roles, and the sign-in providers.
  * The admin web app reads it when it starts, and this call sets the CSRF cookie. No visitor limits
- * and no monetisation here: those are the public site's (ADR 0057, 0069).
+ * and no monetisation here: those are the public site's (ADR 0030, 0032).
  */
 @RestController
 @RequestMapping("/api/v1")

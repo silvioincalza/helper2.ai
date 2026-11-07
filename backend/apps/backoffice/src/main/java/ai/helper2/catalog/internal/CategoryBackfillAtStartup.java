@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Once the application is ready, assigns the categories of the whole catalog again when the
- * category words or rules changed (ADR 0053), on a background thread: startup does not wait for it,
+ * category words or rules changed (ADR 0013), on a background thread: startup does not wait for it,
  * and a failure is logged, not fatal.
  */
 @Component

@@ -61,11 +61,11 @@ import tools.jackson.databind.node.ObjectNode;
  * idempotent, so nothing is duplicated. Needs a GitHub token (GraphQL rejects anonymous calls):
  * without one the collector is disabled.
  *
- * <p>Search inside the lists (ADR 0055): every run also returns each list it read as a resource
+ * <p>Search inside the lists (ADR 0010): every run also returns each list it read as a resource
  * (ARTICLE, tag {@value #LIST_TAG}) and the list's search text (entry lines and headings, cleaned
  * and capped), which the Scout hands to the catalog's list index.
  *
- * <p>Deep search (ADR 0058): a run also follows the awesome lists the seed lists link to ({@link
+ * <p>Deep search (ADR 0022): a run also follows the awesome lists the seed lists link to ({@link
  * AwesomeCrawl}, up to {@link Deep#maxDepth} steps and {@link Deep#maxNestedLists} lists, within a
  * time and size budget); they become list resources like the seeds. The first link of an entry that
  * points outside GitHub at a product's own site ({@link ProductLinks}) becomes a candidate for the
@@ -76,7 +76,7 @@ public class GitHubAwesomeCollector implements Collector {
 
   static final String ID = CollectorDescriptors.GITHUB_AWESOME;
 
-  /** Circuit breaker and retry of this collector\'s calls (ADR 0033). */
+  /** Circuit breaker and retry of this collector\'s calls (ADR 0006). */
   static final String POLICY = "collector-" + ID;
 
   private static final Logger log = LoggerFactory.getLogger(GitHubAwesomeCollector.class);
@@ -92,7 +92,7 @@ public class GitHubAwesomeCollector implements Collector {
       int classifyBatch) {}
 
   /**
-   * Deep search (ADR 0058): how far nested lists are followed, the time and README bytes one run
+   * Deep search (ADR 0022): how far nested lists are followed, the time and README bytes one run
    * may spend, and the links to product sites proposed for review.
    *
    * @param excludeDomains domains whose pages are never a product's own site (directories, review,
@@ -169,7 +169,7 @@ public class GitHubAwesomeCollector implements Collector {
     if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
       return CollectedBatch.notDue();
     }
-    // Discovery's host lists as they are now (ADR 0063); a failed read fails the run first.
+    // Discovery's host lists as they are now (ADR 0022); a failed read fails the run first.
     DiscoveryPages pages = new DiscoveryPages(hosts.lists());
     Pass pass = read(discoverListRepos());
     List<AwesomeListParser.Entry> all = pass.entries();
@@ -275,8 +275,8 @@ public class GitHubAwesomeCollector implements Collector {
 
   /**
    * What one pass read: the entries to collect (unique across lists, at most maxEntriesPerPass, the
-   * lists read left out), the lists whose README was read, their search text (ADR 0055), and every
-   * list read with its depth (ADR 0058).
+   * lists read left out), the lists whose README was read, their search text (ADR 0010), and every
+   * list read with its depth (ADR 0022).
    */
   record Pass(
       List<AwesomeListParser.Entry> entries,
@@ -358,7 +358,7 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   /**
-   * The links of every list read that point at a product's own site (ADR 0058), each site once, in
+   * The links of every list read that point at a product's own site (ADR 0022), each site once, in
    * the order the lists were read, at most {@link Deep#maxLinksPerPass}. Every skip is counted.
    */
   private List<Candidate> candidates(List<AwesomeCrawl.Read> crawl, DiscoveryPages pages) {
@@ -383,7 +383,7 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   /**
-   * A product site from a list: never indexed, a person decides (ADR 0058). Its title is the link's
+   * A product site from a list: never indexed, a person decides (ADR 0022). Its title is the link's
    * words (the product's name), no snippet (the list's text is not kept). Its categories come from
    * the section headings and the name, at most {@link Candidate#MAX_TAGS}; foundBy keeps the list
    * and the section.
@@ -433,7 +433,7 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   /**
-   * The lists themselves, as resources a search can find (ADR 0055): an awesome list is reading
+   * The lists themselves, as resources a search can find (ADR 0010): an awesome list is reading
    * about AI tools, so ARTICLE, tagged {@link #LIST_TAG}. Facts from the search answer only.
    */
   private static List<SourceHit> listHits(List<ListRepo> lists, Instant now) {
@@ -498,8 +498,8 @@ public class GitHubAwesomeCollector implements Collector {
   static final int README_MAX_BYTES = 5 * 1024 * 1024;
 
   /**
-   * Total time for one README (ADR 0006 §2): 5 MB at about 90 kB/s; other calls keep the
-   * collector's deadline.
+   * Total time for one README (ADR 0006 (part was 0006) §2): 5 MB at about 90 kB/s; other calls
+   * keep the collector's deadline.
    */
   static final Duration README_DEADLINE = Duration.ofSeconds(60);
 

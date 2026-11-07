@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
  * The shared caches of model answers, one {@link SharedCache} per name, all in the PostgreSQL table
- * {@code ai_cache} (ADR 0005). Each statement runs under the {@code db-cache} policy (ADR 0033) and
+ * {@code ai_cache} (ADR 0005). Each statement runs under the {@code db-cache} policy (ADR 0006) and
  * stops after {@link #STATEMENT_TIMEOUT}, so a slow or unavailable database costs a lookup at most
  * that long before it is a miss.
  */

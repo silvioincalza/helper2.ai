@@ -44,13 +44,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The review queue's evidence view, bulk decisions, relationship targets and candidate edits (ADMIN
- * only, admin port; ADR 0045, 0064, 0065).
+ * only, admin port; ADR 0026).
  */
 @RestController
 @RequestMapping("/api/v1")
 class ReviewController implements ReviewApi {
 
-  /** The page that explains how AI text is marked (ADR 0038). */
+  /** The page that explains how AI text is marked (ADR 0018). */
   static final String AI_MARKING_POLICY = "/mission";
 
   private final GetReviewEvidence evidence;
@@ -75,7 +75,7 @@ class ReviewController implements ReviewApi {
     this.curateField = curateField;
   }
 
-  /** ADR 0066: a resource's own value of a field, over every source and every run. */
+  /** ADR 0026: a resource's own value of a field, over every source and every run. */
   @Override
   public ResponseEntity<Void> setResourceField(
       UUID id, ResourceFieldDto field, ResourceFieldValueDto body) {
@@ -83,14 +83,14 @@ class ReviewController implements ReviewApi {
     return ResponseEntity.noContent().build();
   }
 
-  /** ADR 0066: the AI's values of a field of a resource, dropped. */
+  /** ADR 0026: the AI's values of a field of a resource, dropped. */
   @Override
   public ResponseEntity<Void> dropResourceField(UUID id, ResourceFieldDto field) {
     curateField.drop(id, field.getValue(), adminId());
     return ResponseEntity.noContent().build();
   }
 
-  /** ADR 0065: an open resource candidate's title, type or tags, before it is accepted. */
+  /** ADR 0026: an open resource candidate's title, type or tags, before it is accepted. */
   @Override
   public ResponseEntity<ReviewItemDto> editCandidate(UUID id, CandidateEditDto body) {
     CandidateEdit change =
@@ -117,7 +117,7 @@ class ReviewController implements ReviewApi {
             queue.find(id).orElseThrow(() -> new NotFoundException("Review item not found."))));
   }
 
-  /** ADR 0064: exactly one of a catalog resource, a resource to add, or a new name. */
+  /** ADR 0026: exactly one of a catalog resource, a resource to add, or a new name. */
   @Override
   public ResponseEntity<ReviewEvidenceDto> changeRelationshipTarget(
       UUID id, RelationshipTargetChangeDto body) {
@@ -183,7 +183,7 @@ class ReviewController implements ReviewApi {
   }
 
   /**
-   * EU AI Act Art. 50(2) (ADR 0038): the field values, the relationship and the validation errors
+   * EU AI Act Art. 50(2) (ADR 0018): the field values, the relationship and the validation errors
    * (they quote the refused output) are model output, so the response says which paths a model
    * wrote, and with which model. Null when none.
    */
@@ -200,7 +200,7 @@ class ReviewController implements ReviewApi {
     }
     if (e.relationship() != null) {
       paths.add("relationship.kind");
-      // A target a person chose (ADR 0064) is theirs, not the model's.
+      // A target a person chose (ADR 0026) is theirs, not the model's.
       if (!e.relationship().targetCurated()) {
         paths.add("relationship.target");
       }

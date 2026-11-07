@@ -4,7 +4,7 @@ import { Icon } from '@/components/Icon';
 import './ui.css';
 
 /**
- * A designed state (ADR 0040, 8): a heading that says what happened, [children] that say why, and the [next] step.
+ * A designed state (ADR 0028 (part was 0040), 8): a heading that says what happened, [children] that say why, and the [next] step.
  * An empty home board has no next step: the box above it is one. An error is an alert, so a screen reader hears it
  * when it appears. A notice (nothing found, no page here) is read with the page, or announced as a status when it
  * comes after the page loaded ([live]). The heading takes focus from [headingRef] (Try again, see useRetry).

@@ -1,9 +1,9 @@
 package ai.helper2.scout
 
 /**
- * Where a resource stands in the enrichment queue, and which admin action applies to it (ADR 0045
- * §7). An action changes the order only: the daily enrichment cap still decides how many resources
- * get a model call.
+ * Where a resource stands in the enrichment queue, and which admin action applies to it (ADR 0026
+ * (part was 0045) §7). An action changes the order only: the daily enrichment cap still decides how
+ * many resources get a model call.
  *
  * [due]: the backlog rule takes it before any admin decision (never run, model unavailable, or
  * FAILED with retries left). [outOfRetries]: its last run FAILED and its FAILED runs reached the

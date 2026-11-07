@@ -11,7 +11,7 @@ import org.springframework.data.redis.core.script.RedisScript;
  * Redis adapter for the daily budgets: one counter per budget name and UTC day, kept two days so
  * the key outlives its day in every time zone. The check against the limit, INCR and PEXPIRE run in
  * one script, so a refused call adds nothing and a key is never left without an expiry (as
- * RedisRateLimiter). The script runs under the {@code redis} policy (ADR 0033): a Redis error, or
+ * RedisRateLimiter). The script runs under the {@code redis} policy (ADR 0006): a Redis error, or
  * the open circuit refusing the call, answers null and DailyBudget counts in memory, so an outage
  * does not add a timeout to every call.
  */

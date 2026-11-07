@@ -1,0 +1,63 @@
+# Flowchart: the evidence ladder inside EnrichResource.attempt, after the first run is validated.
+# Shows when it climbs, the README step, the page step with its URL checks and budgets, and which run is saved.
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (climb, readme, pageMaterials),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/OfficialPages.kt (FieldTargets, PageTargets, PageScope, OfficialLinks, OfficialPages),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt, backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt (UntrustedPageText),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/PageReaderCreditBudget.java, SharedCachePageLedger.java, RedisPageTextCache.java,
+#   ScoutConfiguration.java.
+# Render: cd docs/diagrams && d2 fmt flow-0023-evidence-ladder.d2 && d2 flow-0023-evidence-ladder.d2 flow-0023-evidence-ladder.svg
+
+...@style
+
+direction: down
+
+first: "Run 1: source records only\n(model call 1)" {class: ai}
+needs: "A target fact of the type missing\n(FieldTargets), or PARTIAL / REJECTED?" {class: decision}
+repo: "A record names its own repository\nor model (GapTargets)?" {class: decision}
+readme: "Read README or model card\n(ADR 0023), clean, window 4000" {class: app}
+run2: "Run 2: records + README\n(model call 2, gap budget)" {class: ai}
+still: "Still a target fact missing,\nand a product page record\n(PageTargets: discovery-<category>, curated,\ngithub-awesome off github.com)?" {class: decision}
+scope: "Page allowed? https, a name not an IP,\nno user info, port 443;\nscope = registrable domain (PSL),\nexact host on shared hosts,\npath prefix on a vendor's page" {class: decision}
+seen: "Read by a saved run\nin the last 30 days?\n(URL + text hash, no text)" {class: decision}
+cached: "Cleaned text in Redis?\n(at most 24 h, retry only)" {class: decision}
+credit: "Extract credit left?\n(own cap 20 a day,\nthen global Tavily cap)" {class: decision}
+home: "Tavily Extract: the accepted page\n(basic, markdown, no images)" {class: app}
+links: "Code picks up to 3 links on the site:\npricing · plans · download · features\ndocs · integrations · about" {class: app}
+more: "Tavily Extract: those pages\n(1 more credit)" {class: app}
+recheck: "Every returned URL in scope again?\n(redirects; failed_results = no text)" {class: decision}
+clean: "UntrustedPageText: 64 KB cap,\nno comments, tags, hidden elements,\nhidden characters, AI-addressed lines;\n[email], [phone]; window 6000" {class: app}
+run3: "Run 3: records + README + pages\n(model call 3, gap budget)" {class: ai}
+validate: "EvidenceValidator: facts need a quote that states them;\naudience, tech level = AI_ESTIMATED;\nonly-own-page facts = SELF_DECLARED;\nsource licence wins; ≤ 3 self-declared relationships, unverified;\nsentences keep to their excerpts" {class: app}
+better: "Keeps more accepted\nitems than the best so far?" {class: decision}
+save: "Save the best run once,\nunder the fingerprint of the records\n(UNCHANGED next time)" {class: end}
+mark: "Page call ran: put the pages\nin the 30-day ledger\n(after the save only)" {class: data}
+
+first -> validate
+validate -> needs
+needs -> save: no
+needs -> repo: yes {class: hot}
+repo -> still: no
+repo -> readme: yes {class: hot}
+readme -> run2: text {class: ai-call}
+readme -> still: "no text, failed"
+run2 -> better
+better -> still: "kept or not"
+still -> save: no
+still -> scope: yes {class: hot}
+scope -> save: no
+scope -> seen: yes
+seen -> save: yes
+seen -> cached: no
+cached -> run3: "yes: no credit" {class: ai-call}
+cached -> credit: no
+credit -> save: no
+credit -> home: yes {class: hot}
+home -> links
+links -> more: "links found\nand a credit left"
+links -> recheck: none
+more -> recheck
+recheck -> clean: "allowed pages"
+clean -> run3: "kept 24 h in Redis" {class: ai-call}
+run3 -> better
+better -> save
+save -> mark: "model call 3 answered"

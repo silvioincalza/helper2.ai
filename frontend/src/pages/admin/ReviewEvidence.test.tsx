@@ -34,7 +34,7 @@ function threeItems(extra: Parameters<typeof mockApi>[0] = {}) {
   });
 }
 
-describe('Feature: the evidence next to the selected item (ADR 0045)', () => {
+describe('Feature: the evidence next to the selected item (ADR 0026)', () => {
   it('Scenario: the first item is selected and shows its run, the refused values and the conflict first', async () => {
     threeItems();
     renderAdmin('/admin/review');

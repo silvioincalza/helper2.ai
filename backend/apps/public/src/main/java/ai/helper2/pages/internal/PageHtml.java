@@ -16,11 +16,11 @@ import org.springframework.web.util.HtmlUtils;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Writes a {@link PageHead} as HTML into the shell (ADR 0050 §3-4). Every text comes from a third
- * party, so the escaping is the security rule: HTML text and attributes through one escaper,
- * JSON-LD with {@code <}, {@code >}, {@code &} and the two line separators as \\u escapes, so a
- * description cannot end the script. Every written tag carries data-h2-head, so the app can drop
- * them later.
+ * Writes a {@link PageHead} as HTML into the shell (ADR 0029 (part was 0050) §3-4). Every text
+ * comes from a third party, so the escaping is the security rule: HTML text and attributes through
+ * one escaper, JSON-LD with {@code <}, {@code >}, {@code &} and the two line separators as \\u
+ * escapes, so a description cannot end the script. Every written tag carries data-h2-head, so the
+ * app can drop them later.
  */
 @Component
 public class PageHtml {
@@ -49,7 +49,7 @@ public class PageHtml {
 
   /**
    * The filled shell. The shell's scripts and the JSON-LD scripts written here carry [nonce], the
-   * request's CSP nonce (ADR 0059): under the AdSense policy a script without it does not run. Text
+   * request's CSP nonce (ADR 0030): under the AdSense policy a script without it does not run. Text
    * from sources never gets it.
    */
   public String render(PageHead head, String nonce) {
@@ -85,7 +85,7 @@ public class PageHtml {
       }
       meta(h, "name", "twitter:card", "summary");
     }
-    // Google's site check for AdSense (ADR 0059). Without data-h2-head: it is the same on every
+    // Google's site check for AdSense (ADR 0030). Without data-h2-head: it is the same on every
     // page, so the app keeps it.
     monetisation
         .adsenseClient()
@@ -163,7 +163,7 @@ public class PageHtml {
   }
 
   /**
-   * A link to another site: nofollow ugc, because some sources (web search, ADR 0051) are not
+   * A link to another site: nofollow ugc, because some sources (web search, ADR 0022) are not
    * reviewed by a person, and a link from here must not pass them ranking.
    */
   private static String outboundLink(String href, String text) {

@@ -15,16 +15,16 @@ import ai.helper2.shared.Verification
  * [MUST_STATE_VALUE], (4) the excerpt states the value itself (or a known synonym). Model
  * confidence is ignored.
  *
- * ADR 0056 adds three rules. Audience and tech level are judgement fields: the model may estimate
+ * ADR 0023 adds three rules. Audience and tech level are judgement fields: the model may estimate
  * them without a quote, and they are stored as AI_ESTIMATED, never VERIFIED. A fact that only the
  * product's own pages state is SELF_DECLARED, a relationship they name stays a candidate, and a
  * licence or open-source value the source states wins over them. A summary sentence must keep to
  * its excerpts: every name and number in it is in them, most of its words too, and it holds no
  * superlative, certificate, popularity or comparison.
  *
- * ADR 0066: a field an admin set is not checked at all; the model's value for it is dropped.
+ * ADR 0026: a field an admin set is not checked at all; the model's value for it is dropped.
  *
- * ADR 0062 adds the type: an article, a news item or a paper keeps only audience, tech level and
+ * ADR 0023 adds the type: an article, a news item or a paper keeps only audience, tech level and
  * use case, and names what it is about with ABOUT relationships, at most three ([FieldsByType]).
  */
 class EvidenceValidator(
@@ -50,10 +50,10 @@ class EvidenceValidator(
      */
     const val MAX_SELF_DECLARED_RELATIONSHIPS = 3
 
-    /** Fields the model may estimate without a quote; stored as AI_ESTIMATED (ADR 0056). */
+    /** Fields the model may estimate without a quote; stored as AI_ESTIMATED (ADR 0023). */
     @JvmField val JUDGEMENT_FIELDS = setOf("audience", "techLevel")
 
-    /** ABOUT is only for writing, the others only for the rest ([FieldsByType], ADR 0062). */
+    /** ABOUT is only for writing, the others only for the rest ([FieldsByType], ADR 0023). */
     val RELATIONSHIP_KINDS =
       setOf("INTEGRATES_WITH", "USES", "SUPPORTS", "COMPATIBLE_WITH", FieldsByType.ABOUT)
     val USE_CASES =
@@ -289,7 +289,7 @@ class EvidenceValidator(
       val rule = allowed[f.field]
       return when {
         rule == null -> rejected(f, "$label: field not allowed")
-        // An admin set this field (ADR 0066): the model's value is not a question to review.
+        // An admin set this field (ADR 0026): the model's value is not a question to review.
         f.field in input.curatedFields ->
           CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
         !FieldsByType.allowsField(input.type, f.field) ->
@@ -487,7 +487,7 @@ class EvidenceValidator(
 /** The validator's quote rules, for code that checks stored answers again (RecheckEnrichments). */
 object EvidenceRules {
 
-  /** The facts whose quote must state the value since ADR 0056 (before: licence, platforms...). */
+  /** The facts whose quote must state the value since ADR 0023 (before: licence, platforms...). */
   @JvmField val NEWLY_STATED = setOf("pricing", "type", "useCase")
 
   /**
@@ -568,7 +568,7 @@ internal object PricingWords {
  */
 internal object ClaimCheck {
 
-  /** No superlatives, no certificates, no popularity, no comparisons (ADR 0056). */
+  /** No superlatives, no certificates, no popularity, no comparisons (ADR 0023). */
   private val FORBIDDEN =
     Regex(
       "(?<![a-z0-9])(best|leading|#1|number one|world'?s|trusted by|most popular|" +

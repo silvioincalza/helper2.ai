@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * Resource candidates in the review queue, for an admin's edit (ADR 0065): the details are the
+ * Resource candidates in the review queue, for an admin's edit (ADR 0026): the details are the
  * candidate as JSON ({@link ResourceCandidateJson}), and the reason line follows them.
  */
 @Component

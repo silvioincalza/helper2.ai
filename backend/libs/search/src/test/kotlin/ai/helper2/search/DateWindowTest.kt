@@ -14,7 +14,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
- * The creation-date window (ADR 0032): strict filter, pushed to sources that support it, part of
+ * The creation-date window (ADR 0016): strict filter, pushed to sources that support it, part of
  * their cache key.
  */
 class DateWindowTest {

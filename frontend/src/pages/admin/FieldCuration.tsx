@@ -6,7 +6,7 @@ import { ApiError } from '@/api/client';
 import type { ResourceField } from '@/api/types';
 import { isAiOrigin } from '@/lib/aiMark';
 
-/** The values an admin may set per field (ADR 0066); license is free text (an SPDX id). */
+/** The values an admin may set per field (ADR 0026); license is free text (an SPDX id). */
 const CHOICES: Partial<Record<ResourceField, readonly string[]>> = {
   type: [
     'PRODUCT',
@@ -66,7 +66,7 @@ function errorOf(e: unknown, t: (k: string) => string): string {
 }
 
 /**
- * ADR 0066: next to a field of an enrichment check, the admin sets the resource's own value (it wins over every source
+ * ADR 0026: next to a field of an enrichment check, the admin sets the resource's own value (it wins over every source
  * and every run) or drops what the AI said. Both reload the evidence through [onChanged].
  */
 export function FieldCuration({

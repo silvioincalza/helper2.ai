@@ -88,7 +88,7 @@ const YES = {
   vendor: { consents: { 755: true } },
 };
 
-describe('monetisation (ADR 0057)', () => {
+describe('monetisation (ADR 0030)', () => {
   it('while everything is off: no support link, no cookie question, no ad, no third-party script', async () => {
     mockApi({ 'GET /me': me(OFF) });
     renderApp('/search?q=agents');
@@ -280,7 +280,7 @@ describe('monetisation (ADR 0057)', () => {
     expect(await screen.findByText('Giving is not open yet.')).toBeInTheDocument();
   });
 
-  describe('with AdSense on (ADR 0059)', () => {
+  describe('with AdSense on (ADR 0030)', () => {
     it("loads Google's consent tool instead of our bar, and the footer offers Privacy choices", async () => {
       fakeTcf({ gdprApplies: true, eventStatus: 'cmpuishown' });
       mockApi({ 'GET /me': me(ADSENSE) });

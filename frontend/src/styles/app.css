@@ -168,7 +168,7 @@ code {
 }
 
 /*
- * The shared controls, one definition each, on every page (ADR 0042, decision 14). Geist (v5), at least 44px, the
+ * The shared controls, one definition each, on every page (ADR 0028 (part was 0042), decision 14). Geist (v5), at least 44px, the
  * v4 radius and borders. The focus ring is the 3px ink outline above, 2px off the control; a selected chip is an ink
  * fill, so focus and selection never look alike. Hover always changes a line or a ring that is 3:1 or more.
  */
@@ -932,7 +932,7 @@ h2 {
   padding: 1px 5px;
   border: 1px solid currentColor;
 }
-/* Ask the guide: the quieter second button of the box, an icon only (ADR 0042, decision 11). Its name and key are in
+/* Ask the guide: the quieter second button of the box, an icon only (ADR 0028 (part was 0042), decision 11). Its name and key are in
    the tooltip. */
 .one-box-ask {
   justify-content: center;
@@ -1102,7 +1102,7 @@ input[type='search']::-webkit-search-cancel-button {
   filter: grayscale(1);
 }
 
-/* Guide intents (ADR 0032): how the question was read, the question back, comparison and explanation. */
+/* Guide intents (ADR 0016): how the question was read, the question back, comparison and explanation. */
 .understood {
   display: flex;
   flex-wrap: wrap;
@@ -1295,7 +1295,7 @@ input[type='search']::-webkit-search-cancel-button {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
-/* The text the server writes into #root for crawlers (ADR 0050). People see it only until the app starts. */
+/* The text the server writes into #root for crawlers (ADR 0029). People see it only until the app starts. */
 #root > .h2-prerender {
   max-width: calc(var(--content-wide) + 2 * var(--space-4));
   margin: 0 auto;

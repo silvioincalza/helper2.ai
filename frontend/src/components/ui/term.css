@@ -1,5 +1,5 @@
 /*
- * Design v4 (ADR 0042) on the list pages: Sources, Saved and the back office. The page root carries `v4 v4-term`.
+ * Design v4 (ADR 0028) on the list pages: Sources, Saved and the back office. The page root carries `v4 v4-term`.
  * The `$ helper2 …` line and the table come from TermList (`.v4-list__cmd`, `.v4-table`, home.css); this file adds
  * what a page needs on top: a heading with its command, a table that scrolls in its own box, row headers and status
  * words in the radar colours. Only semantic tokens.

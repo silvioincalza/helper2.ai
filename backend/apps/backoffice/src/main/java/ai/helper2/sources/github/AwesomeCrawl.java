@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Reads the seed lists and follows the awesome lists they link to (ADR 0058), breadth first: every
+ * Reads the seed lists and follows the awesome lists they link to (ADR 0022), breadth first: every
  * seed, then the lists they link, then the lists those link, up to [maxDepth] steps from a seed.
  * Each list is read once (a cycle or a second link to it is skipped), at most [maxNestedLists]
  * nested lists are tried per run, and the whole read stops at [maxRunTime] or [maxReadmeBytes].

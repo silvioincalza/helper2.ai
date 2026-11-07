@@ -20,10 +20,10 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What needs a person now (ADR 0045): open review items per kind, the enrichment backlog, today's
+ * What needs a person now (ADR 0026): open review items per kind, the enrichment backlog, today's
  * model budgets and web credits, the last Scout runs and how many failed in the last day, and how
- * many home examples are shown and hidden (ADR 0049), and how many runtime settings are not at
- * their default (ADR 0060). Counts only. Computed at most once per {@link #FRESH}: the backlog
+ * many home examples are shown and hidden (ADR 0015), and how many runtime settings are not at
+ * their default (ADR 0007). Counts only. Computed at most once per {@link #FRESH}: the backlog
  * count is a full pass, and one admin pressing Refresh must not repeat it.
  */
 public class GetOverview {

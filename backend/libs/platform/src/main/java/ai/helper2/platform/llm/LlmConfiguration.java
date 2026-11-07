@@ -53,7 +53,7 @@ class LlmConfiguration {
   }
 
   /**
-   * The models for the back office's Settings page (ADR 0045). Model ids and sizes only: the
+   * The models for the back office's Settings page (ADR 0026). Model ids and sizes only: the
    * embedding key and URL are not shown.
    */
   @Bean

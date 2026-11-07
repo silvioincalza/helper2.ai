@@ -15,11 +15,11 @@ export interface TermCells {
   where: string;
   /** How soon, e.g. "In 2 days": under the date in a table, before `where` in a log row. */
   note?: string;
-  /** An AI model read the date, type and place (ADR 0067): they carry the AI label and mark. */
+  /** An AI model read the date, type and place (ADR 0021): they carry the AI label and mark. */
   ai?: boolean;
 }
 
-/** [children] marked as AI output when [ai] (EU AI Act Art. 50, ADR 0038). */
+/** [children] marked as AI output when [ai] (EU AI Act Art. 50, ADR 0018). */
 function Ai({ ai, children }: { ai?: boolean | undefined; children: ReactNode }) {
   return ai ? <span {...aiMark()}>{children}</span> : <>{children}</>;
 }
@@ -33,7 +33,7 @@ function AiLabel({ ai }: { ai?: boolean | undefined }) {
 }
 
 /**
- * New this week and Coming up share this one list (ADR 0042, decision 5), in the terminal style: a
+ * New this week and Coming up share this one list (ADR 0028 (part was 0042), decision 5), in the terminal style: a
  * `$ helper2 news · N` line, `ls -l` columns with dashed rules, titles in Geist and the rest in Geist Mono. `table` on
  * a wide screen (four columns with headers), `log` on a phone (inside a tab: the `$` line, then one row per item). Loading,
  * empty and error come from ListState. With more rows than it shows, the list moves like a news ticker (useTicker):

@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
-# The back office app (ADR 0069): builds the admin web app, embeds frontend/dist-admin under /admin as static
+# The back office app (ADR 0032): builds the admin web app, embeds frontend/dist-admin under /admin as static
 # resources, runs on a JRE 25. Same base images, user and JVM flags as the public image (Dockerfile).
 # Build stages run on the build machine's own architecture (fast on Apple silicon); only the
 # runtime stage is the target platform, e.g. --platform linux/amd64 for the cluster.
-# Base images are pinned by the digest of their multi-arch index (ADR 0046): a moved tag cannot change a build.
+# Base images are pinned by the digest of their multi-arch index (ADR 0033): a moved tag cannot change a build.
 # Dependabot updates tag and digest together.
 FROM --platform=$BUILDPLATFORM docker.io/library/node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS web
 WORKDIR /src

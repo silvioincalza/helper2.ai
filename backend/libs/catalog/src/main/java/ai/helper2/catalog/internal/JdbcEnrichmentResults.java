@@ -32,7 +32,7 @@ import tools.jackson.databind.ObjectMapper;
  * AI-extracted relationships of earlier runs, and supersedes their open review items, so a page and
  * the review queue never mix two runs. Relationships a reviewer decided stay. Runs themselves are
  * kept for audit. Also reads them back for the resource detail page, and for a re-check by code
- * (ADR 0056), which may reject fields and drop claims.
+ * (ADR 0023), which may reject fields and drop claims.
  */
 @Component
 public class JdbcEnrichmentResults
@@ -518,8 +518,8 @@ public class JdbcEnrichmentResults
 
   /**
    * One evidence row per (source record, place, excerpt), linked to the owner. A citation with its
-   * own URL (a README or model card read for the record, ADR 0043) keeps that URL and time; the
-   * record still anchors the row, so it goes when the record goes (ADR 0034). joinTable/fk are
+   * own URL (a README or model card read for the record, ADR 0023) keeps that URL and time; the
+   * record still anchors the row, so it goes when the record goes (ADR 0035). joinTable/fk are
    * constants.
    */
   private void link(

@@ -11,7 +11,7 @@ const page =
   });
 
 /**
- * The back office web app (ADR 0045, ADR 0069): its own entry, built apart from the public app and served only on the
+ * The back office web app (ADR 0026, ADR 0032): its own entry, built apart from the public app and served only on the
  * admin host. One guard (AdminLayout), a part per route. Kept separate from the router so tests can mount it.
  */
 export const adminRoutes: RouteObject[] = [

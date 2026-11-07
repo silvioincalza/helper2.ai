@@ -1,5 +1,5 @@
 /*
- * Admin back office (ADR 0023) in design v4 (ADR 0042): a terminal-style heading per part, the tables of
+ * Admin back office (ADR 0024) in design v4 (ADR 0028): a terminal-style heading per part, the tables of
  * components/ui/term.css, the examples as dashed rows. Loaded with the back office only. Only semantic tokens.
  */
 .h2-admin__part {
@@ -426,7 +426,7 @@
   margin: 0 0 var(--space-3);
 }
 
-/* A choice inside a form (ADR 0064): the radio next to its words, not above them. */
+/* A choice inside a form (ADR 0026): the radio next to its words, not above them. */
 .h2-admin__form label.h2-admin__choice {
   flex-direction: row;
   align-items: center;

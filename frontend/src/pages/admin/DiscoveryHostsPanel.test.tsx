@@ -46,7 +46,7 @@ function open(handlers: Parameters<typeof mockApi>[0]) {
   return { api, ...renderAdmin('/admin/settings') };
 }
 
-describe('Feature: an admin manages the hosts discovery knows by name (ADR 0063)', () => {
+describe('Feature: an admin manages the hosts discovery knows by name (ADR 0022)', () => {
   it('Scenario: the two lists show each host with who added it and why', async () => {
     const { container } = open({ 'GET /admin/discovery-hosts': () => SEED });
 

@@ -1,6 +1,6 @@
-# The public app (ADR 0069): search, guide, setup, the pages and sign-in for users. It serves no web files: the web
+# The public app (ADR 0032): search, guide, setup, the pages and sign-in for users. It serves no web files: the web
 # image does (web.yaml). An init container copies the built shell (index.html) from the web image of the same tag;
-# the app writes every page into it (ADR 0050). The back office is its own workload (backoffice.yaml).
+# the app writes every page into it (ADR 0029). The back office is its own workload (backoffice.yaml).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,7 +64,7 @@ spec:
             # spring.lifecycle.timeout-per-shutdown-phase: how long requests in flight get after SIGTERM.
             - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
             - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
-            # Its own role, never the owner (ADR 0070): rows only, no DDL. The migrate Job opens its login.
+            # Its own role, never the owner (ADR 0004): rows only, no DDL. The migrate Job opens its login.
             - { name: H2_DATABASE_USER, value: h2_public }
             - name: H2_DATABASE_PASSWORD
               valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PUBLIC_PASSWORD } }
@@ -82,7 +82,7 @@ spec:
             - { name: H2_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
             - { name: H2_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
             {{- with .Values.app.monetisation }}
-            # Monetisation parts that are on (ADR 0057); an empty value stays off.
+            # Monetisation parts that are on (ADR 0030); an empty value stays off.
             {{- with .githubSponsorsUrl }}
             - { name: H2_SUPPORT_GITHUB_SPONSORS_URL, value: {{ . | quote }} }
             {{- end }}
@@ -103,7 +103,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- with .Values.app.publicBaseUrl }}
-            # The host every canonical link and sitemap address names (ADR 0050).
+            # The host every canonical link and sitemap address names (ADR 0029).
             - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }
             {{- end }}
             {{- /* Daily limits: only the ones set in values, so an unset one keeps the app default or the env Secret. */}}

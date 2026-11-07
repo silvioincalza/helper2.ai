@@ -7,7 +7,7 @@ import { SIGN_IN_RETURN_KEY } from '@/lib/signInReturn';
 
 const header = () => document.querySelector<HTMLElement>('header.site-header')!;
 
-describe('Feature: end users sign in on the public site (ADR 0035)', () => {
+describe('Feature: end users sign in on the public site (ADR 0024)', () => {
   afterEach(() => window.sessionStorage.clear());
 
   it('Scenario: "Sign in" in the header opens the sign-in page, which offers the site\'s providers', async () => {

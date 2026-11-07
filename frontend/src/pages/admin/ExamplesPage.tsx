@@ -44,7 +44,7 @@ function noticeOf(e: unknown): Notice {
 }
 
 /**
- * The back office's Examples part (ADR 0049, UJ-9): the examples the home page picks from, each with its last
+ * The back office's Examples part (ADR 0015, UJ-9): the examples the home page picks from, each with its last
  * quality check in words. The check filter lives in the address, so the overview can link to the hidden ones. One
  * action at a time; a change made on an old version reloads the list.
  */

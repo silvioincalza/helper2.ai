@@ -79,7 +79,7 @@ class QueryTranslationTest {
   }
 
   @Test
-  fun `the translation is its own field, apart from the lexicon terms (AI-written, ADR 0038)`() {
+  fun `the translation is its own field, apart from the lexicon terms (AI-written, ADR 0018)`() {
     val (q, out) =
       run("uno strumento per tradurre i documenti") { _, _ -> "Document translation app" }
     assertEquals("it", q.language)

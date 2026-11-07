@@ -15,11 +15,11 @@ import { ResultDate } from './ResultDate';
 export const rowAnchor = (id: string) => `result-${id}`;
 
 /**
- * One result in the list (ADR 0042, decision 7): type, host and date, the guide's pick, the title, the description and the
+ * One result in the list (ADR 0028 (part was 0042), decision 7): type, host and date, the guide's pick, the title, the description and the
  * sources that list it. The title is a link that covers the whole row and opens the resource page; it passes on where
  * to come back to and, for a pick, the guide's reason and checked quote. A pick shows its reason (AI-written: labelled
  * and marked) and its quote, highlighted in the source's own words. A result found only by the words of an awesome
- * list around it says where (ADR 0055): the list's own words, not AI-written, so no AI label. Nothing in the row is
+ * list around it says where (ADR 0010): the list's own words, not AI-written, so no AI label. Nothing in the row is
  * selected or opens in place. On a pick the reason comes first, then the quote that proves it. The search words are in
  * bold in the source's own description ([terms]), never in the title (it is the link's name), in AI-written text or in a
  * checked quote.
@@ -85,7 +85,7 @@ export function ResultRow({
 }
 
 /**
- * The source's text. A model's description is labelled and marked, and never a quote (ADR 0038). On a pick the
+ * The source's text. A model's description is labelled and marked, and never a quote (ADR 0018). On a pick the
  * checked sentence is highlighted where it stands in that text, or shown on its own when it is not there (it came
  * from the title).
  */

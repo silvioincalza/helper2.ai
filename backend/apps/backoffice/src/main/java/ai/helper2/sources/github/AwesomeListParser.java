@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Reads an "awesome" README as a link graph: the GitHub repositories linked from list items and
  * table rows, with the heading they sit under. Facts about each repository come from the GitHub
- * API, so Helper2 does not copy the list author's text. For search inside the list (ADR 0055) each
+ * API, so Helper2 does not copy the list author's text. For search inside the list (ADR 0010) each
  * entry also carries its line as plain words and its heading path, and the list its headings: the
  * catalog turns them into a tsvector and keeps only that and the heading path, never the text.
  */
@@ -26,7 +26,7 @@ final class AwesomeListParser {
    * One linked repository. [section] is the nearest heading (for the classifier); [headingPath] the
    * headings above it from the second level down ("Tools > Vector databases"), or the title when it
    * sits under the title only; [text] the entry line as plain words; [inListOfLists] true when a
-   * heading above it, below the title, names a section of lists ("Other awesome lists", ADR 0058).
+   * heading above it, below the title, names a section of lists ("Other awesome lists", ADR 0022).
    */
   record Entry(
       String fullName, String section, String headingPath, String text, boolean inListOfLists) {
@@ -36,7 +36,7 @@ final class AwesomeListParser {
     }
 
     /**
-     * A link to another awesome list (ADR 0058): its name says "awesome", or it sits in a section
+     * A link to another awesome list (ADR 0022): its name says "awesome", or it sits in a section
      * of lists.
      */
     boolean pointsAtList() {
@@ -46,7 +46,7 @@ final class AwesomeListParser {
   }
 
   /**
-   * A link to a page outside GitHub that names an entry (ADR 0058): the first link of a list item
+   * A link to a page outside GitHub that names an entry (ADR 0022): the first link of a list item
    * or table row, when that link is not on GitHub. [url] as written, [text] the link's words,
    * cleaned and cut; [headingPath] and [section] as for an {@link Entry}.
    */
@@ -162,7 +162,7 @@ final class AwesomeListParser {
 
   static final int MAX_SECTION = 80;
 
-  /** One heading, and the heading path built from them (stored as plain text, ADR 0055). */
+  /** One heading, and the heading path built from them (stored as plain text, ADR 0010). */
   static final int MAX_HEADING_PATH = 200;
 
   /** One entry line as plain words. */

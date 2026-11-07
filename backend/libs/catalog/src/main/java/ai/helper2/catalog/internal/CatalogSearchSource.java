@@ -184,10 +184,10 @@ public class CatalogSearchSource implements SearchSource {
               null,
               null,
               Map.of(),
-              // Assigned by the catalog (ADR 0053), so a search can filter and count them.
+              // Assigned by the catalog (ADR 0013), so a search can filter and count them.
               r.categories(),
               null,
-              // An admin's value wins over the other sources' in the merge (ADR 0066).
+              // An admin's value wins over the other sources' in the merge (ADR 0026).
               r.curatedFields()));
     }
     return hits;

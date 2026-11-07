@@ -66,7 +66,7 @@ jobs:
           audience: ${{ vars.BAO_AUDIENCE }}
           role: deploy-${{ inputs.environment }}
 
-      # The signatures are checked before the deploy (ADR 0071), with this commit's Makefile and cosign.pub.
+      # The signatures are checked before the deploy (ADR 0033), with this commit's Makefile and cosign.pub.
       - uses: ./.github/actions/install-cosign
 
       # Cluster access comes only from the env's OpenBao entry, so the prod approval gates prod access.
@@ -92,12 +92,12 @@ jobs:
             # The prod deployer may `get` this one Deployment in staging and nothing else (rbac.tf).
             image=$(kubectl -n helper2-staging get deployment helper2 \
               -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}')
-            # repository:tag or repository:tag@sha256:<digest> (ADR 0071): the tag sits before the digest.
+            # repository:tag or repository:tag@sha256:<digest> (ADR 0033): the tag sits before the digest.
             image=${image%@*}
             tag=${image##*:}
           fi
           tag=${tag:-${GITHUB_SHA::12}}
-          # An image tag is a 12-char commit (CD) or a release version X.Y.Z (release.yml, ADR 0048): its commit.
+          # An image tag is a 12-char commit (CD) or a release version X.Y.Z (release.yml, ADR 0034): its commit.
           commit_of() {
             local t=$1 s
             if [[ $t =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -122,7 +122,7 @@ jobs:
           git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
           sha=$(commit_of "$tag") || exit 1
           # Only commits that reached main (and so passed CI) may run with deploy secrets. A release version may also
-          # name a commit of a release/* branch (ADR 0048): release.yml checked it, a reviewer approved it.
+          # name a commit of a release/* branch (ADR 0034): release.yml checked it, a reviewer approved it.
           if ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
             if [[ ! $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "$tag is not on main (a release/* commit deploys only as its release version)"; exit 1
@@ -136,7 +136,7 @@ jobs:
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
           running=${running%@*}
           running=${running##*:}
-          # Commits of main and of a release branch can diverge (ADR 0048): then neither is an ancestor of the other,
+          # Commits of main and of a release branch can diverge (ADR 0034): then neither is an ancestor of the other,
           # and only two release versions say which is newer; with a commit tag on either side it takes rollback: true.
           if [[ -n $running && $running != "$tag" && $ROLLBACK != true ]] \
             && running_sha=$(commit_of "$running" 2>/dev/null) \
@@ -153,7 +153,7 @@ jobs:
               echo "::error::$tag is a lower version than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
             fi
           fi
-          # A release run (ADR 0048): the version must still name the commit release.yml checked. Only then does Harbor
+          # A release run (ADR 0034): the version must still name the commit release.yml checked. Only then does Harbor
           # add the tag X.Y.Z to that commit's image (same digest), here, after the approval and with this commit's
           # Makefile (an older release's has no `retag`). Needs read on ci/harbor for the role deploy-prod.
           # Any other run deploys a version only if a release already tagged it in Harbor, else the rollout fails.
@@ -163,7 +163,7 @@ jobs:
             make retag TAG="${sha::12}" VERSION="$tag"
           fi
           # Every image of the tag and the Postgres image of that commit: digest from Harbor, signature checked against
-          # cosign.pub (ADR 0071), with this commit's Makefile, before the checkout below, so an older commit's images
+          # cosign.pub (ADR 0033), with this commit's Makefile, before the checkout below, so an older commit's images
           # are checked too. An unsigned image stops the deploy here (an image from before signing is signed by hand
           # on the workstation, CI.md "Image signing"). The pull-only robot (ci/harbor-pull) is enough. The Postgres tag is the target
           # commit's, read as the Makefile reads PG_TAG (no yq on the runner).
@@ -176,7 +176,7 @@ jobs:
           # from before that (no digests in its chart or Makefile) deploys by tag: only as a deliberate rollback.
           if ! grep -q 'need_digest' Makefile || ! grep -q 'helper2.atDigest' ../helm/helper2/templates/_helpers.tpl; then
             if [[ $ROLLBACK != true ]]; then
-              echo "::error::$tag predates the deploy by digest (ADR 0071): deploying it needs rollback: true"; exit 1
+              echo "::error::$tag predates the deploy by digest (ADR 0033): deploying it needs rollback: true"; exit 1
             fi
             echo "::warning::$tag predates the deploy by digest: its signatures were checked above, Helm deploys it by tag"
           fi

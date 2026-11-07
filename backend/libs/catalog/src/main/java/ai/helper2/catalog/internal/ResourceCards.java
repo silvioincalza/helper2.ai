@@ -104,9 +104,9 @@ public class ResourceCards {
     return Optional.of(
         card.withIdentity(id, canonical)
             .withDiscovered(DateFact.observed(row.firstDiscoveredAt()))
-            // The categories the catalog assigned (ADR 0053), the ones search filters by.
+            // The categories the catalog assigned (ADR 0013), the ones search filters by.
             .withCategories(row.categories())
-            // An admin's value wins over every record (ADR 0066).
+            // An admin's value wins over every record (ADR 0026).
             .withCurated(
                 row.curatedFields(),
                 row.type(),

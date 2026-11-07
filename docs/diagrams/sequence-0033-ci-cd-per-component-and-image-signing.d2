@@ -1,0 +1,47 @@
+# Sequence: a push to main that changes only the web app: the web and back office images built, the public image
+# carried, every image signed with the OpenBao Transit key, then the staging deploy checks each signature and deploys
+# by digest (ADR 0033).
+# Source of truth: .github/workflows/cd.yml (image job), deploy.yml (Resolve tag, Diff, Deploy),
+#   .github/scripts/changes.sh, .github/actions/bao-login, install-cosign,
+#   deploy/k8s/Makefile (ci-images, image, sign, verify-images, verified, diff, deploy), deploy/k8s/cosign.pub.
+# Render: cd docs/diagrams && d2 fmt sequence-0033-ci-cd-per-component-and-image-signing.d2 && d2 sequence-0033-ci-cd-per-component-and-image-signing.d2 sequence-0033-ci-cd-per-component-and-image-signing.svg
+
+...@style
+
+shape: sequence_diagram
+
+gha: "GitHub Actions\n(cd.yml, deploy.yml)" {class: ext}
+runner: "Self-hosted runner\n(one JIT job)" {class: app}
+bao: "OpenBao\n(kv, Transit)" {class: data}
+harbor: Harbor {class: data}
+k8s: Kubernetes API {class: ext}
+
+image: CD image job (role deploy) {
+  gha -> runner: "push to main: frontend/ changed"
+  runner -> bao: "OIDC login role=deploy;\nkv get ci/harbor"
+  runner -> runner: "changes.sh before..HEAD:\nweb, backoffice"
+  runner -> harbor: "GET helper2:<new> → 404;\nGET helper2:<before> → digest;\ncosign verify: signed by our key"
+  runner -> harbor: "POST helper2:<before>/tags {<new>}\n(public carried, same digest)"
+  runner -> harbor: "build and push\nhelper2-web:<new>, helper2-backoffice:<new>\n(podman --digestfile → PUSHED)" {class: hot}
+  runner -> harbor: "SBOM of each image (syft)"
+}
+
+sign: make sign {
+  runner -> runner: "PUSHED: helper2-web@<d1>,\nhelper2-backoffice@<d2> (nothing else)"
+  runner -> bao: "VAULT_ADDR, VAULT_TOKEN from BAO_*:\ntransit/keys/helper2-images (public half);\ntransit/sign/helper2-images/sha2-256" {class: hot}
+  bao -> runner: "signature (the key stays in OpenBao)"
+  runner -> harbor: "push the signature bundle\n(referrer of the digest)"
+  runner -> harbor: "every image of <new> and postgres:<tag>:\ncosign verify --key cosign.pub"
+  runner -> bao: "bao token revoke -self\n(then the SBOM uploads)"
+}
+
+deploy: Staging deploy (role deploy-staging) {
+  gha -> runner: "deploy.yml environment staging"
+  runner -> bao: "OIDC login role=deploy-staging;\nkv get ci/harbor-pull, ci/staging"
+  runner -> harbor: "make verify-images: digest of each image;\ncosign verify --key cosign.pub" {class: hot}
+  harbor -> runner: "four digests, every signature valid\n(one invalid: the deploy stops here)"
+  runner -> runner: "git checkout <commit>; its Makefile\npins digests (else rollback: true only)"
+  runner -> harbor: "make diff, make deploy: make verified\nagain (digests bound to the tag)"
+  runner -> k8s: "helm upgrade with\nrepository:tag@sha256:<digest>" {class: hot}
+  k8s -> runner: "ready, or rolled back"
+}

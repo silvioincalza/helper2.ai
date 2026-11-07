@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Inbound port of the catalog for re-checking stored enrichment answers by code (ADR 0056): what
+ * Inbound port of the catalog for re-checking stored enrichment answers by code (ADR 0023): what
  * earlier runs left, and the few changes a re-check may make. No model is involved.
  */
 public interface StoredEnrichments {

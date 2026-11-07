@@ -3,7 +3,7 @@ package ai.helper2.sources.github;
 import io.micrometer.core.instrument.MeterRegistry;
 
 /**
- * What the awesome-list collector did in a pass (ADR 0058): lists read (seed or nested), links
+ * What the awesome-list collector did in a pass (ADR 0022): lists read (seed or nested), links
  * proposed for review, and everything it skipped, by a reason from a fixed set.
  */
 final class AwesomeMetrics {

@@ -100,7 +100,7 @@ class RunScout(
   private val clock: Clock,
   private val lock: RunLock,
   private val maxItemsPerRun: Int = 500,
-  /** Read once at the start of each run: a runtime setting (ADR 0060) applies from the next run. */
+  /** Read once at the start of each run: a runtime setting (ADR 0007) applies from the next run. */
   private val maxEnrichmentsPerRun: IntSupplier = IntSupplier { 20 },
   private val backlog: EnrichmentBacklog? = null,
   private val meters: MeterRegistry = SimpleMeterRegistry(),
@@ -116,7 +116,7 @@ class RunScout(
    * The admin review list for the candidates a collector proposes; required as soon as one does.
    */
   private val review: CandidateReview? = null,
-  /** The search index of curated lists (ADR 0055); required as soon as a collector reads one. */
+  /** The search index of curated lists (ADR 0010); required as soon as a collector reads one. */
   private val lists: ListIndex? = null,
 ) {
   private val log = LoggerFactory.getLogger(RunScout::class.java)
@@ -439,7 +439,7 @@ class RunScout(
 
   /**
    * A pass that failed or was deferred stays open: its start is saved, so the next run tries it
-   * again even when its interval says otherwise (a staggered first pass, ADR 0051), and its
+   * again even when its interval says otherwise (a staggered first pass, ADR 0022), and its
    * checkpoint, once it completes, is this start. Losing this save only delays the retry.
    */
   private fun keepPassOpen(sourceId: String, cursor: ScoutCursor, started: Instant) {

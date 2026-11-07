@@ -3,14 +3,14 @@ package ai.helper2.guide
 import java.time.Duration
 
 /**
- * What the guide allows and keeps, as the text pages state it (GET /api/v1/policy, ADR 0052).
+ * What the guide allows and keeps, as the text pages state it (GET /api/v1/policy, ADR 0029).
  *
  * @property questionsPerDay fresh questions per client address and UTC day (ADR 0017)
  * @property freeAnswers answers with no pick, and failed questions, a client address gets a day
  *   without spending a question (ADR 0017)
- * @property maxCandidates search results the reasoning model chooses from (ADR 0015)
+ * @property maxCandidates search results the reasoning model chooses from (ADR 0016)
  * @property maxPicks most picks in one answer
- * @property cachedAnswers how long an answer stays in the shared cache (ADR 0041)
+ * @property cachedAnswers how long an answer stays in the shared cache (ADR 0017)
  */
 data class GuidePolicy
 @JvmOverloads

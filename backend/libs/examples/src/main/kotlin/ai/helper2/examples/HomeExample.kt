@@ -19,7 +19,7 @@ enum class ExampleOrigin {
 }
 
 /**
- * What the last quality check found (ADR 0049). PENDING: new or changed, not checked yet. PASS: an
+ * What the last quality check found (ADR 0015). PENDING: new or changed, not checked yet. PASS: an
  * expected resource in the top 3 of the example's own search. WEAK: in the top 4 to 10. FAIL: none
  * in the top 10.
  */

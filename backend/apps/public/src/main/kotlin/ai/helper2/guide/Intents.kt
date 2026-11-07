@@ -6,7 +6,7 @@ import java.text.Normalizer
 import java.time.LocalDate
 
 /**
- * What kind of answer the question asks for (ADR 0032). One per question; [SUGGEST] is the fallback
+ * What kind of answer the question asks for (ADR 0016). One per question; [SUGGEST] is the fallback
  * and behaves exactly as the guide did before intents.
  */
 enum class GuideIntent {
@@ -84,7 +84,7 @@ data class DateWindow(val from: LocalDate, val to: LocalDate)
 
 /**
  * A question back to the user when the question is too vague to search well, or names an ambiguous
- * subject (ADR 0032 §3).
+ * subject (ADR 0016 (part was 0032) §3).
  */
 data class Clarification(val question: String, val options: List<String>) {
   companion object {
@@ -120,9 +120,9 @@ data class Clarification(val question: String, val options: List<String>) {
 }
 
 /**
- * What kind of thing an entry is, to tell namesakes apart (ADR 0032 §3). A model and a command-line
- * tool both called "Gemini" are different things; an npm package and a GitHub repository of the
- * same tool are not.
+ * What kind of thing an entry is, to tell namesakes apart (ADR 0016 (part was 0032) §3). A model
+ * and a command-line tool both called "Gemini" are different things; an npm package and a GitHub
+ * repository of the same tool are not.
  */
 enum class SubjectKind(val label: String) {
   MODEL("model"),
@@ -352,7 +352,7 @@ object IntentRules {
     )
 
   /**
-   * Grounding for the planner (ADR 0032): the fast model copies periods from its examples ("an open
+   * Grounding for the planner (ADR 0016): the fast model copies periods from its examples ("an open
    * source MCP server" came back with "last month"), so a model window is kept only when the user's
    * words name a time.
    */

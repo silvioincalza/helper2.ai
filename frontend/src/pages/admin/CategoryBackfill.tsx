@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 
 /**
- * "Assign categories again" (ADR 0053): starts the category backfill over the whole catalog. It answers at once and
+ * "Assign categories again" (ADR 0013): starts the category backfill over the whole catalog. It answers at once and
  * runs in the background on one replica; it is idempotent, so a second click does no harm.
  */
 export function CategoryBackfill() {

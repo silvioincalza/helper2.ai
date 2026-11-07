@@ -121,7 +121,7 @@ class MeController implements MeApi {
     return ResponseEntity.ok(me.limits(limitsToday()).monetisation(monetisation(monetisation)));
   }
 
-  /** What the site offers to fund itself (ADR 0057). The back office has its own /me, without. */
+  /** What the site offers to fund itself (ADR 0030). The back office has its own /me, without. */
   static MonetisationDto monetisation(Monetisation shown) {
     return new MonetisationDto(
         shown.githubSponsors().orElse(null),

@@ -40,7 +40,7 @@ data class SourceOverview(
 
 /**
  * Lists every disclosed source (search sources and Scout collectors, enabled or not) by priority
- * with its live numbers (ADR 0008) and what it brought this week (ADR 0042). Never throws for a
+ * with its live numbers (ADR 0009) and what it brought this week (ADR 0028). Never throws for a
  * store that cannot answer: the Scout outcomes, the credits and the new counts are then left out.
  */
 class ListSources(

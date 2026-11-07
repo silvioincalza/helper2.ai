@@ -36,7 +36,7 @@ INSERT INTO seed VALUES
 ('https://descript.com', 'Descript', 'Audio and video editor that lets you edit recordings by editing their transcript.', 'USE_AI', '{video,transcription,audio}'),
 ('https://suno.com', 'Suno', 'Generates songs and music from text descriptions.', 'USE_AI', '{audio}'),
 ('https://elicit.com', 'Elicit', 'Research assistant that finds and summarises academic papers.', 'USE_AI', '{research,summarization}'),
--- AI directories and review sites (ADR 0051): linked as places to browse, never copied. Their terms forbid copying
+-- AI directories and review sites (ADR 0022): linked as places to browse, never copied. Their terms forbid copying
 -- their listings, so the Scout's web searches exclude them; these entries carry only our own one-line description.
 ('https://producthunt.com', 'Product Hunt', 'Community site where makers launch new products, many of them AI tools, and people vote and comment on them.', 'BOTH', '{research}'),
 ('https://theresanaiforthat.com', 'There''s An AI For That', 'Large directory of AI tools, searchable by task.', 'USE_AI', '{research}'),
@@ -54,7 +54,7 @@ ON CONFLICT (canonical_url) DO UPDATE SET
     description_origin = EXCLUDED.description_origin, type = EXCLUDED.type, audience = EXCLUDED.audience,
     tech_level = EXCLUDED.tech_level, data_origin = EXCLUDED.data_origin, modified_at = now();
 
--- Our own labels only: CATEGORY labels are assigned by code (ADR 0053), by the backfill after this seed runs.
+-- Our own labels only: CATEGORY labels are assigned by code (ADR 0013), by the backfill after this seed runs.
 DELETE FROM resource_label
 WHERE kind <> 'CATEGORY' AND resource_id IN (SELECT uuid_generate_v5('6f1c2a8e-4b1d-5c3e-9a7f-2d4e6b8c0a12'::uuid, canonical_url) FROM seed);
 

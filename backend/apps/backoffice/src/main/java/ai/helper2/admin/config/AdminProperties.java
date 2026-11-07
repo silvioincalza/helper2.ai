@@ -14,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
  * @param publicBaseUrl the public site (H2_PUBLIC_BASE_URL): a resource link on the admin host goes
  *     there
  * @param guideDailyModelCalls the guide's daily model-call cap (H2_GUIDE_DAILY_MODEL_CALLS), as the
- *     public app runs it: its default on the Settings page (ADR 0060)
+ *     public app runs it: its default on the Settings page (ADR 0007)
  */
 @Validated
 @ConfigurationProperties("helper2.admin")

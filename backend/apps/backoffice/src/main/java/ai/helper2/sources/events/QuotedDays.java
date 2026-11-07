@@ -12,7 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The days a quote states, read by code (ADR 0067): the model only points to the quote. A quote
+ * The days a quote states, read by code (ADR 0021): the model only points to the quote. A quote
  * proves an event's days only when it names one clear range with its year. Numeric dates other than
  * ISO (12/03/2027) are not read: their day and month order is unclear.
  */

@@ -1,5 +1,5 @@
 /**
- * Which sources the Home radar shows (ADR 0042, decision 4): always 5 to 10 at a time, and every source in turn. It
+ * Which sources the Home radar shows (ADR 0028 (part was 0042), decision 4): always 5 to 10 at a time, and every source in turn. It
  * starts with 5 sources, one after another; then each step adds one new source while it grows, up to 10, and takes
  * away the oldest while it shrinks, down to 5; then it grows again. The sources wait in a queue, shuffled once at the
  * start; a source that leaves goes to the back, so every source of a group is on the radar once before any of them

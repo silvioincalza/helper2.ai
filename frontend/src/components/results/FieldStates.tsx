@@ -4,7 +4,7 @@ import { OriginLabel } from '@/components/Badges';
 import { Icon } from '@/components/Icon';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 
-/** The fields every resource page shows (ADR 0056), in this order. */
+/** The fields every resource page shows (ADR 0023), in this order. */
 const FIELDS = [
   'pricing',
   'platforms',
@@ -48,7 +48,7 @@ function fromCard(field: Field, detail: ResourceDetail): string[] {
 
 /**
  * The enrichment's values of a field: verified facts first, then an estimate. Unproven facts state nothing, and a
- * rejected estimate (a reviewer's reject or an admin's drop, ADR 0066) states nothing either.
+ * rejected estimate (a reviewer's reject or an admin's drop, ADR 0026) states nothing either.
  */
 function fromEnrichment(field: Field, assertions: Assertion[]): State {
   const mine = assertions.filter((a) => a.field === field && isAiOrigin(a.origin));
@@ -66,7 +66,7 @@ function fromEnrichment(field: Field, assertions: Assertion[]): State {
   return { kind: 'notStated' };
 }
 
-/** A value an admin set (ADR 0066): it wins over the sources and the enrichment. */
+/** A value an admin set (ADR 0026): it wins over the sources and the enrichment. */
 function fromAdmin(field: Field, assertions: Assertion[]): string[] {
   return assertions
     .filter((a) => a.field === field && a.origin === 'CURATED' && a.verification === 'VERIFIED')
@@ -84,11 +84,11 @@ function stateOf(field: Field, detail: ResourceDetail): State {
 }
 
 /**
- * Every field of a resource in one of four states (ADR 0056): a value with where it comes from ("Curated by Helper2"
- * when an admin set it, ADR 0066; "From the source",
+ * Every field of a resource in one of four states (ADR 0023): a value with where it comes from ("Curated by Helper2"
+ * when an admin set it, ADR 0026; "From the source",
  * "Self-declared by the vendor", "Extracted by AI", "AI-estimated"), "No", "Sources disagree" or "Not stated". A fact
  * is never guessed: a value the model could not prove with a quote is "Not stated". An estimate (audience, technical
- * level) is labelled and marked as AI-written (EU AI Act Art. 50, ADR 0038).
+ * level) is labelled and marked as AI-written (EU AI Act Art. 50, ADR 0018).
  */
 export function FieldStates({ detail }: { detail: ResourceDetail }) {
   const { t } = useTranslation();

@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Import;
 
 /**
  * The policies of application.yaml as the app loads them: every name in place, the settings ADR
- * 0033 states, meters bound.
+ * 0006 states, meters bound.
  */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)

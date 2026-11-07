@@ -22,11 +22,11 @@ import { toFromResults } from '@/components/results/fromResults';
 /**
  * The picks bar for the question in the URL: reading, then the picks, or one line when there is none. While the guide
  * works, the line says how it read the question and how many results it reads, as the steps arrive. With no AI pick
- * the line says why in a few words (ADR 0040, 6), with the next steps: ask again without one of the requirements, or
+ * the line says why in a few words (ADR 0028 (part was 0040), 6), with the next steps: ask again without one of the requirements, or
  * rephrase. How the guide decided stays folded under the bar. A pick with a row in the list ([anchored]) jumps to it;
  * any other pick, and every pick on the timeline (it has no rows to jump to), opens its own page, with the pick and the
  * way back, as a row does. Try again moves focus to the bar's heading. [webLine] keeps the place of "web searches
- * left" while the guide reads. Each pick shows the guide's reason under its title (AI-written: marked, ADR 0038), so the
+ * left" while the guide reads. Each pick shows the guide's reason under its title (AI-written: marked, ADR 0018), so the
  * picks read on their own before the list.
  */
 export function GuidePicks({
@@ -133,7 +133,7 @@ function picksState(stream: GuideStream, pickCount: number, t: TFunction): Picks
 /**
  * The next steps when the guide found nothing that fits: ask again without one requirement (the same structured
  * removal as ✕ in "Understood as"), or rephrase in the box. The requirements are AI-written: marked on each, labelled
- * once (ADR 0038).
+ * once (ADR 0018).
  */
 function NoPickNext({ answer, onRefine }: { answer: GuideResponse; onRefine: Refine }) {
   const { t } = useTranslation();

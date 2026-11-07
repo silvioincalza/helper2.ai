@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { useTitle } from '@/hooks/useTitle';
 import '@/pages/text.css';
 
-/** Where the Stripe Payment Link sends a giver back (ADR 0057): a thank-you, a way back, no upsell. */
+/** Where the Stripe Payment Link sends a giver back (ADR 0030): a thank-you, a way back, no upsell. */
 export default function SupportThanksPage() {
   const { t } = useTranslation();
   useTitle(t('support.thanksTitle'));

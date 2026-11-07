@@ -1,5 +1,5 @@
 /**
- * The radar's one clock (ADR 0042, decision 4), like a navigation radar (PPI): the beam turns once every 5 s, and a
+ * The radar's one clock (ADR 0028 (part was 0042), decision 4), like a navigation radar (PPI): the beam turns once every 5 s, and a
  * contact is painted only when the beam passes its angle. Then it pops, glows in its own colour and fades to a rest
  * level until the next pass. A source that leaves is not painted again and fades out. Pure functions of the clock
  * time `t` (ms, only running while the radar moves): HomeRadar draws what they return on each animation frame.

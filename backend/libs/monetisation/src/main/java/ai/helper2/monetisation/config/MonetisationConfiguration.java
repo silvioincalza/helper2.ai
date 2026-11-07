@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Publishes the monetisation settings as one value (ADR 0057). */
+/** Publishes the monetisation settings as one value (ADR 0030). */
 @Configuration(proxyBeanMethods = false)
 class MonetisationConfiguration {
 

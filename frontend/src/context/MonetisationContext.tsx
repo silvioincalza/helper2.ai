@@ -12,8 +12,8 @@ const MONETISATION_OFF: Monetisation = {
 };
 
 /**
- * The monetisation parts that are on (ADR 0057), from GET /me, which every page already reads: no extra request,
- * and Home stays without GET /policy (ADR 0042, 13).
+ * The monetisation parts that are on (ADR 0030), from GET /me, which every page already reads: no extra request,
+ * and Home stays without GET /policy (ADR 0028 (part was 0042), 13).
  */
 export function useMonetisation(): Monetisation {
   return useMe().me.monetisation ?? MONETISATION_OFF;

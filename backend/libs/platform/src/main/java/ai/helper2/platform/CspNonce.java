@@ -5,7 +5,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * One Content Security Policy nonce per request (ADR 0059): the pages module writes it on every
+ * One Content Security Policy nonce per request (ADR 0030): the pages module writes it on every
  * script of the page it fills, and the CSP header names it. Whichever asks first creates it; both
  * then read the same value from the request.
  */

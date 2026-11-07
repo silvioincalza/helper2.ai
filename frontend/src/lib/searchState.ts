@@ -203,7 +203,7 @@ export function refinedParams(sp: URLSearchParams, r: Partial<Refinement>): URLS
   return params;
 }
 
-/** Where results live (ADR 0040, 3): / is only the home page; /?q=… keeps working. */
+/** Where results live (ADR 0028 (part was 0040), 3): / is only the home page; /?q=… keeps working. */
 export const RESULTS_PATH = '/search';
 
 /** / and /search draw their own search box; every other page has it in the header. */
@@ -211,14 +211,14 @@ export function hasOwnSearchBox(pathname: string): boolean {
   return pathname === '/' || pathname === RESULTS_PATH;
 }
 
-/** Whether this URL shows the home page itself: an empty /, with no search and no question (ADR 0040, 3). */
+/** Whether this URL shows the home page itself: an empty /, with no search and no question (ADR 0028 (part was 0040), 3). */
 export function showsHome(pathname: string, sp: URLSearchParams): boolean {
   return pathname === '/' && !parseSearchParams(sp).q && !askedQuestion(sp);
 }
 
 /**
- * The path of a resource page (ADR 0040, 4), the id encoded so it stays one path segment. With a title, the
- * readable address `/resource/{id}/{slug}` (ADR 0050): the id stays the key, the slug is for people and search
+ * The path of a resource page (ADR 0028 (part was 0040), 4), the id encoded so it stays one path segment. With a title, the
+ * readable address `/resource/{id}/{slug}` (ADR 0029): the id stays the key, the slug is for people and search
  * engines.
  */
 export function resourcePath(id: string, title?: string | null): string {

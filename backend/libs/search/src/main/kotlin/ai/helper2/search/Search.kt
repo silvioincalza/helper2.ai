@@ -52,7 +52,7 @@ enum class NoticeCode {
 
 /**
  * [message] is always our own words. GUIDE_SUBJECT_NOT_FOUND carries the planner's words apart, so
- * the page can mark them AI-written (ADR 0038): [subject] is the name not found, [query] the
+ * the page can mark them AI-written (ADR 0018): [subject] is the name not found, [query] the
  * planned search shown instead (alternatives).
  */
 data class Notice

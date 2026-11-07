@@ -9,7 +9,7 @@ const SHOWN_ON_PHONE = 2;
 const PHONE = '(max-width: 720px)';
 
 /**
- * The type tabs over the list (ADR 0042, decision 7): All, the four types with the most results (two on a phone), then
+ * The type tabs over the list (ADR 0028 (part was 0042), decision 7): All, the four types with the most results (two on a phone), then
  * More with the rest.
  * A type chosen under More shows as a tab too, so the pressed tab is always in sight. Counts are the facet counts
  * from the API. Escape closes More and gives focus back to it.

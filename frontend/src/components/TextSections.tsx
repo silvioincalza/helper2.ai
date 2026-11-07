@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 /**
- * A sentence that states numbers from GET /policy (ADR 0042 decision 13): [text] with `{{name}}` variables, and
+ * A sentence that states numbers from GET /policy (ADR 0028 (part was 0042) decision 13): [text] with `{{name}}` variables, and
  * [withoutNumbers], the same sentence in words that need no number, shown while the numbers load or when they cannot.
  * A page never types a number the server may not apply.
  */
@@ -51,7 +51,7 @@ export function useTextSections(i18nKey: string, values?: TextValues): TextSecti
 /**
  * Renders the `<key>.sections` array of a locale file as headed sections, with the policy [values] in their sentences. Text pages keep their
  * copy in the locale file, so translating them needs no code change. Each section gets the id of
- * [sectionAnchor], so the table of contents can link to it (ADR 0040).
+ * [sectionAnchor], so the table of contents can link to it (ADR 0028).
  */
 export function TextSections({ i18nKey, values }: { i18nKey: string; values?: TextValues }) {
   const sections = useTextSections(i18nKey, values);

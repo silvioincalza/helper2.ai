@@ -1,4 +1,4 @@
-# Prometheus alert and recording rules for helper2 (ADR 0026). The single source: load this file as a Prometheus rule file
+# Prometheus alert and recording rules for helper2 (ADR 0031). The single source: load this file as a Prometheus rule file
 # (rule_files), or turn on monitoring.prometheusRule.enabled in the Helm chart, which embeds it in a
 # PrometheusRule for the Prometheus Operator.
 #
@@ -97,7 +97,7 @@ groups:
           severity: warning
         annotations:
           summary: "Circuit {{ $labels.name }} has not closed for 5 minutes ({{ $labels.environment }})."
-          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0033): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means guide answers are top search results and queries run untranslated, llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
           runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
       - alert: Helper2CallsNotPermitted
         # Calls an open circuit refused, per policy: the cost of the outage in calls, above one a minute for 10 minutes.
@@ -162,7 +162,7 @@ groups:
         annotations:
           summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 20% free ({{ $labels.namespace }})."
           description: "{{ $value | humanizePercentage }} free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
-          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0034)."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0035)."
       - alert: Helper2VolumeFull
         expr: |
           kubelet_volume_stats_available_bytes{namespace=~"helper2-.+"}
@@ -226,11 +226,11 @@ groups:
           runbook: "Dashboard panels 'Questions by outcome' (AI guide) or 'Enrichment outcomes' (Scout): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SCOUT_DAILY_ENRICHMENT_CALLS (scout_enrichment; its gap-round share H2_SCOUT_GAP_DAILY_CALLS), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS (scout_classifier), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
 
       - alert: Helper2LiveWebCreditsHigh
-        # ADR 0037: live Tavily calls of searches and the guide (one credit each), every feature and tier. The plan has
+        # ADR 0014: live Tavily calls of searches and the guide (one credit each), every feature and tier. The plan has
         # 14,000 credits a month; the Scout uses about 506, prod may spend 250 a day (app.dailyLimits.webSearchCredits)
         # and staging 150. The alert fires at 80% of prod's cap, before searches lose Tavily; change it with the cap.
         # The Scout's discovery and LinkedIn searches count here too (features scout-discovery and scout-linkedin, at
-        # most 40 a day together, ADR 0051 and 0061), as they count on the daily cap; its other Tavily queries do not.
+        # most 40 a day together, ADR 0022 and 0021), as they count on the daily cap; its other Tavily queries do not.
         expr: sum by (environment) (increase(helper2_live_web_credits_total{application="helper2"}[1d])) > 200
         for: 0m
         labels:
@@ -305,7 +305,7 @@ groups:
           runbook: "Dashboard row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
 
       - alert: Helper2DiscoveryStale
-        # ADR 0051: one alert for every discovery category (discovery-<category>, weekly) with no success for more
+        # ADR 0022: one alert for every discovery category (discovery-<category>, weekly) with no success for more
         # than 8 days (the 7-day interval plus a day). One alert per environment; the description lists them.
         expr: |
           count by (environment) (
@@ -322,7 +322,7 @@ groups:
   - name: helper2-guide
     rules:
       - alert: Helper2GuidePicksFromLowRanks
-        # ADR 0015: a kept pick far down the search list is the first sign of text written to be picked (content
+        # ADR 0016: a kept pick far down the search list is the first sign of text written to be picked (content
         # poisoning); its quote is genuine, so the evidence gate cannot catch it.
         expr: |
           (
@@ -340,7 +340,7 @@ groups:
           description: "{{ $value | humanizePercentage }} of the picks kept in the last day were ranked 9+ in search. A page may be written to be chosen by the model (content poisoning)."
           runbook: "Logs: 'guide timings' lines with keptRanks containing 9 or more, then ask the same question and read the low-ranked pick's page for instructions aimed at a model. Report the resource from the back office; rerun scripts/eval-guide.mjs --adversarial."
       - alert: Helper2GuideFirstUsefulSlow
-        # ADR 0026: the guide's latency target is the time to the first useful stream event (retrieved or clarify),
+        # ADR 0031: the guide's latency target is the time to the first useful stream event (retrieved or clarify),
         # p50 <= 3 s and p95 <= 8 s. The timer has buckets at 3 s and 8 s, so the p95 is exact at the target. The floor
         # of 3 questions in 15 minutes keeps one slow question at night from firing.
         expr: |

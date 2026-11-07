@@ -6,7 +6,7 @@
 #   export KUBECONFIG=<incalza-me-infra>/.secrets/kubeconfig
 # The platform repo (incalza-me-infra) owns the namespaces, the Ingresses, DNS and the deployer RBAC.
 #
-#   make image                   build the three linux/amd64 images (web, public app, back office; ADR 0069), push
+#   make image                   build the three linux/amd64 images (web, public app, back office; ADR 0032), push
 #                                them to Harbor (robot from OpenBao helper2/kv ci/harbor)
 #   make retag VERSION=X.Y.Z     add the release tag X.Y.Z to the three pushed images TAG (same digests, no rebuild)
 #   make sbom                    CycloneDX SBOM of the pushed public image TAG (syft), into sbom.cdx.json
@@ -14,7 +14,7 @@
 #   make web-sbom                the same for the web image TAG
 #   make postgres-sbom           the same for the Postgres image of postgres.image.tag
 #   make ci-images FROM=<commit> BUILD="web public backoffice" PUSHED=<file>
-#                                CD per component (ADR 0071): build the components in BUILD, give the others TAG on
+#                                CD per component (ADR 0033): build the components in BUILD, give the others TAG on
 #                                the signed image of FROM (same digest); the digests pushed go to PUSHED
 #   make sign PUSHED=<file>      CD: sign exactly the digests this run pushed (OpenBao Transit), then check TAG's images
 #   make sign-existing TAG=<tag> workstation only, with a confirmation: sign images pushed before signing
@@ -22,7 +22,7 @@
 #                                cosign.pub; diff, env-secret and deploy run it themselves and deploy by digest
 #   make ENV=staging diff        what the next deploy would change
 #   make ENV=staging env-secret  write ENV's app.env into the Secrets helper2-credentials (the passwords) and
-#                                helper2-app-env (the rest), never through Helm (ADR 0070)
+#                                helper2-app-env (the rest), never through Helm (ADR 0004)
 #   make ENV=staging deploy      env-secret, then helm upgrade --install (chart ../helm/helper2) with TAG, wait
 #                                for the migrate Job and the apps, roll back on failure
 #   make ENV=staging rollback    last deployed helm revision (not a failed or interrupted one)
@@ -132,7 +132,7 @@ image: ## build the linux/amd64 images of TAG (web, public app, back office) and
 		echo "pushed $$image:$(TAG)"; \
 	done
 
-# A release names its image by version (ADR 0048): Harbor adds the tag VERSION to the image of the commit TAG, so both
+# A release names its image by version (ADR 0034): Harbor adds the tag VERSION to the image of the commit TAG, so both
 # tags point at one digest and nothing is rebuilt. Run again: a no-op. VERSION already on another digest: a failure
 # (Harbor's tag-immutability rule would refuse to move it anyway).
 VERSION ?=
@@ -154,7 +154,7 @@ retag: ## add the release tag VERSION (X.Y.Z) to the three pushed images TAG in 
 		esac; \
 	done
 
-# CycloneDX SBOM of the pushed image of TAG, read from Harbor with the robot account (ADR 0046). Needs syft.
+# CycloneDX SBOM of the pushed image of TAG, read from Harbor with the robot account (ADR 0033). Needs syft.
 SBOM ?= sbom.cdx.json
 sbom: ## CycloneDX SBOM of the image TAG, read from Harbor (needs syft), into SBOM (default sbom.cdx.json)
 	@set -euo pipefail; $(HARBOR); \
@@ -191,13 +191,13 @@ postgres-image: ## build Postgres + pgvector (deploy/postgres) and push it to Ha
 	esac; \
 	echo "$(PG_REPO):$(PG_TAG) digest: $$(harbor_api apps/postgres $(PG_TAG) -f | jq -r .digest)"
 
-# The env Secrets (ADR 0007, 0070): app.env goes to the cluster with kubectl, never through Helm, so no value is
+# The env Secrets (ADR 0007, 0004): app.env goes to the cluster with kubectl, never through Helm, so no value is
 # kept in the release history. The passwords go to their own Secret, which no workload loads whole: each names
 # only its own keys. Helm gets only hashes, which restart the apps (any change) and Redis (a new Redis password).
 ENV_SECRET   := helper2-app-env
 CREDS_SECRET := helper2-credentials
 CREDENTIALS  := H2_DATABASE_PASSWORD|H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_REDIS_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD
-# One release only (the first with ADR 0070): the owner's and Redis' default password stay in helper2-app-env
+# One release only (the first with ADR 0004): the owner's and Redis' default password stay in helper2-app-env
 # too, so a failed upgrade that rolls back to the old chart (Postgres, Redis and pg-backup reading them from
 # helper2-app-env) still finds them. Both app templates set these two names under env:, which wins over envFrom,
 # so no app process sees them. In the release after, take CREDENTIALS instead of NOT_IN_APP_ENV below.
@@ -245,7 +245,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with a space in a database password"; exit 1; fi; \
 	sed 's|^H2_REDIS_PUBLIC_PASSWORD=.*|H2_REDIS_PUBLIC_PASSWORD=Ab+/Cd0123456789abcdefghijklmnopqr|' "$$env" > "$$bad"; \
 	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with a symbol in a Redis password"; exit 1; fi; \
-	echo "== ADR 0070: no app holds the owner's or Redis' default password; only Postgres, pg-backup and the migrate Job get the owner's"; \
+	echo "== ADR 0004: no app holds the owner's or Redis' default password; only Postgres, pg-backup and the migrate Job get the owner's"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set backup.enabled=true); \
 		for t in app backoffice; do \
@@ -302,14 +302,14 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	prod=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/app.yaml); \
 	grep -qE 'oauth-github' <<< "$$prod" || { echo "prod: no oauth-github profile"; exit 1; }; \
 	grep -qE 'name: H2_GUIDE_SIMILAR_THRESHOLD, value: "0.96"' <<< "$$prod" || { echo "prod: no similar threshold 0.96"; exit 1; }; \
-	echo "== shutdown (ADR 0027): preStop sleep 10 s, drain 30 s, grace 45 s, all from app.shutdown"; \
+	echo "== shutdown (ADR 0032): preStop sleep 10 s, drain 30 s, grace 45 s, all from app.shutdown"; \
 	grep -qE '^      terminationGracePeriodSeconds: 45$$' <<< "$$prod" || { echo "prod: terminationGracePeriodSeconds is not 45"; exit 1; }; \
 	grep -qE 'name: H2_SHUTDOWN_TIMEOUT, value: "30s"' <<< "$$prod" || { echo "prod: H2_SHUTDOWN_TIMEOUT is not 30s"; exit 1; }; \
 	grep -A2 '^            preStop:$$' <<< "$$prod" | grep -qE 'sleep: \{ seconds: 10 \}' || { echo "prod: no preStop sleep of 10 s"; exit 1; }; \
 	grace=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set app.shutdown.preStopSeconds=3 --set app.shutdown.drainSeconds=20 --show-only templates/app.yaml); \
 	grep -qE '^      terminationGracePeriodSeconds: 28$$' <<< "$$grace" || { echo "grace period must be preStopSeconds + drainSeconds + 5"; exit 1; }; \
-	echo "== every image but the apps' is pinned by digest (ADR 0046); postgres once postgres.image.digest is set"; \
+	echo "== every image but the apps' is pinned by digest (ADR 0033); postgres once postgres.image.digest is set"; \
 	imgs=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice|-web)?:' | sort -u); \
 	test -n "$$imgs" || { echo "no images rendered"; exit 1; }; \
@@ -324,7 +324,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	if "$${r[@]}" | grep -q 'checksum/redis-auth-revision'; then echo "chart-managed password: no revision annotation expected"; exit 1; fi; \
 	if "$${r[@]}" --set redis.auth.existingSecret=redis-auth --set redis.auth.revision=v2 >/dev/null 2>&1; then \
 		echo "redis.auth.revision=v2 must fail the render"; exit 1; fi; \
-	echo "== edge (ADR 0035, 0069): Service helper2-admin selects the back office; ingress-nginx reaches the three workloads on 8080 only; the web pods take nothing else"; \
+	echo "== edge (ADR 0024, 0032): Service helper2-admin selects the back office; ingress-nginx reaches the three workloads on 8080 only; the web pods take nothing else"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000); \
 		app=$$("$${r[@]}" --show-only templates/app.yaml); bo=$$("$${r[@]}" --show-only templates/backoffice.yaml); \
@@ -339,7 +339,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		grep -q 'podSelector: { matchLabels: { app: helper2-web } }' <<< "$$web" && [ "$$(grep -c 'port:' <<< "$$web")" -eq 1 ] \
 			|| { echo "$$e: NetworkPolicy ingress-web must let in 8080 only"; exit 1; }; \
 	done; \
-	echo "== web (ADR 0069): the public pod copies its shell from the web image the web pods run, into a read-only /shell"; \
+	echo "== web (ADR 0032): the public pod copies its shell from the web image the web pods run, into a read-only /shell"; \
 	r=(helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set web.image.repository=reg/helper2-web --set web.image.tag=111111111111); \
 	web=$$(helm template "$${r[@]}" --show-only templates/web.yaml | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
 	init=$$(helm template "$${r[@]}" --show-only templates/app.yaml | awk '/initContainers:/ {p=1} /^      containers:/ {p=0} p' | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
@@ -352,7 +352,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		--set monitoring.prometheusRule.enabled=true --show-only templates/prometheusrule.yaml); \
 	diff <(grep -oE 'alert: [A-Za-z0-9]+' <<<"$$rule") <(grep -oE 'alert: [A-Za-z0-9]+' $(ROOT)/deploy/monitoring/helper2-rules.yaml) \
 		|| { echo "the PrometheusRule must hold the alerts of deploy/monitoring/helper2-rules.yaml"; exit 1; }; \
-	echo "== backup (ADR 0027): a failed pg_dump fails the Job, the dump is verified before it replaces the old one, old dumps go last"; \
+	echo "== backup (ADR 0032): a failed pg_dump fails the Job, the dump is verified before it replaces the old one, old dumps go last"; \
 	bk=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/backup.yaml); \
 	grep -q 'set -o pipefail' <<< "$$bk" || { echo "backup: no pipefail"; exit 1; }; \
 	grep -q 'startingDeadlineSeconds: 3600' <<< "$$bk" || { echo "backup: no startingDeadlineSeconds"; exit 1; }; \
@@ -405,7 +405,7 @@ release-ready:
 # --force-conflicts: Helm is the only owner. Fields last written by kubectl (kustomize era, or a manual
 # `kubectl edit`) would otherwise block server-side apply, e.g. the image on the first new tag.
 # 12m: the app's replicas are replaced one after another, each only once the previous one is ready.
-# --wait-for-jobs: the release succeeds only once the migrate Job has (ADR 0070); a failed Job rolls it back.
+# --wait-for-jobs: the release succeeds only once the migrate Job has (ADR 0004); a failed Job rolls it back.
 # --history-max 3: enough to roll back; older revisions are deleted.
 deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV to TAG (default: current commit), wait, roll back on failure
 	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --wait-for-jobs --timeout 12m --rollback-on-failure --history-max 3
@@ -451,7 +451,7 @@ status: ## ENV's pods (READY = the readiness probe) and the public site
 	@# Actuator health is on the management port (8081), which the Services and the Ingresses never route.
 	curl -s -o /dev/null -w "https://$(HOST)/ -> %{http_code}\n" https://$(HOST)/
 
-# --- CD per component, signing and verification (ADR 0071) ---------------------------------------------------------
+# --- CD per component, signing and verification (ADR 0033) ---------------------------------------------------------
 
 .PHONY: ci-images sign sign-existing verify-images verified cosign-pub chart-check-digests
 
@@ -629,7 +629,7 @@ verified:
 	@echo "TAG=$(TAG)" >> "$(VERIFIED).new"; mv -f "$(VERIFIED).new" "$(VERIFIED)"
 diff env-secret: verified
 verified_digest = $(shell sed -n 's/^$(1)=//p' $(VERIFIED) 2>/dev/null)
-need_digest = $(if $(and $(filter TAG=$(TAG),$(shell cat $(VERIFIED) 2>/dev/null)),$(filter sha256:%,$(call verified_digest,$(1)))),--set $(2)=$(call verified_digest,$(1)),$(error $(1): no signature check for TAG $(TAG) in $(VERIFIED). Run make verified (ADR 0071)))
+need_digest = $(if $(and $(filter TAG=$(TAG),$(shell cat $(VERIFIED) 2>/dev/null)),$(filter sha256:%,$(call verified_digest,$(1)))),--set $(2)=$(call verified_digest,$(1)),$(error $(1): no signature check for TAG $(TAG) in $(VERIFIED). Run make verified (ADR 0033)))
 HELM_ARGS += $(call need_digest,APP_DIGEST,image.digest) $(call need_digest,BO_DIGEST,backoffice.image.digest) \
 	$(call need_digest,WEB_DIGEST,web.image.digest) $(call need_digest,PG_DIGEST,postgres.image.digest)
 
@@ -646,7 +646,7 @@ cosign-pub: ## write cosign.pub from the OpenBao Transit key (needs read on its 
 chart-check: chart-check-digests
 chart-check-digests:
 	@set -euo pipefail; \
-	echo "== digests (ADR 0071): with the four digests set, every image is repository:tag@digest; the web pods and the init container run the same one"; \
+	echo "== digests (ADR 0033): with the four digests set, every image is repository:tag@digest; the web pods and the init container run the same one"; \
 	d() { printf 'sha256:%064d' "$$1"; }; \
 	r=(helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set image.digest=$$(d 1) \
 		--set web.image.digest=$$(d 2) --set backoffice.image.digest=$$(d 3) --set postgres.image.digest=$$(d 4)); \

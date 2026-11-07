@@ -1,0 +1,46 @@
+# Sequence: the ai-deadlines collector stores a conference's next edition, then the home page lists it.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (refreshEventDates, upcomingEvents),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexResources.java (index), usecase/ListUpcomingEvents.java, ResourceCards.java,
+#   backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/components/home/EventsBoard.tsx.
+#   Shown with days=90, as the v4 Home asks; today's EventsBoard asks size=60 without days and keeps 90 days itself.
+# Render: cd docs/diagrams && d2 fmt sequence-0021-next-events.d2 && d2 sequence-0021-next-events.d2 sequence-0021-next-events.svg
+
+...@style
+
+shape: sequence_diagram
+
+runner: RunScout {class: app}
+col: AiDeadlinesCollector {class: app}
+gh: "GitHub contents API" {class: ext}
+raw: "raw.githubusercontent.com" {class: ext}
+cat: IndexResources {class: app}
+home: "EventsBoard\n(home page)" {class: person}
+ctrl: ResourcesController {class: app}
+details: ListUpcomingEvents {class: app}
+rs: ResourceStore {class: app}
+db: PostgreSQL {class: data}
+
+runner -> col: "collect(checkpoint, null, 500)\n(due once a day)"
+col -> gh: "GET /repos/huggingface/ai-deadlines/\ncontents/src/data/conferences"
+gh -> col: "file names + download_url"
+col -> col: "download_url on the raw host?\n(else skipped and counted in\nitems.dropped; no token sent)"
+col -> raw: "GET <conference>.yml (no token)"
+raw -> col: "editions: start, end, city, country, link"
+col -> col: "file unreadable or not YAML:\nskipped, counted in items.dropped;\ncircuit open: the pass fails"
+col -> col: "nextEdition(today):\nsoonest edition not ended"
+col -> runner: "EVENT hits with scheduled days"
+runner -> cat: "index(hits, ai-deadlines)"
+cat -> rs: "upsert(hits, INDEXED)"
+rs -> db: "upsert source_record;\nrefreshEventDates(resource ids)"
+home -> ctrl: "GET /api/v1/events/upcoming?days=90&size=6"
+ctrl -> details: "list(today 00:00 UTC,\nuntil = today + 90 days, 6)"
+details -> rs: "upcomingEvents(today, until, 6)"
+rs -> db: "type EVENT, start stated,\nend (or start) on or after today,\nstart before until"
+db -> rs: "ids, soonest first"
+rs -> details: "ids"
+details -> rs: "ResourceCards.cardsOf(ids):\nfindResources, recordsOf(ids)\n(six statements for any size)"
+details -> rs: "countUpcomingEvents(today, until)"
+rs -> details: "total"
+details -> ctrl: "Page(EVENT results, total)"
+ctrl -> home: "200 UpcomingEventsResponse:\nitems, total, until (max-age 5 min)"

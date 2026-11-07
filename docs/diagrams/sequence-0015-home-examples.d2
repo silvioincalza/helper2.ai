@@ -1,0 +1,50 @@
+# Sequence: an admin adds an example, the check passes it, a visitor gets it on the home page (ADR 0015).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java,
+#   examples/usecase/AddHomeExample.java, CheckHomeExamples.java, ListHomeExamples.java,
+#   examples/internal/HomeExampleCheckSchedule.java, SearchExampleSearch.java, examples/web/HomeExamplesController.java,
+#   examples/usecase/DraftHomeExamples.java, internal/SpringAiExampleDrafter.java, admin/usecase/ResolveReview.java,
+#   frontend/src/lib/examples.ts, frontend/src/components/home/HomeExamples.tsx, frontend/src/pages/admin/ExamplesPage.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0015-home-examples.d2 && d2 sequence-0015-home-examples.d2 sequence-0015-home-examples.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(admin host)" {class: person}
+api: "helper2\n(examples, admin)" {class: app}
+db: PostgreSQL {class: data}
+search: "Search\n(no web)" {class: app}
+visitor: "Visitor\n(home page)" {class: person}
+
+model: "Nemotron\n(fast)" {class: ai}
+
+draft: "Draft with AI (optional)" {
+  owner -> api: "POST /api/v1/admin/home-examples/drafts"
+  api -> db: "well-known resources no example expects\nand no waiting draft is about"
+  api -> model: "titles, types, descriptions\n(untrusted, one call, own budget)" {class: ai-call}
+  model -> api: "JSON drafts"
+  api -> db: "kept drafts: review items EXAMPLE_CANDIDATE"
+  owner -> api: "accept a draft"
+  api -> db: "decision + INSERT home_example AI_DRAFTED\n(one transaction)"
+}
+
+add: Add {
+  owner -> api: "POST /api/v1/admin/home-examples"
+  api -> db: "catalog titles of the expected results"
+  api -> db: "INSERT home_example (PENDING),\nINSERT admin_audit (ADDED)"
+  api -> owner: "201, check: PENDING"
+}
+
+check: "Check (within 5 minutes)" {
+  api -> db: "examples PENDING (cluster lock)"
+  api -> search: "query, path, 10 results" {class: hot}
+  search -> api: "ranked ids, every source answered"
+  api -> db: "check PASS, best rank 2\n(only if the search is unchanged)"
+}
+
+show: Show {
+  visitor -> api: "GET /api/v1/home/examples"
+  api -> db: "ACTIVE and PASS, at most 50"
+  api -> visitor: "pool (public, max-age=300)"
+  visitor -> visitor: "pick 2 everyday + 2 builder;\nthe built-in list when the pool is late (800 ms),\nfails, or has fewer than 2 for a path;\nan AI mark on chips with aiDrafted"
+}

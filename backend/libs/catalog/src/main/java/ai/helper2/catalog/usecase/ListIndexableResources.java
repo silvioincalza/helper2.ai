@@ -8,7 +8,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 /**
- * The resource pages a sitemap lists (ADR 0050 §6); the rule itself belongs to the pages module.
+ * The resource pages a sitemap lists (ADR 0029 (part was 0050) §6); the rule itself belongs to the
+ * pages module.
  */
 @Service
 public class ListIndexableResources {

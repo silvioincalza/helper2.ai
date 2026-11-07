@@ -1,0 +1,115 @@
+# Flowchart: who may call what, how a sign-in becomes ADMIN, where bookmarks are kept, how an account is deleted and
+# what the admin audit trail records.
+# The admin host is in ADR 0024 (flow-0024-admin-host.d2): the back office app, ADMIN only there (ADR 0032).
+#   backend/apps/backoffice/src/main/java/ai/helper2/identity/config/BackOfficeSecurityConfiguration.java (admin rules),
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports),
+#   identity/internal/JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java, scout/usecase/StartScoutRun.kt,
+#   frontend/src/context/BookmarksContext.tsx, frontend/src/pages/AccountPage.tsx, frontend/src/pages/admin/,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java (counters deleted with the account),
+#   backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me).
+# Render: cd docs/diagrams && d2 fmt flow-0024-identity-and-admin.d2 && d2 flow-0024-identity-and-admin.d2 flow-0024-identity-and-admin.svg
+
+...@style
+
+direction: down
+
+req: "Request to /api/**" {class: end}
+
+access: "Security rules\n(public app; admin paths: the back office app)" {
+  class: group
+  direction: down
+  open: "Public GET (search, recent, sources,\nresources, events, me)\nor POST reports / guide?" {class: decision}
+  anon: "Allowed, no account" {class: end}
+  admin: "/api/v1/admin/** (back office)\nor /actuator/** (not health)?" {class: decision}
+  isadmin: "Session has ROLE_ADMIN?" {class: decision}
+  bm: "/api/v1/me/bookmarks\nor DELETE /api/v1/me?" {class: decision}
+  signed: "Signed in?" {class: decision}
+  okadmin: "Allowed (admin)" {class: end}
+  ok: "Allowed (own bookmarks,\nown account)" {class: end}
+  e401: "401 (no redirect)" {class: fail}
+  deny: "Any other /api/**: denied" {class: fail}
+  e403: "403" {class: fail}
+  limits: "GET /me: limits of this visitor,\nread from the counters, never counted;\nguide questions null without a model,\nweb searches null without a web source;\nno address, hash or id in the answer" {class: data}
+  open -> anon: yes {class: hot}
+  anon -> limits: "GET /me"
+  open -> admin: no
+  admin -> isadmin: yes
+  admin -> bm: no
+  isadmin -> okadmin: yes
+  isadmin -> e403: "signed in,\nnot admin"
+  isadmin -> e401: "no session"
+  bm -> signed: yes
+  bm -> deny: no
+  signed -> ok: yes
+  signed -> e401: no
+}
+
+signin: Sign-in (only from /admin) {
+  class: group
+  direction: down
+  profile: "Profile oauth-github active?\n(off unless set for the environment)" {class: decision}
+  nosign: "No sign-in offered" {class: end}
+  github: "GitHub OAuth2, scope read:user" {class: ext}
+  roles: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}
+  user: "ROLE_USER" {class: app}
+  adm: "ROLE_USER + ROLE_ADMIN" {class: app}
+  ensure: "InteractiveAuthenticationSuccessEvent\n(the sign-in filter) → Users.signedIn: upsert app_user\n(provider, subject, name,\nlast sign-in; no e-mail)" {class: data}
+  back: "Redirect to /admin\n(failure: /admin?signin=failed)" {class: end}
+  profile -> nosign: no
+  profile -> github: yes
+  github -> roles
+  roles -> adm: yes
+  roles -> user: no
+  adm -> ensure
+  user -> ensure
+  ensure -> back
+}
+
+bookmarks: Bookmarks (one use case per action) {
+  class: group
+  direction: down
+  who: "Signed in?" {class: decision}
+  local: "Browser storage\nh2.bookmarks.v1" {class: app}
+  merge: "MergeLocalBookmarks once after sign-in\n(POST local list), then clear local;\nAddBookmark (PUT one)" {class: app}
+  cap: "http(s) link ≤ 2000 chars and\naccount ≤ 500 afterwards?" {class: decision}
+  saved: "Saved (idempotent,\nfirst savedAt kept)" {class: end}
+  refused: "400, whole request\nrolled back" {class: fail}
+  who -> local: no
+  who -> merge: yes
+  merge -> cap
+  cap -> saved: yes
+  cap -> refused: no
+}
+
+account: Delete my account {
+  class: group
+  direction: down
+  page: "/account: Delete my account,\nthen confirm" {class: app}
+  call: "DELETE /api/v1/me\n(X-XSRF-TOKEN)" {class: app}
+  end: "Session ended first (a session\nthat outlives the row would\nrecreate the account)" {class: app}
+  del: "DeleteMyAccount: delete app_user;\nbookmarks cascade, reports keep\nreporter = NULL" {class: data}
+  quota: "Delete the user's daily\nweb-search counters (Redis);\nRedis down: they expire in 24 h" {class: data}
+  out: "204, page reloads\nsigned out" {class: end}
+  page -> call -> end -> del -> quota -> out
+}
+
+audit: Admin audit trail {
+  class: group
+  direction: down
+  write: "ResolveReviewItem / StartScoutRun" {class: app}
+  row: "admin_audit row: admin id, action,\ntarget, at, outcome (append-only)" {class: data}
+  read: "GET /api/v1/admin/audit\n(paged, newest first)" {class: end}
+  write -> row: "AuditTrail port"
+  row -> read
+}
+
+planned: "Admin port 8082 (ADR 0024):\nback office and ADMIN only there;\npublic port answers 404" {class: config}
+
+req -> access.open: {class: hot}
+access.e401 -> signin.profile: "admin page\nshows SignIn"
+signin.back -> bookmarks.who
+access.ok -> account.page: "signed-in user\nopens own account"
+access.okadmin -> audit.write
+planned -> access.admin: "fronts" {class: config}

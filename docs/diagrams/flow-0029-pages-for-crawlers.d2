@@ -1,0 +1,72 @@
+# Flowchart: what Spring answers for an address the client router owns (ADR 0029).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java,
+#   pages/usecase/RenderPage.java, pages/internal/PageTemplate.java, PageHtml.java, platform/ClientRoutes.java,
+#   deploy/helm/helper2/templates/app.yaml (the shell's init container),
+#   backend/apps/public/src/main/kotlin/ai/helper2/pages/Routes.kt, ResourcePaths.kt (Slug), PageHead.kt (IndexPolicy), Pages.kt (JsonLd).
+# Render: cd docs/diagrams && d2 fmt flow-0029-pages-for-crawlers.d2 && d2 flow-0029-pages-for-crawlers.d2 flow-0029-pages-for-crawlers.svg
+
+...@style
+
+direction: down
+
+req: "GET an address without a file extension\n(not /api, /oauth2, /login, /logout, /actuator)" {class: end}
+
+route: "A page of the app?\n(PageAddress, Routes.kt)" {class: decision}
+notfound: "404 + app shell\nnoindex, \"Page not found\"" {class: fail}
+
+kind: "Which page?" {class: decision}
+
+static: "/, /sources, /mission,\n/privacy, /terms" {class: app}
+personal: "/search, /?q=, /saved,\n/account, /admin/**" {class: app}
+
+res: "/resource/{id}/{slug}" {
+  class: group
+  direction: down
+  uuid: "id is a UUID?" {class: decision}
+  find: "GetResourceDetail.find(id)" {class: app}
+  found: "Found?" {class: decision}
+  merged: "Found under another id\n(records merged)?" {class: decision}
+  moved: "301 to /resource/{owner}/{slug}" {class: end}
+  slug: "Slug as the title gives?\n(none for a title without\nLatin letters or digits)" {class: decision}
+  gone: "404 + app shell\nnoindex, \"Resource not found\"" {class: fail}
+  worthy: "IndexPolicy: index-worthy?\n(type, source description,\na fact or relationship)" {class: decision}
+  index: "robots: index" {class: hot}
+  noindex: "robots: noindex, follow" {class: data}
+  head: "Head: title, source description\n(never AI-written), absolute canonical,\nOpen Graph, JSON-LD by type\nBody: h1, facts, source and related links" {class: app}
+  uuid -> find: yes
+  uuid -> gone: no
+  find -> found
+  found -> merged: yes
+  found -> gone: no
+  merged -> moved: yes
+  merged -> slug: no
+  slug -> moved: "no, missing or old"
+  slug -> worthy: yes
+  worthy -> index: yes
+  worthy -> noindex: no
+  index -> head
+  noindex -> head
+}
+
+fixed: "Fixed title and description\nrobots: index" {class: hot}
+quiet: "Fixed title\nrobots: noindex, follow" {class: data}
+
+escape: "Every text HTML-escaped,\nJSON-LD with \\u003c \\u003e \\u0026" {class: app}
+out: "200 + filled index.html (no-cache)\ntags marked data-h2-head;\nReact replaces the body" {class: end}
+
+built: "A shell read at start?\n(file:/shell/index.html, from the\nweb image of the same tag)" {class: decision}
+spa: "nothing claimed: 404\n(development: Vite serves the UI)" {class: end}
+req -> built
+built -> spa: no
+built -> route: yes
+route -> notfound: no
+route -> kind: yes
+kind -> static
+kind -> personal
+kind -> res.uuid
+static -> fixed
+personal -> quiet
+fixed -> escape
+quiet -> escape
+res.head -> escape
+escape -> out

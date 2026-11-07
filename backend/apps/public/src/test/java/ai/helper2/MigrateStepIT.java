@@ -21,7 +21,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * The migrate step of a deployment (ADR 0070), on a database of its own in the shared container:
+ * The migrate step of a deployment (ADR 0004), on a database of its own in the shared container:
  * {@code java -jar app.jar migrate} migrates as the owner and opens the apps' logins; the apps'
  * roles then read and write rows but change no schema and no migration history; and an app's schema
  * check waits while the database is not migrated yet and fails once the wait is over.

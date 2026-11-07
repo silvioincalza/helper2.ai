@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Records the question embeddings of docs/eval/guide-similar.json into
- * docs/eval/guide-similar-vectors.json, with the embedding API search uses (ADR 0012):
+ * docs/eval/guide-similar-vectors.json, with the embedding API search uses (ADR 0011):
  * H2_NVIDIA_API_KEY, and H2_NVIDIA_EMBEDDING_BASE_URL and H2_NVIDIA_EMBEDDING_MODEL when not the
  * defaults. Our own fixed questions only, so the file is committed and the evaluation runs in every
  * build. Never part of `test` or CI: `./gradlew evalRecord --tests '*GuideSimilarRecorder'`.

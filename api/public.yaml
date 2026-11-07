@@ -347,7 +347,7 @@ paths:
       operationId: getPolicy
       summary: The limits and retention periods the Mission, Privacy and Terms pages state.
       description: >-
-        Read from the running configuration (ADR 0052), so the text pages show the numbers the code applies. The same
+        Read from the running configuration (ADR 0029), so the text pages show the numbers the code applies. The same
         answer for everyone, no personal data; cached for 5 minutes. Rate-limited like the other public reads.
       responses:
         '200':
@@ -372,8 +372,8 @@ components:
           type: object
           required: [maxCandidates, maxPicks]
           properties:
-            maxCandidates: { type: integer, minimum: 1, description: "Search results the guide's model chooses from (`H2_GUIDE_MAX_CANDIDATES`, ADR 0015)." }
-            maxPicks: { type: integer, minimum: 1, description: Most picks in one guide answer (ADR 0015). }
+            maxCandidates: { type: integer, minimum: 1, description: "Search results the guide's model chooses from (`H2_GUIDE_MAX_CANDIDATES`, ADR 0016)." }
+            maxPicks: { type: integer, minimum: 1, description: Most picks in one guide answer (ADR 0016). }
         dailyLimits:
           type: object
           required: [guideQuestions, freeAnswers, webSearches]
@@ -392,7 +392,7 @@ components:
                 (`H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, ADR 0017).
             webSearches:
               type: object
-              description: Live web searches per visitor, feature and UTC day (ADR 0037).
+              description: Live web searches per visitor, feature and UTC day (ADR 0014).
               required: [guest, registered]
               properties:
                 guest: { $ref: '#/components/schemas/WebSearchLimits' }
@@ -401,17 +401,17 @@ components:
                   description: The limits of a signed-in user; null while the registered tier is off (everyone gets the guest limits).
         retention:
           type: object
-          description: How long each store keeps what it keeps (ADR 0034), in seconds.
+          description: How long each store keeps what it keeps (ADR 0035), in seconds.
           required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
           properties:
-            webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0037)." }
+            webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0014)." }
             guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0017)." }
             webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`H2_RETENTION_WEB_NEWS`)." }
             pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
             listIndexSeconds: { type: integer, format: int64, minimum: 0, description: "The search index of an awesome list, after the list was last read (`H2_RETENTION_LIST_INDEX`)." }
             pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
             pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
-            backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_BACKUP_RETENTION_DAYS`, from the chart's `backup.retentionDays`, ADR 0027)." }
+            backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_BACKUP_RETENTION_DAYS`, from the chart's `backup.retentionDays`, ADR 0032)." }
             cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
             cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
             translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`H2_SEARCH_TRANSLATION_TTL`)." }
@@ -419,16 +419,16 @@ components:
             storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_LIVE_WEB_RESULTS`)." }
             inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
-            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0045)." }
-            runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0060). Each setting's newest change stays while it applies." }
+            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0026)." }
+            runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0007). Each setting's newest change stays while it applies." }
         sources:
           type: object
-          description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0051).
+          description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0022).
           required: [categories, categorySearches, quoteChars, articleExcerptChars, productPageExcerptChars, productPages, errorLogChars]
           properties:
             categories: { type: integer, minimum: 0, description: Categories of AI tools searched for once a week (`helper2.categories`). }
             categorySearches: { type: integer, minimum: 0, description: Web searches those categories make in all, once a week. }
-            quoteChars: { type: integer, minimum: 1, description: Longest quote the Scout keeps from a page (fixed in code, ADR 0051). }
+            quoteChars: { type: integer, minimum: 1, description: Longest quote the Scout keeps from a page (fixed in code, ADR 0022). }
             articleExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of an article found by web search (fixed in code). }
             productPageExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of a product page found by web search (fixed in code). }
             productPages: { type: integer, minimum: 1, description: "Most pages of a product's own website read for one product (fixed in code)." }
@@ -458,7 +458,7 @@ components:
         label: { type: string, minLength: 2, maxLength: 32, description: The text on the chip. }
         query: { type: string, minLength: 3, maxLength: 200, description: What the example searches. }
         path: { $ref: './common.yaml#/components/schemas/AudiencePath' }
-        aiDrafted: { type: boolean, description: "A model drafted the label and query, and a person accepted them (ADR 0049 §6). Labelled in the UI." }
+        aiDrafted: { type: boolean, description: "A model drafted the label and query, and a person accepted them (ADR 0015 §6). Labelled in the UI." }
 
     Evidence:
       type: object
@@ -491,7 +491,7 @@ components:
         evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
         origin:
           $ref: './common.yaml#/components/schemas/ValueOrigin'
-          description: AI_EXTRACTED, or SELF_DECLARED when only the product's own page names the target (ADR 0056).
+          description: AI_EXTRACTED, or SELF_DECLARED when only the product's own page names the target (ADR 0023).
 
     SummaryClaim:
       type: object
@@ -501,7 +501,7 @@ components:
         evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
         selfDeclared:
           type: boolean
-          description: True when the claim cites the product's own web page, so it is what the vendor says (ADR 0056).
+          description: True when the claim cites the product's own web page, so it is what the vendor says (ADR 0023).
 
     AiSummary:
       type: object
@@ -727,7 +727,7 @@ components:
           maxItems: 40
           description: >-
             The category filter active on the results page (ids from GET /categories, or `unknown`). The guide picks
-            only among results in one of them (ADR 0053). Applied by code; never sent to a model. Unknown ids are a 400.
+            only among results in one of them (ADR 0013). Applied by code; never sent to a model. Unknown ids are a 400.
           items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 30 }
 
     GuideRecommendation:
@@ -810,7 +810,7 @@ components:
           type: string
           enum: [OK, PARTIAL, LLM_UNAVAILABLE, NO_CANDIDATES, NEEDS_CLARIFICATION]
           description: NEEDS_CLARIFICATION = the question was too vague to search (no search ran), or its one subject matches different kinds of resource (a search ran); see `clarification`.
-        searchQuery: { type: string, description: "Search terms actually used to retrieve candidates. Empty on an answer reused from a similar question (ADR 0041, 0044): the planner wrote them from another asker's words." }
+        searchQuery: { type: string, description: "Search terms actually used to retrieve candidates. Empty on an answer reused from a similar question (ADR 0017, 0018): the planner wrote them from another asker's words." }
         recommendations: { type: array, items: { $ref: '#/components/schemas/GuideRecommendation' } }
         prompt: { oneOf: [{ $ref: '#/components/schemas/GuidePrompt' }, { type: 'null' }] }
         model: { oneOf: [{ $ref: '#/components/schemas/GuideModelInfo' }, { type: 'null' }] }
@@ -837,7 +837,7 @@ components:
       type: object
       required: [queries, removed]
       description: >-
-        The research trail (ADR 0044): the searches the guide ran and the suggestions its checks removed. Never the
+        The research trail (ADR 0018): the searches the guide ran and the suggestions its checks removed. Never the
         removed AI reason, raw model output or the prompt.
       properties:
         queries:
@@ -845,7 +845,7 @@ components:
           maxItems: 3
           description: >-
             AI-written search queries actually run (the planned query, the web query). Empty when the planner did not
-            run, and on an answer reused from a similar question (ADR 0041): those came from another asker's words.
+            run, and on an answer reused from a similar question (ADR 0017): those came from another asker's words.
           items: { type: string, maxLength: 200 }
         removed:
           type: array
@@ -871,7 +871,7 @@ components:
     GuideIntent:
       type: string
       enum: [SUGGEST, NEWEST, ALTERNATIVES, COMPARE, HOW_TO, WHAT_IS, WHEN, LEARN]
-      description: What kind of answer the question asks for (ADR 0032). SUGGEST is the default.
+      description: What kind of answer the question asks for (ADR 0016). SUGGEST is the default.
 
     GuideWindow:
       type: object

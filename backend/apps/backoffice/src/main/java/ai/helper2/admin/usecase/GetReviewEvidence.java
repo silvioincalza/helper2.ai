@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * An administrator opens a review item and sees what it is about: the run or the relationship it
- * links to, with the quotes behind them (ADR 0045). Read-only. Its read-only transaction is
+ * links to, with the quotes behind them (ADR 0026). Read-only. Its read-only transaction is
  * declared where it is wired (AdminUseCaseConfiguration), so the use case stays free of Spring.
  */
 public class GetReviewEvidence {

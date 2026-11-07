@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 /**
- * Pages for crawlers (ADR 0050): the head, the status, the sitemap and robots.txt. The app shell is
+ * Pages for crawlers (ADR 0029): the head, the status, the sitemap and robots.txt. The app shell is
  * set in ApiTestBase, so this test shares the one test context (a second one ran CI out of memory).
  */
 class PagesIT extends ApiTestBase {
@@ -61,7 +61,7 @@ class PagesIT extends ApiTestBase {
         .contains("application/ld+json")
         .contains("<div id=\"root\"><main class=\"h2-prerender\"><h1>DeepL")
         // The shell's script carries the request's CSP nonce, whichever policy is active (ADR
-        // 0059).
+        // 0030).
         .containsPattern("<script nonce=\"[A-Za-z0-9+/=]{24}\" type=\"module\"");
   }
 
@@ -104,7 +104,7 @@ class PagesIT extends ApiTestBase {
 
   @Test
   void filesAndTheApiAreNotClaimed() throws Exception {
-    // The web app's files are the web image's (ADR 0069): the public app serves none of them.
+    // The web app's files are the web image's (ADR 0032): the public app serves none of them.
     for (String file : java.util.List.of("/assets/missing.js", "/theme.js", "/favicon.svg")) {
       mvc.perform(get(file)).andExpect(status().isNotFound());
     }

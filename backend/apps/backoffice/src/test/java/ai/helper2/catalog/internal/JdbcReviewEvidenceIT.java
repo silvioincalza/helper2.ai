@@ -20,7 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-/** A review item's evidence, read through its link on real PostgreSQL (ADR 0045). */
+/** A review item's evidence, read through its link on real PostgreSQL (ADR 0026). */
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
 class JdbcReviewEvidenceIT {

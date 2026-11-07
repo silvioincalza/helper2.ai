@@ -13,7 +13,7 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.module.kotlin.KotlinModule;
 
 /**
- * Tool guide answers in the shared cache {@code tool-guide} (ADR 0031), shared by every replica and
+ * Tool guide answers in the shared cache {@code tool-guide} (ADR 0019), shared by every replica and
  * kept across deploys. An answer holds the checked steps and links to the documents, never a
  * document's text. The key is a hash of the domain's key. While the store is unavailable, get
  * misses and put does nothing.

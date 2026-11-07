@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * Pages for crawlers (ADR 0050), bound from {@code helper2.pages} (defaults and H2_ names in
+ * Pages for crawlers (ADR 0029), bound from {@code helper2.pages} (defaults and H2_ names in
  * application.yaml).
  *
  * @param publicBaseUrl the public host every canonical link and sitemap address uses, without a

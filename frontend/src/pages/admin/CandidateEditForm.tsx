@@ -36,7 +36,7 @@ function errorOf(e: unknown, t: (k: string) => string): string {
 }
 
 /**
- * ADR 0065: an admin fixes an open resource candidate before accepting it: its title, its type (any candidate type) and
+ * ADR 0026: an admin fixes an open resource candidate before accepting it: its title, its type (any candidate type) and
  * its tags. Only the fields that changed are sent, with the [details] the admin saw: when the candidate changed since,
  * the server refuses the edit. The item stays open; [onSaved] reloads the list, so the reason line and the details show
  * the new values.

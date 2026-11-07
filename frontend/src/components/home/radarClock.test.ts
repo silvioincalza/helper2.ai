@@ -1,6 +1,6 @@
 import { beamAngle, contactAt, LEAVE_MS, lastPass, REST, TURN_MS } from './radarClock';
 
-describe('the radar clock (ADR 0042): a contact is painted when the beam passes it', () => {
+describe('the radar clock (ADR 0028): a contact is painted when the beam passes it', () => {
   it('the beam turns once every 5 s, clockwise from 3 o’clock', () => {
     expect(beamAngle(0)).toBe(0);
     expect(beamAngle(TURN_MS / 4)).toBe(90);

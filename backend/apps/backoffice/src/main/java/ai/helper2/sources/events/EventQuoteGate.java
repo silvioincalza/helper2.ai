@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Decides what a model's reading of an event page may publish (ADR 0067). The model only points to
+ * Decides what a model's reading of an event page may publish (ADR 0021). The model only points to
  * a quote; code checks that the quote is on the page, reads the days from it and compares them with
  * the model's. A page with more than one event, a quote without a year, last year's edition, an
  * event further than six months ahead or longer than a month: nothing is published. Kind, format

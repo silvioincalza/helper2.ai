@@ -208,7 +208,7 @@ class ScoutPipelineIT {
                 .value("mcp-registry"));
 
     String id = ResourceId.of(CanonicalUrl.of(REPO)).toString();
-    // The public page reads the same catalog use case (the page is the public app's, ADR 0069).
+    // The public page reads the same catalog use case (the page is the public app's, ADR 0032).
     ResourceDetail detail = resources.find(UUID.fromString(id)).orElseThrow();
     assertThat(detail.enrichmentStatus()).isEqualTo("PARTIAL");
     List<ResourceDetail.Assertion> ai =

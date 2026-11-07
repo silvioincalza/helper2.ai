@@ -1,6 +1,6 @@
 spring:
   application:
-    # The back office (ADR 0069): its own name on every metric, span and log line.
+    # The back office (ADR 0032): its own name on every metric, span and log line.
     name: helper2-backoffice
   profiles:
     # Every external setting uses the H2_ prefix, profiles included. --spring.profiles.active still wins.
@@ -15,7 +15,7 @@ spring:
       enabled: true
   lifecycle:
     # Graceful shutdown (server.shutdown): after SIGTERM, requests in flight get this long to finish, then the
-    # app stops. The chart sets it from app.shutdown.drainSeconds and gives the pod preStop + drain + 5 s (ADR 0027).
+    # app stops. The chart sets it from app.shutdown.drainSeconds and gives the pod preStop + drain + 5 s (ADR 0032).
     timeout-per-shutdown-phase: ${H2_SHUTDOWN_TIMEOUT:30s}
   datasource:
     url: ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}
@@ -26,21 +26,21 @@ spring:
       maximum-pool-size: ${H2_DATABASE_POOL_SIZE:10}
       connection-timeout: 3000
   flyway:
-    # Validate only (SchemaCheck): the migrate step of the public image migrates (ADR 0070).
+    # Validate only (SchemaCheck): the migrate step of the public image migrates (ADR 0004).
     locations: classpath:db/migration
   session:
     data:
       redis:
         # Sign-in sessions, shared by every replica, apart from the public app's: a session id of the public
         # site is never one here. Timeout and cookie: server.servlet.session below.
-        # JSON, not Java serialization (ADR 0070), under a namespace the old format never used: sessions kept
+        # JSON, not Java serialization (ADR 0004), under a namespace the old format never used: sessions kept
         # before it are never read, so everyone signs in again once. The app's Redis ACL user reaches only it.
         namespace: h2:v1:session:backoffice
   data:
     redis:
       host: ${H2_REDIS_HOST:localhost}
       port: ${H2_REDIS_PORT:6379}
-      # The app's own ACL user (ADR 0070); empty = Redis' default user, as in local development.
+      # The app's own ACL user (ADR 0004); empty = Redis' default user, as in local development.
       username: ${H2_REDIS_USER:}
       password: ${H2_REDIS_PASSWORD:}
       timeout: 250ms
@@ -87,7 +87,7 @@ server:
   servlet:
     session:
       cookie:
-        # __Host-: Secure, Path=/ and no Domain, so a sibling host (the public site) cannot set it (ADR 0069).
+        # __Host-: Secure, Path=/ and no Domain, so a sibling host (the public site) cannot set it (ADR 0032).
         # Lax, not Strict: the sign-in callback from GitHub is a cross-site navigation that must carry it.
         name: __Host-SESSION
         same-site: lax
@@ -135,7 +135,7 @@ management:
     export:
       otlp:
         # Logs stay on stdout as JSON; no second copy over OTLP. traceId/spanId are in every log line written
-        # inside a request or an observed background task (ADR 0026).
+        # inside a request or an observed background task (ADR 0031).
         enabled: false
   tracing:
     sampling:
@@ -153,13 +153,13 @@ management:
           # OTLP over HTTP/protobuf; in the cluster: http://alloy.observability.svc:4318/v1/traces
           endpoint: ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
 
-# Resilience policies (ADR 0033), applied in code by platform.resilience.Resilience: no annotations. One policy per
+# Resilience policies (ADR 0006), applied in code by platform.resilience.Resilience: no annotations. One policy per
 # name; an enabled source or collector without its policy stops startup. Instances are created at startup, so each
 # has its meters (resilience4j_circuitbreaker_state, ..._not_permitted_calls) before its first call.
 #   source-<id>     circuit breaker + bulkhead, never a retry: the search deadline is the budget (SearchResources).
 #   collector-<id>  circuit breaker + retry with exponential backoff and jitter, only on 429, 503, network error or
 #                   timeout (TransientSourceFailure); Scout runs are background work and can wait. The discovery
-#                   categories share one: collector-discovery (ADR 0051).
+#                   categories share one: collector-discovery (ADR 0022).
 #   redis           circuit breaker shared by every Redis adapter: cache, guide answers, budgets, rate limits.
 #   db-cache        circuit breaker + bulkhead on the shared caches of model answers in PostgreSQL (SharedCaches).
 #   llm-chat        circuit breaker on every chat-model call (guide, translation, setup guide, enrichment, classifier);
@@ -326,7 +326,7 @@ helper2:
   spa:
     # The admin web app (frontend/dist-admin), copied here in the image.
     location: classpath:/static/admin/
-  # Vector search (ADR 0012): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
+  # Vector search (ADR 0011): NVIDIA embeddings stored in Postgres (pgvector). Empty key = keyword search only.
   embedding:
     api-key: ${H2_NVIDIA_API_KEY:}
     base-url: ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}
@@ -348,10 +348,10 @@ helper2:
     semantic:
       # Embedding call (~0.3 s) plus the HNSW query; parallel with live sources, like the index.
       timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
-      # Cosine distance cut-off (0 = same, 2 = opposite). Measured 27 Oct 2026 (ADR 0012): keyword hits for
+      # Cosine distance cut-off (0 = same, 2 = opposite). Measured 27 Oct 2026 (ADR 0011): keyword hits for
       # the same need 0.28-0.55, other topics 0.72-0.95, nonsense queries 0.81 at best.
       max-distance: ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}
-      # Query vectors are shared by the replicas in Postgres this long (ADR 0012).
+      # Query vectors are shared by the replicas in Postgres this long (ADR 0011).
       query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
     # The background embedding indexer (helper2.embedding has the model and the key).
     indexer:
@@ -365,7 +365,7 @@ helper2:
       singles-after-failure: 5
       initial-delay: PT30S
       every: PT15S
-    # The categories of every resource (ADR 0053): assigned again at startup when the category words or rules in
+    # The categories of every resource (ADR 0013): assigned again at startup when the category words or rules in
     # helper2.categories changed since the last time (one replica, in the background).
     categories:
       backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}
@@ -377,7 +377,7 @@ helper2:
     # How long search waits for the English translation of a non-English query before running it untranslated
     # (a plain number is milliseconds).
     translate-timeout: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
-    # Non-English queries in English words, by the fast model (ADR 0011).
+    # Non-English queries in English words, by the fast model (ADR 0010).
     translation:
       # Off: queries run as typed.
       enabled: true
@@ -406,22 +406,22 @@ helper2:
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}
     # The public site: a resource link on the admin host opens there.
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
-    # The guide's daily model-call cap as the public app runs it, stated on the Settings page (ADR 0060).
+    # The guide's daily model-call cap as the public app runs it, stated on the Settings page (ADR 0007).
     guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
-  # Spending limits an administrator changes at runtime (ADR 0060). Each replica checks for a change this often
+  # Spending limits an administrator changes at runtime (ADR 0007). Each replica checks for a change this often
   # (5 s to 60 s); a change applies everywhere within about this long.
   runtime-settings:
     refresh: ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}
   scout:
     enabled: ${H2_SCOUT_ENABLED:false}
-    # One run a day at a fixed time (cron, UTC; ADR 0018). Each replica checks shortly after startup, then every
+    # One run a day at a fixed time (cron, UTC; ADR 0020). Each replica checks shortly after startup, then every
     # tick; the Scout runs when the cron time after the last scheduled run has passed (or it never ran), once
     # across replicas (ScoutConfiguration). A run starts at most one tick late; one missed while no replica was
     # up starts at the next check. Per-collector intervals below only make a collector run less often.
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
     tick: ${H2_SCOUT_TICK:PT10M}
     cron: ${H2_SCOUT_CRON:0 7 3 * * *}
-    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and 0061) may spend per
+    # Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0022 and 0021) may spend per
     # UTC day; past it the collectors due that day are SKIPPED and try again the next day. Counted on the global
     # credit counter too (the Sources page's web credits).
     daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
@@ -435,16 +435,16 @@ helper2:
     # Per collector and run. 1000 lets GitHub awesome finish its daily pass (max-entries-per-pass) in one run.
     max-items-per-run: 1000
     # Shared by all collectors AND the backlog of not-yet-enriched resources, per scheduled run. Counts resources,
-    # not model calls: a gap round (ADR 0043) adds a second call for the same resource, so a run can make up to
+    # not model calls: a gap round (ADR 0023) adds a second call for the same resource, so a run can make up to
     # twice this many calls. daily-enrichment-calls is the hard cap on calls.
     max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
     # Enrichment model calls per UTC day, apart from the guide's cap; past it resources wait in the backlog.
     daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}
-    # Gap rounds per UTC day (ADR 0043): a second enrichment call with the README or model card. Counted inside
+    # Gap rounds per UTC day (ADR 0023): a second enrichment call with the README or model card. Counted inside
     # daily-enrichment-calls, not on top, so a value above it has no effect until that cap is raised. 0 turns the
     # gap round off.
     gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
-    # Evidence ladder (ADR 0056): a product's own pages, read with Tavily Extract when a run leaves a target field
+    # Evidence ladder (ADR 0023): a product's own pages, read with Tavily Extract when a run leaves a target field
     # unproven. One Extract call (up to 5 pages, basic depth) is one credit; a product takes at most 2. Credits also
     # count on the global Tavily cap (H2_LIVE_WEB_DAILY_CREDITS). 0 turns the page step off. A page a saved run
     # read is not read again for page-read-ttl: for that, only its URL and a hash of its text are kept.
@@ -472,7 +472,7 @@ helper2:
         new model released xAI Grok Meta Llama Mistral,
         new model released NVIDIA Nemotron DeepSeek Qwen
     courses:
-      # New AI course and certification pages (ADR 0032 section 8), sent to the admin review list, never straight to
+      # New AI course and certification pages (ADR 0016 (part was 0032) section 8), sent to the admin review list, never straight to
       # the catalog. One Tavily credit per platform and pass (search_depth basic): 10 platforms weekly ~ 43 credits/month.
       interval: ${H2_SCOUT_COURSES_INTERVAL:P7D}
       query: new artificial intelligence course or certification
@@ -489,7 +489,7 @@ helper2:
         learn.microsoft.com/en-us/credentials=Microsoft Learn,
         nvidia.com=NVIDIA
     linkedin:
-      # Public LinkedIn pages about AI (ADR 0061): one Tavily search per query, restricted to linkedin.com. The URL
+      # Public LinkedIn pages about AI (ADR 0021): one Tavily search per query, restricted to linkedin.com. The URL
       # path decides the type (article, post, company or showcase page, event); profiles, jobs and learning pages are
       # dropped. Every kept page goes to the admin review list, never straight to the catalog. One credit per query
       # and pass (search_depth basic): 20 queries every 7 days = 20 credits a week, ~ 86 a month, all on one day.
@@ -518,7 +518,7 @@ helper2:
         AI event Switzerland,
         NVIDIA GTC
     live-web-events:
-      # Upcoming AI events from the live web (ADR 0067): one Tavily search per query, then Tavily Extract reads the
+      # Upcoming AI events from the live web (ADR 0021): one Tavily search per query, then Tavily Extract reads the
       # pages found (at most max-pages, 1 credit per 5) and the reasoning model reads each page's days. Code keeps an
       # event only when the days are in a quote on the page and start within six months. About 4 search credits and
       # 4 Extract credits a week, ~ 35 a month, on the Scout's daily cap. No commas inside a query.
@@ -533,7 +533,7 @@ helper2:
         upcoming AI conferences and summits,
         upcoming AI workshops
     discovery:
-      # Tavily discovery (ADR 0051): what every category of helper2.categories shares. Each category is its own
+      # Tavily discovery (ADR 0022): what every category of helper2.categories shares. Each category is its own
       # collector. Lists and comparisons are indexed as ARTICLE; a product's own site or GitHub repository goes to the
       # admin review list, never straight to the catalog. search_depth advanced costs 2 credits: 39 searches every
       # 7 days ~ 78 credits a week, ~ 335 a month. A category's first pass falls on day (its place in the list) mod 7 (UTC),
@@ -544,7 +544,7 @@ helper2:
       # Tavily's relevance score, 0-1. Below it a result is dropped; a category can raise it (min-score).
       min-score: 0.4
       # Social and video sites: no product pages, no lists worth indexing. AI directories and review sites: their
-      # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0051). A category adds its
+      # terms forbid copying their listings, and their excerpts carry reviewers' names (ADR 0022). A category adds its
       # own (exclude-domains).
       exclude-domains: >-
         youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com,
@@ -579,7 +579,7 @@ helper2:
       classify-max-tokens: 8192
       # Classifier model calls per UTC day (about 8 batches per daily pass); the cap only bites when something loops.
       classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
-      # Deep search (ADR 0058). One run reads the seed lists and the lists they link to until either budget is spent;
+      # Deep search (ADR 0022). One run reads the seed lists and the lists they link to until either budget is spent;
       # the lists left unread wait for the next pass. A README is at most 5 MB.
       max-run-time: ${H2_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}
       max-readme-bytes-per-run: ${H2_SCOUT_AWESOME_MAX_README_BYTES:50MB}
@@ -638,7 +638,7 @@ helper2:
       token: ${H2_HF_TOKEN:}
       timeout: 10s
       cache-ttl: 30m
-      # Total time per call, body included (ADR 0006 §2); empty = twice the timeout.
+      # Total time per call, body included (ADR 0006 (part was 0006) §2); empty = twice the timeout.
       deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
     live-web-scout:
       # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set.
@@ -657,7 +657,7 @@ helper2:
       cache-ttl: 30m
       deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
     linkedin-scout:
-      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0061).
+      # Disabled (reported as SKIPPED) until H2_LIVE_WEB_API_KEY is set. Calls Tavily, never LinkedIn (ADR 0021).
       enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_LIVE_WEB_API_KEY:}
@@ -666,7 +666,7 @@ helper2:
       deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
     live-web-events-scout:
       # Off until set to true: Tavily's written OK for scheduled searches listed in the catalog is still to confirm
-      # (ADR 0067). Also needs H2_LIVE_WEB_API_KEY and an AI model.
+      # (ADR 0021). Also needs H2_LIVE_WEB_API_KEY and an AI model.
       enabled: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:false}
       base-url: https://api.tavily.com
       token: ${H2_LIVE_WEB_API_KEY:}
@@ -675,7 +675,7 @@ helper2:
       cache-ttl: 30m
       deadline: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}
     discovery:
-      # Every discovery category (helper2.categories, ADR 0051). Disabled (reported as SKIPPED) until
+      # Every discovery category (helper2.categories, ADR 0022). Disabled (reported as SKIPPED) until
       # H2_LIVE_WEB_API_KEY is set.
       enabled: ${H2_SOURCE_DISCOVERY_ENABLED:true}
       base-url: https://api.tavily.com
@@ -685,7 +685,7 @@ helper2:
       cache-ttl: 30m
       deadline: ${H2_SOURCE_DISCOVERY_DEADLINE:}
     page-reader:
-      # Product pages for the evidence ladder (ADR 0056). Off without H2_LIVE_WEB_API_KEY.
+      # Product pages for the evidence ladder (ADR 0023). Off without H2_LIVE_WEB_API_KEY.
       enabled: ${H2_SOURCE_PAGE_READER_ENABLED:true}
       base-url: https://api.tavily.com
       token: ${H2_LIVE_WEB_API_KEY:}
@@ -724,7 +724,7 @@ helper2:
       deadline: ${H2_SOURCE_MCP_DEADLINE:}
 
 ---
-# The schema (ADR 0070): in a deployment the migrate step (a Kubernetes Job, as the owner) migrates and the
+# The schema (ADR 0004): in a deployment the migrate step (a Kubernetes Job, as the owner) migrates and the
 # app only checks, as its own role, waiting up to `wait-for` for the Job. Local development migrates itself.
 helper2:
   schema:
@@ -835,15 +835,15 @@ resilience4j:
       source-demo-down: {base-config: source}
 
 ---
-# Data retention (ADR 0034): what the daily purges delete, and when. Every period can be changed without a release.
+# Data retention (ADR 0035): what the daily purges delete, and when. Every period can be changed without a release.
 helper2:
-  # Home examples (ADR 0049): the quality check runs each example's search on one replica at a time. New and changed
+  # Home examples (ADR 0015): the quality check runs each example's search on one replica at a time. New and changed
   # ones are hidden until checked, so they are checked soon; every example again each night (UTC).
   examples:
     pending-delay: ${H2_EXAMPLES_PENDING_DELAY:PT1M}
     pending-every: ${H2_EXAMPLES_PENDING_EVERY:PT5M}
     cron: ${H2_EXAMPLES_CRON:0 41 2 * * *}
-    # AI drafts (ADR 0049 §6): model calls a day (one per draft run, two when an answer cannot be read; 0 = off), and
+    # AI drafts (ADR 0015 §6): model calls a day (one per draft run, two when an answer cannot be read; 0 = off), and
     # resources given to the model per run.
     draft-calls: ${H2_EXAMPLES_DRAFT_CALLS:5}
     draft-sources: ${H2_EXAMPLES_DRAFT_SOURCES:12}
@@ -852,7 +852,7 @@ helper2:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
     # OBSERVED resources (seen only in searches) no search has seen for this long.
     observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
-    # Awesome-list search index rows (ADR 0055) no pass refreshed for this long: the list left the top lists.
+    # Awesome-list search index rows (ADR 0010) no pass refreshed for this long: the list left the top lists.
     list-index: ${H2_RETENTION_LIST_INDEX:P30D}
     # Enrichment runs; each resource's latest run and any run current rows cite stay.
     enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
@@ -870,13 +870,13 @@ helper2:
     inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
     # Admin audit entries (24 months).
     admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
-    # Runtime setting changes (ADR 0060), with who made them and why (24 months); each setting's newest change stays.
+    # Runtime setting changes (ADR 0007), with who made them and why (24 months); each setting's newest change stays.
     runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
-    # Database dumps (ADR 0027). The chart sets it from backup.retentionDays; the app only states it on /policy.
+    # Database dumps (ADR 0032). The chart sets it from backup.retentionDays; the app only states it on /policy.
     backups: ${H2_RETENTION_BACKUPS:P7D}
 
 ---
-# Tavily (ADR 0037): store first, then a live call inside the visitor's daily web searches, per feature.
+# Tavily (ADR 0014): store first, then a live call inside the visitor's daily web searches, per feature.
 helper2:
   quota:
     # HMAC key of the client pseudonyms (rate limits, guide quota, guest counters) and of the stored query keys
@@ -905,7 +905,7 @@ helper2:
     live-web-results: ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}
 
 ---
-# The categories of the AI world (ADR 0051): 34 categories in 7 families. Each is its own discovery collector
+# The categories of the AI world (ADR 0022): 34 categories in 7 families. Each is its own discovery collector
 # (discovery-<id>), its own dot on the Home radar and its own row on the Sources page, grouped by family.
 #   id          the catalog tag of every result the category fits; lower-case words with hyphens, at most 30 characters
 #   family      prompts-and-skills, everyday-apps, creative-and-media, business, developers, hosting-and-infra or

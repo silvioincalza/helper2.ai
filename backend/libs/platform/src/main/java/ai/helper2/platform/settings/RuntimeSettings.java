@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The runtime settings as this replica applies them (ADR 0060). Hot paths read one immutable
+ * The runtime settings as this replica applies them (ADR 0007). Hot paths read one immutable
  * snapshot, never the database. The snapshot is read again when the store's version changes,
  * checked at most once per refresh interval, so every replica applies a change within about that
  * long. A replica that cannot read the store keeps its last snapshot.

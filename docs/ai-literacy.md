@@ -13,19 +13,19 @@ user is asked to make decisions about the models.
 
 - **What the models are.** The guide and the Scout use NVIDIA Nemotron models on Nebius Token Factory; search by
   meaning uses NVIDIA's embedding model. Only NVIDIA models are allowed: the app does not start with another model id
-  ([ADR 0014](adr/guide/0014-llm-integration.md)). No model is trained or changed by helper2.ai.
+  ([ADR 0008](adr/foundation/0008-llm-integration.md)). No model is trained or changed by helper2.ai.
 - **What they get wrong.** A model can invent tools, quotes and dates. So the model never decides what is true: it may
   only pick among retrieved candidates, every pick needs a quote found word for word in the candidate's own text, and
   a second call checks each reason against its quote ([README](../README.md#how-nemotron-and-token-factory-are-used)).
   The Scout's claims need evidence, model dates are never accepted, and a disagreement with a source goes to human
   review.
 - **How good the answers are.** A fixed set of questions and a set of 8 hostile ones run against staging every
-  night ([ADR 0030](adr/quality/0030-guide-evaluation.md)). Search ranking
-  has its own offline evaluation ([ADR 0036](adr/quality/0036-search-evaluation-harness.md)).
+  night ([ADR 0036](adr/quality/0036-evaluation.md)). Search ranking
+  has its own offline evaluation ([ADR 0036](adr/quality/0036-evaluation.md)).
 - **What it costs and when it stops.** Daily caps on model calls and web searches, and circuit breakers on every
-  model call ([ADR 0017](adr/guide/0017-guide-cost-guard.md), [ADR 0033](adr/foundation/0033-resilience-policies.md)).
+  model call ([ADR 0017](adr/guide/0017-guide-cost-guard-and-answer-cache.md), [ADR 0006](adr/foundation/0006-outbound-calls-and-resilience.md)).
 - **What users are told.** Every text a model wrote has a visible label and a machine-readable mark
-  ([ADR 0038](adr/guide/0038-ai-content-marking.md)). The Mission page explains them.
+  ([ADR 0018](adr/guide/0018-ai-content-marking-and-research-trail.md)). The Mission page explains them.
 
 ## How he keeps up
 

@@ -11,7 +11,7 @@ import java.util.Locale
 import java.util.UUID
 
 /**
- * The evidence ladder (ADR 0056): which fields an enrichment tries to fill for a type, and the
+ * The evidence ladder (ADR 0023): which fields an enrichment tries to fill for a type, and the
  * product's own pages as one more place to read them. Code picks every URL; the model never does.
  */
 object FieldTargets {
@@ -67,8 +67,8 @@ object PageTargets {
 
   /**
    * True when [sourceId]'s record URL can be a product's own page: one a person accepted from any
-   * discovery category (`discovery-<category>`, ADR 0051), one from the editorial seed, or a
-   * product site linked from an awesome list (ADR 0058). The awesome lists themselves are records
+   * discovery category (`discovery-<category>`, ADR 0022), one from the editorial seed, or a
+   * product site linked from an awesome list (ADR 0022). The awesome lists themselves are records
    * of the same source on github.com, a platform host, so [select] skips them. Other records point
    * at a registry, a repository or an article, and an MCP Registry entry can link any site its
    * author likes.
@@ -261,7 +261,7 @@ fun interface ExtractBudget {
 /**
  * Outbound port: the pages whose text a saved enrichment run read, by URL, with a hash of their
  * text, for 30 days. No page text is kept. A page in it is not read (or paid for) again until the
- * entry expires. Written only after the run is saved (ADR 0056), so a failed model call leaves the
+ * entry expires. Written only after the run is saved (ADR 0023), so a failed model call leaves the
  * page free to read again.
  */
 interface PageLedger {
@@ -283,7 +283,7 @@ interface PageLedger {
 /**
  * Outbound port: the cleaned text of a product's pages (after [UntrustedPageText]: hidden text
  * gone, emails and phone numbers masked, cut to the window), by the accepted page's URL, for at
- * most 24 hours (ADR 0056). Only so that a retry (the model was down, the gap cap was spent) does
+ * most 24 hours (ADR 0023). Only so that a retry (the model was down, the gap cap was spent) does
  * not pay Tavily again. Disposable: a miss reads the pages again.
  */
 interface PageTextCache {
@@ -318,7 +318,7 @@ data class PageReading(val pages: List<OfficialPage>, val outcome: String) {
 }
 
 /**
- * Reads a product's own pages (ADR 0056): its accepted page, then up to [MAX_LINKED_PAGES] pages
+ * Reads a product's own pages (ADR 0023): its accepted page, then up to [MAX_LINKED_PAGES] pages
  * its links lead to on the same site. Two reader calls at most, each one credit; at most [MAX_URLS]
  * URLs per product. Every page the reader returns is checked against the scope again, so a redirect
  * to another site is dropped. The cleaned pages are kept in [textCache] for a retry; the [ledger]

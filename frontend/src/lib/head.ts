@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 
-/** Marks every tag the server writes into the shell for crawlers (ADR 0050). */
+/** Marks every tag the server writes into the shell for crawlers (ADR 0029). */
 const SERVER_HEAD = '[data-h2-head]';
 
 /**

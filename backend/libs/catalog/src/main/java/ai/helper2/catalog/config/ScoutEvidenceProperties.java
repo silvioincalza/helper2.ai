@@ -7,7 +7,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * The Scout's retention periods for the pages it reads, from {@code helper2.scout.evidence}, for
- * the policy both apps state (ADR 0052, 0069). The back office's Scout binds the same keys.
+ * the policy both apps state (ADR 0029, 0032). The back office's Scout binds the same keys.
  *
  * @param pageReadTtl how long a page a saved run read is not read again
  * @param pageTextTtl how long the cleaned text of a product's pages is kept for a retry

@@ -75,7 +75,7 @@ class AskGuide(
   private val subjectSearchDeadline: Duration = SUBJECT_SEARCH_DEADLINE,
   private val limits: AnswerLimits = AnswerLimits.DEFAULT,
   /**
-   * Reuse of a similar question's answer (ADR 0041); null (no threshold set) keeps the exact key
+   * Reuse of a similar question's answer (ADR 0017); null (no threshold set) keeps the exact key
    * only.
    */
   private val similar: SimilarQuestions? = null,
@@ -165,7 +165,7 @@ class AskGuide(
     val question = Question(request.trim(), path, clarification?.trim(), drops, asker, categories)
     try {
       observation.openScope().use {
-        // A category filter changes the candidates, so it is part of the key (ADR 0053).
+        // A category filter changes the candidates, so it is part of the key (ADR 0013).
         val config =
           if (categories.isEmpty()) configHash
           else configHash + "|categories=" + categories.sorted().joinToString(",")
@@ -334,7 +334,7 @@ class AskGuide(
   }
 
   /**
-   * The cached answer of a question read the same way and worded closely enough (ADR 0041), once
+   * The cached answer of a question read the same way and worded closely enough (ADR 0017), once
    * the planner read this one. Not for a question with a clarification or removed parts: those are
    * rare and read differently. Sets [Asked.probe], so the fresh answer is indexed, or
    * [Asked.reused].
@@ -354,7 +354,7 @@ class AskGuide(
     asked.probe = probe
     val answer = similar.nearest(probe)?.let(cache::get) ?: return null
     asked.reused = true
-    // Its queries came from another asker's words (ADR 0044), the planned search query too, also
+    // Its queries came from another asker's words (ADR 0018), the planned search query too, also
     // the one a not-found
     // notice shows tools for; this copy is also what is stored under this key.
     return answer.copy(

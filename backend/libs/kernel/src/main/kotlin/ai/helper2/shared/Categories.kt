@@ -4,7 +4,7 @@ import java.security.MessageDigest
 import java.util.HexFormat
 
 /**
- * One category of the AI world (ADR 0051, 0053), as search and the catalog see it: its id (the
+ * One category of the AI world (ADR 0022, 0013), as search and the catalog see it: its id (the
  * search filter value), its names, its family, its words and its rules. The discovery collector of
  * the same id searches for it (the sources module).
  *
@@ -91,7 +91,7 @@ class CategoryCatalog(categories: List<Category>) {
 /**
  * What a resource's categories are read from: its own title and description, its tags, its type,
  * the source ids of the collectors that found it, and the section heading paths of the curated
- * lists that link it ("Tools > Vector databases", ADR 0058).
+ * lists that link it ("Tools > Vector databases", ADR 0022).
  */
 data class CategoryInput
 @JvmOverloads
@@ -105,13 +105,13 @@ constructor(
 )
 
 /**
- * Assigns categories by code (ADR 0053): no model, the same input always gives the same answer. A
+ * Assigns categories by code (ADR 0013): no model, the same input always gives the same answer. A
  * resource gets a category when:
  * - a collector of that category found it (`discovery-<id>`);
  * - one of the category's words is in its title or description;
  * - one of its tags is the category's id or has one of its words;
  * - a heading of a list section it sits under is the category's id or has one of its words (each
- *   heading of a path alone, like a tag, ADR 0058);
+ *   heading of a path alone, like a tag, ADR 0022);
  * - its type is PROMPT or SKILL and exactly one category has that type.
  *
  * A category that requires a word (health, legal) comes only from the first two: a tag, a heading
@@ -164,7 +164,7 @@ class CategoryMatcher(val catalog: CategoryCatalog) {
     /** Types that are a category on their own: a prompt library, a skill. */
     private val NAMING_TYPES = listOf(ResourceType.PROMPT, ResourceType.SKILL)
 
-    /** Between the headings of a list's heading path (ADR 0055). */
+    /** Between the headings of a list's heading path (ADR 0010). */
     const val HEADING_SEPARATOR = " > "
 
     @JvmField val NONE = CategoryMatcher(CategoryCatalog.EMPTY)

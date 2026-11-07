@@ -12,7 +12,7 @@ metadata:
 spec:
   podSelector: {}
   policyTypes: [Ingress]
-{{- /* The two apps (ADR 0069) take the same traffic: the back office is reached only through its own Service,
+{{- /* The two apps (ADR 0032) take the same traffic: the back office is reached only through its own Service,
      which only the in-network host's route uses. */}}
 {{- range $name, $app := dict "ingress-app" "helper2" "ingress-backoffice" "helper2-backoffice" }}
 ---
@@ -45,7 +45,7 @@ spec:
   {{- end }}
 {{- end }}
 ---
-# The web image (ADR 0069): the Ingress controller on 8080, nothing else (not the probe port 8081). No egress rule:
+# The web image (ADR 0032): the Ingress controller on 8080, nothing else (not the probe port 8081). No egress rule:
 # nginx reaches nothing, so egress-default-deny covers it.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

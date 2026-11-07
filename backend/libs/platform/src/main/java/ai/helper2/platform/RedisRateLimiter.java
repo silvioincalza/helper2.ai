@@ -20,7 +20,7 @@ import org.springframework.data.redis.core.script.RedisScript;
  * its address. At midnight UTC the pseudonym changes, so a window open at midnight is followed by a
  * fresh one: at most one extra window's worth of requests, the same as at any fixed-window edge.
  *
- * <p>Fails open: the script runs under the {@code redis} policy (ADR 0033); on a Redis error, or
+ * <p>Fails open: the script runs under the {@code redis} policy (ADR 0006); on a Redis error, or
  * while the circuit is open, each replica counts in its own memory with the same limit, and every
  * such decision is counted in {@code helper2.rate-limit.fallback}.
  */

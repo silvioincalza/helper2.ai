@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The settings one module shows in the back office (ADR 0045), as a bean. The module that owns the
+ * The settings one module shows in the back office (ADR 0026), as a bean. The module that owns the
  * settings builds its group from its own {@code @ConfigurationProperties} records, so the back
  * office reads no other module's record and never the environment.
  *

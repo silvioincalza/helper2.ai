@@ -37,7 +37,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
 /**
- * Tavily discovery (ADR 0051) for one category of the AI world: its searches on the general web, on
+ * Tavily discovery (ADR 0022) for one category of the AI world: its searches on the general web, on
  * its own interval (weekly by default; the categories start on different days of it, by their place
  * in the list, so about 5 search a day). Each result is sorted by code, never by a model ({@link
  * DiscoveryPages}): a product's own site or a GitHub repository is a candidate for the admin review
@@ -60,7 +60,7 @@ public class TavilyDiscoveryCollector implements Collector {
 
   private static final Logger log = LoggerFactory.getLogger(TavilyDiscoveryCollector.class);
 
-  /** Circuit breaker and retry of every discovery collector's calls, shared (ADR 0033). */
+  /** Circuit breaker and retry of every discovery collector's calls, shared (ADR 0006). */
   static final String POLICY = "collector-discovery";
 
   /**
@@ -121,7 +121,7 @@ public class TavilyDiscoveryCollector implements Collector {
     this.descriptor = CollectorDescriptors.discovery(settings, category);
   }
 
-  /** The category's product type, and the articles about them (list pages, posts: ADR 0062). */
+  /** The category's product type, and the articles about them (list pages, posts: ADR 0023). */
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
@@ -160,7 +160,7 @@ public class TavilyDiscoveryCollector implements Collector {
               + credits.dailyCap()
               + " credits); next try tomorrow");
     }
-    // The host lists as they are now (ADR 0063); a failed read fails the run before any search.
+    // The host lists as they are now (ADR 0022); a failed read fails the run before any search.
     DiscoveryPages pages = new DiscoveryPages(hosts.lists());
     Map<String, Found> found = searchAll(pages, TavilyCollector.startDate(checkpoint), startedAt);
     return new CollectedBatch(

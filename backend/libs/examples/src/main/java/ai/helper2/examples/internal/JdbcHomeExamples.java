@@ -25,7 +25,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** The home_example table (ADR 0049). The texts arrive normalised (ExampleInput). */
+/** The home_example table (ADR 0015). The texts arrive normalised (ExampleInput). */
 @Repository
 class JdbcHomeExamples implements HomeExamples {
 

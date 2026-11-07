@@ -25,7 +25,7 @@ import ai.helper2.search.SearchRequest
 import java.time.Clock
 import org.slf4j.LoggerFactory
 
-/** WHAT_IS (ADR 0032): a few quoted sentences about the subject, its own card and related ones. */
+/** WHAT_IS (ADR 0016): a few quoted sentences about the subject, its own card and related ones. */
 internal class ExplainAnswer(
   private val steps: GuideSteps,
   private val reasonCheck: ReasonCheckStep,
@@ -190,7 +190,7 @@ internal class ExplainAnswer(
             }
           val ok = c != null && check == null
           if (!ok) rejected++
-          // The trail names the source the sentence quoted, never the sentence (ADR 0044).
+          // The trail names the source the sentence quoted, never the sentence (ADR 0018).
           if (c != null && check != null) removed += RemovedSuggestion(c.result.title, check)
           if (ok) c!!.key to p else null
         }

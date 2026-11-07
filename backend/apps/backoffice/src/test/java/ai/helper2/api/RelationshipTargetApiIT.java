@@ -23,7 +23,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * PUT /admin/review-items/{id}/relationship-target (ADR 0064): a relationship candidate is pointed
+ * PUT /admin/review-items/{id}/relationship-target (ADR 0026): a relationship candidate is pointed
  * at a catalog resource, at a resource added for it, or renamed; a refused change adds nothing.
  */
 class RelationshipTargetApiIT extends ApiTestBase {

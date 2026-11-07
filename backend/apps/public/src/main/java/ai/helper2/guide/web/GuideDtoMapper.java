@@ -50,7 +50,7 @@ import org.springframework.stereotype.Component;
 class GuideDtoMapper {
 
   /**
-   * Fields a model may write in a guide answer (ADR 0038). Quotes, titles and URLs come from the
+   * Fields a model may write in a guide answer (ADR 0018). Quotes, titles and URLs come from the
    * sources.
    */
   static final List<String> AI_WRITTEN_FIELDS =
@@ -141,7 +141,7 @@ class GuideDtoMapper {
   }
 
   /**
-   * The research trail (ADR 0044): queries and removed suggestions with their check code; never a
+   * The research trail (ADR 0018): queries and removed suggestions with their check code; never a
    * removed reason.
    */
   static GuideTrailDto trail(ResearchTrail t) {

@@ -33,17 +33,17 @@ import org.springframework.ai.converter.BeanOutputConverter;
 /**
  * Spring AI adapter. Structured output is requested as a JSON schema derived from {@link Output};
  * the result is still only a proposal — {@code EvidenceValidator} decides what is published.
- * Thinking is off (ADR 0014): the task is extraction with a strict schema. Each call takes one unit
- * of the Scout's own daily budget inside the {@code llm-chat} circuit (ADR 0033); when the budget
+ * Thinking is off (ADR 0008): the task is extraction with a strict schema. Each call takes one unit
+ * of the Scout's own daily budget inside the {@code llm-chat} circuit (ADR 0006); when the budget
  * is spent or the circuit is open the call is LLM_UNAVAILABLE, so the resource stays in the backlog
  * for a later run.
  */
 class SpringAiEnrichmentModel implements EnrichmentModel {
 
   /**
-   * v5 (ADR 0062): the resource's type comes with the material; an article, a news item or a paper
+   * v5 (ADR 0023): the resource's type comes with the material; an article, a news item or a paper
    * keeps only audience, tech level and use case and names what it is about with ABOUT. v4 (ADR
-   * 0056): pricing, type and use case need the value in the excerpt too, audience and tech level
+   * 0023): pricing, type and use case need the value in the excerpt too, audience and tech level
    * may be estimated without a quote, vendor pages are marked, and summary sentences keep to their
    * excerpts. (v3 marked the material as untrusted data; v2 listed the allowed values.)
    */
