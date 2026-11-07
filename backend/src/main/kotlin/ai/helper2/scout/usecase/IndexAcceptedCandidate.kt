@@ -14,7 +14,9 @@ import java.time.Clock
 import java.util.UUID
 
 /** A resource candidate an admin accepted: what the collector that found it proposed. */
-data class AcceptedCandidate(
+data class AcceptedCandidate
+@JvmOverloads
+constructor(
   val sourceId: String,
   val url: String,
   val title: String,
@@ -26,7 +28,38 @@ data class AcceptedCandidate(
   val facts: Map<String, Any> = emptyMap(),
   /** Every collector that found it, first finder first; empty for a candidate of one finder. */
   val finders: List<String> = emptyList(),
+  /** An admin set the type before accepting (ADR 0065): it need not be one a finder declares. */
+  val typeChosenByAdmin: Boolean = false,
 )
+
+/** What a candidate may be: its longest title, its tags' shape, its types (ADR 0051, 0065). */
+object CandidateRules {
+  const val MAX_TITLE = 300
+
+  @JvmField val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
+
+  /** Every type a candidate may have; a collector narrows it to the types it declares. */
+  @JvmField
+  val TYPES =
+    setOf(
+      ResourceType.PRODUCT,
+      ResourceType.AGENT,
+      ResourceType.PROMPT,
+      ResourceType.SKILL,
+      ResourceType.MCP_SERVER,
+      ResourceType.LIBRARY,
+      ResourceType.MODEL,
+      ResourceType.DATASET,
+      ResourceType.ARTICLE,
+      ResourceType.NEWS,
+      ResourceType.EVENT,
+    )
+
+  /** At most [Candidate.MAX_TAGS] tags, each tag-shaped and at most 40 characters. */
+  @JvmStatic
+  fun tagsOk(tags: Set<String>): Boolean =
+    tags.size <= Candidate.MAX_TAGS && tags.all { it.length <= 40 && TAG.matches(it) }
+}
 
 /** Why an accepted candidate cannot be indexed; the review item stays open. */
 class InvalidCandidate(message: String) : IllegalArgumentException(message)
@@ -52,7 +85,8 @@ fun interface CatalogLookup {
  * found it, it is one record, of the first collector that found it, with every category as a tag
  * and every finder in its extra (foundBy): the same page and excerpt once, not once per category.
  * Its type must be one a collector that found it declares (ADR 0061): LinkedIn may propose
- * articles, posts and events, a discovery category only its products.
+ * articles, posts and events, a discovery category only its products. A type an admin set before
+ * accepting may be any candidate type (ADR 0065).
  */
 class IndexAcceptedCandidate(
   collectors: List<Collector>,
@@ -65,25 +99,8 @@ class IndexAcceptedCandidate(
   private val merger = ResultMerger()
 
   private companion object {
-    const val MAX_TITLE = 300
     /** Tavily's excerpt as evidence for the enrichment (ADR 0051). */
     const val MAX_SNIPPET = 2400
-    val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
-    /** Every type a candidate may have; a collector narrows it to the types it declares. */
-    val TYPES =
-      setOf(
-        ResourceType.PRODUCT,
-        ResourceType.AGENT,
-        ResourceType.PROMPT,
-        ResourceType.SKILL,
-        ResourceType.MCP_SERVER,
-        ResourceType.LIBRARY,
-        ResourceType.MODEL,
-        ResourceType.DATASET,
-        ResourceType.ARTICLE,
-        ResourceType.NEWS,
-        ResourceType.EVENT,
-      )
   }
 
   /**
@@ -124,15 +141,14 @@ class IndexAcceptedCandidate(
   private fun hitOf(c: AcceptedCandidate, collector: Collector): SourceHit {
     val url = CanonicalUrl.of(c.url) ?: throw InvalidCandidate("unreadable URL")
     val title = c.title.trim()
-    if (title.isEmpty() || title.length > MAX_TITLE)
+    if (title.isEmpty() || title.length > CandidateRules.MAX_TITLE)
       throw InvalidCandidate("title missing or too long")
-    if (c.type !in TYPES) throw InvalidCandidate("type ${c.type} cannot be a candidate")
-    if (c.type !in declaredTypes(c, collector)) {
+    if (c.type !in CandidateRules.TYPES)
+      throw InvalidCandidate("type ${c.type} cannot be a candidate")
+    if (!c.typeChosenByAdmin && c.type !in declaredTypes(c, collector)) {
       throw InvalidCandidate("no collector that found it proposes ${c.type}")
     }
-    if (c.tags.size > Candidate.MAX_TAGS || c.tags.any { it.length > 40 || !TAG.matches(it) }) {
-      throw InvalidCandidate("unreadable tags")
-    }
+    if (!CandidateRules.tagsOk(c.tags)) throw InvalidCandidate("unreadable tags")
     return SourceHit(
       sourceId = c.sourceId,
       externalId = url.value,

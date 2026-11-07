@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.usecase.AcceptedCandidate;
+import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
@@ -156,6 +157,53 @@ class ResourceCandidateJsonTest {
     assertThatThrownBy(() ->
             json.read(
                 "{\"sourceId\":\"s\",\"url\":\"https://x.ai\",\"title\":\"X\",\"type\":\"PRODUCT\",\"tags\":\"a\"}"))
+        .isInstanceOf(InvalidCandidate.class);
+  }
+
+  /** ADR 0065: what an admin changed is marked, kept by a later finder, and read on accept. */
+  @Test
+  void anAdminsEditIsMarkedAndAFinderThatComesLaterKeepsIt() {
+    String found = json.write("discovery-self-hosted", candidate("Pricing | Open WebUI"));
+    String edited =
+        json.edit(found, new CandidateEdit("Open WebUI", ResourceType.MODEL, Set.of("local-ai")));
+
+    String merged = json.merge(edited, "discovery-agent-platforms", agent("agent-platforms"));
+
+    AcceptedCandidate read = json.read(merged);
+    assertThat(read.getTitle()).isEqualTo("Open WebUI");
+    // An AGENT is more specific than a MODEL, and agent-platforms is a new tag: both stay out.
+    assertThat(read.getType()).isEqualTo(ResourceType.MODEL);
+    assertThat(read.getTags()).containsExactly("local-ai");
+    assertThat(read.getTypeChosenByAdmin()).isTrue();
+    assertThat(read.getFinders())
+        .containsExactly("discovery-self-hosted", "discovery-agent-platforms");
+    assertThat(read.getFacts()).containsEntry("edited", List.of("tags", "title", "type"));
+    assertThat(json.reason(merged))
+        .isEqualTo(
+            "New MODEL (local-ai) found by discovery-self-hosted, discovery-agent-platforms:"
+                + " Open WebUI");
+  }
+
+  @Test
+  void anEditOfOnlyTheTitleLeavesTheTypeToTheFinders() {
+    String edited =
+        json.edit(
+            json.write("discovery-self-hosted", candidate("x")),
+            new CandidateEdit("Open WebUI", null, null));
+
+    AcceptedCandidate read =
+        json.read(json.merge(edited, "discovery-agent-platforms", agent("agent-platforms")));
+    assertThat(read.getType()).isEqualTo(ResourceType.AGENT);
+    assertThat(read.getTags()).contains("agent-platforms");
+    assertThat(read.getTypeChosenByAdmin()).isFalse();
+    assertThat(read.getFacts()).containsEntry("edited", List.of("title"));
+  }
+
+  @Test
+  void anEditOfDetailsThatAreNotACandidateIsRefused() {
+    assertThatThrownBy(() -> json.edit("not json", new CandidateEdit("x", null, null)))
+        .isInstanceOf(InvalidCandidate.class);
+    assertThatThrownBy(() -> json.edit("[1]", new CandidateEdit("x", null, null)))
         .isInstanceOf(InvalidCandidate.class);
   }
 }

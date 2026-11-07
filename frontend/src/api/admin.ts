@@ -5,6 +5,7 @@ import type {
   ReviewBulkResult,
   ReviewEvidence,
   RelationshipTargetChange,
+  CandidateEdit,
   ReviewResolution,
   ReviewStatus,
   ReviewKind,
@@ -73,6 +74,12 @@ export const adminApi = {
       `/admin/review-items/${encodeURIComponent(id)}/relationship-target`,
       { body },
     ),
+  /**
+   * Fixes an open resource candidate's title, type or tags before it is accepted (ADR 0065). 400 for an unusable
+   * value, 409 when the item is decided, is not a candidate, or changed since it was read.
+   */
+  editCandidate: (id: string, body: CandidateEdit) =>
+    request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/candidate`, { body }),
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
       signal,

@@ -1,6 +1,6 @@
 # 0061 — LinkedIn via Tavily: public articles, posts, company pages and events, all reviewed
 
-**Status.** Accepted. **Builds on:** [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md), [0022](0022-next-events.md), [0033](../foundation/0033-resilience-policies.md), [0034](../operations/0034-data-retention.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0051](0051-tavily-discovery.md)
+**Status.** Accepted. **Builds on:** [0018](0018-scout-runner.md), [0020](0020-scout-collectors.md), [0022](0022-next-events.md), [0033](../foundation/0033-resilience-policies.md), [0034](../operations/0034-data-retention.md), [0037](../search/0037-tavily-store-and-daily-quota.md), [0051](0051-tavily-discovery.md) **Amended by:** [0065](../edge/0065-candidate-edit-in-review.md) (a type an admin sets need not be declared by a finder).
 
 ## Context
 Much of the AI world is announced on LinkedIn first: a company launches a product, a lab posts a model, a meetup

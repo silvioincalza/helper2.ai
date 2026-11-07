@@ -1,0 +1,42 @@
+# Flowchart: an admin edits an open resource candidate; a collector that finds the page later; accepting it.
+# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt,
+#   backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (edit, merge, read),
+#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java (updateCandidate),
+#   backend/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt (hitOf).
+# Render: cd docs/diagrams && d2 fmt flow-0065-candidate-edit-in-review.d2 && d2 flow-0065-candidate-edit-in-review.d2 flow-0065-candidate-edit-in-review.svg
+
+...@style
+
+direction: down
+
+admin: "Admin: Edit the candidate\n(back office, VPN)" {class: person}
+item: "Open RESOURCE_CANDIDATE?" {class: decision}
+gone: "404 / 409, nothing changes" {class: fail}
+valid: "At least one field; title 1-300,\none line; a candidate type;\n≤ 12 tag-shaped tags?" {class: decision}
+bad: "400, nothing changes" {class: fail}
+write: "Details rewritten: fields replaced,\nlisted in edited" {class: app}
+same: "Item still holds the details\nthat were read?" {class: decision}
+conflict: "409 version-conflict:\nreload, edit again" {class: fail}
+saved: "Saved, new reason line;\nEDIT_CANDIDATE" {class: data}
+finder: "A collector finds the page again" {class: ext}
+merge: "Finder joined; an edited type\nor edited tags stay;\nsaved only if unchanged since read" {class: app}
+accept: "Admin accepts" {class: person}
+type: "Type chosen by the admin,\nor declared by a finder?" {class: decision}
+refused: "400: item stays open" {class: fail}
+indexed: "Indexed as the admin wrote it;\nextra lists the edited fields" {class: end}
+
+admin -> item
+item -> gone: no
+item -> valid: yes {class: hot}
+valid -> bad: no
+valid -> write: yes {class: hot}
+write -> same: {class: hot}
+same -> conflict: no
+same -> saved: yes {class: hot}
+saved -> finder
+finder -> merge
+merge -> accept
+saved -> accept: {class: hot}
+accept -> type: {class: hot}
+type -> refused: neither
+type -> indexed: yes {class: hot}

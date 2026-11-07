@@ -129,6 +129,16 @@ class IndexAcceptedCandidateTest {
     assertEquals(0, catalog.indexed.size)
   }
 
+  /** ADR 0065: the admin said what the page is; it is still a candidate type, never a course. */
+  @Test
+  fun `a type an admin chose need not be declared, but must be a candidate type`() {
+    accept.index(candidate(type = ResourceType.EVENT).copy(typeChosenByAdmin = true))
+    assertEquals(ResourceType.EVENT, catalog.indexed.single().first.single().hits.single().type)
+    assertThrows<InvalidCandidate> {
+      accept.index(candidate(type = ResourceType.COURSE).copy(typeChosenByAdmin = true))
+    }
+  }
+
   @Test
   fun `a merged candidate may have the type of any collector that found it`() {
     val merged =

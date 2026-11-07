@@ -28,7 +28,9 @@ public interface AuditTrail {
     REMOVE_DISCOVERY_HOST,
     // A relationship candidate's target, and a resource added for it (V19, ADR 0064).
     CHANGE_RELATIONSHIP_TARGET,
-    ADD_RESOURCE
+    ADD_RESOURCE,
+    // An admin's edit of a resource candidate (V21, ADR 0065).
+    EDIT_CANDIDATE
   }
 
   /**

@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -138,16 +139,20 @@ public class ReviewQueue {
   }
 
   /**
-   * Replaces the reason and details of an OPEN candidate item (another collector found the same
-   * page, ADR 0051). Returns false when it is no longer OPEN.
+   * Replaces the reason and details of an OPEN candidate item that still holds [oldDetails]
+   * (another collector found the same page, ADR 0051; an admin edited it, ADR 0065). Returns false
+   * when it is no longer OPEN or someone changed it since it was read.
    */
-  public boolean updateCandidate(UUID id, String reason, String details) {
+  public boolean updateCandidate(
+      UUID id, @Nullable String oldDetails, String reason, String details) {
     return jdbc.sql(
                 """
                 UPDATE review_item SET reason = :reason, details = :details
                 WHERE id = :id AND status = 'OPEN' AND candidate_url IS NOT NULL
+                  AND details IS NOT DISTINCT FROM CAST(:old AS text)
                 """)
             .param("id", id)
+            .param("old", oldDetails)
             .param("reason", reason)
             .param("details", details)
             .update()
