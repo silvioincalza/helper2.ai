@@ -418,8 +418,9 @@ class ScoutConfiguration {
 
   /** An admin's edit of a resource candidate before accepting it (ADR 0065). */
   @Bean
-  EditCandidate editCandidate(ReviewQueueCandidateItems items, AuditTrail audit) {
-    return new EditCandidate(items, audit);
+  EditCandidate editCandidate(
+      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork scoutUnitOfWork) {
+    return new EditCandidate(items, audit, scoutUnitOfWork);
   }
 
   @Bean

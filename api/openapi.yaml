@@ -512,7 +512,8 @@ paths:
         At least one of the three; what is left out stays as the collector wrote it. The type may be any candidate type,
         not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
         `not-applicable` for an item that is not a resource candidate, `already-decided` for one no longer open,
-        `version-conflict` when the candidate changed since it was read (reload, then edit again).
+        `version-conflict` when the candidate changed since it was shown (`expectedDetails`; reload, then edit
+        again).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -2651,8 +2652,15 @@ components:
 
     CandidateEdit:
       type: object
-      description: At least one; null leaves it as it is.
+      description: At least one of title, type and tags; null leaves it as it is.
+      required: [expectedDetails]
       properties:
+        expectedDetails:
+          type: [string, 'null']
+          description: >-
+            The item's `details` as the admin saw them, unchanged. The edit applies only to these: when the candidate
+            changed since (a collector found the page again, another admin edited it), it is refused with 409
+            `version-conflict`.
         title: { type: [string, 'null'], minLength: 1, maxLength: 300 }
         type:
           oneOf: [{ $ref: '#/components/schemas/CandidateType' }, { type: 'null' }]

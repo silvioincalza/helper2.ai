@@ -37,17 +37,20 @@ function errorOf(e: unknown, t: (k: string) => string): string {
 
 /**
  * ADR 0065: an admin fixes an open resource candidate before accepting it: its title, its type (any candidate type) and
- * its tags. Only the fields that changed are sent. The item stays open; [onSaved] reloads the list, so the reason line
- * and the details show the new values.
+ * its tags. Only the fields that changed are sent, with the [details] the admin saw: when the candidate changed since,
+ * the server refuses the edit. The item stays open; [onSaved] reloads the list, so the reason line and the details show
+ * the new values.
  */
 export function CandidateEditForm({
   itemId,
+  details,
   title,
   type,
   tags,
   onSaved,
 }: {
   itemId: string;
+  details: string | null;
   title: string;
   type: string;
   tags: string[];
@@ -61,8 +64,8 @@ export function CandidateEditForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const change = (): CandidateEdit => {
-    const out: CandidateEdit = {};
+  const change = (): Omit<CandidateEdit, 'expectedDetails'> => {
+    const out: Omit<CandidateEdit, 'expectedDetails'> = {};
     if (newTitle.trim() !== title) out.title = newTitle.trim();
     if (newType !== type) out.type = newType as CandidateType;
     const wanted = tagsOf(newTags);
@@ -80,7 +83,7 @@ export function CandidateEditForm({
     setSaving(true);
     setError(null);
     try {
-      await adminApi.editCandidate(itemId, body);
+      await adminApi.editCandidate(itemId, { expectedDetails: details, ...body });
       setOpen(false);
       onSaved();
     } catch (err) {

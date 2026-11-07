@@ -286,6 +286,18 @@ public class ReviewQueue {
         .single();
   }
 
+  /**
+   * Locks the item's row until the current transaction ends, so an accepted item is indexed from
+   * the details it is decided with: an admin's edit or a collector's merge (ADR 0065) waits, then
+   * finds the item no longer open. A no-op outside a transaction.
+   */
+  public void lock(UUID id) {
+    jdbc.sql("SELECT 1 FROM review_item WHERE id = :id FOR UPDATE")
+        .param("id", id)
+        .query(Integer.class)
+        .optional();
+  }
+
   public Optional<Item> find(UUID id) {
     return jdbc.sql(SELECT_ITEMS + " WHERE i.id = :id")
         .param("id", id)

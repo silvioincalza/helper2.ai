@@ -75,6 +75,8 @@ describe('Feature: an admin fixes a resource candidate before accepting it (ADR 
 
     await waitFor(() =>
       expect(api.callsTo('PUT', PUT_PATH)[0]?.body).toEqual({
+        // The details the admin saw: the server refuses the edit when they changed since.
+        expectedDetails: details(),
         title: 'Google Gemini Carbon promises a leap',
         type: 'NEWS',
       }),

@@ -1,8 +1,10 @@
 package ai.helper2.scout.usecase
 
 import ai.helper2.identity.AuditTrail
+import ai.helper2.scout.UnitOfWork
 import ai.helper2.shared.ResourceType
 import java.util.UUID
+import java.util.function.Supplier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -36,11 +38,22 @@ class EditCandidateTest {
     audit += "$by $action $target $outcome"
   }
 
+  /** Counts the transactions: one per saved edit, the details and their audit entry inside. */
+  private var transactions = 0
+  private val unitOfWork =
+    object : UnitOfWork {
+      override fun <T : Any> run(work: Supplier<T>): T {
+        transactions++
+        return work.get()
+      }
+    }
+
   private fun open(details: String = "d") =
     CandidateItem(open = true, resourceCandidate = true, details)
 
-  private fun edit(items: Items, change: CandidateEdit) =
-    EditCandidate(items, trail).edit(id, change, "42")
+  /** An edit of the details the admin saw: the item's own, unless [seen] says otherwise. */
+  private fun edit(items: Items, change: CandidateEdit, seen: String? = items.item?.details) =
+    EditCandidate(items, trail, unitOfWork).edit(id, seen, change, "42")
 
   @Test
   fun `a new title, type and tags are saved and audited`() {
@@ -53,6 +66,7 @@ class EditCandidateTest {
     assertIs<EditCandidate.Outcome.Edited>(r)
     assertEquals(listOf("d|Gemini 4 Carbon|MODEL|[ai-assistants, coding]"), items.saved)
     assertEquals(listOf("42 EDIT_CANDIDATE $id EDITED title, type, tags"), audit)
+    assertEquals(1, transactions)
   }
 
   @Test
@@ -103,13 +117,24 @@ class EditCandidateTest {
   }
 
   @Test
+  fun `an edit of details that changed since the admin saw them saves nothing`() {
+    val items = Items(open("d2"))
+    assertIs<EditCandidate.Outcome.ChangedMeanwhile>(
+      edit(items, CandidateEdit(title = "x"), seen = "d")
+    )
+    assertTrue(items.saved.isEmpty())
+    assertTrue(audit.isEmpty())
+    assertEquals(0, transactions)
+  }
+
+  @Test
   fun `an unreadable candidate is refused`() {
     val items =
       object : CandidateItems by Items(open()) {
         override fun edit(details: String?, edit: CandidateEdit): String =
           throw InvalidCandidate("the candidate is not JSON")
       }
-    val r = EditCandidate(items, trail).edit(id, CandidateEdit(title = "x"), "42")
+    val r = EditCandidate(items, trail, unitOfWork).edit(id, "d", CandidateEdit(title = "x"), "42")
     assertIs<EditCandidate.Outcome.Invalid>(r)
     assertNull(audit.firstOrNull())
   }

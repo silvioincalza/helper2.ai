@@ -24,9 +24,16 @@ The type was also locked to the finders: a discovery category declares only its 
      a candidate type.
    - The accepted record keeps the list of edited fields in its extra (never shown). Who edited is in the audit
      trail, not in the catalog.
-3. **No lost update.** The edit and a collector's merge both save only when the item still holds the details they
-   read (`updateCandidate` compares them). An edit that lost the race is 409 `version-conflict`: reload, edit
-   again. A merge that lost it is skipped and logged; the next run of that collector joins it again.
+3. **No lost update.**
+   - The form sends back the details it showed (`expectedDetails`). The edit applies only to those: when the
+     candidate changed since the form opened (a collector, another admin), it is 409 `version-conflict`: reload,
+     edit again.
+   - The edit and a collector's merge both save only when the item still holds the details they read
+     (`updateCandidate` compares them). A merge that lost the race is skipped and logged; the next run of that
+     collector joins it again.
+   - The new details and the `EDIT_CANDIDATE` entry are saved in one transaction: no edit without its audit entry.
+   - Accepting locks the item's row first (`ReviewQueue.lock`), so what is indexed is what is decided. An edit or a
+     merge at the same moment waits, then finds the item no longer open, and saves nothing.
 4. **Refusals change nothing:** 400 for no field or an unusable value, 404 for no item, 409 `already-decided` for an
    item no longer open, 409 `not-applicable` for another kind.
 5. **Audit:** `EDIT_CANDIDATE` with the item id and `EDITED <fields>`.
@@ -45,7 +52,8 @@ The type was also locked to the finders: a discovery category declares only its 
 - **Tampering**: the values are checked here and again on accept; the details are rewritten as JSON by code, never
   taken as text from the client.
 - **Repudiation**: every edit is in the append-only audit trail.
-- **Information disclosure**: none new. The record's extra lists field names only, no administrator id.
+- **Information disclosure**: none new. The record's extra lists field names only, no administrator id. The Privacy
+  page says the record keeps which fields a person changed, for as long as the resource is listed.
 - **Denial of service**: one admin, one row per edit.
 
 ## Alternatives considered
@@ -54,14 +62,15 @@ The type was also locked to the finders: a discovery category declares only its 
 - **Edit the resource after accepting** — the right tool for a resource's own facts (next step), but it lets a wrong
   type reach the catalog and the enrichment first.
 - **Lock the item while an admin edits** — long locks for a form left open; the compare-and-save keeps both writers
-  safe without one.
+  safe without one. The only lock is the short one of an accept, for the length of its transaction.
 
 ## Code
 - `backend/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt`; `IndexAcceptedCandidate.kt`
   (`CandidateRules`, `typeChosenByAdmin`).
 - `backend/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`edit`, `merge`, `read`, `reason`),
   `ReviewQueueCandidateItems.java`, `ReviewQueueCandidateReview.java`, `ScoutConfiguration.java`.
-- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details).
+- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
+  `backend/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
 - `backend/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`CandidateEdit`,
   `CandidateType`, audit action).
 - `backend/src/main/resources/db/migration/V21__candidate_edit.sql`.

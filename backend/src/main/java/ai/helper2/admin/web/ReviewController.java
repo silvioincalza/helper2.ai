@@ -77,7 +77,7 @@ class ReviewController implements ReviewApi {
             body.getTitle(),
             body.getType() == null ? null : ResourceType.valueOf(body.getType().getValue()),
             body.getTags() == null ? null : Set.copyOf(body.getTags()));
-    switch (editCandidate.edit(id, change, adminId())) {
+    switch (editCandidate.edit(id, body.getExpectedDetails(), change, adminId())) {
       case EditCandidate.Outcome.Edited e -> {}
       case EditCandidate.Outcome.NotFound n ->
           throw new NotFoundException("Review item not found.");
@@ -88,7 +88,7 @@ class ReviewController implements ReviewApi {
       case EditCandidate.Outcome.ChangedMeanwhile c ->
           throw new ApiProblem(
               ProblemType.VERSION_CONFLICT,
-              "The candidate changed since you read it. Reload it, then edit again.");
+              "The candidate changed since you opened it. Reload it, then edit again.");
       case EditCandidate.Outcome.Invalid i -> throw new BadRequestException(i.getReason());
     }
     return ResponseEntity.ok(

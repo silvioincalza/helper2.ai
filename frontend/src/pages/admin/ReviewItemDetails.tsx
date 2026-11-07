@@ -129,6 +129,7 @@ function ResourceCandidate({
           <CandidateEditForm
             key={details ?? ''}
             itemId={edit.itemId}
+            details={details ?? null}
             title={candidate.title}
             type={candidate.type}
             tags={candidate.tags}
