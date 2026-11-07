@@ -25,12 +25,17 @@ TAG=$(git rev-parse --short=12 HEAD)
 PG_TAG=18.6-pgvector0.8.6-5  # postgres.image.tag in the chart's values.yaml
 
 podman build --platform linux/amd64 -f deploy/Dockerfile -t $REGISTRY/helper2:$TAG .
+podman build --platform linux/amd64 -f deploy/backoffice.Dockerfile -t $REGISTRY/helper2-backoffice:$TAG .
 podman build --platform linux/amd64 -t $REGISTRY/helper2-postgres:$PG_TAG deploy/postgres
 podman push $REGISTRY/helper2:$TAG
+podman push $REGISTRY/helper2-backoffice:$TAG
 podman push $REGISTRY/helper2-postgres:$PG_TAG
 ```
 
-Docker works the same way. Tags are never rebuilt or moved: one commit, one image.
+Two app images, one tag ([ADR 0069](../../docs/adr/operations/0069-three-deployables.md)): `helper2` is the
+public app (search, guide, the pages, sign-in for users), `helper2-backoffice` the back office (admin, Scout,
+collectors, enrichment). Both use the same database, Redis and app.env. Docker works the same way. Tags are
+never rebuilt or moved: one commit, one image.
 
 ## 2. Configure
 
@@ -62,6 +67,10 @@ app:
   environment: prod            # tag on metrics and spans
 image:
   repository: ghcr.io/<owner>/helper2
+backoffice:
+  image:
+    repository: ghcr.io/<owner>/helper2-backoffice   # its tag is image.tag unless you set backoffice.image.tag
+  adminBaseUrl: https://admin.example.com           # the admin host: the sign-in callback is pinned to it
 postgres:
   image:
     repository: ghcr.io/<owner>/helper2-postgres
@@ -107,12 +116,17 @@ spec:
           - { path: /, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
 ```
 
-The back office (`/admin`) answers only on the Service `helper2-admin`, port 80
-([ADR 0035](../../docs/adr/edge/0035-admin-host.md)). Route it from a host that only your own network can
-reach (for example an Ingress with a source allow-list), never from the public host.
+The back office (`/admin`) is its own Deployment, `helper2-backoffice`, behind the Service `helper2-admin`,
+port 80 ([ADR 0035](../../docs/adr/edge/0035-admin-host.md), [ADR 0069](../../docs/adr/operations/0069-three-deployables.md)).
+Route it from a host that only your own network can reach (for example an Ingress with a source allow-list),
+never from the public host. The public app has no admin code and answers 404 on `/admin`. Sign in to the
+back office on that host: its GitHub App (or OAuth app) needs the callback
+`https://<admin host>/login/oauth2/code/github`.
 
-Then open `https://<host>`. The Scout starts about 20 seconds after startup and fills the catalog over
-the next hours.
+Then open `https://<host>`. The public app migrates the database at startup; the back office only checks the
+schema, so on a release with a new migration it waits (restarts) until the public app has migrated. The
+Scout runs in the back office: it starts about 20 seconds after startup and fills the catalog over the next
+hours.
 
 To upgrade, build a new tag and run the same `helm upgrade --install` command with it.
 
@@ -122,18 +136,21 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 |---|---|
 | Traces (OTLP/HTTP) | `app.tracing.export: true`, `app.tracing.endpoint`, `networkPolicy.egress.otlp.namespace` of the collector |
 | Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
-| Replicas | `app.replicas` (default 3) |
+| Replicas | `app.replicas` (public app, default 3), `backoffice.replicas` (default 1) |
+| Scout | `backoffice.scoutEnabled`, `backoffice.scoutCron`, `backoffice.scoutMaxEnrichments` |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |
 
-The network policy lets only the Ingress controller (`networkPolicy.ingressController`) reach the app, on
-port 8080 and the admin port. Without it, no visitor reaches the app. The app trusts `X-Forwarded-For` from
+The network policy lets only the Ingress controller (`networkPolicy.ingressController`) reach the two apps,
+on port 8080. Without it, no visitor reaches the app. The app trusts `X-Forwarded-For` from
 that edge for its per-client rate limits.
 
 ## Operations
 
-The app runs `app.replicas` replicas, replaced one at a time on upgrade, with a PodDisruptionBudget when
-there is more than one replica. The Scout and the embedding indexer run on one replica at a time (lock
+The public app runs `app.replicas` replicas and the back office `backoffice.replicas`, each replaced one at
+a time on upgrade, with a PodDisruptionBudget when there is more than one replica. Every scheduled job runs
+in one of the two apps: the Scout, the collectors, the embedding indexer and the catalog jobs in the back
+office, the guide, account and search retention in the public app. Each runs on one replica at a time (lock
 table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. What is still per replica:
 [docs/roadmap.md](../../docs/roadmap.md), "More than one replica".
 

@@ -10,6 +10,15 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "envSecret.name is required: the Secret with the H2_ keys of app.env (make env-secret)" .Values.envSecret.name }}
 {{- end }}
 
+{{/* The back office's tag: its own, or the public app's, so both deploy the same version by default. */}}
+{{- define "helper2.backofficeTag" -}}
+{{ default .Values.image.tag .Values.backoffice.image.tag }}
+{{- end }}
+
+{{- define "helper2.backofficeImage" -}}
+{{ required "backoffice.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-backoffice)" .Values.backoffice.image.repository }}:{{ required "backoffice.image.tag or image.tag is required" (include "helper2.backofficeTag" .) }}
+{{- end }}
+
 {{- define "helper2.image" -}}
 {{ required "image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2)" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}
 {{- end }}

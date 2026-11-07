@@ -1,4 +1,5 @@
-# The JVM image (SPA embedded).
+# The public app (ADR 0069): search, guide, setup, the pages and sign-in for users; the built web app embedded.
+# The back office is its own workload (backoffice.yaml).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,13 +61,6 @@ spec:
             {{- end }}
             # The running build: cached guide answers are kept per build, so a deploy is seen at once.
             - { name: H2_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
-            {{- if gt (int .Values.app.adminPort) 0 }}
-            # The back office and the ADMIN role only on this port (ADR 0035); the public port answers 404 there.
-            - { name: H2_ADMIN_PORT, value: {{ .Values.app.adminPort | toString | quote }} }
-            {{- end }}
-            {{- with .Values.app.adminGrafanaUrl }}
-            - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
-            {{- end }}
             - { name: H2_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
             {{- with .Values.app.monetisation }}
             # Monetisation parts that are on (ADR 0057); an empty value stays off.
@@ -93,10 +87,6 @@ spec:
             # The host every canonical link and sitemap address names (ADR 0050).
             - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }
             {{- end }}
-            - { name: H2_SCOUT_ENABLED, value: {{ .Values.app.scoutEnabled | toString | quote }} }
-            - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "app.scoutInitialDelay" .Values.app.scoutInitialDelay | quote }} }
-            - { name: H2_SCOUT_CRON, value: {{ required "app.scoutCron" .Values.app.scoutCron | quote }} }
-            - { name: H2_SCOUT_MAX_ENRICHMENTS, value: {{ .Values.app.scoutMaxEnrichments | toString | quote }} }
             {{- /* Daily limits: only the ones set in values, so an unset one keeps the app default or the env Secret. */}}
             {{- $limits := .Values.app.dailyLimits }}
             {{- range $name, $value := dict "H2_LIVE_WEB_GUEST_SEARCH" $limits.webSearches.search "H2_LIVE_WEB_GUEST_GUIDE" $limits.webSearches.guide "H2_GUIDE_CLIENT_DAILY_QUESTIONS" $limits.guideQuestions "H2_LIVE_WEB_DAILY_CREDITS" $limits.webSearchCredits "H2_GUIDE_DAILY_MODEL_CALLS" $limits.guideModelCalls }}
@@ -130,9 +120,6 @@ spec:
           ports:
             - { containerPort: 8080, name: http }
             - { containerPort: 8081, name: management }
-            {{- if gt (int .Values.app.adminPort) 0 }}
-            - { containerPort: {{ .Values.app.adminPort }}, name: admin }
-            {{- end }}
           # Startup runs Flyway and loads the Lingua language models: up to periodSeconds x
           # failureThreshold (app.startupSeconds) before the kubelet restarts the container. Liveness
           # and readiness only start once this has passed, so neither needs an initial delay.
@@ -181,18 +168,3 @@ metadata:
 spec:
   selector: { app: helper2 }
   ports: [{ port: 80, targetPort: http }]
-{{- if gt (int .Values.app.adminPort) 0 }}
----
-# The back office (ADR 0035). Route only an in-network host here (an Ingress with a source allow-list, or a VPN):
-# never the public edge.
-apiVersion: v1
-kind: Service
-metadata:
-  name: helper2-admin
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "helper2.labels" . | nindent 4 }}
-spec:
-  selector: { app: helper2 }
-  ports: [{ port: 80, targetPort: admin }]
-{{- end }}

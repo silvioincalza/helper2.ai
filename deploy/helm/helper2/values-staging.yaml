@@ -10,7 +10,7 @@ redis:
   storageClassName: local-path
 networkPolicy:
   # The platform's ingress-nginx serves the Ingresses (incalza-me-infra terraform/k8s/helper2.tf): public host ->
-  # Service helper2, in-network admin host -> Service helper2-admin (ADR 0035).
+  # Service helper2, in-network admin host -> Service helper2-admin, the back office (ADR 0035, 0069).
   ingressController:
     namespace: ingress-nginx
     podLabels: { app.kubernetes.io/name: ingress-nginx }
@@ -30,9 +30,6 @@ app:
   noindex: true
   # One replica: staging has little traffic, and the cluster's memory goes to prod first.
   replicas: 1
-  # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.
-  # Search and the AI guide still work; staging's catalog stays as last indexed.
-  scoutEnabled: false
   # No per-visitor limits on staging, so a test is never cut off by its own earlier tests. Staging is public, so
   # the whole site keeps a cap on live web searches (the Tavily plan may be shared with prod) and on guide model
   # calls: 150 a day, one nightly guide evaluation with retries (ADR 0030).
@@ -45,3 +42,9 @@ app:
     guideModelCalls: 150
   # The nightly guide evaluation measures fresh answers: a guide answer expires after one second (ADR 0030).
   guideCacheTtl: PT1S
+backoffice:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
+  # No Scout on staging: it would spend Nemotron calls on the same sources prod already indexes.
+  # Search and the AI guide still work; staging's catalog stays as last indexed.
+  scoutEnabled: false

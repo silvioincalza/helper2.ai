@@ -1,7 +1,7 @@
 # Ingress: nothing for any pod here (pg-backup stays at that), then allowed per workload below.
-# app <- the Ingress controller's pods (networkPolicy.ingressController) on 8080 and the admin port; <- the
-# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app and pg-backup;
-# redis <- app.
+# app and helper2-backoffice <- the Ingress controller's pods (networkPolicy.ingressController) on 8080; <- the
+# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app, back office and
+# pg-backup; redis <- app and back office.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -12,18 +12,21 @@ metadata:
 spec:
   podSelector: {}
   policyTypes: [Ingress]
+{{- /* The two apps (ADR 0069) take the same traffic: the back office is reached only through its own Service,
+     which only the in-network host's route uses. */}}
+{{- range $name, $app := dict "ingress-app" "helper2" "ingress-backoffice" "helper2-backoffice" }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ingress-app
-  namespace: {{ .Release.Namespace }}
+  name: {{ $name }}
+  namespace: {{ $.Release.Namespace }}
   labels:
-    {{- include "helper2.labels" . | nindent 4 }}
+    {{- include "helper2.labels" $ | nindent 4 }}
 spec:
-  podSelector: { matchLabels: { app: helper2 } }
+  podSelector: { matchLabels: { app: {{ $app }} } }
   policyTypes: [Ingress]
-  {{- with .Values.networkPolicy }}
+  {{- with $.Values.networkPolicy }}
   {{- if or .ingressController.namespace .metricsNamespace }}
   ingress:
     {{- with .ingressController.namespace }}
@@ -32,11 +35,7 @@ spec:
           {{- with $.Values.networkPolicy.ingressController.podLabels }}
           podSelector: { matchLabels: {{ toJson . }} }
           {{- end }}
-      ports:
-        - { port: 8080, protocol: TCP }
-        {{- if gt (int $.Values.app.adminPort) 0 }}
-        - { port: {{ $.Values.app.adminPort }}, protocol: TCP }
-        {{- end }}
+      ports: [{ port: 8080, protocol: TCP }]
     {{- end }}
     {{- with .metricsNamespace }}
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]
@@ -44,6 +43,7 @@ spec:
     {{- end }}
   {{- end }}
   {{- end }}
+{{- end }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -58,6 +58,7 @@ spec:
   ingress:
     - from:
         - podSelector: { matchLabels: { app: helper2 } }
+        - podSelector: { matchLabels: { app: helper2-backoffice } }
         {{- if .Values.backup.enabled }}
         - podSelector: { matchLabels: { app: pg-backup } }
         {{- end }}
@@ -74,7 +75,9 @@ spec:
   podSelector: { matchLabels: { app: redis } }
   policyTypes: [Ingress]
   ingress:
-    - from: [{ podSelector: { matchLabels: { app: helper2 } } }]
+    - from:
+        - podSelector: { matchLabels: { app: helper2 } }
+        - podSelector: { matchLabels: { app: helper2-backoffice } }
       ports: [{ port: 6379, protocol: TCP }]
 {{- with .Values.networkPolicy.egress }}
 {{- if .enabled }}
@@ -101,7 +104,9 @@ metadata:
   labels:
     {{- include "helper2.labels" $ | nindent 4 }}
 spec:
-  podSelector: { matchLabels: { app: helper2 } }
+  # Both apps reach the same: DNS, Postgres, Redis, traces, and HTTPS to the models and the sources.
+  podSelector:
+    matchExpressions: [{ key: app, operator: In, values: [helper2, helper2-backoffice] }]
   policyTypes: [Egress]
   egress:
     - {{ toJson $dns }}

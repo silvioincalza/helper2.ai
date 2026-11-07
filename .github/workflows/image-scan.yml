@@ -1,6 +1,7 @@
 # Weekly scan of what runs on prod (ADR 0046): Grype against the SBOM attached to the latest GitHub release, with a
 # fresh vulnerability database. New CVEs appear after a release; this finds them without a new build.
-# Report-only: findings go to code scanning (category release/app, on the release tag) and the job summary.
+# Report-only: findings go to code scanning (release/app and release/backoffice, on the release tag) and the job
+# summary.
 name: image-scan
 
 on:
@@ -33,10 +34,16 @@ jobs:
         run: |
           set -euo pipefail
           tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
-          if ! gh release download "$tag" -R "$GITHUB_REPOSITORY" -p 'helper2-*.cdx.json' -O sbom.cdx.json; then
+          if ! gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-$tag.cdx.json" -O sbom.cdx.json; then
             echo "::warning::release $tag has no SBOM (published before ADR 0046): nothing to scan"
             echo "found=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
+          # The back office image (ADR 0069); a release before the split has none.
+          backoffice=false
+          if gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-backoffice-$tag.cdx.json" -O sbom-backoffice.cdx.json; then
+            backoffice=true
+          fi
+          echo "backoffice=$backoffice" >> "$GITHUB_OUTPUT"
           git fetch --quiet --force origin "refs/tags/$tag:refs/tags/$tag"
           { echo "found=true"; echo "tag=$tag"; echo "sha=$(git rev-parse "refs/tags/$tag^{commit}")"; } >> "$GITHUB_OUTPUT"
       - name: Scan (report-only)
@@ -48,11 +55,28 @@ jobs:
           grype sbom:sbom.cdx.json --only-fixed -o table=grype.txt -o sarif=grype.sarif
           { echo "### Grype, release $TAG (fixable only)"; echo '```'; cat grype.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           cat grype.txt
+      - name: Scan the back office (report-only)
+        if: steps.release.outputs.backoffice == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          grype sbom:sbom-backoffice.cdx.json --only-fixed -o table=grype-backoffice.txt -o sarif=grype-backoffice.sarif
+          { echo "### Grype, back office, release $TAG (fixable only)"; echo '```'; cat grype-backoffice.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cat grype-backoffice.txt
       - if: steps.release.outputs.found == 'true'
         uses: ./.github/actions/upload-sarif
         continue-on-error: true
         with:
           sarif: grype.sarif
           category: release/app
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          sha: ${{ steps.release.outputs.sha }}
+      - if: steps.release.outputs.backoffice == 'true'
+        uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-backoffice.sarif
+          category: release/backoffice
           ref: refs/tags/${{ steps.release.outputs.tag }}
           sha: ${{ steps.release.outputs.sha }}
