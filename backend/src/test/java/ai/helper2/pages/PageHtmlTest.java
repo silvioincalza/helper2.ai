@@ -172,7 +172,8 @@ class PageHtmlTest {
     Pattern route = Pattern.compile("path: '([^'*]+)'");
     List<String> paths =
         lines.stream().flatMap(l -> route.matcher(l).results().map(m -> m.group(1))).toList();
-    assertThat(paths).contains("resource/:id/:slug?", "sources", "review", "news", "events", "signin");
+    assertThat(paths)
+        .contains("resource/:id/:slug?", "sources", "review", "news", "events", "signin");
     for (String line : lines) {
       var m = route.matcher(line);
       if (!m.find()) continue;
