@@ -100,6 +100,7 @@ public class NvidiaEmbedder implements Embedder {
     if (texts.isEmpty()) {
       return List.of();
     }
+    List<String> input = texts.stream().map(NvidiaEmbedder::withoutBase64DataUris).toList();
     Response response;
     try {
       response =
@@ -112,7 +113,7 @@ public class NvidiaEmbedder implements Embedder {
                       .body(
                           new Request(
                               model,
-                              texts,
+                              input,
                               kind == Kind.QUERY ? "query" : "passage",
                               dimensions,
                               "END",
@@ -130,6 +131,22 @@ public class NvidiaEmbedder implements Embedder {
     }
     return vectors(response, texts.size(), dimensions);
   }
+
+  /**
+   * The text without its base64 data URIs, each replaced by a space. The model also embeds images:
+   * NVIDIA reads a {@code data:<mime>;base64,} URI anywhere in a text as an image and rejects the
+   * whole call with 422 when the payload is no image (staging, 7 Nov 2026: a news page quoting
+   * {@code data:image/png;base64,BASE64_IMAGE_DATA} never got its vector). The payload carries no
+   * meaning for a text embedding. The stored text hash stays on the text as written, so the cleaned
+   * text is not re-embedded every tick.
+   */
+  static String withoutBase64DataUris(String text) {
+    return BASE64_DATA_URI.matcher(text).replaceAll(" ");
+  }
+
+  private static final Pattern BASE64_DATA_URI =
+      Pattern.compile(
+          "data:[^\\s,;]*(?:;[^\\s,;]*)*;base64,[A-Za-z0-9+/=_-]*", Pattern.CASE_INSENSITIVE);
 
   /**
    * The status, and for catalog texts the provider's reason from the body (NVIDIA's 500 says

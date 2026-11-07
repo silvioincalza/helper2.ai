@@ -263,4 +263,79 @@ class NvidiaEmbedderTest {
               Embedder.EmbeddingFailure.class, e -> assertThat(e.rateLimited()).isTrue());
     }
   }
+
+  /** A 422 is an error answer like a 500: the indexer then sends the texts one at a time. */
+  @Test
+  void anUnprocessableInputIsAProviderError() {
+    try (FixtureServer server =
+        new FixtureServer()
+            .route(
+                "/v1/embeddings",
+                new FixtureServer.Reply(
+                    422, "{\"message\":\"failed to parse VLM input\"}", Map.of(), 0))) {
+      assertThatThrownBy(() -> embedderAt(server).embed(List.of("a"), Embedder.Kind.PASSAGE))
+          .isInstanceOfSatisfying(
+              Embedder.EmbeddingFailure.class,
+              e -> {
+                assertThat(e.reason()).isEqualTo(Embedder.FailureReason.PROVIDER_ERROR);
+                assertThat(e.getMessage())
+                    .startsWith("embedding call failed: HTTP 422")
+                    .contains("failed to parse VLM input");
+              });
+    }
+  }
+
+  /**
+   * The model also takes images: NVIDIA reads a base64 data URI anywhere in a text as an image and
+   * rejects the whole call with 422 when the payload is not an image (staging, 7 Nov 2026: a news
+   * page quoting {@code data:image/png;base64,BASE64_IMAGE_DATA}).
+   */
+  @Test
+  void noBase64DataUriIsSentToTheApi() {
+    try (FixtureServer server =
+        new FixtureServer()
+            .route(
+                "/v1/embeddings",
+                FixtureServer.Reply.ok("{\"data\":[{\"index\":0,\"embedding\":[1,0]}]}"))) {
+      embedderAt(server)
+          .embed(
+              List.of("Embedding models\n{\"url\": \"data:image/png;base64,BASE64_IMAGE_DATA\"}"),
+              Embedder.Kind.PASSAGE);
+
+      assertThat(server.requestBodies.getFirst())
+          .contains("Embedding models")
+          .doesNotContain("base64", "BASE64_IMAGE_DATA");
+    }
+  }
+
+  @Test
+  void base64DataUrisAreRemovedWhereverTheyStand() {
+    assertThat(NvidiaEmbedder.withoutBase64DataUris("data:image/png;base64,iVBORw0KGgo= logo"))
+        .isEqualTo("  logo");
+    assertThat(NvidiaEmbedder.withoutBase64DataUris("see (data:image/png;base64,AAAA_-x) here"))
+        .isEqualTo("see ( ) here");
+    assertThat(NvidiaEmbedder.withoutBase64DataUris("a DATA:IMAGE/JPEG;BASE64,QUJD b"))
+        .isEqualTo("a   b");
+    assertThat(
+            NvidiaEmbedder.withoutBase64DataUris(
+                "x data:audio/wav;base64,UklG y data:;base64,QQ== z"))
+        .isEqualTo("x   y   z");
+    assertThat(
+            NvidiaEmbedder.withoutBase64DataUris(
+                "a data:image/svg+xml;charset=utf-8;base64,PHN2Zz4= b"))
+        .isEqualTo("a   b");
+  }
+
+  /** Only base64 data URIs: a URL-encoded one and prose about base64 went through (staging). */
+  @Test
+  void otherTextIsLeftAsItIs() {
+    for (String text :
+        List.of(
+            "[![logo](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E)]",
+            "import \"encoding/base64\" // accepting a Base64 image data URI",
+            "encode your audio as base64 PCM16",
+            "plain text")) {
+      assertThat(NvidiaEmbedder.withoutBase64DataUris(text)).isEqualTo(text);
+    }
+  }
 }

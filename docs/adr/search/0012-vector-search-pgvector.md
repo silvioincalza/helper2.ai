@@ -14,7 +14,10 @@ never break keyword search.
    so a model change re-embeds everything instead of mixing spaces: storing a resource's vector under the configured
    model deletes its vectors of every other model, so the table and the index hold one vector space.
 2. **NVIDIA embeddings** (`NvidiaEmbedder`, port `Embedder`). `POST {base}/embeddings` with `input_type` `query` or
-   `passage`, `truncate=END`, 1024 dimensions. Settings: `H2_NVIDIA_API_KEY`, `H2_NVIDIA_EMBEDDING_BASE_URL`
+   `passage`, `truncate=END`, 1024 dimensions. The model also embeds images: NVIDIA reads a base64 data URI
+   (`data:<mime>;base64,…`) anywhere in a text as an image and rejects the whole call with 422 when the payload is no
+   image, so every base64 data URI in a text or a query becomes a space before the call. The stored `text_hash`
+   stays on the text as written. Settings: `H2_NVIDIA_API_KEY`, `H2_NVIDIA_EMBEDDING_BASE_URL`
    (`https://integrate.api.nvidia.com/v1`), `H2_NVIDIA_EMBEDDING_MODEL` (`nvidia/nemotron-3.5-embed-1b`).
    Hypertext Transfer Protocol (HTTP) status 429 is reported as rate-limited. The response must hold one vector of the right size per input.
    The client is the observed client from [0006](../foundation/0006-outbound-http.md) (span, `http.client.requests`), with redirects off

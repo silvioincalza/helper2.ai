@@ -28,7 +28,7 @@ indexer: "Indexer on each replica (thread embedding-indexer, every 15 s)" {
   pending: "pendingEmbeddings(model, 50):\nno vector or md5(text) changed;\nmost popular first; no DEMO rows" {class: data}
   empty: "Nothing pending?" {class: decision}
   uptodate: "backlog = 0,\nlast.success = now" {class: end}
-  embed: "NvidiaEmbedder.embed\n(input_type=passage, 30 s client)" {class: ai}
+  embed: "NvidiaEmbedder.embed\n(input_type=passage, 30 s client;\nbase64 data URIs removed)" {class: ai}
   result: "Result?" {class: decision}
   save: "saveEmbeddings (other models'\nvectors deleted), backlog gauge,\nlast.success = now" {class: data}
   limited: "failures{rate_limited},\npause 2 min" {class: fail}
