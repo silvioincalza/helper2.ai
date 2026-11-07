@@ -32,6 +32,9 @@ import tools.jackson.databind.JsonNode;
  */
 public class NpmSource implements SearchSource {
 
+  /** The search API answers 400 ERR_TEXT_LENGTH to a longer {@code text}. */
+  static final int MAX_TEXT_LENGTH = 64;
+
   private final RestClient http;
   private final Clock clock;
   private final SourceDescriptor descriptor;
@@ -63,7 +66,7 @@ public class NpmSource implements SearchSource {
 
   @Override
   public List<SourceHit> search(SourceQuery query) {
-    String text = HttpClients.queryText(query);
+    String text = fitToLimit(HttpClients.queryText(query));
     JsonNode root =
         HttpClients.getJson(
             () ->
@@ -77,6 +80,20 @@ public class NpmSource implements SearchSource {
                     .body(String.class),
             clock);
     return HttpClients.hits("npm", root.path("objects"), clock.instant(), NpmSource::toHit);
+  }
+
+  /**
+   * Keeps the leading words that fit: the user's own words come first, expanded terms after them. A
+   * first word longer than the limit is cut.
+   */
+  static String fitToLimit(String text) {
+    if (text.length() <= MAX_TEXT_LENGTH) {
+      return text;
+    }
+    int lastSpace = text.lastIndexOf(' ', MAX_TEXT_LENGTH);
+    return lastSpace > 0
+        ? text.substring(0, lastSpace).strip()
+        : text.substring(0, MAX_TEXT_LENGTH);
   }
 
   private static SourceHit toHit(JsonNode o, Instant now, int position) {

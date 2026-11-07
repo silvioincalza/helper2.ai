@@ -11,11 +11,14 @@ import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.util.UriComponentsBuilder;
 
 class NpmSourceTest {
 
@@ -57,6 +60,51 @@ class NpmSourceTest {
     assertThat(h.getPopularity())
         .singleElement()
         .satisfies(p -> assertThat(p.getKind()).isEqualTo(PopularityKind.NPM_DOWNLOADS_WEEKLY));
+  }
+
+  @Test
+  void npmGetsAtMost64CharactersCutAtAWordBecauseItRejectsLongerText() {
+    server.route("/-/v1/search", FixtureServer.Reply.ok("{\"objects\":[]}"));
+    NpmSource src = source();
+    src.search(
+        new SourceQuery(
+            "an open-source MCP server so my agent can query a Postgres database",
+            List.of("model context protocol"),
+            null,
+            10));
+    assertThat(sentText())
+        .as("npm answers 400 ERR_TEXT_LENGTH above 64 characters")
+        .isEqualTo("an open-source MCP server so my agent can query a Postgres");
+  }
+
+  @Test
+  void npmCutsASingleWordLongerThan64Characters() {
+    server.route("/-/v1/search", FixtureServer.Reply.ok("{\"objects\":[]}"));
+    source().search(q("x".repeat(80)));
+    assertThat(sentText()).isEqualTo("x".repeat(64));
+  }
+
+  @Test
+  void npmGetsAShortQueryWithItsExpandedTermsUnchanged() {
+    server.route("/-/v1/search", FixtureServer.Reply.ok("{\"objects\":[]}"));
+    source().search(new SourceQuery("mcp postgres", List.of("database"), null, 10));
+    assertThat(sentText()).isEqualTo("mcp postgres database");
+  }
+
+  NpmSource source() {
+    return new NpmSource(
+        settings(),
+        ObservedHttp.restClientBuilder(
+            Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
+        SourceFixtures.CLOCK);
+  }
+
+  String sentText() {
+    return UriComponentsBuilder.fromUriString(server.requests.getFirst())
+        .build()
+        .getQueryParams()
+        .getFirst("text")
+        .transform(t -> URLDecoder.decode(t, StandardCharsets.UTF_8));
   }
 
   @Test
