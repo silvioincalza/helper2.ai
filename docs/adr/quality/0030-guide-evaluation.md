@@ -92,9 +92,9 @@ drop in quality must be seen the next day, not at the next run by hand.
      from the cache), so the threshold leaves room for two questions of model noise; the adversarial set fails on
      any case, as in item 3;
    - `values-staging.yaml` sets `app.guideCacheTtl: PT1S` (every answer a real model call),
-     `app.dailyLimits.guideModelCalls: 150` (the hard bound of a run, retries included; staging visitors share what
-     the run leaves) and per-visitor limits of 1000 (a run and a rerun from one address). Prod keeps the defaults.
-     The full set with `--repeat 3` does not fit in 150 calls: it is a run by hand, with the settings of the day
+     `app.dailyLimits.guideModelCalls: 300` (twice the hard bound of a run, retries included, so checks by hand on
+     staging still get answers after the nightly run) and per-visitor limits of 1000 (a run and a rerun from one
+     address). Prod keeps the defaults. The full set with `--repeat 3` does not fit in 300 calls: it is a run by hand, with the settings of the day
      raised as [docs/evaluation.md](../../evaluation.md) "Clean baseline" says;
    - the reports (`docs/evaluation.md`, `docs/evaluation-adversarial.md`, `backend/eval-data/guide-pool.tsv`) are
      kept as an artifact for 30 days; nothing is committed. Publishing a run stays a step by hand (item 7).

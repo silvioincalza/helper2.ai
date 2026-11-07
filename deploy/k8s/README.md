@@ -248,5 +248,5 @@ kubectl -n $NS scale deployment/helper2 --replicas=3   # your app.replicas
 helper2.ai runs on this chart with [`values-staging.yaml`](../helm/helper2/values-staging.yaml) and
 [`values-prod.yaml`](../helm/helper2/values-prod.yaml), deployed by GitHub Actions: [CI.md](CI.md).
 For the nightly guide evaluation, `values-staging.yaml` keeps guide answers one second (`app.guideCacheTtl`) and caps
-guide model calls at 150 a day (`app.dailyLimits.guideModelCalls`)
+guide model calls at 300 a day (`app.dailyLimits.guideModelCalls`: a run and checks by hand)
 ([ADR 0030](../../docs/adr/quality/0030-guide-evaluation.md)); prod keeps the defaults.
