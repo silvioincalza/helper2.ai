@@ -46,8 +46,9 @@ public class RelationshipTargets {
 
   /**
    * Points the relationship of open item [itemId] at resource [targetId] under its catalog title,
-   * or, with no target, renames it to [title]. Either way its origin becomes CURATED: a person
-   * chose the target. Call inside a transaction.
+   * or, with no target, renames it to [title]. Either way the target becomes CURATED: a person
+   * chose it. The relationship's origin stays, since the kind is still the model's. Call inside a
+   * transaction.
    */
   public Outcome change(UUID itemId, @Nullable UUID targetId, @Nullable String title) {
     Locked item = lock(itemId);
@@ -72,7 +73,8 @@ public class RelationshipTargets {
     }
     jdbc.sql(
             """
-            UPDATE relationship SET to_resource_id = :target, to_title = :title, origin = 'CURATED'
+            UPDATE relationship
+            SET to_resource_id = :target, to_title = :title, target_origin = 'CURATED'
             WHERE id = :id
             """)
         .param("target", targetId)

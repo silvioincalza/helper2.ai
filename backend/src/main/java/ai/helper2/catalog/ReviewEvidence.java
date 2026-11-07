@@ -72,13 +72,17 @@ public interface ReviewEvidence {
       Verification verification,
       List<Quote> quotes) {}
 
-  /** A relationship a run proposed, with at most {@link #MAX_QUOTES} quotes. */
+  /**
+   * A relationship a run proposed, with at most {@link #MAX_QUOTES} quotes. [origin] is the kind's;
+   * [targetCurated] is true when an admin chose the target (ADR 0064).
+   */
   record Relationship(
       String kind,
       String target,
       @Nullable UUID targetId,
       Verification verification,
       ValueOrigin origin,
+      boolean targetCurated,
       List<Quote> quotes) {}
 
   /** A quote copied from a source; [sourceId] is null for a page the run read itself. */

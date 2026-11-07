@@ -65,6 +65,7 @@ function EvidenceBody({
   const { t, i18n } = useTranslation();
   const { item, run, relationship, fields, validationErrors } = evidence;
   const retargetable = item.status === 'OPEN' && item.kind === 'RELATIONSHIP_CANDIDATE';
+  const targetCurated = relationship?.targetOrigin === 'CURATED';
   if (!run && !relationship) return <p className="muted">{t('admin.evidence.none')}</p>;
   return (
     <>
@@ -106,14 +107,15 @@ function EvidenceBody({
           <p className="h2-admin__field-head">
             {/* The kind is the model's; a target a person chose is not (ADR 0064). */}
             <span {...aiMark(run?.model)}>{t(`relationship.${relationship.kind}`)}</span>{' '}
-            <span {...(isAiOrigin(relationship.origin) ? aiMark(run?.model) : {})}>
-              {relationship.target}
-            </span>{' '}
+            <span {...(targetCurated ? {} : aiMark(run?.model))}>{relationship.target}</span>{' '}
             <StatusPill tone={VERIFICATION_TONE[relationship.verification]}>
               {t(`verification.${relationship.verification}`)}
             </StatusPill>
           </p>
-          <p className="h2-admin__ai-label">{t(`origin.${relationship.origin}`)}</p>
+          <p className="h2-admin__ai-label">
+            {t(`origin.${relationship.origin}`)}
+            {targetCurated && <> · {t('admin.evidence.targetCurated')}</>}
+          </p>
           {retargetable && (
             <RelationshipTarget
               itemId={item.id}

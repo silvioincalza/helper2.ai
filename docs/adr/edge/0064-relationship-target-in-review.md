@@ -24,17 +24,20 @@ catalog at all: a new model the article is about.
    records, gives that resource: never a second one. Otherwise it becomes a record of the `curated` source, with the
    admin's name and type, no description, data origin CURATED and enrichment NOT_RUN: the next Scout run enriches it
    from its own pages ([0056](../scout/0056-evidence-ladder.md)). The curated source now lists these types too.
-3. **The target is the admin's.** The relationship's origin becomes CURATED. The kind is still the model's: the
-   review evidence marks `relationship.kind` as AI-written, not `relationship.target`
-   ([0038](../guide/0038-ai-content-marking.md)). On the resource page a CURATED relationship carries no AI label.
-4. **Refusals change nothing.** One transaction, with the item row locked: 404 for no item; 409 `already-decided`
+3. **The target is the admin's, the kind stays the model's.** The relationship keeps its origin; its own
+   `target_origin` becomes CURATED (`targetOrigin` in the API). The review evidence marks `relationship.kind` as
+   AI-written, not `relationship.target` ([0038](../guide/0038-ai-content-marking.md)). The resource page keeps the
+   AI label and `data-ai-generated` on the relationship: its kind is still model output.
+4. **A later run keeps the admin's choice.** A Scout run on the resource before the item is decided does not
+   supersede that item, nor delete its relationship: the change survives and the item stays decidable.
+5. **Refusals change nothing.** One transaction, with the item row locked: 404 for no item; 409 `already-decided`
    for an item no longer open; 409 `not-applicable` for an item that is not a relationship candidate; 409
    `duplicate` when the resource already has a relationship of that kind to that target; 400 for two or none of the
    three, an unknown resource, the resource itself, a non-https address, or a type that is not a tool or a model. A
    resource added for a refused change is rolled back with it.
-5. **Audit.** `CHANGE_RELATIONSHIP_TARGET` with the item id and `LINKED <resource id>` or `RENAMED`, and
+6. **Audit.** `CHANGE_RELATIONSHIP_TARGET` with the item id and `LINKED <resource id>` or `RENAMED`, and
    `ADD_RESOURCE` with the new resource's id and `ADDED`. Refused changes are not recorded: nothing changed.
-6. **Back office.** The evidence of an open relationship candidate has "Change the target": find the resource with
+7. **Back office.** The evidence of an open relationship candidate has "Change the target": find the resource with
    the visitor search (as the home examples do), add it, or give another name. Errors say why; the form stays open.
 
 ## Consequences
@@ -42,6 +45,8 @@ catalog at all: a new model the article is about.
   launched yesterday.
 - A resource an admin adds starts with only a name and an address. Until the Scout enriches it, its card is thin.
 - Two writes for one decision: change the target, then accept. The UI keeps them next to each other.
+- A retargeted relationship stays open until a person decides it, whatever later runs say. A run that proposes the
+  same kind and name adds nothing; one that proposes the model's first name again opens a new item next to it.
 
 ## Security and privacy (STRIDE)
 - **Spoofing / elevation**: ADMIN only, on the admin host behind the VPN, with CSRF

@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewEvidenceFixture;
+import ai.helper2.catalog.enrichment.EnrichmentResults;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -30,6 +32,7 @@ class RelationshipTargetApiIT extends ApiTestBase {
   static final String NEW_CANONICAL = "https://langchain-api-it.example";
 
   @Autowired JdbcClient jdbc;
+  @Autowired EnrichmentResults enrichment;
 
   ReviewEvidenceFixture fixture;
   final UUID other = UUID.randomUUID();
@@ -97,7 +100,8 @@ class RelationshipTargetApiIT extends ApiTestBase {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.relationship.targetId").value(other.toString()))
             .andExpect(jsonPath("$.relationship.target").value("LangChain framework"))
-            .andExpect(jsonPath("$.relationship.origin").value("CURATED"))
+            .andExpect(jsonPath("$.relationship.origin").value("SELF_DECLARED"))
+            .andExpect(jsonPath("$.relationship.targetOrigin").value("CURATED"))
             .andExpect(jsonPath("$.item.status").value("OPEN"))
             .andReturn()
             .getResponse()
@@ -198,6 +202,55 @@ class RelationshipTargetApiIT extends ApiTestBase {
     assertThat(relationship("to_title")).isEqualTo("LangChain");
     assertThat(relationship("origin")).isEqualTo("SELF_DECLARED");
     assertThat(audit()).isEmpty();
+  }
+
+  /** A later run with nothing to say about the relationship. */
+  void reEnrich() {
+    enrichment.record(
+        new EnrichmentResults.Run(
+            fixture.resource,
+            "nebius",
+            "nemotron-test",
+            "v-test",
+            "fp-" + UUID.randomUUID(),
+            Instant.now(),
+            "VALIDATED",
+            List.of(),
+            null),
+        new EnrichmentResults.Checked(List.of(), List.of(), List.of()));
+  }
+
+  String itemStatus() {
+    return jdbc.sql("SELECT status FROM review_item WHERE id = :id")
+        .param("id", fixture.relationshipItem)
+        .query(String.class)
+        .single();
+  }
+
+  @Test
+  void aRetargetedCandidateOutlivesALaterRunAndStaysDecidable() throws Exception {
+    change(fixture.relationshipItem, "{\"resourceId\":\"" + other + "\"}")
+        .andExpect(status().isOk());
+
+    reEnrich();
+
+    assertThat(itemStatus()).isEqualTo("OPEN");
+    assertThat(relationship("to_resource_id")).isEqualTo(other.toString());
+    assertThat(relationship("origin")).isEqualTo("SELF_DECLARED");
+    assertThat(relationship("target_origin")).isEqualTo("CURATED");
+  }
+
+  @Test
+  void anUntouchedCandidateIsSupersededByALaterRun() {
+    reEnrich();
+
+    assertThat(itemStatus()).isEqualTo("SUPERSEDED");
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM relationship WHERE from_resource_id = :r")
+                .param("r", fixture.resource)
+                .query(Long.class)
+                .single())
+        .isZero();
   }
 
   @Test

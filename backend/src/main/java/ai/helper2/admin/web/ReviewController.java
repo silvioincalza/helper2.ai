@@ -23,7 +23,6 @@ import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
-import ai.helper2.shared.ValueOrigin;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -141,7 +140,7 @@ class ReviewController implements ReviewApi {
     if (e.relationship() != null) {
       paths.add("relationship.kind");
       // A target a person chose (ADR 0064) is theirs, not the model's.
-      if (e.relationship().origin() != ValueOrigin.CURATED) {
+      if (!e.relationship().targetCurated()) {
         paths.add("relationship.target");
       }
     }
@@ -177,7 +176,8 @@ class ReviewController implements ReviewApi {
             VerificationDto.fromValue(r.verification().name()),
             ValueOriginDto.fromValue(r.origin().name()),
             r.quotes().stream().map(ReviewController::quote).toList())
-        .targetId(r.targetId());
+        .targetId(r.targetId())
+        .targetOrigin(r.targetCurated() ? ValueOriginDto.CURATED : null);
   }
 
   private static ReviewQuoteDto quote(ReviewEvidence.Quote q) {

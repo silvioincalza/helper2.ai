@@ -134,7 +134,8 @@ class JdbcReviewEvidence implements ReviewEvidence {
     List<Quote> quotes =
         quotes("relationship_evidence", "relationship_id", List.of(id)).getOrDefault(id, List.of());
     return jdbc.sql(
-            "SELECT kind, to_title, to_resource_id, verification, origin FROM relationship WHERE id = :id")
+            "SELECT kind, to_title, to_resource_id, verification, origin, target_origin FROM relationship"
+                + " WHERE id = :id")
         .param("id", id)
         .query((rs, n) ->
             new Relationship(
@@ -143,6 +144,7 @@ class JdbcReviewEvidence implements ReviewEvidence {
                 rs.getObject("to_resource_id", UUID.class),
                 Verification.valueOf(rs.getString("verification")),
                 ValueOrigin.valueOf(rs.getString("origin")),
+                rs.getString("target_origin") != null,
                 quotes))
         .optional()
         .orElse(null);
