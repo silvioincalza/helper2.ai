@@ -104,7 +104,10 @@ class PagesIT extends ApiTestBase {
 
   @Test
   void filesAndTheApiAreNotClaimed() throws Exception {
-    mvc.perform(get("/assets/missing.js")).andExpect(status().isNotFound());
+    // The web app's files are the web image's (ADR 0069): the public app serves none of them.
+    for (String file : java.util.List.of("/assets/missing.js", "/theme.js", "/favicon.svg")) {
+      mvc.perform(get(file)).andExpect(status().isNotFound());
+    }
     mvc.perform(get("/api/v1/home/examples")).andExpect(status().isOk());
   }
 

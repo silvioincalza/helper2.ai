@@ -19,6 +19,13 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{ required "backoffice.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-backoffice)" .Values.backoffice.image.repository }}:{{ required "backoffice.image.tag or image.tag is required" (include "helper2.backofficeTag" .) }}
 {{- end }}
 
+{{/* The web image (ADR 0069): the web Deployment and the public pod's init container both name it through this helper,
+     so the shell the public app writes into always comes from the same version as the files the web pods serve. Its
+     tag: its own, or the public app's. */}}
+{{- define "helper2.webImage" -}}
+{{ required "web.image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2-web)" .Values.web.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}
+{{- end }}
+
 {{- define "helper2.image" -}}
 {{ required "image.repository is required (your registry, e.g. ghcr.io/<owner>/helper2)" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}
 {{- end }}

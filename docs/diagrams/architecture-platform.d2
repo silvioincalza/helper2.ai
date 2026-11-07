@@ -3,7 +3,7 @@
 # With the Redis keys and Postgres tables each one owns, and GitHub OAuth for the back office.
 # Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/package-info.java (open module),
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
-#   ClusterLockConfiguration.java (shedlock), backend/apps/public/src/main/java/ai/helper2/platform/SinglePageApp.java,
+#   ClusterLockConfiguration.java (shedlock), backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java,
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
@@ -32,7 +32,7 @@ admin: "Admin\n(VPN, admin host)" {class: person}
 
 edge: "Request edge (platform)" {
   class: group
-  spa: "SinglePageApp (public app)\nserves the built SPA,\nclient routes → index.html;\nAdminWebApp (back office): /admin/**" {class: app}
+  spa: "PageRoutes (public app):\nclient routes → the shell\n(the web image serves the files);\nAdminWebApp (back office): /admin/**" {class: app}
   rate: "RateLimitInterceptor\nRedisRateLimiter\n(in memory while Redis is down)" {class: app}
   errors: "ApiExceptionHandler\nproblem+json" {class: app}
 }

@@ -67,9 +67,12 @@ must load the app on a direct visit, and a new release must reach browsers at on
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
    it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the actuator serves only health and prometheus, and health is the one open to all. Health shows no details; Redis is left out of health.
-9. **SPA fallback and caching** (`SinglePageApp`, rules in [0001](../foundation/0001-stack-and-runtime.md)): hashed assets are cached
-   for one year, `index.html` and other files are `no-cache`, so a new release reaches browsers at once. Search and guide
-   answers are `no-store`. On the back office (`AdminWebApp`, `BackOfficeEdge`): `/admin/assets/**` is
+9. **SPA fallback and caching** (rules in [0001](../foundation/0001-stack-and-runtime.md)): the web image
+   ([0069](../operations/0069-three-deployables.md), `deploy/web/nginx.conf`) caches hashed assets for one year and
+   `theme.js` and `favicon.svg` for 5 minutes, then revalidated; its other answers are plain 404s with `no-store`. On
+   every answer it sends its own CSP (`default-src 'none'`, `sandbox`), `nosniff`, CORP `same-origin` and
+   `Referrer-Policy: no-referrer`, and it takes GET and HEAD only. The shell (`index.html`, from the public app) is
+   `no-cache`, so a new release reaches browsers at once. Search and guide answers are `no-store`. On the back office (`AdminWebApp`, `BackOfficeEdge`): `/admin/assets/**` is
    `private, max-age=31536000, immutable`, the app's other files `no-cache`, and pages, the API, redirects and errors
    `no-store`, whatever a controller sets.
 
@@ -100,9 +103,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - `backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
 - `backend/apps/backoffice/src/main/java/ai/helper2/identity/config/BackOfficeSecurityConfiguration.java`, `BackOfficeEdge.java`,
   `admin/web/AdminWebApp.java` — the back office's CSRF cookie, headers, cache rules and routes.
-- `backend/apps/public/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
+- `deploy/web/nginx.conf`, `deploy/web/headers.conf` — the web image's routes, cache and security headers.
+- `backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java` — the shell on every client route.
 - `backend/apps/public/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
-- `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the app's ingress policy.
+- `deploy/helm/helper2/templates/app.yaml`, `web.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the ingress
+  policies of the app and the web pods.
 - `frontend/src/api/client.ts`, `frontend/public/theme.js` — CSRF header, CSP-safe theme script.
 
 ## Diagrams

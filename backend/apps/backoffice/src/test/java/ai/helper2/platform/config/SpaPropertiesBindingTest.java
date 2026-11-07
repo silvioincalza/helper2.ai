@@ -9,7 +9,9 @@ import org.springframework.boot.context.properties.bind.validation.BindValidatio
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 
-/** The SPA location binds from application.yaml (no H2_ variable: tests set the key). */
+/**
+ * The admin web app's location binds from application.yaml (no H2_ variable: tests set the key).
+ */
 class SpaPropertiesBindingTest {
 
   @Configuration(proxyBeanMethods = false)
@@ -22,7 +24,7 @@ class SpaPropertiesBindingTest {
   void theYamlDefaultBinds() {
     context.run(c ->
         assertThat(c.getBean(SpaProperties.class))
-            .isEqualTo(new SpaProperties("classpath:/static/")));
+            .isEqualTo(new SpaProperties("classpath:/static/admin/")));
   }
 
   @Test

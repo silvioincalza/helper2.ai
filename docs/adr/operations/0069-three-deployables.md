@@ -13,8 +13,8 @@ the web app rebuilt and redeployed the backend.
 1. **Three deployables, one repo.** `web` (the built React app, static files only), `public` (search, guide, setup,
    the catalog pages, sign-in for users, saved items, news, events, the policy) and `backoffice` (the admin API and
    the admin web app, the Scout, its collectors and enrichment, the home-example check, the catalog's jobs). Each has
-   its own image and image tag. This change builds the two apps and their images (`deploy/Dockerfile`,
-   `deploy/backoffice.Dockerfile`), deployed with the same tag. The `web` image comes next (roadmap).
+   its own image and image tag: `deploy/web.Dockerfile`, `deploy/Dockerfile`, `deploy/backoffice.Dockerfile`, built
+   from one commit and deployed with the same tag.
 2. **Shared code is a library in this repo** ([0068](../foundation/0068-backend-libraries-and-apps.md)). Apps hold the
    driving adapters (controllers, schedules) and the wiring. The public app has no admin and no Scout code; the back
    office has no guide, setup or SEO pages. Both libraries and apps keep their package names.
@@ -59,14 +59,38 @@ the web app rebuilt and redeployed the backend.
    it, read from the shared Redis count. Both apps register the same `source` rows at startup, from the same settings
    and the same descriptors.
 
-Decided, built later: the `web` image with the public app's HTML shell taken from it at deploy (same origin,
-`/assets/*` routed to `web`), the two DB roles, and CI/CD per component (path filters, signing).
+9. **The `web` image serves the public web app's files, the public app writes the pages.** nginx
+   (`nginx-unprivileged`, alpine-slim, user 101, read-only root) serves GET and HEAD only:
+   - `/assets/<file>`: Vite's content-hashed files, `public, max-age=31536000, immutable`;
+   - `/theme.js` and `/favicon.svg`, the root files of `frontend/public`: `public, max-age=300, must-revalidate`;
+   - anything else: a plain 404 with `no-store`, never `index.html` and never a directory listing; another method:
+     405.
+
+   Every answer carries its own CSP (`default-src 'none'; style-src 'unsafe-inline'; ... sandbox`), `nosniff`, CORP
+   `same-origin` and `Referrer-Policy: no-referrer`. nginx keeps no access log. The build stops when `frontend/dist`
+   holds a file nginx does not name, or a source map.
+10. **The shell of the same version.** The built `index.html` sits outside the served folder, at
+    `/usr/share/helper2/shell/index.html`. An init container of each public pod runs the web image of the same tag
+    (one Helm helper names it for both) and copies it into an `emptyDir` that the app mounts read-only at `/shell`.
+    The public app reads it once at start (`H2_PAGES_TEMPLATE`, default `file:/shell/index.html`) and writes every page
+    into it ([0050](../frontend/0050-pages-for-crawlers.md)). The public image holds no web files.
+11. **Same origin, split by path.** The Ingress of the public host sends `/assets/` (prefix), `/theme.js` and
+    `/favicon.svg` (exact) to the Service `helper2-web`, everything else to the Service `helper2`. The web pods take
+    traffic from the Ingress controller on 8080 only, and reach nothing.
+
+Decided, built later: the two DB roles, and CI/CD per component (path filters, signing).
 
 ## Consequences
 - A Scout change ships without touching the public pods, and a long crawl no longer competes with a visitor's question.
 - The back office is closed by a fourth layer: its code is not in the public image.
 - Two apps share one schema. A migration must keep the running back office working until it is replaced.
-- More to run: two images, two workloads. Still one chart, one database, one Redis.
+- More to run: three images, three workloads. Still one chart, one database, one Redis.
+- A web app change still deploys all three with one tag; per-component CD comes later (roadmap).
+- Helm rolls the three Deployments at once; the order web, public, back office is not enforced. In practice the web
+  pods are ready in seconds and a public pod needs its Flyway and Lingua start, so new web pods come first.
+- Known limit (roadmap): during a rollout, a page from an old public pod can name an asset hash that the new web pods
+  no longer have (a 404 for that script until the visitor reloads), and a page from a new public pod can, for a few
+  seconds, name a hash that only the new web pods have. Fix: keep the previous release's assets in the web image.
 - Known limits (roadmap): both apps share one Redis password, so a public pod could write the back office's
   sessions; and both workloads read the whole env Secret.
 - The Settings page shows the back office's groups and the guide's cap; the public app's other guide and setup
@@ -91,7 +115,7 @@ Decided, built later: the `web` image with the public app's HTML shell taken fro
 | 4 | Tool & API | covered: the admin API in its own contract and app |
 | 9 | Guardrails | covered: the same code paths; the evidence gate and the quote checks moved with the Scout |
 | 10 | Observability | deferred: `helper2-backoffice` needs its own Grafana panels and alerts (roadmap); model ids per answer unchanged |
-| 12 | Deployment | covered for two images and two workloads with one tag; the `web` image and the rollout order web → public come later |
+| 12 | Deployment | covered: three images and three workloads with one tag; the public pod's shell from the web image of that tag; the rollout order is not enforced and old pods can name assets the new web pods lack (known limit, roadmap) |
 | 13 | Security & Identity | covered: ADMIN, the admin session and the sign-in callback only on the back office; `__Host-` cookies; Origin and header CSRF; DB roles deferred (roadmap) |
 | 15 | Cost & Reliability | covered: budgets and quotas in the shared Redis; the public site does not depend on the back office being up |
 
@@ -105,13 +129,18 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change.
   `BackOfficeEdge.java`, `admin/web/AdminWebApp.java`, `platform/SchemaCheck.java`.
 - `backend/apps/public/src/main/java/ai/helper2/identity/config/PublicSecurityConfiguration.java`.
 - `backend/apps/*/src/test/java/ai/helper2/api/SchedulesIT.java`, `BackOfficeEdgeIT.java`, `HttpEdgeIT.java`.
-- `deploy/Dockerfile`, `deploy/backoffice.Dockerfile`, `deploy/helm/helper2/templates/app.yaml`, `backoffice.yaml`,
-  `networkpolicy.yaml`; `.github/workflows/cd.yml`, `release.yml`, `image-scan.yml`.
+- `deploy/web.Dockerfile`, `deploy/web/nginx.conf`, `deploy/web/headers.conf`, `deploy/Dockerfile`,
+  `deploy/backoffice.Dockerfile`.
+- `deploy/helm/helper2/templates/web.yaml`, `app.yaml` (the init container), `backoffice.yaml`, `networkpolicy.yaml`,
+  `_helpers.tpl` (`helper2.webImage`); `deploy/k8s/Makefile`; `.github/workflows/cd.yml`, `release.yml`,
+  `image-scan.yml`.
+- `backend/apps/public/src/main/java/ai/helper2/pages/internal/PageTemplate.java`, `pages/web/PageRoutes.java`.
 - `frontend/vite.admin.config.ts`, `frontend/src/api/client.ts` (either CSRF cookie name).
 
 ## Diagrams
 [flow](../../diagrams/flow-0069-three-deployables.svg) · [sequence](../../diagrams/sequence-0069-three-deployables.svg) · [architecture context](../../diagrams/architecture-context.svg) · [infrastructure](../../diagrams/infrastructure.svg)
 
 ## Roadmap
-- [roadmap § 2](../../roadmap.md#2-operations) (web image, DB roles, CI/CD per component, Grafana) and
+- [roadmap § 2](../../roadmap.md#2-operations) (the previous release's assets in the web image, DB roles, CI/CD per
+  component, Grafana) and
   [§ 9](../../roadmap.md#9-known-limits).

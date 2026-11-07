@@ -18,10 +18,10 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 /**
  * Every GET (and HEAD) of an address the client router owns (ADR 0050 §1-2): the shell with the
- * page's head, its status, or a 301. Router functions are asked before the static files, and an
- * address with a file extension or a server prefix is never claimed, so assets, robots.txt and the
- * API are as before. Without a built app nothing is claimed: SinglePageApp answers as it always
- * did.
+ * page's head, its status, or a 301. An address with a file extension or a server prefix is never
+ * claimed, so robots.txt and the API are as before; the web app's files are the web image's (ADR
+ * 0069). Without a shell (development: Vite serves the UI) nothing is claimed and such an address
+ * is a 404.
  */
 @Configuration(proxyBeanMethods = false)
 class PageRoutes {

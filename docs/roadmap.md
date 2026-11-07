@@ -119,9 +119,8 @@ Items are grouped by the order in which they matter. Inside a group, the first i
 ## 2. Operations
 
 - **Service split, next steps** ([ADR 0069](adr/operations/0069-three-deployables.md)):
-  - PR 4: the `web` image (the built React app, static files only). The Ingress routes `/assets/*` to it; the public
-    app takes its HTML shell from the `web` image of the same version at deploy. Rollout order: web, public, back
-    office;
+  - keep the previous release's assets in the web image: during a rollout a page from an old public pod can name an
+    asset hash the new web pods no longer have, and Helm does not enforce the order web, public, back office;
   - PR 5: two DB roles, `h2_public` (reads the catalog, writes only what users create) and `h2_backoffice` (writes
     the catalog, the review queue, the Scout tables and the audit trail), with the V1 squash of next/3.0;
   - PR 5: CI and CD per component (path filters: `frontend/`, `apps/public`, `apps/backoffice`, a library change

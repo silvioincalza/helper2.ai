@@ -319,7 +319,6 @@ helper2:
     fast-model: ""
     # Send the choose call's JSON schema as response_format (guided decoding). See SpringAiGuideModel.call.
     native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
-  # The built SPA (frontend/dist, copied to static/ in the image).
   spa:
     # The admin web app (frontend/dist-admin), copied here in the image.
     location: classpath:/static/admin/

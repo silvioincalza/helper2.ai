@@ -10,7 +10,8 @@ redis:
   storageClassName: local-path
 networkPolicy:
   # The platform's ingress-nginx serves the Ingresses (incalza-me-infra terraform/k8s/helper2.tf): public host ->
-  # Service helper2, in-network admin host -> Service helper2-admin, the back office (ADR 0035, 0069).
+  # Service helper2-web for /assets/, /theme.js and /favicon.svg, Service helper2 for the rest; in-network admin
+  # host -> Service helper2-admin, the back office (ADR 0035, 0069).
   ingressController:
     namespace: ingress-nginx
     podLabels: { app.kubernetes.io/name: ingress-nginx }
@@ -37,6 +38,9 @@ app:
   # live check (~13) ≈ 12,830, about 1,150 under 14,000. Past the cap Tavily is SKIPPED and searches answer from stored results and the other sources.
   dailyLimits:
     webSearchCredits: "250"
+web:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/helper2-web
 backoffice:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice

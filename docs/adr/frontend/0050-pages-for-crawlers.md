@@ -16,13 +16,15 @@ pages cannot. Nothing seems indexed yet, so this is the cheapest moment to decid
 
 ## Decision
 1. **Spring fills the shell; React stays as it is.** A small `pages` module answers every GET and HEAD of an address the
-   client router owns (`ClientRoutes`: no file extension, not a server path) with a router function, which Spring asks
-   before the static files. It reads the built `index.html` once at start-up and, per request, writes into it:
+   client router owns (`ClientRoutes`: no file extension, not a server path) with a router function. It reads the
+   built `index.html` once at start-up (`helper2.pages.template`; in the cluster `file:/shell/index.html`, copied by an
+   init container from the web image of the same tag, [0069](../operations/0069-three-deployables.md)) and, per
+   request, writes into it:
    the title, meta description, canonical link, robots meta, Open Graph and Twitter tags, JSON-LD, and for a
    resource a short plain HTML body inside `#root`. `createRoot` replaces that body when the app starts, so people see
    no change. Bots and people get the same HTML, so it is not cloaking. The start-up fails when the markers it needs
    (`<title>`, `</head>`, `<div id="root"></div>`) are missing, and a test checks the app's own shell. Without a built
-   app (development: Vite serves the UI) the module claims nothing and `SinglePageApp` answers as before.
+   shell (development: Vite serves the UI) the module claims nothing and such an address is a 404.
 2. **What each address says, and its status.**
    | Address | Status | Robots | Head |
    |---|---|---|---|

@@ -15,15 +15,18 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
    calls stay blocking and simple; there is no reactive stack.
 3. **Frontend.** A single-page application (SPA): React 19.3.1, React Router 8.5.0, i18next, built with
    Vite 8.3.5 and TypeScript 6.0.3. Node.js 26 in the build image (`engines: >=24`).
-4. **One artifact per app.** `deploy/Dockerfile` has three stages: Node builds the SPA, the JDK stage copies it into
-   `backend/apps/public/src/main/resources/static` and runs `:apps:public:bootJar`, the runtime stage is
-   `eclipse-temurin:25-jre` as user 10001. `deploy/backoffice.Dockerfile` does the same for the back office, with
-   the admin web app (`dist-admin`) in `backend/apps/backoffice/src/main/resources/static/admin`
-   ([0069](../operations/0069-three-deployables.md)). The SPA and `/api/v1` come from the same origin, so there is no Cross-Origin Resource
-   Sharing (CORS) setup.
-5. **SPA serving.** In the public app, `platform.SinglePageApp` is the only static handler (`spring.web.resources.add-mappings: false`):
-   `/assets/**` is cached for 365 days as immutable; any other path without a file extension, outside
-   `/api`, `/oauth2`, `/login`, `/logout` and `/actuator`, returns `index.html` with `no-cache`.
+4. **One image per deployable** ([0069](../operations/0069-three-deployables.md)). `deploy/web.Dockerfile`: Node builds
+   the public SPA, nginx (`nginx-unprivileged`, alpine-slim) serves its files as user 101. `deploy/Dockerfile`: the JDK
+   stage runs `:apps:public:bootJar`, the runtime stage is `eclipse-temurin:25-jre` as user 10001; the jar holds no
+   web files. `deploy/backoffice.Dockerfile` builds the back office with the admin web app (`dist-admin`) in
+   `backend/apps/backoffice/src/main/resources/static/admin`. The SPA and `/api/v1` come from the same origin (the
+   Ingress splits the paths), so there is no Cross-Origin Resource Sharing (CORS) setup.
+5. **SPA serving.** The web image serves `/assets/<file>` (365 days, immutable) and the root files `/theme.js` and
+   `/favicon.svg` (5 minutes, then revalidated); any other address there is a plain 404, never `index.html`. The public
+   app has no static handler (`spring.web.resources.add-mappings: false`): every path the client router owns (no file
+   extension, outside `/api`, `/oauth2`, `/login`, `/logout` and `/actuator`) is the shell, `index.html`, written by
+   the pages module with `no-cache` ([0050](../frontend/0050-pages-for-crawlers.md)). The shell comes from the web
+   image of the same tag.
 6. **Java Virtual Machine (JVM) flags.** `-XX:MaxRAMPercentage=60` (heap is 60% of the container limit) and
    `-XX:+ExitOnOutOfMemoryError` (the pod restarts instead of running broken).
 7. **Local development.** Vite on port 5173 proxies `/api`, `/oauth2`, `/login` and `/logout` to the
@@ -46,8 +49,9 @@ The stack must be well known, typed end to end, and cheap to operate: one image,
 ## Code
 - `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts`, `backend/*/*/build.gradle.kts` — projects, versions, toolchain, plugins.
 - `frontend/package.json`, `frontend/vite.config.ts` — frontend versions, dev proxy, version constant.
-- `deploy/Dockerfile` — three-stage build, Java Runtime Environment (JRE), JVM flags.
-- `backend/apps/public/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA routes and caching.
+- `deploy/Dockerfile` — two-stage build, Java Runtime Environment (JRE), JVM flags.
+- `deploy/web.Dockerfile`, `deploy/web/nginx.conf` — the SPA's files and their caching.
+- `backend/apps/public/src/main/java/ai/helper2/pages/web/PageRoutes.java` — client routes get the shell.
 - `backend/apps/public/src/main/resources/application.yaml` — virtual threads, static mappings off.
 - `compose.yaml` — local Postgres and Redis.
 

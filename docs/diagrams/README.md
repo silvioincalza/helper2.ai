@@ -22,7 +22,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 
 | ADR | Flowchart | Sequence | Shows |
 |---|---|---|---|
-| [0001](../adr/foundation/0001-stack-and-runtime.md) | [flow](flow-0001-stack-and-runtime.svg) | [sequence](sequence-0001-stack-and-runtime.svg) | the one image, from the three Dockerfile stages to how SinglePageApp and the controllers answer a request, hosted and in local development. |
+| [0001](../adr/foundation/0001-stack-and-runtime.md) | [flow](flow-0001-stack-and-runtime.svg) | [sequence](sequence-0001-stack-and-runtime.svg) | one image per deployable, from the Dockerfile stages to how the web pods, the shell and the controllers answer a request, hosted and in local development. |
 | [0002](../adr/foundation/0002-modular-monolith-hexagonal.md) | [flow](flow-0002-modular-monolith-hexagonal.svg) | [sequence](sequence-0002-modular-monolith-hexagonal.svg) | the dependency rules ModularityTest checks, the module dependencies that pass them, and one search through the ports. |
 | [0003](../adr/foundation/0003-contract-first-rest-api.md) | [flow](flow-0003-contract-first-rest-api.svg) | [sequence](sequence-0003-contract-first-rest-api.svg) | a contract change through the generated Java and TypeScript types to the contract tests, and one request answered with problem+json. |
 | [0004](../adr/foundation/0004-persistence-and-provenance.md) | [flow](flow-0004-persistence-and-provenance.svg) | [sequence](sequence-0004-persistence-and-provenance.svg) | how one search reads discovery dates and records what it saw, off the request path. |
@@ -89,7 +89,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0067](../adr/scout/0067-live-web-events-scout.md) | [flow](flow-0067-live-web-events-scout.svg) | [sequence](sequence-0067-live-web-events-scout.svg) | one weekly pass of the events scout: searches, Extract, the model's reading, the code gate, the merge with a source's days, and the AI label. |
 | [0066](../adr/edge/0066-curated-field.md) | [flow](flow-0066-curated-field.svg) | [sequence](sequence-0066-curated-field.svg) | how an admin sets or drops a field of a resource, and what later records, runs and the page do with it. |
 | [0068](../adr/foundation/0068-backend-libraries-and-apps.md) | [flow](flow-0068-backend-libraries-and-apps.svg) | — (build only, no runtime path) | where a piece of backend code goes (an app or a library), and the build checks that keep the direction. |
-| [0069](../adr/operations/0069-three-deployables.md) | [flow](flow-0069-three-deployables.svg) | [sequence](sequence-0069-three-deployables.svg) | which app answers a request and runs a job, what a change rebuilds, the back office waiting for the public app's migrations; a public page, an admin write and a Scout run end to end. |
+| [0069](../adr/operations/0069-three-deployables.md) | [flow](flow-0069-three-deployables.svg) | [sequence](sequence-0069-three-deployables.svg) | which workload answers a request (the web files by path) and which app runs a job, what a change rebuilds, the public pod's shell from the web image, the back office waiting for the public app's migrations; a public page, an admin write and a Scout run end to end. |
 
 ## Colors
 

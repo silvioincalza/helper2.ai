@@ -1,7 +1,7 @@
 # Ingress: nothing for any pod here (pg-backup stays at that), then allowed per workload below.
 # app and helper2-backoffice <- the Ingress controller's pods (networkPolicy.ingressController) on 8080; <- the
-# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; postgres <- app, back office and
-# pg-backup; redis <- app and back office.
+# metrics scraper's namespace (networkPolicy.metricsNamespace) on 8081; helper2-web <- the Ingress controller's pods
+# on 8080 only (nginx has no metrics); postgres <- app, back office and pg-backup; redis <- app and back office.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -44,6 +44,30 @@ spec:
   {{- end }}
   {{- end }}
 {{- end }}
+---
+# The web image (ADR 0069): the Ingress controller on 8080, nothing else (not the probe port 8081). No egress rule:
+# nginx reaches nothing, so egress-default-deny covers it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: helper2-web } }
+  policyTypes: [Ingress]
+  {{- with .Values.networkPolicy.ingressController }}
+  {{- if .namespace }}
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .namespace }} } }
+          {{- with .podLabels }}
+          podSelector: { matchLabels: {{ toJson . }} }
+          {{- end }}
+      ports: [{ port: 8080, protocol: TCP }]
+  {{- end }}
+  {{- end }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

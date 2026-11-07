@@ -1,11 +1,11 @@
 # Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and the platform's ingress-nginx, the
-# public and the in-network admin host, the two namespaces and their workloads (3 public app pods on prod, 1 on staging, one back office
+# public and the in-network admin host, the two namespaces and their workloads (2 web pods and 3 public app pods on prod, 1 each on staging, one back office
 # pod, rolling updates, disruption budget; ADR 0069),
 # what the per-workload network policies let each workload reach and accept, Redis auth and its AOF volume,
 # OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
 # with its optional off-site copy to Cloudflare R2 (off today).
 # Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), the platform repo outside this repo (DNS, tunnel,
-#   ingress-nginx, Ingresses helper2-public and helper2-admin, namespaces, deployer RBAC),
+#   ingress-nginx, Ingresses helper2-public (helper2-web for the web files) and helper2-admin, namespaces, deployer RBAC),
 #   deploy/k8s/Makefile, deploy/k8s/CI.md, .github/workflows/deploy.yml,
 #   backend/apps/public/src/main/resources/application.yaml, backend/apps/backoffice/src/main/resources/application.yaml (management, tracing).
 # Render: cd docs/diagrams && d2 fmt infrastructure.d2 && d2 infrastructure.d2 infrastructure.svg
@@ -34,12 +34,13 @@ cluster: KUBERNETES {
 
   ingress: "ns ingress-nginx" {
     class: group
-    nginx: "ingress-nginx\nIngress helper2-public → Service helper2\nIngress helper2-admin → Service helper2-admin\n(back office pods; private ranges only)" {class: app}
+    nginx: "ingress-nginx\nIngress helper2-public: /assets/, /theme.js,\n/favicon.svg → Service helper2-web;\nthe rest → Service helper2\nIngress helper2-admin → Service helper2-admin\n(back office pods; private ranges only)" {class: app}
   }
 
   prod: "ns helper2-prod · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
     class: group
     app: "helper2 Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8081 Actuator (in no Service)\nFlyway migrations" {class: app}
+    web: "helper2-web Deployment (nginx) · 2 pods\nPDB minAvailable 1 · read-only root, user 101\n:8080 the web app's files (Service helper2-web)\n:8081 /healthz (in no Service) · no egress" {class: app}
     bo: "helper2-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout,\ncatalog jobs · Flyway validate only\n:8080 (Service helper2-admin)\n:8081 Actuator (in no Service)" {class: app}
     postgres: "postgres StatefulSet\nPostgreSQL 18.6 + pgvector 0.8.6\nPVC 5Gi local-path" {
       shape: cylinder
@@ -73,7 +74,7 @@ cluster: KUBERNETES {
 
   staging: "ns helper2-staging" {
     class: group
-    note: "Same chart and policies\n1 public pod, 1 back office pod (no PDB)\nScout off · no backup\nstaging host" {class: app}
+    note: "Same chart and policies\n1 web pod, 1 public pod,\n1 back office pod (no PDB)\nScout off · no backup\nstaging host" {class: app}
   }
 
   observability: "ns observability" {
@@ -87,6 +88,7 @@ cluster: KUBERNETES {
   }
 
   ingress.nginx -> prod.app: ":8080\n(only allowed caller)" {class: hot}
+  ingress.nginx -> prod.web: ":8080 (/assets/, /theme.js, /favicon.svg)" {class: hot}
   ingress.nginx -> prod.bo: ":8080 (admin hosts)"
   ingress.nginx -> staging.note: ":8080"
   observability.alloy -> prod.app: "scrape :8081" {class: config}
@@ -121,7 +123,7 @@ delivery: "DELIVERY (private network)" {
     shape: cylinder
     class: data
   }
-  harbor: "Harbor registry\nhelper2/apps/helper2:<commit>\nhelper2/apps/helper2-backoffice:<commit>\nhelper2/apps/postgres:<tag>" {
+  harbor: "Harbor registry\nhelper2/apps/helper2-web:<commit>\nhelper2/apps/helper2:<commit>\nhelper2/apps/helper2-backoffice:<commit>\nhelper2/apps/postgres:<tag>" {
     shape: cylinder
     class: data
   }
@@ -145,5 +147,6 @@ cluster.prod.bo -> egress.nebius: "enrichment" {class: ai-call}
 cluster.prod.backup -> r2: "HTTPS 443, only when\nbackup.offsite is on" {class: config}
 github -> delivery.runner: "job (main only)"
 delivery.runner -> cluster.prod: "helm upgrade --wait 12m\n(deployer ServiceAccount)" {class: config}
-delivery.harbor -> cluster.prod.app: "image pull" {class: config}
+delivery.harbor -> cluster.prod.app: "image pull, and the web image\nof the same tag (init container: the shell)" {class: config}
 delivery.harbor -> cluster.prod.bo: "image pull" {class: config}
+delivery.harbor -> cluster.prod.web: "image pull" {class: config}
