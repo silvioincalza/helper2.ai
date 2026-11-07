@@ -55,7 +55,8 @@ catalog at all: a new model the article is about.
   refused. The resource is added through the same catalog write as every record.
 - **Repudiation**: every change and every added resource is in the append-only audit trail.
 - **Information disclosure**: none new. A resource holds a public name and address; the audit holds the
-  administrator's GitHub id, as for every action. The Privacy page already names these records.
+  administrator's GitHub id, as for every action. The Privacy page names these records, and that a relationship
+  keeps whether a person chose its target (kept as long as the relationship).
 - **Denial of service**: one admin, one row per change; no outbound call (the page is read later by the Scout,
   inside its caps).
 
