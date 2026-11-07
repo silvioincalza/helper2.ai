@@ -21,7 +21,9 @@ the same thing again. A value a source states could not be fixed at all.
    - No run changes it: the value goes into the run's stated facts, so the evidence ladder does not read more for
      it, and the validator drops a model value for it without an error, so no review item opens for it.
    - The resource page shows it before a source conflict, the source's value and the enrichment (`FieldStates`).
-     Search cards, filters and ranking read the column, so they show it too.
+     Filters and ranking read the column. A card is merged from the source records, then takes the curated
+     columns over them and drops the sources' conflict on those fields (`ResourceCards`), so the page card and the
+     search cards show it too.
    - The event seeds replace only the fields they assert (eventDates, eventFormat), so they leave an admin's value
      on the same event alone (`scripts/industry-events-seed.mjs`).
 3. **Drop the AI's value:** `POST /admin/resources/{id}/fields/{field}/drop`, for any field the AI writes, use case
@@ -61,6 +63,7 @@ the same thing again. A value a source states could not be fixed at all.
 ## Code
 - `backend/src/main/java/ai/helper2/catalog/usecase/CurateField.java`, `catalog/internal/CuratedFields.java`.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` (the upsert keeps a curated column),
+  `ResourceCards.java` and `backend/src/main/kotlin/ai/helper2/search/Model.kt` (`withCurated`: the card takes it),
   `JdbcEnrichmentCandidates.java`, `catalog/enrichment/EnrichmentCandidates.java` (the curated values).
 - `backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`,
   `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.

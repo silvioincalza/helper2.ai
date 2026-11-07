@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewEvidenceFixture;
+import ai.helper2.catalog.internal.ResourceCards;
 import ai.helper2.catalog.internal.ResourceStore;
 import ai.helper2.catalog.internal.ResourceStore.DataOrigin;
 import ai.helper2.search.ResultMerger;
@@ -47,6 +48,7 @@ class CuratedFieldApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
   @Autowired ResourceStore store;
+  @Autowired ResourceCards cards;
 
   ReviewEvidenceFixture fixture;
   final String adminId = "fields-" + UUID.randomUUID();
@@ -168,6 +170,12 @@ class CuratedFieldApiIT extends ApiTestBase {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.card.pricing").value("PAID"))
         .andExpect(jsonPath("$.card.type").value("MODEL"));
+    assertThat(cards.cardsOf(List.of(fixture.resource)))
+        .singleElement()
+        .satisfies(card -> {
+          assertThat(card.getPricing()).isEqualTo(Pricing.PAID);
+          assertThat(card.getType()).isEqualTo(ResourceType.MODEL);
+        });
     assertThat(audit()).containsExactly("SET_FIELD SET pricing", "SET_FIELD SET type");
   }
 
