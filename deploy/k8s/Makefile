@@ -239,6 +239,12 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with the owner's password on h2_public"; exit 1; fi; \
 	sed 's/^H2_DATABASE_BACKOFFICE_PASSWORD=.*/H2_DATABASE_BACKOFFICE_PASSWORD=short-and-not-hex/' "$$env" > "$$bad"; \
 	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with a short database password"; exit 1; fi; \
+	sed 's|^H2_DATABASE_PASSWORD=.*|H2_DATABASE_PASSWORD=Ab+/Cd=_Ef-0123456789abcdefghijklmnopq|' "$$env" > "$$bad"; \
+	./check-app-env.sh "$$bad" >/dev/null || { echo "check-app-env.sh refused a base64 owner password (openssl rand -base64 32)"; exit 1; }; \
+	sed 's|^H2_DATABASE_PASSWORD=.*|H2_DATABASE_PASSWORD=Ab Cd0123456789abcdefghijklmnopqrstu|' "$$env" > "$$bad"; \
+	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with a space in a database password"; exit 1; fi; \
+	sed 's|^H2_REDIS_PUBLIC_PASSWORD=.*|H2_REDIS_PUBLIC_PASSWORD=Ab+/Cd0123456789abcdefghijklmnopqr|' "$$env" > "$$bad"; \
+	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed with a symbol in a Redis password"; exit 1; fi; \
 	echo "== ADR 0070: no app holds the owner's or Redis' default password; only Postgres, pg-backup and the migrate Job get the owner's"; \
 	for e in prod staging; do \
 		r=(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --set backup.enabled=true); \
