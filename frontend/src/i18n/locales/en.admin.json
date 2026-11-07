@@ -439,6 +439,7 @@
       "loading": "Loading the evidence…",
       "loadError": "Could not load the evidence.",
       "none": "No run or relationship behind this item. Decide from what it says above.",
+      "targetCurated": "target chosen by an admin",
       "model": "Model",
       "prompt": "Prompt",
       "outcome": "Outcome",

@@ -489,6 +489,7 @@ public class JdbcEnrichmentResults
                 WITH gone AS (
                     DELETE FROM relationship r WHERE r.from_resource_id = :rid
                       AND r.origin IN ('AI_EXTRACTED', 'SELF_DECLARED')
+                      AND r.target_origin IS NULL
                       AND NOT EXISTS (SELECT 1 FROM review_item i
                                       WHERE i.relationship_id = r.id AND i.status IN ('ACCEPTED', 'REJECTED'))
                     RETURNING r.id)

@@ -39,7 +39,7 @@ const changed = (item: ReviewItem) =>
   evidence(item, {
     target: 'Acme Translator',
     targetId: '11111111-1111-5111-8111-111111111111',
-    origin: 'CURATED',
+    targetOrigin: 'CURATED',
   });
 
 const conflict = (code: string, detail: string) =>
@@ -92,10 +92,10 @@ describe('Feature: an admin points a relationship candidate at the right resourc
       resourceId: '11111111-1111-5111-8111-111111111111',
     });
     const target = await within(panel).findByText('Acme Translator');
-    // A person chose it: not marked as AI, labelled as curated. The kind stays the model's.
+    // A person chose it: not marked as AI, labelled as theirs. The kind stays the model's.
     expect(target.closest('[data-ai-generated]')).toBeNull();
     expect(within(panel).getByText('About')).toHaveAttribute('data-ai-generated', 'true');
-    expect(panel).toHaveTextContent('Curated by Helper2');
+    expect(panel).toHaveTextContent('target chosen by an admin');
   });
 
   it('Scenario: a resource not in the catalog is added with its name, address and type', async () => {

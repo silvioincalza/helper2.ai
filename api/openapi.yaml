@@ -511,7 +511,8 @@ paths:
       description: >-
         Exactly one of `resourceId` (a catalog resource), `newResource` (a resource to add: its name, official https
         address and type; an address the catalog already has gives that resource, never a second one) or `title` (a
-        new name, not linked). The relationship then is a person's choice: its origin becomes CURATED. The item stays
+        new name, not linked). The target then is a person's choice: its targetOrigin becomes CURATED. The origin stays
+        the model's, since the kind is still AI-written. The item stays
         open: accepting it makes the link VERIFIED. 409 when the item is no longer open, is not a relationship
         candidate, or another relationship of the resource already has that target.
       parameters:
@@ -2691,10 +2692,13 @@ components:
       required: [kind, target, verification, origin, quotes]
       properties:
         kind: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH, ABOUT] }
-        target: { type: string, description: The name the model gave. AI-written. }
+        target: { type: string, description: The name the model gave (AI-written), or the one an admin chose. }
         targetId: { type: [string, 'null'], format: uuid, description: The catalog resource of that name; null when none. }
         verification: { $ref: '#/components/schemas/Verification' }
         origin: { $ref: '#/components/schemas/ValueOrigin' }
+        targetOrigin:
+          description: CURATED when an admin chose the target (ADR 0064); the target then is not AI-written. Null otherwise.
+          oneOf: [{ $ref: '#/components/schemas/ValueOrigin' }, { type: 'null' }]
         quotes: { type: array, maxItems: 5, items: { $ref: '#/components/schemas/ReviewQuote' } }
 
     ReviewQuote:

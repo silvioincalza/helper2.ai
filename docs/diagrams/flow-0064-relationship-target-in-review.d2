@@ -2,7 +2,9 @@
 # Source of truth: backend/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java,
 #   backend/src/main/java/ai/helper2/catalog/usecase/AddCuratedResource.java,
 #   backend/src/main/java/ai/helper2/catalog/internal/RelationshipTargets.java,
-#   backend/src/main/java/ai/helper2/admin/web/ReviewController.java (target).
+#   backend/src/main/java/ai/helper2/admin/web/ReviewController.java (target),
+#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java (supersedeEnrichmentItems),
+#   backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (deleteUnreviewedAiRelationships).
 # Render: cd docs/diagrams && d2 fmt flow-0064-relationship-target-in-review.d2 && d2 flow-0064-relationship-target-in-review.d2 flow-0064-relationship-target-in-review.svg
 
 ...@style
@@ -23,7 +25,9 @@ conflict: "404 / 409:\nrolled back, nothing added" {class: fail}
 target: "Target a resource in the\ncatalog, not the resource itself?" {class: decision}
 taken: "Same kind and target already\non the resource?" {class: decision}
 dup: "409 duplicate:\nrolled back" {class: fail}
-changed: "Relationship: new target,\norigin CURATED;\nCHANGE_RELATIONSHIP_TARGET" {class: app}
+changed: "Relationship: new target,\ntarget_origin CURATED,\norigin kept;\nCHANGE_RELATIONSHIP_TARGET" {class: app}
+rerun: "Scout run on the resource\nbefore a decision?" {class: decision}
+kept: "Item not superseded,\nrelationship not deleted" {class: app}
 open: "Item stays open:\nevidence with the new target" {class: end}
 accept: "Admin accepts:\nlink VERIFIED" {class: end}
 
@@ -48,4 +52,7 @@ target -> taken: yes {class: hot}
 taken -> dup: yes
 taken -> changed: no {class: hot}
 changed -> open: {class: hot}
-open -> accept: {class: hot}
+open -> rerun: {class: hot}
+rerun -> kept: yes
+kept -> accept
+rerun -> accept: no {class: hot}

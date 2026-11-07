@@ -88,7 +88,8 @@ public class ReviewQueue {
 
   /**
    * Closes the resource's OPEN items about earlier enrichment runs as SUPERSEDED by [runId]: a
-   * person decides only what the newest run says.
+   * person decides only what the newest run says. An item whose relationship target an admin chose
+   * stays open (ADR 0064): that relationship outlives the run, so it must stay decidable.
    */
   public void supersedeEnrichmentItems(UUID resourceId, UUID runId) {
     jdbc.sql(
@@ -96,6 +97,8 @@ public class ReviewQueue {
             UPDATE review_item SET status = 'SUPERSEDED', resolved_at = now(), resolution_note = :note
             WHERE resource_id = :rid AND status = 'OPEN' AND enrichment_run_id IS NOT NULL
               AND enrichment_run_id <> :run
+              AND NOT EXISTS (SELECT 1 FROM relationship r
+                              WHERE r.id = review_item.relationship_id AND r.target_origin IS NOT NULL)
             """)
         .param("rid", resourceId)
         .param("run", runId)
