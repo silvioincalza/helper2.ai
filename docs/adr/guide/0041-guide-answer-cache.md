@@ -154,15 +154,15 @@ A reused answer counts as outcome `cached` in `helper2.guide.questions`.
 - **Stemming, stop words or synonyms in the key** — each can change the answer ("free" vs "not free").
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `GuideAnswerCache` (`key`, `normalized`, `put`),
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `GuideAnswerCache` (`key`, `normalized`, `put`),
   `GuideAnswerStore`.
-- `backend/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt` — `ReadingKey`, `SimilarQuestions`, `QuestionEmbedder`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt` — `ReadingKey`, `SimilarQuestions`, `QuestionEmbedder`,
   `SimilarQuestionIndex`, `SimilarQuestionRetention`.
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `ask`, `similarAnswer`; `PurgeExpiredData.kt`.
-- `backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `JdbcSimilarQuestionIndex.java`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `ask`, `similarAnswer`; `PurgeExpiredData.kt`.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`, `JdbcSimilarQuestionIndex.java`,
   `GuideConfiguration.java` (`similarQuestions`), `GuideRetentionSchedule.java`; `platform/PgVectors.java`.
-- `backend/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
-- `docs/eval/guide-similar.json`, `guide-similar-vectors.json`; `backend/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`,
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
+- `docs/eval/guide-similar.json`, `guide-similar-vectors.json`; `backend/apps/helper2/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`,
   `GuideSimilarEvaluationTest.kt`, `GuideSimilarRecorder.kt`.
 - Tests: `GuideAnswerKeyTest`, `SimilarQuestionsTest`, `AskGuideSimilarTest`, `JdbcSimilarQuestionIndexIT`,
   `SharedGuideAnswerStoreTest`, `GuideSimilarConfigurationTest`, `GuideApiIT`.

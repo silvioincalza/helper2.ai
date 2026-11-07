@@ -93,11 +93,11 @@ or in GitHub settings, and the deploy must not need a person to copy them.
   more component. A revision number in the values is explicit and testable.
 
 ## Code
-- `backend/src/main/resources/application.yaml` — every `H2_` variable, defaults, profiles.
-- `backend/src/main/java/ai/helper2/<module>/config/*Properties.java` — the typed settings;
-  `backend/src/main/kotlin/ai/helper2/shared/Secrets.kt` — masks secrets in `toString`.
-- `backend/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the no-`@Value` rule;
-  `backend/src/test/java/ai/helper2/testing/ConfigBinding.java` — binding tests on the real yaml.
+- `backend/apps/helper2/src/main/resources/application.yaml` — every `H2_` variable, defaults, profiles.
+- `backend/{libs,apps}/*/src/main/java/ai/helper2/<module>/config/*Properties.java` — the typed settings;
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Secrets.kt` — masks secrets in `toString`.
+- `backend/apps/helper2/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the no-`@Value` rule;
+  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/ConfigBinding.java` — binding tests on the real yaml.
 - `.env.example`, `deploy/k8s/app.env.example` — templates.
 - `deploy/k8s/Makefile` (`credentials`, `backup-credentials`, `env-secret`, `deploy`), `deploy/k8s/check-app-env.sh`
   — writes, checks and uses the secrets.

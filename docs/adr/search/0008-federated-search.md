@@ -114,21 +114,21 @@ and how many web credits the day has used. Two sources can describe the same res
 - Reading `repository.directory` from each package document — one more registry call per hit on the request path.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fan-out, deadlines, cache, cooldown, source
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fan-out, deadlines, cache, cooldown, source
   policies, coverage, notices.
-- `backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — grouping, conflicts, freshness.
-- `backend/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
-- `backend/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
-- `backend/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
-- `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `ResourceStore.java` —
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — grouping, conflicts, freshness.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `ResourceStore.java` —
   `DiscoveredResources`, `discoveredSince`; `V6__resource_first_discovered_idx.sql`.
-- `backend/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
-- `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
-- `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
-- `backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
+- `backend/libs/search/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
+- `backend/apps/helper2/src/main/resources/application.yaml` (`resilience4j.*`) — the `source-<id>` policies.
+- `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
+- `backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
   store and quota ([0037](0037-tavily-store-and-daily-quota.md)).
-- `backend/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
-- `backend/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
+- `backend/apps/helper2/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
 ## Diagrams
 [flow](../../diagrams/flow-0008-federated-search.svg) · [sequence](../../diagrams/sequence-0008-federated-search.svg)

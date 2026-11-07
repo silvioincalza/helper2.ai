@@ -1,9 +1,9 @@
 # Sequence: an admin sets the pricing of a resource from its enrichment check; a later record states another price.
 # Source of truth: frontend/src/pages/admin/FieldCuration.tsx,
-#   backend/src/main/java/ai/helper2/admin/web/ReviewController.java (setResourceField),
-#   backend/src/main/java/ai/helper2/catalog/usecase/CurateField.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/CuratedFields.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (upsert).
+#   backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java (setResourceField),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/CurateField.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CuratedFields.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java (upsert).
 # Render: cd docs/diagrams && d2 fmt sequence-0066-curated-field.d2 && d2 sequence-0066-curated-field.d2 sequence-0066-curated-field.svg
 
 ...@style

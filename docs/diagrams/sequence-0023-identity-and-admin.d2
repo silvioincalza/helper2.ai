@@ -1,15 +1,15 @@
 # Sequence: the owner signs in on /admin with GitHub, gets ADMIN by numeric id, local bookmarks move to the account,
 # a review decision is audited, and a signed-in user deletes their account.
 # Only possible where profile oauth-github is active (off unless set for the environment).
-# Source of truth: backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
-#   backend/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
-#   backend/src/main/java/ai/helper2/identity/Users.java, Bookmarks.java, AuditLog.java (ports),
+# Source of truth: backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java, identity/internal/CurrentUser.java, identity/web/MeController.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/Users.java, Bookmarks.java, AuditLog.java (ports),
 #   identity/internal/JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
-#   backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
-#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaKeys.java, RedisQuotaCounter.java,
 #   frontend/src/pages/admin/, frontend/src/pages/AccountPage.tsx, frontend/src/components/SignIn.tsx,
 #   frontend/src/context/MeContext.tsx, BookmarksContext.tsx, frontend/src/api/client.ts,
-#   backend/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java,
 #   guide/GuideCost.kt (ClientQuota.left), search/usecase/SearchResources.kt (webSearchesLeft).
 # Render: cd docs/diagrams && d2 fmt sequence-0023-identity-and-admin.d2 && d2 sequence-0023-identity-and-admin.d2 sequence-0023-identity-and-admin.svg
 

@@ -69,12 +69,12 @@ show progress, and every claim on the page must be traceable to a real result.
 - WebSocket for progress — two-way channel not needed; SSE works over plain Hypertext Transfer Protocol (HTTP) and proxies.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide` (the guards and the dispatch by intent);
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `AskGuide` (the guards and the dispatch by intent);
   `QuestionReader.kt` (plan), `PickAnswer.kt` (retrieve, choose, gate) in the same package.
-- `backend/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`.
-- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan and choose calls.
-- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
-- `backend/src/main/resources/prompts/guide/plan.txt`, `choose.txt`.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan and choose calls.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
+- `backend/apps/helper2/src/main/resources/prompts/guide/plan.txt`, `choose.txt`.
 - `api/openapi.yaml` — `/guide`, `/guide/stream` (tag `guide-stream`), `GuideStream*` schemas.
 
 ## Diagrams

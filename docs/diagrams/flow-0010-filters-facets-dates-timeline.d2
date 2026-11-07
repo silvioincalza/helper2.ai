@@ -1,9 +1,9 @@
 # Flowchart: from ranked results to the page the user sees: filters with Unknown, facet counts, sort, page,
 # and the timeline view in the browser.
-# Source of truth: backend/src/main/kotlin/ai/helper2/search/Filtering.kt (Filtering, Facets, Sorting),
-#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search),
-#   backend/src/main/kotlin/ai/helper2/shared/DateFact.kt (earliest, latest, lastChange),
-#   backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt, frontend/src/components/DateFactView.tsx,
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/Filtering.kt (Filtering, Facets, Sorting),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search),
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt (earliest, latest, lastChange),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt, frontend/src/components/DateFactView.tsx,
 #   frontend/src/lib/searchState.ts (toApiParams), frontend/src/lib/timeline.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0010-filters-facets-dates-timeline.d2 && d2 flow-0010-filters-facets-dates-timeline.d2 flow-0010-filters-facets-dates-timeline.svg
 

@@ -104,20 +104,20 @@ same for every visitor.
   not an empty one.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
+- `backend/libs/examples/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
   check, `ExampleSearch`), `ExampleDrafts.kt` (drafts, `DraftRules`), `PoolCounts.kt` (shown and hidden),
   `ExamplePorts.kt`.
-- `backend/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
+- `backend/libs/examples/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
   `CountHomeExamples`, `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`, `DraftHomeExamples`), `config/ExamplesProperties`,
   `internal/` (`JdbcHomeExamples`,
   `SearchExampleSearch`, `CatalogResourceTitles`, `HomeExampleCheckSchedule`, `SpringAiExampleDrafter`,
   `CatalogDraftSources`, `ExamplesConfiguration`), `web/HomeExamplesController.java`; the prompt
-  `backend/src/main/resources/prompts/examples/draft.txt`.
-- `backend/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java`
+  `backend/libs/examples/src/main/resources/prompts/examples/draft.txt`.
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java`
   (accept adds the drafted example), `admin/usecase/GetOverview.java` and `admin/web/OverviewController.java` (the
   counts on the overview), `catalog/usecase/ListWellKnownResources.java`.
-- `backend/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
-- `backend/src/main/resources/db/migration/V4__home_example.sql`, `V5__example_drafts.sql`.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
+- `backend/libs/schema/src/main/resources/db/migration/V4__home_example.sql`, `V5__example_drafts.sql`.
 - `frontend/src/lib/examples.ts` — the built-in pool, the pick and the bucket rule;
   `frontend/src/components/home/HomeExamples.tsx` — the fetch with its timeout, the fallback and the AI mark;
   `frontend/src/pages/admin/ExamplesPage.tsx`; `frontend/src/pages/admin/AdminOverview.tsx` (the counts and the

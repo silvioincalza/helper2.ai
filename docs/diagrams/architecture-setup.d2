@@ -1,11 +1,11 @@
 # Architecture, view 5 of 6: Set it up on a resource page. The setup module, its ports and the adapters that answer them.
 # The registry entry and the README give the run options; the tool guide asks the model for steps, from the tool's own documents.
-# Source of truth: backend/src/main/java/ai/helper2/setup/web/SetupController.java,
-#   backend/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, setup/usecase/GetToolGuide.java,
-#   backend/src/main/kotlin/ai/helper2/setup/Setup.kt, setup/Materials.kt, setup/ToolGuidePorts.kt (ports),
-#   backend/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (adapters, budgets),
+# Source of truth: backend/apps/helper2/src/main/java/ai/helper2/setup/web/SetupController.java,
+#   backend/apps/helper2/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, setup/usecase/GetToolGuide.java,
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/setup/Setup.kt, setup/Materials.kt, setup/ToolGuidePorts.kt (ports),
+#   backend/apps/helper2/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (adapters, budgets),
 #   setup/internal/HourlyFetchBudget.java (h2:v1:setup:fetches:*),
-#   backend/src/main/resources/application.yaml (helper2.setup.*).
+#   backend/apps/helper2/src/main/resources/application.yaml (helper2.setup.*).
 # Render: cd docs/diagrams && d2 fmt architecture-setup.d2 && d2 architecture-setup.d2 architecture-setup.svg
 
 ...@style

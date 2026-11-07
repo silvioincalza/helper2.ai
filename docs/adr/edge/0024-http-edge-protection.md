@@ -83,12 +83,12 @@ must load the app on a direct visit, and a new release must reach browsers at on
 - Spring Boot's default static resource handling — no control over cache headers per path.
 
 ## Code
-- `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java` — limits, 429.
-- `backend/src/main/java/ai/helper2/platform/ClientKey.java` — the client key (IPv6 by /64).
-- `backend/src/main/java/ai/helper2/platform/RedisRateLimiter.java`, `InMemoryRateLimiter.java` — Redis count, fallback.
-- `backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
-- `backend/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
-- `backend/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java` — limits, 429.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` — the client key (IPv6 by /64).
+- `backend/libs/platform/src/main/java/ai/helper2/platform/RedisRateLimiter.java`, `InMemoryRateLimiter.java` — Redis count, fallback.
+- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — CSRF, CSP, referrer policy, access rules.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java` — SPA fallback and cache headers.
+- `backend/apps/helper2/src/main/resources/application.yaml` — forward headers, cookie, management port, rate limits.
 - `deploy/helm/helper2/templates/app.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the app's ingress policy.
 - `frontend/src/api/client.ts`, `frontend/public/theme.js` — CSRF header, CSP-safe theme script.
 

@@ -1,10 +1,10 @@
 # Flowchart: how the guide reads a question (plan, grounding, backup rules, window), when it asks back (a vague
 # question, or a subject with namesakes of different kinds), and how each intent retrieves and answers. The pick pipeline (choose, evidence gate, reason check) is drawn in flow-0015 and flow-0016.
-# Source of truth: backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (answerByIntent),
+# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (answerByIntent),
 #   QuestionReader.kt (read, grounded, clarificationOf, askBackSubject), Question.kt (askBack, namesakes),
 #   PickAnswer.kt (newest, alternatives, picks), CompareAnswer.kt (answer, subjectsFound), ExplainAnswer.kt, DateAnswer.kt,
-#   backend/src/main/kotlin/ai/helper2/guide/Intents.kt (IntentRules, Clarification, SubjectKind, AmbiguousSubject, isSubject),
-#   backend/src/main/kotlin/ai/helper2/guide/Guide.kt, GuideCost.kt (GuideAnswerCache.isCacheable, WINDOWED_TTL).
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Intents.kt (IntentRules, Clarification, SubjectKind, AmbiguousSubject, isSubject),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Guide.kt, GuideCost.kt (GuideAnswerCache.isCacheable, WINDOWED_TTL).
 # Render: cd docs/diagrams && d2 fmt flow-0032-guide-intents.d2 && d2 flow-0032-guide-intents.d2 flow-0032-guide-intents.svg
 
 ...@style

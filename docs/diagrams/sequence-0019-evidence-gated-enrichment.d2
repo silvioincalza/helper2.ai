@@ -1,10 +1,10 @@
 # Sequence: one enrichment of a changed resource that ends PARTIAL and opens a review item.
-# Source of truth: backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (EnrichResource.attempt),
-#   backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator),
-#   backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java, CatalogEnrichmentStore.java,
-#   backend/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java, EnrichmentResults.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java, JdbcEnrichmentResults.java,
-#   backend/src/main/java/ai/helper2/catalog/ReviewQueue.java.
+# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (EnrichResource.attempt),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt (EvidenceValidator),
+#   backend/apps/helper2/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java, CatalogEnrichmentStore.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java, EnrichmentResults.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java, JdbcEnrichmentResults.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0019-evidence-gated-enrichment.d2 && d2 sequence-0019-evidence-gated-enrichment.d2 sequence-0019-evidence-gated-enrichment.svg
 
 ...@style

@@ -75,20 +75,20 @@ day" while the server allows 50, and nothing fails. For the Privacy page that is
 
 ## Code
 - `api/openapi.yaml` — `GET /policy`, schemas `Policy` and `WebSearchLimits`.
-- `backend/src/main/java/ai/helper2/policy/` — the module and `web/PolicyController.java`.
-- `backend/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
-  `backend/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
+- `backend/apps/helper2/src/main/java/ai/helper2/policy/` — the module and `web/PolicyController.java`.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
+  `backend/libs/identity/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
   `scout/ScoutPolicy.java` — the values; built in `search/config/SearchConfiguration.java`,
   `guide/internal/GuideConfiguration.java`, `identity/config/IdentityPolicyConfiguration.java`,
   `catalog/internal/CatalogConfiguration.java`, `scout/internal/ScoutConfiguration.java`.
-- `backend/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
+- `backend/libs/platform/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
   `H2_RETENTION_BACKUPS`, set by `deploy/helm/helper2/templates/app.yaml` from `backup.retentionDays`),
   `platform/config/CategoriesProperties.java` (`discoverySearches`), `platform/quota/RedisQuotaCounter.java` and
   `platform/llm/RedisCallCounter.java` (`KEEP`) — the platform's numbers.
-- `backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
-- `backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — the public path.
-- `backend/src/test/java/ai/helper2/policy/web/PolicyControllerTest.java` — every number comes from its module.
-- `backend/src/test/java/ai/helper2/api/PolicyApiIT.java` — contract, cache header, values from configuration, rate limit.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
+- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — the public path.
+- `backend/apps/helper2/src/test/java/ai/helper2/policy/web/PolicyControllerTest.java` — every number comes from its module.
+- `backend/apps/helper2/src/test/java/ai/helper2/api/PolicyApiIT.java` — contract, cache header, values from configuration, rate limit.
 
 ## Diagrams
 [flow](../../diagrams/flow-0052-policy-endpoint.svg) · [sequence](../../diagrams/sequence-0052-policy-endpoint.svg)

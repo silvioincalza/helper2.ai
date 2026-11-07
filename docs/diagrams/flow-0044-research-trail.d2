@@ -1,10 +1,10 @@
 # Flowchart: how one guide answer gets its research trail: which queries are listed, which removed suggestions,
 # and what a reused answer keeps.
-# Source of truth: backend/src/main/kotlin/ai/helper2/guide/steps/Question.kt (Question.ran, GuideSteps.find),
-#   backend/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt (picks, insideWindow), CompareAnswer.kt, ExplainAnswer.kt,
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (answerByIntent, similarAnswer),
-#   backend/src/main/kotlin/ai/helper2/guide/Guide.kt (ResearchTrail, GuideValidator.Rejection.trailCheck, removedOf),
-#   backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (trail, AI_WRITTEN_FIELDS),
+# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/Question.kt (Question.ran, GuideSteps.find),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt (picks, insideWindow), CompareAnswer.kt, ExplainAnswer.kt,
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (answerByIntent, similarAnswer),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Guide.kt (ResearchTrail, GuideValidator.Rejection.trailCheck, removedOf),
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (trail, AI_WRITTEN_FIELDS),
 #   frontend/src/components/guide/GuideAnswer.tsx (PlannedQueries, RemovedList).
 # Render: cd docs/diagrams && d2 fmt flow-0044-research-trail.d2 && d2 flow-0044-research-trail.d2 flow-0044-research-trail.svg
 

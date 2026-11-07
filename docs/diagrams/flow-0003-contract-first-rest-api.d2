@@ -1,9 +1,9 @@
 # Flowchart: a change to the contract, from api/openapi.yaml to a green build: the generated server interfaces and
 # DTOs, the generated TypeScript types, and the response checks in the API integration tests.
-# Source of truth: api/openapi.yaml, backend/build.gradle.kts (openApiGenerate, compileJava/compileKotlin dependsOn,
+# Source of truth: api/openapi.yaml, backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts (openApiGenerate, compileJava/compileKotlin dependsOn,
 #   Test systemProperty openapi.spec), frontend/package.json (gen:api, prebuild, pretypecheck, prelint, pretest),
-#   backend/src/test/java/ai/helper2/api/ContractValidator.java, GuideApiIT.java,
-#   backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
+#   backend/apps/helper2/src/test/java/ai/helper2/api/ContractValidator.java, GuideApiIT.java,
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
 # Render: cd docs/diagrams && d2 fmt flow-0003-contract-first-rest-api.d2 && d2 flow-0003-contract-first-rest-api.d2 flow-0003-contract-first-rest-api.svg
 
 ...@style

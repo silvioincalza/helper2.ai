@@ -11,7 +11,7 @@ setup beyond Gradle or npm.
 ## Decision
 1. **Style: Google.** google-java-format for Java, ktfmt with `googleStyle()` for Kotlin and the Gradle build file.
    Two-space indent, 100 columns. Neither formatter has options to argue about.
-2. **Tool: Spotless** (Gradle plugin, Apache-2.0) runs both formatters from `backend/build.gradle.kts`.
+2. **Tool: Spotless** (Gradle plugin, Apache-2.0) runs both formatters from `backend/build-logic/src/main/kotlin/helper2.format.gradle.kts`.
    `./gradlew spotlessApply` rewrites the files, `./gradlew spotlessCheck` fails on any file that is not formatted.
    It formats `src/**/*.java`, `src/**/*.kt` and `*.gradle.kts`. Generated OpenAPI code lives in `build/` and is not
    formatted.
@@ -47,7 +47,7 @@ No runtime path: this decision runs in the build and in CI only, so it has no se
 - dprint for the frontend — fast, but a smaller ecosystem and less editor support than Prettier.
 
 ## Code
-- `backend/build.gradle.kts` — the Spotless plugin and the `spotless {}` block.
+- `backend/build-logic/src/main/kotlin/helper2.format.gradle.kts` — the Spotless plugin and the `spotless {}` block.
 - `frontend/package.json` (`format`, `format:check`), `frontend/.prettierrc.json`, `frontend/.prettierignore`,
   `frontend/eslint.config.js` — Prettier and its place next to ESLint.
 - `.github/workflows/ci.yml` (`backend`, `frontend`) — the `spotlessCheck` and `format:check` steps.

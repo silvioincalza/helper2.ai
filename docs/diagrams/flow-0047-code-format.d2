@@ -1,6 +1,6 @@
 # Flowchart: the code format (ADR 0047): Spotless runs google-java-format and ktfmt (Google style) for the backend,
 # Prettier formats the frontend; CI checks both.
-# Source of truth: backend/build.gradle.kts (spotless {}), frontend/package.json (format, format:check),
+# Source of truth: backend/build-logic/src/main/kotlin/helper2.format.gradle.kts (spotless {}), frontend/package.json (format, format:check),
 #   frontend/.prettierrc.json, frontend/.prettierignore, frontend/eslint.config.js,
 #   .github/workflows/ci.yml (backend: spotlessCheck, frontend: format:check), .editorconfig, .idea/codeStyles/Project.xml.
 # Render: cd docs/diagrams && d2 fmt flow-0047-code-format.d2 && d2 flow-0047-code-format.d2 flow-0047-code-format.svg

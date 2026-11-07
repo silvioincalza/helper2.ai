@@ -2,7 +2,8 @@
 version: 2
 updates:
   - package-ecosystem: gradle
-    directory: /backend
+    # The backend projects, and the Gradle plugins of its convention plugins.
+    directories: [/backend, /backend/build-logic]
     schedule: { interval: weekly, day: monday }
     groups:
       gradle-minor-patch: { update-types: [minor, patch] }

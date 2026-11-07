@@ -16,8 +16,8 @@ FROM --platform=$BUILDPLATFORM docker.io/library/eclipse-temurin:25-jdk@sha256:8
 WORKDIR /src
 COPY api ./api
 COPY backend ./backend
-COPY --from=web /src/frontend/dist ./backend/src/main/resources/static
-RUN cd backend && ./gradlew --no-daemon bootJar -x test && cp build/libs/*.jar /app.jar
+COPY --from=web /src/frontend/dist ./backend/apps/helper2/src/main/resources/static
+RUN cd backend && ./gradlew --no-daemon :apps:helper2:bootJar -x test && cp apps/helper2/build/libs/*.jar /app.jar
 
 FROM docker.io/library/eclipse-temurin:25-jre@sha256:ecdc0adb37bde1a281c4d245a3cd535004b1fc8322d560f5b09463b248c81df0
 RUN useradd --system --uid 10001 helper2

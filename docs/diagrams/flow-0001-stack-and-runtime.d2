@@ -1,7 +1,7 @@
 # Flowchart: the one artifact, from the three-stage image build to how the running app answers one request.
 # Shows the Dockerfile stages, the JVM flags, and the SinglePageApp rules for every path no controller claims.
-# Source of truth: deploy/Dockerfile, backend/src/main/java/ai/helper2/platform/SinglePageApp.java,
-#   backend/src/main/resources/application.yaml (spring.threads.virtual, spring.web.resources.add-mappings).
+# Source of truth: deploy/Dockerfile, backend/libs/platform/src/main/java/ai/helper2/platform/SinglePageApp.java,
+#   backend/apps/helper2/src/main/resources/application.yaml (spring.threads.virtual, spring.web.resources.add-mappings).
 # Render: cd docs/diagrams && d2 fmt flow-0001-stack-and-runtime.d2 && d2 flow-0001-stack-and-runtime.d2 flow-0001-stack-and-runtime.svg
 
 ...@style

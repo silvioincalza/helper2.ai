@@ -1,13 +1,13 @@
 # Sequence: the cost guard around one guide question that misses the cache and is answered fresh,
 # and the give-back when its answer has no AI pick or the question fails (AskGuide.settle, in one finally).
-# Source of truth: backend/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
-#   backend/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
-#   backend/src/main/java/ai/helper2/platform/quota/QuotaKeys.java (client pseudonym of the UTC day),
-#   backend/src/main/java/ai/helper2/guide/web/GuideLimits.java,
-#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask, giveBackIfFree), GuideCost.kt (ClientQuota, GuideAnswerCache),
-#   backend/src/main/java/ai/helper2/platform/llm/DailyBudget.java, RedisCallCounter.java (INCR and GIVE_BACK scripts),
-#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaKeys.java (client pseudonym of the UTC day),
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideLimits.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask, giveBackIfFree), GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java, RedisCallCounter.java (INCR and GIVE_BACK scripts),
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0017-guide-cost-guard.d2 && d2 sequence-0017-guide-cost-guard.d2 sequence-0017-guide-cost-guard.svg
 
 ...@style

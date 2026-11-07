@@ -1,12 +1,12 @@
 # Flowchart: how a guide question finds a cached answer: the exact key of its normalised text, then, once planned,
 # the answer of a similar question read the same way.
-# Source of truth: backend/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
-#   backend/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
-#   backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
-#   backend/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
+# Source of truth: backend/apps/helper2/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
+#   backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
+#   backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
 #   GuideConfiguration.java (similarQuestions, H2_GUIDE_SIMILAR_THRESHOLD), GuideRetentionSchedule.java,
-#   backend/src/main/resources/db/migration/V1__schema.sql (ai_cache, guide_similar_question),
-#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
+#   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (ai_cache, guide_similar_question),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
 #   Rate limit, slot, single-flight and quota between the two lookups: flow-0017.
 # Render: cd docs/diagrams && d2 fmt flow-0041-guide-answer-cache.d2 && d2 flow-0041-guide-answer-cache.d2 flow-0041-guide-answer-cache.svg
 

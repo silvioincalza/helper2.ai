@@ -1,10 +1,10 @@
 # Flowchart: language detection and query translation in one search.
 # Shows the evidence rules of LanguageDetector, which sources start at once, the bounded wait for the
 # translation, the checks on the untrusted answer, and how the English words are disclosed.
-# Source of truth: backend/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
-#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, startTranslation, awaitTranslation, withTranslation),
-#   backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java,
-#   backend/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java (ai_cache, cache translation, shared by the replicas).
+# Source of truth: backend/libs/kernel/src/main/kotlin/ai/helper2/shared/LanguageDetector.kt,
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, startTranslation, awaitTranslation, withTranslation),
+#   backend/libs/search/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java (ai_cache, cache translation, shared by the replicas).
 # Render: cd docs/diagrams && d2 fmt flow-0011-language-aware-search.d2 && d2 flow-0011-language-aware-search.d2 flow-0011-language-aware-search.svg
 
 ...@style

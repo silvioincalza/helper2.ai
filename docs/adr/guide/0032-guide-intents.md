@@ -321,24 +321,24 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - **Courses from web search only** — no stable type or card, and every answer depends on one web source.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — dispatch by intent, clarification answer.
-- `backend/src/main/kotlin/ai/helper2/guide/steps/QuestionReader.kt` — plan, grounding, backup rules, window,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — dispatch by intent, clarification answer.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/QuestionReader.kt` — plan, grounding, backup rules, window,
   `clarificationOf`, `askBackSubject`, about an event.
-- `backend/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`,
   `DateAnswer.kt` — retrieval and answer per intent; `Question.kt` — step spans, searches, `askBack`, `namesakes`.
-- `backend/src/main/kotlin/ai/helper2/guide/Intents.kt` — `GuideIntent`, `IntentRules` (with `namesEvent`),
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/guide/Intents.kt` — `GuideIntent`, `IntentRules` (with `namesEvent`),
   `Clarification`, `SubjectKind`, `AmbiguousSubject`, `isSubject`;
   `Guide.kt` — `GuideSearchPlan`, `GuideAnswer` blocks, type sets; `AnswerLimits.kt`; `GuideCost.kt` — `WINDOWED_TTL`.
-- `backend/src/main/resources/i18n/intent-words_en.properties`, `intent-words_it.properties` — backup rule words and
+- `backend/apps/helper2/src/main/resources/i18n/intent-words_en.properties`, `intent-words_it.properties` — backup rule words and
   the event words (`when.event`).
-- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan, compare, explain calls.
-- `backend/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `planned`, `understood`, `clarify` events.
-- `backend/src/main/resources/prompts/guide/plan.txt`, `choose.txt`, `compare.txt`, `explain.txt`.
-- `backend/src/main/kotlin/ai/helper2/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` — window filter,
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — plan, compare, explain calls.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `planned`, `understood`, `clarify` events.
+- `backend/apps/helper2/src/main/resources/prompts/guide/plan.txt`, `choose.txt`, `compare.txt`, `explain.txt`.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` — window filter,
   `SourceQuery.publishedAfter`, `browse`, cache key.
-- `backend/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
   `sources/npm/NpmSource.java`, `sources/tavily/CourseCollector.java`; `catalog/internal/ResourceStore.java` — date pushdown, npm dates, courses.
-- `backend/src/main/resources/db/migration/V1__schema.sql` (`COURSE`, `COURSE_CANDIDATE`, `review_item.candidate_url`), `R__courses.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`COURSE`, `COURSE_CANDIDATE`, `review_item.candidate_url`), `R__courses.sql`.
 - `api/openapi.yaml` — request, response, status, stream events.
 - `frontend/src/components/guide/GuideAnswer.tsx` — clarification chips, "Understood as", comparison table, explanation.
 

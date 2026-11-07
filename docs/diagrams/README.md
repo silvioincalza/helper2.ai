@@ -88,6 +88,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0065](../adr/edge/0065-candidate-edit-in-review.md) | [flow](flow-0065-candidate-edit-in-review.svg) | [sequence](sequence-0065-candidate-edit-in-review.svg) | how an admin edits a resource candidate, what a later finder does with the edit, and accepting it. |
 | [0067](../adr/scout/0067-live-web-events-scout.md) | [flow](flow-0067-live-web-events-scout.svg) | [sequence](sequence-0067-live-web-events-scout.svg) | one weekly pass of the events scout: searches, Extract, the model's reading, the code gate, the merge with a source's days, and the AI label. |
 | [0066](../adr/edge/0066-curated-field.md) | [flow](flow-0066-curated-field.svg) | [sequence](sequence-0066-curated-field.svg) | how an admin sets or drops a field of a resource, and what later records, runs and the page do with it. |
+| [0068](../adr/foundation/0068-backend-libraries-and-apps.md) | [flow](flow-0068-backend-libraries-and-apps.svg) | — (build only, no runtime path) | where a piece of backend code goes (an app or a library), and the build checks that keep the direction. |
 
 ## Colors
 

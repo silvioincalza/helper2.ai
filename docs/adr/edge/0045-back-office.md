@@ -182,31 +182,31 @@ them without each module growing an admin corner.
   (Spring Modulith), like for the policy endpoint.
 
 ## Code
-- `backend/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `usecase/GetOverview.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java`,
   `usecase/ResolveReview.java`, `ExampleDrafts.java` and `internal/JsonExampleDrafts.java` (the drafted example in a
   review item), `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`).
-- `backend/src/main/java/ai/helper2/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in
+- `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in
   `platform/llm/LlmConfiguration.java`, `guide/internal/GuideConfiguration.java`,
   `search/internal/SearchSettingsConfiguration.java`, `scout/internal/ScoutConfiguration.java`,
   `sources/config/SourcesConfiguration.java`, `setup/internal/SetupConfiguration.java`,
   `examples/internal/ExamplesConfiguration.java`.
-- `backend/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
+- `backend/libs/schema/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
-- Queue actions: `V14__enrichment_queue_control.sql`; `backend/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
+- Queue actions: `V14__enrichment_queue_control.sql`; `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
   (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
-- `backend/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
-- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
-- `backend/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
-- `backend/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
+- `backend/libs/examples/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/examples/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
   `catalog/ReviewEvidence.java`, `catalog/internal/JdbcReviewEvidence.java`.
-- `backend/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
   `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/pages/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
   `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`,

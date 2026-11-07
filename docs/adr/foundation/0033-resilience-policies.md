@@ -112,22 +112,22 @@ The domain (Kotlin) must not depend on the library that implements them ([0002](
   other sources answer instead.
 
 ## Code
-- `backend/src/main/java/ai/helper2/platform/resilience/Resilience.java`, `Resilience4jPolicies.java`, `CallRefused.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience.java`, `Resilience4jPolicies.java`, `CallRefused.java`,
   `ResilienceConfiguration.java` — the port and its Resilience4j adapter.
-- `backend/src/main/java/ai/helper2/platform/resilience/OutboundThrottle.java`, `RedisOutboundThrottle.java` — the
+- `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/OutboundThrottle.java`, `RedisOutboundThrottle.java` — the
   shared pace of one host.
-- `backend/src/main/resources/application.yaml` (`resilience4j.*`) — the policies.
-- `backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `source-<id>`, `CIRCUIT_OPEN` and `BUSY`.
-- `backend/src/main/java/ai/helper2/sources/*/*Collector.java`, `support/TransientSourceFailure.java` — `collector-<id>` and what
+- `backend/apps/helper2/src/main/resources/application.yaml` (`resilience4j.*`) — the policies.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `source-<id>`, `CIRCUIT_OPEN` and `BUSY`.
+- `backend/apps/helper2/src/main/java/ai/helper2/sources/*/*Collector.java`, `support/TransientSourceFailure.java` — `collector-<id>` and what
   it retries; `support/HttpClients.java` — transient failures.
-- `backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
+- `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
   `platform/llm/RedisCallCounter.java`, `platform/RedisRateLimiter.java` — `redis`.
-- `backend/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
-- `backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.
-- `backend/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — one request per attempt.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,
   `sources/classifier/SpringAiRepoClassifier.java` — `llm-chat`; `platform/llm/ModelErrors.java` — what counts for it; `catalog/internal/NvidiaEmbedder.java` — `llm-embed` or `llm-embed-index`, given by `CatalogConfiguration`.
-- `backend/src/main/java/ai/helper2/guide/web/GuideLimits.java` — `guide`, held with `trySlot`.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideLimits.java` — `guide`, held with `trySlot`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2CircuitOpen`, `Helper2CallsNotPermitted`.
 
 ## Diagrams

@@ -125,14 +125,14 @@ touched.
   link previews still see an empty page.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt` (`PageHead`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt` (`PageHead`,
   `ResourceView`, `IndexPolicy`), `Pages.kt` (the head of each page, `JsonLd`).
-- `backend/src/main/java/ai/helper2/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`, `internal/PageTemplate`,
+- `backend/apps/helper2/src/main/java/ai/helper2/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`, `internal/PageTemplate`,
   `internal/PageHtml` (the escaping), `web/PageRoutes`, `web/CrawlerFiles`, `config/PagesProperties`.
-- `backend/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
   `catalog/internal/ResourceStore.indexable`.
 - `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`).
-- `backend/src/main/kotlin/ai/helper2/pages/ResourcePaths.kt` (`Slug`, `resourcePath`); `frontend/src/lib/slug.ts`,
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/pages/ResourcePaths.kt` (`Slug`, `resourcePath`); `frontend/src/lib/slug.ts`,
   `frontend/src/lib/searchState.ts` (`resourcePath`), `frontend/src/pages/ResourcePage.tsx` (the address replaced).
 - Tests: `pages/PagesTest.kt` (slug list), `pages/PageHtmlTest.java`, `api/PagesIT.java`, `frontend/src/lib/head.test.tsx`, `frontend/src/lib/slug.test.ts` (same slug list).
 

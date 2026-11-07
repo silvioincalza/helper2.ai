@@ -62,16 +62,16 @@ the same thing again. A value a source states could not be fixed at all.
   thing.
 
 ## Code
-- `backend/src/main/java/ai/helper2/catalog/usecase/CurateField.java`, `catalog/internal/CuratedFields.java`.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` (the upsert keeps a curated column),
-  `ResourceCards.java` and `backend/src/main/kotlin/ai/helper2/search/Model.kt` (`withCurated`: the card takes it;
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/CurateField.java`, `catalog/internal/CuratedFields.java`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` (the upsert keeps a curated column),
+  `ResourceCards.java` and `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`withCurated`: the card takes it;
   `SourceHit.curatedFields`), `search/ResultMerger.kt` (a search merge takes it), `CatalogSearchSource.java`,
   `JdbcEnrichmentCandidates.java`, `catalog/enrichment/EnrichmentCandidates.java` (the curated values).
-- `backend/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`,
-  `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.
-- `backend/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`ResourceField`,
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`,
+  `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml` (`ResourceField`,
   `ResourceFieldValue`, audit actions).
-- `backend/src/main/resources/db/migration/V22__curated_fields.sql`; `scripts/industry-events-seed.mjs` and the two
+- `backend/libs/schema/src/main/resources/db/migration/V22__curated_fields.sql`; `scripts/industry-events-seed.mjs` and the two
   event seeds it writes.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/admin/FieldCuration.tsx`,
   `ReviewEvidence.tsx`.

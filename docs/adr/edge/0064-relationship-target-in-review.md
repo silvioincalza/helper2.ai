@@ -68,12 +68,12 @@ catalog at all: a new model the article is about.
   duplicate. Every new resource needs its address.
 
 ## Code
-- `backend/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
-- `backend/src/main/java/ai/helper2/catalog/internal/RelationshipTargets.java`, `CuratedTypes.java`,
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/RelationshipTargets.java`, `CuratedTypes.java`,
   `ResourceStore.java` (`atUrl`), `CatalogConfiguration.java` (the curated source's types).
-- `backend/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml`
+- `backend/apps/helper2/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/openapi.yaml`
   (`RelationshipTargetChange`, `NewResource`, audit actions).
-- `backend/src/main/resources/db/migration/V19__relationship_target.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V19__relationship_target.sql`.
 - `frontend/src/pages/admin/RelationshipTarget.tsx`, `ReviewEvidence.tsx`.
 - Tests: `RelationshipTargetApiIT`, `RelationshipTarget.test.tsx`, `ReviewEvidence.test.tsx`.
 - Diagrams: [flow](../../diagrams/flow-0064-relationship-target-in-review.svg) · [sequence](../../diagrams/sequence-0064-relationship-target-in-review.svg).

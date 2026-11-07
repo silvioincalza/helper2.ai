@@ -77,10 +77,10 @@ absence costs no measurable quality for a group is not called for that group.
 - **Click logs (online evaluation)** — no click data and no retention decision for query logs yet.
 
 ## Code
-- `backend/src/test/kotlin/ai/helper2/eval/` — `SearchSnapshot.kt` (snapshot, recording, replay),
+- `backend/apps/helper2/src/test/kotlin/ai/helper2/eval/` — `SearchSnapshot.kt` (snapshot, recording, replay),
   `SearchEvaluation.kt` (scores, ablation, pool, report, TREC export), `RelevanceMetrics.kt`, `CutoffSweep.kt`,
   `SearchSnapshotRecorder.kt` (`eval-record`), `SearchRelevanceEvalTest.kt` (`eval`, gate), `EvalFiles.kt`.
-- `backend/build.gradle.kts` — tasks `evalRecord` and `evalTest`; `test` excludes both tags.
+- `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts` — tasks `evalRecord` and `evalTest`; `test` excludes both tags.
 - `docs/eval/search-queries.json`, `docs/eval/semantic-gold.json`, `docs/eval/search-qrels.tsv`,
   `docs/eval/README.md` (how to record, judge and compare).
 

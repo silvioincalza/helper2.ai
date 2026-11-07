@@ -97,26 +97,26 @@ traceable to that administrator.
 - Sessions in PostgreSQL (Spring Session JDBC) — a durable store and cleanup job for short-lived data.
 
 ## Code
-- `backend/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — access rules, OAuth2 login, roles.
-- `backend/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — session reads and writes while Redis is down.
-- `backend/src/test/java/ai/helper2/api/RedisDownIT.java` — anonymous use and sign-in with Redis unreachable.
-- `backend/src/main/java/ai/helper2/identity/internal/CurrentUser.java` — user row on sign-in, current user id.
-- `backend/src/main/java/ai/helper2/identity/web/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
-- `backend/src/main/java/ai/helper2/identity/VisitorLimits.java`, `guide/internal/GuideVisitorLimits.java` — the daily
+- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SecurityConfiguration.java` — access rules, OAuth2 login, roles.
+- `backend/libs/identity/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — session reads and writes while Redis is down.
+- `backend/apps/helper2/src/test/java/ai/helper2/api/RedisDownIT.java` — anonymous use and sign-in with Redis unreachable.
+- `backend/libs/identity/src/main/java/ai/helper2/identity/internal/CurrentUser.java` — user row on sign-in, current user id.
+- `backend/apps/helper2/src/main/java/ai/helper2/identity/web/MeController.java` — `/api/v1/me`, bookmarks endpoints, account deletion.
+- `backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java`, `guide/internal/GuideVisitorLimits.java` — the daily
   limits on `/me`.
-- `backend/src/main/java/ai/helper2/identity/usecase/` — `AddBookmark`, `RemoveBookmark`, `ListBookmarks`,
+- `backend/libs/identity/src/main/java/ai/helper2/identity/usecase/` — `AddBookmark`, `RemoveBookmark`, `ListBookmarks`,
   `MergeLocalBookmarks`, `BookmarkRules` (http(s), 2000 characters, the 500 cap), `DeleteMyAccount`, `ListAuditEntries`.
-- `backend/src/main/java/ai/helper2/identity/Users.java`, `Bookmarks.java`, `AuditLog.java` — the ports of the use
+- `backend/libs/identity/src/main/java/ai/helper2/identity/Users.java`, `Bookmarks.java`, `AuditLog.java` — the ports of the use
   cases; `identity/internal/JdbcUsers.java`, `JdbcBookmarks.java`, `JdbcAuditLog.java` — `app_user`, `bookmark`,
   `admin_audit`; `identity/config/IdentityUseCaseConfiguration.java` — wiring and transactions.
-- `backend/src/main/java/ai/helper2/identity/AuditTrail.java`, `AuditController.java` — the port, `/api/v1/admin/audit`.
-- `backend/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
-  `backend/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
-- `backend/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit;
+- `backend/libs/identity/src/main/java/ai/helper2/identity/AuditTrail.java`, `AuditController.java` — the port, `/api/v1/admin/audit`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
+  `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the trail.
+- `backend/apps/helper2/src/test/java/ai/helper2/api/AccountApiIT.java`, `AdminAuditApiIT.java` — bookmarks, account deletion, audit;
   `identity/internal/SignInEventIT.java` — the sign-in filter's event writes the row, the provider manager's does not.
 - `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/components/SignIn.tsx`,
   `frontend/src/pages/AccountPage.tsx`, `frontend/src/pages/admin/`.
-- `backend/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`.
+- `backend/apps/helper2/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0023-identity-and-admin.svg) · [sequence](../../diagrams/sequence-0023-identity-and-admin.svg)

@@ -1,13 +1,13 @@
 # Architecture, view 2 of 6: one search. The search module's ports and every adapter that answers them.
-# Source of truth: backend/src/main/kotlin/ai/helper2/search/Ports.kt,
-#   backend/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java,
-#   backend/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java,
-#   backend/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
-#   backend/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, platform/quota/RedisQuotaCounter.java,
-#   backend/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java
-#   (prompt: backend/src/main/resources/prompts/search/translate-query.txt),
-#   backend/src/main/java/ai/helper2/search/web/CategoriesController.java,
-#   backend/src/main/java/ai/helper2/platform/CategoryConfiguration.java (CategoryCatalog, CategoryMatcher; ADR 0053).
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt,
+#   backend/apps/helper2/src/main/java/ai/helper2/sources/config/SourcesConfiguration.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
+#   backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, platform/quota/RedisQuotaCounter.java,
+#   backend/libs/search/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java
+#   (prompt: backend/libs/search/src/main/resources/prompts/search/translate-query.txt),
+#   backend/apps/helper2/src/main/java/ai/helper2/search/web/CategoriesController.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/CategoryConfiguration.java (CategoryCatalog, CategoryMatcher; ADR 0053).
 # Render: cd docs/diagrams && d2 fmt architecture-search.d2 && d2 architecture-search.d2 architecture-search.svg
 
 ...@style

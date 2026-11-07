@@ -1,10 +1,10 @@
 # Sequence: a Redis outage seen by the search cache and the daily budget counter, then recovery.
 # Shows the one redis circuit shared by every Redis adapter (open 30 s after half of the last calls failed, then
 # trial calls in half-open) and the in-memory fallback of DailyBudget.
-# Source of truth: backend/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
-#   backend/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (policy redis in application.yaml),
-#   backend/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java, DailyBudget.java,
-#   backend/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt.
+# Source of truth: backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (policy redis in application.yaml),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java, DailyBudget.java,
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt.
 # Render: cd docs/diagrams && d2 fmt sequence-0005-redis-disposable-cache.d2 && d2 sequence-0005-redis-disposable-cache.d2 sequence-0005-redis-disposable-cache.svg
 
 ...@style

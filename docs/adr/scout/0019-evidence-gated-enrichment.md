@@ -81,13 +81,13 @@ source states. Every published value must point to the text it came from, and a 
 - Keep every run's relationships and items — pages and the queue would show proposals the newest run does not make.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — `EnrichResource`.
-- `backend/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `EvidenceValidator`, proposal and result types.
-- `backend/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`, `CatalogEnrichmentStore.java`, `ScoutConfiguration.java`.
-- `backend/src/main/resources/prompts/scout/enrich-v5.txt`.
-- `backend/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java` (named
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — `EnrichResource`.
+- `backend/apps/helper2/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — `EvidenceValidator`, proposal and result types.
+- `backend/apps/helper2/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`, `CatalogEnrichmentStore.java`, `ScoutConfiguration.java`.
+- `backend/apps/helper2/src/main/resources/prompts/scout/enrich-v5.txt`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java` (named
   interface `enrichment`), `catalog/internal/JdbcEnrichmentCandidates.java`, `JdbcEnrichmentResults.java`.
-- `backend/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/ReviewDecisions.java`,
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/ReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `catalog/usecase/ResolveReviewItem.java`, `admin/web/AdminController.java`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
 

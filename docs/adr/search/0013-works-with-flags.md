@@ -43,10 +43,10 @@ must also remove the flag.
 - Read README files for tool names — a mention is not a statement of support.
 
 ## Code
-- `backend/src/main/kotlin/ai/helper2/search/Compatibility.kt` — tools, rules, flags.
-- `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
-- `backend/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
-- `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `replaceLabels`, `MAX_TAGS`.
+- `backend/libs/search/src/main/kotlin/ai/helper2/search/Compatibility.kt` — tools, rules, flags.
+- `backend/apps/helper2/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
+- `backend/apps/helper2/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `replaceLabels`, `MAX_TAGS`.
 - `api/openapi.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`, `GuideRecommendation.compatibleWith`.
 - `frontend/src/components/results/ResultFacts.tsx` — "Works with" in the Build facts of the preview and the resource page; the reason as tooltip and screen-reader text.
 
