@@ -2,6 +2,7 @@ package ai.helper2.catalog.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.platform.llm.LlmPolicies;
@@ -337,5 +338,14 @@ class NvidiaEmbedderTest {
             "plain text")) {
       assertThat(NvidiaEmbedder.withoutBase64DataUris(text)).isEqualTo(text);
     }
+  }
+
+  /** Untrusted text: a long run of near-matches is still read in linear time. */
+  @Test
+  void aLongNearMatchIsReadQuickly() {
+    String text = "data:".repeat(5_000) + ";x".repeat(20_000);
+
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(2), () -> NvidiaEmbedder.withoutBase64DataUris(text));
   }
 }

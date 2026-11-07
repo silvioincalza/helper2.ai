@@ -144,9 +144,14 @@ public class NvidiaEmbedder implements Embedder {
     return BASE64_DATA_URI.matcher(text).replaceAll(" ");
   }
 
+  /**
+   * The text is untrusted: a bounded header (a mime type and at most 4 parameters) keeps the work
+   * at each {@code data:} constant, so a long text is read in linear time.
+   */
   private static final Pattern BASE64_DATA_URI =
       Pattern.compile(
-          "data:[^\\s,;]*(?:;[^\\s,;]*)*;base64,[A-Za-z0-9+/=_-]*", Pattern.CASE_INSENSITIVE);
+          "data:[^\\s,;]{0,128}(?:;[^\\s,;]{0,64}){0,4};base64,[A-Za-z0-9+/=_-]*+",
+          Pattern.CASE_INSENSITIVE);
 
   /**
    * The status, and for catalog texts the provider's reason from the body (NVIDIA's 500 says
