@@ -33,14 +33,14 @@ app:
   replicas: 1
   # No per-visitor limits on staging, so a test is never cut off by its own earlier tests. Staging is public, so
   # the whole site keeps a cap on live web searches (the Tavily plan may be shared with prod) and on guide model
-  # calls: 150 a day, one nightly guide evaluation with retries (ADR 0030).
+  # calls: 300 a day, the nightly guide evaluation (at most 150 with retries, ADR 0030) and room for checks by hand.
   dailyLimits:
     webSearches:
       search: 1000
       guide: 1000
     guideQuestions: 1000
     webSearchCredits: "150"
-    guideModelCalls: 150
+    guideModelCalls: 300
   # The nightly guide evaluation measures fresh answers: a guide answer expires after one second (ADR 0030).
   guideCacheTtl: PT1S
 web:
