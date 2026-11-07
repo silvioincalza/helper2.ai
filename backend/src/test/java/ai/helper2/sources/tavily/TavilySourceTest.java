@@ -108,7 +108,8 @@ class TavilySourceTest {
             source().getDescriptor().getId(),
             TavilyCollector.ID,
             CourseCollector.ID,
-            LinkedInCollector.ID);
+            LinkedInCollector.ID,
+            LiveWebEventsCollector.ID);
     assertThat(WebSources.isWeb("discovery-coding")).isTrue();
     assertThat(WebSources.isWeb("discovery-")).isFalse();
     assertThat(WebSources.isWeb("github")).isFalse();
