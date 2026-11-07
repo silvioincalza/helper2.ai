@@ -613,7 +613,7 @@ verify-images: ## digest of each image of TAG and of the Postgres image, signatu
 		key=$${entry%%=*}; ref=$${entry#*=}; repo=$${ref%%:*}; tag=$${ref#*:}; \
 		digest=$$(digest_of $$repo $$tag) || { echo "$(REGISTRY)/helper2/$$ref is not in Harbor" >&2; exit 1; }; \
 		verify $(REGISTRY)/helper2/$$repo@$$digest || { cat "$$work/verify.log" >&2; \
-			echo "::error::$$ref ($$digest) has no valid signature by cosign.pub. An image from before signing: make sign-existing TAG=$$tag on the workstation (deploy/k8s/CI.md)" >&2; exit 1; }; \
+			echo "::error::$$ref ($$digest) has no valid signature by cosign.pub. An image from before signing: make sign-existing TAG=$(TAG) on the workstation (deploy/k8s/CI.md)" >&2; exit 1; }; \
 		echo "$$ref ($$digest): signature verified" >&2; \
 		out="$$out$$key=$$digest"$$'\n'; \
 	done; \
