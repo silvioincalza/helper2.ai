@@ -130,9 +130,9 @@ Items are grouped by the order in which they matter. Inside a group, the first i
     command does;
   - CI and CD per component, and image signing for every image: done
     ([ADR 0071](adr/operations/0071-ci-cd-per-component-and-image-signing.md)). Open:
-    - before it merges: the OpenBao Transit key `helper2-images`, the policies `helper2-image-sign` (role `deploy`)
-      and `helper2-harbor-pull` (roles `deploy-staging`, `deploy-prod`), a pull-only Harbor robot in `ci/harbor-pull`,
-      then `make cosign-pub` and commit `deploy/k8s/cosign.pub` (deploy/k8s/CI.md, "Image signing"); check that
+    - the OpenBao Transit key `helper2-images`, its sign rights and the pull-only Harbor robot in `ci/harbor-pull`
+      come from incalza-me-infra (`make bao-tenants`); then `make cosign-pub` and commit `deploy/k8s/cosign.pub`
+      (deploy/k8s/CI.md, "Image signing"); check that
       Harbor takes the signature (referrer or `sha256-<digest>` tag) with the tag-immutability rule on;
     - make `ci-ok` a required status check on `main` (repo ruleset);
     - check the signatures in the cluster too, with an admission controller (Kyverno or the Sigstore policy
