@@ -5,10 +5,12 @@ import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.CategoryInput
 import ai.helper2.shared.CategoryMatcher
 import ai.helper2.shared.DateFact
+import ai.helper2.shared.DateStatus
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.SourceMode
 import ai.helper2.shared.SourcedValue
+import ai.helper2.shared.WebSources
 
 /** What the merger needs to know about the source behind a hit. */
 data class SourceContext(val descriptor: SourceDescriptor, val servedFrom: ServedFrom)
@@ -182,14 +184,30 @@ constructor(
       freshness = group.map { freshnessOf(contexts[it.sourceId]) }.minBy { it.ordinal },
       conflicts = conflicts,
       hits = ordered,
-      // Different start or end days from two sources are CONFLICTING, as for published.
-      eventStart = DateFact.earliest(group.map { it.eventStart }),
-      eventEnd = DateFact.latest(group.map { it.eventEnd }),
-      location = ordered.firstNotNullOfOrNull { it.location },
-      eventKind = ordered.firstNotNullOfOrNull { it.eventKind },
-      eventFormat = ordered.firstNotNullOfOrNull { it.eventFormat },
+      // Different start or end days from two sources are CONFLICTING, as for published. Days an AI
+      // model read (ADR 0067) count only when no other source states any.
+      eventStart = DateFact.earliest(eventSources(group).map { it.eventStart }),
+      eventEnd = DateFact.latest(eventSources(group).map { it.eventEnd }),
+      // Kind, format and place come from the same hits as the days, so one origin covers them all.
+      location = eventFacts(ordered, group).firstNotNullOfOrNull { it.location },
+      eventKind = eventFacts(ordered, group).firstNotNullOfOrNull { it.eventKind },
+      eventFormat = eventFacts(ordered, group).firstNotNullOfOrNull { it.eventFormat },
       categories = categoriesOf(primary.title, group, tags, type),
     )
+  }
+
+  /** The hits whose event days count: those a source states, or else those an AI model read. */
+  private fun eventSources(group: List<SourceHit>): List<SourceHit> {
+    val stated = group.filter {
+      !WebSources.eventDaysReadByAi(it.sourceId) && it.eventStart.status == DateStatus.KNOWN
+    }
+    return stated.ifEmpty { group }
+  }
+
+  /** [ordered] restricted to the hits whose event days count ([eventSources]). */
+  private fun eventFacts(ordered: List<SourceHit>, group: List<SourceHit>): List<SourceHit> {
+    val counted = eventSources(group).toSet()
+    return ordered.filter { it in counted }
   }
 
   /**

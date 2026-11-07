@@ -2,11 +2,14 @@ package ai.helper2.search.web
 
 import ai.helper2.api.generated.model.CompatibilityFlagDto
 import ai.helper2.api.generated.model.ListMatchDto
+import ai.helper2.api.generated.model.ValueOriginDto
 import ai.helper2.search.ListMatch
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.contexts
 import ai.helper2.search.hit
+import ai.helper2.shared.DateFact
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WebSources
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -73,5 +76,34 @@ class CardMapperTest {
         .single()
 
     assertEquals(emptyList(), CardMapper.compatibility(plain))
+  }
+
+  private fun eventCard(source: String, start: String?) =
+    CardMapper.card(
+      ResultMerger()
+        .merge(
+          listOf(
+            hit(source, "https://hack.example/2027", type = ResourceType.EVENT)
+              .copy(
+                eventStart = DateFact.scheduledDay(start?.let(java.time.LocalDate::parse), source)
+              )
+          ),
+          contexts(source),
+        )
+        .single()
+    )
+
+  @Test
+  fun `an event says when an AI model read its days and when a source states them`() {
+    assertEquals(
+      ValueOriginDto.AI_EXTRACTED,
+      eventCard(WebSources.EVENTS_SCOUT, "2027-03-12").eventOrigin,
+    )
+    assertEquals(
+      ValueOriginDto.SOURCE_PROVIDED,
+      eventCard("ai-deadlines", "2027-03-12").eventOrigin,
+    )
+    assertEquals(null, eventCard("ai-deadlines", null).eventOrigin)
+    assertEquals(null, CardMapper.card(merged).eventOrigin)
   }
 }

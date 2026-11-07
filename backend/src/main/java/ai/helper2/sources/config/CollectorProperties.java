@@ -74,6 +74,25 @@ final class CollectorProperties {
   }
 
   /**
+   * Upcoming AI events from the live web (ADR 0067): Tavily searches, Extract of at most [maxPages]
+   * pages a pass, and at most [readerDailyCalls] model calls a UTC day to read them.
+   */
+  @Validated
+  @ConfigurationProperties("helper2.scout.live-web-events")
+  record LiveWebEvents(
+      @NotNull Duration interval,
+      @NotNull List<String> queries,
+      @Positive int maxPages,
+      @PositiveOrZero int readerDailyCalls,
+      @Positive int readMaxTokens)
+      implements Scheduled {
+
+    LiveWebEvents {
+      queries = clean(queries);
+    }
+  }
+
+  /**
    * The Tavily credits the Scout's searches (every discovery category and LinkedIn, ADR 0051 and
    * 0061) may spend per UTC day, shared by all of them.
    */

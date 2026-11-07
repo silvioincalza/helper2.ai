@@ -213,6 +213,7 @@ resilience4j:
       collector-course-scout: {base-config: collector}
       collector-discovery: {base-config: collector}
       collector-linkedin-scout: {base-config: collector}
+      collector-live-web-events-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -283,6 +284,7 @@ resilience4j:
       collector-course-scout: {base-config: collector}
       collector-discovery: {base-config: collector}
       collector-linkedin-scout: {base-config: collector}
+      collector-live-web-events-scout: {base-config: collector}
       collector-github-awesome: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -545,6 +547,21 @@ helper2:
         LLM workshop webinar,
         AI event Switzerland,
         NVIDIA GTC
+    live-web-events:
+      # Upcoming AI events from the live web (ADR 0067): one Tavily search per query, then Tavily Extract reads the
+      # pages found (at most max-pages, 1 credit per 5) and the reasoning model reads each page's days. Code keeps an
+      # event only when the days are in a quote on the page and start within six months. About 4 search credits and
+      # 4 Extract credits a week, ~ 35 a month, on the Scout's daily cap. No commas inside a query.
+      interval: ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}
+      max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
+      # Model calls a UTC day to read event pages; past it a pass keeps what it read.
+      reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
+      read-max-tokens: 800
+      queries: >-
+        upcoming AI hackathons,
+        upcoming AI meetups and talks,
+        upcoming AI conferences and summits,
+        upcoming AI workshops
     discovery:
       # Tavily discovery (ADR 0051): what every category of helper2.categories shares. Each category is its own
       # collector. Lists and comparisons are indexed as ARTICLE; a product's own site or GitHub repository goes to the
@@ -677,6 +694,16 @@ helper2:
       timeout: 10s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
+    live-web-events-scout:
+      # Off until set to true: Tavily's written OK for scheduled searches listed in the catalog is still to confirm
+      # (ADR 0067). Also needs H2_LIVE_WEB_API_KEY and an AI model.
+      enabled: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:false}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      # Extract waits up to 10 s on Tavily's side for up to 4 pages.
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}
     discovery:
       # Every discovery category (helper2.categories, ADR 0051). Disabled (reported as SKIPPED) until
       # H2_LIVE_WEB_API_KEY is set.

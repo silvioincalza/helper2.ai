@@ -83,7 +83,7 @@ export function Resource({ detail: d, children }: { detail: ResourceDetail; chil
         <h2 id="h2-res-time" className="h2-res__h">
           {t('results.timeline')}
         </h2>
-        <Timeline timeline={card.timeline} />
+        <Timeline timeline={card.timeline} eventOrigin={card.eventOrigin ?? null} />
       </section>
 
       <WhereFrom card={card} />

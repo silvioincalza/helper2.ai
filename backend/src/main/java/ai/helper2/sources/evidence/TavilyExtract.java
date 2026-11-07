@@ -87,7 +87,7 @@ public class TavilyExtract implements PageReader {
   }
 
   /** Basic depth (1 credit per 5 pages), markdown so the Scout can read the links, no images. */
-  static Map<String, Object> requestBody(List<URI> urls) {
+  public static Map<String, Object> requestBody(List<URI> urls) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("urls", urls.stream().map(URI::toString).toList());
     body.put("extract_depth", "basic");

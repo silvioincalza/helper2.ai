@@ -1,8 +1,11 @@
 package ai.helper2.search
 
+import ai.helper2.shared.DateFact
 import ai.helper2.shared.DateStatus
+import ai.helper2.shared.EventKind
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.SourceMode
+import ai.helper2.shared.WebSources
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -442,5 +445,51 @@ class ResultMergerTest {
       )
     assertEquals(1, merged.size)
     assertEquals("https://github.com/acme/acme-mcp", merged.single().canonicalUrl.value)
+  }
+
+  private fun event(source: String, start: String?, end: String?, kind: EventKind? = null) =
+    hit(source, "https://summit.example/ai-2027", type = ResourceType.EVENT)
+      .copy(
+        eventStart = DateFact.scheduledDay(start?.let(java.time.LocalDate::parse), source),
+        eventEnd = DateFact.scheduledDay(end?.let(java.time.LocalDate::parse), source),
+        eventKind = kind,
+      )
+
+  @Test
+  fun `days a model read never win over days another source states`() {
+    val merged =
+      merger
+        .merge(
+          listOf(
+            event(WebSources.EVENTS_SCOUT, "2027-03-10", "2027-03-20", EventKind.HACKATHON),
+            event("curated", "2027-03-12", "2027-03-14", EventKind.CONFERENCE),
+          ),
+          contexts(WebSources.EVENTS_SCOUT, "curated"),
+        )
+        .single()
+
+    assertEquals("2027-03-12T00:00:00Z", merged.eventStart.value.toString())
+    assertEquals("curated", merged.eventStart.sourceId)
+    assertEquals("2027-03-14T00:00:00Z", merged.eventEnd.value.toString())
+    assertEquals(DateStatus.KNOWN, merged.eventStart.status)
+    assertEquals(EventKind.CONFERENCE, merged.eventKind)
+  }
+
+  @Test
+  fun `days a model read are the event's days when no other source states any`() {
+    val merged =
+      merger
+        .merge(
+          listOf(
+            event(WebSources.EVENTS_SCOUT, "2027-03-12", "2027-03-14", EventKind.HACKATHON),
+            event("live-web", null, null),
+          ),
+          contexts(WebSources.EVENTS_SCOUT, "live-web"),
+        )
+        .single()
+
+    assertEquals("2027-03-12T00:00:00Z", merged.eventStart.value.toString())
+    assertEquals(WebSources.EVENTS_SCOUT, merged.eventStart.sourceId)
+    assertEquals(EventKind.HACKATHON, merged.eventKind)
   }
 }

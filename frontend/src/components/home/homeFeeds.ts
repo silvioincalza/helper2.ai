@@ -62,6 +62,8 @@ export interface EventRow {
   kind: NonNullable<ResultCard['eventKind']> | null;
   format: NonNullable<ResultCard['eventFormat']> | null;
   location: string | null;
+  /** True when an AI model read its days, kind and place on its page (ADR 0067): shown with the AI label. */
+  aiRead: boolean;
   title: string;
   href: string;
 }
@@ -117,6 +119,7 @@ function toEventRow(card: ResultCard, now: number): EventRow {
     kind: card.eventKind ?? null,
     format: card.eventFormat ?? null,
     location: card.location ?? null,
+    aiRead: card.eventOrigin === 'AI_EXTRACTED',
     title: card.title,
     href: resourcePath(card.id, card.title),
   };

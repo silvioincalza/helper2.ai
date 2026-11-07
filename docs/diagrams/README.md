@@ -86,6 +86,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0063](../adr/scout/0063-discovery-hosts.md) | [flow](flow-0063-discovery-hosts.svg) | [sequence](sequence-0063-discovery-hosts.svg) | an admin adds a writing site or a directory: the host checks, the row and its audit; the next discovery run reading the lists. |
 | [0064](../adr/edge/0064-relationship-target-in-review.md) | [flow](flow-0064-relationship-target-in-review.svg) | [sequence](sequence-0064-relationship-target-in-review.svg) | how an admin points a relationship candidate at a resource, adds it, or renames it, and what a refusal leaves. |
 | [0065](../adr/edge/0065-candidate-edit-in-review.md) | [flow](flow-0065-candidate-edit-in-review.svg) | [sequence](sequence-0065-candidate-edit-in-review.svg) | how an admin edits a resource candidate, what a later finder does with the edit, and accepting it. |
+| [0067](../adr/scout/0067-live-web-events-scout.md) | [flow](flow-0067-live-web-events-scout.svg) | [sequence](sequence-0067-live-web-events-scout.svg) | one weekly pass of the events scout: searches, Extract, the model's reading, the code gate, the merge with a source's days, and the AI label. |
 | [0066](../adr/edge/0066-curated-field.md) | [flow](flow-0066-curated-field.svg) | [sequence](sequence-0066-curated-field.svg) | how an admin sets or drops a field of a resource, and what later records, runs and the page do with it. |
 
 ## Colors
