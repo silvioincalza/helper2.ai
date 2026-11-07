@@ -2,7 +2,7 @@
 # radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
 # search opens the results; the guide runs only when asked (Ask the guide, or Shift+Enter).
 # Code: frontend/src/pages/Home.tsx, components/home/HomeRadar.tsx, radarLayout.ts, radarRotation.ts, radarClock.ts,
-#   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer),
+#   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, ticker.ts, HomeLists.tsx, HomeTabs.tsx, homeFeeds.ts, lib/v4Fields.ts, components/Layout.tsx (header, footer),
 #   pages/HomePage.tsx, components/results/Results.tsx, ResultRow.tsx, ResultsSkeleton.tsx, Resource.tsx.
 # Source of truth: docs/adr/frontend/0042-redesign-design-system-v4.md, docs/design/system/README.md.
 # Render: cd docs/diagrams && d2 fmt flow-0042-redesign.d2 && d2 flow-0042-redesign.d2 flow-0042-redesign.svg
@@ -33,6 +33,11 @@ home: Home {
   feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
   measure: "ResizeObserver measures\nthe pinned box (--pinned-h)" {class: app}
   stick: "While a list scrolls by: its head\n(and column names or tabs) stays under\nthe pinned box until the list ends" {class: app}
+  more: "A list has more rows\nthan it shows?" {class: decision}
+  fixed: "Rows stand still" {class: app}
+  hold: "Reduced motion, motion off,\npointer over it, focus in it, tapped,\noff screen or tab hidden?" {class: decision}
+  hold_still: "Ticker holds still\n(a second tap starts it again)" {class: app}
+  tick: "Every 5 s one row leaves at the top,\nthe next comes in at the bottom\n(slides up 700 ms, clipped, wraps round)" {class: app}
   hero -> sources -> fields
   fields -> sized: yes
   fields -> plain: no
@@ -51,6 +56,13 @@ home: Home {
   bar -> measure -> stick
   tables -> stick
   tabs -> stick
+  feeds -> more
+  more -> fixed: no
+  more -> hold: yes
+  hold -> hold_still: yes
+  hold -> tick: no
+  tick -> hold: next step
+  hold_still -> hold: hold ends
 }
 phone: "Screen 720 px or less\nand scrolled 24 px?" {class: decision}
 fold: "Title folds away,\nbox stays pinned" {class: app}

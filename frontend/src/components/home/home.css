@@ -574,9 +574,11 @@
 }
 
 /* The home lists as a news ticker (ticker.ts): the box clips the row that comes in at the bottom; after each step the
-   rows start one row lower and slide up into place. Under reduced motion the list never steps (useRadarStill). */
+   rows start one row lower and slide up into place. Under reduced motion the list never steps (useRadarStill).
+   `clip`, not `hidden`: `hidden` makes the box a scroll container, and the sticky column headers would stick to it
+   instead of to the page. */
 .v4-ticker {
-  overflow: hidden;
+  overflow: clip;
 }
 .v4-ticker .is-sliding {
   animation: v4-tick 700ms ease-out;
