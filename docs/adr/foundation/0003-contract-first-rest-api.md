@@ -63,7 +63,7 @@ every source has a status), and these rules must be visible in one place that bo
 ## Code
 - `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — the contract.
 - `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` (tasks `bundleContract`, `openApiGenerate`) — server generation settings.
-- `backend/build-logic/src/main/kotlin/ai/helper2/build/BundleContract.kt` — joins the files, one meaning per name.
+- `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/BundleContract.kt` — joins the files, one meaning per name.
 - `backend/apps/helper2/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
 - `backend/apps/helper2/src/main/java/ai/helper2/platform/ContractEnumConverters.java` — enum binding.
