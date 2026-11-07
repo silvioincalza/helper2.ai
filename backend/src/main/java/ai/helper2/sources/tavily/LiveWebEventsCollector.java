@@ -136,10 +136,16 @@ public class LiveWebEventsCollector implements Collector {
               + " credits); next try tomorrow");
     }
     List<SourceHit> pages = pagesToRead(startedAt, Math.min(maxPages, Math.max(1, maxItems)));
-    List<SourceHit> events = readAll(pages, startedAt);
-    log.info("{}: {} pages read, {} events kept", ID, pages.size(), events.size());
-    return new CollectedBatch(events, null, startedAt.toString());
+    Reading reading = readAll(pages, startedAt);
+    log.info("{}: {} pages found, {} events kept", ID, pages.size(), reading.events().size());
+    // Without a model the pass did not finish: no checkpoint, so the next Scout run tries again
+    // instead of next week. What was read is kept.
+    return new CollectedBatch(
+        reading.events(), null, reading.modelOut() ? null : startedAt.toString());
   }
+
+  /** The events kept, and whether the model ran out before every page was read. */
+  private record Reading(List<SourceHit> events, boolean modelOut) {}
 
   private String notDueReason(@Nullable String checkpoint, Instant now) {
     LocalDate next = interval.nextDueDay(checkpoint, now);
@@ -179,7 +185,7 @@ public class LiveWebEventsCollector implements Collector {
   }
 
   /** Reads the pages a few at a time; stops when the credit cap is reached or the model is out. */
-  private List<SourceHit> readAll(List<SourceHit> pages, Instant now) {
+  private Reading readAll(List<SourceHit> pages, Instant now) {
     List<SourceHit> events = new ArrayList<>();
     LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
     for (int i = 0; i < pages.size(); i += EXTRACT_BATCH) {
@@ -204,10 +210,10 @@ public class LiveWebEventsCollector implements Collector {
         }
       } catch (LlmUnavailable e) {
         log.info("{}: no model to read pages now ({})", ID, e.getMessage());
-        break;
+        return new Reading(events, true);
       }
     }
-    return events;
+    return new Reading(events, false);
   }
 
   /** One extracted page: the event the gate lets through, if any. */

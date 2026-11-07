@@ -23,6 +23,7 @@ search: "4 Tavily searches\n(general, basic, 10 results):\nhackathons, meetups a
 keep: "About AI, plain https link;\nonce per URL; at most 20 pages" {class: app}
 capagain: "Cap reached before\nthe next Extract call?" {class: decision}
 stop: "Stop reading:\nkeep what was read" {class: end}
+retry: "Stop reading: keep what was read,\npass stays open, next Scout run\ntries again" {class: end}
 extract: "Tavily Extract, 4 pages a call\n(basic, markdown, no images)" {class: ext}
 clean: "Clean the page: hidden text out,\nemails → [email], phones → [phone],\ninstruction-like lines out" {class: app}
 model: "Model reads the page\n(reasoning model, thinking off,\nbudget 40 a day): events on it,\ndays + quote, kind, format, place + quotes" {class: ext}
@@ -46,7 +47,7 @@ search -> keep -> capagain
 capagain -> stop: yes
 capagain -> extract: no
 extract -> clean -> nomodel
-nomodel -> stop: yes
+nomodel -> retry: yes
 nomodel -> model: no
 model -> gate
 gate -> reject: no

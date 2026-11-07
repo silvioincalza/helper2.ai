@@ -1,3 +1,5 @@
+import { OriginLabel } from './Badges';
+import { aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import type { DateFact } from '@/api/types';
 import { formatDate } from '@/lib/format';
@@ -44,12 +46,35 @@ function DateFactValue({ fact }: { fact: DateFact }) {
   return <span className="date-unknown">{t('common.unknown')}</span>;
 }
 
-export function DateFactRow({ label, fact }: { label: string; fact: DateFact }) {
+/**
+ * One date with its label. [aiRead]: an AI model read it on the source's page (ADR 0067): the value carries the AI
+ * label and the machine-readable mark (ADR 0038).
+ */
+export function DateFactRow({
+  label,
+  fact,
+  aiRead = false,
+}: {
+  label: string;
+  fact: DateFact;
+  aiRead?: boolean;
+}) {
   return (
     <div className="date-row">
       <dt>{label}</dt>
       <dd>
-        <DateFactValue fact={fact} />
+        {aiRead ? (
+          <>
+            <span {...aiMark()}>
+              <DateFactValue fact={fact} />
+            </span>{' '}
+            <span className="h2-row__ai">
+              <OriginLabel origin="AI_EXTRACTED" />
+            </span>
+          </>
+        ) : (
+          <DateFactValue fact={fact} />
+        )}
       </dd>
     </div>
   );

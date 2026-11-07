@@ -611,6 +611,51 @@ class ResourceStoreIT {
     assertThat(eventDays(url)).containsExactly("2027-03-12", "2027-03-14");
   }
 
+  @Test
+  void
+      the_card_says_whether_the_event_days_were_read_by_ai_after_a_round_trip_through_the_catalog() {
+    String aiOnly = "https://hack-" + run + ".example/2027";
+    String stated = "https://conf-" + run + ".example/2027";
+    String scout = ai.helper2.shared.WebSources.EVENTS_SCOUT;
+    Map<String, SourceContext> contexts =
+        Map.of("ai-deadlines", context("ai-deadlines"), scout, context(scout));
+    store.upsert(
+        new ResultMerger()
+            .merge(List.of(eventFrom(scout, aiOnly, "2027-03-12", "2027-03-14")), contexts),
+        DataOrigin.OBSERVED,
+        Set.of(scout));
+    store.upsert(
+        new ResultMerger()
+            .merge(
+                List.of(
+                    eventFrom(scout, stated, "2027-04-01", "2027-04-02"),
+                    eventFrom("ai-deadlines", stated, "2027-04-02", "2027-04-03")),
+                contexts),
+        DataOrigin.OBSERVED,
+        Set.of(scout, "ai-deadlines"));
+
+    var aiCard =
+        ai.helper2.search.web.CardMapper.card(
+            details.find(resourceId(aiOnly)).orElseThrow().card());
+    var statedCard =
+        ai.helper2.search.web.CardMapper.card(
+            details.find(resourceId(stated)).orElseThrow().card());
+
+    assertThat(aiCard.getEventOrigin())
+        .isEqualTo(ai.helper2.api.generated.model.ValueOriginDto.AI_EXTRACTED);
+    assertThat(statedCard.getEventOrigin())
+        .isEqualTo(ai.helper2.api.generated.model.ValueOriginDto.SOURCE_PROVIDED);
+    assertThat(statedCard.getTimeline().getEventStart().getValue().toInstant())
+        .hasToString("2027-04-02T00:00:00Z");
+  }
+
+  private UUID resourceId(String url) {
+    return jdbc.sql("SELECT id FROM resource WHERE canonical_url = :url")
+        .param("url", CanonicalUrl.of(url).getValue())
+        .query(UUID.class)
+        .single();
+  }
+
   private List<String> eventDays(String url) {
     return jdbc.sql(
             "SELECT to_char(event_starts_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS s,"

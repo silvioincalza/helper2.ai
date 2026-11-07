@@ -27,8 +27,8 @@ it against.
    how many events the page is about, the first and last day, and the words of the page that state them; kind,
    format and place, each with its own words. The page is untrusted data: it is cut to 12,000 characters, it cannot
    close its block, and the prompt says to ignore instructions in it. One call per page, at most
-   `H2_SCOUT_EVENT_READER_DAILY_CALLS` (40) a UTC day, inside the `llm-chat` circuit. Past the cap the pass keeps
-   what it read.
+   `H2_SCOUT_EVENT_READER_DAILY_CALLS` (40) a UTC day, inside the `llm-chat` circuit. When no model can be called
+   (cap, circuit), the pass keeps what it read and stays open, so the next Scout run tries again.
 5. **Code decides, not the model** (`EventQuoteGate`). An event is kept only when:
    - the page is about one event;
    - the date quote is 20 to 300 characters and is on the page (case, spaces, dashes and quotation marks folded);
@@ -45,7 +45,7 @@ it against.
    The same for kind, format and place.
 8. **They are labelled as AI.** EU AI Act Art. 50 and ADR 0038: a checked quote does not make the days the source's
    own words; they are the model's reading. A result card says `eventOrigin: AI_EXTRACTED` when its start comes from
-   this source, and the UI shows the days, kind and format with the AI label and `data-ai-generated`.
+   this source, and the UI (Coming up, the Events page, the resource page) shows the days, kind and place with the AI label and `data-ai-generated`. Server pages leave AI-read days and place out: their facts and schema.org data cannot carry the label.
 
 ## Consequences
 - Coming up can list hackathons, meetups, talks and workshops without a research pass, each with a quote of its own
@@ -70,7 +70,9 @@ it against.
 - `backend/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — `eventSources`, `statedFirst`.
 - `backend/src/main/java/ai/helper2/catalog/internal/ResourceStore.java` — `refreshEventDates`.
 - `backend/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`.
-- `frontend/src/components/home/listParts.tsx`, `frontend/src/pages/EventsPage.tsx` — the AI label.
+- `backend/src/main/java/ai/helper2/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
+- `frontend/src/components/home/TermList.tsx`, `listParts.tsx`, `frontend/src/pages/EventsPage.tsx`,
+  `frontend/src/components/Timeline.tsx`, `DateFactView.tsx` — the AI label.
 
 ## Diagrams
 [flow](../../diagrams/flow-0067-live-web-events-scout.svg) · [sequence](../../diagrams/sequence-0067-live-web-events-scout.svg)

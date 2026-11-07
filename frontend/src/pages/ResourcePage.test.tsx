@@ -586,6 +586,42 @@ describe('resource detail', () => {
   });
 });
 
+describe('event days on the resource page', () => {
+  const eventCard = (origin: 'AI_EXTRACTED' | 'SOURCE_PROVIDED') =>
+    makeDetail({
+      card: makeCard({
+        type: 'EVENT',
+        eventOrigin: origin,
+        timeline: {
+          ...makeCard().timeline,
+          eventStart: {
+            value: '2027-03-12T00:00:00Z',
+            precision: 'DAY',
+            status: 'KNOWN',
+            sourceId: origin === 'AI_EXTRACTED' ? 'live-web-events-scout' : 'ai-deadlines',
+            alternatives: [],
+          },
+        },
+      }),
+    });
+
+  it('labels the days an AI model read, and marks them', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => eventCard('AI_EXTRACTED') });
+    renderApp(`/resource/${ID}`);
+    const row = (await screen.findByText('Takes place')).closest('.date-row')!;
+    expect(within(row as HTMLElement).getByText('Extracted by AI')).toBeInTheDocument();
+    expect(row.querySelector('dd [data-ai-generated="true"]')).not.toBeNull();
+  });
+
+  it('shows days a source states without the AI label', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => eventCard('SOURCE_PROVIDED') });
+    renderApp(`/resource/${ID}`);
+    const row = (await screen.findByText('Takes place')).closest('.date-row')!;
+    expect(within(row as HTMLElement).queryByText('Extracted by AI')).toBeNull();
+    expect(row.querySelector('[data-ai-generated]')).toBeNull();
+  });
+});
+
 describe('report form', () => {
   const open = async () => {
     const m = mockApi({

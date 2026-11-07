@@ -217,6 +217,8 @@ class LiveWebEventsCollectorTest {
     assertThat(batch.getHits())
         .extracting(SourceHit::getTitle)
         .containsExactly("Zurich AI Builders Hackathon 2027");
+    // The pass did not finish: the next Scout run tries again, not next week.
+    assertThat(batch.getCheckpoint()).isNull();
   }
 
   @Test
