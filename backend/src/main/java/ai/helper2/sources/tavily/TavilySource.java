@@ -55,7 +55,7 @@ public class TavilySource implements SearchSource {
     this.descriptor =
         new SourceDescriptor(
             "live-web",
-            "Live web (AI news)",
+            "Live web search",
             "Web",
             true,
             SourceMode.LIVE,

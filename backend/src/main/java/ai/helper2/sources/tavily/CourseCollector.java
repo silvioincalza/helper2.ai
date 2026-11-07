@@ -109,7 +109,7 @@ public class CourseCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "Course discovery (sent to review)",
+            "Courses and certifications",
             "Courses",
             true,
             SourceMode.INDEXED,

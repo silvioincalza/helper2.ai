@@ -63,8 +63,8 @@ public class TavilyCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "Live web scout (AI news)",
-            "Web scout",
+            "AI news",
+            "News",
             true,
             SourceMode.INDEXED,
             URI.create("https://helper2.ai/sources"),

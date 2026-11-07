@@ -240,7 +240,7 @@ export const HEALTH_SOURCES: SourceInfo[] = [
   },
   {
     id: 'live-web',
-    name: 'Live web (AI news)',
+    name: 'Live web search',
     shortName: 'Web',
     external: true,
     mode: 'LIVE',

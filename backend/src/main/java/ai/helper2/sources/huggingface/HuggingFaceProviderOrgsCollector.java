@@ -63,8 +63,8 @@ public class HuggingFaceProviderOrgsCollector implements Collector {
     this.descriptor =
         new SourceDescriptor(
             ID,
-            "Hugging Face provider organisations",
-            "HF orgs",
+            "Hugging Face model makers",
+            "HF makers",
             true,
             SourceMode.INDEXED,
             URI.create("https://huggingface.co/models"),
