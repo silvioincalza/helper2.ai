@@ -47,8 +47,9 @@ help: ## this list
 # BAO_ADDR must be a node over the mesh (the platform .env sets bao-01): the public bao.infra name
 # sits behind Cloudflare Access, which answers the CLI with 403.
 # Run once per env, and again after an app.env change or a token rotation.
-# API_SERVER: the cluster's API over the mesh, from the platform .env (not in this public repo).
-API_SERVER ?=
+# API_SERVER: the cluster's API over the mesh (not in this public repo). Default: the server of the current
+# kubectl context, which is the mesh address with the platform's KUBECONFIG.
+API_SERVER ?= $(shell kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null)
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
 	@set -euo pipefail; \
 	test -n "$(API_SERVER)" || { echo "API_SERVER is not set (the platform .env sets it)"; exit 1; }; \
