@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { SourceInfo } from '@/api/types';
+import { checkedSecondsAgo } from '@/lib/sourceAge';
 import { responseTimeLabel } from '@/lib/sourceHealth';
 import { newThisWeek } from '@/lib/v4Fields';
 import { beamAngle, contactAt, LEAVE_MS } from './radarClock';
@@ -84,6 +85,7 @@ function useDotName() {
   return (s: SourceInfo, tone: DotTone): string => {
     const where = t(s.mode === 'LIVE' ? 'radar.dot.live' : 'radar.dot.index');
     const parts = [s.shortName, where];
+    const checked = checkedSecondsAgo(s);
     if (tone === 'failed') parts.push(t('radar.dot.failed'));
     else if (s.lastOutcome === 'TIMED_OUT') parts.push(t('radar.dot.timedOut'));
     else if (s.lastOutcome === 'RATE_LIMITED') parts.push(t('radar.dot.rateLimited'));
@@ -95,9 +97,10 @@ function useDotName() {
           time: responseTimeLabel(s.responseTimeMs, i18n.language).short,
         }),
       );
-    else if (s.mode !== 'LIVE' && s.lastCheckedSecondsAgo != null) {
-      // The server's clock, not this browser's, which may be wrong (GET /sources).
-      const minutes = Math.round(s.lastCheckedSecondsAgo / 60);
+    else if (s.mode !== 'LIVE' && checked != null) {
+      // The server's clock, not this browser's, which may be wrong (GET /sources), plus the time since the page got
+      // the answer: a cached answer, or a tab left open, keeps counting.
+      const minutes = Math.round(checked / 60);
       const when =
         minutes < 60
           ? ago.format(-minutes, 'minute')

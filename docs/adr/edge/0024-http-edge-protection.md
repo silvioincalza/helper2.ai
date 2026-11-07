@@ -14,7 +14,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
    bypass it. Limits: `search` 60/min (`H2_RATE_LIMIT_SEARCH_PER_MINUTE`), `reportResource` 20/hour
    (`H2_RATE_LIMIT_REPORT_PER_HOUR`), `askGuideStream` and `askResourceGuide` share 10/min (`H2_RATE_LIMIT_GUIDE_PER_MINUTE`),
    `listRecent` 60/min (`H2_RATE_LIMIT_RECENT_PER_MINUTE`). Over the limit: 429, `Retry-After`, problem+json. The second (async)
-   dispatch of the streamed guide is not charged again.
+   dispatch of the streamed guide is not charged again. On the admin host the client is the signed-in administrator,
+   not an address ([0035](0035-admin-host.md)).
 2. **Limiter in Redis, shared by all replicas** (port `RateLimiter`, adapter `RedisRateLimiter`). Fixed window: one
    key per limiter and client, `h2:v1:rate:<limiter>:<client pseudonym>`. One Lua script runs `INCR` and, on the first request,
    `PEXPIRE` with the window, so a key never lives without an expiry. The key's remaining time is the `Retry-After`.

@@ -136,8 +136,7 @@ public class ResourceStore {
      * already clean.
      */
     ResourceRow withPageTitle() {
-      CanonicalUrl page = CanonicalUrl.of(canonicalUrl);
-      String clean = WebPageTitle.of(title, page == null ? null : page.getHost()).getTitle();
+      String clean = pageTitle(title, canonicalUrl);
       return clean.equals(title)
           ? this
           : new ResourceRow(
@@ -519,32 +518,63 @@ public class ResourceStore {
    * wrote; a prompt with at least [promptMin] characters of it; one of [types] with a licence,
    * pricing, a date or a relationship.
    */
+  /**
+   * The resources a sitemap lists, newest first. Each title is the one the resource page shows, so
+   * the sitemap's address is the page's own and not a 301 to it (ADR 0050): a page title from web
+   * sources is cleaned at read time, as {@link #findResource} does.
+   */
   public List<Indexable> indexable(Collection<String> types, int promptMin, int limit) {
-    return jdbc.sql(
-            """
-            SELECT r.id, r.title, coalesce(r.updated_at, r.modified_at) AS last_modified FROM resource r
-            WHERE r.description_origin IN ('SOURCE_PROVIDED', 'CURATED', 'COMMUNITY')
-              AND length(btrim(coalesce(r.description, ''))) > 0
-              AND (
-                (r.type = 'PROMPT' AND length(btrim(r.description)) >= :promptMin)
-                OR (r.type = ANY(:types)
-                    AND (r.license IS NOT NULL OR r.pricing IS NOT NULL OR r.published_at IS NOT NULL
-                         OR r.event_starts_at IS NOT NULL
-                         OR EXISTS (SELECT 1 FROM relationship rel
-                                    WHERE rel.from_resource_id = r.id AND rel.to_resource_id IS NOT NULL
-                                      AND rel.verification <> 'REJECTED'))))
-            ORDER BY last_modified DESC, r.id
-            LIMIT :limit
-            """)
-        .param("types", types.toArray(String[]::new))
-        .param("promptMin", promptMin)
-        .param("limit", limit)
-        .query((rs, n) ->
+    record Row(
+        UUID id, String title, String canonicalUrl, String dataOrigin, Instant lastModified) {}
+    List<Row> rows =
+        jdbc.sql(
+                """
+                SELECT r.id, r.title, r.canonical_url, r.data_origin,
+                       coalesce(r.updated_at, r.modified_at) AS last_modified
+                FROM resource r
+                WHERE r.description_origin IN ('SOURCE_PROVIDED', 'CURATED', 'COMMUNITY')
+                  AND length(btrim(coalesce(r.description, ''))) > 0
+                  AND (
+                    (r.type = 'PROMPT' AND length(btrim(r.description)) >= :promptMin)
+                    OR (r.type = ANY(:types)
+                        AND (r.license IS NOT NULL OR r.pricing IS NOT NULL OR r.published_at IS NOT NULL
+                             OR r.event_starts_at IS NOT NULL
+                             OR EXISTS (SELECT 1 FROM relationship rel
+                                        WHERE rel.from_resource_id = r.id AND rel.to_resource_id IS NOT NULL
+                                          AND rel.verification <> 'REJECTED'))))
+                ORDER BY last_modified DESC, r.id
+                LIMIT :limit
+                """)
+            .param("types", types.toArray(String[]::new))
+            .param("promptMin", promptMin)
+            .param("limit", limit)
+            .query((rs, n) ->
+                new Row(
+                    rs.getObject("id", UUID.class),
+                    rs.getString("title"),
+                    rs.getString("canonical_url"),
+                    rs.getString("data_origin"),
+                    rs.getTimestamp("last_modified").toInstant()))
+            .list();
+    if (rows.isEmpty()) {
+      return List.of();
+    }
+    Set<UUID> pageTitled = pageTitled(rows.stream().map(Row::id).toArray(UUID[]::new));
+    return rows.stream()
+        .map(r ->
             new Indexable(
-                rs.getObject("id", UUID.class),
-                rs.getString("title"),
-                rs.getTimestamp("last_modified").toInstant()))
-        .list();
+                r.id(),
+                pageTitled.contains(r.id()) && !DataOrigin.CURATED.name().equals(r.dataOrigin())
+                    ? pageTitle(r.title(), r.canonicalUrl())
+                    : r.title(),
+                r.lastModified()))
+        .toList();
+  }
+
+  /** [title] cleaned as the title of the web page at [canonicalUrl] ({@link WebPageTitle}). */
+  private static String pageTitle(String title, String canonicalUrl) {
+    CanonicalUrl page = CanonicalUrl.of(canonicalUrl);
+    return WebPageTitle.of(title, page == null ? null : page.getHost()).getTitle();
   }
 
   /** The title of each of [ids] the catalog has; an unknown id is absent from the map. */
