@@ -12,6 +12,7 @@ enum class PageKind(val pattern: String) {
   EVENTS("events"),
   SOURCES("sources"),
   ACCOUNT("account"),
+  SIGNIN("signin"),
   MISSION("mission"),
   PRIVACY("privacy"),
   TERMS("terms"),

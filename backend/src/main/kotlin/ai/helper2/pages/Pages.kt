@@ -69,6 +69,7 @@ class Pages(private val base: String) {
       PageKind.SEARCH -> unlisted("Search")
       PageKind.SAVED -> unlisted("Saved")
       PageKind.ACCOUNT -> unlisted("Account")
+      PageKind.SIGNIN -> unlisted("Sign in")
       PageKind.ADMIN,
       PageKind.ADMIN_PAGE -> PageHead(brand("Back office"), null, null, Robots.NOINDEX)
       PageKind.RESOURCE -> error("a resource page needs its resource")

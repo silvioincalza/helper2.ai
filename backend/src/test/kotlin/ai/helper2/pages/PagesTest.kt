@@ -157,6 +157,7 @@ class PagesTest {
     assertEquals(PageAddress.Page(PageKind.SOURCES), PageAddress.of("/sources"))
     assertEquals(PageAddress.Page(PageKind.NEWS), PageAddress.of("/news"))
     assertEquals(PageAddress.Page(PageKind.EVENTS), PageAddress.of("/events"))
+    assertEquals(PageAddress.Page(PageKind.SIGNIN), PageAddress.of("/signin"))
     assertEquals(PageAddress.Page(PageKind.ADMIN_PAGE), PageAddress.of("/admin/review"))
     assertEquals(PageAddress.Resource(id.toString(), id), PageAddress.of("/resource/$id"))
     assertEquals(PageAddress.Resource("nope", null), PageAddress.of("/resource/nope"))
