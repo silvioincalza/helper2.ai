@@ -8,9 +8,11 @@ This file is the mapping. `scripts/adr-renumber.py` reads it and rewrites the re
 - A merged record is, for now, the old records one after the other, each under `## Part: was ADR NNNN`. Its context
   PR of the reset writes the merged text (the column "Texts merged in"); PR 13 does the ones no context PR owns.
 - 0038 ("First release reset") is not created here. PR 13 writes it, or makes it a section of 0034.
-- The applied migrations (`backend/libs/schema/src/main/resources/db/migration/V*.sql`) keep the old numbers in their
-  comments: changing them changes their Flyway checksums. PR 1b replaces them with one V1. The repeatable seeds
-  (`R__*.sql`) are rewritten: they are idempotent, and a changed one only runs again.
+- The applied migrations (`backend/libs/schema/src/main/resources/db/migration/V*.sql`) kept the old numbers in their
+  comments: changing them changes their Flyway checksums. PR 1b replaced them with one `V1__schema.sql` that cites the
+  new numbers, and `adr-check.py` checks it like any file. `adr-renumber.py` still skips V*.sql, so the check below,
+  run on the tree before 1a, gives the 1a change. The repeatable seeds (`R__*.sql`) are rewritten: they are
+  idempotent, and a changed one only runs again.
 - The Postgres image's build files (`deploy/postgres/`) keep their old numbers too: any change there needs a new
   `postgres.image.tag` (CI's postgres-tag check), so a rebuild, a new digest and a signature, for a comment. They move
   with the next real Postgres tag.

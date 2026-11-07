@@ -1,11 +1,6 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
-# Source of truth: backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (the whole schema, ADR 0004 (part was 0004) §5),
-#   V2__enrichment_extra_evidence.sql (ADR 0023), V3__review_item_drop_source_conflict.sql (review kinds),
-#   V4__home_example.sql (ADR 0015), V10__resource_enrichment_backlog_idx.sql (ADR 0026), V11__evidence_ladder_origins.sql (ADR 0023: origins, maintenance_task),
-#   V12__resource_categories.sql (CATEGORY labels, catalog_marker; ADR 0013),
-#   V13__awesome_list_search.sql (ADR 0010), V14__enrichment_queue_control.sql (ADR 0026 (part was 0045) §7),
-#   V15__runtime_setting.sql (ADR 0007: runtime_setting, admin_audit before/after/reason),
-#   V17__discovery_host.sql (ADR 0022: discovery_host, two admin_audit actions).
+# Source of truth: backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (the whole schema of v3.0.0, one
+#   section per context, ADR 0004 §5).
 #   Delete rules on the lines: ADR 0035. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -211,6 +206,7 @@ enrichment: "enrichment: AI facts, each backed by evidence" {
     origin: text
     enrichment_run_id: uuid {constraint: foreign_key}
     created_at: timestamptz
+    target_origin: "text (CURATED: an admin chose the target, ADR 0026)"
   }
 
   relationship_evidence: {
@@ -301,6 +297,7 @@ people: "people and review" {
     subject: text {constraint: unique}
     display_name: text
     last_signed_in_at: timestamptz
+    radar_motion: boolean
   }
 
   bookmark: {

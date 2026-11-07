@@ -186,7 +186,7 @@ decides where the extra text comes from, and the same evidence gate judges it.
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java` (gap target), `ScoutConfiguration.java` (budget).
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java` — each source text with its source id, external id
   and repository link (port `catalog.enrichment.EnrichmentCandidates`).
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` — evidence with its own URL; `V2__enrichment_extra_evidence.sql`.
+- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` — evidence with its own URL; `enrichment_run.extra_evidence` in `V1__schema.sql`.
 - `frontend/src/lib/evidenceSource.ts`, `frontend/src/components/EvidenceList.tsx`.
 - Tests: `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
   `JdbcEnrichmentCandidatesIT`, `evidenceSource.test.ts`.
@@ -373,7 +373,7 @@ are judgements: a model may estimate them, and the page says so. The description
 | 4 | Tool & API | Covered: Tavily Extract behind a port, URLs only from code; model tool calling rejected (below). |
 | 5 | Memory | Covered: cleaned page text in Redis for at most 24 h (retry only); the ledger keeps URL and text hashes for 30 days. |
 | 6 | Knowledge & RAG | Covered: grounding by quotes from retrieved pages; no vector search needed here. |
-| 7 | Data | Covered: `V11` migration (origins, `summary_claim.self_declared`, `maintenance_task`); evidence anchored to its record (0035); a code re-check of stored answers. |
+| 7 | Data | Covered: the schema (origins, `summary_claim.self_declared`, `maintenance_task`); evidence anchored to its record (0035); a code re-check of stored answers. |
 | 8 | Browser & Computer Use | Covered: none; Tavily reads the page, we never run a browser. |
 | 9 | Guardrails | Covered: URL scope, cleaning, stating words, claim checks, caps on relationships, source facts win. |
 | 10 | Observability | Covered: `helper2.scout.fields`, `helper2.scout.gap`, credits counter and gauge; no page text in logs. |
@@ -413,7 +413,7 @@ are judgements: a model may estimate them, and the page says so. The description
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/TavilyExtract.java`, `PublicSuffixDomains.java`; beans in `sources/config/SourcesConfiguration.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`officialPages`), `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`, `CatalogEnrichmentStore.java` (type, page target), `SpringAiEnrichmentModel.java` (`enrich-v4`, material kind).
-- `backend/apps/backoffice/src/main/resources/prompts/scout/enrich-v5.txt`, `db/migration/V11__evidence_ladder_origins.sql`.
+- `backend/apps/backoffice/src/main/resources/prompts/scout/enrich-v5.txt`, `db/migration/V1__schema.sql` (origins, `maintenance_task`).
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (origins), `JdbcEnrichmentCandidates.java` (accepted products first).
 - `api/common.yaml, api/public.yaml` — `ValueOrigin`, `Relationship.origin`, `SummaryClaim.selfDeclared`.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`.
@@ -516,7 +516,7 @@ product.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt`,
   `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java` (the stored type).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/tavily/DiscoveryPages.java`, `TavilyDiscoveryCollector.java`.
-- `backend/libs/schema/src/main/resources/db/migration/V16__relationship_about.sql`; `api/public.yaml` (kind ABOUT).
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (relationship kind ABOUT); `api/public.yaml` (kind ABOUT).
 - Tests: `EvidenceValidatorWritingTest`, `RecheckEnrichmentsTest`, `SpringAiEnrichmentModelTest`,
   `DiscoveryPagesTest`, `TavilyDiscoveryCollectorTest`.
 - Diagrams: [flow](../../diagrams/flow-0023-writing-about-a-resource.svg) · [sequence](../../diagrams/sequence-0023-writing-about-a-resource.svg).

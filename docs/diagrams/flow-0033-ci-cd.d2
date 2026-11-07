@@ -35,7 +35,9 @@ cd: cd.yml (push to main or release/*) {
   exists: "Component changed?\n(changes.sh, 0033)" {class: decision}
   reuse: "Tag TAG added to the image\nof the commit before (same digest)" {class: app}
   push: "Build from git archive,\npush TAG = commit[0:12];\nmake sign (OpenBao Transit)" {class: data}
-  scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0033, report-only)" {class: app}
+  scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0033)" {class: app}
+  critical: "Critical finding\nwith a fix?" {class: decision}
+  stopped: "Fail: no staging deploy" {class: fail}
   staging: "deploy.yml env staging:\nverify signatures (0033),\ndiff, deploy by digest, status" {class: app}
   ok: "Staging rollout\nhealthy?" {class: decision}
   rollback: "helm --rollback-on-failure:\nback to the last deployed revision" {class: fail}
@@ -48,6 +50,9 @@ cd: cd.yml (push to main or release/*) {
   exists -> reuse: no
   exists -> push: yes {class: hot}
   build -> scan: "SBOM artifacts"
+  scan -> critical
+  critical -> stopped: yes
+  critical -> staging: "no (staging\nneeds the scan)"
   reuse -> branch
   push -> branch: {class: hot}
   branch -> staging: yes {class: hot}

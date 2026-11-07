@@ -5,7 +5,7 @@ plugins { id("helper2.format") }
 group = "ai.helper2"
 
 // One version for every project (ADR 0034); release.yml reads it from this line.
-version = "2.0.0"
+version = "3.0.0"
 
 // ./gradlew spotlessCheck and spotlessApply also cover the convention plugins.
 tasks.named("spotlessCheck") {

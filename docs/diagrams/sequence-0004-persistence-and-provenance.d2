@@ -24,7 +24,7 @@ pg: PostgreSQL {class: data}
 
 startup: App startup {
   flyway -> pg: "read flyway_schema_history,\nvalidate checksums"
-  flyway -> pg: "empty database: run V1__schema.sql"
+  flyway -> pg: "empty database: run V1__schema.sql\n(locale check first, app roles last)"
   flyway -> pg: "run changed R__ seeds (upserts)"
 }
 

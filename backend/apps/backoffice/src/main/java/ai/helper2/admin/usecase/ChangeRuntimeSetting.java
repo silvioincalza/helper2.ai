@@ -102,7 +102,7 @@ public class ChangeRuntimeSetting {
   static final class Reasons {
     private static final Pattern HIDDEN_CHARACTERS = Pattern.compile("[\\p{Cc}\\p{Cf}]");
 
-    /** The same bound as the database check on {@code runtime_setting.reason} (V15). */
+    /** The same bound as the database check on {@code runtime_setting.reason} (V1). */
     static final int MAX_CHARS = 500;
 
     private Reasons() {}

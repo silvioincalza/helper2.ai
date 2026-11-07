@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: helper2
       POSTGRES_USER: ${H2_DATABASE_USER:-helper2}
       POSTGRES_PASSWORD: ${H2_DATABASE_PASSWORD:-helper2-local-only}
+      # The locale V1 requires (ADR 0004 §5): the text search and trigram indexes split words by it.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
     ports: ["127.0.0.1:5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql"]
     healthcheck:

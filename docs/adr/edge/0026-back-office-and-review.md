@@ -199,10 +199,10 @@ them without each module growing an admin corner.
   `search/internal/SearchSettingsConfiguration.java`, `scout/internal/ScoutConfiguration.java`,
   `sources/config/SourcesConfiguration.java`, `setup/internal/SetupConfiguration.java`,
   `examples/internal/ExamplesConfiguration.java`.
-- `backend/libs/schema/src/main/resources/db/migration/V10__resource_enrichment_backlog_idx.sql`; `catalog/enrichment/EnrichmentCandidates.java`
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`resource_enrichment_backlog_idx`); `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
-- Queue actions: `V14__enrichment_queue_control.sql`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
+- Queue actions: `enrichment_queue_control` in `V1__schema.sql`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
   (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
@@ -314,7 +314,7 @@ catalog at all: a new model the article is about.
   `ResourceStore.java` (`atUrl`), `CatalogConfiguration.java` (the curated source's types).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml`
   (`RelationshipTargetChange`, `NewResource`, audit actions).
-- `backend/libs/schema/src/main/resources/db/migration/V19__relationship_target.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`relationship.target_origin`, the audit actions).
 - `frontend/src/pages/admin/RelationshipTarget.tsx`, `ReviewEvidence.tsx`.
 - Tests: `RelationshipTargetApiIT`, `RelationshipTarget.test.tsx`, `ReviewEvidence.test.tsx`.
 - Diagrams: [flow](../../diagrams/flow-0026-relationship-target-in-review.svg) · [sequence](../../diagrams/sequence-0026-relationship-target-in-review.svg).
@@ -396,7 +396,7 @@ The type was also locked to the finders: a discovery category declares only its 
   `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`CandidateEdit`,
   `CandidateType`, audit action).
-- `backend/libs/schema/src/main/resources/db/migration/V21__candidate_edit.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `EDIT_CANDIDATE` audit action).
 - `frontend/src/pages/admin/CandidateEditForm.tsx`, `ReviewItemDetails.tsx`, `ReviewQueuePage.tsx`.
 - Tests: `EditCandidateTest`, `ResourceCandidateJsonTest`, `IndexAcceptedCandidateTest`, `CandidateEditApiIT`,
   `CandidateEditForm.test.tsx`.
@@ -477,7 +477,7 @@ the same thing again. A value a source states could not be fixed at all.
   `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`ResourceField`,
   `ResourceFieldValue`, audit actions).
-- `backend/libs/schema/src/main/resources/db/migration/V22__curated_fields.sql`; `scripts/industry-events-seed.mjs` and the two
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`resource.curated_fields`); `scripts/industry-events-seed.mjs` and the two
   event seeds it writes.
 - `frontend/src/components/results/FieldStates.tsx`, `frontend/src/pages/admin/FieldCuration.tsx`,
   `ReviewEvidence.tsx`.

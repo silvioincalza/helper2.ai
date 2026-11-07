@@ -117,7 +117,7 @@ same for every visitor.
   (accept adds the drafted example), `admin/usecase/GetOverview.java` and `admin/web/OverviewController.java` (the
   counts on the overview), `catalog/usecase/ListWellKnownResources.java`.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
-- `backend/libs/schema/src/main/resources/db/migration/V4__home_example.sql`, `V5__example_drafts.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`home_example`, the built-in pool, the `EXAMPLE_CANDIDATE` review kind).
 - `frontend/src/lib/examples.ts` — the built-in pool, the pick and the bucket rule;
   `frontend/src/components/home/HomeExamples.tsx` — the fetch with its timeout, the fallback and the AI mark;
   `frontend/src/pages/admin/ExamplesPage.tsx`; `frontend/src/pages/admin/AdminOverview.tsx` (the counts and the

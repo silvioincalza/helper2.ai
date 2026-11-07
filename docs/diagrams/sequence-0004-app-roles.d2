@@ -27,7 +27,7 @@ release: helm upgrade --wait --wait-for-jobs {
   k8s -> bo: "start a new pod"
   public -> db: "validate as h2_public"
   db -> public: "migrations missing: wait 5 s"
-  job -> db: "Flyway migrate (V23 and later)"
+  job -> db: "Flyway migrate (V1 and later)"
   job -> db: "ALTER ROLE ... LOGIN, SCRAM password"
   job -> k8s: "exit 0"
   public -> db: "validate: valid"

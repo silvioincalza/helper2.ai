@@ -12,8 +12,10 @@ a new one (old 0008 is new 0009, old 0009 is new 0012) never moves twice. It rew
 - bare numbers, but only in the ADRs themselves and in the .d2 sources, where every four-digit number from 0001 to
   0071 is an ADR.
 
-It never touches the applied migrations (V*.sql): their Flyway checksums would change. PR 1b replaces them. Nor the
-Postgres image's build files (deploy/postgres): a change there needs a new image tag, a rebuild and a signature.
+It never touches the applied migrations (V*.sql): their Flyway checksums would change. PR 1b replaced them with one
+V1 that cites the new numbers; the skip stays so that the check in RENUMBER.md, run on the tree before 1a, still gives
+the 1a change. Nor the Postgres image's build files (deploy/postgres): a change there needs a new image tag, a rebuild
+and a signature.
 
 A merged record becomes one file: a short header, then each old record under `## Part: was ADR NNNN — <title>`,
 its headings one level down. Both README indexes are written again from the new files and the old rows.

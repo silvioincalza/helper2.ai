@@ -8,8 +8,7 @@
   exactly one diagram.
 - A link to a part of a merged record (`#part-0045`) finds its `<a id="part-0045">`.
 
-Not checked: the applied migrations (V*.sql keep their old numbers until PR 1b of the reset), the Postgres image's
-build files (deploy/postgres: a change there needs a new image tag), the rendered SVGs
+Not checked: the Postgres image's build files (deploy/postgres: a change there needs a new image tag), the rendered SVGs
 (the diagrams job compares them with their .d2), docs/adr/RENUMBER.md and the two ADR scripts, which name old numbers
 on purpose. "was ADR 0045" names an old number on purpose too.
 
@@ -24,7 +23,6 @@ import subprocess
 import sys
 import tempfile
 
-MIGRATIONS = re.compile(r"^backend/libs/schema/src/main/resources/db/migration/V\d+__[^/]*\.sql$")
 # The Postgres image's build files: a change there needs a new postgres.image.tag (the postgres-tag check), so a
 # rebuild, a new digest and a signature. They keep their old numbers until the next real Postgres tag.
 FROZEN = re.compile(r"^deploy/postgres/")
@@ -58,7 +56,7 @@ def files_of(root: str) -> list[str]:
 
 
 def checked(path: str) -> bool:
-    if path in SKIPPED or MIGRATIONS.match(path) or FROZEN.match(path):
+    if path in SKIPPED or FROZEN.match(path):
         return False
     return not path.endswith(".svg") or path == HAND_DRAWN_SVG
 
@@ -174,7 +172,6 @@ def self_test() -> None:
         'label: "a box\\nADR 0002"\n'
         "[ranking](docs/adr/search/0002-ranking.md#part-0009) · flow-0001 · flow-0002-ranking.svg\n"
         "sha256:0000111122223333 port 8081 version 2024 0099-notes.md\n",
-        "backend/libs/schema/src/main/resources/db/migration/V1__schema.sql": "-- ADR 0099 stays until 1b\n",
         "deploy/postgres/Dockerfile": "# ADR 0099 stays until the next Postgres tag\n",
         "docs/adr/RENUMBER.md": "| 0099 | ADR 0099 |\n",
     }
@@ -183,6 +180,10 @@ def self_test() -> None:
         "unknown number": ({"a.java": "// ADR 0003\n"}, 1),
         "unknown number on the next line": ({"a.java": "/** the guide (ADR\n * 0042). */\n"}, 1),
         "unknown number in a d2 label": ({"a.d2": 'x: "IndexAcceptedCandidate\\nADR 0051"\n'}, 1),
+        "unknown number in the schema migration": (
+            {"backend/libs/schema/src/main/resources/db/migration/V1__schema.sql": "-- ADR 0099\n"},
+            1,
+        ),
         "above the highest": ({"a.kt": "// ADRs 0001 and 0071\n"}, 1),
         "old ADR path": ({"a.md": "[x](docs/adr/search/0009-ranking.md)\n"}, 1),
         "relative link to a moved record": ({"docs/adr/foundation/0003-x.md": "[0002](0002-ranking.md)\n"}, 1),

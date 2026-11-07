@@ -22,6 +22,8 @@ spec:
           env:
             - { name: POSTGRES_DB, value: helper2 }
             - { name: POSTGRES_USER, value: helper2 }
+            # The locale V1 requires (ADR 0004 §5); it takes effect when the data directory is created.
+            - { name: POSTGRES_INITDB_ARGS, value: "--encoding=UTF8 --locale=en_US.utf8" }
             - name: POSTGRES_PASSWORD
               valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PASSWORD } }
           ports: [{ containerPort: 5432, name: pg }]
