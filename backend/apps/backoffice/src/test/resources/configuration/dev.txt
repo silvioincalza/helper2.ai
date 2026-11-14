@@ -1,0 +1,6 @@
+helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:true}  =>  true
+spring.datasource.password = ${H2_DATABASE_PASSWORD:helper2-local-only}  =>  helper2-local-only
+spring.docker.compose.enabled = true
+spring.docker.compose.file = ../compose.yaml
+spring.docker.compose.lifecycle-management = start-only
+spring.profiles.active = ${H2_PROFILES:}  =>  dev

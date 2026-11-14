@@ -1,0 +1,7 @@
+spring:
+  config:
+    import: classpath:helper2-shared.yaml
+---
+spring:
+  application:
+    name: helper2-backoffice

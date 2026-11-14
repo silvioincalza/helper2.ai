@@ -1,0 +1,3 @@
+helper2:
+  test:
+    client: h2_backoffice
