@@ -28,11 +28,10 @@ runs:
         WANTED: ${{ inputs.build-caches }}
       run: |
         set -euo pipefail
-        shopt -s nullglob
-        packed=("$RUNNER_TEMP"/build-caches/build-cache.tar "$RUNNER_TEMP"/build-caches/*/build-cache.tar)
-        [[ ${#packed[@]} -gt 0 ]] || { echo "::error::no build cache artifact matches $WANTED"; exit 1; }
+        packed=$(find "$RUNNER_TEMP/build-caches" -name build-cache.tar | sort)
+        [[ -n $packed ]] || { echo "::error::no build cache artifact matches $WANTED"; exit 1; }
         mkdir -p "$HOME/.gradle/caches"
-        for tar in "${packed[@]}"; do
+        while IFS= read -r tar; do
           tar -C "$HOME/.gradle/caches" -xf "$tar"
           echo "unpacked ${tar#"$RUNNER_TEMP"/build-caches/}"
-        done
+        done <<< "$packed"
