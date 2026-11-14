@@ -6,6 +6,7 @@ import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.ReviewQueue.Kind;
 import ai.helper2.catalog.ReviewQueue.Status;
+import ai.helper2.testing.AsBackOffice;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 @SpringBootTest
+@AsBackOffice
 @Import(TestcontainersConfiguration.class)
 class JdbcReviewQueueIT {
 

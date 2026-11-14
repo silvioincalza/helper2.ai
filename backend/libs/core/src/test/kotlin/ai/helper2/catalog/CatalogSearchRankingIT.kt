@@ -14,6 +14,7 @@ import ai.helper2.search.SourceHit
 import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.shared.ResourceType
+import ai.helper2.testing.AsBackOffice
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.simple.JdbcClient
 
 @SpringBootTest
+@AsBackOffice
 @Import(TestcontainersConfiguration::class)
 class CatalogSearchRankingIT {
 

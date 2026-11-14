@@ -1,4 +1,4 @@
-package ai.helper2.catalog;
+package ai.helper2.catalog.internal;
 
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;

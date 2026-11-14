@@ -6,7 +6,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.catalog.ReviewEvidenceFixture;
+import ai.helper2.catalog.internal.ReviewEvidenceFixture;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import java.util.UUID;

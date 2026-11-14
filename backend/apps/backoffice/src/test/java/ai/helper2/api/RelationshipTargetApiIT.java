@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.catalog.ReviewEvidenceFixture;
 import ai.helper2.catalog.enrichment.EnrichmentResults;
+import ai.helper2.catalog.internal.ReviewEvidenceFixture;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

@@ -36,6 +36,10 @@ dependencies {
 
   testImplementation(testFixtures(project(":libs:platform")))
   testImplementation("io.micrometer:micrometer-registry-prometheus")
+  testImplementation(
+    "io.github.resilience4j:resilience4j-spring-boot4:${property("resilience4jVersion")}"
+  )
   testFixturesImplementation(testFixtures(project(":libs:platform")))
   testFixturesImplementation("org.jetbrains.kotlin:kotlin-reflect")
+  testFixturesImplementation("org.springframework.boot:spring-boot-starter-jdbc")
 }

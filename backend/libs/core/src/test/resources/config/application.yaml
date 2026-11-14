@@ -1,0 +1,7 @@
+helper2:
+  test:
+    client: h2_public
+  schema:
+    wait-for: PT10S
+  identity:
+    frontend-url: /

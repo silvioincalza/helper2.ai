@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import ai.helper2.catalog.CatalogWriter;
 import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.ResourceCards;
-import ai.helper2.catalog.ReviewEvidenceFixture;
+import ai.helper2.catalog.internal.ReviewEvidenceFixture;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceContext;

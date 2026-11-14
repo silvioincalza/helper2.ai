@@ -144,10 +144,23 @@ to reach into the other's code.
    [0003](0003-contract-first-rest.md)). The generator options are in one place, `SpringContract.kt`, used by
    both apps and by `core`. Every project uses one of the plugins; versions live there and in
    `build-logic/build.gradle.kts`.
-10. **Tests live with their code.** A library's tests run without the app (`CardMapperTest` in `core`).
+10. **Tests live with their code.** A library's tests run without an app. `libs/core` has a test-only Spring Boot
+    application (`CoreTestApplication`) over the Testcontainers setup of the platform's fixtures, so an integration
+    test of a `core` adapter (a JDBC store, a search source, a use case on real Postgres) sits in `core`, next to
+    the class it tests. The test application supplies what an app supplies: the clock, the rate-limit key and the
+    sign-in pages, and, for a test that runs with the back office's database login (`@AsBackOffice`), the back
+    office parts of the catalog and the examples. A test keeps the login of the app that runs its code, so it still
+    proves that login's grants.
+    A test stays in an app when it needs the app: its controllers, its security, its schedules, a use case only
+    that app wires, the sources that app registers at startup (the collectors' rows in `source`), or the app's own
+    settings. The tests that start the whole app stay there too, the contract tests of the shared paths included:
+    they check each app's answers against that app's whole contract.
+    `libs/platform` holds its unit tests and the tests that bind its settings. It starts no Spring context of its
+    own: `helper2-shared.yaml` names classes of `search` and `sources` in the resilience rules, so the platform's
+    integration tests run in an app.
     Helpers several projects need are test fixtures of the lowest library that owns them: the Testcontainers
-    setup and the recorded responses in `platform`, the search and source fakes in `core`. Tests that start the whole app stay in the app, the contract tests of the shared paths included: they
-    check each app's answers against that app's whole contract.
+    setup and the recorded responses in `platform`, the search and source fakes and `ReviewEvidenceFixture` in
+    `core`.
 11. **No code outside a project.** A file in `backend/src/` stops the build (`checkNoRootSources`): it
     would compile nowhere.
 
@@ -169,6 +182,8 @@ to reach into the other's code.
   `backend/libs/core/src/test/java/ai/helper2/examples/architecture/ExamplesArchitectureTest.java`,
   `backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
   context's own rules.
+- `backend/libs/core/src/test/java/ai/helper2/CoreTestApplication.java`, `PublicParts.java`, `BackOfficeParts.java`,
+  `backend/libs/core/src/test/resources/application.yaml` — the test-only application of `core`.
 - `backend/libs/core/src/main/java/ai/helper2/search/web/` (`SearchController`, `SourcesController`, `CategoriesController`,
   `CardMapper`), `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
   web adapters.
