@@ -72,6 +72,11 @@ and how many web credits the day has used. Two sources can describe the same res
    sources state different days ([0026](0026-filters-facets-categories.md)).
 9. **Catalog link** ([0004](../foundation/0004-persistence-and-the-schema.md)). One read for first-discovered dates; only hits fetched
    live now are handed to `ResultObserver.record`, which queues the write (`helper2.catalog.observation-queue`, 256).
+   A resource a search observed answers the catalog's searches (`helper2-index`, `helper2-semantic`) only once it has
+   settled: its first discovery is at least `helper2.catalog.observed-settles-after` (24 h) old
+   (`JdbcCatalogSearch`). So the search that wrote a row and the searches of the next hours see the same catalog:
+   the row is not a second vote for the live hit it came from, and it takes no place of the catalog's 30 from an
+   older row. A resource the Scout indexed or an admin curated answers at once.
 10. Each source returns at most `H2_SEARCH_PER_SOURCE_LIMIT` (30) hits. The response has `Cache-Control: no-store`.
 11. **Sources page numbers.** `GET /api/v1/sources` (`ListSources`) lists every disclosed source by priority, with:
     - `lastOutcome`, `lastCheckedAt`: the newer of this replica's last search (`SourceHealth`) and the Scout's last
@@ -167,7 +172,17 @@ and how many web credits the day has used. Two sources can describe the same res
 
 - A slow or failed source costs only its own results. The user sees the outcome of every source.
 - A source that is down costs at most 10 searches its deadline per replica, then none until it recovers.
-- The merge is deterministic. Conflicts are shown, not resolved.
+- The merge is deterministic: the same hits in any order give the same results. A page that two sources link to
+  different repositories joins the GitHub one, else the first by URL. Conflicts are shown, not resolved.
+- The same query asked again while its source answers are cached gets the same order
+  (`SearchResourcesTest`). Measured on staging on 14 Nov 2026, six queries ten times each over nine minutes, before
+  the settle rule: the three queries nobody had asked before changed once, between the first search and the second
+  (5, 7 and 7 of the first ten results kept, `total` down by 14, 16 and 2), then gave nine identical answers; the
+  three asked before never changed. No source timed out or answered differently: the rows the first search wrote
+  came back through `helper2-index` in the second.
+- The order of a query still changes once, about a day after its first search, when the rows it wrote settle and
+  the catalog starts to answer with them; and whenever a live source answers differently after its cache entry
+  runs out. `sources[]` says for each source whether the answer is live or cached, and since when.
 - The Hub's search by meaning does not return the same list for the same question every time (the count moved
   between 6 and 7, and between 85 and 88, in calls a second apart). Inside the 30 minutes of the cache the answer
   is the same; after it, the Spaces of a question can change. The search by meaning can also return a popular Space

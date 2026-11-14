@@ -146,7 +146,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
 
 ## Consequences
 
-- The same query gives the same order. Every boost is a fixed, visible rule.
+- The same source answers give the same order. Every boost is a fixed, visible rule.
 - The first two places are not always the two highest scores: with no path one of them is the best result of the
   other lane, and with a path the first is the best result of that lane, even below a result more sources found.
   The score rules of §6 hold for every other place.
@@ -159,9 +159,11 @@ The index query must also stay well inside its 3 s timeout on the production cat
 ### Known limits
 
 - The popularity formula exists twice, in SQL (`h2_resource_popularity`) and Kotlin (`Ranking.popularity`); change them together. Index stage 1 can cut partial matches when more than 300 rows match.
-- A live hit is written back to the catalog (observed), so in later searches it can be found again by `helper2-index` and
-  `helper2-semantic`, each a vote of its own: a result seen early gains votes. The frozen eval snapshots cannot show
-  this effect over time; one catalog vote costs nDCG@10 on them today ([ADR 0025](0025-ranking.md) §7).
+- A live hit is written back to the catalog (observed). Once it has settled, 24 h after its first discovery
+  ([0022](0022-federated-search.md) §9), `helper2-index` and `helper2-semantic` can find it again, each a vote of its
+  own: a result seen early gains votes, and the order of its query changes once on that day. The frozen eval
+  snapshots cannot show this effect over time; one catalog vote costs nDCG@10 on them today
+  ([ADR 0025](0025-ranking.md) §7).
 
 ## Diagrams
 
