@@ -19,7 +19,7 @@ checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed\n
   class: group
   grid-columns: 3
   frontend: "side by side:\nfrontend-build: build, bundle size\nfrontend-check: format, lint,\nknip, typecheck, npm audit\nfrontend-test: Vitest in 3 jobs,\none per group of folders" {class: app}
-  backend: "side by side:\nbackend-build: compile all\nbackend-check: spotlessCheck,\ngradlew test (Testcontainers)" {class: app}
+  backend: "one after the other:\nbackend-build: compile all,\nupload the build cache\nbackend-check: spotlessCheck,\ngradlew test (Testcontainers)" {class: app}
   chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
   pg: "PR only: deploy/postgres changed\n→ tag bumped? (git, no build)" {class: app}
   monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}

@@ -40,10 +40,12 @@ Harbor could put an image under a tag first.
      A group whose folders hold no test passes (`--passWithNoTests`).
      What the images pack waits only for the build; the image still waits for every check, because CD runs the image
      after the whole of CI;
-   - backend, two jobs side by side: `backend-build` compiles every source set (`classes testClasses`, and
-     `gatlingClasses` when `backend/loadtest` is in the tree), `backend-check` runs `./gradlew spotlessCheck test`
-     ([0047](0047-code-format-and-dead-code-audit.md)), tests with Testcontainers (PostgreSQL and Redis).
-     What the images pack waits only for `backend-build`. `backend/gradle.properties` turns on parallel project
+   - backend, two jobs one after the other: `backend-build` compiles every source set (`classes testClasses`, and
+     `gatlingClasses` when `backend/loadtest` is in the tree) and uploads its Gradle build cache as the artifact
+     `backend-build-cache` (kept one day); `backend-check` needs `backend-build`, unpacks that cache into the Gradle
+     home and runs `./gradlew spotlessCheck test` ([0047](0047-code-format-and-dead-code-audit.md)), tests with
+     Testcontainers (PostgreSQL and Redis), so the compile tasks take their outputs from the cache and the sources
+     compile once per run. What the images pack waits only for `backend-build`. `backend/gradle.properties` turns on parallel project
      execution and the build cache: the modules' test tasks run side by side, and a module whose inputs did not
      change takes its results from the cache that pushes to `main` fill;
    - chart: `make -C deploy/k8s chart-check` (`helm lint --strict`, `helm template | kubeconform -strict` for

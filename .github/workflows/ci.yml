@@ -171,9 +171,18 @@ jobs:
           tasks=(classes testClasses)
           if [[ -d loadtest ]]; then tasks+=(gatlingClasses); fi
           ./gradlew --no-daemon "${tasks[@]}"
+      - name: Pack the build cache
+        run: tar -C "$HOME/.gradle/caches" -cf "$RUNNER_TEMP/build-cache.tar" build-cache-1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: backend-build-cache
+          path: ${{ runner.temp }}/build-cache.tar
+          retention-days: 1
+          overwrite: true
+          if-no-files-found: error
 
   backend-check:
-    needs: changes
+    needs: [changes, backend-build]
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -189,6 +198,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: backend-build-cache
+          path: ${{ runner.temp }}
+      - name: Unpack the build cache
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.gradle/caches"
+          tar -C "$HOME/.gradle/caches" -xf "$RUNNER_TEMP/build-cache.tar"
       - run: ./gradlew --no-daemon spotlessCheck test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
