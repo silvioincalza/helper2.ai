@@ -22,7 +22,7 @@ ci: ci.yml on a pull request {
   class: group
   grid-columns: 3
   frontend: "frontend/ →\nfrontend jobs" {class: app}
-  backend: "backend/apps/*, docs/eval →\nbackend jobs" {class: app}
+  backend: "backend/apps/<app> → its chain\n(main sources: both app chains)\nbackend/libs, Gradle files, api/ →\nlibs chain + both app chains" {class: app}
   chart: "deploy/helm, k8s, grafana,\nmonitoring, postgres →\nchart (+ monitoring, tag check)" {class: app}
   docs: "docs/, *.md →\ndiagrams only" {class: app}
   skip: "Part unchanged, or not\nin the tree → job skipped" {class: config}

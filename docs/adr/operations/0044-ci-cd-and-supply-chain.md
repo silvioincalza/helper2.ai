@@ -32,24 +32,38 @@ Harbor could put an image under a tag first.
      research file, `industry-events-seed.test.mjs`, [0012](../scout/0012-scout-collectors-and-events.md)), the
      check that no released migration changed (`.github/scripts/released-migrations.sh`, its self-test first,
      [0004](../foundation/0004-persistence-and-the-schema.md) §5), then the map of what the change touches (§8);
-   - frontend, the build first and the checks after it, each job with the generated API types: `frontend-build`
-     (build, `check:bundle`) runs `npm ci` and caches `frontend/node_modules` under a key of runner, Node version and
-     the hash of `package-lock.json`; with the key in the cache it skips `npm ci`. `frontend-check` (`format:check`
-     with Prettier, lint, `knip`, typecheck, `npm audit`, [0047](0047-code-format-and-dead-code-audit.md)) and
-     `frontend-test` need `frontend-build`, restore that `node_modules` and run side by side; a job that finds no
-     cache entry runs `npm ci` itself. `frontend-test` is Vitest in three jobs named after the folders they test: `search, guide`; `home, resource, pages, admin`; `lib, styles, shell, the rest`. The
-     last one runs every test the first two do not, so a new folder is tested there without a change to `ci.yml`.
-     A group whose folders hold no test passes (`--passWithNoTests`).
-     What the images pack waits only for the build; the image still waits for every check, because CD runs the image
-     after the whole of CI;
-   - backend, two jobs one after the other: `backend-build` compiles every source set (`classes testClasses`, and
-     `gatlingClasses` when `backend/loadtest` is in the tree) and uploads its Gradle build cache as the artifact
-     `backend-build-cache` (kept one day); `backend-check` needs `backend-build`, unpacks that cache into the Gradle
-     home and runs `./gradlew spotlessCheck test` ([0047](0047-code-format-and-dead-code-audit.md)), tests with
-     Testcontainers (PostgreSQL and Redis), so the compile tasks take their outputs from the cache and the sources
-     compile once per run. What the images pack waits only for `backend-build`. `backend/gradle.properties` turns on parallel project
-     execution and the build cache: the modules' test tasks run side by side, and a module whose inputs did not
-     change takes its results from the cache that pushes to `main` fill;
+   - frontend, one npm package that builds two bundles: the checks of the whole package and a chain per bundle,
+     each chain a build then a test. Every job starts with `.github/actions/frontend-setup`: Node,
+     `frontend/node_modules` from the cache under a key of runner, Node version and the hash of `package-lock.json`
+     (`npm ci` when the key is not in the cache), then the generated API types. `frontend-check` runs `format:check`
+     with Prettier, lint, `knip`, typecheck and `npm audit` ([0047](0047-code-format-and-dead-code-audit.md)).
+     `frontend-public-build` runs `vite build` and `check:bundle`, and saves `node_modules` when the lockfile is new;
+     `frontend-public-test` needs it and runs Vitest on every test outside `src/admin`, in two shards side by side.
+     `frontend-backoffice-build` runs `vite build --config vite.admin.config.ts`; `frontend-backoffice-test` needs it
+     and runs Vitest on `src/admin`. The builds do not type-check: `frontend-check` does. A new folder is tested by
+     the public chain without a change to `ci.yml`. A set that holds no test passes (`--passWithNoTests`).
+     Every frontend job runs on any change under `frontend/`: tests outside `src/admin` read the back office code
+     (`a11y.test.tsx` renders its pages, the translation and style tests read every source file,
+     `limits.contract.test.ts` imports its limits), so a change in `src/admin` runs both chains.
+     What the images pack waits only for the two builds; the image still waits for every check, because CD runs the
+     image after the whole of CI;
+   - backend, three chains, each a build then a test, each selected alone (§8): `backend-libs` (the projects under
+     `backend/libs`, the build logic, the root build files and the load test), `backend-public`
+     (`backend/apps/public`) and `backend-backoffice` (`backend/apps/backoffice`). Gradle takes the projects by
+     folder (`./gradlew -p libs`, `-p apps/public`, `-p apps/backoffice`), so a new library is in the libs chain
+     without a change to `ci.yml`. A build job runs `spotlessCheck` for its projects
+     ([0047](0047-code-format-and-dead-code-audit.md)) and compiles their source sets (`classes testClasses`; the
+     libs chain also `testFixturesClasses`, the `spotlessCheck` of the root project and of the build logic, and
+     `gatlingClasses` when `backend/loadtest` is in the tree). Then it uploads its Gradle build cache as an artifact
+     kept one day (`.github/actions/backend-build-cache`): `backend-libs-build-cache`, `backend-public-build-cache`,
+     `backend-backoffice-build-cache`. The test job of a chain unpacks the cache of its build into the Gradle home
+     (`.github/actions/backend-setup`) and runs `test` for the same projects, with Testcontainers (PostgreSQL and
+     Redis), so the compile tasks take their outputs from the cache. An app build waits for `backend-libs-build` and
+     unpacks its cache: the libraries compile once per run. When the libs chain is not selected, the app build starts
+     at once and takes the library classes from the cache that pushes to `main` fill, or compiles them. What the
+     images pack waits only for the two app builds. `backend/gradle.properties` turns on parallel project execution
+     and the build cache: the libraries' test tasks run side by side, and a project whose inputs did not change takes
+     its results from the cache that pushes to `main` fill;
    - chart: `make -C deploy/k8s chart-check` (`helm lint --strict`, `helm template | kubeconform -strict` for
      staging, prod, and prod with the off-site backup on; the self-test of `check-release.sh`, the check after a
      deploy, §3);
@@ -70,8 +84,9 @@ Harbor could put an image under a tag first.
    built and pushed, the others get the new tag on their previous digest (§10), and `make sign` signs every new digest
    (§17). The image tag is the first 12 characters of the commit, built from `git archive`. A `scan` job on a
    GitHub-hosted runner then scans the SBOMs of the images, side by side with the staging deploy (§15).
-   The images pack what CI built and tested: in a CD run the `frontend-build` job uploads `dist` and `dist-admin`, and a
-   `package` job (after `frontend-build` and `backend-build`) puts `dist-admin` into the back office resources, runs both `bootJar`
+   The images pack what CI built and tested: in a CD run `frontend-public-build` uploads `dist` and
+   `frontend-backoffice-build` uploads `dist-admin`, and a `package` job (after the two frontend builds and the two
+   app builds, with their build caches) puts `dist-admin` into the back office resources, runs both `bootJar`
    tasks and uploads the artifact `prebuilt` (the two jars and the web bundle, kept one day). The `image` job downloads
    it and runs `make ci-images PREBUILT=<dir>`: each Dockerfile takes `--build-arg BUILD=prebuilt` and copies the jar
    or the bundle in, with no Gradle or npm build on the self-hosted runner. The web image still checks what the
@@ -160,23 +175,35 @@ Harbor could put an image under a tag first.
 
 ### Per component: a change runs its own checks and builds its own images
 8. **One map of paths to components.** `.github/scripts/changes.sh` maps the changed paths, first match wins:
-   - `docs/eval/` → backend jobs (its tests read the evaluation sets) and diagrams;
+   - `docs/eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
+   - `frontend/index.html`, `frontend/src/routes.tsx`, `frontend/src/i18n/locales/en.json` → frontend jobs, the
+     public chain of the backend (its page tests read these three files), web image and back office image;
    - `frontend/` → frontend jobs, web image and back office image (the back office image builds the admin web app from
      the same package, lock file and tsconfig, so the folder is not split);
    - `deploy/web.Dockerfile`, `deploy/web/` → web image;
-   - `backend/apps/public/`, `deploy/Dockerfile` → backend jobs, public image;
-   - `backend/apps/backoffice/`, `deploy/backoffice.Dockerfile` → backend jobs, back office image;
+   - `backend/apps/public/src/main/java/`, `.../kotlin/` → both app chains, public image; the same folders of
+     `backend/apps/backoffice/` → both app chains, back office image. Tests in each app read the main sources of
+     every project (`SchemaContractTest` in the back office, `ModularityTest` and `SourceBoundariesTest` in the
+     public app), and Gradle counts those sources as inputs of both test tasks;
+   - `src/main/resources/application.yaml` of an app → the chain of that app and the libs chain (`SharedSettingsTest`
+     in `libs/platform` reads both files), the image of that app;
+   - the rest of `backend/apps/public/`, `deploy/Dockerfile` → public chain, public image;
+   - the rest of `backend/apps/backoffice/`, `deploy/backoffice.Dockerfile` → back office chain, back office image;
+   - `backend/loadtest/` → the libs chain (`backend-libs-build` compiles the Gatling simulations), no image;
+   - the rest of `backend/` (`libs/`, `build-logic/`, the Gradle files, settings, version catalog and wrapper) → the
+     three backend chains and all three images: both apps take every library;
+   - `api/` → frontend jobs, the three backend chains and all three images;
+   - `deploy/helm/helper2/files/redis-users.acl` → the three backend chains (the Redis test container mounts it) and
+     chart;
    - `docs/design/system/tokens.json` → frontend jobs (the token test reads it) and diagrams;
-   - `backend/loadtest/` → backend jobs (`backend-build` compiles the Gatling simulations), no image;
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
    - `deploy/postgres/` → the Postgres tag check and chart; `deploy/monitoring/` → monitoring and chart;
      `deploy/helm/`, `deploy/k8s/`, `deploy/grafana/` → chart only. No app image for these;
-   - anything else → everything: `api/`, `backend/libs/` (both apps take every library),
-     `backend/build-logic/`, the Gradle files, settings, version catalog and wrapper, `.github/`, `scripts/`, a new
-     folder. An unknown path runs all, never nothing.
+   - anything else → everything: `.github/`, `scripts/`, a new folder. An unknown path runs all, never nothing.
 
    A part is selected only when it is in the tree. Each part names the files it needs (`needs` in `changes.sh`):
-   `frontend/package.json`, `backend/gradlew`, `deploy/k8s/Makefile` for the chart,
+   `frontend/package.json`, `backend/gradlew` for the libs chain, `backend/gradlew` with the `build.gradle.kts` of
+   the app for each app chain, `deploy/k8s/Makefile` for the chart,
    `deploy/monitoring/helper2-rules.yaml`, `deploy/postgres/Dockerfile` with `deploy/helm/helper2/values.yaml` for
    the Postgres tag check, `docs/diagrams/render.sh`, and the Dockerfile of each image. A change to `.github/` in a
    tree with no `frontend/` runs no frontend job, and the pull request that adds `frontend/package.json` runs them,
@@ -189,7 +216,8 @@ Harbor could put an image under a tag first.
    job with the map (`.github/scripts/ci-ok.sh`, with a self-test): a job whose part is selected must succeed, and a
    job whose part is not selected must be skipped. So a selected job that failed, was cancelled or was skipped fails
    the check, and so does a job the script has no rule for. On a push (`full: true`) every part in the tree is
-   selected; `postgres-tag` is selected on pull requests only. `ci-ok` is the one check to require on `main` and `release/*`. On `main` it is required
+   selected; `postgres-tag` is selected on pull requests only. A manual run of `ci.yml` selects every part too, and
+   with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check to require on `main` and `release/*`. On `main` it is required
    by the ruleset "main: pull requests only", and a pull request must be up to date with `main` before it merges:
    two pull requests that are green alone can break `main` together.
 10. **CD per component.** The `image` job maps the push against the commit pushed before (`github.event.before`).
@@ -293,6 +321,8 @@ Harbor could put an image under a tag first.
 - `.github/workflows/ci.yml` (`changes`, the `if:` of each job, `monitoring` with `PROMETHEUS_IMAGE`, `ci-ok`),
   `cd.yml` (`image`, `scan`, `staging`, `manual`), `deploy.yml` (Resolve tag, verify, canary, deploy), `release.yml`
   (the prod deploy of a release, `publish` with the SBOMs), `image-scan.yml` (the weekly scan).
+- `.github/actions/frontend-setup`, `backend-setup`, `backend-build-cache` — the steps every frontend job and every
+  backend job share: the tools, `node_modules`, the generated API types, the build cache between the jobs of a run.
 - `.github/scripts/changes.sh` — the map of paths to components, the files each part needs, and its self-test.
 - `.github/scripts/ci-ok.sh` — the verdict of `ci-ok`: each job against the map, and its self-test.
 - `.github/scripts/branch-name.sh` — the branch prefixes a pull request may come from, and its self-test.
@@ -359,6 +389,10 @@ Harbor could put an image under a tag first.
 - A green PR has run the same checks that guard `main`; CD repeats every CI job before it builds anything.
 - A pull request that changes one part runs that part's checks; a docs change runs the diagrams only. A path the map
   does not know runs all of CI: slower, never wrong.
+- A change in one app's tests, resources or build file runs that app's chain alone. A change in an app's main
+  sources runs both app chains. A change in a library, the build logic or the contract runs all three.
+- A run of all three backend chains is three Gradle jobs deep (libs build, app build, app test), and every Gradle
+  job spends about a minute to start before its first task. The libraries compile once.
 - A web change builds the web image and the back office image; the public image is tagged, not rebuilt.
 - Pipeline and workstation run the same `Makefile` targets, so the deploy is not described twice.
 - Prod cannot get an untested image: a release is a commit of `main` that staging ran, plus its version; its images
@@ -420,6 +454,9 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 
 ### Known limits
 
+- Three tests that read every project's main sources live in the apps, so a change in one app's main sources runs the other app's chain too.
+- The frontend chains are selected together: tests outside `src/admin` read the back office code.
+- `package` runs on a push and on a manual full run, not on a pull request.
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI.
 - A deploy that is not healthy after the upgrade is rolled back by itself, but the schema is not: the new release's migrations stay. The older code must work on the newer schema, as in every rolling upgrade; no test checks it (the previous release's schema contract against the new migrations). A migration that drops or renames what the older code uses needs two releases (add, then remove), or the rollback ends in `ROLLBACK FAILED` or in an older app with errors. Until the first release tag, a rollback across an edit of `V1__schema.sql` does not pass: the older release holds another V1, and Flyway refuses it. What the new release wrote between the upgrade and the rollback stays. The check sees the public host only, not the admin host.
 - The scanner versions (Syft, Grype in `.github/actions/install-scanners`), cosign and the Prometheus image of the `monitoring` job are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback.

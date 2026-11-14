@@ -29,7 +29,8 @@ builds no image, so a new npm package with a known vulnerability would be found 
    file that is not formatted. Generated OpenAPI code lives in `build/` and is not formatted.
 3. **Versions** are pinned in the build files: Spotless 8.11.0, google-java-format 2.0.0, ktfmt 0.64. Each is the
    latest release that works with the others, chosen with the owner.
-4. **CI for the backend:** the `backend-check` job in `ci.yml` runs `spotlessCheck` before the tests. An unformatted file
+4. **CI for the backend:** each backend build job in `ci.yml` (`backend-libs-build`, `backend-public-build`,
+   `backend-backoffice-build`) runs `spotlessCheck` for its projects before it compiles them. An unformatted file
    fails the pull request.
 5. **Frontend: Prettier**, from `frontend/package.json`. Config in `frontend/.prettierrc.json`: 100 columns like the
    backend, single quotes and trailing commas. `npm run format` rewrites the files, `npm run format:check` fails on
@@ -63,7 +64,8 @@ builds no image, so a new npm package with a known vulnerability would be found 
     High or Critical advisory in a package the browser gets. A second, full `npm audit` lists the build and test tools
     too, as a report only (`continue-on-error`): they never reach a user.
 13. **CI order in the frontend jobs:** `frontend-check` runs `format:check`, lint, `knip`, typecheck, then the two
-    audits; `frontend-build` runs the build and the bundle check, and `frontend-test` the tests, side by side with it.
+    audits; beside it, a chain per bundle runs the build and then the tests (`frontend-public-build` with the bundle
+    check, `frontend-backoffice-build`, and the test job of each).
 
 No runtime path: these decisions run in the build and in CI only, so there is no sequence diagram.
 
@@ -74,7 +76,7 @@ No runtime path: these decisions run in the build and in CI only, so there is no
 - `frontend/package.json` (`format`, `format:check`, `knip`, `preknip`), `frontend/.prettierrc.json`,
   `frontend/.prettierignore`, `frontend/eslint.config.js` — Prettier, its place next to ESLint, and the two knip runs.
 - `frontend/knip.json` — entries, project files, the issue types.
-- `.github/workflows/ci.yml` (`backend-check`, `frontend-check`) — the `spotlessCheck`, `format:check` and knip steps and the two
+- `.github/workflows/ci.yml` (the three backend build jobs, `frontend-check`) — the `spotlessCheck`, `format:check` and knip steps and the two
   `npm audit` steps.
 - `.editorconfig`, `.idea/codeStyles/Project.xml` — the editor settings.
 

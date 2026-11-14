@@ -41,7 +41,7 @@ classify() {
     backend/apps/public/* | deploy/Dockerfile) echo "backend-public public" ;;
     backend/apps/backoffice/* | deploy/backoffice.Dockerfile) echo "backend-backoffice backoffice" ;;
     backend/loadtest/*) echo "backend-libs" ;;
-    backend/*) echo "$BACKEND public backoffice" ;;
+    backend/*) echo "$BACKEND web public backoffice" ;;
     api/*) echo "frontend $BACKEND web public backoffice" ;;
     deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND chart" ;;
     docs/design/system/tokens.json) echo "frontend diagrams" ;;
@@ -148,18 +148,18 @@ backend/apps/backoffice/build.gradle.kts|backend-backoffice backoffice
 deploy/backoffice.Dockerfile|backend-backoffice backoffice
 backend/loadtest/src/gatling/java/ai/helper2/load/SearchSimulation.java|backend-libs
 backend/loadtest/build.gradle.kts|backend-libs
-backend/libs/core/src/main/kotlin/X.kt|BACKEND public backoffice
-backend/libs/core/src/test/kotlin/XTest.kt|BACKEND public backoffice
-backend/libs/core/build.gradle.kts|BACKEND public backoffice
-backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|BACKEND public backoffice
-backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|BACKEND public backoffice
-backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|BACKEND public backoffice
-backend/gradle/libs.versions.toml|BACKEND public backoffice
-backend/gradle/wrapper/gradle-wrapper.properties|BACKEND public backoffice
-backend/settings.gradle.kts|BACKEND public backoffice
-backend/build.gradle.kts|BACKEND public backoffice
-backend/gradlew|BACKEND public backoffice
-backend/README.md|BACKEND public backoffice
+backend/libs/core/src/main/kotlin/X.kt|BACKEND web public backoffice
+backend/libs/core/src/test/kotlin/XTest.kt|BACKEND web public backoffice
+backend/libs/core/build.gradle.kts|BACKEND web public backoffice
+backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|BACKEND web public backoffice
+backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|BACKEND web public backoffice
+backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|BACKEND web public backoffice
+backend/gradle/libs.versions.toml|BACKEND web public backoffice
+backend/gradle/wrapper/gradle-wrapper.properties|BACKEND web public backoffice
+backend/settings.gradle.kts|BACKEND web public backoffice
+backend/build.gradle.kts|BACKEND web public backoffice
+backend/gradlew|BACKEND web public backoffice
+backend/README.md|BACKEND web public backoffice
 api/public.yaml|frontend BACKEND web public backoffice
 api/admin.yaml|frontend BACKEND web public backoffice
 api/common.yaml|frontend BACKEND web public backoffice
