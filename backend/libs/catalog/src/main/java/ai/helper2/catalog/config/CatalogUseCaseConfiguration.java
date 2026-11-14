@@ -2,6 +2,7 @@ package ai.helper2.catalog.config;
 
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.Resources;
+import ai.helper2.catalog.usecase.ListIndexableResources;
 import ai.helper2.search.DescribedSource;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
@@ -13,5 +14,10 @@ class CatalogUseCaseConfiguration {
   @Bean
   ResourceCards resourceCards(Resources resources, List<DescribedSource> sources) {
     return new ResourceCards(resources, sources);
+  }
+
+  @Bean
+  ListIndexableResources listIndexableResources(Resources resources) {
+    return new ListIndexableResources(resources);
   }
 }

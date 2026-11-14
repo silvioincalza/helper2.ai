@@ -132,6 +132,17 @@ resilience4j:
         wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
         permitted-number-of-calls-in-half-open-state: 2
     instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-live-web:
+        base-config: source
+        slow-call-duration-threshold: 5s
+      source-helper2-index: {base-config: source}
+      source-helper2-semantic: {base-config: source}
+      source-curated: {base-config: source}
       collector-hf-trending: {base-config: collector}
       collector-live-web-scout: {base-config: collector}
       collector-course-scout: {base-config: collector}
@@ -173,6 +184,15 @@ resilience4j:
         max-concurrent-calls: ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:3}
         max-wait-duration: 0
     instances:
+      source-github: {base-config: source}
+      source-hf-models: {base-config: source}
+      source-hf-spaces: {base-config: source}
+      source-npm: {base-config: source}
+      source-arxiv: {base-config: source}
+      source-live-web: {base-config: source}
+      source-helper2-index: {base-config: catalog}
+      source-helper2-semantic: {base-config: catalog}
+      source-curated: {base-config: catalog}
       db-cache:
         max-concurrent-calls: ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}
         max-wait-duration: 0
@@ -590,6 +610,24 @@ helper2:
     reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
     fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}
 ---
+spring:
+  config:
+    activate:
+      on-profile: demo
+resilience4j:
+  circuitbreaker:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+  bulkhead:
+    instances:
+      source-demo-catalog: {base-config: source}
+      source-demo-mirror: {base-config: source}
+      source-demo-slow: {base-config: source}
+      source-demo-down: {base-config: source}
+---
 helper2:
   retention:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
@@ -616,6 +654,8 @@ helper2:
           search: ${H2_LIVE_WEB_GUEST_SEARCH:3}
           guide: ${H2_LIVE_WEB_GUEST_GUIDE:3}
         global-daily-credits: ${H2_LIVE_WEB_DAILY_CREDITS:}
+  retention:
+    live-web-results: ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}
 ---
 helper2:
   feeds:
