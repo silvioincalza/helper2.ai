@@ -457,8 +457,9 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 
 ### Known limits
 
-- Three tests that read every project's main sources live in the apps, so a change in one app's main sources runs the other app's chain too.
-- The frontend chains are selected together: tests outside `src/admin` read the back office code.
+- Three tests that read every project's main sources live in the apps, so a change in one app's main sources runs the other app's chain too (S10.2.11).
+- The frontend chains are selected together: tests outside `src/admin` read the back office code (S10.2.12).
+- Every Gradle job spends 30 to 90 seconds before its first project task (S10.2.8). The `chart` job spends 163 of its 169 seconds in the waits of a self-test (S10.2.4).
 - `package` runs on a push and on a manual full run, not on a pull request.
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI.
 - A deploy that is not healthy after the upgrade is rolled back by itself, but the schema is not: the new release's migrations stay. The older code must work on the newer schema, as in every rolling upgrade; no test checks it (the previous release's schema contract against the new migrations). A migration that drops or renames what the older code uses needs two releases (add, then remove), or the rollback ends in `ROLLBACK FAILED` or in an older app with errors. Until the first release tag, a rollback across an edit of `V1__schema.sql` does not pass: the older release holds another V1, and Flyway refuses it. What the new release wrote between the upgrade and the rollback stays. The check sees the public host only, not the admin host.
@@ -484,3 +485,12 @@ The supply-chain checks run in CI only, with no runtime path, so they have no se
 - Open issues that change this decision:
   - [#355](https://github.com/silvioincalza/helper2.ai/issues/355) S10.10.1 The deployer token minted per deploy
   - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
+  - [#412](https://github.com/silvioincalza/helper2.ai/issues/412) S10.2.4 The chart check without the waits of its self-test
+  - [#413](https://github.com/silvioincalza/helper2.ai/issues/413) S10.2.5 The Actions caches of the repository under their limit
+  - [#414](https://github.com/silvioincalza/helper2.ai/issues/414) S10.2.6 The report-only npm audit out of the frontend checks
+  - [#415](https://github.com/silvioincalza/helper2.ai/issues/415) S10.2.7 The Prometheus rule tests in less than a minute
+  - [#416](https://github.com/silvioincalza/helper2.ai/issues/416) S10.2.8 A Gradle job reaches its first task in seconds
+  - [#417](https://github.com/silvioincalza/helper2.ai/issues/417) S10.2.9 The library tests declare the evaluation sets they read
+  - [#418](https://github.com/silvioincalza/helper2.ai/issues/418) S10.2.10 A backend change does not rebuild the web image
+  - [#419](https://github.com/silvioincalza/helper2.ai/issues/419) S10.2.11 The tests that read every backend project in a place of their own
+  - [#420](https://github.com/silvioincalza/helper2.ai/issues/420) S10.2.12 The frontend tests of the whole package apart from the bundle tests
