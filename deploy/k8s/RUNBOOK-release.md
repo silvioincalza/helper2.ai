@@ -219,11 +219,16 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 `v2026.11.3` is the first release of this repository
 ([S10.7.1](https://github.com/silvioincalza/helper2.ai/issues/352)). What is special about it:
 
-- **Prod keeps its data.** Prod runs `2026.11.2`, and its database ran the `V1__schema.sql` and the three seeds this
-  repository holds, byte for byte. The migrate Job finds nothing to run. The catalog and its embeddings, accounts,
-  saved items, reports, review decisions, the audit trail and the runtime settings stay as they are.
-- **This holds only while `V1__schema.sql` is not edited.** Until the first tag CI lets it change (section 6,
-  point 6). Prove it before step 3: prod and staging must print the same checksum for version 1.
+- **Prod does not keep its data.** Prod runs `2026.11.2`, and its database ran an earlier `V1__schema.sql`: the one
+  of this repository has two indexes fewer (`resource_updated_idx`, `resource_label_value_idx`). Flyway refuses the
+  new file on prod's database, and no step brings that database to it
+  ([ADR 0004](../../docs/adr/foundation/0004-persistence-and-the-schema.md) §5). So check 5 says stop, unless prod's
+  database is created again, empty, before the release. Then the migrate Job creates the schema and runs the three
+  seeds. The catalog and its embeddings come back as the Scout runs. Accounts, saved items, reports, review
+  decisions, the audit trail and the runtime settings do not: they are gone.
+- **Staging is in the same state.** Its database ran the earlier V1 too. Its `cd` deploy fails at the migrate Job,
+  and Helm goes back to the release before, until its database is created again, empty. This prints the checksum
+  each database holds for version 1:
 
   ```bash
   for ns in helper2-prod helper2-staging; do
@@ -232,12 +237,12 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
   done
   ```
 
-  When they differ, stop: check 5 applies, the release cannot migrate prod.
-- **A normal release, with the canary.** No migration, so no window. `make diff` in the run shows what changes
-  beside the three images and the chart version: the image of the off-site upload in the backup CronJob.
+- **Not a normal release.** Prod is down while its database is created again, so the release needs a maintenance
+  window. This runbook has no steps for that yet. `make diff` in the run shows what changes beside the three images
+  and the chart version: the image of the off-site upload in the backup CronJob.
 - **No new `app.env` key** is expected; check 6 proves it.
 - **The way back is Helm's revision of `2026.11.2`** (section 5, way 1). This repository has no tag `v2026.11.2`,
   so ways 2 and 3 cannot name that release.
-- **It cannot start yet.** `release-prepare` and `release` do not know a first release with this number. Until
-  S10.7.1 closes that, do not run `release-prepare`: it would cut `release/2026.1`, and a release branch is never
-  deleted.
+- **It cannot start yet.** `release-prepare` and `release` do not know a first release with this number, and the
+  steps that create prod's database again are not written. Until S10.7.1 closes both, do not run `release-prepare`:
+  it would cut `release/2026.1`, and a release branch is never deleted.
