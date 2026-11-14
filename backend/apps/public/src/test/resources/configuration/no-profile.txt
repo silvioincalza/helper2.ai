@@ -689,6 +689,24 @@ helper2.search.web.fresh-time-bound = ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}  =>  
 helper2.search.web.quota.global-daily-credits = ${H2_LIVE_WEB_DAILY_CREDITS:}  =>  <empty>
 helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:3}  =>  3
 helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:3}  =>  3
+helper2.setup.cache-ttl = ${H2_SETUP_CACHE_TTL:PT1H}  =>  PT1H
+helper2.setup.document-cache = ${H2_SETUP_DOCUMENT_CACHE_MB:32}  =>  32
+helper2.setup.document-timeout = ${H2_SETUP_DOCUMENT_TIMEOUT:10s}  =>  10s
+helper2.setup.github-token = ${H2_SETUP_GITHUB_TOKEN:}  =>  <empty>
+helper2.setup.guide.cache-ttl = ${H2_SETUP_GUIDE_CACHE_TTL:P7D}  =>  P7D
+helper2.setup.guide.client-daily-guides = ${H2_SETUP_GUIDE_CLIENT_DAILY:20}  =>  20
+helper2.setup.guide.daily-model-calls = ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:500}  =>  500
+helper2.setup.guide.network-daily-guides = ${H2_SETUP_GUIDE_NETWORK_DAILY:200}  =>  200
+helper2.setup.guide.reasoning = ${H2_SETUP_GUIDE_REASONING:false}  =>  false
+helper2.setup.guide.step-text = ${H2_SETUP_GUIDE_STEP_TEXT:VERIFIED}  =>  VERIFIED
+helper2.setup.guide.unreadable-ttl = ${H2_SETUP_UNREADABLE_TTL:PT10M}  =>  PT10M
+helper2.setup.hosts.github = ${helper2.sources.github.base-url}  =>  https://api.github.com
+helper2.setup.hosts.hf-token = ${helper2.sources.huggingface.token}  =>  <empty>
+helper2.setup.hosts.huggingface = ${helper2.sources.huggingface.base-url}  =>  https://huggingface.co
+helper2.setup.hourly-fetches = ${H2_SETUP_HOURLY_FETCHES:1000}  =>  1000
+helper2.setup.mcp-registry.base-url = ${helper2.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
+helper2.setup.mcp-registry.timeout = ${helper2.sources.mcp-registry.timeout}  =>  10s
+helper2.setup.npm-readme-base-url = ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}  =>  https://cdn.jsdelivr.net
 helper2.sources.ai-deadlines.base-url = https://api.github.com
 helper2.sources.ai-deadlines.cache-ttl = 30m
 helper2.sources.ai-deadlines.deadline = ${H2_SOURCE_AI_DEADLINES_DEADLINE:}  =>  <empty>
@@ -827,6 +845,8 @@ resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${H2_RESILIENCE_
 resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
 resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${H2_GUIDE_MAX_CONCURRENT:8}  =>  8
 resilience4j.bulkhead.instances.guide.max-wait-duration = 0
+resilience4j.bulkhead.instances.setup-guide.max-concurrent-calls = ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}  =>  2
+resilience4j.bulkhead.instances.setup-guide.max-wait-duration = 0
 resilience4j.bulkhead.instances.source-arxiv.base-config = source
 resilience4j.bulkhead.instances.source-curated.base-config = catalog
 resilience4j.bulkhead.instances.source-github.base-config = source

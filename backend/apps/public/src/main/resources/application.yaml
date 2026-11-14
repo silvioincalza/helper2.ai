@@ -20,6 +20,11 @@ resilience4j:
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
         slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}
         slow-call-rate-threshold: 50
+  bulkhead:
+    instances:
+      setup-guide:
+        max-concurrent-calls: ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}
+        max-wait-duration: 0
 helper2:
   guide:
     thinking:
@@ -51,3 +56,25 @@ helper2:
     statement-timeouts:
       h2_public: 5s
       h2_backoffice: 60s
+  setup:
+    document-timeout: ${H2_SETUP_DOCUMENT_TIMEOUT:10s}
+    npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
+    cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
+    document-cache: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
+    hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
+    github-token: ${H2_SETUP_GITHUB_TOKEN:}
+    hosts:
+      github: ${helper2.sources.github.base-url}
+      huggingface: ${helper2.sources.huggingface.base-url}
+      hf-token: ${helper2.sources.huggingface.token}
+    mcp-registry:
+      base-url: ${helper2.sources.mcp-registry.base-url}
+      timeout: ${helper2.sources.mcp-registry.timeout}
+    guide:
+      daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:500}
+      client-daily-guides: ${H2_SETUP_GUIDE_CLIENT_DAILY:20}
+      network-daily-guides: ${H2_SETUP_GUIDE_NETWORK_DAILY:200}
+      reasoning: ${H2_SETUP_GUIDE_REASONING:false}
+      cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
+      unreadable-ttl: ${H2_SETUP_UNREADABLE_TTL:PT10M}
+      step-text: ${H2_SETUP_GUIDE_STEP_TEXT:VERIFIED}
