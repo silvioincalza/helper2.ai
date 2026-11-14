@@ -1,0 +1,209 @@
+package ai.helper2.sources.config.scout;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import ai.helper2.sources.config.CollectorProperties;
+import ai.helper2.testing.ConfigBinding;
+import java.time.Duration;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.util.unit.DataSize;
+
+class CollectorPropertiesTest {
+
+  @Configuration(proxyBeanMethods = false)
+  @EnableConfigurationProperties({
+    CollectorProperties.HfTrending.class,
+    CollectorProperties.LiveWebScout.class,
+    CollectorProperties.Courses.class,
+    CollectorProperties.ScoutCredits.class,
+    CollectorProperties.Discovery.class,
+    CollectorProperties.GitHubAwesome.class,
+    CollectorProperties.HfProviderOrgs.class,
+    CollectorProperties.AiDeadlines.class,
+    CollectorProperties.McpRegistry.class
+  })
+  static class Binding {}
+
+  final ApplicationContextRunner context = ConfigBinding.of(Binding.class);
+
+  @Test
+  void theYamlDefaultsBind() {
+    context.run(c -> {
+      assertThat(c).hasNotFailed();
+      CollectorProperties.Discovery discovery = c.getBean(CollectorProperties.Discovery.class);
+      assertThat(discovery.interval()).isEqualTo(Duration.ofDays(7));
+      assertThat(discovery.searchDepth()).isEqualTo("advanced");
+      assertThat(discovery.maxResults()).isEqualTo(10);
+      assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits()).isEqualTo(40);
+      assertThat(discovery.excludeDomains()).contains("producthunt.com", "alternativeto.net");
+      assertThat(c.getBean(CollectorProperties.HfTrending.class))
+          .isEqualTo(new CollectorProperties.HfTrending(Duration.ofDays(1)));
+      assertThat(c.getBean(CollectorProperties.LiveWebScout.class))
+          .isEqualTo(
+              new CollectorProperties.LiveWebScout(
+                  Duration.ofDays(5),
+                  List.of(
+                      "new AI tool launched",
+                      "new open-source LLM released",
+                      "new MCP server released",
+                      "new AI agent framework released",
+                      "new model released OpenAI Anthropic Google Gemini",
+                      "new model released xAI Grok Meta Llama Mistral",
+                      "new model released NVIDIA Nemotron DeepSeek Qwen")));
+      CollectorProperties.Courses courses = c.getBean(CollectorProperties.Courses.class);
+      assertThat(courses.interval()).isEqualTo(Duration.ofDays(7));
+      assertThat(courses.query()).isEqualTo("new artificial intelligence course or certification");
+      assertThat(courses.platforms())
+          .hasSize(10)
+          .startsWith("coursera.org=Coursera", "oreilly.com=O'Reilly")
+          .endsWith("nvidia.com=NVIDIA");
+      CollectorProperties.GitHubAwesome awesome =
+          c.getBean(CollectorProperties.GitHubAwesome.class);
+      assertThat(awesome)
+          .usingRecursiveComparison()
+          .ignoringFields("maxRunTime", "maxReadmeBytesPerRun", "nested", "links")
+          .isEqualTo(
+              new CollectorProperties.GitHubAwesome(
+                  Duration.ofDays(1),
+                  List.of(
+                      "topic:awesome-list topic:llm",
+                      "topic:awesome topic:llm",
+                      "topic:awesome-list topic:artificial-intelligence",
+                      "topic:awesome-list topic:ai-agents",
+                      "topic:awesome topic:mcp",
+                      "topic:awesome topic:generative-ai"),
+                  10,
+                  1000,
+                  1000,
+                  1000,
+                  50,
+                  25,
+                  8192,
+                  300,
+                  null,
+                  null,
+                  null,
+                  null));
+      assertThat(awesome.maxRunTime()).isEqualTo(Duration.ofMinutes(15));
+      assertThat(awesome.maxReadmeBytesPerRun()).isEqualTo(DataSize.ofMegabytes(50));
+      assertThat(awesome.nested()).isEqualTo(new CollectorProperties.GitHubAwesome.Nested(2, 30));
+      assertThat(awesome.links().perDay()).isEqualTo(50);
+      assertThat(awesome.links().maxPerPass()).isEqualTo(500);
+      assertThat(awesome.links().excludeDomains()).contains("arxiv.org", "discord.gg");
+      assertThat(c.getBean(CollectorProperties.HfProviderOrgs.class))
+          .isEqualTo(
+              new CollectorProperties.HfProviderOrgs(
+                  Duration.ofDays(1),
+                  List.of(
+                      "meta-llama",
+                      "nvidia",
+                      "mistralai",
+                      "deepseek-ai",
+                      "Qwen",
+                      "google",
+                      "openai",
+                      "xai-org",
+                      "microsoft",
+                      "amazon",
+                      "ibm-granite",
+                      "CohereLabs",
+                      "facebook",
+                      "zai-org",
+                      "moonshotai",
+                      "MiniMaxAI",
+                      "baidu",
+                      "tencent",
+                      "ByteDance-Seed",
+                      "stepfun-ai",
+                      "internlm",
+                      "openbmb",
+                      "inclusionAI",
+                      "XiaomiMiMo",
+                      "allenai",
+                      "swiss-ai",
+                      "LiquidAI",
+                      "LGAI-EXAONE",
+                      "upstage",
+                      "BAAI",
+                      "jinaai",
+                      "stabilityai",
+                      "black-forest-labs",
+                      "Lightricks",
+                      "Wan-AI",
+                      "kyutai"),
+                  20));
+      assertThat(c.getBean(CollectorProperties.AiDeadlines.class).interval())
+          .isEqualTo(Duration.ofDays(1));
+      assertThat(c.getBean(CollectorProperties.McpRegistry.class).interval())
+          .isEqualTo(Duration.ofHours(1));
+    });
+  }
+
+  @Test
+  void anH2VariableReachesItsField() {
+    context
+        .withSystemProperties(
+            "H2_SCOUT_AWESOME_PER_RUN=50",
+            "H2_SCOUT_MCP_INTERVAL=PT2H",
+            "H2_SCOUT_AWESOME_NESTED_LISTS=5",
+            "H2_SCOUT_AWESOME_LINKS_PER_DAY=0")
+        .run(c -> {
+          CollectorProperties.GitHubAwesome awesome =
+              c.getBean(CollectorProperties.GitHubAwesome.class);
+          assertThat(awesome.maxEntriesPerRun()).isEqualTo(50);
+          assertThat(awesome.nested().maxListsPerRun()).isEqualTo(5);
+          assertThat(awesome.links().perDay()).isZero();
+          assertThat(c.getBean(CollectorProperties.McpRegistry.class).interval())
+              .isEqualTo(Duration.ofHours(2));
+        });
+  }
+
+  @Test
+  void foldedListsAreTrimmedAndBlankEntriesDropped() {
+    context
+        .withPropertyValues(
+            "helper2.scout.live-web.queries=new AI tool launched,\n  new MCP server released, ,",
+            "helper2.scout.courses.platforms= edx.org=edX , coursera.org=Coursera")
+        .run(c -> {
+          assertThat(c.getBean(CollectorProperties.LiveWebScout.class).queries())
+              .containsExactly("new AI tool launched", "new MCP server released");
+          assertThat(c.getBean(CollectorProperties.Courses.class).platforms())
+              .containsExactly("edx.org=edX", "coursera.org=Coursera");
+        });
+  }
+
+  @Test
+  void anInvalidValueStopsStartupAndNamesTheProperty() {
+    context
+        .withPropertyValues("helper2.scout.github-awesome.max-lists=0")
+        .run(c -> {
+          assertThat(c).hasFailed();
+          assertThat(c.getStartupFailure())
+              .rootCause()
+              .isInstanceOf(BindValidationException.class)
+              .hasMessageContaining("helper2.scout.github-awesome.maxLists");
+        });
+  }
+
+  @Test
+  void aNegativeIntervalStopsStartup() {
+    context.withSystemProperties("H2_SCOUT_MCP_INTERVAL=-PT1H").run(c -> assertThat(c).hasFailed());
+  }
+
+  @Test
+  void anEmptyIntervalStopsStartup() {
+    context
+        .withPropertyValues("H2_SCOUT_HF_INTERVAL=")
+        .run(c -> {
+          assertThat(c).hasFailed();
+          assertThat(c.getStartupFailure())
+              .rootCause()
+              .hasMessageContaining("helper2.scout.hf-trending.interval");
+        });
+  }
+}
