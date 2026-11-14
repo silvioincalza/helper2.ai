@@ -50,6 +50,24 @@ uc.compute -> parts.budget
 uc.compute -> parts.credits
 uc.compute -> parts.examples
 
+start: "The back office starts" {class: end}
+
+grafana: "OverviewController.grafanaLink" {
+  class: group
+  direction: down
+  set: "H2_ADMIN_GRAFANA_URL set?" {class: decision}
+  none: "No link in the overview" {class: end}
+  plain: "An http(s) URL with a host\nand a path only: no user info,\nno query, no fragment?" {class: decision}
+  kept: "The link every overview carries" {class: end}
+  refused: "The app does not start; the refusal\nnames the variable, never its value" {class: fail}
+  set -> none: no
+  set -> plain: yes
+  plain -> kept: yes {class: hot}
+  plain -> refused: "no, or it does not parse"
+}
+
+start -> grafana.set
+
 queue_req: "GET /api/v1/admin/enrichment-queue\n(view, after = cursor)" {class: end}
 
 queue: ListEnrichmentQueue {
