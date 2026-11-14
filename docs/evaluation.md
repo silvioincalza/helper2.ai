@@ -84,8 +84,12 @@ Open work: [S10.4.2](https://github.com/silvioincalza/helper2.ai/issues/348) (th
 
 ## The guide run
 
-No run is recorded in this repository yet: the first one is made after the release 2026.11.3. A run reports the
-figures of "Metrics" above, per question and in total, in `docs/eval/guide-run.md`.
+The latest run of the core questions is in [eval/guide-run.md](eval/guide-run.md), the latest run of the hostile
+questions in [evaluation-adversarial.md](evaluation-adversarial.md). Each header states the date, the address and the
+models; the commit and what a number does not show are in the notes of `guide-run.md`. A run reports the figures of
+"Metrics" above, per question and in total. The picks are not graded yet, so P@3 and nDCG@3 are empty
+([S10.4.3](https://github.com/silvioincalza/helper2.ai/issues/349)). The clean baseline below (51 questions, three
+runs) and the intent cases are not run yet.
 
 ### How to run
 
