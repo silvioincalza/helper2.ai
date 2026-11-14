@@ -147,6 +147,9 @@ Run the relevant tests before calling a change done.
   `<folder>` is the branch name with every `/` replaced by `-` (`fix/review-findings` →
   `fix-review-findings`), so every worktree sits directly under `.claude/worktrees/`.
   The main checkout stays on `main` and clean: no session edits or switches branches there.
+- A branch is named `<prefix>/<short-name>`, lower-case prefix, with one of: `feature/`, `fix/`, `docs/`, `chore/`,
+  `ci/`, `refactor/`, `test/`, `release/` (a release line, `release/YYYY.N`), `replay/` (a replay pull request).
+  CI fails a pull request from a branch with another prefix (`.github/scripts/branch-name.sh`).
 - Do not use `git stash` in a worktree: the stash list is shared by every worktree of the repo, so another
   session can pop your changes. Set work aside with a temporary commit instead.
 - A branch that needs another unmerged branch is stacked on it. Say so in the PR description:
