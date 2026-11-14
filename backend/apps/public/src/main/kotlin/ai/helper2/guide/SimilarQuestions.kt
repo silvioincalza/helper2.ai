@@ -31,11 +31,43 @@ data class ReadingKey(
         )
         .joinToString("|")
 
-  private fun loose(name: String) = name.lowercase().replace(LOOSE, " ").trim()
+  private fun loose(name: String) = looseName(name)
+}
 
-  private companion object {
-    val LOOSE = Regex("[\\s_\\-]+")
-  }
+private val LOOSE = Regex("[\\s_\\-]+")
+
+private fun looseName(name: String) = name.lowercase().replace(LOOSE, " ").trim()
+
+private class OwnSpelling(words: List<String>) {
+  private val byLooseName = words.associateBy(::looseName)
+
+  fun hasEvery(names: List<String>) = names.all { looseName(it) in byLooseName }
+
+  fun of(name: String) = byLooseName.getValue(looseName(name))
+}
+
+fun GuideAnswer.inTheWordsOf(subjects: List<String>, constraints: List<String>): GuideAnswer? {
+  val subject = OwnSpelling(subjects)
+  val constraint = OwnSpelling(constraints)
+  val names =
+    this.subjects +
+      notices.mapNotNull { it.subject } +
+      comparison?.subjects.orEmpty().map { it.name }
+  val requirements = this.constraints + recommendations.flatMap { it.checks }.map { it.constraint }
+  if (!subject.hasEvery(names) || !constraint.hasEvery(requirements)) return null
+  return copy(
+    subjects = this.subjects.map(subject::of),
+    constraints = this.constraints.map(constraint::of),
+    notices = notices.map { it.copy(subject = it.subject?.let(subject::of)) },
+    recommendations =
+      recommendations.map { pick ->
+        pick.copy(checks = pick.checks.map { it.copy(constraint = constraint.of(it.constraint)) })
+      },
+    comparison =
+      comparison?.let { compared ->
+        compared.copy(subjects = compared.subjects.map { it.copy(name = subject.of(it.name)) })
+      },
+  )
 }
 
 fun interface QuestionEmbedder {

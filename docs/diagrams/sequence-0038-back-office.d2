@@ -25,7 +25,7 @@ overview: Overview {
   spa -> api: "GET /api/v1/admin/overview"
   api -> db: "open items per kind, backlog count,\nlast runs, every home example"
   api -> redis: "today's count of each budget,\nweb credits"
-  api -> spa: "counts, counted at T\n(kept one minute)"
+  api -> spa: "counts, counted at T (kept one minute),\nand the Grafana link checked at startup:\nhost and path only, or null"
   spa -> owner: "12 User report · 420 waiting ·\nEnrichment 120 of 500"
 }
 
