@@ -68,7 +68,7 @@
     "title": "The metasearch for the AI universe.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. Ask the guide for a pick with proof.",
     "hint": "Enter searches. Shift+Enter asks the guide for picks with proof.",
-    "hintTouch": "Search, or tap Ask for picks with proof.",
+    "hintTouch": "Tap the star for picks with proof.",
     "examples": "Try:",
     "exampleAi": "Drafted with AI, checked by a person",
     "exampleAiMark": "AI draft",
@@ -726,7 +726,6 @@
   },
   "guide": {
     "ask": "Ask the guide",
-    "askShort": "Ask",
     "filtersChanged": "Filters changed since you asked.",
     "askAgain": "Ask again",
     "askTitle": "Ask the guide (⇧↵)",
