@@ -30,6 +30,7 @@ private val springOptions =
     "containerDefaultToNull" to "false",
     "generateJsonIncludeAnnotations" to "false",
     "generateJsonSetterNullsAnnotations" to "false",
+    "hideGenerationTimestamp" to "true",
   )
 
 fun GenerateTask.springContract(spec: File, output: File, apiPackage: String) {
