@@ -1,5 +1,7 @@
 package ai.helper2.catalog.web;
 
+import ai.helper2.api.AiContentMarking;
+import ai.helper2.api.common.model.AiContentMarkerDto;
 import ai.helper2.api.common.model.ValueOriginDto;
 import ai.helper2.api.common.model.VerificationDto;
 import ai.helper2.api.generated.ResourceDetailApi;
@@ -13,10 +15,14 @@ import ai.helper2.api.generated.model.SummaryClaimDto;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.platform.NotFoundException;
+import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,10 +32,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class ResourceDetailController implements ResourceDetailApi {
 
-  private final GetResourceDetail details;
+  static final String ASSERTION_VALUE = "value";
+  static final List<String> RELATIONSHIP_FIELDS = List.of("kind", "targetTitle");
+  static final String SUMMARY_CLAIMS = "summary.claims[].text";
 
-  ResourceDetailController(GetResourceDetail details) {
+  static final List<String> AI_WRITTEN_FIELDS =
+      Stream.of(
+              CardMapper.AI_WRITTEN_FIELDS.stream().map(field -> "card." + field),
+              Stream.of("assertions[]." + ASSERTION_VALUE),
+              RELATIONSHIP_FIELDS.stream().map(field -> "relationships[]." + field),
+              Stream.of(SUMMARY_CLAIMS))
+          .flatMap(fields -> fields)
+          .toList();
+
+  private final GetResourceDetail details;
+  private final String provider;
+
+  ResourceDetailController(GetResourceDetail details, LlmSettings llm) {
     this.details = details;
+    this.provider = llm.provider();
   }
 
   @Override
@@ -87,8 +108,38 @@ class ResourceDetailController implements ResourceDetailApi {
                             s.fingerprint()))
                     .toList())
             .enrichmentStatus(
-                ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()));
+                ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()))
+            .aiContent(aiContent(d, provider));
     return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(dto);
+  }
+
+  static @Nullable AiContentMarkerDto aiContent(ResourceDetail d, String provider) {
+    List<String> fields = new ArrayList<>();
+    List<@Nullable String> models = new ArrayList<>();
+    CardMapper.aiWrittenFields(d.card()).forEach(field -> fields.add("card." + field));
+    fields.addAll(
+        AiContentMarking.inEachItem(
+            "assertions",
+            d.assertions().stream()
+                .map(a -> a.origin().isFromAModel() ? List.of(ASSERTION_VALUE) : List.<String>of())
+                .toList()));
+    fields.addAll(
+        AiContentMarking.inEachItem(
+            "relationships",
+            d.relationships().stream()
+                .map(r -> r.origin().isFromAModel() ? RELATIONSHIP_FIELDS : List.<String>of())
+                .toList()));
+    d.assertions().stream()
+        .filter(a -> a.origin().isFromAModel())
+        .forEach(a -> models.add(a.model()));
+    d.relationships().stream()
+        .filter(r -> r.origin().isFromAModel())
+        .forEach(r -> models.add(r.model()));
+    if (d.summary() != null && !d.summary().claims().isEmpty()) {
+      fields.add(SUMMARY_CLAIMS);
+      models.add(d.summary().model());
+    }
+    return AiContentMarking.marker(provider, models, fields);
   }
 
   private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {

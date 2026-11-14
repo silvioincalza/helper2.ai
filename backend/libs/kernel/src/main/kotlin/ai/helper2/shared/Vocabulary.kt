@@ -106,7 +106,10 @@ enum class ValueOrigin(val isAiWritten: Boolean) {
   SELF_DECLARED(isAiWritten = false),
   CURATED(isAiWritten = false),
   COMMUNITY(isAiWritten = false),
-  DEMO(isAiWritten = false),
+  DEMO(isAiWritten = false);
+
+  val isFromAModel: Boolean
+    get() = isAiWritten || this == SELF_DECLARED
 }
 
 enum class Verification {

@@ -60,6 +60,7 @@ class SearchApiIT extends ApiTestBase {
     String body = r.getResponse().getContentAsString();
     ContractValidator.assertMatches("SearchResponse", body);
     assertThat(body).contains("acme/translator-ai").contains("DeepL Translator");
+    assertThat(body).as("no AI-written value, no marker").doesNotContain("aiGenerated");
   }
 
   @Test
