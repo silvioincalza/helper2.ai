@@ -26,6 +26,7 @@ import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.CandidateReview;
 import ai.helper2.scout.CatalogIndex;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.DomainRoots;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
@@ -64,8 +65,11 @@ import ai.helper2.scout.usecase.EnrichResource;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
+import ai.helper2.scout.usecase.ManageDiscoveryHosts;
+import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RunScout;
 import ai.helper2.scout.usecase.StartScoutRun;
+import ai.helper2.scout.usecase.StoredAnswers;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.search.WebSearchQuota;
@@ -478,6 +482,30 @@ class ScoutConfiguration {
     return new ListScoutRuns(store);
   }
 
+  @Bean
+  ManageDiscoveryHosts manageDiscoveryHosts(
+      DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
+    return new ManageDiscoveryHosts(hosts, audit, scoutUnitOfWork, clock);
+  }
+
+  @Bean
+  RecheckEnrichments recheckEnrichments(
+      StoredAnswers answers,
+      EnrichmentStore enrichmentStore,
+      EnrichmentModel model,
+      AuditTrail audit,
+      MeterRegistry meters,
+      ClusterLock scoutRunLock) {
+    return new RecheckEnrichments(
+        answers,
+        enrichmentStore,
+        model.getPromptVersion(),
+        model.getAvailable(),
+        audit,
+        meters,
+        new ClusterRunLock(scoutRunLock));
+  }
+
   private static final ContextSnapshotFactory RUN_CONTEXT =
       ContextSnapshotFactory.builder()
           .captureKeyPredicate(ObservationThreadLocalAccessor.KEY::equals)
@@ -487,9 +515,13 @@ class ScoutConfiguration {
       task -> Thread.ofVirtual().name("scout-run").start(RUN_CONTEXT.captureAll().wrap(task));
 
   @Bean
-  ApplicationListener<ApplicationReadyEvent> startScout(RunScout runner) {
+  ApplicationListener<ApplicationReadyEvent> startScout(
+      RunScout runner, RecheckEnrichments recheck, ScoutProperties scout) {
     return event -> {
       closeInterruptedRuns(runner);
+      if (scout.enabled()) {
+        startFirstRecheck(recheck);
+      }
     };
   }
 
@@ -503,6 +535,18 @@ class ScoutConfiguration {
       log.warn(
           "closing interrupted scout runs at startup failed: {}", e.getClass().getSimpleName());
     }
+  }
+
+  private static void startFirstRecheck(RecheckEnrichments recheck) {
+    Thread.ofVirtual()
+        .name("enrichment-recheck")
+        .start(() -> {
+          try {
+            recheck.runOnce();
+          } catch (RuntimeException e) {
+            log.warn("enrichment re-check failed: {}", e.getClass().getSimpleName());
+          }
+        });
   }
 
   static final class ClusterRunLock implements RunLock {
