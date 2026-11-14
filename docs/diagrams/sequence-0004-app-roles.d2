@@ -1,7 +1,6 @@
 # Sequence: a deploy with a new migration, from app.env to the apps serving as their own roles (ADR 0004).
 # Source of truth: deploy/k8s/Makefile (env-secret, deploy), deploy/helm/helper2/templates/ (migrate.yaml, app.yaml,
-#   backoffice.yaml, redis.yaml), backend/libs/schema (MigrateStep, CatchUpThenMigrate,
-#   db/catch-up/V1__catch_up.sql, AppLogins, SchemaCheck),
+#   backoffice.yaml, redis.yaml), backend/libs/schema (MigrateStep, AppLogins, SchemaCheck),
 #   backend/libs/identity (SessionConfiguration).
 # Render: cd docs/diagrams && d2 fmt sequence-0004-app-roles.d2 && d2 sequence-0004-app-roles.d2 sequence-0004-app-roles.svg
 
@@ -28,7 +27,6 @@ release: helm upgrade --wait --wait-for-jobs {
   k8s -> bo: "start a new pod"
   public -> db: "validate as h2_public"
   db -> public: "migrations missing: wait 5 s"
-  job -> db: "staging only (H2_SCHEMA_CATCH_UP), a schema applied:\nrun V1__catch_up.sql, then Flyway repair"
   job -> db: "Flyway migrate (V1 and later)"
   job -> db: "ALTER ROLE ... LOGIN, SCRAM password,\nSET statement_timeout"
   job -> k8s: "exit 0"

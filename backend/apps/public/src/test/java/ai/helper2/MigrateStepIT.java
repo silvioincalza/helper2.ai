@@ -12,7 +12,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
@@ -108,85 +107,6 @@ class MigrateStepIT {
   }
 
   @Test
-  void aDatabaseOnAnOlderV1CatchesUpAndIsNeverRefusedAgain() {
-    migrateStep();
-    JdbcClient owner = owner(url);
-    owner.sql("DROP INDEX resource_enrichment_value_idx").update();
-    owner.sql("UPDATE flyway_schema_history SET checksum = 1 WHERE version = '1'").update();
-    owner
-        .sql("UPDATE flyway_schema_history SET checksum = 1 WHERE script = 'R__courses.sql'")
-        .update();
-    owner
-        .sql(
-            """
-            INSERT INTO flyway_schema_history
-              (installed_rank, version, description, type, script, checksum, installed_by,
-               execution_time, success)
-            SELECT max(installed_rank) + 1, '2', 'enrichment value index', 'SQL',
-                   'V2__enrichment_value_index.sql', 2, current_user, 1, true
-            FROM flyway_schema_history
-            """)
-        .update();
-
-    assertThatThrownBy(MigrateStepIT::migrateStep).hasStackTraceContaining("checksum mismatch");
-
-    migrateStep("--H2_SCHEMA_CATCH_UP=true");
-
-    assertThat(
-            owner
-                .sql("SELECT to_regclass('public.resource_enrichment_value_idx') IS NOT NULL")
-                .query(Boolean.class)
-                .single())
-        .isTrue();
-    assertThat(
-            owner
-                .sql("SELECT count(*) FROM flyway_schema_history WHERE script = 'R__courses.sql'")
-                .query(Long.class)
-                .single())
-        .as("a changed seed runs again: the catch-up aligns versioned migrations only")
-        .isEqualTo(2);
-    migrateStep();
-    migrateStep("--H2_SCHEMA_CATCH_UP=true");
-  }
-
-  @Test
-  void aSeedTakenOutOfTheReleaseIsRefusedUntilTheCatchUpMarksItDeleted() {
-    migrateStep();
-    JdbcClient owner = owner(url);
-    long seededRows = owner.sql("SELECT count(*) FROM resource").query(Long.class).single();
-    owner
-        .sql(
-            """
-            INSERT INTO flyway_schema_history
-              (installed_rank, version, description, type, script, checksum, installed_by,
-               execution_time, success)
-            SELECT max(installed_rank) + 1, NULL, 'removed seed', 'SQL', 'R__removed_seed.sql', 2,
-                   current_user, 1, true
-            FROM flyway_schema_history
-            """)
-        .update();
-
-    assertThatThrownBy(MigrateStepIT::migrateStep)
-        .hasStackTraceContaining("applied migration not resolved locally: removed seed");
-
-    migrateStep("--H2_SCHEMA_CATCH_UP=true");
-
-    migrateStep();
-    check(flyway(TestcontainersConfiguration.TEST_PASSWORD), Duration.ZERO, pause -> {});
-    assertThat(owner.sql("SELECT count(*) FROM resource").query(Long.class).single())
-        .as("the rows a removed seed wrote are not touched")
-        .isEqualTo(seededRows);
-  }
-
-  @Test
-  void theCatchUpLeavesAnEmptyDatabaseToFlyway() {
-    migrateStep("--H2_SCHEMA_CATCH_UP=true");
-
-    assertThat(owner(url).sql("SELECT count(*) FROM resource").query(Long.class).single())
-        .isPositive();
-  }
-
-  @Test
   void theStepRefusesToRunWithoutBothAppPasswords() {
     assertThatThrownBy(() ->
             MigrateStep.run(
@@ -234,20 +154,17 @@ class MigrateStepIT {
         flyway, new SchemaProperties(false, waitFor, Duration.ZERO), Clock.systemUTC(), sleeper);
   }
 
-  private static void migrateStep(String... more) {
+  private static void migrateStep() {
     try {
       MigrateStep.run(
-          Stream.concat(
-                  Stream.of(
-                      MigrateStep.COMMAND,
-                      "--spring.datasource.url=" + url,
-                      "--spring.datasource.username=" + POSTGRES.getUsername(),
-                      "--spring.datasource.password=" + POSTGRES.getPassword(),
-                      "--H2_DATABASE_PUBLIC_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD,
-                      "--H2_DATABASE_BACKOFFICE_PASSWORD="
-                          + TestcontainersConfiguration.TEST_PASSWORD),
-                  Stream.of(more))
-              .toArray(String[]::new));
+          new String[] {
+            MigrateStep.COMMAND,
+            "--spring.datasource.url=" + url,
+            "--spring.datasource.username=" + POSTGRES.getUsername(),
+            "--spring.datasource.password=" + POSTGRES.getPassword(),
+            "--H2_DATABASE_PUBLIC_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD,
+            "--H2_DATABASE_BACKOFFICE_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD
+          });
     } catch (java.sql.SQLException e) {
       throw new IllegalStateException(e);
     }

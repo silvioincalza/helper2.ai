@@ -504,7 +504,6 @@ helper2.llm.reasoning-model = <empty>
 helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
 helper2.runtime-settings.refresh = ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT20S
-helper2.schema.catch-up = ${H2_SCHEMA_CATCH_UP:false}  =>  false
 helper2.schema.logins.h2_backoffice = ${H2_DATABASE_BACKOFFICE_PASSWORD:}  =>  <empty>
 helper2.schema.logins.h2_public = ${H2_DATABASE_PUBLIC_PASSWORD:}  =>  <empty>
 helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:false}  =>  false

@@ -106,23 +106,15 @@ The schema is one file, and from the first release tag on that file must never c
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other
      than `V1__schema.sql` fails. Once it has one, every versioned migration the latest release holds must be the same
      file, byte for byte: an edit or a removal fails, a new `V2__…` passes. The seeds (`R__…`) may change. The check
-     compares with the tag, not with the base of the pull request, so staging's catch-up cannot hide an edit: there
-     `repair` takes the new checksum, and prod would refuse it.
+     compares with the tag, not with the base of the pull request.
    - **Until the tag, every schema change edits V1. There is no V2.** Prod gets V1 on an empty database at the tag.
-     Staging keeps its data, so its migrate Job catches up first (`migrate.catchUp: true` in `values-staging.yaml`,
-     which sets `H2_SCHEMA_CATCH_UP` on the Job only): on a database that already has a schema it runs
-     `db/catch-up/V1__catch_up.sql`, then Flyway `repair` (V1's checksum becomes the file's; a migration whose file is
-     gone is marked deleted), then `migrate`. A change to V1 adds its statements to the catch-up file in the same pull
-     request, written so that a second run changes nothing (`IF NOT EXISTS`). An empty database skips the catch-up.
-     Prod never sets the flag (`make chart-check` fails if it renders). A V1 change without its catch-up statement
-     deploys, and staging lacks the object: the review of the pull request is the guard. At the tag the flag, the
-     file and `CatchUpThenMigrate` are removed.
+     A database that already ran an older V1 is refused by Flyway when V1 changes (checksum mismatch): no step
+     brings it to the new V1, so it is created again, empty.
    - After the versioned migrations, Flyway runs the seeds `R__curated_seed.sql`, `R__industry_events.sql` and
      `R__courses.sql`. The seeds upsert, so Flyway re-runs one whenever it changes.
      The events seed also removes the curated events that are not in its research file ([0012](../scout/0012-scout-collectors-and-events.md)).
      A seed whose file is gone is refused by Flyway on a database that ran it ("applied migration not resolved
-     locally"), until `repair` marks it deleted: staging's catch-up does that, and prod starts empty. After the tag,
-     taking a seed out needs a `repair` in the migrate step. The rows a removed seed wrote stay.
+     locally"): taking a seed out needs a `repair` in the migrate step. The rows a removed seed wrote stay.
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
    query (`ResultObserver.firstDiscovered`), then hands only the results fetched live in this search to
    `ResultObserver.record`. `CatalogResultObserver.record` queues the write in `ObservationQueue`: one thread
@@ -261,9 +253,6 @@ The schema is one file, and from the first release tag on that file must never c
   `SharedCacheRetention.java`, `SharedCacheConfiguration.java` — the shared caches and their purge.
 - `deploy/helm/helper2/templates/postgres.yaml` (`POSTGRES_INITDB_ARGS`), `migrate.yaml`, `files/redis-users.acl`;
   `deploy/k8s/check-app-env.sh`; `compose.yaml`.
-- `backend/libs/schema/src/main/java/ai/helper2/platform/schema/CatchUpThenMigrate.java`,
-  `backend/libs/schema/src/main/resources/db/catch-up/V1__catch_up.sql`, `deploy/helm/helper2/templates/migrate.yaml`
-  (`migrate.catchUp`) — staging follows V1 until the first release tag (§5).
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
 
 ## Alternatives considered

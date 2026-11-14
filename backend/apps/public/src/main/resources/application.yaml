@@ -7,7 +7,6 @@ spring:
     name: helper2
 helper2:
   schema:
-    catch-up: ${H2_SCHEMA_CATCH_UP:false}
     logins:
       h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
       h2_backoffice: ${H2_DATABASE_BACKOFFICE_PASSWORD:}

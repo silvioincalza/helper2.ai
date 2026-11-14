@@ -85,9 +85,8 @@ Run the relevant tests before calling a change done.
   SSE for server streaming; WebSocket only for real two-way interaction.
 - Adopt new storage, queues or streaming only for a concrete, named need.
 - Every data flow: decide storage (relational, vector, graph), caching and retention period.
-- Schema, until the first release tag (v2026.11.3): every change edits `V1__schema.sql`. Never add a `V2__` migration. The same pull
-  request adds the change to `db/catch-up/V1__catch_up.sql`, written so that a second run changes nothing
-  (`IF NOT EXISTS`): the staging migrate Job runs it before Flyway (ADR 0004 §5).
+- Schema, until the first release tag (v2026.11.3): every change edits `V1__schema.sql`. Never add a `V2__` migration
+  (ADR 0004 §5).
 
 ### Performance
 

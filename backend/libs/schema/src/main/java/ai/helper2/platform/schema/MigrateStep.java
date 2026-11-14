@@ -4,17 +4,14 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Map;
 import javax.sql.DataSource;
-import org.flywaydb.core.Flyway;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
-import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Bean;
 
 @ImportAutoConfiguration({DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 @EnableConfigurationProperties(MigrateStep.MigrateProperties.class)
@@ -23,12 +20,7 @@ public final class MigrateStep {
 
   @ConfigurationProperties("helper2.schema")
   public record MigrateProperties(
-      Map<String, String> logins, boolean catchUp, Map<String, Duration> statementTimeouts) {}
-
-  @Bean
-  static FlywayMigrationStrategy migration(MigrateProperties schema, DataSource dataSource) {
-    return schema.catchUp() ? new CatchUpThenMigrate(dataSource) : Flyway::migrate;
-  }
+      Map<String, String> logins, Map<String, Duration> statementTimeouts) {}
 
   public static boolean requested(String[] args) {
     return args.length > 0 && COMMAND.equals(args[0]);
