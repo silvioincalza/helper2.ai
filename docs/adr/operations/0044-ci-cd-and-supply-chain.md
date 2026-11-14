@@ -146,16 +146,17 @@ Harbor could put an image under a tag first.
    never to the one just before the current, which after an interrupted rollback is the failed upgrade. The job's
    budget (45 min) covers that recovery, the upgrade and one rollback, 12 min each: Helm's own when the upgrade
    fails, or the one after a failed check (§3), never both.
-   A newer push to the same branch cancels the build of the older one: the `ci`, `image` and `scan` jobs of `cd.yml`
-   share `concurrency: cd-build-<ref>` with `cancel-in-progress: true`. Only the newest commit reaches staging, and the
-   runner builds it sooner. The `staging` job is not in that group, so a deploy already running finishes. The
-   cancelled commit has no staging deploy and so no release; its images may be missing or unsigned in Harbor, and
-   the next run builds what it cannot carry (§10).
-   The Postgres image is the exception: its tag is shared by every commit and `make postgres-image` skips a tag that
-   is in Harbor, so a cancel before `make sign` would leave it unsigned and stop every later run at `verify-images`.
-   A step with `if: always()` right after the push runs `make sign-pushed` (the digests of `PUSHED`, nothing else), so
-   the image is signed even when the run is cancelled.
-   A re-run of an older run joins the same group and cancels the newer build: re-run the newest run, not an older one.
+   A run on a branch waits for the run before it: `cd.yml` has `concurrency: cd-<ref>` with `cancel-in-progress: false`
+   for a push, so a newer push to the same branch starts only when the run in progress has ended, its staging deploy
+   and its scan included. A run that has started is never cut off by a push. Of several pushes that wait, only the
+   newest starts: GitHub keeps one waiting run per group and cancels the older ones before they begin. Such a commit
+   has no images, no staging deploy and so no release, and the next run builds what it cannot carry (§10).
+   A manual run has its own group (the run id), so it does not wait for a push; `deploy-<env>` still puts its deploy
+   behind one that is running.
+   A run can still be cancelled by hand. The Postgres image is why one step is protected: its tag is shared by every
+   commit and `make postgres-image` skips a tag that is in Harbor, so a cancel before `make sign` would leave it
+   unsigned and stop every later run at `verify-images`. A step with `if: always()` right after the push runs
+   `make sign-pushed` (the digests of `PUSHED`, nothing else), so the image is signed even when the run is cancelled.
 
 ### Per component: a change runs its own checks and builds its own images
 8. **One map of paths to components.** `.github/scripts/changes.sh` maps the changed paths, first match wins:
