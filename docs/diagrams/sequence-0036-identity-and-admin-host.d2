@@ -1,0 +1,83 @@
+# Sequence: the owner signs in on the admin host and gets ADMIN by numeric id; the GitHub token is dropped after the
+# user info; an admin decision is audited; the back office purges old audit rows. On the public host the same id is a
+# plain user, local bookmarks move to the account, and the user deletes the account. A session whose account row is
+# gone is ended and told to sign in again; only a sign-in writes the row.
+# Only possible where profile oauth-github is active (off unless set for the environment).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java,
+#   BackOfficeEdge.java, backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java (oauthUsers, roles), NoProviderTokens.java,
+#   identity/CurrentUser.java, identity/internal/SignedInUser.java, JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
+#   identity/config/KnownAccountOnly.java, identity/SignInAgain.java,
+#   identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java, PurgeExpiredAuditEntries.java,
+#   backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
+#   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (h2_audit_kept),
+#   frontend/src/features/account/SignIn.tsx, frontend/src/context/MeContext.tsx, BookmarksContext.tsx,
+#   frontend/src/features/account/AccountPage.tsx, frontend/src/admin/,
+#   the platform repo (helper2-admin Ingress, whitelist-source-range), outside this repo.
+# Render: cd docs/diagrams && d2 fmt sequence-0036-identity-and-admin-host.d2 && d2 sequence-0036-identity-and-admin-host.d2 sequence-0036-identity-and-admin-host.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(on the VPN)" {class: person}
+nginx: "ingress-nginx\n(allow-list)" {class: app}
+abo: "Back office app" {class: app}
+apub: "Public app" {class: app}
+gh: GitHub {class: ext}
+db: "PostgreSQL\n(app_user, bookmark,\nadmin_audit)" {class: data}
+redis: "Redis\n(sessions)" {class: data}
+
+adminhost: Admin host {
+  owner -> nginx: "GET admin.helper2.ai/admin" {class: hot}
+  nginx -> abo: "private address: allowed" {class: hot}
+  owner -> abo: "/oauth2/authorization/github"
+  abo -> owner: "302 to GitHub, callback pinned to\nH2_ADMIN_BASE_URL/login/oauth2/code/github"
+  owner -> gh: "sign in"
+  gh -> owner: "302 back with code"
+  owner -> abo: "callback"
+  abo -> gh: "code → access token; user info" {class: ai-call}
+  gh -> abo: "id 1234567, login, name"
+  abo -> abo: "\"github:1234567\" in H2_ADMINS: ROLE_ADMIN;\nthe access token is dropped (NoProviderTokens)"
+  abo -> db: "upsert app_user (last sign-in)"
+  abo -> redis: "__Host-SESSION: the user and roles,\nno token (h2:v1:session:backoffice)"
+  abo -> owner: "302 /admin"
+  owner -> abo: "PUT /api/v1/admin/review-items/{id}/resolution\n(Origin, X-XSRF-TOKEN)" {class: hot}
+  abo -> db: "one transaction: decide item +\nINSERT admin_audit (1234567, RESOLVE_REVIEW_ITEM,\nitem id, ACCEPTED)"
+  abo -> owner: "200"
+  abo -> db: "daily, one replica: DELETE admin_audit\nolder than the retention (≥ 730 d)"
+  db -> abo: "trigger: a row younger than 729 d\nwould fail the whole DELETE"
+}
+
+publichost: Public host {
+  owner -> apub: "GET helper2.ai/api/v1/admin/review-items"
+  apub -> owner: "404 (no back office here)"
+  owner -> apub: "Sign in with GitHub (header or Saved)"
+  apub -> gh: "code → access token; user info" {class: ai-call}
+  apub -> apub: "ROLE_USER only; token dropped"
+  apub -> redis: "SESSION (h2:v1:session:public), no token"
+  apub -> owner: "302 /"
+  owner -> apub: "POST /api/v1/me/bookmarks (local list)\nX-XSRF-TOKEN" {class: hot}
+  apub -> db: "MergeLocalBookmarks: INSERT … ON CONFLICT DO NOTHING;\ncount ≤ 500 or 400 + rollback"
+  owner -> apub: "DELETE /api/v1/me, X-XSRF-TOKEN" {class: hot}
+  apub -> apub: "end the session first"
+  apub -> db: "DeleteMyAccount: DELETE app_user,\nbookmarks cascade (reports were never linked)"
+  apub -> owner: "204, signed out"
+}
+
+noaccount: Session without an account (for example after a database rebuild) {
+  owner -> apub: "GET /api/v1/me, SESSION cookie" {class: hot}
+  apub -> redis: "read the session: a signed-in user"
+  apub -> db: "KnownAccountOnly: SELECT id FROM app_user\n(provider, subject)"
+  db -> apub: "no row"
+  apub -> redis: "delete the session"
+  apub -> owner: "401 sign-in-again, SESSION and\nXSRF-TOKEN cookies cleared; no row written"
+  owner -> apub: "GET /api/v1/me (the page reads again)"
+  apub -> owner: "200, a visitor: \"Please sign in again\"\nand the sign-in"
+  owner -> abo: "PUT /api/v1/admin/… with a session\nwhose row is gone"
+  abo -> db: "SELECT id FROM app_user: no row"
+  abo -> redis: "delete the session"
+  abo -> owner: "401 sign-in-again, before the use case:\nnothing changed, nothing audited"
+}
