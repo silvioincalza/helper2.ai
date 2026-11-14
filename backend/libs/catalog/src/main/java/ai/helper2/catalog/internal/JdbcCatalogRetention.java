@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.annotation.Transactional;
 
 class JdbcCatalogRetention implements CatalogRetention {
 
@@ -18,9 +19,11 @@ class JdbcCatalogRetention implements CatalogRetention {
       """;
 
   private final JdbcClient jdbc;
+  private final JdbcCatalogWriter writer;
 
-  JdbcCatalogRetention(JdbcClient jdbc) {
+  JdbcCatalogRetention(JdbcClient jdbc, JdbcCatalogWriter writer) {
     this.jdbc = jdbc;
+    this.writer = writer;
   }
 
   @Override
@@ -39,6 +42,7 @@ class JdbcCatalogRetention implements CatalogRetention {
   }
 
   @Override
+  @Transactional
   public int deleteWebNewsRetrievedBefore(Instant cutoff) {
     List<UUID> owners =
         jdbc.sql(
@@ -54,18 +58,7 @@ class JdbcCatalogRetention implements CatalogRetention {
             .param("cutoff", Timestamp.from(cutoff))
             .query(UUID.class)
             .list();
-    if (!owners.isEmpty()) {
-      jdbc.sql(
-              """
-              DELETE FROM resource r
-              WHERE r.id = ANY(:ids) AND r.data_origin IN ('OBSERVED', 'INDEXED')
-                AND cardinality(r.curated_fields) = 0
-                AND NOT EXISTS (SELECT 1 FROM source_record s WHERE s.resource_id = r.id)
-              """
-                  + UNREFERENCED)
-          .param("ids", owners.stream().distinct().toArray(UUID[]::new))
-          .update();
-    }
+    writer.afterForgetting(owners);
     return owners.size();
   }
 

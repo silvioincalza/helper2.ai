@@ -410,7 +410,8 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
     });
   }
 
-  private Forgotten afterForgetting(List<UUID> owners) {
+  @Transactional
+  Forgotten afterForgetting(List<UUID> owners) {
     if (owners.isEmpty()) {
       return Forgotten.NONE;
     }

@@ -6,7 +6,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 public class CatalogBackOfficeAdapters {
 
   @Bean
-  JdbcCatalogRetention jdbcCatalogRetention(JdbcClient jdbc) {
-    return new JdbcCatalogRetention(jdbc);
+  JdbcCatalogRetention jdbcCatalogRetention(JdbcClient jdbc, JdbcCatalogWriter writer) {
+    return new JdbcCatalogRetention(jdbc, writer);
   }
 }
