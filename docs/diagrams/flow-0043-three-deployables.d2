@@ -1,6 +1,6 @@
 # Flowchart: which app answers a request, which one runs a job, and what a change rebuilds (ADR 0043).
 # Source of truth: backend/settings.gradle.kts, backend/apps/public, backend/apps/backoffice,
-#   backend/libs/* (web-contract: the shared web adapters), api/common.yaml, api/public.yaml, api/admin.yaml,
+#   backend/libs/* (core: the shared web adapters), api/common.yaml, api/public.yaml, api/admin.yaml,
 #   deploy/web.Dockerfile, deploy/web/nginx.conf,
 #   deploy/Dockerfile, deploy/backoffice.Dockerfile, deploy/helm/helper2/templates/ (web.yaml, app.yaml, backoffice.yaml),
 #   the SchedulesIT of each app, the platform repo (Ingresses), outside this repo.
@@ -55,7 +55,7 @@ build: What a change builds {
   change -> bweb: "frontend/, deploy/web/,\nweb.Dockerfile"
   change -> bpub: "apps/public,\ndeploy/Dockerfile"
   change -> bbo: "apps/backoffice, frontend/,\nbackoffice.Dockerfile"
-  rule: "changes.sh (0044): api/, libs/* (web-contract too),\nthe Gradle files and any unknown path build\nall three; an unchanged image gets the new tag\non its previous digest, no build" {class: config}
+  rule: "changes.sh (0044): api/, libs/*,\nthe Gradle files and any unknown path build\nall three; an unchanged image gets the new tag\non its previous digest, no build" {class: config}
   rule -> change
 }
 

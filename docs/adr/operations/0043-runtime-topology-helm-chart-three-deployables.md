@@ -32,16 +32,16 @@ database connections. A change to the web app would rebuild and redeploy the bac
 3. **Shared code is a library in this repo** ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). Apps
    hold the driving adapters (controllers, schedules) and the wiring. The public app has no admin and no Scout code;
    the back office has no guide, setup or SEO pages. Libraries and apps keep their package names.
-   - `libs/sources` holds the live search sources (GitHub, Hugging Face, npm, arXiv, the live web), their HTTP mapping
+   - The `sources` package of `libs/core` holds the live search sources (GitHub, Hugging Face, npm, arXiv, the live web), their HTTP mapping
      and settings, the demo sources, and the descriptors of the Scout's collectors. Both apps search, and both list
      every source on `GET /api/v1/sources`. The collectors themselves stay in the back office.
-   - `ScoutPolicy` is in `libs/catalog` with the limits the Scout reads, so the public policy endpoint
+   - `ScoutPolicy` is in the `catalog` package of `libs/core` with the limits the Scout reads, so the public policy endpoint
      ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)) states the back office's numbers without its code.
-   - The web adapters both apps serve the same way (search, sources, categories) are in `libs/web-contract`, with
+   - The web adapters both apps serve the same way (search, sources, categories) are in `libs/core`, with
      the types of `api/common.yaml` they use, generated once ([0003](../foundation/0003-contract-first-rest.md)).
 4. **One contract per app.** The public app generates its controllers from `api/public.yaml`, the back office from
    `api/admin.yaml`. Each serves the parts of `api/common.yaml` it names, but generates none of them: those come from
-   `libs/web-contract`, under the same names in both apps.
+   `libs/core`, under the same names in both apps.
 5. **Workloads.** The Deployments `helper2-web`, `helper2` and `helper2-backoffice`; the `postgres` StatefulSet
    (5 Gi volume) and the `redis` StatefulSet (1 Gi volume for its append-only file), both on `local-path` in the
    hosted environments; the migrate Job `helper2-migrate-<revision>`, once per release (§10); and on prod the
@@ -223,8 +223,8 @@ The images:
 The apps:
 - `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` — the projects;
   the contract per app.
-- `backend/apps/public`, `backend/apps/backoffice`, `backend/libs/web-contract`, `backend/libs/sources`,
-  `backend/libs/catalog/src/main/java/ai/helper2/catalog/ScoutPolicy.java`.
+- `backend/apps/public`, `backend/apps/backoffice`, `backend/libs/core` (the shared web adapters in `search/web`, the
+  live sources in `sources`), `backend/libs/core/src/main/java/ai/helper2/catalog/ScoutPolicy.java`.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`,
   `H2_PAGES_TEMPLATE`, `H2_SCOUT_TICK`.
 - `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `SchemaCheck.java` — the migrate

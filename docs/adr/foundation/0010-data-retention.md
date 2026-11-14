@@ -92,17 +92,17 @@ The periods are a product decision the owner may change; changing one must not n
 ### Code
 - `backend/libs/platform/src/main/java/ai/helper2/platform/DailyJob.java`, `DailyJobs.java`, `ScheduledJob.java` — the
   daily run, its lock and its name in the scheduler.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/PurgeExpiredData.java`, `catalog/internal/JdbcCatalogRetention.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/PurgeExpiredData.java`, `catalog/internal/JdbcCatalogRetention.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/CatalogRetentionSchedule.java` — catalog rules.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
   `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
-- `backend/libs/identity/src/main/java/ai/helper2/identity/usecase/PurgeInactiveAccounts.java`, `PurgeExpiredAuditEntries.java`,
+- `backend/libs/core/src/main/java/ai/helper2/identity/usecase/PurgeInactiveAccounts.java`, `PurgeExpiredAuditEntries.java`,
   `identity/Users.java`, `AuditLog.java`, `identity/internal/JdbcUsers.java`, `JdbcAuditLog.java`,
   `backend/apps/public/src/main/java/ai/helper2/identity/schedule/AccountRetentionSchedule.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java` — identity rules.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`,
   `backend/apps/public/src/main/java/ai/helper2/search/config/SearchRetentionSchedule.java`,
-  `backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`
+  `backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`
   — search rule.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCacheRetention.java`, `SharedCacheConfiguration.java` — shared
   cache rule.

@@ -1,14 +1,14 @@
 # Flowchart: where a piece of backend code goes (an app or a library), then the checks it meets: Gradle's dependency
-# direction, then the class rules ModularityTest (each app) and a library's own architecture test check on every
+# direction, then the class rules ModularityTest (each app) and a context's own architecture test check on every
 # build, in the order a dependency meets them, then the same boundaries SourceBoundariesTest reads from the source
 # files, and the module dependencies that pass them today (open modules left out: everyone may use them).
 # Source of truth: backend/settings.gradle.kts, backend/build.gradle.kts (checkNoRootSources),
 #   backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts, helper2.spring-app.gradle.kts,
-#   backend/libs/*/build.gradle.kts (web-contract included), backend/apps/{public,backoffice}/build.gradle.kts,
+#   backend/libs/*/build.gradle.kts (kernel, platform, schema, core), backend/apps/{public,backoffice}/build.gradle.kts,
 #   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java,
 #   backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java,
-#   backend/libs/identity/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java,
-#   backend/libs/web-contract/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java,
+#   backend/libs/core/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java,
+#   backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java,
 #   backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
 #   .../catalog/usecase/package-info.java, .../search/web/CardMapper.java (@NamedInterface("cards")).
 # Render: cd docs/diagrams && d2 fmt flow-0002-modular-monolith-libraries-and-apps.d2 && d2 flow-0002-modular-monolith-libraries-and-apps.d2 flow-0002-modular-monolith-libraries-and-apps.svg
@@ -25,9 +25,9 @@ place: Where it goes {
   common: "A controller of a path\nin api/common.yaml?" {class: decision}
   driving: "A controller, a schedule,\nthe app's own contract,\nthe wiring?" {class: decision}
   shared: "Needed by more\nthan one app?" {class: decision}
-  web: "libs/web-contract\n(common.yaml generated once,\nits controllers)" {class: data}
+  web: "libs/core, packages api and search.web\n(common.yaml generated once,\nits controllers)" {class: data}
   app: "apps/<app>\n(boot jar)" {class: app}
-  lib: "libs/<context>\ndomain, use cases,\ndriven adapters" {class: data}
+  lib: "libs/core, the context's package\n(kernel and platform: their own library)\ndomain, use cases, driven adapters" {class: data}
   common -> web: yes
   common -> driving: no
   driving -> app: yes
@@ -41,7 +41,7 @@ build: Build checks {
   direction: down
   root: "File in backend/src/?" {class: decision}
   e_root: "checkNoRootSources:\nbuild stops" {class: fail}
-  dir: "Library depends\non an app, or a cycle?" {class: decision}
+  dir: "A library depends on an app,\nor against kernel ← platform ← core?" {class: decision}
   e_dir: "Gradle refuses\nthe dependency" {class: fail}
   root -> e_root: yes
   root -> dir: no
@@ -54,7 +54,7 @@ place.app -> build.root
 place.lib -> build.root
 build.dir -> rules.dep: no
 
-rules: "Class A depends on class B: ModularityTest (each app),\na library's own architecture test" {
+rules: "Class A depends on class B: ModularityTest (each app),\na context's own architecture test" {
   class: group
   direction: down
   dep: "A → B" {class: end}
@@ -63,7 +63,7 @@ rules: "Class A depends on class B: ModularityTest (each app),\na library's own 
   adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
   same: "B in A's own module?" {class: decision}
   src: "B in sources?\n(no API: its base\npackage is empty)" {class: decision}
-  gen: "A in libs/web-contract and B an\napp's generated type (api.generated)?" {class: decision}
+  gen: "A in the shared web part (api, search.web)\nand B an app's generated type (api.generated)?" {class: decision}
   open: "B's module is open?\n(shared, platform, api)" {class: decision}
   public: "B in the module's base package\nor a named interface?\n(search.usecase, catalog.usecase,\nsearch.web cards)" {class: decision}
   cycle: "Creates a cycle\nbetween modules?" {class: decision}
@@ -105,7 +105,7 @@ today: "Module dependencies that pass today" {
   catalog: "catalog\n(Spring services over SQL)" {class: app}
   identity: "identity" {class: app}
   search: "search\n(Kotlin rules, ports;\nSpringAiQueryTranslator\nin search.internal)" {class: port}
-  web: "search.web in libs/web-contract\n(SearchController,\nCategoriesController, CardMapper)" {class: app}
+  web: "search.web in libs/core\n(SearchController,\nCategoriesController, CardMapper)" {class: app}
   site: "site (public app)\npages, policy, monetisation, csp;\nno module names it" {class: app}
 
   sources -> scout: "Collector, ports"
@@ -127,7 +127,7 @@ source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so 
   class: group
   direction: down
   name: "A names B" {class: end}
-  lib: "A in a library and B in a library\nnot below A's? (kernel ← platform ←\nidentity, search ← catalog ← examples,\nsearch ← sources, web-contract)" {class: decision}
+  lib: "A in a library and B in a context\nnot below A's? (kernel ← platform ←\nidentity, search ← catalog ← examples,\nsearch ← sources, the shared web part;\ninside libs/core only this test holds it)" {class: decision}
   src: "B in sources\nand A outside it?" {class: decision}
   api: "B in another closed module, outside\nits base package and its\nnamed interfaces?" {class: decision}
   ok: "Allowed" {class: end}

@@ -170,22 +170,22 @@ The HTTP client:
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/HttpClientProperties.java` — the four
   `helper2.http` settings; `platform/http/HttpClientSettingsConfiguration.java` — their Settings page group;
   `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/TestHttp.java` — the client the tests build.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping,
+- `backend/libs/core/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping,
   transient failures, per-item guard.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java` and
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java` and
   `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` — one builder
   per source and collector; collectors get their deadline (`collectorClient`).
-- `backend/libs/sources/src/main/java/ai/helper2/sources/support/SourceSettings.java`,
+- `backend/libs/core/src/main/java/ai/helper2/sources/support/SourceSettings.java`,
   `sources/config/SourcesProperties.java` — `deadline`, twice the timeout by default.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`,
+- `backend/libs/core/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`,
   `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/OutboundThrottle.java`, `RedisOutboundThrottle.java` —
   one arXiv call every 3 seconds across replicas.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` (`Run.collect`) — deadlines,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` (`Run.collect`) — deadlines,
   outcomes, `source-<id>`, `CIRCUIT_OPEN` and `BUSY`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`, `SkipReason`) — failure types.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java` — embedding client on
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`, `SkipReason`) — failure types.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java` — embedding client on
   `ObservedHttp`; `llm-embed` or `llm-embed-index`, given by `CatalogConfiguration.java`.
-- `backend/libs/sources/src/test/java/ai/helper2/sources/*/*LiveTest.java`,
+- `backend/libs/core/src/test/java/ai/helper2/sources/*/*LiveTest.java`,
   `backend/apps/backoffice/src/test/java/ai/helper2/sources/*/*LiveTest.java`, `.github/workflows/live.yml` — the
   weekly live check.
 
@@ -196,15 +196,15 @@ The resilience policies:
   `build.gradle.kts` — the version.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` (`resilience4j.*`) — the policies; `backend/apps/public/src/main/resources/application.yaml` — the public app's own (`llm-chat-guide`, `setup-guide`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/**/*Collector.java`,
-  `backend/libs/sources/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java` — `collector-<id>` and
+  `backend/libs/core/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java` — `collector-<id>` and
   what it retries.
-- `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
+- `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
   `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`,
   `platform/quota/RedisQuotaCounter.java`, `platform/RedisRateLimiter.java`,
-  `backend/libs/identity/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — `redis`.
+  `backend/libs/core/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — `redis`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
 - `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`,
-  `backend/libs/search/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`,
+  `backend/libs/core/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`,
   `backend/apps/public/src/main/java/ai/helper2/setup/internal/SpringAiToolGuideModel.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/sources/classifier/SpringAiRepoClassifier.java` — `llm-chat`;

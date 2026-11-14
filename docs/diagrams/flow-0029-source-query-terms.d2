@@ -1,9 +1,9 @@
 # Flowchart: which words each keyword source searches, and how Hugging Face models use task tags (ADR 0029).
-# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt (contentTermsOf),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (searchTermsOf),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt (SourceQuery.keywords),
-#   backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubSource.java (searchText),
-#   backend/libs/sources/src/main/java/ai/helper2/sources/huggingface/HuggingFaceModelsSource.java, HubTasks.java.
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt (contentTermsOf),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (searchTermsOf),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt (SourceQuery.keywords),
+#   backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubSource.java (searchText),
+#   backend/libs/core/src/main/java/ai/helper2/sources/huggingface/HuggingFaceModelsSource.java, HubTasks.java.
 # Render: cd docs/diagrams && d2 fmt flow-0029-source-query-terms.d2 && d2 flow-0029-source-query-terms.d2 flow-0029-source-query-terms.svg
 
 ...@style

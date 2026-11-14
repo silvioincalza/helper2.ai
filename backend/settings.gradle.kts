@@ -13,13 +13,8 @@ rootProject.name = "helper2-backend"
 include(
   ":libs:kernel",
   ":libs:platform",
-  ":libs:identity",
-  ":libs:search",
-  ":libs:catalog",
-  ":libs:examples",
-  ":libs:sources",
   ":libs:schema",
-  ":libs:web-contract",
+  ":libs:core",
   ":apps:public",
   ":apps:backoffice",
 )

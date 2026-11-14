@@ -302,7 +302,7 @@ No new table for deep search, no new dependency.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java` — one category's
   searches, `keep` (Tavily's own pages, score, AI, shape), what is kept; `DiscoveryPages.java` — list, product or post,
   by URL and title, built from `HostLists`; `ScoutLiveWebCredits.java` — credits and the daily cap.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — `isTavilysOwnPage`, `toHit`;
+- `backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — `isTavilysOwnPage`, `toHit`;
   `DiscoveryCategory.java`, `DiscoveryFamily.java`; `sources/config/CategoryProperties.java` — the checked entries;
   `CollectorProperties.java` (`Discovery`, `GitHubAwesome`); `support/RunInterval.java` — `staggered`, `nextDueDay`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java` — one bean per
@@ -323,7 +323,7 @@ No new table for deep search, no new dependency.
   `CandidateReview.propose`); `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt`, `Categories.kt` (`CategoryInput.headings`);
   `backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (open candidate, category filter,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (open candidate, category filter,
   `candidatesOpenedToday`), `catalog/usecase/IndexAwesomeLists.java`, `catalog/internal/JdbcCatalogWriter.java`
   (`extra`, `assignCategories`), `JdbcAwesomeListIndex.java`, `JdbcCatalogRetention.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `RESOURCE_CANDIDATE` review kind,

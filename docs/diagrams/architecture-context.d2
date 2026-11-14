@@ -2,7 +2,7 @@
 # what they call.
 # The internals of each module are in the other views (search, guide, index, setup, platform).
 # Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
-#   backend/settings.gradle.kts (apps and libraries), backend/libs/web-contract (the shared web adapters),
+#   backend/settings.gradle.kts (apps and libraries), backend/libs/core (the shared contexts and web adapters),
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml (base URLs, llm-nebius profile, helper2.embedding).
 # Render: cd docs/diagrams && d2 fmt architecture-context.d2 && d2 architecture-context.d2 architecture-context.svg
 
@@ -41,7 +41,7 @@ app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0043)" {
   }
   libs: "libraries · in both apps" {
     class: group
-    webcontract: "web-contract\nGET /search, /sources, /categories\n(common.yaml, generated once)" {class: app}
+    webcontract: "shared web part (api, search.web)\nGET /search, /sources, /categories\n(common.yaml, generated once)" {class: app}
     search: "search\nfederated search, ranking" {class: app}
     catalog: "catalog\nindex, resource pages, events,\nScoutPolicy" {class: app}
     sources: "sources\nlive adapters,\ncollectors' descriptors" {class: app}

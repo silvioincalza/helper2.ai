@@ -1,11 +1,11 @@
 # Flowchart: an admin changes the target of a relationship candidate in the review list, then decides it.
-# Source of truth: backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/AddCuratedResource.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java, CandidateText.java,
+# Source of truth: backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/AddCuratedResource.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java, CandidateText.java,
 #   frontend/src/admin/ReviewQueuePage.tsx, ReviewEvidence.tsx (heading from the reloaded evidence),
 #   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java (target),
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java (supersedeEnrichmentItems),
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (deleteUnreviewedAiRelationships).
+#   backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java (supersedeEnrichmentItems),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (deleteUnreviewedAiRelationships).
 # Render: cd docs/diagrams && d2 fmt flow-0038-relationship-target-in-review.d2 && d2 flow-0038-relationship-target-in-review.d2 flow-0038-relationship-target-in-review.svg
 
 ...@style

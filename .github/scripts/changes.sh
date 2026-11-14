@@ -122,9 +122,9 @@ backend/apps/backoffice/build.gradle.kts|backend backoffice
 deploy/backoffice.Dockerfile|backend backoffice
 backend/loadtest/src/gatling/java/ai/helper2/load/SearchSimulation.java|backend
 backend/loadtest/build.gradle.kts|backend
-backend/libs/search/src/main/kotlin/X.kt|ALL
-backend/libs/web-contract/build.gradle.kts|ALL
-backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java|ALL
+backend/libs/core/src/main/kotlin/X.kt|ALL
+backend/libs/core/build.gradle.kts|ALL
+backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|ALL
 backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|ALL
 backend/gradle/libs.versions.toml|ALL
 backend/gradle/wrapper/gradle-wrapper.properties|ALL
@@ -199,7 +199,7 @@ EOF
 diagrams|ALL|diagrams
 diagrams|.github/workflows/ci.yml|diagrams
 diagrams|docs/adr/README.md|diagrams
-diagrams|backend/libs/search/src/main/kotlin/X.kt|diagrams
+diagrams|backend/libs/core/src/main/kotlin/X.kt|diagrams
 diagrams|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|
 diagrams|frontend/src/main.tsx|
 diagrams backend|backend/gradlew|backend diagrams

@@ -33,7 +33,7 @@ Redis, PostgreSQL and the NVIDIA models on the driven side.
 
 - Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](adr/foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md).
 - The API is contract-first: controller interfaces and frontend types are generated from `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`;
-  the shared part once, in the library `libs/web-contract`: [ADR 0003](adr/foundation/0003-contract-first-rest.md).
+  the shared part once, in the library `libs/core`: [ADR 0003](adr/foundation/0003-contract-first-rest.md).
 
 ### Context map
 

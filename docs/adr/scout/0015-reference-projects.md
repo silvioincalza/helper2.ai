@@ -86,13 +86,13 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
 ### Code
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubTopicLeadersCollector.java` (`Indexing`: the search scope, `Place`)
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt` (`AdmissionPolicy`, the index floor)
-- `backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubRepositories.java` (`hit`, shared with `GitHubSource`)
+- `backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubRepositories.java` (`hit`, shared with `GitHubSource`)
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java`
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java`, `CollectorProperties.java`
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java`, `CollectorProperties.java`
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java`
 - `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java`, `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (`cursorAfter`)
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`candidateKnown`)
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`candidateKnown`)
 
 ## Alternatives considered
 - **A curated seed file of reference projects.** Complete for the names on it and tiny, but it is one more list to

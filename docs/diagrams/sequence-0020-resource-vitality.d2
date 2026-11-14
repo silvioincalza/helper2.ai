@@ -1,11 +1,11 @@
 # Sequence: one search and one Scout run under the vitality rule (ADR 0020).
-# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, SourceFanOut.kt (Run.collect, Run.admitted),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/Vitality.kt,
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/Ranking.kt,
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, SourceFanOut.kt (Run.collect, Run.admitted),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/Vitality.kt,
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/Ranking.kt,
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, indexable, proposable),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt (AdmissionPolicy.decide),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt (CandidateSignals.statedOn),
-#   backend/libs/sources/src/main/java/ai/helper2/sources/huggingface/HuggingFaceSpacesSource.java, github/GitHubSource.java.
+#   backend/libs/core/src/main/java/ai/helper2/sources/huggingface/HuggingFaceSpacesSource.java, github/GitHubSource.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0020-resource-vitality.d2 && d2 sequence-0020-resource-vitality.d2 sequence-0020-resource-vitality.svg
 
 ...@style

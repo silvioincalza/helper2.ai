@@ -146,9 +146,9 @@ the product: the next source does not get it.
       the 30-day window of the PyPI candidates, the per-topic and per-day limits.
 
 ### Code
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Vitality.kt` — `Vitality`, `VitalityRules`, `Refusal`, `VitalityPolicy`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `admitted`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ranking.kt` — `RankingWeights.unmaintained`.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Vitality.kt` — `Vitality`, `VitalityRules`, `Refusal`, `VitalityPolicy`.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `admitted`.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ranking.kt` — `RankingWeights.unmaintained`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt` — `AdmissionPolicy`, `Admission`
   (`Index`, `Review`, `Refuse`), `AdmissionRules`, `IndexFloor`, `ResourceSignals`, `ReviewReason`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/config/ScoutAdmissionProperties.java` — `helper2.scout.admission`;
@@ -156,11 +156,11 @@ the product: the next source does not get it.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `indexable`, `proposable`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` — `CandidateSignals.statedOn`;
   `sources/github/scout/RepositorySignals.java` — what GitHub states about a candidate.
-- `backend/libs/search/src/main/java/ai/helper2/search/config/VitalityConfiguration.java`, `VitalityProperties.java` — `helper2.vitality`.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/huggingface/HuggingFaceSpacesSource.java`, `github/GitHubSource.java` — the facts.
+- `backend/libs/core/src/main/java/ai/helper2/search/config/VitalityConfiguration.java`, `VitalityProperties.java` — `helper2.vitality`.
+- `backend/libs/core/src/main/java/ai/helper2/sources/huggingface/HuggingFaceSpacesSource.java`, `github/GitHubSource.java` — the facts.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` (`GapTargets.select`, `namesPackage`),
   `usecase/EnrichResource.kt` (`rememberIfArchived`), `sources/evidence/ReadmeEvidence.java` — the visit.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java` (`recordArchived`),
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java` (`recordArchived`),
   `ResourceRows.java` (`statedVitality`), `CatalogSearchSource.java`, `JdbcCatalogWriter.java` — the stored fact.
 - Tests: `VitalityPolicyTest`, `RankingTest`, `SearchResourcesTest`, `HuggingFaceSourcesTest`, `GitHubSourceTest`,
   `RunScoutTest` (an archived candidate is not proposed; a hit under its floor is not indexed), `AdmissionPolicyTest`
@@ -173,8 +173,8 @@ the product: the next source does not get it.
 - **A minimum of stars or downloads as a refusal** — hides new projects; popularity already ranks them lower.
 - **Refusing every fork** — simple, but hides a fork that became the living project.
 - **Reading the last release in the live search** — one more call per repository inside a 2.5 s budget.
-- **The admission rule next to `Vitality.kt` in the search library** — the live search does not admit to the
-  catalog; only the Scout indexes without a person. **In the catalog library** — the catalog would hold Scout rules.
+- **The admission rule next to `Vitality.kt` in the search context** — the live search does not admit to the
+  catalog; only the Scout indexes without a person. **In the catalog context** — the catalog would hold Scout rules.
 - **Admission numbers per resource type** — a repository of a curated list and one of a topic search need different
   numbers; the collector says where a resource comes from.
 - **One strategy class per resource type, a `Resource` aggregate** — four rules today; one rules record and one
