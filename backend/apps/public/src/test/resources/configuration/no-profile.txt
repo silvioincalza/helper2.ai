@@ -569,6 +569,7 @@ helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
 helper2.retention.enrichment-runs = ${H2_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
 helper2.retention.list-index = ${H2_RETENTION_LIST_INDEX:P30D}  =>  P30D
+helper2.retention.live-web-results = ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}  =>  P7D
 helper2.retention.observed-unseen = ${H2_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
 helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
 helper2.retention.resolved-issue-reports = ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}  =>  P365D
@@ -799,6 +800,15 @@ resilience4j.bulkhead.configs.source.max-concurrent-calls = ${H2_RESILIENCE_SOUR
 resilience4j.bulkhead.configs.source.max-wait-duration = 0
 resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
+resilience4j.bulkhead.instances.source-arxiv.base-config = source
+resilience4j.bulkhead.instances.source-curated.base-config = catalog
+resilience4j.bulkhead.instances.source-github.base-config = source
+resilience4j.bulkhead.instances.source-helper2-index.base-config = catalog
+resilience4j.bulkhead.instances.source-helper2-semantic.base-config = catalog
+resilience4j.bulkhead.instances.source-hf-models.base-config = source
+resilience4j.bulkhead.instances.source-hf-spaces.base-config = source
+resilience4j.bulkhead.instances.source-live-web.base-config = source
+resilience4j.bulkhead.instances.source-npm.base-config = source
 resilience4j.circuitbreaker.configs.collector.failure-rate-threshold = 50
 resilience4j.circuitbreaker.configs.collector.ignore-exceptions = ai.helper2.search.SourceFailure$RateLimited
 resilience4j.circuitbreaker.configs.collector.minimum-number-of-calls = 5
@@ -857,6 +867,16 @@ resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.h
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
 resilience4j.circuitbreaker.instances.llm-embed.base-config = model
 resilience4j.circuitbreaker.instances.redis.base-config = store
+resilience4j.circuitbreaker.instances.source-arxiv.base-config = source
+resilience4j.circuitbreaker.instances.source-curated.base-config = source
+resilience4j.circuitbreaker.instances.source-github.base-config = source
+resilience4j.circuitbreaker.instances.source-helper2-index.base-config = source
+resilience4j.circuitbreaker.instances.source-helper2-semantic.base-config = source
+resilience4j.circuitbreaker.instances.source-hf-models.base-config = source
+resilience4j.circuitbreaker.instances.source-hf-spaces.base-config = source
+resilience4j.circuitbreaker.instances.source-live-web.base-config = source
+resilience4j.circuitbreaker.instances.source-live-web.slow-call-duration-threshold = 5s
+resilience4j.circuitbreaker.instances.source-npm.base-config = source
 resilience4j.retry.configs.collector.enable-exponential-backoff = true
 resilience4j.retry.configs.collector.enable-randomized-wait = true
 resilience4j.retry.configs.collector.exponential-backoff-multiplier = 2

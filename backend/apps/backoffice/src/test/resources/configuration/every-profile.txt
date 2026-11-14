@@ -6,6 +6,14 @@ helper2.llm.reasoning-model = ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Su
 helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:true}  =>  true
 helper2.scout.enabled = false
 logging.structured.format.console = <empty>
+resilience4j.bulkhead.instances.source-demo-catalog.base-config = source
+resilience4j.bulkhead.instances.source-demo-down.base-config = source
+resilience4j.bulkhead.instances.source-demo-mirror.base-config = source
+resilience4j.bulkhead.instances.source-demo-slow.base-config = source
+resilience4j.circuitbreaker.instances.source-demo-catalog.base-config = source
+resilience4j.circuitbreaker.instances.source-demo-down.base-config = source
+resilience4j.circuitbreaker.instances.source-demo-mirror.base-config = source
+resilience4j.circuitbreaker.instances.source-demo-slow.base-config = source
 spring.ai.model.chat = openai
 spring.ai.openai.api-key = ${H2_NEBIUS_API_KEY}  =>  <needs a variable>
 spring.ai.openai.base-url = https://api.tokenfactory.nebius.com/v1
