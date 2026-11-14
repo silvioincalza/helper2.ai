@@ -19,7 +19,7 @@ user is asked to make decisions about the models.
   a second call checks each reason against its quote ([README](../README.md#how-the-models-are-used)).
   The Scout's claims need evidence, model dates are never accepted, and a disagreement with a source goes to human
   review.
-- **How good the answers are.** A fixed set of questions and a set of 8 hostile ones run against staging every
+- **How good the answers are.** A fixed set of questions and a set of 13 hostile ones run against staging every
   night ([ADR 0046](adr/operations/0046-evaluation-guide-and-search.md)). Search ranking
   has its own offline evaluation ([ADR 0046](adr/operations/0046-evaluation-guide-and-search.md)).
 - **What it costs and when it stops.** Daily caps on model calls and web searches, and circuit breakers on every

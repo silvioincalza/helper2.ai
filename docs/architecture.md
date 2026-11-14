@@ -1,8 +1,8 @@
 # Architecture
 
-Helper2 is a modular monolith: one Spring Boot application with Spring Modulith modules, hexagonal where
-business rules live, a React single-page app served by the same process, PostgreSQL as the system of record
-and Redis as a disposable cache. The decisions behind each part are in the [ADRs](adr/README.md), one per
+Helper2 is a modular monolith in two Spring Boot apps, the public app and the back office, over shared libraries
+with Spring Modulith modules, hexagonal where business rules live. A React single-page app is served from its own
+web image. PostgreSQL is the system of record and Redis a disposable cache. The decisions behind each part are in the [ADRs](adr/README.md), one per
 feature, in the order a reader should learn them. Open work is in the
 [backlog](https://github.com/silvioincalza/helper2.ai/issues): each ADR lists its open issues in its Backlog section.
 

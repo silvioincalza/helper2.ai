@@ -70,7 +70,7 @@ name stays (`Ollama - Get up and running`), and so does a segment that is not th
 content. A title is never empty: when nothing is left, the title stays as it was. The relevance gate and the event check
 read the title as Live web sent it. Identity is the page URL, so cleaning changes no result id or merge.
 
-**Not connected (and why):** LinkedIn directly (User Agreement forbids scraping; the API has no search — public pages come through Live web, `linkedin-scout`), Hacker News via Algolia (no readable terms of use found), PyPI (no search API), Product Hunt (API forbids commercial use),
+**Not connected (and why):** LinkedIn directly (User Agreement forbids scraping; the API has no search — public pages come through Live web, `linkedin-scout`), PyPI directly (no search API: packages come through BigQuery, `pypi`), Product Hunt (API forbids commercial use),
 There's An AI For That (terms not obtainable), paid web-search APIs other than the one behind Live web.
 
 **Adding a source:** verify docs/terms/limits/costs → add a row here and in the research doc →
