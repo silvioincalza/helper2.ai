@@ -2,6 +2,7 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.ResourceRow;
+import ai.helper2.catalog.config.CatalogProperties;
 import ai.helper2.platform.PgVectors;
 import ai.helper2.search.ListMatch;
 import ai.helper2.search.Vitality;
@@ -9,6 +10,8 @@ import ai.helper2.shared.ResourceType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -28,10 +31,18 @@ public class JdbcCatalogSearch {
 
   private final JdbcClient jdbc;
   private final ResourceRows rows;
+  private final Clock clock;
+  private final Duration observedSettlesAfter;
 
-  JdbcCatalogSearch(JdbcClient jdbc, ResourceRows rows) {
+  JdbcCatalogSearch(JdbcClient jdbc, ResourceRows rows, Clock clock, CatalogProperties catalog) {
     this.jdbc = jdbc;
     this.rows = rows;
+    this.clock = clock;
+    this.observedSettlesAfter = catalog.observedSettlesAfter();
+  }
+
+  private Timestamp settledBefore() {
+    return Timestamp.from(clock.instant().minus(observedSettlesAfter));
   }
 
   Map<UUID, Vitality> statedVitality(List<ResourceRow> found) {
@@ -100,6 +111,7 @@ public class JdbcCatalogSearch {
              similarity(lower(r.title), lower(:raw)) AS sim, r.popularity AS pop, false AS via_list
       FROM resource r, q
       WHERE r.data_origin = ANY(:origins)
+        AND (r.data_origin <> 'OBSERVED' OR r.first_discovered_at <= :settledBefore)
         AND %3$s
         AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
     ), listed AS (
@@ -121,6 +133,7 @@ public class JdbcCatalogSearch {
       SELECT l.id, l.all_match, 0, r.popularity, true
       FROM listed l JOIN resource r ON r.id = l.id
       WHERE r.data_origin = ANY(:origins)
+        AND (r.data_origin <> 'OBSERVED' OR r.first_discovered_at <= :settledBefore)
         AND (CAST(:after AS timestamptz) IS NULL OR r.published_at >= CAST(:after AS timestamptz))
     ), pre AS (
       SELECT * FROM matched m
@@ -194,6 +207,7 @@ public class JdbcCatalogSearch {
             .param("raw", query)
             .param("lang", language == null ? "simple" : language)
             .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
+            .param("settledBefore", settledBefore())
             .param("similarity", TITLE_SIMILARITY)
             .param("preselect", Math.max(PRESELECT, limit))
             .param("limit", limit)
@@ -232,6 +246,7 @@ public class JdbcCatalogSearch {
                     SELECT r.*, 1 - (e.embedding <=> CAST(:v AS vector)) AS score
                     FROM resource_embedding e JOIN resource r ON r.id = e.resource_id
                     WHERE e.model = :model AND r.data_origin = ANY(:origins)
+                      AND (r.data_origin <> 'OBSERVED' OR r.first_discovered_at <= :settledBefore)
                       AND (e.embedding <=> CAST(:v AS vector)) <= :maxDistance
                     ORDER BY e.embedding <=> CAST(:v AS vector)
                     LIMIT :limit
@@ -241,6 +256,7 @@ public class JdbcCatalogSearch {
             .param("v", PgVectors.literal(query))
             .param("model", model)
             .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
+            .param("settledBefore", settledBefore())
             .param("maxDistance", maxDistance)
             .param("limit", limit)
             .query(rows::mapResource)

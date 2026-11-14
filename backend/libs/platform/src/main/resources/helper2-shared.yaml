@@ -257,6 +257,7 @@ helper2:
     timeout: 3s
   catalog:
     observation-queue: 256
+    observed-settles-after: PT24H
     index:
       timeout: ${H2_SOURCE_INDEX_TIMEOUT:3s}
     curated:

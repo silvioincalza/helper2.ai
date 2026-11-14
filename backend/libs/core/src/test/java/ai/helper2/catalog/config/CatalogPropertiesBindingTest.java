@@ -25,6 +25,7 @@ class CatalogPropertiesBindingTest {
           .isEqualTo(
               new CatalogProperties(
                   256,
+                  Duration.ofHours(24),
                   new CatalogProperties.Index(Duration.ofSeconds(3)),
                   new CatalogProperties.Curated(true, Duration.ofMillis(1000)),
                   new CatalogProperties.Semantic(Duration.ofSeconds(3), 0.65, Duration.ofDays(7)),

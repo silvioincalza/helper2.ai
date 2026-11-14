@@ -18,6 +18,7 @@ class CatalogSourceNamesTest {
   private final CatalogProperties catalog =
       new CatalogProperties(
           1,
+          SECOND,
           new CatalogProperties.Index(SECOND),
           new CatalogProperties.Curated(true, SECOND),
           new CatalogProperties.Semantic(SECOND, 0.65, SECOND),

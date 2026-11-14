@@ -23,11 +23,11 @@ constructor(
 
   fun merge(hits: List<SourceHit>, contexts: Map<String, SourceContext>): List<MergedResult> {
     val joining = joiningRepositories(hits)
-    return group(hits, joining).map { withCurated(mergeGroup(it, contexts), it) }
+    return group(hits, joining).map { withCurated(mergeGroup(it, contexts)) }
   }
 
-  private fun withCurated(merged: MergedResult, group: List<SourceHit>): MergedResult {
-    val curated = group.firstOrNull { it.curatedFields.isNotEmpty() } ?: return merged
+  private fun withCurated(merged: MergedResult): MergedResult {
+    val curated = merged.hits.firstOrNull { it.curatedFields.isNotEmpty() } ?: return merged
     return merged.withCurated(
       curated.curatedFields,
       curated.type,
@@ -41,10 +41,9 @@ constructor(
 
   private fun joiningRepositories(hits: List<SourceHit>): Map<CanonicalUrl, CanonicalUrl> =
     hits
-      .mapNotNull { h ->
-        h.repositoryUrl?.takeIf { it != h.canonicalUrl }?.let { h.canonicalUrl to it }
-      }
-      .toMap()
+      .filter { it.repositoryUrl != null && it.repositoryUrl != it.canonicalUrl }
+      .groupBy({ it.canonicalUrl }, { it.repositoryUrl!! })
+      .mapValues { (_, repositories) -> repositories.minWith(GITHUB_FIRST) }
 
   private fun group(
     hits: List<SourceHit>,
@@ -70,11 +69,11 @@ constructor(
   }
 
   private fun mergeGroup(
-    group: List<SourceHit>,
+    found: List<SourceHit>,
     contexts: Map<String, SourceContext>,
   ): MergedResult {
-    val ordered =
-      group.sortedWith(
+    val group =
+      found.sortedWith(
         compareBy<SourceHit>(
           { contexts[it.sourceId]?.descriptor?.priority ?: Int.MAX_VALUE },
           { it.sourceId },
@@ -82,12 +81,12 @@ constructor(
           { it.externalId },
         )
       )
-    val primary = ordered.first()
+    val primary = group.first()
     val identity =
       group
         .mapNotNull { it.repositoryUrl }
         .ifEmpty { group.map { it.canonicalUrl } }
-        .minWith(compareBy({ if (it.host == "github.com") 0 else 1 }, { it.value }))
+        .minWith(GITHUB_FIRST)
     val conflicts = mutableListOf<FieldConflict>()
 
     val license = categorical("license", group, conflicts) { it.license?.let(::normalizeLicense) }
@@ -101,13 +100,13 @@ constructor(
       canonicalUrl = identity,
       url = primary.url,
       title = primary.title,
-      description = ordered.firstNotNullOfOrNull { it.description },
+      description = group.firstNotNullOfOrNull { it.description },
       descriptionOrigin =
-        ordered.firstOrNull { it.description != null }?.descriptionOrigin
+        group.firstOrNull { it.description != null }?.descriptionOrigin
           ?: primary.descriptionOrigin,
       type = type,
       audience = group.map { it.audience }.fold(Audience.UNKNOWN) { acc, a -> acc.combine(a) },
-      techLevel = ordered.firstNotNullOfOrNull { it.techLevel },
+      techLevel = group.firstNotNullOfOrNull { it.techLevel },
       useCases =
         group
           .flatMapTo(sortedSetOf()) { it.useCases }
@@ -126,7 +125,7 @@ constructor(
       discovered = DateFact.unknown(),
       popularity = newestPopularity(group),
       sources =
-        ordered
+        group
           .distinctBy { it.sourceId }
           .map { h ->
             val d = contexts[h.sourceId]?.descriptor
@@ -140,12 +139,12 @@ constructor(
           },
       freshness = group.map { freshnessOf(contexts[it.sourceId]) }.minBy { it.ordinal },
       conflicts = conflicts,
-      hits = ordered,
+      hits = group,
       eventStart = DateFact.earliest(eventSources(group).map { it.eventStart }),
       eventEnd = DateFact.latest(eventSources(group).map { it.eventEnd }),
-      location = eventFacts(ordered, group).firstNotNullOfOrNull { it.location },
-      eventKind = eventFacts(ordered, group).firstNotNullOfOrNull { it.eventKind },
-      eventFormat = eventFacts(ordered, group).firstNotNullOfOrNull { it.eventFormat },
+      location = eventFacts(group).firstNotNullOfOrNull { it.location },
+      eventKind = eventFacts(group).firstNotNullOfOrNull { it.eventKind },
+      eventFormat = eventFacts(group).firstNotNullOfOrNull { it.eventFormat },
       categories = categoriesOf(primary.title, group, tags, type),
     )
   }
@@ -164,9 +163,9 @@ constructor(
     return stated.ifEmpty { group }
   }
 
-  private fun eventFacts(ordered: List<SourceHit>, group: List<SourceHit>): List<SourceHit> {
+  private fun eventFacts(group: List<SourceHit>): List<SourceHit> {
     val counted = eventSources(group).toSet()
-    return ordered.filter { it in counted }
+    return group.filter { it in counted }
   }
 
   private fun categoriesOf(
@@ -221,6 +220,9 @@ constructor(
     }
 
   companion object {
+    private val GITHUB_FIRST =
+      compareBy<CanonicalUrl>({ if (it.host == "github.com") 0 else 1 }, { it.value })
+
     private val LICENSE_ALIASES =
       mapOf(
         "mit license" to "MIT",

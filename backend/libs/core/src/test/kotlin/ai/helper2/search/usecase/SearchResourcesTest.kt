@@ -241,6 +241,40 @@ class SearchResourcesTest {
   }
 
   @Test
+  fun `the same query asked again with the source cache warm gets the same first ten results`() {
+    val pages = (1..8).map { "https://github.com/acme/tool-$it" }
+    val sources =
+      listOf(
+        FakeSource(descriptor("catalog", mode = SourceMode.INDEXED)) {
+          pages.reversed().mapIndexed { i, u -> hit("catalog", u, rank = i) }
+        },
+        ok("github", *pages.toTypedArray()),
+        ok("npm", *(1..8).map { "https://www.npmjs.com/package/kit-$it" }.toTypedArray()),
+        ok("hf", *(1..8).map { "https://huggingface.co/acme/model-$it" }.toTypedArray()),
+      )
+    val svc = service(sources)
+    fun firstTen() =
+      svc.search(req()).let { out ->
+        out.statuses.map { it.servedFrom } to out.results.take(10).map { it.id }
+      }
+
+    val (coldFrom, cold) = firstTen()
+    clock.now = clock.now.plusSeconds(120)
+    val (warmFrom, warm) = firstTen()
+    clock.now = clock.now.plusSeconds(120)
+    val (_, warmAgain) = firstTen()
+
+    assertEquals(List(4) { ServedFrom.LIVE }, coldFrom)
+    assertEquals(
+      listOf(ServedFrom.LIVE, ServedFrom.CACHE, ServedFrom.CACHE, ServedFrom.CACHE),
+      warmFrom,
+    )
+    assertEquals(10, warm.size)
+    assertEquals(warm, warmAgain)
+    assertEquals(cold, warm)
+  }
+
+  @Test
   fun `after ttl the source is queried live again`() {
     val gh = ok("github", "https://github.com/a/x")
     val svc = service(listOf(gh))
