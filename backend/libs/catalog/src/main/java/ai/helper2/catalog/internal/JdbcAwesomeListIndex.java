@@ -22,12 +22,16 @@ class JdbcAwesomeListIndex implements AwesomeListIndex {
 
   @Transactional
   @Override
-  public List<UUID> replace(AwesomeListText list) {
+  public Replaced replace(AwesomeListText list) {
     UUID listId = ResourceId.of(list.url()).getValue();
     if (!exists(listId)) {
-      return List.of();
+      return Replaced.NONE;
     }
-    jdbc.sql("DELETE FROM awesome_list_entry WHERE list_id = :list").param("list", listId).update();
+    List<UUID> previous =
+        jdbc.sql("DELETE FROM awesome_list_entry WHERE list_id = :list RETURNING resource_id")
+            .param("list", listId)
+            .query(UUID.class)
+            .list();
     List<UUID> written =
         jdbc.sql(
                 """
@@ -56,7 +60,8 @@ class JdbcAwesomeListIndex implements AwesomeListIndex {
         .param("list", listId)
         .param("headings", list.headings())
         .update();
-    return written;
+    List<UUID> removed = previous.stream().filter(id -> !written.contains(id)).toList();
+    return new Replaced(written, removed);
   }
 
   private boolean exists(UUID id) {
