@@ -1,0 +1,155 @@
+# Flowchart: how the back office overview is answered (ADR 0038).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
+#   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
+#   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
+#   backend/libs/examples/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/admin/AdminOverview.tsx,
+#   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
+#   catalog/internal/BacklogRule.java, scout/EnrichmentQueue.kt (QueuePlace),
+#   scout/usecase/RequeueEnrichment.kt, SkipEnrichment.kt, PrioritiseEnrichment.kt, admin/web/EnrichmentQueueController.java,
+#   admin/usecase/ResolveReviewItems.java, admin/BulkDecisionRule.java, admin/web/ReviewItemMapper.java,
+#   backend/libs/examples/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java,
+#   admin/web/ReviewController.java (marker).
+# Render: cd docs/diagrams && d2 fmt flow-0038-back-office.d2 && d2 flow-0038-back-office.d2 flow-0038-back-office.svg
+
+...@style
+
+direction: down
+
+req: "GET /api/v1/admin/overview\n(back office, ADMIN)" {class: end}
+
+uc: GetOverview {
+  class: group
+  direction: down
+  fresh: "Last overview younger\nthan one minute?" {class: decision}
+  again: "Same overview again" {class: end}
+  compute: "Compute, one at a time" {class: app}
+  fresh -> again: yes {class: hot}
+  fresh -> compute: no
+}
+
+parts: Counts {
+  class: group
+  direction: down
+  kinds: "Open items per kind\n(catalog, every kind)" {class: data}
+  backlog: "Enrichment backlog\n(the Scout's rule, counted)" {class: data}
+  runs: "Last runs; FAILED\nin the last 24 h" {class: data}
+  budget: "Each declared budget:\ncount in Redis?" {class: decision}
+  used: "used of limit" {class: end}
+  unknown: "unknown" {class: fail}
+  credits: "Web credits today\n(null when off or unreadable)" {class: data}
+  examples: "Home examples shown per path;\nhidden by check, paused" {class: data}
+  budget -> used: yes
+  budget -> unknown: "no Redis, or it cannot answer"
+}
+
+req -> uc.fresh
+uc.compute -> parts.kinds
+uc.compute -> parts.backlog
+uc.compute -> parts.runs
+uc.compute -> parts.budget
+uc.compute -> parts.credits
+uc.compute -> parts.examples
+
+queue_req: "GET /api/v1/admin/enrichment-queue\n(view, after = cursor)" {class: end}
+
+queue: ListEnrichmentQueue {
+  class: group
+  direction: down
+  view: "Which view?" {class: decision}
+  part: "Which part is\nthe cursor in?" {class: decision}
+  at_top: "Rows at the top after it,\nthen never-run, then to retry" {class: data}
+  both: "Never-run rows after it,\nthen the rows to retry" {class: data}
+  retry: "Rows to retry\nafter it" {class: data}
+  skipped: "Skipped rows,\nlatest skip first" {class: data}
+  out: "Rows out of retries\n(not skipped)" {class: data}
+  more: "One row more than asked?" {class: decision}
+  next: "next = cursor of the last row" {class: end}
+  last: "next = null" {class: end}
+  view -> part: WAITING
+  view -> skipped: SKIPPED
+  view -> out: OUT_OF_RETRIES
+  part -> at_top: "at the top, or no cursor"
+  part -> both: "never-run"
+  part -> retry: "to retry"
+  at_top -> more
+  both -> more
+  retry -> more
+  skipped -> more
+  out -> more
+  more -> next: yes
+  more -> last: no
+}
+
+queue_req -> queue.view
+
+act_req: "POST /api/v1/admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\n(back office, ADMIN, CSRF)" {class: end}
+
+act: "RequeueEnrichment · SkipEnrichment · PrioritiseEnrichment\n(one transaction)" {
+  class: group
+  direction: down
+  known: "Resource known?" {class: decision}
+  notfound: "404, audit NOT_FOUND" {class: fail}
+  applies: "Action applies?\nrequeue: skipped or out of retries\nskip: waits, not skipped\nprioritise (after the top lock): waits,\nnot at the top, fewer than 50 at the top" {class: decision}
+  refused: "409 not-applicable,\naudit the reason" {class: fail}
+  write: "Write the control row\n(priority until the next run;\nskip; failures counted from now)" {class: data}
+  done: "204, audit REQUEUED (REQUEUED_RESET\nwhen the retries start again),\nSKIPPED or PRIORITISED" {class: end}
+  known -> notfound: no
+  known -> applies: yes
+  applies -> refused: no
+  applies -> write: yes
+  write -> done
+}
+
+act_req -> act.known
+
+evidence_req: "GET /api/v1/admin/review-items/{id}/evidence" {class: end}
+
+evidence: GetReviewEvidence {
+  class: group
+  direction: down
+  item: "Item exists?" {class: decision}
+  missing: "404" {class: fail}
+  rel: "Item links to a\nrelationship?" {class: decision}
+  relationship: "Run + the relationship,\nat most 5 quotes" {class: data}
+  run: "Item links to a run?" {class: decision}
+  fields: "Run, its validation errors,\nits fields CONFLICTING first,\nat most 5 quotes each" {class: data}
+  drafted: "A drafted example the\nexamples module can read?\n(ReadExampleDraft)" {class: decision}
+  typed: "The item with its draft:\nlabel, query, path, model" {class: end}
+  draftmark: "aiContent: item.draft.label,\nitem.draft.query, the draft's model" {class: ai}
+  none: "The item only\n(details as text)" {class: end}
+  marker: "aiContent: provider, model,\nAI-written paths" {class: ai}
+  item -> missing: no
+  item -> rel: yes
+  rel -> relationship: yes
+  rel -> run: no
+  run -> fields: yes
+  run -> drafted: no
+  drafted -> typed: yes
+  typed -> draftmark
+  drafted -> none: no
+  relationship -> marker
+  fields -> marker
+}
+
+evidence_req -> evidence.item
+
+bulk_req: "POST /api/v1/admin/review-items/resolutions\n(1 to 100 ids, each once, CSRF;\na repeated id: 400)" {class: end}
+
+bulk: "ResolveReviewItems, per item" {
+  class: group
+  direction: down
+  open: "Item open?" {class: decision}
+  reject: "Reject?" {class: decision}
+  kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?\n(ReviewEvidence.conflictingFields)" {class: decision}
+  refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
+  one: "ResolveReview, its own transaction\n(audit: ACCEPTED bulk:<batch>)" {class: app}
+  other: "ResolveReview: NOT_OPEN or NOT_FOUND" {class: end}
+  open -> reject: yes
+  open -> other: "no, or no item"
+  reject -> one: yes
+  reject -> kind: "no (accept)"
+  kind -> one: yes
+  kind -> refused: no
+}
+
+bulk_req -> bulk.open

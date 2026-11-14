@@ -1,0 +1,33 @@
+# Sequence: the public app writes its settings groups at startup, the owner reads them in the back office (ADR 0038).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/settings/PublishSettingsAtStartup.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/settings/JdbcPublicAppSettings.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/SettingsController.java, admin/usecase/GetEffectiveSettings.java,
+#   frontend/src/admin/SettingsPage.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0038-settings-of-both-apps.d2 && d2 sequence-0038-settings-of-both-apps.d2 sequence-0038-settings-of-both-apps.svg
+
+...@style
+
+shape: sequence_diagram
+
+pub: "Public app\n(a replica)" {class: app}
+db: PostgreSQL {class: data}
+bo: "Back office\n(admin module)" {class: app}
+spa: "Settings page" {class: app}
+owner: "Owner\n(admin host)" {class: person}
+
+startup: The public app starts {
+  pub -> pub: "ApplicationReadyEvent:\nits SettingsGroup beans"
+  pub -> db: "pg_advisory_xact_lock;\nDELETE public_app_setting;\nINSERT each setting (version, time)"
+  db -> pub: "committed (a failure: a warning, the app runs)"
+}
+
+read: The owner opens Settings {
+  owner -> spa: "/admin/settings"
+  spa -> bo: "GET /api/v1/admin/config"
+  bo -> bo: "its own groups, read now"
+  bo -> db: "SELECT public_app_setting\nORDER BY group_order, group_id, position"
+  db -> bo: "the public app's groups"
+  bo -> bo: "keep the groups it does not have\n(guide, setup); check each value"
+  bo -> spa: "200 {groups (app per group),\npublicApp {build, publishedAt}}"
+  spa -> owner: "AI guide: from the public app,\nversion, as it started at"
+}
