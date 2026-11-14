@@ -17,6 +17,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcKnownTargetList jdbcKnownTargetList(JdbcClient jdbc) {
+    return new JdbcKnownTargetList(jdbc);
+  }
+
+  @Bean
   JdbcKnownTargetCandidates jdbcKnownTargetCandidates(JdbcClient jdbc) {
     return new JdbcKnownTargetCandidates(jdbc);
   }
