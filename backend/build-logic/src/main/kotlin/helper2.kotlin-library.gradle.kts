@@ -155,4 +155,6 @@ tasks.register<Test>("perfTest") {
 tasks.register<Test>("liveTest") {
   description = "Runs @Tag(\"live\") tests against real external sources."
   taggedFromTestSources("live")
+  doNotTrackState("A live test asks the real sources each time it is asked for.")
+  testLogging { events("skipped", "failed") }
 }
