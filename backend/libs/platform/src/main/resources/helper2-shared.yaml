@@ -198,6 +198,9 @@ resilience4j:
       db-cache:
         max-concurrent-calls: ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}
         max-wait-duration: 0
+      guide:
+        max-concurrent-calls: ${H2_GUIDE_MAX_CONCURRENT:8}
+        max-wait-duration: 0
   retry:
     configs:
       collector:

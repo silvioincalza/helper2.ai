@@ -559,6 +559,26 @@ helper2.feeds[7].id = aws-ml
 helper2.feeds[7].publisher = AWS
 helper2.feeds[7].short-name = AWS ML
 helper2.feeds[7].url = https://aws.amazon.com/blogs/machine-learning/feed/
+helper2.guide.cache-ttl = ${H2_GUIDE_CACHE_TTL:PT24H}  =>  PT24H
+helper2.guide.choose-max-tokens = ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}  =>  8192
+helper2.guide.client-daily-free-answers = ${H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS:5}  =>  5
+helper2.guide.client-daily-questions = ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}  =>  30
+helper2.guide.daily-model-calls = ${H2_GUIDE_DAILY_MODEL_CALLS:600}  =>  600
+helper2.guide.deadline-margin = 2s
+helper2.guide.fairness.budget-pace-slots = ${H2_GUIDE_BUDGET_PACE_SLOTS:12}  =>  12
+helper2.guide.fairness.client-concurrent-questions = ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}  =>  2
+helper2.guide.fairness.network-daily-questions = ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}  =>  300
+helper2.guide.heartbeat = ${H2_GUIDE_HEARTBEAT:PT15S}  =>  PT15S
+helper2.guide.max-candidates = ${H2_GUIDE_MAX_CANDIDATES:24}  =>  24
+helper2.guide.model-call-minimum = 10s
+helper2.guide.model-call-timeout = ${H2_LLM_TIMEOUT:40s}  =>  40s
+helper2.guide.model-stream = ${H2_GUIDE_MODEL_STREAM:OFF}  =>  OFF
+helper2.guide.question-deadline = ${H2_GUIDE_QUESTION_DEADLINE:PT90S}  =>  PT90S
+helper2.guide.similar-threshold = ${H2_GUIDE_SIMILAR_THRESHOLD:}  =>  <empty>
+helper2.guide.thinking.browse-tokens = ${H2_GUIDE_THINK_BROWSE_TOKENS:2048}  =>  2048
+helper2.guide.thinking.choose-tokens = ${H2_GUIDE_THINK_CHOOSE_TOKENS:0}  =>  0
+helper2.guide.thinking.plan-tokens = ${H2_GUIDE_THINK_PLAN_TOKENS:0}  =>  0
+helper2.guide.thinking.verify-tokens = ${H2_GUIDE_THINK_VERIFY_TOKENS:0}  =>  0
 helper2.http.max-connections = 50
 helper2.http.max-connections-per-route = 20
 helper2.http.max-response-size = 2MB
@@ -823,6 +843,8 @@ resilience4j.bulkhead.configs.source.max-concurrent-calls = ${H2_RESILIENCE_SOUR
 resilience4j.bulkhead.configs.source.max-wait-duration = 0
 resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
+resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${H2_GUIDE_MAX_CONCURRENT:8}  =>  8
+resilience4j.bulkhead.instances.guide.max-wait-duration = 0
 resilience4j.bulkhead.instances.setup-guide.max-concurrent-calls = ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.setup-guide.max-wait-duration = 0
 resilience4j.bulkhead.instances.source-arxiv.base-config = source
@@ -888,6 +910,10 @@ resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
 resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.llm-chat-guide.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat-guide.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model

@@ -823,6 +823,8 @@ resilience4j.bulkhead.configs.source.max-concurrent-calls = ${H2_RESILIENCE_SOUR
 resilience4j.bulkhead.configs.source.max-wait-duration = 0
 resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
+resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${H2_GUIDE_MAX_CONCURRENT:8}  =>  8
+resilience4j.bulkhead.instances.guide.max-wait-duration = 0
 resilience4j.bulkhead.instances.source-arxiv.base-config = source
 resilience4j.bulkhead.instances.source-curated.base-config = catalog
 resilience4j.bulkhead.instances.source-github.base-config = source
