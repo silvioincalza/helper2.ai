@@ -109,4 +109,5 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 
 ## Backlog
 - Decides: [F2.10](https://github.com/silvioincalza/helper2.ai/issues/40).
-- Open issues that change it: none.
+- Open issues that change it:
+  - [S2.10.3](https://github.com/silvioincalza/helper2.ai/issues/360): a source record stays with its resource.
