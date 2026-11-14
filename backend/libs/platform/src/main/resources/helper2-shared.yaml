@@ -51,6 +51,51 @@ server:
   port: ${H2_PORT:8080}
   shutdown: graceful
   forward-headers-strategy: ${H2_FORWARD_HEADERS_STRATEGY:none}
+management:
+  server:
+    port: ${H2_MANAGEMENT_PORT:}
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    redis:
+      enabled: false
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+        helper2.scout.run: true
+        helper2.llm.call: true
+        helper2.search.latency: true
+    tags:
+      environment: ${H2_ENVIRONMENT:local}
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  logging:
+    export:
+      otlp:
+        enabled: false
+  tracing:
+    sampling:
+      probability: ${H2_TRACING_SAMPLING:1.0}
+    export:
+      enabled: ${H2_TRACING_EXPORT:false}
+  opentelemetry:
+    resource-attributes:
+      deployment.environment.name: ${H2_ENVIRONMENT:local}
+    tracing:
+      export:
+        otlp:
+          endpoint: ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
 resilience4j:
   circuitbreaker:
     configs:
@@ -121,6 +166,10 @@ resilience4j:
         exponential-backoff-multiplier: 2
         enable-randomized-wait: true
         randomized-wait-factor: 0.5
+logging:
+  structured:
+    format:
+      console: ${H2_LOG_FORMAT:logstash}
 helper2:
   build:
     version: ${H2_BUILD_VERSION:local}
@@ -169,6 +218,10 @@ spring:
       enabled: true
       file: ../compose.yaml
       lifecycle-management: start-only
+logging:
+  structured:
+    format:
+      console: ""
 ---
 spring:
   config:
@@ -193,6 +246,8 @@ helper2:
 helper2:
   retention:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
+    runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
+    backups: ${H2_RETENTION_BACKUPS:P7D}
 ---
 helper2:
   quota:

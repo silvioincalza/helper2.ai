@@ -5,3 +5,10 @@ spring:
 spring:
   application:
     name: helper2-backoffice
+management:
+  metrics:
+    tags:
+      application: helper2-backoffice
+  opentelemetry:
+    resource-attributes:
+      service.name: helper2-backoffice

@@ -5,6 +5,13 @@ spring:
 spring:
   application:
     name: helper2
+management:
+  metrics:
+    tags:
+      application: helper2
+  opentelemetry:
+    resource-attributes:
+      service.name: helper2
 helper2:
   schema:
     logins:

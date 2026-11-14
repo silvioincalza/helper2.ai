@@ -1,4 +1,5 @@
 helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:true}  =>  true
+logging.structured.format.console = <empty>
 spring.datasource.password = ${H2_DATABASE_PASSWORD:helper2-local-only}  =>  helper2-local-only
 spring.docker.compose.enabled = true
 spring.docker.compose.file = ../compose.yaml
