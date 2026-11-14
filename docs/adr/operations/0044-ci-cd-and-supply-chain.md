@@ -32,10 +32,12 @@ Harbor could put an image under a tag first.
      research file, `industry-events-seed.test.mjs`, [0012](../scout/0012-scout-collectors-and-events.md)), the
      check that no released migration changed (`.github/scripts/released-migrations.sh`, its self-test first,
      [0004](../foundation/0004-persistence-and-the-schema.md) §5), then the map of what the change touches (§8);
-   - frontend, jobs side by side, each with `npm ci` and the generated API types: `frontend-build` (build,
-     `check:bundle`), `frontend-check` (`format:check` with Prettier, lint, `knip`, typecheck, `npm audit`,
-     [0047](0047-code-format-and-dead-code-audit.md)) and `frontend-test`, Vitest in three jobs named
-     after the folders they test: `search, guide`; `home, resource, pages, admin`; `lib, styles, shell, the rest`. The
+   - frontend, the build first and the checks after it, each job with the generated API types: `frontend-build`
+     (build, `check:bundle`) runs `npm ci` and caches `frontend/node_modules` under a key of runner, Node version and
+     the hash of `package-lock.json`; with the key in the cache it skips `npm ci`. `frontend-check` (`format:check`
+     with Prettier, lint, `knip`, typecheck, `npm audit`, [0047](0047-code-format-and-dead-code-audit.md)) and
+     `frontend-test` need `frontend-build`, restore that `node_modules` and run side by side; a job that finds no
+     cache entry runs `npm ci` itself. `frontend-test` is Vitest in three jobs named after the folders they test: `search, guide`; `home, resource, pages, admin`; `lib, styles, shell, the rest`. The
      last one runs every test the first two do not, so a new folder is tested there without a change to `ci.yml`.
      A group whose folders hold no test passes (`--passWithNoTests`).
      What the images pack waits only for the build; the image still waits for every check, because CD runs the image

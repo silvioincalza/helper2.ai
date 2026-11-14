@@ -86,13 +86,19 @@ jobs:
           node-version: 26
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --no-audit --no-fund
+      - id: modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npm run gen:api
       - run: npm run build
       - run: npm run check:bundle
 
   frontend-check:
-    needs: changes
+    needs: [changes, frontend-build]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -104,9 +110,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 26
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --no-audit --no-fund
+      - id: modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npm run gen:api
       - run: npm run format:check
       - run: npm run lint
@@ -119,7 +129,7 @@ jobs:
 
   frontend-test:
     name: frontend-test (${{ matrix.group }})
-    needs: changes
+    needs: [changes, frontend-build]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -141,9 +151,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: 26
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --no-audit --no-fund
+      - id: modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npm run gen:api
       - name: Vitest (${{ matrix.group }})
         run: npx vitest run --passWithNoTests ${{ matrix.args }}
