@@ -1119,6 +1119,7 @@ class JdbcCatalogWriterIT {
                 List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, 50_000, "github", now)))),
         DataOrigin.OBSERVED,
         LIVE);
+    settled(fit, popular);
     String english = "app to translate texts " + run;
 
     List<String> found =
@@ -1144,6 +1145,7 @@ class JdbcCatalogWriterIT {
   void searchFindsATitleBySimilarityAlone() {
     String repo = "https://github.com/acme/similar-" + run;
     writer.upsert(merge(hit("github", repo, null, Set.of(), List.of())), DataOrigin.OBSERVED, LIVE);
+    settled(repo);
 
     List<ResourceRow> rows =
         catalogSearch.search(
@@ -1157,6 +1159,16 @@ class JdbcCatalogWriterIT {
             null);
 
     assertThat(rows).extracting(ResourceRow::canonicalUrl).contains(repo);
+  }
+
+  private void settled(String... canonicalUrls) {
+    jdbc.sql(
+            """
+            UPDATE resource SET first_discovered_at = now() - interval '25 hours'
+            WHERE canonical_url = ANY(:urls)
+            """)
+        .param("urls", canonicalUrls)
+        .update();
   }
 
   private SourceHit eventFrom(String source, String url, String start, String end) {

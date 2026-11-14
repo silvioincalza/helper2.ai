@@ -62,6 +62,7 @@ class CatalogSearchSourceIT {
     indexedToolTenDaysOld = resource("PRODUCT", "INDEXED", daysAgo(10));
     indexedArticleThreeDaysOld = resource("ARTICLE", "INDEXED", daysAgo(3));
     observedToolTwoDaysOld = resource("PRODUCT", "OBSERVED", daysAgo(2));
+    discovered(observedToolTwoDaysOld, daysAgo(2));
     indexedToolALongTimeAgo = resource("PRODUCT", "INDEXED", daysAgo(400));
     indexedToolWithoutDate = resource("PRODUCT", "INDEXED", null);
     curatedToolFiveDaysOld = resource("PRODUCT", "CURATED", daysAgo(5));
@@ -98,6 +99,13 @@ class CatalogSearchSourceIT {
         .update();
     created.add(id);
     return id;
+  }
+
+  void discovered(UUID resource, Instant at) {
+    jdbc.sql("UPDATE resource SET first_discovered_at = :at WHERE id = :id")
+        .param("at", Timestamp.from(at))
+        .param("id", resource)
+        .update();
   }
 
   SourceQuery browse(LocalDate after, Set<ResourceType> types) {
@@ -210,6 +218,22 @@ class CatalogSearchSourceIT {
     assertThat(ours(index.search(text(dayOf(daysAgo(30))))))
         .containsExactlyInAnyOrder(
             indexedToolTenDaysOld, indexedArticleThreeDaysOld, observedToolTwoDaysOld);
+  }
+
+  @Test
+  void aResourceASearchObservedAnswersATextSearchOnlyOnceItHasSettled() {
+    UUID observedAMinuteAgo = resource("PRODUCT", "OBSERVED", daysAgo(1));
+    discovered(observedAMinuteAgo, now.minus(1, ChronoUnit.MINUTES));
+    UUID indexedAMinuteAgo = resource("PRODUCT", "INDEXED", daysAgo(1));
+    discovered(indexedAMinuteAgo, now.minus(1, ChronoUnit.MINUTES));
+
+    assertThat(ours(index.search(text(null))))
+        .contains(indexedAMinuteAgo, observedToolTwoDaysOld)
+        .doesNotContain(observedAMinuteAgo);
+
+    discovered(observedAMinuteAgo, now.minus(25, ChronoUnit.HOURS));
+
+    assertThat(ours(index.search(text(null)))).contains(observedAMinuteAgo);
   }
 
   @Test

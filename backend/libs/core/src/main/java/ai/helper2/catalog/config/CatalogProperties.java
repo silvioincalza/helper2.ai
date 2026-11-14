@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("helper2.catalog")
 public record CatalogProperties(
     @Positive int observationQueue,
+    @NotNull Duration observedSettlesAfter,
     @Valid @NotNull Index index,
     @Valid @NotNull Curated curated,
     @Valid @NotNull Semantic semantic,

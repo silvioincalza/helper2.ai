@@ -55,7 +55,7 @@ never break keyword search.
    A process that has not run a tick yet has not counted: its gauge reports `NaN`, not 0. After a start that lasts
    until the lock of the replica before it runs out, up to 10 min.
 5. **One more source** (`SemanticSearchSource`, id `helper2-semantic`, mode `INDEXED`, priority 55). It embeds the
-   query as typed (`usesTranslation = false`, [0023](0023-catalog-full-text-index.md)) and returns the nearest rows of the index, curated list and observed resources with cosine distance at most
+   query as typed (`usesTranslation = false`, [0023](0023-catalog-full-text-index.md)) and returns the nearest rows of the index, curated list and settled observed resources ([0022](0022-federated-search.md) §9) with cosine distance at most
    `H2_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s).
    Rows carry labels and stored popularity like keyword rows ([0025](0025-ranking.md)).
    Query vectors are shared by every replica in the shared cache `query-vector` (`QueryVectorCache`, table `ai_cache`,

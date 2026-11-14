@@ -9,6 +9,7 @@ helper2.catalog.indexer.initial-delay = PT30S
 helper2.catalog.indexer.singles-after-failure = 5
 helper2.catalog.indexer.timeout = 30s
 helper2.catalog.observation-queue = 256
+helper2.catalog.observed-settles-after = PT24H
 helper2.catalog.reconcile-by-projection = ${H2_CATALOG_RECONCILE_BY_PROJECTION:true}  =>  true
 helper2.catalog.semantic.max-distance = ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}  =>  0.65
 helper2.catalog.semantic.query-vector-ttl = ${H2_SEARCH_QUERY_VECTOR_TTL:7d}  =>  7d
