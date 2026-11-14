@@ -63,8 +63,7 @@ input tokens are still an estimate, so this ceiling is too. At the per-question 
 ≈ $0.5/day, ≈ $15/month.
 
 **Measuring it:** every call counts its tokens in `helper2_llm_tokens_total{step,prompt,type}` (Prometheus, on the
-management port, scraped into Grafana). An evaluation run ([evaluation.md](evaluation.md),
-[evaluation-adversarial.md](evaluation-adversarial.md)) is the window to read: the per-question figure is the increase
+management port, scraped into Grafana). An evaluation run ([evaluation.md](evaluation.md)) is the window to read: the per-question figure is the increase
 of the counter over the run divided by its fresh questions. Not measured yet.
 
 ## 3. Ongoing maintenance (people time, estimates)

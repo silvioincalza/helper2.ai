@@ -87,7 +87,7 @@ What they hold:
 - `main`: pull requests only, every review thread resolved, the check `ci-ok` green (GitHub Actions, integration
   15368) on an up-to-date branch, no force push.
 - `release/**`: pull requests only, every review thread resolved, a Copilot review on each push, no force push,
-  no deletion. No check is required: CI runs on these pull requests, but its result does not block the merge.
+  no deletion, the check `ci-ok` green on an up-to-date branch, as on `main`.
 - `v*` tags: never moved or deleted.
 
 The OpenBao roles accept a token only when its `ref_protected` claim is true, so CD cannot log in before these
