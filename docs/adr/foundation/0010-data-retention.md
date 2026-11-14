@@ -50,7 +50,6 @@ The periods are a product decision the owner may change; changing one must not n
    | Browser `sessionStorage` | `h2.signInReturn`, `h2.chunkReload`, scroll positions | until the tab closes | the user's browser |
    | Logs (Loki), traces (Tempo), metrics (Prometheus) | technical logs with addresses, traces, meters | 90 days | [0009](0009-observability.md) |
    | Database backups (`pg-backup`) | full dumps | 7 days; the encrypted off-site copy 7 days, by its bucket's lifecycle rule | [0009](0009-observability.md), [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md) |
-   | The dump of the v2.0.0 database | one encrypted full dump: accounts, saved items, reports, admin records, the catalog | 30 days after it was taken, then deleted; nothing is restored from it | the cutover runbook, by hand: no code deletes it |
 
    A resource is never purged while an issue report or a review item still points at it, nor (for an observed one)
    while a resource of a stronger origin links to it or an admin set one of its fields; reports and review items have their own periods, so such a
@@ -112,7 +111,7 @@ The periods are a product decision the owner may change; changing one must not n
   — guide rule.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — foreign keys and retention indexes.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` — `helper2.retention.*`.
-- `frontend/src/i18n/locales/en.legal.json` — the privacy page's periods, the 30 days of the v2.0.0 dump among them.
+- `frontend/src/i18n/locales/en.legal.json` — the privacy page's periods.
 
 ## Alternatives considered
 - One purge job for every table — it would reach into every module's tables and break module ownership
@@ -144,7 +143,6 @@ The periods are a product decision the owner may change; changing one must not n
 - A curated event leaves the catalog ten years after its last day, like every event; until then search still finds it. A research file that still lists an event ended more than ten years ago puts it back when the seed changes, until the next daily purge ([0012](../scout/0012-scout-collectors-and-events.md)).
 
 ### Points for a lawyer
-- The 30 days of the v2.0.0 dump and their basis, against the 7 days the Privacy page gives for backups.
 - Keeping a hashed key of rejected candidate URLs with no time limit (`candidate_decision`): a pseudonymous key, whose
   address can name a person (a LinkedIn post).
 
