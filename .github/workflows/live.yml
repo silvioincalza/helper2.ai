@@ -1,0 +1,40 @@
+name: live
+
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live
+  cancel-in-progress: false
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      H2_GITHUB_TOKEN: ${{ secrets.H2_GITHUB_TOKEN }}
+      H2_HF_TOKEN: ${{ secrets.H2_HF_TOKEN }}
+      H2_LIVE_WEB_API_KEY: ${{ secrets.H2_LIVE_WEB_API_KEY }}
+      H2_NEBIUS_API_KEY: ${{ secrets.H2_NEBIUS_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
+      - run: ./gradlew --no-daemon liveTest
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: live-test-reports
+          path: backend/**/build/reports/tests/
+          retention-days: 7
