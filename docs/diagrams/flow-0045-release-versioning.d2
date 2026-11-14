@@ -1,0 +1,88 @@
+# Flowchart: one release or patch, from release-prepare to the tag, the GitHub release and the pull request back
+# into main (ADR 0045).
+# Shows every check in order: the commit staging ran, the next version, the version pull request, the checks of
+# release.yml (branch, version rule with its year window, seven files, staging or a fix release, canary present),
+# the CD run of the branch, the approval, then canary and prod (flow 0045 release branches), the tag, and the
+# merge back into main.
+# Source of truth: .github/workflows/release-prepare.yml, .github/workflows/release.yml (check, built, prod, used-up, publish),
+#   .github/scripts/release-version.sh, .github/scripts/bump-version.sh, deploy/k8s/CI.md (Releases).
+# Render: cd docs/diagrams && d2 fmt flow-0045-release-versioning.d2 && d2 flow-0045-release-versioning.d2 flow-0045-release-versioning.svg
+
+...@style
+
+direction: down
+
+owner: Owner {class: person}
+prepare: "release-prepare\n(from main, GitHub-hosted)" {class: end}
+kind: "patch-of YYYY.N?" {class: decision}
+patch: "head of release/YYYY.N: its last\nversion released or used up, fixes since?\nnext-patch = YYYY.N.P+1" {class: decision}
+e_patch: "Fail: release it first,\nor merge the fix first" {class: fail}
+unfinished: "a release/YYYY.N cut\nby an earlier run, with\nno version yet?" {class: decision}
+base: "commit given, or the newest\ncommit of main whose CD run\ndeployed staging?" {class: decision}
+e_base: "Fail: no commit\nthat staging ran" {class: fail}
+next: "release-version.sh next:\nYYYY.N.0, release/YYYY.N\nnot there yet?" {class: decision}
+e_next: "Fail: finish that\nrelease first" {class: fail}
+cut: "version commit made,\nthen release/YYYY.N\ncut on the commit" {class: app}
+branch: "bump-version.sh bump (seven files)\non release-bump/YYYY.N.P (kept when\npushed); pull request into\nrelease/YYYY.N (kept when open)" {class: app}
+merge: "Owner merges the pull request:\ncd.yml builds, signs, scans the images" {class: app}
+
+release: "release YYYY.N.P\n(from main)" {class: end}
+exists: "release/YYYY.N exists,\nno tag vYYYY.N.P, no used/vYYYY.N.P\non another commit?" {class: decision}
+e_exists: "Fail: prepare it, it is released,\nor it is used up: the next patch" {class: fail}
+rule: "release-version.sh check:\nyear between the commit it is cut\nfrom and now; .0 after the highest\nrelease, .P after .P-1?" {class: decision}
+e_rule: "Fail: the rule names\nwhat is wrong" {class: fail}
+files: "seven files at the head\n= YYYY.N.P?" {class: decision}
+e_files: "Fail: merge the\nversion pull request" {class: fail}
+only: "a .0 with only the version\nfiles beside its commit of main?" {class: decision}
+staged: "that commit's CD run\non main deployed staging?" {class: decision}
+e_staged: "Fail: staging\nnever ran it" {class: fail}
+fix: "A patch: warning,\nstaging never ran the fix" {class: app}
+canary: "canary: in the Makefile\nof the head?" {class: decision}
+e_canary: "Fail: the fix must carry\ndeploy/ and .github/ of main" {class: fail}
+built: "CD run of the head\nof the branch passed?" {class: decision}
+e_built: "Fail: fix the branch,\nrun release again" {class: fail}
+approve: "Approval on\nenvironment prod" {class: decision}
+prod: "deploy.yml: canary, smoke test,\nHarbor tag, prod by version\n(flow 0045 release branches)" {class: app}
+e_prod: "Fail: no tag, no release;\nprod runs the release before;\nafter the Harbor tag: used-up tags\nthe commit used/vYYYY.N.P" {class: fail}
+tag: "publish: annotated tag vYYYY.N.P\n(headline + notes since the release below)" {class: app}
+gh: "GitHub release + SBOMs\nof the branch's CD run" {class: app}
+back: "release-merge/vYYYY.N.P from the tag,\nmain merged in (main keeps a higher version);\npull request into main, ci.yml started" {class: app}
+merged: "Owner merges it:\nmain has the version and the fix" {class: end}
+
+owner -> prepare: {class: hot}
+prepare -> kind: {class: hot}
+kind -> patch: yes
+patch -> e_patch: no
+patch -> branch: yes
+kind -> unfinished: no {class: hot}
+unfinished -> branch: "yes: finish it"
+unfinished -> base: no {class: hot}
+base -> e_base: no
+base -> next: yes {class: hot}
+next -> e_next: no
+next -> cut: yes {class: hot}
+cut -> branch: {class: hot}
+branch -> merge: {class: hot}
+merge -> release: {class: hot}
+release -> exists: {class: hot}
+exists -> e_exists: no
+exists -> rule: yes {class: hot}
+rule -> e_rule: no
+rule -> files: yes {class: hot}
+files -> e_files: no
+files -> only: yes {class: hot}
+only -> staged: yes {class: hot}
+only -> fix: no
+staged -> e_staged: no
+staged -> canary: yes {class: hot}
+fix -> canary
+canary -> e_canary: no
+canary -> built: yes {class: hot}
+built -> e_built: no
+built -> approve: yes {class: hot}
+approve -> prod: yes {class: hot}
+prod -> e_prod: fails
+prod -> tag: healthy {class: hot}
+tag -> gh: {class: hot}
+gh -> back: {class: hot}
+back -> merged: {class: hot}

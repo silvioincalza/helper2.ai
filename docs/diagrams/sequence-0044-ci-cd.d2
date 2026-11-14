@@ -1,0 +1,70 @@
+# Sequence: the prod deploy job of a release: approval, OIDC login to OpenBao, kubeconfig and app_env,
+# tag checks, the signature check (ADR 0044), helm upgrade by digest with rollback on failure, the check after the
+# deploy with its rollback, status, clean-up. First, for the reset window only: the manual run of cd.yml with
+# keep-unhealthy, which deployed the commit before the release v2026.11.1. The canary of a release: sequence 0045.
+# Source of truth: .github/workflows/release.yml (prod job), .github/workflows/cd.yml (manual job, the input
+#   keep-unhealthy), .github/workflows/deploy.yml, deploy/k8s/RUNBOOK-reset-cutover.md (section 7),
+#   .github/actions/bao-login/action.yml, deploy/k8s/Makefile (verify-images, diff, deploy, status),
+#   deploy/k8s/check-release.sh,
+#   the platform repo's deployer RBAC (prod deployer may get the staging Deployment), outside this repo.
+# Render: cd docs/diagrams && d2 fmt sequence-0044-ci-cd.d2 && d2 sequence-0044-ci-cd.d2 sequence-0044-ci-cd.svg
+
+...@style
+
+shape: sequence_diagram
+
+reviewer: Prod reviewer {class: person}
+gha: "GitHub Actions\n(cd.yml, release.yml)" {class: ext}
+runner: "Self-hosted runner\n(one JIT job)" {class: app}
+bao: OpenBao {class: data}
+k8s: Kubernetes API {class: ext}
+site: "https://helper2.ai" {class: ext}
+
+window: "The reset window only: a manual run before the tag (runbook section 7)" {
+  reviewer -> gha: "Run workflow cd.yml: environment prod,\ntag = the 12-char commit, rollback,\nkeep-unhealthy. No release tag exists yet:\nno release run holds deploy-prod"
+  gha -> reviewer: "job manual waits on environment prod"
+  reviewer -> gha: "approve"
+  gha -> runner: "run deploy.yml (keep-unhealthy: true):\nlogin, Resolve tag and Deploy as below"
+  runner -> gha: "warning and run summary:\nautomatic rollback OFF for this deploy"
+  runner -> k8s: "make deploy ROLLBACK_UNHEALTHY=false:\nhelm upgrade, then the check" {class: hot}
+  k8s -> runner: "not healthy: no helm rollback,\nthe release stays, the job fails\n(NOT ROLLED BACK)"
+  reviewer -> k8s: "the Ingress change (platform repo),\nthen make status passes"
+  reviewer -> gha: "then the release:\nrelease.yml starts"
+}
+
+approval: Approval {
+  gha -> reviewer: "release YYYY.N.P checked;\njob prod waits on environment prod"
+  reviewer -> gha: "approve"
+  gha -> runner: "run deploy.yml (environment prod, tag = the\ncommit of release/YYYY.N, its version);\ncanary and Harbor tag first (sequence 0045)" {class: hot}
+}
+
+login: OpenBao login (OIDC) {
+  runner -> gha: "request OIDC token\n(audience = BAO_AUDIENCE)"
+  gha -> runner: "JWT, sub ...:environment:prod"
+  runner -> bao: "auth/helper2/jwt/login role=deploy-prod"
+  bao -> runner: "token (can read ci/prod only)"
+  runner -> bao: "kv get ci/prod field kubeconfig"
+  bao -> runner: "prod deployer kubeconfig"
+}
+
+tag: Resolve tag {
+  runner -> runner: "tag = 12 hex chars (no ref with that name)\nor YYYY.N.P (the commit of tag vYYYY.N.P);\ncommit on origin/main, a version, or the\nhead of release/YYYY.N a release passed (0045)"
+  runner -> runner: "make verify-images (0044): digest of each\nimage in Harbor, cosign verify --key cosign.pub;\nan unsigned image stops here"
+  runner -> runner: "git checkout <commit>:\nchart and image match"
+  runner -> gha: "GitHub API: the CD run (push)\nof the commit"
+  gha -> runner: "completed, success;\nanything else stops here\n(rollback: true: a warning)"
+  runner -> bao: "kv get ci/prod field app_env"
+  bao -> runner: "prod/app.env"
+}
+
+deploy: Deploy {
+  runner -> k8s: "make diff (kubectl diff)"
+  runner -> k8s: "make deploy: release-ready (a pending-* release:\nrollback to the last deployed revision), then\nread the deployed revision (check-release.sh)"
+  runner -> k8s: "helm upgrade --install --server-side\n(images by digest) --wait --timeout 12m --rollback-on-failure" {class: hot}
+  k8s -> runner: "ready, or rolled back\nto the previous revision"
+  runner -> k8s: "check-release.sh: release deployed,\nworkloads rolled out, the migrate Job\nthe manifest names complete"
+  runner -> site: "GET / and /api/v1/sources: 200 within 5 tries"
+  runner -> k8s: "not healthy: helm rollback --wait-for-jobs\nto the revision read before the upgrade,\ncheck once more, the job fails either way\n(a release never has keep-unhealthy)" {class: hot}
+  runner -> k8s: "make status: the same check, no rollback"
+  runner -> runner: "always: rm app.env, kubeconfig"
+}

@@ -1,0 +1,28 @@
+# Sequence: the second model call that checks each kept reason against its own evidence.
+# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/ReasonCheckStep.kt (verdicts), guide/Guide.kt (GuideValidator.namesUnstatedSecret),
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (verifyReasons, call),
+#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (Events.reasonsChecked).
+# Render: cd docs/diagrams && d2 fmt sequence-0031-guide-reason-check.d2 && d2 sequence-0031-guide-reason-check.d2 sequence-0031-guide-reason-check.svg
+
+...@style
+
+shape: sequence_diagram
+
+svc: "AskGuide\n(ReasonCheckStep)" {class: app}
+model: SpringAiGuideModel {class: app}
+budget: DailyBudget "guide" {class: app}
+tf: "Token Factory\n(reasoning model)" {class: ai}
+events: "GuideStreamController\n.Events" {class: app}
+browser: Browser {class: person}
+
+svc -> svc: "ReasonClaim per kept pick:\nkey, reason, quote, text,\nconfirmed checks"
+svc -> model: "verifyReasons(need + answer, claims)"
+model -> budget: "tryAcquire()"
+budget -> model: "true"
+model -> tf: "verify-reasons.txt + PICKS\n(<pick key=cN>, text as ‹ ›),\nthinking off, JSON schema" {class: ai-call}
+tf -> model: "{verdicts: [{key,\nclaimsSupported, fitsNeed}]}"
+model -> model: "drop unknown keys;\nsame key twice: both must be true;\nno fitsNeed = fits"
+model -> svc: "Map key → ReasonVerdict"
+svc -> svc: "REMOVED by code when the reason\nnames a secret its evidence does not;\nelse SUPPORTED / REMOVED;\nmissing key → NOT_CHECKED;\nfitsNeed false → pick dropped"
+svc -> events: "reasonsChecked(supported,\nremoved, notChecked)"
+events -> browser: "event: checked"

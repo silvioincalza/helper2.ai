@@ -1,0 +1,89 @@
+# Flowchart: which words each keyword source searches, and how Hugging Face models use task tags (ADR 0029).
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt (contentTermsOf),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (searchTermsOf),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt (SourceQuery.keywords),
+#   backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubSource.java (searchText),
+#   backend/libs/sources/src/main/java/ai/helper2/sources/huggingface/HuggingFaceModelsSource.java, HubTasks.java.
+# Render: cd docs/diagrams && d2 fmt flow-0029-source-query-terms.d2 && d2 flow-0029-source-query-terms.d2 flow-0029-source-query-terms.svg
+
+...@style
+
+direction: down
+
+query: "Query text\n(\"reranker model for retrieval\")" {class: end}
+
+analyze: "QueryAnalyzer.contentTermsOf" {
+  class: group
+  direction: down
+  filler: "Function word or request word?\n(5 languages; build, best, open, tool…)" {class: decision}
+  drop: "Left out" {class: end}
+  server: "\"server\" next to \"mcp\"?" {class: decision}
+  type: "Type word (library, model, paper…)?" {class: decision}
+  next: "A content word follows?\n(\"model context protocol\")" {class: decision}
+  keep: "Content term" {class: app}
+  filler -> drop: yes
+  filler -> server: no
+  server -> drop: yes
+  server -> type: no
+  type -> next: yes
+  type -> keep: no
+  next -> keep: yes
+  next -> drop: no
+}
+
+empty: "No content term left?\nKeep every word" {class: decision}
+
+pick: "SearchResources.searchTermsOf" {
+  class: group
+  direction: down
+  translated: "English translation?" {class: decision}
+  lexicon: "Lexicon terms, no translation?" {class: decision}
+  trans: "Content terms of the translation" {class: app}
+  old: "No search terms: text + expansions\n(as before)" {class: app}
+  own: "Content terms of the query" {class: app}
+  translated -> trans: yes
+  translated -> lexicon: no
+  lexicon -> old: yes
+  lexicon -> own: no
+}
+
+keywords: "SourceQuery.keywords" {class: hot}
+
+engines: "Keyword sources" {
+  class: group
+  direction: right
+  github: "GitHub: keywords\n+ fork:false archived:false" {class: ext}
+  arxiv: "arXiv: all:(keywords)\nAND AI categories" {class: ext}
+  npm: "npm: text=keywords" {class: ext}
+  spaces: "HF Spaces: search=keywords" {class: ext}
+}
+
+web: "Live web: the natural sentence\n(unchanged)" {class: ext}
+
+hf: "HF models" {
+  class: group
+  direction: down
+  task: "Task phrase in the query,\nits full translation or its keywords?\n(speech to text, segmentation,\nreranker…)" {class: decision}
+  plain: "search=keywords" {class: ext}
+  tagcall: "pipeline_tag + sort=likes,\nsearch = the other words" {class: ext}
+  thin: "Other words left less\nthan half a page?" {class: decision}
+  refill: "Second call: the task's\nmost liked models, appended" {class: ext}
+  done: "Hits in order" {class: end}
+  task -> plain: no
+  task -> tagcall: yes
+  tagcall -> thin
+  thin -> refill: yes
+  thin -> done: no
+  refill -> done
+  plain -> done
+}
+
+query -> analyze.filler
+analyze.keep -> empty
+empty -> pick.translated
+pick.trans -> keywords
+pick.old -> keywords
+pick.own -> keywords
+keywords -> engines
+keywords -> hf.task
+query -> web

@@ -1,0 +1,39 @@
+# Sequence: a Scout pass that indexes an awesome list, then a search that finds a tool only by the list's words.
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeListParser.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (listIndex),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexAwesomeLists.java, catalog/internal/JdbcAwesomeListIndex.java,
+#   catalog/internal/CatalogSearchSource.java, JdbcCatalogSearch.java (searchFound), search/web/CardMapper.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0023-search-inside-awesome-lists.d2 && d2 sequence-0023-search-inside-awesome-lists.d2 sequence-0023-search-inside-awesome-lists.svg
+
+...@style
+
+shape: sequence_diagram
+
+scout: RunScout {class: app}
+collector: GitHubAwesomeCollector {class: app}
+github: "api.github.com" {class: ext}
+catalog: "IndexResources /\nIndexAwesomeLists" {class: app}
+pg: PostgreSQL {class: data}
+browser: Browser {class: person}
+source: "CatalogSearchSource\n(helper2-index)" {class: app}
+
+scout -> collector: "collect(checkpoint, cursor, 500)"
+collector -> github: "GET /search/repositories (topic pairs)"
+github -> collector: "lists with stars, description, license"
+collector -> github: "GET /repos/{list}/readme (raw)"
+github -> collector: "Markdown"
+collector -> collector: "parse: entries, headings, heading paths;\nplain words, caps (README text\nstays in memory, then dropped)"
+collector -> github: "POST /graphql (entry facts)"
+collector -> scout: "CollectedBatch(hits + list ARTICLEs,\nlists = ListText per list)"
+scout -> catalog: "index(merged hits)"
+catalog -> pg: "upsert resources and records\n(search_vector: title with / as a space\nand its name words, h2_name_words)"
+scout -> catalog: "replace(list texts)"
+catalog -> pg: "per list, one transaction:\nDELETE entry rows; INSERT … SELECT\nfrom jsonb_to_recordset(:entries)\nJOIN resource (line and name words);\nUPSERT awesome_list"
+pg -> catalog: "entries written"
+
+browser -> source: "GET /api/v1/search?q=…"
+source -> source: "plainWords: / as a space,\nsearch syntax removed"
+source -> pg: "searchFound: direct rows, then rows matched\nonly in awesome_list_entry / awesome_list (GIN),\nhalf weight; best entry's list and heading"
+pg -> source: "rows + found_list, found_heading"
+source -> browser: "card.foundIn {listTitle, headingPath}\n(\"Found in … under …\")"

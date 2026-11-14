@@ -1,0 +1,37 @@
+# Flowchart: dead code and dependency audit in the frontend CI job (ADR 0047): knip in strict mode, then npm audit.
+# Source of truth: frontend/knip.json, frontend/package.json (knip, preknip), .github/workflows/ci.yml (frontend-check).
+# Render: cd docs/diagrams && d2 fmt flow-0047-dead-code-and-dependency-audit.d2 && d2 flow-0047-dead-code-and-dependency-audit.d2 flow-0047-dead-code-and-dependency-audit.svg
+
+...@style
+
+direction: down
+
+pr: "Pull request (ci.yml, frontend-check job)" {class: end}
+gen: "preknip: npm run gen:api\n(schema.ts, admin-schema.ts,\ngit-ignored: not checked)" {class: app}
+
+full: "knip: whole project, tests included\n(Vite, Vitest, ESLint, Prettier plugins + scripts/*.mjs)" {class: app}
+fullok: "Unused file, export, type, enum or namespace member,\ndependency, unlisted or unresolved import,\nduplicate export or import cycle?" {class: decision}
+
+prod: "knip --production --strict:\napp code only, files and dependencies" {class: app}
+prodok: "App code uses a devDependency\nor an unused file?" {class: decision}
+
+build: "typecheck, tests, build, bundle check" {class: app}
+
+audit: "npm audit --omit=dev --audit-level=high" {class: app}
+auditok: "High or Critical advisory\nin a package the browser gets?" {class: decision}
+report: "npm audit (every package):\nreport in the log, never fails" {class: data}
+
+pass: "Job passes" {class: end}
+fail: "Job fails: delete the dead code\nor update the package" {class: end}
+
+pr -> gen -> full -> fullok: {class: hot}
+fullok -> fail: "yes"
+fullok -> prod: "no"
+prod -> prodok
+prodok -> fail: "yes"
+prodok -> build: "no"
+build -> audit
+audit -> auditok
+auditok -> fail: "yes"
+auditok -> report: "no"
+report -> pass

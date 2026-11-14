@@ -1,0 +1,126 @@
+# Flowchart: from a pull request to prod. PR checks on GitHub-hosted runners, per changed part (ADR 0044); on main,
+# all of CI again, the changed images built and every image signed on the self-hosted runner, staging. Prod only from
+# a release (release.yml, run by hand), after the approval, canary first. After helm upgrade, every deploy checks the release and rolls it back when it is
+# not healthy, unless a manual run ticked keep-unhealthy.
+# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, .github/scripts/package.sh,
+#   deploy/*Dockerfile (BUILD=source|prebuilt), deploy/k8s/Makefile (ci-images, image,
+#   sign, verify-images, postgres-image, chart-check, diff, deploy, status), deploy/k8s/check-release.sh,
+#   deploy/k8s/CI.md.
+# Render: cd docs/diagrams && d2 fmt flow-0044-ci-cd.d2 && d2 flow-0044-ci-cd.d2 flow-0044-ci-cd.svg
+
+...@style
+
+direction: down
+
+dev: Developer {class: person}
+pr: "Pull request" {class: end}
+
+checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed, 0044)" {
+  class: group
+  grid-columns: 3
+  frontend: "side by side:\nfrontend-build: build, bundle size\nfrontend-check: format, lint,\nknip, typecheck, npm audit\nfrontend-test: Vitest in 3 jobs,\none per group of folders" {class: app}
+  backend: "side by side:\nbackend-build: compile all\nbackend-check: spotlessCheck,\ngradlew test (Testcontainers)" {class: app}
+  chart: "chart:\nhelm lint + template\n| kubeconform" {class: app}
+  pg: "PR only: deploy/postgres changed\n→ tag bumped? (git, no build)" {class: app}
+  monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}
+  d2: "diagrams\nre-rendered = committed?" {class: app}
+}
+
+green: "ci-ok green?\n(skipped is fine)" {class: decision}
+fix: "Fix and push again" {class: fail}
+merge: "Merge to main" {class: app}
+
+cd: cd.yml (push to main or release/*) {
+  class: group
+  direction: down
+  ci: "ci.yml again, every job\n(full: true); package job after\nfrontend-build + backend-build:\nbootJar x2 + web bundle\n→ artifact prebuilt" {class: app}
+  build: "image job (self-hosted):\nbao-login role deploy\nmake postgres-image, make ci-images" {class: app}
+  exists: "Component changed?\n(changes.sh, 0044)" {class: decision}
+  reuse: "Tag TAG added to the image\nof the commit before (same digest)" {class: app}
+  push: "Pack prebuilt into the image\n(git archive, BUILD=prebuilt),\npush TAG = commit[0:12];\nmake sign (OpenBao Transit)" {class: data}
+  scan: "scan job (GitHub-hosted):\nGrype on the run's SBOMs\n(0044)" {class: app}
+  critical: "Critical finding\nwith a fix?" {class: decision}
+  stopped: "CD run fails:\nno release of the commit" {class: fail}
+  clean: "Scan passed" {class: end}
+  staging: "deploy.yml env staging:\nverify signatures (0044),\ndiff, deploy by digest, status" {class: app}
+  ok: "helm upgrade --wait\npassed?" {class: decision}
+  rollback: "helm --rollback-on-failure:\nback to the last deployed revision" {class: fail}
+  branch: "Push to main?" {class: decision}
+  imageonly: "release/* (0045): image only,\nno staging" {class: end}
+  done: "Staging runs the commit;\nprod unchanged" {class: end}
+  newer: "A newer push to the same branch\nwhile ci, image or scan runs?\n(cd-build-<ref>, 0044)" {class: decision}
+  superseded: "This run is cancelled:\nno staging, no release of the commit;\na running deploy finishes" {class: fail}
+
+  ci -> build: {class: hot}
+  ci -> newer
+  newer -> superseded: yes
+  build -> exists
+  exists -> reuse: no
+  exists -> push: yes {class: hot}
+  build -> scan: "SBOM artifacts"
+  scan -> critical
+  critical -> stopped: yes
+  critical -> clean: no
+  reuse -> branch
+  push -> branch: {class: hot}
+  branch -> staging: "yes (does not wait\nfor the scan)" {class: hot}
+  branch -> imageonly: no
+  staging -> ok
+  ok -> rollback: no
+}
+
+release: release.yml (run by hand, version YYYY.N.P) {
+  class: group
+  direction: down
+  checks: "Release checks (0045):\nrelease/YYYY.N, no tag yet,\nnext release or patch,\nseven version files,\nstaging ran its commit of main" {class: app}
+  valid: "All pass?" {class: decision}
+  refused: "Fail: no release,\nno deploy" {class: fail}
+  staged: "CD run of the branch\npassed? (waits)" {class: decision}
+  blocked: "Fail: no prod deploy" {class: fail}
+  approve: "Prod reviewer\napproves?" {class: decision}
+  wait: "Prod waits\n(not deployed)" {class: end}
+  canary: "deploy.yml env prod: canary\nof the commit, smoke test\nwith its header (0045)" {class: app}
+  retag: "retag: Harbor adds YYYY.N.P\nto the commit's images\n(same digests)" {class: data}
+  prod: "deploy.yml env prod:\nimage YYYY.N.P\n(built by CD, never rebuilt)" {class: app}
+  live: "helper2.ai runs the release;\nthen tag vYYYY.N.P, the GitHub release,\nthe pull request back into main" {class: end}
+
+  checks -> valid
+  valid -> refused: no
+  valid -> staged: yes {class: hot}
+  staged -> blocked: no
+  staged -> approve: yes {class: hot}
+  approve -> wait: no
+  approve -> canary: yes {class: hot}
+  canary -> retag: passed {class: hot}
+  retag -> prod: {class: hot}
+}
+
+after: "deploy.yml after helm upgrade, every environment (make deploy, check-release.sh)" {
+  class: group
+  direction: down
+  healthy: "Release deployed, workloads rolled out,\nmigrate Job complete, / and\n/api/v1/sources answer 200?" {class: decision}
+  keep: "keep-unhealthy ticked?\n(manual run of cd.yml only,\ndefault no: ROLLBACK_UNHEALTHY=false)" {class: decision}
+  back: "helm rollback to the revision\ndeployed before the upgrade,\ncheck once more; the job fails" {class: fail}
+  kept: "No rollback: the release stays,\nthe job fails (NOT ROLLED BACK),\nsaid in the run summary" {class: fail}
+
+  healthy -> keep: no
+  keep -> back: no
+  keep -> kept: yes
+}
+
+tagger: "Owner runs release-prepare\n(release/YYYY.N or its next patch),\nmerges it, runs release YYYY.N.P" {class: person}
+
+manual: "Manual run (workflow_dispatch):\nenvironment + tag + keep-unhealthy;\nprod with empty tag = promote\nwhat staging runs.\nThe reset window: prod by commit with\nkeep-unhealthy, before the tag is pushed" {class: config}
+
+dev -> pr: {class: hot}
+pr -> checks: {class: hot}
+checks -> green
+green -> fix: no
+green -> merge: yes {class: hot}
+merge -> cd.ci: {class: hot}
+tagger -> release.checks: {class: hot}
+manual -> release.prod: "or any env" {class: config}
+cd.ok -> after.healthy: yes {class: hot}
+after.healthy -> cd.done: "yes (staging)" {class: hot}
+release.prod -> after.healthy: {class: hot}
+after.healthy -> release.live: "yes (prod)" {class: hot}

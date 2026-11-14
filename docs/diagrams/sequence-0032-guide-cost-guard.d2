@@ -1,0 +1,65 @@
+# Sequence: the cost guard around one guide question that misses the cache and is answered fresh,
+# and the give-back when its answer has no AI pick or the question fails (AskGuide.QuotaTurn.settle, in one finally).
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RedisRateLimiter.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java (shared by the rate limiters and the quota),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaKeys.java (client pseudonym of the UTC day),
+#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (trySlot on the guide bulkhead),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask, settle), GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java, RedisCallCounter.java (INCR and GIVE_BACK scripts),
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/SingleFlight.kt, Presence.kt (a question nobody waits for stops).
+# Render: cd docs/diagrams && d2 fmt sequence-0032-guide-cost-guard.d2 && d2 sequence-0032-guide-cost-guard.d2 sequence-0032-guide-cost-guard.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+rl: RateLimitInterceptor {class: app}
+ctrl: "GuideStreamController" {class: app}
+limits: GuideLimits {class: app}
+bulkhead: "guide bulkhead\n(Resilience)" {class: app}
+svc: AskGuide {class: app}
+cache: GuideAnswerCache {class: app}
+quota: ClientQuota {class: app}
+redis: Redis {class: data}
+db: PostgreSQL {class: data}
+model: SpringAiGuideModel {class: app}
+
+browser -> rl: "POST /api/v1/guide/stream"
+rl -> redis: "limiter.acquire(remote address): Lua\nINCR + PEXPIRE h2:v1:rate:guide:<pseudonym>"
+redis -> rl: "count ≤ 10 per minute"
+rl -> ctrl: "allowed"
+ctrl -> ctrl: "ClientKey.of(remote address)\n(IPv6 → /64, zone id dropped)"
+ctrl -> limits: "tryStart(client, work, onNoAnswerInTime)"
+limits -> limits: "fewer than 2 running for this client;\ndeadline timer 90 s: interrupt the worker,\nfree the slot; 3 s later, still running: 504"
+limits -> svc: "ask(request, path, progress, client, gate)\non a virtual thread"
+svc -> cache: "get(key)"
+cache -> db: "SELECT value FROM ai_cache WHERE cache_name =\n'guide-answer' AND key_hash = <sha256 of build, key>"
+db -> cache: "no row"
+cache -> svc: "miss"
+svc -> svc: "SingleFlight.follow(key): none"
+svc -> limits: "gate.enter()"
+limits -> bulkhead: "trySlot(guide)"
+bulkhead -> limits: "slot (8 per replica)"
+svc -> quota: "reserve(client)"
+quota -> redis: "Lua: below 30, INCR + PEXPIRE\nh2:v1:budget:guide-client:<pseudonym>:<day>;\nthen below 300 for guide-network:<pseudonym of /24 or /56>"
+redis -> quota: "both counts within their limits"
+quota -> svc: "Reservation (random id, day)"
+svc -> svc: "SingleFlight.run(key, presence)"
+svc -> model: "plan, choose, verifyReasons\n(each attempt: CallTimeLimit gives its timeout,\nmin(40 s, time left − 2 s), none under 10 s;\nllm-chat-guide circuit, then a guide budget unit\nwithin the share of the day so far)" {class: ai-call}
+model -> svc: "results; out of time: deadline or cancelled\n(top results + GUIDE_OUT_OF_TIME,\nor picks NOT_CHECKED; never cached);\nno budget unit: GuideBudgetExhausted\n(top results + GUIDE_BUDGET_SPENT with\nretryAt, never cached)"
+svc -> quota: "finally, settle: no AI pick, comparison or\nexplanation (no_pick), an error or the\ndeadline (failed), a shared answer (shared)\nor no asker left (abandoned):\ngiveBack(reservation)"
+quota -> redis: "Lua GIVE_BACK: id not in …:<day>:given-back,\nset size < free answers, count > 0\n→ DECR count, SADD id, PEXPIRE 2 days"
+redis -> quota: "GIVEN_BACK | ALREADY_GIVEN_BACK |\nCAP_REACHED | NOTHING_COUNTED"
+svc -> cache: "put(key, answer)\nif cacheable"
+cache -> db: "INSERT INTO ai_cache … ON CONFLICT\nDO UPDATE, expires_at ≤ 24 h"
+svc -> svc: "SingleFlight: waiting askers\nget the answer"
+svc -> limits: "answer"
+limits -> bulkhead: "slot.release()"
+limits -> ctrl: "answer"
+ctrl -> browser: "200 GuideResponse\n(Cache-Control: no-store)"
+browser -> ctrl: "instead: closes the stream before the answer"
+ctrl -> limits: "whenTheAskerStaysAway(presence):\nafter 3 s (LEAVE_GRACE) presence.leave()"
+limits -> svc: "model stream ON and a step thinks:\nSingleFlight: no asker left →\nkey freed, worker interrupted,\nSingleFlight.Abandoned (no answer, not cached,\nquestion given back as abandoned);\nelse the question runs on and is cached"

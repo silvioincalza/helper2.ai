@@ -1,0 +1,44 @@
+# Flowchart: how Hacker News turns a query into hits (ADR 0030).
+# Source of truth: backend/libs/sources/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java (search, storySearch, aiStories),
+#   backend/libs/sources/src/main/java/ai/helper2/sources/support/HttpClients.java (fetchSize, firstHits),
+#   backend/libs/sources/src/main/java/ai/helper2/sources/support/Classification.java (AI_TERMS).
+# Render: cd docs/diagrams && d2 fmt flow-0030-hacker-news.d2 && d2 flow-0030-hacker-news.d2 flow-0030-hacker-news.svg
+
+...@style
+
+direction: down
+
+query: "SourceQuery.keywords\n(content words, ADR 0029)" {class: end}
+switch: "Source switched on?\n(H2_SOURCE_HACKER_NEWS_ENABLED,\ndefault true)" {class: decision}
+skipped: "SKIPPED (DISABLED)" {class: end}
+
+hn: "HackerNewsSource" {
+  class: group
+  direction: down
+  blank: "Any word?" {class: decision}
+  none: "No call, no hits" {class: end}
+  window: "Date window?" {class: decision}
+  filter: "numericFilters=\ncreated_at_i >= first day" {class: app}
+  call: "GET hn.algolia.com/api/v1/search\nquery, tags=story,\nhitsPerPage = 3 × limit (≤ 50)" {class: ext}
+  haslink: "Story has a link?" {class: decision}
+  ai: "Title names an AI subject?\n(AI words, model names,\ndigits after them)" {class: decision}
+  keep: "Hit: the linked page,\ntype NEWS, published = created_at" {class: app}
+  drop: "Left out\n(counted no-link / not-ai)" {class: end}
+  blank -> none: no
+  blank -> window: yes
+  window -> filter: yes
+  window -> call: no
+  filter -> call
+  call -> haslink
+  haslink -> drop: no
+  haslink -> ai: yes
+  ai -> drop: no
+  ai -> keep: yes
+}
+
+ranks: "Ranks given after the filter\n(consecutive), first limit kept" {class: hot}
+
+query -> switch
+switch -> skipped: no
+switch -> hn.blank: yes
+hn.keep -> ranks

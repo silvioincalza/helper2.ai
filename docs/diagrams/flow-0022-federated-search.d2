@@ -1,0 +1,122 @@
+# Flowchart: what SearchResources does with each source in one search, then merge and coverage.
+# Shows disabled sources, the rate-limit cooldown, the fresh/stale Redis windows for LIVE sources, the source's
+# policy source-<id> (circuit breaker and bulkhead, no retry), the per-source deadline counted from the source's own
+# start, and the notices. A metered source (Tavily) reads its stored result set instead of Redis and calls live only
+# inside the daily quota: its own flow is flow-0027-tavily-store-and-quota. Below: what GET /api/v1/sources shows of each source.
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search), SourceFanOut.kt (Run.start, Run.collect, stale),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
+#   backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (countsSince),
+#   catalog/internal/JdbcResources.java (discoveredSince, discoveredInIndexSince).
+# Render: cd docs/diagrams && d2 fmt flow-0022-federated-search.d2 && d2 flow-0022-federated-search.d2 flow-0022-federated-search.svg
+
+...@style
+
+direction: down
+
+req: "GET /api/v1/search?q=…" {class: end}
+
+each: For each source (in parallel) {
+  class: group
+  direction: down
+  enabled: "descriptor.enabled?" {class: decision}
+  disabled: "SKIPPED\n\"Disabled in configuration\"" {class: end}
+  cooldown: "In cooldown after\na rate limit?" {class: decision}
+  paused: "SKIPPED (+ stale entry\nif one exists)" {class: end}
+  live: "mode == LIVE?" {class: decision}
+  fresh: "Redis entry younger than cacheTtl?\n(metered: stored set fresh for its\nintent class, 24 h / 48 h)" {class: decision}
+  cached: "SUCCEEDED, served CACHE\n(no live call)" {class: end}
+  quota: "Metered: a daily web search\nleft for this asker?" {class: decision}
+  limited: "SKIPPED, no call:\nDAILY_LIMIT or\nQUOTA_UNAVAILABLE" {class: fail}
+  call: "source.search(query)\non a virtual thread" {class: app}
+  policy: "source-<id> lets it through?\n(circuit closed or trial call,\nbulkhead slot free)" {class: decision}
+  refused: "SKIPPED, no call:\nCIRCUIT_OPEN or BUSY" {class: fail}
+  deadline: "Answer within timeout,\ncounted from own start?" {class: decision}
+  ok: "SUCCEEDED, LIVE\n(LIVE: put entry, TTL 24 h;\nmetered: replace stored set)" {class: end}
+  failed: "TIMED_OUT / RATE_LIMITED /\nFAILED (rate limit sets cooldown;\nfailures and slow calls count\nfor the circuit)" {class: fail}
+  stale: "Entry younger than 24 h?\n(metered: 7 days)" {class: decision}
+  stalehit: "outcome kept,\nserved STALE_CACHE" {class: end}
+  none: "outcome kept,\nserved NONE, 0 hits" {class: fail}
+
+  enabled -> disabled: no
+  enabled -> cooldown: yes
+  cooldown -> paused: yes
+  cooldown -> live: no
+  live -> fresh: yes
+  live -> call: "no (index,\ncurated)"
+  fresh -> cached: yes
+  fresh -> quota: "no / miss"
+  quota -> call: "yes (or not metered)"
+  quota -> limited: no
+  limited -> stale
+  call -> policy
+  policy -> deadline: yes {class: hot}
+  policy -> refused: no
+  refused -> stale
+  deadline -> ok: yes {class: hot}
+  deadline -> failed: "no / error"
+  failed -> stale
+  stale -> stalehit: yes
+  stale -> none: no
+}
+
+merge: "ResultMerger.merge:\ngroup by canonical URL;\na hit that states its repository\nis that repository's resource\n(every package of it joins);\nconflicts kept, value null;\ndates: earliest / latest,\nCONFLICTING if days differ" {class: app}
+spaces: "hf-spaces: asks the Hub by meaning\n(the sentence, + category for 4 needs);\nby words when that finds nothing,\nfor a date window or browsing" {class: ext}
+confirmed: "Left out: a result under a URL\nits live source must confirm\n(Hugging Face Spaces) that only\nthe catalog returned" {class: app}
+discovered: "observer.firstDiscovered\n(one read)" {class: data}
+idxdown: "INDEX_UNAVAILABLE\nnotice" {class: fail}
+record: "record(LIVE hits only)\n→ background queue" {class: data}
+rank: "rank → filter → sort → page" {class: app}
+coverage: "coverage.partial = any enabled\nsource not SUCCEEDED" {class: app}
+allfail: "No success and\nno stale entry?" {class: decision}
+notice: "ALL_SOURCES_FAILED\nnotice" {class: fail}
+resp: "200 SearchResponse\n(sources[], coverage, notices)" {class: end}
+
+req -> each.enabled: {class: hot}
+each.ok -> merge: {class: hot}
+each.cached -> merge
+each.stalehit -> merge
+each.paused -> merge: "stale hits, if any"
+merge -> confirmed: {class: hot}
+confirmed -> discovered
+discovered -> idxdown: "error"
+discovered -> record: {class: hot}
+idxdown -> record
+record -> rank: {class: hot}
+rank -> coverage
+coverage -> allfail
+allfail -> notice: yes
+allfail -> resp: no {class: hot}
+notice -> resp
+
+health: "SourceHealth (per replica):\nlast outcome, durations of\nthe last 20 calls" {class: data}
+each.ok -> health
+each.failed -> health
+
+sources: "GET /api/v1/sources: each disclosed source, by priority" {
+  class: group
+  direction: down
+  last: "lastOutcome: the newer of this replica's\nlast search and the Scout's last run\n(record unreadable: this replica's only)" {class: app}
+  fresh: "newThisWeek: resources first discovered\nin the last 7 days, per source\n(helper2-index: the whole index;\nhelper2-semantic and DB down: null)" {class: data}
+  time: "responseTimeMs: median of this replica's\nlast 20 calls (cache hits and\nskipped calls are not calls)" {class: app}
+  enabled: "Enabled?" {class: decision}
+  circuit: "circuit: state of this replica's\nsource-<id>; circuitOpenedAt\nwhile OPEN (none: null)" {class: app}
+  metered: "Metered?" {class: decision}
+  credits: "webCredits: usedToday from the global\nRedis counter (whole cluster), dailyCap;\nnull when Redis cannot answer" {class: data}
+  out: "200 SourceInfo[]" {class: end}
+
+  last -> fresh
+  fresh -> time
+  time -> enabled
+  enabled -> circuit: yes
+  enabled -> out: "no: no circuit,\nno credits"
+  circuit -> metered
+  metered -> credits: yes
+  metered -> out: no
+  credits -> out
+}
+
+health -> sources.last: read
+each.call -> spaces: "hf-spaces"

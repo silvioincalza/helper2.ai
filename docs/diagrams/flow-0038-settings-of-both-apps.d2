@@ -1,0 +1,59 @@
+# Flowchart: which settings groups the back office's Settings page shows, and where each comes from (ADR 0038).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/settings/PublishSettingsAtStartup.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/settings/PublicAppSettings.java, JdbcPublicAppSettings.java,
+#   Setting.java, SettingsGroup.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetEffectiveSettings.java,
+#   frontend/src/admin/SettingsPage.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0038-settings-of-both-apps.d2 && d2 flow-0038-settings-of-both-apps.d2 flow-0038-settings-of-both-apps.svg
+
+...@style
+
+direction: down
+
+start: "The public app is ready" {class: end}
+
+publish: PublishSettingsAtStartup {
+  class: group
+  direction: down
+  write: "One transaction, advisory lock:\ndelete public_app_setting,\ninsert every group's settings\n(version, time)" {class: data}
+  ok: "Written?" {class: decision}
+  warn: "Log a warning;\nthe app runs" {class: fail}
+  done: "Published" {class: end}
+  write -> ok
+  ok -> warn: no
+  ok -> done: yes
+}
+
+start -> publish.write
+
+req: "GET /api/v1/admin/config\n(back office, ADMIN)" {class: end}
+
+read: GetEffectiveSettings {
+  class: group
+  direction: down
+  rows: "Rows in public_app_setting?" {class: decision}
+  none: "publicApp: null\nthe back office's groups only" {class: end}
+  valid: "At most 500 rows,\nevery key inside its group?" {class: decision}
+  safe: "Value passes the page's check?\n(no quote, no @, ≤ 500)" {class: decision}
+  hidden: "Value reads (hidden)" {class: data}
+  own: "Group id among the\nback office's own groups?" {class: decision}
+  mine: "The back office's group,\nread now (BACK_OFFICE)" {class: app}
+  theirs: "The published group\n(PUBLIC, version, time)" {class: data}
+  rows -> none: no
+  rows -> valid: yes
+  valid -> none: "no, logged"
+  valid -> safe: yes
+  safe -> hidden: no
+  safe -> own: yes
+  hidden -> own
+  own -> mine: yes
+  own -> theirs: no
+}
+
+req -> read.rows
+publish.done -> read.rows: "PostgreSQL" {style.stroke-dash: 3}
+
+page: "Settings page: groups in page order;\na PUBLIC group names the version and the start;\nno publication: a line says so" {class: app}
+read.mine -> page
+read.theirs -> page
+read.none -> page

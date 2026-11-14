@@ -1,0 +1,49 @@
+# Sequence: one fresh guide question and the research trail it carries; then a paraphrase that reuses the answer
+# without its queries.
+# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, answerByIntent, similarAnswer),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/Question.kt (GuideSteps.find, Question.ran),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt (picks); CompareAnswer.kt and ExplainAnswer.kt list removals alike,
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt (GuideValidator, ResearchTrail),
+#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java, GuideStreamController.java,
+#   frontend/src/features/guide/GuideAnswer.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0033-research-trail.d2 && d2 sequence-0033-research-trail.d2 sequence-0033-research-trail.svg
+
+...@style
+
+shape: sequence_diagram
+
+page: GuideAnswer.tsx {class: person}
+web: "GuideStreamController\n+ GuideDtoMapper" {class: app}
+svc: AskGuide {class: app}
+finder: "GuideSteps / Question" {class: app}
+search: SearchResources {class: app}
+model: SpringAiGuideModel {class: app}
+gate: GuideValidator {class: app}
+cache: GuideAnswerCache {class: data}
+
+page -> web: "POST /guide/stream"
+web -> svc: "ask(question)"
+svc -> model: "plan(question)" {class: ai-call}
+model -> svc: "searchQuery, webQuery, constraints"
+svc -> finder: "find(request, planned = true)"
+finder -> search: "search(planned query, web query)"
+search -> finder: "results, source statuses"
+finder -> finder: "ran(planned query);\nran(web query) if a web source read it"
+svc -> model: "choose(candidates)" {class: ai-call}
+model -> svc: "proposed picks"
+svc -> gate: "validate(proposal)"
+gate -> svc: "kept picks, rejectedPicks (candidate, rejection)"
+svc -> svc: "removedOf: title + check code;\nResearchTrail.of(queriesRun, removed)"
+svc -> cache: "put(key, answer with trail)"
+svc -> web: "GuideAnswer"
+web -> page: "answer: trail.queries (AI-marked), trail.removed"
+
+page -> web: "a paraphrase, same reading"
+web -> svc: "ask(paraphrase)"
+svc -> model: "plan(paraphrase)" {class: ai-call}
+svc -> cache: "near twin's answer (ADR 0032)"
+cache -> svc: "answer with trail"
+svc -> svc: "trail.withoutQueries(), searchQuery = \"\""
+svc -> cache: "put(new key, answer without queries)"
+svc -> web: "GuideAnswer"
+web -> page: "answer: no queries, no search query,\nremoved titles kept"

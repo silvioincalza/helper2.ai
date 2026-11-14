@@ -1,0 +1,38 @@
+# Sequence: a crawler, then a person, open a resource page (ADR 0041).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
+#   site/pages/usecase/RenderPage.java, ListSitemap.java, site/pages/web/CrawlerFiles.java, catalog/usecase/GetResourceDetail.java,
+#   ListIndexableResources.java, frontend/src/lib/head.ts, slug.ts, features/resource/ResourcePage.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0041-pages-for-crawlers.d2 && d2 sequence-0041-pages-for-crawlers.d2 sequence-0041-pages-for-crawlers.svg
+
+...@style
+
+shape: sequence_diagram
+
+bot: "Crawler or\nlink preview" {class: person}
+edge: "Cloudflare,\ningress" {class: app}
+api: "helper2 public app\n(site.pages, catalog)" {class: app}
+db: PostgreSQL {class: data}
+person: "Person\n(browser)" {class: person}
+
+crawl: "Crawl" {
+  bot -> edge: "GET /sitemap.xml"
+  edge -> api: "GET /sitemap.xml"
+  api -> db: "index-worthy resources, last update\n(at most once an hour, kept in memory)"
+  api -> bot: "200 sitemap"
+  bot -> edge: "GET /resource/{id}/{slug}"
+  edge -> api: "GET /resource/{id}/{slug}"
+  api -> db: "GetResourceDetail.find(id)"
+  db -> api: "resource, facts, relationships"
+  api -> bot: "200 index.html with head, JSON-LD and a short body\n(404 unknown; 301 to the readable address\nfor a merged id, a missing or old slug)" {class: hot}
+}
+
+visit: "Visit" {
+  person -> edge: "GET /resource/{id}"
+  edge -> api: "GET /resource/{id}"
+  api -> person: "200 filled index.html"
+  person -> api: "GET /api/v1/resources/{id} (the app starts)"
+  api -> db: "GetResourceDetail.find(id)"
+  api -> person: "200 detail"
+  person -> person: "a missing or old slug: the app\nreplaces the address, the focus stays"
+  person -> person: "createRoot replaces the body;\non the first route change the app\nremoves data-h2-head tags and sets its own"
+}

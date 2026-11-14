@@ -1,0 +1,84 @@
+# Flowchart: how one piece of text is marked as AI-written, in the API and in the page.
+# Shows the guide answer marker (aiContent only when a model wrote text, the question back included), the catalog
+# origins that already say AI_SUMMARY or AI_EXTRACTED, the search's translation of a non-English query
+# (interpretation.translatedQuery, apart from the word-list terms), the setup guide's step instructions, and the page
+# attributes and the dot marks (words on hover or tap) that follow from them. Quotes, titles, links and the setup guide's commands stay unmarked.
+# A guide answer drops QUERY_EXPANDED and any AI-origin description of a pick; GuideAiFieldsTest classes every field.
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java (aiContent, aiWrittenFields,
+#   AI_WRITTEN_FIELDS, plannedMarker, clarifyMarker), GuideStreamController.java (planned and clarify events,
+#   notices, sourceDescription), backend/apps/public/src/test/kotlin/ai/helper2/guide/web/GuideAiFieldsTest.kt,
+#   backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java (translatedQuery),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt (AnalyzedQuery.translation, lexiconTerms),
+#   api/common.yaml, api/public.yaml (AiContentMarker, GuideResponse.aiContent, ValueOrigin, QueryInterpretation.translatedQuery,
+#   ToolGuide.model, ToolGuide.aiContent), frontend/src/lib/aiMark.ts, frontend/src/features/guide/GuideAnswer.tsx, Clarify.tsx,
+#   frontend/src/features/search/Results.tsx, Resource.tsx, ResultsTimeline.tsx,
+#   frontend/src/features/resource/ResourcePage.tsx, frontend/src/features/setup/SetupGuide.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0033-ai-content-marking.d2 && d2 flow-0033-ai-content-marking.d2 flow-0033-ai-content-marking.svg
+
+...@style
+
+direction: down
+
+text: "Text shown to the user" {class: app}
+kind: "Where does it come from?" {class: decision}
+
+guide: Guide answer (GuideDtoMapper.toDto) {
+  class: group
+  direction: down
+  used: "Did a model write text?\n(modelUsed or planned)" {class: decision}
+  marker: "aiContent = provider, models that wrote,\nthe AI-written fields this answer holds,\npolicy /mission (answer, planned\nand clarify steps)" {class: app}
+  nomarker: "aiContent absent:\nno AI-written text" {class: end}
+  used -> marker: yes {class: hot}
+  used -> nomarker: no
+  hidden: "Model words in a field\nmarked as ours?\n(QUERY_EXPANDED terms,\nAI-origin description)" {class: decision}
+  drop: "dropped from the answer" {class: end}
+  marker -> hidden
+  hidden -> drop: yes
+}
+
+catalog: Catalog value (card, assertion, summary) {
+  class: group
+  direction: down
+  origin: "origin AI_SUMMARY\nor AI_EXTRACTED?" {class: decision}
+  ai: "origin and model name\nalready in the API;\nheaded \"About\", never a checked quote" {class: app}
+  plain: "source text:\nnot marked" {class: end}
+  origin -> ai: yes
+  origin -> plain: no
+}
+
+search: Search interpretation (SearchController) {
+  class: group
+  direction: down
+  term: "Term from the model's\ntranslation?" {class: decision}
+  translated: "interpretation.translatedQuery:\nAI-written by contract" {class: app}
+  lexicon: "interpretation.expandedTerms:\nfixed word list, not marked" {class: end}
+  term -> translated: yes {class: hot}
+  term -> lexicon: no
+}
+
+setup: "Setup guide step (ToolGuide):\nthe instruction is written by the model;\nToolGuide.aiContent names it and\nthe model, when steps are shown" {class: app}
+
+source: "Quote, title, link, source URL,\nsetup guide command" {class: ext}
+unmarked: "Never marked:\nit comes from the source" {class: end}
+
+page: Page (aiMark) {
+  class: group
+  direction: down
+  field: "Field written by AI?" {class: decision}
+  attr: "data-ai-generated=\"true\"\n+ data-ai-model when known" {class: app}
+  badge: "Visible mark: ● ◐ ○\nwords on hover or tap:\n\"AI-written\", \"Extracted by AI\", …" {class: end}
+  field -> attr: yes {class: hot}
+  attr -> badge
+}
+
+text -> kind
+kind -> guide.used: "guide"
+kind -> catalog.origin: "catalog"
+kind -> search.term: "search"
+kind -> setup: "setup guide"
+kind -> source: "source"
+source -> unmarked
+guide.marker -> page.field: {class: hot}
+catalog.ai -> page.field
+search.translated -> page.field
+setup -> page.field

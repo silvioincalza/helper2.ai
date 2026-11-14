@@ -1,0 +1,170 @@
+# Flowchart: which app answers a request, who may call what, what a session without an account gets, how a sign-in
+# becomes ADMIN (only on the back office) and keeps no GitHub token, where bookmarks are kept, how an account is deleted, and how the admin audit trail is kept.
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java (NoBackOfficeHere),
+#   backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java, BackOfficeEdge.java,
+#   backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java (roles, header-only CSRF), SameOriginWrites.java,
+#   identity/config/NoProviderTokens.java, SignInConfiguration.java (no token kept), identity/CurrentUser.java, identity/internal/SignedInUser.java,
+#   identity/config/KnownAccountOnly.java, identity/SignInAgain.java (a session without an account),
+#   identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports), identity/internal/Jdbc*.java,
+#   backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java, identity/schedule/AccountRetentionSchedule.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java,
+#   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (admin_audit triggers, grants),
+#   backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me),
+#   frontend/src/context/BookmarksContext.tsx, frontend/src/features/account/AccountPage.tsx, frontend/src/admin/,
+#   deploy/helm/helper2/templates/backoffice.yaml (Service helper2-admin), networkpolicy.yaml,
+#   the platform repo (Ingresses, allow-list), outside this repo.
+# Render: cd docs/diagrams && d2 fmt flow-0036-identity-and-admin-host.d2 && d2 flow-0036-identity-and-admin-host.d2 flow-0036-identity-and-admin-host.svg
+
+...@style
+
+direction: down
+
+req: "Request" {class: end}
+
+edge: Network edge {
+  class: group
+  direction: down
+  host: "Which host?" {class: decision}
+  allow: "Client in a\nprivate range?" {class: decision}
+  e403: "403 from ingress-nginx" {class: fail}
+  host -> allow: "admin host"
+  allow -> e403: no
+}
+
+public: Public app {
+  class: group
+  direction: down
+  bo: "Back office path?\n/admin, /api/v1/admin/**\n(decoded, normalised)" {class: decision}
+  e404: "404, before session\nand security" {class: fail}
+  open: "Public GET (search, recent, sources,\nresources, events, me)\nor POST reports / guide?" {class: decision}
+  anon: "Allowed, no account" {class: end}
+  bm: "/api/v1/me/bookmarks,\nDELETE /me, PATCH preferences?" {class: decision}
+  signed: "Signed in?" {class: decision}
+  known: "Session on /api/v1/me/**:\nits app_user row exists?\n(read only)" {class: decision}
+  again: "Session ended, cookie cleared:\n401 sign-in-again" {class: fail}
+  ok: "Allowed (own bookmarks,\nown account)" {class: end}
+  e401: "401 sign-in-required\n(no redirect)" {class: fail}
+  deny: "Any other /api/**: denied" {class: fail}
+  limits: "GET /me: limits of this visitor,\nread from the counters, never counted;\nno address, hash or id in the answer" {class: data}
+  bo -> e404: yes
+  bo -> open: no {class: hot}
+  open -> anon: yes {class: hot}
+  anon -> known: "GET /me\nwith a session"
+  known -> limits: yes
+  anon -> limits: "GET /me,\nno session"
+  open -> bm: no
+  bm -> signed: yes
+  bm -> deny: no
+  signed -> known: yes
+  known -> ok: yes
+  known -> again: no
+  signed -> e401: no
+}
+
+backoffice: Back office app {
+  class: group
+  direction: down
+  own: "One of its own paths?\n/admin/**, /api/v1/admin/**, /me,\nsign-in, POST /logout" {class: decision}
+  e404b: "404, every header,\nno path echoed" {class: fail}
+  write: "Write (POST, PUT,\nPATCH, DELETE)?" {class: decision}
+  origin: "Origin names\nthe admin host?" {class: decision}
+  e403o: "403, before\nthe CSRF check" {class: fail}
+  csrf: "X-XSRF-TOKEN header =\n__Host-XSRF-TOKEN cookie?" {class: decision}
+  e403c: "403" {class: fail}
+  known: "Session on /api/** or /actuator/**:\nits app_user row exists?\n(read only)" {class: decision}
+  again: "Session ended, cookies cleared:\n401 sign-in-again,\nnothing written or audited" {class: fail}
+  isadmin: "Session has ROLE_ADMIN?" {class: decision}
+  okadmin: "Allowed (admin)" {class: end}
+  e403a: "403 (signed in, not admin)\nor 401 (no session)" {class: fail}
+  own -> e404b: no
+  own -> write: yes {class: hot}
+  write -> known: no
+  write -> origin: yes
+  origin -> e403o: no
+  origin -> csrf: yes {class: hot}
+  csrf -> e403c: no
+  csrf -> known: yes {class: hot}
+  known -> again: no
+  known -> isadmin: "yes, or\nno session" {class: hot}
+  isadmin -> okadmin: yes {class: hot}
+  isadmin -> e403a: no
+}
+
+signin: Sign-in (both hosts, profile oauth-github) {
+  class: group
+  direction: down
+  github: "GitHub OAuth2, scope read:user;\neach host its own callback" {class: ext}
+  token: "Access token used once for the user info,\nthen dropped (NoProviderTokens):\nnot in the session, not in memory" {class: config}
+  where: "Which app?" {class: decision}
+  listed: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}
+  user: "ROLE_USER, back to /" {class: end}
+  bouser: "ROLE_USER, back to /admin\n(forbidden pages)" {class: end}
+  adm: "ROLE_USER + ROLE_ADMIN,\nback to /admin" {class: end}
+  ensure: "Sign-in event → Users.signedIn:\nupsert app_user (provider, subject,\nname, last sign-in; no e-mail);\nthe only write of the row" {class: data}
+  github -> token -> ensure -> where
+  where -> user: public
+  where -> listed: back office
+  listed -> adm: yes
+  listed -> bouser: no
+}
+
+bookmarks: Bookmarks (one use case per action) {
+  class: group
+  direction: down
+  who: "Signed in?" {class: decision}
+  local: "Browser storage\nh2.bookmarks.v1" {class: app}
+  merge: "MergeLocalBookmarks once after sign-in,\nthen clear local; AddBookmark (PUT one)" {class: app}
+  cap: "http(s) link ≤ 2000 chars and\naccount ≤ 500 afterwards?" {class: decision}
+  saved: "Saved (idempotent,\nfirst savedAt kept)" {class: end}
+  refused: "400, whole request\nrolled back" {class: fail}
+  who -> local: no
+  who -> merge: yes
+  merge -> cap
+  cap -> saved: yes
+  cap -> refused: no
+}
+
+account: Delete my account {
+  class: group
+  direction: down
+  call: "DELETE /api/v1/me\n(X-XSRF-TOKEN)" {class: app}
+  end: "Session ended first" {class: app}
+  del: "DeleteMyAccount: delete app_user;\nbookmarks cascade; reports stay\n(never linked to an account)" {class: data}
+  out: "204, signed out" {class: end}
+  call -> end -> del -> out
+}
+
+audit: Admin audit trail {
+  class: group
+  direction: down
+  write: "Every admin use case\n(AuditTrail port, same transaction)" {class: app}
+  row: "admin_audit row: admin id, action,\ntarget, at, outcome" {class: data}
+  update: "UPDATE or TRUNCATE?" {class: decision}
+  e_ro: "refused by trigger\n(owner too)" {class: fail}
+  purge: "Daily purge in the back office:\nDELETE rows older than\nH2_RETENTION_ADMIN_AUDIT (≥ 730 d)" {class: app}
+  young: "Row younger than 729 days?" {class: decision}
+  gone: "Row deleted" {class: end}
+  e_young: "refused by trigger,\nthe whole DELETE fails" {class: fail}
+  pub: "Public app: no right on\nadmin_audit (no SELECT,\nINSERT or DELETE)" {class: config}
+  write -> row: {class: hot}
+  row -> update
+  update -> e_ro: yes
+  purge -> young
+  young -> gone: no
+  young -> e_young: yes
+  pub -> row: "denied"
+}
+
+accounts: "Daily purge in the public app:\naccounts with no sign-in for\nH2_RETENTION_INACTIVE_ACCOUNTS" {class: app}
+
+req -> edge.host
+edge.host -> public.bo: "public host\n(Cloudflare, ingress-nginx)" {class: hot}
+edge.allow -> backoffice.own: yes
+public.e401 -> signin.github: "sign in"
+public.again -> signin.github: "sign in again"
+backoffice.again -> signin.github: "sign in again\n(pinned callback)"
+backoffice.e403a -> signin.github: "sign in\n(pinned callback)"
+signin.user -> bookmarks.who
+public.ok -> account.call: "own account"
+backoffice.okadmin -> audit.write
+accounts -> account.del: "same delete,\nby age" {class: config}

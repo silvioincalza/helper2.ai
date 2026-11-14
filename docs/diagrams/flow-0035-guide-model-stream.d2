@@ -1,0 +1,67 @@
+# Flowchart: one guide model call (plan, choose, compare, explain or verify) with H2_GUIDE_MODEL_STREAM=ON:
+# when the stream is disposed, what each stop means for the step, and when the step is asked again without thinking.
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call, streamWithin),
+#   backend/apps/public/src/main/java/ai/helper2/guide/CallTimeLimit.java (forACallStartingNow, forThinking, forTheCallAfterThinking),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/ChatStream.java (collect), BudgetedChat.java (streamed),
+#   ModelCallMetrics.java (tokens, thinkingFallback), CutAnswerWatch.java (isCut), ModelErrors.java,
+#   backend/apps/public/src/main/java/ai/helper2/guide/ModelActivity.java, guide/config/GuideProperties.java (ModelStream).
+# Render: cd docs/diagrams && d2 fmt flow-0035-guide-model-stream.d2 && d2 flow-0035-guide-model-stream.d2 flow-0035-guide-model-stream.svg
+
+...@style
+
+direction: down
+
+mode: "H2_GUIDE_MODEL_STREAM?" {class: decision}
+blocking: "Blocking call\n(ADR 0008): prompt.call()\n.responseEntity(converter)" {class: app}
+window: "CallTimeLimit.forACallStartingNow:\nwindow = min(model timeout,\ntime left - margin)" {class: app}
+units: "BudgetedChat.streamed:\ncircuit llm-chat-guide, one budget unit,\none helper2.llm.call observation\naround the whole subscription" {class: app}
+ask: "prompt.stream().chatResponse()\nsame options, system and user text;\nschema on the options, or the\nformat text after the user text" {class: ai}
+collect: "ChatStream.collect on the\nquestion's virtual thread:\nnext signal?" {class: decision}
+chunk: "Chunk: join the text, keep the last\nfinish reason and the highest token counts" {class: app}
+first: "First reasoning chunk: event reasoning{step}\nFirst answer text: event writing{step}\n(ModelActivity, once per step, no text)" {class: app}
+done: "Complete" {class: app}
+cut: "Finish reason\nlength / max_tokens?" {class: decision}
+convert: "BeanOutputConverter on the whole text\n(ModelAnswers.jsonObject)" {class: app}
+ok: "Entity to the step:\nGuideValidator and the\nreason check decide" {class: end}
+malformed: "Malformed:\nasked once more\n(attempt 2)" {class: fail}
+thinking: "Thinking budget > 0\nand attempt 1?" {class: decision}
+again: "Asked once more with thinking off:\nown budget unit,\nthinking_fallback{step, reason}" {class: ai}
+cutFail: "Step fails: cut" {class: fail}
+error: "Error signal: stream failed after\nthe first chunk, SSE error event\n(SseException), HTTP error" {class: fail}
+provider: "Provider error: counts for the\ncircuit; step fails unavailable,\nrate_limited or timeout" {class: fail}
+windowOver: "Window over:\ndispose" {class: fail}
+shortened: "Window shortened by the\nquestion's deadline?" {class: decision}
+deadline: "Step fails: deadline\n(not a provider failure)" {class: fail}
+timeout: "Step fails: timeout\n(provider failure)" {class: fail}
+interrupted: "Worker interrupted (GuideLimits,\nquestion deadline): dispose" {class: fail}
+cancelled: "Step fails: cancelled,\ninterrupt kept" {class: fail}
+thinkTime: "No answer text when the question has\nmargin + minimum left (2 s + 10 s),\nthinking on, attempt 1: dispose\n(ThinkingTimeout)" {class: fail}
+reserved: "CallTimeLimit.forTheCallAfterThinking:\ntime left - margin" {class: app}
+
+mode -> blocking: OFF
+mode -> window: ON {class: hot}
+window -> units -> ask -> collect: {class: hot}
+collect -> chunk: next {class: hot}
+chunk -> first
+first -> collect
+collect -> done: complete {class: hot}
+done -> cut
+cut -> convert: no {class: hot}
+convert -> ok: parsed {class: hot}
+convert -> malformed: "not JSON"
+malformed -> window
+cut -> thinking: yes
+thinking -> again: yes
+thinking -> cutFail: no
+again -> window: "reason=cut"
+collect -> error: error
+error -> provider
+collect -> windowOver: "nothing in the window"
+windowOver -> shortened
+shortened -> deadline: yes
+shortened -> timeout: no
+collect -> interrupted: interrupt
+interrupted -> cancelled
+collect -> thinkTime: "thinking limit"
+thinkTime -> reserved
+reserved -> again: "reason=time"
