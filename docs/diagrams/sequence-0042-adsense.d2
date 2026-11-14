@@ -1,0 +1,43 @@
+# Sequence: Google checks the site; a visitor in Europe opens Home, then a resource page, with AdSense on (ADR 0042).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/internal/PageHtml.java, site/pages/web/CrawlerFiles.java,
+#   site/csp/CspHeaderWriter.java, frontend/src/lib/googleConsent.ts, features/monetisation/AnalyticsConsent.tsx,
+#   features/monetisation/AdSenseSlot.tsx.
+# Render: cd docs/diagrams && d2 fmt sequence-0042-adsense.d2 && d2 sequence-0042-adsense.d2 sequence-0042-adsense.svg
+
+...@style
+
+shape: sequence_diagram
+
+google: "Google AdSense\ncrawler" {class: person}
+person: "Visitor\n(browser)" {class: person}
+api: "helper2 public app\n(site, identity)" {class: app}
+fc: "Google consent tool" {class: data}
+ads: "Google AdSense" {class: data}
+
+check: "Site check" {
+  google -> api: "GET /, GET /ads.txt"
+  api -> google: "meta google-adsense-account;\ngoogle.com, pub-..., DIRECT, f08c47fec0942fa0" {class: hot}
+}
+
+home: "A visit starts on Home" {
+  person -> api: "GET /"
+  api -> person: "index.html, every script with the nonce;\nCSP names the nonce"
+  person -> api: "GET /api/v1/site"
+  api -> person: "monetisation: adsenseClient, adsenseSlot"
+  person -> person: "not a resource page: nothing asked\nfrom Google, no Google Analytics"
+}
+
+visit: "The visitor opens a resource" {
+  person -> person: "/resource/{id} (inside the app)"
+  person -> fc: "Privacy & messaging tag (pub-...)"
+  fc -> person: "question; TCF answer"
+  person -> fc: "CONSENT_MODE_DATA_READY:\ngetGoogleConsentModeValues()"
+  fc -> person: "analyticsStoragePurposeConsentStatus\n(1 granted, 2 denied, ...)"
+  person -> person: "purposes 1 + 8, vendor 755 and\nanalytics storage granted:\nGoogle Analytics loads"
+  person -> ads: "adsbygoogle.js, one ad for the box\n(resource address, no search words)"
+  ads -> person: "the ad"
+}
+
+later: "Later pages of the visit" {
+  person -> person: "the tool stays loaded: page_view per page\nby the same answer (path only, never q or ask)"
+}
