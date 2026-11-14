@@ -26,13 +26,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cd-${{ github.event_name == 'push' && github.ref || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   ci:
     if: github.event_name == 'push'
     uses: ./.github/workflows/ci.yml
-    concurrency:
-      group: cd-build-${{ github.event_name == 'push' && github.ref || github.run_id }}
-      cancel-in-progress: true
     permissions:
       contents: read
     with:
@@ -45,9 +46,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    concurrency:
-      group: cd-build-${{ github.event_name == 'push' && github.ref || github.run_id }}
-      cancel-in-progress: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -63,7 +61,7 @@ jobs:
         env:
           ENGINE: ${{ vars.IMAGE_ENGINE || 'podman' }}
         run: make -C deploy/k8s postgres-image ENGINE="$ENGINE" PUSHED="$RUNNER_TEMP/pushed.txt"
-      - name: Sign the Postgres image, also when a newer push cancels the run
+      - name: Sign the Postgres image, also when the run is cancelled
         if: always() && steps.postgres.outcome != 'skipped'
         run: make -C deploy/k8s sign-pushed PUSHED="$RUNNER_TEMP/pushed.txt"
       - name: Changed components
@@ -125,9 +123,6 @@ jobs:
     needs: image
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    concurrency:
-      group: cd-build-${{ github.event_name == 'push' && github.ref || github.run_id }}
-      cancel-in-progress: true
     permissions:
       contents: read
       actions: read
