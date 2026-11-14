@@ -1,0 +1,112 @@
+package ai.helper2.scout.usecase
+
+import ai.helper2.platform.AuditTrail
+import ai.helper2.scout.Candidate
+import ai.helper2.scout.UnitOfWork
+import ai.helper2.shared.ResourceType
+import java.util.UUID
+
+data class CandidateEdit(
+  val title: String? = null,
+  val type: ResourceType? = null,
+  val tags: Set<String>? = null,
+)
+
+data class CandidateItem(val open: Boolean, val resourceCandidate: Boolean, val details: String?)
+
+interface CandidateItems {
+  fun find(itemId: UUID): CandidateItem?
+
+  fun edit(details: String?, edit: CandidateEdit): String
+
+  fun replace(itemId: UUID, oldDetails: String?, newDetails: String): Boolean
+}
+
+class EditCandidate(
+  private val items: CandidateItems,
+  private val audit: AuditTrail,
+  private val unitOfWork: UnitOfWork,
+) {
+
+  sealed interface Outcome {
+    data object Edited : Outcome
+
+    data object NotFound : Outcome
+
+    data object NotOpen : Outcome
+
+    data object NotACandidate : Outcome
+
+    data object ChangedMeanwhile : Outcome
+
+    data class Invalid(val reason: String) : Outcome
+  }
+
+  fun edit(itemId: UUID, expectedDetails: String?, change: CandidateEdit, by: String): Outcome {
+    val item = items.find(itemId) ?: return Outcome.NotFound
+    if (!item.open) return Outcome.NotOpen
+    if (!item.resourceCandidate) return Outcome.NotACandidate
+    if (item.details != expectedDetails) return Outcome.ChangedMeanwhile
+    val checked =
+      try {
+        checked(change)
+      } catch (e: IllegalArgumentException) {
+        return Outcome.Invalid(e.message ?: "invalid change")
+      }
+    val edited =
+      try {
+        items.edit(item.details, checked)
+      } catch (e: InvalidCandidate) {
+        return Outcome.Invalid("The candidate cannot be read.")
+      }
+    return save(itemId, item.details, edited, fields(checked), by)
+  }
+
+  private fun save(
+    itemId: UUID,
+    oldDetails: String?,
+    newDetails: String,
+    fields: String,
+    by: String,
+  ): Outcome = unitOfWork.run {
+    if (items.replace(itemId, oldDetails, newDetails)) {
+      audit.record(by, AuditTrail.Action.EDIT_CANDIDATE, itemId.toString(), "EDITED $fields")
+      Outcome.Edited
+    } else {
+      Outcome.ChangedMeanwhile
+    }
+  }
+
+  private fun checked(change: CandidateEdit): CandidateEdit {
+    require(change.title != null || change.type != null || change.tags != null) {
+      "Change at least one of the title, the type and the tags."
+    }
+    val title = change.title?.trim()
+    if (title != null) {
+      require(
+        title.isNotEmpty() &&
+          title.length <= CandidateRules.MAX_TITLE &&
+          title.none { Character.isISOControl(it) }
+      ) {
+        "The title must be 1 to ${CandidateRules.MAX_TITLE} characters on one line."
+      }
+    }
+    if (change.type != null) {
+      require(change.type in CandidateRules.TYPES) { "A candidate cannot be a ${change.type}." }
+    }
+    if (change.tags != null) {
+      require(CandidateRules.tagsOk(change.tags)) {
+        "At most ${Candidate.MAX_TAGS} tags, each in lower case words joined by hyphens (local-ai)."
+      }
+    }
+    return change.copy(title = title, tags = change.tags?.toSortedSet())
+  }
+
+  private fun fields(c: CandidateEdit): String =
+    listOfNotNull(
+        "title".takeIf { c.title != null },
+        "type".takeIf { c.type != null },
+        "tags".takeIf { c.tags != null },
+      )
+      .joinToString(", ")
+}

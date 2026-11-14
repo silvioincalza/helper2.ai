@@ -1,1 +1,2 @@
+helper2.scout.enabled = false
 spring.profiles.active = ${H2_PROFILES:}  =>  demo
