@@ -1,0 +1,342 @@
+groups:
+  - name: helper2-http
+    rules:
+      - alert: Helper2HighServerErrorRatio
+        expr: |
+          (
+            sum by (environment) (rate(http_server_requests_seconds_count{application="helper2", uri!~"/actuator.*", status=~"5.."}[5m]))
+            /
+            sum by (environment) (rate(http_server_requests_seconds_count{application="helper2", uri!~"/actuator.*"}[5m]))
+          ) > 0.05
+          and
+          sum by (environment) (rate(http_server_requests_seconds_count{application="helper2", uri!~"/actuator.*"}[5m])) > 1/60
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "More than 5% of requests to helper2 ({{ $labels.environment }}) fail with a 5xx status."
+          description: "{{ $value | humanizePercentage }} of the requests of the last 5 minutes ended with a server error, for 10 minutes."
+          runbook: "Dashboard row 'HTTP (app port)' (Requests by status, p95 by route), then row Logs filtered on ERROR. 503 on the guide = all slots busy, 504 = question deadline; other 5xx: check Postgres and Redis pods and the last deploy (make ENV=<env> rollback)."
+
+  - name: helper2-search
+    rules:
+      - record: environment_source:helper2_source_latency_seconds:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (environment, source, le) (rate(helper2_source_latency_seconds_bucket{application="helper2"}[5m]))
+          )
+      - alert: Helper2SourceFailing
+        expr: |
+          (
+            sum by (environment, source) (rate(helper2_source_requests_total{application="helper2", outcome=~"FAILED|TIMED_OUT|RATE_LIMITED"}[15m]))
+            /
+            sum by (environment, source) (rate(helper2_source_requests_total{application="helper2", outcome!="SKIPPED"}[15m]))
+          ) > 0.2
+          and
+          sum by (environment, source) (rate(helper2_source_requests_total{application="helper2", outcome!="SKIPPED"}[15m])) > 1/300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Source {{ $labels.source }} fails on more than 20% of searches ({{ $labels.environment }})."
+          description: "{{ $value | humanizePercentage }} of the calls to {{ $labels.source }} failed, timed out or were rate limited over the last 15 minutes. Searches still answer, without that source or from its stale cache."
+          runbook: "Dashboard panels 'Source failures (FAILED, TIMED_OUT, RATE_LIMITED)' and 'Outbound HTTP errors by host'. TIMED_OUT: the provider is slow; RATE_LIMITED: check the token or quota of that provider; FAILED: row Logs, search for the source id."
+      - alert: Helper2PartialSearches
+        expr: |
+          (
+            sum by (environment) (rate(helper2_search_requests_total{application="helper2", partial="true"}[30m]))
+            /
+            sum by (environment) (rate(helper2_search_requests_total{application="helper2"}[30m]))
+          ) > 0.5
+          and
+          sum by (environment) (rate(helper2_search_requests_total{application="helper2"}[30m])) > 1/600
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than half of the searches on helper2 ({{ $labels.environment }}) return partial results."
+          description: "{{ $value | humanizePercentage }} of the searches of the last 30 minutes missed at least one source, for 30 minutes."
+          runbook: "Find the source with Helper2SourceFailing or the panel 'Source outcomes'; a source SKIPPED on every search (cooldown, daily limit, missing token) also makes every search partial."
+      - alert: Helper2SearchCacheErrors
+        expr: sum by (environment) (rate(helper2_cache_events_total{application="helper2", event="error"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The search cache in Redis fails on helper2 ({{ $labels.environment }})."
+          description: "Search cache reads or writes have failed for 10 minutes. Searches still answer, but every search calls the sources live."
+          runbook: "Check the redis-0 pod (kubectl -n helper2-<env> get pod redis-0, logs) and its PersistentVolumeClaim; the rate-limit alert Helper2RateLimitInMemory fires too when Redis is down."
+
+  - name: helper2-resilience
+    rules:
+      - alert: Helper2CircuitOpen
+        expr: max by (environment, name) (1 - resilience4j_circuitbreaker_state{application=~"helper2|helper2-backoffice", state="closed"}) == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit {{ $labels.name }} has not closed for 5 minutes ({{ $labels.environment }})."
+          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide means guide answers are top search results (also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+          runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
+      - alert: Helper2CallsNotPermitted
+        expr: sum by (environment, name) (rate(resilience4j_circuitbreaker_not_permitted_calls_total{application=~"helper2|helper2-backoffice"}[5m])) * 60 > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Policy {{ $labels.name }} refuses calls ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} calls a minute were refused by the open circuit of {{ $labels.name }} over the last 5 minutes, for 10 minutes."
+          runbook: "Same cause as Helper2CircuitOpen for {{ $labels.name }}; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."
+
+  - name: helper2-platform
+    rules:
+      - alert: Helper2RateLimitInMemory
+        expr: sum by (environment, limiter) (increase(helper2_rate_limit_fallback_total{application="helper2"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limiter {{ $labels.limiter }} decides in one replica's memory ({{ $labels.environment }})."
+          description: "Redis was unavailable to the rate limiter, so each replica counted on its own: a client could make up to replicas x the limit. The daily budgets count in memory too."
+          runbook: "Check the redis-0 pod and its logs; the counter stops growing once Redis answers again (the circuit closes after 30 s)."
+      - alert: Helper2PodRestarting
+        expr: sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total{namespace=~"helper2-.+"}[1h])) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} of pod {{ $labels.pod }} restarted more than twice in an hour ({{ $labels.namespace }})."
+          description: "{{ $value }} restarts in the last hour. A crash loop or an out-of-memory kill."
+          runbook: "kubectl -n {{ $labels.namespace }} describe pod {{ $labels.pod }} (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
+      - alert: Helper2ReplicasMissing
+        expr: |
+          kube_deployment_status_replicas_available{namespace=~"helper2-.+", deployment="helper2"}
+          < on (namespace, deployment) kube_deployment_spec_replicas{namespace=~"helper2-.+", deployment="helper2"}
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The app runs with fewer replicas than wanted ({{ $labels.namespace }})."
+          description: "{{ $value }} replicas available for 10 minutes. A rollout stuck on a failing probe, a node out, or a scheduling problem."
+          runbook: "kubectl -n {{ $labels.namespace }} rollout status deploy/helper2; kubectl -n {{ $labels.namespace }} get pods -l app=helper2; describe a Pending or not-ready pod."
+      - alert: Helper2NoReplica
+        expr: kube_deployment_status_replicas_available{namespace=~"helper2-.+", deployment="helper2"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No app replica is available: the site is down ({{ $labels.namespace }})."
+          description: "No pod of deploy/helper2 passed its readiness probe for 2 minutes."
+          runbook: "kubectl -n {{ $labels.namespace }} get pods -l app=helper2; kubectl logs for the crash; roll back with the CD workflow (rollback) if a new tag caused it (deploy/k8s/README.md, Rollback)."
+      - alert: Helper2BackofficeDown
+        expr: kube_deployment_status_replicas_available{namespace=~"helper2-.+", deployment="helper2-backoffice"} == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No back office replica is available ({{ $labels.namespace }})."
+          description: "No pod of deploy/helper2-backoffice passed its readiness probe for 15 minutes. The Scout, the embedding indexer and the admin pages are stopped; the public site keeps answering."
+          runbook: "kubectl -n {{ $labels.namespace }} get pods -l app=helper2-backoffice; kubectl -n {{ $labels.namespace }} logs deploy/helper2-backoffice -c backoffice; roll back with the CD workflow if a new tag caused it."
+
+      - alert: Helper2VolumeAlmostFull
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"helper2-.+"}
+          / on (namespace, persistentvolumeclaim) kubelet_volume_stats_capacity_bytes{namespace=~"helper2-.+"} < 0.2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 20% free ({{ $labels.namespace }})."
+          description: "{{ $value | humanizePercentage }} free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0010)."
+      - alert: Helper2VolumeFull
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"helper2-.+"}
+          / on (namespace, persistentvolumeclaim) kubelet_volume_stats_capacity_bytes{namespace=~"helper2-.+"} < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 10% free ({{ $labels.namespace }})."
+          description: "{{ $value | humanizePercentage }} free. Writes fail soon."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim now (values.yaml storage) or free space (old dumps on pg-backup, purge on Postgres)."
+      - alert: Helper2BackupFailed
+        expr: |
+          max by (namespace, job_name) (kube_job_failed{namespace=~"helper2-.+", job_name=~"pg-backup-.+", condition="true"}) == 1
+          and on (namespace, job_name)
+          (time() - kube_job_status_start_time{namespace=~"helper2-.+", job_name=~"pg-backup-.+"}) < 86400
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The Postgres backup Job {{ $labels.job_name }} failed ({{ $labels.namespace }})."
+          description: "Tonight's pg_dump (or its off-site upload) failed after its retries. Dumps are kept 7 days, so each failed night shortens the history."
+          runbook: "kubectl -n {{ $labels.namespace }} logs job/{{ $labels.job_name }} -c dump (and -c upload with the off-site copy). Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+
+      - alert: Helper2BackupStale
+        expr: |
+          time() - max by (namespace) (kube_cronjob_status_last_successful_time{namespace=~"helper2-.+", cronjob="pg-backup"}) > 36 * 3600
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful Postgres backup for 36 hours ({{ $labels.namespace }})."
+          description: "The pg-backup CronJob last succeeded {{ $value | humanizeDuration }} ago. Tonight's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+          runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-backup; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-backup. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+
+  - name: helper2-budgets
+    rules:
+      - alert: Helper2DailyBudgetLow
+        expr: |
+          min by (environment, budget) (
+            label_replace({__name__=~"helper2_.+_budget_remaining", application="helper2"}, "budget", "$1", "__name__", "helper2_(.+)_budget_remaining")
+          )
+          /
+          max by (environment, budget) (
+            max_over_time(label_replace({__name__=~"helper2_.+_budget_remaining", application="helper2"}, "budget", "$1", "__name__", "helper2_(.+)_budget_remaining")[1d:5m])
+          )
+          < 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Daily budget {{ $labels.budget }} is below 20% ({{ $labels.environment }})."
+          description: "Only {{ $value | humanizePercentage }} of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; setup guide: no answer; translation: query sent as typed)."
+          runbook: "Dashboard helper2, panels 'Questions by outcome' and 'Daily budget remaining' (AI guide): normal traffic or one loop/abuser? Caps: H2_GUIDE_DAILY_MODEL_CALLS (guide), H2_SEARCH_DAILY_TRANSLATIONS (search_translation), H2_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
+
+      - alert: Helper2BackofficeBudgetLow
+        expr: |
+          min by (environment, budget) (
+            label_replace({__name__=~"helper2_.+_(budget|credits)_remaining", application="helper2-backoffice", __name__!="helper2_search_translation_budget_remaining"}, "budget", "$1$2", "__name__", "helper2_(.+)_budget_remaining|helper2_(.+_credits)_remaining")
+          )
+          /
+          max by (environment, budget) (
+            max_over_time(label_replace({__name__=~"helper2_.+_(budget|credits)_remaining", application="helper2-backoffice", __name__!="helper2_search_translation_budget_remaining"}, "budget", "$1$2", "__name__", "helper2_(.+)_budget_remaining|helper2_(.+_credits)_remaining")[1d:5m])
+          )
+          < 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Back office budget {{ $labels.budget }} is below 20% ({{ $labels.environment }})."
+          description: "Only {{ $value | humanizePercentage }} of today's {{ $labels.budget }} is left. At 0 the step waits until 00:00 UTC: enrichment, gap rounds, the classifier and the event reader skip their model call, example drafts stop, the evidence step reads no page. The backlog waits for the next day."
+          runbook: "Dashboard helper2-backoffice, row 'Enrichment and budgets': a large backlog after a fresh database spends the caps for days, as planned; a sudden drop on a normal day is a loop. Caps (back office Settings page or H2_): scout.dailyEnrichmentCalls (H2_SCOUT_DAILY_ENRICHMENT_CALLS), scout.gapDailyCalls (H2_SCOUT_GAP_DAILY_CALLS), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS, H2_SCOUT_PAGE_READER_DAILY_CREDITS."
+      - alert: Helper2LiveWebCreditsHigh
+        expr: sum by (environment) (increase(helper2_live_web_credits_total{application=~"helper2|helper2-backoffice"}[1d])) > 200
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tavily used more than 200 credits in the last 24 hours ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} Tavily credits (live calls and the Scout's discovery, news, courses, LinkedIn, events and evidence reads) in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+          runbook: "Dashboard: helper2_live_web_credits_total by feature (every scout-* feature is the Scout, on the helper2-backoffice dashboard). Many addresses at the limit = rotating IPs: set H2_LIVE_WEB_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+
+  - name: helper2-catalog
+    rules:
+      - alert: Helper2EmbeddingIndexerStalled
+        expr: (time() - max by (environment) (max_over_time(helper2_embedding_last_success_seconds{application="helper2-backoffice"}[2h]))) > 1800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The embedding indexer has not finished a batch for 30 minutes ({{ $labels.environment }})."
+          description: "The last successful batch was {{ $value | humanizeDuration }} ago (one runs every 5 s). New resources are found by keyword search only until it recovers."
+          runbook: "Dashboard helper2-backoffice, row 'Embedding indexer', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; database = Postgres. Logs: 'Embedding batch failed'."
+      - alert: Helper2EmbeddingBacklogStuck
+        expr: |
+          max by (environment) (
+            last_over_time(helper2_embedding_backlog{application="helper2-backoffice"}[20m])
+            and on (environment, instance)
+            (time() - max_over_time(helper2_embedding_last_success_seconds{application="helper2-backoffice"}[20m]) < 1800)
+          ) > 0
+        for: 3h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Resources have waited for an embedding for 3 hours ({{ $labels.environment }})."
+          description: "The embedding backlog has stayed above 0 for 3 hours ({{ $value }} resources now); the indexer embeds about 12 resources a minute, about 17,000 a day."
+          runbook: "If Helper2EmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (helper2.catalog.indexer.batch 1 every 5 s = 12 a minute; H2_EMBEDDING_BATCH and H2_EMBEDDING_EVERY change it)."
+
+      - alert: Helper2ReviewBacklog
+        expr: max by (environment) (helper2_review_open_items{application="helper2-backoffice"}) > 50
+        for: 1d
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 50 review items have waited for a decision for a day ({{ $labels.environment }})."
+          description: "{{ $value }} review items are OPEN. Until someone decides them, AI-proposed relationships stay unverified and user reports go unanswered."
+          runbook: "Admin page, Review: decide or reject in bulk by kind. A sudden rise of one kind (ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE) points to an enrichment prompt or model change."
+
+  - name: helper2-scout
+    interval: 5m
+    rules:
+      - alert: Helper2ScoutCollectorStale
+        expr: |
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source!~"live-web-scout|course-scout|linkedin-scout|discovery-.*"}[9d]))) > 2 * 86400
+          or
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source="live-web-scout"}[9d]))) > 6 * 86400
+          or
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source=~"course-scout|linkedin-scout"}[9d]))) > 8 * 86400
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scout collector {{ $labels.source }}: no successful run for {{ $value | humanizeDuration }} ({{ $labels.environment }})."
+          description: "The catalog misses new resources from {{ $labels.source }} since its last successful run."
+          runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+      - alert: Helper2DiscoveryStale
+        expr: |
+          count by (environment) (
+            (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source=~"discovery-.*"}[9d]))) > 8 * 86400
+          ) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} discovery categories: no successful run for more than 8 days ({{ $labels.environment }})."
+          description: "No new products or list articles from: {{ range query (printf \"(time() - max by (source) (max_over_time(helper2_scout_last_success{application='helper2-backoffice', environment='%s', source=~'discovery-.*'}[9d]))) > 8 * 86400\" $labels.environment) }}{{ .Labels.source }} {{ end }}"
+          runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
+
+      - alert: Helper2ScoutRunsFailing
+        expr: |
+          count by (environment) (
+            sum by (environment, source) (increase(helper2_scout_run_seconds_count{application="helper2-backoffice", status="failed"}[1d])) > 0
+          ) >= 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} Scout collectors failed in the last 24 hours ({{ $labels.environment }})."
+          description: "Several collectors failed on the same day, so the cause is likely one they share: the model provider, Tavily, GitHub or the database."
+          runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error' (the error tag names the exception). Admin back office, Scout runs: the message of each failed run. Then the provider's status page; Helper2CircuitOpen for the collector-<id> policies."
+  - name: helper2-guide
+    rules:
+      - alert: Helper2GuidePicksFromLowRanks
+        expr: |
+          (
+            sum by (environment) (increase(helper2_guide_picks_total{application="helper2", rank="9+"}[1d]))
+            /
+            sum by (environment) (increase(helper2_guide_picks_total{application="helper2"}[1d]))
+          ) > 0.45
+          and
+          sum by (environment) (increase(helper2_guide_picks_total{application="helper2", rank="9+"}[1d])) >= 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 45% of the guide's picks come from search rank 9 or lower ({{ $labels.environment }})."
+          description: "{{ $value | humanizePercentage }} of the picks kept in the last day were ranked 9+ in search. A page may be written to be chosen by the model (content poisoning)."
+          runbook: "Logs: 'guide timings' lines with keptRanks containing 9 or more, then ask the same question and read the low-ranked pick's page for instructions aimed at a model. Report the resource from the back office; rerun scripts/eval-guide.mjs --adversarial."
+      - alert: Helper2GuideFirstUsefulSlow
+        expr: |
+          histogram_quantile(0.95, sum by (environment, le) (rate(helper2_guide_first_useful_seconds_bucket{application="helper2"}[15m]))) > 8
+          and
+          sum by (environment) (rate(helper2_guide_first_useful_seconds_count{application="helper2"}[15m])) > 1/300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The guide takes more than 8 s to show its first useful step at p95 ({{ $labels.environment }})."
+          description: "The p95 time from a guide question to its results or question back was {{ $value | humanizeDuration }} over the last 15 minutes, above the 8 s target, for 15 minutes."
+          runbook: "Dashboard row 'AI guide', 'Time to first useful event by intent', then 'Model call p95 by step / model' (step plan) and 'Source latency p95' (the search). Logs: 'guide timings' lines, plan= and search=. A slow provider: Token Factory status; a slow source: Helper2SourceFailing."
