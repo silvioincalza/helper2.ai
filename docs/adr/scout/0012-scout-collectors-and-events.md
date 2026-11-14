@@ -278,17 +278,17 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`,
   `PageText.java`, `EventReading.java`, `EventReader.java`, `SpringAiEventReader.java`;
   `backend/apps/backoffice/src/main/resources/prompts/sources/read-event.txt`, `classify-repos.txt`.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/CollectorProperties.java` — each collector's validated
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` — each collector's validated
   settings; `support/RunInterval.java`, `support/HttpClients.java` — shared by every collector.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — the type check per
   finder; `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` reads the finders.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt` — `FIXED`, `EVENTS_SCOUT`,
   `eventDaysReadByAi`; `DateFact.kt` — `scheduledDay`; `Vocabulary.kt` — `EventKind`, `EventFormat`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java` — the stored event days;
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java` — the stored event days;
   `JdbcResources.java` — `upcomingEvents`; `catalog/usecase/ListUpcomingEvents.java`,
   `catalog/web/HomeListsController.java` — `listUpcomingEvents`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — `eventSources`, `statedFirst`;
-  `backend/libs/web-contract/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`;
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — `eventSources`, `statedFirst`;
+  `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`;
   `backend/apps/public/src/main/java/ai/helper2/site/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
 - `scripts/industry-events-seed.mjs`, `scripts/industry-events-seed.test.mjs`,
   `docs/research/industry-events-2026-11-12.json`,

@@ -6,8 +6,8 @@
 # (unless the last run already judged their text), and the backlog drain at the end. Enrichment itself is in flow-0014-evidence-gated-enrichment.
 # The records a source withdrew are forgotten (ForgetWithdrawnRecords) before the cursor is saved; a failed removal keeps the cursor.
 # Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (RunScout, enrichChanged, stillToJudge, requestLaterRun, forgetWithdrawnQuietly),
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ForgetWithdrawnRecords.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (forgetRecords, dropClaimsLeftWithoutEvidence),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ForgetWithdrawnRecords.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (forgetRecords, dropClaimsLeftWithoutEvidence),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (unchanged), scout/Scout.kt (ScheduledRun, ScheduledRunStore,
 #   EnrichmentBacklog, UnknownSource),
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java (scout_schedule),
@@ -16,7 +16,7 @@
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (ScoutSchedule, CronRunCalendar, scoutRunLock,
 #   ClusterRunLock, RUN_THREADS), backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java, ClusterLocks.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ScoutRunsController.java (startScoutRun),
-#   backend/libs/sources/src/main/java/ai/helper2/sources/support/RunInterval.java.
+#   backend/libs/core/src/main/java/ai/helper2/sources/support/RunInterval.java.
 # Render: cd docs/diagrams && d2 fmt flow-0011-scout-runner.d2 && d2 flow-0011-scout-runner.d2 flow-0011-scout-runner.svg
 
 ...@style

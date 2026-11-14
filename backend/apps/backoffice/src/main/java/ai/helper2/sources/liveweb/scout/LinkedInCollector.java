@@ -6,6 +6,7 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.support.HttpClients;
@@ -31,7 +32,7 @@ public class LinkedInCollector implements Collector {
 
   private static final Logger log = LoggerFactory.getLogger(LinkedInCollector.class);
 
-  static final String ID = CollectorDescriptors.LINKEDIN;
+  static final String ID = CollectorIds.LINKEDIN;
 
   static final String POLICY = "collector-" + ID;
 

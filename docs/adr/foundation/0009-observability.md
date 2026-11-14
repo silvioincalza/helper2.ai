@@ -149,7 +149,7 @@ the guide work long before that, and what makes the wait feel long is the first 
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/public/src/main/resources/application.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` —
   `management.*` (the `application` tag), `logging.structured`, tracing settings (`service.name`).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/observability/ObservabilityConfiguration.java` — actuator filter.
-- `backend/libs/search/src/main/java/ai/helper2/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
+- `backend/libs/core/src/main/java/ai/helper2/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java` — model call span, timer, tokens.
 - `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `helper2.guide.first_useful`.
 - `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java`, `scout/internal/ScoutConfiguration.java` (`RUN_THREADS`) —
@@ -157,10 +157,10 @@ the guide work long before that, and what makes the wait feel long is the first 
 - `backend/apps/public/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/LlmConfiguration.java`,
-  `backend/libs/search/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
+  `backend/libs/core/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` —
   translation and classifier budget gauges.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java`, `ObservationQueue.java` — catalog meters.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java`, `ObservationQueue.java` — catalog meters.
 - `deploy/grafana/helper2.json`, `helper2-backoffice.json` (Grafana dashboards); `deploy/helm/helper2/templates/app.yaml`,
   `backoffice.yaml` — scrape annotations, tracing env.
 - `deploy/monitoring/helper2-rules.yaml` (alert rules), `deploy/monitoring/tests/` (promtool unit tests);

@@ -91,24 +91,24 @@ same for every visitor.
 
 ### Code
 
-- `backend/libs/examples/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
+- `backend/libs/core/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
   check, `ExampleSearch`), `ExampleDrafts.kt` (drafts, `DraftRules`), `PoolCounts.kt` (shown and hidden),
   `ExamplePorts.kt`.
-- `backend/libs/examples/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
+- `backend/libs/core/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
   `CountHomeExamples`, `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`,
   `DraftHomeExamples`, `AcceptExampleDraft`, `ReadExampleDraft`), `config/` (`ExamplesProperties`,
   `ExamplesUseCaseConfiguration`: the read, both apps; `ExamplesBackOfficeConfiguration`: the back office use cases
   and their transactions), `internal/` (`JdbcServedExamples`, both apps; `ExamplesBackOfficeAdapters`, the back
   office only: `JdbcHomeExamples`, `SearchExampleSearch`, `CatalogResourceTitles`, `SpringAiExampleDrafter`,
   `CatalogDraftSources`, `ReviewQueueDrafts`); the prompt
-  `backend/libs/examples/src/main/resources/prompts/examples/draft.txt`.
+  `backend/libs/core/src/main/resources/prompts/examples/draft.txt`.
 - `backend/apps/public/src/main/java/ai/helper2/examples/web/HomeExamplesController.java` (the pool and its marker).
 - `backend/apps/backoffice/src/main/java/ai/helper2/examples/schedule/HomeExampleCheckSchedule.java`,
   `admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java` (accepts a draft through
   `AcceptExampleDraft`), `admin/web/ReviewItemMapper.java` (the typed draft, through `ReadExampleDraft`),
   `admin/usecase/GetOverview.java` and `admin/web/OverviewController.java` (the counts on the
   overview), `catalog/usecase/ListWellKnownResources.java`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`home_example`, the built-in pool, the `EXAMPLE_CANDIDATE` review kind).
 - `frontend/src/lib/examples.ts` — the built-in pool, the pick and the bucket rule;
   `frontend/src/features/home/HomeExamples.tsx` — the fetch with its timeout, the fallback and the AI mark;

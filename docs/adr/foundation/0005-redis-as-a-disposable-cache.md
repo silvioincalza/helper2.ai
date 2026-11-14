@@ -49,8 +49,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    sessions have their own fallback while Redis is down; the web-search quota allows no live call then.
 
 ### Code
-- `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
+- `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
   fail-fast guard ([0006](0006-outbound-calls-and-resilience.md)).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.

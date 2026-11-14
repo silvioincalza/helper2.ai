@@ -71,13 +71,13 @@ never break keyword search.
 
 ### Code
 
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java`, `QueryVectorCache.java` — the source and its shared
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java`, `QueryVectorCache.java` — the source and its shared
   query vectors; `platform/cache/JdbcSharedCache.java` — the shared cache.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java` — batches, pause, meters.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java` — batches, pause, meters.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java` — lock shared by every replica.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEmbeddingStore.java` — `pendingEmbeddings` (batch and backlog), `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEmbeddingStore.java` — `pendingEmbeddings` (batch and backlog), `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `resource_embedding`, HNSW index.
 
 ## Alternatives considered

@@ -77,7 +77,7 @@ import ai.helper2.scout.usecase.StoredAnswers;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.search.WebSearchQuota;
-import ai.helper2.sources.config.CollectorDescriptors;
+import ai.helper2.shared.CollectorIds;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -237,13 +237,13 @@ class ScoutConfiguration {
   static final List<String> OWNER_SOURCES =
       List.of(
           "github",
-          CollectorDescriptors.GITHUB_AWESOME,
-          CollectorDescriptors.GITHUB_TOPIC_LEADERS,
-          CollectorDescriptors.GITHUB_SDKS,
+          CollectorIds.GITHUB_AWESOME,
+          CollectorIds.GITHUB_TOPIC_LEADERS,
+          CollectorIds.GITHUB_SDKS,
           "hf-models",
           "hf-spaces",
-          CollectorDescriptors.HF_PROVIDER_ORGS,
-          CollectorDescriptors.HF_TRENDING);
+          CollectorIds.HF_PROVIDER_ORGS,
+          CollectorIds.HF_TRENDING);
 
   @Bean
   KnownTargetProposals knownTargetProposals(
@@ -286,13 +286,13 @@ class ScoutConfiguration {
   AdmissionRules admissionRules(ScoutAdmissionProperties admission) {
     return new AdmissionRules(
         Map.of(
-            CollectorDescriptors.GITHUB_TOPIC_LEADERS,
+            CollectorIds.GITHUB_TOPIC_LEADERS,
             new IndexFloor(
                 admission.githubTopicLeaders().indexMinStars(),
                 admission.githubTopicLeaders().indexPushedWithin()),
-            CollectorDescriptors.HF_TRENDING,
+            CollectorIds.HF_TRENDING,
             new IndexFloor(0, null, admission.hfTrending().indexMinLikes()),
-            CollectorDescriptors.PYPI,
+            CollectorIds.PYPI,
             new IndexFloor(0, null, 0, true)));
   }
 

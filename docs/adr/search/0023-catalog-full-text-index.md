@@ -125,22 +125,22 @@ whether a query finds a resource there:
 
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `h2_unaccent`, `h2_ts_config`, `h2_name_words`,
   `search_vector`, `awesome_list`, `awesome_list_entry`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `plainWords`, `searchSql`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `plainWords`, `searchSql`,
   `searchFound`, the language stemmer in the index query; `JdbcAwesomeListIndex.java` — the list index;
   `CatalogSearchSource.java`; `JdbcCatalogRetention.java` (`deleteListIndexUpdatedBefore`).
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `AwesomeListIndex.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `AwesomeListIndex.java`,
   `usecase/IndexAwesomeLists.java`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
   `withTranslation`; `SearchResources.kt` — early and late sources (`startSources`); `Ports.kt` — `QueryTranslator`; `QueryAnalyzer.kt`.
-- `backend/libs/search/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`,
+- `backend/libs/core/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`,
   `TranslationConfiguration.java` — model call, budget, cache key; `src/main/resources/prompts/search/translate-query.txt`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `JdbcSharedCache.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeListParser.java`, `MarkdownText.java`,
   `GitHubAwesomeCollector.java`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` (`ListText`),
   `Scout.kt` (`ListIndex`), `usecase/RunScout.kt` (`indexListsQuietly`).
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `foundIn`),
-  `backend/libs/web-contract/src/main/java/ai/helper2/search/web/CardMapper.java`; `api/common.yaml` (`ResultCard.foundIn`).
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `foundIn`),
+  `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java`; `api/common.yaml` (`ResultCard.foundIn`).
 - `frontend/src/features/search/ResultRow.tsx`; `frontend/src/i18n/locales/en.json` (`results.foundIn`), `en.legal.json` (the Privacy page).
 - Tests: `catalog/CatalogSearchRankingIT.kt` (owner/name cases), `catalog/SchemaMigrationTest.java` (the words of a
   title), `catalog/AwesomeListSearchIT.kt`, `catalog/internal/PlainWordsTest.java`,

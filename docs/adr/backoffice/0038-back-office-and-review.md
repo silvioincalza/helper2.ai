@@ -283,7 +283,7 @@ On a review item, accept and reject were not enough:
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java` (its own groups and the public app's),
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),
   `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`), `config/SpaProperties.java`.
-- The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/examples/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java`,
+- The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java`,
   `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON), `examples/config/ExamplesBackOfficeConfiguration.java`;
   `api/admin.yaml` (`ReviewItem.draft`, `ReviewItem.aiContent`, `DraftedExample`); `admin/web/ReviewController.java` (the
   evidence view's marker); `frontend/src/admin/ReviewItemDetails.tsx`.
@@ -304,9 +304,9 @@ On a review item, accept and reject were not enough:
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
-- `backend/libs/examples/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/examples/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
+- `backend/libs/core/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
   `catalog/ReviewEvidence.java`, `catalog/internal/JdbcReviewEvidence.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
@@ -331,8 +331,8 @@ On a review item, accept and reject were not enough:
   `SettingsPage.test.tsx`, `src/a11y.test.tsx`.
 
 The target of a relationship candidate:
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java`, `CuratedTypes.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java`, `CuratedTypes.java`,
   `JdbcResources.java` (`atUrl`), `CatalogConfiguration.java` (the curated source's types).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml`
   (`RelationshipTargetChange`, `NewResource`, audit actions).
@@ -345,7 +345,7 @@ A candidate edit:
   (`CandidateRules`, `typeChosenByAdmin`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`edit`, `merge`, `read`, `reason`),
   `ReviewQueueCandidateItems.java`, `ReviewQueueCandidateReview.java`, `ScoutConfiguration.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
   `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`CandidateEdit`,
   `CandidateType`, audit action).
@@ -355,9 +355,9 @@ A candidate edit:
   `CandidateEditForm.test.tsx`.
 
 A curated field:
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/CurateField.java`, `catalog/internal/JdbcCuratedFields.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcResources.java` (the upsert keeps a curated column),
-  `ResourceCards.java` and `backend/libs/search/src/main/kotlin/ai/helper2/search/Model.kt` (`withCurated`: the card takes it;
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/CurateField.java`, `catalog/internal/JdbcCuratedFields.java`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcResources.java` (the upsert keeps a curated column),
+  `ResourceCards.java` and `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`withCurated`: the card takes it;
   `SourceHit.curatedFields`), `search/ResultMerger.kt` (a search merge takes it), `CatalogSearchSource.java`,
   `JdbcEnrichmentCandidates.java`, `catalog/enrichment/EnrichmentCandidates.java` (the curated values).
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`,

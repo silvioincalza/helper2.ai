@@ -11,13 +11,8 @@ tasks.named<BundleContract>("bundleContract") {
 dependencies {
   implementation(project(":libs:kernel"))
   implementation(project(":libs:platform"))
-  implementation(project(":libs:identity"))
-  implementation(project(":libs:search"))
-  implementation(project(":libs:catalog"))
-  implementation(project(":libs:examples"))
-  implementation(project(":libs:sources"))
   implementation(project(":libs:schema"))
-  implementation(project(":libs:web-contract"))
+  implementation(project(":libs:core"))
 
   implementation("org.springframework.boot:spring-boot-starter-webmvc")
   implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -51,8 +46,7 @@ dependencies {
   developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
   testImplementation(testFixtures(project(":libs:platform")))
-  testImplementation(testFixtures(project(":libs:search")))
-  testImplementation(testFixtures(project(":libs:sources")))
+  testImplementation(testFixtures(project(":libs:core")))
 }
 
 tasks.named<Test>("test") {

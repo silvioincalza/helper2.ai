@@ -61,13 +61,13 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 ### Code
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt` — the canonical URL and
   the id.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`joiningRepositories`, `group`,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`joiningRepositories`, `group`,
   `identity`) — the package joins its repository.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`upsertResources`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`upsertResources`,
   `upsertRecords`), `JdbcResources.java` (`ownerOfRecordUrl`), `UrlKeys.java` — the write, and the id in SQL.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `resource.canonical_url`,
   `source_record_identity_idx`.
-- `backend/libs/search/src/test/kotlin/ai/helper2/search/ResultMergerTest.kt`,
+- `backend/libs/core/src/test/kotlin/ai/helper2/search/ResultMergerTest.kt`,
   `backend/apps/public/src/test/java/ai/helper2/catalog/internal/JdbcCatalogWriterIT.java` — a package alone, a
   package with its repository, several packages of one repository, a sub-directory.
 

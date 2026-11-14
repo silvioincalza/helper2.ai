@@ -3,6 +3,7 @@ package ai.helper2.sources.config.scout;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.SourceDescriptor;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.config.CategoryProperties;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.config.CollectorProperties;
@@ -46,14 +47,12 @@ class ScoutSourceDescriptors {
 
   @Bean
   DescribedSource aiDeadlinesSource(SourcesProperties p) {
-    return new Described(
-        CollectorDescriptors.aiDeadlines(p.get(CollectorDescriptors.AI_DEADLINES)));
+    return new Described(CollectorDescriptors.aiDeadlines(p.get(CollectorIds.AI_DEADLINES)));
   }
 
   @Bean
   DescribedSource gitHubAwesomeSource(SourcesProperties p) {
-    return new Described(
-        CollectorDescriptors.gitHubAwesome(p.get(CollectorDescriptors.GITHUB_AWESOME)));
+    return new Described(CollectorDescriptors.gitHubAwesome(p.get(CollectorIds.GITHUB_AWESOME)));
   }
 
   @Bean
@@ -61,50 +60,46 @@ class ScoutSourceDescriptors {
       SourcesProperties p, CollectorProperties.GitHubTopicLeaders c) {
     return new Described(
         CollectorDescriptors.gitHubTopicLeaders(
-            p.get(CollectorDescriptors.GITHUB_TOPIC_LEADERS), c.topics()));
+            p.get(CollectorIds.GITHUB_TOPIC_LEADERS), c.topics()));
   }
 
   @Bean
   DescribedSource gitHubSdksSource(SourcesProperties p, CollectorProperties.GitHubSdks c) {
     return new Described(
-        CollectorDescriptors.gitHubSdks(
-            p.get(CollectorDescriptors.GITHUB_SDKS), c.languages(), c.orgs()));
+        CollectorDescriptors.gitHubSdks(p.get(CollectorIds.GITHUB_SDKS), c.languages(), c.orgs()));
   }
 
   @Bean
   DescribedSource hfProviderOrgsSource(SourcesProperties p, CollectorProperties.HfProviderOrgs c) {
     return new Described(
-        CollectorDescriptors.hfProviderOrgs(
-            p.get(CollectorDescriptors.HF_PROVIDER_ORGS), c.orgs()));
+        CollectorDescriptors.hfProviderOrgs(p.get(CollectorIds.HF_PROVIDER_ORGS), c.orgs()));
   }
 
   @Bean
   DescribedSource hfTrendingSource(SourcesProperties p) {
-    return new Described(CollectorDescriptors.hfTrending(p.get(CollectorDescriptors.HF_TRENDING)));
+    return new Described(CollectorDescriptors.hfTrending(p.get(CollectorIds.HF_TRENDING)));
   }
 
   @Bean
   DescribedSource mcpRegistrySource(SourcesProperties p) {
-    return new Described(
-        CollectorDescriptors.mcpRegistry(p.get(CollectorDescriptors.MCP_REGISTRY)));
+    return new Described(CollectorDescriptors.mcpRegistry(p.get(CollectorIds.MCP_REGISTRY)));
   }
 
   @Bean
   DescribedSource pypiSource(SourcesProperties p) {
-    return new Described(CollectorDescriptors.pypi(p.get(CollectorDescriptors.PYPI)));
+    return new Described(CollectorDescriptors.pypi(p.get(CollectorIds.PYPI)));
   }
 
   @Bean
   DescribedSource liveWebScoutSource(SourcesProperties p, CollectorProperties.LiveWebScout c) {
     return new Described(
-        CollectorDescriptors.liveWebScout(p.get(CollectorDescriptors.LIVE_WEB_SCOUT), c.queries()));
+        CollectorDescriptors.liveWebScout(p.get(CollectorIds.LIVE_WEB_SCOUT), c.queries()));
   }
 
   @Bean
   DescribedSource coursesSource(SourcesProperties p, CollectorProperties.Courses c) {
     return new Described(
-        CollectorDescriptors.courses(
-            p.get(CollectorDescriptors.COURSES), c.query(), c.platforms()));
+        CollectorDescriptors.courses(p.get(CollectorIds.COURSES), c.query(), c.platforms()));
   }
 
   @Bean
@@ -115,15 +110,14 @@ class ScoutSourceDescriptors {
       LlmSettings llm) {
     return new Described(
         CollectorDescriptors.liveWebEvents(
-            p.get(CollectorDescriptors.LIVE_WEB_EVENTS),
+            p.get(CollectorIds.LIVE_WEB_EVENTS),
             c.queries(),
             llm.usable(chatModel.getIfAvailable())));
   }
 
   @Bean
   DescribedSource linkedInSource(SourcesProperties p, CollectorProperties.LinkedIn c) {
-    return new Described(
-        CollectorDescriptors.linkedIn(p.get(CollectorDescriptors.LINKEDIN), c.queries()));
+    return new Described(CollectorDescriptors.linkedIn(p.get(CollectorIds.LINKEDIN), c.queries()));
   }
 
   static class Discovery implements BeanRegistrar {

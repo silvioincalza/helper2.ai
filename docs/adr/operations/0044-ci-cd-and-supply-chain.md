@@ -171,7 +171,7 @@ Harbor could put an image under a tag first.
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
    - `deploy/postgres/` → the Postgres tag check and chart; `deploy/monitoring/` → monitoring and chart;
      `deploy/helm/`, `deploy/k8s/`, `deploy/grafana/` → chart only. No app image for these;
-   - anything else → everything: `api/`, `backend/libs/` (`web-contract` too: both apps serve it),
+   - anything else → everything: `api/`, `backend/libs/` (both apps take every library),
      `backend/build-logic/`, the Gradle files, settings, version catalog and wrapper, `.github/`, `scripts/`, a new
      folder. An unknown path runs all, never nothing.
 

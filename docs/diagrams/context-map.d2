@@ -4,6 +4,7 @@
 # Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules, named interfaces),
 #   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java (the rules),
 #   backend/libs/*/build.gradle.kts, backend/apps/*/build.gradle.kts (library and app dependencies),
+#   backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java (the directions inside libs/core),
 #   deploy/helm/helper2 (the three deployables).
 # Render: cd docs/diagrams && d2 fmt context-map.d2 && d2 context-map.d2 context-map.svg
 
@@ -31,7 +32,7 @@ product: "helper2 · two apps over shared libraries" {
   identity: "Identity and the signed-in user\nmodule identity" {class: app}
   scout: "Scout and catalog\nmodules scout, catalog\nsources (Collector adapters)" {class: app}
   search: "Search\nmodules search, examples\nsources (SearchSource adapters)" {class: port}
-  foundation: "Foundation\nopen modules shared, platform, api\n(kernel, platform, web-contract)" {class: data}
+  foundation: "Foundation\nopen modules shared, platform, api\n(kernel, platform, core)" {class: data}
 
   legal -> site: "the numbers of GET /policy"
   money -> site: "settings of GET /site,\nthe public CSP"

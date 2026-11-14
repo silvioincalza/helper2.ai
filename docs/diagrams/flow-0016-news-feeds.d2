@@ -1,8 +1,8 @@
 # Flowchart: how one news feed becomes NEWS records (ADR 0016).
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/NewsFeedCollector.java (collect, hits, isAbout),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/FeedReader.java (read, rssItem, atomEntry),
-#   backend/libs/sources/src/main/java/ai/helper2/sources/config/FeedProperties.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogRetention.java (deleteWebNewsRetrievedBefore).
+#   backend/libs/core/src/main/java/ai/helper2/sources/config/FeedProperties.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogRetention.java (deleteWebNewsRetrievedBefore).
 # Render: cd docs/diagrams && d2 fmt flow-0016-news-feeds.d2 && d2 flow-0016-news-feeds.d2 flow-0016-news-feeds.svg
 
 ...@style

@@ -44,10 +44,10 @@ models first (whisperkit before Whisper, 8 Nov 2026).
 
 ### Code
 
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` (`contentTerms`, `contentTermsOf`,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` (`contentTerms`, `contentTermsOf`,
   word lists, "paper" type word), `Model.kt` (`SourceQuery.searchTerms`, `keywords`),
   `usecase/SearchResources.kt` (`searchTermsOf`).
-- `backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubSource.java` (`searchText`),
+- `backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubSource.java` (`searchText`),
   `huggingface/HuggingFaceModelsSource.java`, `HubTasks.java`, `HuggingFaceSpacesSource.java`,
   `npm/NpmSource.java`, `arxiv/ArxivSource.java`, `support/HttpClients.java` (`hubListing` without empty `search`).
 - Tests: `QueryAnalyzerTest.kt`, `QueryTranslationTest.kt`, `GitHubSourceTest.java`, `HuggingFaceSourcesTest.java`,

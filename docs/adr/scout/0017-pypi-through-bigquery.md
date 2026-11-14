@@ -51,7 +51,7 @@ one week of AI packages and 11.59 GB for the whole table.
   `BigQueryClient.java`, `GoogleAccessTokens.java`, `GoogleServiceAccount.java`
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java`
 - `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java` (`pypi`),
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java` (`pypi`),
   `CollectorProperties.java` (`Pypi`)
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml`
 - Tests: `PypiCollectorTest`, `PypiCollectorsTest`, `BigQueryClientTest`, `GoogleAccessTokensTest`,

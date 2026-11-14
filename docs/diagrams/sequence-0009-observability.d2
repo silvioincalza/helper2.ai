@@ -1,7 +1,7 @@
 # Sequence: the telemetry of one search in the cluster: one trace across threads, meters, logs,
 # the time to the first useful event of a guide question, the scrape on the management port and the dashboard read.
-# Source of truth: backend/libs/search/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
+# Source of truth: backend/libs/core/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml, deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
 #   deploy/grafana/helper2.json; the guide block: backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java,
 #   deploy/monitoring/helper2-rules.yaml (Helper2GuideFirstUsefulSlow).

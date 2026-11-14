@@ -153,31 +153,31 @@ them assigned by code first, and measured on labelled items before a model is ev
 
 ### Code
 
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Filtering.kt` — filters, facets, sort, `UNKNOWN`.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Filtering.kt` — filters, facets, sort, `UNKNOWN`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt` — stated dates, plausibility, `earliest`, `latest`,
   `lastChange`, conflict rule.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — which rule each date of a merged result uses.
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — which rule each date of a merged result uses.
+- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
+- `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
 - `frontend/src/lib/searchState.ts` — URL state, `toApiParams`, `TIMELINE_PAGE_SIZE`.
 - `frontend/src/lib/timeline.ts`, `frontend/src/features/search/ResultsTimeline.tsx` — grouping by creation month.
 - `frontend/src/features/search/FilterFacets.tsx`, `DateFactView.tsx` — facets and date display.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Compatibility.kt` — tools, rules, flags.
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Compatibility.kt` — tools, rules, flags.
+- `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
 - `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` — `replaceLabels`, `MAX_TAGS`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` — `replaceLabels`, `MAX_TAGS`.
 - `api/common.yaml, api/public.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`, `GuideRecommendation.compatibleWith`.
 - `frontend/src/features/resource/ResultFacts.tsx` — "Works with" in the Build facts of the preview and the resource page; the reason as tooltip and screen-reader text.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Categories.kt` — `Category`, `CategoryCatalog`, `CategoryInput`,
   `CategoryMatcher`; `CategoryWords.kt` — the words and their patterns.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`, `platform/CategoryConfiguration.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`assignCategories`, `refreshCategories`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`assignCategories`, `refreshCategories`,
   `resourceIdsAfter`), `JdbcJobMarkers.java` (`marker`, `mark`), `CatalogSearchSource.java`; `catalog/ResourceCards.java`,
   `CategoryLabels.java`, `JobMarkers.java`; `catalog/usecase/BackfillCategories.java`; `catalog/config/CatalogProperties.java`
   (`categories.backfill-at-startup`); `backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/CategoryBackfillAtStartup.java`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
   facet), `Model.kt` (`SourceHit.categories`, `MergedResult.categories`).
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
+- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
   `CardMapper.java`; `admin/web/CategoryBackfillController.java`; `guide/web/GuideStreamController.java`;
   `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`CATEGORY` labels, `job_marker`); the `R__` seeds keep `CATEGORY` labels.

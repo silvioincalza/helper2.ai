@@ -127,27 +127,27 @@ and how many web credits the day has used. Two sources can describe the same res
 
 ### Code
 
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — the use case, top-down: analyse, fan out, merge, confirm,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — the use case, top-down: analyse, fan out, merge, confirm,
   rank, filter, page, coverage, notices.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchNotices.kt` — coverage and the notices of one search;
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchNotices.kt` — coverage and the notices of one search;
   `QueryTranslation.kt` — the bounded wait for the English words of a query ([0023](0023-catalog-full-text-index.md)).
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` — one search over the sources: skip rules, fresh cache,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` — one search over the sources: skip rules, fresh cache,
   quota, live call under the source policy, deadlines, cooldown, stale fallback (`Run`, `SourceAttempt`, `FanOutResult`).
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceCacheKeys.kt` — the cache key of one source query and the text it is
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceCacheKeys.kt` — the cache key of one source query and the text it is
   made of.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — grouping, conflicts, freshness.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `JdbcResources.java` —
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — grouping, conflicts, freshness.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `JdbcResources.java` —
   `DiscoveredResources`, `discoveredSince`; `resource_first_discovered_idx` in `V1__schema.sql`.
-- `backend/libs/search/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
+- `backend/libs/core/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` (`resilience4j.*`) — the `source-<id>` policies.
-- `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
-- `backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
+- `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
+- `backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
   store and quota ([0027](0027-live-web-store-first-daily-quota.md)).
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`; `SourcesController.java` — `GET /api/v1/sources`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
+- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`; `SourcesController.java` — `GET /api/v1/sources`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
 ## Alternatives considered
 

@@ -5,6 +5,7 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.huggingface.HuggingFaceModelsSource;
 import ai.helper2.sources.support.HttpClients;
@@ -25,7 +26,7 @@ public class HuggingFaceProviderOrgsCollector implements Collector {
 
   private static final Logger log = LoggerFactory.getLogger(HuggingFaceProviderOrgsCollector.class);
 
-  static final String ID = CollectorDescriptors.HF_PROVIDER_ORGS;
+  static final String ID = CollectorIds.HF_PROVIDER_ORGS;
 
   static final String POLICY = "collector-" + ID;
 

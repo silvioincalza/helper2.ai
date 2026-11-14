@@ -140,9 +140,9 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/depsdev/` (`DepsDevClient`, `PackageFinder`, `PackageSelection`, `NameGuesses`, `Ecosystem`, `PackageVersion`, `RegistryPackage`)
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`package` per finder, read from the opening finder)
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` (`PackageFacts`)
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`refreshPackageTerms`)
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`refreshPackageTerms`)
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`resource.package_terms`, `search_vector`)
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java`, `CollectorProperties.java` (`GitHubSdks`)
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java`, `CollectorProperties.java` (`GitHubSdks`)
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` (`depsDevClient`, `reviewRoom`)
 - `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`
 

@@ -130,7 +130,7 @@ Both are about the public site itself, and only the public app serves them.
    `@ConfigurationProperties` records at startup, in its base package: `search.SearchPolicy`, `guide.GuidePolicy`,
    `identity.AccountPolicy`, `catalog.CatalogPolicy`, `catalog.ScoutPolicy`. The config records stay internal to their
    module. The Scout runs in the back office and this endpoint in the public app, so the Scout's numbers live in the
-   catalog library, with the limits the Scout's code reads, and the public app binds the two retention periods
+   catalog context, with the limits the Scout's code reads, and the public app binds the two retention periods
    (`helper2.scout.evidence`) from the same `H2_` variables ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)). The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
    from the platform directly: they belong to no module.
 12. **The site serves them.** `site.policy.web.PolicyController` maps the five values to the contract. It composes
@@ -172,8 +172,8 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
   `catalog/internal/JdbcResources.indexable`.
 - `backend/apps/public/src/main/java/ai/helper2/site/policy/web/PolicyController.java`; `api/public.yaml` — `GET /policy`,
   schemas `Policy` and `WebSearchLimits`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
-  `backend/libs/identity/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
+  `backend/libs/core/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
   `catalog/ScoutPolicy.java`, `catalog/config/ScoutEvidenceProperties.java` — the values; built in
   `search/config/SearchConfiguration.java`, `guide/internal/GuideConfiguration.java`,
   `identity/config/IdentityPolicyConfiguration.java`, `catalog/internal/CatalogConfiguration.java` (also `ScoutPolicy`).

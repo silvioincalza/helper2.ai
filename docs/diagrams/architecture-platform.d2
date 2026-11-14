@@ -2,7 +2,7 @@
 # and the platform services every module uses: llm, http, resilience, quota, shared cache and cluster locks.
 # With the Redis keys and Postgres tables each one owns, and GitHub OAuth for the back office.
 # Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/package-info.java (open module),
-#   backend/libs/web-contract/src/main/java/ai/helper2/api/package-info.java (open module api), ContractEnumConverters.java,
+#   backend/libs/core/src/main/java/ai/helper2/api/package-info.java (open module api), ContractEnumConverters.java,
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
 #   ClusterLockConfiguration.java (shedlock), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
@@ -13,7 +13,7 @@
 #   backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java,
 #   backend/apps/public/src/main/java/ai/helper2/site/csp/ContentSecurityPolicy.java, CspHeaderWriter.java, CspNonce.java,
 #   PublicSiteCsp.java (ADR 0042), backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java,
-#   BackOfficeEdge.java, backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java, SameOriginWrites.java,
+#   BackOfficeEdge.java, backend/libs/core/src/main/java/ai/helper2/identity/config/WebSecurity.java, SameOriginWrites.java,
 #   SessionConfiguration.java, KnownAccountOnly.java, identity/internal/SignedInUser.java (CurrentUser, read only),
 #   identity/config/NoProviderTokens.java, SignInConfiguration.java,
 #   identity/web/MeController.java, BookmarksController.java, PreferencesController.java, AuditController.java, identity/internal/*, identity/usecase/*,
@@ -82,7 +82,7 @@ platform: "platform (open module)" {
 }
 
 shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nVocabulary" {class: app}
-api: "api (open)\napi.common: common.yaml, generated once\n(libs/web-contract; ContractEnumConverters)\napi.generated: per app, public.yaml\nor admin.yaml" {class: app}
+api: "api (open)\napi.common: common.yaml, generated once\n(libs/core; ContractEnumConverters)\napi.generated: per app, public.yaml\nor admin.yaml" {class: app}
 
 redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nh2:v1:session:public:* · h2:v1:session:backoffice:*" {shape: cylinder; class: data}
 pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · runtime_setting\npublic_app_setting" {shape: cylinder; class: data}

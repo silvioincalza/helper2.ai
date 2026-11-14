@@ -358,11 +358,11 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - `backend/apps/backoffice/src/main/resources/prompts/scout/enrich.txt`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`, `LiveWebPageReader.java`,
   `PublicSuffixDomains.java`; beans in `sources/config/scout/CollectorsConfiguration.java`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java`,
   `StoredEnrichments.java` (named interface `enrichment`); `catalog/internal/JdbcEnrichmentCandidates.java` (each source
   text with its source id, external id and repository link; accepted products first), `JdbcEnrichmentResults.java`
   (origins, evidence with its own URL, the stored type).
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `GetReviewItem.java`, `ResolveReviewItem.java`;
   `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.

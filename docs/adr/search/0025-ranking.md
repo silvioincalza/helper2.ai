@@ -124,12 +124,12 @@ The index query must also stay well inside its 3 s timeout on the production cat
 
 ### Code
 
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Ranking.kt` — fusion, boosts, bounded popularity, lanes on top, `RankingWeights`.
-- `backend/libs/search/src/main/java/ai/helper2/search/internal/RankingSettingsConfiguration.java` — the read-only "Ranking" group of the Settings page; `search/config/SearchConfiguration.java` — the `Ranking` bean.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ranking.kt` — fusion, boosts, bounded popularity, lanes on top, `RankingWeights`.
+- `backend/libs/core/src/main/java/ai/helper2/search/internal/RankingSettingsConfiguration.java` — the read-only "Ranking" group of the Settings page; `search/config/SearchConfiguration.java` — the `Ranking` bean.
 - `backend/apps/public/src/test/kotlin/ai/helper2/eval/RankingVariants.kt` — the weight variants the evaluation replays (§7).
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `searchSql`, `search`; `ResourceRows.java` — `withFacts`, `popularity`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `searchSql`, `search`; `ResourceRows.java` — `withFacts`, `popularity`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `search_vector`, trigram index, popularity trigger.
 
 ## Alternatives considered

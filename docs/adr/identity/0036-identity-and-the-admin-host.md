@@ -168,7 +168,7 @@ reaches the cluster with an address from the platform's private ranges.
 
 ### Code
 
-- `backend/libs/identity/` — the library both apps use. Core: `Users.java`, `CurrentUser.java`, `Bookmarks.java`, `AuditLog.java`
+- `backend/libs/core/` — the library both apps use. Core: `Users.java`, `CurrentUser.java`, `Bookmarks.java`, `AuditLog.java`
   (`SHORTEST_RETENTION`), `VisitorLimits.java`, `AccountPolicy.java`. Use cases:
   `identity/usecase/` (`AddBookmark`, `RemoveBookmark`, `ListBookmarks`, `MergeLocalBookmarks`, `BookmarkRules`,
   `ShowPreferences`, `ChangePreferences`, `DeleteMyAccount`, `ListAuditEntries`, `PurgeInactiveAccounts`,
@@ -188,10 +188,10 @@ reaches the cluster with an address from the platform's private ranges.
   `identity/schedule/AuditRetentionSchedule.java` — the daily audit purge.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `admin_audit` and its three triggers
   (`h2_append_only`, `h2_audit_kept`), `issue_report` without a reporter, the `h2_public` grants.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
   `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the
   trail.
-- Tests: `backend/libs/identity/src/test/java/ai/helper2/identity/` (`architecture/IdentityArchitectureTest.java`,
+- Tests: `backend/libs/core/src/test/java/ai/helper2/identity/` (`architecture/IdentityArchitectureTest.java`,
   `usecase/PurgeInactiveAccountsTest.java`, `PurgeExpiredAuditEntriesTest.java`, `config/AdminAllowListTest.java`,
   `internal/SignedInUserTest.java`, `config/KnownAccountOnlyTest.java`);
   `backend/apps/*/src/test/java/ai/helper2/identity/security/SessionWithoutAccountIT.java` (a real sign-in, the row
