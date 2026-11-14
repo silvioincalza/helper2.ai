@@ -98,4 +98,19 @@ class GuideAnswerKeyTest {
     assertEquals("what's mcp", once)
     assertEquals(once, GuideAnswerCache.normalized(once))
   }
+
+  @Test
+  fun `the text the guide reads keeps case, quotes and punctuation, without width variants and invisible characters`() {
+    assertEquals(
+      "What is “MCP”, really?",
+      GuideAnswerCache.readable("Wh\u200Bat is “ＭＣＰ”,\u2060 really？\uFEFF"),
+    )
+  }
+
+  @Test
+  fun `the key is built on the text the guide reads`() {
+    listOf("What is “ＭＣＰ”?", "chat\u200B with\u3000PDFs …", "  Ollama   vs\tLM Studio \n").forEach {
+      assertEquals(key(it), key(GuideAnswerCache.readable(it)))
+    }
+  }
 }
