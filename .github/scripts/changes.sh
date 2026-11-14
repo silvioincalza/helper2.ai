@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KEYS="frontend backend chart monitoring postgres diagrams web public backoffice"
+BACKEND="backend-libs backend-public backend-backoffice"
+KEYS="frontend $BACKEND chart monitoring postgres diagrams web public backoffice"
 ROOT=${CHANGES_ROOT:-.}
 
 needs() {
   case $1 in
     frontend) echo "frontend/package.json" ;;
-    backend) echo "backend/gradlew" ;;
+    backend-libs) echo "backend/gradlew" ;;
+    backend-public) echo "backend/gradlew backend/apps/public/build.gradle.kts" ;;
+    backend-backoffice) echo "backend/gradlew backend/apps/backoffice/build.gradle.kts" ;;
     chart) echo "deploy/k8s/Makefile" ;;
     monitoring) echo "deploy/monitoring/helper2-rules.yaml" ;;
     postgres) echo "deploy/postgres/Dockerfile deploy/helm/helper2/values.yaml" ;;
@@ -27,13 +30,21 @@ present() {
 
 classify() {
   case $1 in
-    docs/eval/*) echo "backend diagrams" ;;
+    docs/eval/*) echo "backend-libs backend-public diagrams" ;;
+    frontend/index.html | frontend/src/routes.tsx | frontend/src/i18n/locales/en.json) echo "frontend backend-public web backoffice" ;;
     frontend/*) echo "frontend web backoffice" ;;
     deploy/web.Dockerfile | deploy/web/*) echo "web" ;;
-    backend/apps/public/* | deploy/Dockerfile) echo "backend public" ;;
-    backend/apps/backoffice/* | deploy/backoffice.Dockerfile) echo "backend backoffice" ;;
+    backend/apps/public/src/main/java/* | backend/apps/public/src/main/kotlin/*) echo "backend-public backend-backoffice public" ;;
+    backend/apps/backoffice/src/main/java/* | backend/apps/backoffice/src/main/kotlin/*) echo "backend-public backend-backoffice backoffice" ;;
+    backend/apps/public/src/main/resources/application.yaml) echo "backend-libs backend-public public" ;;
+    backend/apps/backoffice/src/main/resources/application.yaml) echo "backend-libs backend-backoffice backoffice" ;;
+    backend/apps/public/* | deploy/Dockerfile) echo "backend-public public" ;;
+    backend/apps/backoffice/* | deploy/backoffice.Dockerfile) echo "backend-backoffice backoffice" ;;
+    backend/loadtest/*) echo "backend-libs" ;;
+    backend/*) echo "$BACKEND public backoffice" ;;
+    api/*) echo "frontend $BACKEND web public backoffice" ;;
+    deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND chart" ;;
     docs/design/system/tokens.json) echo "frontend diagrams" ;;
-    backend/loadtest/*) echo "backend" ;;
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
     deploy/postgres/*) echo "postgres chart" ;;
@@ -95,13 +106,14 @@ plant() {
 
 self_test() {
   local fails=0 paths want got expect all whole
-  all="frontend backend chart monitoring postgres diagrams web public backoffice"
+  all=$KEYS
   whole=$(mktemp -d)
   # shellcheck disable=SC2086
   plant "$whole" $all
   ROOT=$whole
   while IFS='|' read -r paths want; do
     want=${want//ALL/$all}
+    want=${want//BACKEND/$BACKEND}
     got=$(tr ',' '\n' <<< "$paths" | from_paths | trues)
     expect=$(print "$want" | trues)
     if [[ $got != "$expect" ]]; then
@@ -113,34 +125,54 @@ self_test() {
   done << 'EOF'
 frontend/src/main.tsx|frontend web backoffice
 frontend/src/admin/AdminShell.tsx|frontend web backoffice
+frontend/src/features/search/Results.tsx|frontend web backoffice
 frontend/package-lock.json|frontend web backoffice
+frontend/index.html|frontend backend-public web backoffice
+frontend/src/routes.tsx|frontend backend-public web backoffice
+frontend/src/i18n/locales/en.json|frontend backend-public web backoffice
+frontend/src/i18n/locales/en.admin.json|frontend web backoffice
 deploy/web/nginx.conf|web
 deploy/web.Dockerfile|web
-backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend public
-deploy/Dockerfile|backend public
-backend/apps/backoffice/build.gradle.kts|backend backoffice
-deploy/backoffice.Dockerfile|backend backoffice
-backend/loadtest/src/gatling/java/ai/helper2/load/SearchSimulation.java|backend
-backend/loadtest/build.gradle.kts|backend
-backend/libs/core/src/main/kotlin/X.kt|ALL
-backend/libs/core/build.gradle.kts|ALL
-backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|ALL
-backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|ALL
-backend/gradle/libs.versions.toml|ALL
-backend/gradle/wrapper/gradle-wrapper.properties|ALL
-backend/settings.gradle.kts|ALL
-backend/build.gradle.kts|ALL
-backend/gradlew|ALL
-api/public.yaml|ALL
+backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public backend-backoffice public
+backend/apps/public/src/main/kotlin/ai/helper2/search/Ranking.kt|backend-public backend-backoffice public
+backend/apps/public/src/test/java/ai/helper2/PublicApplicationTest.java|backend-public public
+backend/apps/public/src/main/resources/application.yaml|backend-libs backend-public public
+backend/apps/public/src/main/resources/prompts/guide.st|backend-public public
+backend/apps/public/build.gradle.kts|backend-public public
+deploy/Dockerfile|backend-public public
+backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java|backend-public backend-backoffice backoffice
+backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Scout.kt|backend-public backend-backoffice backoffice
+backend/apps/backoffice/src/test/kotlin/ai/helper2/scout/ScoutTest.kt|backend-backoffice backoffice
+backend/apps/backoffice/src/main/resources/application.yaml|backend-libs backend-backoffice backoffice
+backend/apps/backoffice/build.gradle.kts|backend-backoffice backoffice
+deploy/backoffice.Dockerfile|backend-backoffice backoffice
+backend/loadtest/src/gatling/java/ai/helper2/load/SearchSimulation.java|backend-libs
+backend/loadtest/build.gradle.kts|backend-libs
+backend/libs/core/src/main/kotlin/X.kt|BACKEND public backoffice
+backend/libs/core/src/test/kotlin/XTest.kt|BACKEND public backoffice
+backend/libs/core/build.gradle.kts|BACKEND public backoffice
+backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|BACKEND public backoffice
+backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|BACKEND public backoffice
+backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|BACKEND public backoffice
+backend/gradle/libs.versions.toml|BACKEND public backoffice
+backend/gradle/wrapper/gradle-wrapper.properties|BACKEND public backoffice
+backend/settings.gradle.kts|BACKEND public backoffice
+backend/build.gradle.kts|BACKEND public backoffice
+backend/gradlew|BACKEND public backoffice
+backend/README.md|BACKEND public backoffice
+api/public.yaml|frontend BACKEND web public backoffice
+api/admin.yaml|frontend BACKEND web public backoffice
+api/common.yaml|frontend BACKEND web public backoffice
 .github/workflows/ci.yml|ALL
+.github/actions/backend-setup/action.yml|ALL
 .github/scripts/changes.sh|ALL
 .github/scripts/release-version.sh|ALL
 .github/scripts/released-migrations.sh|ALL
-backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|ALL
 compose.yaml|ALL
 .grype.yaml|ALL
 deploy/helm/helper2/values.yaml|chart
 deploy/helm/helper2/templates/app.yaml|chart
+deploy/helm/helper2/files/redis-users.acl|BACKEND chart
 deploy/k8s/Makefile|chart
 deploy/k8s/cosign.pub|chart
 deploy/grafana/helper2.json|chart
@@ -152,14 +184,15 @@ docs/design/system/tokens.json|frontend diagrams
 docs/diagrams/flow-0044-ci-cd.d2|diagrams
 deploy/k8s/README.md|diagrams
 frontend/README.md|frontend web backoffice
-backend/apps/public/src/main/resources/x.md|backend public
-backend/apps/backoffice/README.md|backend backoffice
+backend/apps/public/src/main/resources/x.md|backend-public public
+backend/apps/backoffice/README.md|backend-backoffice backoffice
 deploy/web/README.md|web
 README.md,LICENSE|diagrams
-docs/eval/search-queries.json|backend diagrams
+docs/eval/search-queries.json|backend-libs backend-public diagrams
 .claude/agents/architect.md|diagrams
 .claude/settings.json|
-frontend/src/main.tsx,backend/apps/public/x.kt|frontend backend web public backoffice
+frontend/src/main.tsx,backend/apps/public/x.kt|frontend backend-public web public backoffice
+backend/apps/public/x.kt,backend/apps/backoffice/x.kt|backend-public backend-backoffice public backoffice
 deploy/k8s/Makefile,docs/roadmap.md|chart diagrams
 EOF
   [[ -z $(from_paths < /dev/null | trues) ]] || {
@@ -199,17 +232,19 @@ EOF
 diagrams|ALL|diagrams
 diagrams|.github/workflows/ci.yml|diagrams
 diagrams|docs/adr/README.md|diagrams
-diagrams|backend/libs/core/src/main/kotlin/X.kt|diagrams
+diagrams|backend/libs/core/src/main/kotlin/X.kt|
 diagrams|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|
 diagrams|frontend/src/main.tsx|
-diagrams backend|backend/gradlew|backend diagrams
-diagrams backend|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend
-diagrams backend|frontend/src/main.tsx|
-diagrams backend|README.md|diagrams
-diagrams backend frontend|frontend/src/main.tsx|frontend
-diagrams backend frontend|api/public.yaml|frontend backend diagrams
-diagrams backend monitoring|deploy/monitoring/helper2-rules.yaml|monitoring
-diagrams backend public|deploy/Dockerfile|backend public
+diagrams backend-libs|backend/gradlew|backend-libs
+diagrams backend-libs|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|
+diagrams backend-libs backend-public|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public
+diagrams backend-libs backend-public|backend/libs/core/src/main/kotlin/X.kt|backend-libs backend-public
+diagrams backend-libs backend-public|frontend/src/main.tsx|
+diagrams backend-libs|README.md|diagrams
+diagrams backend-libs frontend|frontend/src/main.tsx|frontend
+diagrams backend-libs frontend|api/public.yaml|frontend backend-libs
+diagrams backend-libs monitoring|deploy/monitoring/helper2-rules.yaml|monitoring
+diagrams backend-libs backend-public public|deploy/Dockerfile|backend-public public
 EOF
   rm -rf "$tree"
   local repo got
@@ -244,10 +279,10 @@ EOF
     }
     g init -q . && echo r > README.md && g add -A && g commit -qm init
     f=0
-    move backend/apps/public/src/Gone.java docs/Gone.java "backend public diagrams" || f=$((f + 1))
+    move backend/apps/public/src/Gone.java docs/Gone.java "backend-public public diagrams" || f=$((f + 1))
     move docs/notes/Page.tsx frontend/src/Page.tsx "frontend web backoffice diagrams" || f=$((f + 1))
-    move backend/apps/public/src/notes.md docs/notes.md "backend public diagrams" || f=$((f + 1))
-    move backend/apps/public/src/Moved.java backend/apps/backoffice/src/Moved.java "backend public backoffice" || f=$((f + 1))
+    move backend/apps/public/src/notes.md docs/notes.md "backend-public public diagrams" || f=$((f + 1))
+    move backend/apps/public/src/Moved.java backend/apps/backoffice/src/Moved.java "backend-public backend-backoffice public backoffice" || f=$((f + 1))
     odd $'frontend/src/a b\nc.tsx' "frontend web backoffice" || f=$((f + 1))
     odd $'docs/x\nbackend/apps/public/y.java' "diagrams" || f=$((f + 1))
     exit "$f"

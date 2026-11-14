@@ -1,0 +1,18 @@
+name: backend-build-cache
+description: Pack the Gradle build cache of this job as an artifact, for the jobs of this run that come after it
+inputs:
+  name:
+    description: artifact name
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: tar -C "$HOME/.gradle/caches" -cf "$RUNNER_TEMP/build-cache.tar" build-cache-1
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ runner.temp }}/build-cache.tar
+        retention-days: 1
+        overwrite: true
+        if-no-files-found: error

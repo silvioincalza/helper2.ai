@@ -1,0 +1,38 @@
+name: backend-setup
+description: Java and Gradle for a backend job, with the Gradle build cache that earlier jobs of this run filled
+inputs:
+  cache-read-only:
+    description: true when this job must not save the Gradle home to the Actions cache
+    default: 'true'
+  build-caches:
+    description: artifact name, or a glob of names, of the build caches to unpack; empty for none
+    default: ''
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+      with:
+        distribution: temurin
+        java-version: 25
+    - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
+      with:
+        cache-read-only: ${{ inputs.cache-read-only }}
+    - if: inputs.build-caches != ''
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        pattern: ${{ inputs.build-caches }}
+        path: ${{ runner.temp }}/build-caches
+    - if: inputs.build-caches != ''
+      shell: bash
+      env:
+        WANTED: ${{ inputs.build-caches }}
+      run: |
+        set -euo pipefail
+        shopt -s nullglob
+        packed=("$RUNNER_TEMP"/build-caches/build-cache.tar "$RUNNER_TEMP"/build-caches/*/build-cache.tar)
+        [[ ${#packed[@]} -gt 0 ]] || { echo "::error::no build cache artifact matches $WANTED"; exit 1; }
+        mkdir -p "$HOME/.gradle/caches"
+        for tar in "${packed[@]}"; do
+          tar -C "$HOME/.gradle/caches" -xf "$tar"
+          echo "unpacked ${tar#"$RUNNER_TEMP"/build-caches/}"
+        done
