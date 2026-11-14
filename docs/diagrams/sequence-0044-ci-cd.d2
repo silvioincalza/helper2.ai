@@ -3,7 +3,7 @@
 # deploy with its rollback, status, clean-up. First, for the reset window only: the manual run of cd.yml with
 # keep-unhealthy, which deployed the commit before the release v2026.11.1. The canary of a release: sequence 0045.
 # Source of truth: .github/workflows/release.yml (prod job), .github/workflows/cd.yml (manual job, the input
-#   keep-unhealthy), .github/workflows/deploy.yml, deploy/k8s/RUNBOOK-reset-cutover.md (section 7),
+#   keep-unhealthy), .github/workflows/deploy.yml,
 #   .github/actions/bao-login/action.yml, deploy/k8s/Makefile (verify-images, diff, deploy, status),
 #   deploy/k8s/check-release.sh,
 #   the platform repo's deployer RBAC (prod deployer may get the staging Deployment), outside this repo.

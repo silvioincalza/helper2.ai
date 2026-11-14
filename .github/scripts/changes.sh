@@ -38,7 +38,6 @@ classify() {
     .claude/* | .idea/*) echo "" ;;
     deploy/postgres/*) echo "postgres chart" ;;
     deploy/monitoring/*) echo "monitoring chart" ;;
-    deploy/restore/*) echo "backend" ;;
     deploy/helm/* | deploy/k8s/* | deploy/grafana/*) echo "chart" ;;
     *) echo "$KEYS" ;;
   esac
@@ -147,7 +146,6 @@ deploy/k8s/cosign.pub|chart
 deploy/grafana/helper2.json|chart
 deploy/grafana/helper2-backoffice.json|chart
 deploy/monitoring/helper2-rules.yaml|monitoring chart
-deploy/restore/restore-v2-dump.sh|backend
 deploy/postgres/Dockerfile|postgres chart
 docs/adr/README.md|diagrams
 docs/design/system/tokens.json|frontend diagrams

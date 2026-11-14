@@ -34,8 +34,8 @@ backend/**/.settings/
 
 # k8s environment secrets
 deploy/k8s/*/app.env
-# The first release reset (deploy/k8s/RUNBOOK-reset-cutover.md): dumps and their checksums
-# hold personal data and are written outside the repository; these lines catch a copy left in it by mistake.
+# Database dumps and their checksums hold personal data and are written outside the repository;
+# these lines catch a copy left in it by mistake.
 *.dump
 *.dump.*
 *.sql.gz
