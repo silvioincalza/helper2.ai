@@ -2,7 +2,7 @@
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/aideadlines/AiDeadlinesCollector.java,
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java (event days), JdbcResources.java (upcomingEvents),
 #   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexResources.java (index), usecase/ListUpcomingEvents.java, ResourceCards.java,
-#   backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourcesController.java, frontend/src/features/home/HomeLists.tsx, homeFeeds.ts (useEventsFeed).
+#   backend/apps/public/src/main/java/ai/helper2/catalog/web/HomeListsController.java, frontend/src/features/home/HomeLists.tsx, homeFeeds.ts (useEventsFeed).
 # Render: cd docs/diagrams && d2 fmt sequence-0012-next-events.d2 && d2 sequence-0012-next-events.d2 sequence-0012-next-events.svg
 
 ...@style
@@ -15,7 +15,7 @@ gh: "GitHub contents API" {class: ext}
 raw: "raw.githubusercontent.com" {class: ext}
 cat: IndexResources {class: app}
 home: "HomeLists\n(home page)" {class: person}
-ctrl: ResourcesController {class: app}
+ctrl: HomeListsController {class: app}
 details: ListUpcomingEvents {class: app}
 rs: "JdbcCatalogWriter\nJdbcResources" {class: app}
 db: PostgreSQL {class: data}

@@ -286,7 +286,7 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
   `eventDaysReadByAi`; `DateFact.kt` — `scheduledDay`; `Vocabulary.kt` — `EventKind`, `EventFormat`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java` — the stored event days;
   `JdbcResources.java` — `upcomingEvents`; `catalog/usecase/ListUpcomingEvents.java`,
-  `catalog/web/ResourcesController.java` — `listUpcomingEvents`.
+  `catalog/web/HomeListsController.java` — `listUpcomingEvents`.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — `eventSources`, `statedFirst`;
   `backend/libs/web-contract/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`;
   `backend/apps/public/src/main/java/ai/helper2/site/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.

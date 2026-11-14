@@ -22,7 +22,9 @@ servers:
   - url: /api/v1
 tags:
   - name: search
-  - name: resources
+  - name: home-lists
+  - name: resource-detail
+  - name: issue-reports
   - name: guide-stream
   - name: setup
   - name: sources
@@ -37,7 +39,7 @@ paths:
     $ref: './common.yaml#/paths/~1search'
   /recent:
     get:
-      tags: [resources]
+      tags: [home-lists]
       operationId: listRecent
       summary: Newest resources in the helper2.ai catalog, by the publication date their source states.
       description: |
@@ -58,7 +60,7 @@ paths:
         '429': { $ref: './common.yaml#/components/responses/Problem' }
   /events/upcoming:
     get:
-      tags: [resources]
+      tags: [home-lists]
       operationId: listUpcomingEvents
       summary: Next AI events (conferences and industry events), soonest first.
       description: |
@@ -78,7 +80,7 @@ paths:
         '400': { $ref: './common.yaml#/components/responses/Problem' }
   /resources/{id}:
     get:
-      tags: [resources]
+      tags: [resource-detail]
       operationId: getResource
       summary: Resource detail with provenance, evidence and relationships.
       parameters:
@@ -144,7 +146,7 @@ paths:
 
   /resources/{id}/reports:
     post:
-      tags: [resources]
+      tags: [issue-reports]
       operationId: reportResource
       summary: Report wrong or outdated information. Goes to the human review queue.
       parameters:

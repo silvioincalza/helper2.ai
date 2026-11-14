@@ -18,7 +18,10 @@ every source has a status), and these rules must be visible in one place that bo
 2. **Server side generated, the shared part once.** The Gradle task `openApiGenerate` (generator `spring`,
    `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, the same options everywhere) writes controller
    interfaces and Data Transfer Objects (DTOs, suffix `Dto`). It runs before every Java and Kotlin compile.
-   Controllers implement these interfaces (for example `MeController implements MeApi`).
+   Controllers implement these interfaces (for example `MeController implements MeApi`). A tag is one generated
+   interface, and one controller implements it. The catalog's public endpoints have one tag per feature:
+   `home-lists` (`GET /recent`, `GET /events/upcoming`), `resource-detail` (`GET /resources/{id}`) and
+   `issue-reports` (`POST /resources/{id}/report`).
    - The library `libs/web-contract` generates `common.yaml` alone, once: interfaces in `ai.helper2.api.common`
      (`SearchApi`, `SourcesApi`, `CategoriesApi`), DTOs in `ai.helper2.api.common.model`. It also holds the
      controllers of those three paths, so both apps serve them with the same classes.
