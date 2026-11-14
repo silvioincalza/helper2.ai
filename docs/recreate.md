@@ -219,7 +219,8 @@ What the import does:
   and an entry whose title or text changed updates its issue and never makes a second one.
 - Only an issue written by the owner, a member or a collaborator counts. The same line in an issue of anybody else is
   ignored, and the run says so. One ID on two issues stops the run.
-- Every issue is an item of the Project. The import sets the fields Context, Priority, Release and Replay PR. Status
+- Every issue is an item of the Project. The import sets the fields Context, Priority, Release and Replay PR, and
+  clears one whose value was taken out of the file. Status
   is the Project's own field: the import checks that it is there and never sets it, because the Project's workflow
   closes an issue whose Status becomes Done.
 - A built story stays open. The pull request that builds it closes it with a `Closes #n` line.

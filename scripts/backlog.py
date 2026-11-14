@@ -178,14 +178,14 @@ class GhCli:
             args += ["--single-select-options", ",".join(options)]
         self.change(f"create the field {name}", args)
 
-    def items(self, project: dict, names: list[str]) -> dict[int, dict]:
+    def items(self, project: dict, names: list[str]) -> dict[str, dict]:
         listed = self.run(
             ["project", "item-list", project["number"], "--owner", project["owner"], "--format", "json", "--limit", "5000"]
         )
         return {
-            item["content"]["number"]: {"id": item["id"], "values": {n: self.value(item, n) for n in names}}
+            item["content"]["url"]: {"id": item["id"], "values": {n: self.value(item, n) for n in names}}
             for item in listed.get("items", [])
-            if item.get("content", {}).get("number")
+            if item.get("content", {}).get("url")
         }
 
     @staticmethod
@@ -208,6 +208,12 @@ class GhCli:
         else:
             args += ["--text", value]
         self.change(f"set {name} of #{issue['number']} to {value}", args)
+
+    def clear_field(self, project: dict, item: dict, issue: dict, name: str, field: dict) -> None:
+        self.change(
+            f"clear {name} of #{issue['number']}",
+            ["project", "item-edit", "--id", item["id"], "--project-id", project["id"], "--field-id", field["id"], "--clear"],
+        )
 
 
 def tracked(node: dict) -> dict:
@@ -271,13 +277,16 @@ def body_of(x: dict, slices: dict) -> str:
 def wanted_fields(x: dict) -> dict:
     if x["kind"] in ("epic", "feature"):
         return {"Context": x["context"]}
-    wanted = {"Context": x["context"], "Priority": x["priority"], "Release": x["release"], "Replay PR": x["replay_pr"]}
-    return {name: value for name, value in wanted.items() if value not in ("", None)}
+    return {"Context": x["context"], "Priority": x["priority"], "Release": x["release"], "Replay PR": x["replay_pr"]}
+
+
+def empty(value) -> bool:
+    return value in ("", None)
 
 
 def same(current, value) -> bool:
-    if current is None:
-        return False
+    if empty(current) or empty(value):
+        return empty(current) and empty(value)
     if isinstance(value, (int, float)):
         return float(current) == float(value)
     return str(current) == str(value)
@@ -376,15 +385,18 @@ class Import:
                 print(f"  would add {x['id']} to the Project with its fields")
                 added += 1
                 continue
-            item = items.get(issue["number"])
+            item = items.get(issue["url"])
             if item is None:
                 item = self.github.add_item(project, issue)
                 added += 1
             for name, value in wanted_fields(x).items():
                 if name not in fields or same((item or {}).get("values", {}).get(name), value):
                     continue
-                self.require_option(name, fields[name], value)
-                self.github.set_field(project, item, issue, name, fields[name], value)
+                if empty(value):
+                    self.github.clear_field(project, item, issue, name, fields[name])
+                else:
+                    self.require_option(name, fields[name], value)
+                    self.github.set_field(project, item, issue, name, fields[name], value)
                 edits += 1
         print(f"project {title} (#{project['number']}): {added} items added, {edits} field values set")
 
@@ -481,7 +493,7 @@ class FakeGitHub:
         self.parent: dict[int, int] = {}
         self.board: dict | None = None
         self.board_fields: dict[str, dict] = {}
-        self.board_items: dict[int, dict] = {}
+        self.board_items: dict[str, dict] = {}
         self.writes: list[str] = []
 
     def ensure_label(self, repo, name, color):
@@ -540,13 +552,17 @@ class FakeGitHub:
         return copy.deepcopy(self.board_items)
 
     def add_item(self, project, issue):
-        self.board_items[issue["number"]] = {"id": f"I{issue['number']}", "values": {}}
+        self.board_items[issue["url"]] = {"id": f"I{issue['number']}", "values": {}}
         self.writes.append(f"item {issue['number']}")
-        return copy.deepcopy(self.board_items[issue["number"]])
+        return copy.deepcopy(self.board_items[issue["url"]])
 
     def set_field(self, project, item, issue, name, field, value):
-        self.board_items[issue["number"]]["values"][name] = value
+        self.board_items[issue["url"]]["values"][name] = value
         self.writes.append(f"set {name} of {issue['number']}")
+
+    def clear_field(self, project, item, issue, name, field):
+        del self.board_items[issue["url"]]["values"][name]
+        self.writes.append(f"clear {name} of {issue['number']}")
 
 
 SAMPLE = {
@@ -632,17 +648,19 @@ def self_test() -> None:
     first = imported(SAMPLE, github)
     cases["the first run creates one issue per entry"] = "issues: 7 created, 0 updated, 0 unchanged" in first
     cases["a feature is under its epic and a story under its feature"] = github.parent == {3: 1, 4: 2, 5: 3, 6: 3, 7: 4}
-    cases["every issue is an item of the Project"] = sorted(github.board_items) == [1, 2, 3, 4, 5, 6, 7]
+    cases["every issue is an item of the Project"] = sorted(github.board_items) == [
+        f"https://example.test/{number}" for number in range(1, 8)
+    ]
     cases["the Project has Context, Status, Release and Priority"] = {"Context", STATUS, "Release", "Priority"} <= set(
         github.board_fields
     )
-    cases["a story carries its fields"] = github.board_items[5]["values"] == {
+    cases["a story carries its fields"] = github.board_items["https://example.test/5"]["values"] == {
         "Context": "Checkout",
         "Priority": "Replay",
         "Release": "2026.11.3",
         "Replay PR": 3,
     }
-    cases["an epic carries its context only"] = github.board_items[1]["values"] == {"Context": "Checkout"}
+    cases["an epic carries its context only"] = github.board_items["https://example.test/1"]["values"] == {"Context": "Checkout"}
     cases["a story names the pull request that closes it"] = "replay pull request 03 (Checkout)" in github.stored[4]["body"]
 
     public = json.dumps([github.stored, github.board_items])
@@ -665,6 +683,25 @@ def self_test() -> None:
     imported(changed, github)
     cases["a changed entry updates its issue and its field, no duplicate"] = (
         github.writes == ["update S2.1.1 To browse by category and price", "set Priority of 7"] and len(github.stored) == 7
+    )
+
+    emptied = copy.deepcopy(changed)
+    emptied["stories"][0].update(release="", replay_pr=None)
+    github.writes.clear()
+    imported(emptied, github)
+    cases["a value taken out of the file is cleared in the Project"] = (
+        github.writes == ["update S1.1.1 To pay by card", "clear Release of 5", "clear Replay PR of 5"]
+        and github.board_items["https://example.test/5"]["values"] == {"Context": "Checkout", "Priority": "Replay"}
+    )
+    imported(changed, github)
+
+    elsewhere = FakeGitHub()
+    imported(SAMPLE, elsewhere)
+    elsewhere.board_items["https://other.test/5"] = {"id": "X5", "values": {"Priority": "Later"}}
+    elsewhere.writes.clear()
+    imported(SAMPLE, elsewhere)
+    cases["an item of another repository with the same number is left alone"] = (
+        elsewhere.writes == [] and elsewhere.board_items["https://other.test/5"]["values"] == {"Priority": "Later"}
     )
 
     moved = copy.deepcopy(changed)
