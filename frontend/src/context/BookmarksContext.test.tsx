@@ -1,0 +1,333 @@
+import { act, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { BOOKMARK_KEY, readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
+import { ANON, USER, makeDetail, makeSearch } from '@/test/fixtures';
+import { mockApi, problem } from '@/test/mockApi';
+import { renderApp } from '@/test/render';
+
+const bm = {
+  resourceId: '22222222-2222-5222-8222-222222222222',
+  title: 'Local one',
+  url: 'https://l.example',
+  type: 'MODEL' as const,
+  savedAt: '2026-10-01T00:00:00.000Z',
+};
+
+const ACME_PAGE = '/resource/11111111-1111-5111-8111-111111111111';
+const acmeDetail = { 'GET /resources/11111111-1111-5111-8111-111111111111': () => makeDetail() };
+
+describe('bookmarks (local)', () => {
+  it('reads and writes localStorage', () => {
+    expect(writeLocalBookmarks([bm])).toBe(true);
+    expect(readLocalBookmarks()).toEqual([bm]);
+    expect(JSON.parse(window.localStorage.getItem(BOOKMARK_KEY) ?? '[]')).toHaveLength(1);
+  });
+
+  it('survives corrupt data', () => {
+    window.localStorage.setItem(BOOKMARK_KEY, '{not json');
+    expect(readLocalBookmarks()).toEqual([]);
+    window.localStorage.setItem(BOOKMARK_KEY, JSON.stringify([{ nope: 1 }, bm]));
+    expect(readLocalBookmarks()).toEqual([bm]);
+  });
+
+  it('survives localStorage throwing on read and write', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+    expect(readLocalBookmarks()).toEqual([]);
+    expect(writeLocalBookmarks([bm])).toBe(false);
+  });
+
+  it('saves from a resource page, lists on /saved and removes', async () => {
+    mockApi({ 'GET /me': () => ANON, ...acmeDetail });
+    const { router } = renderApp(ACME_PAGE);
+    await userEvent.click(await screen.findByRole('button', { name: /^Saved? Acme Translator$/ }));
+    expect(readLocalBookmarks()[0]).toMatchObject({ title: 'Acme Translator', type: 'PRODUCT' });
+    await act(() => router.navigate('/saved'));
+    await screen.findByRole('heading', { name: 'Saved resources' });
+    expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: /Remove Acme Translator from saved/ }),
+    );
+    expect(screen.getByText(/Nothing saved yet/)).toBeInTheDocument();
+    expect(readLocalBookmarks()).toEqual([]);
+  });
+
+  it('keeps working in memory and warns when storage throws', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+    mockApi(acmeDetail);
+    const { router } = renderApp(ACME_PAGE);
+    await userEvent.click(await screen.findByRole('button', { name: /^Saved? Acme Translator$/ }));
+    expect(screen.getByRole('button', { name: /^Saved? Acme Translator$/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/blocked storage/);
+    expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+  });
+});
+
+describe('bookmarks (signed in)', () => {
+  it('merges local bookmarks into the server once, then uses the server list', async () => {
+    writeLocalBookmarks([bm]);
+    const server = [
+      {
+        resourceId: bm.resourceId,
+        title: 'Local one',
+        url: bm.url,
+        type: 'MODEL',
+        savedAt: '2026-10-22T00:00:00Z',
+      },
+      {
+        resourceId: '33333333-3333-5333-8333-333333333333',
+        title: 'Server only',
+        url: 'https://s.example',
+        type: null,
+        savedAt: '2026-10-21T00:00:00Z',
+      },
+    ];
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () => server,
+      'GET /search': () => makeSearch(),
+    });
+    const { router } = renderApp('/saved');
+    expect(await screen.findByRole('link', { name: 'Server only' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
+    const posts = m.callsTo('POST', '/me/bookmarks');
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.body).toEqual([
+      { resourceId: bm.resourceId, title: 'Local one', url: bm.url, type: 'MODEL' },
+    ]);
+    await waitFor(() => expect(window.localStorage.getItem(BOOKMARK_KEY)).toBeNull());
+    await act(() => router.navigate('/sources'));
+    await act(() => router.navigate('/saved'));
+    await screen.findByRole('link', { name: 'Server only' });
+    expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1);
+  });
+
+  it('a removal while the merge is on its way wins over the merge, and is sent after it', async () => {
+    const acme = '11111111-1111-5111-8111-111111111111';
+    writeLocalBookmarks([{ ...bm, resourceId: acme, title: 'Acme Translator' }]);
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      'DELETE /me/bookmarks/*': () => undefined,
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1));
+    const save = (
+      await screen.findAllByRole('button', { name: /^Saved? Acme Translator$/ })
+    )[0] as HTMLElement;
+    expect(save).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(0);
+
+    await act(async () =>
+      answer([
+        { ...bm, resourceId: acme, title: 'Acme Translator', savedAt: '2026-10-22T00:00:00Z' },
+        {
+          resourceId: '33333333-3333-5333-8333-333333333333',
+          title: 'Server only',
+          url: 'https://s.example',
+          type: null,
+          savedAt: '2026-10-21T00:00:00Z',
+        },
+      ]),
+    );
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    await waitFor(() => expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(1));
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findByRole('link', { name: 'Server only' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
+  });
+
+  it('a save then a removal while the list is on its way ends unsaved, and sends nothing', async () => {
+    const acme = '11111111-1111-5111-8111-111111111111';
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      'PUT /me/bookmarks/*': () => bm,
+      'DELETE /me/bookmarks/*': () => undefined,
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
+    const save = (
+      await screen.findAllByRole('button', { name: /^Saved? Acme Translator$/ })
+    )[0] as HTMLElement;
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+
+    await act(async () => answer([]));
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findByText(/Nothing saved yet/)).toBeInTheDocument();
+    expect(m.callsTo('PUT', `/me/bookmarks/${acme}`)).toHaveLength(0);
+    expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(0);
+  });
+
+  it('a removal while a merge that then fails is on its way still reaches the account after Try again', async () => {
+    const acme = '11111111-1111-5111-8111-111111111111';
+    writeLocalBookmarks([{ ...bm, resourceId: acme, title: 'Acme Translator' }]);
+    let fail = true;
+    const server = [
+      { ...bm, resourceId: acme, title: 'Acme Translator', savedAt: '2026-10-22T00:00:00Z' },
+    ];
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      'GET /me/bookmarks': () => (fail ? problem(500, 'Boom') : server),
+      'DELETE /me/bookmarks/*': () => undefined,
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(1));
+    const save = (
+      await screen.findAllByRole('button', { name: /^Saved? Acme Translator$/ })
+    )[0] as HTMLElement;
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+
+    await act(async () => answer(problem(500, 'Boom')));
+    expect(readLocalBookmarks()).toEqual([]);
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    await act(() => router.navigate('/saved'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    expect(await screen.findByText('Could not sync with your account.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
+
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(m.callsTo('DELETE', `/me/bookmarks/${acme}`)).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('link', { name: 'Acme Translator' })).not.toBeInTheDocument();
+  });
+
+  it('uses GET when there is nothing to merge, and DELETE on remove', async () => {
+    const list = [
+      {
+        resourceId: bm.resourceId,
+        title: 'Srv',
+        url: bm.url,
+        type: null,
+        savedAt: '2026-10-22T00:00:00Z',
+      },
+    ];
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () => list,
+      'DELETE /me/bookmarks/*': () => undefined,
+    });
+    renderApp('/saved');
+    await userEvent.click(await screen.findByRole('button', { name: /Remove Srv from saved/ }));
+    expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1);
+    await waitFor(() =>
+      expect(m.callsTo('DELETE', `/me/bookmarks/${bm.resourceId}`)).toHaveLength(1),
+    );
+    expect(screen.getByText(/Nothing saved yet/)).toBeInTheDocument();
+  });
+
+  const ACME = '11111111-1111-5111-8111-111111111111';
+  const stored = {
+    resourceId: ACME,
+    title: 'Acme Translator',
+    url: 'https://acme.example',
+    type: 'PRODUCT',
+    savedAt: '2026-10-22T00:00:00Z',
+  };
+
+  it('shows Saved at once, before the account answers, so a second click cannot save twice', async () => {
+    let answer: (v: unknown) => void = () => {};
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () => [],
+      [`PUT /me/bookmarks/${ACME}`]: () =>
+        new Promise((r) => {
+          answer = r;
+        }),
+      ...acmeDetail,
+    });
+    const { router } = renderApp(ACME_PAGE);
+    const save = (
+      await screen.findAllByRole('button', { name: /^Saved? Acme Translator$/ })
+    )[0] as HTMLElement;
+    await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
+    await userEvent.click(save);
+    expect(save).toHaveAttribute('aria-pressed', 'true');
+    await act(async () => answer(stored));
+    expect(m.callsTo('PUT', `/me/bookmarks/${ACME}`)).toHaveLength(1);
+    await act(() => router.navigate('/saved'));
+    expect(await screen.findAllByRole('link', { name: 'Acme Translator' })).toHaveLength(1);
+  });
+
+  it('a failed save is undone and says so', async () => {
+    const m = mockApi({
+      'GET /me': () => USER,
+      'GET /me/bookmarks': () => [],
+      [`PUT /me/bookmarks/${ACME}`]: () => problem(500, 'Boom'),
+      ...acmeDetail,
+    });
+    renderApp(ACME_PAGE);
+    const save = (
+      await screen.findAllByRole('button', { name: /^Saved? Acme Translator$/ })
+    )[0] as HTMLElement;
+    await waitFor(() => expect(m.callsTo('GET', '/me/bookmarks')).toHaveLength(1));
+    await userEvent.click(save);
+    await waitFor(() => expect(save).toHaveAttribute('aria-pressed', 'false'));
+  });
+
+  it('when the merge after sign-in fails, the browser list stays and Try again merges it', async () => {
+    writeLocalBookmarks([bm]);
+    let fail = true;
+    const server = [
+      {
+        resourceId: bm.resourceId,
+        title: 'Local one',
+        url: bm.url,
+        type: 'MODEL',
+        savedAt: '2026-10-22T00:00:00Z',
+      },
+    ];
+    const m = mockApi({
+      'GET /me': () => USER,
+      'POST /me/bookmarks': () => (fail ? problem(500, 'Boom') : server),
+    });
+    renderApp('/saved');
+    expect(await screen.findByText('Could not sync with your account.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
+
+    fail = false;
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(m.callsTo('POST', '/me/bookmarks')).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.queryByText('Could not sync with your account.')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('link', { name: 'Local one' })).toBeInTheDocument();
+    await waitFor(() => expect(window.localStorage.getItem(BOOKMARK_KEY)).toBeNull());
+  });
+});

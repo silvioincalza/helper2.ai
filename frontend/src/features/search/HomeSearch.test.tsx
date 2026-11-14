@@ -1,0 +1,639 @@
+import { act, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { json, mockApi, problem } from '@/test/mockApi';
+import { renderApp, settle } from '@/test/render';
+import { known, makeCard, makeDetail, makeSearch, makeStatus, unknownDate } from '@/test/fixtures';
+
+const url = '/search?q=translate&type=MODEL&license=unknown';
+
+const results = async () => within(await screen.findByRole('list', { name: 'Search results' }));
+const openFilters = async () =>
+  userEvent.click(await screen.findByRole('button', { name: 'Filters', expanded: false }));
+
+describe('search results', () => {
+  it('/?q= links still show the results, with the same query, filters and path, not indexed and with no canonical link', async () => {
+    const m = mockApi();
+    const { router, params } = renderApp('/?q=translate&path=USE_AI&type=MODEL');
+    await (await results()).findByText('Acme Translator');
+    expect(router.state.location.pathname).toBe('/');
+    expect(document.querySelector('link[rel="canonical"]')).toBeNull();
+    expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'noindex, follow',
+    );
+    expect(params().get('q')).toBe('translate');
+    expect(params().getAll('type')).toEqual(['MODEL']);
+    expect(new URLSearchParams(m.callsTo('GET', '/search')[0]?.search).get('path')).toBe('USE_AI');
+  });
+
+  it('sends the url params to the API', async () => {
+    const m = mockApi();
+    renderApp(url);
+    await (await results()).findByText('Acme Translator');
+    const call = m.callsTo('GET', '/search')[0];
+    expect(new URLSearchParams(call?.search).getAll('type')).toEqual(['MODEL']);
+    expect(new URLSearchParams(call?.search).get('q')).toBe('translate');
+  });
+
+  it('shows a loading state with a skeleton', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    mockApi({
+      'GET /search': async () => {
+        await gate;
+        return makeSearch();
+      },
+    });
+    renderApp(url);
+    expect(await screen.findByText('Searching the listed sources…')).toBeInTheDocument();
+    expect(document.querySelector('.h2-skeleton')).toBeInTheDocument();
+    release();
+    await (await results()).findByText('Acme Translator');
+  });
+
+  it('the sources grid names each source with its outcome, latency or cache age in words', async () => {
+    const sources = [
+      makeStatus({ sourceId: 'a', name: 'Alpha', outcome: 'SUCCEEDED' }),
+      makeStatus({
+        sourceId: 'b',
+        name: 'Beta',
+        outcome: 'FAILED',
+        servedFrom: 'NONE',
+        latencyMs: null,
+        message: 'Upstream 500',
+      }),
+      makeStatus({ sourceId: 'c', name: 'Gamma', outcome: 'TIMED_OUT', servedFrom: 'NONE' }),
+      makeStatus({
+        sourceId: 'd',
+        name: 'Delta',
+        outcome: 'RATE_LIMITED',
+        servedFrom: 'STALE_CACHE',
+        cachedAt: '2026-10-01T00:00:00Z',
+      }),
+      makeStatus({
+        sourceId: 'e',
+        name: 'Epsilon',
+        outcome: 'SKIPPED',
+        servedFrom: 'NONE',
+        mode: 'CURATED',
+      }),
+    ];
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          sources,
+          coverage: {
+            partial: true,
+            sourcesConfigured: 5,
+            sourcesQueried: 5,
+            sourcesSucceeded: 1,
+            note: 'n',
+          },
+        }),
+    });
+    renderApp(url);
+    const grid = await screen.findByRole('list', { name: 'Sources searched' });
+    const tile = (name: string) => within(grid).getByText(name).closest('li') as HTMLElement;
+    expect(tile('Alpha')).toHaveTextContent('120 ms');
+    expect(tile('Beta')).toHaveTextContent('Failed');
+    expect(tile('Gamma')).toHaveTextContent('Timed out');
+    expect(tile('Delta')).toHaveTextContent('Rate limited');
+    expect(tile('Epsilon')).toHaveTextContent('Skipped');
+    expect(screen.getByRole('heading', { name: /1 of 5 sources answered/ })).toBeInTheDocument();
+  });
+
+  it('filter checkboxes get valid ids whatever the source text, and repeated notices render once each', async () => {
+    const errors = vi.spyOn(console, 'error');
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          facets: { ...makeSearch().facets, license: [{ value: 'Apache 2.0 / "MIT"', count: 1 }] },
+          notices: [
+            { code: 'CACHE_UNAVAILABLE', message: 'a' },
+            { code: 'CACHE_UNAVAILABLE', message: 'b' },
+          ],
+        }),
+    });
+    renderApp('/search?q=translate');
+    await openFilters();
+    const box = await within(await screen.findByRole('group', { name: /License/ })).findByRole(
+      'checkbox',
+      { name: /Apache 2\.0/ },
+    );
+    expect(box.id).toMatch(/^[^\s"/]+$/);
+    expect(
+      screen.getAllByText('Every source was searched live, so this search may be slower.'),
+    ).toHaveLength(2);
+    expect(errors.mock.calls.flat().join(' ')).not.toMatch(/same key/);
+  });
+
+  it('shows the partial line only when coverage.partial', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          coverage: {
+            partial: true,
+            sourcesConfigured: 3,
+            sourcesQueried: 3,
+            sourcesSucceeded: 2,
+            note: 'n',
+          },
+        }),
+    });
+    renderApp(url);
+    expect(await screen.findByText(/1 of 3 sources did not answer/)).toBeInTheDocument();
+  });
+
+  it('has no partial line on full coverage', async () => {
+    mockApi();
+    renderApp(url);
+    await (await results()).findByText('Acme Translator');
+    expect(screen.queryByText(/sources did not answer/)).not.toBeInTheDocument();
+  });
+
+  it('empty state suggests removing filters and shows the sources searched', async () => {
+    mockApi({ 'GET /search': () => makeSearch({ results: [], total: 0 }) });
+    const { params } = renderApp(url);
+    expect(await screen.findByText('No results from the sources searched')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Sources searched' })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove all filters' }));
+    await waitFor(() => expect(params().getAll('type')).toEqual([]));
+  });
+
+  it('all sources failed is NOT shown as an ordinary empty result', async () => {
+    let n = 0;
+    const failed = [
+      makeStatus({ sourceId: 'a', name: 'Alpha', outcome: 'FAILED', servedFrom: 'NONE' }),
+      makeStatus({ sourceId: 'b', name: 'Beta', outcome: 'TIMED_OUT', servedFrom: 'NONE' }),
+    ];
+    mockApi({
+      'GET /search': () =>
+        n++ === 0
+          ? makeSearch({
+              results: [],
+              total: 0,
+              sources: failed,
+              coverage: {
+                partial: true,
+                sourcesConfigured: 2,
+                sourcesQueried: 2,
+                sourcesSucceeded: 0,
+                note: 'n',
+              },
+              notices: [{ code: 'ALL_SOURCES_FAILED', message: 'All sources failed.' }],
+            })
+          : makeSearch(),
+    });
+    renderApp(url);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No source responded');
+    expect(alert).toHaveTextContent('nothing was actually searched');
+    const grid = screen.getByRole('list', { name: 'Sources searched' });
+    expect(within(grid).getByText('Failed')).toBeInTheDocument();
+    expect(within(grid).getByText('Timed out')).toBeInTheDocument();
+    expect(screen.queryByText('No results from the sources searched')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove all filters' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('main')).queryByRole('button', { name: /Switch to/ }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
+    expect(await (await results()).findByText('Acme Translator')).toBeInTheDocument();
+  });
+
+  it('keeps the filter panel populated while a new search loads', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    let n = 0;
+    mockApi({
+      'GET /search': async () => {
+        if (n++ > 0) await gate;
+        return makeSearch();
+      },
+    });
+    renderApp('/search?q=translate');
+    await (await results()).findByText('Acme Translator');
+    await openFilters();
+    await userEvent.click(
+      within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', { name: /Model/ }),
+    );
+    await screen.findByText('Searching the listed sources…');
+    expect(screen.getByRole('group', { name: /License/ })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', {
+        name: /Product/,
+      }),
+    ).toBeInTheDocument();
+    release();
+    await waitFor(() =>
+      expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('error state offers retry and recovers', async () => {
+    let n = 0;
+    mockApi({ 'GET /search': () => (n++ === 0 ? problem(503, 'Unavailable') : makeSearch()) });
+    renderApp(url);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Search is unavailable');
+    await userEvent.click(screen.getByRole('button', { name: /Try again/ }));
+    expect(await (await results()).findByText('Acme Translator')).toBeInTheDocument();
+  });
+
+  it('error state when the network is down', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('down')));
+    renderApp(url);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Search is unavailable');
+  });
+
+  it('marks stale-cache sources in the row and in the sources grid', async () => {
+    const card = makeCard({ freshness: 'STALE' });
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          results: [card],
+          sources: [makeStatus({ servedFrom: 'STALE_CACHE', cachedAt: '2026-09-01T00:00:00Z' })],
+        }),
+    });
+    renderApp(url);
+    await (await results()).findByText('Acme Translator');
+    const row = screen.getByRole('link', { name: 'Acme Translator' }).closest('li')!;
+    expect(within(row).getByText(/Older saved copy/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Sources searched' })).getByText(/cached/),
+    ).toBeInTheDocument();
+  });
+
+  it('filters update the URL and the unknown bucket is labeled Not stated', async () => {
+    const { params } = (mockApi(), renderApp('/search?q=translate'));
+    await (await results()).findByText('Acme Translator');
+    await openFilters();
+    const licenseGroup = screen.getByRole('group', { name: /License/ });
+    const unknownBox = within(licenseGroup).getByRole('checkbox', { name: /Not stated/ });
+    await userEvent.click(unknownBox);
+    await waitFor(() => expect(params().getAll('license')).toEqual(['unknown']));
+    const tech = screen.getByRole('group', { name: /Technical level/ });
+    await userEvent.click(within(tech).getByRole('checkbox', { name: /Not stated/ }));
+    await waitFor(() => expect(params().getAll('techLevel')).toEqual(['UNKNOWN']));
+    await userEvent.click(
+      within(screen.getByRole('group', { name: /Type/ })).getByRole('checkbox', { name: /Model/ }),
+    );
+    await waitFor(() => expect(params().getAll('type')).toEqual(['MODEL']));
+    expect(params().get('q')).toBe('translate');
+  });
+
+  it('active filter chips remove one filter, and clear all', async () => {
+    const { params } =
+      (mockApi(), renderApp('/search?q=translate&type=MODEL&license=MIT&updatedAfter=2026-01-01'));
+    const chips = await screen.findByRole('group', { name: 'Active filters' });
+    expect(within(chips).getByText(/Updated after: Jan 1, 2026/)).toBeInTheDocument();
+    await userEvent.click(
+      within(chips).getByRole('button', { name: 'Remove filter: Type: Model' }),
+    );
+    await waitFor(() => expect(params().getAll('type')).toEqual([]));
+    expect(params().getAll('license')).toEqual(['MIT']);
+    await userEvent.click(screen.getByRole('button', { name: 'Clear all filters' }));
+    await waitFor(() => expect(params().getAll('license')).toEqual([]));
+    expect(params().get('updatedAfter')).toBeNull();
+    expect(params().get('q')).toBe('translate');
+  });
+
+  it('updatedAfter date filter writes the URL', async () => {
+    const { params } = (mockApi(), renderApp('/search?q=translate'));
+    await (await results()).findByText('Acme Translator');
+    await openFilters();
+    const input = screen.getByLabelText('Updated after');
+    await userEvent.type(input, '2026-05-06');
+    await waitFor(() => expect(params().get('updatedAfter')).toBe('2026-05-06'));
+  });
+
+  it('timeline view: creation-date order from the API, grouped by month, unknown dates last, never the scan date', async () => {
+    const cards = [
+      makeCard({
+        id: '11111111-1111-5111-8111-000000000001',
+        title: 'New MCP',
+        timeline: {
+          published: known('2026-10-17T00:00:00Z'),
+          updated: known('2026-10-20T00:00:00Z'),
+          discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+        },
+      }),
+      makeCard({
+        id: '11111111-1111-5111-8111-000000000002',
+        title: 'Old library',
+        timeline: {
+          published: known('2023-07-14T00:00:00Z'),
+          updated: known('2026-10-20T00:00:00Z'),
+          discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+        },
+      }),
+      makeCard({
+        id: '11111111-1111-5111-8111-000000000003',
+        title: 'Undated tool',
+        timeline: {
+          published: unknownDate,
+          updated: known('2026-10-20T00:00:00Z'),
+          discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+        },
+      }),
+    ];
+    const m = mockApi({ 'GET /search': () => makeSearch({ results: cards, total: 3 }) });
+    const { params } = renderApp('/search?q=translate&sort=RECENTLY_UPDATED');
+    await (await results()).findByText('New MCP');
+    expect(screen.getByRole('link', { name: 'List' })).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(screen.getByRole('link', { name: 'Timeline' }));
+
+    await waitFor(() => expect(params().get('view')).toBe('timeline'));
+    expect(params().get('sort')).toBe('RECENTLY_UPDATED');
+    const call = new URLSearchParams(m.callsTo('GET', '/search').at(-1)?.search);
+    expect(call.get('sort')).toBe('NEWEST');
+    expect(call.get('size')).toBe('50');
+    expect(call.get('view')).toBeNull();
+
+    const timeline = await screen.findByRole('list', { name: 'Results by creation date' });
+    const months = within(timeline)
+      .getAllByRole('heading', { level: 3 })
+      .filter((h) => h.classList.contains('tl-month'));
+    expect(months.map((h) => h.textContent)).toEqual([
+      'October 2026',
+      'July 2023',
+      'Date not stated',
+    ]);
+    expect(within(timeline).getByText('Oct 17, 2026')).toBeInTheDocument();
+    const showThem = within(timeline).getByRole('button', { name: 'Show them' });
+    expect(showThem).toHaveAttribute('aria-expanded', 'false');
+    expect(within(timeline).getByText(/^1 result\./)).toBeInTheDocument();
+    expect(within(timeline).queryByText('Creation date not stated')).not.toBeVisible();
+    await userEvent.click(showThem);
+    expect(within(timeline).getByRole('button', { name: 'Hide them' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(within(timeline).getByText('Creation date not stated')).toBeVisible();
+    expect(within(timeline).getByRole('link', { name: /New MCP/ })).toHaveAttribute(
+      'href',
+      '/resource/11111111-1111-5111-8111-000000000001/new-mcp',
+    );
+    expect(screen.queryByRole('combobox', { name: /Sort by/ })).not.toBeInTheDocument();
+
+    expect(screen.getByRole('link', { name: 'Timeline' })).toHaveAttribute('aria-current', 'page');
+    await userEvent.click(screen.getByRole('link', { name: 'List' }));
+    await waitFor(() => expect(params().get('view')).toBeNull());
+    expect(await screen.findByRole('combobox', { name: /Sort by/ })).toHaveValue(
+      'RECENTLY_UPDATED',
+    );
+    expect(params().get('sort')).toBe('RECENTLY_UPDATED');
+  });
+
+  it('sort change updates URL and request', async () => {
+    const m = mockApi();
+    const { params } = renderApp('/search?q=translate');
+    await (await results()).findByText('Acme Translator');
+    await openFilters();
+    await userEvent.selectOptions(screen.getByLabelText('Sort by'), 'RECENTLY_UPDATED');
+    await waitFor(() => expect(params().get('sort')).toBe('RECENTLY_UPDATED'));
+    await waitFor(() =>
+      expect(
+        m.callsTo('GET', '/search').some((c) => c.search.includes('sort=RECENTLY_UPDATED')),
+      ).toBe(true),
+    );
+  });
+
+  it('keeps the last results on screen, busy and dimmed, while a new search loads; focus stays on the sort select', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    let n = 0;
+    mockApi({
+      'GET /search': async () => {
+        if (n++ > 0) await gate;
+        return makeSearch();
+      },
+    });
+    renderApp('/search?q=translate');
+    await (await results()).findByText('Acme Translator');
+    await openFilters();
+    const select = screen.getByLabelText('Sort by');
+    await userEvent.selectOptions(select, 'NEWEST');
+    await screen.findByText('Searching the listed sources…');
+    expect(
+      within(screen.getByRole('list', { name: 'Search results' }))
+        .getByText('Acme Translator')
+        .closest('[aria-busy]'),
+    ).toHaveAttribute('aria-busy', 'true');
+    expect(document.querySelector('.skeleton-card')).toBeNull();
+    expect(select).toHaveFocus();
+    release();
+    await waitFor(() =>
+      expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('Sort by')).toBe(select);
+    expect(select).toHaveFocus();
+    expect(
+      within(screen.getByRole('list', { name: 'Search results' }))
+        .getByText('Acme Translator')
+        .closest('[aria-busy]'),
+    ).toHaveAttribute('aria-busy', 'false');
+  });
+
+  describe('Show more', () => {
+    const paged = (more: Parameters<typeof mockApi>[0] = {}) => {
+      const m = mockApi({
+        ...more,
+        'GET /search': ({ url }) => {
+          const page = Number(url.searchParams.get('page') ?? '0');
+          return makeSearch({
+            total: 3,
+            size: 1,
+            page,
+            results: [
+              makeCard({
+                id: `11111111-1111-5111-8111-00000000000${page}`,
+                title: `Result ${page + 1}`,
+              }),
+            ],
+          });
+        },
+      });
+      return m;
+    };
+
+    it('adds the next page in place, moves focus to its first row and says how many came, once', async () => {
+      const m = paged();
+      const { params } = renderApp('/search?q=translate');
+      await screen.findByRole('link', { name: 'Result 1' });
+      expect(screen.queryByRole('navigation', { name: 'Pagination' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      const second = await screen.findByRole('link', { name: 'Result 2' });
+      await waitFor(() => expect(second).toHaveFocus());
+      expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
+      expect(params().get('page')).toBe('1');
+      expect(screen.getByText('1 more result')).toHaveAttribute('aria-live', 'polite');
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      await screen.findByRole('link', { name: 'Result 3' });
+      expect(screen.queryByRole('button', { name: 'Show more' })).not.toBeInTheDocument();
+      expect(
+        m.callsTo('GET', '/search').map((c) => new URLSearchParams(c.search).get('page')),
+      ).toEqual([null, '1', '2']);
+    });
+
+    it('timeline view: Show more moves focus to the first new result', async () => {
+      paged();
+      renderApp('/search?q=translate&view=timeline');
+      await screen.findByRole('link', { name: 'Result 1' });
+      await userEvent.click(screen.getByRole('button', { name: 'Show more' }));
+      const second = await screen.findByRole('link', { name: 'Result 2' });
+      await waitFor(() => expect(second).toHaveFocus());
+    });
+
+    it('a reload with a page in the URL shows every page up to it', async () => {
+      paged();
+      renderApp('/search?q=translate&page=2');
+      expect(await screen.findByRole('link', { name: 'Result 3' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Result 1' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Result 2' })).toBeInTheDocument();
+      expect(document.activeElement).not.toBe(screen.getByRole('link', { name: 'Result 3' }));
+    });
+
+    it('back from a result on an added page shows every page before the scroll position is restored', async () => {
+      const id = '11111111-1111-5111-8111-000000000002';
+      const m = paged({
+        [`GET /resources/${id}`]: () => makeDetail({ card: makeCard({ id, title: 'Result 3' }) }),
+      });
+      const { router } = renderApp('/search?q=translate&page=2');
+      const third = await screen.findByRole('link', { name: 'Result 3' });
+      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(2400);
+      await userEvent.click(third);
+      await screen.findByRole('heading', { level: 1, name: 'Result 3' });
+      const rowsAtRestore: boolean[] = [];
+      vi.mocked(window.scrollTo).mockImplementation(() => {
+        rowsAtRestore.push(screen.queryByRole('link', { name: 'Result 3' }) !== null);
+      });
+      await act(() => router.navigate(-1));
+      expect(window.scrollTo).toHaveBeenLastCalledWith(0, 2400);
+      expect(rowsAtRestore.at(-1)).toBe(true);
+      expect(m.callsTo('GET', '/search')).toHaveLength(3);
+    });
+  });
+
+  it('renders notices, expanded terms and use-case suggestions', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          notices: [
+            { code: 'CACHE_UNAVAILABLE', message: 'Cache is down; results are live only.' },
+          ],
+          interpretation: {
+            expandedTerms: ['translation', 'writing'],
+            detectedUseCases: ['translation'],
+          },
+        }),
+    });
+    const { params } = renderApp('/search?q=traduzione');
+    expect(
+      await screen.findByText('Every source was searched live, so this search may be slower.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Also searched for: translation, writing/)).toBeInTheDocument();
+    const useCases = screen.getByRole('group', { name: 'Narrow by use case:' });
+    expect(useCases.parentElement).toContainElement(
+      screen.getByRole('group', { name: 'Best for:' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Translation' }));
+    await waitFor(() => expect(params().getAll('useCase')).toEqual(['translation']));
+  });
+
+  it('labels and marks the AI translation of the query; the "not AI" note covers only the word-list terms (ADR 0033)', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          interpretation: {
+            expandedTerms: ['translation'],
+            detectedUseCases: [],
+            translatedQuery: 'document translation tool',
+          },
+        }),
+    });
+    renderApp('/search?q=strumento+per+tradurre+documenti');
+    const translated = await screen.findByText('document translation tool');
+    expect(translated).toHaveAttribute('data-ai-generated', 'true');
+    expect(translated.nextElementSibling).toHaveTextContent('Translated by AI');
+    const line = translated.closest('p') as HTMLElement;
+    expect(line).not.toHaveAttribute('data-ai-generated');
+    expect(line).toHaveTextContent(
+      'Also searched for: document translation tool Translated by AI, translation (added from a fixed word list, not AI)',
+    );
+    expect([...line.querySelectorAll('[data-ai-generated]')].map((m) => m.textContent)).toEqual([
+      'document translation tool',
+    ]);
+  });
+
+  it('a translation alone has no "not AI" note', async () => {
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          interpretation: {
+            expandedTerms: [],
+            detectedUseCases: [],
+            translatedQuery: 'document translation tool',
+          },
+        }),
+    });
+    renderApp('/search?q=herramienta+para+traducir+documentos');
+    const translated = await screen.findByText('document translation tool');
+    expect(translated.closest('p')).not.toHaveTextContent('not AI');
+  });
+
+  it('without a query it shows examples and makes no search call at all (the Radar reads /recent)', async () => {
+    const m = mockApi();
+    renderApp('/');
+    expect(await screen.findByRole('heading', { name: 'Try:' })).toBeInTheDocument();
+    await screen.findByRole('link', { name: 'Fresh MCP server' });
+    expect(m.callsTo('GET', '/search')).toHaveLength(0);
+    expect(screen.queryByRole('region', { name: 'Search results' })).not.toBeInTheDocument();
+  });
+
+  it('cancels a stale search when params change', async () => {
+    const signals: AbortSignal[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const u = new URL(String(input));
+        if (u.pathname.endsWith('/search')) {
+          if (init?.signal) signals.push(init.signal);
+          return new Promise<Response>(() => undefined);
+        }
+        return json(
+          u.pathname.endsWith('/sources')
+            ? []
+            : { authenticated: false, roles: [], loginProviders: [] },
+        );
+      }),
+    );
+    const { router } = renderApp('/search?q=one');
+    await waitFor(() => expect(signals).toHaveLength(1));
+    await act(() => router.navigate('/?q=two'));
+    await waitFor(() => expect(signals[0]?.aborted).toBe(true));
+    await settle();
+  });
+
+  it('back from a result shows the same results at once and keeps the scroll position', async () => {
+    const m = mockApi({
+      'GET /resources/11111111-1111-5111-8111-111111111111': () => makeDetail(),
+    });
+    const { router } = renderApp('/search?q=translate');
+    const title = await screen.findByRole('link', { name: 'Acme Translator' });
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(840);
+    await userEvent.click(title);
+    await screen.findByRole('heading', { level: 1, name: 'Acme Translator' });
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 0);
+
+    await act(() => router.navigate(-1));
+    expect(screen.getByRole('link', { name: 'Acme Translator' })).toBeInTheDocument();
+    expect(screen.queryByText('Searching the listed sources…')).not.toBeInTheDocument();
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 840);
+    expect(m.callsTo('GET', '/search')).toHaveLength(1);
+  });
+});
