@@ -15,6 +15,7 @@ public class AddBookmark {
 
   public Bookmark add(UUID userId, Bookmark bookmark) {
     BookmarkRules.requireWebUrl(bookmark.url());
+    bookmarks.lockForChange(userId);
     bookmarks.addMissing(userId, List.of(bookmark));
     BookmarkRules.requireWithinCap(bookmarks.count(userId));
     return bookmarks.list(userId).stream()

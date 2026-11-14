@@ -9,6 +9,8 @@ public interface Bookmarks {
 
   record Bookmark(UUID resourceId, String title, URI url, String type, Instant savedAt) {}
 
+  void lockForChange(UUID userId);
+
   List<Bookmark> list(UUID userId);
 
   void addMissing(UUID userId, List<Bookmark> items);

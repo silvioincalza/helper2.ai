@@ -17,6 +17,14 @@ class JdbcBookmarks implements Bookmarks {
   }
 
   @Override
+  public void lockForChange(UUID userId) {
+    jdbc.sql("SELECT id FROM app_user WHERE id = :u FOR UPDATE")
+        .param("u", userId)
+        .query()
+        .listOfRows();
+  }
+
+  @Override
   public List<Bookmark> list(UUID userId) {
     return jdbc.sql(
             "SELECT resource_id, title, url, type, saved_at FROM bookmark WHERE user_id = :u ORDER BY saved_at DESC")

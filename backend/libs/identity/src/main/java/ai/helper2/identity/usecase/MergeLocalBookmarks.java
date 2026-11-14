@@ -15,6 +15,7 @@ public class MergeLocalBookmarks {
 
   public List<Bookmark> merge(UUID userId, List<Bookmark> local) {
     local.forEach(b -> BookmarkRules.requireWebUrl(b.url()));
+    bookmarks.lockForChange(userId);
     bookmarks.addMissing(userId, local);
     BookmarkRules.requireWithinCap(bookmarks.count(userId));
     return bookmarks.list(userId);
