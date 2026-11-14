@@ -175,6 +175,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
   `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/shell/Layout.tsx` — version in the footer.
 - `deploy/k8s/CI.md` — how to release, and how to patch a release.
+- `deploy/k8s/RUNBOOK-release.md` — the order of a release day: what must be true before, each step with who does
+  it and its check, the way back, what to clean up.
 - OpenBao roles `deploy` and `deploy-prod`, the Harbor robot, the GitHub rulesets for `v*` tags and `release/*`, the
   repository setting that lets workflows open pull requests — outside this repo (the platform repo, Harbor, repo
   settings).
