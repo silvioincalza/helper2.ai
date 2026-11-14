@@ -598,6 +598,10 @@ helper2.monetisation.ethical-ads-publisher = ${H2_ADS_ETHICALADS_PUBLISHER:}  =>
 helper2.monetisation.ga4-measurement-id = ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}  =>  <empty>
 helper2.monetisation.github-sponsors-url = ${H2_SUPPORT_GITHUB_SPONSORS_URL:}  =>  <empty>
 helper2.monetisation.stripe-payment-url = ${H2_SUPPORT_STRIPE_PAYMENT_URL:}  =>  <empty>
+helper2.pages.noindex = ${H2_NOINDEX:false}  =>  false
+helper2.pages.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
+helper2.pages.sitemap-limit = 50000
+helper2.pages.template = ${H2_PAGES_TEMPLATE:file:/shell/index.html}  =>  file:/shell/index.html
 helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
 helper2.rate-limit.default-per-minute = ${H2_RATE_LIMIT_DEFAULT_PER_MINUTE:120}  =>  120
 helper2.rate-limit.guide-per-minute = ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}  =>  10

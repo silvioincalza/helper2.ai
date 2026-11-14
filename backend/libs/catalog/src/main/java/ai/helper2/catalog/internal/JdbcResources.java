@@ -4,6 +4,7 @@ import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.RecordRow;
 import ai.helper2.catalog.ResourceRow;
 import ai.helper2.catalog.Resources;
+import ai.helper2.shared.WebSources;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -84,7 +85,13 @@ class JdbcResources implements Resources {
                     (r.type = 'PROMPT' AND length(btrim(r.description)) >= :promptMin)
                     OR (r.type = ANY(:types)
                         AND (r.license IS NOT NULL OR r.pricing IS NOT NULL OR r.published_at IS NOT NULL
-                             OR r.event_starts_at IS NOT NULL
+                             OR (r.event_starts_at IS NOT NULL
+                                 AND (EXISTS (SELECT 1 FROM source_record stated
+                                              WHERE stated.resource_id = r.id AND stated.source_id <> :aiRead
+                                                AND stated.source_event_starts_at IS NOT NULL)
+                                      OR NOT EXISTS (SELECT 1 FROM source_record ai_read
+                                                     WHERE ai_read.resource_id = r.id AND ai_read.source_id = :aiRead
+                                                       AND ai_read.source_event_starts_at IS NOT NULL)))
                              OR EXISTS (SELECT 1 FROM relationship rel
                                         WHERE rel.from_resource_id = r.id AND rel.to_resource_id IS NOT NULL
                                           AND rel.verification <> 'REJECTED'))))
@@ -93,6 +100,7 @@ class JdbcResources implements Resources {
                 """)
             .param("types", types.toArray(String[]::new))
             .param("promptMin", promptMin)
+            .param("aiRead", WebSources.EVENTS_SCOUT)
             .param("limit", limit)
             .query((rs, n) ->
                 new Row(
