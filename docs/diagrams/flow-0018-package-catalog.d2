@@ -1,0 +1,77 @@
+# Flowchart: how an AI library or SDK on GitHub becomes a review item with its packages (ADR 0018).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubSdkCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/SdkSearchPlan.java, SdkFacts.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/depsdev/PackageFinder.java, PackageSelection.java, NameGuesses.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt (PackageFacts),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (refreshPackageTerms), SdkSearchTerms.java.
+# Render: cd docs/diagrams && d2 fmt flow-0018-package-catalog.d2 && d2 flow-0018-package-catalog.d2 flow-0018-package-catalog.svg
+
+...@style
+
+direction: down
+
+run: "Scout run" {class: end}
+
+collector: "GitHubSdkCollector" {
+  class: group
+  direction: down
+  due: "7 days since the last pass,\nor a cursor (index or held-back)?" {class: decision}
+  notdue: "Not due" {class: end}
+  slice: "Next 20 queries of the plan:\ntopic x language (own star floor),\nthen org:{provider}" {class: app}
+  low: "Token at 10 or fewer\nsearches left?" {class: decision}
+  partial: "Stop: cursor = next query\n(partial batch)" {class: end}
+  search: "Up to 3 pages of 100, 2 s apart;\nunread results counted" {class: ext}
+  ai: "AI by the fixed word list?" {class: decision}
+  drop: "Dropped" {class: end}
+  known: "In the catalog or\nproposed before?" {class: decision}
+  skip: "Skipped (no deps.dev call)" {class: end}
+  room: "Official first; within\nthe day's room (500)?" {class: decision}
+  later: "Counted over-daily-cap,\nback next pass" {class: end}
+  due -> notdue: no
+  due -> slice: yes
+  slice -> low
+  low -> partial: yes
+  low -> search: no
+  search -> ai
+  ai -> drop: no
+  ai -> known: yes
+  known -> skip: yes
+  known -> room: no
+  room -> later: no
+}
+
+finder: "PackageFinder (deps.dev, cached for the interval)" {
+  class: group
+  direction: down
+  map: "Project -> package versions\n(404 = none; at most 1,500)" {class: ext}
+  filter: "Drop: Go module of a non-Go repo,\nbundled copies, boms, parents,\nexamples, samples; unverified look-alikes\n(scope or group not near the owner,\nplain name not the repo's)" {class: app}
+  latest: "Keep 3; default version: date,\nlicences, source repo\n(a failed lookup drops only that one)" {class: ext}
+  back: "Points back to\nthis repo?" {class: decision}
+  guess: "Capped, or no package named\nlike the repo? Try the repo name\n(not Maven, not Go); first if found" {class: app}
+  map -> filter
+  filter -> latest
+  latest -> back
+  back -> guess: kept
+}
+
+review: "Review list" {
+  class: group
+  direction: down
+  item: "Candidate: languages, official,\npackages, main licence and date,\nsearch terms" {class: data}
+  order: "Official with a package first,\nthen official, then the rest" {class: app}
+  open: "Open review item" {class: data}
+  item -> order
+  order -> open
+}
+
+admin: "Admin accepts" {class: person}
+record: "Record of the opening source:\npackage facts only if it is github-sdks;\nlicence (SPDX), updated = main release" {class: data}
+terms: "resource.package_terms from\nthe records -> search_vector (B)" {class: data}
+
+run -> collector.due
+collector.room -> finder.map: yes
+finder.guess -> review.item
+review.open -> admin
+admin -> record
+record -> terms

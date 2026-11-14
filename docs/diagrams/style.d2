@@ -1,0 +1,165 @@
+# Shared look for every Helper2 diagram. Import with `...@style` at the top of a diagram.
+# The colours are the website's light theme (frontend/src/styles/tokens.css): warm paper, indigo ink,
+# one saffron accent. Classes add meaning by colour:
+# app = indigo on paper, NVIDIA / Nemotron = green, data = lavender, external = amber, port = saffron hexagon.
+# The main path and the model calls are animated lines.
+
+vars: {
+  d2-config: {
+    pad: 60
+    theme-overrides: {
+      # Neutrals: N1 text … N7 canvas background (--ink … --bg).
+      N1: "#1B1C3F"
+      N2: "#35344F"
+      N3: "#4F4B63"
+      N4: "#8A8499"
+      N5: "#D3C7B2"
+      N6: "#E7DFD0"
+      N7: "#F7F2E9"
+      # Base: B1 strokes and lines (--accent-deep), B4–B6 fills from outer container to leaf shape.
+      B1: "#2D2E60"
+      B2: "#2D2E60"
+      B3: "#4F4B63"
+      B4: "#EFE9DD"
+      B5: "#F4EDE1"
+      B6: "#FFFDF8"
+      AA2: "#A8420A"
+      AA4: "#FDEBD3"
+      AA5: "#FBEFE2"
+      AB4: "#E3F3EE"
+      AB5: "#E6F0FB"
+    }
+  }
+}
+
+# Monospace everywhere (shapes and connections, four levels deep), like source names on the site.
+*.style.font: mono
+*.*.style.font: mono
+*.*.*.style.font: mono
+*.*.*.*.style.font: mono
+(* -> *)[*].style.font: mono
+*.(* -> *)[*].style.font: mono
+*.*.(* -> *)[*].style.font: mono
+
+classes: {
+  group: {
+    # Title outside the frame, top left: edges that enter a group at the top never cross it.
+    label.near: outside-top-left
+    style: {
+      fill: "#F4EDE1"
+      stroke: "#D3C7B2"
+      stroke-width: 2
+      font-color: "#4F4B63"
+      border-radius: 16
+      bold: true
+    }
+  }
+  # Our components: --surface, --accent-deep, --ink.
+  app: {
+    style: {
+      fill: "#FFFDF8"
+      stroke: "#2D2E60"
+      font-color: "#1B1C3F"
+      border-radius: 10
+      shadow: true
+    }
+  }
+  # NVIDIA Nemotron: --checked-bg, --status-ok, --checked-ink.
+  ai: {
+    style: {
+      fill: "#E3F3EE"
+      stroke: "#2F8F5B"
+      font-color: "#0F4D3C"
+      border-radius: 10
+      shadow: true
+    }
+  }
+  # Data stores and caches: --tag-paper-bg, --accent-deep.
+  data: {
+    style: {
+      fill: "#E6E7F5"
+      stroke: "#2D2E60"
+      font-color: "#1B1C3F"
+      shadow: true
+    }
+  }
+  # External services: --tag-model-bg, --status-warn, --tag-model-ink.
+  ext: {
+    style: {
+      fill: "#FDEBD3"
+      stroke: "#C98A0B"
+      font-color: "#7A3E00"
+      border-radius: 10
+    }
+  }
+  # Ports of the hexagon: --quote-bg, --accent (saffron), --accent-ink.
+  port: {
+    shape: hexagon
+    style: {
+      fill: "#FBEFE2"
+      stroke: "#E06A1D"
+      font-color: "#A8420A"
+    }
+  }
+  person: {
+    shape: person
+    style: {
+      fill: "#EFE9DD"
+      stroke: "#1B1C3F"
+      font-color: "#1B1C3F"
+    }
+  }
+  # The main path: saffron, animated.
+  hot: {
+    style: {
+      stroke: "#E06A1D"
+      font-color: "#A8420A"
+      stroke-width: 3
+      animated: true
+    }
+  }
+  # A call to the model: green, animated.
+  ai-call: {
+    style: {
+      stroke: "#2F8F5B"
+      font-color: "#0F4D3C"
+      stroke-width: 3
+      animated: true
+    }
+  }
+  config: {
+    style: {
+      stroke: "#8A8499"
+      stroke-dash: 4
+      font-color: "#4F4B63"
+    }
+  }
+  # Flowcharts: a branch in the code, and an end state the caller sees.
+  decision: {
+    shape: diamond
+    style: {
+      fill: "#FFFDF8"
+      stroke: "#E06A1D"
+      font-color: "#1B1C3F"
+    }
+  }
+  end: {
+    shape: oval
+    style: {
+      fill: "#FFFDF8"
+      stroke: "#1B1C3F"
+      font-color: "#1B1C3F"
+      bold: true
+    }
+  }
+  # An error end: --danger.
+  fail: {
+    shape: oval
+    style: {
+      fill: "#FDECEA"
+      stroke: "#B42318"
+      font-color: "#B42318"
+      bold: true
+    }
+  }
+}

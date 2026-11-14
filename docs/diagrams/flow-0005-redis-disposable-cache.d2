@@ -1,0 +1,48 @@
+# Flowchart: how one LIVE source is answered with the Redis cache: the redis circuit, fresh window,
+# live call under the source's policy, stale window and the CACHE_UNAVAILABLE notice.
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.start, Run.collect,
+#   stale, cachedLookup), SourceCacheKeys.kt (cacheKey), SearchNotices.kt (cacheUnavailableNotice), backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
+#   backend/libs/platform/src/main/resources/helper2-shared.yaml (resilience4j.* policies redis and source-<id>,
+#   helper2.search.stale-for = H2_SEARCH_STALE_FOR, helper2.sources.*.cache-ttl).
+# Render: cd docs/diagrams && d2 fmt flow-0005-redis-disposable-cache.d2 && d2 flow-0005-redis-disposable-cache.d2 flow-0005-redis-disposable-cache.svg
+
+...@style
+
+direction: down
+
+start: "LIVE source in a search" {class: end}
+cooldown: "Source in cooldown\nafter a rate limit?" {class: decision}
+circuit: "redis circuit open?\n(30 s after half of the\nlast calls failed)" {class: decision}
+skip: "Refused, no Redis call;\nnotice CACHE_UNAVAILABLE" {class: app}
+get: "GET h2:v1:src:{sourceId}:{hash}" {class: data}
+geterr: "Redis error?" {class: decision}
+trip: "Failure counted by the circuit;\nnotice CACHE_UNAVAILABLE" {class: app}
+fresh: "Entry age < source cacheTtl?\n(30 min; arXiv 6 h)" {class: decision}
+hit: "SUCCEEDED, served from CACHE\nno live call" {class: end}
+call: "Live call under source-<id>\nwith the source's own timeout" {class: app}
+ok: "Call succeeded?" {class: decision}
+put: "SET entry, TTL = stale-for (24 h)\n(error or refused: notice)" {class: data}
+live: "SUCCEEDED, served LIVE" {class: end}
+stale: "Entry age < stale-for (24 h)?" {class: decision}
+stalehit: "FAILED / TIMED_OUT / RATE_LIMITED\n(SKIPPED in cooldown or circuit open)\nserved from STALE_CACHE" {class: end}
+nothing: "Failure stated,\nno results from this source" {class: fail}
+
+start -> cooldown
+cooldown -> stale: "yes (no live call)"
+cooldown -> circuit: no {class: hot}
+circuit -> skip: yes
+circuit -> get: no {class: hot}
+get -> geterr
+geterr -> trip: yes
+geterr -> fresh: no {class: hot}
+skip -> call
+trip -> call
+fresh -> hit: yes {class: hot}
+fresh -> call: "no, or no entry"
+call -> ok
+ok -> put: yes
+put -> live
+ok -> stale: "no: error, timeout, rate limit,\nsource circuit open"
+stale -> stalehit: yes
+stale -> nothing: "no entry or too old"

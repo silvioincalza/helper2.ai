@@ -1,0 +1,125 @@
+# Flowchart: where a piece of backend code goes (an app or a library), then the checks it meets: Gradle's dependency
+# direction, then the class rules ModularityTest (each app) and a library's own architecture test check on every
+# build, in the order a dependency meets them, and the module dependencies that pass them today (open modules left
+# out: everyone may use them).
+# Source of truth: backend/settings.gradle.kts, backend/build.gradle.kts (checkNoRootSources),
+#   backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts, helper2.spring-app.gradle.kts,
+#   backend/libs/*/build.gradle.kts (web-contract included), backend/apps/{public,backoffice}/build.gradle.kts,
+#   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java,
+#   backend/libs/identity/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java,
+#   backend/libs/web-contract/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java,
+#   backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
+#   .../catalog/usecase/package-info.java, .../search/web/CardMapper.java (@NamedInterface("cards")).
+# Render: cd docs/diagrams && d2 fmt flow-0002-modular-monolith-libraries-and-apps.d2 && d2 flow-0002-modular-monolith-libraries-and-apps.d2 flow-0002-modular-monolith-libraries-and-apps.svg
+
+...@style
+
+direction: down
+
+code: "New or moved code" {class: person}
+
+place: Where it goes {
+  class: group
+  direction: down
+  common: "A controller of a path\nin api/common.yaml?" {class: decision}
+  driving: "A controller, a schedule,\nthe app's own contract,\nthe wiring?" {class: decision}
+  shared: "Needed by more\nthan one app?" {class: decision}
+  web: "libs/web-contract\n(common.yaml generated once,\nits controllers)" {class: data}
+  app: "apps/<app>\n(boot jar)" {class: app}
+  lib: "libs/<context>\ndomain, use cases,\ndriven adapters" {class: data}
+  common -> web: yes
+  common -> driving: no
+  driving -> app: yes
+  driving -> shared: no
+  shared -> lib: yes {class: hot}
+  shared -> app: no
+}
+
+build: Build checks {
+  class: group
+  direction: down
+  root: "File in backend/src/?" {class: decision}
+  e_root: "checkNoRootSources:\nbuild stops" {class: fail}
+  dir: "Library depends\non an app, or a cycle?" {class: decision}
+  e_dir: "Gradle refuses\nthe dependency" {class: fail}
+  root -> e_root: yes
+  root -> dir: no
+  dir -> e_dir: yes
+}
+
+code -> place.common
+place.web -> build.root
+place.app -> build.root
+place.lib -> build.root
+build.dir -> rules.dep: no
+
+rules: "Class A depends on class B: ModularityTest (each app),\na library's own architecture test" {
+  class: group
+  direction: down
+  dep: "A → B" {class: end}
+  domain: "A in a domain package?\n(shared, search, scout, guide,\nsetup, examples, site,\nsite.pages, site.monetisation,\nthe Kotlin search/scout/guide\n.usecase, identity, admin\nand their .usecase)" {class: decision}
+  fw: "B in org.springframework..,\ntools.jackson.. or java.sql..?" {class: decision}
+  adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
+  same: "B in A's own module?" {class: decision}
+  src: "B in sources?\n(no API: its base\npackage is empty)" {class: decision}
+  gen: "A in libs/web-contract and B an\napp's generated type (api.generated)?" {class: decision}
+  open: "B's module is open?\n(shared, platform, api)" {class: decision}
+  public: "B in the module's base package\nor a named interface?\n(search.usecase, catalog.usecase,\nsearch.web cards)" {class: decision}
+  cycle: "Creates a cycle\nbetween modules?" {class: decision}
+  ok: "Allowed" {class: end}
+  e_fw: "Build fails:\ndomainIsFrameworkFree" {class: fail}
+  e_ad: "Build fails:\ndomainDoesNotDependOnItsAdapters" {class: fail}
+  e_mod: "Build fails:\nApplicationModules.verify()" {class: fail}
+  e_src: "Build fails:\nsourcesIsReachedOnlyThroughPorts" {class: fail}
+  e_gen: "Build fails:\nWebContractArchitectureTest" {class: fail}
+
+  dep -> domain
+  domain -> fw: yes
+  domain -> same: no
+  fw -> e_fw: yes
+  fw -> adapter: no
+  adapter -> e_ad: yes
+  adapter -> same: no
+  same -> ok: yes {class: hot}
+  same -> src: no
+  src -> e_src: yes
+  src -> gen: no
+  gen -> e_gen: yes
+  gen -> open: no
+  open -> ok: yes
+  open -> public: no
+  public -> e_mod: no
+  public -> cycle: yes
+  cycle -> e_mod: yes
+  cycle -> ok: no {class: hot}
+}
+
+today: "Module dependencies that pass today" {
+  class: group
+  direction: down
+  sources: "sources\n(SearchSource, Collector\nadapters)" {class: app}
+  scout: "scout\n(Kotlin rules)" {class: app}
+  setup: "setup\n(Kotlin rules)" {class: app}
+  guide: "guide\n(Kotlin rules)" {class: app}
+  catalog: "catalog\n(Spring services over SQL)" {class: app}
+  identity: "identity" {class: app}
+  search: "search\n(Kotlin rules, ports;\nSpringAiQueryTranslator\nin search.internal)" {class: port}
+  web: "search.web in libs/web-contract\n(SearchController,\nCategoriesController, CardMapper)" {class: app}
+  site: "site (public app)\npages, policy, monetisation, csp;\nno module names it" {class: app}
+
+  sources -> scout: "Collector, ports"
+  sources -> search: "SearchSource"
+  scout -> catalog: "catalog.usecase"
+  setup -> catalog: "catalog.usecase"
+  guide -> search: "usecase, cards"
+  catalog -> search: "ports, cards"
+  scout -> search: "cards, models"
+  setup -> search: "cards"
+  web -> search: "usecase"
+  site -> catalog: "catalog.usecase,\nCatalogPolicy, ScoutPolicy"
+  site -> identity: "AccountPolicy"
+  site -> guide: "GuidePolicy"
+  site -> search: "SearchPolicy, cards"
+}
+
+rules.ok -> today: "checked over every class" {class: config}

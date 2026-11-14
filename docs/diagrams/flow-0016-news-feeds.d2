@@ -1,0 +1,46 @@
+# Flowchart: how one news feed becomes NEWS records (ADR 0016).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/NewsFeedCollector.java (collect, hits, isAbout),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/FeedReader.java (read, rssItem, atomEntry),
+#   backend/libs/sources/src/main/java/ai/helper2/sources/config/FeedProperties.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogRetention.java (deleteWebNewsRetrievedBefore).
+# Render: cd docs/diagrams && d2 fmt flow-0016-news-feeds.d2 && d2 flow-0016-news-feeds.d2 flow-0016-news-feeds.svg
+
+...@style
+
+direction: down
+
+run: "Scout run reaches feed-<id>" {class: end}
+switch: "Feeds switched on?\n(H2_SOURCE_NEWS_FEEDS_ENABLED,\ndefault true; feed enabled)" {class: decision}
+skipped: "SKIPPED (DISABLED)" {class: end}
+due: "Read today already?\n(interval 1 day)" {class: decision}
+notdue: "Not due" {class: end}
+
+collector: "NewsFeedCollector" {
+  class: group
+  direction: down
+  call: "GET feed URL (https)\nAccept: RSS, Atom, XML\n≤ 2 MB" {class: ext}
+  xml: "RSS 2.0 or Atom?\n(no DTD, no external entity)" {class: decision}
+  bad: "Run FAILED\n(malformed response)" {class: end}
+  post: "Title and http(s) link?" {class: decision}
+  words: "Required words?\n(whole word; word* = start)" {class: decision}
+  hit: "NEWS hit: title, link,\ndate (RSS pubDate, Atom published\nor updated), summary ≤ 400 chars" {class: app}
+  drop: "Left out\n(counted off-topic)" {class: end}
+  call -> xml
+  xml -> bad: no
+  xml -> post: yes
+  post -> drop: no
+  post -> words: yes
+  words -> drop: no
+  words -> hit: yes
+}
+
+index: "Indexed without review\n(first 100 posts, checkpoint = now)" {class: hot}
+purge: "Purge: record gone 180 days\nafter the feed last listed it" {class: app}
+
+run -> switch
+switch -> skipped: no
+switch -> due: yes
+due -> notdue: yes
+due -> collector.call: no
+collector.hit -> index
+index -> purge

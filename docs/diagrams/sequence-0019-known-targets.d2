@@ -1,0 +1,47 @@
+# Sequence: an owner is proposed as a vendor and accepted; a service several resources name becomes a known target,
+# and the waiting relationships are confirmed (ADR 0019).
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (proposeKnownTargetsQuietly),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcKnownTargetCandidates.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (knownNow).
+# Render: cd docs/diagrams && d2 fmt sequence-0019-known-targets.d2 && d2 sequence-0019-known-targets.d2 sequence-0019-known-targets.svg
+
+...@style
+
+shape: sequence_diagram
+
+scout: RunScout {class: app}
+enrich: EnrichResource {class: app}
+model: "Reasoning model" {class: ai}
+validator: EvidenceValidator {class: app}
+pg: PostgreSQL {class: data}
+admin: Admin {class: person}
+api: "Back office API" {class: app}
+
+scout -> pg: "end of run, owner rule: meta-llama owns 22 resources\nof the GitHub and Hugging Face sources,\nno known target, never proposed"
+scout -> pg: "review item KNOWN_TARGET_CANDIDATE\n(meta-llama, VENDOR, OWNER, 22, examples)"
+admin -> api: "change the proposal: Meta,\nother name meta-llama"
+api -> pg: "details of the open item, audit entry"
+admin -> api: "accept"
+api -> pg: "Meta is a known vendor: it gets the other name\nmeta-llama; decision for the key meta-llama,\naudit entries"
+scout -> enrich: "enrich(resource)"
+enrich -> pg: "load material, known resources\nand known target names"
+enrich -> model: "prompt: relationships with targetKind\n(PRODUCT, VENDOR or SERVICE)"
+model -> enrich: "INTEGRATES_WITH Slack,\ntargetKind SERVICE, quote"
+enrich -> validator: "check(answer, input)"
+validator -> enrich: "Slack is no known target and no resource:\nUNVERIFIED, stated kind SERVICE"
+enrich -> pg: "relationship (stated_target_kind SERVICE),\nreview item RELATIONSHIP_CANDIDATE"
+scout -> pg: "step 3b: end of run, agreement rule: Slack stated SERVICE\nby 3 resources of 3 owners, never proposed"
+scout -> pg: "review item KNOWN_TARGET_CANDIDATE\n(Slack, SERVICE, AGREEMENT, 3, examples)"
+admin -> api: "accept (name and kind as proposed)"
+api -> pg: "known_target Slack SERVICE DISCOVERED,\nits name key, decision, audit entry"
+scout -> pg: "next run, confirming step: open candidates that\nname Slack → VERIFIED, target_kind SERVICE,\nitems SUPERSEDED"
+scout -> enrich: "enrich(another resource)"
+enrich -> validator: "check(answer, input with Slack as a known name)"
+validator -> enrich: "VERIFIED, target_kind SERVICE"
+admin -> api: "remove Slack (while the model answers)"
+api -> pg: "lock the known targets, release its relationships,\ndelete the target, audit entry"
+enrich -> pg: "save: shared lock first, read the names again:\nSlack is gone → UNVERIFIED, no target_kind,\nopen RELATIONSHIP_CANDIDATE"

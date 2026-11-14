@@ -1,0 +1,53 @@
+# Sequence: the self-hosted category finds an app, the local-ai category finds it too a day later, and an admin
+# accepts it.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (collect, proposeCandidates),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/ScoutLiveWebCredits.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/ReviewQueue.java (proposeCandidate, openCandidate, updateCandidate),
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
+# Render: cd docs/diagrams && ./render.sh
+
+...@style
+
+shape: sequence_diagram
+
+runner: RunScout {class: app}
+col: "DiscoveryCollector\n(discovery-self-hosted,\none bean per category)" {class: app}
+credits: "ScoutLiveWebCredits\n(Redis)" {class: data}
+tavily: "Tavily API" {class: ext}
+catalog: "CatalogIndex\n(catalog)" {class: app}
+review: ReviewQueueCandidateReview {class: app}
+queue: "ReviewQueue\n(review_item)" {class: data}
+person: "Admin" {class: person}
+resolve: ResolveReview {class: app}
+accept: IndexAcceptedCandidate {class: app}
+
+runner -> col: "collect(cursor, 1000)"
+col -> credits: "capReached? no (12 of 40 today)"
+col -> tavily: "POST /search\n(\"open-source self-hosted AI app...\",\ninclude_usage, include_published_date)"
+tavily -> col: "10 results, request_id, usage.credits 2"
+col -> credits: "add 2 to the global and the Scout's credits\n(each attempt counts, a retried one too)"
+col -> credits: "capReached? before the next search"
+col -> col: "sort: product sites, list pages,\ndropped; tag every category whose\nwords it has; keep the search facts"
+col -> runner: "hits: 1 ARTICLE;\ncandidates: openwebui.com\n(PRODUCT; self-hosted, local-ai);\ncheckpoint only when every search answered,\nelse nextCursor lists the ones that did"
+runner -> catalog: "index(ARTICLE with its facts)"
+runner -> review: "propose(discovery-self-hosted, candidates)"
+review -> queue: "proposeCandidate(RESOURCE_CANDIDATE,\nurl, reason, JSON v2)"
+queue -> review: "opened"
+runner -> review: "next day: propose(discovery-local-ai,\nopenwebui.com)"
+review -> queue: "proposeCandidate: not opened"
+review -> queue: "openCandidate(url): OPEN item"
+review -> queue: "updateCandidate: tags joined,\nfoundBy + discovery-local-ai"
+person -> resolve: "PUT /admin/review-items/{id}/resolution\nACCEPTED"
+resolve -> queue: "find(id): OPEN RESOURCE_CANDIDATE"
+resolve -> accept: "accept(details)"
+accept -> accept: "ResourceCandidateJson.read;\ncheck source, URL, type, tags"
+accept -> queue: "CatalogLookup.listedAs(url): none\n(a listed one: nothing indexed, ACCEPTED,\nalreadyListed = its id and title)"
+accept -> catalog: "index(one record of discovery-self-hosted,\nfacts: discovery, categories, foundBy)"
+catalog -> accept: "resource id"
+resolve -> queue: "decide ACCEPTED (same transaction);\nthe decision kept in candidate_decision"
+resolve -> person: "200 ACCEPTED"

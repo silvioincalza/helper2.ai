@@ -1,0 +1,91 @@
+# Flowchart: how a name becomes a known target (vendor or service), and what a known target does to a relationship
+# (ADR 0019).
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (the steps at the end of a run),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (knownNow, asKnownNow),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/ManageKnownTargets.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcKnownTargetCandidates.java (proposeOwners),
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java (addKnownTarget),
+#   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (known_target, known_target_name).
+# Render: cd docs/diagrams && d2 fmt flow-0019-known-targets.d2 && d2 flow-0019-known-targets.d2 flow-0019-known-targets.svg
+
+...@style
+
+direction: down
+
+run: "End of a Scout run" {class: end}
+
+owner: "Owner rule (SQL, no model)" {
+  class: group
+  direction: down
+  count: "Resources per owner\n(records of the GitHub and Hugging Face\nsources, title owner/name)" {class: data}
+  enough: "5 resources or more?" {class: decision}
+  count -> enough
+}
+
+agree: "Agreement rule (SQL), not built yet" {
+  class: group
+  direction: down
+  stated: "Kind the model stated per target\n(stated_target_kind, AI-estimated)" {class: ai}
+  three: "VENDOR or SERVICE by 3 resources\nof 3 different owners,\nmore often than any other kind?" {class: decision}
+  resource: "Names a catalog resource\nby the name rule?" {class: decision}
+  stated -> three
+  three -> resource: yes
+}
+
+none: "No proposal" {class: end}
+
+proposal: "Proposal" {
+  class: group
+  direction: down
+  known: "Known target, or\nproposed before?" {class: decision}
+  cap: "25 new proposals today\nalready opened?" {class: decision}
+  later: "Waits for the next run" {class: end}
+  item: "Review item KNOWN_TARGET_CANDIDATE\n(name, kind, rule, count, examples)" {class: data}
+  known -> cap: no
+  cap -> later: yes
+  cap -> item: no
+}
+
+admin: "Admin: change the name, the kind\nand the other names, then\naccept or reject" {class: person}
+holds: "A target of the same kind\nalready has the name?" {class: decision}
+extend: "That target gets\nthe other names" {class: data}
+rejected: "Rejected: the name is remembered\nand never proposed again" {class: end}
+settings: "Admin adds, renames or removes\na name on the Settings page" {class: person}
+table: "known_target and known_target_name\n(seeded with 31 vendors)" {class: data}
+
+use: "What a known target does" {
+  class: group
+  direction: down
+  validator: "EvidenceValidator: a relationship names\na known target → VERIFIED, target_kind,\nno target resource, no review item" {class: app}
+  confirm: "End of a run: open relationship candidates\nthat name it → VERIFIED, item SUPERSEDED" {class: app}
+  removed: "Name removed: its relationships lose\ntarget_kind, become UNVERIFIED and each\ngets an open RELATIONSHIP_CANDIDATE" {class: app}
+  save: "Save of an enrichment: shared lock first,\nread the names again" {class: app}
+  still: "Name still known?" {class: decision}
+  kept: "VERIFIED with the kind\nthe table has now" {class: app}
+  gone: "UNVERIFIED, no target_kind,\nopen RELATIONSHIP_CANDIDATE\n(reason of a removal)" {class: app}
+  validator -> save
+  save -> still
+  still -> kept: yes
+  still -> gone: no
+}
+
+run -> owner.count
+run -> agree.stated
+owner.enough -> none: no
+owner.enough -> proposal.known: yes
+agree.three -> none: no
+agree.resource -> none: yes
+agree.resource -> proposal.known: no
+proposal.known -> none: yes
+proposal.item -> admin
+admin -> rejected: reject
+admin -> holds: accept
+holds -> table: "no: new target (DISCOVERED)"
+holds -> extend: yes
+extend -> table
+settings -> table: CURATED
+table -> use.validator
+table -> use.confirm
+settings -> use.removed: "remove (lock first)"

@@ -1,0 +1,43 @@
+# Flowchart: which file gives a setting its value (ADR 0007 §19-21).
+# The shared file is imported by the first document of each app's application.yaml, so the app's own documents win;
+# an H2_ variable fills the placeholder wherever the key is written.
+# Source of truth: backend/libs/platform/src/main/resources/helper2-shared.yaml,
+#   backend/apps/{public,backoffice}/src/main/resources/application.yaml,
+#   backend/libs/platform/src/test/java/ai/helper2/platform/config/SharedSettingsTest.java,
+#   backend/libs/platform/src/testFixtures/java/ai/helper2/testing/ResolvedConfiguration.java.
+# Render: cd docs/diagrams && d2 fmt flow-0007-settings-files.d2 && d2 flow-0007-settings-files.d2 flow-0007-settings-files.svg
+
+...@style
+
+direction: down
+
+start: "Startup: Spring reads\nthe app's application.yaml" {class: end}
+import: "Document 1: spring.config.import\nclasspath:helper2-shared.yaml\n(platform library)" {class: config}
+key: "A key is bound to a record" {class: app}
+own: "In a document of the app's file\nthat counts? (no profile,\nor a profile in H2_PROFILES)" {class: decision}
+ownwins: "The app's value:\nits last such document" {class: config}
+shared: "In a document of the shared file\nthat counts?" {class: decision}
+sharedwins: "The shared value:\nits last such document" {class: config}
+none: "No value: startup fails,\nnaming the property (§8)" {class: fail}
+placeholder: "Value written as\n\${H2_NAME:default}?" {class: decision}
+literal: "The value as written" {class: end}
+variable: "H2_NAME set? (pod environment;\n.env on a laptop)" {class: decision}
+fromenv: "The variable's value" {class: end}
+hasdefault: "A default after the colon?" {class: decision}
+default: "The default" {class: end}
+
+start -> import: {class: hot}
+import -> key: {class: hot}
+key -> own
+own -> ownwins: yes
+own -> shared: no {class: hot}
+shared -> sharedwins: yes {class: hot}
+shared -> none: no
+ownwins -> placeholder
+sharedwins -> placeholder: {class: hot}
+placeholder -> literal: no
+placeholder -> variable: yes {class: hot}
+variable -> fromenv: yes {class: hot}
+variable -> hasdefault: no
+hasdefault -> default: yes
+hasdefault -> none: no

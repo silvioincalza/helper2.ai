@@ -1,0 +1,26 @@
+# Sequence: one Scout pass over one news feed (ADR 0016).
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/NewsFeedCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/FeedReader.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/NewsFeedCollectorRegistrar.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0016-news-feeds.d2 && d2 sequence-0016-news-feeds.d2 sequence-0016-news-feeds.svg
+
+...@style
+
+shape: sequence_diagram
+
+scout: RunScout {class: app}
+collector: "NewsFeedCollector\n(feed-openai)" {class: app}
+reader: FeedReader {class: app}
+vendor: "openai.com" {class: ext}
+catalog: "catalog (Postgres)" {class: app}
+
+scout -> collector: "collect(checkpoint, cursor, budget)"
+collector -> collector: "due? (interval 1 day)"
+collector -> vendor: "GET /news/rss.xml\n(circuit collector-news-feeds, retry on 5xx)"
+vendor -> collector: "RSS 2.0 as bytes (≤ 2 MB)"
+collector -> reader: "read(bytes, HTTP charset or none, feed URL)"
+reader -> collector: "posts: title, link, date, summary"
+collector -> collector: "required words, first 100 posts"
+collector -> scout: "NEWS hits, checkpoint = now"
+scout -> catalog: "index hits (no review), retrieved_at = now"

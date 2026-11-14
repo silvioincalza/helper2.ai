@@ -1,0 +1,55 @@
+# Flowchart: one image per deployable, from the image builds to how the running site answers one request.
+# Shows the Dockerfile stages, the JVM flags, the web image's rules, and the public app's shell for every client route.
+# Source of truth: deploy/web.Dockerfile, deploy/web/nginx.conf, deploy/Dockerfile,
+#   backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java, backend/libs/platform/.../ClientRoutes.java,
+#   backend/libs/platform/src/main/resources/helper2-shared.yaml (spring.threads.virtual, spring.web.resources.add-mappings,
+#   helper2.pages.template).
+# Render: cd docs/diagrams && d2 fmt flow-0001-stack-and-runtime.d2 && d2 flow-0001-stack-and-runtime.d2 flow-0001-stack-and-runtime.svg
+
+...@style
+
+direction: down
+
+webimg: deploy/web.Dockerfile (web image) {
+  class: group
+  direction: down
+  web: "Stage web (node:26-alpine):\nnpm ci, gen:api, tsc, vite build\n→ frontend/dist" {class: app}
+  nginx: "Runtime (nginx-unprivileged, user 101):\n/assets, theme.js, favicon.svg served;\nindex.html kept as the shell, not served" {class: app}
+  web -> nginx
+}
+
+build: deploy/Dockerfile (public app image) {
+  class: group
+  direction: down
+  app: "Stage app (temurin:25-jdk):\ngradlew bootJar\n(no web files)" {class: app}
+  run: "Runtime (temurin:25-jre, user 10001):\njava -XX:MaxRAMPercentage=60\n-XX:+ExitOnOutOfMemoryError" {class: app}
+  app -> run
+}
+
+serve: One request {
+  class: group
+  direction: down
+  req: "GET <path>" {class: end}
+  files: "/assets/<file>, /theme.js\nor /favicon.svg? (Ingress)" {class: decision}
+  hashed: "web pods: the file;\n/assets a year, immutable;\nroot files 5 minutes" {class: end}
+  ctrl: "public app (port 8080, virtual thread):\na controller matches?\n(/api/v1/**, /oauth2, /login,\n/logout, /actuator, robots.txt)" {class: decision}
+  api: "Controller answers\n(same origin, no CORS)" {class: end}
+  route: "ClientRoutes.owns: no extension,\nnot api/ oauth2/ login/\nactuator/ or logout?" {class: decision}
+  built: "shell read at start?\n(file:/shell/index.html; none in\ndevelopment: Vite serves the UI)" {class: decision}
+  index: "the shell with the page's head,\nno-cache (client router takes over)" {class: end}
+  nf: "404" {class: fail}
+
+  req -> files
+  files -> hashed: yes
+  files -> ctrl: no {class: hot}
+  ctrl -> api: yes
+  ctrl -> route: no
+  route -> built: yes {class: hot}
+  route -> nf: no
+  built -> index: yes {class: hot}
+  built -> nf: no
+}
+
+webimg.nginx -> serve.hashed: "web pods" {class: hot}
+webimg.nginx -> build.run: "init container: the shell\nof the same tag → /shell"
+build.run -> serve.ctrl: "pod starts\n(Spring Boot 4.1, Java 25 + Kotlin)" {class: hot}

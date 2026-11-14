@@ -1,0 +1,31 @@
+# Sequence: one Scout pass over PyPI through BigQuery (ADR 0017).
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/BigQueryClient.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/GoogleAccessTokens.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0017-pypi-through-bigquery.d2 && d2 sequence-0017-pypi-through-bigquery.d2 sequence-0017-pypi-through-bigquery.svg
+
+...@style
+
+shape: sequence_diagram
+
+scout: RunScout {class: app}
+collector: PypiCollector {class: app}
+bq: BigQueryClient {class: app}
+tokens: GoogleAccessTokens {class: app}
+oauth: "oauth2.googleapis.com" {class: ext}
+api: "bigquery.googleapis.com" {class: ext}
+catalog: "catalog and review list" {class: app}
+
+scout -> collector: "collect(checkpoint, cursor, budget)"
+collector -> bq: "query(SQL, since, limit)\n(circuit collector-pypi)"
+bq -> tokens: "current()"
+tokens -> oauth: "POST /token: JWT signed with the key\n(only when the token ends in < 5 min)"
+oauth -> tokens: "access token, 1 hour"
+bq -> api: "POST /projects/helper2ai/queries\n(maximumBytesBilled, named parameters)"
+api -> bq: "rows, or jobComplete false"
+bq -> api: "GET /queries/<job>: wait, then pages"
+api -> bq: "rows"
+bq -> collector: "one row per package"
+collector -> scout: "LIBRARY hits, review candidates, cursor or checkpoint"
+scout -> catalog: "index hits; propose candidates (≤ 20 a day)"

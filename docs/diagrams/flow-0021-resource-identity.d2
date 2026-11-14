@@ -1,0 +1,40 @@
+# Flowchart: how one hit gets the id of its resource (ADR 0021).
+# Source of truth: backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt (of, github),
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/ResourceId.kt (of),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt (joiningRepositories, group, identity),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsertResources, upsertRecords).
+# Render: cd docs/diagrams && d2 fmt flow-0021-resource-identity.d2 && d2 flow-0021-resource-identity.d2 flow-0021-resource-identity.svg
+
+...@style
+
+direction: down
+
+hit: "A hit from a source\n(its URL, the repository it states)" {class: end}
+canon: "CanonicalUrl.of: https, host in lower case,\nno www, port, fragment, tracking\nparameters or trailing slash" {class: app}
+none: "No canonical URL\n(dot segment, no host):\nthe hit is left out" {class: end}
+host: "GitHub, arXiv or\nHugging Face?" {class: decision}
+rules: "Host rule: owner/repo in lower case;\na file or an issue names the repository;\ntree/{ref}/{path} -> tree/HEAD/{path};\nevery view of a paper -> arxiv.org/abs/{id}" {class: app}
+states: "States a repository?\n(npm links.repository,\nPyPI source link)" {class: decision}
+repo: "Identity = the repository's address" {class: hot}
+own: "Identity = its own address,\na GitHub URL first" {class: app}
+id: "ResourceId = UUID v5 of the identity" {class: app}
+known: "resource.canonical_url\nalready stored?" {class: decision}
+insert: "Insert the resource" {class: data}
+merge: "Same row, same id:\nnew facts are merged,\na stronger origin keeps its fields" {class: data}
+record: "source_record (source_id, external_id)\nis a record of that resource" {class: data}
+
+hit -> canon
+canon -> none: none
+canon -> host: a URL
+host -> rules: yes
+host -> states: no
+rules -> states
+states -> repo: yes
+states -> own: no
+repo -> id
+own -> id
+id -> known
+known -> insert: no
+known -> merge: yes
+insert -> record
+merge -> record

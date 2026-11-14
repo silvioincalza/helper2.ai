@@ -1,0 +1,72 @@
+# Flowchart: how a runtime setting is changed and applied (ADR 0007).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ChangeRuntimeSetting.java, ResetRuntimeSetting.java,
+#   admin/web/RuntimeSettingsController.java, admin/config/SettingsReloadAfterCommit.java,
+#   platform/settings/RuntimeSetting.java, RuntimeSettings.java,
+#   JdbcRuntimeSettingStore.java, RuntimeSettingsConfiguration.java, platform/llm/DailyBudget.java,
+#   frontend/src/admin/RuntimeSettingsPanel.tsx.
+# Render: cd docs/diagrams && d2 fmt flow-0007-runtime-settings.d2 && d2 flow-0007-runtime-settings.d2 flow-0007-runtime-settings.svg
+
+...@style
+
+direction: down
+
+req: "PUT /api/v1/admin/runtime-settings/{key}\n(back office, ADMIN, CSRF)" {class: end}
+
+change: ChangeRuntimeSetting {
+  class: group
+  direction: down
+  known: "Key in the allow-list?" {class: decision}
+  notfound: "404" {class: fail}
+  reason: "Reason one plain line?\n(no control or format character)" {class: decision}
+  badreason: "400, nothing stored" {class: fail}
+  range: "0 ≤ value ≤ code max?" {class: decision}
+  bad: "400, audited OUT_OF_RANGE" {class: fail}
+  lock: "Advisory lock;\nnewest version = sent version?" {class: decision}
+  stale: "409, audited CONFLICT" {class: fail}
+  append: "Append row (value, who, when, reason)\n+ audit row before/after, one transaction" {class: data}
+  commit: "After commit: this replica\nreads the settings again" {class: app}
+  unread: "Read fails: the change stays stored, 200;\nWARN with the failure's class, no value;\nthe next refresh applies it" {class: fail}
+  known -> notfound: no
+  known -> reason: yes
+  reason -> badreason: no
+  reason -> range: yes
+  range -> bad: no
+  range -> lock: yes
+  lock -> stale: no
+  lock -> append: yes
+  append -> commit
+  commit -> unread: fails
+}
+
+req -> change.known
+
+refresh: "Each replica, every second" {
+  class: group
+  direction: down
+  due: "Refresh interval\npassed? (20 s)" {class: decision}
+  wait: "Keep the snapshot" {class: end}
+  version: "Store version changed?" {class: decision}
+  read: "Read newest row per setting;\nclamp to code max" {class: data}
+  newer: "Snapshot applied unchanged while\nreading? (reloads run one at a time)" {class: decision}
+  apply: "New snapshot" {class: data}
+  due -> wait: no
+  due -> version: yes
+  version -> wait: "no, or the store cannot answer"
+  version -> read: yes
+  read -> newer
+  newer -> apply: yes
+  newer -> wait: "no (a later read applied a newer one)"
+}
+
+use: "Hot path (guide, translation, Tavily, enrichment)" {
+  class: group
+  direction: down
+  limit: "Supplier: override in snapshot?" {class: decision}
+  override: "Override" {class: end}
+  default: "H2_ default\n(an empty cap: the code max)" {class: end}
+  limit -> override: yes
+  limit -> default: no
+}
+
+change.commit -> refresh.read: "same replica, at once" {style.stroke-dash: 3}
+refresh.apply -> use.limit: "AtomicReference" {style.stroke-dash: 3}
