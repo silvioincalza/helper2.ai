@@ -15,9 +15,10 @@ export type Field = (typeof FIELDS)[number];
 
 const CARD_FIELD: Partial<Record<Field, string>> = { useCase: 'useCases' };
 
-interface DisputedValue {
+export interface DisputedValue {
   value: string;
   sourceId?: string | undefined;
+  aiOrigin?: ValueOrigin | undefined;
 }
 
 export type FieldState =
@@ -49,7 +50,10 @@ function fromEnrichment(field: Field, assertions: Assertion[]): FieldState {
   const mine = assertions.filter((a) => a.field === field && isAiOrigin(a.origin));
   const conflict = mine.filter((a) => a.verification === 'CONFLICTING');
   if (conflict.length)
-    return { kind: 'conflict', values: conflict.map((a) => ({ value: a.value })) };
+    return {
+      kind: 'conflict',
+      values: conflict.map((a) => ({ value: a.value, aiOrigin: a.origin })),
+    };
   for (const origin of ['AI_EXTRACTED', 'SELF_DECLARED'] as const) {
     const verified = mine.filter((a) => a.origin === origin && a.verification === 'VERIFIED');
     if (verified.length) return { kind: 'values', values: verified.map((a) => a.value), origin };

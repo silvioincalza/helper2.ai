@@ -4,6 +4,7 @@ import type { ResourceDetail } from '@/api/types';
 import { OriginLabel } from '@/ui/Badges';
 import { Icon } from '@/ui/Icon';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { DisputedValues } from './DisputedValues';
 import { fieldWord, stateOf, type Field, type FieldState } from './fieldState';
 
 const USE: Field[] = ['pricing', 'platforms', 'useCase', 'audience'];
@@ -32,12 +33,13 @@ export function AtAGlance({
       return (
         <dd className="is-conflict">
           <Icon name="warn" /> {t('date.conflicting')}:{' '}
-          {state.values
-            .map((v) => {
+          <DisputedValues
+            values={state.values}
+            word={(v) => {
               const word = fieldWord(t, field, v.value);
               return v.sourceId ? `${word} (${v.sourceId})` : word;
-            })
-            .join(' · ')}
+            }}
+          />
         </dd>
       );
     const words = state.values.map((v) => fieldWord(t, field, v)).join(', ');
