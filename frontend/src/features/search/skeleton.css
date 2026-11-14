@@ -6,9 +6,6 @@
   margin: 0 auto;
   padding: var(--space-4) 0 var(--space-7);
 }
-.h2-results__box {
-  max-width: 680px;
-}
 .h2-results__loading-line {
   margin: 0;
   font: var(--type-meta);

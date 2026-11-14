@@ -314,7 +314,7 @@ body {
 }
 .h2-app .searchbox.large .one-box-ask {
   min-height: 46px;
-  padding: 0 var(--space-4);
+  padding: 0;
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -339,8 +339,7 @@ body {
   .h2-app .searchbox.large .searchbox-field {
     flex: 1 1 calc(100% - var(--target-min) - var(--space-2));
   }
-  .h2-app .searchbox.large .btn-primary,
-  .h2-app .searchbox.large .btn.one-box-ask {
+  .h2-app .searchbox.large .btn-primary {
     flex: 1 1 30%;
     padding: 0 var(--space-3);
   }

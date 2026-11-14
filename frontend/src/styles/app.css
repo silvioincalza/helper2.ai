@@ -957,25 +957,15 @@ tbody th {
   justify-content: center;
   min-width: var(--target-min);
   min-height: var(--target-min);
+  aspect-ratio: 1;
+  padding: 0;
   background: var(--surface);
-  white-space: nowrap;
 }
 .searchbox.large .btn.one-box-ask {
   flex: 0 0 auto;
 }
 .one-box-ask__icon {
   flex: none;
-}
-.one-box-ask__short {
-  display: none;
-}
-@media (max-width: 720px) {
-  .one-box-ask__label {
-    display: none;
-  }
-  .one-box-ask__short {
-    display: inline;
-  }
 }
 @media (max-width: 520px) {
   .searchbox.large .enter-key {
