@@ -22,7 +22,9 @@ Harbor could put an image under a tag first.
 
 ### The pipeline: CI on pull requests, staging on main, prod on a release
 1. **Continuous integration (CI) on every pull request (PR)** — `ci.yml`, GitHub-hosted runners:
-   - `changes`: the self-tests of `.github/scripts/changes.sh` and `.github/scripts/ci-ok.sh`, the ADR check
+   - `changes`: the self-tests of `.github/scripts/changes.sh` and `.github/scripts/ci-ok.sh`, the branch name of
+     the pull request (`.github/scripts/branch-name.sh`, its self-test first: `<prefix>/<name>` with a prefix of its
+     list, which also holds the prefixes Dependabot and the release workflows use), the ADR check
      (`scripts/adr-check.py`, its self-test first: every ADR reference in the repository names a record or a diagram
      that exists, and no file under `docs/adr` holds one of the words that tell a decision's history,
      `HISTORY_WORDS` in the script), every script test in the tree (`scripts/*.test.mjs`: the evaluation script's
@@ -289,6 +291,7 @@ Harbor could put an image under a tag first.
   (the prod deploy of a release, `publish` with the SBOMs), `image-scan.yml` (the weekly scan).
 - `.github/scripts/changes.sh` — the map of paths to components, the files each part needs, and its self-test.
 - `.github/scripts/ci-ok.sh` — the verdict of `ci-ok`: each job against the map, and its self-test.
+- `.github/scripts/branch-name.sh` — the branch prefixes a pull request may come from, and its self-test.
 - `scripts/adr-check.py` — the ADR references and the history words, and its self-test.
 - `.github/scripts/released-migrations.sh` — no released migration changes; before the first release, V1 only.
 - `.github/actions/bao-login/action.yml` — OIDC login to OpenBao.

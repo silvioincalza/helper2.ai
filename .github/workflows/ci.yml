@@ -34,6 +34,12 @@ jobs:
           fetch-depth: 0
       - run: .github/scripts/changes.sh --self-test
       - run: .github/scripts/ci-ok.sh --self-test
+      - run: .github/scripts/branch-name.sh --self-test
+      - name: Branch name
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: .github/scripts/branch-name.sh "$HEAD_REF"
       - name: Released migrations are unchanged
         run: |
           set -euo pipefail
