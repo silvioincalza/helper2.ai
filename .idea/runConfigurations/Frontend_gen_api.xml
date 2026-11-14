@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Frontend gen:api" type="js.build_tools.npm">
+    <package-json value="$PROJECT_DIR$/frontend/package.json" />
+    <command value="run" />
+    <scripts>
+      <script value="gen:api" />
+    </scripts>
+    <arguments value="" />
+    <node-interpreter value="/opt/homebrew/opt/node/bin/node" />
+    <envs />
+    <method v="2" />
+  </configuration>
+</component>
