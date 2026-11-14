@@ -12,7 +12,38 @@ management:
   opentelemetry:
     resource-attributes:
       service.name: helper2
+resilience4j:
+  circuitbreaker:
+    instances:
+      llm-chat-guide:
+        base-config: model
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+        slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}
+        slow-call-rate-threshold: 50
 helper2:
+  guide:
+    thinking:
+      plan-tokens: ${H2_GUIDE_THINK_PLAN_TOKENS:0}
+      choose-tokens: ${H2_GUIDE_THINK_CHOOSE_TOKENS:0}
+      verify-tokens: ${H2_GUIDE_THINK_VERIFY_TOKENS:0}
+      browse-tokens: ${H2_GUIDE_THINK_BROWSE_TOKENS:2048}
+    daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
+    client-daily-questions: ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}
+    client-daily-free-answers: ${H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS:5}
+    question-deadline: ${H2_GUIDE_QUESTION_DEADLINE:PT90S}
+    model-call-timeout: ${H2_LLM_TIMEOUT:40s}
+    model-call-minimum: 10s
+    deadline-margin: 2s
+    heartbeat: ${H2_GUIDE_HEARTBEAT:PT15S}
+    cache-ttl: ${H2_GUIDE_CACHE_TTL:PT24H}
+    similar-threshold: ${H2_GUIDE_SIMILAR_THRESHOLD:}
+    max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
+    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
+    model-stream: ${H2_GUIDE_MODEL_STREAM:OFF}
+    fairness:
+      network-daily-questions: ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}
+      client-concurrent-questions: ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}
+      budget-pace-slots: ${H2_GUIDE_BUDGET_PACE_SLOTS:12}
   schema:
     logins:
       h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
