@@ -1,0 +1,258 @@
+package ai.helper2.search.internal;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.catalog.CatalogWriter;
+import ai.helper2.catalog.DataOrigin;
+import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.search.CachedHits;
+import ai.helper2.search.ResultMerger;
+import ai.helper2.search.ResultObserver;
+import ai.helper2.search.ServedFrom;
+import ai.helper2.search.SourceContext;
+import ai.helper2.search.SourceDescriptor;
+import ai.helper2.search.SourceHit;
+import ai.helper2.search.usecase.PurgeExpiredData;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.SourceMode;
+import ai.helper2.shared.ValueOrigin;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
+
+@SpringBootTest
+@Import(TestcontainersConfiguration.class)
+class JdbcWebResultStoreIT {
+
+  @Autowired CatalogWriter writer;
+
+  @Autowired ResultObserver observer;
+
+  @Autowired JdbcClient jdbc;
+
+  private JdbcWebResultStore store;
+
+  @BeforeEach
+  void store() {
+    store = new JdbcWebResultStore(jdbc, new QuotaKeys("test-secret", Clock.systemUTC()), observer);
+  }
+
+  private final String run = UUID.randomUUID().toString().substring(0, 8);
+  private final Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+  private SourceHit hit(String path, int rank) {
+    String url = "https://news.example/" + run + "/" + path;
+    return new SourceHit(
+        "live-web",
+        CanonicalUrl.of(url).getValue(),
+        URI.create(url),
+        CanonicalUrl.of(url),
+        null,
+        "AI news " + path,
+        "An AI agent framework launched",
+        ValueOrigin.SOURCE_PROVIDED,
+        ResourceType.NEWS,
+        Audience.BOTH,
+        null,
+        Set.of(),
+        Set.of(),
+        null,
+        null,
+        Set.of(),
+        null,
+        DateFact.unknown(),
+        DateFact.unknown(),
+        List.of(),
+        now,
+        rank);
+  }
+
+  private void recordInCatalog(SourceHit... hits) {
+    SourceDescriptor tavily =
+        new SourceDescriptor(
+            "live-web",
+            "Tavily",
+            "Web",
+            true,
+            SourceMode.LIVE,
+            URI.create("https://helper2.ai/sources"),
+            null,
+            null,
+            EnumSet.allOf(ResourceType.class),
+            Duration.ofSeconds(6),
+            Duration.ZERO);
+    var merged =
+        new ResultMerger()
+            .merge(List.of(hits), Map.of("live-web", new SourceContext(tavily, ServedFrom.LIVE)));
+    writer.upsert(merged, DataOrigin.OBSERVED, Set.of("live-web"));
+  }
+
+  @Test
+  void aStoredSetComesBackInItsOrderFromTheCatalogRecords() {
+    SourceHit first = hit("b", 0);
+    SourceHit second = hit("a", 1);
+    recordInCatalog(first, second);
+
+    store.replace("live-web", "agents " + run, now, List.of(first, second));
+    CachedHits found = store.find("live-web", "agents " + run);
+
+    assertThat(found).isNotNull();
+    assertThat(found.getFetchedAt()).isEqualTo(now);
+    assertThat(found.getHits())
+        .extracting(SourceHit::getTitle)
+        .containsExactly("AI news b", "AI news a");
+    assertThat(found.getHits()).extracting(SourceHit::getRank).containsExactly(0, 1);
+    assertThat(found.getHits()).allMatch(h -> h.getSourceId().equals("live-web"));
+  }
+
+  @Test
+  void aStoredSetWithAnOldRawPageTitleComesBackClean() {
+    String url = "https://scored.tools/" + run + "/vector-databases";
+    SourceHit raw =
+        new SourceHit(
+            "live-web",
+            url,
+            URI.create(url),
+            CanonicalUrl.of(url),
+            null,
+            "Best Open Source Vector Databases for Production RAG 2026 | scored.tools",
+            "A ranking of vector databases for RAG.",
+            ValueOrigin.SOURCE_PROVIDED,
+            ResourceType.NEWS,
+            Audience.BOTH,
+            null,
+            Set.of(),
+            Set.of(),
+            null,
+            null,
+            Set.of(),
+            null,
+            DateFact.unknown(),
+            DateFact.unknown(),
+            List.of(),
+            now,
+            0);
+    recordInCatalog(raw);
+    store.replace("live-web", "vector db " + run, now, List.of(raw));
+
+    CachedHits found = store.find("live-web", "vector db " + run);
+
+    assertThat(found.getHits())
+        .extracting(SourceHit::getTitle)
+        .containsExactly("Best Open Source Vector Databases for Production RAG 2026");
+    assertThat(found.getHits().getFirst().getCanonicalUrl()).isEqualTo(CanonicalUrl.of(url));
+  }
+
+  @Test
+  void theKeyIsTheSourceAndTheQueryExactly() {
+    recordInCatalog(hit("a", 0));
+    store.replace("live-web", "agents " + run, now, List.of(hit("a", 0)));
+
+    assertThat(store.find("live-web", "agent " + run)).isNull();
+    assertThat(store.find("other", "agents " + run)).isNull();
+    assertThat(store.find("live-web", "agents " + run)).isNotNull();
+  }
+
+  @Test
+  void aQueryHasOneStoredSet() {
+    recordInCatalog(hit("a", 0), hit("b", 0));
+    store.replace(
+        "live-web", "agents " + run, now.minus(Duration.ofHours(1)), List.of(hit("a", 0)));
+    store.replace("live-web", "agents " + run, now, List.of(hit("b", 0)));
+
+    byte[] key = new QuotaKeys("test-secret", Clock.systemUTC()).queryKey("live-web|agents " + run);
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM live_web_query_result WHERE query_key = :key")
+                .param("key", key)
+                .query(Long.class)
+                .single())
+        .isEqualTo(1L);
+  }
+
+  @Test
+  void aNewLiveAnswerReplacesTheStoredSet() {
+    recordInCatalog(hit("a", 0), hit("b", 0));
+    store.replace("live-web", "agents " + run, now.minus(Duration.ofDays(3)), List.of(hit("a", 0)));
+    store.replace("live-web", "agents " + run, now, List.of(hit("b", 0)));
+
+    CachedHits found = store.find("live-web", "agents " + run);
+
+    assertThat(found.getFetchedAt()).isEqualTo(now);
+    assertThat(found.getHits()).extracting(SourceHit::getTitle).containsExactly("AI news b");
+  }
+
+  @Test
+  void anOlderFetchNeverOverwritesANewerSet() {
+    recordInCatalog(hit("a", 0), hit("b", 0));
+    store.replace("live-web", "agents " + run, now, List.of(hit("b", 0)));
+    store.replace(
+        "live-web", "agents " + run, now.minus(Duration.ofMinutes(5)), List.of(hit("a", 0)));
+
+    CachedHits found = store.find("live-web", "agents " + run);
+
+    assertThat(found.getFetchedAt()).isEqualTo(now);
+    assertThat(found.getHits()).extracting(SourceHit::getTitle).containsExactly("AI news b");
+  }
+
+  @Test
+  void aSetWithAHitTheCatalogDoesNotHoldIsAMissNotAPartialAnswer() {
+    recordInCatalog(hit("a", 0));
+    store.replace("live-web", "agents " + run, now, List.of(hit("a", 0), hit("not-recorded", 1)));
+
+    assertThat(store.find("live-web", "agents " + run)).isNull();
+  }
+
+  @Test
+  void anEmptySetIsStoredAndFound() {
+    store.replace("live-web", "nothing " + run, now, List.of());
+
+    assertThat(store.find("live-web", "nothing " + run).getHits()).isEmpty();
+  }
+
+  @Test
+  void noQueryTextIsStored() {
+    store.replace("live-web", "secret plans " + run, now, List.of());
+
+    List<byte[]> keys =
+        jdbc.sql("SELECT query_key FROM live_web_query_result").query(byte[].class).list();
+    assertThat(keys)
+        .allSatisfy(k ->
+            assertThat(new String(k, StandardCharsets.ISO_8859_1)).doesNotContain("secret plans"));
+    assertThat(keys).allSatisfy(k -> assertThat(k).hasSize(32));
+  }
+
+  @Test
+  void setsFetchedMoreThanSevenDaysAgoArePurged() {
+    Instant purgeNow = Instant.parse("2000-07-01T00:00:00Z");
+    store.replace("live-web", "old " + run, purgeNow.minus(Duration.ofDays(8)), List.of());
+    store.replace("live-web", "recent " + run, purgeNow.minus(Duration.ofDays(6)), List.of());
+
+    int deleted =
+        new PurgeExpiredData(store, Clock.fixed(purgeNow, ZoneOffset.UTC), Duration.ofDays(7))
+            .purge();
+
+    assertThat(deleted).isEqualTo(1);
+    assertThat(store.find("live-web", "old " + run)).isNull();
+    assertThat(store.find("live-web", "recent " + run)).isNotNull();
+    jdbc.sql("DELETE FROM live_web_query_result WHERE fetched_at < '2001-01-01'").update();
+  }
+}

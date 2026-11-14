@@ -505,6 +505,11 @@ helper2.embedding.base-url = ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.ap
 helper2.embedding.dimensions = 1024
 helper2.embedding.model = ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}  =>  nvidia/nemotron-3.5-embed-1b
 helper2.embedding.timeout = 3s
+helper2.examples.cron = ${H2_EXAMPLES_CRON:0 41 2 * * *}  =>  0 41 2 * * *
+helper2.examples.draft-calls = ${H2_EXAMPLES_DRAFT_CALLS:5}  =>  5
+helper2.examples.draft-sources = ${H2_EXAMPLES_DRAFT_SOURCES:12}  =>  12
+helper2.examples.pending-delay = ${H2_EXAMPLES_PENDING_DELAY:PT1M}  =>  PT1M
+helper2.examples.pending-every = ${H2_EXAMPLES_PENDING_EVERY:PT5M}  =>  PT5M
 helper2.feeds[0].homepage = https://openai.com/news/
 helper2.feeds[0].id = openai
 helper2.feeds[0].publisher = OpenAI
@@ -803,6 +808,7 @@ resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
 resilience4j.bulkhead.instances.source-arxiv.base-config = source
 resilience4j.bulkhead.instances.source-curated.base-config = catalog
 resilience4j.bulkhead.instances.source-github.base-config = source
+resilience4j.bulkhead.instances.source-hacker-news.base-config = source
 resilience4j.bulkhead.instances.source-helper2-index.base-config = catalog
 resilience4j.bulkhead.instances.source-helper2-semantic.base-config = catalog
 resilience4j.bulkhead.instances.source-hf-models.base-config = source
@@ -870,6 +876,7 @@ resilience4j.circuitbreaker.instances.redis.base-config = store
 resilience4j.circuitbreaker.instances.source-arxiv.base-config = source
 resilience4j.circuitbreaker.instances.source-curated.base-config = source
 resilience4j.circuitbreaker.instances.source-github.base-config = source
+resilience4j.circuitbreaker.instances.source-hacker-news.base-config = source
 resilience4j.circuitbreaker.instances.source-helper2-index.base-config = source
 resilience4j.circuitbreaker.instances.source-helper2-semantic.base-config = source
 resilience4j.circuitbreaker.instances.source-hf-models.base-config = source
