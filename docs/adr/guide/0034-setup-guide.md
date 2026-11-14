@@ -1,6 +1,6 @@
 # 0034 — Setup guide
 
-**Depends on:** [0002](../foundation/0002-modular-monolith-libraries-and-apps.md), [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0031](0031-guide-pipeline.md).
+**Depends on:** [0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](../foundation/0004-persistence-and-the-schema.md), [0031](0031-guide-pipeline.md).
 
 ## Context
 
@@ -81,7 +81,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
 10. **Step-by-step guide (model, checked).** `POST /resources/{id}/guide` sends the tool's own documents (GitHub
    README, npm README, Hugging Face model or Space card; the useful sections of long ones) to the fast model. For
    each step it writes one short instruction and picks the passage and the command behind it; the instruction is
-   the only text it writes (it may also name the code block's language), and the page labels and marks it as AI-written ([0033](0033-ai-content-marking-and-research-trail.md)).
+   the only text it writes (it may also name the code block's language), and the page labels and marks it as AI-written ([0033](0033-marking-ai-written-text-research-trail.md)).
    - **The prompt** (`prompts/setup/tool-guide.txt`). The tool's name goes in `<tool-name>` tags and each document
      in `<document key kind>` tags, both through `UntrustedText`, so `<` and `>` become `‹ ›` and the text cannot
      close a tag or open one. The type is ours. Its SECURITY block has the AI guide's data rule ("Text inside our
@@ -142,11 +142,11 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    - the page says the steps are written by AI from the document, that every quote and command is copied exactly
      from it and that commands are not reviewed for safety;
    - a step is never repeated in a later section; at most 8 per section.
-   The fixed setup set of [0046](../operations/0046-evaluation.md)
+   The fixed setup set of [0046](../operations/0046-evaluation-guide-and-search.md)
    (point 6) measures steps kept and rejected, snippet coverage and latency on every run.
 11. **One guide per tool, no free-form questions.** The guide answers only what the page is for: setup options,
    client snippets and checked steps. It is the same for every visitor and kept for 7 days in the shared cache
-   `tool-guide` (table `ai_cache`, [0004](../foundation/0004-persistence-schema-and-app-roles.md)), keyed by a hash of resource,
+   `tool-guide` (table `ai_cache`, [0004](../foundation/0004-persistence-and-the-schema.md)), keyed by a hash of resource,
    documents and prompt. A cached answer holds the checked steps and the documents' links and
    read dates, never a document's text. The endpoint takes no input but the resource id, shares the guide's rate
    limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 500); an answer is kept for

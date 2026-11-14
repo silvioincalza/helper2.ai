@@ -1,6 +1,6 @@
 # 0033 — Marking AI-written text, research trail
 
-**Depends on:** [0003](../foundation/0003-contract-first-rest-api.md), [0008](../foundation/0008-llm-integration.md), [0014](../scout/0014-evidence-gated-enrichment.md), [0023](../search/0023-catalog-full-text-index.md), [0031](0031-guide-pipeline.md), [0032](0032-guide-cost-guard-and-answer-cache.md), [0034](0034-setup-guide.md), [0039](../frontend/0039-frontend-one-box.md).
+**Depends on:** [0003](../foundation/0003-contract-first-rest.md), [0008](../foundation/0008-llm-integration.md), [0014](../scout/0014-evidence-gated-enrichment.md), [0023](../search/0023-catalog-full-text-index.md), [0031](0031-guide-pipeline.md), [0032](0032-guide-cost-guard-and-answer-cache.md), [0034](0034-setup-guide.md), [0039](../frontend/0039-frontend-one-box-state-in-the-url.md).
 
 ## Context
 
@@ -92,7 +92,7 @@ another person's words.
 8. **The "not found" notice.** Its name and search (`GUIDE_SUBJECT_NOT_FOUND`) are the planner's, so they are their own
    fields (`notices[].subject`, `notices[].query`). The page puts them in our sentence ("X was not found in our
    sources; showing tools for: Y"), each in a marked element. The page never shows the `message` of these codes, so
-   an older answer from the browser cache ([0039](../frontend/0039-frontend-one-box.md)) says the sentence without the
+   an older answer from the browser cache ([0039](../frontend/0039-frontend-one-box-state-in-the-url.md)) says the sentence without the
    planner's words.
 9. **Never marked.** Quotes, titles, links and the setup guide's commands: they come from the sources. Our own labels
    and the subjects (the asker's own words). The setup step's code language name is marked in the API only: the page
@@ -272,7 +272,7 @@ another person's words.
 - Does a code from a closed list that a model chose (the guide's intent, a resource type) need Art. 50 marking when
   it is shown as a label?
 - Does the privacy text cover showing a cached answer built from someone else's question?
-- The descriptions of the curated industry events ([0012](../scout/0012-collectors-and-events.md) §23) are not in
+- The descriptions of the curated industry events ([0012](../scout/0012-scout-collectors-and-events.md) §23) are not in
   the list of AI-written texts: a model drafts them from the organiser's page, and a person reads and approves each
   one before it is merged, so they are shown as curated. Does a sentence drafted by a model and approved by a person
   need the Art. 50 label and mark?

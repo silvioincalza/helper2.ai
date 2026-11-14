@@ -1,6 +1,6 @@
 # 0035 — Guide model stream
 
-**Depends on:** [0006](../foundation/0006-outbound-calls-and-resilience.md), [0008](../foundation/0008-llm-integration.md), [0031](0031-guide-pipeline.md), [0032](0032-guide-cost-guard-and-answer-cache.md), [0033](0033-ai-content-marking-and-research-trail.md).
+**Depends on:** [0006](../foundation/0006-outbound-calls-and-resilience.md), [0008](../foundation/0008-llm-integration.md), [0031](0031-guide-pipeline.md), [0032](0032-guide-cost-guard-and-answer-cache.md), [0033](0033-marking-ai-written-text-research-trail.md).
 
 ## Context
 
@@ -194,7 +194,7 @@ What the source of Spring AI 2.0.2 and openai-java 4.80 says (each point read in
 
 No new data flow. The provider gets the same request (plus `stream: true`). The two new events hold a step name;
 the page keeps them in memory with the other steps of the running question and stores nothing new (the
-recent-answers cache keeps answers only, [0039](../frontend/0039-frontend-one-box.md)). No new log line with user
+recent-answers cache keeps answers only, [0039](../frontend/0039-frontend-one-box-state-in-the-url.md)). No new log line with user
 text. The Privacy and Terms pages do not change.
 
 ### STRIDE

@@ -1,6 +1,6 @@
 # 0037 — HTTP edge
 
-**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0005](../foundation/0005-redis-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0007](../foundation/0007-configuration-secrets-and-settings.md), [0036](0036-identity-and-admin-host.md).
+**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0036](0036-identity-and-the-admin-host.md).
 
 ## Context
 
@@ -22,7 +22,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
    port are not counted. `RateLimitedOperationsTest` fails when an operation with its own limit is no longer in
    the contract. Over the limit: 429, `Retry-After`, problem+json. Only the first dispatch of a request is
    charged: the second (async) dispatch of the streamed guide is not, and neither is an error dispatch. On the admin host the client is the signed-in administrator,
-   not an address ([0036](0036-identity-and-admin-host.md)).
+   not an address ([0036](0036-identity-and-the-admin-host.md)).
 2. **Limiter in Redis, shared by all replicas** (port `RateLimiter`, adapter `RedisRateLimiter`). Fixed window: one
    key per limiter and client, `h2:v1:rate:<limiter>:<client pseudonym>`. One Lua script runs `INCR` and, on the first request,
    `PEXPIRE` with the window, so a key never lives without an expiry. The key's remaining time is the `Retry-After`.
@@ -31,7 +31,7 @@ must load the app on a direct visit, and a new release must reach browsers at on
    as `unknown`. Both limiters and the guide's daily quota ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)) use this one key.
    Redis never holds the address: the key holds `QuotaKeys.client(client)`, HMAC-SHA256(day key, client), where the
    day key is HMAC-SHA256(`H2_QUOTA_KEY_SECRET`, UTC date), the same pseudonym as the daily web searches
-   ([0027](../search/0027-tavily-store-and-daily-quota.md)). Without the secret, an IPv4 address cannot be found again by
+   ([0027](../search/0027-live-web-store-first-daily-quota.md)). Without the secret, an IPv4 address cannot be found again by
    hashing all 2^32 of them, and the keys of two days cannot be linked. At midnight UTC the pseudonym changes, so a
    window open at midnight is followed by a fresh one: at most one more window's worth of requests (two windows' worth
    in one window), the same as at any fixed-window edge. Without `H2_QUOTA_KEY_SECRET` the app starts, logs a warning
@@ -49,15 +49,15 @@ must load the app on a direct visit, and a new release must reach browsers at on
    the right and skips private and loopback addresses (its default `internalProxies`), so the first public address is the one
    Cloudflare appended. A client can prepend addresses but cannot replace that one. The admin host has no Cloudflare in front, so
    no limit is keyed on an address there: the key is the signed-in administrator, or one shared key for whoever is
-   not signed in yet ([0036](0036-identity-and-admin-host.md)).
+   not signed in yet ([0036](0036-identity-and-the-admin-host.md)).
 5. **CSRF** (cross-site request forgery). `CookieCsrfTokenRepository.withHttpOnlyFalse()` with the SPA setup:
    cookie `XSRF-TOKEN`; `api/client.ts` sends it back as `X-XSRF-TOKEN` on every non-GET call. `CsrfCookieFilter` makes
    sure the cookie exists before the first POST: it writes it on `GET /api/v1/me`, which the SPA calls when it starts,
    and nowhere else. A `Set-Cookie` on a static file or a public cacheable GET would stop Cloudflare from caching it.
    A POST that comes without the cookie gets 403 and a fresh cookie. The token counts only in the header, never as a
-   `_csrf` form field. On the back office ([0043](../operations/0043-runtime-topology.md)) the cookie is
+   `_csrf` form field. On the back office ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)) the cookie is
    `__Host-XSRF-TOKEN` (Secure, `Path=/`, `SameSite=Strict`, no `Domain`), `client.ts` reads either name, and every
-   write also needs that host's own `Origin` ([0036](0036-identity-and-admin-host.md) §13).
+   write also needs that host's own `Origin` ([0036](0036-identity-and-the-admin-host.md) §13).
 6. **Headers.** Content Security Policy (CSP): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;
    connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`.
    `Referrer-Policy: strict-origin-when-cross-origin`. `Permissions-Policy: camera=(), microphone=(), geolocation=(),
@@ -65,18 +65,18 @@ must load the app on a direct visit, and a new release must reach browsers at on
    This is the public app's policy (`site.csp`); it adds the origins of the monetisation parts that are on, or the
    nonce policy ([0042](../money/0042-monetisation.md) §3, §11). The back office sends its own fixed
    policy on every response, never with a nonce or a third-party origin (`BackOfficeEdge`, ADR
-   [0043](../operations/0043-runtime-topology.md)): the one above with `base-uri 'none'`, `frame-src 'none'` and
+   [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)): the one above with `base-uri 'none'`, `frame-src 'none'` and
    `worker-src 'none'`, plus `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, COOP and CORP `same-origin`,
    `X-Robots-Tag: noindex, nofollow` and HSTS. The web image sends a third policy of its own on the files it serves
    (9). So three owners send a CSP, each its own; none reads another's.
 7. **Session cookie**: `SESSION` on the public site (Spring Session's name), `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
-   The session itself is in Redis ([0036](0036-identity-and-admin-host.md)). The back office's is `__Host-SESSION`, always
+   The session itself is in Redis ([0036](0036-identity-and-the-admin-host.md)). The back office's is `__Host-SESSION`, always
    Secure, in its own Redis namespace.
 8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
    it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the actuator serves only health and prometheus, and health is the one open to all. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (rules in [0001](../foundation/0001-stack-and-runtime.md)): the web image
-   ([0043](../operations/0043-runtime-topology.md), `deploy/web/nginx.conf`) caches hashed assets for one year and
+   ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md), `deploy/web/nginx.conf`) caches hashed assets for one year and
    `theme.js` and `favicon.svg` for 5 minutes, then revalidated; its other answers are plain 404s with `no-store`. On
    every answer it sends its own CSP (`default-src 'none'`, `sandbox`), `nosniff`, CORP `same-origin` and
    `Referrer-Policy: no-referrer`, and it takes GET and HEAD only. The shell (`index.html`, from the public app) is

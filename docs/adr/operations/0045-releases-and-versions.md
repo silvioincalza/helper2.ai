@@ -1,6 +1,6 @@
 # 0045 — Releases and versions
 
-**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0010](../foundation/0010-data-retention.md), [0044](0044-ci-cd-and-supply-chain.md).
+**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0004](../foundation/0004-persistence-and-the-schema.md), [0010](../foundation/0010-data-retention.md), [0044](0044-ci-cd-and-supply-chain.md).
 
 ## Context
 
@@ -146,7 +146,7 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 ### Migrations after a release
 16. **After the first tag, forward only.** A schema change is a new `V2__…`, never an edit of `V1__schema.sql`; a fix to
     what runs is a new patch (§12). CI holds the rule on every pull request
-    (`.github/scripts/released-migrations.sh`, [0004](../foundation/0004-persistence-schema-and-app-roles.md) §5). A
+    (`.github/scripts/released-migrations.sh`, [0004](../foundation/0004-persistence-and-the-schema.md) §5). A
     release tag sits on its release branch, beside `main`: the check reads every release whose commit, or the commit
     before it, is in the history it checks.
 

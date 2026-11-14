@@ -1,6 +1,6 @@
 # 0027 — Live web: store first, daily quota
 
-**Depends on:** [0005](../foundation/0005-redis-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0010](../foundation/0010-data-retention.md), [0022](0022-federated-search.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0036](../identity/0036-identity-and-admin-host.md).
+**Depends on:** [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0010](../foundation/0010-data-retention.md), [0022](0022-federated-search.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0036](../identity/0036-identity-and-the-admin-host.md).
 
 ## Context
 
@@ -18,12 +18,12 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 
 1. **Store first.** `live_web_query_result(query_key, fetched_at, result_ids[])` in PostgreSQL. The key
    is HMAC-SHA256(`H2_QUOTA_KEY_SECRET`, source id and the normalised query: words, expansions, limit, web query and
-   date window, the same material as the source cache key of [0005](../foundation/0005-redis-disposable-cache.md)); exact match
+   date window, the same material as the source cache key of [0005](../foundation/0005-redis-as-a-disposable-cache.md)); exact match
    only. The key is what changes the Tavily request, so the intent class is not part of it: the timeline view
    (newest first, time-bound) of a search just made reads the same set and spends no second credit. A query has one
    stored set; a live answer upserts it by key, and an older fetch that ends later never overwrites a newer set. `result_ids` are the resource ids of the hits' own URLs, in Tavily's order; the hits come back from the
    catalog's source records (`ResultObserver.recordedHits`), which the live search writes as it writes every live hit
-   ([0004](../foundation/0004-persistence-schema-and-app-roles.md)). A set with a hit the catalog does not hold is a miss. The search
+   ([0004](../foundation/0004-persistence-and-the-schema.md)). A set with a hit the catalog does not hold is a miss. The search
    module owns the table (`JdbcWebResultStore`); a metered source never uses the Redis source cache.
 2. **Freshness by intent.** A stored set answers without a live call and without quota while it is fresh: 24 h for a
    time-bound question (news, courses, hackathons, conferences, events; `H2_LIVE_WEB_FRESH_TIMEBOUND`), 48 h otherwise
@@ -55,7 +55,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
    for the whole cluster. The counter is capped by `H2_LIVE_WEB_DAILY_CREDITS`; unset, the cap is the code
-   maximum of the runtime setting, 2,000 a day ([0007](../foundation/0007-configuration-secrets-and-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
+   maximum of the runtime setting, 2,000 a day ([0007](../foundation/0007-configuration-secrets-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
    concurrent requests on any replica never pass a limit. The script counts before the `source-live-web` policy is
    asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
    (`WebSearchQuota.refund`): the call never left. A call that reached Tavily keeps its credit also when it fails
@@ -64,7 +64,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 5. **Fail closed.** When Redis cannot answer or the `redis` policy refuses the call ([0006](../foundation/0006-outbound-calls-and-resilience.md)),
    no live Tavily call goes out (`SkipReason.QUOTA_UNAVAILABLE`, "Web search paused: the daily limit cannot be
    checked"); stored sets still answer. Credits are the only cost here that grows with traffic, and during a Redis
-   outage the per-client rate limits count per replica ([0037](../identity/0037-http-edge-protection.md)), so failing open would
+   outage the per-client rate limits count per replica ([0037](../identity/0037-http-edge.md)), so failing open would
    leave the monthly credits unguarded exactly when abuse is easiest. Everything else keeps answering. The arXiv pace
    fails closed for the same reason ([0006](../foundation/0006-outbound-calls-and-resilience.md)).
 6. **What is left, in every answer.** `SearchResponse.webSearches` and `GuideResponse.webSearches`
@@ -84,7 +84,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    180 a day) and the Scout (~506 a month); a 31-day month at both caps stays about 80 under it. The Scout's
    discovery and LinkedIn searches count on the global daily counter and in the alert too (features `scout-discovery`
    and `scout-linkedin`, at most 40 a day together, [0013](../scout/0013-discovery.md),
-   [0012](../scout/0012-collectors-and-events.md)).
+   [0012](../scout/0012-scout-collectors-and-events.md)).
 9. **Retention** ([0010](../foundation/0010-data-retention.md)): stored sets are deleted 7 days after `fetched_at`
    (`H2_RETENTION_LIVE_WEB_RESULTS`) by the search module's daily purge; counters by their 24 h TTL. No counter is
    kept under an account, so deleting one touches none.

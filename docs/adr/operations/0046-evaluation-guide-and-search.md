@@ -1,6 +1,6 @@
 # 0046 — Evaluation: guide and search
 
-**Depends on:** [0008](../foundation/0008-llm-integration.md), [0022](../search/0022-federated-search.md), [0024](../search/0024-vector-search-pgvector.md), [0025](../search/0025-ranking.md), [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0034](../guide/0034-setup-guide.md).
+**Depends on:** [0008](../foundation/0008-llm-integration.md), [0022](../search/0022-federated-search.md), [0024](../search/0024-vector-search.md), [0025](../search/0025-ranking.md), [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0034](../guide/0034-setup-guide.md).
 
 ## Context
 
@@ -11,7 +11,7 @@ drop in quality must be seen the next day, not at the next run by hand.
 
 Search has the same problem one level down. Ranking ([0025](../search/0025-ranking.md)) fuses each source's own order
 (reciprocal-rank fusion, k = 60) with fixed boosts and a bounded popularity term; vector search
-([0024](../search/0024-vector-search-pgvector.md)) keeps catalog rows up to a cosine distance of 0.65; every query goes
+([0024](../search/0024-vector-search.md)) keeps catalog rows up to a cosine distance of 0.65; every query goes
 to every source. Each of these numbers moves what users see, and a change to any of them has to be accepted or
 rejected by measurement, not by a few queries tried by hand.
 

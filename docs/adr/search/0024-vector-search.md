@@ -1,6 +1,6 @@
 # 0024 — Vector search
 
-**Depends on:** [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0022](0022-federated-search.md), [0025](0025-ranking.md).
+**Depends on:** [0004](../foundation/0004-persistence-and-the-schema.md), [0022](0022-federated-search.md), [0025](0025-ranking.md).
 
 ## Context
 
@@ -59,7 +59,7 @@ never break keyword search.
    `H2_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s).
    Rows carry labels and stored popularity like keyword rows ([0025](0025-ranking.md)).
    Query vectors are shared by every replica in the shared cache `query-vector` (`QueryVectorCache`, table `ai_cache`,
-   [0004](../foundation/0004-persistence-schema-and-app-roles.md)): key a SHA-256 of the embedding model and the normalised query,
+   [0004](../foundation/0004-persistence-and-the-schema.md)): key a SHA-256 of the embedding model and the normalised query,
    value the floats in Base64, kept `H2_SEARCH_QUERY_VECTOR_TTL` (7 days). A vector of another size is a miss, and so is
    a database error or a lookup over its time limit: the query is embedded again. So the guide's example questions and pagination spend the embedding rate limit once for the cluster.
    The model, origin and distance filters apply to the HNSW candidates, so the query runs in its own transaction with

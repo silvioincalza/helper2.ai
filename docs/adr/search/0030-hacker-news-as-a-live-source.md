@@ -1,6 +1,6 @@
 # 0030 — Hacker News as a live source
 
-**Depends on:** [0022](0022-federated-search.md), [0025](0025-ranking.md), [0029](0029-source-query-terms.md).
+**Depends on:** [0022](0022-federated-search.md), [0025](0025-ranking.md), [0029](0029-sources-search-content-words.md).
 
 ## Context
 
@@ -13,7 +13,7 @@ A research pass (9 Nov 2026) compared more sources. Most are later steps or out 
 ## Decision
 
 1. **Hacker News** (`hacker-news`, `HackerNewsSource`). `GET https://hn.algolia.com/api/v1/search` with
-   `query` = the query's content words ([0029](0029-source-query-terms.md)), `tags=story`, `hitsPerPage` = three times
+   `query` = the query's content words ([0029](0029-sources-search-content-words.md)), `tags=story`, `hitsPerPage` = three times
    the limit (at most 50), so the AI filter still leaves enough; the first `limit` hits are kept. A query with no words
    makes no call. With a date window, `numericFilters=created_at_i>={first day, epoch seconds, UTC}` asks only for
    newer stories, so the descriptor says `filtersByDate`. A hit is the page the story links, never the discussion.
@@ -26,13 +26,13 @@ A research pass (9 Nov 2026) compared more sources. Most are later steps or out 
    timeout 2.5 s, cache 30 min), the same circuit breaker and bulkhead as the other live sources, both apps. The
    Sources page lists it from its descriptor.
 4. **On by default, one switch.** `H2_SOURCE_HACKER_NEWS_ENABLED` defaults to `true`; `false` switches the source
-   off. The ablation of [0046](../operations/0046-evaluation.md) is recorded with the source on; if it costs quality for
+   off. The ablation of [0046](../operations/0046-evaluation-guide-and-search.md) is recorded with the source on; if it costs quality for
    a query group, routing leaves it out for that group.
 5. **No popularity yet.** Story points would be a good tie-break, but a new `PopularityKind` changes the public API
    contract (`api/common.yaml`), the stored catalog and the result card. It is an open point.
 
 Maven Central is not a source: Sonatype's terms list commercial use without permission as abuse; JVM libraries come from
-the package catalog collector (GitHub + deps.dev, [0018](../scout/0018-package-catalog.md)).
+the package catalog collector (GitHub + deps.dev, [0018](../scout/0018-ai-libraries-and-sdks-per-language.md)).
 
 ### Code
 
@@ -59,7 +59,7 @@ the package catalog collector (GitHub + deps.dev, [0018](../scout/0018-package-c
 
 Not measured yet: the snapshots of 7 Nov 2026 have no hits from the source, and a replay cannot add them. The next
 recording (`./gradlew evalRecord` on a fresh snapshot set, with the source switched on) includes them; then the
-per-source ablation of [0046](../operations/0046-evaluation.md) gives its marginal Recall@20 and ΔnDCG@10, and the new
+per-source ablation of [0046](../operations/0046-evaluation-guide-and-search.md) gives its marginal Recall@20 and ΔnDCG@10, and the new
 pooled results are graded. If the source costs quality for a query group, routing leaves it out for that group.
 
 ### Privacy and terms

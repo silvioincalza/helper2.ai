@@ -1,10 +1,10 @@
 # 0022 — Federated search
 
-**Depends on:** [0002](../foundation/0002-modular-monolith-libraries-and-apps.md), [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0005](../foundation/0005-redis-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0021](../scout/0021-resource-identity.md).
+**Depends on:** [0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](../foundation/0004-persistence-and-the-schema.md), [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0021](../scout/0021-resource-identity-one-resource-per-repository.md).
 
 ## Context
 
-Helper2.ai answers a search from several sources: public application programming interfaces (APIs) (GitHub, Hugging Face, npm, arXiv, Tavily, and when switched on Hacker News, [0030](0030-hacker-news.md)) and its own catalog.
+Helper2.ai answers a search from several sources: public application programming interfaces (APIs) (GitHub, Hugging Face, npm, arXiv, Tavily, and when switched on Hacker News, [0030](0030-hacker-news-as-a-live-source.md)) and its own catalog.
 Each API has its own speed, rate limit and failure modes. One slow or failing source must not block the others, and
 a source that is down must not cost every search its full deadline.
 Users must see which sources answered, which did not, and why. Helper2.ai does not search the whole web,
@@ -17,7 +17,7 @@ and how many web credits the day has used. Two sources can describe the same res
    (`LIVE`, `INDEXED`, `CURATED`, `DEMO`), timeout, cache time to live (TTL), `enabled`, `priority`, `usesWebQuery`,
    `usesTranslation`, `metered`. Search sources and their priority (lower wins on display text): `curated` 10, `github` 20,
    `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `hacker-news` 47, `live-web` 48, `helper2-index` 50, `helper2-semantic` 55
-   (only with an embedding key, [0024](0024-vector-search-pgvector.md)). `GET /api/v1/sources` lists them.
+   (only with an embedding key, [0024](0024-vector-search.md)). `GET /api/v1/sources` lists them.
    The short name (`shortName`, 1 to 12 characters, e.g. `HF models`, `Web scout`) is the name under the source's dot
    on the home radar ([0040](../frontend/0040-design-system.md)); the descriptor refuses a missing or
    longer one, so a new source cannot start without it. `external` is false for Helper2's own sources
@@ -35,12 +35,12 @@ and how many web credits the day has used. Two sources can describe the same res
    Timeouts: `github`, `hf-models`, `hf-spaces`, `npm`, `hacker-news` 2500 ms; `arxiv` 3 s; `live-web` `H2_SOURCE_LIVE_WEB_TIMEOUT` (6 s);
    `helper2-index` `H2_SOURCE_INDEX_TIMEOUT` (3 s); `helper2-semantic` `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s); `curated` 1000 ms.
    On timeout the task is canceled and the outcome is `TIMED_OUT`.
-4. **Cache for LIVE sources.** The fresh and stale windows of [0005](../foundation/0005-redis-disposable-cache.md) apply: a fresh entry
+4. **Cache for LIVE sources.** The fresh and stale windows of [0005](../foundation/0005-redis-as-a-disposable-cache.md) apply: a fresh entry
    is served as `CACHE` with no live call, and after a failure an entry inside the stale window is served as `STALE_CACHE`.
    A metered source (Tavily, `descriptor.metered`) reads its stored result set instead, fresh for 24 h or 48 h by the
    question's intent, and calls live only inside the asker's daily web searches; over the limit it is `SKIPPED` with
    `SkipReason.DAILY_LIMIT` (or `QUOTA_UNAVAILABLE` when the count cannot be read), with its stored set up to 7 days
-   old ([0027](0027-tavily-store-and-daily-quota.md)).
+   old ([0027](0027-live-web-store-first-daily-quota.md)).
 5. **Cooldown.** `SourceFailure.RateLimited` pauses the source until `Retry-After` (or 1 min). During the pause the
    source is `SKIPPED` with `SkipReason.RATE_LIMIT_PAUSE` ("Paused after a rate limit"), with a stale entry if one exists.
    A source that cannot browse is `SKIPPED` with `SkipReason.NOT_BROWSABLE` on a browse request.
@@ -58,10 +58,10 @@ and how many web credits the day has used. Two sources can describe the same res
    `INDEX_UNAVAILABLE`, `QUERY_EXPANDED`, `ALL_SOURCES_FAILED`. The search never throws for a source, cache or index failure.
 8. **Merge without a model.** `ResultMerger` groups hits that share a canonical web address (URL) (union-find). Which hits are
    one resource (a package and its repository, every package of one repository, a link to a sub-directory, the git
-   ref) is decided by the resource-identity rules of [0021](../scout/0021-resource-identity.md): the merger applies
+   ref) is decided by the resource-identity rules of [0021](../scout/0021-resource-identity-one-resource-per-repository.md): the merger applies
    them, and this record does not repeat them. The npm search API returns the repository URL only, not
    `repository.directory`; the sub-directory is known when the package states it in the URL.
-   The result's id comes from the repository its hits state, else from their own URLs, a GitHub URL first ([0004](../foundation/0004-persistence-schema-and-app-roles.md)).
+   The result's id comes from the repository its hits state, else from their own URLs, a GitHub URL first ([0004](../foundation/0004-persistence-and-the-schema.md)).
    Display text comes from the preferred source. License, pricing and open source: if sources disagree, the value is
    null and every claim is kept in `conflicts`. Licence ids that differ only in letter case (`cc-by-4.0`, `CC-BY-4.0`)
    agree. Popularity keeps one value per metric and source: the newest (`asOf`), so a stored star count never hides
@@ -69,8 +69,8 @@ and how many web credits the day has used. Two sources can describe the same res
    description and tags only when two different words of its word-list entry appear ("translate" and "translation"),
    so one common word in a title ("data", "code", "image") is not a facet value. The user sees every claim; nothing goes to the review queue. Dates: published and event start = earliest, event end = latest,
    last update = most recent; the others stay as alternatives. Published and event dates are `CONFLICTING` when two
-   sources state different days ([0026](0026-filters-facets-and-categories.md)).
-9. **Catalog link** ([0004](../foundation/0004-persistence-schema-and-app-roles.md)). One read for first-discovered dates; only hits fetched
+   sources state different days ([0026](0026-filters-facets-categories.md)).
+9. **Catalog link** ([0004](../foundation/0004-persistence-and-the-schema.md)). One read for first-discovered dates; only hits fetched
    live now are handed to `ResultObserver.record`, which queues the write (`helper2.catalog.observation-queue`, 256).
 10. Each source returns at most `H2_SEARCH_PER_SOURCE_LIMIT` (30) hits. The response has `Cache-Control: no-store`.
 11. **Sources page numbers.** `GET /api/v1/sources` (`ListSources`) lists every disclosed source by priority, with:
@@ -87,9 +87,9 @@ and how many web credits the day has used. Two sources can describe the same res
     - `metered`: true for a source whose calls spend a paid quota, enabled or not (`SourceDescriptor.metered`; today
       only Tavily). The page reads this flag, not a source id.
     - `webCredits {usedToday, dailyCap}` on an enabled metered source: the credits of the day for the whole cluster
-      and the global cap, from Redis ([0027](0027-tavily-store-and-daily-quota.md)); null on every other source and
+      and the global cap, from Redis ([0027](0027-live-web-store-first-daily-quota.md)); null on every other source and
       when Redis cannot answer. A visitor's own web searches left stay in the search and guide responses, and in
-      `GET /api/v1/me` ([0036](../identity/0036-identity-and-admin-host.md)).
+      `GET /api/v1/me` ([0036](../identity/0036-identity-and-the-admin-host.md)).
     - `newThisWeek`: the catalog resources this source brought that Helper2 first discovered in the last 7 days (a
       rolling window, `ListSources.NEW_WINDOW`), for the home radar
       ([0040](../frontend/0040-design-system.md)). For a source with records: the resources with a record
@@ -145,7 +145,7 @@ and how many web credits the day has used. Two sources can describe the same res
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` (`resilience4j.*`) — the `source-<id>` policies.
 - `backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
 - `backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
-  store and quota ([0027](0027-tavily-store-and-daily-quota.md)).
+  store and quota ([0027](0027-live-web-store-first-daily-quota.md)).
 - `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
@@ -179,14 +179,14 @@ and how many web credits the day has used. Two sources can describe the same res
 - Two loads of the Sources page can show different response times and circuit states when two replicas answer.
 - `SourceHealthTest`, `ListSourcesTest`, `Resilience4jPoliciesTest`, `SearchApiIT` and `WebSearchQuotaApiIT` cover the
   Sources page numbers.
-- Security: the endpoint stays public and rate-limited like every API path ([0037](../identity/0037-http-edge-protection.md)).
+- Security: the endpoint stays public and rate-limited like every API path ([0037](../identity/0037-http-edge.md)).
   Circuit state, response time and the credit count are operational, not secret: a search already shows a paused
   source as `SKIPPED` ("Paused after repeated failures"), and a visitor over the cap already sees the refusal. The
   response holds no host name, key or exception text, only numbers, enums and times.
 
 ### Known limits
 
-- All packages of one repository are one resource ([0021](../scout/0021-resource-identity.md)), so the result shows one link per source: with several packages of one source, one of them (the first by external id). Download counts of several packages are kept per record and one is shown. Until the repository's own record arrives, the resource carries the first package's title and description.
+- All packages of one repository are one resource ([0021](../scout/0021-resource-identity-one-resource-per-repository.md)), so the result shows one link per source: with several packages of one source, one of them (the first by external id). Download counts of several packages are kept per record and one is shown. Until the repository's own record arrives, the resource carries the first package's title and description.
 - A search waits for the slowest answering source up to its deadline: Tavily (6 s) sets the worst case, and a non-English query can start most sources up to 2.5 s later for translation.
 - Facets and filters see only the hits fetched for this query (at most 30 per source), not the whole catalog.
 - A package found without its repository is a result of its own until a search finds both. Once joined, its record stays with the repository; a later batch where a second package of the same source links to the repository splits it off again, though the stored join was not ambiguous.

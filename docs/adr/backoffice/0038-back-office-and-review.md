@@ -1,6 +1,6 @@
 # 0038 — Back office and review
 
-**Depends on:** [0002](../foundation/0002-modular-monolith-libraries-and-apps.md), [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0007](../foundation/0007-configuration-secrets-and-settings.md), [0011](../scout/0011-scout-runner.md), [0012](../scout/0012-collectors-and-events.md), [0013](../scout/0013-discovery.md), [0014](../scout/0014-evidence-gated-enrichment.md), [0027](../search/0027-tavily-store-and-daily-quota.md), [0028](../search/0028-home-examples.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-ai-content-marking-and-research-trail.md), [0036](../identity/0036-identity-and-admin-host.md), [0043](../operations/0043-runtime-topology.md).
+**Depends on:** [0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](../foundation/0004-persistence-and-the-schema.md), [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0011](../scout/0011-scout-runner.md), [0012](../scout/0012-scout-collectors-and-events.md), [0013](../scout/0013-discovery.md), [0014](../scout/0014-evidence-gated-enrichment.md), [0027](../search/0027-live-web-store-first-daily-quota.md), [0028](../search/0028-home-examples.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-marking-ai-written-text-research-trail.md), [0036](../identity/0036-identity-and-the-admin-host.md), [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md).
 
 ## Context
 
@@ -19,7 +19,7 @@ On a review item, accept and reject were not enough:
 - A resource candidate is what its collector guessed from a URL and a title: "Pricing | Open WebUI", PRODUCT, with the
   category tags of the search that found it. A blog post comes in as a product, or a page title still carries the
   site's name. The type was also locked to the finders: a discovery category declares only its product type and
-  ARTICLE ([0012](../scout/0012-collectors-and-events.md) §14), so a news item it found could never be accepted as NEWS.
+  ARTICLE ([0012](../scout/0012-scout-collectors-and-events.md) §14), so a news item it found could never be accepted as NEWS.
 - An enrichment check shows what the model said about a resource and the quotes behind it. Sometimes the model is
   wrong and the quote does not help: the price is the subject's, the licence is an old one, the type is a guess. The
   wrong value stayed until a new run, and a new run could say the same thing again. A value a source states could
@@ -35,7 +35,7 @@ On a review item, accept and reject were not enough:
    `internal` package: one rule of the back office's `ModularityTest` checks every admin package, web and config
    included. Its use cases are plain classes, wired in `admin.config`, and the `DOMAIN` rule of `ModularityTest`
    checks them with the catalog, examples, identity, search and Scout use cases they call
-   ([0002](../foundation/0002-modular-monolith-libraries-and-apps.md)). It reads no other module's storage format: a
+   ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). It reads no other module's storage format: a
    drafted example is read and accepted through the examples use cases `ReadExampleDraft` and `AcceptExampleDraft`
    ([0028](../search/0028-home-examples.md) §6). Its own classes live in its own packages, never in a library's: the
    place it serves the admin web app from is `admin.config.SpaProperties` (`helper2.spa`).
@@ -87,7 +87,7 @@ On a review item, accept and reject were not enough:
    it (`ReviewEvidence`, a query port, `JdbcReviewEvidence`) in at most 3 statements, whatever the number of fields;
    the admin module only composes it (`GetReviewEvidence`). A new run deletes the old run's AI fields, so an open item's
    run is the current one; an item a later run has closed can show its run with no fields left, and the page says so.
-   The values are model output (EU AI Act Art. 50, [0033](../guide/0033-ai-content-marking-and-research-trail.md)): the response has an
+   The values are model output (EU AI Act Art. 50, [0033](../guide/0033-marking-ai-written-text-research-trail.md)): the response has an
    `aiContent` marker with the run's model and the AI-written paths (and a drafted example's, §11), and the page labels each value with its origin in
    words and marks it with `data-ai-generated` and `data-ai-model`. The validation errors quote what the model wrote,
    so the list says "Includes model output" and is marked the same way. A quote that is not in the material it cites
@@ -149,14 +149,14 @@ On a review item, accept and reject were not enough:
     the settings by module: model ids per use, prompt versions, the guide's configuration hash, the daily budgets and
     caps, the Tavily credits and per-feature quotas, the Scout's schedule, and the sources and collectors that are on.
     Each module publishes one `SettingsGroup` bean (`platform.settings`) built from its own typed records, like the
-    policy values of [0041](../frontend/0041-site-pages-and-policy.md). The back office reads no other module's record and
-    never the environment ([0007](../foundation/0007-configuration-secrets-and-settings.md)).
+    policy values of [0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md). The back office reads no other module's record and
+    never the environment ([0007](../foundation/0007-configuration-secrets-runtime-settings.md)).
     It is an allow-list: each setting is listed by hand, through one factory per kind of value (count, cap, flag,
     duration, model, version, schedule, names). There is no factory for a secret. A value with a quote, an `@` or more
     than 500 characters is refused, so a URL with a user or a password cannot pass even by mistake. Each row names the
     `H2_` variable that sets it. The values are bound at startup, so the page is fixed until the next restart.
     Six spending limits are the exception: they change on the same page, at runtime, and their rows show the value
-    now ([0007](../foundation/0007-configuration-secrets-and-settings.md)). The overview says how many of them are changed, with a link
+    now ([0007](../foundation/0007-configuration-secrets-runtime-settings.md)). The overview says how many of them are changed, with a link
     to the page.
     The guide and the setup guide run only in the public app, so their groups are not beans of the back office. The
     public app writes all its groups to the table `public_app_setting` when it is ready (`PublishSettingsAtStartup`):
@@ -165,7 +165,7 @@ On a review item, accept and reject were not enough:
     and adds the published groups whose id it does not have; a group both apps have (models, search, http) is the back
     office's own. Each group says which app it is from (`ConfigGroup.app`), and a public app group shows the version
     and the time of that start. Before the public app's first start on a database the page says so, and shows the back
-    office's groups only. No call goes between the two apps ([0043](../operations/0043-runtime-topology.md)). A stored
+    office's groups only. No call goes between the two apps ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)). A stored
     row was built by a factory in the public app; the platform reads it back through `Setting.published`, which only
     its own package can call, and it passes the same check as a bound value, so a value the page cannot show reads "(hidden)", and
     rows that make no group (a key outside its group) or more than 500 rows read as nothing published. The table holds no personal data and
@@ -176,7 +176,7 @@ On a review item, accept and reject were not enough:
     readable draft, has `draft: null`; its `details` are shown as plain text. One mapping (`ReviewItemMapper`) gives the
     item the same way in the list, after a decision or an edit, and in the evidence view, so the browser never parses
     a draft. The label and the query are AI-written (EU AI Act Art. 50,
-    [0033](../guide/0033-ai-content-marking-and-research-trail.md)). In the API, an item with a draft has its own
+    [0033](../guide/0033-marking-ai-written-text-research-trail.md)). In the API, an item with a draft has its own
     `aiContent` marker: `fields` names `draft.label` and `draft.query`, `models` the draft's model, `provider` the
     configured model provider; every other item has `aiContent: null`. The evidence view's `aiContent` adds
     `item.draft.label` and `item.draft.query`, also for an item with no run (§7). On the page they are labelled
@@ -199,7 +199,7 @@ On a review item, accept and reject were not enough:
     from its own pages ([0014](../scout/0014-evidence-gated-enrichment.md)). The curated source now lists these types too.
 14. **The target is the admin's, the kind stays the model's.** The relationship keeps its origin; its own
     `target_origin` becomes CURATED (`targetOrigin` in the API). The review evidence marks `relationship.kind` as
-    AI-written, not `relationship.target` ([0033](../guide/0033-ai-content-marking-and-research-trail.md)). The resource page keeps the
+    AI-written, not `relationship.target` ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). The resource page keeps the
     AI label and `data-ai-generated` on the relationship: its kind is still model output. The item's reason line
     and note are written again in the same transaction (`CandidateText`): "Unverified relationship: <kind> <new
     target>", and a note that an admin chose the target (a catalog resource) or named it (no resource). The heading
@@ -482,13 +482,13 @@ A curated field:
 ### Security and privacy (STRIDE)
 
 The back office as a whole: ADMIN only, on the admin host behind the VPN, with `__Host-` cookies and CSRF
-([0036](../identity/0036-identity-and-admin-host.md)); every write is in the append-only audit trail; the review page shows every
+([0036](../identity/0036-identity-and-the-admin-host.md)); every write is in the append-only audit trail; the review page shows every
 text from a source or a model as plain text. The typed draft (§11) adds no data: the same four values the item held,
 read by code, with no new store; its marker names only the provider and the model.
 
 The target of a relationship candidate (§12 to §18):
 - **Spoofing / elevation**: ADMIN only, on the admin host behind the VPN, with CSRF
-  ([0036](../identity/0036-identity-and-admin-host.md)); the same rules as every back-office write.
+  ([0036](../identity/0036-identity-and-the-admin-host.md)); the same rules as every back-office write.
 - **Tampering**: the address must be https and canonical; the name and the type are checked; a link to itself is
   refused. The resource is added through the same catalog write as every record.
 - **Repudiation**: every change and every added resource is in the append-only audit trail.
@@ -499,7 +499,7 @@ The target of a relationship candidate (§12 to §18):
   inside its caps).
 
 A candidate edit (§19 to §24):
-- **Spoofing / elevation**: ADMIN only, admin host behind the VPN, CSRF ([0036](../identity/0036-identity-and-admin-host.md)).
+- **Spoofing / elevation**: ADMIN only, admin host behind the VPN, CSRF ([0036](../identity/0036-identity-and-the-admin-host.md)).
 - **Tampering**: the values are checked here and again on accept; the details are rewritten as JSON by code, never
   taken as text from the client.
 - **Repudiation**: every edit is in the append-only audit trail.
@@ -508,7 +508,7 @@ A candidate edit (§19 to §24):
 - **Denial of service**: one admin, one row per edit.
 
 A curated field (§25 to §29):
-- **Spoofing / elevation**: ADMIN only, admin host behind the VPN, CSRF ([0036](../identity/0036-identity-and-admin-host.md)).
+- **Spoofing / elevation**: ADMIN only, admin host behind the VPN, CSRF ([0036](../identity/0036-identity-and-the-admin-host.md)).
 - **Tampering**: the field is one of a fixed list, the column is the code's constant, the value is checked against
   the field's values; SQL takes the value only as a parameter.
 - **Repudiation**: every change is in the append-only audit trail.
@@ -530,7 +530,7 @@ The back office calls no model itself. It shows model output and lets a person d
 | Observability | Covered: every decision, edit and curated value is in the audit trail; model ids are shown with each AI value and each draft. Deferred: Grafana panels for the back office (open point). |
 | Human-in-the-Loop | Covered: this record is the human loop. Decisions are final; there is no undo (§9). |
 | Agent Framework, Orchestration, Memory, Browser & Computer Use, Evaluation | Not used here. |
-| Deployment, Security & Identity, Cost & Reliability | Covered by [0036](../identity/0036-identity-and-admin-host.md) and [0043](../operations/0043-runtime-topology.md); the overview is computed at most once a minute (§3). |
+| Deployment, Security & Identity, Cost & Reliability | Covered by [0036](../identity/0036-identity-and-the-admin-host.md) and [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md); the overview is computed at most once a minute (§3). |
 
 ### Known limits
 

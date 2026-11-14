@@ -1,6 +1,6 @@
 # 0023 — Catalog full-text index
 
-**Depends on:** [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0008](../foundation/0008-llm-integration.md), [0010](../foundation/0010-data-retention.md), [0011](../scout/0011-scout-runner.md), [0012](../scout/0012-collectors-and-events.md), [0022](0022-federated-search.md), [0025](0025-ranking.md), [0040](../frontend/0040-design-system.md).
+**Depends on:** [0004](../foundation/0004-persistence-and-the-schema.md), [0008](../foundation/0008-llm-integration.md), [0010](../foundation/0010-data-retention.md), [0011](../scout/0011-scout-runner.md), [0012](../scout/0012-scout-collectors-and-events.md), [0022](0022-federated-search.md), [0025](0025-ranking.md), [0040](../frontend/0040-design-system.md).
 
 ## Context
 
@@ -14,7 +14,7 @@ whether a query finds a resource there:
 - **The name.** Half of the catalog's titles are `owner/name` (GitHub repositories) or `@scope/name` (npm). The
   parser reads such a title as one word, so "ollama" did not find ollama/ollama by its words at all (290th on the
   staging copy of 7 Nov 2026).
-- **The words around a resource.** The awesome-list collector ([0012](../scout/0012-collectors-and-events.md)) reads the
+- **The words around a resource.** The awesome-list collector ([0012](../scout/0012-scout-collectors-and-events.md)) reads the
   README of the top 10 AI awesome lists. A list puts a small vector store under "Tools > Vector databases" and writes
   "embedded, runs in the browser" next to it, while the repository's own description says only "Fast storage". I want
   a search to find a resource by those words too, and the lists by the topics they cover, without keeping the README
@@ -37,7 +37,7 @@ whether a query finds a resource there:
    EXPRESSION AS (...)` rewrites it (one table rewrite).
    A resource with packages also adds `package_terms` at weight B, in `simple` and `english`: the words of its
    package names, registries and languages, and a provider's other name (`anthropic` → `claude`), built from its
-   records ([0018](../scout/0018-package-catalog.md) §9).
+   records ([0018](../scout/0018-ai-libraries-and-sdks-per-language.md) §9).
 2. **The query side.** `JdbcCatalogSearch.plainWords` turns `/` into a space before the words are OR-ed for the
    any-word arm, so `@scope/name` is two words there and never an AND. A `.` stays: the index keeps `llama.cpp` whole
    too, and `QueryAnalyzer` already gives the required variant `llama cpp`. The title-similarity arm keeps the raw
@@ -64,7 +64,7 @@ whether a query finds a resource there:
    through `UntrustedText` (cut to 500 characters, the guide's limit for a need), so it cannot close the tag. The language
    is a code from the detector's closed list; any other value is not sent.
    Its own daily cap `H2_SEARCH_DAILY_TRANSLATIONS` (300 per day; days are in Coordinated Universal Time, UTC), separate from the guide's cap; gauge `helper2.search.translation.budget.remaining`. Answers are shared by
-   every replica in the shared cache `translation` ([0004](../foundation/0004-persistence-schema-and-app-roles.md), table `ai_cache`):
+   every replica in the shared cache `translation` ([0004](../foundation/0004-persistence-and-the-schema.md), table `ai_cache`):
    key a SHA-256 of the model, a version of the prompt and of the user message's shape (`cacheVersion`, so a new message format never serves old answers; the meters keep the prompt's label), the language and the normalised query (trimmed, spaces collapsed,
    lower case), value the English words cut by code to 12 words and 120 characters (`QueryTranslator.MAX_CHARS`,
    counted in code points), whatever the model wrote, kept `H2_SEARCH_TRANSLATION_TTL` (24 h). A failed, empty or refused translation
@@ -81,7 +81,7 @@ whether a query finds a resource there:
    translation and the word-list terms) only widen the any-word arm. So a translated query keeps the every-word
    bonus when its English words are all in a row. GitHub gets the English words alone ([0022](0022-federated-search.md)). The API gives them apart
    from the word-list terms, in `interpretation.translatedQuery`, and the page labels them "Translated by AI"
-   ([0033](../guide/0033-ai-content-marking-and-research-trail.md)).
+   ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
 
 ### The words of awesome lists
 9. **What is read.** `AwesomeListParser` reads the README once and gives, per linked repository, its entry line as
@@ -109,7 +109,7 @@ whether a query finds a resource there:
    line or a list's headings do, each on its own GIN index (`awesome_list_entry_search_idx`,
    `awesome_list_search_idx`). A list-only row counts half: half the every-word bonus (+1) and half its popularity, no
    text score. So a direct every-word match (≥ 2) always outranks it, and a direct match beats a list-only match of the
-   same strength. In stage 1 the every-word bonus is 3 instead of the old order "every word first", so direct rows keep
+   same strength. In stage 1 the every-word bonus is 3, not a strict "every word first" order, so direct rows keep
    their order and list-only rows sort below direct every-word rows. The list words help recall; they never push a
    direct match down.
 14. **Explainability.** A list-only row carries the list and heading of its best matching entry (every word first, then
@@ -190,7 +190,7 @@ whether a query finds a resource there:
 the staging copy of 7 Nov 2026 (15,331 resources, the index alone) metasearch measured: "ollama" 290 → 1, "llama.cpp"
 19 → 1, "langchain" 3 → 1; replacing only `/` made "llama.cpp" worse (19 → 43), which is why names are split too. The
 fused order of a whole search also depends on the exact-title boost, which waits for graded queries
-([0046](../operations/0046-evaluation.md)). Cost: about 7 % more lexemes per row and 10 % more vector bytes; search SQL p50
+([0046](../operations/0046-evaluation-guide-and-search.md)). Cost: about 7 % more lexemes per row and 10 % more vector bytes; search SQL p50
 51 ms and p95 79–80 ms on that copy, before and after (the awesome-list numbers below are single runs). No
 re-embedding: the embedded text (title and description) does not change.
 
@@ -239,7 +239,7 @@ OWASP LLM Top 10: the translator's answer is untrusted (point 7); no model reads
 | Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and a retention rule; no text column. |
 | Guardrails | Covered: untrusted translation, cleaning, caps, bind parameters, half weight. |
 | Observability | Covered: translation budget gauge, a log line per list pass. |
-| Evaluation | Gap, deferred: the search set has no grades yet ([0046](../operations/0046-evaluation.md)); the owner/name cases are store-level ITs, not graded metrics. |
+| Evaluation | Gap, deferred: the search set has no grades yet ([0046](../operations/0046-evaluation-guide-and-search.md)); the owner/name cases are store-level ITs, not graded metrics. |
 | Deployment | Covered: V1, one optional setting (`H2_RETENTION_LIST_INDEX`), no chart change. |
 | Security & Identity | Covered: no new endpoint or role. |
 | Human-in-the-loop | Deferred, safe: lists are public, read-only and capped. |

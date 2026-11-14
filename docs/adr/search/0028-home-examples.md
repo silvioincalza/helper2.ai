@@ -1,6 +1,6 @@
 # 0028 — Home examples
 
-**Depends on:** [0022](0022-federated-search.md), [0025](0025-ranking.md), [0036](../identity/0036-identity-and-admin-host.md), [0038](../backoffice/0038-back-office-and-review.md), [0040](../frontend/0040-design-system.md), [0046](../operations/0046-evaluation.md).
+**Depends on:** [0022](0022-federated-search.md), [0025](0025-ranking.md), [0036](../identity/0036-identity-and-the-admin-host.md), [0038](../backoffice/0038-back-office-and-review.md), [0040](../frontend/0040-design-system.md), [0046](../operations/0046-evaluation-guide-and-search.md).
 
 ## Context
 
@@ -84,7 +84,7 @@ same for every visitor.
    `ExamplesBackOfficeConfiguration` and `ExamplesBackOfficeAdapters` (the pool's store `HomeExamples`, the
    example's search, the titles, the drafts, the drafter with its budget, gauge and settings group). They carry no
    stereotype and only `BackOfficeApplication` imports them
-   ([0002](../foundation/0002-modular-monolith-libraries-and-apps.md) §5), so the public context has no write to the
+   ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §5), so the public context has no write to the
    pool, no draft model call and no review queue adapter of the examples (`NoBackOfficeExamplesIT`). The use cases are in the `DOMAIN` of both apps' `ModularityTest`, and the library checks its own rules
    (`ExamplesArchitectureTest`). The public endpoint is the public app's (`examples.web`); the check's schedule is the
    back office's (`examples.schedule`).

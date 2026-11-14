@@ -1,6 +1,6 @@
 # 0044 — CI/CD and supply chain
 
-**Depends on:** [0007](../foundation/0007-configuration-secrets-and-settings.md), [0009](../foundation/0009-observability.md), [0043](0043-runtime-topology.md), [0045](0045-releases-and-versions.md), [0047](0047-code-format-and-dead-code-audit.md).
+**Depends on:** [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0009](../foundation/0009-observability.md), [0043](0043-runtime-topology-helm-chart-three-deployables.md), [0045](0045-releases-and-versions.md), [0047](0047-code-format-and-dead-code-audit.md).
 
 ## Context
 
@@ -10,7 +10,7 @@ only released versions, and only after a person approves: `main` may carry unfin
 users must not see yet. Code from a fork must never run where deploy credentials exist, and GitHub must hold no
 long-lived secret.
 
-Three images ship together: web, public app and back office ([0043](0043-runtime-topology.md)). A change to one page
+Three images ship together: web, public app and back office ([0043](0043-runtime-topology-helm-chart-three-deployables.md)). A change to one page
 of the admin app or to a doc should not run every check and build all three. The images are built from public base
 images and ship hundreds of Java and JavaScript libraries: we must know what an image holds and when one of its parts
 has a known vulnerability. A base-image tag can move to new content without a change in our repository. A scanner run
@@ -25,9 +25,9 @@ Harbor could put an image under a tag first.
    - `changes`: the self-test of `.github/scripts/changes.sh`, the ADR reference check (`scripts/adr-check.py`, its
      self-test first), the tests of the evaluation script's stop rule (`scripts/eval-lib.test.mjs`), the test that the
      industry events seed is what its script writes from the research file (`scripts/industry-events-seed.test.mjs`,
-     [0012](../scout/0012-collectors-and-events.md)), the check that no released migration changed
+     [0012](../scout/0012-scout-collectors-and-events.md)), the check that no released migration changed
      (`.github/scripts/released-migrations.sh`, its self-test first,
-     [0004](../foundation/0004-persistence-schema-and-app-roles.md) §5), then the map of what the change touches (§8);
+     [0004](../foundation/0004-persistence-and-the-schema.md) §5), then the map of what the change touches (§8);
    - frontend, jobs side by side, each with `npm ci` and the generated API types: `frontend-build` (build,
      `check:bundle`), `frontend-check` (`format:check` with Prettier, lint, `knip`, typecheck, `npm audit`,
      [0047](0047-code-format-and-dead-code-audit.md)) and `frontend-test`, Vitest in three jobs named
@@ -85,7 +85,7 @@ Harbor could put an image under a tag first.
    - The same rule on staging and on prod. On staging the failed job fails the CD run, so that commit cannot reach
      prod.
    - The schema is not rolled back. The migrate Job of the failed revision has run; the rollback's own Job runs the
-     older image's step, which finds nothing to do ([0004](../foundation/0004-persistence-schema-and-app-roles.md)
+     older image's step, which finds nothing to do ([0004](../foundation/0004-persistence-and-the-schema.md)
      §10), and the older apps accept a newer versioned migration (Flyway ignores it) and run their own seeds again. So
      the rollback is safe only when the older code works on the newer schema: the same condition every rolling
      upgrade already needs, because the old pods serve until the new ones are ready. A migration that drops or

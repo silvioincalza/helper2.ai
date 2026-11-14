@@ -1,6 +1,6 @@
 # 0041 — Site: pages for crawlers, policy endpoint
 
-**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0002](../foundation/0002-modular-monolith-libraries-and-apps.md), [0003](../foundation/0003-contract-first-rest-api.md), [0007](../foundation/0007-configuration-secrets-and-settings.md), [0010](../foundation/0010-data-retention.md), [0027](../search/0027-tavily-store-and-daily-quota.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-ai-content-marking-and-research-trail.md), [0037](../identity/0037-http-edge-protection.md), [0039](0039-frontend-one-box.md), [0040](0040-design-system.md).
+**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0003](../foundation/0003-contract-first-rest.md), [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0010](../foundation/0010-data-retention.md), [0027](../search/0027-live-web-store-first-daily-quota.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-marking-ai-written-text-research-trail.md), [0037](../identity/0037-http-edge.md), [0039](0039-frontend-one-box-state-in-the-url.md), [0040](0040-design-system.md).
 
 ## Context
 
@@ -28,7 +28,7 @@ Both are about the public site itself, and only the public app serves them.
 1. **Spring fills the shell; React stays as it is.** The site's `pages` part answers every GET and HEAD of an address the
    client router owns (`ClientRoutes`: no file extension, not a server path) with a router function. It reads the
    built `index.html` once at start-up (`helper2.pages.template`; in the cluster `file:/shell/index.html`, copied by an
-   init container from the web image of the same tag, [0043](../operations/0043-runtime-topology.md)) and, per
+   init container from the web image of the same tag, [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)) and, per
    request, writes into it:
    the title, meta description, canonical link, robots meta, Open Graph and Twitter tags, JSON-LD, and for a
    resource a short plain HTML body inside `#root`. `createRoot` swaps that body for the app when it starts, so people see
@@ -43,7 +43,7 @@ Both are about the public site itself, and only the public app serves them.
    | `/resource/{id}`, unknown or not a UUID | 404 | noindex | "Resource not found" |
    | `/`, `/sources`, `/mission`, `/privacy`, `/terms` | 200 | index | fixed title and description per page |
    | `/search`, `/?q=…`, `/saved`, `/account` | 200 | noindex, follow | fixed title |
-   | `/admin/**` | 404 here: the back office app serves it on the admin host ([0043](../operations/0043-runtime-topology.md)), always `noindex` | — | — |
+   | `/admin/**` | 404 here: the back office app serves it on the admin host ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)), always `noindex` | — | — |
    | any other address without a file extension | 404 | noindex | "Page not found" |
 
    The 404 pages still carry the app, so a person sees the app's own "not found" page. The pages the server knows
@@ -88,7 +88,7 @@ Both are about the public site itself, and only the public app serves them.
    limit). The catalog query applies the same rule as `IndexPolicy`; an integration test opens every listed page and
    checks it says `index`. It is built at most once an hour and kept in memory. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
    `/admin`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
-   `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header stays ([0037](../identity/0037-http-edge-protection.md)), every robots meta says
+   `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header stays ([0037](../identity/0037-http-edge.md)), every robots meta says
    `noindex` too, `robots.txt` allows all (a blocked page never shows its noindex) and there is no sitemap.
 7. **Client navigation drops the server's tags.** The tags Spring writes carry `data-h2-head`. At the first move to
    another page the app removes them (`useDropServerHead`); from then on it keeps the title itself. Crawlers
@@ -111,12 +111,12 @@ Both are about the public site itself, and only the public app serves them.
      (`H2_RETENTION_LIST_INDEX`), a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
      with a fingerprint (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0014](../scout/0014-evidence-gated-enrichment.md)); database backups
      (`H2_RETENTION_BACKUPS`: the chart passes its `backup.retentionDays`, the app only states it,
-     [0043](../operations/0043-runtime-topology.md)); cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers
+     [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)); cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers
      (`H2_GUIDE_CACHE_TTL`), translations (`H2_SEARCH_TRANSLATION_TTL`), query vectors (`H2_SEARCH_QUERY_VECTOR_TTL`),
      stored web results (`H2_RETENTION_LIVE_WEB_RESULTS`), inactive accounts with their saved items
      (`H2_RETENTION_INACTIVE_ACCOUNTS`), handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators'
      records in the audit trail (`H2_RETENTION_ADMIN_AUDIT`, [0038](../backoffice/0038-back-office-and-review.md)), and runtime
-     setting changes (`H2_RETENTION_RUNTIME_SETTINGS`, [0007](../foundation/0007-configuration-secrets-and-settings.md); each setting's newest change
+     setting changes (`H2_RETENTION_RUNTIME_SETTINGS`, [0007](../foundation/0007-configuration-secrets-runtime-settings.md); each setting's newest change
      stays while it applies).
    - `sources`: what the Scout reads, as the Privacy page states it: how many categories the discovery searches cover
      and how many searches that is (`helper2.categories`), the longest quote (`EvidenceValidator.MAX_EXCERPT_CHARS`),
@@ -131,7 +131,7 @@ Both are about the public site itself, and only the public app serves them.
    `identity.AccountPolicy`, `catalog.CatalogPolicy`, `catalog.ScoutPolicy`. The config records stay internal to their
    module. The Scout runs in the back office and this endpoint in the public app, so the Scout's numbers live in the
    catalog library, with the limits the Scout's code reads, and the public app binds the two retention periods
-   (`helper2.scout.evidence`) from the same `H2_` variables ([0043](../operations/0043-runtime-topology.md)). The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
+   (`helper2.scout.evidence`) from the same `H2_` variables ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)). The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
    from the platform directly: they belong to no module.
 12. **The site serves them.** `site.policy.web.PolicyController` maps the five values to the contract. It composes
    other modules and owns no table; no module depends on it. There is no use case: the endpoint makes no decision.
@@ -146,7 +146,7 @@ Both are about the public site itself, and only the public app serves them.
 15. **One `site` module in the public app.** `ai.helper2.site` holds what the public site says about itself and how
    it funds itself, one package each: `pages` (1-8), `policy` (9-14), `monetisation` and `csp`
    ([0042](../money/0042-monetisation.md)). Only the public app uses them, so none of it is a library
-   ([0002](../foundation/0002-modular-monolith-libraries-and-apps.md)). The site sits on top: it reads the policy
+   ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). The site sits on top: it reads the policy
    values of search, guide, identity and catalog, and no module names one of its types (`ModularityTest`,
    `noModuleNamesTheSite`). Identity's security configuration needs one of its parts; it takes it as Spring beans of
    Spring's type: the public CSP as a `HeaderWriter` (`contentSecurityPolicy`, and `strictContentSecurityPolicy` for

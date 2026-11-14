@@ -1,6 +1,6 @@
 # 0043 — Runtime topology: Helm chart, three deployables
 
-**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0002](../foundation/0002-modular-monolith-libraries-and-apps.md), [0003](../foundation/0003-contract-first-rest-api.md), [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-secrets-and-settings.md), [0009](../foundation/0009-observability.md), [0011](../scout/0011-scout-runner.md), [0036](../identity/0036-identity-and-admin-host.md), [0037](../identity/0037-http-edge-protection.md), [0038](../backoffice/0038-back-office-and-review.md), [0041](../frontend/0041-site-pages-and-policy.md), [0042](../money/0042-monetisation.md), [0044](0044-ci-cd-and-supply-chain.md).
+**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0003](../foundation/0003-contract-first-rest.md), [0004](../foundation/0004-persistence-and-the-schema.md), [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0009](../foundation/0009-observability.md), [0011](../scout/0011-scout-runner.md), [0036](../identity/0036-identity-and-the-admin-host.md), [0037](../identity/0037-http-edge.md), [0038](../backoffice/0038-back-office-and-review.md), [0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md), [0042](../money/0042-monetisation.md), [0044](0044-ci-cd-and-supply-chain.md).
 
 ## Context
 
@@ -29,16 +29,16 @@ database connections. A change to the web app would rebuild and redeploy the bac
    has its own image: `deploy/web.Dockerfile`, `deploy/Dockerfile`, `deploy/backoffice.Dockerfile`, built from one
    commit and deployed with the same tag. The back office tag defaults to `image.tag`; the web image has no tag of
    its own, it is always `image.tag`.
-3. **Shared code is a library in this repo** ([0002](../foundation/0002-modular-monolith-libraries-and-apps.md)). Apps
+3. **Shared code is a library in this repo** ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). Apps
    hold the driving adapters (controllers, schedules) and the wiring. The public app has no admin and no Scout code;
    the back office has no guide, setup or SEO pages. Libraries and apps keep their package names.
    - `libs/sources` holds the live search sources (GitHub, Hugging Face, npm, arXiv, the live web), their HTTP mapping
      and settings, the demo sources, and the descriptors of the Scout's collectors. Both apps search, and both list
      every source on `GET /api/v1/sources`. The collectors themselves stay in the back office.
    - `ScoutPolicy` is in `libs/catalog` with the limits the Scout reads, so the public policy endpoint
-     ([0041](../frontend/0041-site-pages-and-policy.md)) states the back office's numbers without its code.
+     ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)) states the back office's numbers without its code.
    - The web adapters both apps serve the same way (search, sources, categories) are in `libs/web-contract`, with
-     the types of `api/common.yaml` they use, generated once ([0003](../foundation/0003-contract-first-rest-api.md)).
+     the types of `api/common.yaml` they use, generated once ([0003](../foundation/0003-contract-first-rest.md)).
 4. **One contract per app.** The public app generates its controllers from `api/public.yaml`, the back office from
    `api/admin.yaml`. Each serves the parts of `api/common.yaml` it names, but generates none of them: those come from
    `libs/web-contract`, under the same names in both apps.
@@ -73,7 +73,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
    ([0044](0044-ci-cd-and-supply-chain.md) §3).
    Replicas share state only through Postgres and Redis: the Scout and indexer locks and the end time of the last
    scheduled Scout run ([0011](../scout/0011-scout-runner.md)), rate limits
-   ([0037](../identity/0037-http-edge-protection.md)) and sign-in sessions ([0036](../identity/0036-identity-and-admin-host.md)).
+   ([0037](../identity/0037-http-edge.md)) and sign-in sessions ([0036](../identity/0036-identity-and-the-admin-host.md)).
    The `deployer` Role (incalza-me-infra) must allow PodDisruptionBudgets and Jobs.
 
 ### Edge, ports and probes
@@ -84,7 +84,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
    to the Service `helper2`, port 80; on prod it also redirects `www.helper2.ai` to the apex (301, path and query
    kept). The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx; the
    Ingress `helper2-admin` routes them, from the in-network ranges only, to the Service `helper2-admin`
-   ([0036](../identity/0036-identity-and-admin-host.md)). From ingress-nginx to the pods the traffic is plain Hypertext
+   ([0036](../identity/0036-identity-and-the-admin-host.md)). From ingress-nginx to the pods the traffic is plain Hypertext
    Transfer Protocol (HTTP). On any other cluster, your own Ingress or route targets the same three Services.
    Platform settings (registry, storage classes, Ingress controller, tracing, scraper) are values, set for the hosted
    environments in `values-<env>.yaml` ([deploy/k8s/README.md](../../../deploy/k8s/README.md)).
@@ -121,9 +121,9 @@ database connections. A change to the web app would rebuild and redeploy the bac
 10. **One database, one Flyway owner.** Both apps use the same Postgres and Redis. The migrate Job runs the public
     image's migrate step (`MigrateStep`, `args: [migrate]`) as the database owner: Flyway migrates, the apps' roles get
     their login, and the Job ends. Each app connects as its own role (`h2_public`, `h2_backoffice`) and only checks
-    the schema (`SchemaCheck`), waiting while the Job runs ([0004](../foundation/0004-persistence-schema-and-app-roles.md)).
+    the schema (`SchemaCheck`), waiting while the Job runs ([0004](../foundation/0004-persistence-and-the-schema.md)).
     The passwords are in their own Secret, `helper2-credentials`; every other `H2_` key is in `helper2-app-env`, which
-    both apps load whole ([0007](../foundation/0007-configuration-secrets-and-settings.md)). Each workload names only
+    both apps load whole ([0007](../foundation/0007-configuration-secrets-runtime-settings.md)). Each workload names only
     its own password keys; only Postgres, `pg-backup` and the migrate Job get the owner's. Daily budgets and quotas
     stay in the shared Redis, so they hold across both apps.
 11. **Redis auth.** `redis.auth.enabled: true`. The default user is the admin (probes, `redis-cli`), with
@@ -131,7 +131,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
     `files/redis-users.acl`) with its own password: its keys and commands only. The passwords come from the
     credentials Secret (or `redis.auth.existingSecret`) and reach `redis-server` as config on standard input, never
     in the command line. Redis is a single-replica StatefulSet with an append-only file on its own
-    PersistentVolumeClaim ([0005](../foundation/0005-redis-disposable-cache.md)): a Redis restart keeps sessions,
+    PersistentVolumeClaim ([0005](../foundation/0005-redis-as-a-disposable-cache.md)): a Redis restart keeps sessions,
     rate-limit windows and cached answers. The volume holds only cache data and is not backed up.
 12. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the volume
     `pg-backup` (NFS on prod, kept on `helm uninstall`), 7 days kept. A failed `pg_dump` fails the Job (`pipefail`);
@@ -162,11 +162,11 @@ database connections. A change to the web app would rebuild and redeploy the bac
     `/usr/share/helper2/shell/index.html`. An init container of each public pod runs the web image of the same tag
     (one Helm helper, `helper2.webImage`, names it for both) and copies it into an `emptyDir` that the app mounts
     read-only at `/shell`. The public app reads it once at start (`H2_PAGES_TEMPLATE`, default
-    `file:/shell/index.html`) and writes every page into it ([0041](../frontend/0041-site-pages-and-policy.md)). The
+    `file:/shell/index.html`) and writes every page into it ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)). The
     public image holds no web files.
 
 ### The back office
-15. **The back office only on the admin host** ([0036](../identity/0036-identity-and-admin-host.md)). The Deployment
+15. **The back office only on the admin host** ([0036](../identity/0036-identity-and-the-admin-host.md)). The Deployment
     `helper2-backoffice` sits behind the Service `helper2-admin`; the public Deployment opens no admin port. On every
     response, errors included, the back office sends:
     - a fixed strict CSP, without a nonce: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'
@@ -194,7 +194,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
     snapshot; that only reads, it does no shared work. A test per app (`SchedulesIT`) lists its jobs.
 18. **What the owner sees stays whole.** The back office gets the two site-wide caps (guide model calls, live web
     credits) with the same values as the public app, so its Settings page, its runtime settings
-    ([0007](../foundation/0007-configuration-secrets-and-settings.md)) and its overview's budgets show them, read from
+    ([0007](../foundation/0007-configuration-secrets-runtime-settings.md)) and its overview's budgets show them, read from
     the shared Redis count. Both apps register the same `source` rows at startup, from the same settings and the same
     descriptors.
 19. **Per environment.** The back office runs the Scout once a day at 03:07 UTC (`backoffice.scoutCron`; each replica
@@ -323,7 +323,7 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change with the topology.
 ### Open points
 
 - The web image does not keep the assets of the release before; the schema owner is a superuser; the Redis split is not narrower than one user per app; the apps share one env Secret.
-- No restore of a backup is tested, there is no restore-check job, the R2 copy is off and the dumps are not encrypted.
+- No restore of a backup is tested, and there is no restore-check job.
 - The Scout stays on in staging after the tag.
 
 ## Diagrams

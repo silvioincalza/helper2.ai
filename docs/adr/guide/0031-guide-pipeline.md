@@ -1,6 +1,6 @@
 # 0031 — Guide pipeline
 
-**Depends on:** [0008](../foundation/0008-llm-integration.md), [0009](../foundation/0009-observability.md), [0012](../scout/0012-collectors-and-events.md), [0014](../scout/0014-evidence-gated-enrichment.md), [0022](../search/0022-federated-search.md), [0024](../search/0024-vector-search-pgvector.md), [0025](../search/0025-ranking.md), [0027](../search/0027-tavily-store-and-daily-quota.md), [0032](0032-guide-cost-guard-and-answer-cache.md), [0033](0033-ai-content-marking-and-research-trail.md), [0034](0034-setup-guide.md), [0046](../operations/0046-evaluation.md).
+**Depends on:** [0008](../foundation/0008-llm-integration.md), [0009](../foundation/0009-observability.md), [0012](../scout/0012-scout-collectors-and-events.md), [0014](../scout/0014-evidence-gated-enrichment.md), [0022](../search/0022-federated-search.md), [0024](../search/0024-vector-search.md), [0025](../search/0025-ranking.md), [0027](../search/0027-live-web-store-first-daily-quota.md), [0032](0032-guide-cost-guard-and-answer-cache.md), [0033](0033-marking-ai-written-text-research-trail.md), [0034](0034-setup-guide.md), [0046](../operations/0046-evaluation-guide-and-search.md).
 
 ## Context
 
@@ -29,7 +29,7 @@ What the data supports:
   `published_date` is Tavily's estimate. The catalog's first-discovered date is not a birth date.
 - Each source returns its own top hits by relevance; filters and sort run after merging, so a date filter alone only
   filters what relevance returned.
-- Events have dates and places ([0012](../scout/0012-collectors-and-events.md)).
+- Events have dates and places ([0012](../scout/0012-scout-collectors-and-events.md)).
 
 ## Decision
 
@@ -192,7 +192,7 @@ The plan call (fast model, `prompts/guide/plan.txt`) returns:
   `GuideValidator.normalizedConstraints`): the page and the `planned` event show them as AI-written text, and no
   AI-written text of the guide carries a link. A web query with a link is dropped too (`PlannedQueries.webQueryOf`): the web
   sources then get the search query, and the research trail lists no query with a link
-  ([0033](0033-ai-content-marking-and-research-trail.md));
+  ([0033](0033-marking-ai-written-text-research-trail.md));
 - a model window only when the text names a time (`IntentRules.mentionsTime`);
 - a model intent only when grounded: `NEWEST` with time or newness words, `COMPARE` with 2 grounded subjects,
   `ALTERNATIVES` and `WHAT_IS` with 1;
@@ -258,7 +258,7 @@ Flow:
    reason check. A vague question runs no search; an ambiguous subject runs only the intent's own search. One model
    call (plan).
 2. The stream sends `planned`, `understood`, `clarify`, then `answer` with that status. The question and options
-   are AI-written and marked as such ([0033](0033-ai-content-marking-and-research-trail.md)): the plan call ran.
+   are AI-written and marked as such ([0033](0033-marking-ai-written-text-research-trail.md)): the plan call ran.
 3. The page shows the question, the options as chips and "Search anyway". A chip sends the original text plus
    `clarification` with the option; a free-text reply works the same way; "Search anyway" sends `clarification = ""`.
    `clarification` is user text like `request`: at most 300 characters, wrapped by `UntrustedText` in the plan prompt,
@@ -270,7 +270,7 @@ Flow:
 6. Cost of one round trip: two guide requests, so 2 units of the per-client quota of
    [0032](0032-guide-cost-guard-and-answer-cache.md) and 1 + the intent's model calls (§7) of the daily budget: 2 plan calls for a
    date, 4 for picks, a comparison or an explanation. Daily web searches
-   ([0027](../search/0027-tavily-store-and-daily-quota.md)): a vague question takes none before the reply; an ambiguous subject
+   ([0027](../search/0027-live-web-store-first-daily-quota.md)): a vague question takes none before the reply; an ambiguous subject
    takes 1 for its own search and the reply takes 1 more, because 0027 counts one per request and the reply's search
    carries the chosen name, a different query. The reply takes none when its search equals a stored one (the same
    name searched by anyone in the last 48 h, 24 h for dates).
@@ -288,7 +288,7 @@ Flow:
 #### 5. Retrieval by intent
 `AskGuide` sends the reading to one answer class per intent: `PickAnswer` (`SUGGEST`, `HOW_TO`, `LEARN`, `NEWEST`,
 `ALTERNATIVES`), `CompareAnswer`, `ExplainAnswer`, `DateAnswer`. Every search carries the asker's daily web searches
-([0027](../search/0027-tavily-store-and-daily-quota.md)); `NEWEST`, `WHEN` and `LEARN` searches ask for fresh web results.
+([0027](../search/0027-live-web-store-first-daily-quota.md)); `NEWEST`, `WHEN` and `LEARN` searches ask for fresh web results.
 
 | Intent | Types | Sort | Text | Other |
 |---|---|---|---|---|
@@ -337,7 +337,7 @@ equals the subject, or the subject plus a type word ("Ollama app"). The first su
 none is the subject:
 - `ALTERNATIVES`: the planned query is searched instead, with the notice "Cursor was not found in our sources; showing
   tools for: …" (`GUIDE_SUBJECT_NOT_FOUND`). The name and the query are the notice's own fields, marked AI-written;
-  the page builds the sentence ([0033](0033-ai-content-marking-and-research-trail.md)).
+  the page builds the sentence ([0033](0033-marking-ai-written-text-research-trail.md)).
 - `COMPARE`: a subject whose search finds no own entry, fails or misses its deadline (10 s for all subjects
   together) is not found. With fewer than 2 found, the answer is the picks of the found subject (or of the query),
   with one `GUIDE_SUBJECT_NOT_FOUND` notice per missing subject.
@@ -414,7 +414,7 @@ either, and most platform courses end with a certificate.
   IBM, Databricks). Each entry links the provider's own page.
 - **No platform source.** Coursera's catalog endpoint has no search, O'Reilly's search API and
   edX's Discovery API answer 401 without an enterprise or client key, and Udemy's API answers 403.
-- **Scout collector** `CourseCollector` ([0012](../scout/0012-collectors-and-events.md)): Tavily searches restricted to each
+- **Scout collector** `CourseCollector` ([0012](../scout/0012-scout-collectors-and-events.md)): Tavily searches restricted to each
   platform's domain for new AI courses and certification pages. New pages go to the admin review list
   ([0014](../scout/0014-evidence-gated-enrichment.md)), never straight to the catalog.
 - A course's `published` is its launch date where the platform states it; otherwise unknown, and §4's strict rule
@@ -432,7 +432,7 @@ either, and most platform courses end with a certificate.
   after the plan; the model never sees it, so it cannot be confused with instructions in the user's text.
 
 #### 10. Evaluation
-[0046](../operations/0046-evaluation.md) runs the guide question set. Pass criteria per intent: `NEWEST` — every pick created
+[0046](../operations/0046-evaluation-guide-and-search.md) runs the guide question set. Pass criteria per intent: `NEWEST` — every pick created
 inside the window, newest first; `ALTERNATIVES` — the subject is not a pick; `COMPARE` — one column per subject, no
 cell without a gated quote; `WHAT_IS` — every sentence quoted; `WHEN` — the date equals the event record, and a
 question about an event shows events only; `LEARN` — every pick has type `COURSE`; ask-back cases — asked back
@@ -451,7 +451,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
   thread under `GuideLimits` (a streamed model call is read to its end on that thread, [0035](0035-guide-model-stream.md)); the steps reach the flux through a `Sinks.Many` ([0032](0032-guide-cost-guard-and-answer-cache.md)). No server retry.
 - **Keep-alive comments.** While a question runs, the stream sends the SSE comment `:keep-alive` every
   `H2_GUIDE_HEARTBEAT` (15 s). One model step can be silent for longer than the client's idle timeout (45 s,
-  [0039](../frontend/0039-frontend-one-box.md)), and an asker who joined an identical question already running
+  [0039](../frontend/0039-frontend-one-box-state-in-the-url.md)), and an asker who joined an identical question already running
   ([0032](0032-guide-cost-guard-and-answer-cache.md)) gets no step events at all. The comments are a `Flux.interval`
   merged into the event flux; they stop after the last event or when the client is gone (the flux is cancelled).
   The whole stream ends at the latest 10 s after the last answer time of `GuideLimits`.
@@ -545,9 +545,9 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 | Threat | Risk | Control |
 |---|---|---|
 | Spoofing | A candidate's text pretends to be another resource, or our instructions | Picks name candidates by key only; the quote must be in that candidate's own text; candidate text cannot close or open a tag (`UntrustedText` masks `< >`). |
-| Tampering / prompt injection (OWASP LLM01) | Instructions planted in candidate text, or in a shared question | One SECURITY block in every prompt that sends third-party text; the need is tagged and masked like third-party text; the gate, not the model, decides what is kept; links are rejected in reasons, in the planner's search query and constraints, and in the trail's queries; constraints only lose status. A reason that tells the user what to do, or states what the user must or need not do, is removed by the reason check; a reason that names a secret its evidence does not is removed by code. A sentence of the question written for the reason never becomes a constraint. The adversarial set ([0046](../operations/0046-evaluation.md)) has 13 hostile questions. |
-| Repudiation | Not knowing which model and prompt wrote an answer | Every model call is metered with step, model and prompt label; the answer names its models ([0033](0033-ai-content-marking-and-research-trail.md)). |
-| Information disclosure | The prompt or third-party text leaks into the answer | The model writes only fields the gate checks; the prompts hold no secrets; the trail never shows raw model output ([0033](0033-ai-content-marking-and-research-trail.md)). |
+| Tampering / prompt injection (OWASP LLM01) | Instructions planted in candidate text, or in a shared question | One SECURITY block in every prompt that sends third-party text; the need is tagged and masked like third-party text; the gate, not the model, decides what is kept; links are rejected in reasons, in the planner's search query and constraints, and in the trail's queries; constraints only lose status. A reason that tells the user what to do, or states what the user must or need not do, is removed by the reason check; a reason that names a secret its evidence does not is removed by code. A sentence of the question written for the reason never becomes a constraint. The adversarial set ([0046](../operations/0046-evaluation-guide-and-search.md)) has 13 hostile questions. |
+| Repudiation | Not knowing which model and prompt wrote an answer | Every model call is metered with step, model and prompt label; the answer names its models ([0033](0033-marking-ai-written-text-research-trail.md)). |
+| Information disclosure | The prompt or third-party text leaks into the answer | The model writes only fields the gate checks; the prompts hold no secrets; the trail never shows raw model output ([0033](0033-marking-ai-written-text-research-trail.md)). |
 | Denial of service / cost | Long questions, many candidates, slow models | 500-character need, 800 characters per candidate, 24 candidates, fixed token limits, at most 3 model calls a fresh question; the cost guard of [0032](0032-guide-cost-guard-and-answer-cache.md). |
 | Elevation of privilege | A model answer that acts | The model calls no tools and its answer drives no action; it only proposes text that code checks. |
 
@@ -565,7 +565,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 | 8 | Browser & Computer Use | Covered: none. |
 | 9 | Guardrails | Covered: the evidence gate, constraint checks from source metadata, link filter, the reason check, grounding of the planner's values, one SECURITY block. |
 | 10 | Observability | Covered: `helper2.guide.step`, `helper2.guide.picks`, `helper2.llm.call` with prompt label, `helper2.llm.thinking_fallback{step,reason}`, the `guide timings` line without user text. |
-| 11 | Evaluation | Covered: guide question set, intents set and adversarial set ([0046](../operations/0046-evaluation.md)); the labels are pinned by a test. The staging run with the prompts of this record is still to do (open point). |
+| 11 | Evaluation | Covered: guide question set, intents set and adversarial set ([0046](../operations/0046-evaluation-guide-and-search.md)); the labels are pinned by a test. The staging run with the prompts of this record is still to do (open point). |
 | 12 | Deployment | Covered: config only; the guide is off without a model key. |
 | 13 | Security & Identity | Covered: the model key from OpenBao; no new secret. |
 | 14 | Human-in-the-Loop | Covered: the "Understood as" chips let the user drop a part of the reading; new courses wait in the review list. |

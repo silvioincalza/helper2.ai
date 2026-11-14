@@ -1,6 +1,6 @@
 # 0032 — Guide cost guard and answer cache
 
-**Depends on:** [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0005](../foundation/0005-redis-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0007](../foundation/0007-configuration-secrets-and-settings.md), [0008](../foundation/0008-llm-integration.md), [0010](../foundation/0010-data-retention.md), [0024](../search/0024-vector-search-pgvector.md), [0026](../search/0026-filters-facets-and-categories.md), [0027](../search/0027-tavily-store-and-daily-quota.md), [0031](0031-guide-pipeline.md), [0033](0033-ai-content-marking-and-research-trail.md), [0037](../identity/0037-http-edge-protection.md), [0046](../operations/0046-evaluation.md).
+**Depends on:** [0004](../foundation/0004-persistence-and-the-schema.md), [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0006](../foundation/0006-outbound-calls-and-resilience.md), [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0008](../foundation/0008-llm-integration.md), [0010](../foundation/0010-data-retention.md), [0024](../search/0024-vector-search.md), [0026](../search/0026-filters-facets-categories.md), [0027](../search/0027-live-web-store-first-daily-quota.md), [0031](0031-guide-pipeline.md), [0033](0033-marking-ai-written-text-research-trail.md), [0037](../identity/0037-http-edge.md), [0046](../operations/0046-evaluation-guide-and-search.md).
 
 ## Context
 
@@ -26,13 +26,13 @@ and the search cache; AI answers are kept on disk, in PostgreSQL.
 Enter always searches, whatever the length of the text. The guide runs only when the user asks for it: the "Ask the
 guide" button next to Search, or Shift+Enter; "Ask the guide instead" on an empty result asks too. No word count
 starts the guide, so a name search ("pgvector", a long product name) spends no model call. The choice lives in the one
-box ([0039](../frontend/0039-frontend-one-box.md)); the server answers every question it gets, behind the guards below.
+box ([0039](../frontend/0039-frontend-one-box-state-in-the-url.md)); the server answers every question it gets, behind the guards below.
 Where the guide answers, the page shows what is left today ("2 of 3 AI answers left today",
 [0040](../frontend/0040-design-system.md)).
 
 ### The guards, in code order
 Values are defaults; each has an `H2_` variable.
-1. **Per-minute rate limit** (`RateLimitInterceptor`, [0037](../identity/0037-http-edge-protection.md)): 10 questions a
+1. **Per-minute rate limit** (`RateLimitInterceptor`, [0037](../identity/0037-http-edge.md)): 10 questions a
    minute per client (`H2_RATE_LIMIT_GUIDE_PER_MINUTE`), one limiter shared by `askGuideStream` and the tool guide
    `askResourceGuide`. The client is `platform.ClientKey`: the remote address, IPv4 as is, IPv6 by its /64 (zone id
    dropped, IPv4-mapped becomes IPv4). The rate limiters and the daily quota use the same key. Counted in Redis, so the
@@ -87,7 +87,7 @@ Values are defaults; each has an `H2_` variable.
    on (below, "A closed connection").
 5. **Per-client daily quota** (below).
 6. **Global daily cap** (below).
-7. **Daily web searches** ([0027](../search/0027-tavily-store-and-daily-quota.md)): the question's searches take one web
+7. **Daily web searches** ([0027](../search/0027-live-web-store-first-daily-quota.md)): the question's searches take one web
    search from the asker's guide quota, at the first live Tavily call; a cached, shared or reused answer takes none.
    Every answer states what the asker has left (`webSearches`).
 
@@ -109,7 +109,7 @@ AI answers") instead of `GUIDE_DAILY_QUOTA`, outcome `network_quota`. 0 refuses 
 value (staging sets 1000 for the nightly eval). It counts with a
 `DailyBudget` named `guide-client:<QuotaKeys.client(client)>` (and `guide-network:<QuotaKeys.client(network)>`), held
 by `platform.quota.ClientBudgets`: the client's keyed pseudonym of the UTC
-day, as for the rate limits ([0037](../identity/0037-http-edge-protection.md)). So no address is stored, and the name cannot
+day, as for the rate limits ([0037](../identity/0037-http-edge.md)). So no address is stored, and the name cannot
 be turned back into an address without `H2_QUOTA_KEY_SECRET`. The pseudonym changes at midnight UTC, when the quota
 starts afresh anyway. Past the quota the client gets a search-only answer with the notice `GUIDE_DAILY_QUOTA`, not an
 error. Cached and shared answers do not count; a question answered with a similar question's answer counts, because its
@@ -180,7 +180,7 @@ model calls of these questions stay counted in the global cap.
 In memory, `ClientQuota` keeps only today's clients, at most 10,000 (`MAX_CLIENTS`; the least recently seen leaves
 first), and drops them all when the day changes. `ClientQuota.left` reads what a client has left without counting (the
 Redis count, else this replica's count in memory), so a give-back on any replica shows at once; `GET /api/v1/me` shows it
-([0036](../identity/0036-identity-and-admin-host.md)).
+([0036](../identity/0036-identity-and-the-admin-host.md)).
 
 ### The global daily cap
 `H2_GUIDE_DAILY_MODEL_CALLS` (600): one unit before each model attempt ([0008](../foundation/0008-llm-integration.md)),
@@ -205,7 +205,7 @@ it from a provider that is down (status `LLM_UNAVAILABLE` with no notice). The n
 One code, two messages, no number of calls: "The AI guide has answered as many questions as it can today; showing
 search results instead. AI answers are back after 00:00 UTC.", or "… as it can for now; showing search results
 instead. AI answers are back at 14:00 UTC." The page shows the time as the visitor's browser shows times
-(`backAgain` in `frontend/src/lib/format.ts`, [0039](../frontend/0039-frontend-one-box.md) point 10): "… AI answers
+(`backAgain` in `frontend/src/lib/format.ts`, [0039](../frontend/0039-frontend-one-box-state-in-the-url.md) point 10): "… AI answers
 are back at 15:00.", or
 "… back tomorrow at 01:00." when the instant is on the visitor's next day. Without `retryAt`, or with one that is
 past, it falls back to "… Try again later." The page does not keep the answer, so a later visit asks again. The
@@ -220,7 +220,7 @@ start afresh. The page shows it the same way: "AI answers are back at
 7:00 PM." for a visitor in New York in the evening, "… back tomorrow at 01:00." in Zurich. Without `retryAt`, or with
 one that is past, it says "after midnight UTC".
 
-The cap is a runtime setting ([0007](../foundation/0007-configuration-secrets-and-settings.md)):
+The cap is a runtime setting ([0007](../foundation/0007-configuration-secrets-runtime-settings.md)):
 the variable is its default, an administrator can lower it (0 = search-only answers) or raise it up to 3000 from the
 back office, and every replica applies it within about 20 seconds.
 
@@ -239,7 +239,7 @@ hyphens stay ("open-source"), because search reads them.
 
 The key is the SHA-256 of normalised question | audience path | config | normalised clarification | removed parts of
 the reading. A clarification and removed parts are part of the question ([0031](0031-guide-pipeline.md)). The config is
-the config hash, plus the active category filter when there is one ([0026](../search/0026-filters-facets-and-categories.md)):
+the config hash, plus the active category filter when there is one ([0026](../search/0026-filters-facets-categories.md)):
 it changes the candidates. No store sees the question text or the reply to a question back. Before the answer is
 cached, `AskGuide.withoutTheQuestion` keeps a search text only when the planner wrote it (`Question.plannerWrote`: its
 query and the subject words of that query). It empties the search request (`text`, `webQuery`); it empties
@@ -263,7 +263,7 @@ the eval runs name; a test pins each one (`SpringAiGuideModelTest`): `guide/plan
 `2411356c`, `guide/compare.txt` `14806e21`, `guide/explain.txt` `180b36ae`, `guide/verify-reasons.txt` `c457a114`.
 
 **Store.** `SharedGuideAnswerStore` keeps each answer in the shared cache `guide-answer` (`SharedCaches`, table
-`ai_cache`, [0005](../foundation/0005-redis-disposable-cache.md)), like the other model answers: one primary-key lookup,
+`ai_cache`, [0005](../foundation/0005-redis-as-a-disposable-cache.md)), like the other model answers: one primary-key lookup,
 one upsert, the `db-cache` policy, the shared cache purge. The stored key is the SHA-256 of the running release
 (`H2_BUILD_VERSION`, the image tag the chart passes) and the guide's key: a release reads only its own answers. A
 restart keeps them; a deploy starts empty, so a change in how the guide reads or answers is seen at once. The answer is
@@ -273,7 +273,7 @@ question.
 **Time to live.** Counted from the answer's `generatedAt`, which the page shows: `H2_GUIDE_CACHE_TTL` (24 h), 6 h for a
 question with a period or a `WHEN` question (a `WHEN` answer also ends at the next 00:00 UTC, when "this week" moves
 on), never past its web results; an answer built on stale web results is not
-cached ([0027](../search/0027-tavily-store-and-daily-quota.md)). Only complete answers are cached: model used, at least
+cached ([0027](../search/0027-live-web-store-first-daily-quota.md)). Only complete answers are cached: model used, at least
 one AI pick, and no AI pick with reason `NOT_CHECKED`. A `WHEN` answer is cached too when it found its date or events
 (status `OK`): code reads them from the records, so it has no AI pick, but its plan cost a model call. An answer built
 when a web source was skipped for its daily limit (`DAILY_LIMIT`, `QUOTA_UNAVAILABLE`) is not cached: it is what that
@@ -303,11 +303,11 @@ an exact-key miss, after single-flight and the client quota, the plan runs as fo
   release cannot read, so they must not be the nearest row of a new question. Only questions of one group are
   compared.
 - **Embedding**: the normalised question, embedded as a query by the vector-search model
-  ([0024](../search/0024-vector-search-pgvector.md), `nvidia/nemotron-3.5-embed-1b`, 1024 dimensions). An embedding
+  ([0024](../search/0024-vector-search.md), `nvidia/nemotron-3.5-embed-1b`, 1024 dimensions). An embedding
   failure is a miss.
 - **Match**: the closest question of the group whose answer is still stored, if its cosine similarity is at least the
   threshold. Its answer is returned as it is: same `generatedAt`, same AI marking
-  ([0033](0033-ai-content-marking-and-research-trail.md)), but without the planner's words of the other asker: no
+  ([0033](0033-marking-ai-written-text-research-trail.md)), but without the planner's words of the other asker: no
   search query, no trail queries, no not-found query, and no `QUERY_EXPANDED` notice in its search.
 - The reused answer is stored under the new question's own key until the original expires, so the next identical
   question is an exact hit. It is not indexed: a chain of near twins would drift from the question that was answered.
@@ -351,7 +351,7 @@ stays off. Checked live on staging with the planner of the running release (1 No
 pair gets two readings, except the translation pair above (only its cosine keeps it apart); 1 of the 6 paraphrase pairs
 that reuse on the set was reused live, because the live planner reads two wordings of one need differently more often
 than the set assumes. That lowers reuse, not precision. Staging runs the nightly guide evaluation with answers kept one
-second ([0046](../operations/0046-evaluation.md)), so reuse is measured on prod, through `helper2.guide.cache`.
+second ([0046](../operations/0046-evaluation-guide-and-search.md)), so reuse is measured on prod, through `helper2.guide.cache`.
 
 ### Retention
 A row of `guide_similar_question` lives as long as its answer. A read skips an expired row; the guide's purge
@@ -425,7 +425,7 @@ shared cache purge.
 - **A table of its own for the answers** — a second cache table and a second purge for what the shared cache does.
 - **The question embeddings in the shared cache** — a key-value table cannot find the nearest vector.
 - **pgvector with an HNSW index on `guide_similar_question`** — approximate, and the filter on group and expiry would
-  need an iterative scan ([0024](../search/0024-vector-search-pgvector.md)); an exact scan of a few rows is simpler and
+  need an iterative scan ([0024](../search/0024-vector-search.md)); an exact scan of a few rows is simpler and
   exact.
 - **Reuse before the plan, on the embedding alone** — saves the plan call, but the evaluation shows the embedding cannot
   tell a direction or a negation from a paraphrase.
@@ -447,7 +447,7 @@ shared cache purge.
   honest about its age.
 - With a threshold set, a paraphrase costs one fast-model call and one embedding instead of three model calls and its
   searches.
-- The rate limit and the daily counts are in Redis and hold across replicas ([0043](../operations/0043-runtime-topology.md):
+- The rate limit and the daily counts are in Redis and hold across replicas ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md):
   3 on prod). Every replica reads the same answers from PostgreSQL; a restart keeps them, a deploy starts a new set.
   Single-flight and the concurrency limit stay per replica, on purpose.
 - A new prompt wording, model or limit starts a fresh cache by itself, through the config hash.
@@ -475,7 +475,7 @@ shared cache purge.
 | 1 | Model | Covered: NVIDIA only ([0008](../foundation/0008-llm-integration.md)); a provider outage or a spent cap gives the degraded answer, never an error page. |
 | 2 | Agent Framework | Covered: no agent loop; the guards wrap a fixed pipeline ([0031](0031-guide-pipeline.md)). |
 | 3 | Orchestration | Covered: a slot, a deadline and single-flight per question; a model call starts only with time left for it; no server retry. |
-| 4 | Tool & API | Covered: the embedder behind a port; Tavily searches under the asker's quota ([0027](../search/0027-tavily-store-and-daily-quota.md)). |
+| 4 | Tool & API | Covered: the embedder behind a port; Tavily searches under the asker's quota ([0027](../search/0027-live-web-store-first-daily-quota.md)). |
 | 5 | Memory | Covered: answers for at most 24 h (6 h for a period), per release; question embeddings for the answer's life. |
 | 6 | Knowledge & RAG | Covered: exact vector scan of a group's few rows; reuse needs the same reading. |
 | 7 | Data | Covered: `ai_cache` (`guide-answer`), `guide_similar_question` in V1; the purge of [0010](../foundation/0010-data-retention.md). |

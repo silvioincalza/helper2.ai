@@ -1,10 +1,10 @@
 # 0040 — Design system
 
-**Depends on:** [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-ai-content-marking-and-research-trail.md), [0036](../identity/0036-identity-and-admin-host.md), [0039](0039-frontend-one-box.md), [0041](0041-site-pages-and-policy.md), [0042](../money/0042-monetisation.md).
+**Depends on:** [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-marking-ai-written-text-research-trail.md), [0036](../identity/0036-identity-and-the-admin-host.md), [0039](0039-frontend-one-box-state-in-the-url.md), [0041](0041-site-pages-for-crawlers-policy-endpoint.md), [0042](../money/0042-monetisation.md).
 
 ## Context
 
-The box, the URL state and the guide stream are in [0039](0039-frontend-one-box.md). This record decides the pages
+The box, the URL state and the guide stream are in [0039](0039-frontend-one-box-state-in-the-url.md). This record decides the pages
 around them and the rules every page follows. What matters for a user:
 - Everyone must understand at once what helper2.ai helps with.
 - The guide answer arrives after several seconds. Results are ready much sooner, and the user starts reading them.
@@ -40,7 +40,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    preloads those two. Code uses the system monospace: nothing to download.
 4. **One class prefix.** Every component class is `h2-<block>__<part>--<state>`; the page scope is `.h2-app`, the page
    column `.h2-wrap`. The small shared kit in `app.css` keeps plain names (`.btn*`, `.chip*`, `.field*`,
-   `.sr-only`, `.skip-link`). `.h2-prerender` has no frontend code: the server writes it ([0041](0041-site-pages-and-policy.md)).
+   `.sr-only`, `.skip-link`). `.h2-prerender` has no frontend code: the server writes it ([0041](0041-site-pages-for-crawlers-policy-endpoint.md)).
 5. **Header and footer** (`shell/Layout.tsx`, `styles/shell.css`). The header: the logo (mark, wordmark in Geist
    Mono 600 20 px, "AI on your radar"), News, Events, Saved, Sign in or the account, the links in Geist 500 14 px.
    Up to 720 px: the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources, Mission, Sign
@@ -79,7 +79,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    - **When it holds still.** While the mouse is over the radar or the focus is on a dot, so a focused dot cannot
      leave; it runs again when they leave. There is no button, and typing in the box does not stop it. Under reduced
      motion, or for a signed-in user who turned "Home page motion: radar and lists" off on the account page
-     (`preferences.radarMotion`, [0036](../identity/0036-identity-and-admin-host.md)),
+     (`preferences.radarMotion`, [0036](../identity/0036-identity-and-the-admin-host.md)),
      there is no clock: the beam stands still and a fixed random set of 7 (3 on a phone) shows. Up to 920 px
      the legend is hidden; the dome and its dots show on every width.
 
@@ -120,7 +120,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
     - **The guide's picks bar.** The guide runs only when the user asks (Ask the guide, or Shift+Enter; Enter
       searches). For a question the bar is there from the first render, its height reserved, so nothing moves when the
       answer arrives over SSE ([0031](../guide/0031-guide-pipeline.md)). The picks are chips (#1, #2, #3), labelled
-      AI-written ([0033](../guide/0033-ai-content-marking-and-research-trail.md)). The rows keep the search order: a
+      AI-written ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). The rows keep the search order: a
       picked row shows "Guide pick #1", the reason (labelled "AI-written", marked `data-ai-generated`) and its quote,
       highlighted where it stands in the source's own words. A chip jumps to its row; on the timeline, or for a pick
       not on the page, it opens the resource page and passes what that page shows of the pick in the history state.
@@ -158,7 +158,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
     line that points to the box in the header, and a link home. Account shows who is signed in, the AI answers and
     web searches left today, "Home page motion: radar and lists", and Delete my account with its confirmation (focus on Cancel).
     The sign-in page (`/signin`) says why to sign in and has one button per provider in `loginProviders` on GET /me;
-    "Sign in" in the header opens it and carries the current page ([0036](../identity/0036-identity-and-admin-host.md)).
+    "Sign in" in the header opens it and carries the current page ([0036](../identity/0036-identity-and-the-admin-host.md)).
 15. **The guide by choice, and the quota in sight.** The box has both buttons, always: Search (primary, saffron) and
     Ask the guide (outline). No word count decides anything ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)).
     The hint under the box says so. Once there are words in the box, one quiet line says today's AI answers ("2 of 3
@@ -168,7 +168,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
 16. **Every number comes from data.** The radar legend counts the enabled external sources of GET /sources, the same
     sources the radar shows; the list counts are `total` on GET /recent and GET /events/upcoming, never fewer than the
     rows sent (`lib/sourceCounts.ts` says what the page does when a value is null). The Mission, Privacy and Terms
-    pages take their numbers from GET /policy ([0041](0041-site-pages-and-policy.md)). A sentence with numbers has
+    pages take their numbers from GET /policy ([0041](0041-site-pages-for-crawlers-policy-endpoint.md)). A sentence with numbers has
     two forms: with `{{name}}` variables, and the same sentence in words. The page waits for the numbers at most
     500 ms; late, it shows the words and then the numbers; on an error, the words and one line that says so. Never a
     typed fallback number.

@@ -1,6 +1,6 @@
 # 0039 — Frontend: one box, state in the URL
 
-**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0003](../foundation/0003-contract-first-rest-api.md), [0005](../foundation/0005-redis-disposable-cache.md), [0022](../search/0022-federated-search.md), [0027](../search/0027-tavily-store-and-daily-quota.md), [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0040](0040-design-system.md).
+**Depends on:** [0001](../foundation/0001-stack-and-runtime.md), [0003](../foundation/0003-contract-first-rest.md), [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0022](../search/0022-federated-search.md), [0027](../search/0027-live-web-store-first-daily-quota.md), [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0040](0040-design-system.md).
 
 The pages, their layout and the design system are in [0040](0040-design-system.md).
 
@@ -67,7 +67,7 @@ guide may call the model again. Both cost time and quota for nothing.
    (`retrieved`). It is a `role="status"` line, so a screen reader hears each change once. The parts are plain labels
    until the answer: ✕ to remove one comes with the answer, so a second question never runs next to the first.
    Search and the guide each show the web searches left today (`WebSearchesLeft`,
-   [0027](../search/0027-tavily-store-and-daily-quota.md)), from the first one used, because the limit is small; at 0
+   [0027](../search/0027-live-web-store-first-daily-quota.md)), from the first one used, because the limit is small; at 0
    the line says that stored results still answer and when the limit resets. Nothing is shown when the count is
    unknown.
 5. **The recent-answers cache** (`useApi`). One shared cache: the last 50 successful answers (`CACHE_MAX`), by
@@ -110,7 +110,7 @@ guide may call the model again. Both cost time and quota for nothing.
    (`scripts/check-bundle.mjs`) runs in CI after the build and fails it when the first visit's JavaScript (the entry
    and the modules it preloads) passes 250 KiB gzipped, or any other chunk passes 30 KiB. It runs in CI only, so a few
    bytes never block an image build or a deploy. The back office is its own entry and bundle
-   ([0038](../backoffice/0038-back-office-and-review.md), [0043](../operations/0043-runtime-topology.md)); a test keeps its
+   ([0038](../backoffice/0038-back-office-and-review.md), [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)); a test keeps its
    calls and its copy out of the public bundle (`api/adminBundle.test.ts`).
 9. **One folder per feature.** `src/features/<feature>` holds a feature's pages, parts, styles and tests, named in the
    words of the backend's contexts (search, guide, home, resource, saved, sources, news, events, setup, account,
@@ -131,7 +131,7 @@ guide may call the model again. Both cost time and quota for nothing.
     - "tomorrow" in a notice is the visitor's next local day (`backAgain`).
     Numbers (`Intl.NumberFormat`: counts, limits, response times) stay in the app language alone, because the text
     around them is in that language. Nothing is sent or stored: the browser's language and time zone are only read to
-    format what is on the page. The pages Spring writes for crawlers ([0041](0041-site-pages-and-policy.md)) have no
+    format what is on the page. The pages Spring writes for crawlers ([0041](0041-site-pages-for-crawlers-policy-endpoint.md)) have no
     browser to ask and keep their own dates. This rule has no runtime path of its own, so it has no diagram.
 
 ### Code
@@ -185,7 +185,7 @@ guide may call the model again. Both cost time and quota for nothing.
 - One place to type; the guide and search share the same URL and can be bookmarked or shared.
 - Back and forward show the page at once, at the place the user left it, with no request. Fewer search fan-outs and
   guide calls for the same question within a few minutes. 50 entries and 5 minutes hold a visit of a few searches and
-  resources many times over; the server's own caches ([0005](../foundation/0005-redis-disposable-cache.md),
+  resources many times over; the server's own caches ([0005](../foundation/0005-redis-as-a-disposable-cache.md),
   [0032](../guide/0032-guide-cost-guard-and-answer-cache.md)) keep answers at least as long.
 - A page that shows data the user changes passes `cache: false` and always shows fresh data.
 - Two visitors read the same instant as two clock times, each right for where they are. A screenshot of a time says

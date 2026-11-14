@@ -1,6 +1,6 @@
 # 0042 — Monetisation
 
-**Depends on:** [0033](../guide/0033-ai-content-marking-and-research-trail.md), [0037](../identity/0037-http-edge-protection.md), [0039](../frontend/0039-frontend-one-box.md), [0040](../frontend/0040-design-system.md), [0041](../frontend/0041-site-pages-and-policy.md), [0043](../operations/0043-runtime-topology.md).
+**Depends on:** [0033](../guide/0033-marking-ai-written-text-research-trail.md), [0037](../identity/0037-http-edge.md), [0039](../frontend/0039-frontend-one-box-state-in-the-url.md), [0040](../frontend/0040-design-system.md), [0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md), [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md).
 
 ## Context
 
@@ -25,7 +25,7 @@ The constraints:
 
 ## Decision
 
-1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-and-policy.md) §15) reads six
+1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads six
    `H2_` settings and publishes them as one value, `Monetisation`. An empty setting is off: no link, no script, no CSP
    origin. A value with the wrong shape (a non-https link, an ID that is not `G-...`, a publisher that is not
    `ca-pub-` and 16 digits) stops the app at startup. None is a secret: every page shows them.
@@ -52,9 +52,9 @@ The constraints:
      answer is there, and when the read fails, every part is off (no link, no question, no script). So the order
      stays: settings first, then the consent question or Google's consent tool, then any script (5, 9, 10).
    - **The back office does not serve it** (404) and its web app never asks
-     ([0043](../operations/0043-runtime-topology.md)).
+     ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)).
 3. **The CSP follows the parts that are on.** `site.csp.ContentSecurityPolicy.forPublicSite` starts from the strict
-   policy ([0037](../identity/0037-http-edge-protection.md) §6) and adds only:
+   policy ([0037](../identity/0037-http-edge.md) §6) and adds only:
    - analytics: `https://www.googletagmanager.com` to `script-src`; the Google Analytics hosts to `connect-src` and
      `img-src`, and `https://*.google.com` to `connect-src`, as Google's CSP guide lists. No `'unsafe-inline'`, no
      `'unsafe-eval'`: our own code writes the gtag setup.
@@ -101,19 +101,19 @@ The constraints:
      searches, as the client needs.
    - **One search, one ad.** A filter, a sort, the timeline or "Show more" keeps the words, so it keeps the ad.
      Nothing is asked while a search runs: words that change before their results come (live search starts 700 ms
-     after a pause in typing, [0039](../frontend/0039-frontend-one-box.md)) and a search that fails ask for no ad. A pause long
+     after a pause in typing, [0039](../frontend/0039-frontend-one-box-state-in-the-url.md)) and a search that fails ask for no ad. A pause long
      enough to show results is a search the person saw, and gets its ad. The ad network counts a request as a view,
      so a request for every filter or typing pause would count views nobody had.
    - There is no ad on a page with a guide answer (`ask`), in the guide picks, on the home page, on text pages, on
      sign-in, on error states or on the back office. An ad is never written by our AI and never looks like an answer
-     ([0033](../guide/0033-ai-content-marking-and-research-trail.md)).
+     ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
    - EthicalAds' client runs in the page. Nothing strips the query string before it runs, so it can read the page
      address with the search words; the Privacy page says so. It also picks up to three topic words from the text of
      the page, so they come from the results.
 7. **The footer makes no claim about ads.** The Privacy page says which ads, where and when.
 8. **Google's site check: the tag and `/ads.txt`.** With the publisher set, the server writes
    `<meta name="google-adsense-account" content="ca-pub-...">` into the head of every page it fills
-   ([0041](../frontend/0041-site-pages-and-policy.md)), without `data-h2-head`, so the app keeps it after a route change.
+   ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)), without `data-h2-head`, so the app keeps it after a route change.
    `GET /ads.txt` answers one line, `google.com, pub-..., DIRECT, f08c47fec0942fa0` (Google's certification authority
    ID), cached for an hour; 404 without the publisher.
 9. **The AdSense slot on resource pages only.** One box, marked "Sponsored", of fixed height, between the resource's
@@ -204,19 +204,19 @@ The constraints:
 - **A consent platform (Cookiebot, Usercentrics) for analytics alone** — our own bar is a few lines of code and loads
   nothing from a third party; Google's tool takes over only when AdSense needs it.
 - **Our own bar plus Google's tool** — two questions for one visitor.
-- **Google's tool on every public page** — what it was: analytics for every visit, but Google's dialog covers Home
+- **Google's tool on every public page** — analytics for every visit, but Google's dialog covers Home
   on a first visit in Europe, before the first search.
 - **Reading the tool's cookie on the other pages, to keep an earlier yes** — more visits counted, but it depends on
   an undocumented format, and it cannot tell a visitor outside Europe from one who was never asked.
 - **Google Analytics without the tool's answer on pages where it is not loaded** — a visitor in Europe would be
   counted without consent.
-- **The ad slot keyed on the whole search request** — what it was: a new ad for every filter, sort and typing pause.
+- **The ad slot keyed on the whole search request** — a new ad for every filter, sort and typing pause.
 - **An ad request while the search runs** — the ad shows sooner, but half-typed words and failed searches ask for
   ads nobody sees next to results.
 - **Google's automatic TCF mode for GA4** — no code, but cookieless pings after a "no".
 - **Build-time settings in the frontend bundle** — no API call, but one image could not serve staging and prod with
   different IDs.
-- **In `GET /api/v1/me`** — what it was: no extra request, because every page reads `/me`. But `/me` is per user and
+- **In `GET /api/v1/me`** — no extra request, because every page reads `/me`. But `/me` is per user and
   never cached, and the settings are the same for everyone; the user's session carried the site's configuration.
 - **In `GET /api/v1/policy`** — also configured values and cached the same way, but only the text pages read it, on
   purpose (ADR 0040, decision 16), and it holds limits and retention periods. Every page needs these settings, so
@@ -224,7 +224,7 @@ The constraints:
 - **In the HTML of the page (a script tag written by Spring)** — no request at all, but the page is `no-cache` or
   `no-store`, the web image's `index.html` would not have it, and inline data needs the nonce.
 - **A `monetisation` library** — only the public app uses it
-  ([0041](../frontend/0041-site-pages-and-policy.md) §15).
+  ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15).
 
 ## Consequences
 
@@ -250,7 +250,7 @@ The constraints:
   measurement, "Page changes based on browser history events", site search and form interactions off (they would
   send the full address with `q` and `ask`); Google signals off. Check once in DebugView that no hit carries `q=`.
 - The admin web app is its own build without the site check tag or any Google script
-  ([0043](../operations/0043-runtime-topology.md)).
+  ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)).
 
 ### Threat model (STRIDE)
 

@@ -1,6 +1,6 @@
 # 0026 — Filters, facets, categories
 
-**Depends on:** [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0013](../scout/0013-discovery.md), [0022](0022-federated-search.md), [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-ai-content-marking-and-research-trail.md), [0040](../frontend/0040-design-system.md), [0046](../operations/0046-evaluation.md).
+**Depends on:** [0004](../foundation/0004-persistence-and-the-schema.md), [0013](../scout/0013-discovery.md), [0022](0022-federated-search.md), [0031](../guide/0031-guide-pipeline.md), [0032](../guide/0032-guide-cost-guard-and-answer-cache.md), [0033](../guide/0033-marking-ai-written-text-research-trail.md), [0040](../frontend/0040-design-system.md), [0046](../operations/0046-evaluation-guide-and-search.md).
 
 ## Context
 
@@ -38,7 +38,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 4. **Sort** (`Sorting.sort`): `RELEVANCE` (ranking order, [0025](0025-ranking.md)), `NEWEST` (published date),
    `RECENTLY_UPDATED` (updated date). Unknown dates always sort last; ties keep relevance order.
    Paging: `page` 0..50, `size` 1..50, default 20.
-5. **Stated dates** (`DateFact`, rules in [0004](../foundation/0004-persistence-schema-and-app-roles.md)): value, precision (`INSTANT`, `DAY`,
+5. **Stated dates** (`DateFact`, rules in [0004](../foundation/0004-persistence-and-the-schema.md)): value, precision (`INSTANT`, `DAY`,
    `UNKNOWN`), source id, alternatives, status. When the sources of one merged result differ ([0022](0022-federated-search.md)):
    - published and event start keep the earliest value (`DateFact.earliest`), event end the latest (`DateFact.latest`).
      The status is `CONFLICTING` when two different sources state different days in Coordinated Universal Time (UTC);
@@ -75,7 +75,7 @@ them assigned by code first, and measured on labelled items before a model is ev
    list and upcoming events show the same flags. `GuideDtoMapper` adds the same list to every guide recommendation
    (`GuideRecommendation.compatibleWith`), the AI picks and the plain top results shown when no AI pick survived.
    The server always sends the list, `[]` when no rule matched. The flags are not AI-written: they are outside
-   `aiContent.fields` ([0033](../guide/0033-ai-content-marking-and-research-trail.md)). The contract states they are never
+   `aiContent.fields` ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). The contract states they are never
    model-generated. In the web app a pick is shown as its result card (row and preview) or links to its resource
    page, so the flags show there, outside the AI-labelled reason.
 
@@ -86,7 +86,7 @@ them assigned by code first, and measured on labelled items before a model is ev
    ([0013](../scout/0013-discovery.md)). Search and the catalog read it through `CategoriesProperties`
    (platform) into a `CategoryCatalog` (shared kernel): id, name, short name, family, words, require-keyword and the
    discovery type, in the configured order. The words are `CategoryWords` in the shared kernel. It is the class the
-   discovery collectors already used (`DiscoveryCategory.Keywords` moved there), so the words and their precompiled
+   discovery collectors already used, so the words and their precompiled
    patterns exist once. Startup fails on an id that is not lower-case words with hyphens, on two categories with one
    id, and on the id `unknown`.
 14. **Assigned by code.** `CategoryMatcher` (shared kernel, pure, no model) gives a resource a category when:
@@ -100,7 +100,7 @@ them assigned by code first, and measured on labelled items before a model is ev
    Health and legal require a word: they come only from their finder or a word in the title or description, never
    from a tag or a type alone. An AI-written description (`AI_EXTRACTED`, `AI_SUMMARY`) is never read: categories
    come from public source data only. So they are code-made values, not AI-made ones, and carry no AI label
-   ([0033](../guide/0033-ai-content-marking-and-research-trail.md)). The page says so in one line: "Categories are set by fixed rules
+   ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). The page says so in one line: "Categories are set by fixed rules
    from what the sources say, not by AI."
 15. **When.** On every catalog upsert, for every source: after the labels are rebuilt, `JdbcCatalogWriter` reads each
    touched resource's title, its records' descriptions, every tag of every record, its type and its finders, runs the
@@ -231,7 +231,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 For the categories; the filters and the flags add no endpoint and keep no data.
 
 - **Spoofing:** none new. The list and the filter are public reads; the backfill action is admin only (back office,
-  VPN, [0036](../identity/0036-identity-and-admin-host.md)) and audited.
+  VPN, [0036](../identity/0036-identity-and-the-admin-host.md)) and audited.
 - **Tampering:** a page can put words in its title to get a category. The worst it gets is a wrong filter match on a
   public page, the same as a wrong tag today. Health and legal still need a word in the page's own text or their own
   collector.
@@ -261,7 +261,7 @@ For the categories; the filters and the flags add no endpoint and keep no data.
 | 8 | Browser & Computer Use | Deferred: not used. |
 | 9 | Guardrails | Covered: ids checked against the list (400); require-keyword categories; no AI text read. |
 | 10 | Observability | Covered: backfill metric and log line; no user text logged. |
-| 11 | Evaluation | Gap until labelled: the harness exists, the 150 labels are Silvio's to write. |
+| 11 | Evaluation | Gap until labelled: the harness exists, the 150 labels are the owner's to write. |
 | 12 | Deployment | Covered: one migration, one `H2_` variable with a safe default; rollback leaves unused labels. |
 | 13 | Security & Identity | Covered: admin action under the admin role and audited. |
 | 14 | Human-in-the-Loop | Covered: labels by a person decide whether code is enough; the admin starts a backfill. |

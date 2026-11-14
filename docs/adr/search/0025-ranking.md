@@ -1,6 +1,6 @@
 # 0025 — Ranking
 
-**Depends on:** [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0022](0022-federated-search.md).
+**Depends on:** [0004](../foundation/0004-persistence-and-the-schema.md), [0022](0022-federated-search.md).
 
 ## Context
 
@@ -59,7 +59,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
    [0020](../scout/0020-resource-vitality.md) §4): it stays above a result one source fewer found.
 7. **Weights measured on the eval set.** `./gradlew evalTest` replays each variant of `RankingVariants` (131 queries,
    50 judged) and writes, in the section "Ranking variants" of `backend/eval-data/search-report.md`, its ΔnDCG@10
-   against the weights of the code with the 95 % paired bootstrap interval of [0046](../operations/0046-evaluation.md),
+   against the weights of the code with the 95 % paired bootstrap interval of [0046](../operations/0046-evaluation-guide-and-search.md),
    its unjudged share, its home examples and every group that moved. The results each variant brings into the top 10
    that have no grade go to `backend/eval-data/search-pool-variant-<variant>.tsv`, and into the judging pool.
    - Exact title +0.02 instead of +0.05: neutral overall (interval touches 0), navigational +0.009, MCP servers

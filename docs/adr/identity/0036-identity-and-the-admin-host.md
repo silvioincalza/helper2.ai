@@ -1,6 +1,6 @@
 # 0036 — Identity and the admin host
 
-**Depends on:** [0003](../foundation/0003-contract-first-rest-api.md), [0004](../foundation/0004-persistence-schema-and-app-roles.md), [0005](../foundation/0005-redis-disposable-cache.md), [0007](../foundation/0007-configuration-secrets-and-settings.md), [0010](../foundation/0010-data-retention.md), [0037](0037-http-edge-protection.md), [0043](../operations/0043-runtime-topology.md).
+**Depends on:** [0003](../foundation/0003-contract-first-rest.md), [0004](../foundation/0004-persistence-and-the-schema.md), [0005](../foundation/0005-redis-as-a-disposable-cache.md), [0007](../foundation/0007-configuration-secrets-runtime-settings.md), [0010](../foundation/0010-data-retention.md), [0037](0037-http-edge.md), [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md).
 
 ## Context
 
@@ -19,13 +19,13 @@ reaches the cluster with an address from the platform's private ranges.
 
 1. **Anonymous by default** (`PublicSecurityConfiguration`). `GET` search, recent, upcoming events, resources,
    sources, categories, home examples, policy and `/me`, and `POST` reports and guide, are open. Health is open; see
-   [0037](0037-http-edge-protection.md) for metrics. `/api/v1/me/bookmarks`, `DELETE /api/v1/me` and
+   [0037](0037-http-edge.md) for metrics. `/api/v1/me/bookmarks`, `DELETE /api/v1/me` and
    `PATCH /api/v1/me/preferences` need a signed-in user. Any other `/api/**` path is denied. API calls without a
    session get 401, not a redirect; a refused one gets 403. Both answer the problem the contract promises
-   (`sign-in-required`, `forbidden`; [0003](../foundation/0003-contract-first-rest-api.md)), never the container's
+   (`sign-in-required`, `forbidden`; [0003](../foundation/0003-contract-first-rest.md)), never the container's
    error page. A session whose account is gone gets 401 `sign-in-again` (§6).
 2. **Two apps, two hosts.** The public app (`backend/apps/public`) serves the public host. The back office app
-   (`backend/apps/backoffice`, [0043](../operations/0043-runtime-topology.md)) serves the admin host, on its own pods.
+   (`backend/apps/backoffice`, [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)) serves the admin host, on its own pods.
    Each listens on 8080.
    - The public app has no back office: no admin code, no admin routes. `/admin`, `/admin/**`, `/api/v1/admin` and
      `/api/v1/admin/**` answer 404 there (`NoBackOfficeHere`, before the session and security filters). The check
@@ -81,7 +81,7 @@ reaches the cluster with an address from the platform's private ranges.
    stays), and a merge is all or nothing (400). A bookmark keeps the resource id, title, link, type and `savedAt`, so
    it renders even when the resource left the catalog. `bookmark.resource_id` has no foreign key to `resource`, on
    purpose: a saved item must always render. A live result can be saved before its observed row is written, or when
-   that write was dropped (the queue of [0004](../foundation/0004-persistence-schema-and-app-roles.md) §6); a merge brings
+   that write was dropped (the queue of [0004](../foundation/0004-persistence-and-the-schema.md) §6); a merge brings
    ids the browser kept for months; and retention and the orphan delete remove resources that people may have saved
    ([0010](../foundation/0010-data-retention.md)). A foreign key would refuse those saves or, with a cascade, silently
    delete saved items.
@@ -90,7 +90,7 @@ reaches the cluster with an address from the platform's private ranges.
    session that outlived the row would be told to sign in again on its next request (§6), and if ending it fails
    nothing is deleted. Then `DeleteMyAccount` deletes the `app_user` row; its bookmarks go by `ON DELETE CASCADE`. The daily
    counters are kept under a hash of the client address, never the account
-   ([0027](../search/0027-tavily-store-and-daily-quota.md)), so there is nothing of the user's to delete in Redis. An issue report is never linked to an account, signed in
+   ([0027](../search/0027-live-web-store-first-daily-quota.md)), so there is nothing of the user's to delete in Redis. An issue report is never linked to an account, signed in
    or not (`issue_report` has no reporter column), so deleting the account leaves the reports as they are. Accounts
    with no sign-in for 24 months are deleted the same way by the public app's daily account purge
    (`PurgeInactiveAccounts`, [0010](../foundation/0010-data-retention.md)).
@@ -104,7 +104,7 @@ reaches the cluster with an address from the platform's private ranges.
    the owner too. The triggers are `ENABLE ALWAYS`, so `SET session_replication_role = replica` does not silence them.
    The app roles cannot get past them: they own nothing, may not `SET` that mode and have no `TRIGGER` grant. The owner
    still can, with DDL (disable or drop a trigger), because it is the database's superuser; a non-superuser owner is an open point of
-   [0043](../operations/0043-runtime-topology.md):
+   [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md):
    - a trigger refuses `UPDATE`, and a statement trigger refuses `TRUNCATE` (the app roles have no `TRUNCATE` or
      `TRIGGER` grant anyway);
    - a trigger (`h2_audit_kept`) refuses to delete a row younger than 729 days: the shortest retention the apps accept
@@ -119,7 +119,7 @@ reaches the cluster with an address from the platform's private ranges.
      GitHub ids are out of reach of the more exposed app.
 10. **Daily limits on `/me`.** `GET /api/v1/me` has `limits`: the guide's fresh questions
     ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)), the web searches of search and of the guide
-    ([0027](../search/0027-tavily-store-and-daily-quota.md)), each as `limit` and `remaining`, and `resetsAt` (the next
+    ([0027](../search/0027-live-web-store-first-daily-quota.md)), each as `limit` and `remaining`, and `resetsAt` (the next
     00:00 UTC). The guide questions are null when the guide has no model; a web search count is null without an
     enabled web source or when Redis cannot answer. Identity reads them through the `VisitorLimits` port, which the
     guide implements (`GuideVisitorLimits`): the same counters that enforce the limits, by `ClientKey`, signed in
@@ -158,7 +158,7 @@ reaches the cluster with an address from the platform's private ranges.
 | Tampering | The request stops in the filter, before the access rules and every use case: nothing is written, no `app_user` row is created outside the sign-in. |
 | Repudiation | An administrator session without an account writes nothing, so the audit trail gets no entry in the name of a user the database does not know. |
 | Information disclosure | The answer is the same fixed problem for every such session and names no account. A request without a session gets `sign-in-required` as before, so the code tells nothing about which accounts exist. Nothing is logged. |
-| Denial of service | One indexed read of `app_user` per signed-in request on the checked paths. Without a session there is no read. The rate limits of [0037](0037-http-edge-protection.md) apply as before. |
+| Denial of service | One indexed read of `app_user` per signed-in request on the checked paths. Without a session there is no read. The rate limits of [0037](0037-http-edge.md) apply as before. |
 | Elevation of privilege | ADMIN comes only from a sign-in on the back office (§5). Ending the session removes the roles with it; the allow-list is asked again at the new sign-in. |
 
 | Host                                                  | App         | Back office | Sign-in                  | ADMIN            |
@@ -230,7 +230,7 @@ reaches the cluster with an address from the platform's private ranges.
 - An audit table that references `app_user` — deleting the administrator's account would delete or orphan the trail.
 - A plain `DELETE` trigger on `admin_audit` — no purge could run; the trail would grow without end, against the
   retention on the Privacy page.
-- The audit purge in the public app (as before the split), or any right of the public app on the trail — the public
+- The audit purge in the public app, or any right of the public app on the trail — the public
   app, the more exposed of the two, would hold or reach the administrators' ids and could change the trail.
 - ADMIN by GitHub login — logins can be renamed and taken by someone else.
 - An IP address allow-list inside the app, or a path prefix on the public host — one rule away from the internet,
@@ -252,7 +252,7 @@ reaches the cluster with an address from the platform's private ranges.
 - Every admin decision names the administrator. No statement an app can send edits, empties or cuts the trail
   short: someone who takes over the back office can add rows but not remove the last 729 days, because its role does
   not own the table and cannot touch its triggers. The owner role still could, with DDL, while it is a superuser
-  (an open point of [0043](../operations/0043-runtime-topology.md)).
+  (an open point of [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)).
   A shorter audit retention than 730 days needs a migration, not only a setting.
 - A user row exists only for someone who signed in. After a database rebuild, the open sessions end at their next
   account call and each user signs in once more; the back office does not act for a user the database does not know.

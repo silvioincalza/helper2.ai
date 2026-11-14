@@ -1,6 +1,6 @@
 # 0029 — Sources search content words
 
-**Depends on:** [0022](0022-federated-search.md), [0023](0023-catalog-full-text-index.md), [0025](0025-ranking.md), [0046](../operations/0046-evaluation.md).
+**Depends on:** [0022](0022-federated-search.md), [0023](0023-catalog-full-text-index.md), [0025](0025-ranking.md), [0046](../operations/0046-evaluation-guide-and-search.md).
 
 ## Context
 
@@ -74,7 +74,7 @@ models first (whisperkit before Whisper, 8 Nov 2026).
 Same-time A/B on 9 Nov 2026: for each of the 20 starter queries, GitHub, Hugging Face models and Spaces and npm were
 called live with the old text and with the new terms, one right after the other. The other sources come from the
 7 Nov snapshots. arXiv refused the calls (time-outs, then 429) from both machines, so its snapshot hits are kept in
-both arms. Merge and ranking are the production ones, replayed by the checked replica of [0046](../operations/0046-evaluation.md).
+both arms. Merge and ranking are the production ones, replayed by the checked replica of [0046](../operations/0046-evaluation-guide-and-search.md).
 19 queries have a relevant grade. Interval: paired bootstrap, 10,000 resamples, 95 %.
 
 | Arm | nDCG@10 | Δ vs old | 95 % interval | Recall@20 | MRR | Unjudged in top 10 |
@@ -133,7 +133,7 @@ No change to the Privacy page: the same processors get the query, now with fewer
 ### Open points
 
 - The acceptance gate of this decision has not run: the new results are graded and the interval of the Measurement
-  section holds ([0046](../operations/0046-evaluation.md) §17) before the content words count as measured.
+  section holds ([0046](../operations/0046-evaluation-guide-and-search.md) §17) before the content words count as measured.
 - The 86 new results are not graded and the gate has not run on them.
 - No snapshot set is recorded with the content words.
 - Task phrases are not typo-tolerant.

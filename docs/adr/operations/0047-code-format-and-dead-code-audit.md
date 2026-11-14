@@ -28,7 +28,7 @@ builds no image, so a new npm package with a known vulnerability would be found 
    convention plugins themselves. `./gradlew spotlessApply` rewrites the files, `./gradlew spotlessCheck` fails on any
    file that is not formatted. Generated OpenAPI code lives in `build/` and is not formatted.
 3. **Versions** are pinned in the build files: Spotless 8.11.0, google-java-format 2.0.0, ktfmt 0.64. Each is the
-   latest release that works with the others, chosen with Silvio.
+   latest release that works with the others, chosen with the owner.
 4. **CI for the backend:** the `backend-check` job in `ci.yml` runs `spotlessCheck` before the tests. An unformatted file
    fails the pull request.
 5. **Frontend: Prettier**, from `frontend/package.json`. Config in `frontend/.prettierrc.json`: 100 columns like the
