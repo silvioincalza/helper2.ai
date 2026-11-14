@@ -1,7 +1,7 @@
 # Flowchart: how a guide question finds a cached answer: the exact key of its normalised text, then, once planned,
 # the answer of a similar question read the same way.
 # Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt (GuideAnswerCache.key, normalized, put),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt (ReadingKey, SimilarQuestions, inTheWordsOf),
 #   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, similarAnswer),
 #   backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, JdbcSimilarQuestionIndex.java,
 #   GuideConfiguration.java (similarQuestions, H2_GUIDE_SIMILAR_THRESHOLD),
@@ -29,7 +29,8 @@ embedOk: "Embedded?" {class: decision}
 group: "Group = SHA-256(embedding model |\nrelease | config | path | reading key)" {class: app}
 closest: "Closest live question of the\ngroup (pgvector <=>):\ncosine ≥ threshold?" {class: decision}
 stillCached: "Its answer still cached?" {class: decision}
-reuse: "Reuse that answer\ncache result=similar,\nno search, no web search taken" {class: end}
+named: "Every name in it has a\ncounterpart in this reading?" {class: decision}
+reuse: "Reuse that answer, its names\nwritten as this asker wrote them\ncache result=similar,\nno search, no web search taken" {class: end}
 copy: "Store it under this key\nuntil the original expires;\nnot indexed" {class: data}
 fresh: "Search → choose → validate →\nreason check\ncache result=miss" {class: ai}
 cacheable: "Cacheable?\n(ADR 0032; a complete answer\nwith no pick too)" {class: decision}
@@ -52,7 +53,9 @@ group -> closest
 closest -> fresh: no
 closest -> stillCached: yes {class: hot}
 stillCached -> fresh: no
-stillCached -> reuse: yes {class: hot}
+stillCached -> named: yes {class: hot}
+named -> fresh: no
+named -> reuse: yes {class: hot}
 reuse -> copy
 fresh -> cacheable
 cacheable -> answer: no

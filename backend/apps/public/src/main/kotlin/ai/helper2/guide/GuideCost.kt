@@ -219,12 +219,17 @@ class GuideAnswerCache(
     private val SPACES = Regex("[\\p{Z}\\s]+")
     private val TRAILING_PUNCTUATION = Regex("[\\s.?!,;:…¿¡]+$")
 
+    const val QUESTION_READING = "nfkc/visible"
+
+    @JvmStatic
+    fun readable(text: String): String =
+      Normalizer.normalize(text, Normalizer.Form.NFKC).replace(INVISIBLE, "").trim()
+
     @JvmStatic
     fun normalized(text: String): String {
       val plain =
-        Normalizer.normalize(text, Normalizer.Form.NFKC)
+        readable(text)
           .lowercase(Locale.ROOT)
-          .replace(INVISIBLE, "")
           .replace(APOSTROPHES, "'")
           .replace(QUOTES, " ")
           .replace(QUOTING_APOSTROPHE, " ")
