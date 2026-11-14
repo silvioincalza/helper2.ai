@@ -44,6 +44,8 @@ export const routes: RouteObject[] = [
           { path: 'account', lazy: page(() => import('@/features/account/AccountPage')) },
           { path: 'signin', lazy: page(() => import('@/features/account/SignInPage')) },
           { path: 'mission', lazy: textPage(() => import('@/features/pages/MissionPage')) },
+          { path: 'privacy', lazy: textPage(() => import('@/features/pages/PrivacyPage')) },
+          { path: 'terms', lazy: textPage(() => import('@/features/pages/TermsPage')) },
           { path: 'support', lazy: page(() => import('@/features/monetisation/SupportPage')) },
           {
             path: 'support/thanks',
