@@ -48,8 +48,8 @@ cd: cd.yml (push to main or release/*) {
   branch: "Push to main?" {class: decision}
   imageonly: "release/* (0045): image only,\nno staging" {class: end}
   done: "Staging runs the commit;\nprod unchanged" {class: end}
-  newer: "A newer push to the same branch\nwhile ci, image or scan runs?\n(cd-build-<ref>, 0044)" {class: decision}
-  superseded: "This run is cancelled:\nno staging, no release of the commit;\na running deploy finishes" {class: fail}
+  newer: "A newer push to the same branch\nwhile this run runs?\n(cd-<ref>, 0044)" {class: decision}
+  superseded: "The newer run waits until this one ends;\nof several that wait only the newest starts,\nthe others are cancelled before they begin" {class: end}
 
   ci -> build: {class: hot}
   ci -> newer
