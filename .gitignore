@@ -1,0 +1,61 @@
+.env
+.secrets
+*.local
+backend/**/build/
+backend/**/.gradle/
+# Search evaluation snapshots and judging pools: third-party data, local only (ADR 0036)
+backend/eval-data/
+frontend/node_modules/
+frontend/dist/
+frontend/src/api/schema.ts
+frontend/test-results/
+.DS_Store
+.remember
+
+# Gradle wrapper must be versioned (overrides global *.jar ignore)
+!backend/gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA: share run configurations, code style and VCS mapping; keep the rest local.
+# (Re-includes what a global ".idea/" ignore would hide.)
+!.idea/
+.idea/*
+!.idea/runConfigurations/
+!.idea/codeStyles/
+!.idea/vcs.xml
+*.iml
+out/
+
+# Eclipse / VS Code (local only)
+.vscode/
+backend/**/bin/
+backend/**/.classpath
+backend/**/.project
+backend/**/.settings/
+
+# k8s environment secrets
+deploy/k8s/*/app.env
+# The first release reset (deploy/k8s/RUNBOOK-reset-cutover.md): dumps and their checksums
+# hold personal data and are written outside the repository; these lines catch a copy left in it by mistake.
+*.dump
+*.dump.*
+*.sql.gz
+deleted.txt
+deploy/k8s/*/digests.env
+
+# Kotlin compiler daemon data
+.kotlin/
+
+# Local notes, not published
+.private/
+
+# Demo-video tooling and recordings stay local
+/demo-video/
+
+# AI tools: setup is committed; notes, reviews, memory and local settings are not
+.claude/settings.local.json
+.claude/launch.json
+.claude/worktrees/
+CLAUDE.local.md
+
+# Local Terraform leftovers (the real config lives in incalza-me-infra); terraform.tfvars holds a Cloudflare token.
+deploy/k8s/terraform/
