@@ -4,7 +4,7 @@ argument-hint: <task>
 ---
 Task: $ARGUMENTS
 
-1. Pick only the specialists this task needs (architect, metasearch, performance, security,
+1. Pick only the specialists this task needs (architect, backlog, metasearch, performance, security,
    privacy-legal, ux-journeys, ui-design). Say which and why in one line each.
 2. Run them in parallel. Give each the task and what the others are looking at.
 3. Bring their findings together. Where they disagree, show the conflict and your recommendation.
