@@ -151,7 +151,7 @@ deploy/restore/restore-v2-dump.sh|backend
 deploy/postgres/Dockerfile|postgres chart
 docs/adr/README.md|diagrams
 docs/design/system/tokens.json|frontend diagrams
-docs/diagrams/flow-0033-ci-cd.d2|diagrams
+docs/diagrams/flow-0044-ci-cd.d2|diagrams
 deploy/k8s/README.md|diagrams
 frontend/README.md|frontend web backoffice
 backend/apps/public/src/main/resources/x.md|backend public
