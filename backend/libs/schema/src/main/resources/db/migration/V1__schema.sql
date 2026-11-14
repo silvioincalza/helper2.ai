@@ -189,7 +189,6 @@ CREATE TABLE resource (
 CREATE INDEX resource_search_idx ON resource USING gin (search_vector);
 CREATE INDEX resource_title_trgm_idx ON resource USING gin (lower(title) gin_trgm_ops);
 CREATE INDEX resource_type_idx ON resource (type);
-CREATE INDEX resource_updated_idx ON resource (updated_at DESC NULLS LAST);
 CREATE INDEX resource_published_idx ON resource (published_at DESC) WHERE published_at IS NOT NULL;
 CREATE INDEX resource_origin_idx ON resource (data_origin);
 CREATE INDEX resource_event_idx ON resource (event_starts_at) WHERE type = 'EVENT' AND event_starts_at IS NOT NULL;
@@ -208,7 +207,6 @@ CREATE TABLE resource_label (
     value       text NOT NULL CHECK (length(value) BETWEEN 1 AND 60),
     PRIMARY KEY (resource_id, kind, value)
 );
-CREATE INDEX resource_label_value_idx ON resource_label (kind, value);
 
 CREATE TABLE source_record (
     id                     uuid PRIMARY KEY,
