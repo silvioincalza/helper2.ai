@@ -96,12 +96,12 @@ describe('Feature: the box and an asked question', () => {
     expect(box().value).toBe('postgres mcp s');
   });
 
-  it('Scenario: on a phone the ask button shows a short label and the keyboard offers Search', async () => {
+  it('Scenario: on a phone the ask button shows only its icon and the keyboard offers Search', async () => {
     mockApi();
     renderApp('/');
     await screen.findByRole('textbox', { name: 'Search AI resources' });
 
-    expect(screen.getByRole('button', { name: 'Ask the guide' })).toHaveTextContent('Ask');
+    expect(screen.getByRole('button', { name: 'Ask the guide' })).toHaveTextContent(/^$/);
     expect(box()).toHaveAttribute('enterkeyhint', 'search');
   });
 

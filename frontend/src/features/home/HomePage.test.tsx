@@ -53,37 +53,21 @@ describe('one box', () => {
     await settle();
   });
 
-  it('Scenario: Ask the guide shows its words next to the icon on a wide screen, and "Ask" up to 720px', async () => {
+  it('Scenario: Ask the guide is a square button with only its icon, at every width', async () => {
     mockApi();
     renderApp('/');
     const guide = screen.getByRole('button', { name: 'Ask the guide' });
     expect(guide.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
-    expect(guide.querySelector('.one-box-ask__label')).toHaveTextContent(/^Ask the guide$/);
-    expect(guide.querySelector('.one-box-ask__short')).toHaveTextContent(/^Ask$/);
+    expect(guide).toHaveTextContent(/^$/);
     const css = readFileSync(join(process.cwd(), 'src/styles/app.css'), 'utf8');
-    const outsideMedia = css.replace(/@media[^{]*\{(?:[^{}]*\{[^}]*\})*\s*\}/g, '');
-    expect(outsideMedia).toMatch(
-      /\.one-box-ask \{[^}]*min-width: var\(--target-min\);[^}]*min-height: var\(--target-min\);/,
-    );
-    expect(outsideMedia).not.toMatch(/\.one-box-ask__label \{\s*display: none;/);
-    expect(outsideMedia).toMatch(/\.one-box-ask__short \{\s*display: none;/);
     expect(css).toMatch(
-      /@media \(max-width: 720px\) \{\s*\.one-box-ask__label \{\s*display: none;\s*\}\s*\.one-box-ask__short \{\s*display: inline;/,
+      /\.one-box-ask \{[^}]*min-width: var\(--target-min\);[^}]*min-height: var\(--target-min\);[^}]*aspect-ratio: 1;/,
     );
+    expect(css).not.toMatch(/one-box-ask__(label|short)/);
     await settle();
   });
 
-  it('Scenario: the name a screen reader or a voice command uses holds the words on the button (WCAG 2.5.3)', async () => {
-    mockApi();
-    renderApp('/');
-    const guide = screen.getByRole('button', { name: 'Ask the guide' });
-    const name = guide.getAttribute('aria-label')!;
-    expect(guide.querySelector('.one-box-ask__label')!.textContent).toBe(name);
-    expect(name.startsWith(guide.querySelector('.one-box-ask__short')!.textContent)).toBe(true);
-    await settle();
-  });
-
-  it('Scenario: on a phone the field takes the full row, and Search and Ask share the row below, equal in width', () => {
+  it('Scenario: on a phone the field takes the full row, and Search fills the row below next to the Ask icon', () => {
     const shell = readFileSync(join(process.cwd(), 'src/styles/shell.css'), 'utf8');
     const phone =
       /@media \(max-width: 520px\) \{((?:[^{}]*\{[^}]*\})*)\s*\}/.exec(shell)?.[1] ?? '';
@@ -91,10 +75,16 @@ describe('one box', () => {
     expect(phone).toMatch(
       /\.searchbox-field \{\s*flex: 1 1 calc\(100% - var\(--target-min\) - var\(--space-2\)\);/,
     );
-    expect(phone).toMatch(
-      /\.h2-app \.searchbox\.large \.btn-primary,\s*\.h2-app \.searchbox\.large \.btn\.one-box-ask \{\s*flex: 1 1 30%;/,
-    );
+    expect(phone).toMatch(/\.h2-app \.searchbox\.large \.btn-primary \{\s*flex: 1 1 30%;/);
+    expect(phone).not.toMatch(/one-box-ask/);
     expect(shell).not.toMatch(/flex-flow: row nowrap/);
+  });
+
+  it('Scenario: the search box is as wide as the page column on Home and on the results page', () => {
+    const home = readFileSync(join(process.cwd(), 'src/features/home/home.css'), 'utf8');
+    const results = readFileSync(join(process.cwd(), 'src/features/search/skeleton.css'), 'utf8');
+    expect(/\.h2-pinned__inner \{([^}]*)\}/.exec(home)?.[1]).not.toMatch(/max-width/);
+    expect(results).not.toMatch(/\.h2-results__box \{[^}]*max-width/);
   });
 
   it('given a desktop, the key hints show on Home and in the header; given a touch device, they are hidden', () => {
