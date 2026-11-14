@@ -53,6 +53,27 @@ describe('Feature: the box and an asked question', () => {
     expect(params().get('ask')).toBe('new tools');
   });
 
+  it('Scenario: Back and Forward between two questions with the same first 200 characters show each question in the box', async () => {
+    mockApi({ 'POST /guide/stream': pendingGuide });
+    const shared = 'an MCP server that works with Postgres '.repeat(6).slice(0, 200);
+    const first = `${shared} and runs in a container`;
+    const second = `${shared} and needs no account`;
+    const url = (ask: string) =>
+      `/search?q=${encodeURIComponent(shared.trimEnd())}&ask=${encodeURIComponent(ask)}`;
+    const { router } = renderApp(url(first));
+    await screen.findByRole('textbox', { name: 'Search AI resources' });
+    expect(box().value).toBe(first);
+
+    await act(() => router.navigate(url(second)));
+    expect(box().value).toBe(second);
+
+    await act(() => router.navigate(-1));
+    expect(box().value).toBe(first);
+
+    await act(() => router.navigate(1));
+    expect(box().value).toBe(second);
+  });
+
   it('Scenario: a keystroke right after a live search is kept in the box', async () => {
     mockApi();
     const { params } = renderApp('/search?q=postgres');

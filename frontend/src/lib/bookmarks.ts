@@ -1,6 +1,7 @@
 import type { Bookmark } from '@/api/types';
 
 export const BOOKMARK_KEY = 'h2.bookmarks.v1';
+export const MAX_IMPORT = 200;
 
 export function readLocalBookmarks(): Bookmark[] {
   try {

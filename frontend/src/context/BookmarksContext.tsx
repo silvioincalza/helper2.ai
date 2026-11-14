@@ -10,7 +10,12 @@ import {
 } from 'react';
 import { api } from '@/api/client';
 import type { Bookmark, BookmarkRequest } from '@/api/types';
-import { clearLocalBookmarks, readLocalBookmarks, writeLocalBookmarks } from '@/lib/bookmarks';
+import {
+  clearLocalBookmarks,
+  MAX_IMPORT,
+  readLocalBookmarks,
+  writeLocalBookmarks,
+} from '@/lib/bookmarks';
 import { useMe } from './MeContext';
 
 interface BookmarksValue {
@@ -49,6 +54,19 @@ function withEdits(list: Bookmark[], edits: Edit[]): Bookmark[] {
   );
 }
 
+async function importInBatches(
+  waiting: Bookmark[],
+  keepWaiting: (left: Bookmark[]) => void,
+): Promise<Bookmark[]> {
+  const batch = waiting.slice(0, MAX_IMPORT);
+  const left = waiting.slice(MAX_IMPORT);
+  const list = await api.mergeLocalBookmarks(
+    batch.map(({ savedAt: _savedAt, ...request }) => request),
+  );
+  keepWaiting(left);
+  return left.length ? importInBatches(left, keepWaiting) : list;
+}
+
 export function BookmarksProvider({ children }: { children: ReactNode }) {
   const { me, loaded } = useMe();
   const server = loaded && me.authenticated;
@@ -68,6 +86,14 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     setLocal(list);
     setStorageFailed(!writeLocalBookmarks(list));
   }, []);
+
+  const keepWaiting = useCallback(
+    (left: Bookmark[]) => {
+      if (left.length) persistLocal(left);
+      else if (clearLocalBookmarks()) setLocal([]);
+    },
+    [persistLocal],
+  );
 
   const removeFromAccount = useCallback((gone: Bookmark) => {
     setRemote((r) => (r ?? []).filter((b) => b.resourceId !== gone.resourceId));
@@ -95,14 +121,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
     loadedFor.current = attempt;
     setServerError(false);
     const localList = readLocalBookmarks();
-    const run = localList.length
-      ? api
-          .mergeLocalBookmarks(localList.map(({ savedAt: _savedAt, ...request }) => request))
-          .then((list) => {
-            if (clearLocalBookmarks()) setLocal([]);
-            return list;
-          })
-      : api.listBookmarks();
+    const run = localList.length ? importInBatches(localList, keepWaiting) : api.listBookmarks();
     run.then(
       (list) => {
         const pending = editsRef.current;
@@ -125,7 +144,7 @@ export function BookmarksProvider({ children }: { children: ReactNode }) {
         setServerError(true);
       },
     );
-  }, [server, attempt, persistLocal, saveToAccount, removeFromAccount]);
+  }, [server, attempt, persistLocal, keepWaiting, saveToAccount, removeFromAccount]);
 
   const retry = useCallback(() => setAttempt((a) => a + 1), []);
 

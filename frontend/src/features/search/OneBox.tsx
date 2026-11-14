@@ -45,10 +45,12 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
   const [text, setText] = useState(fromUrl);
   const [followed, setFollowed] = useState(fromUrl);
   const [lastSent, setLastSent] = useState<string | null>(null);
+  const showsUrl =
+    asked && fromUrl === asked ? clampQuestion(text) === asked : clampQuery(text) === state.q;
   if (fromUrl !== followed) {
     setFollowed(fromUrl);
     if (fromUrl === lastSent) setLastSent(null);
-    else if (clampQuery(text) !== state.q) setText(fromUrl);
+    else if (!showsUrl) setText(fromUrl);
   }
 
   const go = (

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { BULK_MAX, EXPECTED_MAX, NOTE_MAX, REASON_MAX } from '../admin/limits';
+import { MAX_IMPORT } from '../lib/bookmarks';
 import {
   MAX_CLARIFICATION,
   MAX_DROP,
@@ -49,6 +50,11 @@ describe('the limits the frontend types again are the limits of the contract', (
   it('guide question', () => {
     expect(MIN_QUESTION).toBe(at(guideRequest, 'request').minLength);
     expect(MAX_QUESTION).toBe(at(guideRequest, 'request').maxLength);
+  });
+
+  it('bookmarks merged in one request', () => {
+    const merge = at(publicApi, 'paths', '/me/bookmarks', 'post', 'requestBody', 'content');
+    expect(MAX_IMPORT).toBe(at(merge, 'application/json', 'schema').maxItems);
   });
 
   it('guide clarification and dropped results', () => {
