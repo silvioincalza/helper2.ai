@@ -224,3 +224,4 @@ Modules, ports and adapters: one view per module group, [context](../../diagrams
 - Open issues that change it:
   - [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180): a closed `llm` module with a small public API.
   - [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181): controllers return views owned by the use cases.
+  - [S1.11.4](https://github.com/silvioincalza/helper2.ai/issues/403): one `core` library for the contexts both apps share.
