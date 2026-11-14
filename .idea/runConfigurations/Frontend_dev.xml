@@ -6,7 +6,7 @@
       <script value="dev" />
     </scripts>
     <arguments value="" />
-    <node-interpreter value="/opt/homebrew/opt/node/bin/node" />
+    <node-interpreter value="project" />
     <envs />
     <method v="2" />
   </configuration>
