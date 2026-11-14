@@ -7,8 +7,10 @@ import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.KnownTargetList;
 import ai.helper2.testing.AsBackOffice;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,8 +29,16 @@ class JdbcKnownTargetListIT {
   private final String name = "Acme " + run;
   private final String otherName = "Acme Cloud " + run;
 
+  private final List<UUID> addedHere = new ArrayList<>();
+
+  @AfterEach
+  void removeWhatThisTestAdded() {
+    addedHere.forEach(targets::remove);
+  }
+
   private UUID added(KnownTarget.Kind kind, String... names) {
     UUID id = UUID.randomUUID();
+    addedHere.add(id);
     targets.add(id, kind, List.of(names), "owner", ADDED, KnownTarget.Origin.CURATED);
     return id;
   }
