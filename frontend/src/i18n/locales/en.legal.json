@@ -1,0 +1,295 @@
+{
+  "privacy": {
+    "title": "Privacy",
+    "updated": "Last updated: 13 November 2026",
+    "lede": "helper2.ai collects as little as possible. You can search and ask the guide without an account. Search pages can show one ad from EthicalAds, which uses no cookies, and resource pages one ad from Google AdSense. Where the EU, EEA, UK or Swiss rules apply, Google Analytics and personalized ads run only if you accept them. We never sell data.",
+    "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
+    "sections": [
+      {
+        "title": "What we process and why",
+        "items": [
+          {
+            "text": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for up to {{cachedSearches}}, so results can still be shown when a source fails. Guide answers are kept for up to {{cachedGuideAnswers}}. Both are stored under a hash of the question, not its text. A cached guide answer keeps the search terms the guide wrote and the names it read from your question (for example the tools you compared), never your whole question or your reply when the guide asks you back. When you ask the guide on a results page filtered by category, it also gets the ids of the categories you chose: they come from our fixed list, never from what you type. When you chose who the results are best for (Apps I can use, or Build with AI), it also gets that choice, one of two fixed values. Both are part of that hash and are kept with the cached answer for up to {{cachedGuideAnswers}}, not linked to you or your account. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information.",
+            "withoutNumbers": "Your searches and guide questions: the text you type, used only to answer you. It is not linked to your account. A source's search results count as fresh for a short time, set per source; we keep the stored copy for a limited time, so results can still be shown when a source fails. Guide answers are kept for a limited time too. Both are stored under a hash of the question, not its text. A cached guide answer keeps the search terms the guide wrote and the names it read from your question (for example the tools you compared), never your whole question or your reply when the guide asks you back. When you ask the guide on a results page filtered by category, it also gets the ids of the categories you chose: they come from our fixed list, never from what you type. When you chose who the results are best for (Apps I can use, or Build with AI), it also gets that choice, one of two fixed values. Both are part of that hash and are kept with the cached answer for the same limited time, not linked to you or your account. A cached guide answer, with the search queries the guide wrote for it, can be shown to anyone who asks the same or a very similar question. Please do not type personal or secret information."
+          },
+          "Your account, if you sign in with GitHub: your GitHub user ID (a number), your display name and when you last signed in. We ask GitHub only for basic profile access, and we do not keep the access key GitHub gives us for it after you have signed in. We never see your GitHub password. We keep nothing else from your GitHub profile.",
+          "Your display settings, if you are signed in: whether the radar on Home moves between its sources. Kept with your account until you delete it.",
+          "Saved items: if you are signed in, each saved resource (its link, title and type) and when you saved it, stored on our server with your account. If you are not signed in, they stay only in your browser; when you sign in, they move to your account.",
+          "Reports you send about a resource: the text you write. A report is never linked to your account, even when you are signed in.",
+          "Web search counters: Tavily searches per day and feature, under a keyed hash of your IP address and the date, for every visitor, signed in or not (no address stored; days cannot be linked).",
+          "Guide question counters: how many new questions the guide answered for you today, and random ids of the questions we gave back (an answer with no pick, or a question that failed), under a keyed hash of your IP address (for IPv6, its /64 network) that changes every day, so we can apply the daily limit in the Terms. A second count of the same kind is kept for your network (for IPv4 the first three parts of the address, for IPv6 its /56 network), shared with the other visitors of that network. The step-by-step setup guide counts the guides a model wrote for you and for your network today the same way. The address itself is not stored.",
+          "Your limits for today: when you open the site, we read these counters under the same daily hash of your IP address, signed in or not, and send only what is left today (guide questions, setup guides, and web searches for search and the guide) back to your browser, with the time they reset. Reading them does not count as a use, stores nothing new and does not send your address.",
+          "Stored Tavily results, under a keyed hash of the question, not its text.",
+          "Guide question fingerprints, only when similar-question reuse is on: a list of numbers (an embedding) computed from your guide question, kept with its cached answer so a later question with the same meaning can get that answer. Not linked to you or your account.",
+          "Records of our administrators: when a person who runs helper2.ai acts in the back office (for example, decides a review item or starts a Scout run), we keep their GitHub user ID, the time, what they did, on what, the result and the note they wrote. When they skip a resource in the enrichment queue, the reason they wrote stays with the resource until it is requeued or we no longer list it. When they decide several review items at once, one batch ID links those records. When they point a relationship between two AI resources at the right resource, or rename its target, the relationship records that a person chose the target (not who: that is in the record above); this stays as long as the relationship. When they fix a proposed resource's title, type or tags before accepting it, the resource's record keeps which of these fields a person changed (not who: that is in the record above); this stays as long as we list the resource. This is about the people who run the site, never about visitors.",
+          "Usage totals: how many searches we answer, how many had results from only some sources, and how many found nothing. They are counts only: never the text you typed, your IP address or your account.",
+          "Technical data: to limit abuse (rate limits and the number of guide questions per day), we count your requests under a keyed hash of your IP address that changes every day. The address itself is not stored with these counts, and the counts of two days cannot be linked. Only when our counter store is down, your IP address is kept in our server's memory for the length of the limit instead. Our servers and our web gateway also write technical logs, which can include your IP address and the pages you request. The address of a search page contains what you typed: your search words and, when you ask the guide, your question. So these logs can keep your search text next to your IP address. Do not type personal data into the search box. Our servers also record request traces: the timing of each step of a request, linked to its log lines by an ID, without your IP address or your search text. We keep these logs and traces for up to 3 months to keep the service running and secure, then delete them.",
+          "Google Analytics: which pages you open (the page path and a fixed page name, never your search words, your guide question or the page title), your device and browser type, your approximate location, which Google derives from your IP address, and when you visit. Google signals and ad personalization are off. Where the EU, EEA, UK or Swiss rules apply, it runs only if you accept it; elsewhere it can run without asking. When Google ads are on, we learn where you are and what you answered only from Google's consent tool, which we load on resource pages only (see below). So Google Analytics stays off, for every visitor, until you open a resource page or press \"Privacy choices\": a visit that never does is not counted, and after you reload the page it is off again until then. You can change your answer at any time in the footer (\"Privacy choices\" or \"Cookie settings\").",
+          "The ad on search pages, only while we have an EthicalAds publisher ID set (without it there is no ad and no request to EthicalAds): your browser loads it from EthicalAds. EthicalAds receives your IP address, which it uses only to find your country and does not store, your browser type, the address of the page, which on a search page contains your search words, and up to three topic words that its script picks from the results on the page, to choose a matching ad. It sets no cookies and builds no profile. There is no ad on pages with a guide answer.",
+          "Gifts, if you give through GitHub Sponsors or Stripe: the payment happens on their site, under their privacy policy. We receive what their dashboards show us: your name or user name, the amount, the date and, for Stripe, your e-mail address. We never see your card details.",
+          "The ad on resource pages, when ads are on: your browser loads it from Google AdSense. Google receives your IP address, your browser and device data, and the address of the resource page, which never contains your search words. Once loaded, the AdSense script stays in the tab for the rest of the visit, until you reload or close it. If you then go back to a search page or search again, it shows no ad and asks for none there, but it could read that page's address, which holds your search words or your guide question. Where the EU, EEA, UK or Swiss rules apply, Google uses cookies and personalized ads only if you accept them in Google's consent question, and otherwise shows limited ads without personalization. Elsewhere Google can personalize ads under its own policies. There is never a Google ad on a search page or next to a guide answer.",
+          "Google's consent question, when Google ads are on: Google's consent tool (Privacy & messaging) asks visitors where the EU, EEA, UK or Swiss rules apply, for Google AdSense and Google Analytics together, and keeps your answer in its cookies. We load it only when you open a resource page, where the Google ad is, or when you press \"Privacy choices\" in the footer. On Home, search pages and every other page nothing is requested from it before that, and we do not read its cookies ourselves. It sees the address of the page, so we never load it on a page with your search words or guide question: there, \"Privacy choices\" first opens this page. Once loaded, it stays in the tab for the rest of the visit, like the AdSense script, and could read the address of a search page you open after it."
+        ]
+      },
+      {
+        "title": "Legal basis",
+        "items": [
+          "Answering your searches and guide questions, your account and your saved items: to provide the service you ask for (Art. 6(1)(b) GDPR).",
+          "Rate limits, technical logs, usage totals and the security cookie: our legitimate interest in keeping the service secure and available (Art. 6(1)(f) GDPR).",
+          "Web search counters, guide question counters and stored results: legitimate interest in a free service at bounded cost (Art. 6(1)(f) GDPR).",
+          "Reports you send: our legitimate interest in keeping the information on helper2.ai correct (Art. 6(1)(f) GDPR).",
+          "Describing public AI resources with names, titles and short quotes or excerpts from their public pages and from web pages found by our searches: our legitimate interest in showing what a resource is and where each fact comes from (Art. 6(1)(f) GDPR).",
+          "Google Analytics and its cookies: your consent where the EU, EEA, UK or Swiss rules apply (Art. 6(1)(a) GDPR, and the consent rules for cookies), elsewhere our legitimate interest in knowing how the site is used (Art. 6(1)(f) GDPR). You can withdraw your consent at any time in the footer; we then stop it and delete its cookies.",
+          "The ad on search pages: our legitimate interest in funding a free service (Art. 6(1)(f) GDPR).",
+          "Gifts: to handle the gift you chose to make, and our legal duty to keep accounting records (Art. 6(1)(b) and (c) GDPR).",
+          "Personalized Google ads and their cookies: your consent, given in Google's consent question. Ads without personalization: our legitimate interest in funding a free service (Art. 6(1)(f) GDPR)."
+        ]
+      },
+      {
+        "title": "Cookies and browser storage",
+        "items": [
+          "A session cookie (SESSION), only when you sign in, so you stay signed in. It holds only a random ID. Who you are signed in as is kept on our server under that ID, until you sign out or for 30 minutes after your last request.",
+          "A security cookie (XSRF-TOKEN) that protects forms against cross-site request forgery.",
+          "On the back office, the separate site the people who run helper2.ai use to review the catalog: a session cookie (__Host-SESSION) while they are signed in, and a security cookie (__Host-XSRF-TOKEN) against cross-site request forgery. Only that site can set or read them; visitors of helper2.ai never get them.",
+          "Browser storage for your light or dark theme, the AI tool you chose in the setup guide and, if you are not signed in, your saved items. When you sign in, the page you were on is kept in this tab until you are back on it, then removed. When a new version of the site is out while a tab is open, the tab keeps the address of the page it reloaded and the time, so it does not reload the same page again right away. The tab also keeps where you had scrolled on each page, so Back returns you there. When you open a result, the tab's history keeps, with that step, the address of your search, the result's public title, type and link, so the resource page can show them while it loads, and, if the guide picked the result, the pick: its rank, its AI-written reason, the quote it checked and the requirements from your question it checked, so the resource page can say why the guide picked it. All of this is gone when you close the tab. This data stays in your browser and is not sent to us, with one exception: when you sign in, the items you saved in this browser are moved to your account and removed from the browser.",
+          "Browser storage for your answer to the analytics question (h2.consent), so we do not ask again. It holds only yes or no and the date.",
+          "Google Analytics cookies (_ga and _ga_ followed by an ID): they let Google tell that two visits come from the same browser. Where the EU, EEA, UK or Swiss rules apply, only if you accept. They last up to 2 years. If you reject or withdraw your consent, we delete them.",
+          "Google's consent tool, when Google ads are on: its cookies (FCCDCF, FCNEC) keep your answer to its question, for up to 13 months. It sets them from the first resource page you open, or when you press \"Privacy choices\".",
+          "Google AdSense cookies (such as __gads, __gpi and __eoi), on resource pages: where the EU, EEA, UK or Swiss rules apply, only if you accept them in Google's consent question.",
+          "All of these, except the Google Analytics, consent tool and AdSense cookies, are strictly necessary for the site to work. The EthicalAds ad sets no cookies."
+        ]
+      },
+      {
+        "title": "Who receives data",
+        "items": [
+          "Search sources: to find results, your search text is sent to the sources that answer live, such as GitHub, Hugging Face, npm, arXiv and Tavily, and Hacker News search (run by Algolia) when it is switched on. The Sources page lists them all. Each provider handles the request under its own privacy policy, and some of them are in the United States.",
+          "Package data: deps.dev (Open Source Insights), run by Google LLC (United States), receives from our server the public names of the GitHub repositories we check (the owner, who can be a person, and the project), to tell us which packages they publish. It receives nothing about you or your searches.",
+          "Tavily (United States): your search text or the guide's web query, unless a stored result answers. Tavily also receives the addresses of AI products' own web pages and of AI event pages, so it can read those pages for us. These addresses are public and contain no data about you.",
+          "AI models: guide questions, and searches written in a language other than English, are sent to NVIDIA Nemotron models on Nebius Token Factory (Nebius B.V., Netherlands). With a guide question, the model that plans the search also gets your Best for choice (Apps I can use, or Build with AI), if you made one. The model that plans the search and translates runs in the European Union (Finland). The model that chooses the results and checks their reasons runs in the United States, so your guide question and the results it chooses from reach the US. We send only the text, never your IP address or account data.",
+          "AI models also read public text about AI resources (source descriptions, web page excerpts, README files, model cards, pages of a product's own website and AI event pages), on NVIDIA Nemotron models on Nebius Token Factory. Describing a resource and reading an event page run on the model in the United States. Sorting the entries of awesome lists, drafting example searches for the home page and writing the steps of the setup guide from a tool's public documents, and checking them when that check is on, run on the model in the European Union (Finland). It is public text about the resources, not about our visitors. The same public text (a resource's title and description) is also sent to the external AI service for search by meaning (below), so search can find a resource by meaning.",
+          "Search by meaning: your search text, the searches the guide writes from your question, and your guide question when similar-question reuse is on, are sent to an external AI service in the United States, which turns each one into a list of numbers (an embedding). We send only the text, never your IP address or account data. We keep the numbers of a search under a hash of the search, not its text (see How long we keep data).",
+          "GitHub, when you choose to sign in with it.",
+          "Network edge: every request to helper2.ai passes through Cloudflare (United States), which routes traffic to our servers. Cloudflare sees your IP address and the request.",
+          "Backup storage: Cloudflare also stores one copy of each database backup, in the European Union. We encrypt the copy on our servers before we send it and we keep the key, so Cloudflare cannot read it.",
+          "Transfers abroad: GitHub, Cloudflare, Google for deps.dev and the AI service for search by meaning are certified under the Swiss-US and EU-US Data Privacy Framework and its UK Extension, so those transfers rely on that certification. Nebius's US calls rely on the standard contractual clauses in its data processing agreement. The AI service for search by meaning receives your search text, the searches the guide writes, your guide question when similar-question reuse is on, and public text about resources (see Search by meaning above). Hugging Face, npm, arXiv, Tavily, and Hacker News search (Algolia) when it is switched on, are not certified. We send them only your search text (and Tavily also public addresses of product pages), never your IP address or account data, and only because it is needed to give you the results you asked for (Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR).",
+          "Google Analytics, Google AdSense and Google's consent tool: Google Ireland Limited and Google LLC (United States). Google keeps the analytics data for 2 months. For AdSense, Google is responsible for the data it collects under its own privacy policy.",
+          "EthicalAds, run by Read the Docs, Inc. (United States), when ads are on: the request for the ad on search pages.",
+          "Gifts: GitHub, Inc. (United States) for GitHub Sponsors, and Stripe Payments Europe, Limited (Ireland) for card gifts. Each one is responsible for the payment data it collects.",
+          "Transfers abroad for these: Google, GitHub and Stripe are certified under the Swiss-US and EU-US Data Privacy Framework, so those transfers rely on that certification. For EthicalAds we send only what loading the ad needs, and no account data.",
+          "Hosting: our servers are in Germany (European Union)."
+        ]
+      },
+      {
+        "title": "Public data about AI resources",
+        "items": [
+          {
+            "text": "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products, articles that compare them and posts about them: {{categories}} categories of AI tools (such as coding, writing, health and legal tools), each searched once a week, {{categorySearches}} searches in all. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. Once a day we read the public metadata of Python packages with the AI topic from PyPI, through Google BigQuery (Google, United States): the name, version, summary, links and keywords of each package, never its authors or their e-mail addresses. These searches and queries contain no data about you.",
+            "withoutNumbers": "To describe the AI resources we list, we read public pages about them, such as GitHub repositories, their README files and Hugging Face model cards. We also run fixed web searches through Tavily to find new AI products, articles that compare them and posts about them: a fixed set of categories of AI tools (such as coding, writing, health and legal tools), each searched once a week. Once a week we also search for public LinkedIn pages about AI through Tavily: articles, posts, company pages and events. We never visit LinkedIn ourselves: Tavily finds the pages. Once a day we read the public metadata of Python packages with the AI topic from PyPI, through Google BigQuery (Google, United States): the name, version, summary, links and keywords of each package, never its authors or their e-mail addresses. These searches and queries contain no data about you."
+          },
+          {
+            "text": "From README files and model cards we keep names of projects, organizations and authors, and short quotes of up to {{quoteChars}} characters, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted.",
+            "withoutNumbers": "From README files and model cards we keep names of projects, organizations and authors, and short quotes, each with its source named and a link to it. We do not keep the rest of their text, and we replace email addresses with \"[email]\" before anything is quoted."
+          },
+          "When a package on npm or PyPI links a GitHub repository, we also read that repository's README, and use it only when it tells how to install this package. From the same GitHub request that reads the license we keep whether the repository is archived and when we checked, with the package's record, so search does not offer an archived project. We keep this as long as we keep that record, and drop it when the package links another repository. When the source of the record later says something else about the same repository, we keep the newer of the two.",
+          "From Hugging Face we also read, for each model in a search, whether Hugging Face has disabled it, whether it asks for an access request and when it was last changed. From the MCP Registry we read whether a server is marked as deprecated. A disabled model and a deprecated server are not offered. From GitHub we also read whether a repository is archived or a fork, and from Hugging Face whether a Space is running. These are public facts about a resource, not about a person. We keep them with the record of the resource, with the time we read them, for as long as we keep that record, so a search of our own catalog does not offer a resource its source calls dead. The date of the last change is kept with the resource like its other public facts.",
+          "From awesome lists on GitHub (curated lists of AI tools) we also build a search index, so a search can find a tool by the words a list uses around it. We keep only the index (word forms, not the text) and the short section heading the tool sits under, for example \"Tools > Vector databases\". We do not keep the text of the list. We also read the public awesome lists that these lists link to, up to two steps away and at most 30 more a day. When a list links to a product's own website, we keep the link, the words of the link (the product's name), the list and the section heading, so we can check the product by hand. We do not visit the linked website for this. A product found this way is shown only after we have checked it.",
+          "Once a week we also ask GitHub for the most-starred public repositories of a fixed set of AI topics (such as LLM, RAG, AI agents and MCP). A repository with at least 1,000 stars that changed in the last 90 days is listed without a check by hand: we keep and show its link, its name (the owner and the project; the owner can be a person), its description, its license, its star count, its topics and the dates it was created and last changed. A repository with at least 3,000 stars that we do not list yet is kept with its link, name, description, star count and topics, the date of its last change and whether it is archived or a copy (fork) of another repository, so we can check it by hand, at most 25 new ones a day, and is shown only after we have checked it. A repository GitHub marks as archived, or a copy with few stars and no recent change, is not kept for a check. When we list a repository after the check, these details stay with it.",
+          "Every day we also ask GitHub for a part of a fixed list of searches for popular AI libraries and SDKs in a fixed set of programming languages (such as Java, Python, TypeScript, Go and Rust), and for the public AI repositories of a fixed set of AI providers (such as OpenAI, Anthropic, Google and Mistral); the whole list is searched once a week. For a repository we do not list yet we keep the same details as above, its programming languages and whether it comes from one of these providers. We then send the repository's public name (the owner and the project; the owner can be a person) from our server to deps.dev (Open Source Insights, run by Google LLC in the United States) to find the packages it publishes, and keep each package's registry, name, latest version, release date and license, and the words of these names so a search can find them. deps.dev receives only public repository and package names, never data about you or your searches. We take at most 500 new repositories a day for review. A repository found this way is shown only after we have checked it.",
+          "After each daily run we count how many of the GitHub repositories and Hugging Face models and spaces we list have the same owner. An owner of 5 or more that we do not know as a vendor yet is put on a list for our administrators, at most 25 new names a day: the owner's public account name, the count and up to 5 of its listed projects. A person then decides whether it is a company to show as a vendor. The owner can be a person; a person's account is rejected and is never shown as a vendor.",
+          {
+            "text": "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page: up to {{articleExcerptChars}} characters for an article, up to {{productPageExcerptChars}} characters for a product page or a post about a product, which we use as evidence to describe it. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page or a post about a product is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder.",
+            "withoutNumbers": "From web pages found by these searches we keep the page title, its link and the excerpt Tavily takes from the page, longer for a product page or a post about a product, which we use as evidence to describe it. We also keep what the search said about the page: which search found it, its rank and relevance score, its publication date, the categories its words fit and the address of its small site icon (we do not load or show the icon). We do not keep the full text of the page, its images or any answer Tavily writes. Articles that compare AI tools are shown in search with their excerpt. A product page or a post about a product is shown only after we have checked it by hand. A title or excerpt can name people, for example an article's author or a product's founder."
+          },
+          {
+            "text": "From LinkedIn pages we keep the link, a title without the author's name and an excerpt of up to {{quoteChars}} characters. A LinkedIn page is shown only after we have checked it by hand. The link and the text of a post can still name its author.",
+            "withoutNumbers": "From LinkedIn pages we keep the link, a title without the author's name and a short excerpt. A LinkedIn page is shown only after we have checked it by hand. The link and the text of a post can still name its author."
+          },
+          {
+            "text": "When a product's facts (price, platforms, license) are missing, we read up to {{productPages}} pages of the product's own website through Tavily, such as its home, pricing and download pages. We only read pages on the product's own site. Before an AI model reads the text, we remove hidden text and replace email addresses with \"[email]\" and phone numbers with \"[phone]\". We never store the raw page. We keep the cleaned text of the product's public pages (hidden text removed, email addresses and phone numbers replaced) for up to {{pageText}} in our cache, only so we can try again if describing the product fails, then it is deleted. When this cache cannot be read or written, our technical log records only the kind of error, never the page address or its text. We keep short quotes of up to {{quoteChars}} characters that prove a fact, each with a link to its page. Once a product is described, we keep for {{pageRead}} the page address with a fingerprint (a hash) of its text, so we do not read the same page twice.",
+            "withoutNumbers": "When a product's facts (price, platforms, license) are missing, we read a few pages of the product's own website through Tavily, such as its home, pricing and download pages. We only read pages on the product's own site. Before an AI model reads the text, we remove hidden text and replace email addresses with \"[email]\" and phone numbers with \"[phone]\". We never store the raw page. We keep the cleaned text of the product's public pages (hidden text removed, email addresses and phone numbers replaced) for a short time in our cache, only so we can try again if describing the product fails, then it is deleted. When this cache cannot be read or written, our technical log records only the kind of error, never the page address or its text. We keep short quotes that prove a fact, each with a link to its page. Once a product is described, we keep for a limited time the page address with a fingerprint (a hash) of its text, so we do not read the same page twice."
+          },
+          {
+            "text": "To list upcoming AI events, we run a few fixed web searches through Tavily once a week and read some of the event pages they find through Tavily. Before an AI model reads a page, we remove hidden text and replace email addresses with \"[email]\" and phone numbers with \"[phone]\". The model reads the event's dates, kind, format and place, with the words of the page that state them; our code checks that those words are on the page and state those dates. We keep the page title, its link, Tavily's excerpt, the sentence that states the dates, and which model and prompt read it. We never store the page itself. The event is shown with a half-dot mark that reads \"Extracted by AI\" when you point at it or tap it. These are public pages about events, not about our visitors.",
+            "withoutNumbers": "To list upcoming AI events, we run a few fixed web searches through Tavily once a week and read some of the event pages they find through Tavily. Before an AI model reads a page, we remove hidden text and replace email addresses with \"[email]\" and phone numbers with \"[phone]\". The model reads the event's dates, kind, format and place, with the words of the page that state them; our code checks that those words are on the page and state those dates. We keep the page title, its link, Tavily's excerpt, the sentence that states the dates, and which model and prompt read it. We never store the page itself. The event is shown with a half-dot mark that reads \"Extracted by AI\" when you point at it or tap it. These are public pages about events, not about our visitors."
+          },
+          "A fact taken from a product's own page is marked \"Self-declared by the vendor\": it is what the vendor says about itself. A fact is shown only with a quote that states it; without one it shows as \"Not stated\".",
+          "Some values are not facts but estimates: who a resource is for and its technical level. An AI model estimates them from the public text, and we mark them on the page with a hollow dot that reads \"AI-estimated\" when you point at it or tap it, and label them so in our API. They can be wrong.",
+          {
+            "text": "To search by meaning, we send each resource's title and description to the external AI service in the United States to compute its embedding. When the service rejects such a request, we log the error message it returns, cut to {{errorLogChars}} characters, so we can see why; it can repeat parts of a resource's public title or description, never your search text (a failed search embedding logs only the status code). These logs are kept up to 3 months (see Retention).",
+            "withoutNumbers": "To search by meaning, we send each resource's title and description to the external AI service in the United States to compute its embedding. When the service rejects such a request, we log the error message it returns, cut short, so we can see why; it can repeat parts of a resource's public title or description, never your search text (a failed search embedding logs only the status code). These logs are kept up to 3 months (see Retention)."
+          },
+          "This data is about the resources. If a quote, title or excerpt names you, you can object or ask us to remove it: write to us at the address above."
+        ]
+      },
+      {
+        "title": "How long we keep data",
+        "items": [
+          {
+            "text": "Cached searches: a source's results count as fresh for a short time, set per source, and the stored copy is kept up to {{cachedSearches}}. Cached guide answers and their question fingerprints: up to {{cachedGuideAnswers}}, deleted by the next daily clean-up.",
+            "withoutNumbers": "Cached searches: a source's results count as fresh for a short time, set per source, and the stored copy is kept for a limited time. Cached guide answers and their question fingerprints: for a limited time, deleted by the next daily clean-up."
+          },
+          "Technical logs and request traces: up to 3 months. Usage totals: 90 days.",
+          {
+            "text": "Web search counters: {{webSearchCounters}}. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions and setup guides per day: {{guideQuestionCounters}}. Stored results: {{storedWebResults}}.",
+            "withoutNumbers": "Web search counters, guide questions and setup guides per day: a few days at most. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Stored results: for a limited time."
+          },
+          {
+            "text": "English translations of searches typed in another language: {{translations}}. Search vectors (the numbers we use to search by meaning): {{queryVectors}}. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire.",
+            "withoutNumbers": "English translations of searches typed in another language, and search vectors (the numbers we use to search by meaning): for a limited time. Both are stored under a hash of the search, not its text, and deleted from the database within a day after they expire."
+          },
+          {
+            "text": "Your account, its display settings and your saved items: until you delete them, or {{inactiveAccounts}} after you last signed in. Then we delete the account, its settings and its saved items.",
+            "withoutNumbers": "Your account, its display settings and your saved items: until you delete them, or a set time after you last signed in. Then we delete the account, its settings and its saved items."
+          },
+          {
+            "text": "Reports: {{handledReports}} after they were handled. They are not linked to any account, so deleting yours does not change them.",
+            "withoutNumbers": "Reports: a set time after they were handled. They are not linked to any account, so deleting yours does not change them."
+          },
+          {
+            "text": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason or note they wrote: {{adminRecords}}.",
+            "withoutNumbers": "Records of our administrators' actions in the back office, with their GitHub user ID and the reason or note they wrote: for a set time."
+          },
+          {
+            "text": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: {{runtimeSettingChanges}}. The latest change of each limit stays until a newer change replaces it.",
+            "withoutNumbers": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: for a set time. The latest change of each limit stays until a newer change replaces it."
+          },
+          "The sites our search for new AI resources knows by name (writing sites and directories), with the GitHub user ID of the administrator who added each and the reason they wrote: until an administrator removes the site. The record of the change stays with the other administrator records.",
+          "The vendors and services our descriptions of AI resources know by name (such as OpenAI or Slack), with the GitHub user ID of the administrator who added each: until an administrator removes it. Changing its names or kind keeps the ID of the person who added it. The record of each change stays with the other administrator records.",
+          {
+            "text": "Database backups: {{backups}}. One copy of each backup is kept outside our servers (see Who receives data), for the same {{backups}}. Anything deleted above is gone from the backups and from that copy within {{backups}}.",
+            "withoutNumbers": "Database backups: a limited number of days. One copy of each backup is kept outside our servers (see Who receives data), for the same time. Anything deleted above is gone from the backups and from that copy within that time."
+          },
+          "One exception to the backup period: before we moved helper2.ai to a new database for version 3, we took one full copy of the old database. We keep it encrypted for 30 days after the move, only so we can go back to the old version if the move fails, then we delete it. We do not copy anything from it into the new database. It holds the accounts, saved items, reports and records of our administrators as they were on that day. The new database starts without them: if you had an account, signing in now gives you a new, empty one.",
+          "Tools, models, MCP servers and code repositories we read from a source such as GitHub, npm, Hugging Face or the MCP Registry, with what the source says about them (on GitHub, the name of the account that owns the repository): until the source withdraws them. GitHub does when it deletes, archives or renames a repository, the MCP Registry when a server is deleted. A tool a source only stops listing stays. Then we delete what we read from that source, with its quotes, and the tool itself unless another source still lists it, we edited it by hand, or we still keep a report or a review of it (see Reports).",
+          "Quotes from public pages about AI resources: as long as we keep the source record they were read for, and never longer than we list the resource. The facts our AI took from those quotes (a field, a link to another tool, a sentence of the summary): as long as a quote we keep supports them. With a link to another tool we also keep what our AI said the other one is (a product, a company or a general service); this is the AI's estimate, it is not shown on the site, and it is kept exactly as long as the link. When a source withdraws a record, every such fact that only its quotes supported goes with it. A fact we set by hand stays.",
+          {
+            "text": "Pages of a product's own website: the raw page is never stored. Their cleaned text: up to {{pageText}}, to try again. The page address and a fingerprint of its text: {{pageRead}}.",
+            "withoutNumbers": "Pages of a product's own website: the raw page is never stored. Their cleaned text: a short time, to try again. The page address and a fingerprint of its text: for a limited time."
+          },
+          {
+            "text": "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: {{webNews}} after we last retrieved them. Posts from the news feeds of AI companies, with their title, link, date and the feed's short summary: {{webNews}} after their feed last listed them. Product pages we accepted from a web search or from an awesome list, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then {{pendingReviewPages}}. After that we keep only a one-way key of the page's address, our decision and its date, for as long as the catalog runs, so we never propose the same page twice. The same holds for an owner name proposed as a vendor: the proposal until we decide, then {{pendingReviewPages}}, then only a one-way key of the name, our decision and its date. Events found by web search, with the sentence that states their dates: until ten years after they end.",
+            "withoutNumbers": "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: for a limited time after we last retrieved them. Posts from the news feeds of AI companies, with their title, link, date and the feed's short summary: for a limited time after their feed last listed them. Product pages we accepted from a web search or from an awesome list, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then for a limited time. After that we keep only a one-way key of the page's address, our decision and its date, for as long as the catalog runs, so we never propose the same page twice. The same holds for an owner name proposed as a vendor: the proposal until we decide, then for a limited time, then only a one-way key of the name, our decision and its date. Events found by web search, with the sentence that states their dates: until ten years after they end."
+          },
+          {
+            "text": "The search index of awesome lists and their section headings: as long as we list the list and the tool, and {{listIndex}} after a list was last read.",
+            "withoutNumbers": "The search index of awesome lists and their section headings: as long as we list the list and the tool, and for a limited time after a list was last read."
+          },
+          "Google Analytics data: 2 months at Google. Your answer to the analytics question: in your browser until you clear it, or in Google's consent cookies for up to 13 months.",
+          "Records of gifts: 10 years, as Swiss law requires for accounting records."
+        ]
+      },
+      {
+        "title": "Deleting your account",
+        "paragraphs": [
+          "When you are signed in, select your name at the top of the page, then \"Delete my account\". We delete your account, its display settings and your saved items at once and sign you out. Reports you sent stay; they were never linked to your account. Signing in again later creates a new, empty account.",
+          "You can also write to the address above and we will delete it for you."
+        ]
+      },
+      {
+        "title": "Your rights",
+        "paragraphs": [
+          "Under the Swiss Federal Act on Data Protection (FADP) and, where it applies, the EU General Data Protection Regulation (GDPR), you can ask what data we hold about you, and ask us to correct, delete or export it. Write to the address above. You can also complain to the Swiss Federal Data Protection and Information Commissioner (FDPIC) or to the data protection authority in your country."
+        ]
+      },
+      {
+        "title": "Changes",
+        "paragraphs": ["If this notice changes, we update this page and the date at the top."]
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of use",
+    "updated": "Last updated: 13 November 2026",
+    "lede": "These terms apply when you use the helper2.ai website. By using it, you accept them. If you do not accept them, please do not use the site.",
+    "contactIntro": "helper2.ai is run by Silvio Incalza, Switzerland. For any question about these terms, write to",
+    "sections": [
+      {
+        "title": "The service",
+        "items": [
+          "helper2.ai is a free search over public sources about the AI ecosystem, with an AI guide that answers questions from those results.",
+          "We may change, limit or stop the service, or parts of it, at any time and without notice.",
+          {
+            "text": "Live web searches: {{webSearches}}; stored results are free, and a live web search that fails or runs out of time does not count. The AI guide: {{guideQuestions}} new questions a day per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (up to {{freeAnswers}} a day). After that, the guide shows the top search results without AI picks. Addresses of one network (an IPv4 /24 or IPv6 /56 network) also share a daily limit of new questions, one address can have at most a few questions running at once, and the step-by-step setup guide has its own daily limits per IP address and per network. Limits reset at 00:00 UTC.",
+            "withoutNumbers": "Live web searches: a daily limit each for search and the guide; stored results are free, and a live web search that fails or runs out of time does not count. The AI guide: a daily limit of new questions per IP address; a question whose answer is still stored does not count, and an answer with no pick, or a question that fails, does not count either (within a daily limit). After that, the guide shows the top search results without AI picks. Addresses of one network (an IPv4 /24 or IPv6 /56 network) also share a daily limit of new questions, one address can have at most a few questions running at once, and the step-by-step setup guide has its own daily limits per IP address and per network. Limits reset at 00:00 UTC."
+          },
+          "You can use helper2.ai without an account. If you sign in, you can delete your account at any time: select your name at the top of the page, then \"Delete my account\". You can also write to us."
+        ]
+      },
+      {
+        "title": "No guarantee on results and answers",
+        "items": [
+          "Results come from third-party sources, and guide answers are written by AI models. Both can be wrong, incomplete or out of date.",
+          "Values marked \"AI-estimated\" (a hollow dot: who a resource is for, its technical level) are an AI model's estimate, not a fact a source states. Values marked \"Self-declared by the vendor\" (a half dot) are what the vendor says about its own product; we do not check them.",
+          "Nothing on helper2.ai is professional, legal, financial, security or other advice. Check important information at the original source before you rely on it.",
+          "The service is provided as it is and as available. We do not promise that it is always available or free of errors."
+        ]
+      },
+      {
+        "title": "Third-party content and links",
+        "items": [
+          "helper2.ai links to websites, code, models and tools owned by others. We do not control them and are not responsible for their content, availability, licenses or security.",
+          "Your use of a linked resource is governed by its owner's terms and license. Check the license before you use any code or model."
+        ]
+      },
+      {
+        "title": "Ads and gifts",
+        "items": [
+          "Search pages can show one ad from EthicalAds and resource pages one ad from Google AdSense, each marked \"Sponsored\". An ad is never part of the results. Ads never change which results you see or their order, and there is never an ad next to a guide answer.",
+          "The guide's answers are written by AI and labeled as such. An ad is never written by our AI and never shown as an answer.",
+          "Gifts through GitHub Sponsors or Stripe are voluntary. They give no right to any service, feature or result, and they are not refunded except where the provider's terms or the law say so. A gift to helper2.ai is not a donation to a charity and is not tax-deductible."
+        ]
+      },
+      {
+        "title": "Acceptable use",
+        "items": [
+          "Do not overload, attack or try to break into the service, and do not try to get around rate limits or other protections.",
+          "Do not scrape or copy the service in bulk with automated tools.",
+          "Do not use helper2.ai for anything illegal, and do not send reports that are abusive or deliberately false.",
+          "We may block access for anyone who breaks these rules."
+        ]
+      },
+      {
+        "title": "How we describe resources",
+        "items": [
+          "Some text about a resource is written or read by an AI model from its sources, and carries a mark. Point at a mark, or tap it, to read its words. A full dot, “AI-written” or “AI summary”, is text a model wrote, such as the guide's picks and reasons, or a description from the resource's own pages. A half dot, “Extracted by AI”, is a fact a model read from a source, shown with a quote of that source. A hollow dot, “AI-estimated”, is a model's estimate.",
+          "We find many resources with automatic web searches and in curated lists on GitHub. A list article that compares tools is added without review; a product page is added only after a person checks it.",
+          "We do not list tools whose main purpose is illegal or deceptive, such as writing fake reviews or getting around the detection of AI-written content.",
+          "If you own a resource and its description is wrong, report it on its page or write to us, and we will correct or remove it."
+        ]
+      },
+      {
+        "title": "Health and legal tools",
+        "items": [
+          "helper2.ai lists AI tools for health and for legal work. This is not medical or legal advice.",
+          "We do not check whether a health tool is approved as a medical device, whether a legal tool is right for your country or your case, or whether what a tool claims is correct. Claims are the vendor's own, quoted with their source. Ask a qualified professional before you rely on any of these tools."
+        ]
+      },
+      {
+        "title": "Liability",
+        "paragraphs": [
+          "To the extent the law allows, we exclude all liability for damage that results from using helper2.ai, from relying on results or guide answers, or from the service being unavailable. This does not limit liability for intent or gross negligence (Art. 100 Swiss Code of Obligations) or any other liability that cannot be excluded by law."
+        ]
+      },
+      {
+        "title": "Intellectual property",
+        "paragraphs": [
+          "Results, titles and descriptions belong to their owners and are shown to help you find them. Short quotes from README files and model cards are shown as evidence, with their source named and a link to it. The helper2.ai name and logo belong to Silvio Incalza. The source code has its own license, linked in the footer."
+        ]
+      },
+      {
+        "title": "Law and place of jurisdiction",
+        "paragraphs": [
+          "These terms are governed by Swiss law. The courts at the seat of the operator in Switzerland are competent, unless mandatory law gives you the right to go to court elsewhere."
+        ]
+      },
+      {
+        "title": "Changes",
+        "paragraphs": [
+          "We may update these terms. If they change, we update this page and the date at the top. Using the site after a change means you accept the new terms."
+        ]
+      }
+    ],
+    "privacyIntro": "How we handle personal data is explained on the",
+    "privacyLink": "Privacy page"
+  }
+}
