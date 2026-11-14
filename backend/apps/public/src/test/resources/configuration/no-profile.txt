@@ -1,4 +1,18 @@
 helper2.build.version = ${H2_BUILD_VERSION:local}  =>  local
+helper2.catalog.categories.backfill-at-startup = ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}  =>  true
+helper2.catalog.curated.enabled = ${H2_SOURCE_CURATED_ENABLED:true}  =>  true
+helper2.catalog.curated.timeout = 1000ms
+helper2.catalog.index.timeout = ${H2_SOURCE_INDEX_TIMEOUT:3s}  =>  3s
+helper2.catalog.indexer.batch = ${H2_EMBEDDING_BATCH:1}  =>  1
+helper2.catalog.indexer.every = ${H2_EMBEDDING_EVERY:PT5S}  =>  PT5S
+helper2.catalog.indexer.initial-delay = PT30S
+helper2.catalog.indexer.singles-after-failure = 5
+helper2.catalog.indexer.timeout = 30s
+helper2.catalog.observation-queue = 256
+helper2.catalog.reconcile-by-projection = ${H2_CATALOG_RECONCILE_BY_PROJECTION:true}  =>  true
+helper2.catalog.semantic.max-distance = ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}  =>  0.65
+helper2.catalog.semantic.query-vector-ttl = ${H2_SEARCH_QUERY_VECTOR_TTL:7d}  =>  7d
+helper2.catalog.semantic.timeout = ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}  =>  3s
 helper2.categories[0].discovery.queries[0] = free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini
 helper2.categories[0].discovery.type = PROMPT
 helper2.categories[0].family = prompts-and-skills
@@ -504,7 +518,14 @@ helper2.llm.reasoning-model = <empty>
 helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
 helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
+helper2.retention.enrichment-runs = ${H2_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
+helper2.retention.list-index = ${H2_RETENTION_LIST_INDEX:P30D}  =>  P30D
+helper2.retention.observed-unseen = ${H2_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
+helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
+helper2.retention.resolved-issue-reports = ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}  =>  P365D
+helper2.retention.resolved-review-items = ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}  =>  P180D
 helper2.retention.runtime-settings = ${H2_RETENTION_RUNTIME_SETTINGS:P730D}  =>  P730D
+helper2.retention.web-news = ${H2_RETENTION_WEB_NEWS:P180D}  =>  P180D
 helper2.runtime-settings.refresh = ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT20S
 helper2.schema.logins.h2_backoffice = ${H2_DATABASE_BACKOFFICE_PASSWORD:}  =>  <empty>
 helper2.schema.logins.h2_public = ${H2_DATABASE_PUBLIC_PASSWORD:}  =>  <empty>
@@ -540,6 +561,7 @@ resilience4j.bulkhead.configs.source.max-wait-duration = 0
 resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
 resilience4j.circuitbreaker.configs.collector.failure-rate-threshold = 50
+resilience4j.circuitbreaker.configs.collector.ignore-exceptions = ai.helper2.search.SourceFailure$RateLimited
 resilience4j.circuitbreaker.configs.collector.minimum-number-of-calls = 5
 resilience4j.circuitbreaker.configs.collector.permitted-number-of-calls-in-half-open-state = 1
 resilience4j.circuitbreaker.configs.collector.sliding-window-size = 10
@@ -552,6 +574,7 @@ resilience4j.circuitbreaker.configs.model.sliding-window-size = 10
 resilience4j.circuitbreaker.configs.model.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.configs.model.wait-duration-in-open-state = ${H2_RESILIENCE_LLM_OPEN_FOR:30s}  =>  30s
 resilience4j.circuitbreaker.configs.source.failure-rate-threshold = ${H2_RESILIENCE_SOURCE_FAILURE_RATE:50}  =>  50
+resilience4j.circuitbreaker.configs.source.ignore-exceptions = ai.helper2.search.SourceFailure$RateLimited
 resilience4j.circuitbreaker.configs.source.minimum-number-of-calls = 10
 resilience4j.circuitbreaker.configs.source.permitted-number-of-calls-in-half-open-state = 2
 resilience4j.circuitbreaker.configs.source.sliding-window-size = 20
