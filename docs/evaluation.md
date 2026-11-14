@@ -85,7 +85,7 @@ Open work: [S10.4.2](https://github.com/silvioincalza/helper2.ai/issues/348) (th
 ## The guide run
 
 No run is recorded in this repository yet: the first one is made after the release 2026.11.3. A run reports the
-figures of "Metrics" above, per question and in total.
+figures of "Metrics" above, per question and in total, in `docs/eval/guide-run.md`.
 
 ### How to run
 
@@ -93,7 +93,7 @@ figures of "Metrics" above, per question and in total.
 `--core` runs the 21 core questions only (the nightly run); `--repeat <n>` runs the set n times to count flips.
 Each question counts against the per-address daily quota (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`) and spends about 3 of the guide's daily model calls (`H2_GUIDE_DAILY_MODEL_CALLS`); the backend under test sets both to cover the run (see "Clean baseline" below).
 `--intents` runs the intent cases (it writes `docs/evaluation-intents.md`), `--adversarial` the hostile questions (it writes `docs/evaluation-adversarial.md`).
-The script stops and leaves its report unchanged on the first answer with the `GUIDE_BUDGET_SPENT` notice (the guide's model budget is used up; exit code 3; the message says when it opens again), on the first with `GUIDE_NETWORK_QUOTA` (the runner's network has used its questions; exit code 4) or `GUIDE_DAILY_QUOTA` (the address has; exit code 1), or after 3 answers in a row without a model and without such a notice (the provider is down; exit code 1). Each log line names the notices of its answer.
+The script stops and leaves `docs/eval/guide-run.md` unchanged on the first answer with the `GUIDE_BUDGET_SPENT` notice (the guide's model budget is used up; exit code 3; the message says when it opens again), on the first with `GUIDE_NETWORK_QUOTA` (the runner's network has used its questions; exit code 4) or `GUIDE_DAILY_QUOTA` (the address has; exit code 1), or after 3 answers in a row without a model and without such a notice (the provider is down; exit code 1). Each log line names the notices of its answer.
 In the report, the section under "Notes on this run" is hand-written and kept by the script; the rest is regenerated.
 
 ### Clean baseline

@@ -7,7 +7,7 @@ The pages, their layout and the design system are in [0040](0040-design-system.m
 ## Context
 
 Users come with a need, not with a choice between "search" and "ask an artificial intelligence (AI)". Two boxes or a
-mode switch make them choose first. A guide answer takes several seconds (docs/evaluation.md: p50 10870 ms), so the
+mode switch make them choose first. A guide answer takes several seconds (p50 10870 ms in the guide evaluation), so the
 stream must stay alive while the server works. Search answers must not flash or steal focus while filters change.
 The site must work with a keyboard and a screen reader, and in light and dark mode.
 

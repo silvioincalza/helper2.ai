@@ -87,7 +87,7 @@ cd frontend && npm ci && npm run dev    # http://localhost:5173, proxies /api, /
 ```bash
 (cd backend && ./gradlew test)             # unit + integration (Testcontainers)
 (cd frontend && npm test -- --run)
-node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 21 fixed guide questions, writes its report
+node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 21 fixed guide questions, writes docs/eval/guide-run.md
 ```
 
 Details and known gaps: [docs/testing.md](docs/testing.md).
