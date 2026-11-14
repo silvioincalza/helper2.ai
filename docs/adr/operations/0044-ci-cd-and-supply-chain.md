@@ -103,7 +103,7 @@ Harbor could put an image under a tag first.
    - **One switch, for one deploy.** `make deploy ROLLBACK_UNHEALTHY=false` keeps the check and the failure but
      skips the rollback (`NOT ROLLED BACK: rollback switched off for this deploy`). It exists for a prod window in
      which the release before cannot run on the new database, so a rollback would start it on a schema it does not
-     know (`deploy/k8s/RUNBOOK-reset-cutover.md`, step 7.4). Only the make command line
+     know. Only the make command line
      sets it: the Makefile ignores the environment (`$(origin)`), and no chart value or `app.env` key exists for it.
      One workflow path passes it: the manual run of `cd.yml` has the input `keep-unhealthy` (a boolean, default
      false), `deploy.yml` takes it and runs `make deploy ROLLBACK_UNHEALTHY=false`, with a warning and a line in the
@@ -169,8 +169,7 @@ Harbor could put an image under a tag first.
    - `backend/loadtest/` → backend jobs (`backend-build` compiles the Gatling simulations), no image;
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
    - `deploy/postgres/` → the Postgres tag check and chart; `deploy/monitoring/` → monitoring and chart;
-     `deploy/restore/` → backend jobs (the restore script, tested by `libs/schema`); `deploy/helm/`,
-     `deploy/k8s/`, `deploy/grafana/` → chart only. No app image for these;
+     `deploy/helm/`, `deploy/k8s/`, `deploy/grafana/` → chart only. No app image for these;
    - anything else → everything: `api/`, `backend/libs/` (`web-contract` too: both apps serve it),
      `backend/build-logic/`, the Gradle files, settings, version catalog and wrapper, `.github/`, `scripts/`, a new
      folder. An unknown path runs all, never nothing.

@@ -201,7 +201,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
     checks every 10 minutes, `H2_SCOUT_TICK`, and a restart does not add a run; each collector runs at most once a
     day) with at most 200 enrichments per run (`backoffice.scoutMaxEnrichments`); the daily enrichment cap (500) still
     applies. Staging has no backup. Its Scout is on only to fill an empty database before a first release; after
-    the tag it goes off again (`deploy/k8s/RUNBOOK-reset-cutover.md`, "After the tag").
+    the tag it goes off again.
 
 ### Code
 
