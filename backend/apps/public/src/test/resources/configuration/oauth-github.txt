@@ -1,1 +1,5 @@
 spring.profiles.active = ${H2_PROFILES:}  =>  oauth-github
+spring.security.oauth2.client.registration.github.client-id = ${H2_GITHUB_OAUTH_CLIENT_ID}  =>  <needs a variable>
+spring.security.oauth2.client.registration.github.client-name = GitHub
+spring.security.oauth2.client.registration.github.client-secret = ${H2_GITHUB_OAUTH_CLIENT_SECRET}  =>  <needs a variable>
+spring.security.oauth2.client.registration.github.scope = read:user

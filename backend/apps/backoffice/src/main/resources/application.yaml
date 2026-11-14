@@ -5,6 +5,19 @@ spring:
 spring:
   application:
     name: helper2-backoffice
+  session:
+    data:
+      redis:
+        namespace: h2:v1:session:backoffice
+server:
+  tomcat:
+    use-relative-redirects: true
+  servlet:
+    session:
+      cookie:
+        name: __Host-SESSION
+        secure: true
+        path: /
 management:
   metrics:
     tags:
@@ -13,6 +26,9 @@ management:
     resource-attributes:
       service.name: helper2-backoffice
 helper2:
+  identity:
+    frontend-url: /admin
+    admins: ${H2_ADMINS:}
   scout:
     enabled: ${H2_SCOUT_ENABLED:false}
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
@@ -43,6 +59,27 @@ helper2:
     pypi:
       token: ${H2_PYPI_BIGQUERY_KEY:}
       deadline: ${H2_SOURCE_PYPI_DEADLINE:}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+server:
+  port: ${H2_PORT:8090}
+helper2:
+  identity:
+    frontend-url: http://localhost:5174/admin
+---
+spring:
+  config:
+    activate:
+      on-profile: oauth-github
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            redirect-uri: ${H2_ADMIN_BASE_URL:{baseUrl}}/login/oauth2/code/{registrationId}
 ---
 spring:
   config:

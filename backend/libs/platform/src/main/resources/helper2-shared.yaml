@@ -51,6 +51,12 @@ server:
   port: ${H2_PORT:8080}
   shutdown: graceful
   forward-headers-strategy: ${H2_FORWARD_HEADERS_STRATEGY:none}
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        same-site: lax
+        http-only: true
 management:
   server:
     port: ${H2_MANAGEMENT_PORT:}
@@ -276,6 +282,14 @@ helper2:
     translation:
       daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
       ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+  rate-limit:
+    search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}
+    report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
+    guide-per-minute: ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}
+    recent-per-minute: ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}
+    default-per-minute: ${H2_RATE_LIMIT_DEFAULT_PER_MINUTE:120}
+  identity:
+    metrics-public: ${H2_METRICS_PUBLIC:false}
   http:
     pool-wait: 250ms
     max-connections: 50
@@ -594,6 +608,23 @@ logging:
   structured:
     format:
       console: ""
+helper2:
+  identity:
+    metrics-public: true
+---
+spring:
+  config:
+    activate:
+      on-profile: oauth-github
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-name: GitHub
+            client-id: ${H2_GITHUB_OAUTH_CLIENT_ID}
+            client-secret: ${H2_GITHUB_OAUTH_CLIENT_SECRET}
+            scope: read:user
 ---
 spring:
   config:
@@ -650,6 +681,8 @@ helper2:
     web-news: ${H2_RETENTION_WEB_NEWS:P180D}
     scout-runs: ${H2_RETENTION_SCOUT_RUNS:P90D}
     past-events: ${H2_RETENTION_PAST_EVENTS:P3650D}
+    inactive-accounts: ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}
+    admin-audit: ${H2_RETENTION_ADMIN_AUDIT:P730D}
     runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
     backups: ${H2_RETENTION_BACKUPS:P7D}
 ---

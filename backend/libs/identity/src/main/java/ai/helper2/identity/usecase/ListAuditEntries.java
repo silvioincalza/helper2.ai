@@ -1,0 +1,22 @@
+package ai.helper2.identity.usecase;
+
+import ai.helper2.identity.AuditLog;
+import ai.helper2.platform.BadRequestException;
+
+public class ListAuditEntries {
+  public static final int MAX_PAGE_SIZE = 100;
+
+  private final AuditLog log;
+
+  public ListAuditEntries(AuditLog log) {
+    this.log = log;
+  }
+
+  public AuditLog.Page list(int page, int size) {
+    if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+      throw new BadRequestException(
+          "page must be 0 or more and size between 1 and " + MAX_PAGE_SIZE);
+    }
+    return log.page(page, size);
+  }
+}
