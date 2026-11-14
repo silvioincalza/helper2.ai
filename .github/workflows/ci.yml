@@ -50,6 +50,8 @@ jobs:
           set -euo pipefail
           python3 scripts/adr-check.py --self-test
           python3 scripts/adr-check.py
+      - name: Backlog script
+        run: python3 scripts/backlog.py --self-test
       - name: Script tests
         run: |
           set -euo pipefail
