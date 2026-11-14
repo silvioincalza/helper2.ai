@@ -1,0 +1,120 @@
+# Architecture, view 6 of 6: the edge and the shared services. Identity, the request edge (rate limits, errors, SPA),
+# and the platform services every module uses: llm, http, resilience, quota, shared cache and cluster locks.
+# With the Redis keys and Postgres tables each one owns, and GitHub OAuth for the back office.
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/package-info.java (open module),
+#   backend/libs/web-contract/src/main/java/ai/helper2/api/package-info.java (open module api), ContractEnumConverters.java,
+#   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
+#   ClusterLockConfiguration.java (shedlock), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
+#   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
+#   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
+#   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
+#   platform/settings/* (RuntimeSettings, JdbcRuntimeSettingStore: runtime_setting; ADR 0007;
+#   PublicAppSettings, JdbcPublicAppSettings: public_app_setting; ADR 0038),
+#   backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java,
+#   backend/apps/public/src/main/java/ai/helper2/site/csp/ContentSecurityPolicy.java, CspHeaderWriter.java, CspNonce.java,
+#   PublicSiteCsp.java (ADR 0042), backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java,
+#   BackOfficeEdge.java, backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java, SameOriginWrites.java,
+#   SessionConfiguration.java, KnownAccountOnly.java, identity/internal/SignedInUser.java (CurrentUser, read only),
+#   identity/config/NoProviderTokens.java, SignInConfiguration.java,
+#   identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
+#   identity/schedule/AccountRetentionSchedule.java (public), AuditRetentionSchedule.java (back office),
+#   identity/Users.java, Bookmarks.java, AuditLog.java (ports), identity/config/IdentityUseCaseConfiguration.java,
+#   backend/apps/{public,backoffice}/src/main/resources/application.yaml (spring.session.data.redis.namespace), backend/libs/platform/src/main/resources/helper2-shared.yaml (oauth-github profile).
+# Render: cd docs/diagrams && d2 fmt architecture-platform.d2 && d2 architecture-platform.d2 architecture-platform.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser\nReact SPA" {class: person}
+admin: "Admin\n(VPN, admin host)" {class: person}
+
+edge: "Request edge (platform)" {
+  class: group
+  spa: "PageRoutes (public app):\nclient routes → the shell\n(the web image serves the files);\nAdminWebApp (back office): /admin/**" {class: app}
+  rate: "RateLimitInterceptor\nRedisRateLimiter\n(in memory while Redis is down)" {class: app}
+  errors: "ApiExceptionHandler\nproblem+json" {class: app}
+}
+
+identity: "identity (Java)" {
+  class: group
+  sec: "PublicSecurityConfiguration (never ADMIN)\nBackOfficeSecurityConfiguration (ADMIN allow-list)\nWebSecurity · SameOriginWrites: CSRF, Origin\nNoProviderTokens: no GitHub token kept\n(each app's identity.security; shared parts\nin the library's identity.config, ADR 0036)" {class: app}
+  edgebo: "BackOfficeEdge (back office):\nfixed strict CSP, headers, routes" {class: app}
+  sec -> edgebo
+  session: "SessionConfiguration\nfail-soft session store\n(identity.config)" {class: app}
+  known: "KnownAccountOnly (identity.config)\npublic: /api/v1/me/**\nback office: /api/**, /actuator/**\nno account row: end the session,\nclear session + CSRF cookies,\n401 sign-in-again" {class: app}
+  current: "SignedInUser: CurrentUser\nreads the account row,\nnever writes it\n(identity.internal)" {class: app}
+  sec -> known
+  known -> current: "id()"
+  current -> ports: "Users" {class: config}
+  me: "MeController · AuditController\n(identity.web)" {class: app}
+  usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeInactiveAccounts (public app)\nPurgeExpiredAuditEntries (back office)\n(plain classes, wired in identity.config\nor next to their identity.schedule)" {class: app}
+  ports: "Users · Bookmarks · AuditLog" {class: port}
+  store: "JdbcUsers · JdbcBookmarks\nJdbcAuditLog\n(identity.internal)" {class: app}
+  me -> usecase
+  usecase -> ports
+  store -> ports: implements {class: config}
+}
+
+site: "site (public app, ADR 0041)" {
+  class: group
+  csp: "site.csp: CspHeaderWriter\nContentSecurityPolicy: strict CSP;\nwith AdSense on: nonce CSP\n(CspNonce per request)" {class: app}
+}
+site.csp -> identity.sec: "HeaderWriter beans:\ncontentSecurityPolicy,\nstrictContentSecurityPolicy" {class: config}
+
+modules: "search · guide · scout · catalog\nsources · setup · site" {class: app}
+
+platform: "platform (open module)" {
+  class: group
+  llm: "llm: LlmSettings · NvidiaOnly\nDailyBudget · BudgetLedger · RedisCallCounter\nModelCallMetrics · LlmPolicies" {class: app}
+  http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
+  resilience: "resilience: Resilience\n(named policies on Resilience4j:\nredis, llm-chat, llm-embed,\nllm-embed-index, guide, …)\nOutboundThrottle" {class: app}
+  quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
+  cache: "cache: SharedCaches\nJdbcSharedCache\nSharedCacheRetention (daily purge)" {class: app}
+  locks: "ClusterLock · ClusterLocks\n(ShedLock, database time)" {class: app}
+  settings: "settings: SettingsGroup · Setting\nRuntimeSetting (allow-list)\nRuntimeSettings (snapshot, 20 s refresh)" {class: app}
+}
+
+shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nVocabulary" {class: app}
+api: "api (open)\napi.common: common.yaml, generated once\n(libs/web-contract; ContractEnumConverters)\napi.generated: per app, public.yaml\nor admin.yaml" {class: app}
+
+redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nh2:v1:session:public:* · h2:v1:session:backoffice:*" {shape: cylinder; class: data}
+pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · runtime_setting\npublic_app_setting" {shape: cylinder; class: data}
+oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
+
+browser -> edge.spa: "pages, assets"
+browser -> edge.rate: "/api/v1/*" {class: hot}
+edge.rate -> modules: {class: hot}
+browser -> identity.me: "/me, bookmarks"
+browser -> site: "/site: monetisation settings\n(the same for everyone, cached 5 min)"
+google: "In the browser only (ADR 0042):\nGoogle consent tool · AdSense\n(resource pages) · Google Analytics" {class: ext}
+browser -> google: "TCF answer, one ad,\npage path" {class: config}
+admin -> identity.sec: "/admin"
+identity.sec -> oauth: "sign-in" {class: config}
+identity.sec -> identity.session
+identity.known -> identity.session: "no account row:\ndelete the session" {class: config}
+modules -> edge.errors: "exceptions"
+modules -> platform.llm: "model calls" {class: ai-call}
+modules -> platform.http: "HTTP client" {class: config}
+modules -> platform.quota: "daily web searches"
+modules -> platform.cache: "model answers"
+modules -> platform.locks: "Scout, embedding indexer"
+modules -> shared
+modules -> api: "controller interfaces, DTOs"
+
+edge.rate -> redis: "h2:v1:rate:*"
+identity.session -> redis: "h2:v1:session:public:* · h2:v1:session:backoffice:*"
+platform.llm -> redis: "h2:v1:budget:*"
+platform.resilience -> redis: "h2:v1:outbound:*"
+platform.quota -> redis: "h2:v1:quota:*"
+identity.store -> pg: "app_user, bookmark,\nadmin_audit"
+platform.cache -> pg: "ai_cache"
+platform.locks -> pg: "shedlock"
+platform.settings -> pg: "runtime_setting,\npublic_app_setting"
+modules -> platform.settings: "spending limits\n(supplier per limit)"

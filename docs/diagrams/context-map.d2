@@ -1,0 +1,57 @@
+# Context map: the 10 bounded contexts of the backlog and the direction of each dependency (A -> B: A uses B).
+# A context is drawn with the Spring Modulith modules that hold its code. An arrow between two contexts stands for
+# the module dependencies named on it; each one passes ApplicationModules.verify().
+# Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules, named interfaces),
+#   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java (the rules),
+#   backend/libs/*/build.gradle.kts, backend/apps/*/build.gradle.kts (library and app dependencies),
+#   deploy/helm/helper2 (the three deployables).
+# Render: cd docs/diagrams && d2 fmt context-map.d2 && d2 context-map.d2 context-map.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+operations: "Release and operations\nHelm chart, CI/CD, releases\n(no module: deploys the three deployables)" {class: ext}
+
+product: "helper2 · two apps over shared libraries" {
+  class: group
+  direction: down
+
+  legal: "Legal and compliance\nPrivacy, Terms and Sources pages\n(no module: the pages read GET /policy)" {class: app}
+  money: "Money and consent\nsite.monetisation\n(gifts, analytics, ads, consent)" {class: app}
+  site: "Site and frontend\nmodule site (pages, policy, csp)\nReact SPA" {class: app}
+  backoffice: "Back office\nmodule admin" {class: app}
+  guide: "AI guide\nmodules guide, setup" {class: app}
+  identity: "Identity and the signed-in user\nmodule identity" {class: app}
+  scout: "Scout and catalog\nmodules scout, catalog\nsources (Collector adapters)" {class: app}
+  search: "Search\nmodules search, examples\nsources (SearchSource adapters)" {class: port}
+  foundation: "Foundation\nopen modules shared, platform, api\n(kernel, platform, web-contract)" {class: data}
+
+  legal -> site: "the numbers of GET /policy"
+  money -> site: "settings of GET /site,\nthe public CSP"
+  site -> guide: "GuidePolicy"
+  site -> identity: "AccountPolicy"
+  site -> scout: "catalog.usecase,\nCatalogPolicy, ScoutPolicy"
+  site -> search: "SearchPolicy, cards"
+  backoffice -> scout: "catalog.usecase,\nscout.usecase"
+  backoffice -> search: "examples.usecase,\ncards"
+  guide -> search: "search.usecase, cards" {class: hot}
+  guide -> scout: "catalog.usecase"
+  guide -> identity: "the signed-in user"
+  scout -> search: "ports, cards, models;\nSearchSource" {class: hot}
+  search -> scout: "examples reads\ncatalog.usecase"
+  guide -> foundation
+  scout -> foundation
+  search -> foundation
+  identity -> foundation
+  backoffice -> foundation
+  site -> foundation
+}
+
+operations -> product: "builds, signs and deploys\npublic app, back office, web" {class: config}

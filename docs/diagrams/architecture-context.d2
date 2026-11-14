@@ -1,0 +1,109 @@
+# Architecture, view 1 of 6: context. helper2 as two apps over shared libraries (ADR 0043), what calls them, and
+# what they call.
+# The internals of each module are in the other views (search, guide, index, setup, platform).
+# Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
+#   backend/settings.gradle.kts (apps and libraries), backend/libs/web-contract (the shared web adapters),
+#   backend/libs/platform/src/main/resources/helper2-shared.yaml (base URLs, llm-nebius profile, helper2.embedding).
+# Render: cd docs/diagrams && d2 fmt architecture-context.d2 && d2 architecture-context.d2 architecture-context.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser\nReact SPA" {class: person}
+admin: "Admin\n(GitHub sign-in)" {class: person}
+
+app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0043)" {
+  class: group
+  public: "public app · public host · /api/v1 (public.yaml)" {
+    class: group
+    guide: "guide\nAI guide, evidence gate" {class: app}
+    setup: "setup\nSet it up: run options, tool guide" {class: app}
+    site: "site (ADR 0041)" {
+      class: group
+      pages: "pages\npages for crawlers, sitemap" {class: app}
+      policy: "policy\nlimits and retention\nfor the text pages" {class: app}
+      monetisation: "monetisation\ngifts, analytics, ad slots\n(settings only)" {class: app}
+      csp: "csp\nthe public CSP, nonce" {class: app}
+    }
+  }
+  bo: "back office app · admin host only · /api/v1/admin (admin.yaml)" {
+    class: group
+    backoffice: "admin\nback office: review, runs, overview,\nsettings; the admin web app" {class: app}
+    scout: "scout\nindex growth, enrichment" {class: app}
+    collectors: "sources (collectors)\nScout's collectors, evidence readers" {class: app}
+  }
+  libs: "libraries · in both apps" {
+    class: group
+    webcontract: "web-contract\nGET /search, /sources, /categories\n(common.yaml, generated once)" {class: app}
+    search: "search\nfederated search, ranking" {class: app}
+    catalog: "catalog\nindex, resource pages, events,\nScoutPolicy" {class: app}
+    sources: "sources\nlive adapters,\ncollectors' descriptors" {class: app}
+    examples: "examples\nhome examples, quality check" {class: app}
+    identity: "identity\nsign-in, bookmarks" {class: app}
+    platform: "platform\nLLM layer, HTTP, edge" {class: app}
+  }
+
+  libs.webcontract -> libs.search: "SearchResources, ListSources" {class: hot}
+  public.guide -> libs.search: "retrieve candidates" {class: hot}
+  libs.search -> libs.sources: "SearchSource" {class: config}
+  libs.search -> libs.catalog: "SearchSource, ResultObserver" {class: config}
+  bo.scout -> bo.collectors: "Collector, ExtraEvidence" {class: config}
+  bo.scout -> libs.catalog: "CatalogIndex" {class: config}
+  public.guide -> libs.platform: "model calls" {class: ai-call}
+  bo.scout -> libs.platform: "model calls" {class: ai-call}
+  public.guide -> public.setup: "setup guides left (GET /me)"
+  public.setup -> libs.catalog: "resource detail"
+  public.setup -> libs.platform: "model calls" {class: ai-call}
+  bo.backoffice -> libs.catalog: "review queue; imports\nCatalogBackOfficeConfiguration\n(curation, review, indexing, purge)"
+  bo.backoffice -> bo.scout: "runs, backlog"
+  bo.backoffice -> libs.platform: "budgets today"
+  bo.backoffice -> libs.examples: "examples, the check; imports\nExamplesBackOfficeConfiguration\n(pool writes, check, drafts)"
+  libs.examples -> libs.search: "check: the example's search" {class: config}
+  libs.examples -> libs.catalog: "expected results' titles,\ndrafts in the review queue"
+  public.site.pages -> libs.catalog: "resource detail, indexable pages"
+  public.site.policy -> libs.search: "SearchPolicy"
+  public.site.policy -> public.guide: "GuidePolicy"
+  public.site.policy -> libs.identity: "AccountPolicy"
+  public.site.policy -> libs.catalog: "CatalogPolicy, ScoutPolicy"
+  public.site.csp -> libs.identity: "beans: the CSP header writers" {class: config}
+}
+
+pg: "PostgreSQL 18 + pgvector\nsystem of record" {shape: cylinder; class: data}
+redis: "Redis 8\ndisposable cache" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory\nNemotron 3.5 Super · Lightning" {class: ai}
+nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
+hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily · deps.dev" {class: ext}
+oauth: "github.com OAuth" {class: ext}
+thirdparty: "In the browser only:\nGoogle consent tool · AdSense (resource pages)\nGoogle Analytics · EthicalAds\nGitHub Sponsors · Stripe" {class: ext}
+
+browser -> app.libs.webcontract: "search, sources, categories" {class: hot}
+browser -> app.public.guide: "ask (SSE)" {class: hot}
+browser -> app.libs.catalog: "resource, events"
+browser -> app.public.setup: "Set it up"
+browser -> app.libs.examples: "home examples\n(read only: ServedExamples)"
+browser -> app.public.site.policy: "policy numbers"
+browser -> thirdparty: "page path, ad request,\nconsent, gift (ADR 0042)"
+crawler: "Crawler,\nlink preview" {class: person}
+crawler -> app.public.site.pages: "page head, sitemap.xml,\nrobots.txt, ads.txt"
+admin -> app.bo.backoffice: "sign-in, /admin\n(admin host only)"
+
+app.libs.catalog -> pg: JDBC
+app.bo.scout -> pg: JDBC
+app.libs.identity -> pg: "bookmarks, users"
+app.libs.examples -> pg: "home_example"
+app.libs.search -> redis: "source cache"
+app.public.guide -> redis: "answers"
+app.libs.platform -> redis: "daily budget"
+app.libs.platform -> nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
+app.libs.catalog -> nvapi: "/embeddings" {class: ai-call}
+app.libs.sources -> hosts: "HTTPS: live search"
+app.bo.collectors -> hosts: "HTTPS: Scout"
+app.public.setup -> hosts: "HTTPS: registry,\nREADMEs, model cards"
+app.libs.identity -> oauth: "sign-in" {class: config}

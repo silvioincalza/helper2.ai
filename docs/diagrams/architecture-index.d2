@@ -1,0 +1,131 @@
+# Architecture, view 4 of 6: how the index grows. Scout runs collectors, enriches with evidence, and the catalog stores and embeds.
+# All of it runs in the back office app (ADR 0043); the catalog is a library both apps use, and the embedding indexer's
+#   schedule is backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/EmbeddingIndexerSchedule.java.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
+#   scout/GapRound.kt (gap round ports, ADR 0014), scout/OfficialPages.kt (evidence ladder ports, ADR 0014),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java (collectors, ReadmeEvidence, LiveWebPageReader),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/NewsFeedCollector.java, FeedReader.java (news feeds, ADR 0016),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollector.java, BigQueryClient.java (PyPI, ADR 0017),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/{CatalogWriter,Resources,CategoryLabels,JobMarkers,EmbeddingStore,
+#   AwesomeListIndex,ReviewQueue}.java (the catalog's ports), catalog/internal/Jdbc*.java (their adapters),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults, SourceOutcomes: the Scout's way in),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/usecase/GetResourceDetail.java (the detail page's way out),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
+#   catalog/usecase/IndexAwesomeLists.java, catalog/internal/JdbcAwesomeListIndex.java (ADR 0023),
+#   scout/usecase/IndexAcceptedCandidate.kt, scout/internal/ResourceCandidateJson.java, admin/usecase/ResolveReview.java,
+#   admin/config/AdminUseCaseConfiguration.java, examples/usecase/AcceptExampleDraft.java, ReadExampleDraft.java,
+#   admin/web/ReviewItemMapper.java (a drafted example typed, ADR 0038 §11).
+#   scout/EnrichmentQueue.kt, scout/usecase/{Requeue,Skip,Prioritise}Enrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
+#   catalog/internal/BacklogRule.java, admin/web/EnrichmentQueueController.java (enrichment queue actions, ADR 0038 §8).
+#   scout/DiscoveryHosts.kt, scout/usecase/ManageDiscoveryHosts.kt, scout/internal/JdbcDiscoveryHostStore.java,
+#   admin/web/DiscoveryHostsController.java, sources/liveweb/scout/DiscoveryPages.java (discovery hosts, ADR 0013).
+#   admin/usecase/GetReviewEvidence.java, catalog/ReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java (evidence view, ADR 0038 §7).
+# Render: cd docs/diagrams && d2 fmt architecture-index.d2 && d2 architecture-index.d2 architecture-index.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+admin: "Admin" {class: person}
+
+scout: "scout (Kotlin domain)" {
+  class: group
+  core: "RunScout · EnrichResource\nEvidenceValidator · FieldTargets\nGapTargets · PageTargets\nOfficialPages · UntrustedPageText\n(evidence ladder)" {class: app}
+  accept: "IndexAcceptedCandidate\n(accept a resource candidate,\nADR 0013)" {class: app}
+  queue: "RequeueEnrichment · SkipEnrichment\nPrioritiseEnrichment · QueuePlace\n(enrichment queue actions,\nADR 0038 §8)" {class: app}
+  p_queue: "EnrichmentQueueControl\nUnitOfWork" {class: port}
+  hostlists: "ManageDiscoveryHosts\nHostNames\n(discovery hosts, ADR 0013)" {class: app}
+  p_hosts: "DiscoveryHostStore\n(HostLists per run)" {class: port}
+  hostlists -> p_hosts
+  queue -> p_queue
+  queue -> p_stores: "where it stands"
+  p_candidates: "CandidateReview\nCandidateDetails · CatalogLookup" {class: port}
+  json: "ReviewQueueCandidateReview\nResourceCandidateJson" {class: app}
+  core -> p_candidates: "candidates to review"
+  accept -> p_candidates
+  accept -> p_index
+  json -> p_candidates: implements {class: config}
+  p_collector: Collector {class: port}
+  p_extra: "ExtraEvidence · GapBudget\nPageReader · ExtractBudget\nPageLedger · PageTextCache\nDomainRoots · StoredAnswers" {class: port}
+  p_index: "CatalogIndex\nListIndex (ADR 0023)" {class: port}
+  p_enrich: EnrichmentModel {class: port}
+  p_stores: "ScoutStore\nEnrichmentStore\nEnrichmentBacklog" {class: port}
+  model: "SpringAiEnrichmentModel" {class: app}
+  jdbc: "JdbcScoutStore\nCatalogEnrichmentStore\nJdbcEnrichmentQueueControl\nJdbcDiscoveryHostStore" {class: app}
+  jdbc -> p_queue: implements {class: config}
+  jdbc -> p_hosts: implements {class: config}
+  core -> p_collector
+  core -> p_extra: "evidence ladder\n(ADR 0014)"
+  core -> p_index
+  core -> p_enrich: {class: ai-call}
+  core -> p_stores
+  model -> p_enrich: implements {class: config}
+  jdbc -> p_stores: implements {class: config}
+}
+
+sources: "sources (collectors, gap evidence)" {
+  class: group
+  collectors: "McpRegistryCollector · LiveWebNewsCollector\nDiscoveryCollector × 34 categories\n(DiscoveryCollectorRegistrar) · LinkedInCollector\nLiveWebEventsCollector (model reads, code gate)\nCourseCollector · HuggingFaceTrendingCollector\nHuggingFaceProviderOrgsCollector\nGitHubAwesomeCollector · AiDeadlinesCollector\nNewsFeedCollector × 8 feeds\n(NewsFeedCollectorRegistrar, FeedReader)\nPypiCollector (BigQueryClient, GoogleAccessTokens)\nGitHubTopicLeadersCollector\nGitHubSdkCollector + DepsDevClient (packages)" {class: app}
+  classifier: "SpringAiRepoClassifier\n(or Heuristic)" {class: app}
+  evidence: "ReadmeEvidence\n(README, model card)\nLiveWebPageReader (product pages)\nPublicSuffixDomains" {class: app}
+  collectors -> classifier: "awesome-list entries" {class: ai-call}
+}
+
+catalog: "catalog (Java)" {
+  class: group
+  catalog: "IndexResources · IndexAwesomeLists\nReviewQueue · BackfillCategories" {class: app}
+  p_evidence: "ReviewEvidence\n(evidence view, query port)" {class: port}
+  review_evidence: JdbcReviewEvidence {class: app}
+  review_evidence -> p_evidence: implements {class: config}
+  p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults\nSourceOutcomes" {class: port}
+  enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults\nJdbcSourceOutcomes" {class: app}
+  p_store: "catalog ports\nCatalogWriter · Resources\nCategoryLabels · JobMarkers\nAwesomeListIndex · EmbeddingStore\nReviewQueue" {class: port}
+  store: "JdbcCatalogWriter · JdbcResources\nJdbcAwesomeListIndex · JdbcJobMarkers\nJdbcEmbeddingStore · JdbcReviewQueue" {class: app}
+  store -> p_store: implements {class: config}
+  enrichment -> p_enrichment: implements {class: config}
+  detail: GetResourceDetail {class: app}
+  p_facts: "EnrichmentFacts\n(detail page)" {class: port}
+  detail -> p_facts
+  detail -> p_store
+  enrichment -> p_facts: implements {class: config}
+  embed: "IndexEmbeddings\nNvidiaEmbedder" {class: app}
+  catalog -> p_store
+  embed -> p_store: "pending texts, vectors"
+}
+
+pg: "PostgreSQL\nresources, facts with evidence,\nreview items, embeddings,\nawesome-list search index" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory\nNemotron 3.5 Super" {class: ai}
+nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
+hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com\nnews feeds of 8 AI companies (ADR 0016)\nbigquery.googleapis.com · oauth2.googleapis.com (ADR 0017)\napi.deps.dev" {class: ext}
+
+backoffice: "admin module\nAdminController · ResolveReview · GetReviewEvidence\n(drafts read and accepted\nthrough examples)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/review-items/{id}/evidence\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\nGET, POST /admin/discovery-hosts" {class: app}
+admin -> backoffice: "trigger run, review,\norder the enrichment queue"
+backoffice -> scout.core
+backoffice -> scout.jdbc: "enrichment queue (read)"
+backoffice -> scout.queue: "requeue, skip, prioritise"
+backoffice -> scout.accept: "accept a resource candidate"
+backoffice -> scout.hostlists: "add, remove a discovery host"
+sources.collectors -> scout.p_hosts: "the lists, once per run\n(Tavily discovery, awesome lists)"
+backoffice -> catalog.p_evidence: "evidence of a review item\n(run, fields, quotes; 3 statements)"
+scout.json -> catalog.catalog: "RESOURCE_CANDIDATE items"
+sources.collectors -> scout.p_collector: implements {class: config}
+sources.evidence -> scout.p_extra: implements {class: config}
+catalog.catalog -> scout.p_index: implements {class: config}
+sources.collectors -> hosts: HTTPS
+sources.evidence -> hosts: "HTTPS: evidence ladder\nREADMEs, model cards,\nPOST /extract"
+sources.classifier -> nebius: "classify repos" {class: ai-call}
+scout.model -> nebius: "enrich" {class: ai-call}
+scout.jdbc -> catalog.p_enrichment: "backlog, source text,\nrecord runs,\nlast outcome per source"
+scout.jdbc -> pg: "JDBC: scout_run, cursors,\nenrichment_queue_control,\ndiscovery_host (writes)"
+catalog.store -> pg: JDBC
+catalog.enrichment -> pg: "JDBC; the backlog reads\nenrichment_queue_control"
+catalog.review_evidence -> pg: "JDBC: run, fields,\nquotes, errors"
+catalog.embed -> nvapi: "/embeddings" {class: ai-call}
