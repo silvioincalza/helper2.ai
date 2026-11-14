@@ -2,7 +2,7 @@
 # all of CI again, the changed images built and every image signed on the self-hosted runner, staging. Prod only from
 # a release (release.yml, run by hand), after the approval, canary first. After helm upgrade, every deploy checks the release and rolls it back when it is
 # not healthy, unless a manual run ticked keep-unhealthy.
-# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, .github/scripts/package.sh,
+# Source of truth: .github/workflows/ci.yml, cd.yml, deploy.yml, release.yml, .github/scripts/ci-ok.sh, package.sh,
 #   deploy/*Dockerfile (BUILD=source|prebuilt), deploy/k8s/Makefile (ci-images, image,
 #   sign, verify-images, postgres-image, chart-check, diff, deploy, status), deploy/k8s/check-release.sh,
 #   deploy/k8s/CI.md.
@@ -15,7 +15,7 @@ direction: down
 dev: Developer {class: person}
 pr: "Pull request" {class: end}
 
-checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed, 0044)" {
+checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed\nand is in the tree, 0044)" {
   class: group
   grid-columns: 3
   frontend: "side by side:\nfrontend-build: build, bundle size\nfrontend-check: format, lint,\nknip, typecheck, npm audit\nfrontend-test: Vitest in 3 jobs,\none per group of folders" {class: app}
@@ -26,7 +26,7 @@ checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed, 
   d2: "diagrams\nre-rendered = committed?" {class: app}
 }
 
-green: "ci-ok green?\n(skipped is fine)" {class: decision}
+green: "ci-ok green?\n(selected jobs succeeded,\nthe others skipped)" {class: decision}
 fix: "Fix and push again" {class: fail}
 merge: "Merge to main" {class: app}
 
