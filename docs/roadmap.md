@@ -6,6 +6,12 @@ hand: run the script and open a pull request with its output.
 The open issues with the label story or task, by epic and by priority: Now, Next, Later. A story with the priority
 Replay is built and is closed by its pull request: it is not listed.
 
+## E0 Decisions and docs
+
+### Now
+
+- [S0.6.2 `docs/roadmap.md` in step with the open issues after the S3.11.2 move](https://github.com/silvioincalza/helper2.ai/issues/449)
+
 ## E1 Foundation
 
 ### Now
@@ -56,7 +62,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
 - [S3.12.1 Ranking weights chosen by the kind of query](https://github.com/silvioincalza/helper2.ai/issues/251)
 - [S3.12.2 A recency term for time-bound searches](https://github.com/silvioincalza/helper2.ai/issues/252)
-- [S3.12.3 The same order for the same query a few minutes later](https://github.com/silvioincalza/helper2.ai/issues/253)
 - [S3.12.4 Two ranking rules decided on graded data](https://github.com/silvioincalza/helper2.ai/issues/254)
 - [T3.0 Owner task (Silvio): one labelling session after the release, about 2–3 hours](https://github.com/silvioincalza/helper2.ai/issues/221)
 
@@ -64,6 +69,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S3.7.3 The open steps of the home examples done](https://github.com/silvioincalza/helper2.ai/issues/245)
 - [S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin](https://github.com/silvioincalza/helper2.ai/issues/250)
+- [S3.11.2 The time of the results next to the result count](https://github.com/silvioincalza/helper2.ai/issues/448)
 - [S3.13.1 Papers ranked by citations](https://github.com/silvioincalza/helper2.ai/issues/255)
 - [S3.14.1 Search by meaning to match English resources](https://github.com/silvioincalza/helper2.ai/issues/256)
 
@@ -72,11 +78,9 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Now
 
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
-- [S4.6.3 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/430)
 
 ### Next
 
-- [S4.3.4 `SearchResponse` and `ResourceDetail` to carry the `aiContent` marker](https://github.com/silvioincalza/helper2.ai/issues/272)
 - [S4.5.2 `H2_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging](https://github.com/silvioincalza/helper2.ai/issues/279)
 - [S4.7.2 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/283)
 - [S4.9.1 The guide latency targets confirmed](https://github.com/silvioincalza/helper2.ai/issues/285)
@@ -101,10 +105,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S5.7.1 To choose between Keycloak and plain Spring Security sign-in](https://github.com/silvioincalza/helper2.ai/issues/295)
 
 ## E6 Back office
-
-### Now
-
-- [S6.2.7 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/431)
 
 ### Next
 
@@ -148,7 +148,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
 - [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
-- [S9.5.1 Each US source and GitHub checked for Data Privacy Framework certification](https://github.com/silvioincalza/helper2.ai/issues/339)
 - [S9.6.1 Each source's terms read again for commercial use](https://github.com/silvioincalza/helper2.ai/issues/340)
 - [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
 - [S9.6.3 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/435)
@@ -158,7 +157,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.2.13 `liveTest` run every time it is asked for](https://github.com/silvioincalza/helper2.ai/issues/429)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
