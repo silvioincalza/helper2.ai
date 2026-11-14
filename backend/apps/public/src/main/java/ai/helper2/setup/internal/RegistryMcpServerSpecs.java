@@ -1,0 +1,192 @@
+package ai.helper2.setup.internal;
+
+import ai.helper2.setup.Argument;
+import ai.helper2.setup.McpServerSpec;
+import ai.helper2.setup.McpServerSpecs;
+import ai.helper2.setup.RunOption;
+import ai.helper2.setup.Setting;
+import ai.helper2.setup.SettingKind;
+import ai.helper2.setup.SetupUnavailable;
+import ai.helper2.setup.Transport;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+class RegistryMcpServerSpecs implements McpServerSpecs {
+  static final int MAX_ENTRIES = 500;
+
+  private final RestClient http;
+  private final String baseUrl;
+  private final ObjectMapper json;
+  private final Clock clock;
+  private final Cache<String, Optional<McpServerSpec>> cache;
+
+  RegistryMcpServerSpecs(
+      RestClient.Builder builder, String baseUrl, ObjectMapper json, Clock clock, Duration ttl) {
+    this.http = builder.baseUrl(baseUrl).build();
+    this.baseUrl = baseUrl;
+    this.json = json;
+    this.clock = clock;
+    this.cache =
+        Caffeine.newBuilder()
+            .ticker(() -> TimeUnit.MILLISECONDS.toNanos(clock.millis()))
+            .expireAfterWrite(ttl)
+            .maximumSize(MAX_ENTRIES)
+            .executor(Runnable::run)
+            .build();
+  }
+
+  @Override
+  public @Nullable McpServerSpec latest(String name) {
+    return cache.get(name, n -> Optional.ofNullable(fetch(n))).orElse(null);
+  }
+
+  private @Nullable McpServerSpec fetch(String name) {
+    String path =
+        "/v0.1/servers/" + URLEncoder.encode(name, StandardCharsets.UTF_8) + "/versions/latest";
+    String body;
+    try {
+      body = http.get().uri(URI.create(baseUrl + path)).retrieve().body(String.class);
+    } catch (RestClientResponseException e) {
+      if (e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+        return null;
+      }
+      throw new SetupUnavailable("MCP Registry answered " + e.getStatusCode().value());
+    } catch (RestClientException e) {
+      throw new SetupUnavailable("MCP Registry did not answer");
+    }
+    try {
+      JsonNode server = json.readTree(body == null ? "" : body).path("server");
+      if (!server.isObject()) {
+        throw new SetupUnavailable("MCP Registry sent an unexpected answer");
+      }
+      return parse(server, URI.create(baseUrl + path), clock);
+    } catch (JacksonException e) {
+      throw new SetupUnavailable("MCP Registry sent a malformed answer");
+    }
+  }
+
+  static McpServerSpec parse(JsonNode server, URI sourceUrl, Clock clock) {
+    List<RunOption> options = new ArrayList<>();
+    for (JsonNode r : server.path("remotes")) {
+      Transport t = transport(text(r, "type"));
+      String url = text(r, "url");
+      if (t == null || t == Transport.STDIO || url == null || !url.startsWith("https://")) {
+        continue;
+      }
+      URI uri;
+      try {
+        uri = URI.create(url);
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
+      options.add(new RunOption.Remote(t, uri, settings(r.path("headers"), SettingKind.HEADER)));
+    }
+    for (JsonNode p : server.path("packages")) {
+      String type = text(p, "registryType");
+      String id = text(p, "identifier");
+      Transport t = transport(text(p.path("transport"), "type"));
+      if (type == null || id == null || t != Transport.STDIO) {
+        continue;
+      }
+      options.add(
+          new RunOption.Package(
+              type,
+              id,
+              text(p, "version"),
+              t,
+              text(p, "runtimeHint"),
+              arguments(p.path("runtimeArguments")),
+              arguments(p.path("packageArguments")),
+              settings(p.path("environmentVariables"), SettingKind.ENV)));
+    }
+    return new McpServerSpec(
+        text(server, "name"), text(server, "version"), options, sourceUrl, clock.instant());
+  }
+
+  private static @Nullable Transport transport(@Nullable String type) {
+    if (type == null) {
+      return null;
+    }
+    return switch (type) {
+      case "streamable-http" -> Transport.STREAMABLE_HTTP;
+      case "sse" -> Transport.SSE;
+      case "stdio" -> Transport.STDIO;
+      default -> null;
+    };
+  }
+
+  private static List<Setting> settings(JsonNode items, SettingKind kind) {
+    List<Setting> out = new ArrayList<>();
+    for (JsonNode s : items) {
+      String name = text(s, "name");
+      if (name == null) {
+        continue;
+      }
+      boolean secret = s.path("isSecret").asBoolean(false);
+      String value = text(s, "value");
+      if (value == null && !secret) {
+        value = text(s, "default");
+      }
+      out.add(
+          new Setting(
+              name,
+              kind,
+              text(s, "description"),
+              s.path("isRequired").asBoolean(false),
+              secret,
+              value));
+    }
+    return out;
+  }
+
+  private static List<Argument> arguments(JsonNode items) {
+    List<Argument> out = new ArrayList<>();
+    for (JsonNode a : items) {
+      boolean named = "named".equals(text(a, "type"));
+      String name = named ? text(a, "name") : null;
+      if (named && name == null) {
+        continue;
+      }
+      boolean secret = a.path("isSecret").asBoolean(false);
+      String value = text(a, "value");
+      if (value == null && !secret) {
+        value = text(a, "default");
+      }
+      out.add(
+          new Argument(
+              name,
+              value,
+              text(a, "valueHint"),
+              text(a, "description"),
+              a.path("isRequired").asBoolean(false),
+              secret));
+    }
+    return out;
+  }
+
+  private static @Nullable String text(JsonNode node, String field) {
+    JsonNode v = node.path(field);
+    if (!v.isString()) {
+      return null;
+    }
+    String s = v.asString().strip();
+    return s.isEmpty() ? null : s;
+  }
+}
