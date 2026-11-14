@@ -9,8 +9,8 @@ import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.depsdev.PackageFinder;
 import ai.helper2.sources.depsdev.RegistryPackage;
 import ai.helper2.sources.github.scout.SdkSearchPlan.Query;
@@ -40,7 +40,7 @@ import tools.jackson.databind.JsonNode;
 
 public class GitHubSdkCollector implements Collector {
 
-  public static final String POLICY = "collector-" + CollectorDescriptors.GITHUB_SDKS;
+  public static final String POLICY = "collector-" + CollectorIds.GITHUB_SDKS;
 
   public static final String PACKAGES_POLICY = "collector-deps-dev";
 
@@ -331,7 +331,7 @@ public class GitHubSdkCollector implements Collector {
       }
       return found;
     } catch (SourceFailure e) {
-      HttpClients.dropped(CollectorDescriptors.GITHUB_SDKS, "packages-unavailable");
+      HttpClients.dropped(CollectorIds.GITHUB_SDKS, "packages-unavailable");
       return List.of();
     }
   }

@@ -8,6 +8,7 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
@@ -43,7 +44,7 @@ import tools.jackson.databind.JsonNode;
 
 public class AiDeadlinesCollector implements Collector {
 
-  static final String ID = CollectorDescriptors.AI_DEADLINES;
+  static final String ID = CollectorIds.AI_DEADLINES;
 
   static final String POLICY = "collector-" + ID;
 

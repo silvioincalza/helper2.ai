@@ -1,9 +1,9 @@
 package ai.helper2.sources.config;
 
 import ai.helper2.search.SourceDescriptor;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.WebSources;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.DiscoveryCategory;
 import java.net.URI;
@@ -13,19 +13,6 @@ import java.util.Set;
 
 public final class CollectorDescriptors {
 
-  public static final String AI_DEADLINES = "ai-deadlines";
-  public static final String GITHUB_AWESOME = "github-awesome";
-  public static final String GITHUB_TOPIC_LEADERS = "github-topic-leaders";
-  public static final String GITHUB_SDKS = "github-sdks";
-  public static final String HF_PROVIDER_ORGS = "hf-provider-orgs";
-  public static final String HF_TRENDING = "hf-trending";
-  public static final String MCP_REGISTRY = "mcp-registry";
-  public static final String PYPI = "pypi";
-  public static final String LIVE_WEB_SCOUT = "live-web-scout";
-  public static final String COURSES = "course-scout";
-  public static final String LIVE_WEB_EVENTS = WebSources.EVENTS_SCOUT;
-  public static final String LINKEDIN = "linkedin-scout";
-
   private static final URI SOURCES_PAGE = URI.create("https://helper2.ai/sources");
   private static final URI TERMS_PAGE = URI.create("https://helper2.ai/terms");
 
@@ -33,7 +20,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor aiDeadlines(SourceSettings settings) {
     return new SourceDescriptor(
-        AI_DEADLINES,
+        CollectorIds.AI_DEADLINES,
         "AI conference deadlines",
         "Conferences",
         true,
@@ -50,7 +37,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor gitHubAwesome(SourceSettings settings) {
     return new SourceDescriptor(
-        GITHUB_AWESOME,
+        CollectorIds.GITHUB_AWESOME,
         "GitHub Awesome lists",
         "Awesome",
         true,
@@ -78,7 +65,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor gitHubTopicLeaders(SourceSettings settings, List<String> topics) {
     return new SourceDescriptor(
-        GITHUB_TOPIC_LEADERS,
+        CollectorIds.GITHUB_TOPIC_LEADERS,
         "GitHub topic leaders",
         "Top repos",
         true,
@@ -104,7 +91,7 @@ public final class CollectorDescriptors {
   public static SourceDescriptor gitHubSdks(
       SourceSettings settings, List<String> languages, List<String> orgs) {
     return new SourceDescriptor(
-        GITHUB_SDKS,
+        CollectorIds.GITHUB_SDKS,
         "AI libraries and SDKs",
         "SDKs",
         true,
@@ -126,7 +113,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor hfProviderOrgs(SourceSettings settings, List<String> orgs) {
     return new SourceDescriptor(
-        HF_PROVIDER_ORGS,
+        CollectorIds.HF_PROVIDER_ORGS,
         "Hugging Face model makers",
         "HF makers",
         true,
@@ -144,7 +131,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor hfTrending(SourceSettings settings) {
     return new SourceDescriptor(
-        HF_TRENDING,
+        CollectorIds.HF_TRENDING,
         "Hugging Face trending",
         "HF trending",
         true,
@@ -161,7 +148,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor mcpRegistry(SourceSettings settings) {
     return new SourceDescriptor(
-        MCP_REGISTRY,
+        CollectorIds.MCP_REGISTRY,
         "Official MCP Registry",
         "MCP",
         true,
@@ -178,7 +165,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor pypi(SourceSettings settings) {
     return new SourceDescriptor(
-        PYPI,
+        CollectorIds.PYPI,
         "PyPI (Python packages)",
         "PyPI",
         true,
@@ -196,7 +183,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor liveWebScout(SourceSettings settings, List<String> queries) {
     return new SourceDescriptor(
-        LIVE_WEB_SCOUT,
+        CollectorIds.LIVE_WEB_SCOUT,
         "AI news",
         "News",
         true,
@@ -213,7 +200,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor courses(SourceSettings settings, String query, List<?> platforms) {
     return new SourceDescriptor(
-        COURSES,
+        CollectorIds.COURSES,
         "Courses and certifications",
         "Courses",
         true,
@@ -231,7 +218,7 @@ public final class CollectorDescriptors {
   public static SourceDescriptor liveWebEvents(
       SourceSettings settings, List<String> queries, boolean readerOn) {
     return new SourceDescriptor(
-        LIVE_WEB_EVENTS,
+        CollectorIds.LIVE_WEB_EVENTS,
         "Upcoming AI events",
         "Events",
         true,
@@ -254,7 +241,7 @@ public final class CollectorDescriptors {
 
   public static SourceDescriptor linkedIn(SourceSettings settings, List<String> queries) {
     return new SourceDescriptor(
-        LINKEDIN,
+        CollectorIds.LINKEDIN,
         "LinkedIn live web",
         "LinkedIn",
         true,

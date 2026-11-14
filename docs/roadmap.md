@@ -11,6 +11,8 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Now
 
 - [S1.8.3 Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys](https://github.com/silvioincalza/helper2.ai/issues/174)
+- [S1.11.3 The module boundaries are checked on the source files too](https://github.com/silvioincalza/helper2.ai/issues/402)
+- [S1.11.4 One `core` library for the contexts both apps share](https://github.com/silvioincalza/helper2.ai/issues/403)
 
 ### Next
 

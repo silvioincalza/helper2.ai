@@ -76,7 +76,8 @@ to reach into the other's code.
    `catalog.usecase`; its JDBC adapters (`Jdbc*`), `CatalogConfiguration`, `CatalogResultObserver`,
    `CatalogSearchSource` and `SemanticSearchSource` are in `catalog.internal`.
    `sources` has no API: its base package is empty, and its own configuration wires its adapters into the ports of
-   `search` and `scout`.
+   `search` and `scout`. The ids of the collectors are value types of the kernel (`shared.CollectorIds`): the
+   Scout's rules name a collector by its id without naming a `sources` class.
 7. **One class per use case.** What a caller can ask a module to do lives in its `usecase` sub-package, one class per
    entry point: `SearchResources` (search), `AskGuide` (guide), `RunScout`, `StartScoutRun`, `EnrichResource` and
    `PurgeExpiredData` (scout), `GetResourceDetail`, `ListRecentResources`, `ListUpcomingEvents`, `ReportIssue`,
@@ -109,6 +110,20 @@ to reach into the other's code.
    - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
      module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
 
+   `SourceBoundariesTest` checks the same boundaries on the source files. The compiler copies a constant into the
+   class that uses it and leaves no reference in the bytecode, so a rule on classes cannot see an import of a
+   constant; a rule on the text of the file does. It runs in the public app and reads every `ai.helper2` name in
+   the main sources of every project, and in the test and fixture sources of the libraries:
+   - a library context uses only itself and the contexts below it (§3), by package: `shared` (kernel),
+     `platform`, `identity`, `search`, `search.web` and `api` (web-contract), `catalog`, `examples`, `sources`. A
+     library file in a package that is not in this list fails too;
+   - a module names another module only by its base package or a named interface (a package or a type with
+     `@NamedInterface`). The open modules are free;
+   - no file outside `sources` names a `sources` package.
+
+   The modules, the open ones and the named interfaces are read from `package-info.java` and the annotations; the
+   directions between the library contexts are a table in the test.
+
    A library also checks its own rules on its classes alone, without an app: `IdentityArchitectureTest`,
    `CatalogArchitectureTest`, `ExamplesArchitectureTest` (no app code, no use case into `internal`, the core
    framework-free) and `WebContractArchitectureTest`. The last one fails if the library uses an app's generated types
@@ -135,7 +150,11 @@ to reach into the other's code.
   — each project's dependencies.
 - `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
 - `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon
-  rules; `backend/libs/identity/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java`,
+  rules; `backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
+  boundaries read from the source, over the roots `BackendSources`
+  (`backend/libs/platform/src/testFixtures/java/ai/helper2/testing/BackendSources.java`) lists;
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CollectorIds.kt` — the collectors' ids;
+  `backend/libs/identity/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java`,
   `backend/libs/catalog/src/test/java/ai/helper2/catalog/architecture/CatalogArchitectureTest.java`,
   `backend/libs/examples/src/test/java/ai/helper2/examples/architecture/ExamplesArchitectureTest.java`,
   `backend/libs/web-contract/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
@@ -180,7 +199,7 @@ to reach into the other's code.
 - A use case is found by its name, not inside a large service file; its tests sit next to it
   (`search/usecase/SearchResourcesTest`, `guide/usecase/AskGuideTest`, `scout/usecase/RunScoutTest`).
 - A boundary break fails the build, not a review: a wrong Gradle dependency at configuration time, a wrong class
-  dependency in `ModularityTest` or in a library's own architecture test.
+  dependency in `ModularityTest` or in a library's own architecture test, a wrong import in `SourceBoundariesTest`.
 - Kotlin stays in the rule packages, so most framework code is Java.
 - Each app takes only the libraries it needs, and neither can import the other's code. The shared web adapters are
   compiled once; both apps run the same classes.
@@ -205,3 +224,4 @@ Modules, ports and adapters: one view per module group, [context](../../diagrams
 - Open issues that change it:
   - [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180): a closed `llm` module with a small public API.
   - [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181): controllers return views owned by the use cases.
+  - [S1.11.4](https://github.com/silvioincalza/helper2.ai/issues/403): one `core` library for the contexts both apps share.

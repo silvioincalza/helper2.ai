@@ -10,6 +10,7 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
@@ -36,7 +37,7 @@ import org.jspecify.annotations.Nullable;
 
 public class PypiCollector implements Collector {
 
-  public static final String ID = CollectorDescriptors.PYPI;
+  public static final String ID = CollectorIds.PYPI;
 
   static final String POLICY = "collector-pypi";
 
