@@ -1,0 +1,300 @@
+name: ci
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      full:
+        description: run the job of every component in the tree, whatever changed
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.map.outputs.frontend }}
+      backend: ${{ steps.map.outputs.backend }}
+      chart: ${{ steps.map.outputs.chart }}
+      monitoring: ${{ steps.map.outputs.monitoring }}
+      postgres: ${{ steps.map.outputs.postgres }}
+      diagrams: ${{ steps.map.outputs.diagrams }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - run: .github/scripts/changes.sh --self-test
+      - run: .github/scripts/ci-ok.sh --self-test
+      - name: Released migrations are unchanged
+        run: |
+          set -euo pipefail
+          .github/scripts/released-migrations.sh --self-test
+          .github/scripts/released-migrations.sh check
+      - name: ADR references and history words
+        run: |
+          set -euo pipefail
+          python3 scripts/adr-check.py --self-test
+          python3 scripts/adr-check.py
+      - name: Script tests
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          tests=(scripts/*.test.mjs)
+          if [[ ${#tests[@]} -eq 0 ]]; then
+            echo "no scripts/*.test.mjs in the tree"; exit 0
+          fi
+          node --test "${tests[@]}"
+      - id: map
+        env:
+          FULL: ${{ inputs.full == true || github.event_name != 'pull_request' }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [[ $FULL == true ]]; then
+            .github/scripts/changes.sh --all | tee -a "$GITHUB_OUTPUT"
+          else
+            .github/scripts/changes.sh "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
+          fi
+
+  frontend-build:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run gen:api
+      - run: npm run build
+      - run: npm run check:bundle
+
+  frontend-check:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run gen:api
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run knip
+      - run: npm run typecheck
+      - run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (report only)
+        run: npm audit
+        continue-on-error: true
+
+  frontend-test:
+    name: frontend-test (${{ matrix.group }})
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: search, guide
+            args: src/features/search src/features/guide
+          - group: home, resource, pages, admin
+            args: src/features/home src/features/resource src/features/pages src/admin
+          - group: lib, styles, shell, the rest
+            args: --exclude 'src/features/{search,guide,home,resource,pages}/**' --exclude 'src/admin/**'
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run gen:api
+      - name: Vitest (${{ matrix.group }})
+        run: npx vitest run --passWithNoTests ${{ matrix.args }}
+
+  backend-build:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Compile every source set
+        run: |
+          set -euo pipefail
+          tasks=(classes testClasses)
+          if [[ -d loadtest ]]; then tasks+=(gatlingClasses); fi
+          ./gradlew --no-daemon "${tasks[@]}"
+
+  backend-check:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - run: ./gradlew --no-daemon spotlessCheck test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: backend-test-reports
+          path: backend/**/build/reports/tests/
+          retention-days: 7
+
+  postgres-tag:
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.postgres == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Changed, and tag bumped?
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          VALUES: deploy/helm/helper2/values.yaml
+        run: |
+          set -euo pipefail
+          if git diff --quiet "$BASE" HEAD -- deploy/postgres; then
+            echo "deploy/postgres unchanged"; exit 0
+          fi
+          tag() {
+            git cat-file -e "$1:$VALUES" 2> /dev/null || return 0
+            git show "$1:$VALUES" | yq '.postgres.image.tag'
+          }
+          old=$(tag "$BASE"); new=$(tag HEAD)
+          if [[ $old == "$new" ]]; then
+            echo "::error file=$VALUES::deploy/postgres changed but postgres.image.tag is still $old: a pushed tag is never rebuilt, so set a new one"
+            exit 1
+          fi
+          echo "postgres.image.tag ${old:-none} -> $new"
+
+  chart:
+    needs: changes
+    if: needs.changes.outputs.chart == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/go-tool
+        with:
+          name: helm
+          module: helm.sh/helm/v4/cmd/helm
+          version: v4.3.1
+      - uses: ./.github/actions/go-tool
+        with:
+          name: kubeconform
+          module: github.com/yannh/kubeconform/cmd/kubeconform
+          version: v0.8.0
+      - run: make -C deploy/k8s chart-check
+
+  monitoring:
+    needs: changes
+    if: needs.changes.outputs.monitoring == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROMETHEUS_IMAGE: docker.io/prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Install promtool
+        run: |
+          set -euo pipefail
+          docker pull --quiet "$PROMETHEUS_IMAGE"
+          mkdir -p "$RUNNER_TEMP/bin"
+          cat > "$RUNNER_TEMP/bin/promtool" << 'SH'
+          #!/usr/bin/env bash
+          exec docker run --rm --network=none -v "$PWD:$PWD:ro" -w "$PWD" --entrypoint /bin/promtool "$PROMETHEUS_IMAGE" "$@"
+          SH
+          chmod +x "$RUNNER_TEMP/bin/promtool"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/bin/promtool" --version
+      - run: promtool check rules deploy/monitoring/helper2-rules.yaml
+      - run: promtool test rules deploy/monitoring/tests/*.yaml
+
+  diagrams:
+    needs: changes
+    if: needs.changes.outputs.diagrams == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/go-tool
+        with:
+          name: d2
+          module: github.com/d2lang/d2
+          version: v0.9.0
+          ldflags: -X github.com/d2lang/d2/lib/version.Version=v0.9.0
+      - name: Re-render and compare
+        working-directory: docs/diagrams
+        run: |
+          set -euo pipefail
+          ./render.sh
+          if [[ -n $(git status --porcelain -- .) ]]; then
+            git status --short -- .
+            echo "::error::docs/diagrams is not what d2 v0.9.0 renders: run docs/diagrams/render.sh with d2 v0.9.0 and commit the result"
+            exit 1
+          fi
+
+  ci-ok:
+    if: always()
+    needs: [changes, frontend-build, frontend-check, frontend-test, backend-build, backend-check, postgres-tag, chart, monitoring, diagrams]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+          PR: ${{ github.event_name == 'pull_request' }}
+        run: .github/scripts/ci-ok.sh

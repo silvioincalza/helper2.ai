@@ -1,0 +1,71 @@
+name: go-tool
+description: Restore a Go tool built for this version, or build it with go install (checked by the Go checksum database) and cache the binary
+inputs:
+  name:
+    description: binary name, as go install writes it
+    required: true
+  module:
+    description: package path to go install, without the version
+    required: true
+  version:
+    description: exact version, vX.Y.Z
+    required: true
+  ldflags:
+    description: -ldflags for go install
+    default: ''
+  go-version:
+    description: Go toolchain that builds the tool on a cache miss
+    default: '1.27'
+  bin:
+    description: directory the binary goes in, added to PATH
+    default: ''
+outputs:
+  cache-hit:
+    description: true when the binary came from the cache
+    value: ${{ steps.cache.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    - id: dir
+      shell: bash
+      env:
+        BIN: ${{ inputs.bin }}
+        NAME: ${{ inputs.name }}
+      run: |
+        set -euo pipefail
+        dir=${BIN:-$RUNNER_TEMP/go-tools/$NAME}
+        mkdir -p "$dir"
+        echo "dir=$dir" >> "$GITHUB_OUTPUT"
+    - id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: ${{ steps.dir.outputs.dir }}/${{ inputs.name }}
+        key: go-tool-${{ inputs.name }}-${{ inputs.version }}-go${{ inputs.go-version }}-${{ runner.os }}-${{ runner.arch }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: false
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        DIR: ${{ steps.dir.outputs.dir }}
+        MODULE: ${{ inputs.module }}
+        VERSION: ${{ inputs.version }}
+        LDFLAGS: ${{ inputs.ldflags }}
+      run: GOBIN="$DIR" go install -ldflags "$LDFLAGS" "$MODULE@$VERSION"
+    - if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: ${{ steps.dir.outputs.dir }}/${{ inputs.name }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+    - shell: bash
+      env:
+        DIR: ${{ steps.dir.outputs.dir }}
+        NAME: ${{ inputs.name }}
+        HIT: ${{ steps.cache.outputs.cache-hit == 'true' }}
+      run: |
+        set -euo pipefail
+        [[ -x $DIR/$NAME ]] || { echo "::error::$NAME is not in $DIR"; exit 1; }
+        echo "$DIR" >> "$GITHUB_PATH"
+        echo "$NAME: $([[ $HIT == true ]] && echo cached || echo built)"
