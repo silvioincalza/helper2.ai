@@ -219,21 +219,41 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 `v2026.11.3` is the first release of this repository
 ([S10.7.1](https://github.com/silvioincalza/helper2.ai/issues/352)). What is special about it:
 
-- **Prod keeps its data.** Prod runs `2026.11.2`, and its database ran the `V1__schema.sql` and the three seeds this
-  repository holds, byte for byte. The migrate Job finds nothing to run. The catalog and its embeddings, accounts,
-  saved items, reports, review decisions, the audit trail and the runtime settings stay as they are.
-- **This holds only while `V1__schema.sql` is not edited.** Until the first tag CI lets it change (section 6,
-  point 6). Prove it before step 3: prod and staging must print the same checksum for version 1.
+- **Prod keeps its data, after one step by hand.** Prod runs `2026.11.2`, and its database ran an earlier
+  `V1__schema.sql`: the one of this repository has two indexes fewer (`resource_updated_idx`,
+  `resource_label_value_idx`). Flyway refuses the new file on prod's database (check 5), so before step 3 the
+  database is brought to the new file by hand: the two indexes are dropped, and the checksum Flyway stored for
+  version 1 is set to the checksum of the file. Nothing else differs between the two files, and no code reads the two
+  indexes. The catalog and its embeddings, accounts, saved items, reports, review decisions, the audit trail and the
+  runtime settings stay as they are.
+
+  **(Silvio)** From the commit of the release, print the checksum of the file (Flyway's own: CRC32 of its lines):
 
   ```bash
-  for ns in helper2-prod helper2-staging; do
-    kubectl -n $ns exec postgres-0 -- psql -U helper2 -d helper2 -At \
-      -c "SELECT version, checksum FROM flyway_schema_history WHERE version = '1'"
-  done
+  python3 -c 'import sys,zlib
+  c=0
+  for l in open(sys.argv[1],encoding="utf-8-sig",newline="").read().splitlines(): c=zlib.crc32(l.encode(),c)
+  print(c-2**32 if c>=2**31 else c)' backend/libs/schema/src/main/resources/db/migration/V1__schema.sql
   ```
 
-  When they differ, stop: check 5 applies, the release cannot migrate prod.
-- **A normal release, with the canary.** No migration, so no window. `make diff` in the run shows what changes
+  Then, with that number as `CHECKSUM`, right before the release (check 4's dump is taken first):
+
+  ```bash
+  NS=helper2-prod; CHECKSUM=<the number>
+  kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 -1 \
+    -c 'DROP INDEX IF EXISTS resource_updated_idx, resource_label_value_idx' \
+    -c "UPDATE flyway_schema_history SET checksum = $CHECKSUM WHERE version = '1'"
+  kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -At \
+    -c "SELECT version, checksum FROM flyway_schema_history WHERE version = '1'"
+  ```
+
+  Between this step and the release, a pod of `2026.11.2` that restarts does not start: it checks the schema against
+  its own file. The pods that run are not touched. So the step and the release are done in one sitting.
+  This holds only while the two indexes are the whole difference: `git diff v<running>..<commit>` of the file in
+  check 5 must show those two lines and nothing else. Any other change of V1 needs its own step, or an empty database.
+- **Staging gets the same step**, with `NS=helper2-staging`, before the first `cd` deploy that carries the new file.
+  Without it that deploy fails at the migrate Job and Helm goes back to the release before.
+- **A normal release, with the canary.** No migration runs, so no window. `make diff` in the run shows what changes
   beside the three images and the chart version: the image of the off-site upload in the backup CronJob.
 - **No new `app.env` key** is expected; check 6 proves it.
 - **The way back is Helm's revision of `2026.11.2`** (section 5, way 1). This repository has no tag `v2026.11.2`,

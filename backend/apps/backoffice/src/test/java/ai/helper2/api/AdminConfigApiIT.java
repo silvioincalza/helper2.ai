@@ -24,9 +24,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
       "helper2.quota.key-secret=" + AdminConfigApiIT.QUOTA_SECRET,
       "helper2.setup.github-token=" + AdminConfigApiIT.GITHUB_TOKEN,
       "helper2.setup.hosts.hf-token=" + AdminConfigApiIT.HF_TOKEN,
-      "helper2.admin.grafana-url=https://viewer:"
-          + AdminConfigApiIT.URL_PASSWORD
-          + "@grafana.test/d",
+      "helper2.admin.grafana-url=" + AdminConfigApiIT.GRAFANA_LINK,
       "helper2.search.web.quota.global-daily-credits=77",
       "spring.datasource.hikari.maximum-pool-size=2",
     })
@@ -35,7 +33,7 @@ class AdminConfigApiIT extends ApiTestBase {
   static final String QUOTA_SECRET = "fake-quota-secret-8d1e";
   static final String GITHUB_TOKEN = "ghp_fakeGithubToken4c2a";
   static final String HF_TOKEN = "hf_fakeHuggingFaceToken9b7";
-  static final String URL_PASSWORD = "fakeUrlPassword3f";
+  static final String GRAFANA_LINK = "https://grafana.test/d/fake-dashboard-3f";
 
   static final Instant PUBLISHED_AT = Instant.parse("2026-11-11T10:00:00Z");
   static final SettingsGroup GUIDE =
@@ -121,9 +119,21 @@ class AdminConfigApiIT extends ApiTestBase {
   void noSecretReachesThePage() throws Exception {
     String body = settings();
     assertThat(body)
-        .doesNotContain(QUOTA_SECRET, GITHUB_TOKEN, HF_TOKEN, URL_PASSWORD, "admin-subject")
+        .doesNotContain(QUOTA_SECRET, GITHUB_TOKEN, HF_TOKEN, "grafana.test", "admin-subject")
         .doesNotContainIgnoringCase("api-key")
         .doesNotContain("@");
+  }
+
+  @Test
+  void theOverviewCarriesTheGrafanaLinkAsConfigured() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/admin/overview").with(ADMIN))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertThat(JsonPath.<String>read(body, "$.grafanaUrl")).isEqualTo(GRAFANA_LINK);
   }
 
   private String settings() throws Exception {
