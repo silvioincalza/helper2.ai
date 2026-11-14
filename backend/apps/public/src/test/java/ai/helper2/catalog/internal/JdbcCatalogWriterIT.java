@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -1159,6 +1160,11 @@ class JdbcCatalogWriterIT {
   }
 
   private SourceHit eventFrom(String source, String url, String start, String end) {
+    return eventFrom(source, url, null, start, end);
+  }
+
+  private SourceHit eventFrom(
+      String source, String url, @Nullable String description, String start, String end) {
     SourceHit h = titled(source, url, "AI Summit " + run);
     return new SourceHit(
         source,
@@ -1167,7 +1173,7 @@ class JdbcCatalogWriterIT {
         h.getCanonicalUrl(),
         null,
         h.getTitle(),
-        null,
+        description,
         ValueOrigin.SOURCE_PROVIDED,
         ResourceType.EVENT,
         Audience.BUILD_WITH_AI,
@@ -1245,6 +1251,42 @@ class JdbcCatalogWriterIT {
         .isEqualTo(ai.helper2.api.common.model.ValueOriginDto.SOURCE_PROVIDED);
     assertThat(statedCard.getTimeline().getEventStart().getValue().toInstant())
         .hasToString("2027-04-02T00:00:00Z");
+  }
+
+  @Test
+  void event_days_only_a_model_read_do_not_put_the_page_in_the_sitemap_days_a_source_states_do() {
+    String url = "https://meetup-" + run + ".example/2027";
+    String scout = ai.helper2.shared.WebSources.EVENTS_SCOUT;
+    Map<String, SourceContext> contexts =
+        Map.of("ai-deadlines", context("ai-deadlines"), scout, context(scout));
+    writer.upsert(
+        new ResultMerger()
+            .merge(
+                List.of(
+                    eventFrom(scout, url, "A meetup about AI agents", "2027-05-10", "2027-05-11")),
+                contexts),
+        DataOrigin.OBSERVED,
+        Set.of(scout));
+    UUID id = resourceId(url);
+    assertThat(eventDays(url)).containsExactly("2027-05-10", "2027-05-11");
+
+    assertThat(store.indexable(List.of("EVENT"), 0, 100_000)).noneMatch(r -> r.id().equals(id));
+
+    writer.upsert(
+        new ResultMerger()
+            .merge(
+                List.of(
+                    eventFrom(
+                        "ai-deadlines",
+                        url,
+                        "A meetup about AI agents",
+                        "2027-05-10",
+                        "2027-05-11")),
+                contexts),
+        DataOrigin.OBSERVED,
+        Set.of("ai-deadlines"));
+
+    assertThat(store.indexable(List.of("EVENT"), 0, 100_000)).anyMatch(r -> r.id().equals(id));
   }
 
   private UUID resourceId(String url) {
