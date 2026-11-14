@@ -1,0 +1,260 @@
+package ai.helper2.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.search.SearchSource;
+import ai.helper2.search.SourceDescriptor;
+import ai.helper2.search.SourceHit;
+import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.SourceMode;
+import ai.helper2.shared.ValueOrigin;
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+@TestPropertySource(
+    properties = {
+      "helper2.quota.key-secret=test-secret",
+      "resilience4j.bulkhead.instances.source-fake-web.base-config=source",
+      "spring.datasource.hikari.maximum-pool-size=2",
+    })
+@Import(WebSearchQuotaApiIT.FakeWeb.class)
+class WebSearchQuotaApiIT extends ApiTestBase {
+
+  static final AtomicInteger WEB_CALLS = new AtomicInteger();
+
+  private static final AtomicInteger ADDRESSES = new AtomicInteger(10);
+
+  private final String address = "198.51.100." + ADDRESSES.incrementAndGet();
+  private final RequestPostProcessor visitor =
+      request -> {
+        request.setRemoteAddr(address);
+        return request;
+      };
+
+  private String search(String q) throws Exception {
+    return mvc.perform(get("/api/v1/search").param("q", q).with(visitor))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+  }
+
+  private static Object read(String json, String path) {
+    return com.jayway.jsonpath.JsonPath.read(json, path);
+  }
+
+  @Test
+  void eachSearchShowsTheWebSearchesLeftAndAtTheLimitTheWebSourceIsSkipped() throws Exception {
+    String run = UUID.randomUUID().toString();
+    int before = WEB_CALLS.get();
+
+    for (int left = 2; left >= 0; left--) {
+      String json = search("agents " + run + " " + left);
+      assertThat(read(json, "$.webSearches.limit")).isEqualTo(3);
+      assertThat(read(json, "$.webSearches.remaining")).isEqualTo(left);
+      ContractValidator.assertMatches("SearchResponse", json);
+    }
+    String over = search("agents " + run + " over");
+
+    assertThat(WEB_CALLS.get() - before).isEqualTo(3);
+    assertThat(read(over, "$.webSearches.remaining")).isEqualTo(0);
+    assertThat(read(over, "$.sources[?(@.sourceId == 'fake-web')].outcome"))
+        .asList()
+        .containsExactly("SKIPPED");
+    assertThat(read(over, "$.sources[?(@.sourceId == 'fake-web')].message"))
+        .asList()
+        .containsExactly("Daily limit of web searches reached; back at 00:00 UTC");
+    assertThat(read(over, "$.sources[?(@.sourceId == 'fake-web')].skipReason"))
+        .asList()
+        .containsExactly("DAILY_LIMIT");
+    assertThat(read(over, "$.sources[?(@.sourceId == 'fake-live')].outcome"))
+        .asList()
+        .containsExactly("SUCCEEDED");
+  }
+
+  @Test
+  void aQuestionAlreadyStoredIsAnsweredWithoutAWebSearch() throws Exception {
+    String q = "rag frameworks " + UUID.randomUUID();
+    search(q);
+    eventually(() ->
+        assertThat(read(search(q), "$.sources[?(@.sourceId == 'fake-web')].servedFrom"))
+            .asList()
+            .containsExactly("CACHE"));
+    int calls = WEB_CALLS.get();
+    Object left = read(search(q), "$.webSearches.remaining");
+
+    String json = search(q);
+
+    assertThat(WEB_CALLS.get()).isEqualTo(calls);
+    assertThat(read(json, "$.webSearches.remaining")).isEqualTo(left);
+    assertThat(read(json, "$.sources[?(@.sourceId == 'fake-web')].resultCount"))
+        .asList()
+        .containsExactly(1);
+  }
+
+  @Test
+  void theGuideCountsItsOwnWebSearches() throws Exception {
+    search("agents " + UUID.randomUUID());
+
+    String json =
+        GuideAnswers.ask(
+                mvc,
+                "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}",
+                csrf().asHeader(),
+                visitor)
+            .value("$.webSearches.limit", 3)
+            .value("$.webSearches.remaining", 2)
+            .json();
+    ContractValidator.assertMatches("GuideResponse", json);
+  }
+
+  private String me() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/me").with(visitor))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("Me", body);
+    return body;
+  }
+
+  @Test
+  void theAccountShowsWhatIsLeftTodayWithoutCountingAndWithoutTheAddress() throws Exception {
+    String fresh = me();
+    assertThat(read(fresh, "$.limits.webSearches.search.limit")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.webSearches.search.remaining")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.webSearches.guide.remaining")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.guideQuestions")).as("no guide model here").isNull();
+    assertThat(java.time.OffsetDateTime.parse(read(fresh, "$.limits.resetsAt").toString()))
+        .isEqualTo(
+            java.time.LocalDate.now(java.time.ZoneOffset.UTC)
+                .plusDays(1)
+                .atStartOfDay()
+                .atOffset(java.time.ZoneOffset.UTC));
+    assertThat(fresh).doesNotContain(address);
+    assertThat(read(me(), "$.limits.webSearches.search.remaining"))
+        .as("reading does not count")
+        .isEqualTo(3);
+
+    search("agents " + UUID.randomUUID());
+    GuideAnswers.ask(
+        mvc,
+        "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}",
+        csrf().asHeader(),
+        visitor);
+
+    String after = me();
+    assertThat(read(after, "$.limits.webSearches.search.remaining")).isEqualTo(2);
+    assertThat(read(after, "$.limits.webSearches.guide.remaining")).isEqualTo(2);
+  }
+
+  private Number creditsToday() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/sources"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertArrayMatches("SourceInfo", body);
+    assertThat(read(body, "$[?(@.id == 'fake-web')].webCredits.dailyCap"))
+        .asList()
+        .as("no H2_ value: the runtime setting's code maximum (ADR 0007)")
+        .containsExactly((int) RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS.max());
+    assertThat(read(body, "$[?(@.id == 'fake-live')].webCredits")).asList().containsOnlyNulls();
+    return (Number)
+        ((List<?>) read(body, "$[?(@.id == 'fake-web')].webCredits.usedToday")).getFirst();
+  }
+
+  @Test
+  void theSourcesPageShowsTheCreditsOfTheDayForAllVisitorsUnderTheCodeMaximum() throws Exception {
+    long before = creditsToday().longValue();
+
+    search("agents " + UUID.randomUUID());
+
+    assertThat(creditsToday().longValue()).isEqualTo(before + 1);
+  }
+
+  @TestConfiguration(proxyBeanMethods = false)
+  static class FakeWeb {
+    @Bean
+    SearchSource fakeWebSource() {
+      SourceDescriptor d =
+          new SourceDescriptor(
+              "fake-web",
+              "Fake web search",
+              "Fake web",
+              true,
+              SourceMode.LIVE,
+              URI.create("https://web.example"),
+              null,
+              null,
+              EnumSet.of(ResourceType.NEWS),
+              Duration.ofMillis(800),
+              Duration.ZERO,
+              true,
+              48,
+              true,
+              true,
+              true,
+              true,
+              true);
+      return new SearchSource() {
+        @Override
+        public SourceDescriptor getDescriptor() {
+          return d;
+        }
+
+        @Override
+        public List<SourceHit> search(SourceQuery query) {
+          WEB_CALLS.incrementAndGet();
+          String url = "https://news.example/" + UUID.nameUUIDFromBytes(query.getText().getBytes());
+          return List.of(
+              new SourceHit(
+                  "fake-web",
+                  CanonicalUrl.of(url).getValue(),
+                  URI.create(url),
+                  CanonicalUrl.of(url),
+                  null,
+                  "AI news about " + query.getText(),
+                  "An AI agent framework launched",
+                  ValueOrigin.SOURCE_PROVIDED,
+                  ResourceType.NEWS,
+                  Audience.BOTH,
+                  null,
+                  Set.of(),
+                  Set.of(),
+                  null,
+                  null,
+                  Set.of(),
+                  null,
+                  DateFact.unknown(),
+                  DateFact.unknown(),
+                  List.of(),
+                  Instant.now(),
+                  0));
+        }
+      };
+    }
+  }
+}

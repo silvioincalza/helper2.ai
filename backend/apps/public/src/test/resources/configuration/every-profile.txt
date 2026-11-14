@@ -1,3 +1,5 @@
+helper2.identity.frontend-url = http://localhost:5173/
+helper2.identity.metrics-public = true
 helper2.llm.chat-model = ${spring.ai.openai.chat.model:}  =>  nvidia/Nemotron-3.5-Super-VL
 helper2.llm.chat-provider = ${spring.ai.model.chat}  =>  openai
 helper2.llm.fast-model = ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}  =>  nvidia/Nemotron-3_5-Lightning
@@ -13,6 +15,7 @@ resilience4j.circuitbreaker.instances.source-demo-catalog.base-config = source
 resilience4j.circuitbreaker.instances.source-demo-down.base-config = source
 resilience4j.circuitbreaker.instances.source-demo-mirror.base-config = source
 resilience4j.circuitbreaker.instances.source-demo-slow.base-config = source
+server.servlet.session.cookie.secure = ${H2_COOKIE_SECURE:false}  =>  false
 spring.ai.model.chat = openai
 spring.ai.openai.api-key = ${H2_NEBIUS_API_KEY}  =>  <needs a variable>
 spring.ai.openai.base-url = https://api.tokenfactory.nebius.com/v1
@@ -24,3 +27,7 @@ spring.docker.compose.enabled = true
 spring.docker.compose.file = ../compose.yaml
 spring.docker.compose.lifecycle-management = start-only
 spring.profiles.active = ${H2_PROFILES:}  =>  dev,oauth-github,llm-nebius,demo
+spring.security.oauth2.client.registration.github.client-id = ${H2_GITHUB_OAUTH_CLIENT_ID}  =>  <needs a variable>
+spring.security.oauth2.client.registration.github.client-name = GitHub
+spring.security.oauth2.client.registration.github.client-secret = ${H2_GITHUB_OAUTH_CLIENT_SECRET}  =>  <needs a variable>
+spring.security.oauth2.client.registration.github.scope = read:user
