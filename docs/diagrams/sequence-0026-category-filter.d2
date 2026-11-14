@@ -1,0 +1,56 @@
+# Sequence: a person filters a search by category, asks the guide on the filtered page, changes the filter and asks
+# again from the filters-changed line, then opens a result.
+# Source of truth: frontend/src/features/search/CategoryFacet.tsx, frontend/src/hooks/useCategories.ts,
+#   frontend/src/hooks/useGuideStream.ts, frontend/src/features/guide/GuidePicks.tsx, frontend/src/features/resource/CategoryLinks.tsx,
+#   backend/libs/web-contract/src/main/java/ai/helper2/search/web/CategoriesController.java,
+#   backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java,
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java,
+#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java,
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt (searchFor).
+# Render: cd docs/diagrams && ./render.sh
+
+...@style
+
+shape: sequence_diagram
+
+person: "Person" {class: person}
+page: "Results page\n(React)" {class: app}
+cats: "CategoriesController" {class: app}
+ctl: "SearchController" {class: app}
+search: "SearchResources" {class: app}
+index: "Catalog source\n(resource_label CATEGORY)" {class: data}
+web: "Live sources\n(Tavily, GitHub ...)" {class: ext}
+merger: "ResultMerger +\nCategoryMatcher" {class: app}
+guide: "GuideStreamController\n+ AskGuide" {class: app}
+
+person -> page: "/search?q=review"
+page -> cats: "GET /categories"
+cats -> page: "34 categories, ETag,\nmax-age 1 h (304 next time)"
+page -> ctl: "GET /search?q=review"
+ctl -> search: "search(filters)"
+search -> index: "query"
+index -> search: "hits with their stored categories"
+search -> web: "query"
+web -> search: "hits without categories"
+search -> merger: "merge(hits)"
+merger -> search: "every result with its categories\n(stored + matched by code)"
+search -> ctl: "results + facet counts\n(category: coding 4, unknown 3)"
+ctl -> page: "200"
+person -> page: "ticks Coding (4)"
+page -> ctl: "GET /search?q=review&category=coding"
+ctl -> ctl: "coding is a configured id"
+ctl -> page: "results in coding only, same facet counts"
+person -> page: "Ask the guide"
+page -> guide: "POST /guide/stream\n{request, categories: [coding]}"
+guide -> search: "pick search with category coding\n(cache key includes it)"
+guide -> page: "picks, all in coding"
+person -> page: "ticks Agents too"
+page -> ctl: "GET /search?q=review&category=coding&category=agents"
+page -> person: "status line: Filters changed since you asked.\n[Ask again] (old picks stay, no new ask)"
+person -> page: "Ask again"
+page -> guide: "POST /guide/stream\n{request, categories: [coding, agents]}"
+guide -> page: "picks in coding or agents; the line goes away"
+person -> page: "opens a resource: Categories → Coding"
+page -> ctl: "GET /search?q=Coding&category=coding"

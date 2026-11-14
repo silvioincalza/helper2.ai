@@ -1,0 +1,24 @@
+# Sequence: one search with the Hacker News live source switched on (ADR 0030).
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, SourceFanOut.kt,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/support/HttpClients.java,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0030-hacker-news.d2 && d2 sequence-0030-hacker-news.d2 sequence-0030-hacker-news.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+search: SearchResources {class: app}
+hn: HackerNewsSource {class: app}
+algolia: "hn.algolia.com" {class: ext}
+
+browser -> search: "GET /api/v1/search?q=openai new model launch"
+search -> search: "switched on? (default on; off: SKIPPED)"
+search -> hn: "SourceQuery (keywords: openai model launch, limit 10)"
+hn -> algolia: "GET /api/v1/search?query=openai model launch&tags=story&hitsPerPage=30\n(+ numericFilters=created_at_i>=… with a date window)"
+algolia -> hn: "stories"
+hn -> hn: "keep linked stories about AI, first 10"
+hn -> search: "hits (or FAILED / TIMEOUT: circuit, bulkhead)"
+search -> browser: "merged, ranked results"

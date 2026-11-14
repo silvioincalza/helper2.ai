@@ -1,0 +1,45 @@
+# Sequence: a source drops a tag, the catalog rebuilds the labels, and the next card no longer shows the flag.
+# Shows the write path (JdbcCatalogWriter.upsert → replaceLabels) and the read path (CardMapper → Compatibility), also for guide picks.
+# Source of truth: backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert, replaceLabels, withFacts),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java,
+#   backend/libs/web-contract/src/main/java/ai/helper2/search/web/CardMapper.java, SearchController.java,
+#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java,
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/Compatibility.kt.
+# Render: cd docs/diagrams && d2 fmt sequence-0026-works-with-flags.d2 && d2 sequence-0026-works-with-flags.d2 sequence-0026-works-with-flags.svg
+
+...@style
+
+shape: sequence_diagram
+
+writer: "Scout run or\nObservationQueue" {class: app}
+store: "JdbcCatalogWriter\nResourceRows" {class: app}
+pg: PostgreSQL {class: data}
+css: CatalogSearchSource {class: app}
+ctl: SearchController {class: app}
+cm: CardMapper {class: app}
+compat: Compatibility {class: app}
+gdm: GuideDtoMapper {class: app}
+
+write: A source no longer tags the repo "ollama" {
+  writer -> store: "upsert(results, origin, sources)"
+  store -> pg: "upsert source_record\n(extra.tags without \"ollama\")"
+  store -> pg: "replaceLabels: DELETE resource_label\nfor touched resources"
+  store -> pg: "INSERT labels from current\nsource_record.extra (TAG ≤ 20)"
+}
+
+read: Next search {
+  css -> store: "search(…)"
+  store -> pg: "rows + resource_label + metrics"
+  store -> css: "ResourceRow (tags without \"ollama\")"
+  css -> ctl: "SourceHit (via SearchResources)"
+  ctl -> cm: "card(result)" {class: hot}
+  cm -> compat: "compatibility(result) → of(result)" {class: hot}
+  compat -> compat: "TYPE rule, then tags per hit\n(normalized), first source wins"
+  compat -> cm: "flags (no Ollama flag now)"
+  cm -> ctl: "ResultCard.compatibleWith"
+}
+
+guide: A guide answer {
+  gdm -> cm: "compatibility(pick.result)\nfor every recommendation" {class: hot}
+  cm -> gdm: "GuideRecommendation.compatibleWith\n([] when no rule matched)"
+}

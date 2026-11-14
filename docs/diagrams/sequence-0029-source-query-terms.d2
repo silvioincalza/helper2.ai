@@ -1,0 +1,36 @@
+# Sequence: one search, the words each source gets, and the Hugging Face task call (ADR 0029).
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (sourceQuery, searchTermsOf),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubSource.java,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/huggingface/HuggingFaceModelsSource.java, HubTasks.java,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/tavily/TavilySource.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0029-source-query-terms.d2 && d2 sequence-0029-source-query-terms.d2 sequence-0029-source-query-terms.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+search: SearchResources {class: app}
+analyzer: QueryAnalyzer {class: app}
+github: "GitHubSource" {class: app}
+hf: "HuggingFaceModelsSource" {class: app}
+hub: "huggingface.co/api/models" {class: ext}
+web: "TavilySource (Live web)" {class: app}
+
+browser -> search: "GET /api/v1/search?q=reranker model for retrieval"
+search -> analyzer: "analyze(text)"
+analyzer -> search: "contentTerms = [reranker, retrieval],\ntypeHints = {MODEL}"
+search -> github: "SourceQuery(text, searchTerms)"
+github -> github: "q = reranker retrieval\nfork:false archived:false"
+search -> hf: "SourceQuery(text, searchTerms)"
+hf -> hf: "HubTasks.of: reranker → text-ranking"
+hf -> hub: "GET ?pipeline_tag=text-ranking&sort=likes\n&search=retrieval&limit=30"
+hub -> hf: "few models"
+hf -> hub: "GET ?pipeline_tag=text-ranking&sort=likes&limit=30"
+hub -> hf: "most liked rerankers (bge-reranker-v2-m3…)"
+search -> web: "SourceQuery: the natural sentence"
+github -> search: "hits"
+hf -> search: "hits (first call's models first)"
+web -> search: "hits"
+search -> browser: "merged, ranked results"
