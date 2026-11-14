@@ -22,21 +22,24 @@ Harbor could put an image under a tag first.
 
 ### The pipeline: CI on pull requests, staging on main, prod on a release
 1. **Continuous integration (CI) on every pull request (PR)** — `ci.yml`, GitHub-hosted runners:
-   - `changes`: the self-test of `.github/scripts/changes.sh`, the ADR reference check (`scripts/adr-check.py`, its
-     self-test first), the tests of the evaluation script's stop rule (`scripts/eval-lib.test.mjs`), the test that the
-     industry events seed is what its script writes from the research file (`scripts/industry-events-seed.test.mjs`,
-     [0012](../scout/0012-scout-collectors-and-events.md)), the check that no released migration changed
-     (`.github/scripts/released-migrations.sh`, its self-test first,
+   - `changes`: the self-tests of `.github/scripts/changes.sh` and `.github/scripts/ci-ok.sh`, the ADR check
+     (`scripts/adr-check.py`, its self-test first: every ADR reference in the repository names a record or a diagram
+     that exists, and no file under `docs/adr` holds one of the words that tell a decision's history,
+     `HISTORY_WORDS` in the script), every script test in the tree (`scripts/*.test.mjs`: the evaluation script's
+     stop rule, `eval-lib.test.mjs`, and the test that the industry events seed is what its script writes from the
+     research file, `industry-events-seed.test.mjs`, [0012](../scout/0012-scout-collectors-and-events.md)), the
+     check that no released migration changed (`.github/scripts/released-migrations.sh`, its self-test first,
      [0004](../foundation/0004-persistence-and-the-schema.md) §5), then the map of what the change touches (§8);
    - frontend, jobs side by side, each with `npm ci` and the generated API types: `frontend-build` (build,
      `check:bundle`), `frontend-check` (`format:check` with Prettier, lint, `knip`, typecheck, `npm audit`,
      [0047](0047-code-format-and-dead-code-audit.md)) and `frontend-test`, Vitest in three jobs named
      after the folders they test: `search, guide`; `home, resource, pages, admin`; `lib, styles, shell, the rest`. The
      last one runs every test the first two do not, so a new folder is tested there without a change to `ci.yml`.
+     A group whose folders hold no test passes (`--passWithNoTests`).
      What the images pack waits only for the build; the image still waits for every check, because CD runs the image
      after the whole of CI;
-   - backend, two jobs side by side: `backend-build` compiles every source set (`classes testClasses
-     gatlingClasses`), `backend-check` runs `./gradlew spotlessCheck test`
+   - backend, two jobs side by side: `backend-build` compiles every source set (`classes testClasses`, and
+     `gatlingClasses` when `backend/loadtest` is in the tree), `backend-check` runs `./gradlew spotlessCheck test`
      ([0047](0047-code-format-and-dead-code-audit.md)), tests with Testcontainers (PostgreSQL and Redis).
      What the images pack waits only for `backend-build`. `backend/gradle.properties` turns on parallel project
      execution and the build cache: the modules' test tasks run side by side, and a module whose inputs did not
@@ -166,12 +169,21 @@ Harbor could put an image under a tag first.
      `backend/build-logic/`, the Gradle files, settings, version catalog and wrapper, `.github/`, `scripts/`, a new
      folder. An unknown path runs all, never nothing.
 
+   A part is selected only when it is in the tree. Each part names the files it needs (`needs` in `changes.sh`):
+   `frontend/package.json`, `backend/gradlew`, `deploy/k8s/Makefile` for the chart,
+   `deploy/monitoring/helper2-rules.yaml`, `deploy/postgres/Dockerfile` with `deploy/helm/helper2/values.yaml` for
+   the Postgres tag check, `docs/diagrams/render.sh`, and the Dockerfile of each image. A change to `.github/` in a
+   tree with no `frontend/` runs no frontend job, and the pull request that adds `frontend/package.json` runs them,
+   with no change to `ci.yml`.
+
    The script has a self-test of fixed cases; the CI job `changes` runs it first.
 9. **CI per component on pull requests.** No `paths:` filter on the workflow: it always starts. The job `changes`
    diffs the pull request against its base (plain `git diff`, no third-party action) and each job runs only when its
-   part changed. A base that cannot be diffed gives everything. One job, `ci-ok`, runs always and fails when a job
-   failed or was cancelled; a skipped job is fine on a pull request. On a push (`full: true`) every job but the two
-   PR-only ones must pass. `ci-ok` is the one check to require on `main` and `release/*`. On `main` it is required
+   part changed. A base that cannot be diffed gives everything. One job, `ci-ok`, runs always and compares each
+   job with the map (`.github/scripts/ci-ok.sh`, with a self-test): a job whose part is selected must succeed, and a
+   job whose part is not selected must be skipped. So a selected job that failed, was cancelled or was skipped fails
+   the check, and so does a job the script has no rule for. On a push (`full: true`) every part in the tree is
+   selected; `postgres-tag` is selected on pull requests only. `ci-ok` is the one check to require on `main` and `release/*`. On `main` it is required
    by the ruleset "main: pull requests only", and a pull request must be up to date with `main` before it merges:
    two pull requests that are green alone can break `main` together.
 10. **CD per component.** The `image` job maps the push against the commit pushed before (`github.event.before`).
@@ -275,7 +287,9 @@ Harbor could put an image under a tag first.
 - `.github/workflows/ci.yml` (`changes`, the `if:` of each job, `monitoring` with `PROMETHEUS_IMAGE`, `ci-ok`),
   `cd.yml` (`image`, `scan`, `staging`, `manual`), `deploy.yml` (Resolve tag, verify, canary, deploy), `release.yml`
   (the prod deploy of a release, `publish` with the SBOMs), `image-scan.yml` (the weekly scan).
-- `.github/scripts/changes.sh` — the map of paths to components and its self-test.
+- `.github/scripts/changes.sh` — the map of paths to components, the files each part needs, and its self-test.
+- `.github/scripts/ci-ok.sh` — the verdict of `ci-ok`: each job against the map, and its self-test.
+- `scripts/adr-check.py` — the ADR references and the history words, and its self-test.
 - `.github/scripts/released-migrations.sh` — no released migration changes; before the first release, V1 only.
 - `.github/actions/bao-login/action.yml` — OIDC login to OpenBao.
 - `.github/actions/install-scanners/action.yml`, `grype-db/action.yml`, `upload-sarif/action.yml`,
