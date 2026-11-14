@@ -36,7 +36,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
 2. **Script.** `node scripts/eval-guide.mjs [baseUrl] [--core] [--repeat <n>] [--min-pass <share>] | [--adversarial |
    --intents]` (Node 18 or newer; default `http://localhost:8080`):
    - gets a CSRF token from `GET /api/v1/me`, then sends each query to `POST /api/v1/guide/stream` exactly as
-     written, never with a suffix, and reads the answer from its last event (`answer`, or `error` counted as a failed
+     written, never with a suffix, with the audience `path` its case names, and reads the answer from its last event (`answer`, or `error` counted as a failed
      question);
    - runs against a backend started with `H2_GUIDE_CACHE_TTL=PT1S` (staging), so every answer is a real model call
      and a rerun of the set is never served from the answer cache;
@@ -96,7 +96,8 @@ repository. Relevance needs a human judgement per result, and judging every resu
    `COURSE`), writes `docs/evaluation-intents.md` and exits with code 1 on a failure. A case answered without a
    model fails.
 5. **Graded relevance.** `docs/eval/guide-qrels.tsv` (`query_id`, `url`, `grade` 0–3, the grades of §15). The script
-   matches a pick to a judgement by the resource id of the URL, reports P@3 (share of the first three AI picks graded
+   matches a pick to a judgement by the resource id of the URL (`canonicalUrl` in `scripts/eval-lib.mjs` gives a URL
+   the identity `CanonicalUrl` gives it in the backend: a folder of a repository is its own resource), reports P@3 (share of the first three AI picks graded
    2 or 3) and nDCG@3 over the judged questions, and writes the picks no one has graded to
    `backend/eval-data/guide-pool.tsv` (git-ignored) for the next judging round. The pool also holds the candidates of
    every question with no answer (2). Graded, they show whether the guide had a good resource and did not pick it
@@ -160,14 +161,16 @@ repository. Relevance needs a human judgement per result, and judging every resu
     repo-root `.env` and runs each query once through the production `SearchResources` with every configured source,
     no cache and no catalog writes. It keeps each source's ranked list (rank, URL, canonical and repository URL,
     title, description, type, audience, tags, popularity, the fields an admin curated, tech level, licence, pricing,
-    open source), its outcome and latency, and, when vector search is on, the
+    open source), its outcome and latency, the address prefix a live source confirms (`confirmsUrlPrefix`), and, when vector search is on, the
     50 nearest catalog vectors with their distance and no cutoff. One JSON file per query in `backend/eval-data/`
     (git-ignored). A query with a file is not recorded again: the snapshot set stays frozen until its folder is
     deleted. Recording runs on the real stack: a catalog database with the index to measure, the GitHub token, the
     Tavily key and the embedding key. A new recording comes with a new baseline and a new judging pool.
 14. **Offline replay.** The evaluation runs production `ResultMerger.merge` and `Ranking.rank` on the snapshots: no
     network, same input, same order. The curated fields make the merge apply the admin's values as production does;
-    a snapshot recorded before they were kept replays without them. A variant is a different `Ranking`, a different merge, or a source left out. The ranking variants
+    a snapshot recorded before they were kept replays without them. A result only the catalog index holds, under an
+    address prefix a live source of the snapshot confirms, is left out before ranking, as `SearchResources` does; a
+    snapshot recorded without the prefixes replays with every result. A variant is a different `Ranking`, a different merge, or a source left out. The ranking variants
     (`RankingVariants`: other `RankingWeights`, or one vote for the catalog sources) are in every report with their
     ΔnDCG@10 and interval, and their top 20 are in the judging pool.
 15. **Pooled graded judgements.** `docs/eval/search-qrels.tsv` (`query_id`, `url`, `grade` 0–3: 0 not relevant,

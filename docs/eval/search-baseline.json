@@ -1,0 +1,7 @@
+{
+  "snapshots" : "48aadfd519a19487",
+  "qrels" : "66229d7c80d01e02",
+  "ndcg10" : 0.3777024266393589,
+  "tolerance" : 0.005,
+  "ranking" : "58699e4a753aac49"
+}
