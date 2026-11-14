@@ -1,3 +1,6 @@
+helper2.admin.grafana-url = ${H2_ADMIN_GRAFANA_URL:}  =>  <empty>
+helper2.admin.guide-daily-model-calls = ${H2_GUIDE_DAILY_MODEL_CALLS:600}  =>  600
+helper2.admin.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
 helper2.build.version = ${H2_BUILD_VERSION:local}  =>  local
 helper2.catalog.categories.backfill-at-startup = ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}  =>  true
 helper2.catalog.curated.enabled = ${H2_SOURCE_CURATED_ENABLED:true}  =>  true
@@ -802,6 +805,7 @@ helper2.sources.pypi.deadline = ${H2_SOURCE_PYPI_DEADLINE:}  =>  <empty>
 helper2.sources.pypi.enabled = ${H2_SOURCE_PYPI_ENABLED:false}  =>  false
 helper2.sources.pypi.timeout = 60s
 helper2.sources.pypi.token = ${H2_PYPI_BIGQUERY_KEY:}  =>  <empty>
+helper2.spa.location = classpath:/static/admin/
 helper2.test.client = h2_backoffice
 helper2.vitality.established-stars = ${H2_VITALITY_ESTABLISHED_STARS:10000}  =>  10000
 helper2.vitality.fork-min-stars = ${H2_VITALITY_FORK_MIN_STARS:10}  =>  10

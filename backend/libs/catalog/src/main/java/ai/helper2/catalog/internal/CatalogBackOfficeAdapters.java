@@ -41,6 +41,16 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcCuratedFields jdbcCuratedFields(JdbcClient jdbc) {
+    return new JdbcCuratedFields(jdbc);
+  }
+
+  @Bean
+  JdbcReviewDecisions jdbcReviewDecisions(JdbcClient jdbc) {
+    return new JdbcReviewDecisions(jdbc);
+  }
+
+  @Bean
   JdbcCatalogRetention jdbcCatalogRetention(JdbcClient jdbc, JdbcCatalogWriter writer) {
     return new JdbcCatalogRetention(jdbc, writer);
   }
@@ -48,6 +58,11 @@ public class CatalogBackOfficeAdapters {
   @Bean
   JdbcAwesomeListIndex jdbcAwesomeListIndex(JdbcClient jdbc, ObjectMapper json) {
     return new JdbcAwesomeListIndex(jdbc, json);
+  }
+
+  @Bean
+  JdbcReviewEvidence jdbcReviewEvidence(JdbcClient jdbc) {
+    return new JdbcReviewEvidence(jdbc);
   }
 
   @Bean
