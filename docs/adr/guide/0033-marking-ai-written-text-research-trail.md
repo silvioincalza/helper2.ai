@@ -71,7 +71,35 @@ another person's words.
 6. **Catalog values keep their origin.** `ResultCard.descriptionOrigin` and `Assertion.origin` say `AI_SUMMARY` or
    `AI_EXTRACTED`, and `AiSummary.model` names the model ([0014](../scout/0014-evidence-gated-enrichment.md)). The
    search's translation of a non-English query is its own field, `interpretation.translatedQuery`, AI-written by
-   contract; `interpretation.expandedTerms` holds only the terms from the fixed word list. The setup guide names its
+   contract; `interpretation.expandedTerms` holds only the terms from the fixed word list.
+7. **A search response and a resource carry the same marker.** `SearchResponse.aiContent` and
+   `ResourceDetail.aiContent` are the `AiContentMarker` of the guide answer, built from what the response holds
+   (`SearchController.aiContent`, `ResourceDetailController.aiContent`, `AiContentMarking.marker`); null when it
+   holds no such value.
+   - **A value from a model** has the origin `AI_EXTRACTED`, `AI_SUMMARY`, `AI_ESTIMATED` or `SELF_DECLARED`
+     (`ValueOrigin.isFromAModel`): a model wrote it, or read it from a page. `isAiWritten` stays the narrower rule
+     for descriptions (§5, §15).
+   - **In a search response:** `interpretation.translatedQuery` when there is a translation; a result's
+     `description` when its `descriptionOrigin` is from a model; and for an event whose `eventOrigin` is
+     `AI_EXTRACTED` the values it holds of `timeline.eventStart.value`, `timeline.eventEnd.value`, `eventKind`,
+     `eventFormat` and `location` (`CardMapper.aiWrittenFields`).
+   - **In a resource:** the same card values under `card.`; `assertions[].value` of an assertion from a model;
+     `relationships[].kind` and `relationships[].targetTitle` of a relationship from a model; and
+     `summary.claims[].text`.
+   - **The paths.** `results[].description` when every item of the array holds the value, else one path per item
+     with its index, `results[2].description` (`AiContentMarking.inEachItem`).
+   - **The models.** The fast model when there is a translation; the model of the enrichment run of each listed
+     assertion and relationship (`ResourceDetail.Assertion.model`, `Relationship.model`, read with the run in
+     `JdbcEnrichmentResults`) and of the summary. A card keeps no model for a stored description or for event days
+     a model read, so these add none and `models` can be empty.
+   - **Every field is classed, by a test.** `SearchAiFieldsTest` and `ResourceAiFieldsTest` walk the generated
+     classes the way `GuideAiFieldsTest` does: each leaf field is AI-written (`SearchController.AI_WRITTEN_FIELDS`,
+     `ResourceDetailController.AI_WRITTEN_FIELDS`) or in the test's list with its reason. The same tests give a
+     response with no value from a model no marker, and each kind of value alone its marker.
+   - **A code a model can choose is not text.** `ResultCard.type` (a model can choose the type of a repository of
+     an awesome list, [0012](../scout/0012-scout-collectors-and-events.md)) and `Assertion.field` come from closed
+     lists and are not listed.
+8. **Other answers.** The setup guide names its
    model in `ToolGuide.model`, and when it shows steps, `ToolGuide.aiContent` names the step texts that are shown
    (a step whose text the step check could not confirm shows only its source and is not named) and the code
    block's language name as AI-written; `SetupAiFieldsTest` classes every field of the setup answers the way
@@ -82,22 +110,24 @@ another person's words.
    also for an item with no run ([0038](../backoffice/0038-back-office-and-review.md) §7, §11).
 
 ### The marker in the page
-7. **An attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the model is
+9. **An attribute on every AI-written element.** `data-ai-generated="true"`, plus `data-ai-model` when the model is
    known (`frontend/src/lib/aiMark.ts`). The guide answer and the question back carry `data-ai-provider` and
-   `data-ai-models`. Marked: reasons, requirements (chips and checks), the question back and its options, comparison
-   aspects and cells, explanation sentences, the planned search query (not our "Searched the catalog for:" around it)
+   `data-ai-models`; so do, from their `aiContent` (`aiSource`), the "Also searched for" line with a translation and
+   the details of a resource page (its summary, relationships and sources: not the guide's reason or the setup
+   guide, which other models wrote), and the result list carries `data-ai-provider` when a result holds a value from a model.
+   Marked: reasons, requirements (chips and checks), the question back and its options, comparison aspects and cells, explanation sentences, the planned search query (not our "Searched the catalog for:" around it)
    and the research trail's queries, AI summaries and values extracted by AI in the result list, the preview and on
    the resource page, the search's translation of the query in "Also searched for", the instructions of the setup
    guide's steps, and in the back office the AI values of a review item's evidence and a drafted example.
-8. **The "not found" notice.** Its name and search (`GUIDE_SUBJECT_NOT_FOUND`) are the planner's, so they are their own
+10. **The "not found" notice.** Its name and search (`GUIDE_SUBJECT_NOT_FOUND`) are the planner's, so they are their own
    fields (`notices[].subject`, `notices[].query`). The page puts them in our sentence ("X was not found in our
    sources; showing tools for: Y"), each in a marked element. The page never shows the `message` of these codes, so
    an older answer from the browser cache ([0039](../frontend/0039-frontend-one-box-state-in-the-url.md)) says the sentence without the
    planner's words.
-9. **Never marked.** Quotes, titles, links and the setup guide's commands: they come from the sources. Our own labels
+11. **Never marked.** Quotes, titles, links and the setup guide's commands: they come from the sources. Our own labels
    and the subjects (the asker's own words). The setup step's code language name is marked in the API only: the page
    shows it nowhere as text, only as `data-language` on the command's block, which holds the document's own text.
-10. **A mark on screen for every marked group** (Art. 50(1)). The mark is a dot in the accent colour (`AiLabel`): a
+12. **A mark on screen for every marked group** (Art. 50(1)). The mark is a dot in the accent colour (`AiLabel`): a
     full dot ● for text a model wrote, a half dot ◐ for a value a model read from a source or from the question, a
     hollow dot ○ for a model's estimate. It is a button: pointing at it, focusing it or tapping it shows its words in
     a bubble over the page, above the mark or below it when there is no room, never cut off by its panel; screen
@@ -113,17 +143,17 @@ another person's words.
     The setup guide keeps its note "Steps written by AI" as a sentence. A key "AI marks: ● written by AI ◐ read from
     the source by AI ○ estimated by AI, can be wrong" sits in the footer of every page and on the Sources page. An AI
     mark never shows without its text: a reason the check removed shows neither.
-11. **Explained in public.** The Mission page has a section "How we mark AI text".
-12. **No hidden characters in the text.** We add no zero-width or other invisible characters.
+13. **Explained in public.** The Mission page has a section "How we mark AI text".
+14. **No hidden characters in the text.** We add no zero-width or other invisible characters.
 
 ### Crawler pages
-13. **AI text never reaches the head of a page.** The prerendered resource pages put only text people wrote in the
+15. **AI text never reaches the head of a page.** The prerendered resource pages put only text people wrote in the
     meta description, Open Graph and JSON-LD: a description whose origin is `SOURCE_PROVIDED`, `CURATED` or
     `COMMUNITY` (`PageHead.WRITTEN_BY_PEOPLE`). The facts come from the resource's own columns, not from AI
     assertions.
 
 ### The research trail
-14. **In the contract.** `GuideResponse.trail` (`GuideTrail`):
+16. **In the contract.** `GuideResponse.trail` (`GuideTrail`):
     - `queries`: the planner's search queries a search really sent, in order. At most 3, each at most 200
       characters, trimmed, without repeats, none with a link (`LinkText.containsLink`).
     - `removed`: one item per suggestion a check removed, in the order proposed: a pick, a comparison cell or an
@@ -132,7 +162,7 @@ another person's words.
 
     The trail never holds the removed AI reason or raw model output. The domain type (`ResearchTrail`) has no field
     for them.
-15. **Which queries.** A query is listed only when the planner wrote it and a search sent it:
+17. **Which queries.** A query is listed only when the planner wrote it and a search sent it:
     - the planned query (`searchQuery`), or a query cut from it (NEWEST without a subject, WHEN without a subject);
     - the planned web query, when a source that reads it (`usesWebQuery`) was asked and not skipped.
 
@@ -142,7 +172,7 @@ another person's words.
     a web query with a link, which is dropped before the sources read it. `GuideSteps.find`
     records them on the `Question` (`Question.ran`). The comparison runs its searches at the same time, so the record
     is synchronised.
-16. **Which removals, and their code.** The validator keeps each rejected suggestion that named a real candidate
+18. **Which removals, and their code.** The validator keeps each rejected suggestion that named a real candidate
     (`GuideValidator.Result.rejectedPicks`). Its rejection maps to one code (`Rejection.trailCheck`):
 
     | Rejection | Code |
@@ -165,29 +195,30 @@ another person's words.
     - A comparison row dropped for its aspect alone names no source and is not listed.
 
     `rejected` keeps counting every rejection, so it can be larger than `removed`.
-17. **Reused answers.** An answer reused from a similar question carries no `queries` (`ResearchTrail.withoutQueries`,
+19. **Reused answers.** An answer reused from a similar question carries no `queries` (`ResearchTrail.withoutQueries`,
     in `AskGuide.similarAnswer`), and its `searchQuery` is empty: the planner wrote both from another asker's words.
     The same goes for the search in a "not found" notice (`notices[].query`); its name stays, as it is part of how
     both questions were read. The copy stored under the new question's key has none of them, so a later exact hit
     shows none. The removed titles stay: they come from the sources. An exact-key hit keeps its queries: its question
     has the same normalised text.
-18. **Marking.** `trail.queries[]` is in `AI_WRITTEN_FIELDS`. On the page each query has `data-ai-generated` and
+20. **Marking.** `trail.queries[]` is in `AI_WRITTEN_FIELDS`. On the page each query has `data-ai-generated` and
     `data-ai-model` (the fast model) and the row has the "AI-written" label. `trail.removed[]` is not marked: the
     title comes from the source and the check is our own text. A removed AI reason is never shown, in the trail or
     anywhere else; only its code is.
-19. **On the page.** Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAnswer`), folded by
+21. **On the page.** Inside the folded "How the guide decided" (`GuidePicks.FullAnswer` → `GuideAnswer`), folded by
     default:
     - "Planned": "Searched for:" and one line per query, AI-marked and labelled. With no query: "No AI-written search
       terms to show". The answer's own `searchQuery` is not shown in its place.
     - "Checked": one line per removed item, "title: check". With nothing removed and nothing rejected: "None removed".
     - React renders all text as text. A title or query with HTML in it shows the HTML as characters.
-20. **Cache and privacy.** The cache `SHAPE` is `v3` and is part of the cache key, so every answer served from the
+22. **Cache and privacy.** The cache `SHAPE` is `v3` and is part of the cache key, so every answer served from the
     cache has a trail. The Privacy page says that a cached guide answer, with the search queries the guide wrote for
     it, can be shown to anyone who asks the same or a very similar question.
 
 ### Code
 
-- `api/common.yaml`, `api/public.yaml`: `AiContentMarker`, `GuideResponse.aiContent`, `GuideTrail`,
+- `api/common.yaml`, `api/public.yaml`: `AiContentMarker`, `GuideResponse.aiContent`, `SearchResponse.aiContent`,
+  `ResourceDetail.aiContent`, `GuideTrail`,
   `GuideTrailRemoved`, `QueryInterpretation.translatedQuery`, `Notice.subject` and `Notice.query`.
 - `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java`: `AI_WRITTEN_FIELDS`, the marker,
   `notices` (no `QUERY_EXPANDED`), `sourceDescription`, `trail`.
@@ -200,13 +231,19 @@ another person's words.
   `usecase/AskGuide.kt` (`answerByIntent`, `similarAnswer`).
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt`: `SHAPE`.
 - `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java`: `translatedQuery` apart from
-  the word-list terms (`AnalyzedQuery.translation`, `lexiconTerms`).
+  the word-list terms (`AnalyzedQuery.translation`, `lexiconTerms`); `aiContent`, `AI_WRITTEN_FIELDS`.
+  `CardMapper.java`: `aiWrittenFields`.
+- `backend/libs/core/src/main/java/ai/helper2/api/AiContentMarking.java`: `marker`, `inEachItem`, `POLICY`.
+- `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`: `aiContent`,
+  `AI_WRITTEN_FIELDS`. `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`: the
+  run's model of an assertion and a relationship.
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt`: `ValueOrigin.isAiWritten`, `isFromAModel`.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
-- `frontend/src/lib/aiMark.ts`: the page attributes; used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
+- `frontend/src/lib/aiMark.ts`: the page attributes (`aiMark`, `aiSource`); used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
   `GuidePicks.tsx`, `Understood.tsx`, `Results.tsx`, `ResultRow.tsx`, `Resource.tsx`, `ResultsTimeline.tsx`,
   `FieldStates.tsx`, `ResourcePage.tsx`, `SetupGuide.tsx`. `GuideAnswer.tsx` also has `PlannedQueries` and
   `RemovedList`.
-- Tests: `GuideAiFieldsTest`, `GuideDtoMapperTest`, `AskGuideTrailTest`, `AskGuideIntentsTest`, `AskGuideSimilarTest`,
+- Tests: `GuideAiFieldsTest`, `SearchAiFieldsTest`, `ResourceAiFieldsTest`, `ValueOriginTest`, `GuideDtoMapperTest`, `AskGuideTrailTest`, `AskGuideIntentsTest`, `AskGuideSimilarTest`,
   `SharedGuideAnswerStoreTest`, `GuideTrail.test.tsx`, `GuideIntents.test.tsx`.
 
 ## Alternatives considered
@@ -236,9 +273,13 @@ another person's words.
   page shows no model words that failed a check.
 - A reused answer leaks neither the other asker's queries nor their planned search query, on the page or in the API.
 - The trail adds no model call and no search. It adds two short lists to each answer and to each cached entry.
-- `SearchResponse` and `ResourceDetail` have no `AiContentMarker`. Their machine-readable mark is the per-value origin
-  (`descriptionOrigin`, `Assertion.origin`, `AiSummary.model`) and `interpretation.translatedQuery`, AI-written by
-  contract. It works, but a consumer must read the contract.
+- A client finds the AI-written values of a search response and of a resource in one place, `aiContent.fields`,
+  without knowing which origins mean a model. The per-value origins (`descriptionOrigin`, `Assertion.origin`,
+  `eventOrigin`, `AiSummary.model`) stay, and say the same.
+- A new field in `SearchResponse` or `ResourceDetail` fails `SearchAiFieldsTest` or `ResourceAiFieldsTest` until it
+  is classed.
+- Reading a resource also reads the model of the enrichment run of each assertion and relationship, in the same
+  query.
 - The streamed `planned` step carries its own `aiContent` (the fast model; `searchQuery` only when the planner wrote
   the query, else the field is empty and the question's own words are searched; `constraints[]` when it read some;
   no marker when it wrote neither),
@@ -249,7 +290,7 @@ another person's words.
 
 | Threat | Where | Mitigation |
 |---|---|---|
-| Tampering | a model writes a new field that reaches the page unmarked | `GuideAiFieldsTest` fails on an unclassed field |
+| Tampering | a model writes a new field that reaches the page unmarked | `GuideAiFieldsTest`, `SearchAiFieldsTest` and `ResourceAiFieldsTest` fail on an unclassed field |
 | Tampering | model words hidden in a field marked as ours (a translation in a notice, an AI description on a pick) | `QUERY_EXPANDED` lists word-list terms only; the mapper drops it and AI-origin descriptions |
 | Information disclosure | a reused answer shows another asker's queries | `withoutQueries`, empty `searchQuery`, no notice query |
 | Spoofing | a removed reason shown as if checked | the trail holds only a title and a code |
@@ -272,6 +313,16 @@ another person's words.
 - Does a code from a closed list that a model chose (the guide's intent, a resource type) need Art. 50 marking when
   it is shown as a label?
 - Does the privacy text cover showing a cached answer built from someone else's question?
+- Is a value a model copied from a source (event days, a self-declared fact, the translation of a query)
+  "generated" content under Art. 50(2), or inside its exception for content the system does not substantially
+  alter? We mark it anyway.
+- Is a marker whose `models` list is empty enough, or do Art. 50(2) or the Code of Practice expect the model named?
+- Is the per-value origin alone enough for the lists of recent resources and upcoming events, which carry no
+  `aiContent`?
+- `eventKind` and `eventFormat` are codes a model chose from a closed list and are listed in `aiContent`; the
+  resource type a model chose is not. Which is right?
+- A relationship a model extracted and a reviewer accepted stays marked as AI. Does a person's review change it?
+- The Mission page's "How we mark AI text" is a public statement of compliance: a lawyer reads its wording.
 - The descriptions of the curated industry events ([0012](../scout/0012-scout-collectors-and-events.md) §23) are not in
   the list of AI-written texts: a model drafts them from the organiser's page, and a person reads and approves each
   one before it is merged, so they are shown as curated. Does a sentence drafted by a model and approved by a person
@@ -286,9 +337,14 @@ another person's words.
 - Lawyer: is metadata-only marking enough for text (it is lost on copy)? A new field in the guide's or the setup
   guide's contract fails `GuideAiFieldsTest` or `SetupAiFieldsTest` until it is classed as AI-written or not; its
   `aiMark` element and label in the UI are still added by hand.
-- `SearchResponse` and `ResourceDetail` carry no `aiContent` marker: the per-value origins and `translatedQuery` mark
-  their AI text, so a client must read the contract. For API v1, the same marker as `GuideResponse` when a translation
-  or an AI value is present.
+- `aiContent.models` of a search response or a resource can be empty: a card keeps no model for a stored AI
+  description or for event days a model read. The translation is cached
+  ([0023](../search/0023-catalog-full-text-index.md)), so after a change of the fast model a cached translation is
+  named with the new model until the cache entry ends.
+- `RecentResponse` and `UpcomingEventsResponse` carry cards and no `aiContent`: the per-value `eventOrigin` and
+  `descriptionOrigin` mark their AI values, so a client must read the contract.
+- A source's own assertion for `description` is `SOURCE_PROVIDED` or `CURATED` (`GetResourceDetail.originOf`), also
+  when the description's origin is from a model. No collector writes such a description today.
 
 ## Diagrams
 
@@ -299,6 +355,5 @@ another person's words.
 
 - Features: [F4.3](https://github.com/silvioincalza/helper2.ai/issues/66) AI-written text marked (Art. 50) and research trail.
 - Open issues that change this decision:
-  - [#272](https://github.com/silvioincalza/helper2.ai/issues/272) S4.3.4 `SearchResponse` and `ResourceDetail` to carry the `aiContent` marker
   - [#273](https://github.com/silvioincalza/helper2.ai/issues/273) S4.3.5 Tracked privately (legal)
   - [#284](https://github.com/silvioincalza/helper2.ai/issues/284) S4.8.1 Each AI answer signed with its model, time and AI-written fields

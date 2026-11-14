@@ -1,6 +1,8 @@
 package ai.helper2.search.web;
 
+import ai.helper2.api.AiContentMarking;
 import ai.helper2.api.common.SearchApi;
+import ai.helper2.api.common.model.AiContentMarkerDto;
 import ai.helper2.api.common.model.AudienceDto;
 import ai.helper2.api.common.model.AudiencePathDto;
 import ai.helper2.api.common.model.CoverageDto;
@@ -21,9 +23,11 @@ import ai.helper2.api.common.model.TechLevelFilterDto;
 import ai.helper2.api.common.model.TriStateDto;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
+import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.Asker;
 import ai.helper2.search.FacetCount;
 import ai.helper2.search.Feature;
+import ai.helper2.search.MergedResult;
 import ai.helper2.search.SearchFilters;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.SearchRequest;
@@ -37,12 +41,14 @@ import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -56,13 +62,27 @@ class SearchController implements SearchApi {
   static final String COVERAGE_NOTE =
       "Results come only from the sources listed here; helper2.ai does not search the whole web.";
 
+  static final String TRANSLATED_QUERY = "interpretation.translatedQuery";
+
+  static final List<String> AI_WRITTEN_FIELDS =
+      Stream.concat(
+              Stream.of(TRANSLATED_QUERY),
+              CardMapper.AI_WRITTEN_FIELDS.stream().map(field -> "results[]." + field))
+          .toList();
+
   private final SearchResources search;
+  private final LlmSettings llm;
   private final CategoryCatalog categories;
 
   private final HttpServletRequest http;
 
-  SearchController(SearchResources search, CategoryCatalog categories, HttpServletRequest http) {
+  SearchController(
+      SearchResources search,
+      LlmSettings llm,
+      CategoryCatalog categories,
+      HttpServletRequest http) {
     this.search = search;
+    this.llm = llm;
     this.categories = categories;
     this.http = http;
   }
@@ -121,7 +141,7 @@ class SearchController implements SearchApi {
     return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
   }
 
-  private static SearchResponseDto toDto(SearchOutcome out) {
+  private SearchResponseDto toDto(SearchOutcome out) {
     SearchResponseDto dto =
         new SearchResponseDto()
             .query(out.getRequest().getText())
@@ -155,8 +175,31 @@ class SearchController implements SearchApi {
                         out.getInterpretation().getLexiconTerms(),
                         List.copyOf(out.getInterpretation().getUseCases()))
                     .translatedQuery(out.getInterpretation().getTranslation()))
-            .webSearches(CardMapper.webSearches(out.getWebSearches()));
+            .webSearches(CardMapper.webSearches(out.getWebSearches()))
+            .aiContent(
+                aiContent(
+                    out.getInterpretation().getTranslation(),
+                    out.getResults(),
+                    llm.provider(),
+                    llm.fast()));
     return dto;
+  }
+
+  static @Nullable AiContentMarkerDto aiContent(
+      @Nullable String translation,
+      List<MergedResult> results,
+      String provider,
+      String translationModel) {
+    List<String> fields = new ArrayList<>();
+    List<String> models = new ArrayList<>();
+    if (translation != null) {
+      fields.add(TRANSLATED_QUERY);
+      models.add(translationModel);
+    }
+    fields.addAll(
+        AiContentMarking.inEachItem(
+            "results", results.stream().map(CardMapper::aiWrittenFields).toList()));
+    return AiContentMarking.marker(provider, models, fields);
   }
 
   private static SourceStatusDto status(SourceStatus s) {

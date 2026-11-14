@@ -466,6 +466,19 @@ components:
         page: { type: integer }
         size: { type: integer }
         webSearches: { oneOf: [{ $ref: '#/components/schemas/WebSearches' }, { type: 'null' }] }
+        aiContent:
+          oneOf: [{ $ref: '#/components/schemas/AiContentMarker' }, { type: 'null' }]
+          description: |
+            Machine-readable mark of the AI-written values this response holds (EU AI Act Art. 50(2), ADR 0033); null
+            when it holds none. Present when at least one of these holds:
+            - `interpretation.translatedQuery` is not null (the model's translation of the query);
+            - a result has a `description` whose `descriptionOrigin` is AI_EXTRACTED, AI_SUMMARY, AI_ESTIMATED or
+              SELF_DECLARED;
+            - a result's `eventOrigin` is AI_EXTRACTED: a model read its `timeline.eventStart.value`,
+              `timeline.eventEnd.value`, `eventKind`, `eventFormat` and `location` on the event's page.
+            `fields` lists only the values present, e.g. `results[2].description`, or `results[].description` when
+            every result holds one. `models` names the translation's model; a result does not keep the model of its
+            stored values, so they add none.
 
     WebSearches:
       type: object
@@ -483,11 +496,14 @@ components:
       required: [aiGenerated, provider, models, fields, policy]
       description: |
         Machine-readable marking of AI-written text (EU AI Act Art. 50(2), ADR 0033). Present only when a model wrote
-        text in this response. `fields` lists the fields a model wrote; every other field is source text or computed.
+        text in this response, or read a value in it from a source. `fields` lists the fields a model wrote or read; every other field is source text or computed.
       properties:
         aiGenerated: { type: boolean, description: Always true. }
         provider: { type: string }
-        models: { type: array, items: { type: string } }
+        models:
+          type: array
+          description: The models that wrote the listed fields, as far as the response knows them; empty when it knows none.
+          items: { type: string }
         fields:
           type: array
           description: JSON paths of the AI-written fields, with [] for every item of an array (e.g. recommendations[].reason), or an index for one item (e.g. sections[0].steps[1].text).

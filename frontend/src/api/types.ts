@@ -19,6 +19,7 @@ export type TrailRemoved = S['GuideTrailRemoved'];
 export type SourceStatus = S['SourceStatus'];
 export type SkipReason = S['SkipReason'];
 export type SearchResponse = S['SearchResponse'];
+export type AiContentMarker = S['AiContentMarker'];
 export type RecentResponse = S['RecentResponse'];
 export type UpcomingEventsResponse = S['UpcomingEventsResponse'];
 export type Facets = S['Facets'];

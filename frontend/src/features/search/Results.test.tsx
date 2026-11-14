@@ -311,6 +311,54 @@ describe('results: one column, a row opens the resource page', () => {
     expect(text.previousElementSibling).toHaveTextContent('AI summary');
   });
 
+  it('carries the response marker into the page: the provider on the list, the model on the translation', async () => {
+    const ai = makeCard({
+      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
+      title: 'Summed Up',
+      description: 'A short summary.',
+      descriptionOrigin: 'AI_SUMMARY',
+    });
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          results: [A, ai],
+          total: 2,
+          sources: [makeStatus()],
+          interpretation: {
+            expandedTerms: [],
+            detectedUseCases: [],
+            translatedQuery: 'postgres server',
+          },
+          aiContent: {
+            aiGenerated: true,
+            provider: 'nebius',
+            models: ['nvidia/nemotron-nano'],
+            fields: ['interpretation.translatedQuery', 'results[1].description'],
+            policy: '/mission',
+          },
+        }),
+    });
+    renderApp('/search?q=server+postgres');
+    const translated = await screen.findByText('postgres server');
+    expect(translated).toHaveAttribute('data-ai-generated', 'true');
+    expect(translated).toHaveAttribute('data-ai-model', 'nvidia/nemotron-nano');
+    const also = translated.closest('[data-ai-provider]');
+    expect(also).toHaveAttribute('data-ai-provider', 'nebius');
+    expect(also).toHaveAttribute('data-ai-models', 'nvidia/nemotron-nano');
+    const list = rowOf('Summed Up').closest('[data-ai-provider]');
+    expect(list).toHaveAttribute('data-ai-provider', 'nebius');
+    expect(list).not.toHaveAttribute('data-ai-models');
+  });
+
+  it('a response with no marker puts no provider on the page', async () => {
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A], total: 1, sources: [makeStatus()] }),
+    });
+    renderApp('/search?q=postgres+mcp');
+    await screen.findByText(A.title);
+    expect(document.querySelector('[data-ai-provider]')).toBeNull();
+  });
+
   it('a pick on an AI-written description shows it labelled and marked, never as the checked quote', async () => {
     const aiB = { ...B, descriptionOrigin: 'AI_EXTRACTED' as const };
     mockApi({

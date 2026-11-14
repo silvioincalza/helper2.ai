@@ -9,7 +9,7 @@ import { Icon } from '@/ui/Icon';
 import { SetupGuidePanel } from '@/features/setup/SetupGuide';
 import { DateTimeline } from '@/features/resource/DateTimeline';
 import { ProofQuote } from '@/ui/ProofQuote';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMark, aiSource, isAiOrigin } from '@/lib/aiMark';
 import { displayHost } from '@/lib/format';
 import { CategoryLinks } from './CategoryLinks';
 import { fromResults, type CardHead, type PickForPage } from '../search/fromResults';
@@ -106,7 +106,9 @@ function ResourceBody({
         <DateTimeline timeline={card.timeline} eventOrigin={card.eventOrigin ?? null} />
       </section>
 
-      <div className="h2-res__details">{children}</div>
+      <div className="h2-res__details" {...aiSource(detail.aiContent)}>
+        {children}
+      </div>
     </>
   );
 }

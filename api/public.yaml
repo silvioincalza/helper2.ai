@@ -623,6 +623,22 @@ components:
         summary: { oneOf: [{ $ref: '#/components/schemas/AiSummary' }, { type: 'null' }] }
         sourceRecords: { type: array, items: { $ref: '#/components/schemas/SourceRecordInfo' } }
         enrichmentStatus: { type: string, enum: [NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE] }
+        aiContent:
+          oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
+          description: |
+            Machine-readable mark of the AI-written values this resource holds (EU AI Act Art. 50(2), ADR 0033); null
+            when it holds none. Present when at least one of these holds:
+            - `card.description` is not null and `card.descriptionOrigin` is AI_EXTRACTED, AI_SUMMARY, AI_ESTIMATED or
+              SELF_DECLARED;
+            - `card.eventOrigin` is AI_EXTRACTED: a model read `card.timeline.eventStart.value`,
+              `card.timeline.eventEnd.value`, `card.eventKind`, `card.eventFormat` and `card.location`;
+            - an assertion's `origin` is AI_EXTRACTED, AI_SUMMARY, AI_ESTIMATED or SELF_DECLARED (`assertions[].value`);
+            - a relationship's `origin` is AI_EXTRACTED or SELF_DECLARED (`relationships[].kind`,
+              `relationships[].targetTitle`);
+            - `summary` holds at least one claim (`summary.claims[].text`).
+            `fields` lists only the values present, with an index when not every item of an array holds one.
+            `models` names the models of the enrichment runs that wrote the listed assertions, relationships and
+            summary; the card does not keep the model of its stored values, so they add none.
 
     SetupGuide:
       type: object
