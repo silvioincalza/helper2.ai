@@ -27,7 +27,7 @@ cd backend && ./gradlew test            # unit + integration (Postgres 18, Redis
                                          # apps/public/src/test/resources/eval/categories-labelled.csv (ADR 0026); skips without rows
 ./gradlew perfTest                      # opt-in latency tests on a seeded catalog (@Tag("perf")), p50/p95/p99 in build/perf/
 ./gradlew :loadtest:gatlingRun --simulation ai.helper2.load.SearchSimulation -Dh2.load.baseUrl=https://<host>
-                                         # Gatling load test, by hand only (deploy/k8s/RUNBOOK-reset-cutover.md, "Load test");
+                                         # Gatling load test, by hand only;
                                          # test only compiles it
 # alert rules (promtool from the Prometheus release or image; CI runs the image)
 promtool check rules deploy/monitoring/helper2-rules.yaml

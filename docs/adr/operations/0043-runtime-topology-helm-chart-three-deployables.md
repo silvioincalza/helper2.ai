@@ -201,7 +201,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
     checks every 10 minutes, `H2_SCOUT_TICK`, and a restart does not add a run; each collector runs at most once a
     day) with at most 200 enrichments per run (`backoffice.scoutMaxEnrichments`); the daily enrichment cap (500) still
     applies. Staging has no backup. Its Scout is on only to fill an empty database before a first release; after
-    the tag it goes off again (`deploy/k8s/RUNBOOK-reset-cutover.md`, "After the tag").
+    the tag it goes off again.
 
 ### Code
 
@@ -213,7 +213,7 @@ The chart and the cluster:
   policies; `deploy/helm/helper2/files/redis-users.acl` — the apps' Redis users.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2BackupFailed`, `Helper2BackupStale`.
 - `deploy/k8s/Makefile` (`deploy`, `rollback`, `env-secret`, `chart-check`), `deploy/k8s/check-app-env.sh`,
-  `deploy/k8s/README.md` — deploy, rollback, backup and restore steps; `deploy/k8s/RUNBOOK-reset-cutover.md` — the cutover of a first release.
+  `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 - incalza-me-infra (outside this repo) — namespace, DNS, tunnel, ingress-nginx and the Ingresses, deployer.
 
 The images:
