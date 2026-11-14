@@ -217,6 +217,8 @@ What the import does:
   story or a task of its feature.
 - An issue is found again by the line `<!-- backlog:ID -->` at the end of its body. So a second run changes nothing,
   and an entry whose title or text changed updates its issue and never makes a second one.
+- Only an issue written by the owner, a member or a collaborator counts. The same line in an issue of anybody else is
+  ignored, and the run says so. One ID on two issues stops the run.
 - Every issue is an item of the Project. The import sets the fields Context, Priority, Release and Replay PR. Status
   is the Project's own field: the import checks that it is there and never sets it, because the Project's workflow
   closes an issue whose Status becomes Done.
@@ -245,7 +247,8 @@ python3 scripts/backlog.py roadmap
 python3 scripts/backlog.py pr-stories <pull request number>
 ```
 
-`roadmap` writes [docs/roadmap.md](roadmap.md) from the open issues; its output goes into a pull request.
+`roadmap` writes [docs/roadmap.md](roadmap.md) from the open issues that have the label story or task; its output
+goes into a pull request.
 `pr-stories` is run before a replay pull request is merged: it passes only when the pull request closes every story
 whose Replay PR field is the number in its branch name (`replay/NN-name`), and no other issue.
 
