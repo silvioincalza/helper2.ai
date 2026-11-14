@@ -18,6 +18,7 @@ import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
@@ -441,7 +442,7 @@ class CollectorsConfiguration {
             c.minStars(),
             c.perTopic(),
             c.perDay(),
-            searchScopeOfWhatIsIndexed(admission.of(CollectorDescriptors.GITHUB_TOPIC_LEADERS), c)),
+            searchScopeOfWhatIsIndexed(admission.of(CollectorIds.GITHUB_TOPIC_LEADERS), c)),
         GitHubSdkCollector.Pause.sleeping());
   }
 
@@ -465,7 +466,7 @@ class CollectorsConfiguration {
       ObservationRegistry observations,
       HttpClientProperties http,
       ReviewQueue reviewQueue) {
-    SourceSettings s = p.get(CollectorDescriptors.GITHUB_SDKS);
+    SourceSettings s = p.get(CollectorIds.GITHUB_SDKS);
     SdkSearchPlan plan =
         SdkSearchPlan.of(
             c.topics(),
@@ -523,7 +524,7 @@ class CollectorsConfiguration {
       public int roomToday() {
         return perDay
             - queue.candidatesOpenedToday(
-                ReviewQueue.Kind.RESOURCE_CANDIDATE, CollectorDescriptors.GITHUB_SDKS);
+                ReviewQueue.Kind.RESOURCE_CANDIDATE, CollectorIds.GITHUB_SDKS);
       }
     };
   }

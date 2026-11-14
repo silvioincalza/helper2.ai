@@ -1,11 +1,12 @@
 # Flowchart: where a piece of backend code goes (an app or a library), then the checks it meets: Gradle's dependency
 # direction, then the class rules ModularityTest (each app) and a library's own architecture test check on every
-# build, in the order a dependency meets them, and the module dependencies that pass them today (open modules left
-# out: everyone may use them).
+# build, in the order a dependency meets them, then the same boundaries SourceBoundariesTest reads from the source
+# files, and the module dependencies that pass them today (open modules left out: everyone may use them).
 # Source of truth: backend/settings.gradle.kts, backend/build.gradle.kts (checkNoRootSources),
 #   backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts, helper2.spring-app.gradle.kts,
 #   backend/libs/*/build.gradle.kts (web-contract included), backend/apps/{public,backoffice}/build.gradle.kts,
 #   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java,
+#   backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java,
 #   backend/libs/identity/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java,
 #   backend/libs/web-contract/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java,
 #   backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
@@ -122,4 +123,26 @@ today: "Module dependencies that pass today" {
   site -> search: "SearchPolicy, cards"
 }
 
-rules.ok -> today: "checked over every class" {class: config}
+source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so a constant the compiler\ncopies into A is seen too)" {
+  class: group
+  direction: down
+  name: "A names B" {class: end}
+  lib: "A in a library and B in a library\nnot below A's? (kernel ← platform ←\nidentity, search ← catalog ← examples,\nsearch ← sources, web-contract)" {class: decision}
+  src: "B in sources\nand A outside it?" {class: decision}
+  api: "B in another closed module, outside\nits base package and its\nnamed interfaces?" {class: decision}
+  ok: "Allowed" {class: end}
+  e_lib: "Build fails:\naLibraryContextUsesOnly\nTheContextsBelowIt" {class: fail}
+  e_src: "Build fails:\nnothingOutsideSourcesNamesIt" {class: fail}
+  e_api: "Build fails:\naModuleUsesOnlyTheApi\nOfAnotherModule" {class: fail}
+
+  name -> lib
+  lib -> e_lib: yes
+  lib -> src: no
+  src -> e_src: yes
+  src -> api: no
+  api -> e_api: yes
+  api -> ok: no {class: hot}
+}
+
+rules.ok -> source.name: "the same dependency,\nread from the source" {class: config}
+source.ok -> today: "checked over every class\nand every source file" {class: config}

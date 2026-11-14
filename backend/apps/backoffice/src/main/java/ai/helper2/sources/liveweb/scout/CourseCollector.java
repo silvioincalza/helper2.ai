@@ -6,6 +6,7 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.config.CollectorDescriptors;
@@ -28,7 +29,7 @@ import tools.jackson.databind.JsonNode;
 
 public class CourseCollector implements Collector {
 
-  static final String ID = CollectorDescriptors.COURSES;
+  static final String ID = CollectorIds.COURSES;
 
   static final String POLICY = "collector-" + ID;
 

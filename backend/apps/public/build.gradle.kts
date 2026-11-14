@@ -77,7 +77,7 @@ tasks.named<Test>("test") {
   inputs
     .files(
       rootProject.fileTree(".") {
-        include("libs/*/src/main/java/**", "libs/*/src/main/kotlin/**")
+        include("libs/*/src/*/java/**", "libs/*/src/*/kotlin/**")
         include("apps/*/src/main/java/**", "apps/*/src/main/kotlin/**")
       }
     )

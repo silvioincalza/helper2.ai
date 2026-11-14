@@ -20,6 +20,7 @@ import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryInput;
 import ai.helper2.shared.CategoryMatcher;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
@@ -55,7 +56,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 public class GitHubAwesomeCollector implements Collector {
 
-  static final String ID = CollectorDescriptors.GITHUB_AWESOME;
+  static final String ID = CollectorIds.GITHUB_AWESOME;
 
   static final String POLICY = "collector-" + ID;
 

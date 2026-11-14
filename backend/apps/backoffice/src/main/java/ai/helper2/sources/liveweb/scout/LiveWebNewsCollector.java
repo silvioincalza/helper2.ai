@@ -5,6 +5,7 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
@@ -22,7 +23,7 @@ import tools.jackson.databind.JsonNode;
 
 public class LiveWebNewsCollector implements Collector {
 
-  static final String ID = CollectorDescriptors.LIVE_WEB_SCOUT;
+  static final String ID = CollectorIds.LIVE_WEB_SCOUT;
 
   static final String POLICY = "collector-" + ID;
 
