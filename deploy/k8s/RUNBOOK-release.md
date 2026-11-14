@@ -70,15 +70,20 @@ Before every release. Nothing here changes prod.
    helm -n helper2-prod history helper2 --max 5
    ```
 
-4. **Last night's dump is there.** For a release with a migration, take one more right before the release and read
-   its log: the dump is verified before it replaces the old one.
+4. **Last night's dump is there.** For a release with a migration, take one more right before the release. Wait
+   until its Job is complete: that covers the dump, which is verified before it replaces the old one, and the
+   off-site upload after it. Then read both logs.
 
    ```bash
    kubectl -n helper2-prod get cronjob pg-backup
    kubectl -n helper2-prod create job --from=cronjob/pg-backup pg-backup-now
+   kubectl -n helper2-prod wait --for=condition=complete job/pg-backup-now --timeout=30m
    kubectl -n helper2-prod logs job/pg-backup-now -c dump
-   kubectl -n helper2-prod delete job pg-backup-now
+   kubectl -n helper2-prod logs job/pg-backup-now -c upload
    ```
+
+   When the wait fails or times out, stop: the release has no fresh dump to go back to. Read the logs, fix the
+   cause, and run the Job again under another name. The Job stays until the release is done; section 6 deletes it.
 
 5. **Read the migrations of the release.** List what changed under
    `backend/libs/schema/src/main/resources/db/migration` since the release prod runs
