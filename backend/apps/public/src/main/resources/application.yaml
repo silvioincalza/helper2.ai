@@ -5,6 +5,15 @@ spring:
 spring:
   application:
     name: helper2
+  session:
+    data:
+      redis:
+        namespace: h2:v1:session:public
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${H2_COOKIE_SECURE:true}
 management:
   metrics:
     tags:
@@ -49,6 +58,16 @@ helper2:
       network-daily-questions: ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}
       client-concurrent-questions: ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}
       budget-pace-slots: ${H2_GUIDE_BUDGET_PACE_SLOTS:12}
+  identity:
+    frontend-url: ${H2_FRONTEND_URL:/}
+    noindex: ${H2_NOINDEX:false}
+  monetisation:
+    github-sponsors-url: ${H2_SUPPORT_GITHUB_SPONSORS_URL:}
+    stripe-payment-url: ${H2_SUPPORT_STRIPE_PAYMENT_URL:}
+    ga4-measurement-id: ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}
+    ethical-ads-publisher: ${H2_ADS_ETHICALADS_PUBLISHER:}
+    adsense-client: ${H2_ADS_ADSENSE_CLIENT:}
+    adsense-slot: ${H2_ADS_ADSENSE_SLOT:}
   schema:
     logins:
       h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
@@ -78,3 +97,16 @@ helper2:
       cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
       unreadable-ttl: ${H2_SETUP_UNREADABLE_TTL:PT10M}
       step-text: ${H2_SETUP_GUIDE_STEP_TEXT:VERIFIED}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${H2_COOKIE_SECURE:false}
+helper2:
+  identity:
+    frontend-url: http://localhost:5173/
