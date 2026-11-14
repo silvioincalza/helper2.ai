@@ -1,10 +1,8 @@
 package ai.helper2.search.web;
 
 import ai.helper2.api.common.SearchApi;
-import ai.helper2.api.common.SourcesApi;
 import ai.helper2.api.common.model.AudienceDto;
 import ai.helper2.api.common.model.AudiencePathDto;
-import ai.helper2.api.common.model.CircuitStateDto;
 import ai.helper2.api.common.model.CoverageDto;
 import ai.helper2.api.common.model.FacetValueDto;
 import ai.helper2.api.common.model.FacetsDto;
@@ -16,14 +14,11 @@ import ai.helper2.api.common.model.SearchResponseDto;
 import ai.helper2.api.common.model.ServedFromDto;
 import ai.helper2.api.common.model.SkipReasonDto;
 import ai.helper2.api.common.model.SortOrderDto;
-import ai.helper2.api.common.model.SourceFamilyDto;
-import ai.helper2.api.common.model.SourceInfoDto;
 import ai.helper2.api.common.model.SourceModeDto;
 import ai.helper2.api.common.model.SourceOutcomeDto;
 import ai.helper2.api.common.model.SourceStatusDto;
 import ai.helper2.api.common.model.TechLevelFilterDto;
 import ai.helper2.api.common.model.TriStateDto;
-import ai.helper2.api.common.model.WebCreditsDto;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
 import ai.helper2.search.Asker;
@@ -33,20 +28,14 @@ import ai.helper2.search.SearchFilters;
 import ai.helper2.search.SearchOutcome;
 import ai.helper2.search.SearchRequest;
 import ai.helper2.search.SortOrder;
-import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceStatus;
-import ai.helper2.search.usecase.ListSources;
 import ai.helper2.search.usecase.SearchResources;
-import ai.helper2.search.usecase.SourceOverview;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.AudiencePath;
 import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -62,28 +51,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
-class SearchController implements SearchApi, SourcesApi {
+class SearchController implements SearchApi {
 
   static final String COVERAGE_NOTE =
       "Results come only from the sources listed here; helper2.ai does not search the whole web.";
 
   private final SearchResources search;
-  private final ListSources sources;
   private final CategoryCatalog categories;
-  private final Clock clock;
 
   private final HttpServletRequest http;
 
-  SearchController(
-      SearchResources search,
-      ListSources sources,
-      CategoryCatalog categories,
-      Clock clock,
-      HttpServletRequest http) {
+  SearchController(SearchResources search, CategoryCatalog categories, HttpServletRequest http) {
     this.search = search;
-    this.sources = sources;
     this.categories = categories;
-    this.clock = clock;
     this.http = http;
   }
 
@@ -139,54 +119,6 @@ class SearchController implements SearchApi, SourcesApi {
                 asker,
                 null));
     return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(toDto(out));
-  }
-
-  @Override
-  public ResponseEntity<List<SourceInfoDto>> listSources() {
-    Instant now = clock.instant();
-    return ResponseEntity.ok(sources.list().stream().map(o -> info(o, now)).toList());
-  }
-
-  private static SourceInfoDto info(SourceOverview o, Instant now) {
-    SourceDescriptor d = o.getDescriptor();
-    SourceInfoDto dto =
-        new SourceInfoDto(
-                d.getId(),
-                d.getName(),
-                d.getShortName(),
-                d.getExternal(),
-                SourceModeDto.fromValue(d.getMode().name()),
-                d.getEnabled(),
-                d.getMetered(),
-                d.getHomepage(),
-                d.getResourceTypes().stream()
-                    .map(t -> ResourceTypeDto.fromValue(t.name()))
-                    .sorted()
-                    .toList())
-            .termsUrl(d.getTermsUrl())
-            .attribution(d.getAttribution())
-            .family(d.getFamily() == null ? null : SourceFamilyDto.fromValue(d.getFamily()))
-            .responseTimeMs(o.getResponseTime() == null ? null : o.getResponseTime().toMillis())
-            .newThisWeek(o.getNewThisWeek());
-    if (o.getLast() != null) {
-      dto.lastOutcome(SourceOutcomeDto.fromValue(o.getLast().getOutcome().name()))
-          .lastCheckedAt(UtcTimes.odt(o.getLast().getCheckedAt()))
-          .lastCheckedSecondsAgo(secondsBetween(o.getLast().getCheckedAt(), now));
-    }
-    if (o.getCircuit() != null) {
-      dto.circuit(CircuitStateDto.fromValue(o.getCircuit().state().name()))
-          .circuitOpenedAt(UtcTimes.odt(o.getCircuit().openedAt()));
-    }
-    if (o.getWebCredits() != null) {
-      dto.webCredits(
-          new WebCreditsDto(o.getWebCredits().getUsedToday())
-              .dailyCap(o.getWebCredits().getDailyCap()));
-    }
-    return dto;
-  }
-
-  private static long secondsBetween(Instant then, Instant now) {
-    return Math.max(0, Duration.between(then, now).getSeconds());
   }
 
   private static SearchResponseDto toDto(SearchOutcome out) {

@@ -16,7 +16,7 @@
 #   BackOfficeEdge.java, backend/libs/core/src/main/java/ai/helper2/identity/config/WebSecurity.java, SameOriginWrites.java,
 #   SessionConfiguration.java, KnownAccountOnly.java, identity/internal/SignedInUser.java (CurrentUser, read only),
 #   identity/config/NoProviderTokens.java, SignInConfiguration.java,
-#   identity/web/MeController.java, AuditController.java, identity/internal/*, identity/usecase/*,
+#   identity/web/MeController.java, BookmarksController.java, PreferencesController.java, AuditController.java, identity/internal/*, identity/usecase/*,
 #   identity/schedule/AccountRetentionSchedule.java (public), AuditRetentionSchedule.java (back office),
 #   identity/Users.java, Bookmarks.java, AuditLog.java (ports), identity/config/IdentityUseCaseConfiguration.java,
 #   backend/apps/{public,backoffice}/src/main/resources/application.yaml (spring.session.data.redis.namespace), backend/libs/platform/src/main/resources/helper2-shared.yaml (oauth-github profile).
@@ -53,7 +53,7 @@ identity: "identity (Java)" {
   sec -> known
   known -> current: "id()"
   current -> ports: "Users" {class: config}
-  me: "MeController · AuditController\n(identity.web)" {class: app}
+  me: "MeController · BookmarksController\nPreferencesController · AuditController\n(identity.web)" {class: app}
   usecase: "AddBookmark · ListBookmarks\nMergeLocalBookmarks · RemoveBookmark\nDeleteMyAccount · ListAuditEntries\nPurgeInactiveAccounts (public app)\nPurgeExpiredAuditEntries (back office)\n(plain classes, wired in identity.config\nor next to their identity.schedule)" {class: app}
   ports: "Users · Bookmarks · AuditLog" {class: port}
   store: "JdbcUsers · JdbcBookmarks\nJdbcAuditLog\n(identity.internal)" {class: app}

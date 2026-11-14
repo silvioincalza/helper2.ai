@@ -178,7 +178,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
   facet), `Model.kt` (`SourceHit.categories`, `MergedResult.categories`).
 - `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
-  `CardMapper.java`; `admin/web/AdminController.java`; `guide/web/GuideStreamController.java`;
+  `CardMapper.java`; `admin/web/CategoryBackfillController.java`; `guide/web/GuideStreamController.java`;
   `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`CATEGORY` labels, `job_marker`); the `R__` seeds keep `CATEGORY` labels.
 - `frontend/src/features/search/CategoryFacet.tsx`, `FilterFacets.tsx`, `FiltersPanel.tsx`, `ActiveFilters.tsx`,

@@ -105,7 +105,7 @@ today: "Module dependencies that pass today" {
   catalog: "catalog\n(Spring services over SQL)" {class: app}
   identity: "identity" {class: app}
   search: "search\n(Kotlin rules, ports;\nSpringAiQueryTranslator\nin search.internal)" {class: port}
-  web: "search.web in libs/core\n(SearchController,\nCategoriesController, CardMapper)" {class: app}
+  web: "search.web in libs/core\n(SearchController, SourcesController,\nCategoriesController, CardMapper)" {class: app}
   site: "site (public app)\npages, policy, monetisation, csp;\nno module names it" {class: app}
 
   sources -> scout: "Collector, ports"

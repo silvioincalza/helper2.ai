@@ -180,8 +180,8 @@ reaches the cluster with an address from the platform's private ranges.
   `SessionConfiguration.java`, `NoProviderTokens.java`, `SignInConfiguration.java`, `IdentityUseCaseConfiguration.java`,
   `IdentityRetentionProperties.java` (the 730-day floor).
 - `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` — the public
-  chain, never ADMIN, `NoBackOfficeHere`; `identity/web/MeController.java` — `/api/v1/me`, bookmarks, account
-  deletion; `identity/schedule/AccountRetentionSchedule.java` — the daily account purge.
+  chain, never ADMIN, `NoBackOfficeHere`; `identity/web/MeController.java` — `/api/v1/me`, account deletion;
+  `BookmarksController.java`, `PreferencesController.java`, `RequireSignIn.java`; `identity/schedule/AccountRetentionSchedule.java` — the daily account purge.
 - `backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java`,
   `BackOfficeEdge.java` — the back office chain, ADMIN for the allow-list, `__Host-` cookies, route allow-list,
   headers; `identity/web/AuditController.java` — `/api/v1/admin/audit`;

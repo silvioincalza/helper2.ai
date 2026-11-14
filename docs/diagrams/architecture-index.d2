@@ -1,7 +1,7 @@
 # Architecture, view 4 of 6: how the index grows. Scout runs collectors, enriches with evidence, and the catalog stores and embeds.
 # All of it runs in the back office app (ADR 0043); the catalog is a library both apps use, and the embedding indexer's
 #   schedule is backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/EmbeddingIndexerSchedule.java.
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminController.java (back office),
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ScoutRunsController.java, ReviewController.java (back office),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt, scout/Scout.kt, scout/Enrichment.kt,
 #   scout/GapRound.kt (gap round ports, ADR 0014), scout/OfficialPages.kt (evidence ladder ports, ADR 0014),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java (collectors, ReadmeEvidence, LiveWebPageReader),
@@ -106,7 +106,7 @@ nebius: "Nebius Token Factory\nNemotron 3.5 Super" {class: ai}
 nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com\nnews feeds of 8 AI companies (ADR 0016)\nbigquery.googleapis.com · oauth2.googleapis.com (ADR 0017)\napi.deps.dev" {class: ext}
 
-backoffice: "admin module\nAdminController · ResolveReview · GetReviewEvidence\n(drafts read and accepted\nthrough examples)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/review-items/{id}/evidence\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\nGET, POST /admin/discovery-hosts" {class: app}
+backoffice: "admin module\nScoutRunsController · ReviewController\nResolveReview · GetReviewEvidence\n(drafts read and accepted\nthrough examples)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/review-items/{id}/evidence\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\nGET, POST /admin/discovery-hosts" {class: app}
 admin -> backoffice: "trigger run, review,\norder the enrichment queue"
 backoffice -> scout.core
 backoffice -> scout.jdbc: "enrichment queue (read)"

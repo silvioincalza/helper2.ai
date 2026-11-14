@@ -22,12 +22,16 @@ servers:
   - url: /api/v1
 tags:
   - name: search
-  - name: resources
+  - name: home-lists
+  - name: resource-detail
+  - name: issue-reports
   - name: guide-stream
   - name: setup
   - name: sources
   - name: categories
   - name: me
+  - name: preferences
+  - name: bookmarks
   - name: examples
   - name: policy
   - name: site
@@ -37,7 +41,7 @@ paths:
     $ref: './common.yaml#/paths/~1search'
   /recent:
     get:
-      tags: [resources]
+      tags: [home-lists]
       operationId: listRecent
       summary: Newest resources in the helper2.ai catalog, by the publication date their source states.
       description: |
@@ -58,7 +62,7 @@ paths:
         '429': { $ref: './common.yaml#/components/responses/Problem' }
   /events/upcoming:
     get:
-      tags: [resources]
+      tags: [home-lists]
       operationId: listUpcomingEvents
       summary: Next AI events (conferences and industry events), soonest first.
       description: |
@@ -78,7 +82,7 @@ paths:
         '400': { $ref: './common.yaml#/components/responses/Problem' }
   /resources/{id}:
     get:
-      tags: [resources]
+      tags: [resource-detail]
       operationId: getResource
       summary: Resource detail with provenance, evidence and relationships.
       parameters:
@@ -144,7 +148,7 @@ paths:
 
   /resources/{id}/reports:
     post:
-      tags: [resources]
+      tags: [issue-reports]
       operationId: reportResource
       summary: Report wrong or outdated information. Goes to the human review queue.
       parameters:
@@ -254,7 +258,7 @@ paths:
 
   /me/preferences:
     patch:
-      tags: [me]
+      tags: [preferences]
       operationId: changePreferences
       summary: Change the signed-in user's display settings. Fields left out stay as they are.
       description: Needs the X-XSRF-TOKEN header. The settings live with the account and go when it is deleted.
@@ -275,7 +279,7 @@ paths:
 
   /me/bookmarks:
     get:
-      tags: [me]
+      tags: [bookmarks]
       operationId: listBookmarks
       responses:
         '200':
@@ -285,7 +289,7 @@ paths:
               schema: { type: array, items: { $ref: '#/components/schemas/Bookmark' } }
         '401': { $ref: './common.yaml#/components/responses/Problem' }
     post:
-      tags: [me]
+      tags: [bookmarks]
       operationId: mergeLocalBookmarks
       summary: Merge the bookmarks kept in the browser into the account, right after sign-in.
       description: >-
@@ -310,7 +314,7 @@ paths:
 
   /me/bookmarks/{resourceId}:
     put:
-      tags: [me]
+      tags: [bookmarks]
       operationId: addBookmark
       summary: Save one resource. Saving it again changes nothing (the first savedAt stays).
       description: An account keeps at most 500 bookmarks; one more is refused with 400.
@@ -330,7 +334,7 @@ paths:
         '400': { $ref: './common.yaml#/components/responses/Problem' }
         '401': { $ref: './common.yaml#/components/responses/Problem' }
     delete:
-      tags: [me]
+      tags: [bookmarks]
       operationId: deleteBookmark
       parameters:
         - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }

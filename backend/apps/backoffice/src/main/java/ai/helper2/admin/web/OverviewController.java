@@ -65,7 +65,7 @@ class OverviewController implements OverviewApi {
                             .usedToday(
                                 b.usedToday() == null ? null : Math.toIntExact(b.usedToday())))
                     .toList(),
-                o.recentRuns().stream().map(AdminController::dto).toList(),
+                o.recentRuns().stream().map(ScoutRunsController::dto).toList(),
                 o.failedRunsLast24h(),
                 dto(o.homeExamples()),
                 o.overridesActive())

@@ -364,7 +364,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   (origins, evidence with its own URL, the stored type).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `GetReviewItem.java`, `ResolveReviewItem.java`;
-  `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminController.java`.
+  `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `enrichment_run` (`extra_evidence`), origins,
   relationship kind ABOUT, `job_marker`; `api/common.yaml`, `api/public.yaml` — `ValueOrigin`, `Relationship.origin`,

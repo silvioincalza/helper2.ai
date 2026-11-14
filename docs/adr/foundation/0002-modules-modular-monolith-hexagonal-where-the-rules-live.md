@@ -29,7 +29,7 @@ to reach into the other's code.
      context is a package, not a Gradle project; the rules of §8 hold its boundaries.
    - The shared web part of `core` is what both apps serve the same way: the types of `api/common.yaml`, generated
      once into `ai.helper2.api.common` ([0003](0003-contract-first-rest.md)), and the controllers of its paths
-     (`SearchController` for `/search` and `/sources`, `CategoriesController`), `CardMapper` and
+     (`SearchController`, `SourcesController`, `CategoriesController`), `CardMapper` and
      `ContractEnumConverters`. Each class is compiled once, and the `core` jar lands in both boot jars.
 
    A module goes into a library only when more than one app needs it; the rest stays in its app.
@@ -169,7 +169,7 @@ to reach into the other's code.
   `backend/libs/core/src/test/java/ai/helper2/examples/architecture/ExamplesArchitectureTest.java`,
   `backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
   context's own rules.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/` (`SearchController`, `CategoriesController`,
+- `backend/libs/core/src/main/java/ai/helper2/search/web/` (`SearchController`, `SourcesController`, `CategoriesController`,
   `CardMapper`), `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
   web adapters.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,

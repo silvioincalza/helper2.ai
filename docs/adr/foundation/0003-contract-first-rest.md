@@ -18,7 +18,11 @@ every source has a status), and these rules must be visible in one place that bo
 2. **Server side generated, the shared part once.** The Gradle task `openApiGenerate` (generator `spring`,
    `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, the same options everywhere) writes controller
    interfaces and Data Transfer Objects (DTOs, suffix `Dto`). It runs before every Java and Kotlin compile.
-   Controllers implement these interfaces (for example `MeController implements MeApi`).
+   Controllers implement these interfaces (for example `MeController implements MeApi`). A tag is one generated
+   interface, and one controller implements it and no other. A tag holds the endpoints of one feature, so two
+   features never share an interface: `/me/bookmarks` has the tag `bookmarks` and `/me/preferences` the tag
+   `preferences`, not `me`; the home lists, the resource detail and the issue reports of the catalog have a tag each
+   (`home-lists`, `resource-detail`, `issue-reports`).
    - The library `libs/core` generates `common.yaml` alone, once: interfaces in `ai.helper2.api.common`
      (`SearchApi`, `SourcesApi`, `CategoriesApi`), DTOs in `ai.helper2.api.common.model`. It also holds the
      controllers of those three paths, so both apps serve them with the same classes.
@@ -65,7 +69,7 @@ every source has a status), and these rules must be visible in one place that bo
 - `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/BundleContract.kt` — joins the files, one meaning per name; the generation file without the shared paths.
 - `backend/libs/core/build.gradle.kts` — generates `common.yaml` once.
 - `backend/libs/core/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java`, `CategoriesController.java`, `CardMapper.java` — the shared paths.
+- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java`, `SourcesController.java`, `CategoriesController.java`, `CardMapper.java` — the shared paths.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
 - `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — enum binding.
 - `backend/apps/public/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.

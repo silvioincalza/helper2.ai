@@ -146,7 +146,7 @@ and how many web credits the day has used. Two sources can describe the same res
 - `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
 - `backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
   store and quota ([0027](0027-live-web-store-first-daily-quota.md)).
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`, `GET /api/v1/sources`.
+- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`; `SourcesController.java` — `GET /api/v1/sources`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
 ## Alternatives considered
