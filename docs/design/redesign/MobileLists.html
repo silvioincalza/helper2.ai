@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile lists: alternatives</title>
+
+<style>
+@font-face{font-family:'Geist';src:url(./Geist.woff2) format('woff2');font-weight:100 900}
+@font-face{font-family:'Geist Mono';src:url(./GeistMono.woff2) format('woff2');font-weight:100 900}
+:root{--bg:#f7f2e9;--surface:#fffdf8;--ink:#1b1c3f;--muted:#5d5a72;--line:#e3d9c8;--accent:#e36a1c;--accent-ink:#a8420a;--tint:#fbeee2;--navy:#2b2d5e}
+*{box-sizing:border-box}
+body{margin:0;background:#efe7da;font-family:'Geist',system-ui,sans-serif;color:var(--ink)}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.wrap{display:flex;gap:44px;padding:40px 44px 56px;align-items:flex-start}
+.col{width:400px}
+.cap{font-family:'Geist Mono';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);font-weight:600;margin:0 0 6px}
+.cap b{color:var(--ink)}
+.desc{font-size:14px;line-height:1.45;color:var(--muted);margin:0 0 18px;min-height:82px}
+.phone{width:390px;height:844px;border:10px solid #1b1c3f;border-radius:44px;background:var(--bg);overflow:hidden;position:relative}
+.hdr{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--bg)}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:var(--ink);font-weight:700}
+.brand{font-family:'Geist Mono';font-size:17px}.brand small{display:block;font-size:9px;letter-spacing:.14em;font-weight:600}
+.menu{margin-left:auto;width:36px;height:36px;border:1px solid var(--ink);border-radius:9px;display:grid;place-items:center;font-size:18px}
+.search{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.search .in{flex:1;border:1px solid #b9ad99;border-radius:8px;padding:11px 12px;font-family:'Geist Mono';font-size:14px;color:#8a8496;background:var(--surface)}
+.search .go{background:var(--accent);border-radius:8px;padding:11px 14px;font-family:'Geist Mono';font-weight:600;font-size:14px}
+.body{padding:14px 16px}
+h2{font-family:'Geist Mono';font-size:15px;font-weight:600;margin:6px 0 10px;display:flex;align-items:baseline;gap:8px}
+h2 .n{font-weight:400;color:var(--muted);font-size:12px}
+.all{font-family:'Geist Mono';font-size:13px;color:var(--accent-ink);text-decoration:underline;display:inline-block;margin:8px 0 18px}
+.tag{font-family:'Geist Mono';font-size:11px;color:var(--accent-ink);border:1px solid #e8c7ad;background:var(--tint);border-radius:5px;padding:1px 6px}
+.date{font-family:'Geist Mono';font-size:12px;color:var(--muted)}
+/* A: plain list */
+.la{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.la li{padding:10px 0;border-bottom:1px solid var(--line)}
+.la .meta{display:flex;gap:8px;align-items:center;margin-bottom:3px}
+.la .t{font-size:15px;line-height:1.3}
+/* B: swipe cards */
+.row{display:flex;gap:10px;overflow:hidden;margin:0 -16px;padding:0 16px 4px}
+.card{flex:0 0 240px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:112px}
+.card .t{font-size:15px;line-height:1.3;margin:6px 0}
+.dots{display:flex;gap:5px;justify-content:center;margin:8px 0 2px}.dots i{width:6px;height:6px;border-radius:50%;background:#cfc3ae}.dots i.on{background:var(--ink)}
+/* C: tabs */
+.tabs{display:flex;border:1px solid var(--ink);border-radius:9px;overflow:hidden;margin:4px 0 12px}
+.tabs div{flex:1;text-align:center;padding:9px 0;font-family:'Geist Mono';font-size:13px}
+.tabs .on{background:var(--ink);color:var(--bg)}
+.tabs .c{opacity:.7;font-size:11px}
+/* D: date rail */
+.rail{position:relative;margin:0;padding:0 0 0 64px;list-style:none}
+.rail:before{content:"";position:absolute;left:52px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.rail li{position:relative;padding:6px 0 12px}
+.rail .d{position:absolute;left:-64px;top:7px;width:46px;text-align:right;font-family:'Geist Mono';font-size:12px;color:var(--muted);line-height:1.2}
+.rail .d b{display:block;color:var(--ink);font-size:15px}
+.rail li:before{content:"";position:absolute;left:-16px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.rail li.now:before{background:var(--accent)}
+.rail .t{font-size:15px;line-height:1.3}
+.rail .s{font-size:12px;color:var(--muted);font-family:'Geist Mono';margin-top:2px}
+.fade{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(transparent,var(--bg))}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="col">
+<p class="cap"><b>A</b> · Plain list</p>
+<p class="desc">Two short lists, one under the other. A row is a type tag, a date and the title. Same look as the result rows, so one component. Show all opens the full list.</p>
+<div class="phone">
+ <div class="hdr"><div class="logo">◎</div><div class="brand">helper2.ai<small>AI ON YOUR RADAR</small></div><div class="menu">☰</div></div>
+ <div class="search"><div class="in">e.g. summarise a PDF</div><div class="go">Search</div></div>
+ <div class="body">
+  <h2>New this week <span class="n">38</span></h2>
+  <ul class="la">
+   <li><div class="meta"><span class="tag">model</span><span class="date">Oct 31</span></div><div class="t">Qwen3-Coder-Next 30B</div></li>
+   <li><div class="meta"><span class="tag">mcp server</span><span class="date">Oct 31</span></div><div class="t">postgres-mcp: query your database from Claude</div></li>
+   <li><div class="meta"><span class="tag">library</span><span class="date">Oct 30</span></div><div class="t">smolagents 1.24</div></li>
+   <li><div class="meta"><span class="tag">paper</span><span class="date">Oct 30</span></div><div class="t">Long-context retrieval without re-ranking</div></li>
+  </ul>
+  <span class="all">Show all 38 →</span>
+  <h2>Coming up <span class="n">12</span></h2>
+  <ul class="la">
+   <li><div class="meta"><span class="tag">tomorrow</span><span class="date">Nov 5</span></div><div class="t">Vultr Agent Rush Hackathon</div></li>
+   <li><div class="meta"><span class="tag">in 2 days</span><span class="date">Nov 6</span></div><div class="t">AI Policy Meetup</div></li>
+  </ul>
+ </div>
+ <div class="fade"></div>
+</div>
+</div>
+
+<div class="col">
+<p class="cap"><b>B</b> · Swipe cards</p>
+<p class="desc">One row of cards per list, swiped sideways. Compact and lively, but half of each list is hidden, swiping is easy to miss, and a carousel is hard with a keyboard or screen reader.</p>
+<div class="phone">
+ <div class="hdr"><div class="logo">◎</div><div class="brand">helper2.ai<small>AI ON YOUR RADAR</small></div><div class="menu">☰</div></div>
+ <div class="search"><div class="in">e.g. summarise a PDF</div><div class="go">Search</div></div>
+ <div class="body">
+  <h2>New this week <span class="n">38</span></h2>
+  <div class="row">
+   <div class="card"><span class="tag">model</span> <span class="date">Oct 31</span><div class="t">Qwen3-Coder-Next 30B</div><span class="date">huggingface.co</span></div>
+   <div class="card"><span class="tag">mcp server</span> <span class="date">Oct 31</span><div class="t">postgres-mcp</div><span class="date">github.com</span></div>
+  </div>
+  <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+  <span class="all">Show all 38 →</span>
+  <h2>Coming up <span class="n">12</span></h2>
+  <div class="row">
+   <div class="card"><span class="tag">tomorrow</span> <span class="date">Nov 5</span><div class="t">Vultr Agent Rush Hackathon</div><span class="date">online</span></div>
+   <div class="card"><span class="tag">in 2 days</span> <span class="date">Nov 6</span><div class="t">AI Policy Meetup</div><span class="date">Zurich</span></div>
+  </div>
+  <div class="dots"><i class="on"></i><i></i><i></i></div>
+  <span class="all">Show all 12 →</span>
+ </div>
+</div>
+</div>
+
+<div class="col">
+<p class="cap"><b>C</b> · Tabs, one list at a time</p>
+<p class="desc">One switch: New this week | Coming up. Only one short list is on screen, so both fit above the fold and the search box stays the hero. The other list is one tap away.</p>
+<div class="phone">
+ <div class="hdr"><div class="logo">◎</div><div class="brand">helper2.ai<small>AI ON YOUR RADAR</small></div><div class="menu">☰</div></div>
+ <div class="search"><div class="in">e.g. summarise a PDF</div><div class="go">Search</div></div>
+ <div class="body">
+  <div class="tabs"><div class="on">New this week <span class="c">38</span></div><div>Coming up <span class="c">12</span></div></div>
+  <ul class="la">
+   <li><div class="meta"><span class="tag">model</span><span class="date">Oct 31</span></div><div class="t">Qwen3-Coder-Next 30B</div></li>
+   <li><div class="meta"><span class="tag">mcp server</span><span class="date">Oct 31</span></div><div class="t">postgres-mcp: query your database from Claude</div></li>
+   <li><div class="meta"><span class="tag">library</span><span class="date">Oct 30</span></div><div class="t">smolagents 1.24</div></li>
+   <li><div class="meta"><span class="tag">paper</span><span class="date">Oct 30</span></div><div class="t">Long-context retrieval without re-ranking</div></li>
+   <li><div class="meta"><span class="tag">agent</span><span class="date">Oct 29</span></div><div class="t">OpenHands 0.62</div></li>
+   <li><div class="meta"><span class="tag">article</span><span class="date">Oct 29</span></div><div class="t">What changed in MCP 2026-10</div></li>
+  </ul>
+  <span class="all">Show all 38 →</span>
+ </div>
+</div>
+</div>
+
+<div class="col">
+<p class="cap"><b>D</b> · Date rail</p>
+<p class="desc">A thin timeline: the date on the left, a dot per item. Reads like a calendar, best for Coming up (a filled dot = on now). For New this week it works too, but most items share the same few days.</p>
+<div class="phone">
+ <div class="hdr"><div class="logo">◎</div><div class="brand">helper2.ai<small>AI ON YOUR RADAR</small></div><div class="menu">☰</div></div>
+ <div class="search"><div class="in">e.g. summarise a PDF</div><div class="go">Search</div></div>
+ <div class="body">
+  <h2>Coming up <span class="n">12</span></h2>
+  <ul class="rail">
+   <li class="now"><div class="d"><b>4</b>Nov</div><div class="t">Agentic AI Summit</div><div class="s">on now · until Nov 8 · online</div></li>
+   <li><div class="d"><b>5</b>Nov</div><div class="t">Vultr Agent Rush Hackathon</div><div class="s">tomorrow · online</div></li>
+   <li><div class="d"><b>6</b>Nov</div><div class="t">AI Policy Meetup</div><div class="s">in 2 days · Zurich</div></li>
+   <li><div class="d"><b>6</b>Nov</div><div class="t">Smart Orchestration: Multi-Agent Systems</div><div class="s">in 2 days · webinar</div></li>
+  </ul>
+  <span class="all">Show all 12 →</span>
+  <h2>New this week <span class="n">38</span></h2>
+  <ul class="la">
+   <li><div class="meta"><span class="tag">model</span><span class="date">Oct 31</span></div><div class="t">Qwen3-Coder-Next 30B</div></li>
+   <li><div class="meta"><span class="tag">mcp server</span><span class="date">Oct 31</span></div><div class="t">postgres-mcp</div></li>
+  </ul>
+ </div>
+ <div class="fade"></div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

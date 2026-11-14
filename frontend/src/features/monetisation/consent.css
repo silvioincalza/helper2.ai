@@ -1,0 +1,36 @@
+.h2-consent-slot {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: var(--z-consent);
+}
+@media (max-height: 480px) {
+  .h2-consent-slot {
+    position: static;
+  }
+}
+.h2-consent {
+  padding: var(--space-4);
+  background: var(--surface);
+  color: var(--ink);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-bar);
+  display: grid;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+.h2-consent__title {
+  font-size: var(--text-16);
+  margin: 0;
+}
+.h2-consent__text {
+  margin: 0;
+  max-width: 60rem;
+}
+.h2-consent__actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.h2-consent__btn {
+  min-width: 9rem;
+}

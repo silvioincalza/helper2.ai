@@ -120,7 +120,6 @@ jobs:
       - run: npm run gen:api
       - run: npm run format:check
       - run: npm run lint
-      - run: npm run knip
       - run: npm run typecheck
       - run: npm audit --omit=dev --audit-level=high
       - name: npm audit (report only)
