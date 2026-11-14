@@ -19,7 +19,7 @@ of the system.
 | What is built and why | [ADRs, one per decision](docs/adr/README.md) · [architecture and diagrams](docs/architecture.md) |
 | What is still open | [the roadmap](docs/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
 | What changed | [CHANGELOG](CHANGELOG.md) |
-| Product | [user journeys](docs/user-journeys.md) · [sources](docs/sources.md) · [costs](docs/cost-analysis.md) |
+| Product | [user journeys](docs/user-journeys.md) · [sources](docs/sources.md) · [processors and transfers](docs/processors.md) · [costs](docs/cost-analysis.md) |
 | Quality | [testing](docs/testing.md) · [evaluation](docs/evaluation.md) · [AI literacy](docs/ai-literacy.md) |
 | Stack | Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin · React 19, Vite · PostgreSQL 18 (full-text + pgvector) · Redis 8 · contract-first [OpenAPI 3.1](api/public.yaml) |
 
