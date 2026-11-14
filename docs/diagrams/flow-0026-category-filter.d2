@@ -1,11 +1,11 @@
 # Flowchart: how a resource gets its categories (by code, no model), and how a search filters and counts them.
 # Source of truth: backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Categories.kt (CategoryMatcher, CategoryCatalog),
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CategoryWords.kt,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert, assignCategories),
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/BackfillCategories.java, IndexAwesomeLists.java,
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt (categoriesOf),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/Filtering.kt (the category facet),
-#   backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java (categoryFilter).
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert, assignCategories),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/BackfillCategories.java, IndexAwesomeLists.java,
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt (categoriesOf),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/Filtering.kt (the category facet),
+#   backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java (categoryFilter).
 # Render: cd docs/diagrams && ./render.sh
 
 ...@style

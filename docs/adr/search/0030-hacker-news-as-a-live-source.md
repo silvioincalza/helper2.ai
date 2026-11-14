@@ -36,10 +36,10 @@ the package catalog collector (GitHub + deps.dev, [0018](../scout/0018-ai-librar
 
 ### Code
 
-- `backend/libs/sources/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java`
-- `backend/libs/sources/src/main/java/ai/helper2/sources/support/HttpClients.java` (`fetchSize`, `firstHits`, `plainWords`)
-- `backend/libs/sources/src/main/java/ai/helper2/sources/support/Classification.java` (`AI_TERMS`)
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java`
+- `backend/libs/core/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java`
+- `backend/libs/core/src/main/java/ai/helper2/sources/support/HttpClients.java` (`fetchSize`, `firstHits`, `plainWords`)
+- `backend/libs/core/src/main/java/ai/helper2/sources/support/Classification.java` (`AI_TERMS`)
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java`
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` (settings, resilience instances)
 - Tests: `HackerNewsSourceTest`, `HackerNewsSourceLiveTest`
 

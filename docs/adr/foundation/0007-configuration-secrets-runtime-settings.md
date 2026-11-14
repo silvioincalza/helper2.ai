@@ -191,11 +191,11 @@ Runtime settings:
   `ResetRuntimeSetting.java`; `admin/web/RuntimeSettingsController.java`; `admin/config/AdminUseCaseConfiguration.java`,
   `SettingsReloadAfterCommit.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `BudgetLedger.java`,
-  `CallCounter.java` (limits by supplier); `backend/libs/search/src/main/kotlin/ai/helper2/search/WebSearch.kt`
+  `CallCounter.java` (limits by supplier); `backend/libs/core/src/main/kotlin/ai/helper2/search/WebSearch.kt`
   (`WebSearchQuota`), `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt`.
 - Declarations: `backend/apps/public/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java`,
-  `backend/libs/search/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
-  `backend/libs/search/src/main/java/ai/helper2/search/config/SearchConfiguration.java`,
+  `backend/libs/core/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
+  `backend/libs/core/src/main/java/ai/helper2/search/config/SearchConfiguration.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/AuditTrail.java`, `identity/AuditLog.java` (before, after,
   reason).

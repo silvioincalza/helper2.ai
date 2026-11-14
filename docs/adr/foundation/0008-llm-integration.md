@@ -105,7 +105,7 @@ Without a configured model the application must still work.
 - `backend/apps/public/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
   `guide/verify-reasons.txt`, `setup/tool-guide.txt`, `setup/verify-steps.txt`; `backend/apps/backoffice/src/main/resources/prompts/` —
   `scout/enrich.txt`, `sources/classify-repos.txt`, `sources/read-event.txt`;
-  `backend/libs/search/src/main/resources/prompts/search/translate-query.txt`.
+  `backend/libs/core/src/main/resources/prompts/search/translate-query.txt`.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` — profile `llm-nebius`, timeout, retries, budgets.
 - `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`, `search/internal/SpringAiQueryTranslator.java`,
   `setup/internal/SpringAiToolGuideModel.java`, `scout/internal/SpringAiEnrichmentModel.java`,

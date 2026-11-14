@@ -2,14 +2,14 @@
 # becomes ADMIN (only on the back office) and keeps no GitHub token, where bookmarks are kept, how an account is deleted, and how the admin audit trail is kept.
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java (NoBackOfficeHere),
 #   backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java, BackOfficeEdge.java,
-#   backend/libs/identity/src/main/java/ai/helper2/identity/config/WebSecurity.java (roles, header-only CSRF), SameOriginWrites.java,
+#   backend/libs/core/src/main/java/ai/helper2/identity/config/WebSecurity.java (roles, header-only CSRF), SameOriginWrites.java,
 #   identity/config/NoProviderTokens.java, SignInConfiguration.java (no token kept), identity/CurrentUser.java, identity/internal/SignedInUser.java,
 #   identity/config/KnownAccountOnly.java, identity/SignInAgain.java (a session without an account),
 #   identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports), identity/internal/Jdbc*.java,
 #   backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java, identity/schedule/AccountRetentionSchedule.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java,
 #   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (admin_audit triggers, grants),
-#   backend/libs/identity/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me),
+#   backend/libs/core/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me),
 #   frontend/src/context/BookmarksContext.tsx, frontend/src/features/account/AccountPage.tsx, frontend/src/admin/,
 #   deploy/helm/helper2/templates/backoffice.yaml (Service helper2-admin), networkpolicy.yaml,
 #   the platform repo (Ingresses, allow-list), outside this repo.

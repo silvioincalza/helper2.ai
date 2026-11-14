@@ -133,7 +133,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 ### Code
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`
   (`known_target`, `known_target_name`, the 31 vendors, `relationship.target_kind`)
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/KnownTarget.java` (`key`, `KEY_OF_TITLE_SQL`),
+- `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTarget.java` (`key`, `KEY_OF_TITLE_SQL`),
   `KnownTargets.java`, `catalog/internal/JdbcKnownTargets.java` (`named`)
 - `catalog/internal/JdbcRelationshipTargets.java` (`confirmOpenKnownTargetCandidates`),
   `catalog/usecase/LinkKnownRelationshipTargets.java`, `catalog/internal/JdbcEnrichmentResults.java`
@@ -143,7 +143,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 
 - `V1__schema.sql` (`known_target.added_by`, `added_at`, `known_target_name.name`, three audit
   actions)
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/KnownTargetList.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetList.java`,
   `catalog/internal/JdbcKnownTargetList.java` (`release`, `setKind`), `catalog/usecase/ManageKnownTargets.java`
 - `catalog/internal/KnownTargetLock.java`, `catalog/internal/JdbcEnrichmentResults.java` (`knownNow`, `asKnownNow`),
   `catalog/internal/JdbcRelationshipTargets.java` (`confirmOpenKnownTargetCandidates` takes the lock)
@@ -154,7 +154,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 
 - `V1__schema.sql` (`known_target.origin`, `KNOWN_TARGET_CANDIDATE` in `review_item.kind` and
   `candidate_decision.kind`, `review_item_known_target_idx`)
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java`,
   `catalog/internal/JdbcKnownTargetCandidates.java` (`proposeOwners`, `of`), `catalog/usecase/ProposeKnownTargets.java`,
   `catalog/usecase/ManageKnownTargets.java` (`addDiscovered`), `catalog/internal/JdbcReviewDecisions.java`
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (`proposeKnownTargetsQuietly`),

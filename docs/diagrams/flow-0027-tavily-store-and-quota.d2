@@ -3,10 +3,10 @@
 # (the credits of the day, capped only when set) and gives it back when the source-live-web policy refuses the call;
 # a web search with no live answer (failed, timed out, refused) gives the asker's own web search back;
 # a live answer replaces the stored set.
-# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.start, Run.quotaAllows, Run.settleWebSearches, Run.save, stale),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota, refund, giveBack, answered, creditsToday),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt (webCredits),
-#   backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, catalog/internal/CatalogResultObserver.java (recordedHits),
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.start, Run.quotaAllows, Run.settleWebSearches, Run.save, stale),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota, refund, giveBack, answered, creditsToday),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt (webCredits),
+#   backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, catalog/internal/CatalogResultObserver.java (recordedHits),
 #   backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java, QuotaKeys.java,
 #   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (find, forAsker), guide/GuideCost.kt (GuideAnswerCache.ttlOf).
 # Render: cd docs/diagrams && d2 fmt flow-0027-tavily-store-and-quota.d2 && d2 flow-0027-tavily-store-and-quota.d2 flow-0027-tavily-store-and-quota.svg

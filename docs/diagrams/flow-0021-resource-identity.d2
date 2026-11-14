@@ -1,8 +1,8 @@
 # Flowchart: how one hit gets the id of its resource (ADR 0021).
 # Source of truth: backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt (of, github),
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/ResourceId.kt (of),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt (joiningRepositories, group, identity),
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsertResources, upsertRecords).
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt (joiningRepositories, group, identity),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsertResources, upsertRecords).
 # Render: cd docs/diagrams && d2 fmt flow-0021-resource-identity.d2 && d2 flow-0021-resource-identity.d2 flow-0021-resource-identity.svg
 
 ...@style

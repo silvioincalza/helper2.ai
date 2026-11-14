@@ -477,11 +477,11 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
 - `backend/apps/public/src/main/resources/prompts/guide/plan.txt`, `choose.txt`, `compare.txt`, `explain.txt`,
   `verify-reasons.txt`, `security.txt`.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` —
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` —
   window filter, `SourceQuery.publishedAfter`, `browse`, cache key.
-- `backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
+- `backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
   `sources/npm/NpmSource.java`; `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/CourseCollector.java`;
-  `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — date pushdown, npm dates,
+  `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — date pushdown, npm dates,
   courses.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`COURSE`, `COURSE_CANDIDATE`,
   `review_item.candidate_url`), `R__courses.sql`.

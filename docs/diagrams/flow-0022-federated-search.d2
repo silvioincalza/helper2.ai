@@ -3,12 +3,12 @@
 # policy source-<id> (circuit breaker and bulkhead, no retry), the per-source deadline counted from the source's own
 # start, and the notices. A metered source (Tavily) reads its stored result set instead of Redis and calls live only
 # inside the daily quota: its own flow is flow-0027-tavily-store-and-quota. Below: what GET /api/v1/sources shows of each source.
-# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search), SourceFanOut.kt (Run.start, Run.collect, stale),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search), SourceFanOut.kt (Run.start, Run.collect, stale),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
-#   backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (countsSince),
+#   backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (countsSince),
 #   catalog/internal/JdbcResources.java (discoveredSince, discoveredInIndexSince).
 # Render: cd docs/diagrams && d2 fmt flow-0022-federated-search.d2 && d2 flow-0022-federated-search.d2 flow-0022-federated-search.svg
 

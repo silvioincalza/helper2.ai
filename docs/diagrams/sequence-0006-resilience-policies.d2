@@ -3,7 +3,7 @@
 # llm-chat-guide while the provider is down. The redis circuit is in sequence-0005-redis-disposable-cache.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java, support/TransientSourceFailure.java,
 #   HttpClients.java, backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*),
 #   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call), guide/steps/QuestionReader.kt.
 # Render: cd docs/diagrams && d2 fmt sequence-0006-resilience-policies.d2 && d2 sequence-0006-resilience-policies.d2 sequence-0006-resilience-policies.svg
 

@@ -199,7 +199,7 @@ another person's words.
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`;
   `usecase/AskGuide.kt` (`answerByIntent`, `similarAnswer`).
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt`: `SHAPE`.
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java`: `translatedQuery` apart from
+- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java`: `translatedQuery` apart from
   the word-list terms (`AnalyzedQuery.translation`, `lexiconTerms`).
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
 - `frontend/src/lib/aiMark.ts`: the page attributes; used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,

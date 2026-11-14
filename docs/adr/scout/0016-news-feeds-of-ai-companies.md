@@ -63,12 +63,12 @@ Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/NewsFeedCollectorRegistrar.java`,
   `CollectorsConfiguration.java`
 - `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java` (`NewsFeeds`)
-- `backend/libs/sources/src/main/java/ai/helper2/sources/config/FeedProperties.java`, `CollectorDescriptors.java`
+- `backend/libs/core/src/main/java/ai/helper2/sources/config/FeedProperties.java`, `CollectorDescriptors.java`
   (`newsFeed`), `CollectorProperties.java` (`NewsFeeds`)
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/NewsFeeds.kt`
 - `backend/libs/platform/src/main/java/ai/helper2/platform/http/XmlConverters.java`, `NoXmlConvertersConfiguration.java`,
   `ObservedHttp.java`
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogRetention.java`
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogRetention.java`
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` (feeds, settings, resilience instances)
 - Tests: `FeedReaderTest`, `NewsFeedCollectorTest`, `NewsFeedCollectorRegistrarTest`, `NoXmlConvertersTest`,
   `CatalogPurgeExpiredDataIT`, `ResiliencePoliciesConfigIT`

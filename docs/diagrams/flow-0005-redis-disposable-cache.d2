@@ -1,7 +1,7 @@
 # Flowchart: how one LIVE source is answered with the Redis cache: the redis circuit, fresh window,
 # live call under the source's policy, stale window and the CACHE_UNAVAILABLE notice.
-# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.start, Run.collect,
-#   stale, cachedLookup), SourceCacheKeys.kt (cacheKey), SearchNotices.kt (cacheUnavailableNotice), backend/libs/search/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.start, Run.collect,
+#   stale, cachedLookup), SourceCacheKeys.kt (cacheKey), SearchNotices.kt (cacheUnavailableNotice), backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml (resilience4j.* policies redis and source-<id>,
 #   helper2.search.stale-for = H2_SEARCH_STALE_FOR, helper2.sources.*.cache-ttl).

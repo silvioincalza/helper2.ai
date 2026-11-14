@@ -215,21 +215,21 @@ The schema is one file, and from the first release tag on that file must never c
 
 ### Code
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `Resources.java`, `ReviewQueue.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `Resources.java`, `ReviewQueue.java`,
   `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps), `CatalogBackOfficeConfiguration.java` and
   `catalog/internal/CatalogBackOfficeAdapters.java` (the back office only).
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` — upserts, origin rank, labels, moved
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` — upserts, origin rank, labels, moved
   reports, orphan deletion.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/Reconciliation.java`, `ProjectedReconciliation.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/Reconciliation.java`, `ProjectedReconciliation.java`,
   `SqlReconciliation.java`, `CatalogConfiguration.java` (`reconciliation`) — the reconciled facts of the row, and the
   temporary switch between the two paths (`CatalogProperties.reconcileByProjection`).
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcCatalogWriter.java` (`report`),
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcCatalogWriter.java` (`report`),
   `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment results, user reports, the review
   queue and its decisions, job markers.
-- `backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema, app roles and seeds.
 - `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `AppLogins.java`, `SchemaCheck.java` —
   the migrate step, the logins, the apps' schema check.
@@ -244,9 +244,9 @@ The schema is one file, and from the first release tag on that file must never c
   `JdbcCatalogWriterWithSqlReconciliationIT.java`, `ProjectedReconciliationIT.java`;
   `backend/apps/backoffice/src/test/java/ai/helper2/catalog/internal/ForgettingWhileWritingIT.java` — the writer on
   both paths, concurrent writes, the rollback.
-- `backend/libs/catalog/src/main/java/ai/helper2/catalog/ResourceCards.java`, `RecordRow.java` — the card of the
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ResourceCards.java`, `RecordRow.java` — the card of the
   resource page; the records that count for its type, licence, pricing and open-source flag
-  (`backend/libs/catalog/src/test/java/ai/helper2/catalog/ResourceCardsTest.java`).
+  (`backend/libs/core/src/test/java/ai/helper2/catalog/ResourceCardsTest.java`).
 - `backend/libs/platform/src/testFixtures/java/ai/helper2/TestcontainersConfiguration.java` — the shared containers,
   the locale, the logins.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,

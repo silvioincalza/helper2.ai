@@ -1,12 +1,12 @@
 # Sequence: one indexer tick under the cluster lock embedding-indexer, then one search through the semantic source.
 # Shows the calls to the NVIDIA API catalog (passage vs query), the pgvector writes and the HNSW query.
-# Source of truth: backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java, NvidiaEmbedder.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (IndexerSchedule),
+# Source of truth: backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java, NvidiaEmbedder.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (IndexerSchedule),
 #   backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcEmbeddingStore.java, JdbcCatalogSearch.java,
-#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java, QueryVectorCache.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEmbeddingStore.java, JdbcCatalogSearch.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java, QueryVectorCache.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java,
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, Ranking.kt.
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, Ranking.kt.
 # Render: cd docs/diagrams && d2 fmt sequence-0024-vector-search-pgvector.d2 && d2 sequence-0024-vector-search-pgvector.d2 sequence-0024-vector-search-pgvector.svg
 
 ...@style

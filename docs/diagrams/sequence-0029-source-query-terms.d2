@@ -1,9 +1,9 @@
 # Sequence: one search, the words each source gets, and the Hugging Face task call (ADR 0029).
-# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (sourceQuery, searchTermsOf),
-#   backend/libs/search/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt,
-#   backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubSource.java,
-#   backend/libs/sources/src/main/java/ai/helper2/sources/huggingface/HuggingFaceModelsSource.java, HubTasks.java,
-#   backend/libs/sources/src/main/java/ai/helper2/sources/tavily/TavilySource.java.
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (sourceQuery, searchTermsOf),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt,
+#   backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubSource.java,
+#   backend/libs/core/src/main/java/ai/helper2/sources/huggingface/HuggingFaceModelsSource.java, HubTasks.java,
+#   backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0029-source-query-terms.d2 && d2 sequence-0029-source-query-terms.d2 sequence-0029-source-query-terms.svg
 
 ...@style
