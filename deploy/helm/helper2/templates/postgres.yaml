@@ -1,0 +1,64 @@
+{{- if not .Values.canary.only }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, runAsUser: 70, runAsGroup: 70, fsGroup: 70, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: postgres
+          image: {{ include "helper2.postgresImage" . }}
+          args: ["postgres", "-c", "max_connections={{ .Values.postgres.maxConnections }}"]
+          env:
+            - { name: POSTGRES_DB, value: helper2 }
+            - { name: POSTGRES_USER, value: helper2 }
+            - { name: POSTGRES_INITDB_ARGS, value: "--encoding=UTF8 --locale=en_US.utf8" }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PASSWORD } }
+          ports: [{ containerPort: 5432, name: pg }]
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
+            periodSeconds: 5
+          startupProbe:
+            exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
+            periodSeconds: 5
+            failureThreshold: 120
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "helper2", "-d", "helper2"] }
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: data, mountPath: /var/lib/postgresql }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.postgres.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.postgres.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432, targetPort: pg }]
+{{- end }}

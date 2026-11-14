@@ -1,0 +1,40 @@
+name: grype-db
+description: Restore the latest Grype database, cached per database build, or download it and cache it
+inputs:
+  cache:
+    description: use the cache (false = always a fresh download)
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - id: latest
+      shell: bash
+      run: |
+        set -euo pipefail
+        listing() { grype db list -o json | jq -er '.[0].checksum | sub("^sha256:"; "")'; }
+        checksum=$(listing) || { echo "Grype database listing failed, retrying in 30 s"; sleep 30; checksum=$(listing); }
+        echo "key=grype-db-$checksum" >> "$GITHUB_OUTPUT"
+    - id: cache
+      if: inputs.cache == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: ~/.cache/grype/db
+        key: ${{ steps.latest.outputs.key }}
+    - if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        grype db update || { echo "Grype database download failed, retrying in 30 s"; sleep 30; grype db update; }
+    - if: inputs.cache == 'true' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: ~/.cache/grype/db
+        key: ${{ steps.latest.outputs.key }}
+    - shell: bash
+      env:
+        HIT: ${{ steps.cache.outputs.cache-hit == 'true' }}
+      run: |
+        set -euo pipefail
+        grype db status
+        echo "GRYPE_DB_AUTO_UPDATE=false" >> "$GITHUB_ENV"
+        echo "grype database: $([[ $HIT == true ]] && echo cached || echo downloaded)"

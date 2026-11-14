@@ -1,0 +1,45 @@
+image:
+  repository: harbor-i.infra.incalza.me/helper2/apps/helper2
+postgres:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/postgres
+  storageClassName: local-path
+redis:
+  storageClassName: local-path
+networkPolicy:
+  ingressController:
+    namespace: ingress-nginx
+    podLabels: { app.kubernetes.io/name: ingress-nginx }
+  metricsNamespace: observability
+  egress:
+    otlp:
+      namespace: observability
+app:
+  springProfiles: llm-nebius,oauth-github
+  tracing:
+    export: true
+    endpoint: http://alloy.observability.svc:4318/v1/traces
+  environment: staging
+  noindex: true
+  replicas: 1
+  dailyLimits:
+    webSearches:
+      search: 1000
+      guide: 1000
+    guideQuestions: 1000
+    webSearchCredits: "180"
+    guideModelCalls: 600
+    guideBudgetPaceSlots: 1
+    guideNetworkQuestions: 1000
+  guideCacheTtl: PT1S
+web:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/helper2-web
+  replicas: 1
+backoffice:
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
+  adminBaseUrl: https://helper2-admin.incalza.me
+  scoutEnabled: true
+canary:
+  host: helper2.incalza.me

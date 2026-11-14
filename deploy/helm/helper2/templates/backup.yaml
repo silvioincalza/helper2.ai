@@ -1,0 +1,115 @@
+{{- if not .Values.canary.only }}
+{{- if .Values.backup.enabled }}
+{{- $offsite := .Values.backup.offsite }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pg-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.backup.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources: { requests: { storage: {{ .Values.backup.storage }} } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  timeZone: {{ .Values.backup.timeZone }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata: { labels: { app: pg-backup } }
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: helper2
+          automountServiceAccountToken: false
+          securityContext: { runAsNonRoot: true, runAsUser: 70, runAsGroup: 70, fsGroup: 70, seccompProfile: { type: RuntimeDefault } }
+          {{- if $offsite.enabled }}
+          initContainers:
+          {{- else }}
+          containers:
+          {{- end }}
+            - name: dump
+              image: {{ include "helper2.postgresImage" . }}
+              env:
+                - { name: PGHOST, value: postgres }
+                - { name: PGUSER, value: helper2 }
+                - { name: PGDATABASE, value: helper2 }
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PASSWORD } }
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  set -o pipefail
+                  f=/backup/helper2-$(date +%Y-%m-%d).sql.gz
+                  trap 'rm -f "$f.tmp"' EXIT
+                  pg_dump --no-owner | gzip > "$f.tmp"
+                  gzip -t "$f.tmp"
+                  [ "$(wc -c < "$f.tmp")" -gt 1024 ]
+                  mv "$f.tmp" "$f"
+                  find /backup -name 'helper2-*.sql.gz' -mtime +{{ .Values.backup.retentionDays }} -delete
+                  ls -l /backup
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts: [{ name: backup, mountPath: /backup }]
+          {{- if $offsite.enabled }}
+          containers:
+            - name: upload
+              image: {{ $offsite.image }}
+              env:
+                - { name: HOME, value: /tmp }
+                - { name: RCLONE_CONFIG_OFFSITE_TYPE, value: s3 }
+                - { name: RCLONE_CONFIG_OFFSITE_PROVIDER, value: Cloudflare }
+                - { name: RCLONE_CONFIG_OFFSITE_NO_CHECK_BUCKET, value: "true" }
+                - name: RCLONE_CONFIG_OFFSITE_ENDPOINT
+                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: endpoint } }
+                - name: RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID
+                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: access_key_id } }
+                - name: RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY
+                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: secret_access_key } }
+                - name: OFFSITE_BUCKET
+                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: bucket } }
+                - name: CRYPT_PASSWORD
+                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: crypt_password } }
+                - { name: RCLONE_CONFIG_SEALED_TYPE, value: crypt }
+                - { name: RCLONE_CONFIG_SEALED_REMOTE, value: "offsite:$(OFFSITE_BUCKET)/{{ $offsite.prefix }}" }
+                - { name: RCLONE_CONFIG_SEALED_FILENAME_ENCRYPTION, value: "off" }
+                - { name: RCLONE_CONFIG_SEALED_DIRECTORY_NAME_ENCRYPTION, value: "false" }
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  RCLONE_CONFIG_SEALED_PASSWORD=$(printf %s "$CRYPT_PASSWORD" | rclone obscure -)
+                  export RCLONE_CONFIG_SEALED_PASSWORD
+                  exec rclone copy /backup sealed: --include='helper2-*.sql.gz' --max-age={{ $offsite.maxAge }} --verbose
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts: [{ name: backup, mountPath: /backup, readOnly: true }, { name: tmp, mountPath: /tmp }]
+          {{- end }}
+          volumes:
+            - { name: backup, persistentVolumeClaim: { claimName: pg-backup } }
+            {{- if $offsite.enabled }}
+            - { name: tmp, emptyDir: {} }
+            {{- end }}
+{{- end }}
+{{- end }}

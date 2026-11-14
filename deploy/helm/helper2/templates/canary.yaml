@@ -1,0 +1,136 @@
+{{- if .Values.canary.only }}
+{{- $canary := .Values.canary }}
+{{- $token := required "canary.token is required: the value of the canary header, new for every canary" $canary.token }}
+{{- if not (regexMatch "^[0-9a-f]{32,}$" $token) }}{{ fail "canary.token must be at least 32 hex characters" }}{{ end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: helper2-canary
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-by-header: {{ required "canary.header" $canary.header | quote }}
+    nginx.ingress.kubernetes.io/canary-by-header-value: {{ $token | quote }}
+spec:
+  ingressClassName: {{ required "canary.ingressClassName" $canary.ingressClassName }}
+  rules:
+    - host: {{ required "canary.host is required: the public host whose Ingress the canary shares" $canary.host }}
+      http:
+        paths:
+          {{- range $canary.webPaths }}
+          - { path: {{ .path }}, pathType: {{ .pathType }}, backend: { service: { name: {{ include "helper2.webName" $ }}, port: { number: 80 } } } }
+          {{- end }}
+          - { path: /, pathType: Prefix, backend: { service: { name: {{ include "helper2.appName" . }}, port: { number: 80 } } } }
+{{- with .Values.networkPolicy }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: canary-ingress-app
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: {{ include "helper2.appName" $ }} } }
+  policyTypes: [Ingress]
+  {{- if or .ingressController.namespace .metricsNamespace }}
+  ingress:
+    {{- with .ingressController.namespace }}
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } }
+          {{- with $.Values.networkPolicy.ingressController.podLabels }}
+          podSelector: { matchLabels: {{ toJson . }} }
+          {{- end }}
+      ports: [{ port: 8080, protocol: TCP }]
+    {{- end }}
+    {{- with .metricsNamespace }}
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]
+      ports: [{ port: 8081, protocol: TCP }]
+    {{- end }}
+  {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: canary-ingress-web
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: {{ include "helper2.webName" $ }} } }
+  policyTypes: [Ingress]
+  {{- with .ingressController }}
+  {{- if .namespace }}
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .namespace }} } }
+          {{- with .podLabels }}
+          podSelector: { matchLabels: {{ toJson . }} }
+          {{- end }}
+      ports: [{ port: 8080, protocol: TCP }]
+  {{- end }}
+  {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: canary-ingress-postgres
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: postgres } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: {{ include "helper2.appName" $ }} } } }]
+      ports: [{ port: 5432, protocol: TCP }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: canary-ingress-redis
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: redis } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: {{ include "helper2.appName" $ }} } } }]
+      ports: [{ port: 6379, protocol: TCP }]
+{{- with .egress }}
+{{- if .enabled }}
+{{- $dns := dict "to" (list (dict "namespaceSelector" (dict "matchLabels" (dict "kubernetes.io/metadata.name" .dns.namespace)) "podSelector" (dict "matchLabels" .dns.podLabels))) "ports" (list (dict "port" 53 "protocol" "UDP") (dict "port" 53 "protocol" "TCP")) }}
+{{- $internet := dict "ipBlock" (dict "cidr" .external.cidr "except" .external.except) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: canary-egress-app
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: {{ include "helper2.appName" $ }} } }
+  policyTypes: [Egress]
+  egress:
+    - {{ toJson $dns }}
+    - to: [{ podSelector: { matchLabels: { app: postgres } } }]
+      ports: [{ port: 5432, protocol: TCP }]
+    - to: [{ podSelector: { matchLabels: { app: redis } } }]
+      ports: [{ port: 6379, protocol: TCP }]
+    {{- if .otlp.namespace }}
+    - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .otlp.namespace }} } } }]
+      ports: [{ port: {{ .otlp.port }}, protocol: TCP }]
+    {{- end }}
+    - to: [{{ toJson $internet }}]
+      ports:
+        {{- range .external.appPorts }}
+        - { port: {{ . }}, protocol: TCP }
+        {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

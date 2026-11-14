@@ -1,0 +1,98 @@
+{{- if not .Values.canary.only }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  serviceName: redis
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata:
+      labels: { app: redis }
+      {{- if .Values.redis.auth.enabled }}
+      annotations:
+        {{- if .Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" . }}
+        {{- else if .Values.envSecret.redisPasswordRevision }}
+        checksum/auth: {{ .Values.envSecret.redisPasswordRevision | quote }}
+        {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      securityContext: { runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, fsGroup: 999, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              {{- if .Values.redis.auth.enabled }}
+              for v in "$REDISCLI_AUTH"
+              {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}
+              {{- $line = trim $line }}
+              {{- if and $line (not (hasPrefix "#" $line)) }} "${{ include "helper2.redisUserPasswordKey" (first (splitList " " $line)) }}"{{ end }}
+              {{- end }}; do
+                case $v in ''|*[!A-Za-z0-9]*) echo "a Redis password is empty or has characters other than letters and digits" >&2; exit 1;; esac
+              done
+              {{- end }}
+              exec redis-server - --dir /data --save "" --appendonly yes --appendfsync everysec --maxmemory {{ .Values.redis.maxMemory }} --maxmemory-policy allkeys-lru <<EOF
+              {{- if .Values.redis.auth.enabled }}
+              requirepass $REDISCLI_AUTH
+              {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}
+              {{- $line = trim $line }}
+              {{- if and $line (not (hasPrefix "#" $line)) }}
+              {{- $user := splitn " " 2 $line }}
+              user {{ $user._0 }} on >${{ include "helper2.redisUserPasswordKey" $user._0 }} {{ $user._1 }}
+              {{- end }}
+              {{- end }}
+              {{- end }}
+              EOF
+          {{- if .Values.redis.auth.enabled }}
+          env:
+            - name: REDISCLI_AUTH
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list . "H2_REDIS_PASSWORD") }} }
+            {{- range $line := splitList "\n" ($.Files.Get "files/redis-users.acl") }}
+            {{- $line = trim $line }}
+            {{- if and $line (not (hasPrefix "#" $line)) }}
+            {{- $key := include "helper2.redisUserPasswordKey" (first (splitList " " $line)) }}
+            - name: {{ $key }}
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list $ $key) }} }
+            {{- end }}
+            {{- end }}
+          {{- end }}
+          ports: [{ containerPort: 6379, name: redis }]
+          readinessProbe: { exec: { command: ["sh", "-c", "redis-cli ping | grep -qx PONG"] }, periodSeconds: 5 }
+          livenessProbe:
+            exec: { command: ["sh", "-c", "redis-cli ping | grep -qE 'PONG|LOADING'"] }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: data, mountPath: /data }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        {{- with .Values.redis.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources: { requests: { storage: {{ .Values.redis.storage }} } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: redis }]
+{{- end }}
