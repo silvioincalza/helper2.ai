@@ -19,7 +19,7 @@ every source has a status), and these rules must be visible in one place that bo
    `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, the same options everywhere) writes controller
    interfaces and Data Transfer Objects (DTOs, suffix `Dto`). It runs before every Java and Kotlin compile.
    Controllers implement these interfaces (for example `MeController implements MeApi`). A tag is one generated
-   interface, and one controller implements it. A tag holds the endpoints of one feature, so two features never
+   interface, and one controller implements it and no other. A tag holds the endpoints of one feature, so two features never
    share an interface: `/me/bookmarks` has the tag `bookmarks` and `/me/preferences` the tag `preferences`, not
    `me`; the home lists, the resource detail and the issue reports of the catalog have a tag each (`home-lists`,
    `resource-detail`, `issue-reports`).
@@ -69,7 +69,7 @@ every source has a status), and these rules must be visible in one place that bo
 - `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/BundleContract.kt` — joins the files, one meaning per name; the generation file without the shared paths.
 - `backend/libs/web-contract/build.gradle.kts` — generates `common.yaml` once.
 - `backend/libs/web-contract/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java`, `CategoriesController.java`, `CardMapper.java` — the shared paths.
+- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/SearchController.java`, `SourcesController.java`, `CategoriesController.java`, `CardMapper.java` — the shared paths.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
 - `backend/libs/web-contract/src/main/java/ai/helper2/api/ContractEnumConverters.java` — enum binding.
 - `backend/apps/public/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.

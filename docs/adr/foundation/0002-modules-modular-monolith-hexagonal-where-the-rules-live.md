@@ -24,7 +24,7 @@ to reach into the other's code.
    goes into a library only when more than one app needs it; the rest stays in its app.
    - `web-contract` is the web part both apps serve the same way: the types of `api/common.yaml`, generated once
      into `ai.helper2.api.common` ([0003](0003-contract-first-rest.md)), and the controllers of its paths
-     (`SearchController` for `/search` and `/sources`, `CategoriesController`), `CardMapper` and
+     (`SearchController`, `SourcesController`, `CategoriesController`), `CardMapper` and
      `ContractEnumConverters`. It is a library like the others: each class is compiled once, and its jar lands in
      both boot jars.
 3. **Dependencies point one way.** A library never depends on an app. Between libraries: kernel ← platform ← search
@@ -140,8 +140,8 @@ to reach into the other's code.
   `backend/libs/examples/src/test/java/ai/helper2/examples/architecture/ExamplesArchitectureTest.java`,
   `backend/libs/web-contract/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
   library's own rules.
-- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/` (`SearchController`, `CategoriesController`,
-  `CardMapper`), `backend/libs/web-contract/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
+- `backend/libs/web-contract/src/main/java/ai/helper2/search/web/` (`SearchController`, `SourcesController`,
+  `CategoriesController`, `CardMapper`), `backend/libs/web-contract/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
   web adapters.
 - `backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.

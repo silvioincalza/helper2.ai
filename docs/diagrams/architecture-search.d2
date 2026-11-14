@@ -24,7 +24,7 @@ browser: "Browser" {class: person}
 
 search: "search (Kotlin domain)" {
   class: group
-  ctl: "SearchController\nGET /search, /sources" {class: app}
+  ctl: "SearchController · SourcesController\nGET /search, /sources" {class: app}
   cats: "CategoriesController\nGET /categories (ETag)" {class: app}
   core: "SearchResources · WebSearchQuota\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
   p_source: SearchSource {class: port}
