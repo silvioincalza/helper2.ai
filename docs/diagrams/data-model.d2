@@ -1,0 +1,487 @@
+# Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
+# Source of truth: backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (the whole schema of v2026.11.1, one
+#   section per context, ADR 0004 §5).
+#   Delete rules on the lines: ADR 0010. Seeds (R__ migrations) add rows, no tables.
+# Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
+# Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+classes: {
+  table: {
+    shape: sql_table
+    style: {
+      fill: "#2D2E60"
+      stroke: "#FFFDF8"
+      font-color: "#FFFDF8"
+      shadow: true
+    }
+  }
+  # A link the code keeps without a foreign key.
+  soft: {
+    style: {
+      stroke: "#8A8499"
+      stroke-dash: 4
+      font-color: "#4F4B63"
+    }
+  }
+}
+
+catalog: "catalog: what sources said, merged into one resource" {
+  class: group
+
+  source: {
+    class: table
+    id: text {constraint: primary_key}
+    mode: "text (LIVE|INDEXED|CURATED|DEMO)"
+    last_outcome: text
+    last_checked_at: timestamptz
+  }
+
+  resource: {
+    class: table
+    id: "uuid (v5 of canonical_url)" {constraint: primary_key}
+    canonical_url: text {constraint: unique}
+    url: text
+    title: text
+    description: text
+    description_origin: text
+    language: text
+    type: "text (PRODUCT|MODEL|… |COURSE)"
+    audience: text
+    tech_level: text
+    license: text
+    pricing: text
+    open_source: boolean
+    published_at: timestamptz
+    published_precision: text
+    published_source_id: text {constraint: foreign_key}
+    updated_at: timestamptz
+    updated_source_id: text {constraint: foreign_key}
+    event_starts_at: timestamptz
+    event_ends_at: timestamptz
+    first_discovered_at: timestamptz
+    last_seen_at: timestamptz
+    data_origin: text
+    enrichment_status: text
+    curated_fields: "text[] (ADR 0038)"
+    enrichment_rerun_requested_at: timestamptz
+    popularity: "numeric (trigger)"
+    search_vector: "tsvector (generated)"
+    created_at: timestamptz
+    modified_at: timestamptz
+  }
+
+  job_marker: {
+    class: table
+    name: "text (a one-off job: category backfill, a maintenance task)" {constraint: primary_key}
+    value: "text (the backfill's fingerprint; null for a claimed task)"
+    done_at: timestamptz
+  }
+
+  resource_label: {
+    class: table
+    resource_id: uuid {constraint: [primary_key; foreign_key]}
+    kind: "text (TAG|USE_CASE|PLATFORM|CATEGORY)" {constraint: primary_key}
+    value: text {constraint: primary_key}
+  }
+
+  source_record: {
+    class: table
+    id: uuid {constraint: primary_key}
+    source_id: text {constraint: [foreign_key; unique]}
+    external_id: text {constraint: unique}
+    resource_id: uuid {constraint: foreign_key}
+    source_url: text
+    canonical_url: text
+    repository_url: text
+    title: text
+    description: text
+    type: text
+    license: text
+    source_published_at: timestamptz
+    source_updated_at: timestamptz
+    source_event_starts_at: timestamptz
+    source_event_ends_at: timestamptz
+    retrieved_at: timestamptz
+    fingerprint: text
+    extra: "jsonb (popularity…)"
+    created_at: timestamptz
+  }
+
+  resource_embedding: {
+    class: table
+    resource_id: uuid {constraint: [primary_key; foreign_key]}
+    model: text {constraint: primary_key}
+    text_hash: text
+    embedding: "vector(1024) HNSW"
+    embedded_at: timestamptz
+  }
+
+  awesome_list_entry: {
+    class: table
+    list_id: uuid {constraint: [primary_key; foreign_key]}
+    resource_id: uuid {constraint: [primary_key; foreign_key]}
+    heading_path: "text (≤ 200)"
+    search_vector: "tsvector GIN"
+    updated_at: timestamptz
+  }
+
+  awesome_list: {
+    class: table
+    list_id: uuid {constraint: [primary_key; foreign_key]}
+    search_vector: "tsvector GIN"
+    updated_at: timestamptz
+  }
+}
+
+enrichment: "enrichment: AI facts, each backed by evidence" {
+  class: group
+
+  enrichment_run: {
+    class: table
+    id: uuid {constraint: primary_key}
+    resource_id: uuid {constraint: foreign_key}
+    provider: text
+    model: text
+    prompt_version: text
+    input_fingerprint: text
+    started_at: timestamptz
+    finished_at: timestamptz
+    outcome: text
+    validation_errors: jsonb
+    extra_evidence: text
+  }
+
+  evidence: {
+    class: table
+    id: uuid {constraint: primary_key}
+    source_record_id: uuid {constraint: foreign_key}
+    source_url: text
+    retrieved_at: timestamptz
+    excerpt: "text (≤ 500)"
+    created_at: timestamptz
+  }
+
+  field_assertion: {
+    class: table
+    id: uuid {constraint: primary_key}
+    resource_id: uuid {constraint: foreign_key}
+    field: text
+    value: text
+    origin: "text (AI_EXTRACTED|AI_ESTIMATED|SELF_DECLARED|CURATED)"
+    verification: text
+    enrichment_run_id: uuid {constraint: foreign_key}
+    created_at: timestamptz
+  }
+
+  field_assertion_evidence: {
+    class: table
+    assertion_id: uuid {constraint: [primary_key; foreign_key]}
+    evidence_id: uuid {constraint: [primary_key; foreign_key]}
+  }
+
+  relationship: {
+    class: table
+    id: uuid {constraint: primary_key}
+    from_resource_id: uuid {constraint: [foreign_key; unique]}
+    to_resource_id: uuid {constraint: foreign_key}
+    to_title: text {constraint: unique}
+    kind: text {constraint: unique}
+    verification: text
+    origin: text
+    enrichment_run_id: uuid {constraint: foreign_key}
+    created_at: timestamptz
+    target_origin: "text (CURATED: an admin chose the target, ADR 0038)"
+  }
+
+  relationship_evidence: {
+    class: table
+    relationship_id: uuid {constraint: [primary_key; foreign_key]}
+    evidence_id: uuid {constraint: [primary_key; foreign_key]}
+  }
+
+  summary_claim: {
+    class: table
+    id: uuid {constraint: primary_key}
+    resource_id: uuid {constraint: foreign_key}
+    enrichment_run_id: uuid {constraint: [foreign_key; unique]}
+    position: int {constraint: unique}
+    text: "text (≤ 400)"
+    self_declared: boolean
+  }
+
+  summary_claim_evidence: {
+    class: table
+    claim_id: uuid {constraint: [primary_key; foreign_key]}
+    evidence_id: uuid {constraint: [primary_key; foreign_key]}
+  }
+}
+
+scout: "scout: collection checkpoints, runs, enrichment queue decisions" {
+  class: group
+
+  source_cursor: {
+    class: table
+    source_id: text {constraint: [primary_key; foreign_key]}
+    cursor: text
+    updated_at: timestamptz
+  }
+
+  scout_run: {
+    class: table
+    id: uuid {constraint: primary_key}
+    source_id: text {constraint: foreign_key}
+    status: text
+    started_at: timestamptz
+    finished_at: timestamptz
+    items_seen: int
+    items_changed: int
+    enrichments_queued: int
+    message: text
+  }
+
+  scout_schedule: {
+    class: table
+    id: "boolean (one row)" {constraint: primary_key}
+    last_ended_at: timestamptz
+  }
+
+  enrichment_queue_control: {
+    class: table
+    resource_id: uuid {constraint: [primary_key; foreign_key]}
+    prioritised_at: timestamptz
+    skipped_at: timestamptz
+    skip_reason: text
+    failures_reset_at: timestamptz
+    updated_at: timestamptz
+  }
+
+  discovery_host: {
+    class: table
+    host: "text (lower case, 3-253)" {constraint: primary_key}
+    kind: "text (WRITING | DIRECTORY)"
+    added_by: "text (provider subject, or migration)"
+    added_at: timestamptz
+    reason: "text (≤ 500)"
+  }
+}
+
+people: "people and review" {
+  class: group
+
+  app_user: {
+    class: table
+    id: uuid {constraint: primary_key}
+    provider: text {constraint: unique}
+    subject: text {constraint: unique}
+    display_name: text
+    last_signed_in_at: timestamptz
+    radar_motion: boolean
+  }
+
+  bookmark: {
+    class: table
+    user_id: uuid {constraint: [primary_key; foreign_key]}
+    resource_id: "uuid (no FK)" {constraint: primary_key}
+    title: text
+    url: text
+    type: text
+    saved_at: timestamptz
+  }
+
+  issue_report: {
+    class: table
+    id: uuid {constraint: primary_key}
+    resource_id: uuid {constraint: foreign_key}
+    kind: text
+    field: text
+    message: text
+    created_at: timestamptz
+  }
+
+  review_item: {
+    class: table
+    id: uuid {constraint: primary_key}
+    kind: text
+    status: "text (OPEN|…|SUPERSEDED)"
+    resource_id: uuid {constraint: foreign_key}
+    enrichment_run_id: uuid {constraint: foreign_key}
+    relationship_id: uuid {constraint: foreign_key}
+    report_id: uuid {constraint: foreign_key}
+    candidate_url: text {constraint: unique}
+    reason: text
+    details: "jsonb (object: RESOURCE_CANDIDATE, EXAMPLE_CANDIDATE)"
+    note: "text (every other kind)"
+    created_at: timestamptz
+    resolved_at: timestamptz
+    resolved_by: text
+    resolution_note: text
+  }
+
+  candidate_decision: {
+    class: table
+    kind: "text (RESOURCE_CANDIDATE|EXAMPLE_CANDIDATE|COURSE_CANDIDATE)" {constraint: primary_key}
+    candidate_key: "uuid (UUIDv5 of the canonical URL, as resource.id)" {constraint: primary_key}
+    status: "text (ACCEPTED|REJECTED|SUPERSEDED)"
+    decided_at: timestamptz
+  }
+
+  admin_audit: {
+    class: table
+    id: uuid {constraint: primary_key}
+    admin_id: "text (provider subject)"
+    action: text
+    target_id: text
+    at: timestamptz
+    outcome: "text (append-only;\nkept ≥ 729 d, no TRUNCATE)"
+    before_value: text
+    after_value: text
+    reason: "text (≤ 500)"
+  }
+}
+
+settings: "runtime settings (ADR 0007): append-only, newest row wins" {
+  class: group
+  runtime_setting: {
+    class: table
+    version: "bigint (identity)" {constraint: primary_key}
+    name: "text (allow-list key)"
+    value: "bigint (≥ 0; null = default)"
+    changed_by: "text (provider subject)"
+    changed_at: timestamptz
+    reason: "text (≤ 500)"
+  }
+  public_app_setting: {
+    class: table
+    key: "text (<group>.<name>)" {constraint: primary_key}
+    group_id: text
+    group_title: text
+    group_order: integer
+    position: integer
+    label: text
+    kind: "text (COUNT|CAP|FLAG|DURATION|\nMODEL|VERSION|SCHEDULE|NAMES)"
+    value: "text (≤ 500; null = none)"
+    unit: text
+    variable: "text (the H2_ name)"
+    build: "text (the public app's version)"
+    published_at: "timestamptz (replaced at\neach start, ADR 0038)"
+  }
+}
+
+examples: "examples: the home page's example searches" {
+  class: group
+  home_example: {
+    class: table
+    id: uuid {constraint: primary_key}
+    label: "text (2-32, unique per locale)"
+    query: "text (3-200, unique per locale)"
+    path: "text (USE_AI|BUILD_WITH_AI)"
+    locale: text
+    status: "text (ACTIVE|PAUSED)"
+    expected_resource_ids: "uuid[] (1-3)"
+    origin: "text (BUILT_IN|CURATED|AI_DRAFTED)"
+    model: text
+    check_outcome: "text (PENDING|PASS|WEAK|FAIL)"
+    check_best_rank: integer
+    check_result_count: integer
+    checked_at: timestamptz
+    version: integer
+    created_at: timestamptz
+    updated_at: timestamptz
+  }
+}
+
+caches: "shared caches: no query text stored, purged by expiry" {
+  class: group
+
+  live_web_query_result: {
+    class: table
+    query_key: "bytea (HMAC)" {constraint: primary_key}
+    fetched_at: timestamptz
+    result_ids: "uuid[]"
+  }
+
+  ai_cache: {
+    class: table
+    cache_name: text {constraint: primary_key}
+    key_hash: "bytea (SHA-256)" {constraint: primary_key}
+    value: text
+    expires_at: timestamptz
+  }
+
+  guide_similar_question: {
+    class: table
+    answer_key: "text (SHA-256)" {constraint: primary_key}
+    group_key: text
+    embedding: "vector(1024)"
+    expires_at: timestamptz
+  }
+}
+
+locks: "one replica at a time" {
+  class: group
+
+  shedlock: {
+    class: table
+    name: "varchar(64)" {constraint: primary_key}
+    lock_until: timestamp
+    locked_at: timestamp
+    locked_by: "varchar(255)"
+  }
+}
+
+# ---- Foreign keys: child column -> parent key, labelled with ON DELETE. ----
+
+catalog.resource.published_source_id -> catalog.source.id: RESTRICT
+catalog.resource.updated_source_id -> catalog.source.id: RESTRICT
+catalog.resource_label.resource_id -> catalog.resource.id: CASCADE
+catalog.source_record.source_id -> catalog.source.id: RESTRICT
+catalog.source_record.resource_id -> catalog.resource.id: CASCADE
+catalog.resource_embedding.resource_id -> catalog.resource.id: CASCADE
+catalog.awesome_list_entry.list_id -> catalog.resource.id: CASCADE
+catalog.awesome_list_entry.resource_id -> catalog.resource.id: CASCADE
+catalog.awesome_list.list_id -> catalog.resource.id: CASCADE
+
+enrichment.enrichment_run.resource_id -> catalog.resource.id: CASCADE
+enrichment.evidence.source_record_id -> catalog.source_record.id: CASCADE
+enrichment.field_assertion.resource_id -> catalog.resource.id: CASCADE
+enrichment.field_assertion.enrichment_run_id -> enrichment.enrichment_run.id: NO ACTION
+enrichment.field_assertion_evidence.assertion_id -> enrichment.field_assertion.id: CASCADE
+enrichment.field_assertion_evidence.evidence_id -> enrichment.evidence.id: CASCADE
+enrichment.relationship.from_resource_id -> catalog.resource.id: CASCADE
+enrichment.relationship.to_resource_id -> catalog.resource.id: SET NULL
+enrichment.relationship.enrichment_run_id -> enrichment.enrichment_run.id: NO ACTION
+enrichment.relationship_evidence.relationship_id -> enrichment.relationship.id: CASCADE
+enrichment.relationship_evidence.evidence_id -> enrichment.evidence.id: CASCADE
+enrichment.summary_claim.resource_id -> catalog.resource.id: CASCADE
+enrichment.summary_claim.enrichment_run_id -> enrichment.enrichment_run.id: NO ACTION
+enrichment.summary_claim_evidence.claim_id -> enrichment.summary_claim.id: CASCADE
+enrichment.summary_claim_evidence.evidence_id -> enrichment.evidence.id: CASCADE
+
+scout.source_cursor.source_id -> catalog.source.id: CASCADE
+scout.scout_run.source_id -> catalog.source.id: CASCADE
+scout.enrichment_queue_control.resource_id -> catalog.resource.id: CASCADE
+
+people.bookmark.user_id -> people.app_user.id: CASCADE
+people.issue_report.resource_id -> catalog.resource.id: CASCADE
+people.review_item.resource_id -> catalog.resource.id: CASCADE
+people.review_item.enrichment_run_id -> enrichment.enrichment_run.id: NO ACTION
+people.review_item.relationship_id -> enrichment.relationship.id: SET NULL
+people.review_item.report_id -> people.issue_report.id: CASCADE
+
+# ---- Links without a foreign key. ----
+
+people.bookmark.resource_id -> catalog.resource.id: "snapshot, may not be indexed" {class: soft}
+people.candidate_decision.candidate_key -> people.review_item.candidate_url: "key of the URL, kept after the item goes" {class: soft}
+caches.live_web_query_result.result_ids -> catalog.resource.id: "ids of the hits" {class: soft}
+examples.home_example.expected_resource_ids -> catalog.resource.id: "expected results" {class: soft}
+caches.guide_similar_question.answer_key -> caches.ai_cache.key_hash: "guide-answer key" {class: soft}

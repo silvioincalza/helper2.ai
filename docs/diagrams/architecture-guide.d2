@@ -1,0 +1,69 @@
+# Architecture, view 3 of 6: one guide question. The guide module, the search it reuses, the LLM layer and its guards.
+# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt, guide/GuideCost.kt,
+#   guide/usecase/AskGuide.kt, guide/steps/* (QuestionReader, PickAnswer, CompareAnswer, ExplainAnswer, DateAnswer),
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/*, guide/schedule/GuideRetentionSchedule.java,
+#   guide/web/GuideStreamController.java, guide/web/GuideLimits.java,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/SingleFlight.kt, Presence.kt,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/*.
+# Render: cd docs/diagrams && d2 fmt architecture-guide.d2 && d2 architecture-guide.d2 architecture-guide.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser" {class: person}
+
+guide: "guide (Kotlin domain)" {
+  class: group
+  ctl: "GuideStreamController (SSE)" {class: app}
+  limits: "GuideLimits\nslots, deadline;\nasker gone 3 s: presence.leave()" {class: app}
+  flight: "SingleFlight · Presence\nsame question runs once;\nnobody waits: worker interrupted" {class: app}
+  core: "AskGuide (guide.usecase)\nplan → retrieve → choose → check\nsteps per intent (guide.steps)" {class: app}
+  gate: "GuideValidator\nverbatim quote, candidate keys" {class: app}
+  quota: "ClientQuota · GuideAnswerCache" {class: app}
+  p_model: GuideModel {class: port}
+  p_store: "GuideAnswerStore\nSimilarQuestionIndex" {class: port}
+  model: "SpringAiGuideModel" {class: app}
+  store: "SharedGuideAnswerStore\nJdbcSimilarQuestionIndex" {class: app}
+  ctl -> limits: "stream closed or cut"
+  ctl -> quota
+  quota -> core: {class: hot}
+  core -> flight: "run(key, presence)"
+  limits -> flight: "asker left"
+  core -> quota: "abandoned:\ngiveBack(reservation)"
+  core -> p_model: {class: ai-call}
+  core -> gate
+  core -> p_store
+  model -> p_model: implements {class: config}
+  store -> p_store: implements {class: config}
+}
+
+search: "search\nSearchResources" {class: app}
+
+platform: "platform.llm" {
+  class: group
+  settings: "LlmSettings\nmodel per step" {class: app}
+  budget: "DailyBudget\nRedisCallCounter" {class: app}
+  metrics: "ModelCallMetrics\ncalls, tokens,\nthinking fallbacks" {class: app}
+}
+
+redis: "Redis\nh2:v1:budget:*" {shape: cylinder; class: data}
+pg: "PostgreSQL + pgvector\nai_cache (guide-answer)\nguide_similar_question" {shape: cylinder; class: data}
+embed: "NVIDIA API catalog\nnemotron-3.5-embed-1b\n(similar questions, ADR 0032)" {class: ai}
+nebius: "Nebius Token Factory\nNano: plan\nSuper: choose, reason check" {class: ai}
+
+browser -> guide.ctl: "ask (SSE)" {class: hot}
+guide.core -> search: "retrieve up to 24 candidates" {class: hot}
+guide.core -> platform.settings
+guide.core -> platform.budget: "check before each call"
+guide.core -> platform.metrics
+guide.model -> nebius: "plan, choose,\nreason check; a call cut\nwhile thinking: once more,\nthinking off" {class: ai-call}
+guide.store -> pg
+guide.core -> embed: "question embedding\n(threshold set)" {class: ai-call}
+platform.budget -> redis

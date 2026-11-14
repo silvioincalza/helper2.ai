@@ -1,0 +1,94 @@
+# Architecture, view 2 of 6: one search. The search module's ports and every adapter that answers them.
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/Ports.kt,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java, backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
+#   backend/libs/search/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, platform/quota/RedisQuotaCounter.java,
+#   backend/libs/search/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java
+#   (prompt: backend/libs/search/src/main/resources/prompts/search/translate-query.txt),
+#   backend/libs/web-contract/src/main/java/ai/helper2/search/web/CategoriesController.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/CategoryConfiguration.java (CategoryCatalog, CategoryMatcher; ADR 0026).
+# Render: cd docs/diagrams && d2 fmt architecture-search.d2 && d2 architecture-search.d2 architecture-search.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+browser: "Browser" {class: person}
+
+search: "search (Kotlin domain)" {
+  class: group
+  ctl: "SearchController\nGET /search, /sources" {class: app}
+  cats: "CategoriesController\nGET /categories (ETag)" {class: app}
+  core: "SearchResources · WebSearchQuota\nQueryAnalyzer · ResultMerger\nRanking · Filtering · Facets" {class: app}
+  p_source: SearchSource {class: port}
+  p_cache: SearchCache {class: port}
+  p_web: WebResultStore {class: port}
+  web: "JdbcWebResultStore\n(Tavily: store first)" {class: app}
+  p_observer: "ResultObserver\nRecordedOutcomes" {class: port}
+  p_translate: QueryTranslator {class: port}
+  cache: "RedisSearchCache" {class: app}
+  translator: "SpringAiQueryTranslator\n(Nemotron Nano)" {class: app}
+  ctl -> core: {class: hot}
+  core -> p_source: {class: hot}
+  core -> p_cache
+  core -> p_web
+  web -> p_web: implements {class: config}
+  web -> p_observer: "recorded hits"
+  core -> p_observer
+  core -> p_translate
+  cache -> p_cache: implements {class: config}
+  translator -> p_translate: implements {class: config}
+}
+
+sources: "sources (Java adapters)" {
+  class: group
+  live: "GitHubSource · NpmSource · ArxivSource\nHuggingFaceModelsSource\nHuggingFaceSpacesSource · TavilySource\nHackerNewsSource (off by default)" {class: app}
+}
+
+catalog: "catalog (Java)" {
+  class: group
+  index: "CatalogSearchSource\nhelper2-index · curated" {class: app}
+  semantic: "SemanticSearchSource\nhelper2-semantic" {class: app}
+  catalog: "CatalogResultObserver\nObservationQueue" {class: app}
+}
+
+platform: "platform" {
+  class: group
+  http: "ObservedHttp\npooled, observed RestClient" {class: app}
+  quota: "QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
+  categories: "CategoryCatalog · CategoryMatcher\n(shared kernel, from helper2.categories)" {class: app}
+}
+
+pg: "PostgreSQL\nfull-text + pgvector" {shape: cylinder; class: data}
+redis: "Redis\nh2:v1:src:* · h2:v1:quota:*" {shape: cylinder; class: data}
+nebius: "Nebius Token Factory" {class: ai}
+nvapi: "NVIDIA embeddings" {class: ai}
+hosts: "api.github.com · huggingface.co\nregistry.npmjs.org · export.arxiv.org\napi.tavily.com · hn.algolia.com" {class: ext}
+
+browser -> search.ctl: "GET /search" {class: hot}
+browser -> search.cats: "GET /categories"
+search.cats -> platform.categories
+search.ctl -> platform.categories: "check ?category="
+search.core -> platform.categories: "categories at merge"
+sources.live -> search.p_source: implements {class: config}
+catalog.index -> search.p_source: implements {class: config}
+catalog.semantic -> search.p_source: implements {class: config}
+catalog.catalog -> search.p_observer: implements {class: config}
+sources.live -> platform.http: "HTTP client" {class: config}
+platform.http -> hosts: HTTPS
+search.cache -> redis
+search.core -> platform.quota: "daily web searches"
+platform.quota -> redis
+search.web -> pg: "live_web_query_result"
+catalog.index -> pg: "full-text"
+catalog.semantic -> pg: "vector search"
+catalog.semantic -> nvapi: "query vector" {class: ai-call}
+catalog.catalog -> pg: "what each search saw"
+search.translator -> nebius: "translate query" {class: ai-call}
