@@ -1,0 +1,5 @@
+spring:
+  config:
+    import: classpath:helper2-shared.yaml
+  application:
+    name: helper2-core-test

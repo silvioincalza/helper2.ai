@@ -7,9 +7,9 @@ import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewEvidence.Evidence;
 import ai.helper2.catalog.ReviewEvidence.Field;
 import ai.helper2.catalog.ReviewEvidence.Quote;
-import ai.helper2.catalog.ReviewEvidenceFixture;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
+import ai.helper2.testing.AsBackOffice;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 @SpringBootTest
+@AsBackOffice
 @Import(TestcontainersConfiguration.class)
 class JdbcReviewEvidenceIT {
 

@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ai.helper2.catalog.ReviewEvidenceFixture;
+import ai.helper2.catalog.internal.ReviewEvidenceFixture;
 import java.util.UUID;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;

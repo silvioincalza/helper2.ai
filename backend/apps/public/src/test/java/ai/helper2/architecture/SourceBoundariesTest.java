@@ -35,8 +35,6 @@ class SourceBoundariesTest {
           entry("examples", "examples"),
           entry("sources", "sources"));
 
-  private static final String LIBRARY_OF_THE_ROOT_PACKAGE = "platform";
-
   private static final Map<String, Set<String>> LIBRARY_USES =
       Map.of(
           "kernel", Set.of(),
@@ -109,6 +107,7 @@ class SourceBoundariesTest {
   void everyLibraryPackageBelongsToAContext() {
     assertThat(
             LIBRARIES.stream()
+                .filter(file -> !file.wiresTheContexts())
                 .filter(file -> libraryOf(file.packageName()).isEmpty())
                 .map(SourceFile::path))
         .as("library files in a package that no context owns")
@@ -120,6 +119,7 @@ class SourceBoundariesTest {
     assertThat(
             LIBRARIES.stream()
                 .filter(file -> !file.statesArchitectureRules())
+                .filter(file -> !file.wiresTheContexts())
                 .flatMap(file -> file.uses(used -> !libraryMayUse(file, used))))
         .as("source references across a library boundary")
         .isEmpty();
@@ -165,9 +165,6 @@ class SourceBoundariesTest {
   }
 
   private static Optional<String> libraryOf(String packageName) {
-    if (packageName.isEmpty()) {
-      return Optional.of(LIBRARY_OF_THE_ROOT_PACKAGE);
-    }
     return withParents(packageName)
         .filter(LIBRARY_OF_PACKAGE::containsKey)
         .map(LIBRARY_OF_PACKAGE::get)
@@ -258,6 +255,10 @@ class SourceBoundariesTest {
 
     boolean declares(Pattern annotation) {
       return annotation.matcher(text).find();
+    }
+
+    boolean wiresTheContexts() {
+      return packageName.isEmpty();
     }
 
     boolean statesArchitectureRules() {
