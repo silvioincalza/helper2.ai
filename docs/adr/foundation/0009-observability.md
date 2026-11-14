@@ -98,6 +98,8 @@ the guide work long before that, and what makes the wait feel long is the first 
      scout_classifier, scout_event_reader, examples_draft, scout_evidence_credits; the shared translation cap is the
      public rule's);
    - `Helper2LiveWebCreditsHigh`: more than 200 Tavily credits in a day, both apps added up;
+   - `Helper2ObservationsLost`: `helper2.catalog.observations` with outcome `dropped` or `failed` for 10 min (a
+     single burst that ends does not fire);
    - `Helper2EmbeddingIndexerStalled`: no successful indexer batch for 30 min; `Helper2EmbeddingBacklogStuck`:
      backlog above 0 for 3 h on the replica that indexes, read over the last 20 min so a restart does not start the
      3 h again; `Helper2ReviewBacklog`: more than 50 open review items for

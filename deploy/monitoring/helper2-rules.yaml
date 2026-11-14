@@ -233,6 +233,15 @@ groups:
 
   - name: helper2-catalog
     rules:
+      - alert: Helper2ObservationsLost
+        expr: sum by (environment, outcome) (rate(helper2_catalog_observations_total{application=~"helper2|helper2-backoffice", outcome=~"dropped|failed"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Search results are not written to the catalog ({{ $labels.outcome }}) on helper2 ({{ $labels.environment }})."
+          description: "Background writes of search results have ended as {{ $labels.outcome }} for 10 minutes. Searches still answer, but the results they found live are not stored: they get no discovery date and the catalog cannot find them later."
+          runbook: "dropped = the queue of 256 writes is full (helper2_catalog_observations_queued): one thread writes, so look for slow Postgres writes or a burst of searches. failed = the write threw: logs 'Recording search results failed', then the Postgres pod."
       - alert: Helper2EmbeddingIndexerStalled
         expr: (time() - max by (environment) (max_over_time(helper2_embedding_last_success_seconds{application="helper2-backoffice"}[2h]))) > 1800
         for: 5m
