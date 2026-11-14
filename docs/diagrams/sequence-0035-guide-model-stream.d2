@@ -1,0 +1,56 @@
+# Sequence: a choose step with thinking on and H2_GUIDE_MODEL_STREAM=ON, from AskGuide to the browser's progress
+# events, then the same step when thinking takes too long and is asked again without thinking.
+# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ModelActivity.reportedTo),
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call, streamWithin),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetedChat.java (streamed), ChatStream.java (collect),
+#   StreamThreads.java, backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (Events),
+#   backend/apps/public/src/main/java/ai/helper2/guide/CallTimeLimit.java, api/public.yaml (reasoning, writing).
+# Render: cd docs/diagrams && d2 fmt sequence-0035-guide-model-stream.d2 && d2 sequence-0035-guide-model-stream.d2 sequence-0035-guide-model-stream.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: ext}
+events: "GuideStreamController\n(Events, Flux of SSE)" {class: app}
+ask: "AskGuide\n(virtual thread)" {class: app}
+model: SpringAiGuideModel {class: app}
+chat: "BudgetedChat\n.streamed" {class: app}
+stream: "ChatStream\n.collect" {class: app}
+client: "ChatClient +\nOpenAI async client" {class: app}
+tf: "Token Factory\n(Nemotron)" {class: ai}
+
+ask -> ask: "ModelActivity.reportedTo(progress)"
+ask -> model: "choose(need, candidates)"
+model -> model: "CallTimeLimit: window,\nthinking limit (attempt 1)"
+model -> chat: "streamed(choose, model, prompt version)"
+chat -> chat: "circuit llm-chat-guide,\nbudget unit, observation start"
+chat -> stream: "collect(flux, limits, watch)"
+stream -> client: "subscribe:\nprompt.stream().chatResponse()"
+client -> tf: "POST /v1/chat/completions\nstream: true, same body\n(virtual dispatcher thread)" {class: ai-call}
+tf -> client: "200, then SSE chunks\n(openai-stream-handler thread,\nthen boundedElastic)"
+client -> stream: "chunk: reasoningContent"
+stream -> model: "watch.reasoning()"
+model -> events: "progress.reasoning(CHOOSE)"
+events -> browser: "event: reasoning\n{step: choose}"
+client -> stream: "chunk: answer text"
+stream -> model: "watch.writing()"
+model -> events: "progress.writing(CHOOSE)"
+events -> browser: "event: writing\n{step: choose}"
+client -> stream: "chunks, finish reason,\nusage, complete"
+stream -> chat: "Answer(text, finish reason, tokens)"
+chat -> chat: "tokens or tokens_unknown;\noutcome=ok; circuit records\nthe whole stream's time"
+chat -> model: Answer
+model -> model: "cut? else BeanOutputConverter\non the whole text"
+model -> ask: GuideProposal
+ask -> events: "chosen, validated, checked, answer"
+events -> browser: "events; answer last"
+
+late: "thinking takes too long: no answer text when the question has margin + minimum left" {
+  stream -> client: "dispose: the exchange ends"
+  stream -> chat: ThinkingTimeout
+  chat -> model: "ThinkingTimeout (circuit: ignored)"
+  model -> model: "thinkingFallback(choose, time);\nCallTimeLimit.forTheCallAfterThinking"
+  model -> chat: "streamed(choose …): thinking off,\none more budget unit"
+  chat -> model: "Answer, or deadline\nwhen its window ends"
+}

@@ -1,0 +1,60 @@
+# Sequence: a user opens "Set it up" on a resource page: the setup options from the MCP Registry (no model), then a
+# step-by-step guide the fast model writes from the tool's own documents, checked before it is shown, its
+# instructions labelled and marked as AI-written on the page.
+# Source of truth: frontend/src/features/setup/SetupGuide.tsx, backend/apps/public/src/main/java/ai/helper2/setup/web/SetupController.java,
+#   backend/apps/public/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, GetToolGuide.java,
+#   backend/apps/public/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, ToolGuides.kt, ToolGuideValidator.kt, StepTexts.kt,
+#   backend/apps/public/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java, HttpToolMaterials.java,
+#   HourlyFetchBudget.java, SpringAiToolGuideModel.java, SharedToolGuideCache.java,
+#   platform/cache/JdbcSharedCache.java, catalog/usecase/GetResourceDetail.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0034-setup-guide.d2 && d2 sequence-0034-setup-guide.d2 sequence-0034-setup-guide.svg
+
+...@style
+
+shape: sequence_diagram
+
+page: "SetupGuide.tsx" {class: person}
+ctrl: SetupController {class: app}
+usecase: "GetResourceSetup /\nGetToolGuide" {class: app}
+detail: "GetResourceDetail\n(catalog.usecase)" {class: app}
+setup: "SetupGuides /\nToolGuides" {class: app}
+registry: "Official MCP Registry" {class: ext}
+docs: "GitHub, jsDelivr,\nHugging Face" {class: ext}
+redis: "Redis\n(policy redis)" {class: data}
+pg: "PostgreSQL ai_cache\n(policy db-cache)" {class: data}
+model: "Fast model\n(Nemotron)" {class: ai}
+
+options: Setup options, no model {
+  page -> ctrl: "GET /api/v1/resources/{id}/setup" {class: hot}
+  ctrl -> usecase: "setup(id)"
+  usecase -> detail: "find(id)"
+  detail -> usecase: "card, source records\n(mcp-registry name)"
+  usecase -> setup: "build(title, registryName, ref)"
+  setup -> registry: "GET /v0.1/servers/{name}/versions/latest\n(unless read in the last hour)"
+  registry -> setup: "remotes, packages, settings"
+  setup -> setup: "RunOptionRules, Launches,\none snippet per client"
+  setup -> page: "200 SetupGuide: options, snippets\nfor 8 clients, source and read time" {class: hot}
+}
+
+walkthrough: Step-by-step guide {
+  page -> ctrl: "POST /api/v1/resources/{id}/guide" {class: hot}
+  ctrl -> usecase: "guide(id, ClientKey)"
+  usecase -> detail: "find(id)"
+  usecase -> setup: "answer(id, ref, client)"
+  setup -> redis: "INCR h2:v1:setup:fetches:<hour>\n(one per document fetch)"
+  setup -> docs: "README (setup's own GitHub token\nor anonymous), npm README,\nmodel or Space card"
+  docs -> setup: "documents (kept in memory,\nbounded by total length)"
+  setup -> pg: "get(tool-guide, sha256(<id>:<hash>))"
+  pg -> setup: "miss"
+  setup -> redis: "INCR h2:v1:budget:setup-client:\n<pseudonym>:<day> (below 20)"
+  setup -> setup: "SingleFlight.run(key);\nslot in the setup-guide bulkhead"
+  setup -> model: "write(ref, documents): tool name\nand documents in escaped tags;\nan instruction per step, with\nits passage and command" {class: ai-call}
+  model -> setup: "ProposedGuide"
+  setup -> setup: "ToolGuideValidator.validate:\ndrop steps not in the documents"
+  setup -> model: "VERIFIED only: confirm(ref, steps):\nevery kept step's text, quote and\ncommand in escaped tags; one verdict\nper step (SOURCE_ONLY: no call)" {class: ai-call}
+  model -> setup: "supported keys; ToolGuideUnavailable\nwhen the check could not run"
+  setup -> setup: "StepTexts.keepConfirmed: an\nunconfirmed step's text becomes null\n(SOURCE_ONLY: sourceOnly, every text;\ncheck could not run: sourceOnly)"
+  setup -> pg: "put (7 days, no document text;\n10 min for two unreadable\nmodel answers; no put when the\nstep check could not run)"
+  setup -> page: "200 ToolGuide: sections, steps,\ndocuments with read dates, model,\naiContent when steps are shown" {class: hot}
+  page -> page: "confirmed instructions labelled \"Steps written by AI\"\nand marked data-ai-generated, data-ai-model;\nthe others \"From the source\": quote and command"
+}
