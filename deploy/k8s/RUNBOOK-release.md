@@ -199,7 +199,8 @@ After a rollback the version that failed is still released: its tag never moves.
 **When the release before cannot run on the migrated schema** (a release made with `canary` unticked), the code
 rollback is not enough. The way back is the dump taken in check 4: the restore of
 [README.md, Backups](README.md#backups), then way 2 or 3. It loses everything written after the dump. Decide it
-before the window, not in it.
+before the window, not in it. One command for it, a dump of its own per release and a rehearsal on staging are
+open: [S10.8.2](https://github.com/silvioincalza/helper2.ai/issues/427).
 
 **An interrupted Helm run** leaves the release `pending-…`. `make deploy` recovers it first, by a rollback to the
 last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Never `helm uninstall`.
