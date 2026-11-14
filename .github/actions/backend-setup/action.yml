@@ -2,7 +2,7 @@ name: backend-setup
 description: Java and Gradle for a backend job, with the Gradle build cache that earlier jobs of this run filled
 inputs:
   cache-read-only:
-    description: true when this job must not save the Gradle home to the Actions cache
+    description: false in the jobs that save the Gradle home to the Actions cache, which every job of a later run restores
     default: 'true'
   build-caches:
     description: artifact name, or a glob of names, of the build caches to unpack; empty for none

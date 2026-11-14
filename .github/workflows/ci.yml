@@ -188,8 +188,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Format and compile the libs, the build logic and the load test
         run: |
           set -euo pipefail
@@ -212,7 +210,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-libs-build-cache
       - run: ./gradlew --no-daemon -p libs test
       - if: failure()
@@ -234,7 +232,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
           build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
       - name: Format and compile the public app
         run: ./gradlew --no-daemon -p apps/public spotlessCheck classes testClasses
@@ -254,7 +251,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-public-build-cache
       - run: ./gradlew --no-daemon -p apps/public test
       - if: failure()
@@ -276,7 +273,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
           build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
       - name: Format and compile the back office app
         run: ./gradlew --no-daemon -p apps/backoffice spotlessCheck classes testClasses
@@ -296,7 +292,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-backoffice-build-cache
       - run: ./gradlew --no-daemon -p apps/backoffice test
       - if: failure()

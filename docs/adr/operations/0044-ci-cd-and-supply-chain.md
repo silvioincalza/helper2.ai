@@ -63,7 +63,10 @@ Harbor could put an image under a tag first.
      at once and takes the library classes from the cache that pushes to `main` fill, or compiles them. What the
      images pack waits only for the two app builds. `backend/gradle.properties` turns on parallel project execution
      and the build cache: the libraries' test tasks run side by side, and a project whose inputs did not change takes
-     its results from the cache that pushes to `main` fill;
+     its results from the cache that pushes to `main` fill. Only the three test jobs save the Gradle home to the
+     Actions cache, and only on a push: their home holds the dependencies, the compiled classes and the test results
+     of the chain, and one dependency bundle is about 460 MiB. The build jobs, `package`, pull requests and manual
+     runs restore it and save nothing;
    - chart: `make -C deploy/k8s chart-check` (`helm lint --strict`, `helm template | kubeconform -strict` for
      staging, prod, and prod with the off-site backup on; the self-test of `check-release.sh`, the check after a
      deploy, §3);
