@@ -136,6 +136,27 @@ class SearchResourcesTest {
   }
 
   @Test
+  fun `a source that answers after its own deadline is timed out even when an earlier source is still awaited`() {
+    val patient =
+      FakeSource(descriptor("patient", timeout = Duration.ofSeconds(5))) {
+        Thread.sleep(600)
+        listOf(hit("patient", "https://github.com/a/patient"))
+      }
+    val late =
+      FakeSource(descriptor("late", timeout = Duration.ofMillis(100))) {
+        Thread.sleep(300)
+        listOf(hit("late", "https://github.com/a/late"))
+      }
+
+    val out = service(listOf(patient, late)).search(req())
+
+    assertEquals(SourceOutcome.SUCCEEDED, out.statuses.single { it.source.id == "patient" }.outcome)
+    assertEquals(SourceOutcome.TIMED_OUT, out.statuses.single { it.source.id == "late" }.outcome)
+    assertEquals(1, out.total)
+    assertTrue(out.coverage.partial)
+  }
+
+  @Test
   fun `slow source times out without blocking the others`() {
     val slow =
       FakeSource(descriptor("slow", timeout = Duration.ofMillis(100))) {

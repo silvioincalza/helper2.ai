@@ -227,6 +227,7 @@ internal class SourceFanOut(
       return try {
         val answered =
           p.future.get(maxOf(0, deadlineNanos - System.nanoTime()), TimeUnit.NANOSECONDS)
+        if (answeredAfter(p, deadlineNanos)) return timedOut(d)
         val hits = admitted(d, answered)
         val latency = latencyOf(p)
         if (d.mode == SourceMode.LIVE) save(d, p.query, hits)
@@ -237,12 +238,7 @@ internal class SourceFanOut(
         )
       } catch (_: TimeoutException) {
         p.future.cancel(true)
-        fallBackToCache(
-          d,
-          d.timeout,
-          SourceOutcome.TIMED_OUT,
-          "No response within ${d.timeout.toMillis()} ms",
-        )
+        timedOut(d)
       } catch (e: ExecutionException) {
         failedAttempt(d, e.cause, latencyOf(p))
       } catch (_: InterruptedException) {
@@ -250,6 +246,19 @@ internal class SourceFanOut(
         fallBackToCache(d, null, SourceOutcome.FAILED, "Interrupted")
       }
     }
+
+    private fun answeredAfter(p: Pending, deadlineNanos: Long): Boolean {
+      val finished = p.finishedNanos.get()
+      return finished != 0L && finished - deadlineNanos > 0
+    }
+
+    private fun timedOut(d: SourceDescriptor): SourceAttempt =
+      fallBackToCache(
+        d,
+        d.timeout,
+        SourceOutcome.TIMED_OUT,
+        "No response within ${d.timeout.toMillis()} ms",
+      )
 
     private fun admitted(d: SourceDescriptor, answered: List<SourceHit>): List<SourceHit> =
       vitality
