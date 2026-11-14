@@ -573,6 +573,8 @@ describe('resource detail', () => {
     expect(row('platforms')).toHaveTextContent('Extracted by AI');
     expect(row('useCase')).toHaveTextContent('Not stated');
     expect(row('license')).toHaveTextContent('Sources disagree');
+    expect(row('license')).toHaveTextContent('Extracted by AI');
+    expect(within(row('license')).getByText('MIT')).toHaveAttribute('data-ai-generated', 'true');
     expect(row('openSource')).toHaveTextContent('No');
     expect(row('audience')).toHaveTextContent('AI-estimated');
     expect(within(row('audience')).getByText('People who use AI')).toHaveAttribute(
