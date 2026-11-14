@@ -182,7 +182,7 @@ public final class ObservedHttp {
     private final long start;
     private final long deadlineNanos;
     private final LongSupplier ticker;
-    private final Runnable onDeadline;
+    private final Runnable abort;
     private boolean expired;
     private long read;
 
@@ -196,13 +196,13 @@ public final class ObservedHttp {
         long start,
         long deadlineNanos,
         LongSupplier ticker,
-        Runnable onDeadline) {
+        Runnable abort) {
       super(in);
       this.max = max;
       this.start = start;
       this.deadlineNanos = deadlineNanos;
       this.ticker = ticker;
-      this.onDeadline = onDeadline;
+      this.abort = abort;
     }
 
     @Override
@@ -231,7 +231,7 @@ public final class ObservedHttp {
       if (expired || ticker.getAsLong() - start > deadlineNanos) {
         if (!expired) {
           expired = true;
-          onDeadline.run();
+          abort.run();
         }
         throw new DeadlineExceeded(Duration.ofNanos(deadlineNanos));
       }
@@ -240,6 +240,7 @@ public final class ObservedHttp {
     private void count(int n) throws IOException {
       read += n;
       if (read > max) {
+        abort.run();
         throw new ResponseTooLarge(max);
       }
     }

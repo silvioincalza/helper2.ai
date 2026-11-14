@@ -92,6 +92,25 @@ class ObservedHttpDeadlineTest {
   }
 
   @Test
+  void aBodyThatDripsPastTheSizeCapStopsAtTheCap() {
+    dripTwoSeconds();
+    RestClient http =
+        TestHttp.restClientBuilder(Duration.ofSeconds(5), ObservationRegistry.NOOP)
+            .baseUrl(server.baseUrl())
+            .build();
+    long start = System.nanoTime();
+
+    assertThatThrownBy(() ->
+            http.get()
+                .uri("/drip")
+                .attributes(ObservedHttp.maxResponseBytes(3))
+                .retrieve()
+                .body(String.class))
+        .satisfies(e -> assertThat(ObservedHttp.isTooLarge(e)).as("cause chain of %s", e).isTrue());
+    assertThat(millisSince(start)).isLessThan(1_200L);
+  }
+
+  @Test
   void theCappedStreamChecksTheDeadlineOnEveryRead() throws Exception {
     AtomicLong nanos = new AtomicLong(1_000);
     long deadline = Duration.ofSeconds(2).toNanos();
