@@ -17,8 +17,8 @@ one week of AI packages and 11.59 GB for the whole table.
 2. **First fill, then new uploads.** The first pass reads from the start of the table. A later pass reads from two
    days before the last pass, so a late row in the dataset is not missed (an upsert of the same package is harmless).
    A pass stops at the run budget (at most 5,000 packages). The cursor (`nextCursor`) is the upload time and the name
-   of the last package read, and the next run reads strictly after that pair (`upload_time > @since OR name >
-   @after`, in the order of the query), so packages with one upload time are neither read twice nor skipped. When the
+   of the last package read, and the next run reads strictly after that pair (`upload_time >= @since AND
+   (upload_time > @since OR name > @after)`, in the order of the query: upload time, then name), so packages with one upload time are neither read twice nor skipped. When the
    review list's daily cap held candidates back at the end of a pass, the runner stores `held-back`: the collector
    then reads the pass window again (two days before the last pass, or the last 30 days on a first fill).
 3. **Index or review.** The rule is the index floor of `pypi` in the admission rule of the Scout
