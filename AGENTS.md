@@ -70,6 +70,9 @@ Run the relevant tests before calling a change done.
   Decision, Alternatives considered, Consequences, Diagrams, Backlog. Known limits go in its Consequences. Its
   Backlog section lists the features it decides and the open issues that change it.
 - Open work is a backlog issue. Docs and ADRs point at issue IDs (`S10.12.1`), never at a roadmap section.
+- Every piece of work has a story on the Project board before its pull request opens. The `backlog` agent finds
+  it, or creates it with every attribute (ID, story line, acceptance criteria, Context, Priority, parent feature),
+  sets its Status to In Progress and gives the `Closes #n` line. No pull request without a story.
 - Every ADR has a flowchart (the decisions in the code) and a sequence diagram (the call path),
   as D2 sources in `docs/diagrams/` (`flow-NNNN-<slug>.d2`, `sequence-NNNN-<slug>.d2`) with the
   rendered SVG committed next to them, linked from the ADR and both README indexes. When the
@@ -121,7 +124,7 @@ Run the relevant tests before calling a change done.
 
 ## Working with Silvio
 
-- Specialist agents (`.claude/agents/`: architect, metasearch, performance, security,
+- Specialist agents (`.claude/agents/`: architect, backlog, metasearch, performance, security,
   privacy-legal, ux-journeys, ui-design) can work on one task together. One coordinator gives them the task,
   shares their findings, resolves conflicts and merges the result. Use several agents only for
   work that crosses roles; a small task stays with one agent.
