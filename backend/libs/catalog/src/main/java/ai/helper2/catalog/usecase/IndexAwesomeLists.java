@@ -4,7 +4,6 @@ import ai.helper2.catalog.AwesomeListIndex;
 import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.CategoryLabels;
 import java.util.List;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,9 +24,9 @@ public class IndexAwesomeLists {
     int listsIndexed = 0;
     for (AwesomeListText list : lists) {
       try {
-        List<UUID> entries = index.replace(list);
-        resources.refreshCategories(entries);
-        written += entries.size();
+        AwesomeListIndex.Replaced replaced = index.replace(list);
+        resources.refreshCategories(replaced.touched());
+        written += replaced.written().size();
         listsIndexed++;
       } catch (RuntimeException e) {
         log.warn("awesome list index of {} failed: {}", list.url(), e.getClass().getSimpleName());
