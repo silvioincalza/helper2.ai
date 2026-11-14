@@ -16,6 +16,8 @@ import ai.helper2.api.generated.model.ReviewKindDto;
 import ai.helper2.examples.PoolCounts;
 import ai.helper2.shared.UtcTimes;
 import java.net.URI;
+import java.net.URISyntaxException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,25 +27,43 @@ import org.springframework.web.bind.annotation.RestController;
 class OverviewController implements OverviewApi {
 
   private final GetOverview overview;
-  private final URI grafanaUrl;
+  private final @Nullable URI grafanaUrl;
 
   OverviewController(GetOverview overview, AdminProperties admin) {
     this.overview = overview;
     this.grafanaUrl = grafanaLink(admin.grafanaUrl());
   }
 
-  static URI grafanaLink(String value) {
+  static @Nullable URI grafanaLink(String value) {
     if (value.isBlank()) {
       return null;
     }
-    URI uri = URI.create(value.strip());
-    String scheme =
-        uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(java.util.Locale.ROOT);
-    if (!(scheme.equals("https") || scheme.equals("http")) || uri.getHost() == null) {
+    URI link = parsed(value.strip());
+    if (link == null || !isHttp(link) || link.getHost() == null || carriesMoreThanAPath(link)) {
       throw new IllegalStateException(
-          "H2_ADMIN_GRAFANA_URL must be an absolute http(s) URL with a host.");
+          "H2_ADMIN_GRAFANA_URL must be an absolute http(s) URL with a host and a path only:"
+              + " no user info, no query, no fragment.");
     }
-    return uri;
+    return link;
+  }
+
+  private static @Nullable URI parsed(String value) {
+    try {
+      return new URI(value);
+    } catch (URISyntaxException malformed) {
+      return null;
+    }
+  }
+
+  private static boolean isHttp(URI link) {
+    String scheme = link.getScheme();
+    return scheme != null && (scheme.equalsIgnoreCase("https") || scheme.equalsIgnoreCase("http"));
+  }
+
+  private static boolean carriesMoreThanAPath(URI link) {
+    return link.getRawUserInfo() != null
+        || link.getRawQuery() != null
+        || link.getRawFragment() != null;
   }
 
   @Override
