@@ -272,12 +272,6 @@ export function OneBox({ hero = false }: { hero?: boolean }) {
           >
             <path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" />
           </svg>
-          <span className="one-box-ask__label" aria-hidden="true">
-            {t('guide.ask')}
-          </span>
-          <span className="one-box-ask__short" aria-hidden="true">
-            {t('guide.askShort')}
-          </span>
         </button>
       </form>
       {hint && (
