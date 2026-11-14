@@ -1,0 +1,94 @@
+# Evaluation sets
+
+Every set here is fixed before the first run and not tuned on results. Labels (grades, 0/1 judgements) are decided
+by people only (a model may propose a grade; a person confirms or corrects each one, ADR 0046); a file that holds only its header has no labels yet, and the test or script that reads it skips
+its relevance part with a message.
+
+| File | What | Read by |
+|---|---|---|
+| `search-queries.json` | 115 search queries in 11 groups: 84 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 20 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `./gradlew evalRecord`, `evalTest` |
+| `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0024, 0046) | same |
+| `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
+| `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
+| `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on (step 5) | `evalTest` |
+| `guide-queries.json` | 51 guide questions: 21 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
+| `guide-intents.json` | 19 intent cases and 7 ask-back cases with pass rules ([ADR 0031](../adr/guide/0031-guide-pipeline.md), intents §10) | `scripts/eval-guide.mjs --intents` |
+| `guide-adversarial.json` | 13 hostile questions | `scripts/eval-guide.mjs --adversarial` |
+| `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
+| `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0032](../adr/guide/0032-guide-cost-guard-and-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
+| `guide-similar-vectors.json` | the query embeddings of those questions, recorded once | written by `./gradlew evalRecord --tests '*GuideSimilarRecorder'` |
+| `classifier-labels.tsv` | items labelled AI-related or not, for `Classification.isAiRelated` | `ClassificationLabelsTest` |
+| `setup-resources.json` | 15 resources for the setup guide ([ADR 0034](../adr/guide/0034-setup-guide.md)) | `scripts/eval-setup.mjs` |
+
+Snapshots, judging pools, TREC files and reports are third-party data and stay in `backend/eval-data/` (git-ignored).
+
+## Grades
+
+| Grade | Meaning |
+|---|---|
+| 3 | The answer: what an expert would hand over first for this query. |
+| 2 | Relevant: does what the query asks; a user would be glad to see it. |
+| 1 | Marginal: on topic but not what was asked (wrong type, wrong language, a fork, a tutorial instead of the tool). |
+| 0 | Not relevant, spam, or a dead link. |
+
+Judge from the result's own page (README, model card, package page), not from its title. Nonsense queries have no
+relevant result: a 0 for each pooled result is the label.
+
+## Search: record, judge, compare
+
+1. **Record once.** With the catalog database to measure (`H2_DATABASE_URL`), `H2_GITHUB_TOKEN`, `H2_LIVE_WEB_API_KEY` and
+   `H2_NVIDIA_API_KEY` in the repo-root `.env`: `cd backend && ./gradlew evalRecord`. One live search per query,
+   135 queries, about 11 minutes with the default 4 s pause (`H2_EVAL_PAUSE`, an ISO duration such as `PT4S`; the guide script has its own pause,
+   `H2_EVAL_PAUSE_MS`, in milliseconds). Queries that already have a snapshot are
+   skipped; delete `backend/eval-data/search-snapshots/` to record a new set.
+   **Starter set.** To judge less first, record every fourth query of `search-queries.json` (20 queries, all nine
+   groups, chosen by position, not by result): `H2_EVAL_ONLY=nav01,nav05,nav09,mcp03,mcp07,mcp11,mod03,mod07,lib01,lib05,lib09,pap03,pap07,new03,new07,lng03,lng07,typ01,typ05,non01 ./gradlew evalRecord`.
+   The metrics then cover these 20; the rest are recorded and judged later in the same way.
+2. **Pool.** `./gradlew evalTest` writes `backend/eval-data/search-pool.tsv`: every result in the top 20 of the baseline
+   or of any source left out, plus the 10 nearest vectors, that has no grade yet.
+3. **Judge.** Fill the `grade` column, keep the first three columns and append them to `search-qrels.tsv`. Expect
+   25–30 pooled results per query; at about 10 s per result, 80 search queries take about 5 hours, the 11 home examples
+   about 45 minutes, the 20 everyday queries about 1.5 hours, the 20 semantic queries about 1.5 hours.
+4. **Second judge.** Pick 20 % of the pooled lines at random (`shuf -n` over the pool), have a second person grade them
+   without seeing the first grades, and save them as `search-qrels-second.tsv`. The report states Cohen's kappa; below
+   0.6, agree on the grade definitions above and re-judge the disagreements.
+5. **Baseline.** `H2_EVAL_WRITE_BASELINE=true ./gradlew evalTest` stores `search-baseline.json`. From then on
+   `./gradlew evalTest` fails when nDCG@10 drops more than 0.005 below it.
+6. **Compare a change.** Run `evalTest` before and after; the report has per-source ablations with a 95 % paired
+   bootstrap interval. TREC files (`baseline.run`, `without-<source>.run`, `search.qrels`) work with
+   `ranx` or `trec_eval` for any other comparison. Their score column follows the order users see, lanes included
+   (ADR 0025 §8), because both tools rank by score and ignore the rank column. Accept per ADR 0046 §17. A change that brings new results into the
+   top 20 extends the pool: judge them before comparing.
+
+## Home examples (`home-example`)
+
+The examples under the home search box are the first search many visitors make, so each one is in the set with the
+words and the `path` it sends (`frontend/src/lib/examples.ts`). A change to the pool changes this group in the same
+pull request. Judge them like any query. The bar for an example is higher than nDCG: a result graded 3 or 2 in its
+top 3. The report lists each `hex` query with its best grade in the top 3 (section "Home examples"); one that loses
+its top-3 answer after a ranking change is a reason to stop that change, or to take the example out of the pool.
+
+## Everyday queries (`everyday`)
+
+The first 80 queries are mostly what a developer types. The everyday group adds 20 in the plain words of someone who
+uses AI apps and does not build them ("translate a PDF", "make a logo", "free alternative to ChatGPT"), with a few typos,
+short forms and Italian or German. They are searched on the `USE_AI` path. The report shows them as their own group,
+so a ranking change cannot help developers and hurt this slice without it showing.
+
+## Guide relevance (P@3, nDCG@3)
+
+`scripts/eval-guide.mjs` writes the AI picks no judge has graded to `backend/eval-data/guide-pool.tsv` (origin
+`pick`), and for every question with no answer the 24 results of its own search terms (origin `candidate <rank>`).
+Grade them with the table above and append the first three columns to `guide-qrels.tsv`. A first run of the 50
+questions leaves about 100 picks and, for each question with no answer, up to 24 candidates: count on 2–3 hours.
+Later runs only add what changed. Then `node scripts/eval-guide.mjs --rescore` rebuilds the report with the new
+grades from the saved answers (`backend/eval-data/guide-runs.json`), with no new request.
+
+## Classifier (`classifier-labels.tsv`)
+
+Columns: `source` (github, npm, live-web), `title`, `description`, `labels` (topics or keywords, comma-separated),
+`ai_related` (1, 0, or empty while not judged). Take about 200 items as the sources return them, before the AI gate:
+about 70 from GitHub search, 70 from npm search and 60 from Tavily, for the queries of `search-queries.json`, and
+label each by hand (about 1.5 hours). Then add two lines with the floor the rules must keep, for example
+`# min-precision 0.90` and `# min-recall 0.80`, chosen from the first measurement. `ClassificationLabelsTest` (part of
+`test`) then fails when a rule change goes below them.

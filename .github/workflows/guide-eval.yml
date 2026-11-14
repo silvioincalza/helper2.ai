@@ -1,0 +1,43 @@
+name: guide-eval
+
+on:
+  schedule:
+    - cron: '41 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guide-eval
+  cancel-in-progress: false
+
+jobs:
+  guide-eval:
+    if: ${{ vars.H2_STAGING_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      STAGING_URL: ${{ vars.H2_STAGING_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 26
+      - name: Fixed questions
+        run: node scripts/eval-guide.mjs "$STAGING_URL" --core --min-pass 0.8
+      - name: Hostile questions
+        if: ${{ !cancelled() }}
+        run: node scripts/eval-guide.mjs "$STAGING_URL" --adversarial
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: guide-eval
+          path: |
+            docs/eval/guide-run.md
+            docs/evaluation-adversarial.md
+            backend/eval-data/guide-pool.tsv
+            backend/eval-data/guide-runs.json
+            backend/eval-data/guide-adversarial-runs.json
+          if-no-files-found: warn
+          retention-days: 30

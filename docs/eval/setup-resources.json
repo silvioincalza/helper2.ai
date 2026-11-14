@@ -1,0 +1,17 @@
+[
+  {"id": "mcp-github", "kind": "MCP server, registry entry", "url": "https://github.com/github/github-mcp-server"},
+  {"id": "mcp-postgres", "kind": "MCP server, community", "url": "https://github.com/crystaldba/postgres-mcp"},
+  {"id": "mcp-playwright", "kind": "MCP server, npm package", "url": "https://github.com/microsoft/playwright-mcp"},
+  {"id": "mcp-filesystem", "kind": "MCP server, monorepo package", "url": "https://www.npmjs.com/package/@modelcontextprotocol/server-filesystem"},
+  {"id": "mcp-notion", "kind": "MCP server, vendor", "url": "https://github.com/makenotion/notion-mcp-server"},
+  {"id": "ollama", "kind": "local runtime, GitHub", "url": "https://github.com/ollama/ollama"},
+  {"id": "llama-cpp", "kind": "library, GitHub", "url": "https://github.com/ggml-org/llama.cpp"},
+  {"id": "vllm", "kind": "inference server, GitHub", "url": "https://github.com/vllm-project/vllm"},
+  {"id": "langchain", "kind": "library, GitHub", "url": "https://github.com/langchain-ai/langchain"},
+  {"id": "ai-sdk", "kind": "library, npm", "url": "https://www.npmjs.com/package/ai"},
+  {"id": "openai-node", "kind": "SDK, npm", "url": "https://www.npmjs.com/package/openai"},
+  {"id": "whisper-large-v3", "kind": "model, Hugging Face", "url": "https://huggingface.co/openai/whisper-large-v3"},
+  {"id": "qwen-coder", "kind": "model, Hugging Face", "url": "https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct"},
+  {"id": "llama-gated", "kind": "gated model, Hugging Face", "url": "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct"},
+  {"id": "open-webui", "kind": "app, GitHub", "url": "https://github.com/open-webui/open-webui"}
+]
