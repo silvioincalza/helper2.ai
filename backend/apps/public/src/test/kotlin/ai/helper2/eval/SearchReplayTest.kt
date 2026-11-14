@@ -153,4 +153,46 @@ class SearchReplayTest {
     assertEquals(baseline.at(shared).score - vote(24), variant.at(shared).score, 1e-12)
     assertEquals(baseline.at(onlyByMeaning).score, variant.at(onlyByMeaning).score, 1e-12)
   }
+
+  private val spaces = "https://huggingface.co/spaces/"
+
+  private fun spacesSnapshot(confirmsUrlPrefix: String?) =
+    snapshot(
+      source("spaces", SourceMode.LIVE, 20, listOf(hit(0, spaces + "o/running")))
+        .copy(confirmsUrlPrefix = confirmsUrlPrefix),
+      source(
+        "helper2-index",
+        SourceMode.INDEXED,
+        50,
+        listOf(
+          hit(0, spaces + "o/running"),
+          hit(1, spaces + "o/gone"),
+          hit(2, "https://github.com/o/indexed"),
+        ),
+      ),
+    )
+
+  @Test
+  fun `a result only the index holds is left out when a live source confirms its address and did not return it`() {
+    val ranked = SearchReplay().rank(spacesSnapshot(confirmsUrlPrefix = spaces))
+
+    assertEquals(
+      setOf(spaces + "o/running", "https://github.com/o/indexed"),
+      ranked.map { it.canonicalUrl.value }.toSet(),
+    )
+  }
+
+  @Test
+  fun `a snapshot recorded without confirmation prefixes keeps every result`() {
+    val ranked = SearchReplay().rank(spacesSnapshot(confirmsUrlPrefix = null))
+
+    assertTrue(ranked.any { it.canonicalUrl.value == spaces + "o/gone" })
+  }
+
+  @Test
+  fun `leaving the confirming source out keeps what the index alone holds`() {
+    val ranked = SearchReplay().rank(spacesSnapshot(spaces), without = setOf("spaces"))
+
+    assertTrue(ranked.any { it.canonicalUrl.value == spaces + "o/gone" })
+  }
 }

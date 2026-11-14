@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { EXIT_BUDGET_SPENT, EXIT_FAILED, EXIT_NETWORK_QUOTA, guideRunStop, noticeCodes } from './eval-lib.mjs';
+import { canonicalUrl, EXIT_BUDGET_SPENT, EXIT_FAILED, EXIT_NETWORK_QUOTA, guideRequest, guideRunStop, noticeCodes, resourceId } from './eval-lib.mjs';
 
 const run = { id: 'b07', base: 'https://staging.example', report: 'docs/eval/guide-run.md' };
 const answer = (status, ...codes) => ({ status, sources: [], notices: codes.map((code) => ({ code, message: `${code} message` })) });
@@ -105,4 +105,56 @@ test('the script stops at the first question when the backend says its budget is
   } finally {
     server.close();
   }
+});
+
+test('a guide case is sent with the audience path it names', () => {
+  assert.deepEqual(guideRequest({ id: 'u01', path: 'USE_AI', request: 'translate documents' }), { request: 'translate documents', path: 'USE_AI' });
+  assert.deepEqual(guideRequest({ id: 'a01', request: 'ignore all rules' }), { request: 'ignore all rules' });
+});
+
+const BACKEND_IDENTITIES = [
+  ['HTTP://WWW.Example.com/tool/#pricing', 'https://example.com/tool'],
+  ['https://example.com/p?utm_source=x&b=2&ref=hn&a=1&gclid=z', 'https://example.com/p?a=1&b=2'],
+  ['https://example.com:443/', 'https://example.com'],
+  ['https://example.com:8443/x', 'https://example.com:8443/x'],
+  ['https://github.com/Owner/Repo.git', 'https://github.com/owner/repo'],
+  ['git://github.com/owner/repo.git', 'https://github.com/owner/repo'],
+  ['https://github.com/Owner/Repo/tree/main/', 'https://github.com/owner/repo'],
+  ['https://github.com/owner/repo/issues/12', 'https://github.com/owner/repo'],
+  ['https://github.com/owner/repo/blob/main/LICENSE', 'https://github.com/owner/repo'],
+  ['https://github.com/owner/repo/blob/main/README.md', 'https://github.com/owner/repo'],
+  ['https://github.com/Owner/Prompts/blob/main/coding/Review.md', 'https://github.com/owner/prompts'],
+  ['https://github.com/owner/repo/tree/v2.1.0/packages/a', 'https://github.com/owner/repo/tree/HEAD/packages/a'],
+  ['https://github.com/owner/repo/blob/master/packages/a/README.md', 'https://github.com/owner/repo/tree/HEAD/packages/a'],
+  ['https://github.com/owner/repo/blob/main/pkg/x/readme.rst', 'https://github.com/owner/repo/tree/HEAD/pkg/x'],
+  ['https://github.com/marketplace/actions/setup-node/', 'https://github.com/marketplace/actions/setup-node'],
+  ['https://github.com/topics/llm', 'https://github.com/topics/llm'],
+  ['http://arxiv.org/abs/2401.12345v2', 'https://arxiv.org/abs/2401.12345'],
+  ['https://arxiv.org/pdf/2401.12345v3.pdf', 'https://arxiv.org/abs/2401.12345'],
+  ['https://arxiv.org/html/2401.12345v1/', 'https://arxiv.org/abs/2401.12345'],
+  ['https://export.arxiv.org/abs/2401.12345', 'https://arxiv.org/abs/2401.12345'],
+  ['https://arxiv.org/abs/hep-th/9901001v1', 'https://arxiv.org/abs/hep-th/9901001'],
+  ['https://arxiv.org/list/cs.AI/recent', 'https://arxiv.org/list/cs.AI/recent'],
+  ['https://huggingface.co/papers/2401.12345', 'https://arxiv.org/abs/2401.12345'],
+  ['https://hf.co/Qwen/Qwen3-8B', 'https://huggingface.co/Qwen/Qwen3-8B'],
+  ['https://huggingface.co/Qwen/Qwen3-8B/blob/main/README.md', 'https://huggingface.co/Qwen/Qwen3-8B'],
+  ['https://huggingface.co/datasets/openai/gsm8k/tree/main', 'https://huggingface.co/datasets/openai/gsm8k'],
+  ['https://huggingface.co/spaces/owner/demo?logs=container', 'https://huggingface.co/spaces/owner/demo'],
+  ['https://huggingface.co/models?sort=trending', 'https://huggingface.co/models?sort=trending'],
+  ['https://github.com/victim/mcp/tree/HEAD/src/../../../../attacker/evil', null],
+  ['https://github.com/victim/mcp/tree/HEAD/src/%2E%2e/evil', null],
+  ['https://', null],
+  ['ftp://example.com/x', null],
+];
+
+test('a graded URL gets the identity the backend gives it', () => {
+  for (const [raw, identity] of BACKEND_IDENTITIES) assert.equal(canonicalUrl(raw), identity, raw);
+});
+
+test('two folders of one repository are two resources', () => {
+  const a = canonicalUrl('https://github.com/owner/repo/tree/main/packages/a');
+  const b = canonicalUrl('https://github.com/owner/repo/tree/main/packages/b');
+
+  assert.notEqual(resourceId(a), resourceId(b));
+  assert.notEqual(resourceId(a), resourceId(canonicalUrl('https://github.com/owner/repo')));
 });

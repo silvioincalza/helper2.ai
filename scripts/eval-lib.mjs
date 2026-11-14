@@ -84,13 +84,63 @@ export function lastGuideEvent(text) {
   return last;
 }
 
+export const guideRequest = (q) => (q.path ? { request: q.request, path: q.path } : { request: q.request });
+
 const TRACKING = new Set(['ref', 'ref_src', 'fbclid', 'gclid', 'mc_cid', 'mc_eid', 'source']);
+const ANY_REF = 'HEAD';
+const GITHUB_SITE_PAGES = new Set(['about', 'apps', 'collections', 'customer-stories', 'enterprise', 'events', 'explore', 'features', 'login',
+  'marketplace', 'orgs', 'pricing', 'readme', 'resources', 'security', 'settings', 'solutions', 'sponsors', 'team', 'topics', 'trending']);
+const ARXIV_VIEWS = new Set(['abs', 'pdf', 'html']);
+const ARXIV_VERSION = /v\d+$/;
+const ARXIV_ID = /^\d{4}\.\d{4,5}(v\d+)?$/;
+const HF_REPOSITORY_KINDS = new Set(['datasets', 'spaces']);
+const HF_SITE_PAGES = new Set(['api', 'blog', 'changelog', 'chat', 'collections', 'course', 'docs', 'enterprise', 'hardware',
+  'inference-endpoints', 'join', 'learn', 'login', 'models', 'new', 'notifications', 'organizations', 'papers', 'posts', 'pricing',
+  'privacy', 'pro', 'search', 'settings', 'tasks', 'terms-of-service']);
+
+const isReadme = (name) => name.split('.')[0].toLowerCase() === 'readme';
+const isDotSegment = (segment) => ['.', '..'].includes(segment.replace(/%2e/gi, '.'));
+
+function githubIdentity(segments) {
+  if (segments.length < 2 || GITHUB_SITE_PAGES.has(segments[0].toLowerCase())) return null;
+  const repository = `https://github.com/${segments[0].toLowerCase()}/${segments[1].toLowerCase().replace(/\.git$/, '')}`;
+  const [kind, ref] = segments.slice(2);
+  const inside = segments.slice(4);
+  if (ref === undefined || !inside.length) return repository;
+  if (kind === 'tree') return `${repository}/tree/${ANY_REF}/${inside.join('/')}`;
+  if (kind === 'blob' && inside.length > 1 && isReadme(inside.at(-1))) return `${repository}/tree/${ANY_REF}/${inside.slice(0, -1).join('/')}`;
+  return repository;
+}
+
+function arxivIdentity(segments) {
+  if (segments.length < 2 || !ARXIV_VIEWS.has(segments[0])) return null;
+  return `https://arxiv.org/abs/${segments.slice(1).join('/').replace(/\.pdf$/, '').replace(ARXIV_VERSION, '')}`;
+}
+
+function huggingFaceIdentity(segments) {
+  if (!segments.length) return null;
+  if (segments[0] === 'papers' && segments.length >= 2 && ARXIV_ID.test(segments[1])) {
+    return `https://arxiv.org/abs/${segments[1].replace(ARXIV_VERSION, '')}`;
+  }
+  const repositoryLength = HF_REPOSITORY_KINDS.has(segments[0]) ? 3 : 2;
+  if (segments.length < repositoryLength || HF_SITE_PAGES.has(segments[0])) return null;
+  return `https://huggingface.co/${segments.slice(0, repositoryLength).join('/')}`;
+}
+
+const HOST_RULES = new Map([
+  ['github.com', githubIdentity],
+  ['arxiv.org', arxivIdentity],
+  ['export.arxiv.org', arxivIdentity],
+  ['huggingface.co', huggingFaceIdentity],
+  ['hf.co', huggingFaceIdentity],
+]);
 
 export function canonicalUrl(raw) {
-  if (!raw || raw.length > 2000) return null;
+  if (!raw?.trim() || raw.length > 2000) return null;
+  const cleaned = raw.trim().replace(/^(git\+)?(git|ssh|https?):\/\/(git@)?/, 'https://');
   let url;
   try {
-    url = new URL(raw.trim().replace(/^(git\+)?(git|ssh|https?):\/\/(git@)?/, 'https://'));
+    url = new URL(cleaned);
   } catch {
     return null;
   }
@@ -99,14 +149,15 @@ export function canonicalUrl(raw) {
   if (!rawHost.includes('.')) return null;
   const host = rawHost.replace(/^www\./, '');
   const port = url.port && url.port !== '80' && url.port !== '443' ? `:${url.port}` : '';
-  const segments = url.pathname.split('/').filter(Boolean);
-  if (host === 'github.com' && segments.length >= 2) {
-    return `https://github.com/${segments[0].toLowerCase()}/${segments[1].toLowerCase().replace(/\.git$/, '')}`;
-  }
+  const rawPath = /^https?:\/\/[^/?#]*([^?#]*)/i.exec(cleaned)?.[1] ?? '';
+  const segments = rawPath.split('/').filter(Boolean);
+  if (segments.some(isDotSegment)) return null;
+  const identity = HOST_RULES.get(host)?.(segments);
+  if (identity) return identity;
   const query = url.search.slice(1).split('&').filter((p) => p.trim())
     .filter((p) => { const n = p.split('=')[0].toLowerCase(); return !n.startsWith('utm_') && !TRACKING.has(n); })
     .sort().join('&');
-  return `https://${host}${port}${url.pathname.replace(/\/+$/, '')}${query ? `?${query}` : ''}`;
+  return `https://${host}${port}${rawPath.replace(/\/+$/, '')}${query ? `?${query}` : ''}`;
 }
 
 const NAMESPACE = Buffer.from('6f1c2a8e4b1d5c3e9a7f2d4e6b8c0a12', 'hex');

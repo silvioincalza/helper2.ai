@@ -10,6 +10,7 @@ import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.SourceMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -71,6 +72,37 @@ class SnapshotTakerTest {
         .take("hex01", "take meeting notes", AudiencePath.USE_AI)
 
     assertEquals(AudiencePath.USE_AI, snapshot.path)
+    assertEquals(
+      outcome.results.map { it.canonicalUrl },
+      SearchReplay().rank(snapshot).map { it.canonicalUrl },
+    )
+  }
+
+  @Test
+  fun `records the address prefix a live source confirms, and the replay leaves out what it did not return`() {
+    val prefix = "https://huggingface.co/spaces/"
+    val spaces =
+      object : SearchSource {
+        override val descriptor = descriptor("spaces", confirmsUrlPrefix = prefix)
+
+        override fun search(query: SourceQuery) = listOf(hit("spaces", prefix + "o/running"))
+      }
+    val index =
+      object : SearchSource {
+        override val descriptor = descriptor("helper2-index", mode = SourceMode.INDEXED)
+
+        override fun search(query: SourceQuery) =
+          listOf(
+            hit("helper2-index", prefix + "o/running", rank = 0),
+            hit("helper2-index", prefix + "o/gone", rank = 1),
+          )
+      }
+
+    val (snapshot, outcome) =
+      SnapshotTaker(listOf(spaces, index), null, QueryTranslator.NONE).take("s01", "running demo")
+
+    assertEquals(listOf(prefix, null), snapshot.sources.map { it.confirmsUrlPrefix })
+    assertEquals(listOf(prefix + "o/running"), outcome.results.map { it.canonicalUrl.value })
     assertEquals(
       outcome.results.map { it.canonicalUrl },
       SearchReplay().rank(snapshot).map { it.canonicalUrl },

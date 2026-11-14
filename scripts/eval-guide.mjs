@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { canonicalUrl, csrfToken, esc, fmt, guideRunStop, lastGuideEvent, mean, ndcgAt, noticeCodes, postJson, precisionAt, readQrels, resourceId, sleep } from './eval-lib.mjs';
+import { canonicalUrl, csrfToken, esc, fmt, guideRequest, guideRunStop, lastGuideEvent, mean, ndcgAt, noticeCodes, postJson, precisionAt, readQrels, resourceId, sleep } from './eval-lib.mjs';
 
 const args = process.argv.slice(2);
 const adversarial = args.includes('--adversarial');
@@ -78,7 +78,7 @@ async function ask(token, q) {
   await github.room();
   const startedAt = Date.now();
   const started = performance.now();
-  const res = await postJson(base, token, '/api/v1/guide/stream', { request: q.request });
+  const res = await postJson(base, token, '/api/v1/guide/stream', guideRequest(q));
   const text = res.ok ? await res.text() : '';
   const ms = Math.round(performance.now() - started);
   if (!res.ok) return { q, ms, error: `HTTP ${res.status}`, http429: res.status === 429 };

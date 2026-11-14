@@ -55,6 +55,7 @@ data class SourceSnapshot(
   val outcome: SourceOutcome,
   val latencyMs: Long?,
   val hits: List<HitSnapshot>,
+  val confirmsUrlPrefix: String? = null,
 )
 
 data class HitSnapshot(
@@ -122,6 +123,7 @@ class SnapshotTaker(
           st.outcome,
           st.latency?.toMillis(),
           hits.map(::snapshotOf),
+          st.source.confirmsUrlPrefix,
         )
       }
     val interpretation = outcome.interpretation
@@ -192,7 +194,7 @@ class SearchReplay(
     val hits = kept.flatMap { s ->
       vitality.admitted(s.hits.map { hitOf(s.id, it, snapshot.recordedAt) }).take(PER_SOURCE_LIMIT)
     }
-    val merged = merger.merge(hits, contextsOf(kept))
+    val merged = confirmedNow(merger.merge(hits, contextsOf(kept)), kept)
     val voters = Voters(kept, hits)
     val ranked =
       ranking.rank(
@@ -205,6 +207,18 @@ class SearchReplay(
       )
     return if (newsLast && !asksForNews(snapshot)) ranked.sortedBy { it.type == ResourceType.NEWS }
     else ranked
+  }
+
+  private fun confirmedNow(
+    merged: List<MergedResult>,
+    kept: List<SourceSnapshot>,
+  ): List<MergedResult> {
+    val prefixes = kept.mapNotNull { it.confirmsUrlPrefix }
+    if (prefixes.isEmpty()) return merged
+    val catalog = kept.filter { it.mode == SourceMode.INDEXED }.map { it.id }.toSet()
+    return merged.filterNot { r ->
+      r.hits.all { it.sourceId in catalog } && prefixes.any { r.canonicalUrl.value.startsWith(it) }
+    }
   }
 
   private fun contextsOf(kept: List<SourceSnapshot>): Map<String, SourceContext> =
