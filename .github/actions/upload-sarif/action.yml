@@ -1,0 +1,30 @@
+name: upload-sarif
+description: Upload a SARIF file to code scanning
+inputs:
+  sarif:
+    description: path of the SARIF file
+    required: true
+  category:
+    description: code scanning category, e.g. image/app
+    required: true
+  ref:
+    description: full Git ref the report belongs to (refs/heads/..., refs/tags/..., refs/pull/N/merge)
+    required: true
+  sha:
+    description: commit the report belongs to
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SARIF: ${{ inputs.sarif }}
+        CATEGORY: ${{ inputs.category }}
+        REF: ${{ inputs.ref }}
+        SHA: ${{ inputs.sha }}
+      run: |
+        set -euo pipefail
+        sarif=$(jq -c --arg id "$CATEGORY/" '.runs[].automationDetails = {id: $id}' "$SARIF" | gzip -c | base64 -w0)
+        jq -n --arg sha "$SHA" --arg ref "$REF" --arg sarif "$sarif" '{commit_sha: $sha, ref: $ref, sarif: $sarif}' \
+          | gh api -X POST "repos/$GITHUB_REPOSITORY/code-scanning/sarifs" --input - --jq '"code scanning upload: " + .id'

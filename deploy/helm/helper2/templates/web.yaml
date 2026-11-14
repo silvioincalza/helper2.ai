@@ -1,0 +1,74 @@
+{{- $web := .Values.web }}
+{{- $name := include "helper2.webName" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ ternary 1 (required "web.replicas" $web.replicas) .Values.canary.only }}
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: {{ $name }} } }
+  template:
+    metadata:
+      labels: { app: {{ $name }} }
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: {{ $name }} } } }
+      securityContext: { runAsNonRoot: true, runAsUser: 101, runAsGroup: 101, seccompProfile: { type: RuntimeDefault } }
+      terminationGracePeriodSeconds: {{ add (int (required "web.preStopSeconds" $web.preStopSeconds)) 5 }}
+      containers:
+        - name: web
+          image: {{ include "helper2.webImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - { containerPort: 8080, name: http }
+            - { containerPort: 8081, name: health }
+          startupProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 2
+            failureThreshold: 15
+          readinessProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: health }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $web.preStopSeconds }} }
+          resources:
+            {{- toYaml $web.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: { sizeLimit: 16Mi } }]
+{{- if and (not .Values.canary.only) (gt (int $web.replicas) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: helper2-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int $web.replicas) 1 }}
+  selector: { matchLabels: { app: helper2-web } }
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: {{ $name }} }
+  ports: [{ port: 80, targetPort: http }]
