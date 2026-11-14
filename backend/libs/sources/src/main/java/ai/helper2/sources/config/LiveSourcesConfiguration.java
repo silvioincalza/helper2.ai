@@ -6,6 +6,7 @@ import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.github.GitHubSource;
+import ai.helper2.sources.hackernews.HackerNewsSource;
 import ai.helper2.sources.huggingface.HuggingFaceModelsSource;
 import ai.helper2.sources.huggingface.HuggingFaceSpacesSource;
 import ai.helper2.sources.npm.NpmSource;
@@ -77,6 +78,17 @@ class LiveSourcesConfiguration {
     SourceSettings s = p.get("arxiv");
     return new ArxivSource(
         s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock, throttle);
+  }
+
+  @Bean
+  HackerNewsSource hackerNewsSource(
+      SourcesProperties p,
+      Clock clock,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    SourceSettings s = p.get("hacker-news");
+    return new HackerNewsSource(
+        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock);
   }
 
   @Bean
