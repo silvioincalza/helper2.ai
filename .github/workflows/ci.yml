@@ -3,6 +3,11 @@ name: ci
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      full:
+        description: also pack the jars and the web bundle the images use
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       full:
@@ -23,7 +28,9 @@ jobs:
     timeout-minutes: 5
     outputs:
       frontend: ${{ steps.map.outputs.frontend }}
-      backend: ${{ steps.map.outputs.backend }}
+      backend-libs: ${{ steps.map.outputs.backend-libs }}
+      backend-public: ${{ steps.map.outputs.backend-public }}
+      backend-backoffice: ${{ steps.map.outputs.backend-backoffice }}
       chart: ${{ steps.map.outputs.chart }}
       monitoring: ${{ steps.map.outputs.monitoring }}
       postgres: ${{ steps.map.outputs.postgres }}
@@ -74,7 +81,7 @@ jobs:
             .github/scripts/changes.sh "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
           fi
 
-  frontend-build:
+  frontend-check:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
@@ -84,52 +91,7 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version: 26
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - id: modules
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: frontend/node_modules
-          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
-      - if: steps.modules.outputs.cache-hit != 'true'
-        run: npm ci --no-audit --no-fund
-      - run: npm run gen:api
-      - run: npm run build
-      - run: npm run check:bundle
-      - if: inputs.full
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: frontend-dist
-          path: |
-            frontend/dist
-            frontend/dist-admin
-          if-no-files-found: error
-          retention-days: 1
-
-  frontend-check:
-    needs: [changes, frontend-build]
-    if: needs.changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version: 26
-      - id: modules
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: frontend/node_modules
-          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
-      - if: steps.modules.outputs.cache-hit != 'true'
-        run: npm ci --no-audit --no-fund
-      - run: npm run gen:api
+      - uses: ./.github/actions/frontend-setup
       - run: npm run format:check
       - run: npm run lint
       - run: npm run knip
@@ -139,9 +101,32 @@ jobs:
         run: npm audit
         continue-on-error: true
 
-  frontend-test:
-    name: frontend-test (${{ matrix.group }})
-    needs: [changes, frontend-build]
+  frontend-public-build:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/frontend-setup
+        with:
+          save-modules: true
+      - run: npx vite build
+      - run: npm run check:bundle
+      - if: inputs.full
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: frontend-public-dist
+          path: frontend/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  frontend-public-test:
+    name: frontend-public-test (${{ matrix.group }})
+    needs: [changes, frontend-public-build]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -149,34 +134,56 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - group: search, guide
-            args: src/features/search src/features/guide
-          - group: home, resource, pages, admin
-            args: src/features/home src/features/resource src/features/pages src/admin
+          - group: features
+            args: src/features
           - group: lib, styles, shell, the rest
-            args: --exclude 'src/features/{search,guide,home,resource,pages}/**' --exclude 'src/admin/**'
+            args: --exclude 'src/features/**' --exclude 'src/admin/**'
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version: 26
-      - id: modules
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: frontend/node_modules
-          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
-      - if: steps.modules.outputs.cache-hit != 'true'
-        run: npm ci --no-audit --no-fund
-      - run: npm run gen:api
+      - uses: ./.github/actions/frontend-setup
       - name: Vitest (${{ matrix.group }})
         run: npx vitest run --passWithNoTests ${{ matrix.args }}
 
-  backend-build:
+  frontend-backoffice-build:
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/frontend-setup
+      - run: npx vite build --config vite.admin.config.ts
+      - if: inputs.full
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: frontend-backoffice-dist
+          path: frontend/dist-admin
+          if-no-files-found: error
+          retention-days: 1
+
+  frontend-backoffice-test:
+    needs: [changes, frontend-backoffice-build]
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/frontend-setup
+      - name: Vitest, the tests in src/admin
+        run: npx vitest run --passWithNoTests src/admin
+
+  backend-libs-build:
+    needs: changes
+    if: needs.changes.outputs.backend-libs == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -184,81 +191,147 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
-        with:
-          distribution: temurin
-          java-version: 25
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
-      - name: Compile every source set
+      - uses: ./.github/actions/backend-setup
+      - name: Format and compile the libs, the build logic and the load test
         run: |
           set -euo pipefail
-          tasks=(classes testClasses)
-          if [[ -d loadtest ]]; then tasks+=(gatlingClasses); fi
-          ./gradlew --no-daemon "${tasks[@]}"
-      - name: Pack the build cache
-        run: tar -C "$HOME/.gradle/caches" -cf "$RUNNER_TEMP/build-cache.tar" build-cache-1
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+          tasks=(:spotlessCheck spotlessCheck classes testClasses testFixturesClasses)
+          if [[ -d loadtest ]]; then tasks+=(:loadtest:spotlessCheck :loadtest:gatlingClasses); fi
+          ./gradlew --no-daemon -p libs "${tasks[@]}"
+      - uses: ./.github/actions/backend-build-cache
         with:
-          name: backend-build-cache
-          path: ${{ runner.temp }}/build-cache.tar
-          retention-days: 1
-          overwrite: true
-          if-no-files-found: error
+          name: backend-libs-build-cache
 
-  backend-check:
-    needs: [changes, backend-build]
-    if: needs.changes.outputs.backend == 'true'
+  backend-libs-test:
+    needs: [changes, backend-libs-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-libs == 'true' && needs.backend-libs-build.result == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+      - uses: ./.github/actions/backend-setup
         with:
-          distribution: temurin
-          java-version: 25
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
-        with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: backend-build-cache
-          path: ${{ runner.temp }}
-      - name: Unpack the build cache
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/.gradle/caches"
-          tar -C "$HOME/.gradle/caches" -xf "$RUNNER_TEMP/build-cache.tar"
-      - run: ./gradlew --no-daemon spotlessCheck test
+          cache-read-only: ${{ github.event_name != 'push' }}
+          build-caches: backend-libs-build-cache
+      - run: ./gradlew --no-daemon -p libs test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: backend-test-reports
+          name: backend-libs-test-reports
+          path: backend/**/build/reports/tests/
+          retention-days: 7
+
+  backend-public-build:
+    needs: [changes, backend-libs-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-public == 'true' && contains(fromJSON('["success", "skipped"]'), needs.backend-libs-build.result) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/backend-setup
+        with:
+          build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
+      - name: Format and compile the public app
+        run: ./gradlew --no-daemon -p apps/public spotlessCheck classes testClasses
+      - uses: ./.github/actions/backend-build-cache
+        with:
+          name: backend-public-build-cache
+
+  backend-public-test:
+    needs: [changes, backend-public-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-public == 'true' && needs.backend-public-build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/backend-setup
+        with:
+          cache-read-only: ${{ github.event_name != 'push' }}
+          build-caches: backend-public-build-cache
+      - run: ./gradlew --no-daemon -p apps/public test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: backend-public-test-reports
+          path: backend/**/build/reports/tests/
+          retention-days: 7
+
+  backend-backoffice-build:
+    needs: [changes, backend-libs-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-backoffice == 'true' && contains(fromJSON('["success", "skipped"]'), needs.backend-libs-build.result) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/backend-setup
+        with:
+          build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
+      - name: Format and compile the back office app
+        run: ./gradlew --no-daemon -p apps/backoffice spotlessCheck classes testClasses
+      - uses: ./.github/actions/backend-build-cache
+        with:
+          name: backend-backoffice-build-cache
+
+  backend-backoffice-test:
+    needs: [changes, backend-backoffice-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-backoffice == 'true' && needs.backend-backoffice-build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/backend-setup
+        with:
+          cache-read-only: ${{ github.event_name != 'push' }}
+          build-caches: backend-backoffice-build-cache
+      - run: ./gradlew --no-daemon -p apps/backoffice test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: backend-backoffice-test-reports
           path: backend/**/build/reports/tests/
           retention-days: 7
 
   package:
-    needs: [changes, frontend-build, backend-build]
-    if: inputs.full && needs.changes.outputs.frontend == 'true' && needs.changes.outputs.backend == 'true'
+    needs: [changes, frontend-public-build, frontend-backoffice-build, backend-public-build, backend-backoffice-build]
+    if: >-
+      ${{ !cancelled() && inputs.full
+      && needs.changes.outputs.frontend == 'true'
+      && needs.changes.outputs.backend-public == 'true'
+      && needs.changes.outputs.backend-backoffice == 'true'
+      && needs.frontend-public-build.result == 'success'
+      && needs.frontend-backoffice-build.result == 'success'
+      && needs.backend-public-build.result == 'success'
+      && needs.backend-backoffice-build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
+      - uses: ./.github/actions/backend-setup
         with:
-          distribution: temurin
-          java-version: 25
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
-        with:
-          cache-read-only: true
+          build-caches: backend-*-build-cache
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
-          name: frontend-dist
-          path: ${{ runner.temp }}/frontend
+          name: frontend-public-dist
+          path: ${{ runner.temp }}/frontend/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: frontend-backoffice-dist
+          path: ${{ runner.temp }}/frontend/dist-admin
       - name: Jars and web bundle the images pack
         env:
           FRONTEND: ${{ runner.temp }}/frontend
@@ -369,7 +442,24 @@ jobs:
 
   ci-ok:
     if: always()
-    needs: [changes, frontend-build, frontend-check, frontend-test, backend-build, backend-check, package, postgres-tag, chart, monitoring, diagrams]
+    needs:
+      - changes
+      - frontend-check
+      - frontend-public-build
+      - frontend-public-test
+      - frontend-backoffice-build
+      - frontend-backoffice-test
+      - backend-libs-build
+      - backend-libs-test
+      - backend-public-build
+      - backend-public-test
+      - backend-backoffice-build
+      - backend-backoffice-test
+      - package
+      - postgres-tag
+      - chart
+      - monitoring
+      - diagrams
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

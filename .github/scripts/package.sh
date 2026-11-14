@@ -7,7 +7,7 @@ root=$(git rev-parse --show-toplevel)
 admin="$root/backend/apps/backoffice/src/main/resources/static/admin"
 
 [[ -f $frontend/dist/index.html && -f $frontend/dist-admin/admin.html ]] \
-  || { echo "$frontend must hold dist/ and dist-admin/ from the frontend-build job" >&2; exit 1; }
+  || { echo "$frontend must hold dist/ and dist-admin/ from the two frontend build jobs" >&2; exit 1; }
 
 rm -rf "$admin" "$out"
 mkdir -p "$admin" "$out/web"
