@@ -1,0 +1,240 @@
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { axeViolations } from '@/test/a11y';
+import { makeStatus } from '@/test/fixtures';
+import { CopyButton } from './CopyButton';
+import { PicksBar } from './PicksBar';
+import { RetryButton, StatePanel } from './StatePanel';
+import { ProofQuote } from './ProofQuote';
+import { SourceTiles } from './SourceTiles';
+import { StatusPill } from './StatusPill';
+
+describe('StatusPill', () => {
+  it('says the status in words; the tone only repeats it', async () => {
+    const { container } = render(
+      <p>
+        <StatusPill tone="ok">Updated</StatusPill> <StatusPill tone="next">In 13 days</StatusPill>
+      </p>,
+    );
+    expect(screen.getByText('Updated')).toHaveClass('h2-status-pill', 'h2-status-pill--ok');
+    expect(screen.getByText('In 13 days')).toHaveClass('h2-status-pill--next');
+    expect(await axeViolations(container)).toEqual([]);
+  });
+});
+
+describe('ProofQuote', () => {
+  const text =
+    'A server for agents. It gives read-only access to a PostgreSQL database. MIT licensed.';
+
+  it('shows the source text with the checked sentence highlighted, and names the source', async () => {
+    const { container } = render(
+      <ProofQuote text={text} quote="read-only access to a postgresql database" source="GitHub" />,
+    );
+    expect(container.querySelector('mark')).toHaveTextContent(
+      'read-only access to a PostgreSQL database',
+    );
+    expect(container.querySelector('blockquote')).toHaveTextContent(text);
+    expect(screen.getByText('GitHub')).toBeInTheDocument();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('shows the quote alone, highlighted, when the source text does not hold it', () => {
+    const { container } = render(
+      <ProofQuote text="Some other description" quote="Postgres MCP" source="GitHub" />,
+    );
+    expect(container.querySelector('blockquote')).toHaveTextContent(/^Postgres MCP$/);
+    expect(container.querySelector('mark')).toHaveTextContent('Postgres MCP');
+  });
+
+  it('is never marked AI-written: it is the source’s own text (ADR 0033)', () => {
+    const { container } = render(<ProofQuote text={text} quote="MIT licensed" source="GitHub" />);
+    expect(container.querySelector('[data-ai-generated]')).toBeNull();
+  });
+});
+
+describe('SourceTiles', () => {
+  it('gives each source its state in words: time, cache age or what went wrong', async () => {
+    const now = Date.parse('2026-10-30T10:00:00Z');
+    const { container } = render(
+      <SourceTiles
+        now={now}
+        sources={[
+          makeStatus({
+            sourceId: 'github',
+            name: 'GitHub',
+            outcome: 'SUCCEEDED',
+            servedFrom: 'LIVE',
+            latencyMs: 320,
+          }),
+          makeStatus({
+            sourceId: 'hf',
+            name: 'Hugging Face',
+            outcome: 'SUCCEEDED',
+            servedFrom: 'CACHE',
+            cachedAt: '2026-10-30T09:56:00Z',
+          }),
+          makeStatus({
+            sourceId: 'npm',
+            name: 'npm',
+            outcome: 'TIMED_OUT',
+            servedFrom: 'NONE',
+            latencyMs: null,
+          }),
+        ]}
+      />,
+    );
+    const tiles = screen.getAllByRole('listitem');
+    expect(tiles[0]).toHaveTextContent('GitHub');
+    expect(tiles[0]).toHaveTextContent('320 ms');
+    expect(tiles[0]).toHaveClass('is-ok');
+    expect(tiles[1]).toHaveTextContent('cached 4 min. ago');
+    expect(tiles[1]).toHaveClass('is-warn');
+    expect(tiles[2]).toHaveTextContent('Timed out');
+    expect(tiles[2]).toHaveClass('is-failed');
+    expect(await axeViolations(container)).toEqual([]);
+  });
+});
+
+describe('PicksBar', () => {
+  it('waits in a box of reserved height, saying how many candidates the guide reads', async () => {
+    const { container } = render(<PicksBar state={{ kind: 'reading', candidates: 24 }} />);
+    const bar = screen.getByRole('region', { name: 'Guide picks' });
+    expect(bar).toHaveClass('h2-picks', 'is-reading');
+    expect(within(bar).getByRole('status')).toHaveTextContent(
+      'Guide is reading 24 candidates… picks will appear here',
+    );
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('before the candidates are counted, says it is reading the results', () => {
+    render(<PicksBar state={{ kind: 'reading' }} />);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Guide is reading the results… picks will appear here',
+    );
+  });
+
+  it('says that the model is thinking, then that it is writing, with none of its text', () => {
+    const { rerender } = render(
+      <PicksBar
+        state={{
+          kind: 'reading',
+          candidates: 24,
+          activity: { phase: 'reasoning', step: 'choose' },
+        }}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Guide is thinking about which results fit…',
+    );
+    rerender(
+      <PicksBar
+        state={{ kind: 'reading', candidates: 24, activity: { phase: 'writing', step: 'choose' } }}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Guide is writing its picks… they appear here once checked',
+    );
+  });
+
+  it('with no pick, shrinks to one line that says why', async () => {
+    const { container } = render(<PicksBar state={{ kind: 'none' }} />);
+    expect(screen.getByRole('region', { name: 'Guide picks' })).toHaveClass('is-none');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No pick. No result has a sentence that proves it fits.',
+    );
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('when the guide asks back, shrinks to one line that points to its question', async () => {
+    const { container } = render(<PicksBar state={{ kind: 'clarify' }} />);
+    expect(screen.getByRole('region', { name: 'Guide picks' })).toHaveClass('is-clarify');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'The guide needs one detail first: answer the question below',
+    );
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('shows the picks under an AI-written label, marked machine-readable (ADR 0033)', async () => {
+    const { container } = render(
+      <PicksBar state={{ kind: 'picks', model: 'nvidia/nemotron-3-super' }}>
+        <ol>
+          <li>#1 Postgres MCP</li>
+        </ol>
+      </PicksBar>,
+    );
+    const bar = screen.getByRole('region', { name: 'Guide picks' });
+    expect(within(bar).getByText('AI-written')).toBeInTheDocument();
+    expect(within(bar).getByText('#1 Postgres MCP').closest('[data-ai-generated]')).toBeNull();
+    expect(within(bar).getByRole('status')).toHaveTextContent('Guide picks are ready');
+    expect(within(bar).getByRole('status')).toHaveClass('sr-only');
+    expect(await axeViolations(container)).toEqual([]);
+  });
+  it('announces the picks in the status line that was already there (WCAG 4.1.3)', () => {
+    const { rerender } = render(<PicksBar state={{ kind: 'reading', candidates: 24 }} />);
+    const status = screen.getByRole('status');
+
+    rerender(
+      <PicksBar state={{ kind: 'picks', model: 'nvidia/nemotron-3-super', count: 3 }}>
+        <ol>
+          <li>#1 Postgres MCP</li>
+        </ol>
+      </PicksBar>,
+    );
+
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status).toHaveTextContent('Guide picks are ready: 3 picks');
+  });
+});
+
+describe('CopyButton', () => {
+  it('copies its text and says so on the button', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    render(<CopyButton text="npx server" label="Copy prompt" />);
+    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    expect(writeText).toHaveBeenCalledWith('npx server');
+    expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
+
+  it('is named Copy when the snippet needs no other name', () => {
+    render(<CopyButton text="x" />);
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+  });
+});
+
+describe('StatePanel', () => {
+  it('an error is an alert: its heading says what happened, the next step sits under it', async () => {
+    const retry = vi.fn();
+    const { container } = render(
+      <StatePanel
+        tone="error"
+        level={2}
+        title="Could not load"
+        next={<RetryButton onClick={retry} />}
+      >
+        <p>The server did not answer.</p>
+      </StatePanel>,
+    );
+    const alert = screen.getByRole('alert');
+    expect(
+      within(alert).getByRole('heading', { level: 2, name: 'Could not load' }),
+    ).toBeInTheDocument();
+    expect(alert).toHaveTextContent('The server did not answer.');
+    await userEvent.click(within(alert).getByRole('button', { name: /Try again/ }));
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('a notice is read with the page, or announced as a status when it is live; it may have no next step', () => {
+    const { rerender } = render(
+      <StatePanel tone="notice" level={3} title="Nothing new this week" />,
+    );
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Nothing new this week' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    rerender(<StatePanel tone="notice" live level={2} title="No results" />);
+    expect(screen.getByRole('status')).toHaveTextContent('No results');
+  });
+});

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sign in to helper2.ai</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&amp;family=Geist:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+html{scroll-padding-top:96px}
+body{margin:0;background:#f7f2e9}
+*{box-sizing:border-box}
+a{color:#a8420a}a:hover{color:#1b1c3f}
+p,li,dd,dt,blockquote,.prose{font-family:'Geist', ui-sans-serif, system-ui, sans-serif}
+.mono,.term,.term *{font-family:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace!important}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+:focus-visible{outline:3px solid #1b1c3f;outline-offset:2px;border-radius:4px}
+.term :focus-visible{outline-color:#f7f2e9}
+.site-header{position:sticky;top:0;z-index:5}
+.search-bar{border-bottom:1px solid transparent}
+.search-bar.is-stuck{box-shadow:0 8px 20px rgba(27,28,63,.12);border-bottom-color:#e7dfd0}
+.search-bar.is-stuck .hero-ex,.search-bar.is-stuck .radar-legend{max-height:0!important;opacity:0;overflow:hidden;margin:0!important}
+.search-bar.is-stuck .wrap{padding-bottom:12px!important;padding-top:12px!important}
+.hero-ex,.radar-legend{max-height:200px;transition:max-height .35s ease,opacity .25s ease}
+.hero-text{transition:max-height .45s ease,opacity .3s ease,transform .45s ease,margin .45s ease}
+.tbl-scroll{overflow-x:auto}
+.tline:hover .tname{text-decoration:underline;text-underline-offset:3px}
+.rowlink:hover .rtitle{text-decoration:underline;text-underline-offset:3px}
+@media (max-width: 900px){
+  .radar-dots,.radar-legend{display:none!important}
+  .grid4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid2{grid-template-columns:minmax(0,1fr)!important}
+}
+@media (max-width: 720px){
+  html{scroll-padding-top:150px}
+  .wrap,.narrow{padding-left:16px!important;padding-right:16px!important}
+  .narrow{padding-top:28px!important}
+  .site-header .wrap{padding-top:10px!important;padding-bottom:10px!important;column-gap:12px!important;row-gap:10px!important}
+  .site-nav{gap:12px!important;flex-wrap:nowrap}
+  .nav-secondary{display:none!important}
+  .site-search{order:3;flex-basis:100%!important}
+  .hero{padding-top:24px!important;padding-bottom:12px!important}
+  .search-bar{top:65px!important}
+  .search-bar .wrap{padding-top:8px!important;padding-bottom:12px!important}
+  .hero-text.is-collapsed{max-height:0!important;opacity:0;transform:translateY(-16px);overflow:hidden;margin:0!important}
+  .hero-text{max-height:420px}
+  .hero-input,.hero-btn{height:50px!important;font-size:16px!important}
+  .hero-btn{flex:0 0 auto!important;padding:0 16px!important}
+  .card{padding:22px!important}
+  .side-wrap{gap:24px!important}
+}
+@media (max-width: 420px){
+  .site-header .logo-tag{display:none}
+  .site-header .logo-word{font-size:20px!important}
+  .signin{padding:0 12px!important}
+  .acct-name{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+}
+@media (max-width: 560px){
+  .grid4{grid-template-columns:minmax(0,1fr)!important}
+  .tl-grid{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+  .tline{grid-template-columns:auto minmax(0,1fr)!important;row-gap:0!important}
+  .tname{grid-column:1/-1}
+  .cards [role=rowgroup]:first-child{display:none!important}
+  .cards [role=table],.cards [role=rowgroup]{display:block!important;min-width:0!important;width:100%!important}
+  .cards [role=row]{display:grid!important;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-top:1px solid #e7dfd0}
+  .cards [role=cell]{display:block!important;padding:0!important;border:0!important}
+  .cards .tbl-scroll{overflow:visible}
+}
+@keyframes line{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.line{animation:line .25s ease-out both}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}.blink{animation:blink 1.6s ease-in-out 3}
+@keyframes sweep{to{transform:rotate(360deg)}}.sweep{animation:sweep 4.5s linear 1}
+@keyframes blip{0%,100%{opacity:.55;box-shadow:0 0 0 0 rgba(224,106,29,0)}12%{opacity:1;box-shadow:0 0 0 0 rgba(224,106,29,.55)}40%{opacity:.9;box-shadow:0 0 0 14px rgba(224,106,29,0)}}.blip{animation:blip 1s ease-out 1}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="min-height: 1300px; background: #f7f2e9; color: #1b1c3f; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; display: flex; flex-direction: column;">
+<header class="site-header" style="border-bottom: 1px solid #e7dfd0; background: #f7f2e9;"><div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 16px; padding-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px 28px; flex-wrap: wrap;"><a href="Main.dc.html" aria-label="helper2.ai home" style="display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: #1b1c3f; flex: none; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><span aria-hidden="true" style="display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e06a1d; color: #1b1c3f;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span style="display: inline-flex; flex-direction: column; gap: 4px;"><span class="logo-word" style="font-size: 24px; font-weight: 500; line-height: 1; letter-spacing: -0.03em;">helper2.ai</span><span class="logo-tag" style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4f4b63; line-height: 1.2;">AI on your radar</span></span></a><nav aria-label="Main" class="site-nav" style="display: flex; gap: 20px; align-items: center; font-size: 15px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><a href="Main.dc.html#news-h" class="nav-secondary" style="display: inline-flex; align-items: center; min-height: 44px; color: #35344f; text-decoration: none;">News</a><a href="Main.dc.html#ev-h" class="nav-secondary" style="display: inline-flex; align-items: center; min-height: 44px; color: #35344f; text-decoration: none;">Events</a><a href="Saved.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #35344f; text-decoration: none;">Saved</a><a href="SignIn.dc.html" class="signin" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; color: #1b1c3f; background: transparent; border: 1px solid #8f8470; border-color: #1b1c3f; font-weight: 500;">Sign in</a></nav></div></header><main class="wrap" style="flex-grow: 1; max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 64px; padding-bottom: 80px; display: flex; flex-wrap: wrap; gap: 56px; align-items: flex-start;">
+  <section aria-labelledby="why-h" style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 22px;">
+    <h1 id="why-h" style="margin: 0; font-weight: 500; font-size: clamp(28px, 3.2vw + 14px, 48px); line-height: 1.08; letter-spacing: -0.035em;">Sign in to keep what you find.</h1>
+    <p style="margin: 0; font-size: 18px; line-height: 1.6; color: #35344f;">You can search without an account. Sign in when you want more.</p>
+    <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; font-size: 16px; line-height: 1.55;">
+      <li style="display: flex; gap: 12px;"><span aria-hidden="true" style="color: #a8420a; font-weight: 600;">1</span><span><strong style="font-weight: 600;">Saved on every device.</strong> Your saved tools follow you.</span></li>
+      <li style="display: flex; gap: 12px;"><span aria-hidden="true" style="color: #a8420a; font-weight: 600;">2</span><span><strong style="font-weight: 600;">Higher daily limits.</strong> More web searches and AI answers a day. [Numbers set in the limits ADR]</span></li>
+      <li style="display: flex; gap: 12px;"><span aria-hidden="true" style="color: #a8420a; font-weight: 600;">3</span><span><strong style="font-weight: 600;">Your choice.</strong> GitHub or Google now; a passkey, an email link or a password later.</span></li>
+    </ul>
+  </section>
+  <section aria-labelledby="how-h" class="card" style="flex: 1 1 320px; min-width: 0; background: #fffdf8; border: 1px solid #e7dfd0; border-radius: 14px; padding: 36px; display: flex; flex-direction: column; gap: 14px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;">
+    <h2 id="how-h" style="margin: 0 0 6px; font-weight: 500; font-size: 22px; letter-spacing: -0.02em;">Choose how to sign in</h2>
+    <a href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; font-weight: 500; color: #f7f2e9; background: #1b1c3f; border: 0; width: 100%; font-size: 16px; font-weight: 500;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-4 1.3-4-2-6-2.5M15 21v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"></path></svg> Continue with GitHub</a>
+    <a href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; color: #1b1c3f; background: transparent; border: 1px solid #8f8470; width: 100%; font-size: 16px; font-weight: 500;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M12 12h8"></path></svg> Continue with Google</a>
+    <a href="#" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; color: #1b1c3f; background: transparent; border: 1px solid #8f8470; width: 100%; font-size: 16px; font-weight: 500;"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="4"></circle><path d="M12 12l8 8M17 17l2-2M15 15l2-2"></path></svg> Use a passkey <span style="font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; color: #8a5a00; border: 1px dashed #8a5a00; border-radius: 4px; padding: 2px 6px; white-space: nowrap;">Phase 2</span></a>
+    <div style="display: flex; align-items: center; gap: 12px; margin: 8px 0; font-size: 13px; color: #4f4b63;"><span style="flex-grow: 1; height: 1px; background: #e7dfd0;"></span>or with your email <span style="font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 600; color: #8a5a00; border: 1px dashed #8a5a00; border-radius: 4px; padding: 2px 6px; white-space: nowrap;">Phase 2</span><span style="flex-grow: 1; height: 1px; background: #e7dfd0;"></span></div>
+    <div role="tablist" aria-label="Email sign-in" style="display: flex; border: 1px solid #8f8470; border-radius: 10px; overflow: hidden;">
+      <button type="button" role="tab" id="tab-pw" aria-controls="panel-pw" aria-selected="{{tabPw}}" onClick="{{showPw}}" style="flex: 1 1 0; min-height: 44px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; font-weight: 600; border: 0; background: {{pwBg}}; color: {{pwFg}}; cursor: pointer;">Password</button>
+      <button type="button" role="tab" id="tab-link" aria-controls="panel-link" aria-selected="{{tabLink}}" onClick="{{showLink}}" style="flex: 1 1 0; min-height: 44px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; font-weight: 600; border: 0; background: {{linkBg}}; color: {{linkFg}}; cursor: pointer;">Email link</button>
+    </div>
+    <sc-if value="{{tabPw}}" hint-placeholder-val="{{ true }}">
+      <form id="panel-pw" role="tabpanel" aria-labelledby="tab-pw" style="display: flex; flex-direction: column; gap: 10px;">
+        <label for="user" style="font-size: 14px; color: #35344f;">Email or username</label>
+        <input id="user" type="text" autocomplete="username" placeholder="you@example.com" style="height: 48px; box-sizing: border-box; padding: 0 16px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; color: #1b1c3f; background: #fffdf8; border: 1px solid #8f8470; border-radius: 10px; min-width: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;"><label for="pw" style="font-size: 14px; color: #35344f;">Password</label><a href="SignInStates.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 14px;">Forgot password?</a></div>
+        <input id="pw" type="password" autocomplete="current-password" style="height: 48px; box-sizing: border-box; padding: 0 16px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; color: #1b1c3f; background: #fffdf8; border: 1px solid #8f8470; border-radius: 10px; min-width: 0;">
+        <button type="submit" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; font-weight: 600; color: #1b1c3f; background: #e06a1d; border: 0; margin-top: 4px; font-size: 16px;">Sign in</button>
+        <p style="margin: 0; font-size: 14px; color: #35344f;">New here? <a href="SignInStates.dc.html">Create an account</a></p>
+      </form>
+    </sc-if>
+    <sc-if value="{{tabLink}}" hint-placeholder-val="{{ false }}">
+      <form id="panel-link" role="tabpanel" aria-labelledby="tab-link" style="display: flex; flex-direction: column; gap: 10px;">
+        <label for="email" style="font-size: 14px; color: #35344f;">Email address</label>
+        <input id="email" type="email" autocomplete="email" placeholder="you@example.com" style="height: 48px; box-sizing: border-box; padding: 0 16px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; color: #1b1c3f; background: #fffdf8; border: 1px solid #8f8470; border-radius: 10px; min-width: 0;">
+        <button type="submit" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; font-weight: 600; color: #1b1c3f; background: #e06a1d; border: 0; font-size: 16px;">Email me a sign-in link</button>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4f4b63;">The link works once and expires soon. [Expiry set in the sign-in ADR]</p>
+      </form>
+    </sc-if>
+    <p style="margin: 12px 0 0; padding-top: 16px; border-top: 1px solid #e7dfd0; font-size: 13px; line-height: 1.5; color: #4f4b63;">By signing in you accept the <a href="Terms.dc.html">Terms</a>. See what we keep on the <a href="Privacy.dc.html">Privacy</a> page.</p>
+  </section>
+</main><footer style="border-top: 1px solid #e7dfd0; margin-top: auto;"><div class="wrap" style="max-width: 1040px; margin: 0 auto; padding-left: 24px; padding-right: 24px; box-sizing: border-box; width: 100%; padding-top: 28px; padding-bottom: 28px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #4f4b63;"><div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;"><a href="Main.dc.html" aria-label="helper2.ai home" style="display: inline-flex; align-items: center; gap: 14px; text-decoration: none; color: #1b1c3f; flex: none; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><span aria-hidden="true" style="display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e06a1d; color: #1b1c3f;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span><span style="display: inline-flex; flex-direction: column; gap: 4px;"><span class="logo-word" style="font-size: 20px; font-weight: 500; line-height: 1; letter-spacing: -0.03em;">helper2.ai</span><span class="logo-tag" style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4f4b63; line-height: 1.2;">AI on your radar</span></span></a><div style="display: flex; flex-wrap: wrap; gap: 0 22px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;"><a href="Mission.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Mission</a><a href="Sources.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Sources</a><a href="Privacy.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Privacy</a><a href="Terms.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Terms</a><a href="#" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">GitHub ↗</a><a href="#" style="display: inline-flex; align-items: center; min-height: 44px; color: #4f4b63;">Apache-2.0 ↗</a><button type="button" aria-pressed="false" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; border-radius: 10px; text-decoration: none; cursor: pointer; box-sizing: border-box; min-height: 44px; padding: 0 4px; color: #a8420a; background: none; border: 0; text-decoration: underline; font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; color: #4f4b63; font-size: 14px;">Dark theme</button></div></div><p style="margin: 0;">helper2.ai searches the sources listed on the <a href="Sources.dc.html" style="color: #4f4b63;">Sources</a> page, not the whole web. No ads. © 2026 Silvio Incalza · Switzerland · EU servers</p></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pw = (this.state && this.state.tab ? this.state.tab : 'pw') === 'pw';
+    return {
+      tabPw: pw, tabLink: !pw,
+      pwBg: pw ? '#1b1c3f' : 'transparent', pwFg: pw ? '#f7f2e9' : '#1b1c3f',
+      linkBg: pw ? 'transparent' : '#1b1c3f', linkFg: pw ? '#1b1c3f' : '#f7f2e9',
+      showPw: () => this.setState({ tab: 'pw' }),
+      showLink: () => this.setState({ tab: 'link' })
+    };
+  }
+}
+</script>
+</body>
+</html>

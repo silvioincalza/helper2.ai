@@ -1,0 +1,61 @@
+.h2-sponsor {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  min-height: 9.5rem;
+  box-sizing: border-box;
+}
+.h2-sponsor__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  align-items: baseline;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-14);
+}
+.h2-sponsor__tag {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--text-12);
+}
+.h2-sponsor__progress {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--border);
+  margin: 0 0 var(--space-2);
+}
+.h2-sponsor__bar {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  animation: h2-sponsor-fill 6s linear forwards;
+}
+@keyframes h2-sponsor-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .h2-sponsor__bar {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+.h2-sponsor__ad {
+  min-height: 6rem;
+}
+.h2-adsense {
+  min-height: 18rem;
+}
+.h2-adsense__ad {
+  display: block;
+  min-height: 15rem;
+}

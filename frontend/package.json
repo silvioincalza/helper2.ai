@@ -1,0 +1,67 @@
+{
+  "name": "helper2-frontend",
+  "private": true,
+  "version": "2026.11.3",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "gen:api": "openapi-typescript ../api/public.yaml --enum-values -o src/api/schema.ts && openapi-typescript ../api/admin.yaml --enum-values -o src/api/admin-schema.ts",
+    "dev": "vite",
+    "dev:admin": "vite --config vite.admin.config.ts",
+    "prebuild": "npm run gen:api",
+    "build": "tsc --noEmit && vite build && vite build --config vite.admin.config.ts",
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "preview": "vite preview",
+    "pretypecheck": "npm run gen:api",
+    "typecheck": "tsc --noEmit",
+    "prelint": "npm run gen:api",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "preknip": "npm run gen:api",
+    "knip": "knip && knip --production --strict --exclude exports,nsExports,types,nsTypes,enumMembers,namespaceMembers,duplicates",
+    "pretest": "npm run gen:api",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "i18next": "26.7.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-i18next": "17.1.13",
+    "react-router": "8.5.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "axe-core": "4.14.0",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "jsdom": "31.0.0",
+    "knip": "6.44.1",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.6",
+    "vitest": "5.1.0",
+    "yaml": "2.9.1"
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
+  }
+}

@@ -1,0 +1,1237 @@
+{
+  "common": {
+    "unknown": "Not stated",
+    "yes": "Yes",
+    "no": "No",
+    "retry": "Try again",
+    "copy": "Copy",
+    "copied": "Copied",
+    "loading": "Loading…",
+    "optional": "optional",
+    "required": "required",
+    "opensNewTab": "(opens in a new tab)"
+  },
+  "guideMe": {
+    "label": "Set it up"
+  },
+  "nav": {
+    "main": "Main",
+    "menu": "Menu",
+    "home": "helper2.ai home",
+    "news": "News",
+    "events": "Events",
+    "saved": "Saved",
+    "sources": "Sources",
+    "signIn": "Sign in",
+    "signInWith": "Sign in with {{provider}}",
+    "signOut": "Sign out",
+    "signedIn": "Signed in",
+    "skip": "Skip to main content",
+    "mission": "Mission",
+    "privacy": "Privacy",
+    "theme": {
+      "switchTo": "Switch to {{theme}} theme",
+      "light": "light",
+      "dark": "dark"
+    },
+    "terms": "Terms",
+    "account": "Your account",
+    "signInFailed": "Sign-in did not work. Please try again.",
+    "signInAgain": "Choose how to sign in",
+    "sessionEnded": "Please sign in again.",
+    "tagline": "AI on your radar"
+  },
+  "aiKey": {
+    "title": "AI marks:",
+    "written": "written by AI",
+    "read": "read from the source by AI",
+    "estimated": "estimated by AI, can be wrong"
+  },
+  "footer": {
+    "coverage": "We search only the sources listed on the Sources page, not the whole web.",
+    "copyright": "© {{year}} Silvio Incalza",
+    "github": "GitHub",
+    "githubLabel": "Source code of helper2.ai on GitHub (opens in a new tab)",
+    "license": "Apache-2.0",
+    "licenseLabel": "Apache-2.0 license (opens in a new tab)",
+    "mission": "Mission",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "versionLabel": "Release notes for version {{version}} (opens in a new tab)",
+    "place": "Switzerland · EU servers",
+    "support": "Support helper2.ai",
+    "cookieSettings": "Cookie settings",
+    "privacyChoices": "Privacy choices"
+  },
+  "home": {
+    "name": "helper2.ai",
+    "title": "The metasearch for the AI universe.",
+    "lede": "One search across the world of AI for models, apps, MCP servers and papers. Ask the guide for a pick with proof.",
+    "hint": "Enter searches. Shift+Enter asks the guide for picks with proof.",
+    "hintTouch": "Search, or tap Ask for picks with proof.",
+    "examples": "Try:",
+    "exampleAi": "Drafted with AI, checked by a person",
+    "exampleAiMark": "AI draft",
+    "example": {
+      "papers": {
+        "label": "Summarize research papers",
+        "query": "summarize research papers"
+      },
+      "meetings": {
+        "label": "Take meeting notes",
+        "query": "take meeting notes"
+      },
+      "images": {
+        "label": "Make images from text",
+        "query": "make images from text"
+      },
+      "background": {
+        "label": "Remove a photo background",
+        "query": "remove image background"
+      },
+      "video": {
+        "label": "Edit videos with AI",
+        "query": "edit videos with AI"
+      },
+      "postgres": {
+        "label": "Postgres MCP server",
+        "query": "postgres mcp server"
+      },
+      "vectors": {
+        "label": "Vector database",
+        "query": "vector database"
+      },
+      "agents": {
+        "label": "Agent framework",
+        "query": "agent framework"
+      },
+      "local": {
+        "label": "Run LLMs locally",
+        "query": "run llms locally"
+      },
+      "rag": {
+        "label": "RAG framework",
+        "query": "rag framework"
+      },
+      "coding": {
+        "label": "AI coding assistant",
+        "query": "AI coding assistant"
+      }
+    },
+    "does": {
+      "title": "What helper2.ai does for you",
+      "search": {
+        "title": "Searches for you",
+        "text": "One question goes to every source at once: Hugging Face, GitHub, npm, arXiv and more. You get one clean list."
+      },
+      "recommend": {
+        "title": "Recommends up to three",
+        "text": "Describe your task in a sentence. The guide picks the best fits and says why."
+      },
+      "proof": {
+        "title": "Shows its proof",
+        "text": "Every fact links to where it comes from. AI-written text always carries a mark."
+      }
+    }
+  },
+  "search": {
+    "label": "Search AI resources",
+    "placeholder": "e.g. summarize research papers",
+    "submit": "Search",
+    "clear": "Clear search",
+    "typeFirst": "Type what you need first.",
+    "slashHint": "Press / to search",
+    "charsLeft_one": "{{count}} character left",
+    "charsLeft_other": "{{count}} characters left",
+    "charsLeftShort": "{{count}} left"
+  },
+  "results": {
+    "title": "Search results",
+    "all": "Results",
+    "command": "helper2 search",
+    "commandTimeline": "helper2 search --timeline",
+    "filtersOn": " · {{count}} on",
+    "loading": "Searching the listed sources…",
+    "errorTitle": "Search is unavailable",
+    "errorBody": "We could not reach the helper2.ai service. Nothing was searched. Check your connection, then try again.",
+    "partialLine_one": "{{missed}} of {{count}} source did not answer",
+    "partialLine_other": "{{missed}} of {{count}} sources did not answer",
+    "partialLineShort_one": "{{count}} source did not answer",
+    "partialLineShort_other": "{{count}} sources did not answer",
+    "partialWhich": "Which?",
+    "missReason": {
+      "FAILED": "returned an error.",
+      "TIMED_OUT": "took too long to answer.",
+      "RATE_LIMITED": "hit its rate limit and is paused for a while.",
+      "RATE_LIMIT_PAUSE": "is paused for a while after a rate limit.",
+      "CIRCUIT_OPEN": "is paused after repeated errors.",
+      "BUSY": "was busy with other searches.",
+      "QUOTA_UNAVAILABLE": "is paused: today’s web search limit cannot be checked.",
+      "SKIPPED": "was skipped."
+    },
+    "missFromCache": "Saved results from it are shown.",
+    "noticeInfo": "Notice",
+    "noticeWarning": "Warning",
+    "alsoSearchedLabel": "Also searched for:",
+    "translatedNote": "Translated by AI",
+    "lexiconNote": "added from a fixed word list, not AI",
+    "suggestUseCase": "Narrow by use case:",
+    "path": {
+      "label": "Best for:",
+      "ALL": "Anyone",
+      "USE_AI": "Apps I can use",
+      "BUILD_WITH_AI": "Build with AI"
+    },
+    "emptyTitle": "No results from the sources searched",
+    "emptyRemoveFilters": "Remove all filters",
+    "emptyTryOther": "Try different or fewer words.",
+    "allFailedTitle": "No source responded",
+    "allFailedBody": "None of the listed sources returned an answer, so nothing was actually searched. This is not the same as \"no results\". Try again in a moment.",
+    "notice": {
+      "CACHE_UNAVAILABLE": "Every source was searched live, so this search may be slower.",
+      "INDEX_UNAVAILABLE": "Our own index did not answer, so “first seen” dates are missing for this search.",
+      "ALL_SOURCES_FAILED": "No source could be reached."
+    },
+    "heading": "Results for {{q}}",
+    "found_one": "{{count}} result",
+    "found_other": "{{count}} results",
+    "types": "Result types",
+    "allTypes": "All",
+    "moreTypes": "More",
+    "pick": "Guide pick #{{rank}}",
+    "checkedQuote": "Checked word for word in the source",
+    "sourceLine": {
+      "answered": "{{ok}} of {{total}} sources answered",
+      "live_one": "{{count}} live, {{ms}} ms",
+      "live_other": "{{count}} live, slowest {{ms}} ms",
+      "liveOnly_one": "{{count}} live",
+      "liveOnly_other": "{{count}} live",
+      "cached_one": "{{count}} from the cache",
+      "cached_other": "{{count}} from the cache",
+      "details": "Details"
+    },
+    "keys": {
+      "title": "Keyboard keys",
+      "move": { "key": "j k", "does": "next or previous result" },
+      "open": { "key": "Enter", "does": "open the result" },
+      "box": { "key": "/", "does": "go to the search box" },
+      "ask": {
+        "key": "g",
+        "does": "go to the Ask the guide button (Enter then asks)"
+      },
+      "help": { "key": "?", "does": "show or hide this list" },
+      "note": "The keys work while the focus is in the results, for example after Tab or a click on a result's line."
+    },
+    "from": "From {{sources}}",
+    "fromCatalog": "helper2.ai catalog",
+    "foundIn": "Found in {{list}} under {{heading}}",
+    "foundInList": "Found in {{list}}",
+    "dateUpdated": "updated {{date}}",
+    "dateCreated": "created {{date}}",
+    "dateFirstSeen": "first seen {{date}}",
+    "fullAnswer": "How the guide decided",
+    "openOn": "Open on {{host}}",
+    "whyPicked": "Why the guide picked it",
+    "reasonChecked": "A second model call checked this reason against the quote.",
+    "reasonNotChecked": "Not checked by a second model call.",
+    "noReason": "The guide gave no reason for this pick.",
+    "aboutAi": "About",
+    "use": "Use",
+    "build": "Build",
+    "notStated": "Not stated",
+    "timeline": "Timeline",
+    "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result, duplicates removed",
+    "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results, duplicates removed",
+    "seeSources": "See the sources we search",
+    "showMore": "Show more",
+    "loadingMore": "Loading more…",
+    "moreLoaded_one": "{{count}} more result",
+    "moreLoaded_other": "{{count}} more results",
+    "moreFailed": "Could not load more results",
+    "askGuide": "Ask the guide instead"
+  },
+  "timeline": {
+    "viewLabel": "Show results as",
+    "view": {
+      "list": "List",
+      "timeline": "Timeline"
+    },
+    "order": "By the date each item was created, newest first.",
+    "label": "Results by creation date",
+    "created": "Created",
+    "noDate": "Creation date not stated",
+    "unknown": "Date not stated",
+    "unknownCount_one": "{{count}} result.",
+    "unknownCount_other": "{{count}} results.",
+    "unknownHint": "No source states when these were created. We do not use the date helper2.ai found them instead.",
+    "showThem": "Show them",
+    "hideThem": "Hide them"
+  },
+  "sort": {
+    "label": "Sort by",
+    "RELEVANCE": "Best match",
+    "NEWEST": "Newest",
+    "RECENTLY_UPDATED": "Recently updated"
+  },
+  "filters": {
+    "title": "Filters",
+    "active": "Active filters",
+    "clearAll": "Clear all filters",
+    "remove": "Remove filter: {{filter}}",
+    "updatedAfter": "Updated after",
+    "updatedAfterHint": "Only results with a known last-updated date on or after this day.",
+    "close": "Close",
+    "showResults_one": "Show {{count}} result",
+    "showResults_other": "Show {{count}} results",
+    "searching": "Searching…"
+  },
+  "facet": {
+    "type": "Type",
+    "useCase": "Use case",
+    "techLevel": "Technical level",
+    "source": "Source",
+    "license": "License",
+    "pricing": "Pricing",
+    "platform": "Platform",
+    "openSource": "Open source",
+    "category": "Category"
+  },
+  "categories": {
+    "title": "Categories",
+    "loading": "Loading categories…",
+    "error": "Could not load the categories.",
+    "retry": "Try again",
+    "empty": "None of these results has a category yet.",
+    "none": "No category yet",
+    "searchIn": "Search in {{name}}",
+    "byCode": "Categories are set by fixed rules from what the sources say, not by AI."
+  },
+  "sources": {
+    "latencyMs": "{{ms}} ms",
+    "col": {
+      "source": "Source"
+    },
+    "how": "How we search",
+    "all": "Every source",
+    "filter": "Show sources by mode",
+    "covers": "Covers",
+    "lastCheck": "Last check",
+    "summary": "{{ok}} of {{total}} sources answered at their last check",
+    "warn_one": "{{count}} slow or limited",
+    "warn_other": "{{count}} slow or limited",
+    "failed_one": "{{count}} failed",
+    "failed_other": "{{count}} failed",
+    "idle_one": "{{count}} skipped or not checked",
+    "idle_other": "{{count}} skipped or not checked",
+    "steps": {
+      "ask": {
+        "title": "One search, every source",
+        "text": "Your search goes to every enabled source at the same time."
+      },
+      "merge": {
+        "title": "Duplicates become one",
+        "text": "The same resource from several sources is shown once, with every source named."
+      },
+      "prove": {
+        "title": "Picks quote their source",
+        "text": "The guide only recommends what it found, and quotes the sentence that supports it."
+      },
+      "dates": {
+        "title": "Dates as stated",
+        "text": "A date is shown only when the source states it. Nothing is guessed."
+      }
+    }
+  },
+  "outcome": {
+    "SUCCEEDED": "Succeeded",
+    "FAILED": "Failed",
+    "TIMED_OUT": "Timed out",
+    "RATE_LIMITED": "Rate limited",
+    "SKIPPED": "Skipped"
+  },
+  "servedFrom": {
+    "STALE_CACHE": "Older saved copy"
+  },
+  "mode": {
+    "LIVE": {
+      "label": "Live",
+      "hint": "Queried at the moment you search."
+    },
+    "INDEXED": {
+      "label": "Indexed",
+      "hint": "Our own index, built ahead of time. It can be behind the original."
+    },
+    "CURATED": {
+      "label": "Curated",
+      "hint": "A starter list written by helper2.ai. Not live."
+    },
+    "DEMO": {
+      "label": "Demo",
+      "hint": "Fixture data for demonstrations and tests. Not real listings."
+    }
+  },
+  "origin": {
+    "SOURCE_PROVIDED": "From source",
+    "AI_EXTRACTED": "Extracted by AI",
+    "AI_SUMMARY": "AI summary",
+    "AI_ESTIMATED": "AI-estimated",
+    "SELF_DECLARED": "Self-declared by the vendor (extracted by AI)",
+    "CURATED": "Curated by helper2.ai",
+    "COMMUNITY": "Community submission",
+    "DEMO": "Demo data"
+  },
+  "verification": {
+    "VERIFIED": "Verified",
+    "UNVERIFIED": "Unverified",
+    "CONFLICTING": "Conflicting",
+    "REJECTED": "Rejected"
+  },
+  "type": {
+    "PRODUCT": "Product",
+    "MODEL": "Model",
+    "AGENT": "Agent",
+    "PROMPT": "Prompt",
+    "SKILL": "Skill",
+    "MCP_SERVER": "MCP server",
+    "LIBRARY": "Library",
+    "DATASET": "Dataset",
+    "ARTICLE": "Article",
+    "PAPER": "Paper",
+    "NEWS": "News",
+    "EVENT": "Event",
+    "COURSE": "Course",
+    "OTHER": "Other"
+  },
+  "techLevel": {
+    "BEGINNER": "Beginner",
+    "INTERMEDIATE": "Intermediate",
+    "ADVANCED": "Advanced",
+    "UNKNOWN": "Not stated"
+  },
+  "pricing": {
+    "FREE": "Free",
+    "FREEMIUM": "Freemium",
+    "PAID": "Paid",
+    "OPEN_SOURCE_SELF_HOSTED": "Open source, self-hosted",
+    "UNKNOWN": "Not stated"
+  },
+  "useCase": {
+    "writing": "Writing",
+    "translation": "Translation",
+    "image-generation": "Image generation",
+    "coding": "Coding",
+    "research": "Research",
+    "summarization": "Summarization",
+    "transcription": "Transcription",
+    "automation": "Automation",
+    "design": "Design",
+    "learning": "Learning",
+    "data-analysis": "Data analysis",
+    "chat": "Chat",
+    "video": "Video",
+    "audio": "Audio"
+  },
+  "date": {
+    "published": "Published",
+    "updated": "Last updated",
+    "discovered": "First seen by helper2.ai",
+    "conflicting": "Sources disagree",
+    "fromSource": "source: {{source}}",
+    "eventStart": "Takes place"
+  },
+  "card": {
+    "openOriginal": "Open original",
+    "noDescription": "No description available.",
+    "timeline": "Dates",
+    "compatibleWith": "Works with"
+  },
+  "compat": {
+    "basis": {
+      "TAG": "{{source}} lists the tag “{{evidence}}”",
+      "TYPE": "MCP servers work with any MCP client (Claude, Cursor, VS Code…)",
+      "FORMAT": "Published as {{evidence}} weights, which this runtime loads"
+    }
+  },
+  "bookmark": {
+    "save": "Save",
+    "saved": "Saved",
+    "label": "Save {{title}}",
+    "savedLabel": "Saved {{title}}"
+  },
+  "detail": {
+    "backToSearch": "Back to search",
+    "notFound": "Resource not found",
+    "errorTitle": "Could not load this resource",
+    "summary": "AI summary",
+    "noSummary": "No AI summary",
+    "selfDeclaredClaim": "From the product's own page: what the vendor says about itself.",
+    "fields": "All details",
+    "field": {
+      "type": "Type",
+      "pricing": "Pricing",
+      "platforms": "Platforms",
+      "useCase": "Use cases",
+      "license": "License",
+      "openSource": "Open source",
+      "audience": "For",
+      "techLevel": "Technical level"
+    },
+    "audience": {
+      "USE_AI": "People who use AI",
+      "BUILD_WITH_AI": "People who build with AI",
+      "BOTH": "Both"
+    },
+    "summaryMeta": "Written by {{model}} on {{date}}. Each sentence links to its evidence.",
+    "citations_one": "{{count}} citation",
+    "citations_other": "{{count}} citations",
+    "assertions": "Facts and where they come from",
+    "noAssertions": "No individual facts recorded.",
+    "col": {
+      "field": "Field",
+      "value": "Value",
+      "origin": "Origin",
+      "verification": "Verification",
+      "evidence": "Evidence",
+      "externalId": "ID at the source",
+      "retrieved": "Retrieved",
+      "fingerprint": "Content hash"
+    },
+    "relationships": "Verified relationships",
+    "noVerified": "No verified relationships.",
+    "candidates": "Unverified candidates",
+    "candidatesHint": "These links were suggested automatically and have not been confirmed. Treat them as leads, not facts.",
+    "sourceRecords": "Source records",
+    "noEvidence": "No evidence attached.",
+    "evidenceLink": "Evidence",
+    "evidenceReadme": "{{name}} · README",
+    "evidenceModelCard": "{{name}} · model card",
+    "retrievedAt": "Retrieved {{date}}"
+  },
+  "enrichment": {
+    "NOT_RUN": "No AI summary yet.",
+    "VALIDATED": "The AI analysis was checked against its evidence.",
+    "PARTIAL": "Only part of the AI analysis passed validation; the rest was dropped.",
+    "REJECTED": "An AI analysis was produced but failed validation, so it is not shown.",
+    "LLM_UNAVAILABLE": "The AI model was not available, so there is no AI summary."
+  },
+  "relationship": {
+    "INTEGRATES_WITH": "Integrates with",
+    "USES": "Uses",
+    "SUPPORTS": "Supports",
+    "COMPATIBLE_WITH": "Compatible with",
+    "ABOUT": "About"
+  },
+  "report": {
+    "title": "Report wrong or outdated info",
+    "kind": "What is the problem?",
+    "field": "Which detail is wrong?",
+    "message": "Describe the problem",
+    "hint": "{{count}} / 2000 characters (at least 5)",
+    "submit": "Send report",
+    "errorLength": "Please write between 5 and 2000 characters.",
+    "errorGeneric": "The report could not be sent. Please try again.",
+    "success": "Thank you. Your report was sent to the human review queue.",
+    "kinds": {
+      "WRONG": "Wrong information",
+      "OUTDATED": "Outdated information",
+      "BROKEN_LINK": "Broken link",
+      "OTHER": "Something else"
+    }
+  },
+  "saved": {
+    "title": "Saved resources",
+    "empty": "Nothing saved yet.",
+    "remove": "Remove",
+    "removeLabel": "Remove {{title}} from saved",
+    "savedAt": "saved {{date}}",
+    "localNote": "Saved in this browser only.",
+    "serverNote": "Saved on your account.",
+    "storageFailed": "Your browser blocked storage, so saved items will be lost when you leave this page.",
+    "serverError": "Could not sync with your account.",
+    "types": "Saved by type",
+    "localNoteSignIn": "Saved in this browser only. Sign in to keep them on every device.",
+    "emptyHint": "Press Save on any result to keep it here."
+  },
+  "account": {
+    "title": "Your account",
+    "signedInAs": "Signed in with GitHub as {{name}}.",
+    "signedOut": "You are not signed in, so there is no account to delete.",
+    "signedInTitle": "Signed in",
+    "name": "Name",
+    "aiAnswersLeft": "AI answers left today",
+    "setupGuidesLeft": "AI setups left today",
+    "webSearchesLeft": "Web searches left today",
+    "guideWebSearchesLeft": "Guide searches left today",
+    "leftOf": "{{remaining}} of {{limit}} · resets {{time}}",
+    "displayTitle": "Display",
+    "radarMotion": "Home page motion: radar and lists",
+    "radarMotionText": "Turn off to keep the Home radar still. It is also still when your system asks for reduced motion.",
+    "saveFailed": "Not saved. Please try again later.",
+    "deleteTitle": "Delete your account",
+    "deleteText": "This deletes your account and everything saved on it. Reports you sent stay: they were never linked to your account.",
+    "privacyLink": "What we keep and for how long",
+    "delete": "Delete my account",
+    "confirmTitle": "Delete your account?",
+    "confirmText": "Your account and your saved items are deleted now and cannot be restored. You will be signed out.",
+    "cancel": "Cancel",
+    "confirm": "Delete account",
+    "failed": "Your account could not be deleted. Please try again later."
+  },
+  "sourcesPage": {
+    "title": "Sources",
+    "lede": "These are all the sources helper2.ai can search. Anything not listed here is not covered.",
+    "error": "Could not load the source list.",
+    "disabled": "Disabled",
+    "terms": "Terms",
+    "neverChecked": "Never checked",
+    "col": {
+      "terms": "Terms",
+      "mode": "Mode",
+      "when": "When",
+      "newThisWeek": "New this week"
+    },
+    "radar_one": "The Home radar shows {{shown}} of these {{count}} external source at a time.",
+    "radar_other": "The Home radar shows {{shown}} of these {{count}} external sources at a time.",
+    "internal": "ours, not on the radar",
+    "responseTime": "Response time",
+    "noCalls": "No calls yet",
+    "pause": {
+      "since": "Paused after repeated failures, since {{time}}. It tries again on its own.",
+      "paused": "Paused after repeated failures. It tries again on its own.",
+      "trying": "Trying again"
+    },
+    "webCredits": "Web credits today",
+    "credits": {
+      "capped": "{{used}} of {{cap}} (all visitors)",
+      "uncapped": "{{used}} (no daily cap)",
+      "unavailable": "Not available right now"
+    },
+    "replicaNote": "Response time and pauses are from the server that answered this page.",
+    "refreshFailed": "Could not refresh; showing the list from {{time}}",
+    "discovery": {
+      "group": "Discovery · {{family}}",
+      "lede": "Discovery categories: once a week, each one runs its own live web search to find new AI tools, articles that compare them and posts about them.",
+      "lists": "List articles are added without review.",
+      "products": "Products and posts about them are added only after a person checks them."
+    },
+    "family": {
+      "prompts-and-skills": "Prompts and skills",
+      "everyday-apps": "Everyday apps",
+      "creative-and-media": "Creative and media",
+      "business": "Business",
+      "developers": "Developers",
+      "hosting-and-infra": "Hosting and infrastructure",
+      "run-it-yourself": "Run it yourself"
+    },
+    "notice": {
+      "health": "Not medical advice. We do not check whether a tool is approved as a medical device. Claims are the vendor's own, quoted with their source.",
+      "legal": "Not legal advice. We do not check whether a tool is right for your country or case."
+    }
+  },
+  "routeError": {
+    "label": "Error",
+    "title": "This page could not open",
+    "body": "The site was probably updated while this tab was open. Reload the page to get the new version.",
+    "reload": "Reload the page"
+  },
+  "notFound": {
+    "label": "404",
+    "title": "Page not found",
+    "body": "This page does not exist, or it moved. Search for what you need in the box above, or go to the home page.",
+    "home": "Go to the home page"
+  },
+  "glossary": {
+    "whatIs": "What does this mean?",
+    "mcp_server": {
+      "term": "MCP server",
+      "def": "A small program that lets an AI assistant use an outside tool or data source through the Model Context Protocol, an open standard."
+    },
+    "model": {
+      "term": "Model",
+      "def": "The trained AI system that produces text, images or other output. Products and agents are built on top of models."
+    },
+    "agent": {
+      "term": "Agent",
+      "def": "Software that uses a model to carry out multi-step tasks on its own, often by calling tools."
+    },
+    "prompt": {
+      "term": "Prompt",
+      "def": "The instructions or text you give an AI model. A prompt template is a reusable one."
+    },
+    "skill": {
+      "term": "Skill",
+      "def": "A packaged set of instructions and files that teaches an AI assistant to do a specific task."
+    },
+    "library": {
+      "term": "Library",
+      "def": "Reusable code that developers add to their own software."
+    },
+    "dataset": {
+      "term": "Dataset",
+      "def": "A collection of data used to train or test AI models."
+    },
+    "product": {
+      "term": "Product",
+      "def": "A finished AI app or service that you use directly, without writing code."
+    },
+    "article": {
+      "term": "Article",
+      "def": "Writing about AI: a guide, tutorial or blog post."
+    },
+    "paper": {
+      "term": "Paper",
+      "def": "A research paper, usually from arXiv."
+    },
+    "news": {
+      "term": "News",
+      "def": "A news story about AI."
+    },
+    "event": {
+      "term": "Event",
+      "def": "A conference, meetup, webinar or hackathon."
+    },
+    "course": {
+      "term": "Course",
+      "def": "A course or a certification about AI. Its platform is listed under Platforms; tags say whether it gives a certification (a proctored exam) or a certificate of completion, and whether it is self-paced, instructor-led, a live event or an exam only."
+    },
+    "other": {
+      "term": "Other",
+      "def": "An AI resource that fits none of the other types."
+    },
+    "typeAssigned": "The type comes from the source's data, keyword rules or an AI model, so it can be wrong.",
+    "license": {
+      "term": "License",
+      "def": "The rules for using, changing and sharing the resource. Always read the license itself before relying on it."
+    },
+    "open_source": {
+      "term": "Open source",
+      "def": "The source code is public under a license that lets others use and modify it. It does not always mean free of charge."
+    },
+    "tech_level": {
+      "term": "Technical level",
+      "def": "How much technical skill is needed to get started."
+    },
+    "platform": {
+      "term": "Platform",
+      "def": "Where it runs, for example web, desktop, mobile, command line, or a language runtime such as Python or Java."
+    },
+    "popularity": {
+      "term": "Popularity",
+      "def": "Counts such as stars or downloads reported by one source. They are never combined into a single score."
+    },
+    "provenance": {
+      "term": "Provenance",
+      "def": "Where a piece of information came from and when it was retrieved."
+    }
+  },
+  "guide": {
+    "ask": "Ask the guide",
+    "askShort": "Ask",
+    "filtersChanged": "Filters changed since you asked.",
+    "askAgain": "Ask again",
+    "askTitle": "Ask the guide (⇧↵)",
+    "answersLeft": {
+      "some": "{{remaining}} of {{limit}} AI answers left today.",
+      "none": "No AI answers left today. The guide shows the top search results without AI picks until {{time}} your time."
+    },
+    "searchedFor": "Searched the sources for: {{q}}",
+    "considered": "{{n}} candidates considered",
+    "rejected_one": "{{count}} AI suggestion removed: no supporting evidence",
+    "rejected_other": "{{count}} AI suggestions removed: no supporting evidence",
+    "reasonRemoved": "The model's explanation claimed more than the quote shows, so it is not shown.",
+    "checksLabel": "Your requirements, checked against the source",
+    "checkConfirmed": "confirmed by the source:",
+    "checkNotConfirmed": "not confirmed by the source (it may still be true; check before you rely on it)",
+    "noFit": "Nothing clearly fits your need.",
+    "promptAi": "AI-written",
+    "answeredBy": "Planning: {{fast}} · Choosing: {{reasoning}} · on {{provider}}",
+    "status": {
+      "OK": "All AI suggestions passed the evidence check.",
+      "PARTIAL": "Some AI suggestions were removed because the evidence did not support them.",
+      "LLM_UNAVAILABLE": "The AI model is not available right now. Showing the best search results instead.",
+      "NO_CANDIDATES": "No source had a match. Try different words, or press Search.",
+      "NEEDS_CLARIFICATION": "The question needs one more detail."
+    },
+    "notice": {
+      "GUIDE_DAILY_QUOTA": "You have used today's AI answers. Showing the top search results instead. AI answers are back after midnight UTC.",
+      "GUIDE_NETWORK_QUOTA": "Your network has used today's AI answers. Showing the top search results instead. AI answers are back after midnight UTC.",
+      "dailyQuotaBackAt": "You have used today's AI answers. Showing the top search results instead. AI answers are back at {{time}}.",
+      "dailyQuotaBackTomorrowAt": "You have used today's AI answers. Showing the top search results instead. AI answers are back tomorrow at {{time}}.",
+      "networkQuotaBackAt": "Your network has used today's AI answers. Showing the top search results instead. AI answers are back at {{time}}.",
+      "networkQuotaBackTomorrowAt": "Your network has used today's AI answers. Showing the top search results instead. AI answers are back tomorrow at {{time}}.",
+      "ALL_SOURCES_FAILED": "No source answered the guide's search. Try again in a moment.",
+      "GUIDE_BUDGET_SPENT": "The AI guide has answered as many questions as it can for now. Showing the best search results instead. Try again later.",
+      "budgetBackAt": "The AI guide has answered as many questions as it can for now. Showing the best search results instead. AI answers are back at {{time}}.",
+      "budgetBackTomorrowAt": "The AI guide has answered as many questions as it can for now. Showing the best search results instead. AI answers are back tomorrow at {{time}}.",
+      "GUIDE_OUT_OF_TIME": "The guide ran out of time before its AI answer was ready. Showing the best search results instead. Ask again in a moment.",
+      "GUIDE_SUBJECT_NOT_FOUND": "A name in the question was not found in our sources; showing the closest results.",
+      "subjectNotFound": "{{subject}} was not found in our sources.",
+      "subjectNotFoundShowing": "{{subject}} was not found in our sources; showing tools for: {{query}}",
+      "subjectAi": "Name AI-written",
+      "subjectAndSearchAi": "Name and search AI-written"
+    },
+    "error": "The guide could not answer. Please try again.",
+    "streamFailure": {
+      "IDLE_TIMEOUT": "The guide sent nothing for 45 seconds, so the request was stopped. Please try again.",
+      "MALFORMED": "The guide sent a reply this page could not read. Please try again.",
+      "ENDED_EARLY": "The connection closed before the answer arrived. Please try again.",
+      "DROPPED": "The connection to the guide dropped while the answer was coming. Please try again."
+    },
+    "howMade": "How this answer was made",
+    "strip": {
+      "planned": "1 · Planned",
+      "found": "2 · Found",
+      "chose": "3 · Chose",
+      "checked": "4 · Checked"
+    },
+    "sourcesAnswered": "{{ok}} of {{all}} sources answered",
+    "proposed_one": "{{count}} pick proposed",
+    "proposed_other": "{{count}} picks proposed",
+    "kept_one": "{{count}} pick kept",
+    "kept_other": "{{count}} picks kept",
+    "noneRejected": "No pick rejected",
+    "trail": {
+      "searchedFor": "Searched for:",
+      "queries": "Search queries the guide wrote",
+      "noQueries": "No AI-written search terms to show",
+      "removed": "Suggestions the checks removed",
+      "removedLine": "{{title}}: {{check}}",
+      "noneRemoved": "None removed",
+      "check": {
+        "QUOTE_NOT_FOUND": "quote not found in the source",
+        "REASON_NOT_SUPPORTED": "reason not supported",
+        "CONSTRAINT_NOT_MET": "does not fit the kind or period asked for",
+        "OFF_NEED": "does a different task than the one asked for"
+      }
+    },
+    "understood": "Understood as",
+    "requirementsAi": "Read by AI",
+    "remove": "Remove “{{part}}” and ask again",
+    "intent": {
+      "SUGGEST": "Suggestions",
+      "NEWEST": "New resources",
+      "ALTERNATIVES": "Alternatives",
+      "COMPARE": "Comparison",
+      "HOW_TO": "How to",
+      "WHAT_IS": "What it is",
+      "WHEN": "Dates",
+      "LEARN": "Courses and certifications"
+    },
+    "window": "Created {{from}} – {{to}}",
+    "windowNext": "From {{from}} to {{to}}",
+    "clarify": {
+      "label": "Pick one, or answer in your own words",
+      "other": "Your answer",
+      "send": "Ask",
+      "anyway": "Search anyway"
+    },
+    "comparison": {
+      "title": "Side by side",
+      "aspect": "Aspect",
+      "notStated": "Not stated by the source",
+      "notFound": "Not found in our sources",
+      "aiNote": "Each answer is AI-written. The quote under it is that resource's own text."
+    },
+    "explanation": {
+      "title": "What it is",
+      "aiNote": "AI-written. Each sentence quotes the resource it links to."
+    }
+  },
+  "eventsPage": {
+    "title": "Events",
+    "lede": "Conferences, hackathons, meetups, talks and workshops on AI in the next year. Only events whose source states the dates.",
+    "kind": "Kind of event",
+    "format": "Online or in person",
+    "allKinds": "All",
+    "empty": "No events with stated dates in the next year.",
+    "noneForFilter": "No event matches these filters.",
+    "inMonth_one": "{{count}} event",
+    "inMonth_other": "{{count}} events"
+  },
+  "newsPage": {
+    "title": "AI news",
+    "lede": "The last week of AI news found by our web search. Headlines and sites only: open a story to read it at its source.",
+    "bySite": "Site",
+    "allSites": "All sites",
+    "top": "Top stories",
+    "latest": "Latest",
+    "earlier": "Earlier this week",
+    "error": "Could not load the news.",
+    "empty": "No AI news in the last week.",
+    "noneForSite": "No story from this site in the last week."
+  },
+  "events": {
+    "error": "Could not load the next events.",
+    "empty": "No events with stated dates in the next three months.",
+    "kind": {
+      "CONFERENCE": "Conference",
+      "HACKATHON": "Hackathon",
+      "MEETUP": "Meetup",
+      "TALK": "Talk",
+      "WORKSHOP": "Workshop"
+    },
+    "format": {
+      "IN_PERSON": "In person",
+      "ONLINE": "Online",
+      "HYBRID": "Hybrid"
+    }
+  },
+  "radar": {
+    "empty": "Nothing with a stated publication date in the last 7 days.",
+    "error": "Could not load what’s new right now.",
+    "label": "Some of the sources we search",
+    "dot": {
+      "live": "live",
+      "index": "from our index",
+      "answeredIn": "answered in {{time}}",
+      "checked": "checked {{when}}",
+      "notChecked": "not checked yet",
+      "failed": "last check failed",
+      "timedOut": "timed out",
+      "rateLimited": "rate limited",
+      "skipped": "skipped",
+      "newThisWeek_one": "{{count}} new this week",
+      "newThisWeek_other": "{{count}} new this week"
+    },
+    "legend": {
+      "atATime_one": "{{shown}} of {{count}} source at a time",
+      "atATime_other": "{{shown}} of {{count}} sources at a time",
+      "answering": "answering",
+      "warn": "slow or limited",
+      "failed": "failed",
+      "all": "Sources page"
+    }
+  },
+  "textPage": {
+    "onThisPage": "On this page",
+    "numbersUnavailable": "Some limits and periods could not be loaded, so this page states them without numbers. Reload the page to see them."
+  },
+  "policy": {
+    "webSearches": "{{search}} a day for search and {{guide}} for the guide",
+    "duration": {
+      "seconds_one": "{{count}} second",
+      "seconds_other": "{{count}} seconds",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months"
+    }
+  },
+  "signInPage": {
+    "title": "Sign in to keep what you find.",
+    "lede": "You can search without an account. Sign in when you want more.",
+    "savedTitle": "Saved on every device.",
+    "savedText": "What you save follows you to every browser where you sign in.",
+    "settingsTitle": "Your settings.",
+    "settingsText": "Set the Home radar once; it stays that way on every device.",
+    "how": "Choose how to sign in",
+    "continueWith": "Continue with {{provider}}",
+    "termsIntro": "By signing in you accept the",
+    "privacyIntro": "See what we keep on the",
+    "privacyOutro": "page.",
+    "signedInTitle": "You are signed in",
+    "signedInText": "Signed in as {{name}}.",
+    "noneTitle": "Sign-in is not offered here",
+    "noneText": "This site has no sign-in set up. You can still search, ask the guide and save in this browser."
+  },
+  "mission": {
+    "title": "Our mission",
+    "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
+    "sections": [
+      {
+        "title": "Why helper2.ai exists",
+        "paragraphs": [
+          "New AI models, tools, agents, MCP servers and papers appear every day. General search engines mix them with marketing pages and old content, so it is hard to know what is real and current.",
+          "We search only sources about AI, tell you which sources we searched, and show where every result comes from and when it was checked."
+        ]
+      },
+      {
+        "title": "What we promise",
+        "items": [
+          "Proof before opinion. The guide only recommends a resource when it can quote a real source that supports the choice.",
+          "Honest coverage. We list every source we search and show what each one returned. We do not claim to search the whole web.",
+          "No invented facts. We never fill in dates, popularity or other facts that no source stated.",
+          "Open by default. The source code is public under the Apache-2.0 license.",
+          "Privacy first. In Europe, personalized ads and analytics only if you accept them, and we never sell data."
+        ]
+      },
+      {
+        "title": "How we mark AI text",
+        "items": [
+          "On the screen, every text an AI model wrote or read has a mark next to it. A full dot ● is text a model wrote: the guide’s picks, reasons, search terms, question back to you, comparison and explanation, a name it did not find in our sources, a summary of a resource, and the English translation of a query. A half dot ◐ is a value a model read from a source, or a requirement it read from your question. A hollow dot ○ is a model’s estimate, which can be wrong. Point at a mark, or tap it, to read its words, such as “AI-written”, “Extracted by AI” or “AI-estimated”. The key is at the bottom of every page. The setup steps carry the note “Steps written by AI”. A setup step shows only the words of the tool’s own documentation, labeled “From the source”, when a second AI check could not confirm its text, or when the site is set to show every step only from the source.",
+          "On the home page, an example a model drafted and a person checked has a full-dot mark that reads “AI draft”, with the note “Drafted with AI, checked by a person”.",
+          "In the page, the same text carries the HTML attribute data-ai-generated=\"true\", and data-ai-model with the model name when we know it.",
+          "In our API, a guide answer has an aiContent object that names the provider, the models and the fields they wrote. Catalog values carry an origin such as AI_SUMMARY or AI_EXTRACTED. A search gives the translation of a query in its own field, translatedQuery.",
+          "Quotes, titles and links are never written by AI. They come from the sources."
+        ]
+      },
+      {
+        "title": "Who is behind it",
+        "paragraphs": [
+          "Silvio Incalza, a software engineer based in Switzerland, builds helper2.ai as an independent project. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory."
+        ]
+      }
+    ],
+    "feedback": "Ideas, mistakes or missing sources? Open an issue on GitHub.",
+    "feedbackLink": "Open an issue on GitHub (opens in a new tab)"
+  },
+  "how": {
+    "title": "How the guide answers",
+    "lede": "Search first, an AI model second, a checker last. The model never decides what is true.",
+    "steps": {
+      "search": {
+        "title": "Search real sources",
+        "body": {
+          "text": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds up to {{maxCandidates}} real candidates.",
+          "withoutNumbers": "A fast Nemotron model turns your words, in any language, into search terms. A normal search across every source then finds the real candidates."
+        }
+      },
+      "choose": {
+        "title": "Nemotron chooses",
+        "body": {
+          "text": "A reasoning model picks at most {{maxPicks}} of those candidates and explains why with a quote.",
+          "withoutNumbers": "A reasoning model picks a few of those candidates and explains why with a quote."
+        }
+      },
+      "check": {
+        "title": "A validator checks",
+        "body": "Each pick must be one of the candidates, and its quote must appear word for word in that resource’s text. Rejected suggestions are counted and shown."
+      }
+    },
+    "rulesTitle": "Never guessed",
+    "rules": {
+      "notStated": {
+        "title": "Missing means not stated",
+        "body": "If no source gave a fact, it says Not stated. Dates, popularity and prices are never filled in."
+      },
+      "dates": {
+        "title": "Dates are the source’s own",
+        "body": "Published and updated come from the source. Otherwise you see when helper2.ai first saw it."
+      },
+      "unchecked": {
+        "title": "Every explanation is labeled",
+        "body": "Code checks the quote word for word. A second model call checks the explanation; the page says if it was checked, removed or not checked."
+      },
+      "fallback": {
+        "title": "Search keeps working",
+        "body": "If the AI model is unavailable, the guide shows the top real results instead, clearly labeled."
+      }
+    }
+  },
+  "setup": {
+    "title": "Set up {{title}}",
+    "loading": "Reading how to set it up…",
+    "guidesLeft": {
+      "some": "{{remaining}} of {{limit}} AI setups left today. Steps that are already written do not count.",
+      "none": "No AI setups left today. Steps already written still open; new ones are back at {{time}} your time."
+    },
+    "howToRun": "How to run it",
+    "yourTool": "Your AI tool",
+    "remote": "Hosted server, nothing to install. Endpoint:",
+    "package": "Runs locally from the {{type}} package {{id}}",
+    "requires": "needs {{what}}",
+    "headers": "Headers it asks for",
+    "env": "Environment variables it asks for",
+    "required": "required",
+    "optional": "optional",
+    "secret": "secret: fill in your own",
+    "default": "default {{value}}",
+    "where": "Paste into",
+    "unsupported": "Not available in {{client}}:",
+    "placeholders": "Replace each <placeholder> with your own value. Format from",
+    "docs": "{{client}} docs",
+    "from": "From its Official MCP Registry entry, version {{version}}, read {{date}}.",
+    "registryEntry": "Registry entry",
+    "connectTitle": "Connect it to your AI tool",
+    "command": "Runs locally with {{cmd}}, copied from its README; not reviewed for safety, so read it before you run it",
+    "fromReadme": "From the config example in its README, read {{date}}.",
+    "readme": "README",
+    "stepsTitle": "Step by step",
+    "reading": "Reading its documentation… (up to half a minute)",
+    "stepsError": "The setup steps could not be loaded. Try again.",
+    "stepsNote": "Steps written by AI from the tool's own documentation. Every quote and command below is copied exactly from it; commands are not reviewed for safety, so read each one before you run it.",
+    "stepsNoteSourceOnly": "Steps picked by AI from the tool's own documentation and shown in its own words. Every quote and command below is copied exactly from it; commands are not reviewed for safety, so read each one before you run it.",
+    "caution": "This command runs a downloaded script, uses sudo, opens permissions to everyone or deletes files. Read it before you run it.",
+    "quoteLabel": "Where the {{doc}} says this",
+    "fromSource": "From the source",
+    "fromSourceNote": "the {{doc}}'s own words; no AI-written text is shown for this step.",
+    "readOn": "read {{date}}",
+    "writtenBy": "steps written by {{model}}",
+    "pickedBy": "steps picked by {{model}}",
+    "section": {
+      "REQUIREMENTS": "What you need first",
+      "INSTALL": "Install",
+      "CONFIGURE": "Configure",
+      "USE": "Use it",
+      "CONNECT": "Connect to an AI tool"
+    },
+    "doc": {
+      "README": "README",
+      "PACKAGE_README": "npm README",
+      "MODEL_CARD": "model card"
+    },
+    "status": {
+      "NO_MATERIAL": "{{title}} has no README or model card we can read.",
+      "NO_STEPS": "No step could be copied exactly from its documentation for this. Open the original for its own instructions.",
+      "LLM_UNAVAILABLE": "Setup steps are not available right now. Try again later.",
+      "BUDGET": "Today's AI budget for setup steps is used. Steps already written still open; new ones are back after 00:00 UTC.",
+      "budgetBackAt": "Today's AI budget for setup steps is used. Steps already written still open; new ones are back at {{time}}.",
+      "budgetBackTomorrowAt": "Today's AI budget for setup steps is used. Steps already written still open; new ones are back tomorrow at {{time}}.",
+      "QUOTA": "You have reached today's limit for new setup steps. Steps already written still open; new ones are back after 00:00 UTC.",
+      "quotaBackAt": "You have reached today's limit for new setup steps. Steps already written still open; new ones are back at {{time}}.",
+      "quotaBackTomorrowAt": "You have reached today's limit for new setup steps. Steps already written still open; new ones are back tomorrow at {{time}}.",
+      "BUSY": "Many setup steps are being written right now. Try again in a moment.",
+      "OK": ""
+    }
+  },
+  "picks": {
+    "title": "Guide picks",
+    "aiWritten": "AI-written",
+    "reading_one": "Guide is reading {{count}} candidate… picks will appear here",
+    "reading_other": "Guide is reading {{count}} candidates… picks will appear here",
+    "readingResults": "Guide is reading the results… picks will appear here",
+    "activity": {
+      "reasoning": {
+        "plan": "Guide is thinking about your question…",
+        "choose": "Guide is thinking about which results fit…",
+        "compare": "Guide is thinking about the comparison…",
+        "explain": "Guide is thinking about the explanation…",
+        "verify": "Guide is thinking about its reasons…"
+      },
+      "writing": {
+        "plan": "Guide is writing its search plan…",
+        "choose": "Guide is writing its picks… they appear here once checked",
+        "compare": "Guide is writing the comparison… it appears once checked",
+        "explain": "Guide is writing the explanation… it appears once checked",
+        "verify": "Guide is checking each reason against its quote…"
+      }
+    },
+    "ready": "Guide picks are ready",
+    "readyCount_one": "Guide picks are ready: {{count}} pick",
+    "readyCount_other": "Guide picks are ready: {{count}} picks",
+    "none": "No pick. No result has a sentence that proves it fits.",
+    "clarify": "The guide needs one detail first: answer the question below",
+    "understood": "Understood as {{parts}}",
+    "askWithout": "Ask without",
+    "rephrase": "Rephrase",
+    "command": "helper2 guide",
+    "commandCount_one": "helper2 guide --picks {{count}}",
+    "commandCount_other": "helper2 guide --picks {{count}}",
+    "chosenBy": "Chosen by {{model}}"
+  },
+  "sourceTile": {
+    "label": "Sources searched",
+    "cached": "cached {{age}}"
+  },
+  "board": {
+    "news": {
+      "title": "New in the catalog"
+    },
+    "events": {
+      "title": "Coming up"
+    },
+    "countdown": {
+      "onNow": "On now",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "days_one": "In {{count}} day",
+      "days_other": "In {{count}} days",
+      "weeks_one": "In {{count}} week",
+      "weeks_other": "In {{count}} weeks",
+      "months_one": "In {{count}} month",
+      "months_other": "In {{count}} months"
+    }
+  },
+  "lists": {
+    "tabs": "New in the catalog and Coming up",
+    "col": {
+      "date": "Date",
+      "type": "Type",
+      "title": "Title",
+      "source": "Source",
+      "when": "When",
+      "event": "Event",
+      "where": "Where"
+    },
+    "showAll": "show all {{count}}",
+    "showFewer": "show fewer",
+    "seeAllEvents": "All events ›",
+    "onNow": "on now",
+    "until": "until {{date}}",
+    "firstSeen": "seen {{date}}",
+    "noDate": "date not stated",
+    "scrollBox": "{{name}}, the whole table"
+  },
+  "webSearches": {
+    "feature": {
+      "search": "search",
+      "guide": "the guide"
+    },
+    "left": "{{remaining}} of {{limit}} web searches left today for {{feature}}.",
+    "none": "No web searches left today for {{feature}}. Stored results still answer. Resets at {{time}} your time (00:00 UTC)."
+  },
+  "resource": {
+    "backToResults": "Back to results",
+    "back": "Back",
+    "backToNews": "Back to news",
+    "backToEvents": "Back to events",
+    "backToSaved": "Back to saved",
+    "sourceText": "From the source",
+    "checkedNote": "Highlighted: the sentence the guide checked against this source.",
+    "atAGlance": "At a glance",
+    "notStatedBy": "Not stated by any source:",
+    "notStatedName": {
+      "pricing": "pricing",
+      "platforms": "platforms",
+      "useCase": "use cases",
+      "audience": "who it is for",
+      "license": "license",
+      "openSource": "open source",
+      "techLevel": "technical level"
+    },
+    "whereFrom": "Where this information comes from",
+    "readAt": "read {{date}}",
+    "allSources": "All sources and their last check"
+  },
+  "consent": {
+    "title": "Can we count your visit with Google Analytics?",
+    "text": "If you accept, Google Analytics sets cookies to count page visits by country. It never gets your searches or guide questions. Search works the same either way. You can change your answer in Cookie settings in the footer.",
+    "more": "How we use analytics",
+    "reject": "Reject",
+    "accept": "Accept"
+  },
+  "sponsor": {
+    "label": "Sponsored",
+    "tag": "Sponsored",
+    "why": "Ads keep helper2.ai free. This one comes from EthicalAds: no tracking, no profile.",
+    "searching": "Searching the sources"
+  },
+  "support": {
+    "title": "Support helper2.ai",
+    "lede": "You can use helper2.ai for free, with no account, and it stays that way. Running it costs money every day. If it saves you time, you can help pay for it.",
+    "costsTitle": "What it costs to run",
+    "costs": [
+      "The AI models that write the guide's answers and read the pages about each resource.",
+      "Live web searches, paid per search.",
+      "The servers in Germany, the database and the backups.",
+      "The time to add sources, check results and fix what breaks."
+    ],
+    "howTitle": "How to give",
+    "github": "Sponsor on GitHub",
+    "githubNote": "Monthly or one-off, through your GitHub account. GitHub takes no fee.",
+    "card": "Give by card",
+    "cardNote": "One-off, any amount, no account needed. The payment is handled by Stripe, which takes a small fee.",
+    "newTab": "(opens in a new tab)",
+    "leave": "Both buttons take you to the provider's own page. Nothing on helper2.ai changes when you give: no badge, no extra features, and we never ask you again.",
+    "closed": "Giving is not open yet.",
+    "privacyIntro": "What the payment providers receive is on the",
+    "privacyLink": "Privacy page.",
+    "thanksTitle": "Thank you",
+    "thanksBody": "Your support helps keep helper2.ai free and fast for everyone.",
+    "backHome": "Back to search"
+  }
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tech font candidates</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0;background:#f7f2e9}</style>
+</helmet>
+<div style="width: 1440px; box-sizing: border-box; padding: 48px 0 64px; background: #f7f2e9; color: #1b1c3f; display: flex; flex-direction: column; gap: 40px;">
+  <div style="max-width: 1040px; width: 100%; margin: 0 auto; padding: 0 24px; box-sizing: border-box; font-family: system-ui, sans-serif;">
+    <h1 style="margin: 0 0 8px; font-size: 28px; font-weight: 600;">Pick one tech font for the whole site</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #35344f;">Each row shows the same logo, headline, text, list row and button. All four fonts are free (SIL Open Font License) and can be self-hosted.</p>
+  </div>
+  <sc-for list="{{fonts}}" as="f" hint-placeholder-count="4">
+    <section style="max-width: 1040px; width: 100%; margin: 0 auto; padding: 32px 24px; box-sizing: border-box; background: #fffdf8; border: 1px solid #e7dfd0; border-radius: 14px; display: flex; flex-direction: column; gap: 20px; font-family: {{f.css}};">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; font-family: system-ui, sans-serif;">
+        <span style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a8420a;">{{f.label}}</span>
+        <span style="font-size: 14px; color: #4f4b63;">{{f.note}}</span>
+      </div>
+      <span style="display: inline-flex; align-items: center; gap: 16px;">
+        <span aria-hidden="true" style="display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #e06a1d; color: #1b1c3f;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.2" stroke-width="1.4" opacity="0.5"></circle><path d="M12 12 18.4 5.6"></path><path d="M16.2 11.1Q16.2 15 20.1 15Q16.2 15 16.2 18.9Q16.2 15 12.3 15Q16.2 15 16.2 11.1Z" fill="currentColor" stroke-width="1"></path></svg></span>
+        <span style="display: inline-flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 24px; font-weight: 500; line-height: 1; letter-spacing: -0.02em;">helper2.ai</span>
+          <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #4f4b63; line-height: 1.2;">AI on your radar</span>
+        </span>
+      </span>
+      <h2 style="margin: 0; font-size: 40px; font-weight: 500; line-height: 1.1; letter-spacing: -0.03em;">Find the right AI tool for your task.</h2>
+      <p style="margin: 0; max-width: 640px; font-size: 16px; line-height: 1.6; color: #35344f;">Search models, apps, MCP servers and papers from 16 sources at once. Ask in plain words and get a recommendation, with a quote that proves it.</p>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding: 14px 0; border-top: 1px solid #e7dfd0; border-bottom: 1px solid #e7dfd0;">
+        <span style="font-size: 13px; color: #4f4b63;"><span style="font-weight: 600; color: #a8420a;">Oct 31</span> · <span style="font-weight: 600; color: #35344f;">MCP server</span> · MCP Registry</span>
+        <span style="font-size: 19px; font-weight: 500;">postgres-mcp 0.4.1</span>
+        <span style="font-size: 15px; line-height: 1.55; color: #35344f;">Lets your AI assistant read and query a Postgres database, with read-only mode by default.</span>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="display: inline-flex; align-items: center; height: 48px; padding: 0 24px; border-radius: 10px; background: #e06a1d; color: #1b1c3f; font-size: 16px; font-weight: 600;">Search</span>
+        <span style="display: inline-flex; align-items: center; height: 48px; padding: 0 18px; border-radius: 10px; border: 1px solid #d3c7b2; font-size: 16px;">Show all 24</span>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      fonts: [
+        { label: 'A · Geist Mono (my pick)', note: 'Modern, made for developer and AI products. Clean and easy to read.', css: "'Geist Mono', ui-monospace, monospace" },
+        { label: 'B · JetBrains Mono', note: 'The code-editor look. Very technical, a bit heavier.', css: "'JetBrains Mono', ui-monospace, monospace" },
+        { label: 'C · IBM Plex Mono', note: 'Engineering feel, softer shapes. Good for long text.', css: "'IBM Plex Mono', ui-monospace, monospace" },
+        { label: 'D · Space Mono', note: 'Retro terminal. Strong character, but only two weights.', css: "'Space Mono', ui-monospace, monospace" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
