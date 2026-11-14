@@ -38,7 +38,9 @@ Harbor could put an image under a tag first.
      (`npm ci` when the key is not in the cache), then the generated API types. `frontend-check` runs `format:check`
      with Prettier, lint, `knip`, typecheck and `npm audit` ([0047](0047-code-format-and-dead-code-audit.md)).
      `frontend-public-build` runs `vite build` and `check:bundle`, and saves `node_modules` when the lockfile is new;
-     `frontend-public-test` needs it and runs Vitest on every test outside `src/admin`, in two shards side by side.
+     `frontend-public-test` needs it and runs Vitest on every test outside `src/admin`, in two jobs side by side,
+     named after the folders they test: `features` (`src/features`) and `lib, styles, shell, the rest` (every test
+     the first does not run).
      `frontend-backoffice-build` runs `vite build --config vite.admin.config.ts`; `frontend-backoffice-test` needs it
      and runs Vitest on `src/admin`. The builds do not type-check: `frontend-check` does. A new folder is tested by
      the public chain without a change to `ci.yml`. A set that holds no test passes (`--passWithNoTests`).

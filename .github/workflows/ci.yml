@@ -125,7 +125,7 @@ jobs:
           retention-days: 1
 
   frontend-public-test:
-    name: frontend-public-test (${{ matrix.shard }}/2)
+    name: frontend-public-test (${{ matrix.group }})
     needs: [changes, frontend-public-build]
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
@@ -133,15 +133,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        include:
+          - group: features
+            args: src/features
+          - group: lib, styles, shell, the rest
+            args: --exclude 'src/features/**' --exclude 'src/admin/**'
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/frontend-setup
-      - name: Vitest, every test outside src/admin (${{ matrix.shard }}/2)
-        run: npx vitest run --passWithNoTests --exclude 'src/admin/**' --shard=${{ matrix.shard }}/2
+      - name: Vitest (${{ matrix.group }})
+        run: npx vitest run --passWithNoTests ${{ matrix.args }}
 
   frontend-backoffice-build:
     needs: changes
