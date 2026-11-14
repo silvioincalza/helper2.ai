@@ -35,7 +35,7 @@ dependencies {
   implementation("io.micrometer:micrometer-registry-prometheus")
   implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
   implementation("org.flywaydb:flyway-database-postgresql")
-  implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1")
+  implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.11.0")
   implementation("org.jetbrains.kotlin:kotlin-reflect")
   implementation("tools.jackson.module:jackson-module-kotlin")
   implementation("com.github.pemistahl:lingua:1.2.2")

@@ -12,7 +12,7 @@ dependencies {
   api("org.springframework.boot:spring-boot-starter-data-redis")
   api("org.springframework.ai:spring-ai-starter-model-openai")
   api("org.apache.httpcomponents.client5:httpclient5")
-  api("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1")
+  api("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.11.0")
   api("io.github.resilience4j:resilience4j-circuitbreaker")
   api("io.github.resilience4j:resilience4j-bulkhead")
   api("io.github.resilience4j:resilience4j-retry")
