@@ -108,6 +108,7 @@ resilience4j:
         slow-call-rate-threshold: 50
         wait-duration-in-open-state: ${H2_RESILIENCE_SOURCE_OPEN_FOR:30s}
         permitted-number-of-calls-in-half-open-state: 2
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
       collector:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
@@ -115,6 +116,7 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: ${H2_RESILIENCE_COLLECTOR_OPEN_FOR:1m}
         permitted-number-of-calls-in-half-open-state: 1
+        ignore-exceptions: ai.helper2.search.SourceFailure$RateLimited
       store:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
@@ -186,6 +188,26 @@ helper2:
     model: ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
     dimensions: 1024
     timeout: 3s
+  catalog:
+    observation-queue: 256
+    index:
+      timeout: ${H2_SOURCE_INDEX_TIMEOUT:3s}
+    curated:
+      enabled: ${H2_SOURCE_CURATED_ENABLED:true}
+      timeout: 1000ms
+    semantic:
+      timeout: ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}
+      max-distance: ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}
+      query-vector-ttl: ${H2_SEARCH_QUERY_VECTOR_TTL:7d}
+    indexer:
+      timeout: 30s
+      batch: ${H2_EMBEDDING_BATCH:1}
+      singles-after-failure: 5
+      initial-delay: PT30S
+      every: ${H2_EMBEDDING_EVERY:PT5S}
+    categories:
+      backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}
+    reconcile-by-projection: ${H2_CATALOG_RECONCILE_BY_PROJECTION:true}
   http:
     pool-wait: 250ms
     max-connections: 50
@@ -246,6 +268,13 @@ helper2:
 helper2:
   retention:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
+    observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
+    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
+    enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
+    resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
+    resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
+    web-news: ${H2_RETENTION_WEB_NEWS:P180D}
+    past-events: ${H2_RETENTION_PAST_EVENTS:P3650D}
     runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
     backups: ${H2_RETENTION_BACKUPS:P7D}
 ---
