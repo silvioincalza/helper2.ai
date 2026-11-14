@@ -31,6 +31,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import tools.jackson.databind.json.JsonMapper
 
 class StoredAnswerPrivacyTest {
@@ -137,5 +138,79 @@ class StoredAnswerPrivacyTest {
       )
 
     assertHoldsNeither(stored, question, "for my laptop")
+  }
+
+  private fun assertHolds(stored: String, words: String) =
+    assertTrue(words.lowercase() in stored, "the store does not hold \"$words\"")
+
+  @Test
+  fun `a short question the planner searches as it stands is stored whole, as the planned search`() {
+    val question = "dictation software"
+
+    val stored = storedAfter(GuideSearchPlan("dictation software"), question, null)
+
+    assertHolds(stored, question)
+  }
+
+  @Test
+  fun `a short question that is only a name is stored whole, as the subject read in it`() {
+    val question = "Frobnicator"
+
+    val stored =
+      storedAfter(
+        GuideSearchPlan("", intent = GuideIntent.ALTERNATIVES, subjects = listOf("Frobnicator")),
+        question,
+        null,
+      )
+
+    assertHolds(stored, question)
+  }
+
+  @Test
+  fun `a person's name or a phone number the guide reads as a subject is stored, the rest of the question is not`() {
+    val name = "Maria Rossi"
+    val phone = "+41 79 555 01 23"
+    val question = "alternatives to the dictation tool of $name, call $phone to ask my cousin"
+
+    val stored =
+      storedAfter(
+        GuideSearchPlan(
+          "dictation tool",
+          intent = GuideIntent.ALTERNATIVES,
+          subjects = listOf(name, phone),
+        ),
+        question,
+        null,
+      )
+
+    assertHolds(stored, name)
+    assertHolds(stored, phone)
+    assertHoldsNeither(stored, question, "to ask my cousin", "alternatives to the")
+  }
+
+  @Test
+  fun `a person's name and a phone number the planner leaves out of its search are not stored`() {
+    val name = "Maria Rossi"
+    val phone = "+41 79 555 01 23"
+    val question = "a dictation tool for $name, call $phone when it is found"
+
+    val stored = storedAfter(GuideSearchPlan("dictation tool"), question, null)
+
+    assertHoldsNeither(stored, question, name, phone, "79 555")
+  }
+
+  @Test
+  fun `an e-mail address is never stored, even when the planner reads it as a subject or a search`() {
+    val address = "maria.rossi@example.org"
+    val question = "alternatives to the dictation tool of $address"
+
+    val stored =
+      storedAfter(
+        GuideSearchPlan(address, intent = GuideIntent.ALTERNATIVES, subjects = listOf(address)),
+        question,
+        null,
+      )
+
+    assertHoldsNeither(stored, question, address, "maria.rossi")
   }
 }

@@ -225,7 +225,12 @@ the variable is its default, an administrator can lower it (0 = search-only answ
 back office, and every replica applies it within about 20 seconds.
 
 ### The answer cache and its key
-`GuideAnswerCache.normalized` changes only what cannot change the answer:
+The guide reads one text of a question and of a reply to a question back (`GuideAnswerCache.readable`): Unicode
+compatibility form (NFKC), invisible characters removed, trimmed. The models, the rules, the search and the key all
+read this text, so two questions that share a key give the planner the same letters. Case, quotes and punctuation stay
+in it: the model reads them.
+
+On that text, `GuideAnswerCache.normalized` changes only what cannot change the answer:
 - Unicode compatibility form (NFKC): full-width letters, ligatures, no-break spaces;
 - lower case;
 - quote marks removed (`" “ ” « » \``, and `'` at the edge of a word); an apostrophe inside a word stays ("what's");
@@ -246,15 +251,20 @@ query and the subject words of that query). It empties the search request (`text
 `searchQuery` and the search's reading (`interpretation`: original, normalised, content and expanded terms) when they
 are the question's own words: the planner wrote no query, or a dated (`WHEN`) or "what is" answer searched the name
 read from the question; and it drops `QUERY_EXPANDED` notices. The asker of a fresh answer still sees their own
-words; the stored copy does not hold them. `StoredAnswerPrivacyTest` checks the encoded entry for a planned answer,
-a planner with no query and a dated answer. The stored answer still holds the search terms the planner wrote, the
-trail's queries, and the names read from the question (`subjects`, the compared names): words of the question, never
-all of it.
+words; the stored copy does not hold them. The stored answer still holds the search terms the planner wrote (a query
+of up to 6 words, a web query of up to 12, the trail's queries), the names read from the question or the reply
+(`subjects`, up to 3 of 60 characters, also in a not-found notice and as the compared names) and the requirements read
+from it (`constraints`, up to 4 of 60 characters, also in each pick's checks). They are words of the question, and for
+a short question or reply they can be all of it: a question that is only a name is stored as its subject. A person's
+name or a phone number is stored when the planner reads it as a subject or writes it in its search, and not otherwise; a text that holds a link
+or an e-mail address is never a query, a subject or a constraint (`LinkText.containsLink`). `StoredAnswerPrivacyTest`
+checks the encoded entry for each of these cases.
 
 The **config hash** (`AskGuide.configHash`) is the first 16 hex characters of a SHA-256 over the provider, both model
 ids, the model's config fingerprint (`SpringAiGuideModel.getConfigFingerprint`: the five rendered prompts, the thinking
 flags, the native-schema flag, the token limits, the candidate text size), the validator's limits, the comparison and
-explanation limits (`AnswerLimits`) and `maxCandidates`. How a model call is read (`H2_GUIDE_MODEL_STREAM`) is not
+explanation limits (`AnswerLimits`), `maxCandidates` and the way the question is read
+(`GuideAnswerCache.QUESTION_READING`). How a model call is read (`H2_GUIDE_MODEL_STREAM`) is not
 part of it: the request and the checks are the same, so it cannot change an answer
 ([0035](0035-guide-model-stream.md); a test pins it). The back office's Settings page shows it. A new prompt wording
 or limit therefore never serves answers of the old one: it starts a fresh cache by itself. Each prompt's label is the
@@ -306,9 +316,14 @@ an exact-key miss, after single-flight and the client quota, the plan runs as fo
   ([0024](../search/0024-vector-search.md), `nvidia/nemotron-3.5-embed-1b`, 1024 dimensions). An embedding
   failure is a miss.
 - **Match**: the closest question of the group whose answer is still stored, if its cosine similarity is at least the
-  threshold. Its answer is returned as it is: same `generatedAt`, same AI marking
+  threshold. Its answer is returned with the same `generatedAt` and the same AI marking
   ([0033](0033-marking-ai-written-text-research-trail.md)), but without the planner's words of the other asker: no
-  search query, no trail queries, no not-found query, and no `QUERY_EXPANDED` notice in its search.
+  search query, no trail queries, no not-found query, and no `QUERY_EXPANDED` notice in its search. Every name in it
+  is written as the new asker wrote it (`GuideAnswer.inTheWordsOf`): the subjects, the constraints, the name of a
+  not-found notice, the constraint of each check and the compared names, each matched the way the reading key
+  compares them (case, spaces, hyphens and underscores apart). An answer with a name that has no counterpart in the
+  new reading is not reused. The AI-written texts (reasons, comparison cells, explanation sentences) are returned as
+  the model wrote them for the first question.
 - The reused answer is stored under the new question's own key until the original expires, so the next identical
   question is an exact hit. It is not indexed: a chain of near twins would drift from the question that was answered.
 - A fresh answer that is cached is indexed in `guide_similar_question (answer_key, group_key, embedding vector(1024),
@@ -462,9 +477,9 @@ shared cache purge.
 | Threat | Risk | Control |
 |---|---|---|
 | Spoofing | A client spreads its questions over many addresses | IPv6 counted by its /64, and a network count per /56 (IPv4 per /24); the global cap opens in 2-hour parts and bounds the day whatever the client count. |
-| Tampering | A wrong share: one asker's answer shown for another need | Reuse only for the same reading key and group, at a threshold with no false reuse on the eval set; the planner's words of the other asker are dropped from the reused answer. |
+| Tampering | A wrong share: one asker's answer shown for another need | Reuse only for the same reading key and group, at a threshold with no false reuse on the eval set; the planner's words of the other asker are dropped from the reused answer and its names are written as the new asker wrote them; the model reads the same text the key is built on, so a variant that shares a key cannot be read another way. |
 | Repudiation | Not knowing which prompts wrote a cached answer | The config hash covers the rendered prompts and models; each prompt's label is pinned by a test and tagged on every model call. |
-| Information disclosure | Question text or client address kept | Keys are hashes, no store sees the whole question text (the search request is emptied before the answer is stored); the quota keeps a keyed pseudonym of the day, never an address; the question embedding lives only as long as its answer. |
+| Information disclosure | Question text or client address kept | Keys are hashes; the search request is emptied before the answer is stored, which keeps only the planner's terms and the names and requirements read from the question (all of a short question); the quota keeps a keyed pseudonym of the day, never an address; the question embedding lives only as long as its answer. |
 | Denial of service / cost | A flood of questions, slow questions piling up | Per-minute limit, per-client and per-network quota with a capped give-back, a global daily cap paced through the day, 2 questions at once per client, a bulkhead of 8 per replica taken only for real work, a 90 s deadline, no model call without time left for it, no repeat of a call whose answer was cut at the token limit, a circuit that opens on slow model calls (a cancelled question does not count), single-flight. |
 | Elevation of privilege | Raising the cap | Only an administrator changes the runtime cap, from the back office, up to 3000. |
 
@@ -492,12 +507,16 @@ shared cache purge.
 
 1. Is a question embedding personal data under the nFADP and the GDPR, and what is the legal basis for keeping it?
 2. The transfer of the question text to the NVIDIA API catalog in the United States.
-3. The cached answer keeps the planner's search terms and the names read from the question, shown to anyone who
-   asks the same or a similar question. Is the Privacy sentence ("never your whole question") enough, and is the
-   retention of those words covered by the answer's retention period?
+3. The cached answer keeps the planner's search terms and the names and requirements read from the question or from
+   the reply to a question back; for a short question or reply they can be the whole of it, and a person's name or a
+   phone number can be among them. The same question gets them back with the answer; a similar question gets the
+   answer without the queries, with the AI-written texts written for the first question, which can repeat its words.
+   Is the Privacy text that says so enough, what is the legal basis for keeping these words and showing them to other
+   visitors, and is their retention covered by the answer's retention period?
 
 ### Known limits
 
+- A reused answer shows the reasons, comparison cells and explanation sentences the model wrote for the first asker's question. Each is checked against a quote of a public source, but its wording can follow the first question.
 - A guide question can answer up to 3 s after its 90 s deadline. The margin before the deadline (2 s) and the shortest model call (10 s) are fixed in the yaml; a call started with little time left takes a budget unit even when it runs out of time. The tool guide (`POST /resources/{id}/guide`) has no question deadline: it runs on the request thread, each of its model calls is bounded by `H2_LLM_TIMEOUT` alone, and nothing bounds the whole request; a failed call gives status `LLM_UNAVAILABLE`.
 - The time on the notices `GUIDE_BUDGET_SPENT`, `GUIDE_DAILY_QUOTA` and `GUIDE_NETWORK_QUOTA` and on the setup guide (`retryAt`) is when the next share opens, not a promise: other visitors can use it first. For `GUIDE_BUDGET_SPENT` it comes from what one replica knows of the count, so during a Redis outage two replicas can give different times.
 - A question nobody waits for stops only with `H2_GUIDE_MODEL_STREAM=ON` and a thinking budget for plan, choose or

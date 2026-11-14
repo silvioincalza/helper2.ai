@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -483,5 +484,126 @@ class AskGuideSimilarTest {
     assertEquals(1, model.chooses)
     assertEquals(0, index.size)
     assertEquals(1.0, cache("miss"))
+  }
+
+  private class SpelledAsAsked : GuideModel {
+    val read = mutableListOf<String>()
+    var chooses = 0
+    override val provider = "fake"
+    override val fastModel = "fast"
+    override val reasoningModel = "reasoning"
+
+    private val name = Regex("(?i)frobnicator[- ]pro")
+    private val requirement = Regex("(?i)self[- ]hosted")
+
+    override fun plan(request: String, path: AudiencePath?): GuideSearchPlan {
+      read += request
+      return GuideSearchPlan(
+        "pdf chat",
+        constraints = listOfNotNull(requirement.find(request)?.value),
+        intent = GuideIntent.ALTERNATIVES,
+        subjects = listOfNotNull(name.find(request)?.value),
+      )
+    }
+
+    override fun plan(request: String, path: AudiencePath?, clarification: String?) =
+      plan(request, path).also { read += clarification.orEmpty() }
+
+    override fun choose(
+      request: Need,
+      candidates: List<Candidate>,
+      constraints: List<String>,
+    ): GuideProposal {
+      chooses++
+      read += listOfNotNull(request.request, request.answer)
+      return GuideProposal(
+        candidates.map { ProposedPick(it.key, "Chats with PDFs.", it.result.description!!) }
+      )
+    }
+
+    override fun verifyReasons(
+      request: Need,
+      claims: List<ReasonClaim>,
+    ): Map<String, ReasonVerdict> {
+      read += listOfNotNull(request.request, request.answer)
+      return claims.associate { it.key to ReasonVerdict(true) }
+    }
+  }
+
+  private fun guideWith(model: GuideModel, vectors: Map<String, FloatArray> = emptyMap()) =
+    AskGuide(
+      search,
+      model,
+      clock,
+      cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+      meters = meters,
+      similar =
+        SimilarQuestions(0.95, "embed", TableEmbedder(vectors), MemoryQuestionIndex(), clock),
+    )
+
+  @Test
+  fun `a reused answer names its subjects and constraints as the second asker wrote them, with nothing of the first asker's spelling`() {
+    val spelled = SpelledAsAsked()
+    val guide =
+      guideWith(
+        spelled,
+        mapOf(
+          "self-hosted alternatives to frobnicator-pro" to floatArrayOf(1f, 0f, 0f),
+          "alternatives to frobnicator pro that are self hosted" to floatArrayOf(0.96f, 0.28f, 0f),
+        ),
+      )
+    val first = guide.ask("self-hosted alternatives to Frobnicator-Pro", null)
+    assertEquals(listOf("Frobnicator-Pro"), first.subjects)
+    assertEquals(listOf("self-hosted"), first.constraints)
+
+    val reused = guide.ask("alternatives to FROBNICATOR PRO that are Self Hosted", null)
+    val again = guide.ask("alternatives to FROBNICATOR PRO that are Self Hosted", null)
+
+    assertEquals(1, spelled.chooses, "the second question is answered from the first one's answer")
+    assertEquals(listOf(1.0, 1.0), listOf(cache("similar"), cache("exact")))
+    listOf(reused, again).forEach { answer ->
+      assertEquals(listOf("FROBNICATOR PRO"), answer.subjects)
+      assertEquals(listOf("Self Hosted"), answer.constraints)
+      assertEquals(
+        listOf("FROBNICATOR PRO"),
+        answer.notices.filter { it.code == NoticeCode.GUIDE_SUBJECT_NOT_FOUND }.map { it.subject },
+      )
+      assertEquals(
+        listOf("Self Hosted"),
+        answer.recommendations.flatMap { it.checks }.map { it.constraint }.distinct(),
+      )
+      val everyField = answer.toString()
+      assertFalse("Frobnicator-Pro" in everyField, "the first asker's spelling of the name")
+      assertFalse("self-hosted" in everyField, "the first asker's spelling of the constraint")
+    }
+  }
+
+  @Test
+  fun `a zero-width or full-width variant of a question gives the model the same text as the plain one`() {
+    val plain = "a self-hosted alternative to Frobnicator-Pro"
+    val plainReply = "the desktop one"
+    val variants =
+      listOf(
+        "a self-hosted alter\u200Bnative to Frobni\u2060cator-Pro\uFEFF" to "the desk\u200Dtop one",
+        "ａ ｓｅｌｆ-ｈｏｓｔｅｄ alternative to Ｆｒｏｂｎｉｃａｔｏｒ-Ｐｒｏ" to "the ｄｅｓｋｔｏｐ one",
+        "\u200B a self-hosted alternative to\u3000Frobnicator-Pro " to " the desktop one\u200B",
+      )
+    fun readOf(question: String, reply: String): List<String> {
+      val spelled = SpelledAsAsked()
+      guideWith(spelled).ask(question, null, clarification = reply)
+      return spelled.read
+    }
+
+    val readPlain = readOf(plain, plainReply)
+
+    assertTrue(plain in readPlain && plainReply in readPlain, "the model is asked: $readPlain")
+    variants.forEach { (question, reply) ->
+      assertEquals(
+        GuideAnswerCache.key(plain, null, "config", plainReply),
+        GuideAnswerCache.key(question, null, "config", reply),
+        "the variant shares the plain question's key",
+      )
+      assertEquals(readPlain, readOf(question, reply), "what the model reads of \"$question\"")
+    }
   }
 }
