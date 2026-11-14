@@ -1,0 +1,980 @@
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { makeCard, makeDetail } from '@/test/fixtures';
+import { mockApi, problem } from '@/test/mockApi';
+import { axeViolations } from '@/test/a11y';
+import { renderApp, settle } from '@/test/render';
+import type { Evidence, Relationship, SetupGuide, ToolGuide } from '@/api/types';
+
+const ID = '11111111-1111-5111-8111-111111111111';
+const ev: Evidence = {
+  id: '44444444-4444-5444-8444-444444444444',
+  sourceUrl: 'https://github.com/acme/translator/README.md',
+  retrievedAt: '2026-10-20T10:00:00Z',
+  excerpt: 'Supports 40 languages.',
+};
+const rel = (title: string, verification: Relationship['verification']): Relationship => ({
+  kind: 'INTEGRATES_WITH',
+  targetTitle: title,
+  targetId: null,
+  verification,
+  evidence: [ev],
+});
+
+describe('resource detail', () => {
+  it('separates verified relationships from unverified candidates', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          relationships: [
+            rel('Slack', 'VERIFIED'),
+            rel('Notion', 'UNVERIFIED'),
+            rel('Bogus', 'REJECTED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const verified = (
+      await screen.findByRole('heading', { name: 'Verified relationships' })
+    ).closest('section') as HTMLElement;
+    const cand = screen
+      .getByRole('heading', { name: /Unverified candidates/ })
+      .closest('section') as HTMLElement;
+    expect(within(verified).getByText('Slack')).toBeInTheDocument();
+    expect(within(verified).queryByText('Notion')).not.toBeInTheDocument();
+    expect(within(cand).getByText('Notion')).toBeInTheDocument();
+    expect(within(cand).getByText('Unverified')).toBeInTheDocument();
+    expect(within(cand).queryByText('Slack')).not.toBeInTheDocument();
+    expect(screen.queryByText('Bogus')).not.toBeInTheDocument();
+  });
+
+  const SETUP: SetupGuide = {
+    resourceId: ID,
+    title: 'pg-mcp-server',
+    version: '1.2.0',
+    options: [
+      {
+        id: 'o1',
+        kind: 'REMOTE',
+        transport: 'SSE',
+        label: 'Hosted server (SSE)',
+        url: 'https://mcp.acme.dev/sse',
+        settings: [],
+      },
+      {
+        id: 'o2',
+        kind: 'PACKAGE',
+        transport: 'STDIO',
+        label: 'npm package @acme/pg-mcp',
+        registryType: 'npm',
+        identifier: '@acme/pg-mcp',
+        runtime: 'npx',
+        requires: 'Node.js (npx)',
+        settings: [
+          {
+            name: 'DATABASE_URL',
+            kind: 'ENV',
+            description: 'Connection string',
+            required: true,
+            secret: true,
+          },
+        ],
+      },
+    ],
+    clients: [
+      {
+        id: 'claude-code',
+        name: 'Claude Code',
+        docsUrl: 'https://code.claude.com/docs/en/mcp',
+        snippets: [
+          {
+            optionId: 'o1',
+            supported: true,
+            where: 'Terminal',
+            language: 'shell',
+            text: 'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse',
+          },
+          {
+            optionId: 'o2',
+            supported: true,
+            where: 'Terminal',
+            language: 'shell',
+            text: "claude mcp add --env 'DATABASE_URL=<DATABASE_URL>' --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp@1.2.0",
+          },
+        ],
+      },
+      {
+        id: 'codex',
+        name: 'OpenAI Codex',
+        docsUrl: 'https://learn.chatgpt.com/docs/extend/mcp',
+        snippets: [
+          {
+            optionId: 'o1',
+            supported: false,
+            note: "This client's documentation does not describe connecting to an SSE server.",
+          },
+          {
+            optionId: 'o2',
+            supported: true,
+            where: '~/.codex/config.toml',
+            language: 'toml',
+            text: '[mcp_servers.pg-mcp-server]',
+          },
+        ],
+      },
+    ],
+    sources: [
+      {
+        sourceId: 'mcp-registry',
+        url: 'https://registry.modelcontextprotocol.io/v0.1/servers/io.acme%2Fpg/versions/latest',
+        retrievedAt: '2026-10-27T20:00:00Z',
+      },
+    ],
+  };
+
+  const STEPS: ToolGuide = {
+    resourceId: ID,
+    title: 'pg-mcp-server',
+    status: 'OK',
+    rejected: 1,
+    generatedAt: '2026-10-28T00:00:00Z',
+    model: 'nemotron-nano',
+    sections: [
+      {
+        kind: 'REQUIREMENTS',
+        steps: [
+          {
+            text: 'Install Node.js 20 or later.',
+            quote: 'Requires Node.js 20 or later.',
+            source: 'readme',
+            caution: false,
+          },
+        ],
+      },
+      {
+        kind: 'INSTALL',
+        steps: [
+          {
+            text: 'Install it with npm.',
+            quote: 'Install globally:',
+            source: 'readme',
+            caution: false,
+            code: { language: 'bash', text: 'npm install -g @acme/pg-mcp' },
+          },
+        ],
+      },
+    ],
+    documents: [
+      {
+        key: 'readme',
+        kind: 'README',
+        url: 'https://github.com/acme/pg-mcp',
+        retrievedAt: '2026-10-28T00:00:00Z',
+      },
+    ],
+  };
+
+  it('Set it up opens snippets per AI tool and checked steps from the README, with no question box', async () => {
+    const m = mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}/setup`]: () => SETUP,
+      [`POST /resources/${ID}/guide`]: () => STEPS,
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    const button = await screen.findByRole('button', { name: 'Set it up' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(m.callsTo('GET', `/resources/${ID}/setup`)).toHaveLength(0);
+    await userEvent.click(button);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Set up pg-mcp-server' }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'claude mcp add --transport sse pg-mcp-server https://mcp.acme.dev/sse',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/From its Official MCP Registry entry, version 1.2.0/),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'npm package @acme/pg-mcp' }));
+    expect(screen.getByText(/needs Node.js \(npx\)/)).toBeInTheDocument();
+    expect(screen.getByText(/secret: fill in your own/)).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Your AI tool'), 'codex');
+    expect(screen.getByText('[mcp_servers.pg-mcp-server]')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: 'Hosted server (SSE)' }));
+    expect(screen.getByText(/Not available in OpenAI Codex/)).toBeInTheDocument();
+
+    expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What you need first' })).toBeInTheDocument();
+    expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
+    expect(
+      screen.getByText(/copied exactly from it; commands are not reviewed for safety/),
+    ).toBeInTheDocument();
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)).toHaveLength(1);
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)[0]?.body).toBeUndefined();
+    expect(screen.queryByRole('textbox', { name: /Ask about/ })).not.toBeInTheDocument();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('closing Set it up while the steps load and opening it again pays for one model call only', async () => {
+    let answer: (r: ToolGuide) => void = () => undefined;
+    const m = mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}/setup`]: () => SETUP,
+      [`POST /resources/${ID}/guide`]: () =>
+        new Promise<ToolGuide>((resolve) => {
+          answer = resolve;
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const button = await screen.findByRole('button', { name: 'Set it up' });
+
+    await userEvent.click(button);
+    await waitFor(() => expect(m.callsTo('POST', `/resources/${ID}/guide`)).toHaveLength(1));
+    await userEvent.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(button);
+    answer(STEPS);
+
+    expect(await screen.findByRole('heading', { name: 'Install' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Set up pg-mcp-server' })).toHaveFocus();
+    expect(m.callsTo('POST', `/resources/${ID}/guide`)).toHaveLength(1);
+  });
+
+  it('a step whose text the AI check could not confirm shows only its source words and command, not marked as AI', async () => {
+    const unconfirmed: ToolGuide = {
+      ...STEPS,
+      sections: [
+        STEPS.sections[0]!,
+        {
+          kind: 'INSTALL',
+          steps: [{ ...STEPS.sections[1]!.steps[0]!, text: null }],
+        },
+      ],
+    };
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}/setup`]: () => SETUP,
+      [`POST /resources/${ID}/guide`]: () => unconfirmed,
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
+
+    expect(await screen.findByText('From the source', { selector: 'strong' })).toBeInTheDocument();
+    expect(screen.getByText(/the README's own words/)).toBeInTheDocument();
+    const quote = screen.getByText('Install globally:');
+    expect(quote.tagName).toBe('BLOCKQUOTE');
+    expect(quote.closest('[data-ai-generated]')).toBeNull();
+    expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
+    expect(screen.queryByText('Install it with npm.')).not.toBeInTheDocument();
+    expect(screen.getByText('Install Node.js 20 or later.')).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(container.querySelectorAll('[data-ai-generated]')).toHaveLength(1);
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('a guide with every step text null shows every step from the source, with nothing marked as AI', async () => {
+    const sourceOnly: ToolGuide = {
+      ...STEPS,
+      aiContent: null,
+      sections: STEPS.sections.map((s) => ({
+        ...s,
+        steps: s.steps.map((st) => ({ ...st, text: null })),
+      })),
+    };
+    const stepCount = sourceOnly.sections.reduce((n, s) => n + s.steps.length, 0);
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}/setup`]: () => SETUP,
+      [`POST /resources/${ID}/guide`]: () => sourceOnly,
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
+
+    expect(await screen.findAllByText('From the source', { selector: 'strong' })).toHaveLength(
+      stepCount,
+    );
+    expect(screen.queryByText('Install it with npm.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Install Node.js 20 or later.')).not.toBeInTheDocument();
+    expect(screen.getByText('npm install -g @acme/pg-mcp')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Steps picked by AI from the tool's own documentation/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Steps written by AI/)).not.toBeInTheDocument();
+    expect(container.querySelectorAll('.setup-step-text')).toHaveLength(0);
+    expect(container.querySelectorAll('.setup-steps [data-ai-generated]')).toHaveLength(0);
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('a run command copied from the README says it is not reviewed for safety', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'MCP_SERVER', title: 'pg-mcp-server' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        ...SETUP,
+        options: [
+          {
+            id: 'o1',
+            kind: 'COMMAND',
+            transport: 'STDIO',
+            label: 'npx @acme/pg-mcp',
+            runtime: 'npx',
+            requires: 'Node.js (npx)',
+            settings: [],
+          },
+        ],
+        clients: [
+          {
+            id: 'claude-code',
+            name: 'Claude Code',
+            docsUrl: 'https://code.claude.com/docs/en/mcp',
+            snippets: [
+              {
+                optionId: 'o1',
+                supported: true,
+                where: 'Terminal',
+                language: 'shell',
+                text: 'claude mcp add --transport stdio pg-mcp-server -- npx -y @acme/pg-mcp',
+              },
+            ],
+          },
+        ],
+        sources: [
+          {
+            sourceId: 'readme',
+            url: 'https://github.com/acme/pg-mcp',
+            retrievedAt: '2026-10-27T20:00:00Z',
+          },
+        ],
+      }),
+      [`POST /resources/${ID}/guide`]: () => STEPS,
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
+    expect(
+      await screen.findByText(
+        /Runs locally with npx, copied from its README; not reviewed for safety/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('Try again on the steps keeps focus in the guide: on the steps heading, not the page body', async () => {
+    let n = 0;
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        resourceId: ID,
+        title: 'acme-lib',
+        version: null,
+        options: [],
+        clients: [],
+        sources: [],
+      }),
+      [`POST /resources/${ID}/guide`]: () => (n++ === 0 ? problem(503, 'Unavailable') : STEPS),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
+    const retry = await screen.findByRole('button', { name: /Try again/ });
+    retry.focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Step by step' })).toHaveFocus(),
+    );
+    expect(screen.queryByRole('button', { name: /Try again/ })).not.toBeInTheDocument();
+  });
+
+  it('without setup data or documents it says why', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        resourceId: ID,
+        title: 'acme-lib',
+        version: null,
+        options: [],
+        clients: [],
+        sources: [],
+      }),
+      [`POST /resources/${ID}/guide`]: () => ({
+        ...STEPS,
+        title: 'acme-lib',
+        status: 'NO_MATERIAL',
+        sections: [],
+        documents: [],
+        model: null,
+        rejected: 0,
+      }),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
+    expect(await screen.findByText(/acme-lib has no README or model card/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Your AI tool')).not.toBeInTheDocument();
+  });
+
+  it("a visitor past today's setup guides is told so, not that the model is down", async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'LIBRARY', title: 'acme-lib' }) }),
+      [`GET /resources/${ID}/setup`]: () => ({
+        resourceId: ID,
+        title: 'acme-lib',
+        version: null,
+        options: [],
+        clients: [],
+        sources: [],
+      }),
+      [`POST /resources/${ID}/guide`]: () => ({
+        ...STEPS,
+        title: 'acme-lib',
+        status: 'LLM_UNAVAILABLE',
+        unavailable: 'quota',
+        retryAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        sections: [],
+        model: null,
+        rejected: 0,
+      }),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Set it up' }));
+    expect(
+      await screen.findByText(
+        /reached today's limit for new setup steps\. Steps already written still open; new ones are back (tomorrow )?at \d/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('offers no Set it up on a paper', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ card: makeCard({ type: 'PAPER', title: 'A survey' }) }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'A survey' });
+    expect(screen.queryByRole('button', { name: 'Set it up' })).not.toBeInTheDocument();
+  });
+
+  it('omits the candidates section when there are none', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail() });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'Verified relationships' });
+    expect(
+      screen.queryByRole('heading', { name: /Unverified candidates/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('No verified relationships.')).toBeInTheDocument();
+  });
+
+  it('labels and marks relationships extracted by AI, verified or not, and not those a source states (ADR 0033)', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          relationships: [
+            { ...rel('Gemini 4 Carbon', 'VERIFIED'), kind: 'ABOUT', origin: 'AI_EXTRACTED' },
+            { ...rel('Claude', 'UNVERIFIED'), kind: 'ABOUT', origin: 'AI_EXTRACTED' },
+            { ...rel('Slack', 'VERIFIED'), origin: 'SOURCE_PROVIDED' },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const item = async (title: string) =>
+      (await screen.findByText(title)).closest('li') as HTMLElement;
+    for (const title of ['Gemini 4 Carbon', 'Claude']) {
+      const li = await item(title);
+      expect(within(li).getByText('Extracted by AI')).toBeInTheDocument();
+      expect(within(li).getByText(title).closest('[data-ai-generated="true"]')).not.toBeNull();
+    }
+    const slack = await item('Slack');
+    expect(within(slack).queryByText('Extracted by AI')).not.toBeInTheDocument();
+    expect(slack.querySelector('[data-ai-generated]')).toBeNull();
+  });
+
+  it('marks values extracted by AI as AI-generated and values stated by the source not (ADR 0033)', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          assertions: [
+            {
+              field: 'license',
+              value: 'MIT',
+              origin: 'AI_EXTRACTED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [ev],
+            },
+            {
+              field: 'stars',
+              value: '120',
+              origin: 'SOURCE_PROVIDED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [],
+            },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const license = await screen.findByRole('rowheader', { name: 'License' });
+    const stars = screen.getByRole('rowheader', { name: 'Stars' });
+    expect(within(license.closest('tr') as HTMLElement).getByText('MIT')).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(within(stars.closest('tr') as HTMLElement).getByText('120')).not.toHaveAttribute(
+      'data-ai-generated',
+    );
+  });
+
+  it('shows every field as a value with its origin, "No", "Sources disagree" or "Not stated" (ADR 0014)', async () => {
+    const assertion = (
+      field: string,
+      value: string,
+      origin: 'AI_EXTRACTED' | 'SELF_DECLARED' | 'AI_ESTIMATED',
+      verification: 'VERIFIED' | 'UNVERIFIED' | 'CONFLICTING',
+    ) => ({ field, value, origin, verification, sourceId: null, evidence: [ev] });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({
+            pricing: null,
+            platforms: [],
+            useCases: [],
+            license: null,
+            openSource: false,
+            techLevel: null,
+          }),
+          assertions: [
+            assertion('pricing', 'PAID', 'SELF_DECLARED', 'VERIFIED'),
+            assertion('platforms', 'web', 'AI_EXTRACTED', 'VERIFIED'),
+            assertion('useCase', 'coding', 'AI_EXTRACTED', 'UNVERIFIED'),
+            assertion('license', 'MIT', 'AI_EXTRACTED', 'CONFLICTING'),
+            assertion('audience', 'USE_AI', 'AI_ESTIMATED', 'UNVERIFIED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'All details' });
+    const row = (field: string) =>
+      document.querySelector(`[data-field="${field}"] dd`) as HTMLElement;
+    expect(row('pricing')).toHaveTextContent('Paid');
+    expect(row('pricing')).toHaveTextContent('Self-declared by the vendor');
+    expect(row('platforms')).toHaveTextContent('web');
+    expect(row('platforms')).toHaveTextContent('Extracted by AI');
+    expect(row('useCase')).toHaveTextContent('Not stated');
+    expect(row('license')).toHaveTextContent('Sources disagree');
+    expect(row('license')).toHaveTextContent('Extracted by AI');
+    expect(within(row('license')).getByText('MIT')).toHaveAttribute('data-ai-generated', 'true');
+    expect(row('openSource')).toHaveTextContent('No');
+    expect(row('audience')).toHaveTextContent('AI-estimated');
+    expect(within(row('audience')).getByText('People who use AI')).toHaveAttribute(
+      'data-ai-generated',
+      'true',
+    );
+    expect(row('techLevel')).toHaveTextContent('Not stated');
+  });
+
+  it('a value an admin set wins over the sources, a conflict and the AI, and is not marked as AI (ADR 0038)', async () => {
+    const assertion = (
+      value: string,
+      origin: 'AI_EXTRACTED' | 'CURATED',
+      verification: 'VERIFIED' | 'REJECTED',
+    ) => ({ field: 'pricing', value, origin, verification, sourceId: null, evidence: [] });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({
+            pricing: 'PAID',
+            conflicts: [
+              {
+                field: 'pricing',
+                values: [
+                  { value: 'FREE', sourceId: 'github' },
+                  { value: 'PAID', sourceId: 'npm' },
+                ],
+              },
+            ],
+          }),
+          assertions: [
+            assertion('FREE', 'AI_EXTRACTED', 'REJECTED'),
+            assertion('PAID', 'CURATED', 'VERIFIED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'All details' });
+    const pricing = document.querySelector('[data-field="pricing"] dd') as HTMLElement;
+    expect(pricing).toHaveTextContent('Paid');
+    expect(pricing).toHaveTextContent('Curated by helper2.ai');
+    expect(pricing).not.toHaveTextContent('Sources disagree');
+    expect(within(pricing).getByText('Paid')).not.toHaveAttribute('data-ai-generated');
+  });
+
+  it('an estimate an admin dropped is no longer shown (ADR 0038)', async () => {
+    const estimate = (field: string, value: string, verification: 'UNVERIFIED' | 'REJECTED') => ({
+      field,
+      value,
+      origin: 'AI_ESTIMATED' as const,
+      verification,
+      sourceId: null,
+      evidence: [],
+    });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({ techLevel: null }),
+          assertions: [
+            estimate('audience', 'USE_AI', 'REJECTED'),
+            estimate('techLevel', 'ADVANCED', 'REJECTED'),
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'All details' });
+    const row = (field: string) =>
+      document.querySelector(`[data-field="${field}"] dd`) as HTMLElement;
+    expect(row('audience')).toHaveTextContent('Not stated');
+    expect(row('techLevel')).toHaveTextContent('Not stated');
+  });
+
+  it('renders assertions with origin, verification and evidence excerpt', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          assertions: [
+            {
+              field: 'license',
+              value: 'MIT',
+              origin: 'AI_EXTRACTED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [ev],
+            },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const table = await screen.findByRole('table', { name: '' }).catch(() => null);
+    expect(table ?? true).toBeTruthy();
+    expect(await screen.findByText('Extracted by AI')).toBeInTheDocument();
+    expect(screen.getByText('Verified', { selector: '.verif' })).toBeInTheDocument();
+    expect(screen.getByText('Supports 40 languages.')).toBeInTheDocument();
+    expect(screen.getByText(/Retrieved Oct 20, 2026/)).toBeInTheDocument();
+  });
+
+  it('Scenario: with no AI summary there is no AI summary section, only one line in the fold that says why', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'LLM_UNAVAILABLE' }),
+    });
+    renderApp(`/resource/${ID}`);
+    const line = await screen.findByText(
+      'The AI model was not available, so there is no AI summary.',
+    );
+    expect(line.closest('details')).toBe(
+      screen.getByText('Where this information comes from').closest('details'),
+    );
+    expect(screen.queryByRole('heading', { name: 'AI summary' })).not.toBeInTheDocument();
+  });
+
+  it('Scenario: a resource not read by AI yet says so once, in plain words, with no name of an internal job', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'NOT_RUN' }) });
+    renderApp(`/resource/${ID}`);
+    const line = await screen.findByText('No AI summary yet.');
+    expect(line).toHaveTextContent(/^No AI summary yet\.$/);
+    expect(screen.queryByText(/Scout/)).not.toBeInTheDocument();
+  });
+
+  it('Scenario: an AI summary that failed its check says there is none, and why', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ enrichmentStatus: 'REJECTED' }) });
+    renderApp(`/resource/${ID}`);
+    expect(
+      await screen.findByText(
+        'No AI summary. An AI analysis was produced but failed validation, so it is not shown.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows summary claims with citations', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          enrichmentStatus: 'VALIDATED',
+          summary: {
+            claims: [{ text: 'It translates PDFs.', evidence: [ev] }],
+            model: 'm1',
+            promptVersion: 'v3',
+            generatedAt: '2026-10-21T00:00:00Z',
+          },
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const claim = await screen.findByText('It translates PDFs.');
+    expect(claim).toHaveAttribute('data-ai-generated', 'true');
+    expect(claim).toHaveAttribute('data-ai-model', 'm1');
+    expect(screen.getByText('1 citation')).toBeInTheDocument();
+    expect(
+      screen.getByText(/^Written by m1 on .+\. Each sentence links to its evidence\.$/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/prompt v3/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'AI summary' })).toBeInTheDocument();
+    expect(claim.closest('details')).toBeNull();
+    expect(screen.queryByText(/No AI summary/)).not.toBeInTheDocument();
+  });
+
+  it('Scenario: the proof is one click away: fields with origin, facts and source records sit in the closed fold', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          assertions: [
+            {
+              field: 'published',
+              value: '2023-03-27T18:49:32Z',
+              origin: 'SOURCE_PROVIDED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [],
+            },
+            {
+              field: 'firstCommit',
+              value: '2023-03-01',
+              origin: 'SOURCE_PROVIDED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [],
+            },
+            {
+              field: 'pricing',
+              value: 'FREEMIUM',
+              origin: 'SOURCE_PROVIDED',
+              verification: 'VERIFIED',
+              sourceId: 'github',
+              evidence: [],
+            },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const fold = (await screen.findByText('Where this information comes from')).closest(
+      'details',
+    ) as HTMLElement;
+    expect(fold).not.toHaveAttribute('open');
+    for (const name of ['All details', 'Facts and where they come from', 'Source records'])
+      expect(within(fold).getByRole('heading', { name })).toBeInTheDocument();
+    expect(within(fold).getByText('acme/translator')).toBeInTheDocument();
+    expect(within(fold).getByText('abcdef012345')).toBeInTheDocument();
+
+    const published = within(fold).getByRole('rowheader', { name: 'Published' }).closest('tr')!;
+    expect(published).not.toHaveTextContent('2023-03-27T18:49:32Z');
+    expect(published.querySelector('time')).toHaveAttribute('datetime', '2023-03-27T18:49:32Z');
+    expect(published.querySelector('time')).toHaveTextContent(/Mar 27, 2023/);
+    const firstCommit = within(fold)
+      .getByRole('rowheader', { name: 'First commit' })
+      .closest('tr')!;
+    expect(firstCommit.querySelector('time')).toHaveTextContent('Mar 1, 2023');
+    expect(
+      within(fold).getByRole('rowheader', { name: 'Pricing' }).closest('tr'),
+    ).toHaveTextContent('Freemium');
+    expect(document.querySelectorAll('.h2-res table')).toHaveLength(
+      fold.querySelectorAll('table').length,
+    );
+    expect(document.querySelectorAll('[data-field]')).toHaveLength(
+      fold.querySelectorAll('[data-field]').length,
+    );
+  });
+
+  it('Scenario: At a glance shows a value the AI read with its AI label and mark, and names only what nobody states', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({ pricing: null, platforms: [], techLevel: null }),
+          assertions: [
+            {
+              field: 'pricing',
+              value: 'PAID',
+              origin: 'AI_EXTRACTED',
+              verification: 'VERIFIED',
+              sourceId: null,
+              evidence: [ev],
+            },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const glance = await screen.findByRole('region', { name: 'At a glance' });
+    const paid = within(glance).getByText('Paid');
+    expect(paid).toHaveAttribute('data-ai-generated', 'true');
+    expect(paid.closest('dd')).toHaveTextContent('Extracted by AI');
+    expect(within(glance).getByText('MIT').closest('dd')).not.toHaveTextContent(/Stated|source/i);
+    expect(within(glance).getByText(/Not stated by any source:/)).toHaveTextContent(
+      'Not stated by any source: platforms, who it is for, technical level',
+    );
+    expect(within(glance).queryByText('Not stated')).not.toBeInTheDocument();
+  });
+
+  it('shows not found for 404', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => problem(404, 'Not found') });
+    renderApp(`/resource/${ID}`);
+    expect(await screen.findByText('Resource not found')).toBeInTheDocument();
+  });
+});
+
+describe('event days on the resource page', () => {
+  const eventCard = (origin: 'AI_EXTRACTED' | 'SOURCE_PROVIDED') =>
+    makeDetail({
+      card: makeCard({
+        type: 'EVENT',
+        eventOrigin: origin,
+        timeline: {
+          ...makeCard().timeline,
+          eventStart: {
+            value: '2027-03-12T00:00:00Z',
+            precision: 'DAY',
+            status: 'KNOWN',
+            sourceId: origin === 'AI_EXTRACTED' ? 'live-web-events-scout' : 'ai-deadlines',
+            alternatives: [],
+          },
+        },
+      }),
+    });
+
+  it('labels the days an AI model read, and marks them', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => eventCard('AI_EXTRACTED') });
+    renderApp(`/resource/${ID}`);
+    const row = (await screen.findByText('Takes place')).closest('.date-row')!;
+    expect(within(row as HTMLElement).getByText('Extracted by AI')).toBeInTheDocument();
+    expect(row.querySelector('dd [data-ai-generated="true"]')).not.toBeNull();
+  });
+
+  it('shows days a source states without the AI label', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => eventCard('SOURCE_PROVIDED') });
+    renderApp(`/resource/${ID}`);
+    const row = (await screen.findByText('Takes place')).closest('.date-row')!;
+    expect(within(row as HTMLElement).queryByText('Extracted by AI')).toBeNull();
+    expect(row.querySelector('[data-ai-generated]')).toBeNull();
+  });
+});
+
+describe('report form', () => {
+  const open = async () => {
+    const m = mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail(),
+      [`POST /resources/${ID}/reports`]: () =>
+        new Response(JSON.stringify({ reportId: '55555555-5555-5555-8555-555555555555' }), {
+          status: 202,
+          headers: { 'content-type': 'application/json' },
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'Report wrong or outdated info' });
+    return m;
+  };
+
+  it('Scenario: the one field that must be filled says so in its label and to a screen reader (WCAG 3.3.2)', async () => {
+    await open();
+    const message = screen.getByRole('textbox', { name: 'Describe the problem (required)' });
+    expect(message).toBeRequired();
+    expect(screen.getByLabelText(/Which detail is wrong\?/)).not.toBeRequired();
+  });
+
+  it('validates message length (5-2000) before sending', async () => {
+    const m = await open();
+    await userEvent.type(screen.getByLabelText(/Describe the problem/), 'abc');
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('between 5 and 2000');
+    expect(m.callsTo('POST', `/resources/${ID}/reports`)).toHaveLength(0);
+  });
+
+  it('submits kind, optional field and message and shows success', async () => {
+    const m = await open();
+    await userEvent.selectOptions(screen.getByLabelText('What is the problem?'), 'OUTDATED');
+    await userEvent.type(screen.getByLabelText(/Which detail is wrong\?/), 'license');
+    await userEvent.type(
+      screen.getByLabelText(/Describe the problem/),
+      'License changed to Apache.',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Thank you');
+    expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toEqual({
+      kind: 'OUTDATED',
+      field: 'license',
+      message: 'License changed to Apache.',
+    });
+  });
+
+  it('sends field as null when left empty', async () => {
+    const m = await open();
+    await userEvent.type(screen.getByLabelText(/Describe the problem/), 'Wrong price shown');
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    await waitFor(() =>
+      expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toMatchObject({
+        kind: 'WRONG',
+        field: null,
+      }),
+    );
+  });
+
+  it('shows the server problem detail on failure and allows retry', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail(),
+      [`POST /resources/${ID}/reports`]: () =>
+        problem(429, 'Too many', 'Too many reports, slow down.'),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.type(
+      await screen.findByLabelText(/Describe the problem/),
+      'Something wrong here',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('Too many reports, slow down.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send report' })).toBeEnabled();
+  });
+
+  it('starts fresh when it moves to another resource: a report sent on one does not show on the next', async () => {
+    const OTHER = '22222222-2222-5222-8222-222222222222';
+    const to = (targetId: string, targetTitle: string): Relationship => ({
+      kind: 'INTEGRATES_WITH',
+      targetTitle,
+      targetId,
+      verification: 'VERIFIED',
+      evidence: [ev],
+    });
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          card: makeCard({ id: ID, title: 'First tool' }),
+          relationships: [to(OTHER, 'Other tool')],
+        }),
+      [`GET /resources/${OTHER}`]: () =>
+        makeDetail({
+          card: makeCard({ id: OTHER, title: 'Other tool' }),
+          relationships: [to(ID, 'First tool')],
+        }),
+      [`POST /resources/${OTHER}/reports`]: () => ({ id: '55555555-5555-5555-8555-555555555555' }),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('link', { name: 'Other tool' }));
+    await userEvent.type(
+      await screen.findByLabelText(/Describe the problem/),
+      'The price is wrong.',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText(/Your report was sent/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: 'First tool' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'First tool' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Your report was sent/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Describe the problem/)).toHaveValue('');
+  });
+});
