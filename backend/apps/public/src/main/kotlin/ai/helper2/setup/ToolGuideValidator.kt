@@ -173,7 +173,7 @@ class ToolGuideValidator {
             "\\b(?:invoke-expression|iex)\\s*\\(",
             "\\bsudo\\b",
             "\\bchmod\\s+(?:-\\S+\\s+)*0?777\\b",
-            "\\brm\\s+(?:-\\S+\\s+)*-[a-z]*(?:r[a-z]*f|f[a-z]*r)",
+            "\\brm\\s+(?:-\\S+\\s+)*-[a-z]*r",
             "\\brm\\s+(?:-\\S+\\s+)*--recursive\\b",
           )
           .joinToString("|"),

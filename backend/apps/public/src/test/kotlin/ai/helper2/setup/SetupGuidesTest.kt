@@ -288,6 +288,13 @@ class SetupGuidesTest {
   }
 
   @Test
+  fun `vs code keeps the shape of a secret header and asks only for the secret`() {
+    val text = snippet(guide(sse), "vscode").text!!
+    assertTrue("\"Authorization\": \"Bearer \${input:authorization}\"" in text, text)
+    assertTrue("\"id\": \"authorization\"" in text && "\"password\": true" in text, text)
+  }
+
+  @Test
   fun `codex toml, gemini httpUrl vs url, cline names the transport`() {
     val g = guide(remote, sse, npm)
     assertEquals(

@@ -213,7 +213,9 @@ object Clients {
     val secrets = t.option.settings.filter { it.secret && it.name in t.values }
     val values =
       t.values.mapValues { (k, v) ->
-        if (secrets.any { it.name == k }) "\${input:${inputId(k)}}" else v
+        secrets
+          .firstOrNull { it.name == k }
+          ?.let { SetupGuides.secretValue(it, "\${input:${inputId(k)}}") } ?: v
       }
     val entry: Map<String, Any?> =
       if (t.stdio) {

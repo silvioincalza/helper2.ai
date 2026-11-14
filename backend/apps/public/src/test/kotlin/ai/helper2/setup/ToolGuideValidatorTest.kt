@@ -480,6 +480,11 @@ class ToolGuideValidatorTest {
         "chmod 777 /usr/local/bin",
         "rm -fr ~/.cache",
         "rm --recursive --force build",
+        "rm -r build",
+        "rm -R build",
+        "rm -r -f build",
+        "rm -f -r build",
+        "rm --force -r build",
       )
       .forEach { assertTrue(ToolGuideValidator.cautious(it), it) }
     listOf(
@@ -490,6 +495,9 @@ class ToolGuideValidatorTest {
         "cat config.json | jq .servers",
         "brew install acme",
         "bash scripts/setup.sh",
+        "rm -f build.log",
+        "rm --force build.log",
+        "rm old-report.txt",
       )
       .forEach { assertFalse(ToolGuideValidator.cautious(it), it) }
   }

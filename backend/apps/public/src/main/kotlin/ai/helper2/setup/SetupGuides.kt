@@ -99,6 +99,11 @@ constructor(
       }
     }
 
+    fun secretValue(s: Setting, secret: String): String {
+      val template = s.value?.takeIf { TEMPLATE.containsMatchIn(it) } ?: return secret
+      return TEMPLATE.replace(template) { secret }
+    }
+
     private val TEMPLATE = Regex("\\{([A-Za-z0-9_.-]+)\\}")
 
     private fun label(o: RunOption): String =
