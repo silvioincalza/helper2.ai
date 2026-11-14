@@ -505,6 +505,55 @@ helper2.embedding.base-url = ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.ap
 helper2.embedding.dimensions = 1024
 helper2.embedding.model = ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}  =>  nvidia/nemotron-3.5-embed-1b
 helper2.embedding.timeout = 3s
+helper2.feeds[0].homepage = https://openai.com/news/
+helper2.feeds[0].id = openai
+helper2.feeds[0].publisher = OpenAI
+helper2.feeds[0].short-name = OpenAI
+helper2.feeds[0].url = https://openai.com/news/rss.xml
+helper2.feeds[1].homepage = https://deepmind.google/blog/
+helper2.feeds[1].id = google-deepmind
+helper2.feeds[1].publisher = Google DeepMind
+helper2.feeds[1].short-name = DeepMind
+helper2.feeds[1].url = https://deepmind.google/blog/rss.xml
+helper2.feeds[2].homepage = https://research.google/blog/
+helper2.feeds[2].id = google-research
+helper2.feeds[2].publisher = Google Research
+helper2.feeds[2].short-name = G. Research
+helper2.feeds[2].url = https://research.google/blog/rss/
+helper2.feeds[3].homepage = https://blog.google/innovation-and-ai/technology/ai/
+helper2.feeds[3].id = google-ai
+helper2.feeds[3].publisher = Google
+helper2.feeds[3].short-name = Google AI
+helper2.feeds[3].url = https://blog.google/innovation-and-ai/technology/ai/rss/
+helper2.feeds[4].homepage = https://huggingface.co/blog
+helper2.feeds[4].id = hugging-face
+helper2.feeds[4].publisher = Hugging Face
+helper2.feeds[4].short-name = HF blog
+helper2.feeds[4].url = https://huggingface.co/blog/feed.xml
+helper2.feeds[5].homepage = https://mistral.ai/news
+helper2.feeds[5].id = mistral
+helper2.feeds[5].publisher = Mistral AI
+helper2.feeds[5].short-name = Mistral
+helper2.feeds[5].url = https://mistral.ai/news/rss
+helper2.feeds[6].homepage = https://blogs.nvidia.com/
+helper2.feeds[6].id = nvidia
+helper2.feeds[6].publisher = NVIDIA
+helper2.feeds[6].require-words[0] = ai
+helper2.feeds[6].require-words[1] = agent*
+helper2.feeds[6].require-words[2] = model*
+helper2.feeds[6].require-words[3] = llm*
+helper2.feeds[6].require-words[4] = inference
+helper2.feeds[6].require-words[5] = generative
+helper2.feeds[6].require-words[6] = robot*
+helper2.feeds[6].require-words[7] = nemotron
+helper2.feeds[6].require-words[8] = cuda
+helper2.feeds[6].short-name = NVIDIA
+helper2.feeds[6].url = https://blogs.nvidia.com/feed/
+helper2.feeds[7].homepage = https://aws.amazon.com/blogs/machine-learning/
+helper2.feeds[7].id = aws-ml
+helper2.feeds[7].publisher = AWS
+helper2.feeds[7].short-name = AWS ML
+helper2.feeds[7].url = https://aws.amazon.com/blogs/machine-learning/feed/
 helper2.http.max-connections = 50
 helper2.http.max-connections-per-route = 20
 helper2.http.max-response-size = 2MB
@@ -525,6 +574,7 @@ helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
 helper2.retention.resolved-issue-reports = ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}  =>  P365D
 helper2.retention.resolved-review-items = ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}  =>  P180D
 helper2.retention.runtime-settings = ${H2_RETENTION_RUNTIME_SETTINGS:P730D}  =>  P730D
+helper2.retention.scout-runs = ${H2_RETENTION_SCOUT_RUNS:P90D}  =>  P90D
 helper2.retention.web-news = ${H2_RETENTION_WEB_NEWS:P180D}  =>  P180D
 helper2.runtime-settings.refresh = ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT20S
 helper2.schema.logins.h2_backoffice = ${H2_DATABASE_BACKOFFICE_PASSWORD:}  =>  <empty>
@@ -533,7 +583,196 @@ helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:false}  =>  false
 helper2.schema.statement-timeouts.h2_backoffice = 60s
 helper2.schema.statement-timeouts.h2_public = 5s
 helper2.schema.wait-for = ${H2_SCHEMA_WAIT:PT4M}  =>  PT4M
+helper2.scout.admission.github-topic-leaders.index-min-stars = ${H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}  =>  1000
+helper2.scout.admission.github-topic-leaders.index-pushed-within = ${H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN:P90D}  =>  P90D
+helper2.scout.admission.hf-trending.index-min-likes = 20
+helper2.scout.ai-deadlines.interval = ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}  =>  P1D
+helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
+helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
+helper2.scout.courses.query = new artificial intelligence course or certification
+helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:40}  =>  40
+helper2.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
+helper2.scout.discovery.interval = ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
+helper2.scout.discovery.max-results = 10
+helper2.scout.discovery.min-score = 0.4
+helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
+helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
+helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
+helper2.scout.github-awesome.classifier-daily-calls = ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}  =>  300
+helper2.scout.github-awesome.classify-batch = 25
+helper2.scout.github-awesome.classify-max-tokens = 8192
+helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
+helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+helper2.scout.github-awesome.links.max-per-pass = 500
+helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
+helper2.scout.github-awesome.max-entries-per-pass = 1000
+helper2.scout.github-awesome.max-entries-per-run = ${H2_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
+helper2.scout.github-awesome.max-lists = 10
+helper2.scout.github-awesome.max-readme-bytes-per-run = ${H2_SCOUT_AWESOME_MAX_README_BYTES:50MB}  =>  50MB
+helper2.scout.github-awesome.max-run-time = ${H2_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}  =>  PT15M
+helper2.scout.github-awesome.min-list-stars = 1000
+helper2.scout.github-awesome.min-repo-stars = 50
+helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
+helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
+helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+helper2.scout.github-sdks.deps-dev-url = ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
+helper2.scout.github-sdks.interval = ${H2_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
+helper2.scout.github-sdks.languages = ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000
+helper2.scout.github-sdks.org-min-stars = ${H2_SCOUT_SDKS_ORG_MIN_STARS:300}  =>  300
+helper2.scout.github-sdks.orgs = ${H2_SCOUT_SDKS_ORGS:openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs}  =>  openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs
+helper2.scout.github-sdks.packages-per-repo = ${H2_SCOUT_SDKS_PACKAGES_PER_REPO:3}  =>  3
+helper2.scout.github-sdks.pages-per-query = ${H2_SCOUT_SDKS_PAGES_PER_QUERY:3}  =>  3
+helper2.scout.github-sdks.per-day = ${H2_SCOUT_SDKS_PER_DAY:500}  =>  500
+helper2.scout.github-sdks.per-query = ${H2_SCOUT_SDKS_PER_QUERY:100}  =>  100
+helper2.scout.github-sdks.queries-per-run = ${H2_SCOUT_SDKS_QUERIES_PER_RUN:20}  =>  20
+helper2.scout.github-sdks.rate-limit-reserve = ${H2_SCOUT_SDKS_RATE_LIMIT_RESERVE:10}  =>  10
+helper2.scout.github-sdks.search-pause = ${H2_SCOUT_SDKS_SEARCH_PAUSE:2s}  =>  2s
+helper2.scout.github-sdks.topics = ${H2_SCOUT_SDKS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk}  =>  llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk
+helper2.scout.github-topic-leaders.index-per-topic = ${H2_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC:1000}  =>  1000
+helper2.scout.github-topic-leaders.interval = ${H2_SCOUT_TOPIC_LEADERS_INTERVAL:P7D}  =>  P7D
+helper2.scout.github-topic-leaders.min-stars = ${H2_SCOUT_TOPIC_LEADERS_MIN_STARS:3000}  =>  3000
+helper2.scout.github-topic-leaders.per-day = ${H2_SCOUT_TOPIC_LEADERS_PER_DAY:25}  =>  25
+helper2.scout.github-topic-leaders.per-topic = ${H2_SCOUT_TOPIC_LEADERS_PER_TOPIC:50}  =>  50
+helper2.scout.github-topic-leaders.search-pause = ${H2_SCOUT_TOPIC_LEADERS_SEARCH_PAUSE:2s}  =>  2s
+helper2.scout.github-topic-leaders.topics = ${H2_SCOUT_TOPIC_LEADERS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning}  =>  llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning
+helper2.scout.hf-provider-orgs.interval = ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}  =>  P1D
+helper2.scout.hf-provider-orgs.orgs = meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org, microsoft,amazon,ibm-granite,CohereLabs,facebook,zai-org,moonshotai,MiniMaxAI, baidu,tencent,ByteDance-Seed,stepfun-ai,internlm,openbmb,inclusionAI,XiaomiMiMo, allenai,swiss-ai,LiquidAI,LGAI-EXAONE,upstage,BAAI,jinaai,stabilityai, black-forest-labs,Lightricks,Wan-AI,kyutai
+helper2.scout.hf-provider-orgs.per-org = 20
+helper2.scout.hf-trending.interval = ${H2_SCOUT_HF_INTERVAL:P1D}  =>  P1D
+helper2.scout.linkedin.interval = ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}  =>  P7D
+helper2.scout.linkedin.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen, launches new AI product, AI startup announces launch, introducing our new AI agent, now available generative AI platform, open-source AI model release announcement, MCP server launch announcement, AI conference, AI hackathon, generative AI meetup, AI summit Europe, LLM workshop webinar, AI event Switzerland, NVIDIA GTC
+helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}  =>  P7D
+helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
+helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
+helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
+helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
+helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
+helper2.scout.mcp-registry.interval = ${H2_SCOUT_MCP_INTERVAL:PT1H}  =>  PT1H
+helper2.scout.news-feeds.interval = ${H2_SCOUT_NEWS_FEEDS_INTERVAL:P1D}  =>  P1D
+helper2.scout.pypi.candidates-per-day = ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  =>  20
+helper2.scout.pypi.interval = ${H2_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
+helper2.scout.pypi.max-bytes-billed = ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
+helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
+helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
+helper2.search.translate-timeout = ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
+helper2.search.translation.daily-calls = ${H2_SEARCH_DAILY_TRANSLATIONS:300}  =>  300
+helper2.search.translation.ttl = ${H2_SEARCH_TRANSLATION_TTL:24h}  =>  24h
+helper2.search.web.fresh-general = ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}  =>  PT48H
+helper2.search.web.fresh-time-bound = ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}  =>  PT24H
+helper2.search.web.quota.global-daily-credits = ${H2_LIVE_WEB_DAILY_CREDITS:}  =>  <empty>
+helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:3}  =>  3
+helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:3}  =>  3
+helper2.sources.ai-deadlines.base-url = https://api.github.com
+helper2.sources.ai-deadlines.cache-ttl = 30m
+helper2.sources.ai-deadlines.deadline = ${H2_SOURCE_AI_DEADLINES_DEADLINE:}  =>  <empty>
+helper2.sources.ai-deadlines.enabled = ${H2_SOURCE_AI_DEADLINES_ENABLED:true}  =>  true
+helper2.sources.ai-deadlines.timeout = 15s
+helper2.sources.ai-deadlines.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
+helper2.sources.arxiv.base-url = https://export.arxiv.org
+helper2.sources.arxiv.cache-ttl = 6h
+helper2.sources.arxiv.enabled = ${H2_SOURCE_ARXIV_ENABLED:true}  =>  true
+helper2.sources.arxiv.timeout = 3s
+helper2.sources.course-scout.base-url = https://api.tavily.com
+helper2.sources.course-scout.cache-ttl = 30m
+helper2.sources.course-scout.deadline = ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}  =>  <empty>
+helper2.sources.course-scout.enabled = ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}  =>  true
+helper2.sources.course-scout.timeout = 10s
+helper2.sources.course-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
+helper2.sources.discovery.base-url = https://api.tavily.com
+helper2.sources.discovery.cache-ttl = 30m
+helper2.sources.discovery.deadline = ${H2_SOURCE_DISCOVERY_DEADLINE:}  =>  <empty>
+helper2.sources.discovery.enabled = ${H2_SOURCE_DISCOVERY_ENABLED:true}  =>  true
+helper2.sources.discovery.timeout = 20s
+helper2.sources.discovery.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
+helper2.sources.github-awesome.base-url = https://api.github.com
+helper2.sources.github-awesome.cache-ttl = 30m
+helper2.sources.github-awesome.deadline = ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}  =>  <empty>
+helper2.sources.github-awesome.enabled = ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}  =>  true
+helper2.sources.github-awesome.timeout = 15s
+helper2.sources.github-awesome.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
+helper2.sources.github-sdks.base-url = https://api.github.com
+helper2.sources.github-sdks.cache-ttl = 30m
+helper2.sources.github-sdks.deadline = ${H2_SOURCE_GITHUB_SDKS_DEADLINE:}  =>  <empty>
+helper2.sources.github-sdks.enabled = ${H2_SOURCE_GITHUB_SDKS_ENABLED:true}  =>  true
+helper2.sources.github-sdks.timeout = 20s
+helper2.sources.github-sdks.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
+helper2.sources.github-topic-leaders.base-url = https://api.github.com
+helper2.sources.github-topic-leaders.cache-ttl = 30m
+helper2.sources.github-topic-leaders.deadline = ${H2_SOURCE_GITHUB_TOPIC_LEADERS_DEADLINE:}  =>  <empty>
+helper2.sources.github-topic-leaders.enabled = ${H2_SOURCE_GITHUB_TOPIC_LEADERS_ENABLED:true}  =>  true
+helper2.sources.github-topic-leaders.timeout = 15s
+helper2.sources.github-topic-leaders.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
+helper2.sources.github.base-url = https://api.github.com
+helper2.sources.github.cache-ttl = 30m
+helper2.sources.github.enabled = ${H2_SOURCE_GITHUB_ENABLED:true}  =>  true
+helper2.sources.github.timeout = 2500ms
+helper2.sources.github.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
+helper2.sources.hacker-news.base-url = https://hn.algolia.com
+helper2.sources.hacker-news.cache-ttl = 30m
+helper2.sources.hacker-news.enabled = ${H2_SOURCE_HACKER_NEWS_ENABLED:true}  =>  true
+helper2.sources.hacker-news.timeout = 2500ms
+helper2.sources.hf-provider-orgs.base-url = https://huggingface.co
+helper2.sources.hf-provider-orgs.cache-ttl = 30m
+helper2.sources.hf-provider-orgs.deadline = ${H2_SOURCE_HF_ORGS_DEADLINE:}  =>  <empty>
+helper2.sources.hf-provider-orgs.enabled = ${H2_SOURCE_HF_ORGS_ENABLED:true}  =>  true
+helper2.sources.hf-provider-orgs.timeout = 10s
+helper2.sources.hf-provider-orgs.token = ${H2_HF_TOKEN:}  =>  <empty>
+helper2.sources.hf-trending.base-url = https://huggingface.co
+helper2.sources.hf-trending.cache-ttl = 30m
+helper2.sources.hf-trending.deadline = ${H2_SOURCE_HF_TRENDING_DEADLINE:}  =>  <empty>
+helper2.sources.hf-trending.enabled = ${H2_SOURCE_HF_TRENDING_ENABLED:true}  =>  true
+helper2.sources.hf-trending.timeout = 10s
+helper2.sources.hf-trending.token = ${H2_HF_TOKEN:}  =>  <empty>
+helper2.sources.huggingface.base-url = https://huggingface.co
+helper2.sources.huggingface.cache-ttl = 30m
+helper2.sources.huggingface.enabled = ${H2_SOURCE_HF_ENABLED:true}  =>  true
+helper2.sources.huggingface.timeout = 2500ms
+helper2.sources.huggingface.token = ${H2_HF_TOKEN:}  =>  <empty>
+helper2.sources.linkedin-scout.base-url = https://api.tavily.com
+helper2.sources.linkedin-scout.cache-ttl = 30m
+helper2.sources.linkedin-scout.deadline = ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}  =>  <empty>
+helper2.sources.linkedin-scout.enabled = ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}  =>  true
+helper2.sources.linkedin-scout.timeout = 10s
+helper2.sources.linkedin-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
+helper2.sources.live-web-events-scout.base-url = https://api.tavily.com
+helper2.sources.live-web-events-scout.cache-ttl = 30m
+helper2.sources.live-web-events-scout.deadline = ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}  =>  <empty>
+helper2.sources.live-web-events-scout.enabled = ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:true}  =>  true
+helper2.sources.live-web-events-scout.timeout = 20s
+helper2.sources.live-web-events-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
+helper2.sources.live-web-scout.base-url = https://api.tavily.com
+helper2.sources.live-web-scout.cache-ttl = 30m
+helper2.sources.live-web-scout.deadline = ${H2_SOURCE_LIVE_WEB_SCOUT_DEADLINE:}  =>  <empty>
+helper2.sources.live-web-scout.enabled = ${H2_SOURCE_LIVE_WEB_SCOUT_ENABLED:true}  =>  true
+helper2.sources.live-web-scout.timeout = 10s
+helper2.sources.live-web-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
+helper2.sources.live-web.base-url = https://api.tavily.com
+helper2.sources.live-web.cache-ttl = 30m
+helper2.sources.live-web.enabled = ${H2_SOURCE_LIVE_WEB_ENABLED:true}  =>  true
+helper2.sources.live-web.timeout = ${H2_SOURCE_LIVE_WEB_TIMEOUT:6s}  =>  6s
+helper2.sources.live-web.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
+helper2.sources.mcp-registry.base-url = https://registry.modelcontextprotocol.io
+helper2.sources.mcp-registry.cache-ttl = 30m
+helper2.sources.mcp-registry.deadline = ${H2_SOURCE_MCP_DEADLINE:}  =>  <empty>
+helper2.sources.mcp-registry.enabled = ${H2_SOURCE_MCP_ENABLED:true}  =>  true
+helper2.sources.mcp-registry.timeout = 10s
+helper2.sources.news-feeds.cache-ttl = 30m
+helper2.sources.news-feeds.deadline = ${H2_SOURCE_NEWS_FEEDS_DEADLINE:}  =>  <empty>
+helper2.sources.news-feeds.enabled = ${H2_SOURCE_NEWS_FEEDS_ENABLED:true}  =>  true
+helper2.sources.news-feeds.timeout = 10s
+helper2.sources.npm.base-url = https://registry.npmjs.org
+helper2.sources.npm.cache-ttl = 30m
+helper2.sources.npm.enabled = ${H2_SOURCE_NPM_ENABLED:true}  =>  true
+helper2.sources.npm.timeout = 2500ms
+helper2.sources.pypi.cache-ttl = 30m
+helper2.sources.pypi.enabled = ${H2_SOURCE_PYPI_ENABLED:false}  =>  false
+helper2.sources.pypi.timeout = 60s
 helper2.test.client = h2_public
+helper2.vitality.established-stars = ${H2_VITALITY_ESTABLISHED_STARS:10000}  =>  10000
+helper2.vitality.fork-min-stars = ${H2_VITALITY_FORK_MIN_STARS:10}  =>  10
+helper2.vitality.hosted-app-min-likes = ${H2_SOURCE_HF_SPACES_MIN_LIKES:3}  =>  3
+helper2.vitality.maintained-within = ${H2_VITALITY_MAINTAINED_WITHIN:P1095D}  =>  P1095D
 logging.structured.format.console = ${H2_LOG_FORMAT:logstash}  =>  logstash
 management.endpoint.health.probes.enabled = true
 management.endpoint.health.show-details = never
@@ -588,6 +827,23 @@ resilience4j.circuitbreaker.configs.store.permitted-number-of-calls-in-half-open
 resilience4j.circuitbreaker.configs.store.sliding-window-size = 10
 resilience4j.circuitbreaker.configs.store.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.configs.store.wait-duration-in-open-state = ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.collector-ai-deadlines.base-config = collector
+resilience4j.circuitbreaker.instances.collector-course-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-deps-dev.base-config = collector
+resilience4j.circuitbreaker.instances.collector-discovery.base-config = collector
+resilience4j.circuitbreaker.instances.collector-gap-evidence.base-config = collector
+resilience4j.circuitbreaker.instances.collector-gap-web.base-config = collector
+resilience4j.circuitbreaker.instances.collector-github-awesome.base-config = collector
+resilience4j.circuitbreaker.instances.collector-github-sdks.base-config = collector
+resilience4j.circuitbreaker.instances.collector-github-topic-leaders.base-config = collector
+resilience4j.circuitbreaker.instances.collector-hf-provider-orgs.base-config = collector
+resilience4j.circuitbreaker.instances.collector-hf-trending.base-config = collector
+resilience4j.circuitbreaker.instances.collector-linkedin-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-live-web-events-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
+resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
+resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
 resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
@@ -606,7 +862,25 @@ resilience4j.retry.configs.collector.enable-randomized-wait = true
 resilience4j.retry.configs.collector.exponential-backoff-multiplier = 2
 resilience4j.retry.configs.collector.max-attempts = ${H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}  =>  3
 resilience4j.retry.configs.collector.randomized-wait-factor = 0.5
+resilience4j.retry.configs.collector.retry-exception-predicate = ai.helper2.sources.support.TransientSourceFailure
 resilience4j.retry.configs.collector.wait-duration = 1s
+resilience4j.retry.instances.collector-ai-deadlines.base-config = collector
+resilience4j.retry.instances.collector-course-scout.base-config = collector
+resilience4j.retry.instances.collector-deps-dev.base-config = collector
+resilience4j.retry.instances.collector-discovery.base-config = collector
+resilience4j.retry.instances.collector-gap-evidence.base-config = collector
+resilience4j.retry.instances.collector-gap-web.base-config = collector
+resilience4j.retry.instances.collector-github-awesome.base-config = collector
+resilience4j.retry.instances.collector-github-sdks.base-config = collector
+resilience4j.retry.instances.collector-github-topic-leaders.base-config = collector
+resilience4j.retry.instances.collector-hf-provider-orgs.base-config = collector
+resilience4j.retry.instances.collector-hf-trending.base-config = collector
+resilience4j.retry.instances.collector-linkedin-scout.base-config = collector
+resilience4j.retry.instances.collector-live-web-events-scout.base-config = collector
+resilience4j.retry.instances.collector-live-web-scout.base-config = collector
+resilience4j.retry.instances.collector-mcp-registry.base-config = collector
+resilience4j.retry.instances.collector-news-feeds.base-config = collector
+resilience4j.retry.instances.collector-pypi.base-config = collector
 server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${H2_PORT:8080}  =>  8080
 server.shutdown = graceful

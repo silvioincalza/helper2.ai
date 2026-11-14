@@ -5,8 +5,10 @@ import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.ScoutPolicy;
 import ai.helper2.catalog.config.CatalogProperties;
 import ai.helper2.catalog.config.CatalogRetentionProperties;
+import ai.helper2.catalog.config.ScoutEvidenceProperties;
 import ai.helper2.platform.config.EmbeddingProperties;
 import ai.helper2.platform.config.HttpClientProperties;
 import ai.helper2.platform.llm.LlmPolicies;
@@ -18,12 +20,14 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(ScoutEvidenceProperties.class)
 class CatalogConfiguration {
   @Bean
   CatalogPolicy catalogPolicy(CatalogProperties catalog, CatalogRetentionProperties retention) {
@@ -48,6 +52,11 @@ class CatalogConfiguration {
       return new ProjectedReconciliation(jdbc, json, rows, resources, cards);
     }
     return new SqlReconciliation(jdbc);
+  }
+
+  @Bean
+  ScoutPolicy scoutPolicy(ScoutEvidenceProperties evidence) {
+    return ScoutPolicy.of(evidence.pageTextTtl(), evidence.pageReadTtl());
   }
 
   @Bean(destroyMethod = "close")

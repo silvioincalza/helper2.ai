@@ -132,6 +132,23 @@ resilience4j:
         wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
         permitted-number-of-calls-in-half-open-state: 2
     instances:
+      collector-hf-trending: {base-config: collector}
+      collector-live-web-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
+      collector-live-web-events-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-github-topic-leaders: {base-config: collector}
+      collector-github-sdks: {base-config: collector}
+      collector-deps-dev: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+      collector-news-feeds: {base-config: collector}
+      collector-pypi: {base-config: collector}
+      collector-gap-evidence: {base-config: collector}
+      collector-gap-web: {base-config: collector}
       redis: {base-config: store}
       llm-chat:
         base-config: model
@@ -168,6 +185,25 @@ resilience4j:
         exponential-backoff-multiplier: 2
         enable-randomized-wait: true
         randomized-wait-factor: 0.5
+        retry-exception-predicate: ai.helper2.sources.support.TransientSourceFailure
+    instances:
+      collector-hf-trending: {base-config: collector}
+      collector-live-web-scout: {base-config: collector}
+      collector-course-scout: {base-config: collector}
+      collector-discovery: {base-config: collector}
+      collector-linkedin-scout: {base-config: collector}
+      collector-live-web-events-scout: {base-config: collector}
+      collector-github-awesome: {base-config: collector}
+      collector-github-topic-leaders: {base-config: collector}
+      collector-github-sdks: {base-config: collector}
+      collector-deps-dev: {base-config: collector}
+      collector-hf-provider-orgs: {base-config: collector}
+      collector-ai-deadlines: {base-config: collector}
+      collector-mcp-registry: {base-config: collector}
+      collector-news-feeds: {base-config: collector}
+      collector-pypi: {base-config: collector}
+      collector-gap-evidence: {base-config: collector}
+      collector-gap-web: {base-config: collector}
 logging:
   structured:
     format:
@@ -208,6 +244,13 @@ helper2:
     categories:
       backfill-at-startup: ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}
     reconcile-by-projection: ${H2_CATALOG_RECONCILE_BY_PROJECTION:true}
+  search:
+    stale-for: ${H2_SEARCH_STALE_FOR:24h}
+    per-source-limit: ${H2_SEARCH_PER_SOURCE_LIMIT:30}
+    translate-timeout: ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}
+    translation:
+      daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
+      ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
   http:
     pool-wait: 250ms
     max-connections: 50
@@ -215,6 +258,288 @@ helper2:
     max-response-size: 2MB
   runtime-settings:
     refresh: ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}
+  scout:
+    evidence:
+      page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
+      page-text-ttl: ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
+    admission:
+      github-topic-leaders:
+        index-min-stars: ${H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}
+        index-pushed-within: ${H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN:P90D}
+      hf-trending:
+        index-min-likes: 20
+    hf-trending:
+      interval: ${H2_SCOUT_HF_INTERVAL:P1D}
+    github-topic-leaders:
+      interval: ${H2_SCOUT_TOPIC_LEADERS_INTERVAL:P7D}
+      topics: ${H2_SCOUT_TOPIC_LEADERS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning}
+      min-stars: ${H2_SCOUT_TOPIC_LEADERS_MIN_STARS:3000}
+      per-topic: ${H2_SCOUT_TOPIC_LEADERS_PER_TOPIC:50}
+      per-day: ${H2_SCOUT_TOPIC_LEADERS_PER_DAY:25}
+      index-per-topic: ${H2_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC:1000}
+      search-pause: ${H2_SCOUT_TOPIC_LEADERS_SEARCH_PAUSE:2s}
+    github-sdks:
+      interval: ${H2_SCOUT_SDKS_INTERVAL:P7D}
+      topics: ${H2_SCOUT_SDKS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk}
+      languages: ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}
+      orgs: ${H2_SCOUT_SDKS_ORGS:openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs}
+      org-min-stars: ${H2_SCOUT_SDKS_ORG_MIN_STARS:300}
+      per-query: ${H2_SCOUT_SDKS_PER_QUERY:100}
+      pages-per-query: ${H2_SCOUT_SDKS_PAGES_PER_QUERY:3}
+      queries-per-run: ${H2_SCOUT_SDKS_QUERIES_PER_RUN:20}
+      rate-limit-reserve: ${H2_SCOUT_SDKS_RATE_LIMIT_RESERVE:10}
+      search-pause: ${H2_SCOUT_SDKS_SEARCH_PAUSE:2s}
+      per-day: ${H2_SCOUT_SDKS_PER_DAY:500}
+      deps-dev-url: ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}
+      packages-per-repo: ${H2_SCOUT_SDKS_PACKAGES_PER_REPO:3}
+    github-awesome:
+      interval: ${H2_SCOUT_AWESOME_INTERVAL:P1D}
+      topic-queries: >-
+        topic:awesome-list topic:llm,
+        topic:awesome topic:llm,
+        topic:awesome-list topic:artificial-intelligence,
+        topic:awesome-list topic:ai-agents,
+        topic:awesome topic:mcp,
+        topic:awesome topic:generative-ai
+      max-lists: 10
+      min-list-stars: 1000
+      max-entries-per-pass: 1000
+      max-entries-per-run: ${H2_SCOUT_AWESOME_PER_RUN:1000}
+      min-repo-stars: 50
+      classify-batch: 25
+      classify-max-tokens: 8192
+      classifier-daily-calls: ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}
+      max-run-time: ${H2_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}
+      max-readme-bytes-per-run: ${H2_SCOUT_AWESOME_MAX_README_BYTES:50MB}
+      nested:
+        max-depth: ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}
+        max-lists-per-run: ${H2_SCOUT_AWESOME_NESTED_LISTS:30}
+      links:
+        per-day: ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}
+        max-per-pass: 500
+        exclude-domains: >-
+          arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
+          discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,
+          kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com,
+          chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+    ai-deadlines:
+      interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
+    mcp-registry:
+      interval: ${H2_SCOUT_MCP_INTERVAL:PT1H}
+    news-feeds:
+      interval: ${H2_SCOUT_NEWS_FEEDS_INTERVAL:P1D}
+    pypi:
+      interval: ${H2_SCOUT_PYPI_INTERVAL:P1D}
+      candidates-per-day: ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}
+      max-bytes-billed: ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}
+    live-web:
+      interval: ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen
+    courses:
+      interval: ${H2_SCOUT_COURSES_INTERVAL:P7D}
+      query: new artificial intelligence course or certification
+      platforms: >-
+        coursera.org=Coursera,
+        oreilly.com=O'Reilly,
+        edx.org=edX,
+        udemy.com=Udemy,
+        deeplearning.ai=DeepLearning.AI,
+        huggingface.co/learn=Hugging Face Learn,
+        cloud.google.com/learn=Google Cloud,
+        aws.amazon.com/certification=AWS,
+        learn.microsoft.com/en-us/credentials=Microsoft Learn,
+        nvidia.com=NVIDIA
+    linkedin:
+      interval: ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}
+      queries: >-
+        new AI tool launched,
+        new open-source LLM released,
+        new MCP server released,
+        new AI agent framework released,
+        new model released OpenAI Anthropic Google Gemini,
+        new model released xAI Grok Meta Llama Mistral,
+        new model released NVIDIA Nemotron DeepSeek Qwen,
+        launches new AI product,
+        AI startup announces launch,
+        introducing our new AI agent,
+        now available generative AI platform,
+        open-source AI model release announcement,
+        MCP server launch announcement,
+        AI conference,
+        AI hackathon,
+        generative AI meetup,
+        AI summit Europe,
+        LLM workshop webinar,
+        AI event Switzerland,
+        NVIDIA GTC
+    live-web-events:
+      interval: ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}
+      max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
+      reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
+      read-max-tokens: 800
+      queries: >-
+        upcoming AI hackathons,
+        upcoming AI meetups and talks,
+        upcoming AI conferences and summits,
+        upcoming AI workshops
+    discovery:
+      interval: ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}
+      search-depth: ${H2_SCOUT_DISCOVERY_DEPTH:advanced}
+      max-results: 10
+      min-score: 0.4
+      exclude-domains: >-
+        youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com,
+        pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai,
+        topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com,
+        trustpilot.com, alternativeto.net, saasworthy.com
+    hf-provider-orgs:
+      interval: ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}
+      orgs: >-
+        meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org,
+        microsoft,amazon,ibm-granite,CohereLabs,facebook,zai-org,moonshotai,MiniMaxAI,
+        baidu,tencent,ByteDance-Seed,stepfun-ai,internlm,openbmb,inclusionAI,XiaomiMiMo,
+        allenai,swiss-ai,LiquidAI,LGAI-EXAONE,upstage,BAAI,jinaai,stabilityai,
+        black-forest-labs,Lightricks,Wan-AI,kyutai
+      per-org: 20
+  vitality:
+    hosted-app-min-likes: ${H2_SOURCE_HF_SPACES_MIN_LIKES:3}
+    fork-min-stars: ${H2_VITALITY_FORK_MIN_STARS:10}
+    maintained-within: ${H2_VITALITY_MAINTAINED_WITHIN:P1095D}
+    established-stars: ${H2_VITALITY_ESTABLISHED_STARS:10000}
+  sources:
+    github:
+      enabled: ${H2_SOURCE_GITHUB_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 2500ms
+      cache-ttl: 30m
+    huggingface:
+      enabled: ${H2_SOURCE_HF_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 2500ms
+      cache-ttl: 30m
+    npm:
+      enabled: ${H2_SOURCE_NPM_ENABLED:true}
+      base-url: https://registry.npmjs.org
+      timeout: 2500ms
+      cache-ttl: 30m
+    hacker-news:
+      enabled: ${H2_SOURCE_HACKER_NEWS_ENABLED:true}
+      base-url: https://hn.algolia.com
+      timeout: 2500ms
+      cache-ttl: 30m
+    arxiv:
+      enabled: ${H2_SOURCE_ARXIV_ENABLED:true}
+      base-url: https://export.arxiv.org
+      timeout: 3s
+      cache-ttl: 6h
+    live-web:
+      enabled: ${H2_SOURCE_LIVE_WEB_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: ${H2_SOURCE_LIVE_WEB_TIMEOUT:6s}
+      cache-ttl: 30m
+    hf-trending:
+      enabled: ${H2_SOURCE_HF_TRENDING_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_HF_TRENDING_DEADLINE:}
+    live-web-scout:
+      enabled: ${H2_SOURCE_LIVE_WEB_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LIVE_WEB_SCOUT_DEADLINE:}
+    course-scout:
+      enabled: ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}
+    linkedin-scout:
+      enabled: ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}
+    live-web-events-scout:
+      enabled: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}
+    discovery:
+      enabled: ${H2_SOURCE_DISCOVERY_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_DISCOVERY_DEADLINE:}
+    github-topic-leaders:
+      enabled: ${H2_SOURCE_GITHUB_TOPIC_LEADERS_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_GITHUB_TOPIC_LEADERS_DEADLINE:}
+    github-sdks:
+      enabled: ${H2_SOURCE_GITHUB_SDKS_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_GITHUB_SDKS_DEADLINE:}
+    github-awesome:
+      enabled: ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}
+    hf-provider-orgs:
+      enabled: ${H2_SOURCE_HF_ORGS_ENABLED:true}
+      base-url: https://huggingface.co
+      token: ${H2_HF_TOKEN:}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_HF_ORGS_DEADLINE:}
+    ai-deadlines:
+      enabled: ${H2_SOURCE_AI_DEADLINES_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_AI_DEADLINES_DEADLINE:}
+    mcp-registry:
+      enabled: ${H2_SOURCE_MCP_ENABLED:true}
+      base-url: https://registry.modelcontextprotocol.io
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_MCP_DEADLINE:}
+    news-feeds:
+      enabled: ${H2_SOURCE_NEWS_FEEDS_ENABLED:true}
+      timeout: 10s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_NEWS_FEEDS_DEADLINE:}
+    pypi:
+      enabled: ${H2_SOURCE_PYPI_ENABLED:false}
+      timeout: 60s
+      cache-ttl: 30m
 ---
 helper2:
   schema:
@@ -274,6 +599,7 @@ helper2:
     resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
     resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
     web-news: ${H2_RETENTION_WEB_NEWS:P180D}
+    scout-runs: ${H2_RETENTION_SCOUT_RUNS:P90D}
     past-events: ${H2_RETENTION_PAST_EVENTS:P3650D}
     runtime-settings: ${H2_RETENTION_RUNTIME_SETTINGS:P730D}
     backups: ${H2_RETENTION_BACKUPS:P7D}
@@ -281,8 +607,59 @@ helper2:
 helper2:
   quota:
     key-secret: ${H2_QUOTA_KEY_SECRET:}
+  search:
+    web:
+      fresh-time-bound: ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}
+      fresh-general: ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}
+      quota:
+        guest:
+          search: ${H2_LIVE_WEB_GUEST_SEARCH:3}
+          guide: ${H2_LIVE_WEB_GUEST_GUIDE:3}
+        global-daily-credits: ${H2_LIVE_WEB_DAILY_CREDITS:}
 ---
 helper2:
+  feeds:
+    - id: openai
+      publisher: OpenAI
+      short-name: OpenAI
+      url: https://openai.com/news/rss.xml
+      homepage: https://openai.com/news/
+    - id: google-deepmind
+      publisher: Google DeepMind
+      short-name: DeepMind
+      url: https://deepmind.google/blog/rss.xml
+      homepage: https://deepmind.google/blog/
+    - id: google-research
+      publisher: Google Research
+      short-name: G. Research
+      url: https://research.google/blog/rss/
+      homepage: https://research.google/blog/
+    - id: google-ai
+      publisher: Google
+      short-name: Google AI
+      url: https://blog.google/innovation-and-ai/technology/ai/rss/
+      homepage: https://blog.google/innovation-and-ai/technology/ai/
+    - id: hugging-face
+      publisher: Hugging Face
+      short-name: HF blog
+      url: https://huggingface.co/blog/feed.xml
+      homepage: https://huggingface.co/blog
+    - id: mistral
+      publisher: Mistral AI
+      short-name: Mistral
+      url: https://mistral.ai/news/rss
+      homepage: https://mistral.ai/news
+    - id: nvidia
+      publisher: NVIDIA
+      short-name: NVIDIA
+      url: https://blogs.nvidia.com/feed/
+      homepage: https://blogs.nvidia.com/
+      require-words: [ai, agent*, model*, llm*, inference, generative, robot*, nemotron, cuda]
+    - id: aws-ml
+      publisher: AWS
+      short-name: AWS ML
+      url: https://aws.amazon.com/blogs/machine-learning/feed/
+      homepage: https://aws.amazon.com/blogs/machine-learning/
   categories:
     - id: prompt-libraries
       family: prompts-and-skills
