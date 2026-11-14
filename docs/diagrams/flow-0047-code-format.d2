@@ -1,0 +1,47 @@
+# Flowchart: the code format (ADR 0047): Spotless runs google-java-format and ktfmt (Google style) for the backend,
+# Prettier formats the frontend; CI checks both.
+# Source of truth: backend/build-logic/src/main/kotlin/helper2.format.gradle.kts (spotless {}), frontend/package.json (format, format:check),
+#   frontend/.prettierrc.json, frontend/.prettierignore, frontend/eslint.config.js,
+#   .github/workflows/ci.yml (backend-check: spotlessCheck, frontend-check: format:check), .editorconfig, .idea/codeStyles/Project.xml.
+# Render: cd docs/diagrams && d2 fmt flow-0047-code-format.d2 && d2 flow-0047-code-format.d2 flow-0047-code-format.svg
+
+...@style
+
+direction: down
+
+dev: "Developer or assistant\nedits code" {class: end}
+pr: "Pull request (ci.yml)" {class: end}
+
+side: "Backend or frontend?" {class: decision}
+
+apply: "./gradlew spotlessApply" {class: app}
+which: "Which file?" {class: decision}
+java: "src/**/*.java\ngoogle-java-format" {class: app}
+kotlin: "src/**/*.kt, *.gradle.kts\nktfmt googleStyle()" {class: app}
+generated: "build/generated/openapi\nnot formatted" {class: data}
+
+format: "npm run format\n(Prettier, .prettierrc.json)" {class: app}
+ignored: "src/api/schema.ts, admin-schema.ts,\ndist, dist-admin, lockfile,\nMarkdown: not formatted\n(.prettierignore)" {class: data}
+
+formatted: "Formatted in place" {class: data}
+
+check: "backend: spotlessCheck\nfrontend: format:check" {class: app}
+clean: "Every file formatted?" {class: decision}
+next: "Tests (backend)\nlint, ESLint without style rules (frontend)" {class: app}
+fail: "Job fails: run the formatter" {class: end}
+
+dev -> side: {class: hot}
+side -> apply: "backend"
+side -> format: "frontend"
+apply -> which
+which -> java
+which -> kotlin
+which -> generated: "generated code"
+java -> formatted
+kotlin -> formatted
+format -> formatted
+format -> ignored: "skipped"
+
+pr -> check -> clean: {class: hot}
+clean -> next: "yes"
+clean -> fail: "no"

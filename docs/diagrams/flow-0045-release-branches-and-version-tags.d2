@@ -1,0 +1,63 @@
+# Flowchart: which push builds an image and which tag it gets, then the prod job of a release: the order by
+# version, the canary and its smoke test, the version tag in Harbor, prod by version, the canary removed (ADR 0045).
+# Source of truth: .github/workflows/cd.yml (on push, staging), .github/workflows/deploy.yml (Resolve tag, Canary and
+#   smoke test, Version tag in Harbor, Deploy, Remove the canary), deploy/k8s/Makefile (image, canary, canary-smoke,
+#   retag, uncanary, deploy), deploy/k8s/check-release.sh (smoke), deploy/helm/helper2/templates/canary.yaml, .github/workflows/release.yml (used-up).
+# Render: cd docs/diagrams && d2 fmt flow-0045-release-branches-and-version-tags.d2 && d2 flow-0045-release-branches-and-version-tags.d2 flow-0045-release-branches-and-version-tags.svg
+
+...@style
+
+direction: down
+
+pr: "Pull request (any base)" {class: end}
+light: "ci.yml: checks only,\nno image" {class: app}
+push: "Push to main or\nrelease/YYYY.N" {class: end}
+image: "cd.yml: CI, images tagged\n<commit[0:12]>, signed, scanned" {class: app}
+onmain: "Push to main?" {class: decision}
+staging: "Staging deploys the commit" {class: end}
+nostaging: "No staging deploy" {class: app}
+
+job: "deploy.yml env prod, after the approval:\ntag = commit, release-version, release-commit" {class: end}
+head: "commit = head of\nrelease/YYYY.N = release-commit?" {class: decision}
+e_head: "Fail: the branch moved,\nrun release again" {class: fail}
+order: "YYYY.N.P higher than the\nversion prod runs?" {class: decision}
+e_order: "Fail: a rollback\nneeds rollback: true" {class: fail}
+verify: "Images of the commit signed\n(cosign, by digest)?" {class: decision}
+e_verify: "Fail: no deploy" {class: fail}
+withcanary: "canary ticked?" {class: decision}
+canary: "make canary: helper2-canary release,\nits migrate Job, 1 app + 1 web pod,\nIngress on X-Helper2-Canary = token" {class: app}
+smoke: "make canary-smoke: with the header,\nthe page names YYYY.N.P within a minute,\nsources and search answer; without it too" {class: decision}
+e_smoke: "make uncanary; fail:\nno Harbor tag, prod unchanged" {class: fail}
+uncanary: "make uncanary: no canary\nduring the rollout" {class: app}
+retag: "make retag: Harbor adds YYYY.N.P\nto the three images (same digests)" {class: app}
+deploy: "make deploy TAG=YYYY.N.P:\nhelm upgrade, check-release.sh" {class: app}
+healthy: "Healthy?" {class: decision}
+e_deploy: "Back to the revision before;\nfail: release.yml tags the commit\nused/vYYYY.N.P, the fix is the next patch" {class: fail}
+remove: "make uncanary\n(always, when one is left)" {class: app}
+done: "Prod runs YYYY.N.P:\npublish tags vYYYY.N.P" {class: end}
+
+pr -> light
+push -> image: {class: hot}
+image -> onmain: {class: hot}
+onmain -> staging: yes
+onmain -> nostaging: no {class: hot}
+nostaging -> job: release.yml {class: hot}
+job -> head: {class: hot}
+head -> e_head: no
+head -> order: yes {class: hot}
+order -> e_order: no
+order -> verify: yes {class: hot}
+verify -> e_verify: no
+verify -> withcanary: yes {class: hot}
+withcanary -> canary: yes {class: hot}
+withcanary -> retag: "no (maintenance window)"
+canary -> smoke: {class: hot}
+smoke -> e_smoke: no
+smoke -> uncanary: yes {class: hot}
+uncanary -> retag: {class: hot}
+retag -> deploy: {class: hot}
+deploy -> healthy: {class: hot}
+healthy -> e_deploy: no
+healthy -> remove: yes {class: hot}
+e_deploy -> remove
+remove -> done: {class: hot}

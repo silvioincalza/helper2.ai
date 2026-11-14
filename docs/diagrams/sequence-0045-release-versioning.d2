@@ -1,0 +1,65 @@
+# Sequence: one release, from release-prepare and the merged version pull request to the tag, the GitHub release
+# and the pull request back into main, a patch on the release branch, the tag ruleset that blocks a moved or deleted tag, and the footer link that leads back to the release.
+# Source of truth: .github/workflows/release-prepare.yml, .github/workflows/release.yml, .github/scripts/release-version.sh,
+#   .github/scripts/bump-version.sh, .github/workflows/deploy.yml, deploy/k8s/CI.md (Releases),
+#   frontend/vite.config.ts (__APP_VERSION__), frontend/src/shell/Layout.tsx (footer link).
+# Render: cd docs/diagrams && d2 fmt sequence-0045-release-versioning.d2 && d2 sequence-0045-release-versioning.d2 sequence-0045-release-versioning.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: Owner {class: person}
+github: "GitHub\n(repository, Actions,\nrulesets)" {class: ext}
+runner: "release-prepare, release\n(GitHub-hosted runner)" {class: app}
+prod: "Prod job\n(deploy.yml, self-hosted)" {class: app}
+releases: "GitHub Releases\n(gh CLI)" {class: ext}
+visitor: "Visitor\n(site footer)" {class: person}
+
+prepare: Prepare the release YYYY.N.0 {
+  owner -> github: "run release-prepare from main" {class: hot}
+  github -> runner: "workflow_dispatch"
+  runner -> github: "cd.yml runs on main: the newest\nwhose staging jobs passed"
+  runner -> runner: "release-version.sh next = YYYY.N.0;\nno release/YYYY.N, no vYYYY.N.0"
+  runner -> runner: "bump-version.sh bump: seven files,\nthe version commit"
+  runner -> github: "POST git/refs release/YYYY.N\n(the commit staging ran)" {class: hot}
+  runner -> github: "push release-bump/YYYY.N.P;\ngh pr create into release/YYYY.N" {class: hot}
+  runner -> runner: "run again after a stop half-way: it finds\nrelease/YYYY.N with no version and finishes it"
+  owner -> github: "merge the version pull request" {class: hot}
+  github -> github: "cd.yml on release/YYYY.N:\nCI, images, signatures, scan"
+}
+
+release: Release YYYY.N.P {
+  owner -> github: "run release from main,\nversion YYYY.N.P (headline)" {class: hot}
+  github -> runner: "workflow_dispatch"
+  runner -> runner: "release-version.sh check (year window);\nseven files = YYYY.N.P; only the version\nbeside main, staging ran its commit; canary present"
+  runner -> github: "job built: CD run of the head\n(waits while it runs)"
+  github -> runner: "completed, success"
+  github -> owner: "job prod waits for the\napproval on environment prod"
+  owner -> github: "approve"
+  github -> prod: "deploy.yml env prod, tag = commit,\nrelease-version YYYY.N.P" {class: hot}
+  prod -> prod: "canary, smoke test, Harbor tag YYYY.N.P,\nhelm upgrade by version, canary removed\n(sequence 0045 release branches)"
+  prod -> github: "job succeeded"
+  runner -> github: "publish: generate-notes since the release below;\ngit tag -a vYYYY.N.P <head>; push" {class: hot}
+  runner -> releases: "gh release create --verify-tag\nnotes = tag message + images" {class: hot}
+  runner -> releases: "gh release upload: SBOMs\nof the branch's CD run"
+  runner -> github: "push release-merge/vYYYY.N.P (the tag,\nmain merged in); gh pr create into main;\ngh workflow run ci.yml on it" {class: hot}
+  owner -> github: "merge the pull request into main"
+}
+
+patch: A patch YYYY.N.P+1 {
+  owner -> github: "merge the fix into release/YYYY.N\n(pull request)"
+  owner -> github: "run release-prepare, patch-of YYYY.N" {class: hot}
+  runner -> github: "next-patch = YYYY.N.P+1 (after the last version,\nreleased or used up): version pull\nrequest into release/YYYY.N"
+  owner -> github: "merge it, run release YYYY.N.P+1:\nthe same checks, canary, prod, tag,\npull request back (main keeps a higher version)"
+}
+
+blocked: Moving or deleting a release tag or branch {
+  owner -> github: "git push --force / --delete vYYYY.N.P\nor release/YYYY.N"
+  github -> owner: "rejected by the rulesets (no bypass)"
+}
+
+footer: On the site {
+  visitor -> visitor: "footer shows v<package.json version>\n(__APP_VERSION__ from Vite)"
+  visitor -> releases: "open /releases/tag/vYYYY.N.P"
+}

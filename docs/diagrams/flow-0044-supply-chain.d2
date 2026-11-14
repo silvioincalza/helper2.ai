@@ -1,0 +1,51 @@
+# Flowchart: the supply-chain checks in CI (ADR 0044): an SBOM and a Grype scan per image; a Critical finding with a
+# fix fails the scan job and so the CD run: no release of the commit. Staging does not wait for the scan.
+# The weekly scan only reports.
+# Source of truth: .github/workflows/cd.yml (image, scan), release.yml (sbom), image-scan.yml,
+#   .github/actions/install-scanners, go-tool, grype-db, upload-sarif, deploy/k8s/Makefile (sbom, backoffice-sbom, web-sbom, postgres-sbom), .grype.yaml.
+# Pull requests build no image (ci.yml): every image is built, pushed and scanned on main.
+# Render: cd docs/diagrams && d2 fmt flow-0044-supply-chain.d2 && d2 flow-0044-supply-chain.d2 flow-0044-supply-chain.svg
+
+...@style
+
+direction: down
+
+push: "Push to main (cd.yml)" {class: end}
+tag: "Release tag vYYYY.N.P (release.yml)" {class: end}
+weekly: "Monday (image-scan.yml)" {class: end}
+
+install: "install-scanners: Syft tarball (SHA-256),\nGrype go install (Go checksum database),\nbinary cached per version (go-tool)" {class: app}
+db: "grype-db: latest database,\ncached per build (key: its SHA-256);\none retry" {class: app}
+
+scanjob: "cd.yml scan job (GitHub-hosted):\ndownloads this run's SBOMs" {class: app}
+grype: "grype sbom:<file> --only-fixed\n--fail-on critical, every image\n(.grype.yaml exceptions)" {class: app}
+report: "Job log + code scanning (SARIF,\nimage/app, image/backoffice,\nimage/web, image/postgres)" {class: data}
+gate: "Critical with a fix?" {class: decision}
+pass: "CD run can pass:\nthe commit can be released" {class: end}
+stop: "scan job fails: the CD run fails,\nno release of the commit\n(staging can already run it)" {class: fail}
+staging: "Staging deploy (main), side by side:\ndoes not wait for the scan" {class: app}
+
+pushed: "make image: pushed to Harbor" {class: app}
+sbomcd: "make sbom, backoffice-sbom, web-sbom,\npostgres-sbom: Syft reads the\npushed images from Harbor" {class: app}
+artifact: "Artifacts sbom, sbom-backoffice,\nsbom-web, sbom-postgres, 90 days" {class: data}
+
+staged: "The commit's CD run passed staging" {class: app}
+attach: "helper2-, helper2-backoffice-,\nhelper2-web-, helper2-postgres-vYYYY.N.P.cdx.json\nattached to the GitHub release" {class: data}
+
+latest: "SBOMs of the latest release" {class: app}
+fresh: "Fresh database (no cache)" {class: app}
+weeklyreport: "Job summary + code scanning\n(release/app, release/backoffice,\nrelease/web, release/postgres,\non the tag)" {class: data}
+
+artifact -> scanjob: {class: hot}
+artifact -> staging: "image job done"
+scanjob -> install -> db -> grype -> report -> gate
+gate -> pass: no
+gate -> stop: yes
+
+push -> pushed -> sbomcd -> artifact: {class: hot}
+tag -> staged -> attach
+artifact -> attach: "download from that run"
+
+weekly -> latest
+attach -> latest: "release asset"
+latest -> fresh -> weeklyreport

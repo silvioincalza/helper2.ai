@@ -1,0 +1,80 @@
+# Flowchart: scripts/eval-guide.mjs, from a fixed question set to its report (default set shown;
+# --intents and --adversarial differ only in the set, the pass rules and the report file).
+# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (guideRunStop), docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv,
+#   .github/workflows/guide-eval.yml (nightly run on staging).
+# Render: cd docs/diagrams && d2 fmt flow-0046-guide-evaluation.d2 && d2 flow-0046-guide-evaluation.d2 flow-0046-guide-evaluation.svg
+
+...@style
+
+direction: down
+
+start: "node scripts/eval-guide.mjs\n[baseUrl] [--core] [--repeat n] [--min-pass]\n| --intents | --adversarial | --rescore\n(backend: H2_GUIDE_CACHE_TTL=PT1S)" {class: person}
+nightly: "guide-eval.yml, 01:41 UTC:\nstaging only, --core --min-pass 0.8,\nthen --adversarial" {class: config}
+queries: "Read docs/eval/guide-queries.json\n(50 fixed queries; --core: the 20\nwithout \"extended\")" {class: data}
+csrf: "GET /api/v1/me →\nXSRF-TOKEN cookie?" {class: decision}
+noBackend: "Stop: \"is the\nbackend running?\"" {class: fail}
+
+loop: For each query, in order {
+  class: group
+  direction: down
+  pause: "Wait 7 s after the first\n(guide limit: 10 per minute), and while\n25 live GitHub searches fell in 60 s" {class: config}
+  post: "POST /api/v1/guide/stream\n(no path, question as written;\nanswer = last event)" {class: app}
+  ok: "HTTP 200?" {class: decision}
+  err: "Row: HTTP <status>" {class: fail}
+  budget: "Notice\nGUIDE_BUDGET_SPENT?" {class: decision}
+  network: "Notice\nGUIDE_NETWORK_QUOTA?" {class: decision}
+  quota: "Notice GUIDE_DAILY_QUOTA,\nor 3 answers in a row\nLLM_UNAVAILABLE?" {class: decision}
+  cached: "generatedAt older than\nthe request − 1 s?" {class: decision}
+  fromCache: "Mark (cache);\nleave out of latency" {class: end}
+  row: "Keep status, AI picks,\nsources, checks, latency;\npassed = fresh model answer,\nanswered or empty as expected" {class: end}
+  answered: "Answered (pick, comparison,\nexplanation, dated record)?" {class: decision}
+  candidates: "GET /api/v1/search\n?q=<searchQuery>&size=24:\ncandidates for the pool" {class: app}
+
+  pause -> post
+  post -> ok
+  ok -> err: no
+  ok -> budget: yes
+  budget -> network: no
+  network -> quota: no
+  quota -> cached: no
+  cached -> fromCache: yes
+  cached -> answered: no
+  answered -> row: yes
+  answered -> candidates: no
+  candidates -> row
+}
+
+stopBudget: "Stop, exit code 3: the guide's\nmodel budget on <base> is used up\n(run again after retryAt);\ndocs/evaluation.md unchanged" {class: fail}
+stopNetwork: "Stop, exit code 4: the runner's\nnetwork has used its questions;\ndocs/evaluation.md unchanged" {class: fail}
+stopQuota: "Stop, exit code 1 (address quota,\nor the provider is down);\ndocs/evaluation.md unchanged" {class: fail}
+raw: "Raw answers →\nbackend/eval-data/guide-runs.json\n(--rescore starts here)" {class: data}
+summary: "Go / no-go figures: answer rate,\nP@3, relevant candidates, p90,\n429s, flips over the runs;\ntotals as before" {class: app}
+qrels: "docs/eval/guide-qrels.tsv\nhas grades?" {class: decision}
+rel: "P@3 and nDCG@3 of the AI picks;\nshare of graded candidates relevant" {class: app}
+pool: "Ungraded picks and candidates →\nbackend/eval-data/guide-pool.tsv" {class: data}
+keep: "Read the hand-written notes\nbetween the markers\n(placeholder if none)" {class: app}
+write: "Rewrite docs/evaluation.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
+minPass: "--min-pass given and\nshare passed below it?" {class: decision}
+failRun: "Exit 1: the nightly job fails;\nreports kept 30 days\nas an artifact" {class: fail}
+manual: "By hand: grade the pool into\nguide-qrels.tsv, --rescore, update the\nnotes, move the old run to docs/eval/" {class: person}
+
+nightly -> start
+start -> queries -> csrf
+csrf -> noBackend: no
+csrf -> loop.pause: yes {class: hot}
+loop.row -> raw
+loop.fromCache -> raw
+loop.err -> raw
+raw -> summary
+loop.budget -> stopBudget: yes
+loop.network -> stopNetwork: yes
+loop.quota -> stopQuota: yes
+summary -> qrels
+qrels -> rel: yes
+qrels -> pool: no
+rel -> pool
+pool -> keep: {class: hot}
+keep -> write: {class: hot}
+write -> minPass
+minPass -> failRun: yes
+minPass -> manual: no
