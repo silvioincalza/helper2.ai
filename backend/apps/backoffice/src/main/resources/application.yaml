@@ -12,3 +12,42 @@ management:
   opentelemetry:
     resource-attributes:
       service.name: helper2-backoffice
+helper2:
+  scout:
+    enabled: ${H2_SCOUT_ENABLED:false}
+    initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
+    tick: ${H2_SCOUT_TICK:PT10M}
+    cron: ${H2_SCOUT_CRON:0 7 3 * * *}
+    mcp-registry:
+      items-per-run: ${H2_SCOUT_MCP_ITEMS_PER_RUN:5000}
+    pypi:
+      project: ${H2_PYPI_BIGQUERY_PROJECT:}
+    max-items-per-run: 1000
+    max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
+    daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}
+    gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
+    evidence:
+      daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
+    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
+    known-targets:
+      owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
+      per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}
+  sources:
+    page-reader:
+      enabled: ${H2_SOURCE_PAGE_READER_ENABLED:true}
+      base-url: https://api.tavily.com
+      token: ${H2_LIVE_WEB_API_KEY:}
+      timeout: 20s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_PAGE_READER_DEADLINE:}
+    pypi:
+      token: ${H2_PYPI_BIGQUERY_KEY:}
+      deadline: ${H2_SOURCE_PYPI_DEADLINE:}
+---
+spring:
+  config:
+    activate:
+      on-profile: demo
+helper2:
+  scout:
+    enabled: false

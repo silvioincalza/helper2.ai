@@ -586,14 +586,20 @@ helper2.scout.ai-deadlines.interval = ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}  => 
 helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
 helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
 helper2.scout.courses.query = new artificial intelligence course or certification
+helper2.scout.cron = ${H2_SCOUT_CRON:0 7 3 * * *}  =>  0 7 3 * * *
 helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:40}  =>  40
+helper2.scout.daily-enrichment-calls = ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}  =>  500
 helper2.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
 helper2.scout.discovery.interval = ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
 helper2.scout.discovery.max-results = 10
 helper2.scout.discovery.min-score = 0.4
 helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
+helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
+helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
+helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}  =>  20
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
+helper2.scout.gap-daily-calls = ${H2_SCOUT_GAP_DAILY_CALLS:400}  =>  400
 helper2.scout.github-awesome.classifier-daily-calls = ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}  =>  300
 helper2.scout.github-awesome.classify-batch = 25
 helper2.scout.github-awesome.classify-max-tokens = 8192
@@ -635,6 +641,9 @@ helper2.scout.hf-provider-orgs.interval = ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}  =>  
 helper2.scout.hf-provider-orgs.orgs = meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org, microsoft,amazon,ibm-granite,CohereLabs,facebook,zai-org,moonshotai,MiniMaxAI, baidu,tencent,ByteDance-Seed,stepfun-ai,internlm,openbmb,inclusionAI,XiaomiMiMo, allenai,swiss-ai,LiquidAI,LGAI-EXAONE,upstage,BAAI,jinaai,stabilityai, black-forest-labs,Lightricks,Wan-AI,kyutai
 helper2.scout.hf-provider-orgs.per-org = 20
 helper2.scout.hf-trending.interval = ${H2_SCOUT_HF_INTERVAL:P1D}  =>  P1D
+helper2.scout.initial-delay = ${H2_SCOUT_INITIAL_DELAY:PT20S}  =>  PT20S
+helper2.scout.known-targets.owner-min-resources = ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}  =>  5
+helper2.scout.known-targets.per-day = ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}  =>  25
 helper2.scout.linkedin.interval = ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}  =>  P7D
 helper2.scout.linkedin.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen, launches new AI product, AI startup announces launch, introducing our new AI agent, now available generative AI platform, open-source AI model release announcement, MCP server launch announcement, AI conference, AI hackathon, generative AI meetup, AI summit Europe, LLM workshop webinar, AI event Switzerland, NVIDIA GTC
 helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}  =>  P7D
@@ -644,11 +653,16 @@ helper2.scout.live-web-events.read-max-tokens = 800
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
+helper2.scout.max-enrichments-per-run = ${H2_SCOUT_MAX_ENRICHMENTS:20}  =>  20
+helper2.scout.max-items-per-run = 1000
 helper2.scout.mcp-registry.interval = ${H2_SCOUT_MCP_INTERVAL:PT1H}  =>  PT1H
+helper2.scout.mcp-registry.items-per-run = ${H2_SCOUT_MCP_ITEMS_PER_RUN:5000}  =>  5000
 helper2.scout.news-feeds.interval = ${H2_SCOUT_NEWS_FEEDS_INTERVAL:P1D}  =>  P1D
 helper2.scout.pypi.candidates-per-day = ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  =>  20
 helper2.scout.pypi.interval = ${H2_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
 helper2.scout.pypi.max-bytes-billed = ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
+helper2.scout.pypi.project = ${H2_PYPI_BIGQUERY_PROJECT:}  =>  <empty>
+helper2.scout.tick = ${H2_SCOUT_TICK:PT10M}  =>  PT10M
 helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
 helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
 helper2.search.translate-timeout = ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
@@ -761,9 +775,17 @@ helper2.sources.npm.base-url = https://registry.npmjs.org
 helper2.sources.npm.cache-ttl = 30m
 helper2.sources.npm.enabled = ${H2_SOURCE_NPM_ENABLED:true}  =>  true
 helper2.sources.npm.timeout = 2500ms
+helper2.sources.page-reader.base-url = https://api.tavily.com
+helper2.sources.page-reader.cache-ttl = 30m
+helper2.sources.page-reader.deadline = ${H2_SOURCE_PAGE_READER_DEADLINE:}  =>  <empty>
+helper2.sources.page-reader.enabled = ${H2_SOURCE_PAGE_READER_ENABLED:true}  =>  true
+helper2.sources.page-reader.timeout = 20s
+helper2.sources.page-reader.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
 helper2.sources.pypi.cache-ttl = 30m
+helper2.sources.pypi.deadline = ${H2_SOURCE_PYPI_DEADLINE:}  =>  <empty>
 helper2.sources.pypi.enabled = ${H2_SOURCE_PYPI_ENABLED:false}  =>  false
 helper2.sources.pypi.timeout = 60s
+helper2.sources.pypi.token = ${H2_PYPI_BIGQUERY_KEY:}  =>  <empty>
 helper2.test.client = h2_backoffice
 helper2.vitality.established-stars = ${H2_VITALITY_ESTABLISHED_STARS:10000}  =>  10000
 helper2.vitality.fork-min-stars = ${H2_VITALITY_FORK_MIN_STARS:10}  =>  10
