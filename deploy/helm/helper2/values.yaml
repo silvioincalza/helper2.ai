@@ -1,0 +1,155 @@
+image:
+  repository: ""
+  tag: ""
+  digest: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+envSecret:
+  name: helper2-app-env
+  revision: ""
+  redisPasswordRevision: ""
+credentialsSecret:
+  name: helper2-credentials
+migrate:
+  backoffLimit: 2
+  deadlineSeconds: 600
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 512Mi }
+
+app:
+  springProfiles: llm-nebius
+  replicas: 3
+  shutdown:
+    preStopSeconds: 10
+    drainSeconds: 30
+  startupSeconds: 300
+  dailyLimits:
+    webSearches:
+      search: null
+      guide: null
+    guideQuestions: null
+    webSearchCredits: null
+    guideModelCalls: null
+    guideBudgetPaceSlots: null
+    guideNetworkQuestions: null
+  guideCacheTtl: null
+  guideSimilarThreshold: null
+  setupGuideStepText: null
+  guideModelStream: null
+  monetisation:
+    githubSponsorsUrl: ""
+    stripePaymentUrl: ""
+    ga4MeasurementId: ""
+    ethicalAdsPublisher: ""
+    adsenseClient: ""
+    adsenseSlot: ""
+  environment: ""
+  noindex: false
+  publicBaseUrl: ""
+  tracing:
+    export: false
+    sampling: 1.0
+    endpoint: ""
+  resources:
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { memory: 1Gi }
+
+backoffice:
+  image:
+    repository: ""
+    tag: ""
+    digest: ""
+  replicas: 1
+  adminBaseUrl: ""
+  grafanaUrl: ""
+  scoutEnabled: true
+  scoutInitialDelay: PT20S
+  scoutCron: "0 7 3 * * *"
+  scoutMaxEnrichments: 200
+  resources:
+    requests: { cpu: 250m, memory: 768Mi }
+    limits: { memory: 1Gi }
+
+web:
+  image:
+    repository: ""
+    digest: ""
+  replicas: 2
+  preStopSeconds: 10
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 64Mi }
+
+postgres:
+  image:
+    repository: ""
+    tag: 18.6-pgvector0.8.6-7
+    digest: ""
+  storageClassName: ""
+  storage: 5Gi
+  maxConnections: 150
+  resources:
+    requests: { cpu: 50m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+redis:
+  image: docker.io/library/redis:8.10.2-alpine@sha256:9f8d2d789b9a1d1e3f283f979aa9cbf393373806472e1ccd460e2f9c869b833b
+  maxMemory: 128mb
+  storageClassName: ""
+  storage: 1Gi
+  auth:
+    enabled: true
+    existingSecret: ""
+    existingSecretKey: H2_REDIS_PASSWORD
+    revision: 0
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+    limits: { memory: 192Mi }
+
+networkPolicy:
+  ingressController:
+    namespace: ""
+    podLabels: {}
+  metricsNamespace: ""
+  egress:
+    enabled: true
+    dns:
+      namespace: kube-system
+      podLabels: { k8s-app: kube-dns }
+    otlp:
+      namespace: ""
+      port: 4318
+    external:
+      cidr: 0.0.0.0/0
+      except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16]
+      appPorts: [443]
+
+backup:
+  enabled: false
+  schedule: "30 2 * * *"
+  timeZone: Etc/UTC
+  retentionDays: 7
+  storageClassName: ""
+  storage: 5Gi
+  offsite:
+    enabled: false
+    image: docker.io/rclone/rclone:1.75.2@sha256:2687085f718d3c628f7fdfb77c52a1d344332aed543110bb88088f2c70d43eb5
+    prefix: helper2-prod
+    maxAge: 24h
+    secret: pg-backup-offsite
+
+canary:
+  only: false
+  host: ""
+  ingressClassName: nginx
+  header: X-Helper2-Canary
+  token: ""
+  webPaths:
+    - { path: /assets/, pathType: Prefix }
+
+monitoring:
+  prometheusRule:
+    enabled: false
+    labels: {}

@@ -1,0 +1,32 @@
+name: install-scanners
+description: Install pinned Syft and, optionally, Grype into RUNNER_TEMP/scanners
+inputs:
+  grype:
+    description: also install Grype (built once per version and cached; the self-hosted CD runner only makes SBOMs)
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Install Syft
+      shell: bash
+      env:
+        SYFT_VERSION: 1.56.0
+        SYFT_SHA256: 1c2493cfcf52d3367d6cb25780d9190c111c2219c34c820574c43e8bae15c528
+      run: |
+        set -euo pipefail
+        dir="$RUNNER_TEMP/scanners"; mkdir -p "$dir"
+        tarball="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+        curl -fsSLo "$dir/$tarball" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/${tarball}"
+        echo "${SYFT_SHA256}  $dir/$tarball" | sha256sum -c -
+        tar -xzf "$dir/$tarball" -C "$dir" syft
+        rm "$dir/$tarball"
+        echo "$dir" >> "$GITHUB_PATH"
+    - name: Install Grype
+      if: inputs.grype == 'true'
+      uses: ./.github/actions/go-tool
+      with:
+        name: grype
+        module: github.com/anchore/grype/cmd/grype
+        version: v0.121.1
+        ldflags: -X main.version=0.121.1
+        bin: ${{ runner.temp }}/scanners

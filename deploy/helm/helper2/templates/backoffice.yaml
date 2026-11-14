@@ -1,0 +1,132 @@
+{{- if not .Values.canary.only }}
+{{- $bo := .Values.backoffice }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helper2-backoffice
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ required "backoffice.replicas" $bo.replicas }}
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: helper2-backoffice } }
+  template:
+    metadata:
+      labels: { app: helper2-backoffice }
+      annotations:
+        {{- with .Values.envSecret.revision }}
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.redis.auth.enabled .Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" . }}
+        {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: helper2-backoffice } } }
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      {{- $shutdown := .Values.app.shutdown }}
+      terminationGracePeriodSeconds: {{ add (int (required "app.shutdown.preStopSeconds" $shutdown.preStopSeconds)) (int (required "app.shutdown.drainSeconds" $shutdown.drainSeconds)) 5 }}
+      containers:
+        - name: backoffice
+          image: {{ include "helper2.backofficeImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom: [{ secretRef: { name: {{ include "helper2.envSecret" . }} } }]
+          env:
+            - { name: H2_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
+            - { name: H2_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
+            - { name: H2_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/helper2" }
+            - { name: H2_DATABASE_USER, value: h2_backoffice }
+            - name: H2_DATABASE_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_BACKOFFICE_PASSWORD } }
+            - { name: H2_REDIS_HOST, value: redis }
+            {{- if .Values.redis.auth.enabled }}
+            - { name: H2_REDIS_USER, value: h2_backoffice }
+            - name: H2_REDIS_PASSWORD
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list . "H2_REDIS_BACKOFFICE_PASSWORD") }} }
+            {{- else }}
+            - { name: H2_REDIS_PASSWORD, value: "" }
+            {{- end }}
+            - { name: H2_BUILD_VERSION, value: {{ include "helper2.backofficeTag" . | quote }} }
+            {{- with $bo.grafanaUrl }}
+            - { name: H2_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with $bo.adminBaseUrl }}
+            - { name: H2_ADMIN_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.publicBaseUrl }}
+            - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            - { name: H2_SCOUT_ENABLED, value: {{ $bo.scoutEnabled | toString | quote }} }
+            - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "backoffice.scoutInitialDelay" $bo.scoutInitialDelay | quote }} }
+            - { name: H2_SCOUT_CRON, value: {{ required "backoffice.scoutCron" $bo.scoutCron | quote }} }
+            - { name: H2_SCOUT_MAX_ENRICHMENTS, value: {{ $bo.scoutMaxEnrichments | toString | quote }} }
+            {{- $limits := .Values.app.dailyLimits }}
+            {{- range $name, $value := dict "H2_LIVE_WEB_DAILY_CREDITS" $limits.webSearchCredits "H2_GUIDE_DAILY_MODEL_CALLS" $limits.guideModelCalls }}
+            {{- if not (kindIs "invalid" $value) }}
+            - { name: {{ $name }}, value: {{ $value | toString | quote }} }
+            {{- end }}
+            {{- end }}
+            - { name: H2_RETENTION_BACKUPS, value: {{ printf "P%dD" (int .Values.backup.retentionDays) | quote }} }
+            - { name: H2_COOKIE_SECURE, value: "true" }
+            - { name: H2_FORWARD_HEADERS_STRATEGY, value: native }
+            - { name: H2_LOG_FORMAT, value: logstash }
+            - { name: H2_ENVIRONMENT, value: {{ required "app.environment" .Values.app.environment | quote }} }
+            - { name: H2_TRACING_EXPORT, value: {{ .Values.app.tracing.export | toString | quote }} }
+            - { name: H2_TRACING_SAMPLING, value: {{ .Values.app.tracing.sampling | toString | quote }} }
+            - { name: H2_OTLP_TRACES_ENDPOINT, value: {{ .Values.app.tracing.endpoint | quote }} }
+            - { name: H2_MANAGEMENT_PORT, value: "8081" }
+            - { name: H2_METRICS_PUBLIC, value: "true" }
+          ports:
+            - { containerPort: 8080, name: http }
+            - { containerPort: 8081, name: management }
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: {{ div (required "app.startupSeconds" .Values.app.startupSeconds) 5 }}
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $shutdown.preStopSeconds }} }
+          resources:
+            {{- toYaml $bo.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+{{- if gt (int $bo.replicas) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: helper2-backoffice
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int $bo.replicas) 1 }}
+  selector: { matchLabels: { app: helper2-backoffice } }
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper2-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: helper2-backoffice }
+  ports: [{ port: 80, targetPort: http }]
+{{- end }}

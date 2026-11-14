@@ -1,0 +1,152 @@
+name: release-prepare
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: a new release from this commit of main (12 or 40 characters). Empty = the newest commit of main whose CD run deployed staging
+        type: string
+        default: ''
+      patch-of:
+        description: the next patch of this release line instead (YYYY.N, the branch release/YYYY.N); merge its fixes into the branch first, leave commit empty
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-prepare
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      COMMIT: ${{ inputs.commit }}
+      PATCH_OF: ${{ inputs.patch-of }}
+    steps:
+      - name: Started from main
+        run: |
+          [[ $GITHUB_REF == refs/heads/main ]] || { echo "::error::run release-prepare from main, not $GITHUB_REF"; exit 1; }
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: The commit and the version
+        id: plan
+        run: |
+          set -euo pipefail
+          git fetch --quiet --tags origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
+          staged_on_main() {
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$1/jobs" -X GET -f per_page=100 \
+              --jq '[.jobs[] | select(.name | startswith("staging")) | .conclusion] | all(. == "success") and length > 0'
+          }
+          if [[ -n $PATCH_OF ]]; then
+            [[ -z $COMMIT ]] || { echo "::error::give commit or patch-of, not both"; exit 1; }
+            [[ $PATCH_OF =~ ^[0-9]{4}\.[1-9][0-9]*$ ]] || { echo "::error::patch-of must be a release line YYYY.N, got '$PATCH_OF'"; exit 1; }
+            sha=$(git rev-parse --verify --quiet "refs/remotes/origin/release/$PATCH_OF") \
+              || { echo "::error::no branch release/$PATCH_OF"; exit 1; }
+            version=$(.github/scripts/release-version.sh next-patch "$PATCH_OF" 2>&1) || { echo "::error::$version"; exit 1; }
+            released=$(git tag -l "v$PATCH_OF.*" "used/v$PATCH_OF.*" | sed 's#^used/##' | { grep -E '^v[0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*)$' || true; } | sort -V | tail -1)
+            have=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
+            [[ v$have == "$released" ]] \
+              || { echo "::error::release/$PATCH_OF carries $have, not its last version $released (released or used up): release $have first"; exit 1; }
+            ref=refs/tags/$released
+            git rev-parse --verify --quiet "$ref" >/dev/null || ref=refs/tags/used/$released
+            [[ $(git rev-parse "$ref^{commit}") != "$sha" ]] \
+              || { echo "::error::release/$PATCH_OF has nothing since $released: merge the fix into it first"; exit 1; }
+            branch=release/$PATCH_OF
+            echo "patch $version of $PATCH_OF: the fixes on release/$PATCH_OF since $released, staging never runs them"
+          else
+            unfinished=""
+            for ref in $(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin/release/); do
+              [[ $ref =~ ^release/([0-9]{4}\.[1-9][0-9]*)$ ]] || continue
+              line=${BASH_REMATCH[1]}
+              [[ -z $(git tag -l "v$line.*" "used/v$line.*" | sed 's#^used/##' | { grep -E '^v[0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*)$' || true; }) ]] || continue
+              carries=$(git show "refs/remotes/origin/$ref:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
+              [[ $carries == "$line.0" ]] || unfinished="$unfinished $line"
+            done
+            read -r -a unfinished <<< "$unfinished"
+            ((${#unfinished[@]} <= 1)) || { echo "::error::release/${unfinished[0]} and release/${unfinished[1]} were cut and carry no version yet"; exit 1; }
+            if ((${#unfinished[@]} == 1)); then
+              line=${unfinished[0]}
+              sha=$(git rev-parse "refs/remotes/origin/release/$line")
+              if [[ -n $COMMIT && $sha != "$COMMIT"* ]]; then
+                echo "::error::release/$line was cut from ${sha::12} and carries no version yet: leave commit empty to finish it"; exit 1
+              fi
+              version=$line.0
+              branch=release/$line
+              echo "new release $version: $branch was cut from ${sha::12} by an earlier run, its version pull request is made now"
+            else
+              if [[ -n $COMMIT ]]; then
+                [[ $COMMIT =~ ^[0-9a-f]{12}([0-9a-f]{28})?$ ]] || { echo "::error::commit must be 12 or 40 hex characters, got '$COMMIT'"; exit 1; }
+                sha=$(git rev-parse --verify --quiet "$COMMIT^{commit}") || { echo "::error::no commit $COMMIT"; exit 1; }
+                git merge-base --is-ancestor "$sha" refs/remotes/origin/main || { echo "::error::$COMMIT is not on main"; exit 1; }
+                run=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs" -f event=push -f branch=main \
+                  -f head_sha="$sha" -f status=success -f per_page=1 --jq '.workflow_runs[0].id // empty')
+                [[ -n $run && $(staged_on_main "$run") == true ]] || { echo "::error::$COMMIT has no CD run on main that deployed staging"; exit 1; }
+              else
+                sha=""
+                for run in $(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs" -f event=push -f branch=main \
+                  -f status=success -f per_page=20 --jq '.workflow_runs[] | "\(.id):\(.head_sha)"'); do
+                  if [[ $(staged_on_main "${run%%:*}") == true ]]; then sha=${run#*:}; break; fi
+                done
+                [[ -n $sha ]] || { echo "::error::none of the last 20 green CD runs on main deployed staging: give the commit"; exit 1; }
+              fi
+              version=$(.github/scripts/release-version.sh next)
+              branch=release/${version%.*}
+              git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null \
+                && { echo "::error::$branch exists already"; exit 1; }
+              cut=true
+              echo "new release $version: $branch is cut from ${sha::12} once its version commit is made"
+            fi
+          fi
+          git ls-remote --exit-code origin "refs/tags/v$version" "refs/tags/used/v$version" >/dev/null && { echo "::error::v$version is released or used up already"; exit 1; }
+          { echo "sha=$sha"; echo "version=$version"; echo "branch=$branch"; echo "cut=${cut:-false}"; } >> "$GITHUB_OUTPUT"
+          echo "Version $version on $branch (${sha::12})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Version pull request
+        env:
+          SHA: ${{ steps.plan.outputs.sha }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          BRANCH: ${{ steps.plan.outputs.branch }}
+          CUT: ${{ steps.plan.outputs.cut }}
+        run: |
+          set -euo pipefail
+          head=release-bump/$VERSION
+          pushed=false
+          if git ls-remote --exit-code origin "refs/heads/$head" >/dev/null; then
+            pushed=true
+            echo "$head is pushed already: its version commit is kept"
+          else
+            bump=$RUNNER_TEMP/bump-version.sh
+            cp .github/scripts/bump-version.sh "$bump"
+            git switch --quiet --detach "$SHA"
+            "$bump" bump "$VERSION"
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit --quiet -am "chore(release): version $VERSION"
+          fi
+          if [[ $CUT == true ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$SHA" >/dev/null
+            echo "$BRANCH cut from ${SHA::12}"
+          fi
+          [[ $pushed == true ]] || git push --quiet origin "HEAD:refs/heads/$head"
+          open=$(gh pr list --head "$head" --base "$BRANCH" --state open --json url --jq '.[0].url // empty')
+          if [[ -n $open ]]; then
+            echo "The version pull request of $VERSION is open already: $open" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          body=$(printf '%s\n' \
+            "The version $VERSION on \`$BRANCH\` (\`${SHA::12}\`, ADR 0045)." \
+            "" \
+            "Merge it (squash). The push builds and signs the images of \`$BRANCH\`. When its CD run is green, run the workflow **release** from \`main\` with version \`$VERSION\`: canary, smoke test, prod, then the tag \`v$VERSION\`, the GitHub release and the pull request back into \`main\`.")
+          gh pr create --base "$BRANCH" --head "$head" \
+            --title "chore(release): version $VERSION" --body "$body"

@@ -1,0 +1,295 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: the version to release, YYYY.N.P, from the branch release/YYYY.N (its version pull request made by release-prepare)
+        type: string
+        required: true
+      canary:
+        description: canary and smoke test before prod. Untick only for a migration the release before it cannot run on, in a maintenance window
+        type: boolean
+        default: true
+      headline:
+        description: first line of the release notes, for a breaking change (a migration that drops or rewrites data, an API break). Empty = none
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ inputs.version }}
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+      commit: ${{ steps.check.outputs.commit }}
+      base: ${{ steps.check.outputs.base }}
+      fix: ${{ steps.check.outputs.fix }}
+      line: ${{ steps.check.outputs.line }}
+    steps:
+      - name: Started from main
+        run: |
+          [[ $GITHUB_REF == refs/heads/main ]] || { echo "::error::run release from main, not $GITHUB_REF"; exit 1; }
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Check branch, version and files
+        id: check
+        run: |
+          set -euo pipefail
+          [[ $VERSION =~ ^[0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*)$ ]] || { echo "::error::version must be YYYY.N.P, got '$VERSION'"; exit 1; }
+          LINE=${VERSION%.*}
+          git fetch --quiet --tags origin +refs/heads/main:refs/remotes/origin/main "+refs/heads/release/$LINE:refs/remotes/origin/release/$LINE" \
+            || { echo "::error::no branch release/$LINE: run release-prepare first"; exit 1; }
+          if git rev-parse --verify --quiet "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::v$VERSION is released already: tags are immutable, prepare the next version"; exit 1
+          fi
+          sha=$(git rev-parse "refs/remotes/origin/release/$LINE")
+          used=$(git rev-parse --verify --quiet "refs/tags/used/v$VERSION^{commit}" || true)
+          [[ -z $used || $used == "$sha" ]] \
+            || { echo "::error::$VERSION is used up on ${used::12}, release/$LINE is at ${sha::12} now: run release-prepare with patch-of $LINE (ADR 0045)"; exit 1; }
+          base=$(git merge-base "$sha" refs/remotes/origin/main)
+          version=$(git tag -l 'v*' 'used/v*' | .github/scripts/release-version.sh check "v$VERSION" "$(git log -1 --format=%ct "$base")" "$(date +%s)" 2>&1) \
+            || { echo "::error::$version"; exit 1; }
+          gradle=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
+          npm=$(git show "$sha:frontend/package.json" | jq -r .version)
+          lock=$(git show "$sha:frontend/package-lock.json" | jq -r '[.version, .packages[""].version] | unique | join(",")')
+          chart=$(git show "$sha:deploy/helm/helper2/Chart.yaml" | yq .version)
+          public=$(git show "$sha:api/public.yaml" | yq .info.version)
+          admin=$(git show "$sha:api/admin.yaml" | yq .info.version)
+          common=$(git show "$sha:api/common.yaml" | yq .info.version)
+          for v in "build.gradle.kts=$gradle" "package.json=$npm" "package-lock.json=$lock" "Chart.yaml=$chart" "public.yaml=$public" "admin.yaml=$admin" "common.yaml=$common"; do
+            [[ ${v#*=} == "$VERSION" ]] || { echo "::error::${v%%=*} has version ${v#*=}, the release is $VERSION: merge the version pull request of release-prepare"; exit 1; }
+          done
+          git show "$sha:deploy/k8s/Makefile" | grep -q '^canary:' \
+            || { echo "::error::release/$LINE has no canary in deploy/k8s/Makefile: a fix of a release made before the canary must carry deploy/ and .github/ of main (ADR 0045)"; exit 1; }
+          fix=false
+          if [[ ${VERSION##*.} != 0 ]]; then
+            fix=true
+            echo "::warning::$VERSION is a patch of release/$LINE: staging never ran its fixes (ADR 0045)"
+          elif other=$(.github/scripts/bump-version.sh only-version-files "$base" "$sha"); then
+            echo "release/$LINE is ${base::12} of main plus the version: staging ran that commit"
+          else
+            fix=true
+            echo "::warning::release/$LINE changes $other and more beside the version: a fix release, staging never ran it (ADR 0045)"
+          fi
+          { echo "sha=$sha"; echo "commit=${sha::12}"; echo "base=$base"; echo "fix=$fix"; echo "line=$LINE"; } >> "$GITHUB_OUTPUT"
+          echo "Release $VERSION: commit ${sha::12} of release/$LINE, cut from ${base::12}" >> "$GITHUB_STEP_SUMMARY"
+
+  built:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      LINE: ${{ needs.check.outputs.line }}
+      SHA: ${{ needs.check.outputs.sha }}
+      BASE: ${{ needs.check.outputs.base }}
+      FIX: ${{ needs.check.outputs.fix }}
+    outputs:
+      run: ${{ steps.wait.outputs.run }}
+    steps:
+      - name: Staging ran the commit the release is cut from
+        if: needs.check.outputs.fix == 'false'
+        run: |
+          set -euo pipefail
+          run=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs" -f event=push -f branch=main \
+            -f head_sha="$BASE" -f status=success -f per_page=1 --jq '.workflow_runs[0].id // empty')
+          [[ -n $run ]] || { echo "::error::${BASE::12} has no green CD run on main"; exit 1; }
+          staged=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs" -X GET -f per_page=100 \
+            --jq '[.jobs[] | select(.name | startswith("staging")) | .conclusion] | all(. == "success") and length > 0')
+          [[ $staged == true ]] || { echo "::error::the CD run of ${BASE::12} on main did not deploy staging"; exit 1; }
+          echo "staging ran ${BASE::12}"
+
+      - name: Wait for the CD run of the release branch
+        id: wait
+        run: |
+          set -euo pipefail
+          missing=0
+          for _ in $(seq 1 80); do
+            run=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs" \
+              -f event=push -f head_sha="$SHA" -f branch="release/$LINE" -f per_page=1 \
+              --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url, .id] | @tsv")
+            if [[ -z $run ]]; then
+              ((++missing <= 6)) || { echo "::error::no CD run for ${SHA::12} on release/$LINE: merge the version pull request first"; exit 1; }
+              echo "no CD run for ${SHA::12} yet, waiting"; sleep 10; continue
+            fi
+            IFS=$'\t' read -r status conclusion url id <<< "$run"
+            if [[ $status == completed ]]; then
+              [[ $conclusion == success ]] || { echo "::error::the CD run of ${SHA::12} ended '$conclusion' ($url): fix the release branch, then run the release again"; exit 1; }
+              echo "images of ${SHA::12} built, signed and scanned: $url"
+              echo "run=$id" >> "$GITHUB_OUTPUT"; exit 0
+            fi
+            echo "CD run of ${SHA::12} is $status, waiting ($url)"
+            sleep 30
+          done
+          echo "::error::the CD run of ${SHA::12} did not finish in 40 minutes"; exit 1
+
+  prod:
+    needs: [check, built]
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    with:
+      environment: prod
+      tag: ${{ needs.check.outputs.commit }}
+      release-version: ${{ inputs.version }}
+      canary: ${{ inputs.canary }}
+      release-commit: ${{ needs.check.outputs.sha }}
+
+  used-up:
+    needs: [check, prod]
+    if: failure() && needs.prod.outputs.harbor-tagged == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      LINE: ${{ needs.check.outputs.line }}
+      SHA: ${{ needs.check.outputs.sha }}
+    steps:
+      - name: Tag the commit used/vYYYY.N.P
+        run: |
+          set -euo pipefail
+          tag=used/v$VERSION
+          if have=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq .object.sha 2>/dev/null); then
+            [[ $have == "$SHA" ]] || { echo "::error::$tag names $have, this run deployed $SHA"; exit 1; }
+            echo "$tag names ${SHA::12} already"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$tag" -f sha="$SHA" >/dev/null
+            echo "tagged ${SHA::12} as $tag"
+          fi
+          echo "**$VERSION is used up** on ${SHA::12} (\`$tag\`): run release again for this commit unchanged, or merge the fix into \`release/$LINE\` and run release-prepare with patch-of $LINE." >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: [check, built, prod]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      LINE: ${{ needs.check.outputs.line }}
+      HEADLINE: ${{ inputs.headline }}
+      SHA: ${{ needs.check.outputs.sha }}
+      RUN: ${{ needs.built.outputs.run }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Git push with the workflow token, for this job only
+        run: |
+          set -euo pipefail
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          echo "::add-mask::$auth"
+          echo "PUSH_AUTH=http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" >> "$GITHUB_ENV"
+
+      - name: Tag the release
+        run: |
+          set -euo pipefail
+          tag=v$VERSION
+          git fetch --quiet --tags origin
+          if have=$(git rev-parse --verify --quiet "refs/tags/$tag^{commit}"); then
+            [[ $have == "$SHA" ]] || { echo "::error::$tag names $have, the release deployed $SHA"; exit 1; }
+            echo "$tag names ${SHA::12} already"; exit 0
+          fi
+          previous=$({ git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; echo "$tag"; } | sort -uV | grep -Fx -B1 -- "$tag" | head -1)
+          since=()
+          [[ $previous == "$tag" ]] || since=(-f previous_tag_name="$previous")
+          notes=$(mktemp)
+          [[ -z $HEADLINE ]] || printf '%s\n\n' "$HEADLINE" > "$notes"
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$tag" -f target_commitish="$SHA" \
+            "${since[@]}" --jq .body >> "$notes"
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            tag -a "$tag" "$SHA" -F "$notes"
+          git -c "$PUSH_AUTH" push --quiet origin "refs/tags/$tag"
+          echo "tagged ${SHA::12} as $tag" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the GitHub release
+        run: |
+          set -euo pipefail
+          tag=v$VERSION
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag exists already, left as is"; exit 0
+          fi
+          git fetch --quiet --force origin "refs/tags/$tag:refs/tags/$tag"
+          notes=$(mktemp)
+          git tag -l --format='%(contents)' "$tag" > "$notes"
+          # shellcheck disable=SC2016
+          printf '\nImages (commit `%s`):\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-web:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice:%s`\n' "${SHA::12}" "$VERSION" "$VERSION" "$VERSION" >> "$notes"
+          gh release create "$tag" --verify-tag --title "$tag" --notes-file "$notes"
+
+      - name: Attach the CD run's SBOMs to the release
+        run: |
+          set -euo pipefail
+          tag=v$VERSION
+          dir=$(mktemp -d)
+          for entry in sbom:helper2 sbom-backoffice:helper2-backoffice sbom-web:helper2-web sbom-postgres:helper2-postgres; do
+            artifact=${entry%%:*}; name=${entry#*:}
+            if ! gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n "$artifact" -D "$dir/$artifact"; then
+              echo "::warning::CD run $RUN has no artifact $artifact: release $tag has no SBOM for $name"; continue
+            fi
+            mv "$dir/$artifact/$artifact.cdx.json" "$dir/$name-$tag.cdx.json"
+            gh release upload "$tag" "$dir/$name-$tag.cdx.json" -R "$GITHUB_REPOSITORY" --clobber
+          done
+
+      - name: Pull request of the release back into main
+        run: |
+          set -euo pipefail
+          head=release-merge/v$VERSION
+          if [[ -n $(gh pr list --head "$head" --base main --state all --json number --jq '.[].number') ]]; then
+            echo "the pull request from $head exists already"; exit 0
+          fi
+          git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
+          bump=$RUNNER_TEMP/bump-version.sh
+          cp .github/scripts/bump-version.sh "$bump"
+          git switch --quiet -c "$head" "$SHA"
+          bot=(-c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com')
+          on_main=$(git show refs/remotes/origin/main:backend/build.gradle.kts | sed -n 's/^version = "\(.*\)"$/\1/p')
+          if [[ $(printf '%s\n%s\n' "$on_main" "$VERSION" | sort -V | tail -1) != "$VERSION" ]]; then
+            "$bump" bump "$on_main"
+            git "${bot[@]}" commit --quiet -am "chore(release): main keeps its higher version $on_main"
+          fi
+          merged=true
+          if ! git "${bot[@]}" merge --quiet --no-edit refs/remotes/origin/main; then
+            git merge --abort
+            merged=false
+          fi
+          git -c "$PUSH_AUTH" push --quiet origin "HEAD:refs/heads/$head"
+          if [[ $merged == true ]]; then
+            state="It is up to date with \`main\`. CI runs on it from this workflow (a pull request opened by the workflow token starts none)."
+          else
+            state="It conflicts with \`main\`: resolve the conflict on \`$head\` (that push runs CI)."
+          fi
+          body=$(printf '%s\n' \
+            "Brings the release v$VERSION (\`release/$LINE\`) back into \`main\`: its version and, for a patch, its fixes (ADR 0045)." \
+            "" \
+            "$state")
+          gh pr create --base main --head "$head" --title "chore(release): v$VERSION back into main" --body "$body"
+          if [[ $merged == true ]]; then
+            gh workflow run ci.yml --ref "$head"
+          fi
+          echo "pull request $head -> main opened" >> "$GITHUB_STEP_SUMMARY"

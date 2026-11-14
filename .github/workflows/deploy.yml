@@ -1,0 +1,298 @@
+name: deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: staging or prod
+        type: string
+        required: true
+      tag:
+        description: image tag = 12-char commit or release version YYYY.N.P. Empty = the caller's commit; for prod, what staging runs
+        type: string
+        default: ''
+      rollback:
+        description: allow a commit older than the one the environment runs (a deliberate rollback)
+        type: boolean
+        default: false
+      keep-unhealthy:
+        description: cd.yml's manual run only, this one deploy keeps a release that is not healthy after the upgrade (no automatic rollback); the job still fails
+        type: boolean
+        default: false
+      release-version:
+        description: release.yml only, the version YYYY.N.P of the release branch release/YYYY.N whose head is in tag. Canary and smoke test first, then the version tag in Harbor, then prod by version
+        type: string
+        default: ''
+      canary:
+        description: release.yml only, false for a release whose migration the release before it cannot run on (a maintenance window); no canary, prod by version straight away
+        type: boolean
+        default: true
+      release-commit:
+        description: release.yml only, the full commit its checks passed, the head of release/YYYY.N
+        type: string
+        default: ''
+    outputs:
+      tag:
+        description: the tag that was deployed
+        value: ${{ jobs.deploy.outputs.tag }}
+      harbor-tagged:
+        description: true once the release's Harbor tag was started; the version names the images of tag from then on
+        value: ${{ jobs.deploy.outputs.harbor-tagged }}
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, incalzame]
+    timeout-minutes: 45
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.environment == 'prod' && 'https://helper2.ai' || 'https://helper2.incalza.me' }}
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      ENV: ${{ inputs.environment }}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      harbor-tagged: ${{ steps.retag.outputs.started }}
+    defaults:
+      run:
+        working-directory: deploy/k8s
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/bao-login
+        with:
+          addr: ${{ vars.BAO_ADDR }}
+          audience: ${{ vars.BAO_AUDIENCE }}
+          role: deploy-${{ inputs.environment }}
+
+      - uses: ./.github/actions/install-cosign
+
+      - name: Kubeconfig from OpenBao
+        run: |
+          set -euo pipefail
+          kc=$(mktemp "$RUNNER_TEMP/kubeconfig.XXXXXX")
+          bao kv get -mount=helper2/kv -field=kubeconfig "ci/$ENV" > "$kc"
+          echo "KUBECONFIG=$kc" >> "$GITHUB_ENV"
+
+      - name: Resolve tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          ROLLBACK: ${{ inputs.rollback }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          tag=$INPUT_TAG
+          if [[ -z $tag && $ENV == prod ]]; then
+            image=$(kubectl -n helper2-staging get deployment helper2 \
+              -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}')
+            image=${image%@*}
+            tag=${image##*:}
+          fi
+          tag=${tag:-${GITHUB_SHA::12}}
+          commit_of() {
+            local t=$1 s
+            if [[ $t =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              git rev-parse --verify --quiet "refs/tags/v$t" >/dev/null \
+                || git fetch --quiet origin "refs/tags/v$t:refs/tags/v$t" 2>/dev/null \
+                || { echo "no release tag v$t" >&2; return 1; }
+              [[ $(git ls-remote origin "refs/tags/v$t" | cut -f1) == "$(git rev-parse "refs/tags/v$t")" ]] \
+                || { echo "release tag v$t differs from GitHub's, refusing" >&2; return 1; }
+              git rev-parse --verify --quiet "refs/tags/v$t^{commit}" || { echo "v$t names no commit" >&2; return 1; }
+              return
+            fi
+            [[ $t =~ ^[0-9a-f]{12}$ ]] || { echo "tag must be a 12-char commit or a version YYYY.N.P, got '$t'" >&2; return 1; }
+            if [[ -n $(git for-each-ref "refs/tags/$t" "refs/heads/$t" "refs/remotes/origin/$t") ]]; then
+              echo "a ref named $t exists, refusing" >&2; return 1
+            fi
+            s=$(git rev-parse --verify --quiet "$t^{commit}") || { echo "no commit $t" >&2; return 1; }
+            [[ $s == "$t"* ]] || { echo "$t resolved to $s" >&2; return 1; }
+            echo "$s"
+          }
+          git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
+          sha=$(commit_of "$tag") || exit 1
+          release=false
+          if [[ -n $RELEASE_VERSION || -n $RELEASE_COMMIT ]]; then
+            [[ $ENV == prod ]] || { echo "release-version is for prod"; exit 1; }
+            [[ $RELEASE_VERSION =~ ^[0-9]{4}\.[1-9][0-9]*\.[0-9]+$ ]] || { echo "release-version must be YYYY.N.P, got '$RELEASE_VERSION'"; exit 1; }
+            [[ $tag =~ ^[0-9a-f]{12}$ ]] || { echo "a release deploys the commit of its branch first, got tag '$tag'"; exit 1; }
+            [[ $sha == "$RELEASE_COMMIT" ]] || { echo "::error::$tag is $sha, release.yml checked $RELEASE_COMMIT"; exit 1; }
+            head=$(git rev-parse --verify --quiet "refs/remotes/origin/release/${RELEASE_VERSION%.*}") \
+              || { echo "::error::no branch release/${RELEASE_VERSION%.*}"; exit 1; }
+            [[ $head == "$sha" ]] || { echo "::error::release/${RELEASE_VERSION%.*} moved to ${head::12} after the checks of ${sha::12}: run the release again"; exit 1; }
+            release=true
+          fi
+          if [[ $release != true ]] && ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+            if [[ ! $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "$tag is not on main (a release/* commit deploys only as its release version)"; exit 1
+            fi
+            [[ -n $(git for-each-ref --contains "$sha" refs/remotes/origin/release/) ]] \
+              || { echo "$tag is not on main nor on a release/* branch"; exit 1; }
+          fi
+          running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
+            -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
+          running=${running%@*}
+          running=${running##*:}
+          order=$tag
+          [[ $release != true ]] || order=$RELEASE_VERSION
+          if [[ -n $running && $running != "$tag" && $ROLLBACK != true ]] \
+            && running_sha=$(commit_of "$running" 2>/dev/null) \
+            && [[ $running_sha != "$sha" ]] \
+            && ! git merge-base --is-ancestor "$running_sha" "$sha"; then
+            semver='^[0-9]+\.[0-9]+\.[0-9]+$'
+            if git merge-base --is-ancestor "$sha" "$running_sha"; then
+              echo "::error::$tag is older than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            fi
+            if [[ ! $order =~ $semver || ! $running =~ $semver ]]; then
+              echo "::error::$order and $running ($ENV) are on diverging histories with no versions to order them; deploying needs rollback: true"; exit 1
+            fi
+            if [[ $(printf '%s\n%s\n' "$order" "$running" | sort -uV | tail -1) != "$order" || $order == "$running" ]]; then
+              echo "::error::$order is not a higher version than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
+            fi
+          fi
+          pg_tag=$(git show "$sha:deploy/helm/helper2/values.yaml" \
+            | awk '/^postgres:/ {p=1; next} p && /^[^ #]/ {exit} p && $1 == "tag:" {print $2; exit}')
+          make verify-images TAG="$tag" PG_TAG="$pg_tag" HARBOR_KV=ci/harbor-pull DIGESTS=/dev/null
+          git checkout --quiet --detach "$sha"
+          if ! grep -q 'need_digest' Makefile || ! grep -q 'helper2.atDigest' ../helm/helper2/templates/_helpers.tpl; then
+            if [[ $ROLLBACK != true ]]; then
+              echo "::error::$tag predates the deploy by digest (ADR 0044): deploying it needs rollback: true"; exit 1
+            fi
+            echo "::warning::$tag predates the deploy by digest: its signatures were checked above, Helm deploys it by tag"
+          fi
+          echo "HARBOR_KV=ci/harbor-pull" >> "$GITHUB_ENV"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Deploying $tag (commit ${sha::12}) to $ENV" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: The commit's CD run passed (prod)
+        if: inputs.environment == 'prod'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.tag.outputs.sha }}
+          ROLLBACK: ${{ inputs.rollback }}
+        run: |
+          set -euo pipefail
+          if ! runs=$(curl -fsS --retry 2 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs?event=push&head_sha=$SHA&per_page=20") \
+            || ! run=$(jq -r '[.workflow_runs[] | select((.head_branch // "") | . == "main" or startswith("release/"))][0]
+                // empty | [.status, (.conclusion // "none"), .html_url] | @tsv' <<< "$runs"); then
+            problem="the CD runs of ${SHA::12} could not be read from the GitHub API"
+          else
+            if [[ -z $run ]]; then
+              problem="${SHA::12} has no CD run"
+            else
+              IFS=$'\t' read -r status conclusion url <<< "$run"
+              if [[ $status == completed && $conclusion == success ]]; then
+                echo "the CD run of ${SHA::12} passed: $url"; exit 0
+              fi
+              if [[ $status == completed ]]; then
+                problem="the CD run of ${SHA::12} ended '$conclusion' ($url)"
+              else
+                problem="the CD run of ${SHA::12} is still $status ($url): wait for it"
+              fi
+            fi
+          fi
+          if [[ $ROLLBACK == true ]]; then
+            echo "::warning::$problem; deploying anyway, rollback: true"; exit 0
+          fi
+          echo "::error::$problem. Prod runs only a commit whose CD run passed, the image scan included; a rollback needs rollback: true"
+          exit 1
+
+      - name: Write app.env from OpenBao
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$ENV"
+          bao kv get -mount=helper2/kv -field=app_env "ci/$ENV" > "$ENV/app.env"
+
+      - name: Canary and smoke test (release)
+        if: inputs.release-version != '' && inputs.canary
+        env:
+          VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          token=$(openssl rand -hex 16)
+          echo "::add-mask::$token"
+          make uncanary
+          if ! make canary CANARY_TOKEN="$token" || ! make canary-smoke CANARY_TOKEN="$token" CANARY_VERSION="$VERSION"; then
+            echo "::error::the canary of $VERSION ($TAG) failed: it is removed, prod still runs the release before it (on the schema the canary migrated, if it had a migration), no version tag was made"
+            make uncanary
+            exit 1
+          fi
+          make uncanary
+          echo "Canary of $VERSION ($TAG) passed the smoke test and is removed before the rollout" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: No canary (release)
+        if: inputs.release-version != '' && !inputs.canary
+        run: |
+          echo "::warning::no canary for this release: prod gets $TAG straight away, in a maintenance window"
+          echo "**No canary** for this release: prod gets $TAG straight away." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Version tag in Harbor (release)
+        id: retag
+        if: inputs.release-version != ''
+        env:
+          VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          echo "started=true" >> "$GITHUB_OUTPUT"
+          make retag TAG="$TAG" VERSION="$VERSION" HARBOR_KV=ci/harbor
+          echo "TAG=$VERSION" >> "$GITHUB_ENV"
+          echo "Deploying $VERSION to $ENV, the images of $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Recover interrupted staging release
+        if: inputs.environment == 'staging'
+        run: |
+          set -euo pipefail
+          status=$(helm -n "helper2-$ENV" status helper2 2>/dev/null | awk '/^STATUS:/ {print $2}' || true)
+          case "$status" in
+            pending-*)
+              echo "release helper2 in helper2-$ENV is $status: rolling back to the last deployed revision first"
+              make rollback
+              ;;
+          esac
+
+      - name: Diff
+        run: make diff
+
+      - name: Deploy
+        env:
+          KEEP_UNHEALTHY: ${{ inputs.keep-unhealthy }}
+        run: |
+          set -euo pipefail
+          if [[ $KEEP_UNHEALTHY != true ]]; then
+            exec make deploy
+          fi
+          echo "::warning::keep-unhealthy: the automatic rollback is OFF for this deploy of $TAG to $ENV. A release that is not healthy stays as it is; the job still fails"
+          echo "**Automatic rollback OFF for this deploy** (\`keep-unhealthy\`): a release that is not healthy after the upgrade stays as it is." >> "$GITHUB_STEP_SUMMARY"
+          make deploy ROLLBACK_UNHEALTHY=false
+
+      - name: Version used up (release)
+        if: failure() && inputs.release-version != '' && steps.retag.outputs.started == 'true'
+        env:
+          VERSION: ${{ inputs.release-version }}
+          COMMIT: ${{ steps.tag.outputs.tag }}
+        run: |
+          echo "::error::$VERSION is used up: Harbor keeps it on the images of $COMMIT, and a fixed branch builds other ones. The release run tags the commit used/v$VERSION. Run release again for $COMMIT unchanged, or merge the fix into release/${VERSION%.*} and run release-prepare with patch-of ${VERSION%.*} (ADR 0045)"
+
+      - name: Remove the canary (release)
+        if: always() && inputs.release-version != ''
+        run: make uncanary
+
+      - name: Status
+        run: make status
+
+      - name: Clean up
+        if: always()
+        run: rm -f "$ENV/app.env" "$ENV/digests.env" "${KUBECONFIG:-}"
