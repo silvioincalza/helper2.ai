@@ -1,0 +1,17 @@
+helper2.llm.chat-model = ${spring.ai.openai.chat.model:}  =>  nvidia/Nemotron-3.5-Super-VL
+helper2.llm.chat-provider = ${spring.ai.model.chat}  =>  openai
+helper2.llm.fast-model = ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}  =>  nvidia/Nemotron-3_5-Lightning
+helper2.llm.provider-label = nebius-token-factory
+helper2.llm.reasoning-model = ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}  =>  nvidia/Nemotron-3.5-Super-VL
+helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:true}  =>  true
+spring.ai.model.chat = openai
+spring.ai.openai.api-key = ${H2_NEBIUS_API_KEY}  =>  <needs a variable>
+spring.ai.openai.base-url = https://api.tokenfactory.nebius.com/v1
+spring.ai.openai.chat.max-tokens = 2048
+spring.ai.openai.chat.model = ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}  =>  nvidia/Nemotron-3.5-Super-VL
+spring.ai.openai.chat.temperature = 0.0
+spring.datasource.password = ${H2_DATABASE_PASSWORD:helper2-local-only}  =>  helper2-local-only
+spring.docker.compose.enabled = true
+spring.docker.compose.file = ../compose.yaml
+spring.docker.compose.lifecycle-management = start-only
+spring.profiles.active = ${H2_PROFILES:}  =>  dev,oauth-github,llm-nebius,demo

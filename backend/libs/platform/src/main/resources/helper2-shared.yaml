@@ -1,0 +1,509 @@
+spring:
+  profiles:
+    active: ${H2_PROFILES:}
+  config:
+    import: ${helper2.dotenv-import:optional:file:../.env[.properties],optional:file:.env[.properties]}
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: ${H2_SHUTDOWN_TIMEOUT:30s}
+  datasource:
+    url: ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}
+    username: ${H2_DATABASE_USER:helper2}
+    password: ${H2_DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${H2_DATABASE_POOL_SIZE:16}
+      connection-timeout: 3000
+  flyway:
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${H2_REDIS_HOST:localhost}
+      port: ${H2_REDIS_PORT:6379}
+      username: ${H2_REDIS_USER:}
+      password: ${H2_REDIS_PASSWORD:}
+      timeout: 250ms
+      connect-timeout: 500ms
+  docker:
+    compose:
+      enabled: false
+  ai:
+    model:
+      chat: none
+      embedding: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+    openai:
+      chat:
+        timeout: ${H2_LLM_TIMEOUT:40s}
+        max-retries: ${H2_LLM_MAX_RETRIES:0}
+  mvc:
+    problemdetails:
+      enabled: true
+  web:
+    resources:
+      add-mappings: false
+server:
+  port: ${H2_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: ${H2_FORWARD_HEADERS_STRATEGY:none}
+resilience4j:
+  circuitbreaker:
+    configs:
+      source:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: ${H2_RESILIENCE_SOURCE_FAILURE_RATE:50}
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_SOURCE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+      collector:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_COLLECTOR_OPEN_FOR:1m}
+        permitted-number-of-calls-in-half-open-state: 1
+      store:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+      model:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_LLM_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+    instances:
+      redis: {base-config: store}
+      llm-chat:
+        base-config: model
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+      llm-embed: {base-config: model}
+      llm-embed-index: {base-config: model}
+      db-cache:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 50
+        slow-call-duration-threshold: 250ms
+        slow-call-rate-threshold: 50
+        wait-duration-in-open-state: ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}
+        permitted-number-of-calls-in-half-open-state: 2
+  bulkhead:
+    configs:
+      source:
+        max-concurrent-calls: ${H2_RESILIENCE_SOURCE_MAX_CONCURRENT:20}
+        max-wait-duration: 0
+      catalog:
+        max-concurrent-calls: ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:3}
+        max-wait-duration: 0
+    instances:
+      db-cache:
+        max-concurrent-calls: ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}
+        max-wait-duration: 0
+  retry:
+    configs:
+      collector:
+        max-attempts: ${H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}
+        wait-duration: 1s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+helper2:
+  build:
+    version: ${H2_BUILD_VERSION:local}
+  llm:
+    chat-provider: ${spring.ai.model.chat}
+    chat-model: ${spring.ai.openai.chat.model:}
+    provider-label: ""
+    reasoning-model: ""
+    fast-model: ""
+    native-schema: ${H2_NEBIUS_NATIVE_SCHEMA:true}
+  embedding:
+    api-key: ${H2_NVIDIA_API_KEY:}
+    base-url: ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}
+    model: ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}
+    dimensions: 1024
+    timeout: 3s
+  http:
+    pool-wait: 250ms
+    max-connections: 50
+    max-connections-per-route: 20
+    max-response-size: 2MB
+  runtime-settings:
+    refresh: ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}
+---
+helper2:
+  schema:
+    migrate: ${H2_SCHEMA_MIGRATE:false}
+    wait-for: ${H2_SCHEMA_WAIT:PT4M}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+helper2:
+  schema:
+    migrate: ${H2_SCHEMA_MIGRATE:true}
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    password: ${H2_DATABASE_PASSWORD:helper2-local-only}
+  docker:
+    compose:
+      enabled: true
+      file: ../compose.yaml
+      lifecycle-management: start-only
+---
+spring:
+  config:
+    activate:
+      on-profile: llm-nebius
+  ai:
+    model:
+      chat: openai
+    openai:
+      api-key: ${H2_NEBIUS_API_KEY}
+      base-url: https://api.tokenfactory.nebius.com/v1
+      chat:
+        model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
+        temperature: 0.0
+        max-tokens: 2048
+helper2:
+  llm:
+    provider-label: nebius-token-factory
+    reasoning-model: ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}
+    fast-model: ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}
+---
+helper2:
+  retention:
+    cron: ${H2_RETENTION_CRON:0 17 3 * * *}
+---
+helper2:
+  quota:
+    key-secret: ${H2_QUOTA_KEY_SECRET:}
+---
+helper2:
+  categories:
+    - id: prompt-libraries
+      family: prompts-and-skills
+      short-name: Prompts
+      name: Prompt libraries
+      words: [prompt library, prompt libraries, prompt marketplace, prompt collection, ready to use prompts, prompt pack]
+      discovery:
+        type: PROMPT
+        queries: [free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini]
+    - id: skills-and-gpts
+      family: prompts-and-skills
+      short-name: Skills
+      name: Agent skills and GPTs
+      words: [agent skill, claude skill, skill.md, custom gpt, gpt store]
+      discovery:
+        type: SKILL
+        queries: [open-source collection of Claude Code and agent skills with SKILL.md files]
+    - id: ai-assistants
+      family: everyday-apps
+      short-name: Assistants
+      name: AI assistants
+      words: [personal assistant, ai companion, ai chat app, chatgpt alternative]
+      discovery:
+        type: PRODUCT
+        queries: [AI chat assistant app for web and mobile that answers questions and remembers context]
+    - id: writing
+      family: everyday-apps
+      short-name: Writing
+      name: Writing
+      words: [writing assistant, ai writer, ai writing, copywriting, paraphras, grammar checker]
+      discovery:
+        type: PRODUCT
+        queries: [AI writing assistant for emails documents and marketing copy]
+    - id: translation
+      family: everyday-apps
+      short-name: Translation
+      name: Translation
+      words: [ai translat, machine translation, document translat, translation app, real time translat]
+      discovery:
+        type: PRODUCT
+        queries: [AI translator for documents websites and conversations]
+    - id: meetings-and-transcription
+      family: everyday-apps
+      short-name: Meetings
+      name: Meetings and transcription
+      words: [meeting assistant, meeting notes, meeting summar, notetaker, note taker, transcription, transcribe,
+              speech to text]
+      discovery:
+        type: PRODUCT
+        queries: [AI notetaker that joins meetings and writes notes and action items]
+    - id: documents-and-pdf
+      family: everyday-apps
+      short-name: Documents
+      name: Documents and PDF
+      words: [chat with pdf, chat with your documents, pdf summar, document summar, ai pdf]
+      discovery:
+        type: PRODUCT
+        queries: [AI that summarises and answers questions about PDFs and documents]
+    - id: research-and-papers
+      family: everyday-apps
+      short-name: Research
+      name: Research and papers
+      words: [research assistant, literature review, research papers, scientific papers, paper summar, deep research]
+      discovery:
+        type: PRODUCT
+        queries: [AI research assistant that finds and summarises scientific papers]
+    - id: ai-search
+      family: everyday-apps
+      short-name: AI search
+      name: AI search
+      words: [ai search, ai search engine, answer engine, ai powered search]
+      discovery:
+        type: PRODUCT
+        queries: [AI search engine that answers questions with cited sources]
+    - id: browser-extensions
+      family: everyday-apps
+      short-name: Extensions
+      name: Browser extensions
+      words: [browser extension, chrome extension, firefox add on, firefox extension, extension for chrome]
+      discovery:
+        type: PRODUCT
+        queries: [AI browser extension for Chrome or Firefox]
+    - id: education-and-tutors
+      family: everyday-apps
+      short-name: Education
+      name: Education and tutors
+      words: [ai tutor, ai tutoring, homework help, homework helper, study assistant, flashcard generat, quiz generat,
+              ai teaching assistant, lesson plan generat, ai for teachers, grading assistant, ai grading]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI tutor app that explains homework step by step and makes quizzes and flashcards for students
+          - AI tools for teachers that create lesson plans and grade assignments
+        exclude-domains: [coursera.org, udemy.com, edx.org, skillshare.com, udacity.com, pluralsight.com]
+    - id: health
+      family: everyday-apps
+      short-name: Health
+      name: Health
+      words: [medical scribe, ai scribe, clinical documentation, clinical notes, ambient clinical, healthcare ai,
+              ai for healthcare, medical ai, medical coding, prior authori, patient intake, symptom checker,
+              ai health assistant, ai health app]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI medical scribe that writes clinical notes from doctor and patient visits
+          - AI health app that answers health questions and tracks symptoms for patients
+        min-score: 0.5
+        require-keyword: true
+        index-lists: false
+        exclude-domains: [webmd.com, mayoclinic.org, clevelandclinic.org, healthline.com, medicalnewstoday.com,
+                          verywellhealth.com, medlineplus.gov, nih.gov, cdc.gov, who.int, nhs.uk, drugs.com,
+                          wikipedia.org]
+    - id: image-generation
+      family: creative-and-media
+      short-name: Images
+      name: Image generation
+      words: [image generat, text to image, ai art generat, ai artwork, photo editor, image editing, background remov,
+              upscal]
+      discovery:
+        type: PRODUCT
+        queries: [AI image generator that creates and edits images from text prompts]
+    - id: video-generation
+      family: creative-and-media
+      short-name: Video
+      name: Video generation
+      words: [video generat, text to video, image to video, ai video, video editor, avatar video, lip sync]
+      discovery:
+        type: PRODUCT
+        queries: [AI video generator that turns text or images into video]
+    - id: voice-and-audio
+      family: creative-and-media
+      short-name: Voice, audio
+      name: Voice and audio
+      words: [text to speech, voice clon, voice generat, ai voice, speech synthesis, tts api, music generat, ai music,
+              song generat]
+      discovery:
+        type: PRODUCT
+        queries:
+          - realistic AI text to speech and voice cloning
+          - AI music generator that creates songs from a text prompt
+    - id: design-and-presentations
+      family: creative-and-media
+      short-name: Design
+      name: Design and presentations
+      words: [ai presentation, presentation maker, slide deck, pitch deck, slides generat, ui design,
+              ai website builder, website generat, logo generat, graphic design]
+      discovery:
+        type: PRODUCT
+        queries:
+          - AI presentation maker that creates slides from a prompt
+          - AI website builder and UI design generator
+    - id: customer-support
+      family: business
+      short-name: Support
+      name: Customer support
+      words: [customer support, customer service, helpdesk, help desk, support ticket]
+      discovery:
+        type: PRODUCT
+        queries: [AI customer support agent that answers tickets and live chat]
+    - id: voice-agents
+      family: business
+      short-name: Voice agents
+      name: Voice agents
+      words: [voice agent, phone agent, ai receptionist, conversational voice ai]
+      discovery:
+        type: AGENT
+        queries: [platform to build AI voice agents that answer phone calls]
+    - id: data-and-analytics
+      family: business
+      short-name: Data
+      name: Data and analytics
+      words: [data analysis, ai data analyst, ai analyst, text to sql, business intelligence, spreadsheet ai,
+              chat with your data]
+      discovery:
+        type: PRODUCT
+        queries: [AI data analyst that answers questions about spreadsheets and databases]
+    - id: no-code
+      family: business
+      short-name: No-code
+      name: No-code
+      words: [no code ai, no code builder, no code app, nocode, low code, workflow automation, automation builder]
+      discovery:
+        type: PRODUCT
+        queries: [no-code builder for AI apps and workflow automations]
+    - id: marketing-and-seo
+      family: business
+      short-name: Marketing
+      name: Marketing and SEO
+      words: [ai marketing, marketing ai, seo tool, seo content, seo optimi, ai seo, keyword research, ad copy,
+              ad creative, social media post, social media content, email marketing, generative engine optimi]
+      discovery:
+        type: PRODUCT
+        queries: [AI marketing platform that writes SEO blog posts and ad copy and plans social media content]
+    - id: legal
+      family: business
+      short-name: Legal
+      name: Legal
+      words: [legal ai, ai legal, ai lawyer, legal assistant, contract review, contract analy, contract drafting,
+              legal research, legal drafting, ediscovery, e discovery, clause extraction]
+      discovery:
+        type: PRODUCT
+        queries: [AI legal assistant for lawyers that reviews contracts and drafts legal documents]
+        min-score: 0.5
+        require-keyword: true
+        index-lists: false
+        exclude-domains: [law.cornell.edu, findlaw.com, justia.com, nolo.com, avvo.com, lawinsider.com, legalzoom.com,
+                          rocketlawyer.com, upcounsel.com, eur-lex.europa.eu, wikipedia.org]
+    - id: coding
+      family: developers
+      short-name: Coding
+      name: Coding
+      words: [coding assistant, coding agent, code assistant, ai coding, code review, code generat, ai ide,
+              ai code editor]
+      discovery:
+        type: PRODUCT
+        queries: [AI coding agent and code editor for software developers]
+    - id: agent-platforms
+      family: developers
+      short-name: Agents
+      name: Agent platforms
+      words: [agent platform, agent builder, build ai agents, autonomous agent, multi agent]
+      discovery:
+        type: AGENT
+        queries: [platform to build deploy and run AI agents for business workflows]
+    - id: llm-frameworks
+      family: developers
+      short-name: Frameworks
+      name: LLM frameworks
+      words: [llm framework, agent framework, orchestration framework, llm library]
+      discovery:
+        type: LIBRARY
+        queries: [open-source framework or library to build LLM apps and agents]
+    - id: rag-and-vector-databases
+      family: developers
+      short-name: RAG
+      name: RAG and vector databases
+      words: [vector database, vector db, vector search, retrieval augmented, rag pipeline, rag platform,
+              document parsing, pdf parsing, pdf to markdown, ocr api, ocr model, document extraction]
+      discovery:
+        type: PRODUCT
+        queries:
+          - vector database or RAG platform for retrieval augmented generation
+          - API to parse PDFs and documents into clean text for LLMs
+    - id: llmops-and-evaluation
+      family: developers
+      short-name: LLMOps
+      name: LLMOps and evaluation
+      words: [llm observability, llmops, llm evaluation, llm evals, evals, llm tracing, llm monitoring,
+              prompt management, prompt versioning]
+      discovery:
+        type: PRODUCT
+        queries: [LLM observability evaluation and monitoring tool]
+    - id: ai-security
+      family: developers
+      short-name: AI security
+      name: AI security
+      words: [guardrail, prompt injection, llm security, ai security, ai red team, jailbreak]
+      discovery:
+        type: PRODUCT
+        queries: [AI guardrails and LLM security tool against prompt injection]
+    - id: fine-tuning
+      family: developers
+      short-name: Fine-tuning
+      name: Fine-tuning
+      words: [fine tuning platform, fine tune llm, fine tune models, finetun, lora, qlora, model training]
+      discovery:
+        type: PRODUCT
+        queries: [platform to fine-tune and train open-source LLMs]
+    - id: model-hosting
+      family: hosting-and-infra
+      short-name: Hosting
+      name: Model hosting
+      words: [inference api, serverless inference, model hosting, deploy models, inference platform]
+      discovery:
+        type: PRODUCT
+        queries: [serverless inference API for open-weight LLMs and image models]
+    - id: ai-cloud-and-paas
+      family: hosting-and-infra
+      short-name: AI cloud
+      name: AI cloud and PaaS
+      words: [serverless gpu, gpu cloud, gpu instances, rent gpus, deploy ai apps, ai cloud]
+      discovery:
+        type: PRODUCT
+        queries: [GPU cloud platform to deploy and scale AI apps and models]
+    - id: ai-gateways
+      family: hosting-and-infra
+      short-name: Gateways
+      name: AI gateways
+      words: [llm gateway, ai gateway, llm router, model router, llm proxy]
+      discovery:
+        type: PRODUCT
+        queries: [LLM gateway or router that gives one API for many model providers]
+    - id: self-hosted
+      family: run-it-yourself
+      short-name: Self-hosted
+      name: Self-hosted
+      words: [self hosted, selfhosted, on prem, docker compose, homelab]
+      discovery:
+        type: PRODUCT
+        queries: [open-source self-hosted AI app you run on your own server with Docker]
+    - id: local-ai
+      family: run-it-yourself
+      short-name: Local AI
+      name: Local AI
+      words: [run locally, runs locally, run llms locally, local llm, local ai, offline ai, works offline, on device]
+      discovery:
+        type: PRODUCT
+        queries: [desktop app to run LLMs locally and offline on your own computer]

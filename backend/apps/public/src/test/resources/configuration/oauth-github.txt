@@ -1,0 +1,1 @@
+spring.profiles.active = ${H2_PROFILES:}  =>  oauth-github

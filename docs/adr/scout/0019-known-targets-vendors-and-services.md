@@ -131,7 +131,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
    fact a person put in the table. The public API does not expose `target_kind` (Known limits).
 
 ### Code
-- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` and `db/catch-up/V1__catch_up.sql`
+- `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`
   (`known_target`, `known_target_name`, the 31 vendors, `relationship.target_kind`)
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/KnownTarget.java` (`key`, `KEY_OF_TITLE_SQL`),
   `KnownTargets.java`, `catalog/internal/JdbcKnownTargets.java` (`named`)
@@ -141,7 +141,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
   `scout/Enrichment.kt` (`EnrichmentInput.knownTargets`), `scout/usecase/EnrichResource.kt` (`run`),
   `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java` (`knownTargets`)
 
-- `V1__schema.sql` and the catch-up file (`known_target.added_by`, `added_at`, `known_target_name.name`, three audit
+- `V1__schema.sql` (`known_target.added_by`, `added_at`, `known_target_name.name`, three audit
   actions)
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/KnownTargetList.java`,
   `catalog/internal/JdbcKnownTargetList.java` (`release`, `setKind`), `catalog/usecase/ManageKnownTargets.java`
@@ -152,7 +152,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 - `frontend/src/admin/KnownTargetsPanel.tsx`, `SettingsPage.tsx`, `frontend/src/api/admin.ts`,
   `frontend/src/i18n/locales/en.admin.json` (`admin.settings.targets`)
 
-- `V1__schema.sql` and the catch-up file (`known_target.origin`, `KNOWN_TARGET_CANDIDATE` in `review_item.kind` and
+- `V1__schema.sql` (`known_target.origin`, `KNOWN_TARGET_CANDIDATE` in `review_item.kind` and
   `candidate_decision.kind`, `review_item_known_target_idx`)
 - `backend/libs/catalog/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java`,
   `catalog/internal/JdbcKnownTargetCandidates.java` (`proposeOwners`, `of`), `catalog/usecase/ProposeKnownTargets.java`,
@@ -168,7 +168,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 - `frontend/src/admin/KnownTargetProposalForm.tsx`; the names of a target are typed one per line
   (`KnownTargetsPanel.namesOf`), so a name with a comma stays whole
 
-- `V1__schema.sql` and the catch-up file (`relationship.stated_target_kind`)
+- `V1__schema.sql` (`relationship.stated_target_kind`)
 - `backend/apps/backoffice/src/main/resources/prompts/scout/enrich.txt`,
   `scout/internal/SpringAiEnrichmentModel.java` (`Rel.targetKind`, `PROMPT_VERSION`),
   `scout/EvidenceValidator.kt` (`statedKindOf`), `catalog/internal/JdbcEnrichmentResults.java`
