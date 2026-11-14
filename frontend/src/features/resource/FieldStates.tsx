@@ -3,6 +3,7 @@ import type { ResourceDetail } from '@/api/types';
 import { OriginLabel } from '@/ui/Badges';
 import { Icon } from '@/ui/Icon';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { DisputedValues } from './DisputedValues';
 import { FIELDS, fieldWord, stateOf } from './fieldState';
 
 export function FieldStates({ detail }: { detail: ResourceDetail }) {
@@ -21,7 +22,10 @@ export function FieldStates({ detail }: { detail: ResourceDetail }) {
                 ) : state.kind === 'conflict' ? (
                   <dd className="is-conflict">
                     <Icon name="warn" /> {t('date.conflicting')}:{' '}
-                    {state.values.map((v) => fieldWord(t, field, v.value)).join(' · ')}
+                    <DisputedValues
+                      values={state.values}
+                      word={(v) => fieldWord(t, field, v.value)}
+                    />
                   </dd>
                 ) : (
                   <dd>

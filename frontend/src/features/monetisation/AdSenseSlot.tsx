@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router';
 import { useMonetisation } from '@/context/MonetisationContext';
-import { loadGoogleConsent } from '@/lib/googleConsent';
+import { asksForConsent, loadGoogleConsent } from '@/lib/googleConsent';
 import '@/features/monetisation/sponsor.css';
 
 const SCRIPT_ID = 'h2-adsense';
@@ -25,9 +26,11 @@ function loadAdSense(client: string, doc: Document = document) {
 export function AdSenseSlot() {
   const { t } = useTranslation();
   const { adsenseClient, adsenseSlot } = useMonetisation();
+  const { pathname, search } = useLocation();
+  const googleAllowed = asksForConsent(pathname, search);
 
   useEffect(() => {
-    if (!adsenseClient || !adsenseSlot) return;
+    if (!adsenseClient || !adsenseSlot || !googleAllowed) return;
     const queue = (window.adsbygoogle = window.adsbygoogle ?? []);
     queue.pauseAdRequests = 0;
     loadGoogleConsent(adsenseClient);
@@ -38,9 +41,9 @@ export function AdSenseSlot() {
     return () => {
       queue.pauseAdRequests = 1;
     };
-  }, [adsenseClient, adsenseSlot]);
+  }, [adsenseClient, adsenseSlot, googleAllowed]);
 
-  if (!adsenseClient || !adsenseSlot) return null;
+  if (!adsenseClient || !adsenseSlot || !googleAllowed) return null;
   return (
     <aside className="h2-sponsor h2-adsense" aria-label={t('sponsor.label')}>
       <p className="h2-sponsor__head">
