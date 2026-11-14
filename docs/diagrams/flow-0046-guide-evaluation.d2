@@ -44,16 +44,16 @@ loop: For each query, in order {
   candidates -> row
 }
 
-stopBudget: "Stop, exit code 3: the guide's\nmodel budget on <base> is used up\n(run again after retryAt);\ndocs/evaluation.md unchanged" {class: fail}
-stopNetwork: "Stop, exit code 4: the runner's\nnetwork has used its questions;\ndocs/evaluation.md unchanged" {class: fail}
-stopQuota: "Stop, exit code 1 (address quota,\nor the provider is down);\ndocs/evaluation.md unchanged" {class: fail}
+stopBudget: "Stop, exit code 3: the guide's\nmodel budget on <base> is used up\n(run again after retryAt);\ndocs/eval/guide-run.md unchanged" {class: fail}
+stopNetwork: "Stop, exit code 4: the runner's\nnetwork has used its questions;\ndocs/eval/guide-run.md unchanged" {class: fail}
+stopQuota: "Stop, exit code 1 (address quota,\nor the provider is down);\ndocs/eval/guide-run.md unchanged" {class: fail}
 raw: "Raw answers →\nbackend/eval-data/guide-runs.json\n(--rescore starts here)" {class: data}
 summary: "Go / no-go figures: answer rate,\nP@3, relevant candidates, p90,\n429s, flips over the runs;\ntotals as before" {class: app}
 qrels: "docs/eval/guide-qrels.tsv\nhas grades?" {class: decision}
 rel: "P@3 and nDCG@3 of the AI picks;\nshare of graded candidates relevant" {class: app}
 pool: "Ungraded picks and candidates →\nbackend/eval-data/guide-pool.tsv" {class: data}
 keep: "Read the hand-written notes\nbetween the markers\n(placeholder if none)" {class: app}
-write: "Rewrite docs/evaluation.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
+write: "Rewrite docs/eval/guide-run.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
 minPass: "--min-pass given and\nshare passed below it?" {class: decision}
 failRun: "Exit 1: the nightly job fails;\nreports kept 30 days\nas an artifact" {class: fail}
 manual: "By hand: grade the pool into\nguide-qrels.tsv, --rescore, update the\nnotes, move the old run to docs/eval/" {class: person}

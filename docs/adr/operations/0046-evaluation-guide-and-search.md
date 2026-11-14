@@ -54,7 +54,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
      judgements of that moment and no new request;
    - marks an answer as cached when its `generatedAt` is older than the request, counts it in the summary and leaves
      it out of the latency figures;
-   - stops with an error, and leaves `docs/evaluation.md` unchanged, when the rest of the run would be search-only
+   - stops with an error, and leaves `docs/eval/guide-run.md` unchanged, when the rest of the run would be search-only
      answers and would not measure the model (`guideRunStop` in `scripts/eval-lib.mjs`, tested by
      `scripts/eval-lib.test.mjs`): on the first answer with the notice `GUIDE_BUDGET_SPENT` (the guide's model budget
      on that backend is used up, [0032](../guide/0032-guide-cost-guard-and-answer-cache.md)) with exit code 3, the
@@ -68,7 +68,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
      `LLM_UNAVAILABLE`) with an AI pick, a comparison, an explanation or a dated record; it passes when answered, or
      when it stays empty and expects to; `--min-pass` exits with code 1 when the share passed is below the given one,
      after writing the report;
-   - writes `docs/evaluation.md`: the go / no-go figures of later retrieval changes (answer rate, questions kept
+   - writes `docs/eval/guide-run.md`: the go / no-go figures of later retrieval changes (answer rate, questions kept
      empty, P@3, share of relevant candidates, p90, 429s, flips), questions passed, statuses, AI picks kept and
      rejected, reason check counts, constraint checks, latency p50 / p90 / max, P@3 and nDCG@3 of the AI picks when
      judgements exist (5), one row per query with its top pick, and how to run it.
@@ -131,7 +131,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
      rerun and checks by hand on staging still get answers after the nightly run) and per-visitor limits of 1000 (a run and a rerun from one
      address). Prod keeps the defaults. The full set with `--repeat 3` does not fit in 600 calls: it is a run by hand,
      with the settings of the day raised as [docs/evaluation.md](../../evaluation.md) "Clean baseline" says;
-   - the reports (`docs/evaluation.md`, `docs/evaluation-adversarial.md`, `backend/eval-data/guide-pool.tsv`,
+   - the reports (`docs/eval/guide-run.md`, `docs/evaluation-adversarial.md`, `backend/eval-data/guide-pool.tsv`,
      `backend/eval-data/guide-runs.json`, `backend/eval-data/guide-adversarial-runs.json`) are kept as an artifact for 30 days; nothing is committed. Publishing a run
      stays a step by hand (7).
 
@@ -142,8 +142,9 @@ repository. Relevance needs a human judgement per result, and judging every resu
     ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)). Their query embeddings are recorded once into
     `docs/eval/guide-similar-vectors.json` (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`, the embedding
     key), so `GuideSimilarEvaluationTest` sweeps the reuse threshold offline in every build, with no model call.
-11. **Results.** The latest run is in [docs/evaluation.md](../../evaluation.md); its header states the conditions
-    (date, commit, models, index size).
+11. **Results.** The latest run is in `docs/eval/guide-run.md`; its header states the conditions
+    (date, commit, models, index size). How search and the guide are measured, and how a run is made and read, is in
+    [docs/evaluation.md](../../evaluation.md), which no script writes.
 
 ### Search
 12. **Fixed query set.** `docs/eval/search-queries.json`: 115 fixed queries, never tuned on results. Groups:
@@ -225,7 +226,8 @@ The guide:
   `docs/eval/README.md` — grades and how to judge.
 - `backend/apps/public/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
   `GuideSimilarRecorder.kt` — the similar-question sweep.
-- `docs/evaluation.md`, `docs/evaluation-adversarial.md` — the latest runs; `docs/evaluation-intents.md` and
+- `docs/evaluation.md` — how search and the guide are measured; `docs/eval/guide-run.md`,
+  `docs/evaluation-adversarial.md` — the latest runs; `docs/evaluation-intents.md` and
   `docs/evaluation-setup.md` are written by `--intents` and `eval-setup.mjs` and committed after a run (neither is
   committed yet); `docs/eval/run-*.md` — earlier runs.
 

@@ -16,7 +16,7 @@ files: "docs/eval/*.json,\nguide-qrels.tsv" {class: data}
 api: "helper2 staging /api/v1\n(H2_GUIDE_CACHE_TTL=PT1S)" {class: app}
 guide: AskGuide {class: app}
 model: "Nemotron\n(Token Factory)" {class: ai}
-out: "docs/evaluation*.md,\neval-data/guide-pool.tsv,\nguide-runs.json,\nguide-adversarial-runs.json" {class: data}
+out: "docs/eval/guide-run.md,\ndocs/evaluation-*.md,\neval-data/guide-pool.tsv,\nguide-runs.json,\nguide-adversarial-runs.json" {class: data}
 
 start: Start {
   gha -> script: "01:41 UTC: node scripts/eval-guide.mjs\nthe staging URL --core --min-pass 0.8\n(then again with --adversarial)"
