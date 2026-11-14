@@ -762,3 +762,27 @@ tests:
       - eval_time: 50m
         alertname: Helper2EmbeddingIndexerStalled
         exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: 'helper2_catalog_observations_total{application="helper2", environment="prod", instance="a", outcome="dropped"}'
+        values: '0+1x30'
+      - series: 'helper2_catalog_observations_total{application="helper2", environment="prod", instance="a", outcome="failed"}'
+        values: '0 0 0 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4'
+      - series: 'helper2_catalog_observations_total{application="helper2", environment="prod", instance="a", outcome="written"}'
+        values: '0+9x30'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: Helper2ObservationsLost
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: Helper2ObservationsLost
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              outcome: dropped
+            exp_annotations:
+              summary: "Search results are not written to the catalog (dropped) on helper2 (prod)."
+              description: "Background writes of search results have ended as dropped for 10 minutes. Searches still answer, but the results they found live are not stored: they get no discovery date and the catalog cannot find them later."
+              runbook: "dropped = the queue of 256 writes is full (helper2_catalog_observations_queued): one thread writes, so look for slow Postgres writes or a burst of searches. failed = the write threw: logs 'Recording search results failed', then the Postgres pod."
