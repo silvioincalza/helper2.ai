@@ -4,6 +4,7 @@ helper2.llm.fast-model = ${H2_NEBIUS_FAST_MODEL:nvidia/Nemotron-3_5-Lightning}  
 helper2.llm.provider-label = nebius-token-factory
 helper2.llm.reasoning-model = ${H2_NEBIUS_REASONING_MODEL:nvidia/Nemotron-3.5-Super-VL}  =>  nvidia/Nemotron-3.5-Super-VL
 helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:true}  =>  true
+logging.structured.format.console = <empty>
 spring.ai.model.chat = openai
 spring.ai.openai.api-key = ${H2_NEBIUS_API_KEY}  =>  <needs a variable>
 spring.ai.openai.base-url = https://api.tokenfactory.nebius.com/v1

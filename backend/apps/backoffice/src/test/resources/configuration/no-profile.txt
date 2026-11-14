@@ -502,11 +502,33 @@ helper2.llm.native-schema = ${H2_NEBIUS_NATIVE_SCHEMA:true}  =>  true
 helper2.llm.provider-label = <empty>
 helper2.llm.reasoning-model = <empty>
 helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
+helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
+helper2.retention.runtime-settings = ${H2_RETENTION_RUNTIME_SETTINGS:P730D}  =>  P730D
 helper2.runtime-settings.refresh = ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT20S
 helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:false}  =>  false
 helper2.schema.wait-for = ${H2_SCHEMA_WAIT:PT4M}  =>  PT4M
 helper2.test.client = h2_backoffice
+logging.structured.format.console = ${H2_LOG_FORMAT:logstash}  =>  logstash
+management.endpoint.health.probes.enabled = true
+management.endpoint.health.show-details = never
+management.endpoints.web.exposure.include = health,prometheus
+management.health.redis.enabled = false
+management.logging.export.otlp.enabled = false
+management.metrics.distribution.percentiles-histogram.helper2.llm.call = true
+management.metrics.distribution.percentiles-histogram.helper2.scout.run = true
+management.metrics.distribution.percentiles-histogram.helper2.search.latency = true
+management.metrics.distribution.percentiles-histogram.http.client.requests = true
+management.metrics.distribution.percentiles-histogram.http.server.requests = true
+management.metrics.tags.application = helper2-backoffice
+management.metrics.tags.environment = ${H2_ENVIRONMENT:local}  =>  local
+management.opentelemetry.resource-attributes.deployment.environment.name = ${H2_ENVIRONMENT:local}  =>  local
+management.opentelemetry.resource-attributes.service.name = helper2-backoffice
+management.opentelemetry.tracing.export.otlp.endpoint = ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}  =>  http://localhost:4318/v1/traces
+management.otlp.metrics.export.enabled = false
+management.server.port = ${H2_MANAGEMENT_PORT:}  =>  <empty>
+management.tracing.export.enabled = ${H2_TRACING_EXPORT:false}  =>  false
+management.tracing.sampling.probability = ${H2_TRACING_SAMPLING:1.0}  =>  1.0
 resilience4j.bulkhead.configs.catalog.max-concurrent-calls = ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:3}  =>  3
 resilience4j.bulkhead.configs.catalog.max-wait-duration = 0
 resilience4j.bulkhead.configs.source.max-concurrent-calls = ${H2_RESILIENCE_SOURCE_MAX_CONCURRENT:20}  =>  20
