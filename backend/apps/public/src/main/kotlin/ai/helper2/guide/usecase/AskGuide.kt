@@ -18,6 +18,7 @@ import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
 import ai.helper2.guide.WorkGate
 import ai.helper2.guide.hasAiAnswer
+import ai.helper2.guide.inTheWordsOf
 import ai.helper2.guide.sha256Hex
 import ai.helper2.guide.steps.Asked
 import ai.helper2.guide.steps.CompareAnswer
@@ -86,6 +87,7 @@ class AskGuide(
             validator.fingerprint,
             limits.fingerprint,
             maxCandidates,
+            GuideAnswerCache.QUESTION_READING,
           )
           .joinToString("\u0000")
       )
@@ -144,7 +146,15 @@ class AskGuide(
     val observation = Observation.createNotStarted("helper2.guide.ask", observations).start()
     val tally = Tally()
     val asker = client?.let { Asker(Feature.GUIDE, it) }
-    val question = Question(request.trim(), path, clarification?.trim(), drops, asker, categories)
+    val question =
+      Question(
+        GuideAnswerCache.readable(request),
+        path,
+        clarification?.let(GuideAnswerCache::readable),
+        drops,
+        asker,
+        categories,
+      )
     try {
       observation.openScope().use {
         return answerOnce(question, progress, client, gate, countedIfQuestionsStop(presence), tally)
@@ -378,7 +388,8 @@ class AskGuide(
       return null
     val probe = similar.probe(q.text, configHash, q.path, r.key(q)) ?: return null
     asked.probe = probe
-    val answer = similar.nearest(probe)?.let(cache::get) ?: return null
+    val stored = similar.nearest(probe)?.let(cache::get) ?: return null
+    val answer = stored.inTheWordsOf(r.subjects, r.constraints) ?: return null
     asked.reused = true
     return answer.copy(
       searchQuery = "",
