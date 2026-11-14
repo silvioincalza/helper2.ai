@@ -18,9 +18,7 @@ describe('Feature: the hint under the home box fits the device', () => {
     expect(
       await screen.findByText('Enter searches. Shift+Enter asks the guide for picks with proof.'),
     ).toHaveClass('h2-hint__keys');
-    expect(screen.getByText('Search, or tap Ask for picks with proof.')).toHaveClass(
-      'h2-hint__touch',
-    );
+    expect(screen.getByText('Tap the star for picks with proof.')).toHaveClass('h2-hint__touch');
     await settle();
   });
 
