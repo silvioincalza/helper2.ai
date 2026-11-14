@@ -19,9 +19,10 @@ every source has a status), and these rules must be visible in one place that bo
    `interfaceOnly`, `useSpringBoot4`, `useJackson3`, `useTags`, the same options everywhere) writes controller
    interfaces and Data Transfer Objects (DTOs, suffix `Dto`). It runs before every Java and Kotlin compile.
    Controllers implement these interfaces (for example `MeController implements MeApi`). A tag is one generated
-   interface, and one controller implements it. The catalog's public endpoints have one tag per feature:
-   `home-lists` (`GET /recent`, `GET /events/upcoming`), `resource-detail` (`GET /resources/{id}`) and
-   `issue-reports` (`POST /resources/{id}/report`).
+   interface, and one controller implements it. A tag holds the endpoints of one feature, so two features never
+   share an interface: `/me/bookmarks` has the tag `bookmarks` and `/me/preferences` the tag `preferences`, not
+   `me`; the home lists, the resource detail and the issue reports of the catalog have a tag each (`home-lists`,
+   `resource-detail`, `issue-reports`).
    - The library `libs/web-contract` generates `common.yaml` alone, once: interfaces in `ai.helper2.api.common`
      (`SearchApi`, `SourcesApi`, `CategoriesApi`), DTOs in `ai.helper2.api.common.model`. It also holds the
      controllers of those three paths, so both apps serve them with the same classes.

@@ -5,28 +5,13 @@ import ai.helper2.api.common.model.LimitsDto;
 import ai.helper2.api.common.model.LimitsWebSearchesDto;
 import ai.helper2.api.common.model.MeDto;
 import ai.helper2.api.common.model.MeLoginProvidersInnerDto;
-import ai.helper2.api.common.model.PreferencesDto;
-import ai.helper2.api.common.model.ResourceTypeDto;
 import ai.helper2.api.common.model.WebSearchesDto;
 import ai.helper2.api.generated.MeApi;
-import ai.helper2.api.generated.model.BookmarkDto;
-import ai.helper2.api.generated.model.BookmarkRequestDto;
-import ai.helper2.api.generated.model.PreferencesChangeDto;
-import ai.helper2.identity.Bookmarks.Bookmark;
 import ai.helper2.identity.CurrentUser;
-import ai.helper2.identity.Users.Preferences;
 import ai.helper2.identity.VisitorLimits;
-import ai.helper2.identity.usecase.AddBookmark;
-import ai.helper2.identity.usecase.ChangePreferences;
 import ai.helper2.identity.usecase.DeleteMyAccount;
-import ai.helper2.identity.usecase.ListBookmarks;
-import ai.helper2.identity.usecase.MergeLocalBookmarks;
-import ai.helper2.identity.usecase.RemoveBookmark;
 import ai.helper2.identity.usecase.ShowPreferences;
-import ai.helper2.platform.ApiProblem;
-import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ClientKey;
-import ai.helper2.platform.ProblemType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Clock;
@@ -53,13 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 class MeController implements MeApi {
 
   private final CurrentUser currentUser;
-  private final ListBookmarks listBookmarks;
-  private final AddBookmark addBookmark;
-  private final RemoveBookmark removeBookmark;
-  private final MergeLocalBookmarks mergeLocalBookmarks;
+  private final RequireSignIn signIn;
   private final DeleteMyAccount deleteMyAccount;
   private final ShowPreferences showPreferences;
-  private final ChangePreferences changePreferences;
   private final ObjectProvider<ClientRegistrationRepository> registrations;
   private final VisitorLimits limits;
   private final Clock clock;
@@ -68,26 +49,18 @@ class MeController implements MeApi {
 
   MeController(
       CurrentUser currentUser,
-      ListBookmarks listBookmarks,
-      AddBookmark addBookmark,
-      RemoveBookmark removeBookmark,
-      MergeLocalBookmarks mergeLocalBookmarks,
+      RequireSignIn signIn,
       DeleteMyAccount deleteMyAccount,
       ShowPreferences showPreferences,
-      ChangePreferences changePreferences,
       ObjectProvider<ClientRegistrationRepository> registrations,
       VisitorLimits limits,
       Clock clock,
       HttpServletRequest request,
       HttpServletResponse response) {
     this.currentUser = currentUser;
-    this.listBookmarks = listBookmarks;
-    this.addBookmark = addBookmark;
-    this.removeBookmark = removeBookmark;
-    this.mergeLocalBookmarks = mergeLocalBookmarks;
+    this.signIn = signIn;
     this.deleteMyAccount = deleteMyAccount;
     this.showPreferences = showPreferences;
-    this.changePreferences = changePreferences;
     this.registrations = registrations;
     this.limits = limits;
     this.clock = clock;
@@ -101,7 +74,10 @@ class MeController implements MeApi {
     MeDto me =
         new MeDto().authenticated(false).roles(new ArrayList<>()).loginProviders(providers());
     if (a instanceof OAuth2AuthenticationToken t && t.isAuthenticated()) {
-      currentUser.id().flatMap(showPreferences::of).ifPresent(p -> me.preferences(dto(p)));
+      currentUser
+          .id()
+          .flatMap(showPreferences::of)
+          .ifPresent(p -> me.preferences(PreferencesController.dto(p)));
       me.authenticated(true).displayName(currentUser.displayName().orElse(null));
       t.getAuthorities()
           .forEach(g -> {
@@ -136,49 +112,11 @@ class MeController implements MeApi {
 
   @Override
   public ResponseEntity<Void> deleteMyAccount() {
-    UUID userId = user();
+    UUID userId = signIn.userId();
     new SecurityContextLogoutHandler()
         .logout(request, response, SecurityContextHolder.getContext().getAuthentication());
     deleteMyAccount.delete(userId);
     return ResponseEntity.noContent().build();
-  }
-
-  @Override
-  public ResponseEntity<PreferencesDto> changePreferences(PreferencesChangeDto body) {
-    return ResponseEntity.ok(dto(changePreferences.change(user(), body.getRadarMotion())));
-  }
-
-  @Override
-  public ResponseEntity<List<BookmarkDto>> listBookmarks() {
-    return ResponseEntity.ok(listBookmarks.list(user()).stream().map(MeController::dto).toList());
-  }
-
-  @Override
-  public ResponseEntity<BookmarkDto> addBookmark(UUID resourceId, BookmarkRequestDto body) {
-    if (!resourceId.equals(body.getResourceId())) {
-      throw new BadRequestException("resourceId in the path and the body differ");
-    }
-    return ResponseEntity.ok(dto(addBookmark.add(user(), bookmark(body))));
-  }
-
-  @Override
-  public ResponseEntity<List<BookmarkDto>> mergeLocalBookmarks(List<BookmarkRequestDto> body) {
-    return ResponseEntity.ok(
-        mergeLocalBookmarks
-            .merge(user(), body.stream().map(MeController::bookmark).toList())
-            .stream()
-            .map(MeController::dto)
-            .toList());
-  }
-
-  @Override
-  public ResponseEntity<Void> deleteBookmark(UUID resourceId) {
-    removeBookmark.remove(user(), resourceId);
-    return ResponseEntity.noContent().build();
-  }
-
-  private UUID user() {
-    return currentUser.id().orElseThrow(() -> new ApiProblem(ProblemType.SIGN_IN_REQUIRED, null));
   }
 
   private List<MeLoginProvidersInnerDto> providers() {
@@ -191,23 +129,5 @@ class MeController implements MeApi {
       }
     }
     return out;
-  }
-
-  private static Bookmark bookmark(BookmarkRequestDto r) {
-    return new Bookmark(
-        r.getResourceId(),
-        r.getTitle(),
-        r.getUrl(),
-        r.getType() == null ? null : r.getType().getValue(),
-        null);
-  }
-
-  private static PreferencesDto dto(Preferences p) {
-    return new PreferencesDto(p.radarMotion());
-  }
-
-  private static BookmarkDto dto(Bookmark b) {
-    return new BookmarkDto(b.resourceId(), b.title(), b.url(), b.savedAt().atOffset(ZoneOffset.UTC))
-        .type(b.type() == null ? null : ResourceTypeDto.fromValue(b.type()));
   }
 }

@@ -26,8 +26,10 @@ tags:
   - name: sources
   - name: categories
   - name: me
-  - name: admin
   - name: review
+  - name: scout-runs
+  - name: enrichment-recheck
+  - name: category-backfill
   - name: audit
   - name: overview
   - name: enrichment-queue
@@ -60,7 +62,7 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
   /admin/review-items:
     get:
-      tags: [admin]
+      tags: [review]
       operationId: listReviewItems
       parameters:
         - { name: status, in: query, description: Omit for every status., schema: { $ref: '#/components/schemas/ReviewStatus' } }
@@ -84,7 +86,7 @@ paths:
 
   /admin/review-items/{id}/resolution:
     put:
-      tags: [admin]
+      tags: [review]
       operationId: resolveReviewItem
       description: >-
         409 when the item is no longer OPEN (another decision, a double click, or a newer enrichment run superseded
@@ -291,7 +293,7 @@ paths:
 
   /admin/scout-runs:
     get:
-      tags: [admin]
+      tags: [scout-runs]
       operationId: listScoutRuns
       responses:
         '200':
@@ -302,7 +304,7 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
     post:
-      tags: [admin]
+      tags: [scout-runs]
       operationId: startScoutRun
       summary: Start collection for one source (or all) now.
       description: >-
@@ -331,7 +333,7 @@ paths:
 
   /admin/enrichment-recheck:
     post:
-      tags: [admin]
+      tags: [enrichment-recheck]
       operationId: recheckEnrichments
       summary: Re-check the stored enrichment answers by code, with no model call (ADR 0014).
       description: >-
@@ -348,7 +350,7 @@ paths:
         '409': { $ref: './common.yaml#/components/responses/Problem' }
   /admin/category-backfill:
     post:
-      tags: [admin]
+      tags: [category-backfill]
       operationId: backfillCategories
       summary: Assign the categories of every resource again.
       description: >-

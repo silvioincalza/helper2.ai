@@ -30,6 +30,8 @@ tags:
   - name: sources
   - name: categories
   - name: me
+  - name: preferences
+  - name: bookmarks
   - name: examples
   - name: policy
   - name: site
@@ -256,7 +258,7 @@ paths:
 
   /me/preferences:
     patch:
-      tags: [me]
+      tags: [preferences]
       operationId: changePreferences
       summary: Change the signed-in user's display settings. Fields left out stay as they are.
       description: Needs the X-XSRF-TOKEN header. The settings live with the account and go when it is deleted.
@@ -277,7 +279,7 @@ paths:
 
   /me/bookmarks:
     get:
-      tags: [me]
+      tags: [bookmarks]
       operationId: listBookmarks
       responses:
         '200':
@@ -287,7 +289,7 @@ paths:
               schema: { type: array, items: { $ref: '#/components/schemas/Bookmark' } }
         '401': { $ref: './common.yaml#/components/responses/Problem' }
     post:
-      tags: [me]
+      tags: [bookmarks]
       operationId: mergeLocalBookmarks
       summary: Merge the bookmarks kept in the browser into the account, right after sign-in.
       description: >-
@@ -312,7 +314,7 @@ paths:
 
   /me/bookmarks/{resourceId}:
     put:
-      tags: [me]
+      tags: [bookmarks]
       operationId: addBookmark
       summary: Save one resource. Saving it again changes nothing (the first savedAt stays).
       description: An account keeps at most 500 bookmarks; one more is refused with 400.
@@ -332,7 +334,7 @@ paths:
         '400': { $ref: './common.yaml#/components/responses/Problem' }
         '401': { $ref: './common.yaml#/components/responses/Problem' }
     delete:
-      tags: [me]
+      tags: [bookmarks]
       operationId: deleteBookmark
       parameters:
         - { name: resourceId, in: path, required: true, schema: { type: string, format: uuid } }

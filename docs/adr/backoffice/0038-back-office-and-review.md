@@ -28,8 +28,8 @@ On a review item, accept and reject were not enough:
 ## Decision
 
 ### The back office
-1. **A thin `admin` module.** `ai.helper2.admin` holds the back office's web adapters (`AdminController`,
-   `OverviewController`, `ReviewController`, ...) and use cases that only compose other modules (`GetOverview`). It owns
+1. **A thin `admin` module.** `ai.helper2.admin` holds the back office's web adapters (`ReviewController`,
+   `OverviewController`, `ScoutRunsController`, ...) and use cases that only compose other modules (`GetOverview`). It owns
    no table and no module depends on it. It calls the other modules only through their use cases and ports
    (`catalog.usecase`, `scout.usecase`, `examples.usecase`, `identity`, `platform.settings`), never a class of their
    `internal` package: one rule of the back office's `ModularityTest` checks every admin package, web and config
@@ -278,7 +278,7 @@ On a review item, accept and reject were not enough:
 
 ### Code
 
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/AdminController.java`, `web/OverviewController.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/ReviewController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `web/AdminWebApp.java`, `usecase/GetOverview.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java` (its own groups and the public app's),
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),

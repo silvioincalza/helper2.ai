@@ -151,7 +151,7 @@ the daily gap cap counts gap calls ([0014](0014-evidence-gated-enrichment.md)).
   while another replica holds the lock.
 - `frontend/src/admin/ScoutRunsPage.tsx` — "Run now", polling of the run listing.
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminController.java` — `startScoutRun`, `listScoutRuns`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ScoutRunsController.java` — `startScoutRun`, `listScoutRuns`.
 - `backend/libs/sources/src/main/java/ai/helper2/sources/support/RunInterval.java`.
 
 ## Alternatives considered
