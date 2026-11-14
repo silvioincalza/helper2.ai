@@ -95,7 +95,8 @@ change, rerun `make ENV=<env> credentials`; the next deploy restarts the app wit
 
 **Releases** ([ADR 0045](../../docs/adr/operations/0045-releases-and-versions.md)) — a version is `YYYY.N.P`: the year
 (UTC), the release in the year, the patch. `2026.12.0` is a release, `2026.12.1` its first patch. A release is
-tried on prod before it gets its tag:
+tried on prod before it gets its tag. The steps in short; [RUNBOOK-release.md](RUNBOOK-release.md) has what must be
+true before, the check after each step and the way back:
 
 1. Run **release-prepare** from `main` (Actions → release-prepare). Leave `commit` empty for the newest commit of
    `main` that staging ran. It creates `release/2026.12` on that commit and opens the pull request with the version

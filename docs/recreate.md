@@ -180,7 +180,8 @@ after this run, with `release-prepare`. Check:
 - the pull request showed the check `ci-ok`, and the merge button offered squash only;
 - the next nightly `guide-eval` run reaches staging.
 
-Prod gets the next release: [CI.md, Releases](../deploy/k8s/CI.md).
+Prod gets the next release: [CI.md, Releases](../deploy/k8s/CI.md), step by step in
+[RUNBOOK-release.md](../deploy/k8s/RUNBOOK-release.md).
 
 ## 11. The workstation
 
