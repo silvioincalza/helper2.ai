@@ -377,10 +377,11 @@ env-secret: check-env ## write ENV's app.env into the Secrets helper2-credential
 		| kubectl -n $(NS) apply --server-side --field-manager=helper2-env-secret -f - >/dev/null; \
 	echo "wrote $(NS)/$(CREDS_SECRET) and $(NS)/$(ENV_SECRET) from $(ENV)/app.env (revision $(ENV_REV))"
 
-diff: check-env ## what deploy would change in ENV (not the env Secret: env-secret writes it)
+WITHOUT_MIGRATE_JOB := awk 'function flush() { if (!job) printf "%s", doc; doc = ""; job = 0 } /^---$$/ { flush() } /^kind: Job$$/ { job = 1 } { doc = doc $$0 "\n" } END { flush() }'
+diff: check-env ## what deploy would change in ENV (not the env Secret: env-secret writes it; not the migrate Job: each revision makes its own)
 	@set -uo pipefail; \
 	out=$$(mktemp); trap 'rm -f "$$out"' EXIT; \
-	helm template $(HELM_ARGS) > "$$out" || exit; \
+	helm template $(HELM_ARGS) | $(WITHOUT_MIGRATE_JOB) > "$$out" || exit; \
 	kubectl diff -n $(NS) -f "$$out"; rc=$$?; \
 	if [ $$rc -gt 1 ]; then echo "kubectl diff failed (exit $$rc)"; exit $$rc; fi
 
@@ -630,5 +631,11 @@ chart-check-digests:
 	grep -qF -- "--set image.digest=$$(d 1) --set backoffice.image.digest=$$(d 3)" <<< "$$(dry)" \
 		|| { echo "make diff does not pass the checked digests to Helm (or took APP_DIGEST from the environment): $$(dry)"; exit 1; }; \
 	grep -q 'verify-images' <<< "$$(dry)" || { echo "make diff does not run verify-images first"; exit 1; }; \
+	echo "== make diff leaves out the migrate Job: a finished Job cannot be changed, each upgrade makes a new one"; \
+	all=$$(helm template "$${r[@]}"); kept=$$($(WITHOUT_MIGRATE_JOB) <<< "$$all"); \
+	[ "$$(grep -c '^kind: Job$$' <<< "$$all")" -eq 1 ] || { echo "the chart renders more or less than one Job"; exit 1; }; \
+	if grep -q '^kind: Job$$' <<< "$$kept"; then echo "make diff still previews the migrate Job"; exit 1; fi; \
+	[ "$$(grep -c '^kind: ' <<< "$$kept")" -eq "$$(( $$(grep -c '^kind: ' <<< "$$all") - 1 ))" ] || { echo "make diff drops more than the migrate Job"; exit 1; }; \
+	grep -qF 'helm template $$(HELM_ARGS) | $$(WITHOUT_MIGRATE_JOB)' $(firstword $(MAKEFILE_LIST)) || { echo "make diff does not filter the migrate Job"; exit 1; }; \
 	echo "== sign-existing (workstation only) is called by no workflow"; \
 	if grep -rn 'sign-existing' $(ROOT)/.github; then echo "a workflow names make sign-existing: it is for the operator's workstation only"; exit 1; fi
