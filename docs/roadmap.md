@@ -10,7 +10,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S1.2.4 One tag of the contract per feature](https://github.com/silvioincalza/helper2.ai/issues/405)
 - [S1.8.3 Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys](https://github.com/silvioincalza/helper2.ai/issues/174)
 
 ### Next
@@ -33,6 +32,7 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Next
 
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
+- [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
 - [S2.11.4 The Scout to visit every record that has a repository link](https://github.com/silvioincalza/helper2.ai/issues/216)
@@ -72,6 +72,7 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Now
 
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
+- [S4.6.3 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/430)
 
 ### Next
 
@@ -100,6 +101,10 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S5.7.1 To choose between Keycloak and plain Spring Security sign-in](https://github.com/silvioincalza/helper2.ai/issues/295)
 
 ## E6 Back office
+
+### Now
+
+- [S6.2.7 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/431)
 
 ### Next
 
@@ -141,26 +146,40 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Next
 
+- [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
 - [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
 - [S9.5.1 Each US source and GitHub checked for Data Privacy Framework certification](https://github.com/silvioincalza/helper2.ai/issues/339)
 - [S9.6.1 Each source's terms read again for commercial use](https://github.com/silvioincalza/helper2.ai/issues/340)
+- [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
+- [S9.6.3 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/435)
 - [S9.7.1 Nebius to state in writing where `nvidia/Nemotron-3.5-Super-VL` and `nvidia/Nemotron-3_5-Lightning` are served](https://github.com/silvioincalza/helper2.ai/issues/341)
 
 ## E10 Release and operations
 
 ### Now
 
+- [S10.2.13 `liveTest` run every time it is asked for](https://github.com/silvioincalza/helper2.ai/issues/429)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
 ### Next
 
+- [S10.2.4 The chart check without the waits of its self-test](https://github.com/silvioincalza/helper2.ai/issues/412)
+- [S10.2.5 The Actions caches of the repository under their limit](https://github.com/silvioincalza/helper2.ai/issues/413)
+- [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/helper2.ai/issues/417)
+- [S10.2.11 The tests that read every backend project in a place of their own](https://github.com/silvioincalza/helper2.ai/issues/419)
 - [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/helper2.ai/issues/348)
 - [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/helper2.ai/issues/352)
+- [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/helper2.ai/issues/427)
 - [S10.9.1 The new repository with the replayed history and the GitHub Project](https://github.com/silvioincalza/helper2.ai/issues/354)
 
 ### Later
 
+- [S10.2.6 The report-only npm audit out of the frontend checks](https://github.com/silvioincalza/helper2.ai/issues/414)
+- [S10.2.7 The Prometheus rule tests in less than a minute](https://github.com/silvioincalza/helper2.ai/issues/415)
+- [S10.2.8 A Gradle job reaches its first task in seconds](https://github.com/silvioincalza/helper2.ai/issues/416)
+- [S10.2.10 A backend change does not rebuild the web image](https://github.com/silvioincalza/helper2.ai/issues/418)
+- [S10.2.12 The frontend tests of the whole package apart from the bundle tests](https://github.com/silvioincalza/helper2.ai/issues/420)
 - [S10.4.3 Guide relevance judged by a second person](https://github.com/silvioincalza/helper2.ai/issues/349)
 - [S10.10.1 The deployer token minted per deploy](https://github.com/silvioincalza/helper2.ai/issues/355)
 - [S10.12.1 The main journeys automated in a browser](https://github.com/silvioincalza/helper2.ai/issues/357)
