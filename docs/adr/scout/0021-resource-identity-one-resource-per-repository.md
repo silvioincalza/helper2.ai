@@ -42,9 +42,13 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 4. **All packages of one repository merge into it.** Every package that states the same repository is a record of
    that repository's resource, so a monorepo with many packages is one result. The result shows one link per
    source.
-5. **A record is never moved.** What a later source says is added to the resource that exists. The catalog writes a
-   resource with `INSERT ... ON CONFLICT (canonical_url) DO UPDATE` (`JdbcCatalogWriter.upsertResources`): the id of
-   a stored resource never changes.
+5. **A resource is never moved; a source record follows its resource.** What a later source says is added to the
+   resource that exists. The catalog writes a resource with `INSERT ... ON CONFLICT (canonical_url) DO UPDATE`
+   (`JdbcCatalogWriter.upsertResources`): the id and the address of a stored resource never change. A source record
+   is one row per source and external id, and it belongs to the resource its source names. When the source names
+   another one (a package stored alone that later states its repository), the record moves there
+   (`JdbcCatalogWriter.upsertRecords`), and the user reports and review items of a resource left without records
+   move with it ([0004](../foundation/0004-persistence-and-the-schema.md) §3).
 6. **New facts are merged into the existing resource.** A write never overwrites the fields of a resource from a
    stronger origin, and the reconciled facts are rebuilt from all its records
    ([0004](../foundation/0004-persistence-and-the-schema.md) §3). A stored resource keeps the title, link,
@@ -90,6 +94,9 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   id).
 - Until the repository's own record arrives, the resource carries the first package's title and description.
 - A package found without a stated repository is a result of its own until a source states the repository.
+- A resource left without records is deleted only when it is `OBSERVED` and no report, review item or curated
+  field holds it; an `INDEXED` or `CURATED` one stays as a row without records. Its relationships and labels do not
+  move with the records.
 - A single file in a repository (one prompt of a prompt library) is not a resource of its own: a link to it names
   the repository.
 - A sub-folder of a repository is one resource under any branch or tag: a folder whose content differs between two
