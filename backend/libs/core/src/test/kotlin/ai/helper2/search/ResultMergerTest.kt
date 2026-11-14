@@ -31,6 +31,47 @@ class ResultMergerTest {
   }
 
   @Test
+  fun `the merge is the same in any order of the hits`() {
+    val page = "https://www.npmjs.com/package/acme-mcp"
+    val hits =
+      listOf(
+        hit("npm", page, repo = "https://github.com/acme/acme-mcp", license = "MIT"),
+        hit("catalog", page, repo = "https://gitlab.com/acme/acme-mcp", license = "ISC")
+          .copy(curatedFields = setOf("license")),
+        hit("github", "https://github.com/acme/acme-mcp", license = "Apache-2.0")
+          .copy(curatedFields = setOf("license")),
+        hit("gitlab", "https://gitlab.com/acme/acme-mcp"),
+      )
+    val sources = contexts("npm", "catalog", "github", "gitlab")
+    val inOrder = merger.merge(hits, sources).toSet()
+
+    assertEquals(inOrder, merger.merge(hits.reversed(), sources).toSet())
+    assertEquals(inOrder, merger.merge(hits.drop(2) + hits.take(2), sources).toSet())
+  }
+
+  @Test
+  fun `a page two sources link to different repositories joins the GitHub one`() {
+    val page = "https://www.npmjs.com/package/acme-mcp"
+    val merged =
+      merger.merge(
+        listOf(
+          hit("npm", page, repo = "https://github.com/acme/acme-mcp"),
+          hit("catalog", page, repo = "https://gitlab.com/acme/acme-mcp"),
+          hit("github", "https://github.com/acme/acme-mcp"),
+          hit("gitlab", "https://gitlab.com/acme/acme-mcp"),
+        ),
+        contexts("npm", "catalog", "github", "gitlab"),
+      )
+    assertEquals(
+      mapOf(
+        "https://github.com/acme/acme-mcp" to setOf("catalog", "github", "npm"),
+        "https://gitlab.com/acme/acme-mcp" to setOf("gitlab"),
+      ),
+      merged.associate { r -> r.canonicalUrl.value to r.sources.map { it.sourceId }.toSet() },
+    )
+  }
+
+  @Test
   fun `npm package linked to its repository merges with the github record`() {
     val merged =
       merger.merge(

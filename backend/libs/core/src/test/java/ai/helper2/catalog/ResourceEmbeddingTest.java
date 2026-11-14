@@ -416,6 +416,28 @@ class ResourceEmbeddingTest {
   }
 
   @Test
+  void aResourceASearchObservedIsFoundByMeaningOnlyOnceItHasSettled() {
+    UUID settled = insert("settled", "x", "OBSERVED");
+    jdbc.sql("UPDATE resource SET first_discovered_at = now() - interval '25 hours' WHERE id = :id")
+        .param("id", settled)
+        .update();
+    UUID observedJustNow = insert("observed just now", "x", "OBSERVED");
+    embeddings.saveEmbeddings(
+        model,
+        List.of(
+            new EmbeddingTask(observedJustNow, "observed just now\nx", "h1"),
+            new EmbeddingTask(settled, "settled\nx", "h2")),
+        List.of(axis(0, 0), axis(0, 0.1f)));
+
+    List<UUID> found =
+        catalogSearch.semanticSearch(axis(0, 0), model, Set.of(DataOrigin.OBSERVED), 10, 2).stream()
+            .map(ResourceRow::id)
+            .toList();
+
+    assertThat(found).containsExactly(settled);
+  }
+
+  @Test
   void theNearestRowsOfTheWantedOriginsAreFoundBehindCloserRowsOfOtherOrigins() {
     vacuumEmbeddings();
     assertThat(embeddingRows()).as("vectors other tests left in the HNSW graph").isZero();
