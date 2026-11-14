@@ -32,6 +32,7 @@ import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.EnrichmentInput;
 import ai.helper2.scout.EnrichmentModel;
 import ai.helper2.scout.EnrichmentProposal;
+import ai.helper2.scout.EnrichmentQueueControl;
 import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
@@ -66,8 +67,11 @@ import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.scout.usecase.ManageDiscoveryHosts;
+import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
+import ai.helper2.scout.usecase.RequeueEnrichment;
 import ai.helper2.scout.usecase.RunScout;
+import ai.helper2.scout.usecase.SkipEnrichment;
 import ai.helper2.scout.usecase.StartScoutRun;
 import ai.helper2.scout.usecase.StoredAnswers;
 import ai.helper2.search.SourceDescriptor;
@@ -478,14 +482,44 @@ class ScoutConfiguration {
   }
 
   @Bean
+  RequeueEnrichment requeueEnrichment(
+      EnrichmentBacklog backlog,
+      EnrichmentQueueControl control,
+      AuditTrail audit,
+      UnitOfWork scoutUnitOfWork,
+      Clock clock) {
+    return new RequeueEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+  }
+
+  @Bean
   ListScoutRuns listScoutRuns(ScoutStore store) {
     return new ListScoutRuns(store);
+  }
+
+  @Bean
+  SkipEnrichment skipEnrichment(
+      EnrichmentBacklog backlog,
+      EnrichmentQueueControl control,
+      AuditTrail audit,
+      UnitOfWork scoutUnitOfWork,
+      Clock clock) {
+    return new SkipEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
   }
 
   @Bean
   ManageDiscoveryHosts manageDiscoveryHosts(
       DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
     return new ManageDiscoveryHosts(hosts, audit, scoutUnitOfWork, clock);
+  }
+
+  @Bean
+  PrioritiseEnrichment prioritiseEnrichment(
+      EnrichmentBacklog backlog,
+      EnrichmentQueueControl control,
+      AuditTrail audit,
+      UnitOfWork scoutUnitOfWork,
+      Clock clock) {
+    return new PrioritiseEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
   }
 
   @Bean

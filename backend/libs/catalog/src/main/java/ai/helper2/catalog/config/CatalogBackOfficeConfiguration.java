@@ -4,21 +4,33 @@ import ai.helper2.catalog.AwesomeListIndex;
 import ai.helper2.catalog.CatalogRetention;
 import ai.helper2.catalog.CatalogWriter;
 import ai.helper2.catalog.CategoryLabels;
+import ai.helper2.catalog.CuratedFields;
 import ai.helper2.catalog.JobMarkers;
 import ai.helper2.catalog.KnownTarget;
+import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.KnownTargetList;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.Resources;
+import ai.helper2.catalog.ReviewDecisions;
+import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.internal.CatalogBackOfficeAdapters;
+import ai.helper2.catalog.internal.CatalogSearchSource;
+import ai.helper2.catalog.usecase.AddCuratedResource;
 import ai.helper2.catalog.usecase.BackfillCategories;
+import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
+import ai.helper2.catalog.usecase.CurateField;
+import ai.helper2.catalog.usecase.EditKnownTargetCandidate;
 import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
+import ai.helper2.catalog.usecase.GetReviewItem;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.catalog.usecase.LinkKnownRelationshipTargets;
+import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ListWellKnownResources;
 import ai.helper2.catalog.usecase.LookUpResourceTitles;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.PurgeExpiredData;
+import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.shared.CategoryCatalog;
@@ -28,6 +40,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.NamedInterface;
@@ -36,6 +49,15 @@ import org.springframework.transaction.annotation.Transactional;
 @NamedInterface("backoffice")
 @Import(CatalogBackOfficeAdapters.class)
 public class CatalogBackOfficeConfiguration {
+
+  @Bean
+  AddCuratedResource addCuratedResource(
+      CatalogWriter writer,
+      Resources resources,
+      @Qualifier("curatedSearchSource") CatalogSearchSource curated,
+      Clock clock) {
+    return new AddCuratedResource(writer, resources, curated.getDescriptor(), clock);
+  }
 
   @Bean
   BackfillCategories backfillCategories(
@@ -61,8 +83,30 @@ public class CatalogBackOfficeConfiguration {
   }
 
   @Bean
+  ChangeRelationshipTarget changeRelationshipTarget(
+      RelationshipTargets targets, AddCuratedResource add, AuditTrail audit) {
+    return new TransactionalChangeRelationshipTarget(targets, add, audit);
+  }
+
+  @Bean
   ManageKnownTargets manageKnownTargets(KnownTargetList targets, AuditTrail audit, Clock clock) {
     return new TransactionalManageKnownTargets(targets, audit, clock);
+  }
+
+  @Bean
+  EditKnownTargetCandidate editKnownTargetCandidate(
+      ReviewQueue queue, KnownTargetCandidates candidates, AuditTrail audit) {
+    return new TransactionalEditKnownTargetCandidate(queue, candidates, audit);
+  }
+
+  @Bean
+  CurateField curateField(CuratedFields fields, AuditTrail audit) {
+    return new TransactionalCurateField(fields, audit);
+  }
+
+  @Bean
+  GetReviewItem getReviewItem(ReviewQueue queue) {
+    return new GetReviewItem(queue);
   }
 
   @Bean
@@ -78,6 +122,11 @@ public class CatalogBackOfficeConfiguration {
   @Bean
   ForgetWithdrawnRecords forgetWithdrawnRecords(CatalogWriter writer) {
     return new ForgetWithdrawnRecords(writer);
+  }
+
+  @Bean
+  ListReviewItems listReviewItems(ReviewQueue queue) {
+    return new ListReviewItems(queue);
   }
 
   @Bean
@@ -104,6 +153,31 @@ public class CatalogBackOfficeConfiguration {
             periods.pastEvents(),
             periods.observedUnseen(),
             periods.listIndex()));
+  }
+
+  @Bean
+  ResolveReviewItem resolveReviewItem(
+      ReviewDecisions decisions, ReviewQueue queue, AuditTrail audit) {
+    return new TransactionalResolveReviewItem(decisions, queue, audit);
+  }
+
+  static class TransactionalEditKnownTargetCandidate extends EditKnownTargetCandidate {
+
+    TransactionalEditKnownTargetCandidate(
+        ReviewQueue queue, KnownTargetCandidates candidates, AuditTrail audit) {
+      super(queue, candidates, audit);
+    }
+
+    @Override
+    @Transactional
+    public Outcome edit(
+        UUID itemId,
+        KnownTarget.Kind kind,
+        @Nullable String name,
+        @Nullable List<String> otherNames,
+        String by) {
+      return super.edit(itemId, kind, name, otherNames, by);
+    }
   }
 
   static class TransactionalManageKnownTargets extends ManageKnownTargets {
@@ -147,6 +221,59 @@ public class CatalogBackOfficeConfiguration {
     @Transactional
     public Removed remove(String by, UUID id) {
       return super.remove(by, id);
+    }
+  }
+
+  static class TransactionalChangeRelationshipTarget extends ChangeRelationshipTarget {
+
+    TransactionalChangeRelationshipTarget(
+        RelationshipTargets targets, AddCuratedResource add, AuditTrail audit) {
+      super(targets, add, audit);
+    }
+
+    @Override
+    @Transactional
+    public void change(UUID itemId, Target target, String by) {
+      super.change(itemId, target, by);
+    }
+  }
+
+  static class TransactionalCurateField extends CurateField {
+
+    TransactionalCurateField(CuratedFields fields, AuditTrail audit) {
+      super(fields, audit);
+    }
+
+    @Override
+    @Transactional
+    public void set(UUID resourceId, String field, String value, String by) {
+      super.set(resourceId, field, value, by);
+    }
+
+    @Override
+    @Transactional
+    public int drop(UUID resourceId, String field, String by) {
+      return super.drop(resourceId, field, by);
+    }
+  }
+
+  static class TransactionalResolveReviewItem extends ResolveReviewItem {
+
+    TransactionalResolveReviewItem(ReviewDecisions decisions, ReviewQueue queue, AuditTrail audit) {
+      super(decisions, queue, audit);
+    }
+
+    @Override
+    @Transactional
+    public Outcome resolve(UUID id, ReviewQueue.Status decision, String by, String note) {
+      return super.resolve(id, decision, by, note);
+    }
+
+    @Override
+    @Transactional
+    public Outcome resolve(
+        UUID id, ReviewQueue.Status decision, String by, String note, @Nullable UUID batch) {
+      return super.resolve(id, decision, by, note, batch);
     }
   }
 }

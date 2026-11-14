@@ -26,9 +26,15 @@ management:
     resource-attributes:
       service.name: helper2-backoffice
 helper2:
+  spa:
+    location: classpath:/static/admin/
   identity:
     frontend-url: /admin
     admins: ${H2_ADMINS:}
+  admin:
+    grafana-url: ${H2_ADMIN_GRAFANA_URL:}
+    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
+    guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
   scout:
     enabled: ${H2_SCOUT_ENABLED:false}
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
