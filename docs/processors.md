@@ -1,0 +1,57 @@
+# Processors and transfers
+
+Who receives data from helper2.ai, where they are, and what a transfer outside Switzerland and the EU rests on.
+The [Privacy page](../frontend/src/i18n/locales/en.legal.json) ("Who receives data") is what visitors read; this page is
+its evidence. The sources themselves are in [sources.md](sources.md).
+
+## The Data Privacy Framework list
+
+Each US company that receives data, and GitHub, looked up by name on the official list
+([dataprivacyframework.gov/list](https://www.dataprivacyframework.gov/list), active participants) on 2026-11-14
+([S9.5.1](https://github.com/silvioincalza/helper2.ai/issues/339)). "All three" means the EU-U.S. Data Privacy Framework,
+the Swiss-U.S. Data Privacy Framework and the UK Extension, each `Active`.
+
+| Recipient | What it receives | Entry on the list | Privacy page | Match |
+|---|---|---|---|---|
+| GitHub | Search words (live search); the sign-in; a gift through GitHub Sponsors | "GitHub", San Francisco: all three. EU-U.S. since 26 January 2017, Swiss-U.S. since 23 July 2019, UK since 16 October 2023; next certification due 3 August 2027. No other covered entity | certified, Swiss-US and EU-US and UK Extension | yes |
+| Cloudflare | Every request and its IP address (network edge); the encrypted backup copy | "Cloudflare, Inc.", San Francisco: all three | certified, all three | yes |
+| Google (deps.dev) | Public repository names, from our server | "Google LLC", Mountain View: all three | certified, all three | yes |
+| Google (Analytics, AdSense, the consent tool) | What the browser sends, after consent where the rules ask for it | same entry | certified, Swiss-US and EU-US | yes |
+| Google (BigQuery, `pypi`) | A fixed query; nothing about a visitor | same entry | named; no personal data goes | yes |
+| The AI service for search by meaning (NVIDIA) | Search text, the guide's searches, public text about resources | "NVIDIA Corporation", Santa Clara: all three | certified, all three | yes |
+| Stripe | A gift by card, on Stripe's own page. The contract is with Stripe Payments Europe, Limited (Ireland) | "Stripe, LLC", South San Francisco: all three, certified 11 May 2026, next due 11 May 2027 | certified, Swiss-US and EU-US | yes |
+| Hugging Face | Search words | not on the list | not certified; Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR | yes |
+| npm | Search words | "npm" is not on the list, and GitHub's entry names no other covered entity | not certified; same basis | yes |
+| arXiv (Cornell University) | Search words | not on the list | not certified; same basis | yes |
+| Tavily | Search text or the guide's web query; public page addresses | not on the list | not certified; same basis | yes |
+| Algolia (Hacker News search) | Search words | not on the list | not certified; same basis | yes |
+| Nebius (AI models) | Guide questions, searches in another language, public text about resources. The contract is with Nebius B.V. (Netherlands), a processor | "Nebius Inc.", Newburyport: EU-U.S. only, certified 19 November 2025, next due 19 November 2026. No Swiss-U.S. entry | the standard contractual clauses of its data processing agreement, not the list | yes |
+| EthicalAds (Read the Docs, Inc.) | The ad request from the browser: IP address, browser type, page address | not on the list | names no certification | yes |
+
+Every line of the Privacy page that names the list matches it. The basis for EthicalAds is tracked privately: the page
+says what is sent and names none.
+
+**Not on this table, and why.** Y Combinator receives nothing: Hacker News search is Algolia's. The MCP Registry, the
+news feeds of AI companies and `huggingface/ai-deadlines` are read by our server with a plain `GET` that carries nothing
+about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
+setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/helper2.ai/issues/433)).
+
+**When to look again.** Before a release that adds a recipient, and when a "next due" date above has passed: an entry
+that is not renewed moves to the inactive list, and the Privacy line changes in the same change.
+
+## Providers' terms for commercial use
+
+The terms of each processor and money provider, read on 2026-11-14 for a site that shows ads and takes gifts
+([S9.6.1](https://github.com/silvioincalza/helper2.ai/issues/340)). `yes`, `ask` and `no` mean what they mean in
+[sources.md](sources.md#terms-for-commercial-use). The legal points behind a row are tracked privately.
+
+| Provider | Role | Terms read | Commercial use | Condition, and whether it is met |
+|---|---|---|---|---|
+| NVIDIA API catalog (embeddings, `integrate.api.nvidia.com`) | Receives search text; no data processing agreement found | [NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), sections 1.2, 1.4 and 3.3 | no | — |
+| Nebius Token Factory (chat models) | Processor | [Nebius Agreement](https://docs.nebius.com/legal/agreement) (effective 22 October 2026); [Token Factory terms](https://docs.nebius.com/legal/token-factory) (effective 22 October 2026); [data processing agreement](https://docs.nebius.com/legal/dpa) (effective 15 September 2026), part of the terms without a signature; [sub-processors](https://docs.nebius.com/legal/sub-processors_tofa) (23 September 2026) | yes | AI output is labelled: met. Zero Data Retention in the account: to check. Where each model runs on a public endpoint: to ask |
+| Google Analytics 4 | Processor | [Terms of Service](https://marketingplatform.google.com/about/analytics/terms/us/) (modified 15 May 2023); [Data Processing Terms](https://business.safety.google/adsprocessorterms/) (v8.0, 30 May 2024); [EU user consent policy](https://www.google.com/about/company/user-consent-policy/) | yes | Consent first where the rules ask for it: met ([ADR 0042](adr/money/0042-monetisation.md)). The Data Processing Terms accepted in the account: to check |
+| Google AdSense and the consent tool | Its own controller | [Program policies](https://support.google.com/adsense/answer/48182) (updated 4 August 2026); [Publisher Policies](https://support.google.com/publisherpolicies/answer/10502938); [Controller Terms](https://business.safety.google/adscontrollerterms/) (v8.0, 30 May 2024) | yes | A certified consent tool for the EEA, the UK and Switzerland: met. No ad on a search page: met. A resource page adds its own value to what it quotes: to check on a sample |
+| EthicalAds | Its own controller | [Publisher policy](https://www.ethicalads.io/publisher-policy/) (updated 14 March 2024); [terms](https://www.ethicalads.io/terms-of-service/) (effective 8 December 2022); [privacy policy](https://www.ethicalads.io/privacy-policy/) (effective 18 March 2022) | ask | One ad a page, above the fold, no other network on the page: met. Approval as a publisher for a search site: to ask |
+| Stripe (Payment Link) | Processor, and its own controller for fraud checks | [Services Agreement](https://stripe.com/en-ch/legal/ssa) (updated 28 September 2026); [Restricted Businesses](https://stripe.com/en-ch/legal/restricted-businesses) (updated 22 September 2026); [tips and donations](https://support.stripe.com/questions/requirements-for-accepting-tips-or-donations) | ask | How Stripe classes a gift with nothing in return: to ask |
+| GitHub Sponsors | Its own controller | [GitHub Sponsors Additional Terms](https://docs.github.com/en/site-policy/github-terms/github-sponsors-additional-terms) | yes | Switzerland is a supported region: met. A tax form (W-8BEN) before the profile is public |
+| Cloudflare (network edge, backup storage) | Processor | [Self-Serve Subscription Agreement](https://www.cloudflare.com/terms/) (updated 12 September 2025); [data processing addendum](https://www.cloudflare.com/cloudflare-customer-dpa/) (v6.4, effective 3 April 2026), part of the agreement without a signature | yes | The backup bucket set to the EU: to check |
