@@ -47,7 +47,9 @@ On a review item, accept and reject were not enough:
    today's count and limit, web credits today, the last 10 Scout runs and the failed ones of the last 24 hours, the
    home examples shown and hidden ([0028](../search/0028-home-examples.md)), and a link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
    the backlog count is a full pass, and Refresh must not repeat it. That count gives up after 5 seconds. The Grafana
-   link must be an absolute http(s) URL with a host, or the app does not start: the page puts it in an href.
+   link must be an absolute http(s) URL with a host and a path only, or the app does not start: the page puts it in an
+   href and every administrator's browser receives it, so it carries no user info, no query and no fragment. The
+   refusal names the variable and never repeats its value.
 4. **Budgets read from the shared counter.** Every `DailyBudget` declares its name and limit in the `BudgetLedger`, the
    `CallCounter` it counts on. The overview reads today's count from Redis, the store every replica counts in, never
    from one replica's memory. Without Redis, or while it cannot answer, the count is unknown and shown as unknown.

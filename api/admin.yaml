@@ -930,7 +930,7 @@ components:
         failedRunsLast24h: { type: integer, minimum: 0 }
         homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
         overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0007). }
-        grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL); null when not set." }
+        grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL): an http(s) URL with a host and a path only, never user info, a query or a fragment; null when not set." }
 
     HomeExampleCounts:
       type: object

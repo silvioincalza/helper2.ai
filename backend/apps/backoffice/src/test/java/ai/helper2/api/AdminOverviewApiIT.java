@@ -38,6 +38,9 @@ class AdminOverviewApiIT extends ApiTestBase {
             .getResponse()
             .getContentAsString();
     ContractValidator.assertMatches("AdminOverview", body);
+    assertThat(JsonPath.<Object>read(body, "$.grafanaUrl"))
+        .as("no link when H2_ADMIN_GRAFANA_URL is not set")
+        .isNull();
     assertThat(JsonPath.<List<String>>read(body, "$.openReviewItems[*].kind"))
         .containsExactlyInAnyOrder(
             "ENRICHMENT_VALIDATION",
