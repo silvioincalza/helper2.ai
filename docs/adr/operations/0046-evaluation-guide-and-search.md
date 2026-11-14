@@ -143,8 +143,9 @@ repository. Relevance needs a human judgement per result, and judging every resu
     ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)). Their query embeddings are recorded once into
     `docs/eval/guide-similar-vectors.json` (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`, the embedding
     key), so `GuideSimilarEvaluationTest` sweeps the reuse threshold offline in every build, with no model call.
-11. **Results.** The latest run is in `docs/eval/guide-run.md`; its header states the conditions
-    (date, commit, models, index size). How search and the guide are measured, and how a run is made and read, is in
+11. **Results.** The latest run of the core questions is in `docs/eval/guide-run.md`, the latest run of the hostile
+    questions in `docs/evaluation-adversarial.md`; each header states the date, the address and the models, and the
+    notes of `guide-run.md` name the commit. How search and the guide are measured, and how a run is made and read, is in
     [docs/evaluation.md](../../evaluation.md), which no script writes.
 
 ### Search
@@ -267,7 +268,7 @@ Search:
   core ones, so its threshold keeps its meaning.
 - A question with no answer leaves its candidates in the pool, so a person can tell a choosing problem from a
   retrieval problem before anyone builds more retrieval.
-- Bad results are visible next to good ones; the report states its conditions (date, commit, models, index size).
+- Bad results are visible next to good ones; the report states its conditions (date, address, models; the commit in its notes).
 - Relevance is graded by people, per pick and per search result, with one set of grade definitions.
 - Hostile questions and intent cases have their own pass rules; a failure ends the script with exit code 1.
 - A drop in the guide's quality on `main` fails the nightly run within a day, on staging, before a release.
