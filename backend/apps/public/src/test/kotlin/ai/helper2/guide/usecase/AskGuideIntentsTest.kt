@@ -291,6 +291,45 @@ class AskGuideIntentsTest {
   }
 
   @Test
+  fun `without a window the newest answer puts an undated pick after the dated ones`() {
+    hits =
+      listOf(
+        hit(
+          "s",
+          "https://www.npmjs.com/package/undated",
+          title = "undated",
+          description = "A package whose source states no creation date at all for anyone to read",
+        ),
+        hit(
+          "s",
+          "https://github.com/acme/rag-box",
+          title = "rag-box",
+          rank = 1,
+          published = "2026-10-01T00:00:00Z",
+          description =
+            "Retrieval augmented generation toolkit with connectors for many vector databases",
+        ),
+        hit(
+          "s",
+          "https://github.com/acme/agent-kit",
+          title = "agent-kit",
+          rank = 2,
+          published = "2026-10-20T00:00:00Z",
+          description =
+            "Agent framework for building tool-using assistants in Python, released this autumn",
+        ),
+      )
+    val model = Model(GuideSearchPlan("AI tools", intent = GuideIntent.NEWEST), choose = ::pickAll)
+
+    val a = guide(model).ask("the newest AI tools", null)
+
+    assertEquals(
+      listOf("agent-kit", "rag-box", "undated"),
+      a.recommendations.map { it.result.title },
+    )
+  }
+
+  @Test
   fun `new right before a kind of resource asks for the newest even when the planner says suggest`() {
     val model =
       Model(

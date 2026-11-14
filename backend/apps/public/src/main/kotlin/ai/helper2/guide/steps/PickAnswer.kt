@@ -75,7 +75,7 @@ internal class PickAnswer(
     return answer.copy(
       recommendations =
         answer.recommendations.sortedWith(
-          compareByDescending(nullsLast()) { it.result.published.value }
+          compareBy(nullsLast(reverseOrder())) { it.result.published.value }
         )
     )
   }
