@@ -395,18 +395,23 @@ public class JdbcEnrichmentResults
   public List<ResourceDetail.Assertion> assertions(UUID resourceId) {
     List<Owned<ResourceDetail.Assertion>> rows =
         jdbc.sql(
-                "SELECT id, field, value, origin, verification FROM field_assertion WHERE resource_id = :id ORDER BY field")
+                """
+                SELECT a.id, a.field, a.value, a.origin, a.verification, run.model
+                FROM field_assertion a LEFT JOIN enrichment_run run ON run.id = a.enrichment_run_id
+                WHERE a.resource_id = :id ORDER BY a.field
+                """)
             .param("id", resourceId)
             .query((rs, n) -> {
               String field = rs.getString("field");
               String value = rs.getString("value");
               ValueOrigin origin = ValueOrigin.valueOf(rs.getString("origin"));
               Verification verification = Verification.valueOf(rs.getString("verification"));
+              String model = rs.getString("model");
               return new Owned<>(
                   rs.getObject("id", UUID.class),
                   evidence ->
                       new ResourceDetail.Assertion(
-                          field, value, origin, verification, null, evidence));
+                          field, value, origin, verification, null, evidence, model));
             })
             .list();
     return withEvidence(rows, "field_assertion_evidence", "assertion_id");
@@ -417,8 +422,10 @@ public class JdbcEnrichmentResults
     List<Owned<ResourceDetail.Relationship>> rows =
         jdbc.sql(
                 """
-                SELECT id, kind, to_resource_id, to_title, verification, origin FROM relationship
-                WHERE from_resource_id = :id AND verification <> 'REJECTED' ORDER BY kind, to_title
+                SELECT rel.id, rel.kind, rel.to_resource_id, rel.to_title, rel.verification, rel.origin, run.model
+                FROM relationship rel LEFT JOIN enrichment_run run ON run.id = rel.enrichment_run_id
+                WHERE rel.from_resource_id = :id AND rel.verification <> 'REJECTED'
+                ORDER BY rel.kind, rel.to_title
                 """)
             .param("id", resourceId)
             .query((rs, n) -> {
@@ -427,11 +434,12 @@ public class JdbcEnrichmentResults
               String title = rs.getString("to_title");
               Verification verification = Verification.valueOf(rs.getString("verification"));
               ValueOrigin origin = ValueOrigin.valueOf(rs.getString("origin"));
+              String model = rs.getString("model");
               return new Owned<>(
                   rs.getObject("id", UUID.class),
                   evidence ->
                       new ResourceDetail.Relationship(
-                          kind, target, title, verification, evidence, origin));
+                          kind, target, title, verification, evidence, origin, model));
             })
             .list();
     return withEvidence(rows, "relationship_evidence", "relationship_id");

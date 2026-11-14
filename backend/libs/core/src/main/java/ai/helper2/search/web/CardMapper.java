@@ -32,7 +32,49 @@ import org.springframework.modulith.NamedInterface;
 @NamedInterface("cards")
 public final class CardMapper {
 
+  public static final List<String> AI_WRITTEN_FIELDS =
+      List.of(
+          "description",
+          "timeline.eventStart.value",
+          "timeline.eventEnd.value",
+          "eventKind",
+          "eventFormat",
+          "location");
+
   private CardMapper() {}
+
+  public static List<String> aiWrittenFields(MergedResult r) {
+    ResultCardDto card = card(r);
+    List<String> fields = new ArrayList<>();
+    if (card.getDescription() != null && r.getDescriptionOrigin().isFromAModel()) {
+      fields.add("description");
+    }
+    if (card.getEventOrigin() == ValueOriginDto.AI_EXTRACTED) {
+      fields.addAll(eventFieldsHeld(card));
+    }
+    return fields;
+  }
+
+  private static List<String> eventFieldsHeld(ResultCardDto card) {
+    List<String> held = new ArrayList<>();
+    if (card.getTimeline().getEventStart().getValue() != null) {
+      held.add("timeline.eventStart.value");
+    }
+    if (card.getTimeline().getEventEnd() != null
+        && card.getTimeline().getEventEnd().getValue() != null) {
+      held.add("timeline.eventEnd.value");
+    }
+    if (card.getEventKind() != null) {
+      held.add("eventKind");
+    }
+    if (card.getEventFormat() != null) {
+      held.add("eventFormat");
+    }
+    if (card.getLocation() != null) {
+      held.add("location");
+    }
+    return held;
+  }
 
   public static ResultCardDto card(MergedResult r) {
     ResultCardDto dto =

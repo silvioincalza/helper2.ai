@@ -536,6 +536,40 @@ describe('resource detail', () => {
     );
   });
 
+  it('carries the response marker into the page: its provider and models on the resource', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          summary: {
+            claims: [{ text: 'It translates documents.', evidence: [] }],
+            model: 'nvidia/nemotron-test',
+            promptVersion: 'v1',
+            generatedAt: '2026-01-01T00:00:00Z',
+          },
+          aiContent: {
+            aiGenerated: true,
+            provider: 'nebius',
+            models: ['nvidia/nemotron-test'],
+            fields: ['summary.claims[].text'],
+            policy: '/mission',
+          },
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const claim = await screen.findByText('It translates documents.');
+    expect(claim).toHaveAttribute('data-ai-generated', 'true');
+    const page = claim.closest('[data-ai-provider]');
+    expect(page).toHaveAttribute('data-ai-provider', 'nebius');
+    expect(page).toHaveAttribute('data-ai-models', 'nvidia/nemotron-test');
+  });
+
+  it('a resource with no marker puts no provider on the page', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail() });
+    renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { level: 1 });
+    expect(document.querySelector('[data-ai-provider]')).toBeNull();
+  });
+
   it('shows every field as a value with its origin, "No", "Sources disagree" or "Not stated" (ADR 0014)', async () => {
     const assertion = (
       field: string,

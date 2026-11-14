@@ -18,7 +18,7 @@ import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
 import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { aiMark } from '@/lib/aiMark';
+import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
 import {
   activeFilterCount,
@@ -264,7 +264,7 @@ function ResultsBody({
       />
 
       <NoticeList notices={res.notices} exclude={['QUERY_EXPANDED']} />
-      <AlsoSearched interpretation={res.interpretation} />
+      <AlsoSearched interpretation={res.interpretation} aiContent={res.aiContent} />
       <WebSearchesLeft feature="search" value={res.webSearches} />
 
       {nothingSearched ? (
@@ -306,7 +306,12 @@ function ResultsBody({
           <p>{t('results.emptyTryOther')}</p>
         </StatePanel>
       ) : (
-        <div ref={listRef}>
+        <div
+          ref={listRef}
+          {...(marksFieldsOf(res.aiContent, 'results[')
+            ? { 'data-ai-provider': res.aiContent?.provider }
+            : {})}
+        >
           {state.view === 'timeline' ? (
             <ResultsTimeline cards={more.cards} />
           ) : (
@@ -472,17 +477,25 @@ function ListHead({
   );
 }
 
-function AlsoSearched({ interpretation }: { interpretation: SearchResponse['interpretation'] }) {
+function AlsoSearched({
+  interpretation,
+  aiContent,
+}: {
+  interpretation: SearchResponse['interpretation'];
+  aiContent: SearchResponse['aiContent'];
+}) {
   const { t } = useTranslation();
   const translated = interpretation.translatedQuery;
   const lexicon = interpretation.expandedTerms;
   if (!translated && lexicon.length === 0) return null;
+  const translation = marksFieldsOf(aiContent, 'interpretation.translatedQuery') ? aiContent : null;
   return (
-    <p className="muted small interpretation">
+    <p className="muted small interpretation" {...aiSource(translation)}>
       {t('results.alsoSearchedLabel')}{' '}
       {translated && (
         <>
-          <span {...aiMark()}>{translated}</span> <AiLabel>{t('results.translatedNote')}</AiLabel>
+          <span {...aiMark(translation?.models[0])}>{translated}</span>{' '}
+          <AiLabel>{t('results.translatedNote')}</AiLabel>
           {lexicon.length > 0 && ', '}
         </>
       )}

@@ -30,4 +30,17 @@ class ValueOriginTest {
       ValueOrigin.entries.associateWith { it.isAiWritten },
     )
   }
+
+  @Test
+  fun `a self-declared value is read by a model too, so it comes from a model`() {
+    assertEquals(
+      setOf(
+        ValueOrigin.AI_EXTRACTED,
+        ValueOrigin.AI_SUMMARY,
+        ValueOrigin.AI_ESTIMATED,
+        ValueOrigin.SELF_DECLARED,
+      ),
+      ValueOrigin.entries.filter { it.isFromAModel }.toSet(),
+    )
+  }
 }

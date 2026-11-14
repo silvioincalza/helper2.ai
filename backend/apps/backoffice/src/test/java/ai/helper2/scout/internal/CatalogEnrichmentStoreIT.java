@@ -379,6 +379,12 @@ class CatalogEnrichmentStoreIT {
     assertThat(results.relationships(resource))
         .extracting(r -> r.targetTitle() + ":" + r.origin())
         .containsExactly("Slack:SELF_DECLARED");
+    assertThat(results.assertions(resource))
+        .extracting(ResourceDetail.Assertion::model)
+        .containsOnly(MODEL.getModel());
+    assertThat(results.relationships(resource))
+        .extracting(ResourceDetail.Relationship::model)
+        .containsOnly(MODEL.getModel());
     assertThat(reviewStatuses(ReviewQueue.Kind.RELATIONSHIP_CANDIDATE)).containsExactly("OPEN");
     assertThat(results.summary(resource).claims().getFirst().selfDeclared()).isTrue();
 

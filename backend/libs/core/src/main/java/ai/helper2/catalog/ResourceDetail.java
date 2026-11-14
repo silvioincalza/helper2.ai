@@ -7,6 +7,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public record ResourceDetail(
     MergedResult card,
@@ -24,7 +25,18 @@ public record ResourceDetail(
       ValueOrigin origin,
       Verification verification,
       String sourceId,
-      List<Evidence> evidence) {}
+      List<Evidence> evidence,
+      @Nullable String model) {
+    public Assertion(
+        String field,
+        String value,
+        ValueOrigin origin,
+        Verification verification,
+        String sourceId,
+        List<Evidence> evidence) {
+      this(field, value, origin, verification, sourceId, evidence, null);
+    }
+  }
 
   public record Relationship(
       String kind,
@@ -32,7 +44,18 @@ public record ResourceDetail(
       String targetTitle,
       Verification verification,
       List<Evidence> evidence,
-      ValueOrigin origin) {
+      ValueOrigin origin,
+      @Nullable String model) {
+    public Relationship(
+        String kind,
+        UUID targetId,
+        String targetTitle,
+        Verification verification,
+        List<Evidence> evidence,
+        ValueOrigin origin) {
+      this(kind, targetId, targetTitle, verification, evidence, origin, null);
+    }
+
     public Relationship(
         String kind,
         UUID targetId,
