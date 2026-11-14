@@ -102,14 +102,6 @@ The schema is one file, and from the first release tag on that file must never c
    - **Forward-only from the first release tag.** While the history has no release tag `vYYYY.N.P`, V1 is edited in
      place. From the tag on, an applied migration is never edited: an edit changes its checksum, and Flyway refuses
      to start. A change is a new versioned migration (`V2__…`), forward-only.
-   - **The dump of the v2.0.0 database.** That database is kept as one encrypted dump for 30 days
-     ([0010](0010-data-retention.md)); nothing is restored from it. `deploy/restore/restore-v2-dump.sh` stays until
-     the dump is deleted: a dry run on a local scratch database only (accounts merged on the GitHub id, settings,
-     discovery hosts; nothing selected by default). It refuses any server not started as the scratch one, and loads
-     the dump as a role with no superuser rights, under psql's `\restrict`: a dump is SQL, so it is trusted input,
-     made and checksummed by the owner. A database is created empty by
-     [the cutover runbook](../../../deploy/k8s/RUNBOOK-reset-cutover.md): with its locale, checked before the
-     deploy, Redis cleared by key family, never `FLUSHALL`.
    - **CI holds both halves of the rule** (`.github/scripts/released-migrations.sh`, job `changes`, every pull
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other
      than `V1__schema.sql` fails. Once it has one, every versioned migration the latest release holds must be the same
@@ -272,9 +264,6 @@ The schema is one file, and from the first release tag on that file must never c
 - `backend/libs/schema/src/main/java/ai/helper2/platform/schema/CatchUpThenMigrate.java`,
   `backend/libs/schema/src/main/resources/db/catch-up/V1__catch_up.sql`, `deploy/helm/helper2/templates/migrate.yaml`
   (`migrate.catchUp`) — staging follows V1 until the first release tag (§5).
-- `deploy/k8s/RUNBOOK-reset-cutover.md` — a database created empty with its locale, the dump of the v2.0.0 database.
-- `deploy/restore/restore-v2-dump.sh`, `backend/libs/schema/src/test/java/ai/helper2/platform/schema/RestoreV2DumpIT.java` —
-  the restore dry run from the v2.0.0 dump, and its test.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
 
 ## Alternatives considered
