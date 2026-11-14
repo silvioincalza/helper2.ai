@@ -1,0 +1,29 @@
+name: frontend-setup
+description: Node, the node_modules of this lockfile and the API types generated from the contract, for a frontend job
+inputs:
+  save-modules:
+    description: true in the one job that saves node_modules to the Actions cache when the lockfile is new
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      with:
+        node-version: 26
+    - id: modules
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: frontend/node_modules
+        key: node-modules-${{ runner.os }}-${{ runner.arch }}-node26-${{ hashFiles('frontend/package-lock.json') }}
+    - if: steps.modules.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: frontend
+      run: npm ci --no-audit --no-fund
+    - if: steps.modules.outputs.cache-hit != 'true' && inputs.save-modules == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: frontend/node_modules
+        key: ${{ steps.modules.outputs.cache-primary-key }}
+    - shell: bash
+      working-directory: frontend
+      run: npm run gen:api

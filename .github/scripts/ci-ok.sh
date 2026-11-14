@@ -2,18 +2,24 @@
 set -euo pipefail
 
 SELECTED_BY='{
-  "frontend-build": "frontend",
   "frontend-check": "frontend",
-  "frontend-test": "frontend",
-  "backend-build": "backend",
-  "backend-check": "backend",
+  "frontend-public-build": "frontend",
+  "frontend-public-test": "frontend",
+  "frontend-backoffice-build": "frontend",
+  "frontend-backoffice-test": "frontend",
+  "backend-libs-build": "backend-libs",
+  "backend-libs-test": "backend-libs",
+  "backend-public-build": "backend-public",
+  "backend-public-test": "backend-public",
+  "backend-backoffice-build": "backend-backoffice",
+  "backend-backoffice-test": "backend-backoffice",
   "chart": "chart",
   "monitoring": "monitoring",
   "postgres-tag": "postgres",
   "diagrams": "diagrams"
 }'
 PULL_REQUEST_ONLY='["postgres-tag"]'
-FULL_RUN_ONLY='{"package": ["frontend", "backend"]}'
+FULL_RUN_ONLY='{"package": ["frontend", "backend-public", "backend-backoffice"]}'
 
 results() { jq -r 'to_entries[] | "\(.key): \(.value.result)"'; }
 
@@ -81,12 +87,18 @@ self_test() {
   done << 'EOF'
 nothing selected, every job skipped|pr||{"postgres-tag":{"result":"skipped"}}|ok
 diagrams selected and green|pr|diagrams|{}|ok
-everything selected and green|pr|frontend backend chart monitoring postgres diagrams|{}|ok
+everything selected and green|pr|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{}|ok
+one app chain selected and green, the others skipped|pr|backend-public|{}|ok
+the libs chain and one app chain selected and green|pr|backend-libs backend-backoffice|{}|ok
 a selected job failed|pr|diagrams|{"diagrams":{"result":"failure"}}|fail
-a selected job was cancelled|pr|backend|{"backend-check":{"result":"cancelled"}}|fail
-a selected job was skipped|pr|backend|{"backend-build":{"result":"skipped"}}|fail
-a selected matrix job failed|pr|frontend|{"frontend-test":{"result":"failure"}}|fail
+a selected job was cancelled|pr|backend-public|{"backend-public-test":{"result":"cancelled"}}|fail
+a selected build was skipped|pr|backend-public|{"backend-public-build":{"result":"skipped"}}|fail
+a selected test was skipped because its build failed|pr|backend-backoffice|{"backend-backoffice-build":{"result":"failure"},"backend-backoffice-test":{"result":"skipped"}}|fail
+an app build was skipped because the libs build failed|pr|backend-libs backend-public backend-backoffice|{"backend-libs-build":{"result":"failure"},"backend-libs-test":{"result":"skipped"},"backend-public-build":{"result":"skipped"},"backend-public-test":{"result":"skipped"}}|fail
+a selected matrix job failed|pr|frontend|{"frontend-public-test":{"result":"failure"}}|fail
 a job ran that was not selected|pr|diagrams|{"chart":{"result":"success"}}|fail
+an app chain ran that was not selected|pr|backend-public|{"backend-backoffice-test":{"result":"success"}}|fail
+the libs chain ran that was not selected|pr|backend-public|{"backend-libs-build":{"result":"success"}}|fail
 the changes job failed|pr||{"changes":{"result":"failure","outputs":{}}}|fail
 the changes job was cancelled|pr||{"changes":{"result":"cancelled","outputs":{}}}|fail
 the changes job gave no outputs and the rest was skipped|pr||{"changes":{"result":"success","outputs":{}}}|fail
@@ -94,15 +106,16 @@ a job with no rule|pr|diagrams|{"deploy":{"result":"success"}}|fail
 a push: postgres selected, postgres-tag skipped|push|postgres chart|{"postgres-tag":{"result":"skipped"}}|ok
 a push: postgres-tag ran|push|postgres chart|{}|fail
 a pull request: postgres selected, postgres-tag skipped|pr|postgres chart|{"postgres-tag":{"result":"skipped"}}|fail
-a push: everything else selected and green|push|frontend backend chart monitoring diagrams|{}|ok
-a push: a selected job skipped|push|frontend backend chart monitoring diagrams|{"monitoring":{"result":"skipped"}}|fail
-a full run: package ran and is green|full|frontend backend chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"}}|ok
-a full run: package skipped|full|frontend backend chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"skipped"}}|fail
-a full run: package failed|full|frontend backend chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"failure"}}|fail
-a full run of a tree with no frontend: package skipped|full|backend diagrams|{}|ok
-a full run of a tree with no frontend: package ran|full|backend diagrams|{"package":{"result":"success"}}|fail
-a pull request: package ran|pr|frontend backend|{"package":{"result":"success"}}|fail
-a push that is not a full run: package ran|push|frontend backend|{"package":{"result":"success"}}|fail
+a push: everything else selected and green|push|frontend backend-libs backend-public backend-backoffice chart monitoring diagrams|{}|ok
+a push: a selected job skipped|push|frontend backend-libs backend-public backend-backoffice chart monitoring diagrams|{"monitoring":{"result":"skipped"}}|fail
+a full run: package ran and is green|full|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"}}|ok
+a full run: package skipped|full|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"skipped"}}|fail
+a full run: package failed|full|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"failure"}}|fail
+a full run of a tree with no frontend: package skipped|full|backend-libs backend-public backend-backoffice diagrams|{}|ok
+a full run of a tree with no frontend: package ran|full|backend-libs backend-public backend-backoffice diagrams|{"package":{"result":"success"}}|fail
+a full run of a tree with one app: package skipped|full|frontend backend-libs backend-public diagrams|{}|ok
+a pull request: package ran|pr|frontend backend-libs backend-public backend-backoffice|{"package":{"result":"success"}}|fail
+a push that is not a full run: package ran|push|frontend backend-libs backend-public backend-backoffice|{"package":{"result":"success"}}|fail
 EOF
   [[ $(problems true false <<< '{}' | wc -l) -eq 1 ]] || {
     echo "FAIL: needs without the changes job must be one problem" >&2
