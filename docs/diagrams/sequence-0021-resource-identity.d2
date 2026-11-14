@@ -1,0 +1,39 @@
+# Sequence: a package seen alone, then its repository, are written to one resource (ADR 0021).
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt, ResourceId.kt,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcResources.java (ownerOfRecordUrl).
+# Render: cd docs/diagrams && d2 fmt sequence-0021-resource-identity.d2 && d2 sequence-0021-resource-identity.d2 sequence-0021-resource-identity.svg
+
+...@style
+
+shape: sequence_diagram
+
+search: SearchResources {class: app}
+merger: ResultMerger {class: app}
+canon: "CanonicalUrl, ResourceId" {class: app}
+writer: JdbcCatalogWriter {class: app}
+db: "PostgreSQL\nresource, source_record" {class: data}
+detail: GetResourceDetail {class: app}
+
+first: "search 1: npm answers, GitHub does not" {
+  search -> merger: "merge(npm hit, repository github.com/acme/kit)"
+  merger -> canon: "identity of the group"
+  canon -> merger: "github.com/acme/kit, id R"
+  merger -> search: "one result, id R"
+  search -> writer: "record(result), off the request path"
+  writer -> db: "insert resource R; npm record -> R"
+}
+
+second: "search 2: GitHub answers too" {
+  search -> merger: "merge(GitHub hit, npm hit)"
+  merger -> canon: "identity of the group"
+  canon -> merger: "the same address, id R"
+  search -> writer: "record(result)"
+  writer -> db: "ON CONFLICT (canonical_url): same row R,\nthe repository's record sets title and link;\nGitHub record -> R"
+}
+
+open: "a link made from the npm page" {
+  detail -> db: "ownerOfRecordUrl(id of the npm address)"
+  db -> detail: "resource R"
+}

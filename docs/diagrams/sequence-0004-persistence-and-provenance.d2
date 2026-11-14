@@ -1,0 +1,91 @@
+# Sequence: startup migrates the schema; then one search that sees a resource for the first time, then the
+# background write.
+# Shows that the response leaves before the catalog write, so the first sighting has an UNKNOWN
+# discovery date and the next search shows it.
+# The write builds the card of each touched resource and copies its reconciled facts into the row,
+# behind a temporary switch to the older SQL rule.
+# Last, the resource page: the card counts for its facts only the records its row counts.
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/SqlReconciliation.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (reconciliation),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/usecase/GetResourceDetail.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/ResourceCards.java (card),
+#   backend/apps/public/src/test/java/ai/helper2/api/SearchApiIT.java (discoveredDateIsRecordedByTheCatalogAndDetailPageWorks),
+#   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql, R__*.sql (Flyway at startup).
+# Render: cd docs/diagrams && d2 fmt sequence-0004-persistence-and-provenance.d2 && d2 sequence-0004-persistence-and-provenance.d2 sequence-0004-persistence-and-provenance.svg
+
+...@style
+
+shape: sequence_diagram
+
+flyway: Flyway {class: app}
+controller: SearchController {class: app}
+search: SearchResources {class: app}
+catalog: CatalogResultObserver {class: app}
+queue: ObservationQueue {class: app}
+store: JdbcCatalogWriter {class: app}
+detail: GetResourceDetail {class: app}
+cards: ResourceCards {class: app}
+merger: ResultMerger {class: app}
+pg: PostgreSQL {class: data}
+
+startup: App startup {
+  flyway -> pg: "read flyway_schema_history,\nvalidate checksums"
+  flyway -> pg: "empty database: run V1__schema.sql\n(locale check first, app roles last)"
+  flyway -> pg: "run changed R__ seeds (upserts)"
+}
+
+first: First search {
+  controller -> search: "search(request)" {class: hot}
+  search -> search: "sources in parallel,\nmerge by ResourceId"
+  search -> catalog: "firstDiscovered(merged)"
+  catalog -> store: "firstDiscovered(ids)"
+  store -> pg: "SELECT id, first_discovered_at\nWHERE id = ANY(:ids)"
+  pg -> store: "no row for the new resource"
+  catalog -> search: "{} (empty map)"
+  search -> search: "discovered = UNKNOWN"
+  search -> catalog: "record(live results only)"
+  catalog -> queue: "offer(persistObserved)"
+  queue -> catalog: "true (queued)"
+  search -> controller: "SearchOutcome" {class: hot}
+}
+
+background: Background thread catalog-observations {
+  queue -> store: "upsert(results, OBSERVED,\nlive source ids)"
+  store -> pg: "records back at their own URL:\nstill under their repository's resource?\n(keep that owner)"
+  store -> pg: "INSERT resource ... ON CONFLICT\n(canonical_url) DO UPDATE"
+  store -> pg: "INSERT source_record ... ON CONFLICT\n(source_id, external_id) DO UPDATE"
+  store -> pg: "move reports and review items of\nemptied resources (one new owner)"
+  store -> pg: "delete OBSERVED orphans with no\nreport, review item or admin field;\nrebuild labels"
+  store -> pg: "SELECT the touched resource rows\nORDER BY id FOR UPDATE" {class: hot}
+  store -> pg: "SELECT their source_record rows\n(one statement)"
+  store -> cards: "card(row, records)\n(ProjectedReconciliation)"
+  cards -> store: "type, licence, pricing,\nopen-source flag, event days"
+  store -> pg: "one UPDATE resource\n(changed rows only)"
+  store -> store: "H2_CATALOG_RECONCILE_BY_PROJECTION=false\n(temporary): reconcileFacts and\nrefreshEventDates in SQL instead" {class: config}
+  queue -> queue: "outcome=written"
+}
+
+next: Next search {
+  controller -> search: "search(request)" {class: hot}
+  search -> catalog: "firstDiscovered(merged)"
+  catalog -> store: "firstDiscovered(ids)"
+  store -> pg: "SELECT ..."
+  pg -> store: "first_discovered_at"
+  search -> controller: "discovered = KNOWN" {class: hot}
+}
+
+page: Resource page {
+  detail -> pg: "the resource row and its source_record rows\n(extra.dataOrigin: the strongest origin that wrote each)"
+  detail -> cards: "card(row, records)" {class: hot}
+  cards -> merger: "merge(hits of every record)"
+  merger -> cards: "the card: title, tags, dates, sources"
+  cards -> cards: "row INDEXED or OBSERVED:\nkeep records of its origin or stronger"
+  cards -> merger: "merge(hits of those records)"
+  merger -> cards: "type, licence, pricing,\nopen-source flag, their conflicts"
+  cards -> detail: "card with those facts,\nthen the fields an admin set" {class: hot}
+}

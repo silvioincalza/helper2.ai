@@ -1,0 +1,84 @@
+# Flowchart: how GitHub topic leaders reach the catalog (indexed by rule) or the review list, and how far a run
+# reads the MCP Registry (ADR 0015).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubTopicLeadersCollector.java (collect, index, forReview),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt (AdmissionPolicy.decide, the index floor),
+#   backend/libs/sources/src/main/java/ai/helper2/sources/github/GitHubRepositories.java (hit),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java (collect),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (proposeCandidates, cursorAfter, index),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java.
+# Render: cd docs/diagrams && d2 fmt flow-0015-reference-projects-for-review.d2 && d2 flow-0015-reference-projects-for-review.d2 flow-0015-reference-projects-for-review.svg
+
+...@style
+
+direction: down
+
+run: "Scout run (daily)" {class: end}
+
+leaders: "GitHubTopicLeadersCollector" {
+  class: group
+  direction: down
+  due: "7 days since the last pass,\nor a pass held open?" {class: decision}
+  notdue: "Not due" {class: end}
+  held: "Pass held back by\nthe review cap?" {class: decision}
+  active: "Per topic: topic:{t} stars>=1000\npushed in the last 90 days,\nno forks, not archived,\n100 a page, up to 1,000" {class: ext}
+  ai: "Name, description or another\ntopic says it is about AI?" {class: decision}
+  drop: "Not indexed" {class: end}
+  hit: "Hit of github-topic-leaders\n(type by fixed rules, licence,\nstars, dates, archived, fork)" {class: app}
+  budget: "Run's item budget reached?" {class: decision}
+  place: "Place saved (topic, page,\nposition in the page):\nthe next daily run reads on" {class: app}
+  search: "Per topic: topic:{t} stars>=3000\nno forks, not archived,\nmost stars first, 50" {class: ext}
+  merge: "One candidate per repository,\ntagged with each topic it leads\n(at most 12)" {class: app}
+  type: "Type by fixed rules\n(name, description, topics),\nlibrary by default" {class: app}
+  due -> notdue: no
+  due -> held: yes
+  held -> search: yes
+  held -> active: no
+  active -> ai
+  ai -> drop: no
+  ai -> hit: yes
+  hit -> budget
+  budget -> place: yes
+  budget -> active: "no, next page or topic"
+  budget -> search: "no, every topic read"
+  search -> merge
+  merge -> type
+}
+
+review: "Review list (ReviewQueueCandidateReview)" {
+  class: group
+  direction: down
+  known: "In the catalog, or\nproposed before?" {class: decision}
+  skip: "Skipped" {class: end}
+  cap: "25 new items today\nalready opened?" {class: decision}
+  wait: "Held back: the pass stays open,\nthe next daily run searches again" {class: end}
+  open: "Open review item\n(signals: stars, last push,\narchived, fork)" {class: data}
+  known -> skip: yes
+  known -> cap: no
+  cap -> wait: yes
+  cap -> open: no
+}
+
+admin: "Admin accepts\n(type and tags editable)" {class: person}
+catalog: "Catalog resource" {class: data}
+vitality: "RunScout asks AdmissionPolicy:\nnot refused by the vitality rule,\n1,000 stars and a push inside 90 days\n→ indexed; else not indexed" {class: app}
+
+registry: "McpRegistryCollector" {
+  class: group
+  direction: down
+  page: "GET /v0.1/servers?version=latest\n(100 a page, name order)" {class: ext}
+  budget: "Read max(run budget, items-per-run 5,000)?" {class: decision}
+  index: "Indexed directly (CC0)" {class: data}
+  resume: "Cursor saved: the next\nrun continues the pass" {class: app}
+  page -> budget
+  budget -> page: no, next page
+  budget -> index: yes
+  index -> resume
+}
+
+run -> leaders.due
+leaders.type -> review.known
+review.open -> admin
+admin -> catalog
+leaders.hit -> vitality
+vitality -> catalog
+run -> registry.page

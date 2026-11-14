@@ -1,0 +1,62 @@
+# Flowchart: what an enrichment keeps for a resource by its type, how writing names what it is about, and how a
+# discovery post becomes an ARTICLE candidate.
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/FieldsByType.kt,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt (field, relationship, capAbout),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt (notKeptBy),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryPages.java (classify, isWritingPage).
+# Render: cd docs/diagrams && d2 fmt flow-0014-writing-about-a-resource.d2 && d2 flow-0014-writing-about-a-resource.d2 flow-0014-writing-about-a-resource.svg
+
+...@style
+
+direction: down
+
+result: "Discovery result\n(URL, title)" {class: ext}
+site: "Home page, repository\nor site page?" {class: decision}
+product: "PRODUCT candidate\n(the product's site)" {class: data}
+list: "List title\n(\"12 best …\", \"X vs Y\")?" {class: decision}
+listed: "LIST: indexed as ARTICLE\n(lists on)" {class: end}
+post: "Post? below /blog/, /news/ …,\na writing host, or a post's slug;\nnot docs, careers, legal,\nan author's page or a directory" {class: decision}
+dropped: "Dropped" {class: end}
+article: "ARTICLE candidate\n(its own URL)" {class: data}
+admin: "Admin accepts\n(back office, VPN)" {class: person}
+catalog: "Resource in the catalog\n(type from its source)" {class: data}
+
+type: "Enrichment: type is\nARTICLE, NEWS or PAPER?" {class: decision}
+all: "Every field;\nINTEGRATES_WITH, USES,\nSUPPORTS, COMPATIBLE_WITH;\na COURSE or an EVENT\nalso ABOUT (at most 3)" {class: app}
+field: "Field is audience,\ntechLevel or useCase?" {class: decision}
+refused: "REJECTED: \"not a fact of a NEWS,\nbut of what it is about\"" {class: fail}
+checked: "Usual checks\n(quote in the evidence,\nstates the value)" {class: app}
+about: "Relationship kind ABOUT?" {class: decision}
+names: "Quote names the target?\nAt most 3 per run?" {class: decision}
+known: "Exactly one INDEXED or\nCURATED tool, model, library,\nagent, skill or dataset has the\ntarget's title or repository name\n(an MCP server: only a name\nthat says MCP)?" {class: decision}
+verified: "ABOUT VERIFIED,\nlinked to the resource" {class: end}
+vendor: "A known vendor\n(OpenAI, Anthropic, ...)?" {class: decision}
+named: "ABOUT VERIFIED, no resource:\nthe vendor's name,\ntarget_kind VENDOR" {class: end}
+candidate: "ABOUT UNVERIFIED:\nRELATIONSHIP_CANDIDATE\nreview item" {class: data}
+recheck: "Re-check by code (once after\nthe deploy, or the admin's button;\nboth under the Scout's run lock):\nan AI field writing does not keep\nis rejected" {class: app}
+
+result -> site
+site -> product: yes {class: hot}
+site -> list: no
+list -> listed: yes
+list -> post: no
+post -> dropped: no
+post -> article: yes {class: hot}
+product -> admin
+article -> admin: {class: hot}
+admin -> catalog: accept {class: hot}
+catalog -> type: {class: hot}
+type -> all: no
+type -> field: "yes: fields" {class: hot}
+field -> refused: no
+field -> checked: yes {class: hot}
+type -> about: "yes: relationships" {class: hot}
+about -> refused: no
+about -> names: yes {class: hot}
+names -> refused: no
+names -> vendor: yes {class: hot}
+vendor -> named: yes
+vendor -> known: no {class: hot}
+known -> verified: yes
+known -> candidate: no {class: hot}
+catalog -> recheck: stored answers

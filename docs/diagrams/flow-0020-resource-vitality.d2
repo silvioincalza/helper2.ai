@@ -1,0 +1,68 @@
+# Flowchart: how the vitality rule judges one hit, and where the rank penalty comes in (ADR 0020).
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/Vitality.kt (VitalityPolicy.refusalOf, isUnmaintained),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.admitted),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (indexable, proposable),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt (AdmissionPolicy.decide, IndexFloor.reasonToReview),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/Ranking.kt (RankingWeights.unmaintained).
+# Render: cd docs/diagrams && d2 fmt flow-0020-resource-vitality.d2 && d2 flow-0020-resource-vitality.d2 flow-0020-resource-vitality.svg
+
+...@style
+
+direction: down
+
+hit: "A hit from a live source\nor a Scout collector, or a\ncandidate for the review list,\nwith the facts its source states" {class: end}
+
+policy: "VitalityPolicy.refusalOf" {
+  class: group
+  direction: down
+  archived: "archived?" {class: decision}
+  deprecated: "deprecated?" {class: decision}
+  running: "Hosted app:\nstate known?" {class: decision}
+  runs: "Runs now?" {class: decision}
+  likes: "Likes ≥ minimum (3)?" {class: decision}
+  fork: "fork?" {class: decision}
+  alive: "Stars ≥ 10, or updated\ninside 1,095 days?" {class: decision}
+  archived -> deprecated: "no / not known"
+  deprecated -> running: "no / not known"
+  running -> runs: yes
+  running -> fork: no
+  runs -> likes: yes
+  likes -> fork: yes
+  fork -> alive: yes
+}
+
+visit: "Stored on the record (extra.vitality):\nwhat its source stated, and archived\nfrom the Scout visit of the repository;\nthe newest wins; stated by catalog hits" {class: data}
+refused: "Refused: not a result.\nCounted in\nhelper2.source.items.dropped\n{source, reason}" {class: fail}
+admitted: "Not refused. Live search:\nconsecutive ranks, the per-source\nlimit, then the cache.\nA candidate: the review list" {class: app}
+floor: "Scout hit: at or above the\nindex floor of its collector?\n(AdmissionPolicy: stars and push,\nlikes, repository and summary)" {class: decision}
+indexed: "Index: into the catalog,\nconsecutive ranks" {class: data}
+person: "Review: not indexed\nwithout a person" {class: end}
+
+rank: "Ranking.rank" {
+  class: group
+  direction: down
+  type: "MCP server, library,\nskill or agent?\n(under 10,000 stars)" {class: decision}
+  old: "Last update known and\nolder than 1,095 days?" {class: decision}
+  penalty: "score − 0.008" {class: app}
+  type -> old: yes
+  old -> penalty: yes
+}
+
+out: "Result" {class: end}
+
+hit -> policy.archived: {class: hot}
+policy.archived -> refused: yes
+policy.deprecated -> refused: yes
+policy.runs -> refused: no
+policy.likes -> refused: no
+policy.alive -> refused: no
+policy.fork -> admitted: "no / not known" {class: hot}
+policy.alive -> admitted: yes
+admitted -> rank.type: {class: hot}
+rank.type -> out: no
+rank.old -> out: "no / not known" {class: hot}
+rank.penalty -> out
+visit -> policy.archived: "catalog hit"
+admitted -> floor: "hit of a collector"
+floor -> indexed: yes
+floor -> person: no

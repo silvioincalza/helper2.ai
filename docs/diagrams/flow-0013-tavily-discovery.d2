@@ -1,0 +1,97 @@
+# Flowchart: one discovery category's pass, from its searches to the catalog or the review list, and an admin's
+# decision on a candidate.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java (collect,
+#   searchAll, keep, matchedWords, candidateTags), backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryPages.java (classify,
+#   isListPage, productSite, siteTitle), backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/ScoutLiveWebCredits.java, QueryProgress.java,
+#   backend/libs/sources/src/main/java/ai/helper2/sources/support/RunInterval.java (staggered),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt (keepPassOpen),
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (merge, mergedTags),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcReviewQueue.java (proposeCandidate, listedAs),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcReviewDecisions.java (keepCandidateDecision).
+# Render: cd docs/diagrams && ./render.sh
+
+...@style
+
+direction: down
+
+due: "Scout run: is this category due?\n(its first day of the week, then\n7 days since its last pass;\nan open pass always is)" {class: decision}
+notdue: "SKIPPED\n\"Not due yet: next pass on ...\"" {class: end}
+cap: "Scout's Tavily credits today\nunder the daily cap (40)?" {class: decision}
+capped: "SKIPPED\n\"Daily Tavily credit cap\nof the Scout reached\";\npass stays open" {class: end}
+percap: "Still under the cap\nbefore this search?" {class: decision}
+stopped: "Pass stops here:\nwhat it found is kept,\ncheckpoint stays" {class: data}
+skipdone: "Search done earlier\nin this pass (resume\ncursor)? skip it" {class: decision}
+search: "The category's 1 or 2 searches\n(general, advanced, 10 results; date,\nicon URL and credits asked; no page text,\nimages or answer; excluded sites;\nonly pages since the last pass)" {class: ext}
+count: "Credits counted on the global\nand the Scout's counters,\nfor every attempt (a retried\none too)" {class: data}
+allok: "Every search answered?" {class: decision}
+moved: "Checkpoint moves\nto this pass" {class: data}
+kept: "Checkpoint stays; resume cursor\nlists the searches that answered:\nthe next run makes only the\nmissing ones" {class: data}
+outage: "Half or more of\nthe searches failed?" {class: decision}
+failed: "Pass FAILED,\ncheckpoint stays,\npass stays open" {class: fail}
+score: "Score ≥ the category's min-score,\nnot on Tavily's own site\n(isTavilysOwnPage), about AI?" {class: decision}
+drop: "Dropped" {class: end}
+own: "GitHub repository\nor home page?" {class: decision}
+list: "List-like title (\"12 best\", \"vs\",\n\"alternatives\")?" {class: decision}
+lists: "The category indexes lists?\n(not health, not legal)" {class: decision}
+site: "One level below a home page\n(/en does not count), not /blog,\na post slug, blog. or docs. host,\nnot a publisher's or directory's host?" {class: decision}
+words: "Tag of this category and of every\ncategory whose words it has.\nWords required (health, legal)\nand none of its own?" {class: decision}
+article: "Indexed as ARTICLE (discovery-<id>),\neven when its title names an event;\n400-character excerpt, search facts\nin source_record.extra" {class: data}
+candidate: "Candidate: its site's home page or\nthe page; type = the category's;\nat most 12 tags, its own first;\nexcerpt up to 2,400 characters;\nsearch facts" {class: app}
+known: "URL a resource or a source\nrecord, proposed before or\ndecided (candidate_decision)?" {class: decision}
+open: "Its item still OPEN?" {class: decision}
+merge: "Merged into the item: tags joined\n(at most 12, finders' categories first),\nmost specific type, collector added\nto foundBy (once)" {class: data}
+skip: "Not proposed again" {class: end}
+item: "RESOURCE_CANDIDATE review item\n(candidate JSON v2 with foundBy)" {class: data}
+admin: "Admin decides\n(back office, VPN; filter by category)" {class: person}
+reject: "REJECTED: decision only,\nkept in candidate_decision" {class: end}
+valid: "ResourceCandidateJson reads it (v1 or v2);\nknown source, URL, title,\nproduct type, at most 12 tags?" {class: decision}
+exists: "CatalogLookup: listed since\nproposed (resource or record)?" {class: decision}
+keep: "ACCEPTED, nothing added:\nnote \"Already listed as <title>.\",\nalreadyListed links the\nlisted resource" {class: end}
+refused: "400: item stays open" {class: fail}
+indexed: "One record of the first finder, every\ncategory as a tag, search facts and\nfoundBy in extra; item ACCEPTED (one\ntransaction); the next run enriches it" {class: end}
+
+due -> notdue: no
+due -> cap: yes {class: hot}
+cap -> capped: no
+cap -> skipdone: yes {class: hot}
+skipdone -> percap: no {class: hot}
+percap -> search: yes {class: hot}
+percap -> stopped: no
+search -> count
+count -> outage
+outage -> allok: no {class: hot}
+allok -> moved: yes {class: hot}
+allok -> kept: no
+stopped -> kept
+moved -> score: {class: hot}
+kept -> score
+outage -> failed: yes
+score -> drop: no
+score -> own: yes {class: hot}
+own -> words: product {class: hot}
+own -> list: no
+list -> lists: yes
+lists -> words: list
+lists -> drop: no
+list -> site: no
+site -> drop: no
+site -> words: product
+words -> drop: yes
+words -> article: "no, a list"
+words -> candidate: "no, a product" {class: hot}
+candidate -> known: {class: hot}
+known -> item: no {class: hot}
+known -> open: yes
+open -> merge: yes
+open -> skip: no
+merge -> admin
+item -> admin
+admin -> reject: reject
+admin -> valid: accept {class: hot}
+valid -> refused: no
+valid -> exists: yes {class: hot}
+exists -> keep: yes
+exists -> indexed: no {class: hot}

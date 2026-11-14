@@ -1,0 +1,47 @@
+# Flowchart: how a PyPI package becomes a library or a review candidate (ADR 0017).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollector.java (collect, since, sort),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollectors.java (create),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/BigQueryClient.java (query).
+# Render: cd docs/diagrams && d2 fmt flow-0017-pypi-through-bigquery.d2 && d2 flow-0017-pypi-through-bigquery.d2 flow-0017-pypi-through-bigquery.svg
+
+...@style
+
+direction: down
+
+start: "Back office starts" {class: end}
+switch: "H2_SOURCE_PYPI_ENABLED?\n(default false)" {class: decision}
+off: "Source off" {class: end}
+key: "Project and a readable\nservice account key?" {class: decision}
+stop: "Startup fails\n(names the variable, never its value)" {class: end}
+run: "Scout run reaches pypi" {class: end}
+due: "Read today already?\n(interval 1 day)" {class: decision}
+notdue: "Not due" {class: end}
+since: "from = after the cursor (time, name);\nheld-back or none: last pass − 2 days,\nelse the start of the table\n(held-back on a first fill: 30 days)" {class: app}
+query: "BigQuery: AI classifier, newest upload per package,\nfrom since, budget + 1 rows\n(maximumBytesBilled 20 GB)" {class: ext}
+pkg: "Summary and a GitHub repo?" {class: decision}
+recent: "Uploaded in the last 30 days?" {class: decision}
+old: "Left out\n(counted old-without-repo)" {class: end}
+hit: "LIBRARY hit for Python\n(PyPI page, repo, summary, tags,\nlicence, updated)" {class: hot}
+cand: "Review candidate\n(≤ 20 new a day)" {class: app}
+more: "More rows than the budget?" {class: decision}
+resume: "nextCursor = last upload time | name" {class: app}
+done: "Checkpoint = pass start" {class: end}
+
+start -> switch
+switch -> off: no
+switch -> key: yes
+key -> stop: no
+key -> run: yes
+run -> due
+due -> notdue: yes
+due -> since: no
+since -> query
+query -> pkg
+pkg -> hit: yes
+pkg -> recent: no
+recent -> cand: yes
+recent -> old: no
+hit -> more
+cand -> more
+more -> resume: yes
+more -> done: no

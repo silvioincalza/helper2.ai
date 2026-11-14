@@ -1,0 +1,39 @@
+# Sequence: one pass of GitHub topic leaders: the active ones indexed by rule, the quiet ones from the search to an
+# accepted resource (ADR 0015).
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubTopicLeadersCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt.
+# Render: cd docs/diagrams && d2 fmt sequence-0015-reference-projects-for-review.d2 && d2 sequence-0015-reference-projects-for-review.d2 sequence-0015-reference-projects-for-review.svg
+
+...@style
+
+shape: sequence_diagram
+
+scout: RunScout {class: app}
+collector: GitHubTopicLeadersCollector {class: app}
+github: "api.github.com" {class: ext}
+review: "ReviewQueueCandidateReview" {class: app}
+pg: PostgreSQL {class: data}
+admin: Admin {class: person}
+accept: IndexAcceptedCandidate {class: app}
+
+scout -> collector: "collect(cursor, budget)"
+collector -> github: "GET /search/repositories?q=topic:agents\nstars:>=1000 pushed:>={today − 90 days}\nfork:false archived:false\n&sort=stars&order=desc&per_page=100&page=1"
+github -> collector: "repositories (name, description, stars,\ntopics, licence, pushed_at, archived, fork)"
+collector -> collector: "AI words beside the topic → a hit\nthat states stars, last push,\narchived, fork"
+collector -> github: "… next page (up to 10) and next topic,\n2 s apart, until the item budget"
+collector -> scout: "budget reached: CollectedBatch(hits,\nnextCursor = topic:page:position, no candidates)"
+scout -> pg: "AdmissionPolicy: not refused, 1,000 stars\nand a push inside 90 days → index the hits,\nsave the cursor: the next daily run reads on"
+scout -> collector: "collect(cursor topic:page:position, budget)"
+collector -> github: "the remaining pages and topics"
+collector -> github: "GET /search/repositories?q=topic:agents\nstars:>=3000 fork:false archived:false\n&sort=stars&order=desc&per_page=50\n… one call per topic (14)"
+github -> collector: "repositories (name, description, topics,\nstars, pushed_at, archived, fork)"
+collector -> scout: "CollectedBatch(hits, candidates = every leader,\nnewCandidatesPerDay = 25)"
+scout -> pg: "vitality rule, index the hits"
+scout -> review: "propose(github-topic-leaders, candidates, 25)"
+review -> pg: "skip URLs in the catalog or proposed before;\nopen at most 25 new items today"
+review -> scout: "Proposal(opened, heldBack)"
+scout -> pg: "heldBack > 0: save cursor held-back, pass stays open\n(next daily run asks for the review list only);\nelse checkpoint = pass start"
+admin -> accept: "accept item (type, tags)"
+accept -> pg: "index the repository as a resource\n(facts: stars, topics)"

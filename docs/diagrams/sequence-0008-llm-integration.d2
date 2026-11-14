@@ -1,0 +1,54 @@
+# Sequence: one guide model call (the plan step) through the shared LLM layer.
+# Shows the llm-chat circuit, the budget unit taken in Redis inside it, the per-attempt observation with the prompt
+# version, the provider call and the answer clean-up, all in BudgetedChat, then the one call with thinking off
+# for a plan cut while thinking. SpringAiQueryTranslator,
+# SpringAiToolGuideModel, SpringAiEnrichmentModel, SpringAiRepoClassifier, SpringAiEventReader and
+# SpringAiExampleDrafter go through the same BudgetedChat with their own budget name and step tag.
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, call),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/ (BudgetedChat, DailyBudget, RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0008-llm-integration.d2 && d2 sequence-0008-llm-integration.d2 sequence-0008-llm-integration.svg
+
+...@style
+
+shape: sequence_diagram
+
+model: SpringAiGuideModel {class: app}
+chat: "BudgetedChat\n(policy guide)" {class: app}
+cb: "llm-chat circuit\n(Resilience)" {class: app}
+budget: DailyBudget "guide" {class: app}
+counter: RedisCallCounter {class: app}
+redis: Redis {class: data}
+metrics: ModelCallMetrics {class: app}
+client: "ChatClient +\nOpenAI client" {class: app}
+tf: "Token Factory\n(Nemotron)" {class: ai}
+
+model -> chat: "entity(plan, model, prompt version, attempt)"
+chat -> cb: "call(llm-chat)"
+cb -> cb: "closed: let through"
+cb -> budget: "tryAcquire()"
+budget -> counter: "increment(guide, UTC day, 600)"
+counter -> redis: "Lua: below 600, INCR h2:v1:budget:guide:<day>,\nPEXPIRE 2 days on first; at 600, nothing"
+redis -> counter: count
+counter -> budget: "count (null on error:\ncount in memory)"
+budget -> cb: "true (count ≤ 600)"
+cb -> metrics: "observe(plan, model,\nprompt version)"
+metrics -> client: "prompt(system, user)\nCallOptions.of(model, max tokens):\nthinking off (CallOptions.thinking\nwith a step's thinking budget)"
+client -> tf: "POST /v1/chat/completions\n(timeout 40 s, no SDK retry)" {class: ai-call}
+tf -> client: "JSON answer + token usage"
+client -> metrics: "ChatResponse"
+metrics -> metrics: "tokens(plan, prompt version,\nresponse); outcome=ok"
+metrics -> cb: "entity (BeanOutputConverter\nreads ModelAnswers.jsonObject)"
+cb -> chat: "entity; success recorded"
+chat -> model: entity
+model -> model: "GuideSearchPlan"
+cut: "the answer was cut while thinking (finish reason length, thinking budget > 0)" {
+  model -> model: "too little of the question's time left\n(CallTimeLimit): fail as cut"
+  model -> metrics: "thinkingFallback(plan, cut)"
+  model -> chat: "entity(plan, model, prompt version, attempt 2)\nCallOptions.of: thinking off, same answer tokens"
+  chat -> cb: "call(llm-chat): same circuit"
+  cb -> budget: "tryAcquire(): one more unit"
+  budget -> cb: "true, then the provider call as above\n(false: budget spent, no call)"
+  cb -> chat: "entity"
+  chat -> model: "entity, or fail as cut\nwhen cut again"
+}

@@ -1,0 +1,44 @@
+# Sequence: a browser opens a deep link on the hosted site, loads the SPA and calls the API on the same origin;
+# then the same calls in local development, where Vite serves the UI and proxies the server paths.
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java, deploy/web/nginx.conf,
+#   frontend/vite.config.ts (server.proxy), backend/libs/platform/src/main/resources/helper2-shared.yaml
+#   (spring.threads.virtual.enabled), deploy/Dockerfile, deploy/web.Dockerfile, compose.yaml.
+# Render: cd docs/diagrams && d2 fmt sequence-0001-stack-and-runtime.d2 && d2 sequence-0001-stack-and-runtime.d2 sequence-0001-stack-and-runtime.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: Browser {class: person}
+vite: "Vite dev server\n(:5173, local only)" {class: ext}
+edge: "Ingress\n(hosted)" {class: app}
+web: "web pods\n(nginx)" {class: app}
+mvc: "public app (:8080)\none virtual thread\nper request" {class: app}
+ctrl: "API controller\n(generated interface)" {class: app}
+stores: "Postgres, Redis\n(compose.yaml locally)" {class: data}
+
+hosted: Hosted: one origin, split by path {
+  browser -> edge: "GET /resources/abc (refresh)" {class: hot}
+  edge -> mvc: "not a web file"
+  mvc -> mvc: "PageRoutes: a client route → the shell with its head"
+  mvc -> browser: "index.html, Cache-Control: no-cache"
+  browser -> edge: "GET /assets/index-<hash>.js"
+  edge -> web: "/assets/ prefix"
+  web -> browser: "file, max-age 365 days, immutable"
+  browser -> edge: "GET /api/v1/resources/abc\n(same origin, no CORS)" {class: hot}
+  edge -> mvc: "not a web file"
+  mvc -> ctrl: "blocking call on the virtual thread"
+  ctrl -> stores: "JDBC / Redis (blocking)"
+  stores -> ctrl: "rows"
+  ctrl -> browser: "JSON"
+}
+
+dev: Local development {
+  browser -> vite: "GET /, /src/** (hot reload)"
+  vite -> browser: "SPA modules"
+  browser -> vite: "GET /api/v1/... (also /oauth2, /login, /logout)"
+  vite -> mvc: "proxy to http://localhost:8080"
+  mvc -> ctrl: "controller"
+  ctrl -> vite: "JSON"
+  vite -> browser: "JSON"
+}

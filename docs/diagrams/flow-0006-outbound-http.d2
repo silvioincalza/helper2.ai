@@ -1,0 +1,93 @@
+# Flowchart: one outbound source call, from the pooled Apache client to the outcome the search reports.
+# Shows the shared arXiv slot in Redis, the pool wait, connect/response timeouts, one request per attempt (no client
+# retries), the redirect rules (sources follow redirects without an https-to-http downgrade and never carry a token
+# to another host; the embedder follows none), the status mapping to SourceFailure (transient for 503 and network
+# errors), the total deadline checked on each body read, the response size cap, the per-item guard, and how
+# SearchResources turns each failure into a source outcome.
+# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java (restClientBuilder,
+#   requestFactory, NoDowngradeRedirects, BoundedResponse, CappedStream), backend/libs/sources/src/main/java/ai/helper2/sources/support/HttpClients.java
+#   (getText, getJson, mapStatus, retryAfter, hits), backend/libs/sources/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java (search),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/RedisOutboundThrottle.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java (collectorClient, deadline default),
+#   backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.collect).
+# Render: cd docs/diagrams && d2 fmt flow-0006-outbound-http.d2 && d2 flow-0006-outbound-http.d2 flow-0006-outbound-http.svg
+
+...@style
+
+direction: down
+
+start: "source.search(query)\non a virtual thread" {class: end}
+arxiv: "arXiv only: SET h2:v1:outbound:arxiv\nNX PX 3000 succeeded?\n(Redis down: no)" {class: decision}
+paced: "SourceFailure.RateLimited\n(pause 3 s, no request)" {class: app}
+pool: "Free pooled connection\nwithin 250 ms?" {class: decision}
+send: "Connect + send once, no client retry\n(connect timeout = source timeout)" {class: app}
+redirect: "Redirect?" {class: decision}
+follows: "Client follows redirects?\n(sources: yes; embedder: no)" {class: decision}
+down: "https → http?" {class: decision}
+token: "Authorization set and\nanother scheme, host or port?" {class: decision}
+noredir: "Not followed:\nthe 3xx is the response" {class: app}
+status: "Status 2xx?" {class: decision}
+limited: "429, or 403 with\nx-ratelimit-remaining 0,\nor 503 with Retry-After?" {class: decision}
+rl: "SourceFailure.RateLimited\n(pause from Retry-After\nor x-ratelimit-reset)" {class: app}
+httpfail: "SourceFailure.Unavailable\n\"HTTP <status>\"\n(transient for 503)" {class: app}
+netfail: "SourceFailure.Unavailable\n\"network error or timeout\"\n(transient)" {class: app}
+intime: "Each body read before the\ncall's deadline? (clock from\nbefore the request; search: timeout;\ncollectors: 2× or H2_SOURCE_<ID>_DEADLINE)" {class: decision}
+late: "SourceFailure.Unavailable\n\"deadline exceeded\"\n(transient; connection dropped)" {class: app}
+size: "Body within the cap?\n(2 MB; README 5 MB)" {class: decision}
+toolarge: "SourceFailure.Unavailable\n\"response too large\"" {class: app}
+json: "Body is a JSON\nobject or array?" {class: decision}
+badjson: "SourceFailure.Unavailable\n\"malformed response\"" {class: app}
+hits: "Map each item to a SourceHit;\na malformed item is dropped\nand counted (items.dropped)" {class: app}
+
+search: SourceFanOut.collect {
+  class: group
+  direction: down
+  deadline: "Done before the source's\ndeadline (from its own start)?" {class: decision}
+  timedout: "TIMED_OUT\n(future cancelled)" {class: fail}
+  kind: "Result?" {class: decision}
+  ok: "SUCCEEDED, LIVE\n(cache put)" {class: end}
+  ratelimited: "RATE_LIMITED\ncooldown until pause\n(default 1 min)" {class: fail}
+  failed: "FAILED\n\"Source unavailable\" or\n\"Source returned an error\"" {class: fail}
+
+  deadline -> timedout: no
+  deadline -> kind: yes {class: hot}
+  kind -> ok: hits {class: hot}
+  kind -> ratelimited: RateLimited
+  kind -> failed: "Unavailable or\nother exception"
+}
+
+start -> arxiv: {class: hot}
+arxiv -> pool: "yes, or another source" {class: hot}
+arxiv -> paced: no
+paced -> search.deadline
+pool -> netfail: "no"
+pool -> send: yes {class: hot}
+send -> netfail: "connect or\nresponse timeout,\nI/O error"
+send -> redirect: {class: hot}
+redirect -> follows: yes
+follows -> down: yes
+follows -> noredir: no
+down -> noredir: yes
+down -> token: no
+token -> noredir: yes
+token -> send: "no: follow"
+noredir -> status
+redirect -> status: no {class: hot}
+status -> intime: yes {class: hot}
+intime -> size: yes {class: hot}
+intime -> late: no
+size -> json: yes {class: hot}
+size -> toolarge: no
+status -> limited: no
+limited -> rl: yes
+limited -> httpfail: no
+json -> hits: yes {class: hot}
+json -> badjson: no
+hits -> search.deadline: {class: hot}
+rl -> search.deadline
+httpfail -> search.deadline
+netfail -> search.deadline
+badjson -> search.deadline
+toolarge -> search.deadline
+late -> search.deadline

@@ -1,0 +1,151 @@
+# Flowchart: the schema at startup, then how one search reads discovery dates and records what it saw,
+# off the request path. Startup: Flyway applies the one versioned migration (it checks the locale first) and the
+# repeatable seeds.
+# Shows the batched date read, the live-only filter, the bounded queue (drop when full) and the
+# background upsert with the origin rank, what a resource shows when only records that state it
+# arrive, record fingerprints, reports moved with their records,
+# orphan clean-up,
+# labels, and the licence, the pricing, the open-source flag, the type and event dates copied from the card of the
+# resource page (or, behind a temporary switch, rebuilt by the older SQL rule).
+# Then the card of the resource page: which records count for its type, licence, pricing and open-source flag.
+# Source of truth: backend/libs/search/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, record),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (firstDiscovered, record),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert,
+#   moveReportsOfEmptiedResources, deleteOrphans),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/SqlReconciliation.java,
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (reconciliation),
+#   backend/libs/catalog/src/main/java/ai/helper2/catalog/ResourceCards.java (card), RecordRow.java, DataOrigin.java,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt,
+#   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql, R__*.sql (Flyway at startup).
+# Render: cd docs/diagrams && d2 fmt flow-0004-persistence-and-provenance.d2 && d2 flow-0004-persistence-and-provenance.d2 flow-0004-persistence-and-provenance.svg
+
+...@style
+
+direction: down
+
+startup: App startup (Flyway) {
+  class: group
+  direction: down
+  history: "Applied migrations match\nthe files? (checksums)" {class: decision}
+  refuse: "Refuse to start;\nthe deploy rolls back" {class: fail}
+  locale: "Database UTF8 with\nlocale en_US.utf8?" {class: decision}
+  v1: "Empty database:\napply V1__schema.sql\n(the whole schema,\nthe app roles last)" {class: data}
+  seeds: "Apply each R__ seed\nthat changed (upserts)" {class: data}
+  up: "App serves" {class: end}
+
+  history -> refuse: no
+  history -> locale: "yes, V1 not applied yet"
+  locale -> v1: yes
+  locale -> refuse: "no: V1 stops"
+  history -> seeds: "yes, V1 applied"
+  v1 -> seeds
+  seeds -> up
+}
+
+merged: "Merged results of one search\n(ids = UUIDv5 of canonical URL)" {class: end}
+read: "firstDiscovered(results):\none batched SELECT" {class: app}
+readok: "Read worked?" {class: decision}
+known: "discovered = first_discovered_at,\nor UNKNOWN if not stored yet" {class: app}
+unavailable: "All discovery dates UNKNOWN\n+ INDEX_UNAVAILABLE notice" {class: app}
+live: "Hits fetched LIVE now?\n(cache replays were recorded\nwhen fetched)" {class: decision}
+none: "Nothing to record" {class: end}
+offer: "ObservationQueue.offer(write)" {class: app}
+full: "Queue full (256)\nor shut down?" {class: decision}
+dropped: "Dropped, counted\noutcome=dropped\n(date waits for next sighting)" {class: fail}
+answer: "Search answers now\n(no write on the request path)" {class: end}
+
+writer: catalog-observations thread (one writer) {
+  class: group
+  direction: down
+  resources: "Upsert resource by canonical_url\n(rows sorted by URL)" {class: data}
+  rank: "Existing row from a\nstronger origin?\nDEMO > CURATED >\nINDEXED > OBSERVED" {class: decision}
+  keep: "Keep its fields;\nlast_seen_at and a newer\nupdated_at still apply" {class: data}
+  own: "Batch has a record at the\nresource's own address?" {class: decision}
+  shown: "Keep the title, link,\ndescription and language\nit shows; take the rest" {class: data}
+  take: "Take the new fields;\nnull dates never\noverwrite known ones" {class: data}
+  records: "Upsert source_record\n(source_id, external_id);\nextra.dataOrigin keeps the\nstrongest origin that wrote it" {class: data}
+  moved: "Record moved to\nanother resource?" {class: decision}
+  emptied: "Old resource left\nwithout records?" {class: decision}
+  oneOwner: "All its records went\nto one resource?" {class: decision}
+  moveReports: "Move issue_report and\nreview_item rows to it" {class: data}
+  held: "Report or review item\nstill points at it?" {class: decision}
+  kept: "Keep it for\nthe reviewer" {class: data}
+  orphan: "Delete it if OBSERVED\nand no field set by an admin" {class: data}
+  labels: "Rebuild labels\nfrom current records" {class: data}
+  switch: "reconcile-by-projection?\n(H2_CATALOG_RECONCILE_BY_PROJECTION,\ntemporary, default true)" {class: decision}
+  project: "Lock the touched rows (id order),\nread all their records,\nbuild each card (ResourceCards.card);\ncopy its event days, and its type,\nlicence, pricing and open-source flag\nwhen the write is of the row's\norigin or stronger (not CURATED or DEMO)" {class: data}
+  sqlRule: "SQL rule: rebuild licence, pricing,\nopen-source flag, type and event dates\nin two UPDATEs (same origin rule;\nkeeps the stored letter case\nof the licence; no lock)" {class: data}
+  ok: "outcome=written" {class: end}
+  failed: "outcome=failed\n(warning logged)" {class: fail}
+
+  resources -> rank
+  rank -> keep: yes
+  rank -> own: no
+  own -> take: yes
+  own -> shown: "no: only records\nthat state it"
+  keep -> records
+  shown -> records
+  take -> records
+  records -> moved
+  moved -> emptied: yes
+  moved -> labels: no
+  emptied -> oneOwner: yes
+  emptied -> labels: no
+  oneOwner -> moveReports: yes
+  oneOwner -> held: no
+  moveReports -> held
+  held -> kept: yes
+  held -> orphan: no
+  kept -> labels
+  orphan -> labels
+  labels -> switch
+  switch -> project: yes
+  switch -> sqlRule: no
+  project -> ok
+  sqlRule -> ok
+  project -> failed: "exception:\nthe whole write\nrolls back" {class: config}
+  records -> failed: exception {class: config}
+}
+
+card: Card of the resource page (ResourceCards.card) {
+  class: group
+  direction: down
+  row: "The resource row\nand all its records" {class: end}
+  every: "Merge every record:\ntitle, description, tags,\npopularity, dates, sources" {class: app}
+  rebuilt: "Row INDEXED or OBSERVED?\n(its facts are rebuilt\nfrom its records)" {class: decision}
+  all: "Type, licence, pricing and\nopen-source flag from\nevery record" {class: app}
+  counted: "Keep the records of the row's\norigin or stronger (no recorded\norigin counts as the row's)" {class: app}
+  any: "Any record left?" {class: decision}
+  facts: "Type, licence, pricing,\nopen-source flag and their\nconflicts from those records" {class: app}
+  bare: "Type of the row; no licence,\npricing or open-source flag" {class: app}
+  curated: "Fields set by an admin\nreplace the merged ones" {class: data}
+  shown: "Card shown" {class: end}
+
+  row -> every
+  every -> rebuilt
+  rebuilt -> all: "no: CURATED or DEMO"
+  rebuilt -> counted: yes
+  counted -> any
+  any -> facts: yes
+  any -> bare: no
+  all -> curated
+  facts -> curated
+  bare -> curated
+  curated -> shown
+}
+
+merged -> read: {class: hot}
+read -> readok
+readok -> known: yes {class: hot}
+readok -> unavailable: no
+known -> live
+unavailable -> live
+live -> none: no
+live -> offer: yes {class: hot}
+offer -> full
+full -> dropped: yes
+full -> answer: "no: queued" {class: hot}
+full -> writer.resources: "later, in the background" {class: config}
+writer.project -> card.row: "the same card" {class: config}
