@@ -259,6 +259,13 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 - **No new `app.env` key** is expected; check 6 proves it.
 - **The way back is Helm's revision of `2026.11.2`** (section 5, way 1). This repository has no tag `v2026.11.2`,
   so ways 2 and 3 cannot name that release.
-- **It cannot start yet.** `release-prepare` and `release` do not know a first release with this number. Until
-  S10.7.1 closes that, do not run `release-prepare`: it would cut `release/2026.1`, and a release branch is never
-  deleted.
+- **Two steps fewer.** `main` carries `2026.11.3` already, so step 1 (`release-prepare`, no input) creates
+  `release/2026.11` on the commit of `main` and opens no version pull request: its summary says so. Skip step 2.
+  Step 3 uses that commit's CD run on `main`, the one check 1 read. Step 8 opens no pull request back into `main`,
+  because the release is a commit of `main`: skip step 9, and section 6 item 1.
+- **Check the number before step 1.** `release-version.sh first` prints the version the first release takes:
+  `2026.11.3`. Anything else, stop: the files on `main` do not carry the version this section is for.
+
+  ```bash
+  .github/scripts/release-version.sh first
+  ```
