@@ -20,10 +20,11 @@ prepare: Prepare the release YYYY.N.0 {
   owner -> github: "run release-prepare from main" {class: hot}
   github -> runner: "workflow_dispatch"
   runner -> github: "cd.yml runs on main: the newest\nwhose staging jobs passed"
-  runner -> runner: "release-version.sh next = YYYY.N.0;\nno release/YYYY.N, no vYYYY.N.0"
+  runner -> runner: "release-version.sh first: no release yet?\nthen the version main carries, no version commit"
+  runner -> runner: "else release-version.sh next = YYYY.N.0;\nno release/YYYY.N, no vYYYY.N.0"
   runner -> runner: "bump-version.sh bump: seven files,\nthe version commit"
   runner -> github: "POST git/refs release/YYYY.N\n(the commit staging ran)" {class: hot}
-  runner -> github: "push release-bump/YYYY.N.P;\ngh pr create into release/YYYY.N" {class: hot}
+  runner -> github: "push release-bump/YYYY.N.P;\ngh pr create into release/YYYY.N\n(not for the first release)" {class: hot}
   runner -> runner: "run again after a stop half-way: it finds\nrelease/YYYY.N with no version and finishes it"
   owner -> github: "merge the version pull request" {class: hot}
   github -> github: "cd.yml on release/YYYY.N:\nCI, images, signatures, scan"
@@ -33,7 +34,7 @@ release: Release YYYY.N.P {
   owner -> github: "run release from main,\nversion YYYY.N.P (headline)" {class: hot}
   github -> runner: "workflow_dispatch"
   runner -> runner: "release-version.sh check (year window);\nseven files = YYYY.N.P; only the version\nbeside main, staging ran its commit; canary present"
-  runner -> github: "job built: CD run of the head\n(waits while it runs)"
+  runner -> github: "job built: CD run of the head (waits while it runs);\non main for a commit of main unchanged"
   github -> runner: "completed, success"
   github -> owner: "job prod waits for the\napproval on environment prod"
   owner -> github: "approve"
@@ -43,7 +44,7 @@ release: Release YYYY.N.P {
   runner -> github: "publish: generate-notes since the release below;\ngit tag -a vYYYY.N.P <head>; push" {class: hot}
   runner -> releases: "gh release create --verify-tag\nnotes = tag message + images" {class: hot}
   runner -> releases: "gh release upload: SBOMs\nof the branch's CD run"
-  runner -> github: "push release-merge/vYYYY.N.P (the tag,\nmain merged in); gh pr create into main;\ngh workflow run ci.yml on it" {class: hot}
+  runner -> github: "push release-merge/vYYYY.N.P (the tag,\nmain merged in); gh pr create into main;\ngh workflow run ci.yml on it\n(none when the commit is on main)" {class: hot}
   owner -> github: "merge the pull request into main"
 }
 

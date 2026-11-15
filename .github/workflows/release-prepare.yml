@@ -72,7 +72,7 @@ jobs:
               line=${BASH_REMATCH[1]}
               [[ -z $(git tag -l "v$line.*" "used/v$line.*" | sed 's#^used/##' | { grep -E '^v[0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*)$' || true; }) ]] || continue
               carries=$(git show "refs/remotes/origin/$ref:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
-              [[ $carries == "$line.0" ]] || unfinished="$unfinished $line"
+              [[ $carries =~ ^${line//./\\.}\.(0|[1-9][0-9]*)$ ]] || unfinished="$unfinished $line"
             done
             read -r -a unfinished <<< "$unfinished"
             ((${#unfinished[@]} <= 1)) || { echo "::error::release/${unfinished[0]} and release/${unfinished[1]} were cut and carry no version yet"; exit 1; }
@@ -101,19 +101,47 @@ jobs:
                 done
                 [[ -n $sha ]] || { echo "::error::none of the last 20 green CD runs on main deployed staging: give the commit"; exit 1; }
               fi
-              version=$(.github/scripts/release-version.sh next)
+              first=$(.github/scripts/release-version.sh first 2>&1) || { echo "::error::$first"; exit 1; }
+              if [[ -n $first ]]; then
+                version=$first
+                carries=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
+                [[ $carries == "$version" ]] || { echo "::error::the first release is $version, the version main carries, but ${sha::12} carries $carries: give a commit that carries it"; exit 1; }
+              else
+                version=$(.github/scripts/release-version.sh next)
+              fi
               branch=release/${version%.*}
               git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null \
                 && { echo "::error::$branch exists already"; exit 1; }
               cut=true
-              echo "new release $version: $branch is cut from ${sha::12} once its version commit is made"
+              if [[ -n $first ]]; then
+                echo "first release $version: $branch is cut on ${sha::12}, which carries the version already"
+              else
+                echo "new release $version: $branch is cut from ${sha::12} once its version commit is made"
+              fi
             fi
           fi
           git ls-remote --exit-code origin "refs/tags/v$version" "refs/tags/used/v$version" >/dev/null && { echo "::error::v$version is released or used up already"; exit 1; }
-          { echo "sha=$sha"; echo "version=$version"; echo "branch=$branch"; echo "cut=${cut:-false}"; } >> "$GITHUB_OUTPUT"
+          { echo "sha=$sha"; echo "version=$version"; echo "branch=$branch"; echo "cut=${cut:-false}"; echo "first=${first:+true}"; } >> "$GITHUB_OUTPUT"
           echo "Version $version on $branch (${sha::12})" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: First release, on main's commit
+        if: steps.plan.outputs.first == 'true'
+        env:
+          SHA: ${{ steps.plan.outputs.sha }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          BRANCH: ${{ steps.plan.outputs.branch }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$SHA" >/dev/null
+          echo "$BRANCH cut on ${SHA::12}"
+          {
+            echo "The first release: \`$BRANCH\` is \`${SHA::12}\` of \`main\`, which carries $VERSION already. No version pull request."
+            echo ""
+            echo "Run the workflow **release** from \`main\` with version \`$VERSION\`: it uses the CD run of \`${SHA::12}\` on \`main\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Version pull request
+        if: steps.plan.outputs.first != 'true'
         env:
           SHA: ${{ steps.plan.outputs.sha }}
           VERSION: ${{ steps.plan.outputs.version }}

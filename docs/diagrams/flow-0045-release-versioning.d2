@@ -1,6 +1,6 @@
 # Flowchart: one release or patch, from release-prepare to the tag, the GitHub release and the pull request back
 # into main (ADR 0045).
-# Shows every check in order: the commit staging ran, the next version, the version pull request, the checks of
+# Shows every check in order: the commit staging ran, the first release or the next version, the version pull request, the checks of
 # release.yml (branch, version rule with its year window, seven files, staging or a fix release, canary present),
 # the CD run of the branch, the approval, then canary and prod (flow 0045 release branches), the tag, and the
 # merge back into main.
@@ -20,6 +20,9 @@ e_patch: "Fail: release it first,\nor merge the fix first" {class: fail}
 unfinished: "a release/YYYY.N cut\nby an earlier run, with\nno version yet?" {class: decision}
 base: "commit given, or the newest\ncommit of main whose CD run\ndeployed staging?" {class: decision}
 e_base: "Fail: no commit\nthat staging ran" {class: fail}
+first: "release-version.sh first:\nno release yet, the commit\ncarries the version of main?" {class: decision}
+e_first: "Fail: give a commit\nthat carries it" {class: fail}
+first_cut: "release/YYYY.N cut on\nthe commit of main;\nno version pull request" {class: app}
 next: "release-version.sh next:\nYYYY.N.0, release/YYYY.N\nnot there yet?" {class: decision}
 e_next: "Fail: finish that\nrelease first" {class: fail}
 cut: "version commit made,\nthen release/YYYY.N\ncut on the commit" {class: app}
@@ -29,23 +32,25 @@ merge: "Owner merges the pull request:\ncd.yml builds, signs, scans the images" 
 release: "release YYYY.N.P\n(from main)" {class: end}
 exists: "release/YYYY.N exists,\nno tag vYYYY.N.P, no used/vYYYY.N.P\non another commit?" {class: decision}
 e_exists: "Fail: prepare it, it is released,\nor it is used up: the next patch" {class: fail}
-rule: "release-version.sh check:\nyear between the commit it is cut\nfrom and now; .0 after the highest\nrelease, .P after .P-1?" {class: decision}
+rule: "release-version.sh check:\nyear between the commit it is cut\nfrom and now; no other release (the first),\n.0 after the highest release, .P after .P-1?" {class: decision}
 e_rule: "Fail: the rule names\nwhat is wrong" {class: fail}
 files: "seven files at the head\n= YYYY.N.P?" {class: decision}
 e_files: "Fail: merge the\nversion pull request" {class: fail}
-only: "a .0 with only the version\nfiles beside its commit of main?" {class: decision}
+only: "a commit of main unchanged,\nor a .0 with only the version\nfiles beside its commit of main?" {class: decision}
 staged: "that commit's CD run\non main deployed staging?" {class: decision}
 e_staged: "Fail: staging\nnever ran it" {class: fail}
 fix: "A patch: warning,\nstaging never ran the fix" {class: app}
 canary: "canary: in the Makefile\nof the head?" {class: decision}
 e_canary: "Fail: the fix must carry\ndeploy/ and .github/ of main" {class: fail}
-built: "CD run of the head\nof the branch passed?" {class: decision}
+built: "CD run of the head passed?\n(on main for a commit of\nmain unchanged)" {class: decision}
 e_built: "Fail: fix the branch,\nrun release again" {class: fail}
 approve: "Approval on\nenvironment prod" {class: decision}
 prod: "deploy.yml: canary, smoke test,\nHarbor tag, prod by version\n(flow 0045 release branches)" {class: app}
 e_prod: "Fail: no tag, no release;\nprod runs the release before;\nafter the Harbor tag: used-up tags\nthe commit used/vYYYY.N.P" {class: fail}
 tag: "publish: annotated tag vYYYY.N.P\n(headline + notes since the release below)" {class: app}
 gh: "GitHub release + SBOMs\nof the branch's CD run" {class: app}
+onmain: "the release commit\nis on main already?" {class: decision}
+nothing: "No pull request:\nnothing to bring back" {class: end}
 back: "release-merge/vYYYY.N.P from the tag,\nmain merged in (main keeps a higher version);\npull request into main, ci.yml started" {class: app}
 merged: "Owner merges it:\nmain has the version and the fix" {class: end}
 
@@ -58,7 +63,11 @@ kind -> unfinished: no {class: hot}
 unfinished -> branch: "yes: finish it"
 unfinished -> base: no {class: hot}
 base -> e_base: no
-base -> next: yes {class: hot}
+base -> first: yes {class: hot}
+first -> e_first: "yes, it does not"
+first -> first_cut: "yes"
+first_cut -> release
+first -> next: "no: a release exists" {class: hot}
 next -> e_next: no
 next -> cut: yes {class: hot}
 cut -> branch: {class: hot}
@@ -84,5 +93,7 @@ approve -> prod: yes {class: hot}
 prod -> e_prod: fails
 prod -> tag: healthy {class: hot}
 tag -> gh: {class: hot}
-gh -> back: {class: hot}
+gh -> onmain: {class: hot}
+onmain -> nothing: yes
+onmain -> back: no {class: hot}
 back -> merged: {class: hot}
