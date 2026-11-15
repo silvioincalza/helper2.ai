@@ -129,7 +129,11 @@ jobs:
               -f event=push -f head_sha="$SHA" -f branch="$branch" -f per_page=1 \
               --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url, .id] | @tsv")
             if [[ -z $run ]]; then
-              ((++missing <= 6)) || { echo "::error::no CD run for ${SHA::12} on $branch: merge the version pull request first"; exit 1; }
+              if ((++missing > 6)); then
+                hint="merge the version pull request first"
+                [[ $branch == main ]] && hint="the release is that commit of main unchanged, and its push to main built no images: release-prepare cuts only a commit whose CD run on main deployed staging"
+                echo "::error::no CD run for ${SHA::12} on $branch: $hint"; exit 1
+              fi
               echo "no CD run for ${SHA::12} yet, waiting"; sleep 10; continue
             fi
             IFS=$'\t' read -r status conclusion url id <<< "$run"
