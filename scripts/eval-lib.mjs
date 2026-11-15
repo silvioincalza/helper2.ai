@@ -212,7 +212,7 @@ function claimOf(entry) {
   if (!isWord(c.claim) || !Array.isArray(c.supportedBy) || !c.supportedBy.every(isWord)) {
     throw new Error(`a hostile case names a claim with a blank or malformed word: ${JSON.stringify(entry)}`);
   }
-  return c;
+  return { claim: c.claim.trim(), supportedBy: c.supportedBy.map((w) => w.trim()) };
 }
 
 function supports(pick, { claim, supportedBy = [] }) {
