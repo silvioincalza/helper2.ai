@@ -17,6 +17,7 @@ export function ResultsAsOf({ sources }: { sources: readonly SourceStatus[] }) {
   return (
     <>
       <span aria-hidden="true"> · </span>
+      <span className="sr-only">, </span>
       <time dateTime={at}>{t('results.asOf', { time: clockTime(at, false) })}</time>
     </>
   );
