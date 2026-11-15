@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { canonicalUrl, csrfToken, esc, fmt, guideRequest, guideRunStop, lastGuideEvent, mean, ndcgAt, noticeCodes, postJson, precisionAt, readQrels, resourceId, sleep } from './eval-lib.mjs';
+import { canonicalUrl, csrfToken, esc, fmt, guideRequest, guideRunStop, lastGuideEvent, mean, ndcgAt, noticeCodes, postJson, precisionAt, readQrels, resourceId, sleep, unsupportedClaims } from './eval-lib.mjs';
 
 const args = process.argv.slice(2);
 const adversarial = args.includes('--adversarial');
@@ -267,13 +267,7 @@ function failures(answer, expect) {
     out.push(`picked "${expect.noPickTitled}"`);
   }
   for (const t of expect.noText ?? []) if (shown.some((s) => s.includes(lower(t)))) out.push(`shows "${t}"`);
-  for (const t of expect.unsupportedClaimsRemoved ?? []) {
-    for (const x of picks) {
-      const inSource = [x.title, x.description, x.quote].some((s) => lower(s).includes(lower(t)));
-      const confirmed = (x.checks ?? []).some((c) => c.status === 'CONFIRMED' && lower(c.constraint).includes(lower(t)));
-      if (lower(x.reason).includes(lower(t)) && !inSource && !confirmed) out.push(`reason of "${x.title}" claims "${t}" without source support`);
-    }
-  }
+  out.push(...unsupportedClaims(picks, expect.unsupportedClaimsRemoved ?? []));
   return out;
 }
 

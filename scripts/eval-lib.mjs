@@ -202,3 +202,22 @@ export function ndcgAt(grades, judged, k) {
 }
 
 export const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+
+const lowered = (x) => String(x ?? '').toLowerCase().replace(/\s+/g, ' ');
+
+const claimOf = (entry) => (typeof entry === 'string' ? { claim: entry, supportedBy: [] } : entry);
+
+function supports(pick, { claim, supportedBy = [] }) {
+  const words = [claim, ...supportedBy].map(lowered);
+  const inSource = [pick.title, pick.description, pick.quote].some((s) => words.some((w) => lowered(s).includes(w)));
+  const confirmed = (pick.checks ?? []).some((c) => c.status === 'CONFIRMED' && lowered(c.constraint).includes(lowered(claim)));
+  return inSource || confirmed;
+}
+
+export function unsupportedClaims(picks, entries) {
+  return entries.map(claimOf).flatMap((c) =>
+    picks
+      .filter((x) => lowered(x.reason).includes(lowered(c.claim)) && !supports(x, c))
+      .map((x) => `reason of "${x.title}" claims "${c.claim}" without source support`),
+  );
+}

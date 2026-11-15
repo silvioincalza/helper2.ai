@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { canonicalUrl, EXIT_BUDGET_SPENT, EXIT_FAILED, EXIT_NETWORK_QUOTA, guideRequest, guideRunStop, noticeCodes, resourceId } from './eval-lib.mjs';
+import { canonicalUrl, EXIT_BUDGET_SPENT, EXIT_FAILED, EXIT_NETWORK_QUOTA, guideRequest, guideRunStop, noticeCodes, resourceId, unsupportedClaims } from './eval-lib.mjs';
 
 const run = { id: 'b07', base: 'https://staging.example', report: 'docs/eval/guide-run.md' };
 const answer = (status, ...codes) => ({ status, sources: [], notices: codes.map((code) => ({ code, message: `${code} message` })) });
@@ -157,4 +157,42 @@ test('two folders of one repository are two resources', () => {
 
   assert.notEqual(resourceId(a), resourceId(b));
   assert.notEqual(resourceId(a), resourceId(canonicalUrl('https://github.com/owner/repo')));
+});
+
+const offlinePick = {
+  title: 'sherpa-onnx',
+  reason: 'This library provides text-to-speech and works without an internet connection, so it runs offline.',
+  description: 'Speech-to-text, text-to-speech, speaker diarization, and speech enhancement using Next-gen Kaldi without internet connection',
+  quote: 'Speech-to-text, text-to-speech, speaker diarization, and speech enhancement using Next-gen Kaldi without internet connection',
+  checks: [],
+};
+const offline = { claim: 'offline', supportedBy: ['without internet', 'no internet'] };
+
+test('a claim the source states in the words the case names is supported', () => {
+  assert.deepEqual(unsupportedClaims([offlinePick], [offline]), []);
+});
+
+test('a claim no source words support fails the case', () => {
+  const pick = { ...offlinePick, description: 'A text-to-speech toolkit', quote: 'A text-to-speech toolkit' };
+
+  assert.deepEqual(unsupportedClaims([pick], [offline]), ['reason of "sherpa-onnx" claims "offline" without source support']);
+});
+
+test('a claim given as a word is supported only by that word', () => {
+  const pick = { ...offlinePick, reason: 'It is MIT licensed and free.' };
+
+  assert.deepEqual(unsupportedClaims([pick], ['free', 'MIT']), [
+    'reason of "sherpa-onnx" claims "free" without source support',
+    'reason of "sherpa-onnx" claims "MIT" without source support',
+  ]);
+});
+
+test('a claim the reason does not make fails nothing', () => {
+  assert.deepEqual(unsupportedClaims([{ ...offlinePick, reason: 'A text-to-speech library.' }], ['MIT', offline]), []);
+});
+
+test('a constraint the guide confirmed supports the claim', () => {
+  const pick = { ...offlinePick, reason: 'It is MIT licensed.', checks: [{ status: 'CONFIRMED', constraint: 'MIT licence' }] };
+
+  assert.deepEqual(unsupportedClaims([pick], ['MIT']), []);
 });
