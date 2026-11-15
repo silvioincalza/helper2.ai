@@ -60,6 +60,21 @@ export function clockTime(iso: string, seconds = true): string {
   );
 }
 
+export function clockTimeOnDay(iso: string, now: number): string {
+  const d = instant(iso);
+  if (!d || Number.isNaN(now)) return clockTime(iso, false);
+  const today = new Date(now);
+  const day = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short' });
+  if (day.format(d) === day.format(today)) return clockTime(iso, false);
+  return new Intl.DateTimeFormat(dateLocale(), {
+    day: 'numeric',
+    month: 'short',
+    ...(d.getFullYear() !== today.getFullYear() ? { year: 'numeric' as const } : {}),
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(d);
+}
+
 export function shortDay(iso: string, now?: number): string {
   const d = instant(iso);
   if (!d) return '';

@@ -353,7 +353,7 @@ function ResultsBody({
             total: res.coverage.sourcesQueried,
             count: res.total,
           })}
-          <ResultsAsOf sources={res.sources} />
+          <ResultsAsOf sources={res.sources} now={Date.parse(res.executedAt)} />
         </h2>
         <SourceTiles sources={res.sources} now={Date.parse(res.executedAt)} />
       </section>

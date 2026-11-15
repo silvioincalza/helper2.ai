@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { SourceStatus } from '@/api/types';
-import { clockTime } from '@/lib/format';
+import { clockTimeOnDay } from '@/lib/format';
 
 function oldestCachedAt(sources: readonly SourceStatus[]): string | null {
   const saved = sources
@@ -10,7 +10,7 @@ function oldestCachedAt(sources: readonly SourceStatus[]): string | null {
   return saved.reduce((oldest, at) => (Date.parse(at) < Date.parse(oldest) ? at : oldest));
 }
 
-export function ResultsAsOf({ sources }: { sources: readonly SourceStatus[] }) {
+export function ResultsAsOf({ sources, now }: { sources: readonly SourceStatus[]; now: number }) {
   const { t } = useTranslation();
   const at = oldestCachedAt(sources);
   if (!at) return null;
@@ -18,7 +18,7 @@ export function ResultsAsOf({ sources }: { sources: readonly SourceStatus[] }) {
     <>
       <span aria-hidden="true"> · </span>
       <span className="sr-only">, </span>
-      <time dateTime={at}>{t('results.asOf', { time: clockTime(at, false) })}</time>
+      <time dateTime={at}>{t('results.asOf', { time: clockTimeOnDay(at, now) })}</time>
     </>
   );
 }

@@ -1,6 +1,7 @@
 import {
   backAgain,
   clockTime,
+  clockTimeOnDay,
   dateLocale,
   displayHost,
   formatDate,
@@ -110,7 +111,32 @@ describe('an INSTANT is shown in the time zone and the clock of the visitor', ()
     expect(longLocalDay(Date.parse('2026-11-11T02:30:00Z'))).toBe('Tuesday, November 10, 2026');
   });
 
+  it('a clock time on the day of now is the time alone, on another day it carries the day', () => {
+    browser('it-CH');
+    zone('Europe/Zurich');
+    const now = Date.parse('2026-11-12T10:00:00Z');
+
+    expect(clockTimeOnDay('2026-11-12T06:15:00Z', now)).toBe('07:15');
+    expect(clockTimeOnDay('2026-11-09T17:00:00Z', now).replace(/\s/g, ' ')).toBe('9 Nov, 18:00');
+    expect(clockTimeOnDay('2025-12-31T17:00:00Z', now).replace(/\s/g, ' ')).toBe(
+      '31 Dec 2025, 18:00',
+    );
+  });
+
+  it('the day of a clock time is the day of the visitor', () => {
+    const now = Date.parse('2026-11-12T10:00:00Z');
+
+    browser('it-CH');
+    zone('Europe/Zurich');
+    expect(clockTimeOnDay('2026-11-11T23:30:00Z', now)).toBe('00:30');
+
+    browser('en-US');
+    zone('America/Los_Angeles');
+    expect(clockTimeOnDay('2026-11-11T23:30:00Z', now).replace(/\s/g, ' ')).toBe('Nov 11, 3:30 PM');
+  });
+
   it('a value that cannot be read is shown as it is', () => {
+    expect(clockTimeOnDay('nope', 0)).toBe('nope');
     expect(formatDate('nope', 'INSTANT')).toBe('nope');
     expect(clockTime('nope')).toBe('nope');
     expect(localDay('nope')).toBe('nope');
