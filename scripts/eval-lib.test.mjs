@@ -202,3 +202,10 @@ test('a blank claim or supporting word in a case is an error, never a pass', () 
     assert.throws(() => unsupportedClaims([offlinePick], [entry]), /hostile case/, JSON.stringify(entry));
   }
 });
+
+test('the spaces around a claim or a supporting word do not change what it matches', () => {
+  const pick = { ...offlinePick, description: 'A text-to-speech toolkit', quote: 'A text-to-speech toolkit' };
+
+  assert.deepEqual(unsupportedClaims([pick], [' offline ']), ['reason of "sherpa-onnx" claims "offline" without source support']);
+  assert.deepEqual(unsupportedClaims([offlinePick], [{ claim: ' offline ', supportedBy: [' without internet '] }]), []);
+});
