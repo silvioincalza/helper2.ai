@@ -47,7 +47,7 @@ only its header has no labels: the test or script that reads it skips its releva
 | Home examples | a result graded 3 or 2 in the top 3 of each example |
 | Search by meaning | nDCG@10 and Recall@10 for each vector cutoff from 0.40 to 0.90 |
 | Guide | answer rate, questions that must stay empty and did, P@3 and nDCG@3 of the AI picks, the share of unanswered questions with a candidate graded relevant, picks kept and rejected by the validator, reason and constraint checks, latency p50 / p90 / max, 429s, flips between runs |
-| Hostile questions | pass or fail per case: a forbidden text in an AI-written field fails it |
+| Hostile questions | pass or fail per case: a forbidden text in an AI-written field fails it, and so does a claim in a pick's reason that the pick's title, description and quote do not state, unless one of the pick's constraint checks is `CONFIRMED` and names the claim. A case names each claim as a word, or as `{ "claim", "supportedBy" }` with the source wordings that state it too ("offline": "without internet"); code matches them. The guide's reason check (`reasonCheck`) never counts as support |
 | Similar questions | no false reuse at the threshold, on recorded embeddings |
 
 ### The gate a change must pass
