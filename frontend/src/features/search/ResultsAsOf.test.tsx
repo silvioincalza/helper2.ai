@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { makeStatus } from '@/test/fixtures';
-import { clockTime } from '@/lib/format';
+import { clockTime, dateLocale } from '@/lib/format';
 import { ResultsAsOf } from './ResultsAsOf';
 
 const searchedAt = Date.parse('2026-10-22T08:50:00Z');
@@ -40,6 +40,8 @@ describe('the time of the results next to the result count', () => {
         ]}
       />,
     );
+    expect(dateLocale()).toBe('en-US');
+    expect(Intl.DateTimeFormat().resolvedOptions().timeZone).toBe('UTC');
     expect(container.textContent?.replace(/\s/g, ' ')).toContain('results as of Oct 19, 6:00 PM');
     expect(container.querySelector('time')).toHaveAttribute('dateTime', '2026-10-19T18:00:00Z');
   });
