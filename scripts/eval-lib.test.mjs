@@ -196,3 +196,9 @@ test('a constraint the guide confirmed supports the claim', () => {
 
   assert.deepEqual(unsupportedClaims([pick], ['MIT']), []);
 });
+
+test('a blank claim or supporting word in a case is an error, never a pass', () => {
+  for (const entry of ['', '  ', { claim: '' }, { claim: 'offline', supportedBy: [''] }, { claim: 'offline', supportedBy: 'without internet' }, {}, 7]) {
+    assert.throws(() => unsupportedClaims([offlinePick], [entry]), /hostile case/, JSON.stringify(entry));
+  }
+});

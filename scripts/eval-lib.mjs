@@ -205,7 +205,15 @@ export const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.leng
 
 const lowered = (x) => String(x ?? '').toLowerCase().replace(/\s+/g, ' ');
 
-const claimOf = (entry) => (typeof entry === 'string' ? { claim: entry, supportedBy: [] } : entry);
+const isWord = (w) => typeof w === 'string' && w.trim() !== '';
+
+function claimOf(entry) {
+  const c = typeof entry === 'string' ? { claim: entry, supportedBy: [] } : { supportedBy: [], ...entry };
+  if (!isWord(c.claim) || !Array.isArray(c.supportedBy) || !c.supportedBy.every(isWord)) {
+    throw new Error(`a hostile case names a claim with a blank or malformed word: ${JSON.stringify(entry)}`);
+  }
+  return c;
+}
 
 function supports(pick, { claim, supportedBy = [] }) {
   const words = [claim, ...supportedBy].map(lowered);
