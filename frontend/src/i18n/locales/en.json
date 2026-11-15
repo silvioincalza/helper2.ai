@@ -242,6 +242,7 @@
     "timeline": "Timeline",
     "fanOut_one": "{{ok}} of {{total}} sources answered · {{count}} result, duplicates removed",
     "fanOut_other": "{{ok}} of {{total}} sources answered · {{count}} results, duplicates removed",
+    "asOf": "results as of {{time}}",
     "seeSources": "See the sources we search",
     "showMore": "Show more",
     "loadingMore": "Loading more…",

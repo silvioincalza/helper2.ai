@@ -44,6 +44,7 @@ import { FiltersPanel } from './FiltersPanel';
 import { useMorePages } from './morePages';
 import { ResultKeys } from './ResultKeys';
 import { ResultRow } from './ResultRow';
+import { ResultsAsOf } from './ResultsAsOf';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { SourceLine } from './SourceLine';
 import { TypeTabs } from './TypeTabs';
@@ -352,6 +353,7 @@ function ResultsBody({
             total: res.coverage.sourcesQueried,
             count: res.total,
           })}
+          <ResultsAsOf sources={res.sources} />
         </h2>
         <SourceTiles sources={res.sources} now={Date.parse(res.executedAt)} />
       </section>
