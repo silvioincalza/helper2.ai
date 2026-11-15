@@ -75,7 +75,9 @@ jobs:
           git show "$sha:deploy/k8s/Makefile" | grep -q '^canary:' \
             || { echo "::error::release/$LINE has no canary in deploy/k8s/Makefile: a fix of a release made before the canary must carry deploy/ and .github/ of main (ADR 0045)"; exit 1; }
           fix=false
-          if [[ ${VERSION##*.} != 0 ]]; then
+          if [[ $sha == "$base" ]]; then
+            echo "release/$LINE is ${base::12} of main unchanged: staging ran that commit, and its CD run on main built the images"
+          elif [[ ${VERSION##*.} != 0 ]]; then
             fix=true
             echo "::warning::$VERSION is a patch of release/$LINE: staging never ran its fixes (ADR 0045)"
           elif other=$(.github/scripts/bump-version.sh only-version-files "$base" "$sha"); then
@@ -119,13 +121,15 @@ jobs:
         id: wait
         run: |
           set -euo pipefail
+          branch=release/$LINE
+          [[ $SHA != "$BASE" ]] || branch=main
           missing=0
           for _ in $(seq 1 80); do
             run=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/workflows/cd.yml/runs" \
-              -f event=push -f head_sha="$SHA" -f branch="release/$LINE" -f per_page=1 \
+              -f event=push -f head_sha="$SHA" -f branch="$branch" -f per_page=1 \
               --jq ".workflow_runs[0] // empty | [.status, (.conclusion // \"\"), .html_url, .id] | @tsv")
             if [[ -z $run ]]; then
-              ((++missing <= 6)) || { echo "::error::no CD run for ${SHA::12} on release/$LINE: merge the version pull request first"; exit 1; }
+              ((++missing <= 6)) || { echo "::error::no CD run for ${SHA::12} on $branch: merge the version pull request first"; exit 1; }
               echo "no CD run for ${SHA::12} yet, waiting"; sleep 10; continue
             fi
             IFS=$'\t' read -r status conclusion url id <<< "$run"
@@ -264,6 +268,10 @@ jobs:
             echo "the pull request from $head exists already"; exit 0
           fi
           git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main
+          if git merge-base --is-ancestor "$SHA" refs/remotes/origin/main; then
+            echo "v$VERSION is ${SHA::12} of main: nothing to bring back into main, no pull request" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           bump=$RUNNER_TEMP/bump-version.sh
           cp .github/scripts/bump-version.sh "$bump"
           git switch --quiet -c "$head" "$SHA"

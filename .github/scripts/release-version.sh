@@ -25,6 +25,10 @@ check() {
     return 1
   fi
   tags=$(sed 's#^used/##' | { grep -E "$RELEASE" || true; })
+  if [[ -z $(grep -vFx "$tag" <<< "$tags" || true) ]]; then
+    echo "${tag#v}"
+    return 0
+  fi
   if ((p == 0)); then
     highest=$(highest_release_below "$year" "$n" <<< "$tags")
     ((n == highest + 1)) || { echo "$tag must be release $((highest + 1)) of $year, the one after the highest below it" >&2; return 1; }
@@ -41,10 +45,23 @@ known_versions() {
     | sed -n 's/^\([0-9]\{4\}\.[1-9][0-9]*\)$/v\1.0/p'
 }
 
+first_version() {
+  local carried
+  carried=$(sed -n 's/^version = "\(.*\)"$/\1/p' "$(git rev-parse --show-toplevel)/backend/build.gradle.kts" 2> /dev/null || true)
+  [[ v$carried =~ $VERSION ]] || { echo "no release yet, and backend/build.gradle.kts carries '$carried', not YYYY.N.P" >&2; return 1; }
+  echo "$carried"
+}
+
+first() {
+  [[ -n $(known_versions | { grep -E "$RELEASE" || true; }) ]] || first_version
+}
+
 next() {
-  local year highest
+  local year highest known
+  known=$(known_versions | { grep -E "$RELEASE" || true; })
+  [[ -n $known ]] || { first_version; return; }
   year=$(year_of "${1:-$(date +%s)}")
-  highest=$(known_versions | highest_release_below "$year" 999999)
+  highest=$(highest_release_below "$year" 999999 <<< "$known")
   echo "$year.$((highest + 1)).0"
 }
 
@@ -78,6 +95,14 @@ ok|v2026.13.0|2026-12-02 10:00|v2026.11.1,v2026.12.0,v2026.12.1
 ok|v2027.1.0|2027-01-02 09:00|v2026.11.1,v2026.14.3
 ok|v2026.1.0|2026-03-01 09:00|v2.0.0
 ok|v2026.1.0|2026-03-01 09:00|
+# the first release of a repository is the version its files carry, whatever its number
+ok|v2026.11.3|2026-11-15 10:00|
+ok|v2026.11.3|2026-11-15 10:00|used/v2026.11.3
+ok|v2026.11.3|2026-11-15 10:00|v2026.11.3
+fail|v2026.11.3|2026-11-15 10:00|v2026.11.1
+fail|v2026.11.3|2026-11-15 10:00|used/v2026.11.1
+fail|v2026.11.3|2027-01-02 09:00|
+fail|v2026.11.03|2026-11-15 10:00|
 # patches on a release branch
 ok|v2026.12.1|2026-11-20 10:00|v2026.11.1,v2026.12.0
 ok|v2026.12.2|2026-12-20 10:00|v2026.12.0,v2026.12.1,v2026.13.0
@@ -124,8 +149,18 @@ CASES
       fails=$((fails + 1))
     fi
   }
-  expect_next 2026.1.0 "next with no tag" next 1794132000
+  expect_next fail "next with no release and no version file" next 1794132000
+  mkdir -p "$repo/backend"
+  echo 'version = "2.0.0"' > "$repo/backend/build.gradle.kts"
+  expect_next fail "next with no release and a version that is not YYYY.N.P" next 1794132000
+  echo 'version = "2026.11.3"' > "$repo/backend/build.gradle.kts"
+  expect_next 2026.11.3 "next with no release: the version the files carry" next 1794132000
+  expect_next 2026.11.3 "first with no release" first
   expect_next fail "next patch of a line with no release" next-patch 2026.11
+  (cd "$repo" && git branch release/2026.11) > /dev/null 2>&1
+  expect_next 2026.12.0 "next after the first release was prepared" next 1794132000
+  expect_next "" "first after the first release was prepared" first
+  (cd "$repo" && git branch -D release/2026.11) > /dev/null 2>&1
   (cd "$repo" && git tag v2026.11.1 && git tag v2.0.0) > /dev/null 2>&1
   expect_next 2026.12.0 "next after v2026.11.1" next 1794132000
   expect_next 2026.11.2 "next patch of 2026.11" next-patch 2026.11
@@ -145,12 +180,13 @@ CASES
 }
 
 usage() {
-  echo "usage: release-version.sh check <tag> <unix-time> [<latest-unix-time>] | next [unix-time] | next-patch <YYYY.N> | --self-test" >&2
+  echo "usage: release-version.sh check <tag> <unix-time> [<latest-unix-time>] | first | next [unix-time] | next-patch <YYYY.N> | --self-test" >&2
   exit 2
 }
 
 case ${1:-} in
   check) (($# == 3 || $# == 4)) || usage; check "${@:2}" ;;
+  first) first ;;
   next) next "${2:-}" ;;
   next-patch) (($# == 2)) || usage; next_patch "$2" ;;
   --self-test) self_test ;;

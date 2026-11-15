@@ -28,8 +28,10 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    from 0: v2026.12.0 is a release, v2026.12.1 and v2026.12.2 are its patches, v2026.13.0 the next release,
    v2027.1.0 the first of 2027. It is a valid semantic version, so the chart, npm, Gradle and the three API files carry
    it as it is.
-   - **The first release fits.** v2026.11.3, the first release of this repository, reads as release 11 of 2026,
-     patch 3: the next release is v2026.12.0.
+   - **The first release is the version `main` carries.** With no release yet (no `vYYYY.N.P`, no
+     `used/vYYYY.N.P`, no `release/YYYY.N`), `release-version.sh next` and `first` print the version of the seven
+     files, and `check` accepts it whatever its number. v2026.11.3, the first release of this repository, reads as
+     release 11 of 2026, patch 3: the next release is v2026.12.0.
    - **No gap, no repeat.** A release `.0` follows the highest release of its year (or is `.1.0`); a patch `.P`
      follows `.P-1` of the same release.
    - **The year is the year the release is prepared.** The tag comes later, after the canary, maybe on 1 January:
@@ -57,6 +59,9 @@ read as a fix of that release. What a release branch gained must reach `main` ag
      release with `release-version.sh next` (it counts prepared branches too), makes the version commit, and only then
      creates `release/YYYY.N` on that commit. A branch `release/YYYY.N` with no tag and no version yet was cut by a
      run that stopped half-way: the next run finishes it instead of picking `YYYY.N+1`;
+   - **the first release** (`release-version.sh first` prints a version): the commit must carry that version
+     already, so there is no version commit and no version pull request. It creates `release/YYYY.N` on the commit
+     of `main` and stops: `release` runs next;
    - **a patch** (`patch-of: YYYY.N`): takes the head of `release/YYYY.N`, where the fixes arrived by pull
      request, and picks `release-version.sh next-patch`. It refuses a branch whose last version is neither released nor used up (`used/vYYYY.N.P`, §8),
      and a branch with nothing since that version.
@@ -68,10 +73,12 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    - the version follows §1, with the year window from the commit the branch was cut from to now;
    - the seven files at the head of the branch carry the version;
    - a release `.0` must be the commit of `main` plus the version files only (`bump-version.sh only-version-files`):
-     then that commit's CD run on `main` must have deployed staging. A patch reaches prod without a staging run, with
-     a warning;
+     then that commit's CD run on `main` must have deployed staging. A branch that is a commit of `main` unchanged
+     (the first release) is checked the same way, whatever its patch number. A patch reaches prod without a staging
+     run, with a warning;
    - the head of the branch has the canary (`canary:` in `deploy/k8s/Makefile`);
-   - it waits for the CD run of the head of the branch, which must pass.
+   - it waits for the CD run of the head of the branch, which must pass. For a commit of `main` unchanged it is that
+     commit's CD run on `main`: its images are built, signed and scanned there, and its SBOMs go with the release.
    Then the `prod` job calls `deploy.yml` with the commit, the version and the commit the checks passed. It waits
    for the approval on the `prod` environment; the canary, the rollout and the version tag in Harbor all come after
    that one approval.
@@ -117,7 +124,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
     merge has no conflict on the version lines and `main` keeps its version. A pull request opened with the workflow
     token starts no workflow, so the job starts `ci.yml` on that branch (`workflow_dispatch`), and its `ci-ok` stands
     for the pull request. When the merge conflicts, the branch stays at the tag and the pull request says so: the
-    owner resolves it, and that push runs CI. The owner merges it.
+    owner resolves it, and that push runs CI. The owner merges it. A release that is a commit of `main` (the first
+    release) has nothing to bring back: the job opens no pull request and says so in its summary.
 11. **No canary for a migration the release before cannot run on.** A migration is written expand then contract:
     the release before must keep working on the new schema, because the canary migrates prod's database while the
     release before still serves it. A release that cannot follow that rule is released with `canary` unticked, in a
@@ -220,7 +228,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
   and a fixed branch builds another one. Git records it as `used/vYYYY.N.P`, and the fix is the next patch.
 - The footer, Harbor and the release list say which release runs; the release date says when.
 - The version does not say whether an upgrade breaks something: the release notes and the API path do.
-- A release needs no choice of number: `release-prepare` picks it.
+- A release needs no choice of number: `release-prepare` picks it. The first release takes the number the files
+  carry, so a new repository goes on from the version the repository before it reached.
 - A release is two manual runs and two merges: `release-prepare`, its version pull request, `release`, and the pull
   request back into `main`. The version pull request is opened with the workflow token, so no CI runs on it; the push
   after the merge runs all of CI.
@@ -244,6 +253,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 - The year of a release is checked against a window, from the commit it is cut from to the time of the check: a
   release prepared on 31 December may carry the old year. The version does not say whether an upgrade breaks
   something; the release notes say it.
+- The first release's number is checked only for its form and its year: the version of the seven files on `main`
+  decides it.
 - A prepared release cannot be abandoned: its branch is never deleted and the numbers allow no gap, so the version
   is released, or the next year starts again at `.1.0`. A rollout that fails after the version tag in Harbor uses the
   number up (Harbor keeps it on that digest): the fix is the next patch. A run that fails after prod and before the tag leaves prod on a version
@@ -272,3 +283,4 @@ release branches, the canary and version tags: [flow](../../diagrams/flow-0045-r
 - Features: [F10.3](https://github.com/silvioincalza/helper2.ai/issues/109) Release branches, versions, canary.
 - Open issues that change this decision:
   - [#352](https://github.com/silvioincalza/helper2.ai/issues/352) S10.7.1 V2026.11.3, the first release of the new repository, on prod
+  - [#452](https://github.com/silvioincalza/helper2.ai/issues/452) T10.7.1 release-prepare and release make the first release of a repository
