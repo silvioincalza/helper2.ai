@@ -37,7 +37,9 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
    server's `repository.url`. `RepositoryJoin` decides whether the record joins it. The names are compared by
    words (lower case, split on anything that is not a letter or a digit), so `@langchain` is the owner
    `langchain-ai` and `@tanstack` is `TanStack`. A record joins the repository it states when:
-   - the stated repository is a sub-directory (`/tree/HEAD/{path}`): one folder is one package or one server;
+   - the stated repository is a sub-directory (`/tree/HEAD/{path}`): one folder is one package or one server. A
+     repository in a nested group (`gitlab.com/group/subgroup/name`) is a repository, named by its last part, and
+     a repository stated by its host alone is named by the host;
    - its scope is the repository's owner (`@langchain/core` under `langchain-ai/langchainjs`,
      `@microsoft/postgres-mcp-darwin-arm64` under `microsoft/postgres-mcp`); or
    - its name holds the repository's name (`@ai-sdk/openai` under `vercel/ai`, `langchain-openai` under
@@ -61,7 +63,8 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
    name, `https://registry.modelcontextprotocol.io/v0.1/servers/{name}` (`McpRegistryCollector.identity`), whatever
    host the collector reads, and it states its repository. It joins the repository root only when its name, the
    part after the namespace (`a1lane` in `ai.a1lane/a1lane`), holds one telling word of the repository's name: a
-   word other than `mcp`, `server`, `servers`, `model`, `context` or `protocol` (`a1lane` of `a1lane/a1lane-mcp`). A
+   word other than `mcp`, `server`, `servers`, `model`, `context` or `protocol` (`a1lane` of `a1lane/a1lane-mcp`); a
+   repository named with these words only (`modelcontextprotocol/servers`) needs one of them in the server's name. A
    repository with one server is still one result, and a collection repository with many servers
    (`codespar/mcp-dev-latam`, 127 servers: `mcp-adyen`, `mcp-afip`, …) is one result per server. The registry
    namespace is the owner of every server it publishes, so the owner alone does not join a server.

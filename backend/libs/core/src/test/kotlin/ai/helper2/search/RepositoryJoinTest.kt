@@ -51,6 +51,20 @@ class RepositoryJoinTest {
   }
 
   @Test
+  fun `a repository in a nested group is checked by its own name, not taken as a sub-directory`() {
+    val nested = "https://gitlab.com/group/subgroup/transformers"
+    assertNull(RepositoryJoin.of(npm("@someone/agents-kit", nested)))
+    assertJoins(npm("@group/transformers-js", nested))
+    assertJoins(pypi("transformers-lite", nested))
+  }
+
+  @Test
+  fun `a repository stated by its host alone is named by the host`() {
+    assertJoins(pypi("acme-sdk", "https://acme.dev"))
+    assertNull(RepositoryJoin.of(pypi("other-sdk", "https://acme.dev")))
+  }
+
+  @Test
   fun `a stated sub-directory is joined as stated`() {
     val folder = "https://github.com/remotion-dev/remotion/tree/HEAD/packages/player"
     assertEquals(folder, RepositoryJoin.of(npm("@remotion/player", folder))?.value)
@@ -82,6 +96,14 @@ class RepositoryJoinTest {
         server("io.github.sadri-dridi/aba-ok", "https://github.com/sadri-dridi/named-mcp-utilities")
       )
     )
+  }
+
+  @Test
+  fun `the servers of a repository with only generic words in its name join it only by sharing one`() {
+    val repo = "https://github.com/modelcontextprotocol/servers"
+    assertNull(RepositoryJoin.of(server("io.github.modelcontextprotocol/memory", repo)))
+    assertNull(RepositoryJoin.of(server("io.github.modelcontextprotocol/filesystem", repo)))
+    assertJoins(server("io.github.acme/mcp-server", "https://github.com/acme/mcp-server"))
   }
 
   @Test

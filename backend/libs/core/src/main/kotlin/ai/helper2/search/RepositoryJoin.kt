@@ -23,9 +23,12 @@ object RepositoryJoin {
     companion object {
       fun of(repository: CanonicalUrl): RepositoryRoot? {
         val segments = (URI(repository.value).rawPath ?: "").split('/').filter { it.isNotEmpty() }
-        if (segments.size != 2) return null
-        return RepositoryRoot(words(segments[0]), words(segments[1]))
+        if (FOLDER in segments) return null
+        val name = segments.lastOrNull() ?: repository.host.substringBefore('.')
+        return RepositoryRoot(words(segments.dropLast(1).joinToString(" ")), words(name))
       }
+
+      private const val FOLDER = "tree"
     }
   }
 
@@ -55,8 +58,8 @@ object RepositoryJoin {
 
   private class ServerName(val name: Set<String>) : StatedName {
     override fun belongsTo(root: RepositoryRoot): Boolean {
-      val telling = root.name - GENERIC_REPOSITORY_WORDS
-      return telling.isEmpty() || telling.any { it in name }
+      val telling = (root.name - GENERIC_REPOSITORY_WORDS).ifEmpty { root.name }
+      return telling.any { it in name }
     }
   }
 
