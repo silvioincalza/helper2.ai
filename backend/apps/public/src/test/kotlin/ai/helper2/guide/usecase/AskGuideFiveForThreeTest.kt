@@ -71,6 +71,7 @@ class AskGuideFiveForThreeTest {
 
   private class FiveModel(
     val picked: List<String>,
+    val misquoted: Set<String> = emptySet(),
     val verdict: (String) -> ReasonVerdict,
   ) : GuideModel {
     var claimsSeen: List<ReasonClaim> = emptyList()
@@ -92,7 +93,9 @@ class AskGuideFiveForThreeTest {
       titles = candidates.associate { it.key to it.result.title }
       return GuideProposal(
         picked.map { name ->
-          ProposedPick(byTitle.getValue(name).key, "A $name reason.", textOf(name))
+          val quote =
+            if (name in misquoted) "A quote that the text of $name never says" else textOf(name)
+          ProposedPick(byTitle.getValue(name).key, "A $name reason.", quote)
         }
       )
     }
@@ -171,6 +174,35 @@ class AskGuideFiveForThreeTest {
     assertEquals(0, answer.rejected)
     assertEquals(GuideStatus.OK, answer.status)
     assertTrue(answer.trail.removed.isEmpty())
+  }
+
+  @Test
+  fun `a spare whose quote is not in its text is no rejection either`() {
+    val model = FiveModel(names.take(5), misquoted = setOf("delta")) { fitting }
+
+    val answer = AskGuide(search, model, clock).ask(need, null)
+
+    assertEquals(
+      listOf("alpha", "bravo", "charlie"),
+      answer.recommendations.map { it.result.title },
+    )
+    assertEquals(0, answer.rejected)
+    assertEquals(GuideStatus.OK, answer.status)
+    assertTrue(answer.trail.removed.isEmpty())
+  }
+
+  @Test
+  fun `a misquoted pick before the third is still a rejection`() {
+    val model = FiveModel(names.take(5), misquoted = setOf("alpha")) { fitting }
+
+    val answer = AskGuide(search, model, clock).ask(need, null)
+
+    assertEquals(
+      listOf("bravo", "charlie", "delta"),
+      answer.recommendations.map { it.result.title },
+    )
+    assertEquals(1, answer.rejected)
+    assertEquals(GuideStatus.PARTIAL, answer.status)
   }
 
   @Test

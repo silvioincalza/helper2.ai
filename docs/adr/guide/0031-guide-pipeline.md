@@ -140,8 +140,9 @@ lose a check, never create one.
 5. **Three shown.** After the reason check the answer keeps the first 3 picks that are still in it
    (`GuideValidator.MAX_PICKS`), in the order the model gave. A pick dropped as off the need leaves its place to the
    next one the model proposed. A pick whose reason is `REMOVED` keeps its place, as it did before. The picks proposed
-   after the third one that fits the need are spares, even when they are off the need: they count in no
-   `rejectedBy`, no trail and no `PARTIAL` status (`PickAnswer.upToShownFitting`). So one weak
+   after the third one that fits the need are spares, even when they are off the need or fail the evidence gate: they
+   count in no `rejectedBy`, no trail and no `PARTIAL` status (`PickAnswer.upToShownFitting`, by each pick's position
+   in the proposal). A sixth pick still counts as `OVER_LIMIT`: the model broke the rule. So one weak
    pick no longer leaves the user with two. The cost is tokens, not calls: choose writes up to two more picks and the
    one reason check reads them.
 6. **Event.** `GuideProgress.reasonsChecked` sends `checked` with the counts `supported`, `removed`, `notChecked`, over

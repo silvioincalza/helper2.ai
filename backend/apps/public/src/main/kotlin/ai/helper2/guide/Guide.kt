@@ -335,11 +335,12 @@ class GuideValidator(
     val checks: Map<String, List<ConstraintCheck>> = emptyMap(),
     val rejectedBy: Map<Rejection, Int> = emptyMap(),
     val rejectedPicks: List<RejectedPick> = emptyList(),
+    val rejectionsAt: List<Pair<Int, Rejection>> = emptyList(),
   )
 
-  data class RejectedPick(val candidate: Candidate, val rejection: Rejection)
+  data class RejectedPick(val candidate: Candidate, val rejection: Rejection, val position: Int = 0)
 
-  data class KeptPick(val candidate: Candidate, val pick: ProposedPick)
+  data class KeptPick(val candidate: Candidate, val pick: ProposedPick, val position: Int = 0)
 
   val fingerprint: String
     get() =
@@ -393,12 +394,14 @@ class GuideValidator(
     val byKey = candidates.associateBy { it.key }
     val rejectedBy = mutableMapOf<Rejection, Int>()
     val rejectedPicks = mutableListOf<RejectedPick>()
-    fun reject(r: Rejection, c: Candidate? = null) {
-      rejectedBy.merge(r, 1, Int::plus)
-      if (c != null) rejectedPicks += RejectedPick(c, r)
-    }
+    val rejectionsAt = mutableListOf<Pair<Int, Rejection>>()
     val picks = mutableListOf<KeptPick>()
-    for (p in proposal.picks) {
+    for ((position, p) in proposal.picks.withIndex()) {
+      fun reject(r: Rejection, c: Candidate? = null) {
+        rejectedBy.merge(r, 1, Int::plus)
+        rejectionsAt += position to r
+        if (c != null) rejectedPicks += RejectedPick(c, r, position)
+      }
       val c = byKey[p.candidateKey.trim()]
       val problem =
         when {
@@ -410,11 +413,12 @@ class GuideValidator(
       when {
         problem != null -> reject(problem, c)
         picks.size >= maxProposed -> reject(Rejection.OVER_LIMIT)
-        else -> picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = p.quote.trim()))
+        else ->
+          picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = p.quote.trim()), position)
       }
     }
     val checks = picks.associate { (c, p) -> c.key to checkConstraints(constraints, c, p.evidence) }
-    return Result(picks, rejectedBy.values.sum(), checks, rejectedBy, rejectedPicks)
+    return Result(picks, rejectedBy.values.sum(), checks, rejectedBy, rejectedPicks, rejectionsAt)
   }
 
   fun checkConstraints(
