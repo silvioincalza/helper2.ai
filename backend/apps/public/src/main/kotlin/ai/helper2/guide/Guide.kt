@@ -7,6 +7,7 @@ import ai.helper2.search.WebSearchesLeft
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.LinkText.containsLink
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WordBounds
 import ai.helper2.shared.WordLists
 import java.time.Instant
 
@@ -45,7 +46,8 @@ private val READING_WORDS = IntentWords.anywhere("reading")
 
 private val QUALIFIERS =
   Regex(
-    "(?iu)(?<![\\p{L}\\p{Nd}_-])(?:${WordLists.alternation(IntentWords.phrases("qualifier"))})(?![\\p{L}\\p{Nd}_-])"
+    "(?iu)${WordBounds.HYPHENATED_START}(?:${WordLists.alternation(IntentWords.phrases("qualifier"))})" +
+      WordBounds.HYPHENATED_END
   )
 
 fun withoutQualifiers(query: String): String =

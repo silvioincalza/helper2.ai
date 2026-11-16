@@ -4,6 +4,7 @@ import ai.helper2.search.MergedResult
 import ai.helper2.shared.LinkText
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.WordBounds.END
+import ai.helper2.shared.WordBounds.GAP
 import ai.helper2.shared.WordBounds.START
 import ai.helper2.shared.WordLists
 import java.text.Normalizer
@@ -195,13 +196,21 @@ object IntentRules {
       .toMap()
   private val UNIT = alternation(UNITS.keys)
 
-  private val PAST =
-    Regex("(?iu)$START(?:${alternation("period.past")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)$END")
+  private val PAST = periods("period.past")
 
-  private val THIS = Regex("(?iu)$START(?:${alternation("period.this")})\\s+($UNIT)$END")
+  private val THIS = Regex("(?iu)$START(?:${alternation("period.this")})$GAP($UNIT)$END")
 
-  private val NEXT =
-    Regex("(?iu)$START(?:${alternation("period.next")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)$END")
+  private val NEXT = periods("period.next")
+
+  private fun periods(key: String): List<Regex> {
+    val period = alternation(key)
+    val amount = "(\\d{1,3})"
+    return listOf(
+      Regex("(?iu)$START(?:$period)$GAP(?:$amount$GAP)?($UNIT)$END"),
+      Regex("(?iu)$START$amount$GAP(?:$period)$GAP($UNIT)$END"),
+      Regex("(?iu)$START()($UNIT)$GAP(?:$period)$END"),
+    )
+  }
 
   private val TODAY = anywhere("period.today")
 
@@ -209,8 +218,8 @@ object IntentRules {
 
   private val NEW_KIND =
     Regex(
-      "(?iu)$START(?:${alternation("intent.new-word")})\\s+" +
-        "(?:(?!(?:${alternation("intent.new-skip")})$END)[\\p{L}\\d.'-]+\\s+)?(?:${alternation("intent.new-kind")})$END"
+      "(?iu)$START(?:${alternation("intent.new-word")})$GAP" +
+        "(?:(?!(?:${alternation("intent.new-skip")})$END)[\\p{L}\\d.'-]+?$GAP)?(?:${alternation("intent.new-kind")})$END"
     )
   private val ALTERNATIVES = anywhere("intent.alternatives")
   private val COMPARE = anywhere("intent.compare")
@@ -273,12 +282,14 @@ object IntentRules {
 
   @JvmStatic
   fun windowOf(request: String): PlannedWindow? {
-    PAST.find(request)?.let { m ->
-      return window(m.groupValues[1], m.groupValues[2], WindowDirection.PAST)
-    }
-    NEXT.find(request)?.let { m ->
-      return window(m.groupValues[1], m.groupValues[2], WindowDirection.NEXT)
-    }
+    PAST.firstNotNullOfOrNull { it.find(request) }
+      ?.let { m ->
+        return window(m.groupValues[1], m.groupValues[2], WindowDirection.PAST)
+      }
+    NEXT.firstNotNullOfOrNull { it.find(request) }
+      ?.let { m ->
+        return window(m.groupValues[1], m.groupValues[2], WindowDirection.NEXT)
+      }
     THIS.find(request)?.let { m ->
       return window("", m.groupValues[1], WindowDirection.PAST)
     }
