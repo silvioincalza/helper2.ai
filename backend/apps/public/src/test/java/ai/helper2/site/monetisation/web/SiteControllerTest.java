@@ -23,7 +23,6 @@ class SiteControllerTest {
     assertThat(m.getGithubSponsorsUrl()).isNull();
     assertThat(m.getStripePaymentUrl()).isNull();
     assertThat(m.getGa4MeasurementId()).isNull();
-    assertThat(m.getEthicalAdsPublisher()).isNull();
     assertThat(m.getAdsenseClient()).isNull();
     assertThat(m.getAdsenseSlot()).isNull();
   }
@@ -36,14 +35,12 @@ class SiteControllerTest {
                 Optional.of(URI.create("https://github.com/sponsors/someone")),
                 Optional.of(URI.create("https://buy.stripe.com/abc")),
                 Optional.of("G-TEST1234"),
-                Optional.of("helper2"),
                 Optional.empty(),
                 Optional.empty()));
 
     assertThat(m.getGithubSponsorsUrl()).hasToString("https://github.com/sponsors/someone");
     assertThat(m.getStripePaymentUrl()).hasToString("https://buy.stripe.com/abc");
     assertThat(m.getGa4MeasurementId()).isEqualTo("G-TEST1234");
-    assertThat(m.getEthicalAdsPublisher()).isEqualTo("helper2");
   }
 
   @Test
@@ -64,11 +61,6 @@ class SiteControllerTest {
 
   private static Monetisation adsense(Optional<String> adUnit) {
     return new Monetisation(
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        ADSENSE_CLIENT,
-        adUnit);
+        Optional.empty(), Optional.empty(), Optional.empty(), ADSENSE_CLIENT, adUnit);
   }
 }

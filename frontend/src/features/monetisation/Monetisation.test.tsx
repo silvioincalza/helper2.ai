@@ -11,7 +11,6 @@ const ON = {
   githubSponsorsUrl: 'https://github.com/sponsors/someone',
   stripePaymentUrl: 'https://buy.stripe.com/abc',
   ga4MeasurementId: 'G-TEST1234',
-  ethicalAdsPublisher: 'helper2',
   adsenseClient: 'ca-pub-4688630163076563',
   adsenseSlot: '1234567890',
 };
@@ -19,7 +18,6 @@ const OFF = {
   githubSponsorsUrl: null,
   stripePaymentUrl: null,
   ga4MeasurementId: null,
-  ethicalAdsPublisher: null,
   adsenseClient: null,
   adsenseSlot: null,
 };
@@ -32,11 +30,9 @@ const banner = () => screen.queryByRole('region', { name: /Google Analytics/ });
 
 function clearThirdParties() {
   document.getElementById('h2-ga4')?.remove();
-  document.getElementById('h2-ethicalads')?.remove();
   delete window.gtag;
   delete window.dataLayer;
   delete window['ga-disable-G-TEST1234'];
-  delete window.ethicalads;
   delete window.__tcfapi;
   delete window.googlefc;
   delete window.adsbygoogle;
@@ -191,169 +187,7 @@ describe('monetisation (ADR 0042)', () => {
       within(footer()).queryByRole('link', { name: 'Support helper2.ai' }),
     ).not.toBeInTheDocument();
     expect(banner()).not.toBeInTheDocument();
-    expect(
-      document.querySelectorAll('script[src*="google"], script[src*="ethicalads"]'),
-    ).toHaveLength(0);
-  });
-
-  describe('Feature: one ad per search (ADR 0042)', () => {
-    function fakeEthicalAds() {
-      const load = vi.fn((): void => {
-        const box = document.getElementById('h2-results-ad');
-        box?.classList.add('loaded');
-        box?.append(document.createElement('a'));
-      });
-      const reload = vi.fn();
-      window.ethicalads = Object.assign({ load }, { reload });
-      return { load, reload };
-    }
-
-    it('Scenario: a search shows one labelled ad slot with why it is there, the bar only while it runs, and the ad when the results are there', async () => {
-      let answer: (() => void) | undefined;
-      mockApi({
-        'GET /site': site({ ethicalAdsPublisher: 'helper2' }),
-        'GET /search': async () => {
-          await new Promise<void>((r) => (answer = r));
-          return makeSearch();
-        },
-      });
-      renderApp('/search?q=agents');
-      const slot = await screen.findByRole('complementary', { name: 'Sponsored' });
-      expect(slot).toHaveTextContent('Ads keep helper2.ai free');
-      expect(within(slot).getByRole('progressbar')).toBeInTheDocument();
-      expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
-      await waitFor(() => expect(answer).toBeDefined());
-      await settle();
-      expect(document.getElementById('h2-ethicalads')).toBeNull();
-
-      answer?.();
-      await waitFor(() => expect(within(slot).queryByRole('progressbar')).not.toBeInTheDocument());
-      await waitFor(() => expect(document.getElementById('h2-ethicalads')).not.toBeNull());
-      expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
-    });
-
-    it('Scenario: a filter, a sort or another view of the same words keeps the ad', async () => {
-      const { load } = fakeEthicalAds();
-      const { callsTo } = mockApi({ 'GET /site': site({ ethicalAdsPublisher: 'helper2' }) });
-      const { router } = renderApp('/search?q=agents');
-      await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
-      const box = document.getElementById('h2-results-ad');
-      const ad = box?.firstElementChild;
-
-      for (const address of [
-        '/search?q=agents&type=MODEL',
-        '/search?q=agents&type=MODEL&sort=NEWEST',
-        '/search?q=agents&view=timeline',
-      ]) {
-        await act(() => router.navigate(address));
-        await settle();
-      }
-
-      expect(callsTo('GET', '/search').length).toBeGreaterThan(1);
-      expect(load).toHaveBeenCalledTimes(1);
-      expect(document.getElementById('h2-results-ad')).toBe(box);
-      expect(box?.firstElementChild).toBe(ad);
-    });
-
-    it('Scenario: words that changed before their results came get no ad', async () => {
-      const { load } = fakeEthicalAds();
-      const waiting: (() => void)[] = [];
-      mockApi({
-        'GET /site': site({ ethicalAdsPublisher: 'helper2' }),
-        'GET /search': async () => {
-          await new Promise<void>((r) => waiting.push(r));
-          return makeSearch();
-        },
-      });
-      const { router } = renderApp('/search?q=age');
-      await waitFor(() => expect(waiting).toHaveLength(1));
-      await act(() => router.navigate('/search?q=agents', { replace: true }));
-      await waitFor(() => expect(waiting).toHaveLength(2));
-      expect(load).not.toHaveBeenCalled();
-
-      await act(async () => waiting.forEach((r) => r()));
-      await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
-      await settle();
-      expect(load).toHaveBeenCalledTimes(1);
-    });
-
-    it('Scenario: each new search empties the box and loads a new ad (the client skips manual boxes on reload)', async () => {
-      const { load, reload } = fakeEthicalAds();
-      mockApi({ 'GET /site': site({ ethicalAdsPublisher: 'helper2' }) });
-      renderApp('/search?q=agents');
-      await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
-      const box = document.getElementById('h2-results-ad');
-      expect(box).toHaveClass('loaded');
-
-      const input = screen.getByRole('textbox', { name: 'Search AI resources' });
-      await userEvent.clear(input);
-      await userEvent.type(input, 'mcp servers{Enter}');
-
-      await waitFor(() => expect(load).toHaveBeenCalledTimes(2));
-      expect(reload).not.toHaveBeenCalled();
-      expect(document.getElementById('h2-results-ad')).toBe(box);
-      expect(box?.children).toHaveLength(1);
-    });
-
-    it('Scenario: a search that fails asks for no ad', async () => {
-      const { load } = fakeEthicalAds();
-      let fail: (() => void) | undefined;
-      mockApi({
-        'GET /site': site({ ethicalAdsPublisher: 'helper2' }),
-        'GET /search': async () => {
-          await new Promise<void>((r) => (fail = r));
-          return problem(503, 'Unavailable');
-        },
-      });
-      renderApp('/search?q=agents');
-      await screen.findByRole('complementary', { name: 'Sponsored' });
-      await waitFor(() => expect(fail).toBeDefined());
-      await settle();
-      fail?.();
-      await screen.findByRole('alert');
-      expect(load).not.toHaveBeenCalled();
-    });
-  });
-
-  it('no ad when the search fails', async () => {
-    mockApi({
-      'GET /site': site({ ethicalAdsPublisher: 'helper2' }),
-      'GET /search': () => problem(503, 'Unavailable'),
-    });
-    renderApp('/search?q=agents');
-    await screen.findByRole('alert');
-    expect(screen.queryByRole('complementary', { name: 'Sponsored' })).not.toBeInTheDocument();
-  });
-
-  it('no ad when no source could search', async () => {
-    mockApi({
-      'GET /site': site({ ethicalAdsPublisher: 'helper2' }),
-      'GET /search': () =>
-        makeSearch({
-          results: [],
-          total: 0,
-          coverage: {
-            partial: true,
-            sourcesConfigured: 1,
-            sourcesQueried: 1,
-            sourcesSucceeded: 0,
-            note: 'n',
-          },
-          notices: [{ code: 'ALL_SOURCES_FAILED', message: 'All sources failed.' }],
-        }),
-    });
-    renderApp('/search?q=agents');
-    expect(await screen.findByRole('alert')).toHaveTextContent('No source responded');
-    expect(screen.queryByRole('complementary', { name: 'Sponsored' })).not.toBeInTheDocument();
-  });
-
-  it('no ad next to a guide answer', async () => {
-    mockApi({ 'GET /site': site({ ethicalAdsPublisher: 'helper2' }) });
-    renderApp(
-      '/search?q=which+agent+framework+should+I+use&ask=which+agent+framework+should+I+use',
-    );
-    await settle();
-    expect(screen.queryByRole('complementary', { name: 'Sponsored' })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('script[src*="google"]')).toHaveLength(0);
   });
 
   it('the Support page offers only the ways that are on, and the footer links to it', async () => {
@@ -578,11 +412,12 @@ describe('monetisation (ADR 0042)', () => {
       await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(1));
     });
 
-    it('a resource page shows one labelled AdSense box; a search page shows no AdSense', async () => {
+    it('a search page shows no ad at all', async () => {
       fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
-      mockApi({ 'GET /site': site({ ...ADSENSE, ethicalAdsPublisher: 'helper2' }) });
+      mockApi({ 'GET /site': site(ADSENSE), 'GET /search': () => makeSearch() });
       renderApp('/search?q=agents');
-      await screen.findByRole('complementary', { name: 'Sponsored' });
+      await settle();
+      expect(screen.queryByRole('complementary', { name: 'Sponsored' })).not.toBeInTheDocument();
       expect(document.querySelector('ins.adsbygoogle')).toBeNull();
       expect(document.getElementById('h2-adsense')).toBeNull();
     });

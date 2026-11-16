@@ -1206,9 +1206,7 @@
   },
   "sponsor": {
     "label": "Sponsored",
-    "tag": "Sponsored",
-    "why": "Ads keep helper2.ai free. This one comes from EthicalAds: no tracking, no profile.",
-    "searching": "Searching the sources"
+    "tag": "Sponsored"
   },
   "support": {
     "title": "Support helper2.ai",

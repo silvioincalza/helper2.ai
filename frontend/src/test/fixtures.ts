@@ -269,7 +269,6 @@ export const SITE_OFF: Site = {
     githubSponsorsUrl: null,
     stripePaymentUrl: null,
     ga4MeasurementId: null,
-    ethicalAdsPublisher: null,
     adsenseClient: null,
     adsenseSlot: null,
   },

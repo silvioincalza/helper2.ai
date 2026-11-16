@@ -19,7 +19,6 @@ class MonetisationConfiguration {
         filled(p.githubSponsorsUrl()).map(URI::create),
         filled(p.stripePaymentUrl()).map(URI::create),
         filled(p.ga4MeasurementId()),
-        filled(p.ethicalAdsPublisher()),
         filled(p.adsenseClient()),
         filled(p.adsenseSlot()));
   }

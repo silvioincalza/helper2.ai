@@ -12,7 +12,6 @@ const withAdSense = () =>
         githubSponsorsUrl: null,
         stripePaymentUrl: null,
         ga4MeasurementId: null,
-        ethicalAdsPublisher: null,
         adsenseClient: 'ca-pub-4688630163076563',
         adsenseSlot: '1234567890',
       },

@@ -11,8 +11,6 @@ the site is used.
 The constraints:
 - Google's ad rules forbid ads on screens used "for alerts, navigation or other behavioral purposes" and ads shown for
   a preset time before the content (pre-roll). An ad on a waiting screen breaks both.
-- EthicalAds uses no cookies, builds no profile and needs no consent tool. It allows one ad per page, above the fold,
-  above, beside or below the content and never inside it. It pays per 1,000 views, and may refuse a small site.
 - Google AdSense checks the site before it serves an ad: a `google-adsense-account` tag in the page head, and an
   `ads.txt` file that names Google as an authorised seller. It sends the full page address to Google, and search and
   guide addresses hold the search words (`/search?q=`) and the question (`ask`). In the EEA, the UK and Switzerland it
@@ -25,13 +23,12 @@ The constraints:
 
 ## Decision
 
-1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads six
+1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads five
    `H2_` settings and publishes them as one value, `Monetisation`. An empty setting is off: no link, no script, no CSP
    origin. A value with the wrong shape (a non-https link, an ID that is not `G-...`, a publisher that is not
    `ca-pub-` and 16 digits) stops the app at startup. None is a secret: every page shows them.
    - `H2_SUPPORT_GITHUB_SPONSORS_URL`, `H2_SUPPORT_STRIPE_PAYMENT_URL`
    - `H2_ANALYTICS_GA4_MEASUREMENT_ID`
-   - `H2_ADS_ETHICALADS_PUBLISHER`
    - `H2_ADS_ADSENSE_CLIENT` and `H2_ADS_ADSENSE_SLOT` (the ad unit, 8 to 12 digits). **The publisher alone** answers
      Google's site check (8) and nothing else. **Publisher and ad unit** turn on the rest in one step: Google's
      consent tool, the nonce CSP and the slot. So the CSP changes only on the day the ads start, never before Google
@@ -58,8 +55,6 @@ The constraints:
    - analytics: `https://www.googletagmanager.com` to `script-src`; the Google Analytics hosts to `connect-src` and
      `img-src`, and `https://*.google.com` to `connect-src`, as Google's CSP guide lists. No `'unsafe-inline'`, no
      `'unsafe-eval'`: our own code writes the gtag setup.
-   - ads: `media.ethicalads.io` and `server.ethicalads.io` to `script-src`, `connect-src` and `img-src`, and
-     `'unsafe-inline'` to `style-src` only (the EthicalAds client writes its own `<style>`). Scripts stay strict.
    - AdSense on: the nonce policy of decision 11 instead.
 
    `CspHeaderWriter` sends it on every response of the public app's filter chain; identity's security configuration
@@ -88,28 +83,10 @@ The constraints:
    - host-only cookies (`cookie_domain: 'none'`): on the site's own host, never on a parent domain such as
      `incalza.me` for staging. A withdrawal removes `_ga` cookies on the host and on every parent domain;
    - nothing on `/admin`.
-6. **One EthicalAds slot, on search pages.** Only while the publisher ID is set: without it there is no slot and no
-   request to EthicalAds. The slot sits above the results, in a box of fixed height, marked "Sponsored" with one line
-   on why it is there ("Ads keep helper2 free..."). EthicalAds allows one ad per page, so the same slot does both
-   jobs:
-   - **while a search runs**, it shows a progress bar that fills over the longest source deadline (6 s,
-     [0022](../search/0022-federated-search.md)). The bar is only a sign of progress: the results take its place the
-     moment they come, and nothing waits for the ad;
-   - **with the results**, it stays where it is. The slot asks EthicalAds for an ad when the results for the search
-     words are on the page, once per words (`q`): the box is emptied and loaded again with the client's `load()`.
-     Its `reload()` skips manual placements, and `load()` skips a box marked "loaded". The box stays mounted between
-     searches, as the client needs.
-   - **One search, one ad.** A filter, a sort, the timeline or "Show more" keeps the words, so it keeps the ad.
-     Nothing is asked while a search runs: words that change before their results come (live search starts 700 ms
-     after a pause in typing, [0039](../frontend/0039-frontend-one-box-state-in-the-url.md)) and a search that fails ask for no ad. A pause long
-     enough to show results is a search the person saw, and gets its ad. The ad network counts a request as a view,
-     so a request for every filter or typing pause would count views nobody had.
-   - There is no ad on a page with a guide answer (`ask`), in the guide picks, on the home page, on text pages, on
-     sign-in, on error states or on the back office. An ad is never written by our AI and never looks like an answer
-     ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
-   - EthicalAds' client runs in the page. Nothing strips the query string before it runs, so it can read the page
-     address with the search words; the Privacy page says so. It also picks up to three topic words from the text of
-     the page, so they come from the results.
+6. **No ad on search pages.** A search address holds the search words (`q`) and the question (`ask`), and an ad
+   network's script in the page can read the address. So search results, guide answers and the guide picks carry no
+   ad, and neither do Home, text pages, sign-in, error states or the back office. An ad is never written by our AI
+   and never looks like an answer ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
 7. **The footer makes no claim about ads.** The Privacy page says which ads, where and when.
 8. **Google's site check: the tag and `/ads.txt`.** With the publisher set, the server writes
    `<meta name="google-adsense-account" content="ca-pub-...">` into the head of every page it fills
@@ -118,7 +95,7 @@ The constraints:
    ID), cached for an hour; 404 without the publisher.
 9. **The AdSense slot on resource pages only.** One box, marked "Sponsored", of fixed height, between the resource's
    sections and never next to the AI summary. A resource address has no search words. No AdSense on search pages
-   (EthicalAds is there, one network per page), guide answers, Home, text pages, sign-in, error states or the back
+   (6), guide answers, Home, text pages, sign-in, error states or the back
    office. Each resource mounts its own box and asks AdSense for one ad, after it has put Google's consent tool in the
    page (10): as in Google's own snippet, the tool's presence frame makes the ad request wait for the consent signal,
    also for a visit that lands on a resource page. The AdSense script stays loaded in the app, so leaving a resource
@@ -159,11 +136,10 @@ The constraints:
     another, and `/index.html` (the shell without nonces) redirects to `/`. The policy:
     `script-src 'nonce-…' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`, `object-src 'none'`,
     `base-uri 'none'`, frames, images and requests to any https origin, `frame-ancestors 'none'`. Scripts our bundle
-    adds (Google's tags, GA4, EthicalAds) run through `'strict-dynamic'`. The back office keeps its own fixed strict
+    adds (Google's tags, GA4) run through `'strict-dynamic'`. The back office keeps its own fixed strict
     policy.
 12. **Privacy and Terms say it.** The Privacy page lists Google Analytics (consent, cookies, 2 months at Google),
-    EthicalAds (only while its publisher ID is set; the IP for the country only, the page address with the search
-    words on a search page, topic words from the page, no cookies), AdSense and Google's consent tool (what Google
+    AdSense and Google's consent tool (what Google
     receives, when it personalises, its cookies) and the gift providers. The Terms page has "Ads and gifts": an ad
     never changes results or their order, a gift buys nothing and is not tax-deductible.
 
@@ -193,7 +169,7 @@ The constraints:
 ## Alternatives considered
 
 - **An ad on a waiting screen** — against Google's ad rules and close to pre-roll; it would also pay more the slower
-  search is. The slot above the results shows during loading instead, and never holds the results back.
+  search is.
 - **AdSense on search pages** — the search words would go to Google with every ad.
 - **A nonce CSP on resource pages only** — does not work in a single-page app: the CSP of the first page stays.
 - **A full page load for every resource link** — the CSP would fit per page, but every click reloads the app.
@@ -239,13 +215,10 @@ The constraints:
 - While AdSense is on, Google Analytics misses every visit that never opens a resource page, in Europe and outside
   it, and the pages of a visit before its first resource page. The numbers for Home and search are too low and are
   not comparable with the time before. That is the price of no Google dialog on Home.
-- The EthicalAds box is empty while the first search of a page runs: the ad comes with the results, not before.
 - Which TCF purposes GA4 needs is our reading (1 and 8), not a Google statement: on the lawyer list.
 - `no-store` turns off the browser's back/forward cache for the shell while AdSense is on.
 - GA4 and the ad clients run in the visitor's browser and talk to their hosts directly: the CSP must list the hosts,
   and they may change them. A blocked request shows in the browser console, not in our logs.
-- What EthicalAds' client sends is its own code; a capture of its request on staging checks the Privacy sentence
-  (open, see Backlog).
 - Manual steps in Google Analytics, needed before the prod ID is set: data retention 2 months; in enhanced
   measurement, "Page changes based on browser history events", site search and form interactions off (they would
   send the full address with `q` and `ask`); Google signals off. Check once in DebugView that no hit carries `q=`.
@@ -254,8 +227,8 @@ The constraints:
 
 ### Threat model (STRIDE)
 
-Trust boundary: our page and the third-party scripts it loads (Google's consent tool, AdSense, Google Analytics,
-EthicalAds). They run in our origin with full access to the page.
+Trust boundary: our page and the third-party scripts it loads (Google's consent tool, AdSense, Google Analytics).
+They run in our origin with full access to the page.
 
 | | Threat | Mitigation | Left |
 |---|---|---|---|
@@ -264,14 +237,13 @@ EthicalAds). They run in our origin with full access to the page.
 | T | An injected script runs under the weaker CSP | Nonce per request, only on the shell and our JSON-LD, never on source text; `no-store`; `/index.html` redirects | `'unsafe-eval'`: eval-style sinks are open |
 | R | Invalid clicks get the AdSense account closed | No own clicks; nothing asks for clicks | Accepted |
 | I | Search words or the guide question reach Google | No AdSense on `q` or `ask` addresses; the consent tool only from a resource page or "Privacy choices", never on such an address; requests paused off resource pages; Auto ads and overlay formats off; GA gets the path only | The AdSense script and the consent tool, once loaded, stay for the visit and could read a later search address; the Privacy page says so (lawyer point, see Backlog) |
-| I | Search words reach EthicalAds | No slot on `ask` pages; the Privacy page says the address of a search page goes with the ad request | Accepted and stated |
 | I | Analytics without consent in Europe | Our bar, or the TCF answer (purposes 1 and 8, vendor 755); a "no" sets `ga-disable` and deletes cookies; tool blocked or not loaded yet = no GA | Our reading of the purposes: lawyer |
 | D | Ad scripts slow the page (INP, CLS) | Fixed-height boxes; scripts load after the app | Measure on staging |
 | E | A third-party script uses the CSRF token for same-origin writes | Writes need sign-in or are rate-limited; admin only on the admin host, with the strict CSP and no third-party script | Accepted on the public host |
 
 ### Known limits
 
-- With ads on, public pages allow inline styles (`style-src 'unsafe-inline'`) for the EthicalAds client. The ad slot's height is fixed by hand; check it against real ads on staging.
+- The ad slot's height is fixed by hand; check it against real ads on staging.
 - Google Analytics hosts are listed by hand in the CSP; if Google changes them, hits are blocked until the list is updated.
 
 ### Open points
@@ -280,12 +252,12 @@ EthicalAds). They run in our origin with full access to the page.
 
 ## Diagrams
 
-Gifts, analytics and the EthicalAds slot: [flow](../../diagrams/flow-0042-monetisation.svg) · [sequence](../../diagrams/sequence-0042-monetisation.svg) ·
+Gifts and analytics: [flow](../../diagrams/flow-0042-monetisation.svg) · [sequence](../../diagrams/sequence-0042-monetisation.svg) ·
 AdSense and Google's consent tool: [flow](../../diagrams/flow-0042-adsense.svg) · [sequence](../../diagrams/sequence-0042-adsense.svg)
 
 ## Backlog
 
-- Features: [F8.1](https://github.com/silvioincalza/helper2.ai/issues/95) Gifts: GitHub Sponsors and Stripe Payment Link, [F8.2](https://github.com/silvioincalza/helper2.ai/issues/96) Google Analytics after consent, [F8.3](https://github.com/silvioincalza/helper2.ai/issues/97) EthicalAds and AdSense on resource pages.
+- Features: [F8.1](https://github.com/silvioincalza/helper2.ai/issues/95) Gifts: GitHub Sponsors and Stripe Payment Link, [F8.2](https://github.com/silvioincalza/helper2.ai/issues/96) Google Analytics after consent, [F8.3](https://github.com/silvioincalza/helper2.ai/issues/97) AdSense on resource pages.
 - Open issues that change this decision:
   - [#332](https://github.com/silvioincalza/helper2.ai/issues/332) S8.4.1 The ad networks' rules checked before any prod setting is filled
   - [#333](https://github.com/silvioincalza/helper2.ai/issues/333) S8.5.1 A 10 CHF subscription for more calls
