@@ -5,6 +5,7 @@ import ai.helper2.catalog.EmbeddingStore.EmbeddingCoverage;
 import ai.helper2.catalog.EmbeddingStore.EmbeddingTask;
 import ai.helper2.catalog.EmbeddingStore.PendingEmbeddings;
 import ai.helper2.platform.PgVectors;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.dao.DataAccessException;
@@ -37,11 +38,12 @@ class JdbcEmbeddingStore implements EmbeddingStore {
           + "))";
 
   @Override
-  public PendingEmbeddings pendingEmbeddings(String model, int limit) {
-    return unavailableOnFailure(() -> pending(model, limit));
+  public PendingEmbeddings pendingEmbeddings(
+      String model, int limit, Collection<EmbeddingTask> skipped) {
+    return unavailableOnFailure(() -> pending(model, limit, skipped));
   }
 
-  private PendingEmbeddings pending(String model, int limit) {
+  private PendingEmbeddings pending(String model, int limit, Collection<EmbeddingTask> skipped) {
     long[] backlog = {0};
     List<EmbeddingTask> tasks =
         jdbc.sql(
@@ -50,12 +52,20 @@ class JdbcEmbeddingStore implements EmbeddingStore {
                 FROM resource r
                 LEFT JOIN resource_embedding e ON e.resource_id = r.id AND e.model = :model
                 WHERE %2$s
+                  AND NOT EXISTS (
+                    SELECT 1 FROM unnest(CAST(:skippedIds AS uuid[]), CAST(:skippedHashes AS text[])) AS s(id, hash)
+                    WHERE s.id = r.id AND s.hash = md5(%1$s))
                 ORDER BY r.popularity DESC, r.id
                 LIMIT :limit
                 """
                     .formatted(EMBEDDED_TEXT, EMBEDDING_PENDING))
             .param("model", model)
             .param("limit", limit)
+            .param(
+                "skippedIds", skipped.stream().map(EmbeddingTask::resourceId).toArray(UUID[]::new))
+            .param(
+                "skippedHashes",
+                skipped.stream().map(EmbeddingTask::textHash).toArray(String[]::new))
             .query((rs, i) -> {
               backlog[0] = rs.getLong("backlog");
               return new EmbeddingTask(

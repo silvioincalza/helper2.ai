@@ -1,5 +1,6 @@
 package ai.helper2.catalog;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,7 +17,11 @@ public interface EmbeddingStore {
     }
   }
 
-  PendingEmbeddings pendingEmbeddings(String model, int limit);
+  default PendingEmbeddings pendingEmbeddings(String model, int limit) {
+    return pendingEmbeddings(model, limit, List.of());
+  }
+
+  PendingEmbeddings pendingEmbeddings(String model, int limit, Collection<EmbeddingTask> skipped);
 
   void saveEmbeddings(String model, List<EmbeddingTask> tasks, List<float[]> vectors);
 

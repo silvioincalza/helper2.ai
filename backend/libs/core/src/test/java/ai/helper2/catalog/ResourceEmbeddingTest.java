@@ -370,6 +370,57 @@ class ResourceEmbeddingTest {
     assertThat(embedder.batches).hasSize(callsSoFar);
   }
 
+  @Test
+  void aTextTheApiRefusesIsLeftOutUntilItsTextChanges() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    UUID beta = insert("beta", "y");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.TEXT_REJECTED, Set.of("alpha\nx"), FailureReason.TEXT_REJECTED);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    IndexEmbeddings indexer =
+        new IndexEmbeddings(
+            embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+
+    indexer.tick();
+    int callsSoFar = embedder.batches.size();
+    indexer.tick();
+
+    assertThat(pendingIds()).containsExactly(alpha).doesNotContain(beta);
+    assertThat(embedder.batches).as("the refused text is not sent again").hasSize(callsSoFar);
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isEqualTo(1);
+    assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
+
+    jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id")
+        .param("id", alpha)
+        .update();
+    indexer.tick();
+
+    assertThat(pendingIds()).isEmpty();
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+  }
+
+  @Test
+  void aProviderErrorOnASingleTextIsTriedAgainOnTheNextTick() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.PROVIDER_ERROR, Set.of("alpha\nx"), FailureReason.PROVIDER_ERROR);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    IndexEmbeddings indexer =
+        new IndexEmbeddings(
+            embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+
+    indexer.tick();
+    indexer.tick();
+
+    assertThat(embedder.batches).hasSize(2);
+    assertThat(pendingIds()).containsExactly(alpha);
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+  }
+
   private List<UUID> pendingIds() {
     return pendingOfThisRun().stream().map(EmbeddingTask::resourceId).toList();
   }

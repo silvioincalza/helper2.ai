@@ -13,6 +13,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +33,7 @@ public class IndexEmbeddings {
   private final Clock clock;
   private final AtomicLong backlog = new AtomicLong(NOT_COUNTED_YET);
   private final AtomicLong lastSuccessEpochSeconds = new AtomicLong();
+  private final Map<UUID, EmbeddingTask> rejected = new ConcurrentHashMap<>();
   private final Counter rateLimited;
   private final Counter embeddingFailed;
   private final Counter databaseFailed;
@@ -58,6 +62,10 @@ public class IndexEmbeddings {
         .description("Epoch seconds of the last successful indexer batch")
         .baseUnit("seconds")
         .register(registry);
+    Gauge.builder("helper2.embedding.rejected", rejected, Map::size)
+        .description(
+            "Resources whose current text the embedding API refused, left out until the text changes")
+        .register(registry);
     this.rateLimited = failures(registry, "rate_limited");
     this.embeddingFailed = failures(registry, "embedding");
     this.databaseFailed = failures(registry, "database");
@@ -80,7 +88,8 @@ public class IndexEmbeddings {
       return 0;
     }
     try {
-      PendingEmbeddings pending = store.pendingEmbeddings(embedder.model(), batch);
+      PendingEmbeddings pending =
+          store.pendingEmbeddings(embedder.model(), batch, rejected.values());
       backlog.set(pending.backlog());
       if (pending.tasks().isEmpty()) {
         upToDate();
@@ -110,7 +119,14 @@ public class IndexEmbeddings {
       return save(tasks);
     } catch (EmbeddingFailure e) {
       failed(e);
-      return rejectedByTheApi(e) && tasks.size() > 1 ? oneAtATime(tasks) : 0;
+      if (!rejectedByTheApi(e)) {
+        return 0;
+      }
+      if (tasks.size() == 1) {
+        rememberRejected(tasks.getFirst(), e);
+        return 0;
+      }
+      return oneAtATime(tasks);
     }
   }
 
@@ -124,6 +140,7 @@ public class IndexEmbeddings {
         if (!rejectedByTheApi(e)) {
           break;
         }
+        rememberRejected(task, e);
       }
     }
     return embedded;
@@ -133,12 +150,25 @@ public class IndexEmbeddings {
     List<float[]> vectors =
         embedder.embed(tasks.stream().map(EmbeddingTask::text).toList(), Embedder.Kind.PASSAGE);
     store.saveEmbeddings(embedder.model(), tasks, vectors);
+    tasks.forEach(task -> rejected.remove(task.resourceId()));
     succeeded();
     return tasks.size();
   }
 
   private static boolean rejectedByTheApi(EmbeddingFailure e) {
-    return e.reason() == FailureReason.PROVIDER_ERROR;
+    return e.reason() == FailureReason.PROVIDER_ERROR || e.reason() == FailureReason.TEXT_REJECTED;
+  }
+
+  private void rememberRejected(EmbeddingTask task, EmbeddingFailure e) {
+    if (e.reason() != FailureReason.TEXT_REJECTED) {
+      return;
+    }
+    if (!task.equals(rejected.put(task.resourceId(), task))) {
+      log.info(
+          "Embedding left out for resource {} until its text changes: {}",
+          task.resourceId(),
+          e.getMessage());
+    }
   }
 
   private void failed(EmbeddingFailure e) {

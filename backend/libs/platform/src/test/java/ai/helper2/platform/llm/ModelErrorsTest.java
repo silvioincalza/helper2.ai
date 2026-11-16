@@ -6,7 +6,11 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 class ModelErrorsTest {
 
@@ -86,5 +90,23 @@ class ModelErrorsTest {
     } finally {
       Thread.interrupted();
     }
+  }
+
+  @Test
+  void aTextTheProviderRefusesIsARejectedInputAndAnOutageIsNot() {
+    var predicate = new ModelErrors.RejectedInput();
+    var refused =
+        HttpClientErrorException.create(
+            HttpStatus.UNPROCESSABLE_CONTENT, "", null, new byte[0], StandardCharsets.UTF_8);
+    var outage =
+        HttpServerErrorException.create(
+            HttpStatus.BAD_GATEWAY, "", null, new byte[0], StandardCharsets.UTF_8);
+    var badKey =
+        HttpClientErrorException.create(
+            HttpStatus.UNAUTHORIZED, "", null, new byte[0], StandardCharsets.UTF_8);
+
+    assertThat(predicate.test(new IllegalStateException("call failed", refused))).isTrue();
+    assertThat(predicate.test(outage)).isFalse();
+    assertThat(predicate.test(badKey)).isFalse();
   }
 }

@@ -172,7 +172,9 @@ resilience4j:
         base-config: model
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
       llm-embed: {base-config: model}
-      llm-embed-index: {base-config: model}
+      llm-embed-index:
+        base-config: model
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$RejectedInput
       db-cache:
         sliding-window-type: COUNT_BASED
         sliding-window-size: 10
