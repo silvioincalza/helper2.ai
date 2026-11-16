@@ -92,10 +92,48 @@ class RepositoryJoinTest {
   }
 
   @Test
-  fun `a registry server that shares one telling word with its repository's name joins it`() {
+  fun `a registry server whose telling words are all in its repository's name joins it`() {
     assertJoins(server("ai.a1lane/a1lane", "https://github.com/a1lane/a1lane-mcp"))
     assertJoins(server("agency.goji/goji", "https://github.com/goji-agency/goji-mcp"))
     assertJoins(server("ai.1325/mcp", "https://github.com/1325ai/mcp-server"))
+    assertJoins(
+      server(
+        "io.github.pipeworx-io/epa-emissions",
+        "https://github.com/pipeworx-io/mcp-epa-emissions",
+      )
+    )
+    assertJoins(server("io.github.open-leash/leash", "https://github.com/open-leash/leash-plugin"))
+  }
+
+  @Test
+  fun `a registry server whose name holds every telling word of its repository's name joins it`() {
+    assertJoins(
+      server(
+        "io.github.ansvar-systems/uk-livestock-mcp",
+        "https://github.com/ansvar-systems/uk-livestock",
+      )
+    )
+    assertJoins(
+      server("io.github.stakemate369/8004swap-mcp", "https://github.com/stakemate369/8004swap")
+    )
+  }
+
+  @Test
+  fun `a registry server that shares only some telling words with its repository's name stays apart`() {
+    assertNull(
+      RepositoryJoin.of(
+        server("io.github.acme/airtable-sync", "https://github.com/acme/airtable-tools")
+      )
+    )
+  }
+
+  @Test
+  fun `a registry server with no word in common with its repository's name stays apart`() {
+    assertNull(
+      RepositoryJoin.of(
+        server("com.wavebrook/dashboard", "https://github.com/wavebrook/ai-plugins")
+      )
+    )
   }
 
   @Test

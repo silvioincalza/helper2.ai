@@ -67,11 +67,21 @@ object RepositoryJoin {
         (owner.containsAll(scope) || scope.containsAll(owner))
   }
 
+  /**
+   * A registry server joins its repository root when every telling word of one name is in the
+   * other: `epa-emissions` in `mcp-epa-emissions`, `vectreal-platform` holding `vectreal`. A
+   * collection's servers have words of their own (`mcp-adyen` in `mcp-dev-latam`), so they stay
+   * apart. A name of generic words only is read as it is.
+   */
   private class ServerName(val name: Set<String>) : StatedName {
     override fun belongsTo(root: RepositoryRoot): Boolean {
-      val telling = (root.name - GENERIC_REPOSITORY_WORDS).ifEmpty { root.name }
-      return telling.any { it in name }
+      val repository = telling(root.name)
+      val server = telling(name)
+      return server.isNotEmpty() &&
+        (server.containsAll(repository) || repository.containsAll(server))
     }
+
+    private fun telling(words: Set<String>) = (words - GENERIC_REPOSITORY_WORDS).ifEmpty { words }
   }
 
   private val GENERIC_REPOSITORY_WORDS =

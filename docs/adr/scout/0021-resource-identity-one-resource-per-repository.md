@@ -61,13 +61,15 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 5. **An MCP Registry server is its own resource, keyed on its registry name.** A server that states a
    sub-directory is the resource of that sub-directory (§2). Any other server is the resource of its registry
    name, `https://registry.modelcontextprotocol.io/v0.1/servers/{name}` (`McpRegistryCollector.identity`), whatever
-   host the collector reads, and it states its repository. It joins the repository root only when its name, the
-   part after the namespace (`a1lane` in `ai.a1lane/a1lane`), holds one telling word of the repository's name: a
-   word other than `mcp`, `server`, `servers`, `model`, `context` or `protocol` (`a1lane` of `a1lane/a1lane-mcp`); a
-   repository named with these words only (`modelcontextprotocol/servers`) needs one of them in the server's name. A
-   repository with one server is still one result, and a collection repository with many servers
-   (`codespar/mcp-dev-latam`, 127 servers: `mcp-adyen`, `mcp-afip`, …) is one result per server. The registry
-   namespace is the owner of every server it publishes, so the owner alone does not join a server.
+   host the collector reads, and it states its repository. It joins the repository root only when every telling
+   word of one name is in the other: the server's name (the part after the namespace, `a1lane` in
+   `ai.a1lane/a1lane`) and the repository's name, without `mcp`, `server`, `servers`, `model`, `context`, `protocol`
+   and `modelcontextprotocol`. So `epa-emissions` joins `pipeworx-io/mcp-epa-emissions`, `leash` joins
+   `open-leash/leash-plugin` and `uk-livestock-mcp` joins `ansvar-systems/uk-livestock`; a name of these words only
+   (`modelcontextprotocol/servers`) is read as it is. A repository with one server is still one result, and a
+   collection repository with many servers (`codespar/mcp-dev-latam`, 127 servers: `mcp-adyen`, `mcp-afip`, …) is one
+   result per server, because its servers have words of their own. The registry namespace is the owner of every
+   server it publishes, so the owner alone does not join a server.
 6. **A resource is never moved; a source record follows its resource.** What a later source says is added to the
    resource that exists. The catalog writes a resource with `INSERT ... ON CONFLICT (canonical_url) DO UPDATE`
    (`JdbcCatalogWriter.upsertResources`): the id and the address of a stored resource never change. A source record
@@ -113,11 +115,14 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   repository swallows every server it holds (`codespar/mcp-dev-latam` holds 127).
 - **Join a registry server by its owner** — the registry namespace is the owner of every server it publishes, so a
   collection repository would still be one result.
-- **Join a registry server only when its name holds every word of the repository's name** — on the public Registry
-  (65,463 servers) 39% of the repositories with one server would show it as a second result,
-  because a server name drops the `-mcp` of its repository (`ai.a1lane/a1lane` under `a1lane/a1lane-mcp`). One
-  telling word keeps 88% of them one result and gives 93% of the servers of repositories with five or more their
-  own result.
+- **Other name rules for a registry server**, measured on the staging catalog (16 Nov 2026: 26,017 repositories with
+  one server, 5,066 servers in 160 repositories with five or more), as "one-server repository stays one result /
+  collection server is its own result": the full name (`io.github.owner/name` = `owner/name`) 52.7% / 99.7%; the
+  name holds the repository's name 61.0% / 97.5%; the name holds every telling word of the repository's 77.0% /
+  96.3%; one telling word in common 85.6% / 92.9%; every telling word, either way (this rule) 88.0% / 96.1%. A
+  server name often drops or adds a word of its repository's (`epa-emissions` under `mcp-epa-emissions`, `leash`
+  under `leash-plugin`), so one-direction rules split one-server repositories, and one shared word joins too many
+  collection servers.
 - **Join a registry server unless another server states the same repository** — it splits collections exactly, but
   the id of a server would depend on what the catalog holds when it is written.
 - **The stated repository as a relationship (`relationship` table)** — that table holds enrichment claims with
@@ -165,10 +170,12 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   owner of an unscoped package is unknown.
 - A record that does not join its repository does not reach the admin review list, and an admin cannot join it by
   hand (S2.10.6).
-- A registry server whose name holds a telling word of a collection repository's name joins it (`airtable-mcp`
-  under `acme/airtable-tools`); about 7% of the servers of repositories with five or more on the public Registry.
-- A repository with one server whose name shares no telling word with it shows the repository and the server as
-  two results (`ai.tandem/docs-mcp` under `frumu-ai/tandem`); about 12% of those repositories.
+- A registry server whose telling words are all in a collection repository's name, or the other way round, joins
+  it (`airtable` under `acme/airtable-tools`); about 4% of the servers of repositories with five or more (staging,
+  16 Nov 2026).
+- A repository with one server whose name and the server's do not hold each other's telling words shows the
+  repository and the server as two results (`com.wavebrook/dashboard` under `wavebrook/ai-plugins`); about 12% of
+  those repositories. S2.10.6 lets an admin join them.
 
 ## Diagrams
 [flow](../../diagrams/flow-0021-resource-identity.svg) · [sequence](../../diagrams/sequence-0021-resource-identity.svg)
