@@ -87,13 +87,19 @@ The constraints:
    network's script in the page can read the address. So search results, guide answers and the guide picks carry no
    ad, and neither do Home, text pages, sign-in, error states or the back office. An ad is never written by our AI
    and never looks like an answer ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
+   While the first results of a plain search are still loading after 700 ms, and a gift link is on (4), the space
+   above the loading results shows a note of our own, marked "From helper2.ai": one line on what the site costs and
+   a link to `/support` (`SupportWhileSearching`). It holds nothing back: the results replace it the moment they
+   come, a faster search never shows it, and a guide question never gets it. It is not an ad and sends nothing to
+   anyone, so no network's rules on waiting screens apply.
 7. **The footer makes no claim about ads.** The Privacy page says which ads, where and when.
 8. **Google's site check: the tag and `/ads.txt`.** With the publisher set, the server writes
    `<meta name="google-adsense-account" content="ca-pub-...">` into the head of every page it fills
    ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)), without `data-h2-head`, so the app keeps it after a route change.
    `GET /ads.txt` answers one line, `google.com, pub-..., DIRECT, f08c47fec0942fa0` (Google's certification authority
    ID), cached for an hour; 404 without the publisher.
-9. **The AdSense slot on resource pages only.** One box, marked "Sponsored", of fixed height, between the resource's
+9. **The AdSense slot on resource pages only.** One box, marked "Advertisements" (one of the two labels Google
+   allows), of fixed height, between the resource's
    sections and never next to the AI summary. A resource address has no search words. No AdSense on search pages
    (6), guide answers, Home, text pages, sign-in, error states or the back
    office. Each resource mounts its own box and asks AdSense for one ad, after it has put Google's consent tool in the
@@ -232,7 +238,7 @@ They run in our origin with full access to the page.
 
 | | Threat | Mitigation | Left |
 |---|---|---|---|
-| S | An ad imitates the page (a fake "Download" or sign-in) | One box, marked "Sponsored", fixed place; AdSense blocking controls | Accepted: Google's ad review |
+| S | An ad imitates the page (a fake "Download" or sign-in) | One box, marked "Advertisements", fixed place; AdSense blocking controls | Accepted: Google's ad review |
 | T | A Google script, or a malicious ad, changes the page or the results | No SRI is possible for Google's scripts; ads only in their box; nothing on the admin host | Accepted while AdSense is on |
 | T | An injected script runs under the weaker CSP | Nonce per request, only on the shell and our JSON-LD, never on source text; `no-store`; `/index.html` redirects | `'unsafe-eval'`: eval-style sinks are open |
 | R | Invalid clicks get the AdSense account closed | No own clicks; nothing asks for clicks | Accepted |

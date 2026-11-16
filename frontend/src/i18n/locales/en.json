@@ -1205,8 +1205,13 @@
     "accept": "Accept"
   },
   "sponsor": {
-    "label": "Sponsored",
-    "tag": "Sponsored"
+    "label": "Advertisements",
+    "tag": "Advertisements"
+  },
+  "supportWait": {
+    "tag": "From helper2.ai",
+    "text": "helper2.ai is free, with no account. If it saves you time, you can help pay for it.",
+    "link": "Support helper2.ai"
   },
   "support": {
     "title": "Support helper2.ai",
