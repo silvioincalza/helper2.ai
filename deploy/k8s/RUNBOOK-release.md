@@ -211,8 +211,16 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 2. `CHANGELOG.md` on `main`: the entry of the version no longer says unreleased. By pull request.
 3. The release's story is closed by its pull request, and the Project follows.
 4. The job made for check 4 is deleted (`pg-backup-now`), and no canary is left (`helm -n helper2-prod list`).
-5. Nothing to delete in Git or Harbor: a release branch, a release tag and an image tag stay for good.
-6. From the first tag `vYYYY.N.P` on, CI refuses an edit of a released migration
+5. The first release with the restore check runs it once by hand, then the CronJob takes over every Sunday:
+
+   ```bash
+   kubectl -n helper2-prod create job --from=cronjob/pg-restore-check pg-restore-check-now
+   kubectl -n helper2-prod wait --for=condition=complete job/pg-restore-check-now --timeout=60m
+   kubectl -n helper2-prod logs job/pg-restore-check-now -c check
+   kubectl -n helper2-prod delete job pg-restore-check-now
+   ```
+6. Nothing to delete in Git or Harbor: a release branch, a release tag and an image tag stay for good.
+7. From the first tag `vYYYY.N.P` on, CI refuses an edit of a released migration
    (`.github/scripts/released-migrations.sh`): a schema change is a new `V2__…`.
 
 ## The first use: v2026.11.3

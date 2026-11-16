@@ -108,13 +108,14 @@ database connections. A change to the web app would rebuild and redeploy the bac
    - web pods (`ingress-web`): the Ingress controller's pods on 8080, nothing else;
    - Postgres (`ingress-postgres`, `ingress-postgres-migrate`): both apps, `pg-backup` and the migrate Job on 5432;
    - Redis (`ingress-redis`): both apps on 6379;
-   - `pg-backup`: nothing.
+   - `pg-backup` and `pg-restore-check`: nothing.
 
    Egress is denied by default, then allowed per workload:
    - both apps (`egress-app`): DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318),
      and the internet on 443 only, with the private ranges excluded;
    - the migrate Job (`egress-migrate`): DNS and Postgres;
    - `pg-backup` (`egress-backup`): DNS, Postgres, and 443 only when `backup.offsite` is on;
+   - `pg-restore-check` (`egress-restore-check`, only when `backup.offsite` is on): DNS and 443, never Postgres;
    - the web pods, Postgres and Redis: nothing.
 
 ### Data: Postgres, Redis and the backups
@@ -134,7 +135,9 @@ database connections. A change to the web app would rebuild and redeploy the bac
     PersistentVolumeClaim ([0005](../foundation/0005-redis-as-a-disposable-cache.md)): a Redis restart keeps sessions,
     rate-limit windows and cached answers. The volume holds only cache data and is not backed up.
 12. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the volume
-    `pg-backup` (NFS on prod, kept on `helm uninstall`), 7 days kept. A failed `pg_dump` fails the Job (`pipefail`);
+    `pg-backup` (NFS on prod, kept on `helm uninstall`). The newest `backup.retentionDays` (7) dumps are kept,
+    chosen by the date in their name, and none older than 7 days, so dumps of a night that failed do not stretch the
+    period the Privacy page states. A failed `pg_dump` fails the Job (`pipefail`);
     the new dump takes the place of the old one only once `gzip -t` reads it back whole and it is bigger than an empty dump
     (1 KB), and the old dumps are deleted after that, never before. A run that cannot start within an hour is missed
     (`startingDeadlineSeconds`). Two alerts: `Helper2BackupFailed` for a failed Job, `Helper2BackupStale` when no run
@@ -145,6 +148,17 @@ database connections. A change to the web app would rebuild and redeploy the bac
     holds the password. rclone never deletes there: the bucket's lifecycle rule deletes after 7 days, the same
     period as the volume. Only a dump younger than 24 hours is copied (`backup.offsite.maxAge`), so a dump the rule
     deleted is not uploaded again. Restore steps: [deploy/k8s/README.md](../../../deploy/k8s/README.md), "Backups".
+
+    **Restore check.** `pg-restore-check` runs every Sunday at 04:00 Europe/Zurich
+    (`backup.restoreCheck.schedule`) and restores the newest dump the way a recovery would. With `backup.offsite` on,
+    its `fetch` container takes the newest dump from R2 and decrypts it, which also proves the bucket and the
+    encryption password; without it, it reads the `pg-backup` volume, read-only. Its `check` container starts a
+    throwaway Postgres of the same image on an `emptyDir` (`backup.restoreCheck.scratch`, 4 Gi), creates the app roles
+    of `V1__schema.sql` (`h2_public`, `h2_backoffice`, no login) that the dump grants rights to, loads the dump with
+    `ON_ERROR_STOP`, and fails the Job when a Flyway history row is not successful or `flyway_schema_history`,
+    `source` or `resource` is empty. It never connects to prod's Postgres and holds no database password; the copy
+    lives only as long as the Pod. Two alerts: `Helper2RestoreCheckFailed` for a failed Job (critical),
+    `Helper2RestoreCheckStale` when no check has succeeded for 8 days (warning).
 
 ### The web image and the public app's shell
 13. **The `web` image serves the public web app's files; the public app writes the pages.** nginx
@@ -209,9 +223,10 @@ The chart and the cluster:
 - `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
 - `deploy/helm/helper2/templates/web.yaml`, `app.yaml` (the shell's init container), `backoffice.yaml`,
   `migrate.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`, `networkpolicy.yaml`, `serviceaccount.yaml`,
-  `_helpers.tpl` (`helper2.webImage`, `helper2.credentialsSecret`, `helper2.redisPasswordFrom`) — workloads and
+  `_helpers.tpl` (`helper2.webImage`, `helper2.credentialsSecret`, `helper2.redisPasswordFrom`, `helper2.offsiteEnv`) — workloads and
   policies; `deploy/helm/helper2/files/redis-users.acl` — the apps' Redis users.
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2BackupFailed`, `Helper2BackupStale`.
+- `deploy/monitoring/helper2-rules.yaml` — `Helper2BackupFailed`, `Helper2BackupStale`, `Helper2RestoreCheckFailed`,
+  `Helper2RestoreCheckStale`.
 - `deploy/k8s/Makefile` (`deploy`, `rollback`, `env-secret`, `chart-check`), `deploy/k8s/check-app-env.sh`,
   `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 - incalza-me-infra (outside this repo) — namespace, DNS, tunnel, ingress-nginx and the Ingresses, deployer.
@@ -258,6 +273,11 @@ The apps:
   pages and the nonce CSP.
 - A published library — versions and a registry to keep in step for code that changes in the same pull request.
 - A copy of the search controllers in the back office — two mappers of the same contract types to keep equal.
+- The restore check into a scratch database on prod's Postgres — simpler, but it loads prod's Postgres, needs the
+  owner's password and `CREATE DATABASE`, and a bug in it runs next to the real data.
+- The restore check from the volume only — no network, but it never proves the off-site copy can be read back.
+- A daily restore check — catches a bad dump a few days sooner at seven times the cost; the backup's own gate
+  (`gzip -t`, size) already runs every night.
 
 ## Consequences
 
@@ -304,10 +324,10 @@ The apps:
 | 3 | Orchestration | covered: every job in one app (`SchedulesIT` per app), ShedLock across replicas, the migrate Job before the apps start |
 | 4 | Tool & API | covered: the admin API in its own contract and app |
 | 9 | Guardrails | covered: the evidence gate and the quote checks moved with the Scout, unchanged |
-| 10 | Observability | covered: the back office reports as `helper2-backoffice`, with its own dashboard and alerts (Scout runs and collectors, budgets and credits, the indexer, the review queue; [0009](../foundation/0009-observability.md)); the backup alerts; model ids per answer unchanged |
+| 10 | Observability | covered: the back office reports as `helper2-backoffice`, with its own dashboard and alerts (Scout runs and collectors, budgets and credits, the indexer, the review queue; [0009](../foundation/0009-observability.md)); the backup and restore-check alerts; model ids per answer unchanged |
 | 12 | Deployment | covered: three images and three workloads with one tag; the public pod's shell from the web image of that tag; `helm --wait` and a rollback on failure. Deferred: the rollout order and the previous release's assets (open point) |
 | 13 | Security & Identity | covered: no ServiceAccount token, network policy per workload, a database role and a Redis user per app, ADMIN and the admin session only on the back office, `__Host-` cookies, Origin and header CSRF. Deferred: an env Secret per app (open point) |
-| 15 | Cost & Reliability | covered: budgets and quotas in the shared Redis; PodDisruptionBudgets; nightly backups with a verification gate; the public site does not depend on the back office being up |
+| 15 | Cost & Reliability | covered: budgets and quotas in the shared Redis; PodDisruptionBudgets; nightly backups with a verification gate and a weekly restore check; the public site does not depend on the back office being up |
 
 Layers 2, 5, 6, 7, 8, 11 and 14 do not change with the topology.
 
@@ -323,7 +343,6 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change with the topology.
 ### Open points
 
 - The web image does not keep the assets of the release before; the schema owner is a superuser; the Redis split is not narrower than one user per app; the apps share one env Secret.
-- No restore of a backup is tested, and there is no restore-check job.
 - The Scout stays on in staging after the tag.
 
 ## Diagrams

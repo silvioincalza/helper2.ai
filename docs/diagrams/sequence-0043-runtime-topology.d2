@@ -1,6 +1,7 @@
 # Sequence: the runtime paths of the hosted chart: a visitor's request through Cloudflare and ingress-nginx, the
 # probes and the metrics scrape on the management port, the Postgres and Redis probes and the restart they
-# trigger, an old pod leaving in a rolling update, and the nightly backup on prod with its verification gate.
+# trigger, an old pod leaving in a rolling update, the nightly backup on prod with its verification gate, and the
+# weekly restore check into a throwaway Postgres.
 # Source of truth: deploy/helm/helper2/templates/app.yaml, postgres.yaml, redis.yaml, backup.yaml, networkpolicy.yaml,
 #   files/redis-users.acl, values-prod.yaml; the edge (tunnel, DNS, Ingresses) is in incalza-me-infra.
 # Render: cd docs/diagrams && d2 fmt sequence-0043-runtime-topology.d2 && d2 sequence-0043-runtime-topology.d2 sequence-0043-runtime-topology.svg
@@ -17,6 +18,8 @@ pg: "postgres\n(StatefulSet)" {class: data}
 redis: "redis\n(StatefulSet, AOF)" {class: data}
 obs: "kubelet probes;\nAlloy scrape\n(ns observability)" {class: ext}
 backup: "pg-backup\n(CronJob, prod)" {class: app}
+r2: "Cloudflare R2\n(encrypted copy)" {class: ext}
+check: "pg-restore-check\n(CronJob, prod;\nits own Postgres)" {class: app}
 
 request: One request {
   user -> cf: "HTTPS helper2.ai" {class: hot}
@@ -54,5 +57,12 @@ nightly: 02:30 Europe/Zurich, prod {
   backup -> pg: "pg_dump --no-owner | gzip (pipefail:\na failed dump fails the Job)"
   pg -> backup: "dump, into helper2-<date>.sql.gz.tmp\non the pg-backup volume (NFS)"
   backup -> backup: "gzip -t reads it back whole, and it is\nbigger than an empty dump: else the Job fails\nand the old dumps stay" {class: hot}
-  backup -> backup: "mv .tmp into place, then delete\ndumps older than 7 days"
+  backup -> backup: "mv .tmp into place, then keep the newest\n7 dumps by name, none older than 7 days"
+  backup -> r2: "rclone crypt: tonight's dump\n(backup.offsite)"
+}
+
+weekly: Sunday 04:00 Europe/Zurich, prod {
+  check -> r2: "fetch: the newest dump, decrypted\n(else the pg-backup volume, read-only)"
+  check -> check: "initdb on an emptyDir, load with\nON_ERROR_STOP: an error fails the Job" {class: hot}
+  check -> check: "every Flyway row successful,\nsource and resource not empty;\nnever reaches prod's Postgres"
 }

@@ -99,7 +99,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
       'Web search counters: 2 days. Rate-limit counters: 1 minute or 1 hour (the length of the limit). Guide questions and setup guides per day: 5 days.',
     );
     expect(keep).toHaveTextContent(
-      'Database backups: 9 days. One copy of each backup is kept outside our servers (see Who receives data), for the same 9 days. Anything deleted above is gone from the backups and from that copy within 9 days.',
+      'Database backups: 9 days. One copy of each backup is kept outside our servers (see Who receives data), for the same 9 days. Anything deleted above is gone from the backups and from that copy within 9 days. Once a week we load the newest backup into a temporary database on our servers to check that it can be restored, and delete that database when the check ends, within the hour.',
     );
     expect(keep).toHaveTextContent('Their cleaned text: up to 2 days, to try again.');
     expect(keep).toHaveTextContent('a fingerprint of its text: 60 days.');

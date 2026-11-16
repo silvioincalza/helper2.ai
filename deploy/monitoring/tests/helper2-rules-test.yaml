@@ -445,6 +445,54 @@ tests:
               description: "The pg-backup CronJob last succeeded 1d 16h 0m 0s ago. Tonight's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
               runbook: "kubectl -n helper2-prod get cronjob pg-backup; kubectl -n helper2-prod get jobs,pods -l app=pg-backup. Rerun: kubectl -n helper2-prod create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
 
+  - interval: 1h
+    input_series:
+      - series: 'kube_job_failed{namespace="helper2-prod", job_name="pg-restore-check-29001", condition="true"}'
+        values: '1x200'
+      - series: 'kube_job_status_start_time{namespace="helper2-prod", job_name="pg-restore-check-29001"}'
+        values: '0x200'
+      - series: 'kube_job_failed{namespace="helper2-prod", job_name="pg-backup-29003", condition="true"}'
+        values: '0x200'
+      - series: 'kube_job_status_start_time{namespace="helper2-prod", job_name="pg-backup-29003"}'
+        values: '0x200'
+    alert_rule_test:
+      - eval_time: 2h
+        alertname: Helper2RestoreCheckFailed
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: helper2-prod
+              job_name: pg-restore-check-29001
+            exp_annotations:
+              summary: "The weekly restore check pg-restore-check-29001 failed (helper2-prod)."
+              description: "The latest dump could not be fetched, restored into a throwaway Postgres, or checked (failed migration, empty table). Until a check passes, nothing proves prod can come back from its backup."
+              runbook: "kubectl -n helper2-prod logs job/pg-restore-check-29001 -c check (and -c fetch with the off-site copy). Rerun: kubectl -n helper2-prod create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
+      - eval_time: 2h
+        alertname: Helper2BackupFailed
+        exp_alerts: []
+      - eval_time: 8d
+        alertname: Helper2RestoreCheckFailed
+        exp_alerts: []
+
+  - interval: 1h
+    input_series:
+      - series: 'kube_cronjob_status_last_successful_time{namespace="helper2-prod", cronjob="pg-restore-check"}'
+        values: '0x240'
+    alert_rule_test:
+      - eval_time: 7d
+        alertname: Helper2RestoreCheckStale
+        exp_alerts: []
+      - eval_time: 9d
+        alertname: Helper2RestoreCheckStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+            exp_annotations:
+              summary: "No successful restore check for 8 days (helper2-prod)."
+              description: "The pg-restore-check CronJob last succeeded 9d 0h 0m 0s ago. This week's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+              runbook: "kubectl -n helper2-prod get cronjob pg-restore-check; kubectl -n helper2-prod get jobs,pods -l app=pg-restore-check. Rerun: kubectl -n helper2-prod create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
+
   - interval: 10m
     input_series:
       - series: 'kube_pod_container_status_restarts_total{namespace="helper2-prod", pod="helper2-abc", container="app"}'
