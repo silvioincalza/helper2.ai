@@ -222,8 +222,8 @@ Harbor could put an image under a tag first.
    job whose part is not selected must be skipped. So a selected job that failed, was cancelled or was skipped fails
    the check, and so does a job the script has no rule for. On a push (`full: true`) every part in the tree is
    selected; `postgres-tag` is selected on pull requests only. A manual run of `ci.yml` selects every part too, and
-   with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check to require on `main` and `release/*`. On `main` it is required
-   by the ruleset "main: pull requests only", and a pull request must be up to date with `main` before it merges:
+   with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check of CI to require on `main` and `release/*`. It is required by
+   the rulesets "main: pull requests only" and "release branches: pull requests only", and a pull request must be up to date with `main` before it merges:
    two pull requests that are green alone can break `main` together.
 10. **CD per component.** The `image` job maps the push against the commit pushed before (`github.event.before`).
     `make ci-images` gives all three images the new commit tag, always, so they keep one tag (the public pod copies
@@ -494,7 +494,6 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 
 ### Open points
 
-- `ci-ok` is not a required status check on `release/*`.
 - Signatures are not verified in the cluster (admission controller, infra side).
 
 ## Diagrams
