@@ -52,7 +52,7 @@ class QueryAnalyzer {
       if (enHit || otherHit) useCases += e.useCase
       if (otherHit && !enHit && !has(e.english)) expanded += e.english
     }
-    val words = padded.trim().split(' ').filter { it.isNotEmpty() }
+    val words = joinedTypes(padded).trim().split(' ').filter { it.isNotEmpty() }
     val typeHints = linkedSetOf<ResourceType>()
     val core = mutableListOf<String>()
     for ((i, w) in words.withIndex()) {
@@ -94,11 +94,14 @@ class QueryAnalyzer {
     )
   }
 
-  private fun tokensOf(normalized: String): List<String> =
-    SEPARATE(normalized)
-      .split(TOKEN_SEPARATOR)
-      .map { it.replace(EDGE_PUNCTUATION, "") }
-      .filter { it.isNotEmpty() }
+  private fun tokensOf(normalized: String): List<String> {
+    val tokens =
+      SEPARATE(normalized)
+        .split(TOKEN_SEPARATOR)
+        .map { it.replace(EDGE_PUNCTUATION, "") }
+        .filter { it.isNotEmpty() }
+    return joinedTypes(" ${tokens.joinToString(" ")} ").split(' ').filter { it.isNotEmpty() }
+  }
 
   private fun contentTermsOf(words: List<String>): List<String> {
     fun isFiller(w: String) = w in FUNCTION_WORDS || w in REQUEST_WORDS
@@ -128,9 +131,21 @@ class QueryAnalyzer {
       WORDS.keys("type.")
         .flatMap { key ->
           val type = ResourceType.valueOf(key.removePrefix("type.").uppercase())
-          WORDS.words(key).map { it to type }
+          WORDS.words(key).map { asOneWord(it) to type }
         }
         .toMap()
+    val TYPE_PHRASES: Map<String, String> =
+      WORDS.keys("type.")
+        .flatMap { WORDS.words(it) }
+        .filter { ' ' in it }
+        .sortedByDescending { it.length }
+        .associate { " $it " to " ${asOneWord(it)} " }
+
+    fun asOneWord(phrase: String) = phrase.replace(' ', '-')
+
+    fun joinedTypes(padded: String) =
+      TYPE_PHRASES.entries.fold(padded) { text, (phrase, word) -> text.replace(phrase, word) }
+
     val FUNCTION_WORDS = WORDS.words("function")
     val REQUEST_WORDS = WORDS.words("request")
     val SYNONYMS = WORDS.phrasesIn("en", "synonyms").map { it.split(' ').toSet() }

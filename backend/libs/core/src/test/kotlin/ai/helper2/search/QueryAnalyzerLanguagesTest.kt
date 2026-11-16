@@ -55,6 +55,30 @@ class QueryAnalyzerLanguagesTest {
     delimiter = '|',
     value =
       [
+        "en | audio dataset | audio",
+        "it | dataset audio | audio",
+        "de | Datensatz für Audio | audio",
+        "fr | jeu de données audio | audio",
+        "es | conjunto de datos de audio | audio",
+        "zh | 音频数据集 | 音频",
+      ],
+  )
+  fun `a word or phrase for a dataset hints the type and is not required`(
+    lang: String,
+    query: String,
+    required: String,
+  ) {
+    val analyzed = analyzer.analyze(query)
+    assertEquals(setOf(ResourceType.DATASET), analyzed.typeHints, lang)
+    assertTrue(analyzed.requiredVariants.none { "données" in it || "datos" in it }, lang)
+    assertTrue(required in analyzed.contentTerms, lang)
+  }
+
+  @ParameterizedTest(name = "{0}: {1}")
+  @CsvSource(
+    delimiter = '|',
+    value =
+      [
         "en | find a tool for notes of meetings | notes meetings",
         "it | trovare uno strumento per note di riunioni | strumento note riunioni",
         "de | finden ein Werkzeug für Notizen von Meetings | notizen meetings",

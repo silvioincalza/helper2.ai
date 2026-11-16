@@ -345,11 +345,28 @@ class IntentRulesLanguagesTest {
         "de | die besten neuen KI Werkzeuge für Ollama | Ollama",
         "fr | les meilleurs outils pour Ollama | Ollama",
         "es | las mejores herramientas para Ollama | Ollama",
-        "zh | 推荐 工具 Ollama | Ollama",
+        "zh | 推荐好用的Ollama工具 | 好用 Ollama",
       ],
   )
   fun `generic words name no subject`(lang: String, question: String, subject: String) {
     assertEquals(subject, IntentRules.subjectWords(question), lang)
+  }
+
+  @ParameterizedTest(name = "{0}: {1}")
+  @CsvSource(
+    delimiter = '|',
+    value =
+      [
+        "en | the latest new AI tools",
+        "it | i nuovi strumenti",
+        "de | die neuesten KI Werkzeuge",
+        "fr | les nouveaux outils",
+        "es | las nuevas herramientas",
+        "zh | 最新的人工智能工具",
+      ],
+  )
+  fun `a question of only generic words names no subject`(lang: String, question: String) {
+    assertEquals("", IntentRules.subjectWords(question), lang)
   }
 
   @ParameterizedTest(name = "{0}: {1}")
