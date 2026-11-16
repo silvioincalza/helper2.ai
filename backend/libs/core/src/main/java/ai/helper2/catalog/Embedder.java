@@ -19,6 +19,7 @@ public interface Embedder {
     RATE_LIMITED,
     REFUSED,
     PROVIDER_ERROR,
+    TEXT_REJECTED,
     UNAVAILABLE,
     INVALID_RESPONSE
   }
