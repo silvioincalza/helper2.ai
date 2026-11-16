@@ -27,7 +27,7 @@ checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed\n
   d2: "diagrams\nre-rendered = committed?" {class: app}
 }
 
-green: "ci-ok green?\n(selected jobs succeeded,\nthe others skipped)\ncopilot-pull-request-reviewer green?\n(Copilot reviewed the head\ncommit, flow 0044 copilot-review)" {class: decision}
+green: "ci-ok green?\n(selected jobs succeeded,\nthe others skipped)\nCopilot threads resolved?\n(flow 0044 copilot-review)" {class: decision}
 fix: "Fix and push again" {class: fail}
 merge: "Merge to main" {class: app}
 
