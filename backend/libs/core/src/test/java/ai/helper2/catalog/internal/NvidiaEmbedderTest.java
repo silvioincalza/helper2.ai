@@ -256,7 +256,7 @@ class NvidiaEmbedderTest {
   }
 
   @Test
-  void anUnprocessableInputIsAProviderError() {
+  void anUnprocessableInputIsARejectedText() {
     try (FixtureServer server =
         new FixtureServer()
             .route(
@@ -267,11 +267,23 @@ class NvidiaEmbedderTest {
           .isInstanceOfSatisfying(
               Embedder.EmbeddingFailure.class,
               e -> {
-                assertThat(e.reason()).isEqualTo(Embedder.FailureReason.PROVIDER_ERROR);
+                assertThat(e.reason()).isEqualTo(Embedder.FailureReason.TEXT_REJECTED);
                 assertThat(e.getMessage())
                     .startsWith("embedding call failed: HTTP 422")
                     .contains("failed to parse VLM input");
               });
+    }
+  }
+
+  @Test
+  void aRefusedKeyIsAProviderErrorNotARejectedText() {
+    try (FixtureServer server =
+        new FixtureServer()
+            .route("/v1/embeddings", new FixtureServer.Reply(401, "{}", Map.of(), 0))) {
+      assertThatThrownBy(() -> embedderAt(server).embed(List.of("a"), Embedder.Kind.PASSAGE))
+          .isInstanceOfSatisfying(
+              Embedder.EmbeddingFailure.class,
+              e -> assertThat(e.reason()).isEqualTo(Embedder.FailureReason.PROVIDER_ERROR));
     }
   }
 
