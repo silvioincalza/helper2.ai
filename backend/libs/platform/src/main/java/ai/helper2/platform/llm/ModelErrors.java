@@ -9,7 +9,9 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientResponseException;
 
 public final class ModelErrors {
   private static final Set<String> TRANSIENT =
@@ -21,6 +23,8 @@ public final class ModelErrors {
           "OpenAIRetryableException");
 
   private static final Set<String> PROVIDER = Set.of("OpenAIException", "NonTransientAiException");
+
+  private static final Set<Integer> REJECTED_INPUT = Set.of(400, 413, 422);
 
   private ModelErrors() {}
 
@@ -75,6 +79,23 @@ public final class ModelErrors {
     return hasPackage(e, "tools.jackson") || hasPackage(e, "com.fasterxml.jackson")
         ? "parse_error"
         : "error";
+  }
+
+  public static boolean isRejectedInput(HttpStatusCode status) {
+    return REJECTED_INPUT.contains(status.value());
+  }
+
+  public static final class RejectedInput implements Predicate<Throwable> {
+    @Override
+    public boolean test(Throwable e) {
+      for (Throwable t = e; t != null; t = next(t)) {
+        if (t instanceof RestClientResponseException response
+            && isRejectedInput(response.getStatusCode())) {
+          return true;
+        }
+      }
+      return false;
+    }
   }
 
   public static final class NotFromProvider implements Predicate<Throwable> {

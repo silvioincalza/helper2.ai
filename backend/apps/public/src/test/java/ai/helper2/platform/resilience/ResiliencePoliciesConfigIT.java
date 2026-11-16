@@ -8,12 +8,15 @@ import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpClientErrorException;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -134,6 +137,19 @@ class ResiliencePoliciesConfigIT {
     assertThat(chat.getSlowCallDurationThreshold())
         .as("translation and the setup guide do not open on slow guide calls")
         .isGreaterThan(Duration.ofSeconds(40));
+    var indexing = circuits.find("llm-embed-index").orElseThrow().getCircuitBreakerConfig();
+    assertThat(
+            indexing
+                .getIgnoreExceptionPredicate()
+                .test(
+                    HttpClientErrorException.create(
+                        HttpStatus.UNPROCESSABLE_CONTENT,
+                        "",
+                        null,
+                        new byte[0],
+                        StandardCharsets.UTF_8)))
+        .as("a catalog text the provider refuses is not an outage")
+        .isTrue();
     var guide = bulkheads.find("guide").orElseThrow().getBulkheadConfig();
     assertThat(guide.getMaxConcurrentCalls()).isEqualTo(8);
     assertThat(guide.getMaxWaitDuration()).isEqualTo(Duration.ZERO);
