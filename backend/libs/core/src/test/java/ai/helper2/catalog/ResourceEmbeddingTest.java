@@ -433,6 +433,7 @@ class ResourceEmbeddingTest {
         new IndexEmbeddings(
             embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
     indexer.tick();
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isEqualTo(1);
 
     jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id")
         .param("id", alpha)
@@ -441,6 +442,7 @@ class ResourceEmbeddingTest {
     indexer.tick();
 
     assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+    assertThat(pendingIds()).doesNotContain(alpha);
   }
 
   @Test
