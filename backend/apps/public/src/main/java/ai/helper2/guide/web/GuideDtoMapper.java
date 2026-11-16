@@ -24,6 +24,7 @@ import ai.helper2.api.generated.model.GuideResponseDto;
 import ai.helper2.api.generated.model.GuideTrailDto;
 import ai.helper2.api.generated.model.GuideTrailRemovedDto;
 import ai.helper2.api.generated.model.GuideWindowDto;
+import ai.helper2.api.generated.model.QuotedFromDto;
 import ai.helper2.guide.Clarification;
 import ai.helper2.guide.Comparison;
 import ai.helper2.guide.ConstraintCheck;
@@ -31,6 +32,7 @@ import ai.helper2.guide.DateWindow;
 import ai.helper2.guide.Explanation;
 import ai.helper2.guide.GuideAnswer;
 import ai.helper2.guide.GuideKt;
+import ai.helper2.guide.QuotedFrom;
 import ai.helper2.guide.ResearchTrail;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.Notice;
@@ -101,6 +103,7 @@ class GuideDtoMapper {
                             r.getResult().getSources().stream().map(s -> s.getSourceId()).toList(),
                             r.getAiReasoned())
                         .description(GuideKt.getOwnDescription(r.getResult()))
+                        .quotedFrom(quotedFrom(r.getQuotedFrom()))
                         .compatibleWith(CardMapper.compatibility(r.getResult()))
                         .checks(r.getChecks().stream().map(GuideDtoMapper::check).toList())
                         .reasonCheck(
@@ -216,6 +219,10 @@ class GuideDtoMapper {
 
   static GuideWindowDto window(DateWindow w) {
     return w == null ? null : new GuideWindowDto(w.getFrom(), w.getTo());
+  }
+
+  static QuotedFromDto quotedFrom(QuotedFrom q) {
+    return q == null ? null : new QuotedFromDto(q.getSourceId(), q.getUrl());
   }
 
   static GuideClarificationDto clarification(Clarification c) {

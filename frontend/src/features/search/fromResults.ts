@@ -4,7 +4,10 @@ import type { ResourceType, ResultCard } from '@/api/types';
 import { safeHref } from '@/lib/format';
 import type { GuidePick } from '@/lib/selection';
 
-export type PickForPage = Pick<GuidePick, 'rank' | 'reason' | 'quote' | 'reasonCheck' | 'checks'>;
+export type PickForPage = Pick<
+  GuidePick,
+  'rank' | 'reason' | 'quote' | 'quotedFrom' | 'reasonCheck' | 'checks'
+>;
 
 export type CardHead = Pick<ResultCard, 'id' | 'title' | 'url' | 'type'>;
 
@@ -53,6 +56,7 @@ function forPage(p: PickForPage): PickForPage {
     rank: p.rank,
     reason: p.reason,
     quote: p.quote,
+    quotedFrom: readQuotedFrom(p.quotedFrom),
     reasonCheck: p.reasonCheck,
     checks: p.checks.map(({ constraint, status, quote }) => ({
       constraint,
@@ -70,7 +74,16 @@ function readPick(value: unknown): PickForPage | undefined {
     rank: p.rank,
     reason: typeof p.reason === 'string' ? p.reason : '',
     quote: p.quote,
+    quotedFrom: readQuotedFrom(p.quotedFrom),
     reasonCheck: p.reasonCheck ?? 'NOT_CHECKED',
     checks: Array.isArray(p.checks) ? p.checks : [],
   });
+}
+
+/** Navigation state is user-controllable: keep the source page only when it is a safe http(s) link. */
+function readQuotedFrom(value: unknown): PickForPage['quotedFrom'] {
+  if (!value || typeof value !== 'object') return null;
+  const q = value as Record<string, unknown>;
+  if (typeof q.sourceId !== 'string' || typeof q.url !== 'string' || !safeHref(q.url)) return null;
+  return { sourceId: q.sourceId, url: q.url };
 }

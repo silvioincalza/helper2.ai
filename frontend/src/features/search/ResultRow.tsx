@@ -14,6 +14,7 @@ import { BookmarkButton } from '../saved/BookmarkButton';
 import { toFromResults } from './fromResults';
 import { ResultDate } from './ResultDate';
 import { AiLabel } from '@/ui/AiLabel';
+import { QuotedFromLink } from '@/ui/QuotedFromLink';
 
 export const rowAnchor = (id: string) => `result-${id}`;
 
@@ -136,6 +137,7 @@ function RowText({
       <p className="h2-row__checked">
         <span aria-hidden="true">✓ </span>
         {t('results.checkedQuote')}
+        <QuotedFromLink pick={pick} />
       </p>
     </div>
   );

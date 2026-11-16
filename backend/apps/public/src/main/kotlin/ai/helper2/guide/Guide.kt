@@ -250,6 +250,7 @@ constructor(
   val aiReasoned: Boolean,
   val checks: List<ConstraintCheck> = emptyList(),
   val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED,
+  val quotedFrom: QuotedFrom? = null,
 )
 
 enum class TrailCheck {

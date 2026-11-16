@@ -9,6 +9,7 @@ import { Icon } from '@/ui/Icon';
 import { SetupGuidePanel } from '@/features/setup/SetupGuide';
 import { DateTimeline } from '@/features/resource/DateTimeline';
 import { ProofQuote } from '@/ui/ProofQuote';
+import { QuotedFromLink } from '@/ui/QuotedFromLink';
 import { aiMark, aiSource, isAiOrigin } from '@/lib/aiMark';
 import { displayHost } from '@/lib/format';
 import { CategoryLinks } from './CategoryLinks';
@@ -83,13 +84,22 @@ function ResourceBody({
             <span {...aiMark()}>{card.description}</span>
           </p>
         ) : quote ? (
-          <ProofQuote text={card.description ?? ''} quote={quote} source={host} />
+          <ProofQuote
+            text={card.description ?? ''}
+            quote={quote}
+            source={pick?.quotedFrom ? displayHost(pick.quotedFrom.url) : host}
+          />
         ) : card.description ? (
           <p className="h2-res__text">{card.description}</p>
         ) : (
           <p className="muted">{t('card.noDescription')}</p>
         )}
-        {quote && !aiDescription && <p className="h2-res__note">{t('resource.checkedNote')}</p>}
+        {quote && !aiDescription && (
+          <p className="h2-res__note">
+            {t('resource.checkedNote')}
+            <QuotedFromLink pick={pick} />
+          </p>
+        )}
       </section>
 
       <section className="h2-res__sec" aria-labelledby="h2-res-facts">

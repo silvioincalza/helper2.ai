@@ -13,6 +13,8 @@ import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.LEARN_TYPES
 import ai.helper2.guide.ModelActivity
+import ai.helper2.guide.QuoteOrigins
+import ai.helper2.guide.QuoteRecords
 import ai.helper2.guide.ReadingKey
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
@@ -71,7 +73,10 @@ class AskGuide(
   private val limits: AnswerLimits = AnswerLimits.DEFAULT,
   private val similar: SimilarQuestions? = null,
   private val stopsWhenNobodyWaits: Boolean = false,
+  private val quoteRecords: QuoteRecords = QuoteRecords.NONE,
 ) {
+  private val quoteOrigins = QuoteOrigins()
+
   val answersWithModel: Boolean
     get() = model != null
 
@@ -250,8 +255,25 @@ class AskGuide(
     log.info("guide quota reached ({}): answering from search only", notice.code)
     tally.outcome =
       if (notice.code == NoticeCode.GUIDE_NETWORK_QUOTA) "network_quota" else "client_quota"
-    val answer = answer(q, progress, asked, model = null)
+    val answer = answer(q, progress, asked, model = null).withQuoteOrigins()
     return answer.copy(notices = answer.notices + notice)
+  }
+
+  /**
+   * Names the source page of every pick's quote (ADR 0031). Catalog resources need their stored
+   * records: one read for all picks of the answer.
+   */
+  private fun GuideAnswer.withQuoteOrigins(): GuideAnswer {
+    if (recommendations.isEmpty()) return this
+    val records = quoteRecords.of(recommendations.map { it.result.id }.distinct())
+    return copy(
+      recommendations =
+        recommendations.map {
+          it.copy(
+            quotedFrom = quoteOrigins.of(it.quote, it.result, records[it.result.id].orEmpty())
+          )
+        }
+    )
   }
 
   private fun answerAndStore(
@@ -262,7 +284,10 @@ class AskGuide(
     tally: Tally,
   ): GuideAnswer {
     val answer =
-      answer(q, progress, asked, model).withNotices(budgetSpentNotice(asked)).withoutAsker()
+      answer(q, progress, asked, model)
+        .withNotices(budgetSpentNotice(asked))
+        .withoutAsker()
+        .withQuoteOrigins()
     val complete = !asked.outOfTime && !asked.budgetExhausted
     val expiresAt = if (complete) cache?.put(key, answer.withoutTheQuestion(q)) else null
     if (expiresAt != null && !asked.reused && answer.hasAiAnswer())
