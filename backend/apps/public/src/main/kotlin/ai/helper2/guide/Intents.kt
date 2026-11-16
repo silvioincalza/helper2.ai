@@ -282,20 +282,21 @@ object IntentRules {
 
   @JvmStatic
   fun windowOf(request: String): PlannedWindow? {
-    PAST.firstNotNullOfOrNull { it.find(request) }
-      ?.let { m ->
-        return window(m.groupValues[1], m.groupValues[2], WindowDirection.PAST)
-      }
-    NEXT.firstNotNullOfOrNull { it.find(request) }
-      ?.let { m ->
-        return window(m.groupValues[1], m.groupValues[2], WindowDirection.NEXT)
-      }
+    earliest(PAST, request)?.let { m ->
+      return window(m.groupValues[1], m.groupValues[2], WindowDirection.PAST)
+    }
+    earliest(NEXT, request)?.let { m ->
+      return window(m.groupValues[1], m.groupValues[2], WindowDirection.NEXT)
+    }
     THIS.find(request)?.let { m ->
       return window("", m.groupValues[1], WindowDirection.PAST)
     }
     if (TODAY.containsMatchIn(request)) return PlannedWindow(1, WindowUnit.DAY)
     return null
   }
+
+  private fun earliest(rules: List<Regex>, request: String): MatchResult? =
+    rules.mapNotNull { it.find(request) }.minByOrNull { it.range.first }
 
   private fun window(amount: String, unit: String, direction: WindowDirection): PlannedWindow? {
     val u = UNITS[unit.lowercase()] ?: return null
