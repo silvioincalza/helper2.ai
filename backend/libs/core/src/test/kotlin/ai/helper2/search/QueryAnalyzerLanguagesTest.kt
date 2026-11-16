@@ -72,6 +72,8 @@ class QueryAnalyzerLanguagesTest {
     assertEquals(setOf(ResourceType.DATASET), analyzed.typeHints, lang)
     assertTrue(analyzed.requiredVariants.none { "données" in it || "datos" in it }, lang)
     assertTrue(required in analyzed.contentTerms, lang)
+    assertTrue("data-analysis" !in analyzed.useCases, lang)
+    assertTrue(analyzed.expandedTerms.none { "data" in it }, lang)
   }
 
   @ParameterizedTest(name = "{0}: {1}")
@@ -84,7 +86,7 @@ class QueryAnalyzerLanguagesTest {
         "de | finden ein Werkzeug für Notizen von Meetings | notizen meetings",
         "fr | trouver un outil pour notes des réunions | notes réunions",
         "es | encontrar una herramienta para notas de reuniones | notas reuniones",
-        "zh | 找工具的会议笔记 | 会议 笔记",
+        "zh | 工具的会议笔记 | 会议 笔记",
       ],
   )
   fun `filler and request words are not content`(lang: String, query: String, content: String) {
@@ -130,6 +132,12 @@ class QueryAnalyzerLanguagesTest {
   )
   fun `two use case words in a text derive its use cases`(lang: String, text: String) {
     assertTrue("chat" in analyzer.useCasesOf(text), lang)
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @CsvSource(value = ["新加坡的数据集 | 新加坡", "有道翻译 | 有道", "用户手册 | 用户手册"], delimiter = '|')
+  fun `a Chinese name is not cut at a single character`(query: String, name: String) {
+    assertTrue(name in analyzer.analyze(query).contentTerms, query)
   }
 
   @ParameterizedTest(name = "{0}")

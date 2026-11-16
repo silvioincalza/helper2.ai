@@ -352,6 +352,12 @@ class IntentRulesLanguagesTest {
     assertEquals(subject, IntentRules.subjectWords(question), lang)
   }
 
+  @ParameterizedTest(name = "{0}")
+  @CsvSource(value = ["新加坡的模型 | 新加坡 模型", "有道词典 | 有道词典"], delimiter = '|')
+  fun `a Chinese subject is not cut at a single character`(question: String, subject: String) {
+    assertEquals(subject, IntentRules.subjectWords(question), question)
+  }
+
   @ParameterizedTest(name = "{0}: {1}")
   @CsvSource(
     delimiter = '|',

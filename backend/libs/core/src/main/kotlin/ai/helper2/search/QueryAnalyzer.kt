@@ -42,7 +42,8 @@ class QueryAnalyzer {
     val normalized =
       Normalizer.normalize(raw, Normalizer.Form.NFKC).lowercase().trim().replace(Regex("\\s+"), " ")
     val padded = padded(normalized)
-    fun has(term: String) = contains(padded, term)
+    val read = joinedTypes(padded)
+    fun has(term: String) = contains(read, term)
     val useCases = linkedSetOf<String>()
     val expanded = linkedSetOf<String>()
     for (e in lexicon) {
@@ -51,7 +52,7 @@ class QueryAnalyzer {
       if (enHit || otherHit) useCases += e.useCase
       if (otherHit && !enHit && !has(e.english)) expanded += e.english
     }
-    val words = joinedTypes(padded).trim().split(' ').filter { it.isNotEmpty() }
+    val words = read.trim().split(' ').filter { it.isNotEmpty() }
     val typeHints = linkedSetOf<ResourceType>()
     val core = mutableListOf<String>()
     for ((i, w) in words.withIndex()) {
@@ -152,7 +153,7 @@ class QueryAnalyzer {
 
   fun useCasesOf(vararg texts: String?): Set<String> {
     val text = texts.filterNotNull().joinToString(" ")
-    val padded = padded(Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase())
+    val padded = joinedTypes(padded(Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase()))
     return lexicon
       .filter { e -> (e.en + e.other).count { contains(padded, it) } >= DERIVED_USE_CASE_WORDS }
       .mapTo(linkedSetOf()) { it.useCase }
