@@ -2,7 +2,7 @@ plugins { id("helper2.format") }
 
 group = "ai.helper2"
 
-version = "2026.11.3"
+version = "2026.12.0"
 
 tasks.named("spotlessCheck") {
   dependsOn(gradle.includedBuild("build-logic").task(":spotlessCheck"))
