@@ -345,7 +345,7 @@ class IntentRulesLanguagesTest {
         "de | die besten neuen KI Werkzeuge für Ollama | Ollama",
         "fr | les meilleurs outils pour Ollama | Ollama",
         "es | las mejores herramientas para Ollama | Ollama",
-        "zh | 推荐好用的Ollama工具 | 好用 Ollama",
+        "zh | 最新的工具Ollama | Ollama",
       ],
   )
   fun `generic words name no subject`(lang: String, question: String, subject: String) {
