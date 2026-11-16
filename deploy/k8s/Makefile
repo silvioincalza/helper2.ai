@@ -141,7 +141,7 @@ CREDS_SECRET := helper2-credentials
 CREDENTIALS  := H2_DATABASE_PASSWORD|H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_DATABASE_MONITOR_PASSWORD|H2_REDIS_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD|H2_REDIS_MONITOR_PASSWORD
 NOT_IN_APP_ENV := H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_DATABASE_MONITOR_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD|H2_REDIS_MONITOR_PASSWORD
 ENV_REV     = $(shell sha256sum < $(ENV)/app.env 2>/dev/null | cut -c1-16)
-REDIS_REV   = $(shell grep -E '^H2_REDIS_(PUBLIC_|BACKOFFICE_)?PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
+REDIS_REV   = $(shell grep -E '^H2_REDIS_(PUBLIC_|BACKOFFICE_|MONITOR_)?PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
 HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
 	--set image.repository=$(IMAGE) --set image.tag=$(TAG) --set backoffice.image.repository=$(BO_IMAGE) \
 	--set web.image.repository=$(WEB_IMAGE) \
@@ -220,6 +220,8 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		--set envSecret.revision=abc --set envSecret.redisPasswordRevision=def --show-only templates/app.yaml --show-only templates/backoffice.yaml --show-only templates/redis.yaml); \
 	[ "$$(grep -c 'checksum/env-revision: "abc"' <<< "$$rev")" -eq 2 ] || { echo "app and back office: no checksum/env-revision"; exit 1; }; \
 	grep -q 'checksum/auth: "def"' <<< "$$rev" || { echo "redis: no checksum/auth"; exit 1; }; \
+	ex=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set envSecret.revision=abc --show-only templates/exporters.yaml); \
+	[ "$$(grep -c 'checksum/env-revision: "abc"' <<< "$$ex")" -eq 2 ] || { echo "exporters: a new monitor password must restart both (checksum/env-revision)"; exit 1; }; \
 	echo "== canary (ADR 0045): only its own objects, one pod each, reached only with its header and a token"; \
 	tok=0123456789abcdef0123456789abcdef; \
 	for e in staging prod; do \

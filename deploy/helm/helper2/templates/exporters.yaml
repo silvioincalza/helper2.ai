@@ -20,6 +20,12 @@ spec:
     metadata:
       labels: { app: {{ .name }} }
       annotations:
+        {{- with $.Values.envSecret.revision }}
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
+        {{- if and (eq $e.store "redis") $.Values.redis.auth.enabled $.Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" $ }}
+        {{- end }}
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .port }}"
         prometheus.io/path: /metrics
