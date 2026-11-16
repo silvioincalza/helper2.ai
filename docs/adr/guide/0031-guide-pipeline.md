@@ -86,7 +86,8 @@ each with its own maximum text length (400, 200 and 300 characters). A pick is k
   "api_key"; a combining mark belongs to its letter; in a script written without spaces, Chinese, Japanese, Thai and
   the like, any two letters have a boundary), with at least 40 characters and 6 words, or the whole text when the
   text is shorter;
-- at most 5 proposed picks pass (`OVER_LIMIT` for the rest).
+- only the first 5 proposals are read: every one after them is `OVER_LIMIT`, valid or not, so an early failure
+  gives the model no extra try.
 
 Every kept pick increments `helper2.guide.picks{rank}` with its search rank band (`1-3`, `4-8`, `9+`), and the
 `guide timings` log line lists the ranks (`keptRanks`).

@@ -405,14 +405,14 @@ class GuideValidator(
       val c = byKey[p.candidateKey.trim()]
       val problem =
         when {
+          position >= maxProposed -> Rejection.OVER_LIMIT
           c == null -> Rejection.UNKNOWN_CANDIDATE
           picks.any { it.candidate.key == c.key } -> Rejection.DUPLICATE
           !allowReading && c.result.type in READING_TYPES -> Rejection.READING_TYPE
           else -> evidenceGate.claimProblem(p.reason, p.quote, c, MAX_REASON_CHARS)
         }
       when {
-        problem != null -> reject(problem, c)
-        picks.size >= maxProposed -> reject(Rejection.OVER_LIMIT)
+        problem != null -> reject(problem, c.takeIf { problem != Rejection.OVER_LIMIT })
         else ->
           picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = p.quote.trim()), position)
       }

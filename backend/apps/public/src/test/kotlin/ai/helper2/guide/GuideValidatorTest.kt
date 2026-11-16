@@ -98,29 +98,28 @@ class GuideValidatorTest {
   }
 
   @Test
-  fun `every rejection has a reason, and a valid pick past the proposal limit is over it, not wrong`() {
+  fun `every rejection has a reason, and every proposal past the fifth is over the limit, valid or not`() {
     val result =
-      GuideValidator(maxProposed = 3)
-        .validate(
-          proposal(
-            pick("c99", "anything at all here"),
-            pick("c1", "Machine translation for text and documents in over thirty languages"),
-            pick("c1", "Machine translation for text and documents in over thirty languages"),
-            pick("c2", "free forever for everyone, trusted by ten thousand companies"),
-            pick("c3", "tiny-mcp MCP server for SQLite"),
-            pick("c2", "Open source speech recognition model that transcribes audio into text"),
-            pick("c4", "Summarise meeting notes into decisions, owners and next steps"),
-            pick("c2", "speech recognition"),
-          ),
-          all,
-        )
-    assertEquals(listOf("c1", "c3", "c2"), result.picks.map { it.candidate.key })
+      validator.validate(
+        proposal(
+          pick("c99", "anything at all here"),
+          pick("c1", "Machine translation for text and documents in over thirty languages"),
+          pick("c1", "Machine translation for text and documents in over thirty languages"),
+          pick("c2", "free forever for everyone, trusted by ten thousand companies"),
+          pick("c3", "tiny-mcp MCP server for SQLite"),
+          pick("c2", "Open source speech recognition model that transcribes audio into text"),
+          pick("c4", "Summarise meeting notes into decisions, owners and next steps"),
+          pick("c2", "speech recognition"),
+        ),
+        all,
+      )
+    assertEquals(listOf("c1", "c3"), result.picks.map { it.candidate.key })
     assertEquals(
       mapOf(
         GuideValidator.Rejection.UNKNOWN_CANDIDATE to 1,
-        GuideValidator.Rejection.DUPLICATE to 2,
+        GuideValidator.Rejection.DUPLICATE to 1,
         GuideValidator.Rejection.QUOTE_NOT_IN_TEXT to 1,
-        GuideValidator.Rejection.OVER_LIMIT to 1,
+        GuideValidator.Rejection.OVER_LIMIT to 3,
       ),
       result.rejectedBy,
     )
@@ -208,8 +207,11 @@ class GuideValidatorTest {
           proposal(pick("c1", q1), pick("c1", q1), pick("c2", q2), pick("c3", q3), pick("c4", q4)),
           all,
         )
-    assertEquals(listOf("c1", "c2", "c3"), result.picks.map { it.candidate.key })
-    assertEquals(2, result.rejected)
+    assertEquals(listOf("c1", "c2"), result.picks.map { it.candidate.key })
+    assertEquals(
+      mapOf(GuideValidator.Rejection.DUPLICATE to 1, GuideValidator.Rejection.OVER_LIMIT to 2),
+      result.rejectedBy,
+    )
     val five =
       validator.validate(
         proposal(pick("c1", q1), pick("c2", q2), pick("c3", q3), pick("c4", q4)),
