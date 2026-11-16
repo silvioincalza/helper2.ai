@@ -8,6 +8,7 @@ import ai.helper2.catalog.EmbeddingStore.RefusedText;
 import ai.helper2.platform.PgVectors;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -73,6 +74,32 @@ class JdbcEmbeddingStore implements EmbeddingStore {
             })
             .list();
     return new PendingEmbeddings(tasks, backlog[0]);
+  }
+
+  @Override
+  public Set<UUID> stillRefused(String model, Collection<RefusedText> refused) {
+    if (refused.isEmpty()) {
+      return Set.of();
+    }
+    List<RefusedText> snapshot = List.copyOf(refused);
+    return unavailableOnFailure(() ->
+        Set.copyOf(
+            jdbc.sql(
+                    """
+                    SELECT r.id
+                    FROM resource r
+                    JOIN unnest(CAST(:ids AS uuid[]), CAST(:hashes AS text[])) AS s(id, hash)
+                      ON s.id = r.id AND s.hash = md5(%1$s)
+                    LEFT JOIN resource_embedding e ON e.resource_id = r.id AND e.model = :model
+                    WHERE %2$s
+                    """
+                        .formatted(EMBEDDED_TEXT, EMBEDDING_PENDING))
+                .param("model", model)
+                .param("ids", snapshot.stream().map(RefusedText::resourceId).toArray(UUID[]::new))
+                .param(
+                    "hashes", snapshot.stream().map(RefusedText::textHash).toArray(String[]::new))
+                .query(UUID.class)
+                .list()));
   }
 
   @Override

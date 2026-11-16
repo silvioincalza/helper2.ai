@@ -402,6 +402,48 @@ class ResourceEmbeddingTest {
   }
 
   @Test
+  void aRefusedResourceThatIsDeletedIsForgotten() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.TEXT_REJECTED, Set.of("alpha\nx"), FailureReason.TEXT_REJECTED);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    IndexEmbeddings indexer =
+        new IndexEmbeddings(
+            embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+    indexer.tick();
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isEqualTo(1);
+
+    jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", alpha).update();
+    indexer.tick();
+
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+  }
+
+  @Test
+  void aRefusedTextThatAnotherReplicaEmbedsIsForgotten() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.TEXT_REJECTED, Set.of("alpha\nx"), FailureReason.TEXT_REJECTED);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    IndexEmbeddings indexer =
+        new IndexEmbeddings(
+            embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+    indexer.tick();
+
+    jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id")
+        .param("id", alpha)
+        .update();
+    embedEverythingSoFar();
+    indexer.tick();
+
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+  }
+
+  @Test
   void aProviderErrorOnASingleTextIsTriedAgainOnTheNextTick() {
     embedEverythingSoFar();
     UUID alpha = insert("alpha", "x");

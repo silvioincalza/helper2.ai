@@ -36,7 +36,8 @@ never break keyword search.
    its texts one per call (`helper2.catalog.indexer.singles-after-failure`); a text that fails on its own waits for
    a later tick, and a rate limit, a refused call or a timeout ends the round. A text the API refuses on its own
    (HTTP 400, 413 or 422, such as 422 "input rejected by content safety screening") is remembered in memory by
-   resource id and text md5 and left out of later batches until its text changes or the process restarts; the
+   resource id and text md5 and left out of later batches until its text changes or the process restarts (each tick first drops the
+   remembered texts that were deleted, changed or embedded by another replica); the
    circuit `llm-embed-index` does not count such a refusal (`ModelErrors.RejectedInput`), while 429, 5xx, a refused
    key (401, 403) and a timeout still count. Otherwise the refused text would head every batch at its popularity rank
    and no row behind it would be embedded. NVIDIA failed most calls of two or

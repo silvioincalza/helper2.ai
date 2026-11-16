@@ -89,6 +89,7 @@ public class IndexEmbeddings {
       return 0;
     }
     try {
+      forgetWhatIsNoLongerRefused();
       PendingEmbeddings pending =
           store.pendingEmbeddings(embedder.model(), batch, rejected.values());
       backlog.set(pending.backlog());
@@ -105,6 +106,13 @@ public class IndexEmbeddings {
       log.warn("Embedding batch failed: {}", e.getMessage());
       return 0;
     }
+  }
+
+  private void forgetWhatIsNoLongerRefused() {
+    if (rejected.isEmpty()) {
+      return;
+    }
+    rejected.keySet().retainAll(store.stillRefused(embedder.model(), rejected.values()));
   }
 
   private void upToDate() {
