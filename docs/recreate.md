@@ -86,7 +86,7 @@ What they hold:
   bumps the versions every week.
 - `main`: pull requests only, every review thread resolved, a Copilot review on each push, the checks `ci-ok` and
   `copilot-pull-request-reviewer` green (GitHub Actions, integration 15368) on an up-to-date branch, no force push.
-  When Copilot cannot review for a long time, drop `copilot-pull-request-reviewer` from `ruleset-main.json`, apply it
+  When Copilot cannot review for a long time, drop `copilot-pull-request-reviewer` from `$S/ruleset-main.json` (`.github/settings/ruleset-main.json`), apply it
   with `gh api -X PUT repos/$R/rulesets/<id> --input $S/ruleset-main.json`, and put it back once Copilot reviews again.
 - `release/**`: pull requests only, every review thread resolved, a Copilot review on each push, no force push,
   no deletion, the check `ci-ok` green on an up-to-date branch, as on `main`.
