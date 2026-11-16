@@ -463,18 +463,8 @@ No new table for deep search, no new dependency.
 | 14 | Human-in-the-Loop | Covered: every product and post waits for a person; a host list changes only by an admin, audited. |
 | 15 | Cost & Reliability | Covered: the Scout's daily credit cap on the global counter, a shared circuit, deep search's time and size budgets. |
 
-### Points for a lawyer
-1. Is Tavily's written OK for scheduled discovery searches whose list pages we index still to confirm (see
-   [sources.md](../../sources.md))?
-2. Do GitHub's terms (Acceptable Use, API terms) allow reading up to 40 README files a day through the API, following
-   links from list to list, to build a search index and a review list?
-3. Is keeping a link to a third-party product site, with the link's words and the list's section heading, and showing
-   it (after our review) as a catalog entry, allowed without the site owner's consent? Does it make us responsible for
-   the linked content (DSA, Swiss law on links)?
-4. Is a list's section heading used as a category a reuse of the list author's selection or arrangement (copyright, EU
-   sui generis database right)?
-5. Is keeping a hashed key of rejected candidate URLs with no time limit allowed (`candidate_decision`)? The key is
-   pseudonymous: a LinkedIn post's URL names a person ([0010](../foundation/0010-data-retention.md)).
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 Discovery: [flow](../../diagrams/flow-0013-tavily-discovery.svg) · [sequence](../../diagrams/sequence-0013-tavily-discovery.svg) ·

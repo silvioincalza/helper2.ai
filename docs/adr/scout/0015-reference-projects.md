@@ -155,9 +155,8 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
 | 14 | Human-in-the-Loop | Partly, on purpose: an active leader with 1,000 stars is indexed with no person; every other leader waits for one. Off with `H2_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC=0`. |
 | 15 | Cost & Reliability | Covered: no credits; at most 154 GitHub calls a pass; registry calls bounded per run. Each indexed repository later costs one embedding and one enrichment. |
 
-### Points for a lawyer
-- GitHub's terms allow API use; showing a repository's name, description and stars with a link is what the other
-  GitHub collectors already do. No new point.
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 [flow](../../diagrams/flow-0015-reference-projects-for-review.svg) · [sequence](../../diagrams/sequence-0015-reference-projects-for-review.svg)

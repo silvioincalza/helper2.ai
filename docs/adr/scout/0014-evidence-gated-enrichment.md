@@ -470,11 +470,8 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 | 14 | Human-in-the-Loop | Covered: conflicts, validation errors, unverified and self-declared relationships and unknown ABOUT targets wait in the review queue. |
 | 15 | Cost & Reliability | Covered: daily enrichment, gap and Extract caps, the global Tavily cap, the 30-day ledger, the UNCHANGED skip, circuit breakers. |
 
-### Points for a lawyer
-1. Are the 20–300-character quotes of READMEs, model cards and product pages, shown with their link, covered by
-   quotation or by the facts exception?
-2. Do Tavily's terms and its written OK for Extract cover reading product pages and keeping the cleaned text in Redis
-   for at most 24 hours?
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 The gate: [flow](../../diagrams/flow-0014-evidence-gated-enrichment.svg) · [sequence](../../diagrams/sequence-0014-evidence-gated-enrichment.svg) ·

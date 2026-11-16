@@ -230,13 +230,8 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 | 14 | Human-in-the-Loop | Covered: nothing reaches the table without a person. |
 | 15 | Cost & Reliability | Covered: no new model call; a few output tokens per relationship. |
 
-### Points for a lawyer
-- An owner name the rule proposes can be a natural person's account name. It is public and already shown in the
-  resource's title; the proposal adds a count. Confirm that this needs no entry of its own in the record of
-  processing.
-- Naming a company as a "vendor" or a service as a "service" a resource works with is a statement about that
-  company's product. It rests on the resource's own text, with its quote. No new point compared with today's vendor
-  relationships.
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 [flow](../../diagrams/flow-0019-known-targets.svg) · [sequence](../../diagrams/sequence-0019-known-targets.svg)

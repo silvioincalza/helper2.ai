@@ -104,11 +104,8 @@ one week of AI packages and 11.59 GB for the whole table.
   and which fields.
 - The key lives in OpenBao and the environment, never in the repo or the logs.
 
-#### Points for a lawyer
-1. PyPI's terms for reusing package metadata (name, summary, links, keywords) from the public BigQuery dataset in a
-   catalog, with a link to the PyPI page.
-2. Google Cloud's terms for the sandbox project: use for a public service, and the data location (BigQuery public
-   datasets are in the United States; only public package data and our query travel).
+#### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 [flow](../../diagrams/flow-0017-pypi-through-bigquery.svg) ·

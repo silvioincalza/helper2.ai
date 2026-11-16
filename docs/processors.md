@@ -39,16 +39,5 @@ that is not renewed moves to the inactive list, and the Privacy line changes in 
 
 ## Providers' terms for commercial use
 
-The terms of each processor and money provider, read on 2026-11-14 for a site that shows ads and takes gifts
-([S9.6.1](https://github.com/silvioincalza/helper2.ai/issues/340)). `yes`, `ask` and `no` mean what they mean in
-[sources.md](sources.md#terms-for-commercial-use). The legal points behind a row are tracked privately.
-
-| Provider | Role | Terms read | Commercial use | Condition, and whether it is met |
-|---|---|---|---|---|
-| NVIDIA API catalog (embeddings, `integrate.api.nvidia.com`) | Receives search text; no data processing agreement found | [NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), sections 1.2, 1.4 and 3.3 | no | — |
-| Nebius Token Factory (chat models) | Processor | [Nebius Agreement](https://docs.nebius.com/legal/agreement) (effective 22 October 2026); [Token Factory terms](https://docs.nebius.com/legal/token-factory) (effective 22 October 2026); [data processing agreement](https://docs.nebius.com/legal/dpa) (effective 15 September 2026), part of the terms without a signature; [sub-processors](https://docs.nebius.com/legal/sub-processors_tofa) (23 September 2026) | yes | AI output is labelled: met. Zero Data Retention in the account: to check. Where each model runs on a public endpoint: to ask |
-| Google Analytics 4 | Processor | [Terms of Service](https://marketingplatform.google.com/about/analytics/terms/us/) (modified 15 May 2023); [Data Processing Terms](https://business.safety.google/adsprocessorterms/) (v8.0, 30 May 2024); [EU user consent policy](https://www.google.com/about/company/user-consent-policy/) | yes | Consent first where the rules ask for it: met ([ADR 0042](adr/money/0042-monetisation.md)). The Data Processing Terms accepted in the account: to check |
-| Google AdSense and the consent tool | Its own controller | [Program policies](https://support.google.com/adsense/answer/48182) (updated 4 August 2026); [Publisher Policies](https://support.google.com/publisherpolicies/answer/10502938); [Controller Terms](https://business.safety.google/adscontrollerterms/) (v8.0, 30 May 2024) | yes | A certified consent tool for the EEA, the UK and Switzerland: met. No ad on a search page: met. A resource page adds its own value to what it quotes: to check on a sample |
-| Stripe (Payment Link) | Processor, and its own controller for fraud checks | [Services Agreement](https://stripe.com/en-ch/legal/ssa) (updated 28 September 2026); [Restricted Businesses](https://stripe.com/en-ch/legal/restricted-businesses) (updated 22 September 2026); [tips and donations](https://support.stripe.com/questions/requirements-for-accepting-tips-or-donations) | ask | How Stripe classes a gift with nothing in return: to ask |
-| GitHub Sponsors | Its own controller | [GitHub Sponsors Additional Terms](https://docs.github.com/en/site-policy/github-terms/github-sponsors-additional-terms) | yes | Switzerland is a supported region: met. A tax form (W-8BEN) before the profile is public |
-| Cloudflare (network edge, backup storage) | Processor | [Self-Serve Subscription Agreement](https://www.cloudflare.com/terms/) (updated 12 September 2025); [data processing addendum](https://www.cloudflare.com/cloudflare-customer-dpa/) (v6.4, effective 3 April 2026), part of the agreement without a signature | yes | The backup bucket set to the EU: to check |
+The terms of each processor and money provider are read for a site that shows ads and takes gifts. The reading and
+its legal points are tracked privately (S9.6.1, S9.6.3).

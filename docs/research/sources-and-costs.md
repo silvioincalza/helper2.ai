@@ -166,7 +166,7 @@ the 1,500 cap; most links are `UNVERIFIED_METADATA` (the package's own metadata)
 `SLSA_ATTESTATION`, some PyPI packages `PYPI_PUBLISH_ATTESTATION`.
 
 **Implication (judgment, not legal advice):** fine for the Scout. Credit deps.dev on the Sources page (done in the
-source's attribution). A lawyer confirms the CC-BY 4.0 attribution form before launch (ADR 0018).
+source's attribution).
 
 ---
 

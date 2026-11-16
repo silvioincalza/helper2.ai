@@ -71,7 +71,7 @@ same for every visitor.
    (`5826f49c`), pinned by a test: a new wording shows up there first.
 7. **AI-drafted examples are marked.** The rule: an example a model drafted is AI-written text, also after a person
    accepted or edited it. Its label and query are what the model wrote; its path is a model's pick among two values,
-   a classification. An accepted draft is human-reviewed text, but until a lawyer confirms how Art. 50 treats it, the
+   a classification. An accepted draft is human-reviewed text, but the
    house rule applies: the public pool carries `aiDrafted` per example and an `AiContentMarker` (ADR 0033) when one is
    in it, naming the model and the fields `examples[].label` and `examples[].query`. The page reads the pool and gives
    an AI-drafted chip an "AI draft" label (its tooltip: "Drafted with AI, checked by a person"); the chip and the
@@ -159,14 +159,8 @@ same for every visitor.
 | Human-in-the-loop | Covered: nothing reaches the pool without an accept. |
 | Cost & Reliability | Covered: own daily budget (5 calls by default), circuit breaker. |
 
-### Points for a lawyer
-
-1. Does Art. 50(2) marking still apply to AI-drafted text once a person reviewed, maybe edited, and accepted it?
-2. Does an unedited accepted draft differ from an edited one?
-3. Can the human-review logic of Art. 50(4) apply by analogy to short UI text that is not public-interest
-   information? Until these are answered, the house rule (label and mark) stays.
-4. Does the path a model picked (`USE_AI`, `BUILD_WITH_AI`), a classification and not shown as text, need a mark of
-   its own?
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 

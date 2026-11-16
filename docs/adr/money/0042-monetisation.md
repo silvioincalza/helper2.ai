@@ -221,7 +221,7 @@ The constraints:
 - While AdSense is on, Google Analytics misses every visit that never opens a resource page, in Europe and outside
   it, and the pages of a visit before its first resource page. The numbers for Home and search are too low and are
   not comparable with the time before. That is the price of no Google dialog on Home.
-- Which TCF purposes GA4 needs is our reading (1 and 8), not a Google statement: on the lawyer list.
+- Which TCF purposes GA4 needs is our reading (1 and 8), not a Google statement.
 - `no-store` turns off the browser's back/forward cache for the shell while AdSense is on.
 - GA4 and the ad clients run in the visitor's browser and talk to their hosts directly: the CSP must list the hosts,
   and they may change them. A blocked request shows in the browser console, not in our logs.
@@ -242,8 +242,8 @@ They run in our origin with full access to the page.
 | T | A Google script, or a malicious ad, changes the page or the results | No SRI is possible for Google's scripts; ads only in their box; nothing on the admin host | Accepted while AdSense is on |
 | T | An injected script runs under the weaker CSP | Nonce per request, only on the shell and our JSON-LD, never on source text; `no-store`; `/index.html` redirects | `'unsafe-eval'`: eval-style sinks are open |
 | R | Invalid clicks get the AdSense account closed | No own clicks; nothing asks for clicks | Accepted |
-| I | Search words or the guide question reach Google | No AdSense on `q` or `ask` addresses; the consent tool only from a resource page or "Privacy choices", never on such an address; requests paused off resource pages; Auto ads and overlay formats off; GA gets the path only | The AdSense script and the consent tool, once loaded, stay for the visit and could read a later search address; the Privacy page says so (lawyer point, see Backlog) |
-| I | Analytics without consent in Europe | Our bar, or the TCF answer (purposes 1 and 8, vendor 755); a "no" sets `ga-disable` and deletes cookies; tool blocked or not loaded yet = no GA | Our reading of the purposes: lawyer |
+| I | Search words or the guide question reach Google | No AdSense on `q` or `ask` addresses; the consent tool only from a resource page or "Privacy choices", never on such an address; requests paused off resource pages; Auto ads and overlay formats off; GA gets the path only | The AdSense script and the consent tool, once loaded, stay for the visit and could read a later search address; the Privacy page says so |
+| I | Analytics without consent in Europe | Our bar, or the TCF answer (purposes 1 and 8, vendor 755); a "no" sets `ga-disable` and deletes cookies; tool blocked or not loaded yet = no GA | Our reading of the purposes |
 | D | Ad scripts slow the page (INP, CLS) | Fixed-height boxes; scripts load after the app | Measure on staging |
 | E | A third-party script uses the CSRF token for same-origin writes | Writes need sign-in or are rate-limited; admin only on the admin host, with the strict CSP and no third-party script | Accepted on the public host |
 
@@ -254,7 +254,7 @@ They run in our origin with full access to the page.
 
 ### Open points
 
-- The manual steps and the lawyer points come before a setting is filled on prod.
+- The manual steps come before a setting is filled on prod.
 
 ## Diagrams
 

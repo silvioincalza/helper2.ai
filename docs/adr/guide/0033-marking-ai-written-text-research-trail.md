@@ -304,37 +304,14 @@ another person's words.
   every AI-written text the answer shows.
 - The other layers: not touched by this record.
 
-### Points for a lawyer
-
-- Is a dot mark whose words show on hover or tap, with a key on every page, "clear and distinguishable" under
-  Art. 50(1) and (4), or does the text need its words visible next to it?
-- Is metadata-only marking (no watermark, lost on copy) enough for text under Art. 50(2)?
-- Do the AI-written search queries in the trail fall under Art. 50(2)? We mark them anyway.
-- Does a code from a closed list that a model chose (the guide's intent, a resource type) need Art. 50 marking when
-  it is shown as a label?
-- Does the privacy text cover showing a cached answer built from someone else's question?
-- Is a value a model copied from a source (event days, a self-declared fact, the translation of a query)
-  "generated" content under Art. 50(2), or inside its exception for content the system does not substantially
-  alter? We mark it anyway.
-- Is a marker whose `models` list is empty enough, or do Art. 50(2) or the Code of Practice expect the model named?
-- Is the per-value origin alone enough for the lists of recent resources and upcoming events, which carry no
-  `aiContent`?
-- `eventKind` and `eventFormat` are codes a model chose from a closed list and are listed in `aiContent`; the
-  resource type a model chose is not. Which is right?
-- A relationship a model extracted and a reviewer accepted stays marked as AI. Does a person's review change it?
-- The Mission page's "How we mark AI text" is a public statement of compliance: a lawyer reads its wording.
-- The descriptions of the curated industry events ([0012](../scout/0012-scout-collectors-and-events.md) §23) are not in
-  the list of AI-written texts: a model drafts them from the organiser's page, and a person reads and approves each
-  one before it is merged, so they are shown as curated. Does a sentence drafted by a model and approved by a person
-  need the Art. 50 label and mark?
+### Legal points
+Tracked privately (S9.6.3).
 
 ### Known limits
 
 - The research trail lists no duplicate and no pick dropped for lack of room, so `rejected` can be larger
-  than the list. A reused answer shows no queries and no search query. Lawyer: are AI-written
-  search queries covered by Art. 50(2), and does the privacy text cover showing a cached answer built from someone
-  else's question?
-- Lawyer: is metadata-only marking enough for text (it is lost on copy)? A new field in the guide's or the setup
+  than the list. A reused answer shows no queries and no search query.
+- Metadata marking is lost when text is copied. A new field in the guide's or the setup
   guide's contract fails `GuideAiFieldsTest` or `SetupAiFieldsTest` until it is classed as AI-written or not; its
   `aiMark` element and label in the UI are still added by hand.
 - `aiContent.models` of a search response or a resource can be empty: a card keeps no model for a stored AI
