@@ -45,6 +45,7 @@ import { ResultKeys } from './ResultKeys';
 import { ResultRow } from './ResultRow';
 import { ResultsAsOf } from './ResultsAsOf';
 import { ResultsSkeleton } from './ResultsSkeleton';
+import { SupportWhileSearching } from '@/features/monetisation/SupportWhileSearching';
 import { SourceLine } from './SourceLine';
 import { TypeTabs } from './TypeTabs';
 import './results.css';
@@ -118,7 +119,10 @@ export function Results() {
             {t('results.loading')}
           </p>
         ) : (
-          <ResultsSkeleton />
+          <>
+            <SupportWhileSearching waiting={!asked} />
+            <ResultsSkeleton />
+          </>
         ))}
       {!search.loading && search.error !== undefined && (
         <StatePanel

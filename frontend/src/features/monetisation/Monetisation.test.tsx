@@ -89,7 +89,7 @@ describe('monetisation (ADR 0042)', () => {
       within(footer()).queryByRole('button', { name: 'Cookie settings' }),
     ).not.toBeInTheDocument();
     expect(banner()).not.toBeInTheDocument();
-    expect(screen.queryByRole('complementary', { name: 'Sponsored' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('complementary', { name: 'Advertisements' })).not.toBeInTheDocument();
     expect(document.querySelector('script[src^="https://"]')).toBeNull();
   });
 
@@ -381,7 +381,7 @@ describe('monetisation (ADR 0042)', () => {
       const id = '11111111-1111-5111-8111-111111111111';
       mockApi({ 'GET /site': site(ADSENSE), [`GET /resources/${id}`]: () => makeDetail() });
       renderApp(`/resource/${id}`);
-      const box = await screen.findByRole('complementary', { name: 'Sponsored' });
+      const box = await screen.findByRole('complementary', { name: 'Advertisements' });
       const ins = box.querySelector('ins.adsbygoogle');
       expect(ins).toHaveAttribute('data-ad-client', 'ca-pub-4688630163076563');
       expect(ins).toHaveAttribute('data-ad-slot', '1234567890');
@@ -390,7 +390,7 @@ describe('monetisation (ADR 0042)', () => {
         'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4688630163076563',
       );
       expect(window.adsbygoogle).toHaveLength(1);
-      expect(screen.getAllByRole('complementary', { name: 'Sponsored' })).toHaveLength(1);
+      expect(screen.getAllByRole('complementary', { name: 'Advertisements' })).toHaveLength(1);
       const consentTag = document.getElementById('h2-googlefc');
       const adTag = document.getElementById('h2-adsense');
       expect(consentTag).not.toBeNull();
@@ -405,7 +405,7 @@ describe('monetisation (ADR 0042)', () => {
       const id = '11111111-1111-5111-8111-111111111111';
       mockApi({ 'GET /site': site(ADSENSE), [`GET /resources/${id}`]: () => makeDetail() });
       const { router } = renderApp(`/resource/${id}`);
-      await screen.findByRole('complementary', { name: 'Sponsored' });
+      await screen.findByRole('complementary', { name: 'Advertisements' });
       await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(0));
 
       await act(() => router.navigate('/search?q=agents'));
@@ -417,7 +417,9 @@ describe('monetisation (ADR 0042)', () => {
       mockApi({ 'GET /site': site(ADSENSE), 'GET /search': () => makeSearch() });
       renderApp('/search?q=agents');
       await settle();
-      expect(screen.queryByRole('complementary', { name: 'Sponsored' })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('complementary', { name: 'Advertisements' }),
+      ).not.toBeInTheDocument();
       expect(document.querySelector('ins.adsbygoogle')).toBeNull();
       expect(document.getElementById('h2-adsense')).toBeNull();
     });

@@ -232,7 +232,7 @@
       {
         "title": "Ads and gifts",
         "items": [
-          "Resource pages can show one ad from Google AdSense, marked \"Sponsored\"; search pages show none. An ad is never part of the results. Ads never change which results you see or their order, and there is never an ad next to a guide answer.",
+          "Resource pages can show one ad from Google AdSense, marked \"Advertisements\"; search pages show none. While the first results of a search load, a search page can show a short note from helper2.ai about supporting the site; it is not an ad and sends nothing to anyone. An ad is never part of the results. Ads never change which results you see or their order, and there is never an ad next to a guide answer.",
           "The guide's answers are written by AI and labeled as such. An ad is never written by our AI and never shown as an answer.",
           "Gifts through GitHub Sponsors or Stripe are voluntary. They give no right to any service, feature or result, and they are not refunded except where the provider's terms or the law say so. A gift to helper2.ai is not a donation to a charity and is not tax-deductible."
         ]

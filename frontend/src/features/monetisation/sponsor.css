@@ -27,3 +27,13 @@
   display: block;
   min-height: 15rem;
 }
+.h2-support-wait {
+  min-height: 0;
+}
+.h2-support-wait__text {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-14);
+}
+.h2-support-wait__link {
+  font-weight: 600;
+}
