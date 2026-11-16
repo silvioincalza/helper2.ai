@@ -16,12 +16,6 @@ final class ContentSecurityPolicy {
 
   static final String GA4_REQUESTS = GA4_BEACONS + " https://*.google.com";
 
-  static final String ADS_SCRIPTS = "https://media.ethicalads.io https://server.ethicalads.io";
-
-  static final String ADS_REQUESTS = "https://server.ethicalads.io";
-
-  static final String ADS_IMAGES = "https://media.ethicalads.io https://server.ethicalads.io";
-
   private ContentSecurityPolicy() {}
 
   static final String NONCE = "{nonce}";
@@ -43,12 +37,6 @@ final class ContentSecurityPolicy {
       add(d, "script-src", GA4_SCRIPTS);
       add(d, "connect-src", GA4_REQUESTS);
       add(d, "img-src", GA4_BEACONS);
-    }
-    if (monetisation.adsOn()) {
-      add(d, "script-src", ADS_SCRIPTS);
-      add(d, "connect-src", ADS_REQUESTS);
-      add(d, "img-src", ADS_IMAGES);
-      add(d, "style-src", "'unsafe-inline'");
     }
     return write(d);
   }

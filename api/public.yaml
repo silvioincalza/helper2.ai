@@ -414,12 +414,11 @@ components:
       description: >-
         How the site funds itself (ADR 0042), as configured. Each value is null while that part is off (no link, no
         script).
-      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, ethicalAdsPublisher, adsenseClient, adsenseSlot]
+      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, adsenseClient, adsenseSlot]
       properties:
         githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
         stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
         ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`H2_ANALYTICS_GA4_MEASUREMENT_ID`)." }
-        ethicalAdsPublisher: { type: [string, 'null'], description: "EthicalAds publisher of the one ad slot (`H2_ADS_ETHICALADS_PUBLISHER`)." }
         adsenseClient:
           type: [string, 'null']
           description: >-

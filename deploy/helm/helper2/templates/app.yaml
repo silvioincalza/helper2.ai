@@ -74,9 +74,6 @@ spec:
             {{- with .ga4MeasurementId }}
             - { name: H2_ANALYTICS_GA4_MEASUREMENT_ID, value: {{ . | quote }} }
             {{- end }}
-            {{- with .ethicalAdsPublisher }}
-            - { name: H2_ADS_ETHICALADS_PUBLISHER, value: {{ . | quote }} }
-            {{- end }}
             {{- with .adsenseClient }}
             - { name: H2_ADS_ADSENSE_CLIENT, value: {{ . | quote }} }
             {{- end }}

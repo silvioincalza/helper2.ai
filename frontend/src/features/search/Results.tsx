@@ -1,5 +1,4 @@
 import { upTo } from '@/lib/breakpoints';
-import { SponsorSlot } from '@/features/monetisation/SponsorSlot';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -113,7 +112,6 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
-      {!asked && state.q && !failed && <SponsorSlot query={state.q} loading={search.loading} />}
       {search.loading &&
         (shown ? (
           <p role="status" className="h2-results__loading-line">

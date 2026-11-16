@@ -11,6 +11,5 @@ public record MonetisationProperties(
     @Pattern(regexp = "^$|https://(buy|donate)\\.stripe\\.com/[A-Za-z0-9_]+")
         String stripePaymentUrl,
     @Pattern(regexp = "^$|G-[A-Z0-9]{4,16}") String ga4MeasurementId,
-    @Pattern(regexp = "^$|[a-z0-9-]{2,64}") String ethicalAdsPublisher,
     @Pattern(regexp = "^$|ca-pub-[0-9]{16}") String adsenseClient,
     @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlot) {}

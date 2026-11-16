@@ -16,7 +16,7 @@ class MonetisationConfigurationTest {
   void thePublisherAloneOnlyAnswersTheSiteCheck() {
     Monetisation m =
         MonetisationConfiguration.from(
-            new MonetisationProperties("", "", "", "", "ca-pub-4688630163076563", ""));
+            new MonetisationProperties("", "", "", "ca-pub-4688630163076563", ""));
 
     assertThat(m.adsTxt()).isPresent();
     assertThat(m.adsenseOn()).isFalse();
@@ -29,8 +29,7 @@ class MonetisationConfigurationTest {
 
   @Test
   void emptyMeansOff() {
-    assertThat(
-            MonetisationConfiguration.from(new MonetisationProperties("", " ", null, "", "", "")))
+    assertThat(MonetisationConfiguration.from(new MonetisationProperties("", " ", null, "", "")))
         .isEqualTo(Monetisation.OFF);
   }
 
@@ -42,7 +41,6 @@ class MonetisationConfigurationTest {
                 "https://github.com/sponsors/someone",
                 "https://buy.stripe.com/abc123",
                 "G-ABC123XYZ9",
-                "helper2",
                 "ca-pub-4688630163076563",
                 "1234567890"));
 
@@ -51,7 +49,6 @@ class MonetisationConfigurationTest {
     assertThat(m.githubSponsors()).hasValueSatisfying(u -> assertThat(u).hasHost("github.com"));
     assertThat(m.stripePayment()).isPresent();
     assertThat(m.analyticsOn()).isTrue();
-    assertThat(m.adsOn()).isTrue();
   }
 
   @Test
@@ -62,11 +59,10 @@ class MonetisationConfigurationTest {
                     "https://github.com/sponsors/someone",
                     "https://donate.stripe.com/abc_123",
                     "G-ABC123XYZ9",
-                    "helper2",
                     "ca-pub-4688630163076563",
                     "1234567890")))
         .isEmpty();
-    assertThat(VALIDATOR.validate(new MonetisationProperties("", "", "", "", "", ""))).isEmpty();
+    assertThat(VALIDATOR.validate(new MonetisationProperties("", "", "", "", ""))).isEmpty();
   }
 
   @Test
@@ -77,9 +73,8 @@ class MonetisationConfigurationTest {
                     "http://github.com/sponsors/someone",
                     "https://evil.example/pay",
                     "UA-12345-1",
-                    "Bad Publisher",
                     "pub-4688630163076563",
                     "slot-1")))
-        .hasSize(6);
+        .hasSize(5);
   }
 }

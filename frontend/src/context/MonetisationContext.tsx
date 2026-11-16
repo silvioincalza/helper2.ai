@@ -6,7 +6,6 @@ const MONETISATION_OFF: Monetisation = {
   githubSponsorsUrl: null,
   stripePaymentUrl: null,
   ga4MeasurementId: null,
-  ethicalAdsPublisher: null,
   adsenseClient: null,
   adsenseSlot: null,
 };

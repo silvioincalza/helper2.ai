@@ -20,7 +20,6 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),
-            Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
             Optional.empty());
 
@@ -48,7 +47,6 @@ class AdsTxtTest {
   void pagesAreNeverStoredWhileAdSenseIsOn() {
     var adsense =
         new Monetisation(
-            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             Optional.empty(),

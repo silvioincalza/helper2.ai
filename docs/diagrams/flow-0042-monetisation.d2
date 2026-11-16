@@ -2,7 +2,7 @@
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/config/MonetisationConfiguration.java,
 #   site/monetisation/web/SiteController.java, frontend/src/context/MonetisationContext.tsx,
 #   site/csp/ContentSecurityPolicy.java, frontend/src/features/monetisation/AnalyticsConsent.tsx,
-#   features/monetisation/SponsorSlot.tsx, features/search/Results.tsx, lib/analytics.ts.
+#   features/search/Results.tsx, lib/analytics.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0042-monetisation.d2 && d2 flow-0042-monetisation.d2 flow-0042-monetisation.svg
 
 ...@style
@@ -34,33 +34,10 @@ ga: {
 }
 nothing: "No analytics" {class: data}
 
-ads: {
-  class: group
-  direction: down
-  set: "EthicalAds ID set?" {class: decision}
-  search: "Search page with a query,\nno guide question?" {class: decision}
-  slot: "One slot above the results:\nSponsored + why" {class: app}
-  loading: "Search running?" {class: decision}
-  bar: "Progress bar (6 s);\nresults replace it at once" {class: app}
-  first: "First results\nfor these words (q)?" {class: decision}
-  ad: "Empty the box,\nethicalads.load(): one ad per search" {class: hot}
-  keep: "Keep the ad\n(filter, sort, timeline, Show more)" {class: data}
-  set -> search: yes
-  search -> slot: yes
-  slot -> loading
-  loading -> bar: yes
-  loading -> first: no
-  bar -> first: "results come"
-  bar -> noad: "search fails, or\nthe words change first"
-  first -> ad: yes
-  first -> keep: no
-}
-noad: "No ad" {class: data}
+ads: "Search, guide answer, Home or a text page:\nno ad of any network\n(AdSense only on resource pages, ADR 0042 §9)" {class: data}
 
 page -> admin
 admin -> strict: yes
 admin -> ga.on: no
-admin -> ads.set: no
+admin -> ads: no
 ga.on -> nothing: no
-ads.set -> noad: no
-ads.search -> noad: no
