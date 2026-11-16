@@ -176,3 +176,4 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 - Open issues that change it:
   - [S2.10.3](https://github.com/silvioincalza/helper2.ai/issues/360): a source record stays with its resource.
   - S2.10.6: a refused package join on the admin review list, and accepting it joins.
+  - S2.10.7: an official package without a scope joins its repository by its publisher.
