@@ -274,6 +274,14 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice|-web)?:' | sort -u); \
 	test -n "$$imgs" || { echo "no images rendered"; exit 1; }; \
 	if grep -v '@sha256:[0-9a-f]\{64\}' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
+	echo "== Redis' memory limit is at least twice maxmemory (ADR 0005: an AOF rewrite forks)"; \
+	for e in staging prod; do \
+		rd=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --show-only templates/redis.yaml); \
+		max=$$(grep -oE -- '--maxmemory [0-9]+mb' <<< "$$rd" | grep -oE '[0-9]+'); \
+		lim=$$(awk '/limits:/ {l=1} l && /memory:/ {gsub(/[^0-9]/, "", $$2); print $$2; exit}' <<< "$$rd"); \
+		[ -n "$$max" ] && [ -n "$$lim" ] && [ "$$lim" -ge $$((2 * max)) ] \
+			|| { echo "$$e: Redis' memory limit ($${lim:-?}Mi) must be at least twice maxmemory ($${max:-?}mb)"; exit 1; }; \
+	done; \
 	echo "== redis.auth.existingSecret: redis.auth.revision restarts Redis and the app; without it, no revision annotation"; \
 	r=(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--show-only templates/app.yaml --show-only templates/backoffice.yaml --show-only templates/redis.yaml); \

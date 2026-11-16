@@ -10,7 +10,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 
 ## Decision
 1. **Redis 8.10.2 as a cache with AOF persistence.** Bounded memory (`maxmemory 128mb`, `allkeys-lru` in the
-   Helm chart): entries are evicted under pressure, as in any cache. The append-only file keeps the cache across
+   Helm chart): entries are evicted under pressure, as in any cache. `maxmemory` bounds the data only: an AOF
+   rewrite forks Redis, and copy-on-write can nearly double it, so the container's memory limit is at least twice
+   `maxmemory` (`redis.resources`, 320 Mi), or the kernel kills Redis before eviction can act. The append-only file keeps the cache across
    restarts: `--appendonly yes`, `--appendfsync everysec`, no RDB snapshots (`--save ""`). In the chart Redis is a
    single-replica StatefulSet with `/data` on a ReadWriteOnce PersistentVolumeClaim (`redis.storage`, 1 Gi;
    `redis.storageClassName`, empty = the cluster default). Redis is never a system of record: losing the volume
