@@ -75,6 +75,7 @@ helper2:
     statement-timeouts:
       h2_public: 5s
       h2_backoffice: 60s
+    monitor-password: ${H2_DATABASE_MONITOR_PASSWORD:}
   pages:
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
     noindex: ${H2_NOINDEX:false}

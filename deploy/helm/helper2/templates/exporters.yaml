@@ -1,0 +1,98 @@
+{{- if not .Values.canary.only }}
+{{- with .Values.monitoring.exporters }}
+{{- if .enabled }}
+{{- $exporters := list
+  (dict "name" "postgres-exporter" "port" 9187 "store" "postgres" "storePort" 5432 "spec" .postgres)
+  (dict "name" "redis-exporter" "port" 9121 "store" "redis" "storePort" 6379 "spec" .redis) }}
+{{- range $e := $exporters }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: {{ .name }} } }
+  template:
+    metadata:
+      labels: { app: {{ .name }} }
+      annotations:
+        {{- with $.Values.envSecret.revision }}
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
+        {{- if and (eq $e.store "redis") $.Values.redis.auth.enabled $.Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "helper2.redisAuthRevision" $ }}
+        {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .port }}"
+        prometheus.io/path: /metrics
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext: { runAsNonRoot: true, runAsUser: 65534, runAsGroup: 65534, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: exporter
+          image: {{ .spec.image }}
+          {{- if eq .store "postgres" }}
+          env:
+            - { name: DATA_SOURCE_URI, value: "postgres:5432/helper2?sslmode=disable" }
+            - { name: DATA_SOURCE_USER, value: h2_monitor }
+            - name: DATA_SOURCE_PASS
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" $ }}, key: H2_DATABASE_MONITOR_PASSWORD } }
+          {{- else }}
+          args: ["-config-command=-"]
+          env:
+            - { name: REDIS_ADDR, value: "redis://redis:6379" }
+            - { name: REDIS_USER, value: h2_monitor }
+            - name: REDIS_PASSWORD
+              valueFrom: { {{ include "helper2.redisPasswordFrom" (list $ "H2_REDIS_MONITOR_PASSWORD") }} }
+          {{- end }}
+          ports: [{ containerPort: {{ .port }}, name: metrics }]
+          readinessProbe: { httpGet: { path: /metrics, port: metrics }, periodSeconds: 30, timeoutSeconds: 5 }
+          resources:
+            {{- toYaml .spec.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: {{ .name }} } }
+  policyTypes: [Ingress]
+  {{- with $.Values.networkPolicy.metricsNamespace }}
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } } }]
+      ports: [{ port: {{ $e.port }}, protocol: TCP }]
+  {{- end }}
+{{- with $.Values.networkPolicy.egress }}
+{{- if .enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-{{ $e.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: {{ $e.name }} } }
+  policyTypes: [Egress]
+  egress:
+    - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .dns.namespace }} } }, podSelector: { matchLabels: {{ toJson .dns.podLabels }} } }]
+      ports: [{ port: 53, protocol: UDP }, { port: 53, protocol: TCP }]
+    - to: [{ podSelector: { matchLabels: { app: {{ $e.store }} } } }]
+      ports: [{ port: {{ $e.storePort }}, protocol: TCP }]
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

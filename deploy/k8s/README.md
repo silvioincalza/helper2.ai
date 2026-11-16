@@ -49,12 +49,13 @@ moved: one commit, one image.
 **`app.env`** (never commit it): copy [`app.env.example`](app.env.example) and fill in the values. When the
 example gains keys later, `scripts/env-align.sh deploy/k8s/app.env.example app.env` appends only the ones app.env
 does not have yet, with their comments; it never changes a key that is there (`--dry-run` lists them first). It must
-contain six different passwords of 32+ characters (`openssl rand -hex 32`;
-[ADR 0004](../../docs/adr/foundation/0004-persistence-and-the-schema.md)). The three database ones may also hold base64 characters
-(`+ / = _ -`); the three Redis ones only letters and digits: `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
+contain eight different passwords of 32+ characters (`openssl rand -hex 32`;
+[ADR 0004](../../docs/adr/foundation/0004-persistence-and-the-schema.md)). The four database ones may also hold base64 characters
+(`+ / = _ -`); the four Redis ones only letters and digits: `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
 backup and the migrate Job only), `H2_DATABASE_PUBLIC_PASSWORD` and `H2_DATABASE_BACKOFFICE_PASSWORD` (each app's
-own role), `H2_REDIS_PASSWORD` (Redis' default user, the admin), and `H2_REDIS_PUBLIC_PASSWORD` and
-`H2_REDIS_BACKOFFICE_PASSWORD` (each app's own Redis user). With `redis.auth.existingSecret` (or
+own role), `H2_DATABASE_MONITOR_PASSWORD` (the Postgres exporter's role `h2_monitor`, statistics only), `H2_REDIS_PASSWORD` (Redis' default user, the admin), and `H2_REDIS_PUBLIC_PASSWORD` and
+`H2_REDIS_BACKOFFICE_PASSWORD` (each app's own Redis user), and `H2_REDIS_MONITOR_PASSWORD` (the Redis exporter's
+user, `PING` and `INFO` only). With `redis.auth.existingSecret` (or
 `redis.auth.enabled=false`), Redis does not read app.env: check it with `--no-redis-password`. `make env-secret`
 picks the flag from the rendered chart.
 It goes into two Secrets that the chart does not create, so no value is kept in Helm's release history: the

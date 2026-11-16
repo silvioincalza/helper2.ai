@@ -20,7 +20,9 @@ public final class MigrateStep {
 
   @ConfigurationProperties("helper2.schema")
   public record MigrateProperties(
-      Map<String, String> logins, Map<String, Duration> statementTimeouts) {}
+      Map<String, String> logins,
+      Map<String, Duration> statementTimeouts,
+      String monitorPassword) {}
 
   public static boolean requested(String[] args) {
     return args.length > 0 && COMMAND.equals(args[0]);
@@ -36,8 +38,9 @@ public final class MigrateStep {
                 "spring.main.banner-mode=off")
             .run(args)) {
       MigrateProperties schema = context.getBean(MigrateProperties.class);
-      AppLogins.open(
-          context.getBean(DataSource.class), schema.logins(), schema.statementTimeouts());
+      DataSource owner = context.getBean(DataSource.class);
+      AppLogins.open(owner, schema.logins(), schema.statementTimeouts());
+      MonitorLogin.open(owner, schema.monitorPassword());
     }
   }
 }

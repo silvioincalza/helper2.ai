@@ -205,10 +205,10 @@ The schema is one file, and from the first release tag on that file must never c
     types, only the exact plain values a provider's user attributes hold (strings, numbers, booleans, `ArrayList`,
     `LinkedHashMap`, `HashMap`), never a subclass. A session that cannot be read is logged and served as anonymous.
     Namespaces `h2:v1:session:public` and `h2:v1:session:backoffice`.
-15. **The passwords in their own Secret.** `make env-secret` splits app.env: the six passwords (the owner's, each
-    role's, Redis' default user's and each app user's) go to `helper2-credentials`, every other key to
+15. **The passwords in their own Secret.** `make env-secret` splits app.env: the eight passwords (the owner's, each
+    app role's and the monitor role's, Redis' default user's, each app user's and the monitor user's) go to `helper2-credentials`, every other key to
     `helper2-app-env`. Both apps still load `helper2-app-env` whole; no workload loads `helper2-credentials` whole. Each
-    names only its own keys. `check-app-env.sh` requires all six and refuses two that are the same. For the first
+    names only its own keys. `check-app-env.sh` requires all eight and refuses two that are the same. For the first
     release only, the owner's and Redis' default password also stay in `helper2-app-env`, so a rollback to the old
     chart still starts Postgres and Redis; both apps set those two names under `env:`, which wins over `envFrom`, so no
     app process sees them.
@@ -231,8 +231,8 @@ The schema is one file, and from the first release tag on that file must never c
   queue and its decisions, job markers.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema, app roles and seeds.
-- `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `AppLogins.java`, `SchemaCheck.java` —
-  the migrate step, the logins, the apps' schema check.
+- `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `AppLogins.java`, `MonitorLogin.java`,
+  `SchemaCheck.java` — the migrate step, the logins, the exporter's monitor login, the apps' schema check.
 - `.github/scripts/released-migrations.sh` — CI: V1 only before the first release, no released migration changes after.
 - `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
 - `backend/apps/public/src/test/java/ai/helper2/AppRolesGrantsIT.java`, `MigrateStepIT.java` — the grants per table, the
@@ -331,7 +331,7 @@ The schema is one file, and from the first release tag on that file must never c
 - A compromised public pod cannot read, forge or delete an admin's session, and a planted session runs no code.
 - A deploy runs one more pod, the Job, for a few seconds. A new password for a role takes effect when the Job runs, a
   moment before the app pods restart: an old pod opening a new connection in between is refused until it is replaced.
-- app.env in OpenBao holds the six passwords (`openssl rand -hex 32`), and the deployer may `create`/`delete` Jobs and
+- app.env in OpenBao holds the eight passwords (`openssl rand -hex 32`), and the deployer may `create`/`delete` Jobs and
   `patch` the Secret `helper2-credentials` (the platform repo owns that RBAC; `make credentials` checks it).
 - Accepted: `+eval` lets an app run a Lua script that blocks Redis until the default user kills it (`SCRIPT KILL`);
   and both apps share the rate-limit, budget, quota and source-cache keys, so a compromised public pod could reset a

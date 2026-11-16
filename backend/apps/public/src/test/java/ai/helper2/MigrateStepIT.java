@@ -67,6 +67,25 @@ class MigrateStepIT {
   }
 
   @Test
+  void theStepOpensTheMonitorLogin_whichReadsStatisticsButNoTable() {
+    migrateStep("--H2_DATABASE_MONITOR_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD);
+
+    JdbcClient monitor = as("h2_monitor");
+    assertThat(monitor.sql("SELECT count(*) FROM pg_stat_database").query(Long.class).single())
+        .isPositive();
+    assertThat(
+            monitor
+                .sql("SELECT pg_has_role('h2_monitor', 'pg_monitor', 'USAGE')")
+                .query(Boolean.class)
+                .single())
+        .isTrue();
+    assertThat(statementTimeout(monitor)).isEqualTo("10s");
+    assertDenied(monitor, "SELECT count(*) FROM resource");
+    assertDenied(monitor, "SELECT count(*) FROM app_user");
+    assertDenied(monitor, "CREATE TABLE planted (id int)");
+  }
+
+  @Test
   void theStepGivesEachAppItsStatementTimeout_andTheOwnerNone() {
     migrateStep();
 
@@ -154,17 +173,20 @@ class MigrateStepIT {
         flyway, new SchemaProperties(false, waitFor, Duration.ZERO), Clock.systemUTC(), sleeper);
   }
 
-  private static void migrateStep() {
+  private static void migrateStep(String... more) {
     try {
       MigrateStep.run(
-          new String[] {
-            MigrateStep.COMMAND,
-            "--spring.datasource.url=" + url,
-            "--spring.datasource.username=" + POSTGRES.getUsername(),
-            "--spring.datasource.password=" + POSTGRES.getPassword(),
-            "--H2_DATABASE_PUBLIC_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD,
-            "--H2_DATABASE_BACKOFFICE_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD
-          });
+          java.util.stream.Stream.concat(
+                  java.util.stream.Stream.of(
+                      MigrateStep.COMMAND,
+                      "--spring.datasource.url=" + url,
+                      "--spring.datasource.username=" + POSTGRES.getUsername(),
+                      "--spring.datasource.password=" + POSTGRES.getPassword(),
+                      "--H2_DATABASE_PUBLIC_PASSWORD=" + TestcontainersConfiguration.TEST_PASSWORD,
+                      "--H2_DATABASE_BACKOFFICE_PASSWORD="
+                          + TestcontainersConfiguration.TEST_PASSWORD),
+                  java.util.stream.Stream.of(more))
+              .toArray(String[]::new));
     } catch (java.sql.SQLException e) {
       throw new IllegalStateException(e);
     }

@@ -43,3 +43,7 @@ backoffice:
   scoutEnabled: true
 canary:
   host: helper2.incalza.me
+
+monitoring:
+  exporters:
+    enabled: true

@@ -125,9 +125,23 @@ the guide work long before that, and what makes the wait feel long is the first 
      15 min (the public site keeps answering, the Scout and the indexer stop);
    - `Helper2VolumeAlmostFull`: a PersistentVolumeClaim in a `helper2-*` namespace (Postgres data, backups, the
      Redis append-only file) under 20% free for 15 min; `Helper2VolumeFull` (critical): under 10% for 5 min.
+   - `Helper2RedisEvicting`: Redis dropped keys in the last 15 minutes to stay under `redis.maxMemory`
+     (`redis_evicted_keys_total`); `Helper2DatastoreExporterDown`: an exporter not scraped, or not logged in to its
+     data store, for 15 min.
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
    renders the `PrometheusRule` once and validates it against its CRD schema.
-7. **Retention.** Required of the observability stack, which lives outside this repository and must use these values:
+7. **Data store exporters** (`monitoring.exporters.enabled`, on for staging and prod). Two Deployments of one
+   replica each, scraped like the apps (pod annotations, port 9187 and 9121): `postgres-exporter`
+   (prometheus-community `postgres_exporter`, its default collectors; `pg_stat_statements` stays off, it would export
+   query text) and `redis-exporter` (`redis_exporter` with `-config-command=-`: no `CONFIG GET`, which shows the admin
+   password). Each logs in with its own account, never the owner's or the admin's: the Postgres role `h2_monitor`
+   (`pg_monitor` only: statistics, no table; a connection limit of 3, a 10 s statement timeout), which the migrate Job
+   creates and opens (`MonitorLogin`, `H2_DATABASE_MONITOR_PASSWORD`), and the Redis user `h2_monitor` of
+   `files/redis-users.acl` (`PING`, `INFO`, `LATENCY`, client naming; no key, no channel). Its network policy admits
+   only the scraper's namespace on the metrics port and lets it reach only its own data store. The exporters run
+   apart from Postgres and Redis, so turning them on never restarts Postgres; the Redis user does restart Redis once.
+   The cluster's scraper keeps only allow-listed metric names: `pg_` and `redis_` must be on its list.
+8. **Retention.** Required of the observability stack, which lives outside this repository and must use these values:
    - logs (Loki: the app's stdout and the ingress-nginx access logs): deleted after 3 months (`retention_period: 2160h`,
      90 days), the period the privacy page states;
    - traces (Tempo): deleted after 3 months (`block_retention: 2160h`), never kept longer than the logs they link to;
@@ -135,7 +149,7 @@ the guide work long before that, and what makes the wait feel long is the first 
      lookback. Meters carry no personal data, so this bound is cost, not privacy.
    Database backups: 7 days on the `pg-backup` volume (`backup.retentionDays`); the encrypted off-site copy, 7 days
    by its bucket's lifecycle rule ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)).
-8. **Guide latency target: time to the first useful event.** The first useful event is the first `retrieved` (the
+9. **Guide latency target: time to the first useful event.** The first useful event is the first `retrieved` (the
    results the guide reads, with their count and sources) or `clarify` (the question back) on the stream
    ([0031](../guide/0031-guide-pipeline.md)): `retrieved` is the first step the page always shows, while
    `planned` is not shown and `understood` shows nothing for a plain suggestion, the most common question.
@@ -164,7 +178,8 @@ the guide work long before that, and what makes the wait feel long is the first 
   translation and classifier budget gauges.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java`, `ObservationQueue.java` — catalog meters.
 - `deploy/grafana/helper2.json`, `helper2-backoffice.json` (Grafana dashboards); `deploy/helm/helper2/templates/app.yaml`,
-  `backoffice.yaml` — scrape annotations, tracing env.
+  `backoffice.yaml` — scrape annotations, tracing env; `exporters.yaml` — the data store exporters;
+  `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MonitorLogin.java` — the exporter's database role.
 - `deploy/monitoring/helper2-rules.yaml` (alert rules), `deploy/monitoring/tests/` (promtool unit tests);
   `deploy/helm/helper2/templates/prometheusrule.yaml`, `files/helper2-rules.yaml` (symlink) — optional `PrometheusRule`.
 
@@ -173,6 +188,10 @@ the guide work long before that, and what makes the wait feel long is the first 
 - Logs over OTLP — stdout JSON is already collected; a second path adds cost.
 - Sample traces lower — traffic is low; probes and scrapes are already dropped.
 - Query text as a tag — high cardinality and personal data.
+- Exporters as sidecars in the Postgres and Redis pods — fewer objects, but adding one restarts Postgres, and a
+  crashing exporter shares the data store's pod.
+- The exporters on the owner's or Redis' admin login — no new secret, but a scrape path that holds the keys to
+  everything.
 - Grafana-managed alerts — stored in Grafana's database, not reviewable or testable in the repository.
 - Rules only as a `PrometheusRule` template — ties the chart to the Prometheus Operator; a plain rule file works
   with any Prometheus.
@@ -204,7 +223,6 @@ the guide work long before that, and what makes the wait feel long is the first 
 [flow](../../diagrams/flow-0009-observability.svg) · [sequence](../../diagrams/sequence-0009-observability.svg)
 
 ## Backlog
-- Decides: [F1.8](https://github.com/silvioincalza/helper2.ai/issues/27).
+- Decides: [F1.8](https://github.com/silvioincalza/helper2.ai/issues/27), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) (the data store exporters).
 - Open issues that change it:
-  - [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174): Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys.
   - [S4.9.1](https://github.com/silvioincalza/helper2.ai/issues/285): the guide latency targets confirmed on prod data.

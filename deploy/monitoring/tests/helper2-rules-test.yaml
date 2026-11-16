@@ -493,6 +493,77 @@ tests:
               description: "The pg-restore-check CronJob last succeeded 9d 0h 0m 0s ago. This week's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
               runbook: "kubectl -n helper2-prod get cronjob pg-restore-check; kubectl -n helper2-prod get jobs,pods -l app=pg-restore-check. Rerun: kubectl -n helper2-prod create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
 
+  - interval: 1m
+    input_series:
+      - series: 'redis_evicted_keys_total{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
+        values: '0x30 0+10x10 100x60'
+      - series: 'redis_evicted_keys_total{namespace="other", app="redis-exporter", pod="x"}'
+        values: '0+10x100'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: Helper2RedisEvicting
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: Helper2RedisEvicting
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+            exp_annotations:
+              summary: "Redis dropped 90 keys in 15 minutes to stay under its memory limit (helper2-prod)."
+              description: "Redis is full (redis.maxMemory, allkeys-lru) and evicts the least recently used keys. Sign-in sessions, rate-limit windows and source caches share it: an eviction can sign an admin out or give a client a fresh window early."
+              runbook: "Redis dashboard (memory used against max, evicted keys); kubectl -n helper2-prod exec redis-0 -- redis-cli info memory. Raise redis.maxMemory (and the pod's limit) or shorten the cache TTLs."
+      - eval_time: 90m
+        alertname: Helper2RedisEvicting
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="postgres-exporter"}'
+        values: '1x60'
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="redis-exporter"}'
+        values: '1x60'
+      - series: 'up{namespace="helper2-prod", app="postgres-exporter", pod="postgres-exporter-a"}'
+        values: '1x60'
+      - series: 'pg_up{namespace="helper2-prod", app="postgres-exporter", pod="postgres-exporter-a"}'
+        values: '1x5 0x55'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: Helper2DatastoreExporterDown
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: Helper2DatastoreExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              app: postgres-exporter
+            exp_annotations:
+              summary: "postgres-exporter has reported nothing for 15 minutes (helper2-prod)."
+              description: "The exporter is not scraped, or it cannot log in to its data store. Until it is back, Redis evictions and Postgres statistics go unseen."
+              runbook: "kubectl -n helper2-prod logs deploy/postgres-exporter; a login refused: the h2_monitor password in helper2-credentials (make env-secret) and the migrate Job of the last deploy."
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              app: redis-exporter
+            exp_annotations:
+              summary: "redis-exporter has reported nothing for 15 minutes (helper2-prod)."
+              description: "The exporter is not scraped, or it cannot log in to its data store. Until it is back, Redis evictions and Postgres statistics go unseen."
+              runbook: "kubectl -n helper2-prod logs deploy/redis-exporter; a login refused: the h2_monitor password in helper2-credentials (make env-secret) and the migrate Job of the last deploy."
+
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="redis-exporter"}'
+        values: '1x60'
+      - series: 'up{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
+        values: '1x60'
+      - series: 'redis_up{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
+        values: '1x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: Helper2DatastoreExporterDown
+        exp_alerts: []
+
   - interval: 10m
     input_series:
       - series: 'kube_pod_container_status_restarts_total{namespace="helper2-prod", pod="helper2-abc", container="app"}'

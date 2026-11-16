@@ -33,6 +33,8 @@ spec:
               valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_PUBLIC_PASSWORD } }
             - name: H2_DATABASE_BACKOFFICE_PASSWORD
               valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_BACKOFFICE_PASSWORD } }
+            - name: H2_DATABASE_MONITOR_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "helper2.credentialsSecret" . }}, key: H2_DATABASE_MONITOR_PASSWORD } }
             - { name: H2_LOG_FORMAT, value: logstash }
           resources:
             {{- toYaml $migrate.resources | nindent 12 }}

@@ -9,7 +9,8 @@
 #   backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java, backend/libs/core/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java, backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java,
 #   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (helper2.guide.first_useful),
 #   deploy/helm/helper2/templates/app.yaml, prometheusrule.yaml, deploy/helm/helper2/values.yaml, deploy/grafana/helper2.json, helper2-backoffice.json,
-#   deploy/monitoring/helper2-rules.yaml.
+#   deploy/monitoring/helper2-rules.yaml; the data store exporters: deploy/helm/helper2/templates/exporters.yaml,
+#   files/redis-users.acl, backend/libs/schema/src/main/java/ai/helper2/platform/schema/MonitorLogin.java.
 # Render: cd docs/diagrams && d2 fmt flow-0009-observability.d2 && d2 flow-0009-observability.d2 flow-0009-observability.svg
 
 ...@style
@@ -57,9 +58,13 @@ metrics: Metrics {
   endpoint: "/actuator/prometheus on\nH2_MANAGEMENT_PORT 8081" {class: app}
   scrape: "Alloy scrapes (pod annotations)\n→ remote write to Prometheus" {class: ext}
   grafana: "Grafana: helper2.json (public app:\nHTTP, search, guide, runtime) and\nhelper2-backoffice.json (Scout, budgets,\nindexer, admin); latency from _bucket" {class: ext}
-  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nper app by the application tag; first\nuseful p95 > 8 s for 15 min warns" {class: config}
+  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nper app by the application tag; first\nuseful p95 > 8 s for 15 min warns;\nRedis evictions in 15 min warn" {class: config}
+  exporters: "monitoring.exporters.enabled?\n(staging and prod)" {class: decision}
+  stores: "postgres-exporter :9187 as h2_monitor\n(pg_monitor, no table, no query text);\nredis-exporter :9121 as h2_monitor\n(PING, INFO; no key, no CONFIG)" {class: app}
   registry -> endpoint
   endpoint -> scrape: {class: hot}
+  exporters -> stores: yes
+  stores -> scrape: "pg_ and redis_ names on\nthe scraper's allow-list"
   scrape -> grafana: {class: hot}
   scrape -> alerts: {class: config}
 }
