@@ -321,7 +321,7 @@ data class GuideAnswer(
 )
 
 class GuideValidator(
-  private val maxPicks: Int = MAX_PICKS,
+  private val maxProposed: Int = MAX_PROPOSED,
   private val minQuoteChars: Int = MIN_QUOTE_CHARS,
   private val minQuoteWords: Int = MIN_QUOTE_WORDS,
   private val maxQuote: Int = MAX_QUOTE_CHARS,
@@ -343,7 +343,7 @@ class GuideValidator(
 
   val fingerprint: String
     get() =
-      "$maxPicks/$minQuoteChars/$minQuoteWords/$maxQuote/$MAX_REASON_CHARS/$MIN_CHECK_QUOTE/words/secrets"
+      "$maxProposed/$MAX_PICKS/$minQuoteChars/$minQuoteWords/$maxQuote/$MAX_REASON_CHARS/$MIN_CHECK_QUOTE/words/secrets"
 
   enum class Rejection {
     UNKNOWN_CANDIDATE,
@@ -409,7 +409,7 @@ class GuideValidator(
         }
       when {
         problem != null -> reject(problem, c)
-        picks.size >= maxPicks -> reject(Rejection.OVER_LIMIT)
+        picks.size >= maxProposed -> reject(Rejection.OVER_LIMIT)
         else -> picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = p.quote.trim()))
       }
     }
@@ -475,6 +475,7 @@ class GuideValidator(
 
   companion object {
     const val MAX_PICKS = 3
+    const val MAX_PROPOSED = 5
     const val MIN_QUOTE_CHARS = 40
     const val MIN_QUOTE_WORDS = 6
     const val MAX_QUOTE_CHARS = 300

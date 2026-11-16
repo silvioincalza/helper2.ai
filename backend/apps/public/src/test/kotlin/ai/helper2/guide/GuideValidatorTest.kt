@@ -98,21 +98,22 @@ class GuideValidatorTest {
   }
 
   @Test
-  fun `every rejection has a reason, and a valid fourth pick is over the limit, not wrong`() {
+  fun `every rejection has a reason, and a valid pick past the proposal limit is over it, not wrong`() {
     val result =
-      validator.validate(
-        proposal(
-          pick("c99", "anything at all here"),
-          pick("c1", "Machine translation for text and documents in over thirty languages"),
-          pick("c1", "Machine translation for text and documents in over thirty languages"),
-          pick("c2", "free forever for everyone, trusted by ten thousand companies"),
-          pick("c3", "tiny-mcp MCP server for SQLite"),
-          pick("c2", "Open source speech recognition model that transcribes audio into text"),
-          pick("c4", "Summarise meeting notes into decisions, owners and next steps"),
-          pick("c2", "speech recognition"),
-        ),
-        all,
-      )
+      GuideValidator(maxProposed = 3)
+        .validate(
+          proposal(
+            pick("c99", "anything at all here"),
+            pick("c1", "Machine translation for text and documents in over thirty languages"),
+            pick("c1", "Machine translation for text and documents in over thirty languages"),
+            pick("c2", "free forever for everyone, trusted by ten thousand companies"),
+            pick("c3", "tiny-mcp MCP server for SQLite"),
+            pick("c2", "Open source speech recognition model that transcribes audio into text"),
+            pick("c4", "Summarise meeting notes into decisions, owners and next steps"),
+            pick("c2", "speech recognition"),
+          ),
+          all,
+        )
     assertEquals(listOf("c1", "c3", "c2"), result.picks.map { it.candidate.key })
     assertEquals(
       mapOf(
@@ -196,18 +197,25 @@ class GuideValidatorTest {
   }
 
   @Test
-  fun `at most three picks and no duplicates`() {
+  fun `at most five proposed picks and no duplicates`() {
     val q1 = "Machine translation for text and documents in over thirty languages"
     val q2 = "speech recognition model that transcribes audio into text"
     val q3 = "tiny-mcp MCP server for SQLite"
     val q4 = "Summarise meeting notes into decisions, owners and next steps"
     val result =
-      validator.validate(
-        proposal(pick("c1", q1), pick("c1", q1), pick("c2", q2), pick("c3", q3), pick("c4", q4)),
-        all,
-      )
+      GuideValidator(maxProposed = 3)
+        .validate(
+          proposal(pick("c1", q1), pick("c1", q1), pick("c2", q2), pick("c3", q3), pick("c4", q4)),
+          all,
+        )
     assertEquals(listOf("c1", "c2", "c3"), result.picks.map { it.candidate.key })
     assertEquals(2, result.rejected)
+    val five =
+      validator.validate(
+        proposal(pick("c1", q1), pick("c2", q2), pick("c3", q3), pick("c4", q4)),
+        all,
+      )
+    assertEquals(listOf("c1", "c2", "c3", "c4"), five.picks.map { it.candidate.key })
   }
 
   private fun checks(constraints: List<String>, vararg evidence: ConstraintQuote) =

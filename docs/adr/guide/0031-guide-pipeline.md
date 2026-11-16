@@ -45,7 +45,8 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
   something to read (model flag or words such as "papers", "news", "articoli"), only tool types are searched.
 - **Choose** (reasoning model, `prompts/guide/choose.txt`, native JSON schema when `H2_NEBIUS_NATIVE_SCHEMA=true`):
   the candidates go as `<candidate key="c1" …>` … `c24`, their text through `UntrustedText`, 800 characters each. The
-  model returns up to 3 picks, each with key, reason, verbatim quote and optional constraint quotes. It writes picks
+  model returns up to 5 picks, best first (`GuideValidator.MAX_PROPOSED`), each with key, reason, verbatim quote and
+  optional constraint quotes. It writes picks
   only: nothing else it writes reaches the page. Its rules say a candidate must be the kind asked for and its own text
   must show it does the task; a need that asks for a task to do for the user ("write a polite reply to a customer")
   instead of a resource that does it gets no pick.
@@ -62,7 +63,7 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
 - **Prompt labels.** A prompt's label is the first 8 hex digits of the SHA-256 of its rendered text
   (`ModelCallMetrics.promptVersion`). The meters, the answer cache key ([0032](0032-guide-cost-guard-and-answer-cache.md)) and the
   eval runs name it. `SpringAiGuideModelTest.theWordingOfEachPromptIsPinnedToItsLabel` pins each one, so a new wording
-  changes its label in the same change: plan `cbb55ef0`, choose `c4ac02df`, compare `14806e21`, explain `180b36ae`,
+  changes its label in the same change: plan `cbb55ef0`, choose `f9d7a3e2`, compare `14806e21`, explain `180b36ae`,
   verify-reasons `eae9e99b`. The prompts state the limits code enforces through `{{placeholders}}`, and a test checks
   each number.
 
@@ -85,7 +86,7 @@ each with its own maximum text length (400, 200 and 300 characters). A pick is k
   "api_key"; a combining mark belongs to its letter; in a script written without spaces, Chinese, Japanese, Thai and
   the like, any two letters have a boundary), with at least 40 characters and 6 words, or the whole text when the
   text is shorter;
-- at most 3 picks are kept (`OVER_LIMIT` for the rest).
+- at most 5 proposed picks pass (`OVER_LIMIT` for the rest).
 
 Every kept pick increments `helper2.guide.picks{rank}` with its search rank band (`1-3`, `4-8`, `9+`), and the
 `guide timings` log line lists the ranks (`keptRanks`).
@@ -136,9 +137,17 @@ lose a check, never create one.
      (text-to-speech for a speech-to-text need). The pick is dropped (`OFF_NEED`, trail `OFF_NEED`: "does a different task than the one asked for"), whatever
      its reason. A missing `fitsNeed` counts as true, so only a stated "does not fit" drops a pick. Comparison cells and
      explanation sentences use only `claimsSupported`.
-5. **Event.** `GuideProgress.reasonsChecked` sends `checked` with the counts `supported`, `removed`, `notChecked`.
-6. **Cache rule.** An answer with an AI pick left `NOT_CHECKED` is not cached ([0032](0032-guide-cost-guard-and-answer-cache.md)).
-7. **Budget.** The call takes a unit of the guide budget like plan and choose ([0008](../foundation/0008-llm-integration.md)), so a
+5. **Three shown.** After the reason check the answer keeps the first 3 picks that are still in it
+   (`GuideValidator.MAX_PICKS`), in the order the model gave. A pick dropped as off the need leaves its place to the
+   next one the model proposed. A pick whose reason is `REMOVED` keeps its place, as it did before. The picks proposed
+   after the third one that fits the need are spares, even when they are off the need: they count in no
+   `rejectedBy`, no trail and no `PARTIAL` status (`PickAnswer.upToShownFitting`). So one weak
+   pick no longer leaves the user with two. The cost is tokens, not calls: choose writes up to two more picks and the
+   one reason check reads them.
+6. **Event.** `GuideProgress.reasonsChecked` sends `checked` with the counts `supported`, `removed`, `notChecked`, over
+   every proposed pick the check read.
+7. **Cache rule.** An answer with an AI pick left `NOT_CHECKED` is not cached ([0032](0032-guide-cost-guard-and-answer-cache.md)).
+8. **Budget.** The call takes a unit of the guide budget like plan and choose ([0008](../foundation/0008-llm-integration.md)), so a
    fresh question costs 3 calls, more with retries.
 
 ### Intents and asking back
@@ -576,6 +585,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names.
 - The gate proves a quote, not that it is true: a description written to be chosen passes the gate and the reason check. Strict rules reject some good picks. A resource outside the 24 candidates cannot be picked.
 - The reason check is a model's judgment and can miss or reject a claim; it costs one more call per question (the 600-call daily cap covers at most 200 fresh questions).
+- The reason check reads up to 5 picks in one prompt, with their third-party texts. A 4th or 5th candidate whose text talks the check into finding the first ones off the need takes their place. The evidence gate and the SECURITY block still apply to it; no eval case plants such a text yet.
 - Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found.
 - `NEWEST` drops undated results silently. Events are found only in a source's own top hits, and the event words are a fixed list. Two more prompts (`compare`, `explain`) to maintain and evaluate. The course list needs editorial review.
 

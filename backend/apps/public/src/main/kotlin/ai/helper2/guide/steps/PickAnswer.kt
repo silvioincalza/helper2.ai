@@ -237,7 +237,7 @@ internal class PickAnswer(
       "candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
         "rejectedBy=${checked.rejectedBy} reasons=${verdicts.checks.values.groupingBy { it }.eachCount()} " +
         "offNeed=${verdicts.offNeed.size}"
-    val fitting = checked.withoutOffNeed(verdicts)
+    val fitting = checked.upToShownFitting(verdicts).withoutOffNeed(verdicts)
     val trail = ResearchTrail(removed = validator.removedOf(fitting))
     if (fitting.picks.isEmpty()) {
       return topResults(
@@ -383,6 +383,17 @@ internal class PickAnswer(
       rejectedPicks =
         rejectedPicks + off.map { GuideValidator.RejectedPick(it.candidate, rejection) },
     )
+  }
+
+  private fun GuideValidator.Result.upToShownFitting(
+    verdicts: ReasonVerdicts
+  ): GuideValidator.Result {
+    val fits = picks.runningFold(0) { n, p -> if (verdicts.fitsNeed(p.candidate.key)) n + 1 else n }
+    val end = fits.indexOfFirst { it == GuideValidator.MAX_PICKS }
+    if (end < 0) return this
+    val shown = picks.take(end)
+    val keys = shown.map { it.candidate.key }.toSet()
+    return copy(picks = shown, checks = checks.filterKeys { it in keys })
   }
 
   private fun GuideValidator.Result.insideWindow(filters: SearchFilters): GuideValidator.Result {
