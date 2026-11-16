@@ -84,8 +84,8 @@ What they hold:
 - Squash merges only, and the branch deleted after the merge. No auto-merge.
 - Secret scanning with push protection. Dependabot alerts and security-update pull requests; `.github/dependabot.yml`
   bumps the versions every week.
-- `main`: pull requests only, every review thread resolved, the check `ci-ok` green (GitHub Actions, integration
-  15368) on an up-to-date branch, no force push.
+- `main`: pull requests only, every review thread resolved, a Copilot review on each push, the check `ci-ok` green
+  (GitHub Actions, integration 15368) on an up-to-date branch, no force push.
 - `release/**`: pull requests only, every review thread resolved, a Copilot review on each push, no force push,
   no deletion, the check `ci-ok` green on an up-to-date branch, as on `main`.
 - `v*` tags: never moved or deleted.

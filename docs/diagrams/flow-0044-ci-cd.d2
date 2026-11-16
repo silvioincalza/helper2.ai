@@ -3,6 +3,7 @@
 # a release (release.yml, run by hand), after the approval, canary first. After helm upgrade, every deploy checks the release and rolls it back when it is
 # not healthy, unless a manual run ticked keep-unhealthy.
 # Source of truth: .github/workflows/ci.yml, .github/actions/frontend-setup, backend-setup, backend-build-cache, cd.yml, deploy.yml, release.yml, .github/scripts/ci-ok.sh, package.sh,
+#   .github/settings/ruleset-main.json (required checks),
 #   deploy/*Dockerfile (BUILD=source|prebuilt), deploy/k8s/Makefile (ci-images, image,
 #   sign, verify-images, postgres-image, chart-check, diff, deploy, status), deploy/k8s/check-release.sh,
 #   deploy/k8s/CI.md.
@@ -26,7 +27,7 @@ checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed\n
   d2: "diagrams\nre-rendered = committed?" {class: app}
 }
 
-green: "ci-ok green?\n(selected jobs succeeded,\nthe others skipped)" {class: decision}
+green: "ci-ok green?\n(selected jobs succeeded,\nthe others skipped)\nCopilot threads resolved?\n(flow 0044 copilot-review)" {class: decision}
 fix: "Fix and push again" {class: fail}
 merge: "Merge to main" {class: app}
 
