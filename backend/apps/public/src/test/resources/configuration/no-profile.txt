@@ -938,6 +938,7 @@ resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-rate-threshold = 
 resilience4j.circuitbreaker.instances.llm-chat.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
+resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$RejectedInput
 resilience4j.circuitbreaker.instances.llm-embed.base-config = model
 resilience4j.circuitbreaker.instances.redis.base-config = store
 resilience4j.circuitbreaker.instances.source-arxiv.base-config = source

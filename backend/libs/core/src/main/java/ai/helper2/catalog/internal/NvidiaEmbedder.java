@@ -3,6 +3,7 @@ package ai.helper2.catalog.internal;
 import ai.helper2.catalog.Embedder;
 import ai.helper2.platform.config.HttpClientProperties;
 import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.platform.llm.ModelErrors;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import io.micrometer.observation.ObservationRegistry;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.InterceptingClientHttpRequestFactory;
@@ -132,11 +134,16 @@ public class NvidiaEmbedder implements Embedder {
         message += ": " + reason;
       }
     }
-    FailureReason reason =
-        e.getStatusCode().isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)
-            ? FailureReason.RATE_LIMITED
-            : FailureReason.PROVIDER_ERROR;
-    return new EmbeddingFailure(message, reason);
+    return new EmbeddingFailure(message, reasonOf(e.getStatusCode()));
+  }
+
+  private static FailureReason reasonOf(HttpStatusCode status) {
+    if (status.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
+      return FailureReason.RATE_LIMITED;
+    }
+    return ModelErrors.isRejectedInput(status)
+        ? FailureReason.TEXT_REJECTED
+        : FailureReason.PROVIDER_ERROR;
   }
 
   static String shortened(String body) {
