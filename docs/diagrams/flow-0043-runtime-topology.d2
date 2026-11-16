@@ -36,7 +36,7 @@ options: Per-environment values {
   egress: "networkPolicy.egress.enabled?\n(default yes)" {class: decision}
   out: "Egress per workload: app DNS, 5432, 6379,\nOTLP 4318, 443 without private ranges" {class: app}
   backup: "backup.enabled?\n(prod only)" {class: decision}
-  cron: "pg-backup CronJob 02:30 Europe/Zurich,\nmissed if it cannot start within an hour;\nPVC kept on uninstall, newest 7 dumps by name;\npostgres accepts pg-backup" {class: app}
+  cron: "pg-backup CronJob 02:30 Europe/Zurich,\nmissed if it cannot start within an hour;\nPVC kept on uninstall, newest 7 dumps,\nnone older than 7 days;\npostgres accepts pg-backup" {class: app}
   offsite: "backup.offsite.enabled?\n(on for prod)" {class: decision}
   rclone: "rclone crypt, then copy tonight's dump to R2;\nkey, endpoint, bucket and password\nfrom the Secret pg-backup-offsite;\npg-backup egress 443" {class: app}
   restore: "backup.restoreCheck.enabled?\n(default yes)" {class: decision}

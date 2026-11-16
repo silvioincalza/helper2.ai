@@ -65,6 +65,7 @@ spec:
                   [ "$(wc -c < "$f.tmp")" -gt 1024 ]
                   mv "$f.tmp" "$f"
                   ls -1 /backup/helper2-*.sql.gz | sort -r | tail -n +{{ add1 .Values.backup.retentionDays }} | xargs -r rm -f
+                  find /backup -name 'helper2-*.sql.gz' -mtime +{{ sub .Values.backup.retentionDays 1 }} -delete
                   ls -l /backup
               resources:
                 requests: { cpu: 20m, memory: 64Mi }

@@ -57,7 +57,7 @@ nightly: 02:30 Europe/Zurich, prod {
   backup -> pg: "pg_dump --no-owner | gzip (pipefail:\na failed dump fails the Job)"
   pg -> backup: "dump, into helper2-<date>.sql.gz.tmp\non the pg-backup volume (NFS)"
   backup -> backup: "gzip -t reads it back whole, and it is\nbigger than an empty dump: else the Job fails\nand the old dumps stay" {class: hot}
-  backup -> backup: "mv .tmp into place, then keep the\nnewest 7 dumps by name"
+  backup -> backup: "mv .tmp into place, then keep the newest\n7 dumps by name, none older than 7 days"
   backup -> r2: "rclone crypt: tonight's dump\n(backup.offsite)"
 }
 

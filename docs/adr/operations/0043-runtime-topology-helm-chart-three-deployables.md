@@ -136,7 +136,8 @@ database connections. A change to the web app would rebuild and redeploy the bac
     rate-limit windows and cached answers. The volume holds only cache data and is not backed up.
 12. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the volume
     `pg-backup` (NFS on prod, kept on `helm uninstall`). The newest `backup.retentionDays` (7) dumps are kept,
-    chosen by the date in their name. A failed `pg_dump` fails the Job (`pipefail`);
+    chosen by the date in their name, and none older than 7 days, so dumps of a night that failed do not stretch the
+    period the Privacy page states. A failed `pg_dump` fails the Job (`pipefail`);
     the new dump takes the place of the old one only once `gzip -t` reads it back whole and it is bigger than an empty dump
     (1 KB), and the old dumps are deleted after that, never before. A run that cannot start within an hour is missed
     (`startingDeadlineSeconds`). Two alerts: `Helper2BackupFailed` for a failed Job, `Helper2BackupStale` when no run

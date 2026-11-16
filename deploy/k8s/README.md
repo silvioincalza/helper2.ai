@@ -206,7 +206,8 @@ stays as the new release migrated it.
 
 With `backup.enabled: true`, the CronJob `pg-backup` (02:30 in `backup.timeZone`) writes
 `pg_dump --no-owner | gzip` to `/backup/helper2-<date>.sql.gz` on the PVC `pg-backup` (the newest
-`backup.retentionDays` dumps, 7, chosen by the date in their name; kept on `helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
+`backup.retentionDays` dumps, 7, chosen by the date in their name, and none older than 7 days; kept on
+`helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
 fails the Job; the dump replaces the old one only after `gzip -t` and a size check, and old dumps are deleted
 after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
 36 hours (the stale alert needs one successful run first: check the first night by hand).
