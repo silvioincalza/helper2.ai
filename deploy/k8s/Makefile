@@ -277,8 +277,10 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	echo "== Redis' memory limit is at least twice maxmemory (ADR 0005: an AOF rewrite forks)"; \
 	for e in staging prod; do \
 		rd=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --show-only templates/redis.yaml); \
-		max=$$(grep -oE -- '--maxmemory [0-9]+mb' <<< "$$rd" | grep -oE '[0-9]+'); \
-		lim=$$(awk '/limits:/ {l=1} l && /memory:/ {gsub(/[^0-9]/, "", $$2); print $$2; exit}' <<< "$$rd"); \
+		max=$$(grep -oE -- '--maxmemory [0-9]+[mg]b' <<< "$$rd" | awk '{ n = $$2 + 0; print ($$2 ~ /gb$$/) ? n * 1024 : n }'); \
+		lim=$$(awk '/limits:/ {l=1} l && /memory:/ { v = $$2; gsub(/"/, "", v); n = v + 0; u = v; sub(/^[0-9.]+/, "", u); \
+			f = (u == "Gi") ? 1024 : (u == "Mi") ? 1 : (u == "Ki") ? 1 / 1024 : (u == "G") ? 1e9 / 1048576 : (u == "M") ? 1e6 / 1048576 : -1; \
+			print (f < 0) ? "" : int(n * f); exit }' <<< "$$rd"); \
 		[ -n "$$max" ] && [ -n "$$lim" ] && [ "$$lim" -ge $$((2 * max)) ] \
 			|| { echo "$$e: Redis' memory limit ($${lim:-?}Mi) must be at least twice maxmemory ($${max:-?}mb)"; exit 1; }; \
 	done; \
