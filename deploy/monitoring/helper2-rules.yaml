@@ -223,7 +223,7 @@ groups:
         expr: |
           (
             max by (namespace, app) (up{namespace=~"helper2-.+", app=~"postgres-exporter|redis-exporter"})
-            or on (namespace, app) label_replace(kube_deployment_spec_replicas{namespace=~"helper2-.+", deployment=~"postgres-exporter|redis-exporter"}, "app", "$1", "deployment", "(.*)") * 0
+            or on (namespace, app) max by (namespace, app) (label_replace(kube_deployment_spec_replicas{namespace=~"helper2-.+", deployment=~"postgres-exporter|redis-exporter"}, "app", "$1", "deployment", "(.*)")) * 0
           ) == 0
           or max by (namespace, app) (pg_up{namespace=~"helper2-.+", app="postgres-exporter"}) == 0
           or max by (namespace, app) (redis_up{namespace=~"helper2-.+", app="redis-exporter"}) == 0

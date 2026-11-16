@@ -519,16 +519,16 @@ tests:
 
   - interval: 1m
     input_series:
-      - series: 'up{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="postgres-exporter"}'
         values: '1x60'
-      - series: 'redis_up{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
-        values: '1x5 0x55'
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="redis-exporter"}'
+        values: '1x60'
       - series: 'up{namespace="helper2-prod", app="postgres-exporter", pod="postgres-exporter-a"}'
-        values: '1x5 0x55'
-      - series: 'pg_up{namespace="helper2-prod", app="postgres-exporter", pod="postgres-exporter-a"}'
         values: '1x60'
+      - series: 'pg_up{namespace="helper2-prod", app="postgres-exporter", pod="postgres-exporter-a"}'
+        values: '1x5 0x55'
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 3m
         alertname: Helper2DatastoreExporterDown
         exp_alerts: []
       - eval_time: 30m
@@ -550,6 +550,19 @@ tests:
               summary: "redis-exporter has reported nothing for 15 minutes (helper2-prod)."
               description: "The exporter is not scraped, or it cannot log in to its data store. Until it is back, Redis evictions and Postgres statistics go unseen."
               runbook: "kubectl -n helper2-prod logs deploy/redis-exporter; a login refused: the h2_monitor password in helper2-credentials (make env-secret) and the migrate Job of the last deploy."
+
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="redis-exporter"}'
+        values: '1x60'
+      - series: 'up{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
+        values: '1x60'
+      - series: 'redis_up{namespace="helper2-prod", app="redis-exporter", pod="redis-exporter-a"}'
+        values: '1x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: Helper2DatastoreExporterDown
+        exp_alerts: []
 
   - interval: 10m
     input_series:
