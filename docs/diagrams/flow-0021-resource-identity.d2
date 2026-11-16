@@ -19,7 +19,7 @@ rules: "Host rule: owner/repo in lower case;\na file or an issue names the repos
 states: "States a repository?\n(npm links.repository,\nPyPI source link,\nMCP Registry repository)" {class: decision}
 folder: "Inside the repository\n(its stated sub-directory)?" {class: decision}
 subdir: "The stated repository\nis a sub-directory?" {class: decision}
-belongs: "RepositoryJoin: its scope is the\nrepository's owner (by word), or\nits name holds the repository's name?\n(an MCP Registry server: its name only)" {class: decision}
+belongs: "RepositoryJoin: its scope is the\nrepository's owner (by word), or\nits name holds the repository's name?\n(an MCP Registry server: its name holds\none telling word of the repository's name)" {class: decision}
 repo: "Identity = the repository's address" {class: hot}
 own: "Identity = its own address,\na GitHub URL first" {class: app}
 id: "ResourceId = UUID v5 of the identity" {class: app}

@@ -60,10 +60,11 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
    sub-directory is the resource of that sub-directory (§2). Any other server is the resource of its registry
    name, `https://registry.modelcontextprotocol.io/v0.1/servers/{name}` (`McpRegistryCollector.identity`), whatever
    host the collector reads, and it states its repository. It joins the repository root only when its name, the
-   part after the namespace (`github-mcp-server` in `io.github.github/github-mcp-server`), holds the repository's
-   name: a repository with one server is still one result, and a collection repository with many servers
-   (`codespar/mcp-dev-latam`, 127 servers) is one result per server. The registry namespace is the owner of every
-   server it publishes, so the owner alone does not join a server.
+   part after the namespace (`a1lane` in `ai.a1lane/a1lane`), holds one telling word of the repository's name: a
+   word other than `mcp`, `server`, `servers`, `model`, `context` or `protocol` (`a1lane` of `a1lane/a1lane-mcp`). A
+   repository with one server is still one result, and a collection repository with many servers
+   (`codespar/mcp-dev-latam`, 127 servers: `mcp-adyen`, `mcp-afip`, …) is one result per server. The registry
+   namespace is the owner of every server it publishes, so the owner alone does not join a server.
 6. **A resource is never moved; a source record follows its resource.** What a later source says is added to the
    resource that exists. The catalog writes a resource with `INSERT ... ON CONFLICT (canonical_url) DO UPDATE`
    (`JdbcCatalogWriter.upsertResources`): the id and the address of a stored resource never change. A source record
@@ -109,6 +110,13 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   repository swallows every server it holds (`codespar/mcp-dev-latam` holds 127).
 - **Join a registry server by its owner** — the registry namespace is the owner of every server it publishes, so a
   collection repository would still be one result.
+- **Join a registry server only when its name holds every word of the repository's name** — on the public Registry
+  (65,463 servers) 39% of the repositories with one server would show it as a second result,
+  because a server name drops the `-mcp` of its repository (`ai.a1lane/a1lane` under `a1lane/a1lane-mcp`). One
+  telling word keeps 88% of them one result and gives 93% of the servers of repositories with five or more their
+  own result.
+- **Join a registry server unless another server states the same repository** — it splits collections exactly, but
+  the id of a server would depend on what the catalog holds when it is written.
 - **The stated repository as a relationship (`relationship` table)** — that table holds enrichment claims with
   their evidence; a repository the source states is a fact of the record, so it stays on the record.
 - **Join only when both hits are in one result set** — the id would depend on what a search happened to return, and
@@ -154,8 +162,10 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   owner of an unscoped package is unknown.
 - A record that does not join its repository does not reach the admin review list, and an admin cannot join it by
   hand (S2.10.6).
-- A registry server whose name holds a collection repository's name joins it (`mcp-servers-x` under
-  `acme/mcp-servers`).
+- A registry server whose name holds a telling word of a collection repository's name joins it (`airtable-mcp`
+  under `acme/airtable-tools`); about 7% of the servers of repositories with five or more on the public Registry.
+- A repository with one server whose name shares no telling word with it shows the repository and the server as
+  two results (`ai.tandem/docs-mcp` under `frumu-ai/tandem`); about 12% of those repositories.
 
 ## Diagrams
 [flow](../../diagrams/flow-0021-resource-identity.svg) · [sequence](../../diagrams/sequence-0021-resource-identity.svg)
