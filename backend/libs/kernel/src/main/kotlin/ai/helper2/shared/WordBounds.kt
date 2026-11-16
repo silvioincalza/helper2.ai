@@ -2,6 +2,17 @@ package ai.helper2.shared
 
 object WordBounds {
 
+  private const val WORD_PART = "\\p{L}\\p{Nd}_\\p{M}"
+
+  private const val SPACELESS =
+    "\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}\\p{IsThai}\\p{IsLao}\\p{IsKhmer}\\p{IsMyanmar}\\p{IsTibetan}"
+
+  const val START = "(?:(?<![$WORD_PART])|(?<=[$SPACELESS])|(?=[$SPACELESS]))"
+
+  const val END = "(?:(?![$WORD_PART])|(?<=[$SPACELESS])|(?=[$SPACELESS]))"
+
+  const val WORD_ENDING = "[$WORD_PART]*"
+
   private val WITHOUT_SPACES =
     setOf(
       Character.UnicodeScript.HAN,
@@ -44,5 +55,7 @@ object WordBounds {
   private fun isWordPart(cp: Int) =
     Character.isLetterOrDigit(cp) || cp == '_'.code || Character.getType(cp) in MARKS
 
-  private fun writtenWithoutSpaces(cp: Int) = Character.UnicodeScript.of(cp) in WITHOUT_SPACES
+  @JvmStatic fun isSpaceless(cp: Int): Boolean = Character.UnicodeScript.of(cp) in WITHOUT_SPACES
+
+  private fun writtenWithoutSpaces(cp: Int) = isSpaceless(cp)
 }

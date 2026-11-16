@@ -3,8 +3,13 @@ package ai.helper2.guide
 import ai.helper2.search.MergedResult
 import ai.helper2.shared.LinkText
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WordBounds.END
+import ai.helper2.shared.WordBounds.START
+import ai.helper2.shared.WordLists
 import java.text.Normalizer
 import java.time.LocalDate
+
+internal val IntentWords: WordLists = WordLists.load("intent-words")
 
 enum class GuideIntent {
   SUGGEST,
@@ -191,12 +196,12 @@ object IntentRules {
   private val UNIT = alternation(UNITS.keys)
 
   private val PAST =
-    Regex("(?i)\\b(?:${alternation("period.past")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)\\b")
+    Regex("(?iu)$START(?:${alternation("period.past")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)$END")
 
-  private val THIS = Regex("(?i)\\b(?:${alternation("period.this")})\\s+($UNIT)\\b")
+  private val THIS = Regex("(?iu)$START(?:${alternation("period.this")})\\s+($UNIT)$END")
 
   private val NEXT =
-    Regex("(?i)\\b(?:${alternation("period.next")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)\\b")
+    Regex("(?iu)$START(?:${alternation("period.next")})\\s+(?:(\\d{1,3})\\s+)?($UNIT)$END")
 
   private val TODAY = anywhere("period.today")
 
@@ -204,8 +209,8 @@ object IntentRules {
 
   private val NEW_KIND =
     Regex(
-      "(?i)\\b(?:${alternation("intent.new-word")})\\s+" +
-        "(?:(?!(?:${alternation("intent.new-skip")})\\b)[\\p{L}\\d.'-]+\\s+)?(?:${alternation("intent.new-kind")})\\b"
+      "(?iu)$START(?:${alternation("intent.new-word")})\\s+" +
+        "(?:(?!(?:${alternation("intent.new-skip")})$END)[\\p{L}\\d.'-]+\\s+)?(?:${alternation("intent.new-kind")})$END"
     )
   private val ALTERNATIVES = anywhere("intent.alternatives")
   private val COMPARE = anywhere("intent.compare")
@@ -214,19 +219,15 @@ object IntentRules {
   private val HOW_TO = atStart("intent.how-to")
   private val LEARN = anywhere("intent.learn")
 
-  private val GENERIC: Set<String> =
-    IntentWords.phrases("query.generic").map { it.lowercase() }.toSet()
+  private val GENERIC: Set<String> = IntentWords.words("query.generic")
 
-  private fun anywhere(key: String) = Regex("(?i)\\b(?:${alternation(key)})\\b")
+  private fun anywhere(key: String) = IntentWords.anywhere(key)
 
-  private fun atStart(key: String) = Regex("(?i)^\\s*(?:${alternation(key)})\\b")
+  private fun atStart(key: String) = IntentWords.atStart(key)
 
   private fun alternation(key: String) = alternation(IntentWords.phrases(key))
 
-  private fun alternation(phrases: Collection<String>): String =
-    phrases
-      .sortedByDescending { it.length }
-      .joinToString("|") { p -> p.split(' ').joinToString("\\s+") { Regex.escape(it) } }
+  private fun alternation(phrases: Collection<String>): String = WordLists.alternation(phrases)
 
   @JvmStatic
   fun intentOf(request: String): GuideIntent? =
@@ -242,31 +243,21 @@ object IntentRules {
       else -> null
     }
 
-  private val TIME_WORDS =
-    Regex(
-      "(?i)\\b(days?|weeks?|months?|years?|today|yesterday|tonight|weekend|since|20\\d\\d|" +
-        "january|february|march|april|may|june|july|august|september|october|november|december|" +
-        "giorn[oi]|settiman[ae]|mes[ei]|ann[oi]|oggi|ieri|da quando)\\b"
-    )
+  private val TIME_WORDS = anywhere("time.word")
 
-  private val NEW_WORDS =
-    Regex(
-      "(?i)\\b(new|newest|latest|recent(ly)?|upcoming|launched|released|born|nuov[oaie]|recent[ei])\\b"
-    )
+  private val YEAR = Regex("${START}20\\d\\d$END")
 
-  @JvmStatic fun mentionsTime(request: String): Boolean = TIME_WORDS.containsMatchIn(request)
+  private val NEW_WORDS = anywhere("new.word")
+
+  @JvmStatic
+  fun mentionsTime(request: String): Boolean =
+    TIME_WORDS.containsMatchIn(request) || YEAR.containsMatchIn(request)
 
   @JvmStatic
   fun mentionsNewness(request: String): Boolean =
     mentionsTime(request) || NEW_WORDS.containsMatchIn(request)
 
-  private val REQUIREMENT_WORDS =
-    listOf(
-      Regex("(?i)\\b(free|gratis|gratuit\\w*|no cost|without paying|kostenlos)\\b"),
-      Regex("(?i)\\b(self[- ]?host\\w*|on[- ]?prem\\w*|local(ly)?|my own server|in locale)\\b"),
-      Regex("(?i)\\b(offline|without internet|no internet|air[- ]?gapped|local(ly)?)\\b"),
-      Regex("(?i)\\b(open[- ]?source|oss|mit|apache|bsd|gpl|licen[cs]e\\w*|permissive)\\b"),
-    )
+  private val REQUIREMENT_WORDS = IntentWords.keys("requirement.").map(::anywhere)
 
   @JvmStatic
   fun constraintStated(constraint: String, request: String): Boolean {
@@ -274,25 +265,11 @@ object IntentRules {
       constraint.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter {
         it.length >= 3 && it !in STOP
       }
-    if (words.any { Regex("(?i)\\b${Regex.escape(it)}").containsMatchIn(request) }) return true
+    if (words.any { Regex("(?iu)$START${Regex.escape(it)}").containsMatchIn(request) }) return true
     return REQUIREMENT_WORDS.any { it.containsMatchIn(constraint) && it.containsMatchIn(request) }
   }
 
-  private val STOP =
-    setOf(
-      "works",
-      "runs",
-      "the",
-      "and",
-      "with",
-      "must",
-      "has",
-      "have",
-      "licence",
-      "license",
-      "support",
-      "supports",
-    )
+  private val STOP = IntentWords.words("constraint.stop")
 
   @JvmStatic
   fun windowOf(request: String): PlannedWindow? {
@@ -344,8 +321,7 @@ fun isSubject(result: MergedResult, subject: String): Boolean {
   }
 }
 
-private val TYPE_SUFFIX: List<String> =
-  IntentWords.phrases("subject.type-suffix").map { it.lowercase() }
+private val TYPE_SUFFIX: Set<String> = IntentWords.words("subject.type-suffix")
 
 private fun normalizedName(s: String): String =
   Normalizer.normalize(s, Normalizer.Form.NFKC)
@@ -353,23 +329,3 @@ private fun normalizedName(s: String): String =
     .substringAfterLast('/')
     .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
     .trim()
-
-internal object IntentWords {
-  private val LANGUAGES = listOf("en", "it")
-
-  private val bundles: List<java.util.Properties> = LANGUAGES.map { lang ->
-    val path = "i18n/intent-words_$lang.properties"
-    val stream =
-      IntentWords::class.java.classLoader.getResourceAsStream(path) ?: error("missing $path")
-    java.util.Properties().apply { stream.reader(Charsets.UTF_8).use { load(it) } }
-  }
-
-  fun phrases(key: String): List<String> {
-    require(bundles.any { it.containsKey(key) }) { "no language defines $key" }
-    return bundles
-      .flatMap { b ->
-        b.getProperty(key).orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }
-      }
-      .distinct()
-  }
-}

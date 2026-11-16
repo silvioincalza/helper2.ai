@@ -5,6 +5,7 @@ import ai.helper2.platform.quota.QuotaCounter.Counter
 import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WordLists
 import java.time.Duration
 import java.util.function.Supplier
 
@@ -45,34 +46,11 @@ enum class IntentClass {
 
     private val TIME_BOUND_TYPES = setOf(ResourceType.NEWS, ResourceType.EVENT, ResourceType.COURSE)
 
-    private val TIME_BOUND_WORDS =
-      setOf(
-        "news",
-        "course",
-        "courses",
-        "certification",
-        "certifications",
-        "hackathon",
-        "hackathons",
-        "conference",
-        "conferences",
-        "event",
-        "events",
-        "meetup",
-        "meetups",
-        "summit",
-        "webinar",
-        "webinars",
-        "workshop",
-        "workshops",
-        "notizie",
-        "corso",
-        "corsi",
-        "conferenza",
-        "conferenze",
-        "evento",
-        "eventi",
-      )
+    private val WORDS = WordLists.load("query-words")
+
+    private val TIME_BOUND_WORDS = WORDS.words("time-bound")
+
+    private val SEPARATE = WordLists.separator(TIME_BOUND_WORDS)
 
     @JvmStatic
     fun of(request: SearchRequest, analyzed: AnalyzedQuery): IntentClass {
@@ -84,7 +62,7 @@ enum class IntentClass {
         (types.isNotEmpty() && TIME_BOUND_TYPES.containsAll(types)) ||
           request.filters.publishedAfter != null ||
           request.sort == SortOrder.NEWEST ||
-          analyzed.normalized.split(NON_WORD).any { it in TIME_BOUND_WORDS }
+          SEPARATE(analyzed.normalized).split(NON_WORD).any { it in TIME_BOUND_WORDS }
       return if (timeBound) TIME_BOUND else GENERAL
     }
   }
