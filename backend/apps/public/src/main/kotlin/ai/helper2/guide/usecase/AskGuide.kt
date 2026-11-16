@@ -39,6 +39,7 @@ import ai.helper2.guide.steps.readingFilter
 import ai.helper2.guide.steps.withNotices
 import ai.helper2.search.Asker
 import ai.helper2.search.Feature
+import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.QueryAnalyzer
@@ -260,19 +261,39 @@ class AskGuide(
   }
 
   /**
-   * Names the source page of every pick's quote (ADR 0031). Catalog resources need their stored
-   * records: one read for all picks of the answer.
+   * Names the source page of every quote of the answer (ADR 0031): picks, comparison cells and
+   * explanation sentences. Catalog resources need their stored records: one read for all of them.
    */
   private fun GuideAnswer.withQuoteOrigins(): GuideAnswer {
-    if (recommendations.isEmpty()) return this
-    val records = quoteRecords.of(recommendations.map { it.result.id }.distinct())
+    val subjects =
+      comparison?.subjects.orEmpty().mapNotNull { s -> s.result?.let { s.key to it } }.toMap()
+    val quoted =
+      recommendations.map { it.result } +
+        subjects.values +
+        explanation?.sentences.orEmpty().map { it.source }
+    if (quoted.isEmpty()) return this
+    val records = quoteRecords.of(quoted.map { it.id }.distinct())
+    fun from(quote: String?, result: MergedResult?) =
+      if (quote.isNullOrBlank() || result == null) null
+      else quoteOrigins.of(quote, result, records[result.id].orEmpty())
     return copy(
-      recommendations =
-        recommendations.map {
-          it.copy(
-            quotedFrom = quoteOrigins.of(it.quote, it.result, records[it.result.id].orEmpty())
+      recommendations = recommendations.map { it.copy(quotedFrom = from(it.quote, it.result)) },
+      comparison =
+        comparison?.let { c ->
+          c.copy(
+            rows =
+              c.rows.map { row ->
+                row.copy(
+                  cells =
+                    row.cells.map { it.copy(quotedFrom = from(it.quote, subjects[it.subjectKey])) }
+                )
+              }
           )
-        }
+        },
+      explanation =
+        explanation?.let { e ->
+          e.copy(sentences = e.sentences.map { it.copy(quotedFrom = from(it.quote, it.source)) })
+        },
     )
   }
 

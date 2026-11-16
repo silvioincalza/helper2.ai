@@ -1013,6 +1013,9 @@ components:
                     subjectKey: { type: string }
                     text: { type: [string, 'null'], description: AI-written; null when the subject's own text does not state it. }
                     quote: { type: [string, 'null'], description: Exact text from that subject's own description. }
+                    quotedFrom:
+                      oneOf: [{ $ref: '#/components/schemas/QuotedFrom' }, { type: 'null' }]
+                      description: The source page whose own text holds the quote (ADR 0031); null when no stored source text holds it or the cell has no quote.
                     reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
 
     GuideExplanation:
@@ -1030,6 +1033,9 @@ components:
               resourceId: { type: string, format: uuid }
               title: { type: string }
               url: { type: string, format: uri }
+              quotedFrom:
+                oneOf: [{ $ref: '#/components/schemas/QuotedFrom' }, { type: 'null' }]
+                description: The source page whose own text holds the quote (ADR 0031); it can differ from `url`. null when no stored source text holds it.
               reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
 
     GuideStreamEvent:

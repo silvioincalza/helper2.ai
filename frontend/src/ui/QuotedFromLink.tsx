@@ -2,16 +2,13 @@ import { useTranslation } from 'react-i18next';
 import { displayHost, safeHref } from '@/lib/format';
 
 /**
- * The page where a checked quote can be read (ADR 0031). It can be another page than the result's own link: a
- * package's text shown under its repository names the package page. Nothing when the server named no page.
+ * The page where a checked quote can be read (ADR 0031): of a pick, a comparison cell or an explanation sentence.
+ * It can be another page than the resource's own link: a package's text shown under its repository names the
+ * package page. Nothing when the server named no page.
  */
-export function QuotedFromLink({
-  pick,
-}: {
-  pick: { quotedFrom: { url: string } | null } | undefined;
-}) {
+export function QuotedFromLink({ from }: { from: { url: string } | null | undefined }) {
   const { t } = useTranslation();
-  const href = pick?.quotedFrom ? safeHref(pick.quotedFrom.url) : null;
+  const href = from ? safeHref(from.url) : null;
   if (!href) return null;
   return (
     <>

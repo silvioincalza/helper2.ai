@@ -45,10 +45,10 @@ const onPhone = (selector: string) =>
     .map((m) => m[2])
     .join('\n');
 
-function view() {
+function view(c: NonNullable<GuideResponse['comparison']> = comparison) {
   render(
     <MemoryRouter>
-      <ComparisonTable comparison={comparison} />
+      <ComparisonTable comparison={c} />
     </MemoryRouter>,
   );
   return screen.getByRole('table');
@@ -125,5 +125,27 @@ describe('Feature: the comparison reads on a phone (WCAG 1.4.10)', () => {
     expect(onPhone('.guide-compare thead th')).toMatch(/white-space:\s*normal/);
     expect(onPhone('.guide-compare .guide-compare__aspect')).toMatch(/clip:\s*rect\(0, 0, 0, 0\)/);
     expect(onPhone('.guide-compare .guide-compare__aspect')).not.toMatch(/display:\s*none/);
+  });
+
+  it('Scenario: a quoted answer links the page where its quote can be read; an unquoted one links nothing', () => {
+    const npm = 'https://www.npmjs.com/package/ollama';
+    const table = view({
+      ...comparison,
+      rows: [
+        {
+          aspect: 'Licence',
+          cells: [
+            { ...comparison.rows[0]!.cells[0]!, quotedFrom: { sourceId: 'npm', url: npm } },
+            comparison.rows[0]!.cells[1]!,
+          ],
+        },
+      ],
+    });
+    const [ollama, lmStudio] = within(table).getAllByRole('cell');
+    expect(within(ollama!).getByRole('link', { name: /read it on npmjs\.com/ })).toHaveAttribute(
+      'href',
+      npm,
+    );
+    expect(within(lmStudio!).queryByText(/read it on/)).not.toBeInTheDocument();
   });
 });

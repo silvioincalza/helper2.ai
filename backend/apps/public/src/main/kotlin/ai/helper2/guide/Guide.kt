@@ -201,6 +201,7 @@ data class ComparisonCell(
   val text: String?,
   val quote: String?,
   val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED,
+  val quotedFrom: QuotedFrom? = null,
 )
 
 data class ComparisonRow(val aspect: String, val cells: List<ComparisonCell>)
@@ -222,6 +223,7 @@ data class ExplainedSentence(
   val quote: String,
   val source: MergedResult,
   val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED,
+  val quotedFrom: QuotedFrom? = null,
 )
 
 data class Explanation(val sentences: List<ExplainedSentence>)

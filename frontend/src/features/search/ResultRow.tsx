@@ -137,7 +137,7 @@ function RowText({
       <p className="h2-row__checked">
         <span aria-hidden="true">✓ </span>
         {t('results.checkedQuote')}
-        <QuotedFromLink pick={pick} />
+        <QuotedFromLink from={pick?.quotedFrom} />
       </p>
     </div>
   );

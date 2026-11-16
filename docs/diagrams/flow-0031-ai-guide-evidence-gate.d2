@@ -33,7 +33,7 @@ validated: "event: validated" {class: config}
 kept: "Any pick kept?" {class: decision}
 partial: "PARTIAL:\ntop 3 search results" {class: fail}
 check: "Reason check (ADR 0031)\nevent: checked" {class: ai}
-origin: "QuoteOrigins: each pick names\nthe page that holds its quote\n(own address first; catalog rows:\nstored records, one read per answer)" {class: app}
+origin: "QuoteOrigins: each pick, cell and\nsentence names the page\nthat holds its quote\n(own address first; catalog rows:\nstored records, one read per answer)" {class: app}
 answer: "OK (none rejected)\nor PARTIAL\nevent: answer" {class: end}
 
 ask -> guard -> hasModel

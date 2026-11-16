@@ -95,16 +95,18 @@ Every kept pick increments `helper2.guide.picks{rank}` with its search rank band
 **Where the quote can be read.** A resource shows one link and one text, but the text can come from another record
 than the link: a package's description under its repository's link until the repository's own record arrives
 ([0021](../scout/0021-resource-identity-one-resource-per-repository.md)), or the description of the last record that
-wrote one. So every pick of an answer (AI picks and fallback results) names the page that holds its quote:
-`QuoteOrigins` looks the quote up, with the gate's own whole-word rule, in the title and source-written description of
-each record of the resource, the record at the resource's own address first, then the others in source order. A live
-hit is its own record; a catalog row (a hit whose external id is the resource id) is the resource, not a source, so
-its stored records stand in for it: `QuoteRecords` reads them with `Resources.recordsOf`, one read per answer for all
-its picks, in `AskGuide` before the answer is cached. The answer carries `quotedFrom` (`sourceId`, `url`) per pick;
-the result row and the resource page link "read it on {host}" to that page, and the resource page names that host
-under the highlighted quote. `quotedFrom` is null when no record holds the quote (a curated description): the page then
-names the resource's own host, as before. AI-written descriptions are never a record's text here, as in the gate. The
-lookup only names a page: it never keeps or drops a pick.
+wrote one. So every quote of an answer names the page that holds it: a pick (AI pick or fallback result), a
+comparison cell (looked up in its subject) and an explanation sentence (in its source). `QuoteOrigins` looks the
+quote up, with the gate's own whole-word rule, in the title and source-written description of each record of the
+resource, the record at the resource's own address first, then the others in source order. A live hit is its own
+record; a catalog row (a hit whose external id is the resource id) is the resource, not a source, so its stored
+records stand in for it: `QuoteRecords` reads them with `Resources.recordsOf`, one read per answer for all its quotes,
+in `AskGuide.withQuoteOrigins` before the answer is cached. The answer carries `quotedFrom` (`sourceId`, `url`) per
+pick, cell and sentence; the result row, the resource page, the comparison and the explanation link "read it on
+{host}" to that page, and the resource page names that host under the highlighted quote. `quotedFrom` is null when no
+record holds the quote (a curated description, a cell without a quote): the page then names the resource's own host,
+as before. AI-written descriptions are never a record's text here, as in the gate. The lookup only names a page: it
+never keeps or drops a pick, a cell or a sentence.
 
 **Constraint checks.** Each constraint gets CONFIRMED or NOT_CONFIRMED per pick. Licence constraints are decided by the
 licence the source states: a named licence must match as a whole word ("mit" does not match "Limited"), and a stated
@@ -492,7 +494,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`,
   `GuideSearchPlan`, `PlannedQueries`, `ReasonClaim`, `ReasonCheck`, `GuideAnswer`; `EvidenceGate.kt` — `EvidenceGate`
   (`claimProblem`: the text and quote rule of picks, cells and sentences); `QuoteOrigins.kt` — `QuoteOrigins`,
-  `QuotedFrom` (the page that holds a pick's quote), `QuoteRecords.kt` (the stored records it reads; wired in
+  `QuotedFrom` (the page that holds a quote), `QuoteRecords.kt` (the stored records it reads; wired in
   `GuideConfiguration.quoteRecords`); `Intents.kt` — `GuideIntent`,
   `IntentRules`, `Clarification`, `SubjectKind`, `AmbiguousSubject`, `isSubject`; `HostileText.kt` —
   `QuestionDirections`, `SecretWords`; `AnswerLimits.kt`; `GuideCost.kt` —
@@ -602,7 +604,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names.
 - The gate proves a quote, not that it is true: a description written to be chosen passes the gate and the reason check. Strict rules reject some good picks. A resource outside the 24 candidates cannot be picked.
-- `quotedFrom` names a page as the source last wrote it: a page changed since the record was read may no longer show the quote. Comparison cells and explanation sentences quote resource text too, but name no page yet.
+- `quotedFrom` names a page as the source last wrote it: a page changed since the record was read may no longer show the quote.
 - The reason check is a model's judgment and can miss or reject a claim; it costs one more call per question (the 600-call daily cap covers at most 200 fresh questions).
 - The reason check reads up to 5 picks in one prompt, with their third-party texts. A 4th or 5th candidate whose text talks the check into finding the first ones off the need takes their place. The evidence gate and the SECURITY block still apply to it; no eval case plants such a text yet.
 - Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found.

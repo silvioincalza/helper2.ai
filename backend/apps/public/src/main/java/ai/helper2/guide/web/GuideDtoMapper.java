@@ -250,6 +250,7 @@ class GuideDtoMapper {
                             new GuideComparisonRowsInnerCellsInnerDto(cell.getSubjectKey())
                                 .text(cell.getText())
                                 .quote(cell.getQuote())
+                                .quotedFrom(quotedFrom(cell.getQuotedFrom()))
                                 .reasonCheck(
                                     GuideComparisonRowsInnerCellsInnerDto.ReasonCheckEnum.fromValue(
                                         cell.getReasonCheck().name())))
@@ -270,6 +271,7 @@ class GuideDtoMapper {
                         x.getSource().getId().getValue(),
                         x.getSource().getTitle(),
                         x.getSource().getUrl())
+                    .quotedFrom(quotedFrom(x.getQuotedFrom()))
                     .reasonCheck(
                         GuideExplanationSentencesInnerDto.ReasonCheckEnum.fromValue(
                             x.getReasonCheck().name())))
