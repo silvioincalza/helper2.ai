@@ -24,7 +24,12 @@ public final class MonitorLogin {
               + " LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT"
               + " CONNECTION LIMIT 3");
       statement.execute("GRANT pg_monitor TO " + ROLE);
-      statement.execute("GRANT CONNECT ON DATABASE " + connection.getCatalog() + " TO " + ROLE);
+      String database = connection.getCatalog();
+      if (database == null || database.isBlank()) {
+        throw new SQLException("Cannot determine database name for GRANT CONNECT");
+      }
+      statement.execute(
+          "GRANT CONNECT ON DATABASE \"" + database.replace("\"", "\"\"") + "\" TO " + ROLE);
       statement.execute("ALTER ROLE " + ROLE + " SET statement_timeout = 10000");
       connection.unwrap(PGConnection.class).alterUserPassword(ROLE, password.toCharArray(), null);
     }
