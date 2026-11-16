@@ -29,27 +29,39 @@ object RepositoryJoin {
     }
   }
 
-  private class StatedName(val scope: Set<String>, val name: Set<String>) {
-
-    fun belongsTo(root: RepositoryRoot): Boolean =
-      name.containsAll(root.name) || sameOwner(root.owner)
-
-    private fun sameOwner(owner: Set<String>): Boolean =
-      scope.isNotEmpty() && (owner.containsAll(scope) || scope.containsAll(owner))
+  private sealed interface StatedName {
+    fun belongsTo(root: RepositoryRoot): Boolean
 
     companion object {
       fun of(hit: SourceHit): StatedName {
         val id = packageName(hit.canonicalUrl) ?: hit.externalId
-        return if (hit.sourceId == CollectorIds.MCP_REGISTRY) {
-          StatedName(emptySet(), words(id.substringAfter('/')))
-        } else if (id.startsWith("@") && id.contains('/')) {
-          StatedName(words(id.substringBefore('/')), words(id))
-        } else {
-          StatedName(emptySet(), words(id))
+        return when {
+          hit.sourceId == CollectorIds.MCP_REGISTRY -> ServerName(words(id.substringAfter('/')))
+          id.startsWith("@") && id.contains('/') ->
+            PackageName(words(id.substringBefore('/')), words(id))
+          else -> PackageName(emptySet(), words(id))
         }
       }
     }
   }
+
+  private class PackageName(val scope: Set<String>, val name: Set<String>) : StatedName {
+    override fun belongsTo(root: RepositoryRoot): Boolean =
+      name.containsAll(root.name) || sameOwner(root.owner)
+
+    private fun sameOwner(owner: Set<String>): Boolean =
+      scope.isNotEmpty() && (owner.containsAll(scope) || scope.containsAll(owner))
+  }
+
+  private class ServerName(val name: Set<String>) : StatedName {
+    override fun belongsTo(root: RepositoryRoot): Boolean {
+      val telling = root.name - GENERIC_REPOSITORY_WORDS
+      return telling.isEmpty() || telling.any { it in name }
+    }
+  }
+
+  private val GENERIC_REPOSITORY_WORDS =
+    setOf("mcp", "server", "servers", "model", "context", "protocol", "modelcontextprotocol")
 
   private val PACKAGE_PAGE = Regex("^https://(?:npmjs\\.com/package|pypi\\.org/project)/([^?#]+)$")
 

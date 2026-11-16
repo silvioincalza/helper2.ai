@@ -64,6 +64,27 @@ class RepositoryJoinTest {
   }
 
   @Test
+  fun `a registry server that shares one telling word with its repository's name joins it`() {
+    assertJoins(server("ai.a1lane/a1lane", "https://github.com/a1lane/a1lane-mcp"))
+    assertJoins(server("agency.goji/goji", "https://github.com/goji-agency/goji-mcp"))
+    assertJoins(server("ai.1325/mcp", "https://github.com/1325ai/mcp-server"))
+  }
+
+  @Test
+  fun `the servers of collection repositories with other names stay apart`() {
+    assertNull(
+      RepositoryJoin.of(
+        server("io.github.mrfentmen/airtable-mcp", "https://github.com/mrfentmen/premium-mcps")
+      )
+    )
+    assertNull(
+      RepositoryJoin.of(
+        server("io.github.sadri-dridi/aba-ok", "https://github.com/sadri-dridi/named-mcp-utilities")
+      )
+    )
+  }
+
+  @Test
   fun `the servers of a collection repository are not joined by their owner alone`() {
     val repo = "https://github.com/codespar/mcp-dev-latam"
     assertNull(RepositoryJoin.of(server("io.github.codespar/mcp-adyen", repo)))
