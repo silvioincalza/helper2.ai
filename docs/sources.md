@@ -44,7 +44,8 @@ Each source's terms, read on 2026-11-14 for a site that shows ads and takes gift
 
 - `yes`: the terms allow the use. The condition is named, with whether the code meets it.
 - `ask`: the terms do not say, or the page could not be read. The source is asked in writing.
-- `no`: the terms as written do not allow the use. The source is turned off or asked in writing.
+- `no`: the terms as written do not allow the use. The source is turned off, asked in writing, or kept on as a risk
+  the owner accepts, dated in its row. A source kept on stays a named source, with its credit and link.
 
 The legal points behind a row are tracked privately.
 
@@ -59,7 +60,7 @@ The legal points behind a row are tracked privately.
 | `page-reader` | same | yes | The provider's written OK for page extract: received |
 | `discovery-<category>`, `live-web-events-scout` | same | ask | The provider's written OK for scheduled searches whose pages we index: to confirm (page extract for events: received) |
 | `course-scout` | same; [Coursera](https://www.coursera.org/about/terms) (effective 1 January 2026), [edX](https://www.edx.org/edx-terms-service) (updated 3 November 2025), [O'Reilly](https://www.oreilly.com/terms/) (updated 19 December 2019); [Udemy](https://www.udemy.com/terms/) could not be read | ask | Nothing is indexed. An accepted course is a link in our own words, with no description or logo of the platform: met. O'Reilly and Udemy: to ask |
-| `linkedin-scout` | [LinkedIn User Agreement](https://www.linkedin.com/legal/user-agreement) (effective 3 November 2025), section 8.2 | no | — |
+| `linkedin-scout` | [LinkedIn User Agreement](https://www.linkedin.com/legal/user-agreement) (effective 3 November 2025), section 8.2 | no | On: risk accepted by the owner on 16 November 2026. Shown as "LinkedIn" with a link to each page. Turned off (`H2_SOURCE_LINKEDIN_SCOUT_ENABLED=false`) when LinkedIn objects |
 | `mcp-registry` | [MCP Registry Terms of Service](https://modelcontextprotocol.io/registry/terms-of-service) (effective 2 September 2025): registry data is CC0 | yes | The wording of the credit (section 6): met. Read once a day: met |
 | `ai-deadlines` (the data) | [MIT License](https://github.com/huggingface/ai-deadlines/blob/main/LICENSE) of the repository | yes | The licence is linked: met. Its copyright line: not shown yet ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)) |
 | `github-sdks` (deps.dev part) | [deps.dev API](https://docs.deps.dev/api/v3/): generated data CC-BY 4.0, caching allowed; [Google APIs Terms of Service](https://developers.google.com/terms) (modified 9 November 2021) | yes | The credit names deps.dev and CC-BY 4.0: met. A link to the licence text: not shown yet ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)) |
@@ -69,8 +70,8 @@ The legal points behind a row are tracked privately.
 | `feed-hugging-face` | [Hugging Face Terms of Service](https://huggingface.co/terms-of-service) (effective 15 September 2022) | ask | The terms do not speak of the blog feed |
 | `feed-mistral` | [Mistral AI legal documents](https://legal.mistral.ai/terms): no terms for the website found | ask | — |
 | `feed-nvidia` | [NVIDIA Terms of Service](https://www.nvidia.com/en-us/about-nvidia/terms-of-service/) (15 July 2026) | ask | Whether these terms cover the blog and its feed |
-| `feed-aws-ml` | [AWS Site Terms](https://aws.amazon.com/terms/) (updated 4 June 2025), "License and Site Access" | no | — |
-| `helper2-semantic` (the embedding service) | [NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), sections 1.2 and 1.4 | no | — |
+| `feed-aws-ml` | [AWS Site Terms](https://aws.amazon.com/terms/) (updated 4 June 2025), "License and Site Access" | no | On: risk accepted by the owner on 16 November 2026. Shown as "AWS ML" with a link to each post. Turned off (`enabled: false` in `helper2.feeds`) when AWS objects |
+| `helper2-semantic` (the embedding service) | [NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), sections 1.2 and 1.4 | no | Asked in writing: NVIDIA is asked for commercial use (the owner). On until it answers; if it says no, a paid plan or an NVIDIA model on Nebius replaces it |
 | Setup guide documents (not a search source; an npm package's README from `cdn.jsdelivr.net`, [ADR 0034](adr/guide/0034-setup-guide.md)) | [jsDelivr Terms of Use](https://github.com/jsdelivr/jsdelivr/blob/master/Terms%20of%20Use.md) (effective 5 October 2026, read in jsDelivr's repository) | yes | Free for commercial use. One README for a setup guide, cached (`H2_SETUP_CACHE_TTL`): met |
 | `helper2-index`, `curated`, `demo-*` | own data | — | — |
 
