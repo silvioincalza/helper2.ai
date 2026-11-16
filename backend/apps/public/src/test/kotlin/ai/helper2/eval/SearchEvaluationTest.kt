@@ -42,7 +42,10 @@ class SearchEvaluationTest {
       emptySet(),
       listOf(
         source("github", hit(0, "https://github.com/o/a"), hit(1, "https://github.com/o/b")),
-        source("npm", hit(0, "https://www.npmjs.com/package/c", repo = "https://github.com/o/b")),
+        source(
+          "npm",
+          hit(0, "https://www.npmjs.com/package/b-js", repo = "https://github.com/o/b"),
+        ),
       ),
     )
   private val queries =
@@ -77,7 +80,7 @@ class SearchEvaluationTest {
       evaluation(
         """
             query_id	url	grade
-            q1	https://npmjs.com/package/c	3
+            q1	https://npmjs.com/package/b-js	3
             q1	https://github.com/o/a	0
         """
       )
