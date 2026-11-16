@@ -1,7 +1,6 @@
 package ai.helper2.search
 
 import ai.helper2.shared.ResourceType
-import ai.helper2.shared.WordBounds
 import ai.helper2.shared.WordLists
 import java.text.Normalizer
 
@@ -162,7 +161,5 @@ class QueryAnalyzer {
   private fun padded(normalized: String) =
     " ${SEPARATE(normalized).replace(Regex("[^\\p{L}\\p{N}-]+"), " ")} "
 
-  private fun contains(padded: String, term: String) =
-    padded.contains(" $term ") ||
-      (term.any { WordBounds.isSpaceless(it.code) } && WordBounds.containsOnWords(padded, term))
+  private fun contains(padded: String, term: String) = padded.contains(" $term ")
 }

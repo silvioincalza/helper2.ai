@@ -133,6 +133,14 @@ class QueryAnalyzerLanguagesTest {
   }
 
   @ParameterizedTest(name = "{0}")
+  @CsvSource(value = ["向量数据库", "代码库搜索", "知识库问答"])
+  fun `a Chinese word that holds a shorter known word is read whole`(query: String) {
+    val analyzed = analyzer.analyze(query)
+    assertEquals(emptySet(), analyzed.typeHints, query)
+    assertTrue("data-analysis" !in analyzed.useCases, query)
+  }
+
+  @ParameterizedTest(name = "{0}")
   @CsvSource(
     delimiter = '|',
     value = ["postgres mcp | postgresql mcp", "k8s operator | kubernetes operator"],
