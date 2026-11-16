@@ -6,6 +6,7 @@ import ai.helper2.catalog.Embedder.FailureReason;
 import ai.helper2.catalog.EmbeddingStore;
 import ai.helper2.catalog.EmbeddingStore.EmbeddingTask;
 import ai.helper2.catalog.EmbeddingStore.PendingEmbeddings;
+import ai.helper2.catalog.EmbeddingStore.RefusedText;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,7 +34,7 @@ public class IndexEmbeddings {
   private final Clock clock;
   private final AtomicLong backlog = new AtomicLong(NOT_COUNTED_YET);
   private final AtomicLong lastSuccessEpochSeconds = new AtomicLong();
-  private final Map<UUID, EmbeddingTask> rejected = new ConcurrentHashMap<>();
+  private final Map<UUID, RefusedText> rejected = new ConcurrentHashMap<>();
   private final Counter rateLimited;
   private final Counter embeddingFailed;
   private final Counter databaseFailed;
@@ -163,7 +164,8 @@ public class IndexEmbeddings {
     if (e.reason() != FailureReason.TEXT_REJECTED) {
       return;
     }
-    if (!task.equals(rejected.put(task.resourceId(), task))) {
+    RefusedText refused = new RefusedText(task.resourceId(), task.textHash());
+    if (!refused.equals(rejected.put(task.resourceId(), refused))) {
       log.info(
           "Embedding left out for resource {} until its text changes: {}",
           task.resourceId(),

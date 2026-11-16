@@ -4,6 +4,7 @@ import ai.helper2.catalog.EmbeddingStore;
 import ai.helper2.catalog.EmbeddingStore.EmbeddingCoverage;
 import ai.helper2.catalog.EmbeddingStore.EmbeddingTask;
 import ai.helper2.catalog.EmbeddingStore.PendingEmbeddings;
+import ai.helper2.catalog.EmbeddingStore.RefusedText;
 import ai.helper2.platform.PgVectors;
 import java.util.Collection;
 import java.util.List;
@@ -39,11 +40,11 @@ class JdbcEmbeddingStore implements EmbeddingStore {
 
   @Override
   public PendingEmbeddings pendingEmbeddings(
-      String model, int limit, Collection<EmbeddingTask> skipped) {
+      String model, int limit, Collection<RefusedText> skipped) {
     return unavailableOnFailure(() -> pending(model, limit, skipped));
   }
 
-  private PendingEmbeddings pending(String model, int limit, Collection<EmbeddingTask> skipped) {
+  private PendingEmbeddings pending(String model, int limit, Collection<RefusedText> skipped) {
     long[] backlog = {0};
     List<EmbeddingTask> tasks =
         jdbc.sql(
@@ -61,11 +62,9 @@ class JdbcEmbeddingStore implements EmbeddingStore {
                     .formatted(EMBEDDED_TEXT, EMBEDDING_PENDING))
             .param("model", model)
             .param("limit", limit)
+            .param("skippedIds", skipped.stream().map(RefusedText::resourceId).toArray(UUID[]::new))
             .param(
-                "skippedIds", skipped.stream().map(EmbeddingTask::resourceId).toArray(UUID[]::new))
-            .param(
-                "skippedHashes",
-                skipped.stream().map(EmbeddingTask::textHash).toArray(String[]::new))
+                "skippedHashes", skipped.stream().map(RefusedText::textHash).toArray(String[]::new))
             .query((rs, i) -> {
               backlog[0] = rs.getLong("backlog");
               return new EmbeddingTask(

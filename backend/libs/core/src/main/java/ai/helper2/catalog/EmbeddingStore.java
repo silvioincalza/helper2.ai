@@ -7,6 +7,8 @@ import java.util.UUID;
 public interface EmbeddingStore {
   record EmbeddingTask(UUID resourceId, String text, String textHash) {}
 
+  record RefusedText(UUID resourceId, String textHash) {}
+
   record PendingEmbeddings(List<EmbeddingTask> tasks, long backlog) {}
 
   record EmbeddingCoverage(long embedded, long total) {}
@@ -21,7 +23,7 @@ public interface EmbeddingStore {
     return pendingEmbeddings(model, limit, List.of());
   }
 
-  PendingEmbeddings pendingEmbeddings(String model, int limit, Collection<EmbeddingTask> skipped);
+  PendingEmbeddings pendingEmbeddings(String model, int limit, Collection<RefusedText> skipped);
 
   void saveEmbeddings(String model, List<EmbeddingTask> tasks, List<float[]> vectors);
 
