@@ -145,7 +145,9 @@ read as a fix of that release. What a release branch gained must reach `main` ag
     `release-prepare` with `patch-of`, then `release`. A push runs `cd.yml`: CI, then the `image` and `scan` jobs,
     with the commit tag. No staging deploy: staging follows `main`. A patch of a release made before the canary must
     carry `deploy/` and `.github/` of `main`. A release branch is never deleted (ruleset), so a version that was
-    prepared is released.
+    prepared is released. Every change to a release branch needs a pull request with `ci-ok`; creating the branch does
+    not: on `main` CI runs inside `cd.yml`, where the check is named `ci / ci-ok`, so the commit `release-prepare` cuts
+    from has no `ci-ok` of its own.
 15. **What may deploy.** `deploy.yml` hands deploy secrets to a commit on `main`, to a release version that has its
     tag (a rollback), and to the head of `release/YYYY.N` only when `release.yml` passes its version and that
     commit, after the approval on `prod`. A commit tag of a release branch alone is refused. `release` and
