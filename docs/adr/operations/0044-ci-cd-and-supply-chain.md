@@ -321,6 +321,17 @@ Harbor could put an image under a tag first.
     outside collaborator waits for an approval before its workflows run; secret scanning with push protection;
     Dependabot alerts and security-update pull requests beside the weekly version updates and the Grype scan.
 
+### A pull request merges after its review
+22. **`review-done` is a required check on `main`.** The ruleset "main: pull requests only" asks Copilot to review
+    every push to a pull request (`copilot_code_review`), and every review thread must be resolved before a merge.
+    The workflow `review.yml` runs its one job, `review-done`, on every push to a pull request and again on every review
+    posted or dismissed. It reads the reviews of the pull request (`.github/scripts/review-done.sh`, with a self-test the
+    CI job `changes` runs) and passes when Copilot or the repository owner has reviewed the head commit: commented,
+    approved or asked for changes. A pending or dismissed review does not count, nor a review of an older commit. So a
+    new push, "Update branch" too, waits for a new review. When Copilot does not review (its quota, a Dependabot or a
+    release pull request), the owner requests it again or submits a review of his own. `review-done` is a separate
+    workflow, not a job of `ci.yml`: `ci-ok` is done before Copilot posts, and a review must not run all of CI again.
+
 ### Code
 
 - `.github/workflows/ci.yml` (`changes`, the `if:` of each job, `monitoring` with `PROMETHEUS_IMAGE`, `ci-ok`),
@@ -331,6 +342,8 @@ Harbor could put an image under a tag first.
 - `.github/scripts/changes.sh` — the map of paths to components, the files each part needs, and its self-test.
 - `.github/scripts/ci-ok.sh` — the verdict of `ci-ok`: each job against the map, and its self-test.
 - `.github/scripts/branch-name.sh` — the branch prefixes a pull request may come from, and its self-test.
+- `.github/workflows/review.yml`, `.github/scripts/review-done.sh` — the check `review-done`: a review by Copilot or
+  the owner on the head commit, and its self-test.
 - `scripts/adr-check.py` — the ADR references and the history words, and its self-test.
 - `.github/scripts/released-migrations.sh` — no released migration changes; before the first release, V1 only.
 - `.github/actions/bao-login/action.yml` — OIDC login to OpenBao.
@@ -386,6 +399,13 @@ Harbor could put an image under a tag first.
 - Keyless signing (Fulcio and Rekor, the GitHub OIDC identity) — no key to keep, but every signature and our image
   names go to a public log, and the deploy needs the public Sigstore services to verify.
 - A key file in OpenBao KV — the private key would sit on the runner during the job; Transit never hands it out.
+- One approving review required by the ruleset — Copilot only comments, it never approves, and GitHub does not let
+  the owner approve his own pull request: no pull request could merge.
+- The ruleset rule `copilot_code_review` alone — it asks for the review but does not wait for it: a pull request
+  merged two minutes after Copilot started.
+- `review-done` as a job of `ci.yml` — `ci-ok` ends before Copilot posts, and running CI on every review repeats
+  every check for nothing.
+- Wait in the job until Copilot posts — a runner held for minutes on each push, and a time-out still has to fail.
 - Verify in the cluster with an admission controller (Kyverno, the Sigstore policy controller) — stronger, but a
   controller to run and a dependency on one cluster; the deploy stays generic (open point, infra side).
 
@@ -463,6 +483,10 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 - The frontend chains are selected together: tests outside `src/admin` read the back office code (S10.2.12).
 - Every Gradle job spends 30 to 90 seconds before its first project task (S10.2.8). The `chart` job spends 163 of its 169 seconds in the waits of a self-test (S10.2.4).
 - `package` runs on a push and on a manual full run, not on a pull request.
+- Every merge waits for the Copilot review of the head commit, a few minutes, also after "Update branch". A pull
+  request can change `review.yml` or `review-done.sh` itself, like every check of CI: the owner reads that change in
+  the review, and a pull request from an outside collaborator runs no workflow before his approval.
+- `review-done` is not a required check on `release/*`.
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI.
 - A deploy that is not healthy after the upgrade is rolled back by itself, but the schema is not: the new release's migrations stay. The older code must work on the newer schema, as in every rolling upgrade; no test checks it (the previous release's schema contract against the new migrations). A migration that drops or renames what the older code uses needs two releases (add, then remove), or the rollback ends in `ROLLBACK FAILED` or in an older app with errors. Until the first release tag, a rollback across an edit of `V1__schema.sql` does not pass: the older release holds another V1, and Flyway refuses it. What the new release wrote between the upgrade and the rollback stays. The check sees the public host only, not the admin host.
 - The scanner versions (Syft, Grype in `.github/actions/install-scanners`), cosign and the Prometheus image of the `monitoring` job are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback.
@@ -477,7 +501,8 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 
 The pipeline: [flow](../../diagrams/flow-0044-ci-cd.svg) · [sequence](../../diagrams/sequence-0044-ci-cd.svg) ·
 per component and signing: [flow](../../diagrams/flow-0044-ci-cd-per-component-and-image-signing.svg) · [sequence](../../diagrams/sequence-0044-ci-cd-per-component-and-image-signing.svg) ·
-the supply-chain checks: [flow](../../diagrams/flow-0044-supply-chain.svg)
+the supply-chain checks: [flow](../../diagrams/flow-0044-supply-chain.svg) ·
+the review before a merge: [flow](../../diagrams/flow-0044-review-done.svg) · [sequence](../../diagrams/sequence-0044-review-done.svg)
 
 The supply-chain checks run in CI only, with no runtime path, so they have no sequence diagram.
 

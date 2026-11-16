@@ -39,8 +39,19 @@
           {
             "context": "ci-ok",
             "integration_id": 15368
+          },
+          {
+            "context": "review-done",
+            "integration_id": 15368
           }
         ]
+      }
+    },
+    {
+      "type": "copilot_code_review",
+      "parameters": {
+        "review_on_push": true,
+        "review_draft_pull_requests": true
       }
     }
   ]

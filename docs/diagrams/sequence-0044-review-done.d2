@@ -1,0 +1,36 @@
+# Sequence: a push to a pull request, the Copilot review it asks for, and the required check review-done that waits
+# for it (ADR 0044 §22).
+# Source of truth: .github/workflows/review.yml, .github/scripts/review-done.sh,
+#   .github/settings/ruleset-main.json.
+# Render: cd docs/diagrams && d2 fmt sequence-0044-review-done.d2 && d2 sequence-0044-review-done.d2 sequence-0044-review-done.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: Owner {class: person}
+github: "GitHub\n(pull request, ruleset)" {class: ext}
+copilot: Copilot code review {class: ext}
+actions: "GitHub Actions\n(review.yml)" {class: app}
+
+push: A push {
+  owner -> github: "push to the pull request branch"
+  github -> copilot: "copilot_code_review: review the push"
+  github -> actions: "pull_request synchronize"
+  actions -> github: "GET pulls/<n>/reviews (token: pull-requests read)"
+  github -> actions: "no review on the head commit"
+  actions -> github: "review-done fails: merge blocked" {class: hot}
+}
+
+review: The review {
+  copilot -> github: "review submitted on the head commit\n(state COMMENTED, review threads)"
+  github -> actions: "pull_request_review submitted"
+  actions -> github: "GET pulls/<n>/reviews"
+  github -> actions: "a Copilot review on the head commit"
+  actions -> github: "review-done passes" {class: hot}
+}
+
+merge: The merge {
+  owner -> github: "fix or answer the findings,\nresolve every thread"
+  owner -> github: "squash merge: allowed when ci-ok and\nreview-done pass and no thread is open"
+}
