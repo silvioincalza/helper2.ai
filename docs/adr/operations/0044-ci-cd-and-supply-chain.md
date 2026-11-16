@@ -325,8 +325,8 @@ Harbor could put an image under a tag first.
 22. **`review-done` is a required check on `main`.** The ruleset "main: pull requests only" asks Copilot to review
     every push to a pull request (`copilot_code_review`), and every review thread must be resolved before a merge.
     The workflow `review.yml` runs its one job, `review-done`, on every push to a pull request and again on every review
-    posted or dismissed. It reads the reviews of the pull request (`.github/scripts/review-done.sh`, with a self-test the
-    CI job `changes` runs) and passes when Copilot or the repository owner has reviewed the head commit: commented,
+    posted or dismissed. It reads the reviews of the pull request (`.github/scripts/review-done.sh` of the base commit, with a
+    self-test the CI job `changes` runs) and passes when Copilot or the repository owner has reviewed the head commit: commented,
     approved or asked for changes. A pending or dismissed review does not count, nor a review of an older commit. So a
     new push, "Update branch" too, waits for a new review. When Copilot does not review (its quota, a Dependabot or a
     release pull request), the owner requests it again or submits a review of his own. `review-done` is a separate
@@ -483,9 +483,10 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 - The frontend chains are selected together: tests outside `src/admin` read the back office code (S10.2.12).
 - Every Gradle job spends 30 to 90 seconds before its first project task (S10.2.8). The `chart` job spends 163 of its 169 seconds in the waits of a self-test (S10.2.4).
 - `package` runs on a push and on a manual full run, not on a pull request.
-- Every merge waits for the Copilot review of the head commit, a few minutes, also after "Update branch". A pull
-  request can change `review.yml` or `review-done.sh` itself, like every check of CI: the owner reads that change in
-  the review, and a pull request from an outside collaborator runs no workflow before his approval.
+- Every merge waits for the Copilot review of the head commit, a few minutes, also after "Update branch". The job
+  runs `review-done.sh` from the base commit, so a pull request cannot change the verdict by changing the script. It
+  can still change `review.yml` itself, like every workflow of CI: the owner reads that change in the review, and a
+  pull request from an outside collaborator runs no workflow before his approval.
 - `review-done` is not a required check on `release/*`.
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI.
 - A deploy that is not healthy after the upgrade is rolled back by itself, but the schema is not: the new release's migrations stay. The older code must work on the newer schema, as in every rolling upgrade; no test checks it (the previous release's schema contract against the new migrations). A migration that drops or renames what the older code uses needs two releases (add, then remove), or the rollback ends in `ROLLBACK FAILED` or in an older app with errors. Until the first release tag, a rollback across an edit of `V1__schema.sql` does not pass: the older release holds another V1, and Flyway refuses it. What the new release wrote between the upgrade and the rollback stays. The check sees the public host only, not the admin host.
