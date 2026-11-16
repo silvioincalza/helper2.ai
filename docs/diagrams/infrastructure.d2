@@ -51,7 +51,8 @@ cluster: KUBERNETES {
       shape: cylinder
       class: data
     }
-    backup: "pg-backup CronJob\n02:30 Europe/Zurich\npg_dump | gzip, 7 days" {class: app}
+    backup: "pg-backup CronJob\n02:30 Europe/Zurich\npg_dump | gzip, newest 7 dumps" {class: app}
+    restore_check: "pg-restore-check CronJob\nSunday 04:00 Europe/Zurich\nnewest dump into its own Postgres\n(emptyDir), never prod's" {class: app}
     backup_pvc: "PVC pg-backup\nnfs-k8s · kept on uninstall" {
       shape: cylinder
       class: data
@@ -73,6 +74,7 @@ cluster: KUBERNETES {
     secret -> bo: envFrom {class: config}
     backup -> postgres: ":5432"
     backup -> backup_pvc: "dump"
+    restore_check -> backup_pvc: "read-only, only\nwithout backup.offsite"
     secret -> app: envFrom {class: config}
     migrate -> postgres: "JDBC :5432 (owner)"
     creds -> migrate: "owner + role passwords" {class: config}
@@ -169,6 +171,7 @@ cluster.prod.app -> egress.sources: "search"
 cluster.prod.bo -> egress.sources: "Scout + admin search"
 cluster.prod.bo -> egress.nebius: "enrichment" {class: ai-call}
 cluster.prod.backup -> r2: "HTTPS 443, only when\nbackup.offsite is on" {class: config}
+cluster.prod.restore_check -> r2: "HTTPS 443: the newest dump,\ndecrypted (backup.offsite)" {class: config}
 github -> delivery.runner: "job (main only)"
 delivery.runner -> cluster.prod: "helm upgrade --wait 12m\n(deployer ServiceAccount);\na release: canary first" {class: config}
 delivery.harbor -> cluster.prod.app: "image pull, and the web image\nof the same tag (init container: the shell)" {class: config}

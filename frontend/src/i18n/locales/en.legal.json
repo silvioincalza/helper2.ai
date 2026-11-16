@@ -1,7 +1,7 @@
 {
   "privacy": {
     "title": "Privacy",
-    "updated": "Last updated: 14 November 2026",
+    "updated": "Last updated: 16 November 2026",
     "lede": "helper2.ai collects as little as possible. You can search and ask the guide without an account. Search pages can show one ad from EthicalAds, which uses no cookies, and resource pages one ad from Google AdSense. Where the EU, EEA, UK or Swiss rules apply, Google Analytics and personalized ads run only if you accept them. We never sell data.",
     "contactIntro": "Silvio Incalza, Switzerland, is responsible for this website. For any privacy question or request, write to",
     "sections": [
@@ -156,8 +156,8 @@
           "The sites our search for new AI resources knows by name (writing sites and directories), with the GitHub user ID of the administrator who added each and the reason they wrote: until an administrator removes the site. The record of the change stays with the other administrator records.",
           "The vendors and services our descriptions of AI resources know by name (such as OpenAI or Slack), with the GitHub user ID of the administrator who added each: until an administrator removes it. Changing its names or kind keeps the ID of the person who added it. The record of each change stays with the other administrator records.",
           {
-            "text": "Database backups: {{backups}}. One copy of each backup is kept outside our servers (see Who receives data), for the same {{backups}}. Anything deleted above is gone from the backups and from that copy within {{backups}}.",
-            "withoutNumbers": "Database backups: a limited number of days. One copy of each backup is kept outside our servers (see Who receives data), for the same time. Anything deleted above is gone from the backups and from that copy within that time."
+            "text": "Database backups: {{backups}}. One copy of each backup is kept outside our servers (see Who receives data), for the same {{backups}}. Anything deleted above is gone from the backups and from that copy within {{backups}}. Once a week we load the newest backup into a temporary database on our servers to check that it can be restored, and delete that database when the check ends, within the hour.",
+            "withoutNumbers": "Database backups: a limited number of days. One copy of each backup is kept outside our servers (see Who receives data), for the same time. Anything deleted above is gone from the backups and from that copy within that time. Once a week we load the newest backup into a temporary database on our servers to check that it can be restored, and delete that database when the check ends, within the hour."
           },
           "One exception to the backup period: before we moved helper2.ai to a new database for version 3, we took one full copy of the old database. We keep it encrypted for 30 days after the move, only so we can go back to the old version if the move fails, then we delete it. We do not copy anything from it into the new database. It holds the accounts, saved items, reports and records of our administrators as they were on that day. The new database starts without them: if you had an account, signing in now gives you a new, empty one.",
           "Tools, models, MCP servers and code repositories we read from a source such as GitHub, npm, Hugging Face or the MCP Registry, with what the source says about them (on GitHub, the name of the account that owns the repository): until the source withdraws them. GitHub does when it deletes, archives or renames a repository, the MCP Registry when a server is deleted. A tool a source only stops listing stays. Then we delete what we read from that source, with its quotes, and the tool itself unless another source still lists it, we edited it by hand, or we still keep a report or a review of it (see Reports).",

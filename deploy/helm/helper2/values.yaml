@@ -139,6 +139,13 @@ backup:
     prefix: helper2-prod
     maxAge: 24h
     secret: pg-backup-offsite
+  restoreCheck:
+    enabled: true
+    schedule: "0 4 * * 0"
+    scratch: 4Gi
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits: { memory: 1Gi }
 
 canary:
   only: false

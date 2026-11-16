@@ -64,7 +64,7 @@ spec:
                   gzip -t "$f.tmp"
                   [ "$(wc -c < "$f.tmp")" -gt 1024 ]
                   mv "$f.tmp" "$f"
-                  find /backup -name 'helper2-*.sql.gz' -mtime +{{ .Values.backup.retentionDays }} -delete
+                  ls -1 /backup/helper2-*.sql.gz | sort -r | tail -n +{{ add1 .Values.backup.retentionDays }} | xargs -r rm -f
                   ls -l /backup
               resources:
                 requests: { cpu: 20m, memory: 64Mi }
@@ -77,23 +77,7 @@ spec:
               image: {{ $offsite.image }}
               env:
                 - { name: HOME, value: /tmp }
-                - { name: RCLONE_CONFIG_OFFSITE_TYPE, value: s3 }
-                - { name: RCLONE_CONFIG_OFFSITE_PROVIDER, value: Cloudflare }
-                - { name: RCLONE_CONFIG_OFFSITE_NO_CHECK_BUCKET, value: "true" }
-                - name: RCLONE_CONFIG_OFFSITE_ENDPOINT
-                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: endpoint } }
-                - name: RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID
-                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: access_key_id } }
-                - name: RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY
-                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: secret_access_key } }
-                - name: OFFSITE_BUCKET
-                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: bucket } }
-                - name: CRYPT_PASSWORD
-                  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: crypt_password } }
-                - { name: RCLONE_CONFIG_SEALED_TYPE, value: crypt }
-                - { name: RCLONE_CONFIG_SEALED_REMOTE, value: "offsite:$(OFFSITE_BUCKET)/{{ $offsite.prefix }}" }
-                - { name: RCLONE_CONFIG_SEALED_FILENAME_ENCRYPTION, value: "off" }
-                - { name: RCLONE_CONFIG_SEALED_DIRECTORY_NAME_ENCRYPTION, value: "false" }
+                {{- include "helper2.offsiteEnv" . | nindent 16 }}
               command: ["/bin/sh", "-ec"]
               args:
                 - |
@@ -111,5 +95,106 @@ spec:
             {{- if $offsite.enabled }}
             - { name: tmp, emptyDir: {} }
             {{- end }}
+{{- with .Values.backup.restoreCheck }}
+{{- if .enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-restore-check
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" $ | nindent 4 }}
+spec:
+  schedule: {{ .schedule | quote }}
+  timeZone: {{ $.Values.backup.timeZone }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 3600
+      template:
+        metadata: { labels: { app: pg-restore-check } }
+        spec:
+          restartPolicy: Never
+          serviceAccountName: helper2
+          automountServiceAccountToken: false
+          securityContext: { runAsNonRoot: true, runAsUser: 70, runAsGroup: 70, fsGroup: 70, seccompProfile: { type: RuntimeDefault } }
+          {{- if $offsite.enabled }}
+          initContainers:
+            - name: fetch
+              image: {{ $offsite.image }}
+              env:
+                - { name: HOME, value: /tmp }
+                {{- include "helper2.offsiteEnv" $ | nindent 16 }}
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  RCLONE_CONFIG_SEALED_PASSWORD=$(printf %s "$CRYPT_PASSWORD" | rclone obscure -)
+                  export RCLONE_CONFIG_SEALED_PASSWORD
+                  f=$(rclone lsf sealed: --include='helper2-*.sql.gz' | sort | tail -n 1)
+                  [ -n "$f" ] || { echo "no dump off-site"; exit 1; }
+                  mkdir -p /work/dumps
+                  rclone copyto "sealed:$f" "/work/dumps/$f"
+                  echo "fetched $f"
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts: [{ name: work, mountPath: /work }, { name: tmp, mountPath: /tmp }]
+          {{- end }}
+          containers:
+            - name: check
+              image: {{ include "helper2.postgresImage" $ }}
+              env:
+                - { name: DUMPS, value: {{ ternary "/work/dumps" "/backup" $offsite.enabled }} }
+                - { name: PGDATA, value: /work/pgdata }
+                - { name: PGHOST, value: /work }
+                - { name: PGUSER, value: helper2 }
+                - { name: PGDATABASE, value: helper2 }
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  set -o pipefail
+                  f=$(ls -1 "$DUMPS"/helper2-*.sql.gz | sort | tail -n 1)
+                  echo "restoring $f"
+                  initdb --username=helper2 --auth=trust --encoding=UTF8 --locale=C --no-sync > /dev/null
+                  pg_ctl -w -l /work/postgres.log \
+                    -o "-c listen_addresses= -c unix_socket_directories=/work -c fsync=off -c full_page_writes=off" start > /dev/null
+                  createdb helper2
+                  for r in h2_public h2_backoffice; do psql -q -c "CREATE ROLE $r NOLOGIN"; done
+                  start=$(date +%s)
+                  gunzip -c "$f" | psql -v ON_ERROR_STOP=1 -q > /dev/null
+                  echo "restored in $(( $(date +%s) - start ))s"
+                  failed=$(psql -Atc 'select count(*) from flyway_schema_history where not success')
+                  [ "$failed" -eq 0 ] || { echo "$failed migration(s) not successful"; exit 1; }
+                  for t in flyway_schema_history source resource; do
+                    n=$(psql -Atc "select count(*) from $t")
+                    echo "$t: $n rows"
+                    [ "$n" -gt 0 ] || { echo "$t is empty"; exit 1; }
+                  done
+                  pg_ctl -m fast stop > /dev/null
+              {{- with .resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts:
+                - { name: work, mountPath: /work }
+                {{- if not $offsite.enabled }}
+                - { name: backup, mountPath: /backup, readOnly: true }
+                {{- end }}
+          volumes:
+            - { name: work, emptyDir: { sizeLimit: {{ .scratch }} } }
+            {{- if $offsite.enabled }}
+            - { name: tmp, emptyDir: {} }
+            {{- else }}
+            - { name: backup, persistentVolumeClaim: { claimName: pg-backup } }
+            {{- end }}
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}

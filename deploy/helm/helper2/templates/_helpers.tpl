@@ -74,3 +74,24 @@ H2_REDIS_{{ trimPrefix "h2_" . | upper }}_PASSWORD
 {{- define "helper2.migrateName" -}}
 {{ ternary "helper2-canary-migrate" "helper2-migrate" .Values.canary.only }}
 {{- end }}
+
+{{- define "helper2.offsiteEnv" -}}
+{{- $offsite := .Values.backup.offsite -}}
+- { name: RCLONE_CONFIG_OFFSITE_TYPE, value: s3 }
+- { name: RCLONE_CONFIG_OFFSITE_PROVIDER, value: Cloudflare }
+- { name: RCLONE_CONFIG_OFFSITE_NO_CHECK_BUCKET, value: "true" }
+- name: RCLONE_CONFIG_OFFSITE_ENDPOINT
+  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: endpoint } }
+- name: RCLONE_CONFIG_OFFSITE_ACCESS_KEY_ID
+  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: access_key_id } }
+- name: RCLONE_CONFIG_OFFSITE_SECRET_ACCESS_KEY
+  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: secret_access_key } }
+- name: OFFSITE_BUCKET
+  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: bucket } }
+- name: CRYPT_PASSWORD
+  valueFrom: { secretKeyRef: { name: {{ $offsite.secret }}, key: crypt_password } }
+- { name: RCLONE_CONFIG_SEALED_TYPE, value: crypt }
+- { name: RCLONE_CONFIG_SEALED_REMOTE, value: "offsite:$(OFFSITE_BUCKET)/{{ $offsite.prefix }}" }
+- { name: RCLONE_CONFIG_SEALED_FILENAME_ENCRYPTION, value: "off" }
+- { name: RCLONE_CONFIG_SEALED_DIRECTORY_NAME_ENCRYPTION, value: "false" }
+{{- end }}

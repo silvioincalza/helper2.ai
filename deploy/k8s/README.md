@@ -205,8 +205,8 @@ stays as the new release migrated it.
 ## Backups
 
 With `backup.enabled: true`, the CronJob `pg-backup` (02:30 in `backup.timeZone`) writes
-`pg_dump --no-owner | gzip` to `/backup/helper2-<date>.sql.gz` on the PVC `pg-backup` (7 days, kept on
-`helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
+`pg_dump --no-owner | gzip` to `/backup/helper2-<date>.sql.gz` on the PVC `pg-backup` (the newest
+`backup.retentionDays` dumps, 7, chosen by the date in their name; kept on `helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
 fails the Job; the dump replaces the old one only after `gzip -t` and a size check, and old dumps are deleted
 after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
 36 hours (the stale alert needs one successful run first: check the first night by hand).
@@ -230,6 +230,15 @@ it on:
    cannot start and the Job fails. Check:
    `kubectl -n helper2 create job --from=cronjob/pg-backup pg-backup-now`, then
    `kubectl -n helper2 logs job/pg-backup-now -c upload`.
+
+**Restore check** (`backup.restoreCheck`, on with the backup): every Sunday at 04:00 in `backup.timeZone` the
+CronJob `pg-restore-check` restores the newest dump into a throwaway Postgres inside its own Pod, never into the
+real one. With the off-site copy on it takes the dump from the bucket and decrypts it; without it, it reads the PVC.
+It fails when the load stops on an error, a Flyway migration is not successful, or `flyway_schema_history`, `source`
+or `resource` is empty. `Helper2RestoreCheckFailed` fires on a failed Job, `Helper2RestoreCheckStale` when no check
+has succeeded for 8 days (it too needs one successful run first: run the first one by hand). Run one by hand:
+`kubectl -n helper2 create job --from=cronjob/pg-restore-check pg-restore-check-now`, then
+`kubectl -n helper2 logs job/pg-restore-check-now -c check` (and `-c fetch` with the off-site copy).
 
 **Restore** (replaces the whole database; the app is down in the meantime). The dump is plain SQL with
 `CREATE EXTENSION vector` and Flyway's history, so the app starts on it as usual:

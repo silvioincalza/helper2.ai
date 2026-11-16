@@ -184,6 +184,30 @@ groups:
           description: "The pg-backup CronJob last succeeded {{ $value | humanizeDuration }} ago. Tonight's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
           runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-backup; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-backup. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
 
+      - alert: Helper2RestoreCheckFailed
+        expr: |
+          max by (namespace, job_name) (kube_job_failed{namespace=~"helper2-.+", job_name=~"pg-restore-check-.+", condition="true"}) == 1
+          and on (namespace, job_name)
+          (time() - kube_job_status_start_time{namespace=~"helper2-.+", job_name=~"pg-restore-check-.+"}) < 7 * 86400
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The weekly restore check {{ $labels.job_name }} failed ({{ $labels.namespace }})."
+          description: "The latest dump could not be fetched, restored into a throwaway Postgres, or checked (failed migration, empty table). Until a check passes, nothing proves prod can come back from its backup."
+          runbook: "kubectl -n {{ $labels.namespace }} logs job/{{ $labels.job_name }} -c check (and -c fetch with the off-site copy). Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
+
+      - alert: Helper2RestoreCheckStale
+        expr: |
+          time() - max by (namespace) (kube_cronjob_status_last_successful_time{namespace=~"helper2-.+", cronjob="pg-restore-check"}) > 8 * 86400
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No successful restore check for 8 days ({{ $labels.namespace }})."
+          description: "The pg-restore-check CronJob last succeeded {{ $value | humanizeDuration }} ago. This week's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+          runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-restore-check; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-restore-check. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
+
   - name: helper2-budgets
     rules:
       - alert: Helper2DailyBudgetLow

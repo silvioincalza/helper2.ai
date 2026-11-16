@@ -314,8 +314,23 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	bk=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/backup.yaml); \
 	grep -q 'set -o pipefail' <<< "$$bk" || { echo "backup: no pipefail"; exit 1; }; \
 	grep -q 'startingDeadlineSeconds: 3600' <<< "$$bk" || { echo "backup: no startingDeadlineSeconds"; exit 1; }; \
-	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /find \/backup .* -delete/ {d=NR} END { exit !(t && m && d && t < m && m < d) }' <<< "$$bk" \
-		|| { echo "backup: gzip -t must come before mv, and find -delete after both"; exit 1; }
+	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /sort -r \| tail -n \+8 \| xargs -r rm -f/ {d=NR} END { exit !(t && m && d && t < m && m < d) }' <<< "$$bk" \
+		|| { echo "backup: gzip -t must come before mv, and the prune to retentionDays (7) dumps after both"; exit 1; }; \
+	echo "== restore check (ADR 0043): the latest dump, off-site or from the volume, restored with ON_ERROR_STOP into a throwaway Postgres"; \
+	for o in true false; do \
+		rc=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set backup.offsite.enabled=$$o \
+			--show-only templates/backup.yaml | awk '/name: pg-restore-check$$/ {p=1} p'); \
+		[ -n "$$rc" ] || { echo "restore check (offsite=$$o): no pg-restore-check CronJob"; exit 1; }; \
+		grep -q 'psql -v ON_ERROR_STOP=1' <<< "$$rc" || { echo "restore check (offsite=$$o): no ON_ERROR_STOP"; exit 1; }; \
+		grep -q 'where not success' <<< "$$rc" || { echo "restore check (offsite=$$o): no Flyway history check"; exit 1; }; \
+		roles=$$(grep -oE "ARRAY\['h2_[a-z_]+'(, 'h2_[a-z_]+')*\]" $(ROOT)/backend/libs/schema/src/main/resources/db/migration/V1__schema.sql | grep -oE 'h2_[a-z_]+' | xargs); \
+		awk -v want="for r in $$roles; do" 'index($$0, want) {r=NR} /psql -v ON_ERROR_STOP=1/ {l=NR} END { exit !(r && l && r < l) }' <<< "$$rc" \
+			|| { echo "restore check (offsite=$$o): the roles of V1__schema.sql ($$roles) must exist before the load"; exit 1; }; \
+		! grep -q 'H2_DATABASE_PASSWORD\|PGHOST, value: postgres' <<< "$$rc" || { echo "restore check (offsite=$$o): it must not reach prod's Postgres"; exit 1; }; \
+		if [ $$o = true ]; then grep -q 'name: fetch' <<< "$$rc" && ! grep -q 'claimName: pg-backup' <<< "$$rc"; \
+		else ! grep -q 'name: fetch' <<< "$$rc" && grep -q 'claimName: pg-backup' <<< "$$rc"; fi \
+			|| { echo "restore check (offsite=$$o): off-site reads R2 only, else the pg-backup volume only"; exit 1; }; \
+	done
 
 check-env:
 	@test -f $(ENV)/app.env || { echo "$(ENV)/app.env missing: copy app.env.example and fill it"; exit 1; }
