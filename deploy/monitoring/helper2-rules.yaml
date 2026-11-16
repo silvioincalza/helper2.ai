@@ -208,6 +208,30 @@ groups:
           description: "The pg-restore-check CronJob last succeeded {{ $value | humanizeDuration }} ago. This week's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
           runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-restore-check; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-restore-check. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
 
+      - alert: Helper2RedisEvicting
+        expr: |
+          sum by (namespace) (increase(redis_evicted_keys_total{namespace=~"helper2-.+", app="redis-exporter"}[15m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis dropped {{ $value | humanize }} keys in 15 minutes to stay under its memory limit ({{ $labels.namespace }})."
+          description: "Redis is full (redis.maxMemory, allkeys-lru) and evicts the least recently used keys. Sign-in sessions, rate-limit windows and source caches share it: an eviction can sign an admin out or give a client a fresh window early."
+          runbook: "Redis dashboard (memory used against max, evicted keys); kubectl -n {{ $labels.namespace }} exec redis-0 -- redis-cli info memory. Raise redis.maxMemory (and the pod's limit) or shorten the cache TTLs."
+
+      - alert: Helper2DatastoreExporterDown
+        expr: |
+          max by (namespace, app) (up{namespace=~"helper2-.+", app=~"postgres-exporter|redis-exporter"}) == 0
+          or max by (namespace, app) (pg_up{namespace=~"helper2-.+", app="postgres-exporter"}) == 0
+          or max by (namespace, app) (redis_up{namespace=~"helper2-.+", app="redis-exporter"}) == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.app }} has reported nothing for 15 minutes ({{ $labels.namespace }})."
+          description: "The exporter is not scraped, or it cannot log in to its data store. Until it is back, Redis evictions and Postgres statistics go unseen."
+          runbook: "kubectl -n {{ $labels.namespace }} logs deploy/{{ $labels.app }}; a login refused: the h2_monitor password in helper2-credentials (make env-secret) and the migrate Job of the last deploy."
+
   - name: helper2-budgets
     rules:
       - alert: Helper2DailyBudgetLow

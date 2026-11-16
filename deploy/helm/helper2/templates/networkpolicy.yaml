@@ -79,6 +79,9 @@ spec:
         {{- if .Values.backup.enabled }}
         - podSelector: { matchLabels: { app: pg-backup } }
         {{- end }}
+        {{- if .Values.monitoring.exporters.enabled }}
+        - podSelector: { matchLabels: { app: postgres-exporter } }
+        {{- end }}
       ports: [{ port: 5432, protocol: TCP }]
 ---
 apiVersion: networking.k8s.io/v1
@@ -95,6 +98,9 @@ spec:
     - from:
         - podSelector: { matchLabels: { app: helper2 } }
         - podSelector: { matchLabels: { app: helper2-backoffice } }
+        {{- if .Values.monitoring.exporters.enabled }}
+        - podSelector: { matchLabels: { app: redis-exporter } }
+        {{- end }}
       ports: [{ port: 6379, protocol: TCP }]
 {{- with .Values.networkPolicy.egress }}
 {{- if .enabled }}

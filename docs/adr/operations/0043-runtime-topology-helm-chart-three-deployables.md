@@ -106,14 +106,18 @@ database connections. A change to the web app would rebuild and redeploy the bac
      (`networkPolicy.ingressController`: namespace `ingress-nginx`, label `app.kubernetes.io/name=ingress-nginx`) on
      8080; the scraper's namespace (`networkPolicy.metricsNamespace`, `observability`) on 8081;
    - web pods (`ingress-web`): the Ingress controller's pods on 8080, nothing else;
-   - Postgres (`ingress-postgres`, `ingress-postgres-migrate`): both apps, `pg-backup` and the migrate Job on 5432;
-   - Redis (`ingress-redis`): both apps on 6379;
+   - Postgres (`ingress-postgres`, `ingress-postgres-migrate`): both apps, `pg-backup`, `postgres-exporter` and the
+     migrate Job on 5432;
+   - Redis (`ingress-redis`): both apps and `redis-exporter` on 6379;
+   - the exporters (`ingress-postgres-exporter`, `ingress-redis-exporter`): the scraper's namespace on 9187 and 9121;
    - `pg-backup` and `pg-restore-check`: nothing.
 
    Egress is denied by default, then allowed per workload:
    - both apps (`egress-app`): DNS, Postgres 5432, Redis 6379, the OpenTelemetry collector (`observability`, 4318),
      and the internet on 443 only, with the private ranges excluded;
    - the migrate Job (`egress-migrate`): DNS and Postgres;
+   - `postgres-exporter` and `redis-exporter` (`egress-postgres-exporter`, `egress-redis-exporter`): DNS and their own
+     data store only;
    - `pg-backup` (`egress-backup`): DNS, Postgres, and 443 only when `backup.offsite` is on;
    - `pg-restore-check` (`egress-restore-check`, only when `backup.offsite` is on): DNS and 443, never Postgres;
    - the web pods, Postgres and Redis: nothing.
@@ -222,7 +226,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
 The chart and the cluster:
 - `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
 - `deploy/helm/helper2/templates/web.yaml`, `app.yaml` (the shell's init container), `backoffice.yaml`,
-  `migrate.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`, `networkpolicy.yaml`, `serviceaccount.yaml`,
+  `migrate.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`, `exporters.yaml`, `networkpolicy.yaml`, `serviceaccount.yaml`,
   `_helpers.tpl` (`helper2.webImage`, `helper2.credentialsSecret`, `helper2.redisPasswordFrom`, `helper2.offsiteEnv`) — workloads and
   policies; `deploy/helm/helper2/files/redis-users.acl` — the apps' Redis users.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2BackupFailed`, `Helper2BackupStale`, `Helper2RestoreCheckFailed`,
@@ -358,6 +362,5 @@ the three deployables: [flow](../../diagrams/flow-0043-three-deployables.svg) ·
 
 - Features: [F6.1](https://github.com/silvioincalza/helper2.ai/issues/81) Back office as its own app, admin host over WireGuard, [F10.1](https://github.com/silvioincalza/helper2.ai/issues/107) Helm chart and three deployables.
 - Open issues that change this decision:
-  - [#174](https://github.com/silvioincalza/helper2.ai/issues/174) S1.8.3 Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys
   - [#178](https://github.com/silvioincalza/helper2.ai/issues/178) S1.10.2 To know when per-replica limits hurt
   - [#353](https://github.com/silvioincalza/helper2.ai/issues/353) S10.8.1 Prod recoverable and watched before the release

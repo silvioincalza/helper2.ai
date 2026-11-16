@@ -17,7 +17,7 @@ db: Postgres {class: data}
 redis: Redis {class: data}
 
 secrets: Secrets {
-  make -> k8s: "check-app-env.sh; helper2-credentials (6 passwords)\nand helper2-app-env (the rest)"
+  make -> k8s: "check-app-env.sh; helper2-credentials (8 passwords)\nand helper2-app-env (the rest)"
 }
 
 release: helm upgrade --wait --wait-for-jobs {

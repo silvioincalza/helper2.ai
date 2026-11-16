@@ -42,3 +42,7 @@ backup:
     enabled: true
 canary:
   host: helper2.ai
+
+monitoring:
+  exporters:
+    enabled: true

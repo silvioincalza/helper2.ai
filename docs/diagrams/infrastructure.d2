@@ -51,6 +51,8 @@ cluster: KUBERNETES {
       shape: cylinder
       class: data
     }
+    pgexp: "postgres-exporter Deployment · 1 pod\n:9187, role h2_monitor (pg_monitor)" {class: app}
+    redisexp: "redis-exporter Deployment · 1 pod\n:9121, Redis user h2_monitor (INFO)" {class: app}
     backup: "pg-backup CronJob\n02:30 Europe/Zurich\npg_dump | gzip, newest 7 dumps" {class: app}
     restore_check: "pg-restore-check CronJob\nSunday 04:00 Europe/Zurich\nnewest dump into its own Postgres\n(emptyDir), never prod's" {class: app}
     backup_pvc: "PVC pg-backup\nnfs-k8s · kept on uninstall" {
@@ -61,7 +63,7 @@ cluster: KUBERNETES {
       shape: page
       class: config
     }
-    creds: "Secret helper2-credentials\nthe 6 passwords; each workload\nnames only its own keys" {
+    creds: "Secret helper2-credentials\nthe 8 passwords; each workload\nnames only its own keys" {
       shape: page
       class: config
     }
@@ -73,6 +75,8 @@ cluster: KUBERNETES {
     bo -> redis: ":6379 AUTH\n(own session namespace)"
     secret -> bo: envFrom {class: config}
     backup -> postgres: ":5432"
+    pgexp -> postgres: ":5432 as h2_monitor"
+    redisexp -> redis: ":6379 as h2_monitor"
     backup -> backup_pvc: "dump"
     restore_check -> backup_pvc: "read-only, only\nwithout backup.offsite"
     secret -> app: envFrom {class: config}
@@ -103,7 +107,7 @@ cluster: KUBERNETES {
 
   observability: "ns observability" {
     class: group
-    alloy: "Alloy\nscrapes :8081/actuator/prometheus\nreceives OTLP :4318" {class: app}
+    alloy: "Alloy\nscrapes :8081/actuator/prometheus\nand the exporters :9187, :9121\n(names on its allow-list)\nreceives OTLP :4318" {class: app}
   }
 
   kubesystem: "ns kube-system" {
@@ -119,6 +123,8 @@ cluster: KUBERNETES {
   ingress.nginx -> prod.canary.cweb: "header + token only:\n/assets/"
   observability.alloy -> prod.app: "scrape :8081" {class: config}
   observability.alloy -> prod.bo: "scrape :8081" {class: config}
+  observability.alloy -> prod.pgexp: "scrape :9187" {class: config}
+  observability.alloy -> prod.redisexp: "scrape :9121" {class: config}
   prod.app -> observability.alloy: "traces OTLP/HTTP :4318"
   prod.app -> kubesystem.dns: "DNS (every workload)" {class: config}
 }

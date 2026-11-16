@@ -627,6 +627,7 @@ helper2.runtime-settings.refresh = ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT2
 helper2.schema.logins.h2_backoffice = ${H2_DATABASE_BACKOFFICE_PASSWORD:}  =>  <empty>
 helper2.schema.logins.h2_public = ${H2_DATABASE_PUBLIC_PASSWORD:}  =>  <empty>
 helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:false}  =>  false
+helper2.schema.monitor-password = ${H2_DATABASE_MONITOR_PASSWORD:}  =>  <empty>
 helper2.schema.statement-timeouts.h2_backoffice = 60s
 helper2.schema.statement-timeouts.h2_public = 5s
 helper2.schema.wait-for = ${H2_SCHEMA_WAIT:PT4M}  =>  PT4M

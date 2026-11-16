@@ -138,8 +138,8 @@ postgres-image: ## build Postgres + pgvector (deploy/postgres) and push it to Ha
 
 ENV_SECRET   := helper2-app-env
 CREDS_SECRET := helper2-credentials
-CREDENTIALS  := H2_DATABASE_PASSWORD|H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_REDIS_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD
-NOT_IN_APP_ENV := H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD
+CREDENTIALS  := H2_DATABASE_PASSWORD|H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_DATABASE_MONITOR_PASSWORD|H2_REDIS_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD|H2_REDIS_MONITOR_PASSWORD
+NOT_IN_APP_ENV := H2_DATABASE_PUBLIC_PASSWORD|H2_DATABASE_BACKOFFICE_PASSWORD|H2_DATABASE_MONITOR_PASSWORD|H2_REDIS_PUBLIC_PASSWORD|H2_REDIS_BACKOFFICE_PASSWORD|H2_REDIS_MONITOR_PASSWORD
 ENV_REV     = $(shell sha256sum < $(ENV)/app.env 2>/dev/null | cut -c1-16)
 REDIS_REV   = $(shell grep -E '^H2_REDIS_(PUBLIC_|BACKOFFICE_)?PASSWORD=' $(ENV)/app.env 2>/dev/null | sha256sum | cut -c1-16)
 HELM_ARGS = helper2 $(CHART) -n $(NS) -f $(CHART)/values-$(ENV).yaml \
@@ -153,9 +153,9 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	@set -euo pipefail; \
 	env=$$(mktemp); bad=$$(mktemp); trap 'rm -f "$$env" "$$bad"' EXIT; \
 	printf '%s\n' H2_DATABASE_PASSWORD=33333333333333333333333333333333 H2_DATABASE_PUBLIC_PASSWORD=44444444444444444444444444444444 \
-		H2_DATABASE_BACKOFFICE_PASSWORD=55555555555555555555555555555555 \
+		H2_DATABASE_BACKOFFICE_PASSWORD=55555555555555555555555555555555 H2_DATABASE_MONITOR_PASSWORD=66666666666666666666666666666666 \
 		H2_REDIS_PASSWORD=00000000000000000000000000000000 H2_REDIS_PUBLIC_PASSWORD=11111111111111111111111111111111 \
-		H2_REDIS_BACKOFFICE_PASSWORD=22222222222222222222222222222222 > "$$env"; \
+		H2_REDIS_BACKOFFICE_PASSWORD=22222222222222222222222222222222 H2_REDIS_MONITOR_PASSWORD=77777777777777777777777777777777 > "$$env"; \
 	echo "== app.env: a key outside ^H2_[A-Z0-9_]+$$, a missing or shared database password or a short or shared Redis password fails"; \
 	./check-app-env.sh "$$env"; \
 	for b in 'NEBIUS_API_KEY=stale' 'H2_REDIS_PASSWORD=0000000000000000' 'H2_DATABASE_PASSWORD=33333333333333333333333333333333' 'H2_X=trailing ' ' H2_X=indented' 'H2_X'; do \
@@ -164,7 +164,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	done; \
 	grep -v DATABASE "$$env" > "$$bad"; \
 	if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed without H2_DATABASE_PASSWORD"; exit 1; fi; \
-	for k in H2_DATABASE_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD; do \
+	for k in H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_MONITOR_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD H2_REDIS_MONITOR_PASSWORD; do \
 		grep -v "^$$k=" "$$env" > "$$bad"; \
 		if ./check-app-env.sh "$$bad" 2>/dev/null; then echo "check-app-env.sh passed without $$k"; exit 1; fi; \
 	done; \
@@ -193,9 +193,9 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		job=$$("$${r[@]}" --show-only templates/migrate.yaml); \
 		grep -q 'args: \[migrate\]' <<< "$$job" || { echo "$$e: the migrate Job does not run the migrate step"; exit 1; }; \
 		if grep -q 'envFrom' <<< "$$job"; then echo "$$e: the migrate Job loads a whole Secret"; exit 1; fi; \
-		[ "$$("$${r[@]}" --show-only templates/redis.yaml | grep -cE '^ +user h2_(public|backoffice) on >[$$]H2_REDIS_(PUBLIC|BACKOFFICE)_PASSWORD ')" -eq 2 ] \
-			|| { echo "$$e: Redis must define the two ACL users of files/redis-users.acl"; exit 1; }; \
-		"$${r[@]}" --show-only templates/redis.yaml | grep -qF 'for v in "$$REDISCLI_AUTH" "$$H2_REDIS_PUBLIC_PASSWORD" "$$H2_REDIS_BACKOFFICE_PASSWORD"; do' \
+		[ "$$("$${r[@]}" --show-only templates/redis.yaml | grep -cE '^ +user h2_(public|backoffice|monitor) on >[$$]H2_REDIS_(PUBLIC|BACKOFFICE|MONITOR)_PASSWORD ')" -eq 3 ] \
+			|| { echo "$$e: Redis must define the three ACL users of files/redis-users.acl"; exit 1; }; \
+		"$${r[@]}" --show-only templates/redis.yaml | grep -qF 'for v in "$$REDISCLI_AUTH" "$$H2_REDIS_PUBLIC_PASSWORD" "$$H2_REDIS_BACKOFFICE_PASSWORD" "$$H2_REDIS_MONITOR_PASSWORD"; do' \
 			|| { echo "$$e: Redis must refuse a password that is empty or not letters and digits before it starts"; exit 1; }; \
 		for a in "" "--set redis.auth.enabled=false"; do \
 			"$${r[@]}" $$a | ./check-env-overrides.sh $(ENV_SECRET) \
@@ -305,6 +305,19 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		|| { echo "the web pods ($$web) and the init container ($$init) must both run the web image tagged image.tag"; exit 1; }; \
 	app=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/app.yaml); \
 	grep -qF '{ name: shell, mountPath: /shell, readOnly: true }' <<< "$$app" || { echo "the app must mount /shell read-only"; exit 1; }; \
+	echo "== exporters (ADR 0009): staging and prod only; each logs in as h2_monitor with its own key, never the owner's or the admin's"; \
+	plain=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set monitoring.exporters.enabled=false); \
+	grep -qE '^kind: StatefulSet' <<< "$$plain" || { echo "exporters: the chart does not render with them off"; exit 1; }; \
+	if grep -qE 'name: (postgres|redis)-exporter$$' <<< "$$plain"; then echo "exporters: rendered without monitoring.exporters.enabled"; exit 1; fi; \
+	grep -qE '^h2_monitor resetkeys resetchannels -@all ' $(CHART)/files/redis-users.acl || { echo "the Redis monitor user must reach no key"; exit 1; }; \
+	for e in staging prod; do \
+		x=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --show-only templates/exporters.yaml); \
+		[ "$$(grep -cE '^kind: Deployment' <<< "$$x")" -eq 2 ] || { echo "$$e: want the two exporter Deployments"; exit 1; }; \
+		[ "$$(grep -cE 'key: H2_(DATABASE|REDIS)_MONITOR_PASSWORD \}' <<< "$$x")" -eq 2 ] || { echo "$$e: each exporter needs its own monitor password"; exit 1; }; \
+		if grep -qE 'key: H2_(DATABASE|REDIS)_(PASSWORD|PUBLIC_PASSWORD|BACKOFFICE_PASSWORD) \}|envFrom' <<< "$$x"; then echo "$$e: an exporter holds a password that is not its own"; exit 1; fi; \
+		grep -qF 'args: ["-config-command=-"]' <<< "$$x" || { echo "$$e: redis-exporter must not run CONFIG GET"; exit 1; }; \
+		if grep -qi 'stat_statements' <<< "$$x"; then echo "$$e: postgres-exporter must not export query text"; exit 1; fi; \
+	done; \
 	echo "== PrometheusRule holds deploy/monitoring/helper2-rules.yaml"; \
 	rule=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set monitoring.prometheusRule.enabled=true --show-only templates/prometheusrule.yaml); \
