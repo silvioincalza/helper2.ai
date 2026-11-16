@@ -1,0 +1,28 @@
+# Sequence: a push to a pull request, the Copilot review the ruleset asks for, and the merge that waits for it
+# (ADR 0044 §22).
+# Source of truth: .github/settings/ruleset-main.json.
+# Render: cd docs/diagrams && d2 fmt sequence-0044-copilot-review.d2 && d2 sequence-0044-copilot-review.d2 sequence-0044-copilot-review.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: Owner {class: person}
+github: "GitHub\n(pull request, ruleset)" {class: ext}
+copilot: "Copilot code review\n(GitHub Actions job\ncopilot-pull-request-reviewer)" {class: ext}
+
+push: A push {
+  owner -> github: "push to the pull request branch"
+  github -> copilot: "copilot_code_review: review the head commit"
+  github -> owner: "required check copilot-pull-request-reviewer\nnot green: merge blocked" {class: hot}
+}
+
+review: The review {
+  copilot -> github: "review posted on the head commit\n(summary, review threads)"
+  copilot -> github: "job copilot-pull-request-reviewer: success" {class: hot}
+}
+
+merge: The merge {
+  owner -> github: "fix or answer the findings,\nresolve every thread"
+  owner -> github: "squash merge: allowed when ci-ok and\ncopilot-pull-request-reviewer are green\nand no thread is open"
+}
