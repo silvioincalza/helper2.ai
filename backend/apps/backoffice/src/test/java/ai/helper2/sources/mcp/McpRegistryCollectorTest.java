@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.search.FixturesKt;
+import ai.helper2.search.ResultMerger;
+import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
@@ -129,6 +132,34 @@ class McpRegistryCollectorTest {
     assertThat(hits)
         .extracting(h -> h.getUrl().toString())
         .containsOnly("https://github.com/codespar/mcp-dev-latam");
+  }
+
+  @Test
+  void aServerAloneInItsRepositoryIsTheRepositoryAndTheServersOfACollectionAreOneEach() {
+    server.route(
+        "/v0.1/servers",
+        FixtureServer.Reply.ok(
+            """
+            {"servers":[
+              {"server":{"name":"io.github.github/github-mcp-server","description":"d","version":"1","repository":{"url":"https://github.com/github/github-mcp-server","source":"github"}},
+               "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,"publishedAt":"2026-01-01T00:00:00Z","updatedAt":"2026-02-01T00:00:00Z"}}},
+              {"server":{"name":"io.github.codespar/mcp-adyen","description":"d","version":"1","repository":{"url":"https://github.com/codespar/mcp-dev-latam","source":"github"}},
+               "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,"publishedAt":"2026-01-01T00:00:00Z","updatedAt":"2026-02-01T00:00:00Z"}}},
+              {"server":{"name":"io.github.codespar/mcp-afip","description":"d","version":"1","repository":{"url":"https://github.com/codespar/mcp-dev-latam","source":"github"}},
+               "_meta":{"io.modelcontextprotocol.registry/official":{"isLatest":true,"publishedAt":"2026-01-01T00:00:00Z","updatedAt":"2026-02-01T00:00:00Z"}}}
+            ],"metadata":{"count":3}}\
+            """));
+    var merged =
+        new ResultMerger()
+            .merge(
+                collector().collect(null, null, 50).getHits(),
+                FixturesKt.contexts(new String[] {"mcp-registry"}, ServedFrom.LIVE));
+    assertThat(merged)
+        .extracting(r -> r.getCanonicalUrl().getValue())
+        .containsExactlyInAnyOrder(
+            "https://github.com/github/github-mcp-server",
+            "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.codespar%2Fmcp-adyen",
+            "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.codespar%2Fmcp-afip");
   }
 
   @Test

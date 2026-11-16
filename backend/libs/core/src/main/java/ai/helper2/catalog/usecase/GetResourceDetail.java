@@ -60,7 +60,7 @@ public class GetResourceDetail {
         assertions(id, records, card.getConflicts()),
         enrichment.relationships(id),
         enrichment.summary(id),
-        records.stream().map(GetResourceDetail::sourceRecordInfo).toList(),
+        records.stream().map(ResourceDetail.SourceRecordInfo::of).toList(),
         row.enrichmentStatus());
   }
 
@@ -70,11 +70,6 @@ public class GetResourceDetail {
         new ArrayList<>(sourceAssertions(records, conflicts));
     assertions.addAll(enrichment.assertions(id));
     return assertions;
-  }
-
-  private static ResourceDetail.SourceRecordInfo sourceRecordInfo(RecordRow r) {
-    return new ResourceDetail.SourceRecordInfo(
-        r.sourceId(), r.externalId(), URI.create(r.sourceUrl()), r.retrievedAt(), r.fingerprint());
   }
 
   private List<ResourceDetail.Assertion> sourceAssertions(

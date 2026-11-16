@@ -37,9 +37,17 @@ class RepositoryJoinTest {
   }
 
   @Test
-  fun `a fork whose name holds the repository's name still joins`() {
+  fun `an unscoped package whose name does not hold the repository's name does not join`() {
+    assertNull(RepositoryJoin.of(pypi("openai", "https://github.com/openai/openai-python")))
+    assertNull(RepositoryJoin.of(pypi("torch", "https://github.com/pytorch/pytorch")))
+    assertNull(RepositoryJoin.of(pypi("mcp", "https://github.com/modelcontextprotocol/python-sdk")))
+  }
+
+  @Test
+  fun `a fork or a stranger whose name holds the repository's name still joins`() {
     assertJoins(pypi("divyanx-transformers", "https://github.com/huggingface/transformers"))
     assertJoins(pypi("vllm-npu", "https://github.com/vllm-project/vllm"))
+    assertJoins(npm("ai-toolkit", "https://github.com/vercel/ai"))
   }
 
   @Test

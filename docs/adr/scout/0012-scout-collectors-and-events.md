@@ -36,7 +36,9 @@ Two kinds of source need more care:
    sub-folder of a repository (`repository.subfolder`) is linked at that folder (`/tree/HEAD/{folder}`), so the
    servers of one monorepo stay one resource each ([0021](0021-resource-identity-one-resource-per-repository.md) §2); the repository stays their repository link. The folder must be a
    plain path inside a GitHub repository (letters, digits, `.`, `_`, `-`, no `.` or `..` segment, at most 300
-   characters); otherwise the server is linked at the repository. Platform `remote` when the server lists
+   characters); otherwise the server is linked at the repository. A server without a valid folder is the resource
+   of its registry name, and joins its repository only when its name holds the repository's name
+   ([0021](0021-resource-identity-one-resource-per-repository.md) §5). Platform `remote` when the server lists
    remotes, else `local`. The data is CC0. Incremental: it resumes with the registry's cursor. A server whose latest
    version has the status `deleted` is withdrawn: its record leaves the catalog on that run.
 3. **Hugging Face trending** (`hf-trending`, 1 day). The top 100 models by `trendingScore`. The collector

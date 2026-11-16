@@ -826,6 +826,43 @@ describe('resource detail', () => {
     );
   });
 
+  it('Scenario: a source record that states its repository links to it, one without states nothing', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          sourceRecords: [
+            {
+              sourceId: 'mcp-registry',
+              externalId: 'io.github.codespar/mcp-adyen',
+              url: 'https://github.com/codespar/mcp-dev-latam',
+              repositoryUrl: 'https://github.com/codespar/mcp-dev-latam',
+              retrievedAt: '2026-10-20T10:00:00Z',
+              fingerprint: 'abcdef0123456789',
+            },
+            {
+              sourceId: 'awesome',
+              externalId: 'adyen',
+              url: 'https://example.org/list',
+              retrievedAt: '2026-10-20T10:00:00Z',
+              fingerprint: '0123456789abcdef',
+            },
+          ],
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    const fold = (await screen.findByText('Where this information comes from')).closest(
+      'details',
+    ) as HTMLElement;
+    expect(within(fold).getByRole('columnheader', { name: 'Repository' })).toBeInTheDocument();
+    const stated = within(fold).getByRole('rowheader', { name: 'mcp-registry' }).closest('tr')!;
+    expect(within(stated).getByRole('link', { name: /codespar\/mcp-dev-latam/ })).toHaveAttribute(
+      'href',
+      'https://github.com/codespar/mcp-dev-latam',
+    );
+    const unstated = within(fold).getByRole('rowheader', { name: 'awesome' }).closest('tr')!;
+    expect(within(unstated).getAllByRole('link')).toHaveLength(1);
+  });
+
   it('Scenario: At a glance shows a value the AI read with its AI label and mark, and names only what nobody states', async () => {
     mockApi({
       [`GET /resources/${ID}`]: () =>
