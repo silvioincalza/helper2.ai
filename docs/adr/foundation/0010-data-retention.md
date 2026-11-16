@@ -142,9 +142,8 @@ The periods are a product decision the owner may change; changing one must not n
 - A purged observed resource seen again comes back with a new `first_discovered_at`.
 - A curated event leaves the catalog ten years after its last day, like every event; until then search still finds it. A research file that still lists an event ended more than ten years ago puts it back when the seed changes, until the next daily purge ([0012](../scout/0012-scout-collectors-and-events.md)).
 
-### Points for a lawyer
-- Keeping a hashed key of rejected candidate URLs with no time limit (`candidate_decision`): a pseudonymous key, whose
-  address can name a person (a LinkedIn post).
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 [flow](../../diagrams/flow-0010-data-retention.svg) · [sequence](../../diagrams/sequence-0010-data-retention.svg)

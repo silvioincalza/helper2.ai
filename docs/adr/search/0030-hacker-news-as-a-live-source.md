@@ -47,8 +47,7 @@ the package catalog collector (GitHub + deps.dev, [0018](../scout/0018-ai-librar
 
 - **OpenAlex** for papers with a citation sort (CC0, about $0.001 a search, free key with $1 a day): finds the
   Shazeer 2017 MoE paper, LoRA and QLoRA at the top. Open ([#255](https://github.com/silvioincalza/helper2.ai/issues/255)), after this measurement.
-- **Semantic Scholar**: best paper relevance, but needs a key, and its data can be CC BY-NC. Open, with a lawyer
-  check first.
+- **Semantic Scholar**: best paper relevance, but needs a key, and its data can be CC BY-NC. Not used.
 - **Libraries.io, deps.dev, ecosyste.ms** as live sources: no useful free-text search, or share-alike data. Out.
 - **PyPI**: no search API; a daily BigQuery snapshot through the Scout is the clean way. Separate decision.
 - **Product Hunt, Ollama library, Glama**: their terms forbid this use. Out.
@@ -70,9 +69,8 @@ pooled results are graded. If the source costs quality for a query group, routin
 - Terms: the HN search API has no terms page; the Y Combinator / Hacker News terms apply. Only title, link and date are
   kept.
 
-#### Points for a lawyer
-1. Algolia as a new recipient on the Privacy page, and the basis (Art. 49(1)(b) GDPR, Art. 17(1)(b) FADP).
-2. Y Combinator / Hacker News terms for showing title, link and date from the Algolia search API.
+#### Legal points
+Tracked privately (S9.6.3).
 
 ### STRIDE
 
@@ -98,7 +96,7 @@ pooled results are graded. If the source costs quality for a query group, routin
 - A new snapshot set with the source on is not recorded and graded; the ablation then keeps the source or drops it.
 - Hacker News points are not a popularity metric (it changes the API contract).
 - The shared AI word list is not measured on a labelled set (`docs/eval/classifier-labels.tsv` has no rows).
-- OpenAlex is not a live paper source; Semantic Scholar needs a lawyer check first.
+- OpenAlex is not a live paper source; Semantic Scholar is not used.
 
 ## Diagrams
 

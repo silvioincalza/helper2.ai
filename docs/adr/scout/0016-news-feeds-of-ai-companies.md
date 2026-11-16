@@ -47,8 +47,7 @@ Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI
    (`agent*` matches "agents" and "agentic"; `ai` does not match "aim"). Only the NVIDIA feed has them. A post left out
    is counted (`helper2.source.items.dropped{reason=off-topic}`).
 6. **On by default, one switch.** `H2_SOURCE_NEWS_FEEDS_ENABLED` defaults to `true`, for every feed; `false` switches
-   all of them off. One feed can be switched off with `enabled: false` in the YAML. The lawyer points below stay open
-   and do not hold the feeds back.
+   all of them off. One feed can be switched off with `enabled: false` in the YAML.
 7. **Retention.** A feed record is kept 180 days after its feed last listed it, the same period as web news
    (`WEB_NEWS`, [0010](../foundation/0010-data-retention.md)): `JdbcCatalogRetention.deleteWebNewsRetrievedBefore`
    also takes the source ids `feed-*` (`NewsFeeds.LIKE`). A feed lists its newest posts, and each pass refreshes their
@@ -114,7 +113,7 @@ Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI
 ### Known limits
 - News queries are not measured on the staging catalog with the feeds on.
 - A company without a feed (Anthropic, Meta AI, Microsoft AI) is not covered.
-- A lawyer point that fails switches its feed off (`enabled: false`).
+- A feed can be switched off on its own (`enabled: false`).
 
 ### Privacy and terms
 - No visitor data leaves: the Scout asks for a public feed from the cluster.
@@ -123,10 +122,8 @@ Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI
 - We keep the title, the link, the date and the feed's own short summary; the card links to the original post. No
   full text, no images.
 
-#### Points for a lawyer
-1. Each company's terms for showing the title, the link, the date and the feed's summary of its posts: OpenAI,
-   Google (DeepMind, Research, The Keyword), Hugging Face, Mistral AI, NVIDIA, AWS.
-2. Whether the summary, up to 400 characters, is a short quote that needs no licence, under Swiss and EU copyright law.
+#### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 [flow](../../diagrams/flow-0016-news-feeds.svg) ·

@@ -389,11 +389,8 @@ enrichment and in the guide as untrusted text, as every web text does ([0013](00
 | Human-in-the-loop | Covered: courses, LinkedIn pages and discovery products wait for an admin. |
 | Cost & Reliability | Covered: intervals, the Scout's daily credit cap, the classifier's and the reader's daily caps, circuit breakers. |
 
-### Points for a lawyer
-1. The legal basis for post authors' names in LinkedIn pages (legitimate interest, GDPR Art. 6(1)(f) and Swiss nFADP
-   Art. 31), and the Art. 14 notice through the Privacy page.
-2. Does Tavily's written OK cover pages Tavily indexed from LinkedIn, and scheduled searches whose pages we list
-   (discovery, LinkedIn, the events scout)?
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 Collectors: [flow](../../diagrams/flow-0012-scout-collectors.svg) · [sequence](../../diagrams/sequence-0012-scout-collectors.svg) ·

@@ -39,42 +39,9 @@ GitHub, Hugging Face, npm, Hacker News and arXiv get the query's content words, 
 
 ## Terms for commercial use
 
-Each source's terms, read on 2026-11-14 for a site that shows ads and takes gifts
-([S9.6.1](https://github.com/silvioincalza/helper2.ai/issues/340)). The date after a link is the one the page shows.
-
-- `yes`: the terms allow the use. The condition is named, with whether the code meets it.
-- `ask`: the terms do not say, or the page could not be read. The source is asked in writing.
-- `no`: the terms as written do not allow the use. The source is turned off or asked in writing.
-
-The legal points behind a row are tracked privately.
-
-| id | Terms read | Commercial use | Condition, and whether the code meets it |
-|---|---|---|---|
-| `github`, `github-awesome`, `github-topic-leaders`, `github-sdks` (GitHub part), `ai-deadlines` (the API calls), `gap-evidence` (GitHub part) | [GitHub Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service) (effective 27 April 2026), section H; [Acceptable Use Policies](https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies) | yes | Through the API only, one token never shared, inside the rate limits: met. No spam with, and no sale of, personal information: met |
-| `hf-models`, `hf-spaces`, `hf-trending`, `hf-provider-orgs`, `gap-evidence` (Hugging Face part) | [Hugging Face Terms of Service](https://huggingface.co/terms-of-service) (effective 15 September 2022); [Content Policy](https://huggingface.co/content-policy) (effective 10 April 2025); [rate limits](https://huggingface.co/docs/hub/rate-limits) | ask | The terms do not speak of reusing Hub metadata. Rate limits: met. Every result links back to its model or Space: met |
-| `npm` | [npm Open Source Terms](https://docs.npmjs.com/policies/open-source-terms) (updated 10 March 2022) | yes | The public API only, under 5 million requests a month, no crawling of the website, no reuse of security data: met |
-| `hacker-news` | [hn.algolia.com/api](https://hn.algolia.com/api) shows no terms; [Y Combinator legal](https://www.ycombinator.com/legal/) (Terms of Use, no date) | ask | No terms cover the search API. Only title, link and date are kept |
-| `arxiv` | [arXiv API Terms of Use](https://info.arxiv.org/help/api/tou.html); [brand guidelines](https://info.arxiv.org/brand/brand-guidelines.html) (no dates) | yes | 1 request every 3 s on one connection: met. Metadata only, no PDFs: met. The acknowledgement sentence: met. The statement that helper2.ai is not reviewed or approved by arXiv: not shown yet ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)) |
-| `live-web`, `live-web-scout` | The provider's [Terms of Service](https://www.tavily.com/terms) (updated 4 May 2026) and [Acceptable Use Policy](https://www.tavily.com/acceptable-use-policy) (updated 21 October 2026) | yes | The provider's written OK to show its results publicly, to store them and to reuse them across users: received |
-| `page-reader` | same | yes | The provider's written OK for page extract: received |
-| `discovery-<category>`, `live-web-events-scout` | same | ask | The provider's written OK for scheduled searches whose pages we index: to confirm (page extract for events: received) |
-| `course-scout` | same; [Coursera](https://www.coursera.org/about/terms) (effective 1 January 2026), [edX](https://www.edx.org/edx-terms-service) (updated 3 November 2025), [O'Reilly](https://www.oreilly.com/terms/) (updated 19 December 2019); [Udemy](https://www.udemy.com/terms/) could not be read | ask | Nothing is indexed. An accepted course is a link in our own words, with no description or logo of the platform: met. O'Reilly and Udemy: to ask |
-| `linkedin-scout` | [LinkedIn User Agreement](https://www.linkedin.com/legal/user-agreement) (effective 3 November 2025), section 8.2 | no | — |
-| `mcp-registry` | [MCP Registry Terms of Service](https://modelcontextprotocol.io/registry/terms-of-service) (effective 2 September 2025): registry data is CC0 | yes | The wording of the credit (section 6): met. Read once a day: met |
-| `ai-deadlines` (the data) | [MIT License](https://github.com/huggingface/ai-deadlines/blob/main/LICENSE) of the repository | yes | The licence is linked: met. Its copyright line: not shown yet ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)) |
-| `github-sdks` (deps.dev part) | [deps.dev API](https://docs.deps.dev/api/v3/): generated data CC-BY 4.0, caching allowed; [Google APIs Terms of Service](https://developers.google.com/terms) (modified 9 November 2021) | yes | The credit names deps.dev and CC-BY 4.0: met. A link to the licence text: not shown yet ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)) |
-| `pypi` | [PyPI Terms of Service](https://policies.python.org/pypi.org/Terms-of-Service/) (effective 25 February 2025); [BigQuery dataset](https://docs.pypi.org/api/bigquery/): CC BY 4.0 | yes | Off by default. No author, maintainer or e-mail columns: met. A credit for the dataset: not shown yet, needed before the source is switched on ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)) |
-| `feed-google-deepmind`, `feed-google-research`, `feed-google-ai` | [Google Terms of Service](https://policies.google.com/terms) (effective 30 July 2026); each site's `robots.txt` allows the feed path | yes | No Google logo: met. Each post links to the original: met |
-| `feed-openai` | [OpenAI Europe Terms of Use](https://openai.com/policies/terms-of-use/) (updated 16 January 2026) | ask | The terms do not speak of the news feed |
-| `feed-hugging-face` | [Hugging Face Terms of Service](https://huggingface.co/terms-of-service) (effective 15 September 2022) | ask | The terms do not speak of the blog feed |
-| `feed-mistral` | [Mistral AI legal documents](https://legal.mistral.ai/terms): no terms for the website found | ask | — |
-| `feed-nvidia` | [NVIDIA Terms of Service](https://www.nvidia.com/en-us/about-nvidia/terms-of-service/) (15 July 2026) | ask | Whether these terms cover the blog and its feed |
-| `feed-aws-ml` | [AWS Site Terms](https://aws.amazon.com/terms/) (updated 4 June 2025), "License and Site Access" | no | — |
-| `helper2-semantic` (the embedding service) | [NVIDIA API Trial Terms of Service](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), sections 1.2 and 1.4 | no | — |
-| Setup guide documents (not a search source; an npm package's README from `cdn.jsdelivr.net`, [ADR 0034](adr/guide/0034-setup-guide.md)) | [jsDelivr Terms of Use](https://github.com/jsdelivr/jsdelivr/blob/master/Terms%20of%20Use.md) (effective 5 October 2026, read in jsDelivr's repository) | yes | Free for commercial use. One README for a setup guide, cached (`H2_SETUP_CACHE_TTL`): met |
-| `helper2-index`, `curated`, `demo-*` | own data | — | — |
-
-A row with `no` or `ask` stays so until the source answers in writing or the row's use changes; then the row and its date change.
+Each source's terms are read for a site that shows ads and takes gifts, one source at a time. The reading and
+its legal points are tracked privately (S9.6.1, S9.6.3). The credits a source's terms ask for are shown on the Sources
+page ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)).
 
 **Discovery categories** ([ADR 0013](adr/scout/0013-discovery.md)): one `discovery-<id>` source each, grouped by
 family on the Sources page. Health and legal keep only results with their own words (`require-keyword`), with a Live web

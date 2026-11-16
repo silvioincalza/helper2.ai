@@ -503,16 +503,8 @@ shared cache purge.
 | 14 | Human-in-the-Loop | Covered: an administrator sets the daily cap. |
 | 15 | Cost & Reliability | Covered: every guard above; a database or embedding error is a miss, never a failed question. |
 
-### Points for a lawyer
-
-1. Is a question embedding personal data under the nFADP and the GDPR, and what is the legal basis for keeping it?
-2. The transfer of the question text to the NVIDIA API catalog in the United States.
-3. The cached answer keeps the planner's search terms and the names and requirements read from the question or from
-   the reply to a question back; for a short question or reply they can be the whole of it, and a person's name or a
-   phone number can be among them. The same question gets them back with the answer; a similar question gets the
-   answer without the queries, with the AI-written texts written for the first question, which can repeat its words.
-   Is the Privacy text that says so enough, what is the legal basis for keeping these words and showing them to other
-   visitors, and is their retention covered by the answer's retention period?
+### Legal points
+Tracked privately (S9.6.3).
 
 ### Known limits
 

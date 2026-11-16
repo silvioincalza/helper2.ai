@@ -245,13 +245,8 @@ OWASP LLM Top 10: the translator's answer is untrusted (point 7); no model reads
 | Human-in-the-loop | Deferred, safe: lists are public, read-only and capped. |
 | Cost & Reliability | Covered: the translator's daily cap and cache; no new calls for names or lists; p95 measured above. |
 
-### Points for a lawyer
-
-1. Is a search index of a list's words (lexemes with positions, not the text) a reproduction of the list under Swiss URG
-   and EU copyright, or a database extraction under the EU sui generis database right?
-2. Is keeping section headings (at most 200 characters) and showing them as "Found in … under …" covered by quotation
-   or by the facts exception? Many awesome lists are CC0 or CC BY; some have no licence.
-3. Do GitHub's terms allow reading README files through the API to build such an index?
+### Legal points
+Tracked privately (S9.6.3).
 
 ### Known limits
 

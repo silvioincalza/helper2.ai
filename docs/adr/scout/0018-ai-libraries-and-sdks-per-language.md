@@ -155,7 +155,7 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
 - **Live search per registry (Maven Central, PyPI, crates.io…) per user query.** Dropped: PyPI has no search API,
   each registry ranks differently, and every query would wait on several more calls.
 - **ecosyste.ms instead of deps.dev.** It covers PHP, Dart, R and Swift too, but its data is CC-BY-SA 4.0
-  (share-alike on a derived catalog) and "commercial use" is not defined. It waits for a lawyer.
+  (share-alike on a derived catalog) and "commercial use" is not defined. It is not used.
 - **Libraries.io.** Its API needs a key and its data is CC-BY-SA 4.0 too.
 - **A query synonym `claude` ↔ `anthropic` instead of package terms.** One line, but it changes every query with
   either word; package terms change only the resources that have packages.
@@ -181,7 +181,7 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
 - The frozen eval snapshots hold no package terms: the effect on search is not measured until a new snapshot set is recorded and graded ([S10.4.2](https://github.com/silvioincalza/helper2.ai/issues/348)).
 - Bulk accept does not cover resource candidates: each is accepted one by one.
 - An item the topic leaders opened first is indexed without packages: a later `github-sdks` record does not join it.
-- PHP, Dart, R and Swift have no package source: ecosyste.ms waits for a lawyer ([S2.15.1](https://github.com/silvioincalza/helper2.ai/issues/220)).
+- PHP, Dart, R and Swift have no package source: ecosyste.ms is not used yet ([S2.15.1](https://github.com/silvioincalza/helper2.ai/issues/220)).
 - SDKs inside monorepos (AWS Bedrock runtime, Azure OpenAI) and repositories with no AI word (cohere-python) are not found.
 
 ### STRIDE
@@ -213,16 +213,8 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
 | 14 | Human-in-the-Loop | Covered: every repo waits for a person; official repos with a confirmed package come first. |
 | 15 | Cost & Reliability | Covered: no credits; GitHub searches spaced and stopped on a low token; deps.dev only for new repos; separate circuit for deps.dev. |
 
-### Points for a lawyer
-- deps.dev: use is under the Google APIs Terms of Service; data deps.dev generates (the repo ↔ package links) is
-  CC-BY 4.0; data from the registries is under each registry's own terms. Confirm that showing a package name,
-  version, date and licence with a link, and the attribution on the Sources page, is enough.
-- deps.dev as a recipient: Google LLC (United States) receives the repo owner and repo names we look up. An owner
-  can be a person, so this is personal data sent abroad. Confirm the legal basis (legitimate interest in describing
-  public repositories) and the transfer basis (Google is certified under the Data Privacy Framework), and the
-  wording on the Privacy page.
-- ecosyste.ms (later): CC-BY-SA 4.0 on a derived catalog (does share-alike reach the whole catalog?), and its
-  undefined "commercial use". Ask ecosyste.ms (support@ecosyste.ms) before any use.
+### Legal points
+Tracked privately (S9.6.3).
 
 ## Diagrams
 [flow](../../diagrams/flow-0018-package-catalog.svg) · [sequence](../../diagrams/sequence-0018-package-catalog.svg)
