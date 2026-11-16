@@ -45,6 +45,7 @@ class JdbcEmbeddingStore implements EmbeddingStore {
   }
 
   private PendingEmbeddings pending(String model, int limit, Collection<RefusedText> skipped) {
+    List<RefusedText> refused = List.copyOf(skipped);
     long[] backlog = {0};
     List<EmbeddingTask> tasks =
         jdbc.sql(
@@ -62,9 +63,9 @@ class JdbcEmbeddingStore implements EmbeddingStore {
                     .formatted(EMBEDDED_TEXT, EMBEDDING_PENDING))
             .param("model", model)
             .param("limit", limit)
-            .param("skippedIds", skipped.stream().map(RefusedText::resourceId).toArray(UUID[]::new))
+            .param("skippedIds", refused.stream().map(RefusedText::resourceId).toArray(UUID[]::new))
             .param(
-                "skippedHashes", skipped.stream().map(RefusedText::textHash).toArray(String[]::new))
+                "skippedHashes", refused.stream().map(RefusedText::textHash).toArray(String[]::new))
             .query((rs, i) -> {
               backlog[0] = rs.getLong("backlog");
               return new EmbeddingTask(
