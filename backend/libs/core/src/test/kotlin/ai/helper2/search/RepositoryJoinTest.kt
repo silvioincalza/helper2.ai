@@ -65,6 +65,20 @@ class RepositoryJoinTest {
   }
 
   @Test
+  fun `a repository named tree is a repository, and only a tree after the repository is a folder`() {
+    assertNull(RepositoryJoin.of(npm("@someone/agents-kit", "https://github.com/acme/tree")))
+    assertNull(RepositoryJoin.of(npm("@someone/agents-kit", "https://github.com/tree/tools")))
+    val gitlabFolder = "https://gitlab.com/group/sub/repo/-/tree/main/packages/kit"
+    assertEquals(gitlabFolder, RepositoryJoin.of(npm("@someone/kit", gitlabFolder))?.value)
+  }
+
+  @Test
+  fun `a scoped package does not join a repository stated by its host alone by scope`() {
+    assertNull(RepositoryJoin.of(npm("@someone/agents-kit", "https://acme.dev")))
+    assertJoins(npm("@someone/acme-kit", "https://acme.dev"))
+  }
+
+  @Test
   fun `a stated sub-directory is joined as stated`() {
     val folder = "https://github.com/remotion-dev/remotion/tree/HEAD/packages/player"
     assertEquals(folder, RepositoryJoin.of(npm("@remotion/player", folder))?.value)

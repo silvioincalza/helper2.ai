@@ -23,12 +23,21 @@ object RepositoryJoin {
     companion object {
       fun of(repository: CanonicalUrl): RepositoryRoot? {
         val segments = (URI(repository.value).rawPath ?: "").split('/').filter { it.isNotEmpty() }
-        if (FOLDER in segments) return null
+        if (isFolder(segments)) return null
         val name = segments.lastOrNull() ?: repository.host.substringBefore('.')
         return RepositoryRoot(words(segments.dropLast(1).joinToString(" ")), words(name))
       }
 
       private const val FOLDER = "tree"
+
+      private const val GITLAB_PAGES = "-"
+
+      private fun isFolder(segments: List<String>): Boolean {
+        val at = segments.indexOf(FOLDER)
+        val refAndPath = at >= 0 && segments.size >= at + 3
+        val afterRepository = at == 2 || (at >= 3 && segments[at - 1] == GITLAB_PAGES)
+        return refAndPath && afterRepository
+      }
     }
   }
 
@@ -53,7 +62,9 @@ object RepositoryJoin {
       name.containsAll(root.name) || sameOwner(root.owner)
 
     private fun sameOwner(owner: Set<String>): Boolean =
-      scope.isNotEmpty() && (owner.containsAll(scope) || scope.containsAll(owner))
+      scope.isNotEmpty() &&
+        owner.isNotEmpty() &&
+        (owner.containsAll(scope) || scope.containsAll(owner))
   }
 
   private class ServerName(val name: Set<String>) : StatedName {
