@@ -39,10 +39,6 @@
           {
             "context": "ci-ok",
             "integration_id": 15368
-          },
-          {
-            "context": "copilot-pull-request-reviewer",
-            "integration_id": 15368
           }
         ]
       }

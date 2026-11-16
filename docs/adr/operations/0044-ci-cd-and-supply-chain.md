@@ -322,13 +322,13 @@ Harbor could put an image under a tag first.
     Dependabot alerts and security-update pull requests beside the weekly version updates and the Grype scan.
 
 ### A pull request merges after its review
-22. **The Copilot review is a required check on `main`.** The ruleset "main: pull requests only" asks Copilot to
-    review every push to a pull request (`copilot_code_review`), and every review thread must be resolved before a
-    merge. Copilot runs as the GitHub Actions job `copilot-pull-request-reviewer` on the head commit, and that job ends
-    green when its review is posted. The ruleset requires it next to `ci-ok`, so a pull request merges only after
-    Copilot has reviewed its head commit: a new push, "Update branch" too, waits for a new review. When Copilot does not
-    review (its quota, an outage), the owner requests the review again; in a long outage he changes the ruleset by hand
-    (`docs/recreate.md`).
+22. **Copilot reviews every push to `main`'s pull requests; the owner merges once its threads are resolved.** The
+    ruleset "main: pull requests only" asks Copilot to review every push to a pull request (`copilot_code_review`), and
+    every review thread must be resolved before a merge. The only required check is `ci-ok`. Copilot runs as the
+    GitHub Actions job `copilot-pull-request-reviewer`, but GitHub starts that job from a `dynamic` event and leaves it
+    out of the pull request's checks, so a ruleset that requires it waits for ever. The owner merges after Copilot
+    has posted on the head commit; when Copilot does not review (its quota, an outage), he requests the review again
+    or merges on the other reviews.
 
 ### Code
 
@@ -397,8 +397,9 @@ Harbor could put an image under a tag first.
 - A key file in OpenBao KV — the private key would sit on the runner during the job; Transit never hands it out.
 - One approving review required by the ruleset — Copilot only comments, it never approves, and GitHub does not let
   the owner approve his own pull request: no pull request could merge.
-- The ruleset rule `copilot_code_review` alone — it asks for the review but does not wait for it: a pull request
-  merged two minutes after Copilot started.
+- The job `copilot-pull-request-reviewer` as a required check next to `ci-ok` — the job passes, but its result never
+  reaches the pull request's checks: the merge panel shows it as "Expected — Waiting for status to be reported", and
+  no pull request can merge.
 - A workflow of our own that reads the reviews on every push and every review posted — GitHub runs a workflow
   started by the Copilot review only after an approval, since the repository asks one for every outside contributor:
   the check would wait for a click on every pull request. A job of `ci.yml` has the same problem, and `ci-ok` ends
@@ -481,10 +482,9 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 - The frontend chains are selected together: tests outside `src/admin` read the back office code (S10.2.12).
 - Every Gradle job spends 30 to 90 seconds before its first project task (S10.2.8). The `chart` job spends 163 of its 169 seconds in the waits of a self-test (S10.2.4).
 - `package` runs on a push and on a manual full run, not on a pull request.
-- Every merge waits for the Copilot review of the head commit, a few minutes, also after "Update branch". No
-  owner review stands in for Copilot's: when Copilot cannot review, the pull request waits. A pull request could add
-  a workflow job named `copilot-pull-request-reviewer` and pass the check without a review: the owner reads that
-  change in the review, and a pull request from an outside collaborator runs no workflow before his approval.
+- Nothing makes a merge wait for Copilot: a pull request whose threads are resolved can merge before Copilot has
+  posted on its head commit, or while Copilot is rate-limited. The owner checks that the review of the head commit is
+  there before he merges.
 - The Copilot review is not a required check on `release/*`.
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI.
 - A deploy that is not healthy after the upgrade is rolled back by itself, but the schema is not: the new release's migrations stay. The older code must work on the newer schema, as in every rolling upgrade; no test checks it (the previous release's schema contract against the new migrations). A migration that drops or renames what the older code uses needs two releases (add, then remove), or the rollback ends in `ROLLBACK FAILED` or in an older app with errors. Until the first release tag, a rollback across an edit of `V1__schema.sql` does not pass: the older release holds another V1, and Flyway refuses it. What the new release wrote between the upgrade and the rollback stays. The check sees the public host only, not the admin host.
