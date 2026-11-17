@@ -1,6 +1,7 @@
 package ai.helper2.admin.usecase;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.enrichment.ValidationIssues;
 import ai.helper2.examples.PoolCounts;
 import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.platform.llm.BudgetLedger;
@@ -26,6 +27,10 @@ public class GetOverview {
 
   static final int RUNS_FOR_FAILURES = 200;
 
+  public static final Duration ISSUE_WINDOW = Duration.ofDays(7);
+
+  static final int TOP_ISSUES = 10;
+
   public record Overview(
       Instant generatedAt,
       Map<ReviewQueue.Kind, Long> openReviewItems,
@@ -35,7 +40,8 @@ public class GetOverview {
       List<RunSummary> recentRuns,
       int failedRunsLast24h,
       PoolCounts homeExamples,
-      int overridesActive) {}
+      int overridesActive,
+      ValidationIssues.Summary validationIssues) {}
 
   private final ReviewQueue reviewQueue;
   private final EnrichmentBacklog backlog;
@@ -44,6 +50,7 @@ public class GetOverview {
   private final Supplier<@Nullable WebSearchQuota> webSearchQuota;
   private final CountHomeExamples homeExamples;
   private final RuntimeSettings runtimeSettings;
+  private final ValidationIssues validationIssues;
   private final Clock clock;
   private @Nullable Overview last;
 
@@ -55,6 +62,7 @@ public class GetOverview {
       Supplier<@Nullable WebSearchQuota> webSearchQuota,
       CountHomeExamples homeExamples,
       RuntimeSettings runtimeSettings,
+      ValidationIssues validationIssues,
       Clock clock) {
     this.reviewQueue = reviewQueue;
     this.backlog = backlog;
@@ -63,6 +71,7 @@ public class GetOverview {
     this.webSearchQuota = webSearchQuota;
     this.homeExamples = homeExamples;
     this.runtimeSettings = runtimeSettings;
+    this.validationIssues = validationIssues;
     this.clock = clock;
   }
 
@@ -86,7 +95,8 @@ public class GetOverview {
         recent.stream().limit(RECENT_RUNS).toList(),
         failedSince(recent, now.minus(Duration.ofDays(1))),
         homeExamples.count(),
-        runtimeSettings.overrideCount());
+        runtimeSettings.overrideCount(),
+        validationIssues.since(now.minus(ISSUE_WINDOW), TOP_ISSUES));
   }
 
   static int failedSince(List<RunSummary> runs, Instant since) {

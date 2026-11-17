@@ -45,7 +45,9 @@ On a review item, accept and reject were not enough:
 3. **The overview: what needs a person now.** `GET /api/v1/admin/overview` returns counts only: open review items per
    kind (every kind, 0 included), the enrichment backlog (the same rule the Scout takes it by), every model budget with
    today's count and limit, web credits today, the last 10 Scout runs and the failed ones of the last 24 hours, the
-   home examples shown and hidden ([0028](../search/0028-home-examples.md)), and a link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
+   home examples shown and hidden ([0028](../search/0028-home-examples.md)), the 10 most frequent enrichment validation
+   issues of the runs started in the last 7 days (subject and rule, quotes and numbers taken out, counted per run; a
+   partial run opens no review item, so this is where the validator is tuned), and a link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
    the backlog count is a full pass, and Refresh must not repeat it. That count gives up after 5 seconds. The Grafana
    link must be an absolute http(s) URL with a host and a path only, or the app does not start: the page puts it in an
    href and every administrator's browser receives it, so it carries no user info, no query and no fragment. The
@@ -306,7 +308,7 @@ than a hundred), so the question is the same for each of them: what is this name
 ### Code
 
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/ReviewController.java`, `web/OverviewController.java`,
-  `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `web/AdminWebApp.java`, `usecase/GetOverview.java`,
+  `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `web/AdminWebApp.java`, `usecase/GetOverview.java`, `catalog/internal/JdbcValidationIssues.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java` (its own groups and the public app's),
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),
   `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`), `config/SpaProperties.java`.

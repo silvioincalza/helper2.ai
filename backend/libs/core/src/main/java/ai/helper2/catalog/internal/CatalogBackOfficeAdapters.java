@@ -26,6 +26,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcValidationIssues jdbcValidationIssues(JdbcClient jdbc) {
+    return new JdbcValidationIssues(jdbc);
+  }
+
+  @Bean
   JdbcKnownTargets jdbcKnownTargets(JdbcClient jdbc) {
     return new JdbcKnownTargets(jdbc);
   }

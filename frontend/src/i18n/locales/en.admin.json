@@ -110,6 +110,17 @@
         "FAIL": "hidden, no expected result in the top 10",
         "PENDING": "waiting for the check",
         "paused": "paused"
+      },
+      "issues": {
+        "title_one": "Enrichment validation issues: {{count}} run in the last {{days}} days",
+        "title_other": "Enrichment validation issues: {{count}} runs in the last {{days}} days",
+        "label": "Enrichment validation issues",
+        "none": "No run had an issue.",
+        "col": {
+          "subject": "Where",
+          "rule": "Rule that failed",
+          "runs": "Runs"
+        }
       }
     },
     "audit": {

@@ -981,7 +981,31 @@ components:
         failedRunsLast24h: { type: integer, minimum: 0 }
         homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
         overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0007). }
+        validationIssues: { $ref: '#/components/schemas/ValidationIssueSummary' }
         grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL): an http(s) URL with a host and a path only, never user info, a query or a fragment; null when not set." }
+
+    ValidationIssueSummary:
+      type: object
+      description: >-
+        The enrichment validation issues of the runs started in the last `days` days, read from each run's errors. An
+        issue is its subject (a field with its name, a relationship with its kind, or a summary claim) and its rule,
+        with quotes, parentheses and numbers taken out. The most frequent first, at most 10.
+      required: [days, runs, top]
+      properties:
+        days: { type: integer, minimum: 1 }
+        runs: { type: integer, minimum: 0, description: Runs with at least one issue. }
+        top:
+          type: array
+          maxItems: 10
+          items: { $ref: '#/components/schemas/ValidationIssueCount' }
+
+    ValidationIssueCount:
+      type: object
+      required: [subject, rule, runs]
+      properties:
+        subject: { type: string, description: 'For example "field pricing", "relationship INTEGRATES_WITH", "summary claim".' }
+        rule: { type: string, description: 'For example "the cited excerpt does not state the value", "excerpt length N outside N..N".' }
+        runs: { type: integer, minimum: 1, description: Runs with this issue. }
 
     HomeExampleCounts:
       type: object
