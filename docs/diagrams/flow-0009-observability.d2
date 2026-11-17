@@ -60,7 +60,7 @@ metrics: Metrics {
   endpoint: "/actuator/prometheus on\nH2_MANAGEMENT_PORT 8081" {class: app}
   scrape: "Alloy scrapes (pod annotations)\n→ remote write to Prometheus" {class: ext}
   grafana: "Grafana: helper2.json (public app:\nHTTP, search, guide, runtime) and\nhelper2-backoffice.json (Scout, budgets,\nindexer, admin); latency from _bucket" {class: ext}
-  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nper app by the application tag; first\nuseful p95 > 8 s for 15 min warns;\nRedis evictions in 15 min warn;\na Scout collector warns one day past\nits run interval (helper2.scout.interval,\nat least a day); its last success is\nread from scout_run on each scrape" {class: config}
+  alerts: "Alert rules deploy/monitoring/helper2-rules.yaml\n(rule file, or PrometheusRule with\nmonitoring.prometheusRule.enabled):\nper app by the application tag; first\nuseful p95 > 8 s for 15 min warns;\nRedis evictions in 15 min warn;\none OOM kill of a container warns;\na Scout collector warns one day past\nits run interval (helper2.scout.interval,\nat least a day); its last success is\nread from scout_run on each scrape" {class: config}
   exporters: "monitoring.exporters.enabled?\n(staging and prod)" {class: decision}
   stores: "postgres-exporter :9187 as h2_monitor\n(pg_monitor, no table, no query text);\nredis-exporter :9121 as h2_monitor\n(PING, INFO; no key, no CONFIG)" {class: app}
   registry -> endpoint
