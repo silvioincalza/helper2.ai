@@ -105,7 +105,7 @@ redis:
     revision: 0
   resources:
     requests: { cpu: 20m, memory: 64Mi }
-    limits: { memory: 320Mi }
+    limits: { memory: 448Mi }
 
 networkPolicy:
   ingressController:
