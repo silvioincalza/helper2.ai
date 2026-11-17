@@ -37,14 +37,10 @@ import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
-/**
- * Upcoming AI conferences from confs.tech: the JSON files of {@code
- * tech-conferences/conference-data} (MIT) for this year and the next. The days, city and country
- * are the file's own; a conference is kept when its name passes the AI check.
- */
 public class ConfsTechCollector implements Collector {
 
   static final String ID = CollectorIds.CONFS_TECH;
@@ -140,7 +136,6 @@ public class ConfsTechCollector implements Collector {
     return new CollectedBatch(List.copyOf(byUrl.values()), null, startedAt.toString());
   }
 
-  /** The topic files of one year; a year with no folder yet has none. */
   private List<URI> topicFiles(int year) {
     JsonNode files;
     try {
@@ -149,11 +144,19 @@ public class ConfsTechCollector implements Collector {
               POLICY,
               () ->
                   HttpClients.getJson(
-                      () -> http.get().uri(YEAR_PATH + year).retrieve().body(String.class), clock));
-    } catch (CallRefused e) {
-      throw e;
-    } catch (RuntimeException e) {
-      log.info("confs-tech: no conference files for {}: {}", year, e.getClass().getSimpleName());
+                      () ->
+                          http.get()
+                              .uri(YEAR_PATH + year)
+                              .retrieve()
+                              .onStatus(
+                                  status -> status.value() == HttpStatus.NOT_FOUND.value(),
+                                  (request, response) -> {
+                                    throw new YearNotPublished();
+                                  })
+                              .body(String.class),
+                      clock));
+    } catch (YearNotPublished e) {
+      log.info("confs-tech: no conference folder for {} yet", year);
       return List.of();
     }
     List<URI> out = new ArrayList<>();
@@ -174,15 +177,23 @@ public class ConfsTechCollector implements Collector {
     return out;
   }
 
+  static final class YearNotPublished extends RuntimeException {
+    YearNotPublished() {
+      super(null, null, false, false);
+    }
+  }
+
   static Optional<SourceHit> toHit(JsonNode c, LocalDate today, Instant now, int position) {
     String name = HttpClients.text(c, "name");
     String link = HttpClients.text(c, "url");
     CanonicalUrl canonical = link == null ? null : CanonicalUrl.of(link);
     LocalDate start = day(HttpClients.text(c, "startDate"));
+    if (start == null) {
+      return Optional.empty();
+    }
     LocalDate end = Objects.requireNonNullElse(day(HttpClients.text(c, "endDate")), start);
     if (name == null
         || canonical == null
-        || start == null
         || end.isBefore(start)
         || end.isBefore(today)
         || !Classification.isAiRelated(name, null, Set.of())) {
@@ -224,7 +235,6 @@ public class ConfsTechCollector implements Collector {
             format(c.path("online").asBoolean(false), city != null)));
   }
 
-  /** confs.tech's {@code online} flag with a city is a hybrid event; without one, online only. */
   static @Nullable EventFormat format(boolean online, boolean hasCity) {
     if (online) {
       return hasCity ? EventFormat.HYBRID : EventFormat.ONLINE;

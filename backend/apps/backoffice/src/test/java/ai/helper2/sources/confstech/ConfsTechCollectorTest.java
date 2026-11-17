@@ -1,9 +1,11 @@
 package ai.helper2.sources.confstech;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
@@ -32,6 +34,7 @@ class ConfsTechCollectorTest {
         "endDate":"2026-12-02","city":"Berlin","country":"Germany","online":false},
        {"name":"AI Summit Past","url":"https://past.example","startDate":"2026-03-01",
         "endDate":"2026-03-02","city":"Rome","country":"Italy"},
+       {"name":"AI Day TBA","url":"https://tba.example"},
        {"name":"LLM Online Day","url":"https://llm-day.example","startDate":"2026-12-10",
         "online":true}]\
       """;
@@ -135,5 +138,15 @@ class ConfsTechCollectorTest {
 
     assertThat(batch.getNotDue()).isTrue();
     assertThat(server.requests).isEmpty();
+  }
+
+  @Test
+  void a_failed_year_listing_fails_the_pass_so_it_is_tried_again() {
+    server.route(
+        ConfsTechCollector.YEAR_PATH + "2026",
+        new FixtureServer.Reply(500, "{}", java.util.Map.of(), 0));
+
+    assertThatThrownBy(() -> collector().collect(null, null, 500))
+        .isInstanceOf(SourceFailure.class);
   }
 }

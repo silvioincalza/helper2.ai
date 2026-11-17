@@ -202,7 +202,6 @@ public final class HttpClients {
     Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", reason).increment();
   }
 
-  /** The URL when it is on {@code host} (same scheme, host and port, no user info), else empty. */
   public static Optional<URI> onHost(URI host, String raw) {
     try {
       URI u = new URI(raw.strip());
