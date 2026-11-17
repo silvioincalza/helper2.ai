@@ -233,6 +233,23 @@ Two kinds of source need more care:
       the Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, [0013](0013-discovery.md) §10). The cap is checked before the
       pass and before each Extract call; past it the pass keeps what it read, and its queries are not marked done:
       the pages left unread are found and read on the next run (their searches are paid again).
+    - **Undated catalog events are read too.** Each pass also reads the page of every catalog EVENT with no start
+      day first discovered since the last pass (the first pass: the last 30 days), oldest first
+      (`Resources.undatedEvents`), with its own budget of `H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES` pages next to the
+      search pages. A full batch keeps the pass open: the cursor holds the last event read
+      (`catalog:undated-events@<discovered at>/<id>`), and the next call reads on from there. The pass is complete
+      only when the searches are done and a batch comes back short. Such a page goes through the same reader and gate;
+      `extra.query` is `catalog:undated-events`.
+    - **A LinkedIn post leads to the event's own site.** When the reader keeps no event from a LinkedIn post
+      (`/posts/`, `/feed/update/`), the post's raw text gives its links (`LinkedInPosts.eventSite`): when exactly one
+      https link is not LinkedIn, `lnkd.in` or a social site, that page is read through the same reader and gate, and
+      the event is kept at that site, titled by the post's title up to its first ` | `, with `extra.linkedFrom` = the
+      post. Short `lnkd.in` links are not followed. The post counts as read only once its site was read, so a call
+      that stops before the second round leaves the post for the next one.
+    - **Progress counts only pages read.** A page found by a search and in the catalog is read once, as a catalog page.
+      A search is done when every chosen page it found was read; the catalog cursor moves only past pages read. A
+      failed Extract call, the credit cap or a missing model ends the call and leaves the rest for the next one. A page
+      that Extract answers as failed is not tried again.
     - **A model reads the page.** The reasoning model, thinking off ([0008](../foundation/0008-llm-integration.md)),
       prompt `prompts/sources/read-event.txt`: how many events the page is about, the first and last day, and the
       words of the page that state them; kind, format and place, each with its own words. The page is untrusted data:

@@ -9,24 +9,29 @@ import ai.helper2.scout.PageScope;
 import ai.helper2.scout.UntrustedPageText;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebSources;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.events.EventQuoteGate;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
+import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.TavilySource;
+import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -51,6 +56,10 @@ public class LiveWebEventsCollector implements Collector {
   static final int EXTRACT_BATCH = 4;
   private static final int MAX_EXTRACT_BYTES = 2 * 1024 * 1024;
 
+  static final String UNDATED = "catalog:undated-events";
+  static final String UNDATED_AFTER = UNDATED + "@";
+  static final Duration UNDATED_LOOKBACK = Duration.ofDays(30);
+
   private static final Logger log = LoggerFactory.getLogger(LiveWebEventsCollector.class);
 
   private final RestClient http;
@@ -61,6 +70,7 @@ public class LiveWebEventsCollector implements Collector {
   private final int maxPages;
   private final ScoutLiveWebCredits credits;
   private final @Nullable EventReader reader;
+  private final UndatedEvents undated;
   private final EventQuoteGate gate = new EventQuoteGate();
   private final SourceDescriptor descriptor;
 
@@ -73,8 +83,10 @@ public class LiveWebEventsCollector implements Collector {
       List<String> queries,
       int maxPages,
       ScoutLiveWebCredits credits,
-      @Nullable EventReader reader) {
+      @Nullable EventReader reader,
+      UndatedEvents undated) {
     this.clock = clock;
+    this.undated = undated;
     this.resilience = resilience;
     this.interval = interval;
     this.queries = List.copyOf(queries);
@@ -115,32 +127,172 @@ public class LiveWebEventsCollector implements Collector {
               + credits.dailyCap()
               + " credits); next try tomorrow");
     }
-    Set<String> doneBefore = QueryProgress.done(resumeCursor);
-    Found found =
-        pagesToRead(
-            startedAt, Math.min(maxPages, Math.max(1, maxItems)), new LinkedHashSet<>(doneBefore));
-    Reading reading = readAll(found.pages(), startedAt);
+    Set<String> done = QueryProgress.done(resumeCursor);
+    int limit = Math.min(maxPages, Math.max(1, maxItems));
+    UndatedBatch catalog =
+        undatedBatch(undatedSince(checkpoint, startedAt), startedAt, limit, done);
+    Found found = pagesToRead(startedAt, limit, done);
+    List<SourceHit> pages = onePerUrl(catalog.hits(), found.pages());
+    Reading reading = readAll(pages, startedAt);
     log.info(
-        "{}: {} pages found, {} events kept", ID, found.pages().size(), reading.events().size());
-    Set<String> done = reading.pagesLeftUnread() ? doneBefore : found.done();
-    boolean complete = done.containsAll(queries);
+        "{}: {} search and {} undated catalog pages, {} events kept",
+        ID,
+        found.pages().size(),
+        catalog.hits().size(),
+        reading.events().size());
+    markSearchesDone(found, pages, reading.processed(), done);
+    markCatalogProgress(catalog, reading.processed(), done);
+    boolean complete = done.containsAll(queries) && done.contains(UNDATED);
     return new CollectedBatch(
         reading.events(),
         complete ? null : QueryProgress.cursor(done),
         complete ? startedAt.toString() : null);
   }
 
-  private record Found(List<SourceHit> pages, Set<String> done) {}
+  private record Found(List<SourceHit> pages, Map<String, Set<String>> urlsByQuery) {}
 
-  private record Reading(List<SourceHit> events, boolean pagesLeftUnread) {}
+  private record Reading(List<SourceHit> events, Set<String> processed) {}
+
+  private record UndatedBatch(List<UndatedEvents.Page> pages, List<SourceHit> hits, boolean full) {
+    static final UndatedBatch NONE = new UndatedBatch(List.of(), List.of(), false);
+  }
+
+  static List<SourceHit> onePerUrl(List<SourceHit> first, List<SourceHit> then) {
+    Map<String, SourceHit> byUrl = new LinkedHashMap<>();
+    first.forEach(h -> byUrl.putIfAbsent(h.getCanonicalUrl().getValue(), h));
+    then.forEach(h -> byUrl.putIfAbsent(h.getCanonicalUrl().getValue(), h));
+    return List.copyOf(byUrl.values());
+  }
+
+  private static void markSearchesDone(
+      Found found, List<SourceHit> read, Set<String> processed, Set<String> done) {
+    Set<String> selected = new LinkedHashSet<>();
+    read.forEach(h -> selected.add(h.getCanonicalUrl().getValue()));
+    found
+        .urlsByQuery()
+        .forEach((query, urls) -> {
+          boolean allRead = urls.stream().filter(selected::contains).allMatch(processed::contains);
+          if (allRead) {
+            done.add(query);
+          }
+        });
+  }
+
+  private static void markCatalogProgress(
+      UndatedBatch batch, Set<String> processed, Set<String> done) {
+    if (done.contains(UNDATED)) {
+      return;
+    }
+    UndatedEvents.Page lastRead = null;
+    for (UndatedEvents.Page page : batch.pages()) {
+      CanonicalUrl canonical = CanonicalUrl.of(page.url());
+      if (canonical != null && !processed.contains(canonical.getValue()) && readable(page)) {
+        break;
+      }
+      lastRead = page;
+    }
+    boolean allRead =
+        lastRead == null ? batch.pages().isEmpty() : lastRead == batch.pages().getLast();
+    if (allRead && !batch.full()) {
+      done.removeIf(key -> key.startsWith(UNDATED_AFTER));
+      done.add(UNDATED);
+    } else if (lastRead != null) {
+      done.removeIf(key -> key.startsWith(UNDATED_AFTER));
+      done.add(UNDATED_AFTER + lastRead.position().token());
+    }
+  }
+
+  private static boolean readable(UndatedEvents.Page page) {
+    try {
+      return CanonicalUrl.of(page.url()) != null
+          && PageScope.plainUrlProblem(URI.create(page.url())) == null;
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+  }
 
   private String notDueReason(@Nullable String checkpoint, Instant now) {
     LocalDate next = interval.nextDueDay(checkpoint, now);
     return next == null ? "Not due yet (run interval)" : "Not due yet: next pass on " + next;
   }
 
+  static Instant undatedSince(@Nullable String checkpoint, Instant now) {
+    if (checkpoint != null) {
+      try {
+        return Instant.parse(checkpoint);
+      } catch (DateTimeParseException e) {
+        log.debug("{}: checkpoint {} is not an instant", ID, checkpoint);
+      }
+    }
+    return now.minus(UNDATED_LOOKBACK);
+  }
+
+  private UndatedBatch undatedBatch(Instant since, Instant now, int limit, Set<String> done) {
+    if (done.contains(UNDATED)) {
+      return UndatedBatch.NONE;
+    }
+    List<UndatedEvents.Page> batch = undated.discoveredSince(since, undatedPosition(done), limit);
+    return new UndatedBatch(batch, asPages(batch, now), batch.size() >= limit);
+  }
+
+  private static UndatedEvents.@Nullable Position undatedPosition(Set<String> done) {
+    return done.stream()
+        .filter(key -> key.startsWith(UNDATED_AFTER))
+        .findFirst()
+        .flatMap(key -> UndatedEvents.Position.parse(key.substring(UNDATED_AFTER.length())))
+        .orElse(null);
+  }
+
+  private static List<SourceHit> asPages(List<UndatedEvents.Page> batch, Instant now) {
+    List<SourceHit> pages = new ArrayList<>();
+    for (UndatedEvents.Page p : batch) {
+      CanonicalUrl canonical = CanonicalUrl.of(p.url());
+      URI url;
+      try {
+        url = URI.create(p.url());
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
+      if (canonical == null || PageScope.plainUrlProblem(url) != null) {
+        continue;
+      }
+      pages.add(
+          new SourceHit(
+              ID,
+              canonical.getValue(),
+              url,
+              canonical,
+              null,
+              p.title(),
+              null,
+              ValueOrigin.SOURCE_PROVIDED,
+              ResourceType.EVENT,
+              Audience.BOTH,
+              null,
+              Set.of(),
+              Set.of(),
+              null,
+              null,
+              Set.of(),
+              null,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              List.of(),
+              now,
+              pages.size(),
+              DateFact.unknown(),
+              DateFact.unknown(),
+              null,
+              null,
+              null,
+              Map.of("query", UNDATED)));
+    }
+    return pages;
+  }
+
   private Found pagesToRead(Instant now, int limit, Set<String> done) {
     List<List<SourceHit>> perQuery = new ArrayList<>();
+    Map<String, Set<String>> urlsByQuery = new LinkedHashMap<>();
     RuntimeException lastFailure = null;
     int failed = 0;
     for (String query : queries) {
@@ -162,7 +314,9 @@ public class LiveWebEventsCollector implements Collector {
           }
         }
         perQuery.add(found);
-        done.add(query);
+        Set<String> urls = new LinkedHashSet<>();
+        found.forEach(h -> urls.add(h.getCanonicalUrl().getValue()));
+        urlsByQuery.put(query, urls);
       } catch (RuntimeException e) {
         log.warn("{}: a search failed: {}", ID, e.getClass().getSimpleName());
         lastFailure = e;
@@ -172,7 +326,7 @@ public class LiveWebEventsCollector implements Collector {
     if (lastFailure != null && failed * 2 >= queries.size()) {
       throw lastFailure;
     }
-    return new Found(interleaved(perQuery, limit), done);
+    return new Found(interleaved(perQuery, limit), urlsByQuery);
   }
 
   static List<SourceHit> interleaved(List<List<SourceHit>> perQuery, int limit) {
@@ -190,12 +344,34 @@ public class LiveWebEventsCollector implements Collector {
   }
 
   private Reading readAll(List<SourceHit> pages, Instant now) {
+    Map<String, SourceHit> siteByPost = new LinkedHashMap<>();
+    Reading first = readPages(pages, now, siteByPost);
+    Set<String> processed = new LinkedHashSet<>(first.processed());
+    processed.removeAll(siteByPost.keySet());
+    if (siteByPost.isEmpty() || first.processed().size() < pages.size()) {
+      return new Reading(first.events(), processed);
+    }
+    Reading sites =
+        readPages(
+            onePerUrl(List.copyOf(siteByPost.values()), List.of()), now, new LinkedHashMap<>());
+    siteByPost.forEach((post, site) -> {
+      if (sites.processed().contains(site.getCanonicalUrl().getValue())) {
+        processed.add(post);
+      }
+    });
+    List<SourceHit> events = new ArrayList<>(first.events());
+    events.addAll(sites.events());
+    return new Reading(events, processed);
+  }
+
+  private Reading readPages(List<SourceHit> pages, Instant now, Map<String, SourceHit> siteByPost) {
     List<SourceHit> events = new ArrayList<>();
+    Set<String> processed = new LinkedHashSet<>();
     LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
     for (int i = 0; i < pages.size(); i += EXTRACT_BATCH) {
       if (credits.capReached()) {
         log.info("{}: credit cap reached, {} pages left unread", ID, pages.size() - i);
-        return new Reading(events, true);
+        return new Reading(events, processed);
       }
       List<SourceHit> batch = pages.subList(i, Math.min(pages.size(), i + EXTRACT_BATCH));
       Map<String, SourceHit> byUrl = new LinkedHashMap<>();
@@ -204,19 +380,82 @@ public class LiveWebEventsCollector implements Collector {
       try {
         root = post("/extract", extractBody(batch));
       } catch (RuntimeException e) {
-        log.warn("{}: a page read failed: {}", ID, e.getClass().getSimpleName());
-        continue;
+        log.warn(
+            "{}: a page read failed, {} pages left unread: {}",
+            ID,
+            pages.size() - i,
+            e.getClass().getSimpleName());
+        return new Reading(events, processed);
       }
       try {
         for (JsonNode r : root.path("results")) {
-          readPage(r, byUrl, today).ifPresent(events::add);
+          Optional<SourceHit> event = readPage(r, byUrl, today);
+          event.ifPresent(events::add);
+          if (event.isEmpty()) {
+            eventSiteOfPost(r, byUrl, now)
+                .ifPresent(
+                    site -> siteByPost.put(site.getFacts().get("linkedFrom").toString(), site));
+          }
+          CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
+          if (url != null) {
+            processed.add(url.getValue());
+          }
         }
       } catch (LlmUnavailable e) {
         log.info("{}: no model to read pages now ({})", ID, e.getMessage());
-        return new Reading(events, true);
+        return new Reading(events, processed);
+      }
+      for (String url : byUrl.keySet()) {
+        if (processed.add(url)) {
+          log.debug("{}: {} could not be extracted, it is not read again", ID, url);
+        }
       }
     }
-    return new Reading(events, false);
+    return new Reading(events, processed);
+  }
+
+  private static Optional<SourceHit> eventSiteOfPost(
+      JsonNode r, Map<String, SourceHit> byUrl, Instant now) {
+    CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
+    SourceHit post = url == null ? null : byUrl.get(url.getValue());
+    String raw = HttpClients.text(r, "raw_content");
+    if (post == null || raw == null || !LinkedInPosts.isPost(post.getCanonicalUrl())) {
+      return Optional.empty();
+    }
+    return LinkedInPosts.eventSite(raw)
+        .map(site -> {
+          Map<String, Object> facts = new LinkedHashMap<>(post.getFacts());
+          facts.put("linkedFrom", post.getCanonicalUrl().getValue());
+          return new SourceHit(
+              ID,
+              CanonicalUrl.of(site.toString()).getValue(),
+              site,
+              CanonicalUrl.of(site.toString()),
+              null,
+              LinkedInPosts.eventTitle(post.getTitle()),
+              null,
+              ValueOrigin.SOURCE_PROVIDED,
+              ResourceType.EVENT,
+              Audience.BOTH,
+              null,
+              Set.of(),
+              Set.of(),
+              null,
+              null,
+              Set.of(),
+              null,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              List.of(),
+              now,
+              0,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              null,
+              null,
+              null,
+              facts);
+        });
   }
 
   private Optional<SourceHit> readPage(JsonNode r, Map<String, SourceHit> byUrl, LocalDate today) {
