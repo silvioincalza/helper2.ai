@@ -228,4 +228,57 @@ describe('Events page', () => {
     expect(stated.querySelector('[data-ai-generated]')).toBeNull();
     expect(await axeViolations(container)).toEqual([]);
   });
+
+  it('moves on by the page size, even when a page holds fewer cards than it asked for', async () => {
+    const all = Array.from({ length: 501 }, (_, i) => event(`Card ${i + 1}`, '2027-01-01'));
+    const m = mockApi({
+      'GET /events/upcoming': ({ url }) => {
+        const size = Number(url.searchParams.get('size'));
+        const offset = Number(url.searchParams.get('offset') ?? 0);
+        const slice = all.slice(offset, offset + size);
+        return {
+          generatedAt: '2026-11-07T09:00:00Z',
+          total: all.length,
+          items: offset === 0 ? slice.slice(1) : slice,
+        };
+      },
+    });
+    renderApp('/events');
+    expect(await screen.findByRole('link', { name: 'Card 501' })).toBeInTheDocument();
+    expect(m.callsTo('GET', '/events/upcoming').map((c) => c.search)).toEqual([
+      expect.stringContaining('offset=0'),
+      expect.stringContaining('offset=500'),
+    ]);
+  });
+
+  it('reads every page of the window, so the last event is listed and counted', async () => {
+    const all = Array.from({ length: 501 }, (_, i) =>
+      event(
+        `Event ${i + 1}`,
+        `2027-${String(1 + Math.floor(i / 60)).padStart(2, '0')}-01`,
+        i === 500 ? { eventKind: 'HACKATHON' } : {},
+      ),
+    );
+    const m = mockApi({
+      'GET /events/upcoming': ({ url }) => {
+        const size = Number(url.searchParams.get('size'));
+        const offset = Number(url.searchParams.get('offset') ?? 0);
+        return {
+          generatedAt: '2026-11-07T09:00:00Z',
+          total: all.length,
+          items: all.slice(offset, offset + size),
+        };
+      },
+    });
+    renderApp('/events');
+    expect(await screen.findByRole('link', { name: 'Event 501' })).toBeInTheDocument();
+    const kinds = screen.getByRole('group', { name: 'Kind of event' });
+    expect(within(kinds).getByRole('button', { name: 'All 501' })).toBeInTheDocument();
+    expect(within(kinds).getByRole('button', { name: 'Hackathon 1' })).toBeInTheDocument();
+    expect(m.callsTo('GET', '/events/upcoming').map((c) => c.search)).toEqual([
+      expect.stringContaining('offset=0'),
+      expect.stringContaining('offset=500'),
+    ]);
+    expect(m.callsTo('GET', '/events/upcoming')[0]?.search).toContain('size=500');
+  });
 });

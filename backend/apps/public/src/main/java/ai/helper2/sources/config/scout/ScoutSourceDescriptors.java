@@ -51,6 +51,11 @@ class ScoutSourceDescriptors {
   }
 
   @Bean
+  DescribedSource confsTechSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.confsTech(p.get(CollectorIds.CONFS_TECH)));
+  }
+
+  @Bean
   DescribedSource gitHubAwesomeSource(SourcesProperties p) {
     return new Described(CollectorDescriptors.gitHubAwesome(p.get(CollectorIds.GITHUB_AWESOME)));
   }

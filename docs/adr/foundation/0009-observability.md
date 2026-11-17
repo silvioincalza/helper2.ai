@@ -51,7 +51,9 @@ the guide work long before that, and what makes the wait feel long is the first 
      `helper2.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
      [0008](0008-llm-integration.md), or `time`, [0035](../guide/0035-guide-model-stream.md)), `helper2.guide.budget.remaining`,
      `helper2.search.translation.budget.remaining`;
-   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}`,
+   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
+     each collector, read from Postgres at most every 30 s, so every replica reports it from start-up),
+     `helper2.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
      `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
      `helper2.scout.classifier.budget.remaining`;
    - platform: `helper2.rate-limit.fallback{limiter}` (rate-limit decisions made in one replica's memory while
@@ -104,11 +106,16 @@ the guide work long before that, and what makes the wait feel long is the first 
      backlog above 0 for 3 h on the replica that indexes, read over the last 20 min so a restart does not start the
      3 h again; `Helper2ReviewBacklog`: more than 50 open review items for
      a day;
-   - `Helper2ScoutCollectorStale`: a collector's last success older than its run interval plus a day (2 days;
-     `live-web-scout` 6, `course-scout` 8), over a 9-day lookback so a deploy does not lose the gauge; the discovery
-     categories are left out;
+   - `Helper2ScoutCollectorStale`: a collector's last success older than its run interval plus a day. The rule
+     reads the interval from `helper2.scout.interval`, never from a list of names, so a new or retuned collector
+     needs no rule change. An interval under a day counts as a day: the Scout runs once a day. A run that is not
+     due is SKIPPED and does not move the last success, so a 7-day collector fires after 8 days, not 2. The last
+     success comes from `scout_run`, not from the memory of the replica that ran it: a success stays visible when
+     that replica stops before a scrape, or when Prometheus misses hours of scrapes. Both gauges are read over a
+     9-day lookback; the discovery categories are left out;
    - `Helper2DiscoveryStale`: one alert per environment when any discovery category (`discovery-*`) has had no
-     success for more than 8 days; the description lists them ([0013](../scout/0013-discovery.md));
+     success for its run interval plus a day, by the same two gauges; the description lists them
+     ([0013](../scout/0013-discovery.md));
    - `Helper2ScoutRunsFailing`: three or more collectors with a failed run in the last day, a cause they share;
    - `Helper2GuidePicksFromLowRanks`: more than 45% of the day's kept picks, and at least 3, from search rank 9+
      (`helper2.guide.picks{rank="9+"}`), the first sign of content poisoning ([0031](../guide/0031-guide-pipeline.md)).
@@ -119,6 +126,8 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2BackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
      `Helper2BackupStale` (critical): no successful backup for 36 h;
      `Helper2PodRestarting`: more than 2 restarts of a container in an hour;
+     `Helper2ContainerOOMKilled`: a container restarted in the last 10 min and its last termination was `OOMKilled`
+     (kube-state-metrics), so a single out-of-memory kill is not silent;
    - `Helper2ReplicasMissing`: the `helper2` Deployment has had fewer available replicas than wanted for 10 min;
      `Helper2NoReplica` (critical): none for 2 min, the site is down. Both read kube-state-metrics, not `up{}`:
      the scrape job's labels live outside this repository; `Helper2BackofficeDown`: no back office replica for

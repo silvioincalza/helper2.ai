@@ -5,6 +5,9 @@ import type {
   ReviewBulkResult,
   ReviewEvidence,
   RelationshipTargetChange,
+  RelationshipTargetGroupPage,
+  RelationshipTargetGroupDecision,
+  RelationshipTargetGroupOutcome,
   CandidateEdit,
   ResourceField,
   ResourceFieldValue,
@@ -55,6 +58,15 @@ export const adminApi = {
         size: String(size),
       }),
       signal,
+    }),
+  listRelationshipTargetGroups: (page: number, size: number, signal?: AbortSignal) =>
+    request<RelationshipTargetGroupPage>('GET', '/admin/relationship-targets', {
+      query: new URLSearchParams({ page: String(page), size: String(size) }),
+      signal,
+    }),
+  decideRelationshipTargetGroup: (body: RelationshipTargetGroupDecision) =>
+    request<RelationshipTargetGroupOutcome>('POST', '/admin/relationship-targets/decision', {
+      body,
     }),
   resolveReviewItem: (id: string, body: ReviewResolution) =>
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, {

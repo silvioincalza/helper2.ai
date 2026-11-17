@@ -37,6 +37,7 @@ tags:
   - name: runtime-settings
   - name: discovery-hosts
   - name: known-targets
+  - name: relationship-targets
   - name: examples-admin
 
 paths:
@@ -291,13 +292,63 @@ paths:
         '404': { $ref: './common.yaml#/components/responses/Problem' }
         '409': { $ref: './common.yaml#/components/responses/Problem' }
 
+  /admin/relationship-targets:
+    get:
+      tags: [relationship-targets]
+      operationId: listRelationshipTargetGroups
+      summary: The open relationship candidates grouped by target name, the largest group first (ADR 0038).
+      description: >-
+        A relationship candidate is open because its target is not a known resource: its quotes already passed. Items
+        are grouped by the target key (lower case, spaces folded, a trailing 's dropped), the same key known targets
+        use, so "PyTorch" and "pytorch" are one group.
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        '200':
+          description: One page of groups.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RelationshipTargetGroupPage' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/relationship-targets/decision:
+    post:
+      tags: [relationship-targets]
+      operationId: decideRelationshipTargetGroup
+      summary: One decision for every open relationship candidate of one target name (ADR 0038).
+      description: >-
+        LINK points each item at the catalog resource `resourceId` and accepts it (VERIFIED). VENDOR or SERVICE adds
+        the name as a known target and closes the items it now matches (SUPERSEDED). REJECT rejects each item and
+        its relationship. Each item is decided in its own transaction with its own audit entry, `<decision>
+        bulk:<batch>`; an item decided meanwhile, one whose resource already has this target, or the target
+        resource itself, is skipped and stays as it is. At most 1000 items per call: `left` says how many wait.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RelationshipTargetGroupDecision' }
+      responses:
+        '200':
+          description: What was decided.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RelationshipTargetGroupOutcome' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
   /admin/scout-runs:
     get:
       tags: [scout-runs]
       operationId: listScoutRuns
       responses:
         '200':
-          description: Recent AI Resource Scout runs.
+          description: The latest run of each source, newest first.
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }
@@ -930,7 +981,31 @@ components:
         failedRunsLast24h: { type: integer, minimum: 0 }
         homeExamples: { $ref: '#/components/schemas/HomeExampleCounts' }
         overridesActive: { type: integer, minimum: 0, description: Runtime settings whose value is not the default now (ADR 0007). }
+        validationIssues: { $ref: '#/components/schemas/ValidationIssueSummary' }
         grafanaUrl: { type: [string, 'null'], format: uri, description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL): an http(s) URL with a host and a path only, never user info, a query or a fragment; null when not set." }
+
+    ValidationIssueSummary:
+      type: object
+      description: >-
+        The enrichment validation issues of the runs started in the last `days` days, read from each run's errors. An
+        issue is its subject (a field with its name, a relationship with its kind, or a summary claim) and its rule,
+        with quotes, parentheses and numbers taken out. The most frequent first, at most 10.
+      required: [days, runs, top]
+      properties:
+        days: { type: integer, minimum: 1 }
+        runs: { type: integer, minimum: 0, description: Runs with at least one issue. }
+        top:
+          type: array
+          maxItems: 10
+          items: { $ref: '#/components/schemas/ValidationIssueCount' }
+
+    ValidationIssueCount:
+      type: object
+      required: [subject, rule, runs]
+      properties:
+        subject: { type: string, description: 'For example "field pricing", "relationship INTEGRATES_WITH", "summary claim".' }
+        rule: { type: string, description: 'For example "the cited excerpt does not state the value", "excerpt length N outside N..N".' }
+        runs: { type: integer, minimum: 1, description: Runs with this issue. }
 
     HomeExampleCounts:
       type: object
@@ -1287,6 +1362,47 @@ components:
           items: { type: string, format: uuid }
         status: { type: string, enum: [ACCEPTED, REJECTED] }
         note: { type: [string, 'null'], maxLength: 1000 }
+
+    RelationshipTargetGroupPage:
+      type: object
+      required: [items, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/RelationshipTargetGroup' } }
+        total: { type: integer, minimum: 0, description: Groups across all pages. }
+
+    RelationshipTargetGroup:
+      type: object
+      required: [key, name, items, kinds, examples]
+      properties:
+        key: { type: string, description: The target key the group is made of. }
+        name: { type: string, description: The name as most of its items write it. }
+        items: { type: integer, minimum: 1, description: Open items in the group. }
+        kinds:
+          type: array
+          items: { type: string, enum: [INTEGRATES_WITH, USES, SUPPORTS, COMPATIBLE_WITH, ABOUT] }
+        examples:
+          type: array
+          maxItems: 3
+          description: Titles of up to three resources that name this target, oldest item first.
+          items: { type: string }
+
+    RelationshipTargetGroupDecision:
+      type: object
+      required: [key, decision]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 300 }
+        decision: { type: string, enum: [LINK, VENDOR, SERVICE, REJECT] }
+        resourceId: { type: string, format: uuid, description: Required for LINK, not allowed otherwise. }
+        note: { type: [string, 'null'], maxLength: 1000 }
+
+    RelationshipTargetGroupOutcome:
+      type: object
+      required: [batch, decided, skipped, left]
+      properties:
+        batch: { type: string, format: uuid, description: The id in the audit entries of this decision (`bulk:<batch>`). }
+        decided: { type: integer, minimum: 0 }
+        skipped: { type: integer, minimum: 0, description: Items that stay as they are (decided meanwhile, or the link does not fit them). }
+        left: { type: integer, minimum: 0, description: Items of the group past the 1000 of one call. }
 
     ReviewBulkResult:
       type: object

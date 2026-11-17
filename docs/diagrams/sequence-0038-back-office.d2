@@ -2,7 +2,7 @@
 # Source of truth: frontend/src/admin/AdminOverview.tsx, ReviewQueuePage.tsx,
 #   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetOverview.java, admin/web/OverviewController.java,
 #   catalog/ReviewQueue.java (openCountsByKind), scout/internal/CatalogEnrichmentStore.java, catalog/internal/JdbcEnrichmentCandidates.java (pendingCount),
-#   examples/usecase/CountHomeExamples.java, examples/internal/JdbcHomeExamples.java (all), platform/llm/BudgetLedger.java,
+#   catalog/internal/JdbcValidationIssues.java, examples/usecase/CountHomeExamples.java, examples/internal/JdbcHomeExamples.java (all), platform/llm/BudgetLedger.java,
 #   admin/usecase/GetReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java, frontend/src/admin/ReviewEvidence.tsx,
 #   frontend/src/admin/EnrichmentQueuePage.tsx, admin/web/EnrichmentQueueController.java,
 #   scout/usecase/PrioritiseEnrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
@@ -23,10 +23,10 @@ redis: Redis {class: data}
 overview: Overview {
   owner -> spa: "/admin" {class: hot}
   spa -> api: "GET /api/v1/admin/overview"
-  api -> db: "open items per kind, backlog count,\nlast runs, every home example"
+  api -> db: "open items per kind, backlog count,\nlast runs, every home example,\nvalidation issues of the last 7 days"
   api -> redis: "today's count of each budget,\nweb credits"
   api -> spa: "counts, counted at T (kept one minute),\nand the Grafana link checked at startup:\nhost and path only, or null"
-  spa -> owner: "12 User report · 420 waiting ·\nEnrichment 120 of 500"
+  spa -> owner: "12 User report · 420 waiting ·\nEnrichment 120 of 500 ·\nfield pricing: 812 runs"
 }
 
 follow: Follow a count {

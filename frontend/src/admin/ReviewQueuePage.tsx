@@ -1,6 +1,7 @@
 import './adminText';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useSearchParams } from 'react-router';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { api, ApiError } from '@/api/client';
@@ -19,11 +20,12 @@ import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
 import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE, oneOf } from './adminModel';
 import { BulkBar, bulkSummary, type Decision } from './ReviewBulk';
 import { ReviewEvidencePanel } from './ReviewEvidence';
-import { ItemDetails } from './ReviewItemDetails';
+import { ItemDetails, parseCandidate, type Candidate } from './ReviewItemDetails';
 import { ReviewKeysHelp } from './ReviewKeysHelp';
+import { RelationshipGroups } from './RelationshipGroups';
 import { NOTE_MAX } from './limits';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 const CATEGORY = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const DETAIL_ID = 'rq-detail';
 
@@ -55,6 +57,26 @@ function openPicks(
   return kept.length === picked.size ? picked : new Map(kept);
 }
 
+const RELATIONSHIP = /^Unverified relationship: ([A-Z_]+) (.+)$/;
+
+function rowText(
+  t: TFunction,
+  item: ReviewItem,
+  reason: string,
+  candidate: Candidate | null,
+): string {
+  if (candidate) {
+    const type = t(`type.${candidate.type}`, { defaultValue: candidate.type });
+    return [type, ...candidate.tags, ...candidate.foundBy].join(' · ');
+  }
+  const relationship = item.kind === 'RELATIONSHIP_CANDIDATE' ? RELATIONSHIP.exec(reason) : null;
+  if (relationship) {
+    const [, kind, target] = relationship;
+    return t(`admin.review.row.relationship.${kind}`, { target, defaultValue: reason });
+  }
+  return reason;
+}
+
 function nextAfter(list: ReviewItem[], id: string): string | undefined {
   const at = list.findIndex((i) => i.id === id);
   return (list[at + 1] ?? list[at - 1])?.id;
@@ -68,6 +90,8 @@ export default function ReviewQueuePage() {
   const wanted = params.get('category');
   const category = wanted && CATEGORY.test(wanted) ? wanted : undefined;
   const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
+  const byTarget =
+    status === 'OPEN' && kind === 'RELATIONSHIP_CANDIDATE' && params.get('view') !== 'items';
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<ActionError | null>(null);
   const [listed, setListed] = useState<ReviewItem['alreadyListed'] | null>(null);
@@ -87,6 +111,14 @@ export default function ReviewQueuePage() {
   );
   const { retry, focusRef: heading } = useRetry(items.reload, items.loading);
   const sources = useApi('sources', (s) => api.listSources(s));
+  const overview = useApi('admin-overview', (s) => adminApi.getAdminOverview(s), { cache: false });
+  const reloadQueue = () => {
+    items.reload();
+    overview.reload();
+  };
+  const openCounts = new Map(
+    (overview.data?.openReviewItems ?? []).map(({ kind: k, count }) => [k, count] as const),
+  );
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const list = items.data?.items ?? [];
   const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
@@ -117,7 +149,10 @@ export default function ReviewQueuePage() {
     else heading.current?.focus();
   }, [items.loading, selected, heading]);
 
-  const setFilter = (name: 'status' | 'kind' | 'category' | 'page', value: string | undefined) => {
+  const setFilter = (
+    name: 'status' | 'kind' | 'category' | 'page' | 'view',
+    value: string | undefined,
+  ) => {
     const next = new URLSearchParams(params);
     if (value === undefined) next.delete(name);
     else next.set(name, value);
@@ -158,11 +193,11 @@ export default function ReviewQueuePage() {
       setAnnouncement(t(`admin.review.decided.${decision}`, { count: left }));
       setSelectedId(nextAfter(list, item.id));
       focusAfterLoad.current = true;
-      items.reload();
+      reloadQueue();
     } catch (e) {
       const error = actionErrorOf(e);
       setActionError(error);
-      if (error.kind === 'alreadyDecided') items.reload();
+      if (error.kind === 'alreadyDecided') reloadQueue();
     } finally {
       setBusy(false);
     }
@@ -182,10 +217,10 @@ export default function ReviewQueuePage() {
       setPicked((p) => new Map([...p].filter(([id]) => failed.has(id))));
       setBulkResult(bulkSummary(t, result));
       focusAfterLoad.current = true;
-      items.reload();
+      reloadQueue();
     } catch {
       setActionError({ kind: 'failed' });
-      items.reload();
+      reloadQueue();
     } finally {
       setBusy(false);
     }
@@ -260,14 +295,19 @@ export default function ReviewQueuePage() {
             onChange={(e) => setFilter('kind', e.target.value || undefined)}
           >
             <option value="">{t('admin.allKinds')}</option>
-            {REVIEW_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {t(`admin.kind.${k}`)}
-              </option>
-            ))}
+            {REVIEW_KINDS.map((k) => {
+              const count = status === 'OPEN' ? openCounts.get(k) : undefined;
+              return (
+                <option key={k} value={k}>
+                  {count === undefined
+                    ? t(`admin.kind.${k}`)
+                    : t('admin.kindCount', { kind: t(`admin.kind.${k}`), count })}
+                </option>
+              );
+            })}
           </select>
         </label>
-        {categories.length > 0 && (
+        {categories.length > 0 && !byTarget && (
           <label>
             {t('admin.categoryFilter')}
             <select
@@ -283,11 +323,37 @@ export default function ReviewQueuePage() {
             </select>
           </label>
         )}
+        {status === 'OPEN' && kind === 'RELATIONSHIP_CANDIDATE' && (
+          <span className="h2-admin__views" role="group" aria-label={t('admin.groups.view.label')}>
+            <button
+              type="button"
+              className="btn"
+              aria-pressed={byTarget}
+              onClick={() => setFilter('view', undefined)}
+            >
+              {t('admin.groups.view.groups')}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-pressed={!byTarget}
+              onClick={() => setFilter('view', 'items')}
+            >
+              {t('admin.groups.view.items')}
+            </button>
+          </span>
+        )}
         <button type="button" className="btn" aria-keyshortcuts="?" onClick={() => setHelp(true)}>
           {t('admin.keys.open')}
         </button>
       </div>
-      {items.loading ? (
+      {byTarget ? (
+        <RelationshipGroups
+          page={page}
+          onPage={(p) => setFilter('page', String(p))}
+          onDecided={overview.reload}
+        />
+      ) : items.loading ? (
         <AdminLoading command={command} />
       ) : items.error !== undefined ? (
         <StatePanel
@@ -318,6 +384,8 @@ export default function ReviewQueuePage() {
               <tbody>
                 {list.map((it) => {
                   const current = it.id === selected.id;
+                  const candidate =
+                    it.kind === 'RESOURCE_CANDIDATE' ? parseCandidate(it.details) : null;
                   return (
                     <tr
                       key={it.id}
@@ -347,6 +415,15 @@ export default function ReviewQueuePage() {
                           >
                             {it.resourceTitle ?? it.resourceId}
                           </a>
+                        ) : candidate ? (
+                          <a
+                            className="h2-title"
+                            href={candidate.url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                          >
+                            {candidate.title}
+                          </a>
                         ) : (
                           '—'
                         )}
@@ -364,7 +441,7 @@ export default function ReviewQueuePage() {
                           }}
                           onClick={() => select(it.id, false)}
                         >
-                          {reasons[it.id] ?? it.reason}
+                          {rowText(t, it, reasons[it.id] ?? it.reason, candidate)}
                         </button>
                       </td>
                       <td className="h2-nowrap">{formatDate(it.createdAt, 'INSTANT')}</td>
@@ -456,7 +533,7 @@ export default function ReviewQueuePage() {
           onClear={() => setPicked(new Map())}
         />
       )}
-      {items.data && (
+      {items.data && !byTarget && (
         <Pagination
           page={page}
           size={PAGE_SIZE}

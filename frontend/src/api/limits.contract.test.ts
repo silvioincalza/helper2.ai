@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import { BULK_MAX, EXPECTED_MAX, NOTE_MAX, REASON_MAX } from '../admin/limits';
+import { MAX_EVENTS } from '../features/home/homeFeeds';
 import { MAX_IMPORT } from '../lib/bookmarks';
 import {
   MAX_CLARIFICATION,
@@ -43,6 +44,13 @@ function searchQuery(): Node {
 }
 
 describe('the limits the frontend types again are the limits of the contract', () => {
+  it('upcoming events on the Events page', () => {
+    const parameters = at(publicApi, 'paths', '/events/upcoming', 'get').parameters as Node[];
+    const size = parameters.find((p) => p.name === 'size');
+    if (!size) throw new Error('the contract has no size parameter on /events/upcoming');
+    expect(MAX_EVENTS).toBe((size.schema as Node).maximum);
+  });
+
   it('search query', () => {
     expect(MAX_QUERY).toBe(searchQuery().maxLength);
   });

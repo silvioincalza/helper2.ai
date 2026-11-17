@@ -55,7 +55,7 @@ rules: EvidenceValidator, per proposed item {
 
 outcome: "Run outcome:\nREJECTED (nothing accepted),\nVALIDATED (no error) or PARTIAL" {class: app}
 save: "Catalog (EnrichmentResults) saves run;\nsupersedes older OPEN items;\ndeletes older AI_EXTRACTED fields and\nunreviewed AI relationships;\ninserts non-rejected items; a citation\nof a record gone meanwhile is dropped,\nan item left with no evidence too" {class: data}
-review: "Errors (not a value the quote does not state)\nor CONFLICTING → ENRICHMENT_VALIDATION;\nUNVERIFIED relationship → RELATIONSHIP_CANDIDATE\n(ReviewQueue; OPEN items counted by\nhelper2.review.open_items)" {class: data}
+review: "Errors of a REJECTED run (not a value the quote\ndoes not state) or CONFLICTING → ENRICHMENT_VALIDATION;\na PARTIAL run's errors alone open none;\nUNVERIFIED relationship → RELATIONSHIP_CANDIDATE\n(ReviewQueue; OPEN items counted by\nhelper2.review.open_items)" {class: data}
 
 start -> load
 load -> noMat: no

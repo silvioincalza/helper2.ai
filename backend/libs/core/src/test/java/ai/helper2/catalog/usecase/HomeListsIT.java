@@ -209,7 +209,7 @@ class HomeListsIT {
 
   @Test
   void theUpcomingListTakesSevenStatementsForAnyNumberOfCards() {
-    var counted = StatementCounting.count(() -> upcoming.list(SINCE, null, 60));
+    var counted = StatementCounting.count(() -> upcoming.list(SINCE, null, 60, 0));
 
     assertThat(counted.result().items()).hasSize(6);
     assertThat(counted.result().total()).isEqualTo(6);
@@ -217,11 +217,76 @@ class HomeListsIT {
   }
 
   @Test
+  void anOffsetSkipsThatManyEventsOfTheSameOrder() {
+    List<UUID> all = store.upcomingEvents(SINCE, null, 500, 0);
+    List<UUID> afterTwo = store.upcomingEvents(SINCE, null, 500, 2);
+
+    assertThat(afterTwo).containsExactlyElementsOf(all.subList(2, all.size()));
+  }
+
+  @Test
   void theUpcomingWindowEndsBeforeItsLastDayAndTheTotalFollowsIt() {
-    ListUpcomingEvents.Page page = upcoming.list(SINCE, SINCE.plus(Duration.ofDays(3)), 2);
+    ListUpcomingEvents.Page page = upcoming.list(SINCE, SINCE.plus(Duration.ofDays(3)), 2, 0);
 
     assertThat(page.items()).hasSize(2);
     assertThat(page.total()).isEqualTo(3);
+  }
+
+  @Test
+  void undatedEventsAreTheEventsWithNoStartDayFoundSinceAGivenTime() {
+    Instant since = now.minus(Duration.ofMinutes(5));
+    UUID undated =
+        upsert(hit("github", "https://github.com/acme/undated-" + run, null, 0)).getFirst();
+    UUID oldUndated =
+        upsert(hit("github", "https://github.com/acme/old-undated-" + run, null, 0)).getFirst();
+    jdbc.sql("UPDATE resource SET type = 'EVENT' WHERE id = ANY(:ids)")
+        .param("ids", new UUID[] {undated, oldUndated})
+        .update();
+    jdbc.sql("UPDATE resource SET first_discovered_at = :at WHERE id = :id")
+        .param("at", Timestamp.from(now.minus(Duration.ofDays(30))))
+        .param("id", oldUndated)
+        .update();
+
+    List<String> urls =
+        store.undatedEvents(since, null, null, 500).stream()
+            .map(Resources.UndatedEvent::url)
+            .toList();
+
+    assertThat(urls)
+        .contains("https://github.com/acme/undated-" + run)
+        .doesNotContain("https://github.com/acme/old-undated-" + run)
+        .noneMatch(u -> u.contains("/event-" + run))
+        .noneMatch(u -> u.contains("/home-" + run));
+  }
+
+  @Test
+  void undatedEventsArePagedOldestFirstAfterTheLastOneRead() {
+    Instant since = now.minus(Duration.ofMinutes(5));
+    List<UUID> ids = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      UUID id =
+          upsert(hit("github", "https://github.com/acme/page-undated-" + run + "-" + i, null, 0))
+              .getFirst();
+      jdbc.sql("UPDATE resource SET type = 'EVENT', first_discovered_at = :at WHERE id = :id")
+          .param("at", Timestamp.from(now.minus(Duration.ofMinutes(3 - i))))
+          .param("id", id)
+          .update();
+      ids.add(id);
+    }
+
+    List<Resources.UndatedEvent> mine =
+        store.undatedEvents(since, null, null, 500).stream()
+            .filter(e -> ids.contains(e.id()))
+            .toList();
+    Resources.UndatedEvent first = mine.getFirst();
+    List<UUID> rest =
+        store.undatedEvents(since, first.discoveredAt(), first.id(), 500).stream()
+            .map(Resources.UndatedEvent::id)
+            .filter(ids::contains)
+            .toList();
+
+    assertThat(mine).extracting(Resources.UndatedEvent::id).containsExactlyElementsOf(ids);
+    assertThat(rest).containsExactly(ids.get(1), ids.get(2));
   }
 
   @Test
@@ -248,7 +313,7 @@ class HomeListsIT {
         new ArrayList<>(
             store.recentlyPublished(SINCE, UNTIL, Set.of(), Set.of(DataOrigin.OBSERVED), 24));
     ids.add(1, UUID.randomUUID());
-    ids.addAll(store.upcomingEvents(SINCE, null, 60));
+    ids.addAll(store.upcomingEvents(SINCE, null, 60, 0));
 
     List<MergedResult> batched = cards.cardsOf(ids);
 

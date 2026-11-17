@@ -63,6 +63,29 @@ class NpmSourceTest {
   }
 
   @Test
+  void aBuildForOneSystemIsNotAResultAndItsBasePackageIs() {
+    server.route(
+        "/-/v1/search",
+        FixtureServer.Reply.ok(
+            """
+            {"objects":[
+              {"package":{"name":"@anthropic-ai/claude-agent-sdk-linux-x64-musl",
+                          "description":"Claude Agent SDK native binary for linux x64 musl",
+                          "keywords":["ai","agent","claude"]}},
+              {"package":{"name":"@anthropic-ai/claude-agent-sdk",
+                          "description":"SDK for building AI agents with Claude",
+                          "keywords":["ai","agent","claude"]}}
+            ]}
+            """));
+
+    List<SourceHit> hits = source().search(q("claude agent sdk"));
+
+    assertThat(hits)
+        .extracting(SourceHit::getExternalId)
+        .containsExactly("@anthropic-ai/claude-agent-sdk");
+  }
+
+  @Test
   void npmGetsAtMost64CharactersCutAtAWordBecauseItRejectsLongerText() {
     server.route("/-/v1/search", FixtureServer.Reply.ok("{\"objects\":[]}"));
     NpmSource src = source();

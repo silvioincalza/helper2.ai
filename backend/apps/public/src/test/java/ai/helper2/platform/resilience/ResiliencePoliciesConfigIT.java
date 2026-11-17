@@ -43,6 +43,7 @@ class ResiliencePoliciesConfigIT {
           "github-awesome",
           "hf-provider-orgs",
           "ai-deadlines",
+          "confs-tech",
           "mcp-registry",
           "news-feeds",
           "pypi",

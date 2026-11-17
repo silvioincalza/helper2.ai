@@ -180,7 +180,7 @@ describe('Feature: the overview says what needs a person now', () => {
     expect(screen.getByRole('combobox', { name: 'Kind' })).toHaveValue('USER_REPORT');
     await waitFor(() =>
       expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe(
-        '?status=OPEN&kind=USER_REPORT&page=0&size=20',
+        '?status=OPEN&kind=USER_REPORT&page=0&size=50',
       ),
     );
   });
@@ -459,7 +459,7 @@ describe('Feature: deciding review items', () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': ({ url }) =>
-        page([{ ...item, reason: `Item on page ${url.searchParams.get('page')}` }], 45),
+        page([{ ...item, reason: `Item on page ${url.searchParams.get('page')}` }], 145),
     });
     renderAdmin('/admin/review');
     expect(await screen.findByText('Item on page 0', { selector: 'button' })).toBeInTheDocument();
@@ -469,13 +469,13 @@ describe('Feature: deciding review items', () => {
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'Superseded');
     await waitFor(() =>
       expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe(
-        '?status=SUPERSEDED&page=0&size=20',
+        '?status=SUPERSEDED&page=0&size=50',
       ),
     );
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Kind' }), 'User report');
     await waitFor(() =>
       expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe(
-        '?status=SUPERSEDED&kind=USER_REPORT&page=0&size=20',
+        '?status=SUPERSEDED&kind=USER_REPORT&page=0&size=50',
       ),
     );
   });
@@ -485,7 +485,7 @@ describe('Feature: deciding review items', () => {
     renderAdmin('/admin/review?status=BOGUS&kind=NOPE&page=-3');
     await screen.findByText('Nothing in this queue.');
     expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toBe(
-      '?status=OPEN&page=0&size=20',
+      '?status=OPEN&page=0&size=50',
     );
   });
 
