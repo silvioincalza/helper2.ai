@@ -33,9 +33,7 @@ import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.usecase.SearchResources;
-import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceId;
-import ai.helper2.sources.config.SourcesProperties;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -161,8 +159,7 @@ class GuideConfiguration {
       LlmProperties llmProperties,
       BuildInfoProperties build,
       GuideProperties settings,
-      Resources resources,
-      SourcesProperties sources) {
+      Resources resources) {
     boolean nativeSchema = llmProperties.nativeSchema();
     int chooseMaxTokens = settings.chooseMaxTokens();
     int maxCandidates = settings.maxCandidates();
@@ -238,7 +235,7 @@ class GuideConfiguration {
             build.version()),
         settings.stopsAQuestionNobodyWaitsFor(),
         quoteRecords(resources),
-        new QuoteOrigins(new EvidenceGate(), sources.get(CollectorIds.MCP_REGISTRY).baseUrl()));
+        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()));
   }
 
   static QuoteRecords quoteRecords(Resources resources) {
