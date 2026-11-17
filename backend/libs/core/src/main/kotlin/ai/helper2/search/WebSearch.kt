@@ -50,8 +50,6 @@ enum class IntentClass {
 
     private val TIME_BOUND_WORDS = WORDS.words("time-bound")
 
-    private val SEPARATE = WordLists.separator(TIME_BOUND_WORDS)
-
     @JvmStatic
     fun of(request: SearchRequest, analyzed: AnalyzedQuery): IntentClass {
       request.intentClass?.let {
@@ -62,7 +60,7 @@ enum class IntentClass {
         (types.isNotEmpty() && TIME_BOUND_TYPES.containsAll(types)) ||
           request.filters.publishedAfter != null ||
           request.sort == SortOrder.NEWEST ||
-          SEPARATE(analyzed.normalized).split(NON_WORD).any { it in TIME_BOUND_WORDS }
+          analyzed.normalized.split(NON_WORD).any { it in TIME_BOUND_WORDS }
       return if (timeBound) TIME_BOUND else GENERAL
     }
   }

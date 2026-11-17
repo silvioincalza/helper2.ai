@@ -230,8 +230,6 @@ object IntentRules {
 
   private val GENERIC: Set<String> = IntentWords.words("query.generic")
 
-  private val SEPARATE_GENERIC = WordLists.separator(GENERIC)
-
   private fun anywhere(key: String) = IntentWords.anywhere(key)
 
   private fun atStart(key: String) = IntentWords.atStart(key)
@@ -319,7 +317,7 @@ object IntentRules {
 
   @JvmStatic
   fun subjectWords(query: String): String =
-    SEPARATE_GENERIC(query)
+    query
       .split(Regex("\\s+"))
       .filter { it.isNotBlank() && it.lowercase().trim('.', ',', '?', '!') !in GENERIC }
       .joinToString(" ")
