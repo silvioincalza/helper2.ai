@@ -244,7 +244,8 @@ Two kinds of source need more care:
       (`/posts/`, `/feed/update/`), the post's raw text gives its links (`LinkedInPosts.eventSite`): when exactly one
       https link is not LinkedIn, `lnkd.in` or a social site, that page is read through the same reader and gate, and
       the event is kept at that site, titled by the post's title up to its first ` | `, with `extra.linkedFrom` = the
-      post. Short `lnkd.in` links are not followed.
+      post. Short `lnkd.in` links are not followed. The post counts as read only once its site was read, so a call
+      that stops before the second round leaves the post for the next one.
     - **Progress counts only pages read.** A page found by a search and in the catalog is read once, as a catalog page.
       A search is done when every chosen page it found was read; the catalog cursor moves only past pages read. A
       failed Extract call, the credit cap or a missing model ends the call and leaves the rest for the next one. A page

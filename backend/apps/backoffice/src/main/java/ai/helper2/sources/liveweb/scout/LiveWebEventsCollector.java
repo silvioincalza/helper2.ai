@@ -339,17 +339,27 @@ public class LiveWebEventsCollector implements Collector {
   }
 
   private Reading readAll(List<SourceHit> pages, Instant now) {
-    List<SourceHit> eventSites = new ArrayList<>();
-    Reading reading = readPages(pages, now, eventSites);
-    if (eventSites.isEmpty() || reading.processed().size() < pages.size()) {
-      return reading;
+    Map<String, SourceHit> siteByPost = new LinkedHashMap<>();
+    Reading first = readPages(pages, now, siteByPost);
+    Set<String> processed = new LinkedHashSet<>(first.processed());
+    processed.removeAll(siteByPost.keySet());
+    if (siteByPost.isEmpty() || first.processed().size() < pages.size()) {
+      return new Reading(first.events(), processed);
     }
-    List<SourceHit> events = new ArrayList<>(reading.events());
-    events.addAll(readPages(onePerUrl(eventSites, List.of()), now, new ArrayList<>()).events());
-    return new Reading(events, reading.processed());
+    Reading sites =
+        readPages(
+            onePerUrl(List.copyOf(siteByPost.values()), List.of()), now, new LinkedHashMap<>());
+    siteByPost.forEach((post, site) -> {
+      if (sites.processed().contains(site.getCanonicalUrl().getValue())) {
+        processed.add(post);
+      }
+    });
+    List<SourceHit> events = new ArrayList<>(first.events());
+    events.addAll(sites.events());
+    return new Reading(events, processed);
   }
 
-  private Reading readPages(List<SourceHit> pages, Instant now, List<SourceHit> eventSites) {
+  private Reading readPages(List<SourceHit> pages, Instant now, Map<String, SourceHit> siteByPost) {
     List<SourceHit> events = new ArrayList<>();
     Set<String> processed = new LinkedHashSet<>();
     LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
@@ -377,7 +387,9 @@ public class LiveWebEventsCollector implements Collector {
           Optional<SourceHit> event = readPage(r, byUrl, today);
           event.ifPresent(events::add);
           if (event.isEmpty()) {
-            eventSiteOfPost(r, byUrl, now).ifPresent(eventSites::add);
+            eventSiteOfPost(r, byUrl, now)
+                .ifPresent(
+                    site -> siteByPost.put(site.getFacts().get("linkedFrom").toString(), site));
           }
           CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
           if (url != null) {

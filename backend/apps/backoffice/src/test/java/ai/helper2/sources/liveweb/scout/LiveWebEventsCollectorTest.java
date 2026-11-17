@@ -580,4 +580,33 @@ class LiveWebEventsCollectorTest {
     assertThat(server.requestBodies.getLast()).contains("agenticdays.com");
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
   }
+
+  @Test
+  void a_post_whose_event_site_was_not_read_yet_keeps_the_catalog_position() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(POST_AND_SITE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    POST_URL,
+                    "Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference | AI & ML Events",
+                    position(1)));
+    EventReader onlyTheSite =
+        reader(title ->
+            title.equals("Agentic Engineering Days Zurich 2026")
+                ? readsConference(title)
+                : Optional.empty());
+
+    CollectedBatch batch = collector(3, onlyTheSite, undated).collect(null, null, 500);
+
+    assertThat(server.requests)
+        .as("two searches, one extract, the cap stops the site read")
+        .hasSize(3);
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCheckpoint()).isNull();
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .doesNotContain(LiveWebEventsCollector.UNDATED)
+        .noneMatch(key -> key.startsWith(LiveWebEventsCollector.UNDATED_AFTER));
+  }
 }
