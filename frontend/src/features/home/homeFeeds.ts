@@ -26,6 +26,8 @@ const NEWS_TYPES: ResourceType[] = [
 const NEWS_SIZE = 60;
 const NEWS_DAYS = 7;
 const EVENTS_SIZE = 60;
+/** The largest `size` of `GET /events/upcoming`: the Events page lists every upcoming event. */
+export const MAX_EVENTS = 500;
 const EVENTS_DAYS = 90;
 
 type DateKind = 'published' | 'updated' | 'firstSeen';
@@ -124,12 +126,9 @@ export function useNewsFeed(): Feed<NewsRow> {
   };
 }
 
-export function useEventsFeed(days = EVENTS_DAYS): Feed<EventRow> {
-  const feed = useApi<UpcomingEventsResponse>(`next-events?days=${days}`, (signal) =>
-    api.listUpcomingEvents(
-      new URLSearchParams({ days: String(days), size: String(EVENTS_SIZE) }),
-      signal,
-    ),
+export function useEventsFeed(days = EVENTS_DAYS, size = EVENTS_SIZE): Feed<EventRow> {
+  const feed = useApi<UpcomingEventsResponse>(`next-events?days=${days}&size=${size}`, (signal) =>
+    api.listUpcomingEvents(new URLSearchParams({ days: String(days), size: String(size) }), signal),
   );
   const now = Date.parse(feed.data?.generatedAt ?? '');
   const rows = (feed.data?.items ?? []).map((card) => toEventRow(card, now));

@@ -34,7 +34,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class HomeListsPerfTest {
 
   static final int RESOURCES = 25_000;
-  static final int EVENTS = 200;
+  static final int EVENTS = 500;
   static final int WARMUP = 30;
   static final int CALLS = 200;
   static final Instant SINCE = Instant.parse("2098-12-01T00:00:00Z");
@@ -197,5 +197,10 @@ class HomeListsPerfTest {
         () -> oneByOne(store.upcomingEvents(TODAY, null, 60)),
         () -> upcoming.list(TODAY, null, 60).items(),
         60);
+    measure(
+        "/upcoming size=500",
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 500)),
+        () -> upcoming.list(TODAY, null, 500).items(),
+        500);
   }
 }

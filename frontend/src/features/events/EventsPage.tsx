@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router';
 import { useFromHere } from '@/features/search/fromResults';
 import { useTranslation } from 'react-i18next';
-import { useEventsFeed, type EventRow } from '@/features/home/homeFeeds';
+import { MAX_EVENTS, useEventsFeed, type EventRow } from '@/features/home/homeFeeds';
 import { ListState, useEventText } from '@/features/home/listParts';
 import { TermCommand } from '@/features/home/TermList';
 import { OriginLabel } from '@/ui/Badges';
@@ -44,7 +44,7 @@ export default function EventsPage() {
   const { t } = useTranslation();
   const from = useFromHere();
   useTitle(t('eventsPage.title'));
-  const feed = useEventsFeed(EVENTS_PAGE_DAYS);
+  const feed = useEventsFeed(EVENTS_PAGE_DAYS, MAX_EVENTS);
   const text = useEventText();
   const [params, setParams] = useSearchParams();
   const kind = (params.get('kind') || null) as Kind | null;
