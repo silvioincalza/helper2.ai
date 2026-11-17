@@ -137,11 +137,9 @@ async function allUpcomingEvents(
     );
   const first = await page(0);
   const items = [...first.items];
-  let last = first.items.length;
-  while (last === size && items.length < first.total) {
-    const next = await page(items.length);
+  for (let offset = size; offset < first.total; offset += size) {
+    const next = await page(offset);
     items.push(...next.items);
-    last = next.items.length;
   }
   return { ...first, items };
 }

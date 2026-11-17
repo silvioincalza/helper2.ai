@@ -229,6 +229,28 @@ describe('Events page', () => {
     expect(await axeViolations(container)).toEqual([]);
   });
 
+  it('moves on by the page size, even when a page holds fewer cards than it asked for', async () => {
+    const all = Array.from({ length: 501 }, (_, i) => event(`Card ${i + 1}`, '2027-01-01'));
+    const m = mockApi({
+      'GET /events/upcoming': ({ url }) => {
+        const size = Number(url.searchParams.get('size'));
+        const offset = Number(url.searchParams.get('offset') ?? 0);
+        const slice = all.slice(offset, offset + size);
+        return {
+          generatedAt: '2026-11-07T09:00:00Z',
+          total: all.length,
+          items: offset === 0 ? slice.slice(1) : slice,
+        };
+      },
+    });
+    renderApp('/events');
+    expect(await screen.findByRole('link', { name: 'Card 501' })).toBeInTheDocument();
+    expect(m.callsTo('GET', '/events/upcoming').map((c) => c.search)).toEqual([
+      expect.stringContaining('offset=0'),
+      expect.stringContaining('offset=500'),
+    ]);
+  });
+
   it('reads every page of the window, so the last event is listed and counted', async () => {
     const all = Array.from({ length: 501 }, (_, i) =>
       event(
