@@ -109,6 +109,18 @@ class RunScout(
   private val lastSuccess = ConcurrentHashMap<String, AtomicLong>()
   private val merger = ResultMerger()
 
+  init {
+    collectors.forEach(::publishInterval)
+  }
+
+  private fun publishInterval(collector: Collector) {
+    Gauge.builder("helper2.scout.interval", collector) { it.runEvery().seconds.toDouble() }
+      .tag("source", collector.descriptor.id)
+      .baseUnit("seconds")
+      .strongReference(true)
+      .register(meters)
+  }
+
   fun tryStart(onlySourceId: String? = null): List<RunSummary>? {
     if (onlySourceId != null && collectors.none { it.descriptor.id == onlySourceId }) {
       throw UnknownSource(onlySourceId)

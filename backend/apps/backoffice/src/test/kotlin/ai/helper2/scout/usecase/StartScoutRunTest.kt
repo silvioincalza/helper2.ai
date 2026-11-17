@@ -11,6 +11,7 @@ import ai.helper2.scout.ScoutStore
 import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.descriptor
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.function.Supplier
 import kotlin.test.assertEquals
@@ -47,6 +48,8 @@ class StartScoutRunTest {
   }
 
   private class EmptyCollector(override val descriptor: SourceDescriptor) : Collector {
+    override fun runEvery(): Duration = Duration.ZERO
+
     override fun collect(
       checkpoint: String?,
       resumeCursor: String?,

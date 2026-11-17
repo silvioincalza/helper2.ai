@@ -12,6 +12,7 @@ import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,11 @@ public class HuggingFaceTrendingCollector implements Collector {
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   @Override
