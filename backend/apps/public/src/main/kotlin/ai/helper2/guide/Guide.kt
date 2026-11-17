@@ -7,6 +7,8 @@ import ai.helper2.search.WebSearchesLeft
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.LinkText.containsLink
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WordBounds
+import ai.helper2.shared.WordLists
 import java.time.Instant
 
 data class Candidate(val key: String, val result: MergedResult) {
@@ -40,16 +42,12 @@ val LEARN_TYPES: Set<ResourceType> = setOf(ResourceType.COURSE)
 
 val TOOL_TYPES: Set<ResourceType> = ResourceType.entries.toSet() - READING_TYPES - LEARN_TYPES
 
-private val READING_WORDS =
-  Regex(
-    "(?i)\\b(papers?|articles?|news|research|stud(y|ies)|blogs?|posts?|events?|conferences?|reading|read about|" +
-      "articol[oi]|notizi[ae]|ricerc[ah]e?|studi[oi]?|eventi?)\\b"
-  )
+private val READING_WORDS = IntentWords.anywhere("reading")
 
 private val QUALIFIERS =
   Regex(
-    "(?i)(?<![\\w-])(open[- ]?source|oss|free( of charge)?|for free|gratis|gratuit[oa]|self[- ]?host(ed|able)?|" +
-      "local(ly)?|offline|on[- ]prem(ise)?|mit|apache( 2(\\.0)?)?|bsd|gpl|licen[cs]ed?|licen[cs]e|permissive|cheap|low[- ]cost)(?![\\w-])"
+    "(?iu)${WordBounds.HYPHENATED_START}(?:${WordLists.alternation(IntentWords.phrases("qualifier"))})" +
+      WordBounds.HYPHENATED_END
   )
 
 fun withoutQualifiers(query: String): String =
