@@ -88,7 +88,8 @@ Two kinds of source need more care:
    becomes a `COURSE_CANDIDATE` review item, and nothing reaches the catalog until an admin accepts it. Off without
    `H2_LIVE_WEB_API_KEY`.
 8. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
-   `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token.
+   `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token
+   and without following redirects (`HttpClients.getWithoutRedirect`): a redirect fails the file.
    One EVENT per conference: its next edition (point 22). A file that cannot be read or parsed, or whose download URL
    is on another host, is logged, skipped and counted in `helper2.source.items.dropped{source=ai-deadlines, reason}`
    (the exception type, or `ForeignDownloadUrl`). A conference with no upcoming edition is not counted. When the
@@ -96,7 +97,8 @@ Two kinds of source need more care:
 8a. **confs.tech** (`confs-tech`, 1 day). The crowd-sourced conference list of confs.tech,
    `tech-conferences/conference-data` (MIT). One GitHub contents call per year (this year and the next) lists its
    topic files; each JSON file is read only from `raw.githubusercontent.com`, by a client that does not follow
-   redirects (`ObservedHttp.restClientBuilderWithoutRedirects`), so a redirect cannot lead to another host. The pass stops
+   redirects (`ObservedHttp.restClientBuilderWithoutRedirects`, `HttpClients.getWithoutRedirect`), so a redirect fails
+   the file instead of leading to another host. The pass stops
    asking for files and years once it holds `maxItems` conferences. A conference is kept when its name passes
    the AI check (`Classification.isAiRelated`) and it has not ended; a conference listed under several topics is kept
    once, by canonical URL. Its days, city and country are the file's own (DAY precision); `online` with a city is

@@ -363,6 +363,8 @@ class CollectorsConfiguration {
     return new AiDeadlinesCollector(
         s,
         collectorClient(s, observations, http),
+        ObservedHttp.restClientBuilderWithoutRedirects(
+            s.timeout(), s.deadline(), observations, http),
         clock,
         resilience,
         new RunInterval(c.interval()));

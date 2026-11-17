@@ -24,6 +24,7 @@ class AiDeadlinesCollectorLiveTest {
         new AiDeadlinesCollector(
             live("https://api.github.com", "H2_GITHUB_TOKEN"),
             liveHttp(),
+            liveHttp(),
             Clock.systemUTC(),
             Resilience.NONE,
             new RunInterval(Duration.ZERO));
