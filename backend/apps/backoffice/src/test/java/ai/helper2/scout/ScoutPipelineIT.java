@@ -212,7 +212,8 @@ class ScoutPipelineIT {
             .getResponse()
             .getContentAsString();
     assertThat(JsonPath.<List<String>>read(review, "$.items[?(@.resourceId=='" + id + "')].kind"))
-        .contains("ENRICHMENT_VALIDATION", "RELATIONSHIP_CANDIDATE");
+        .contains("RELATIONSHIP_CANDIDATE")
+        .doesNotContain("ENRICHMENT_VALIDATION");
 
     String again = runMcpRegistry();
     assertThat(JsonPath.<Integer>read(again, "$.itemsChanged")).isZero();

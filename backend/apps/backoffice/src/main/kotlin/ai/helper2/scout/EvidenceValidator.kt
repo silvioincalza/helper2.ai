@@ -288,7 +288,8 @@ class EvidenceValidator(
             EnrichmentOutcome.VALIDATED
           else -> EnrichmentOutcome.PARTIAL
         }
-      return ValidationResult(outcome, fields, relationships, claims, errors, errors - unstated)
+      val forReview = if (outcome == EnrichmentOutcome.PARTIAL) emptyList() else errors - unstated
+      return ValidationResult(outcome, fields, relationships, claims, errors, forReview)
     }
 
     private fun repeatsTheType(f: ProposedField): Boolean =
