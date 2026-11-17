@@ -675,7 +675,9 @@
       "done_other": "{{name}}: {{count}} items decided, {{skipped}} skipped, {{left}} left.",
       "failed": "Could not save the decision. Try again."
     },
-    "kindCount": "{{kind}} ({{count}})"
+    "kindCount": "{{kind}} ({{count}})",
+    "showSkipped_one": "Show the {{count}} skipped source",
+    "showSkipped_other": "Show the {{count}} skipped sources"
   },
   "nav": {
     "admin": "Admin"

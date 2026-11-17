@@ -55,6 +55,9 @@ interface ScoutStore {
 
   fun recent(limit: Int): List<RunSummary>
 
+  fun latestPerSource(): List<RunSummary> =
+    recent(Int.MAX_VALUE).distinctBy { it.sourceId }.sortedByDescending { it.startedAt }
+
   fun markInterrupted(at: Instant): Int
 }
 
