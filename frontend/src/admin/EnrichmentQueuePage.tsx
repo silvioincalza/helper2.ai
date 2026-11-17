@@ -32,6 +32,11 @@ export default function EnrichmentQueuePage() {
     { cache: false },
   );
   const { retry, focusRef: heading } = useRetry(queue.reload, queue.loading);
+  const overview = useApi('admin-overview', (s) => adminApi.getAdminOverview(s));
+  const waiting = overview.data && {
+    count: overview.data.enrichmentBacklog,
+    limit: overview.data.budgets.find((b) => b.name === 'enrichment')?.dailyLimit,
+  };
   const [busy, setBusy] = useState(false);
   const [skipping, setSkipping] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -97,6 +102,14 @@ export default function EnrichmentQueuePage() {
         {t('admin.enrichment.title')}
       </h2>
       <p className="muted">{t(`admin.enrichment.lede.${view}`)}</p>
+      {view === 'WAITING' && waiting !== undefined && (
+        <p className="h2-admin__count-line">
+          {t('admin.enrichment.waitingCount', {
+            count: waiting.count,
+            limit: waiting.limit ?? '—',
+          })}
+        </p>
+      )}
       <div className="h2-admin__tools">
         <label>
           {t('admin.enrichment.show')}

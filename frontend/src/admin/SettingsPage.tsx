@@ -1,8 +1,9 @@
 import './adminText';
 import type { TFunction } from 'i18next';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import type { ConfigSetting, RuntimeSettingState } from '@/api/types';
+import type { ConfigSetting, ConfigGroup, RuntimeSettingState } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
@@ -44,6 +45,20 @@ function SettingValue({
   }
 }
 
+function matches(setting: ConfigSetting, words: string): boolean {
+  if (!words) return true;
+  return [setting.label, setting.variable ?? '', setting.value ?? '', setting.key]
+    .join(' ')
+    .toLowerCase()
+    .includes(words);
+}
+
+function filtered(groups: ConfigGroup[], words: string): ConfigGroup[] {
+  return groups
+    .map((g) => ({ ...g, settings: g.settings.filter((s) => matches(s, words)) }))
+    .filter((g) => g.settings.length > 0);
+}
+
 export default function SettingsPage() {
   const { t } = useTranslation();
   const config = useApi('admin/config', (s) => adminApi.getEffectiveConfig(s), { cache: false });
@@ -55,6 +70,9 @@ export default function SettingsPage() {
   const publicApp = config.data?.publicApp ?? null;
   const runtimeSettings = runtime.data?.settings ?? [];
   const runtimeByKey = new Map(runtimeSettings.map((r) => [r.key, r]));
+  const [find, setFind] = useState('');
+  const words = find.trim().toLowerCase();
+  const shown = filtered(groups, words);
 
   return (
     <section aria-labelledby="settings-h" className="h2-admin__part">
@@ -62,6 +80,24 @@ export default function SettingsPage() {
         {t('admin.settings.title')}
       </h2>
       <p className="muted">{t('admin.settings.lede')}</p>
+      <nav aria-label={t('admin.settings.contents')} className="h2-admin__contents">
+        <ul>
+          <li>
+            <a href="#rt-h">{t('admin.settings.runtime.title')}</a>
+          </li>
+          <li>
+            <a href="#dh-h">{t('admin.settings.hosts.title')}</a>
+          </li>
+          <li>
+            <a href="#kt-h">{t('admin.settings.targets.title')}</a>
+          </li>
+          {groups.map((g) => (
+            <li key={g.id}>
+              <a href={`#settings-${g.id}`}>{g.title}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <RuntimeSettingsPanel
         settings={runtimeSettings}
         loading={runtime.loading}
@@ -88,7 +124,16 @@ export default function SettingsPage() {
               {t('admin.settings.publicAppNotStarted')}
             </p>
           )}
-          {groups.map((g) => (
+          <label className="h2-admin__find">
+            {t('admin.settings.find')}
+            <input type="search" value={find} onChange={(e) => setFind(e.target.value)} />
+          </label>
+          {words && shown.length === 0 && (
+            <p role="status" className="muted">
+              {t('admin.settings.noMatch')}
+            </p>
+          )}
+          {shown.map((g) => (
             <section key={g.id} aria-labelledby={`settings-${g.id}`}>
               <h3 id={`settings-${g.id}`} className="h2-admin__h">
                 {g.title}

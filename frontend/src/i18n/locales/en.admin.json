@@ -432,12 +432,15 @@
         "confirmRemove": "Remove name",
         "cancel": "Cancel",
         "discovered": "proposed by a rule"
-      }
+      },
+      "contents": "On this page",
+      "find": "Find a setting (name, variable or value)",
+      "noMatch": "No setting matches these words."
     },
     "enrichment": {
       "title": "Enrichment queue",
       "lede": {
-        "WAITING": "What the Scout enriches next, in its order: the ones you moved to the top first, then never-run resources, then the ones to try again, newest first. An action changes the order only: the daily enrichment limit stays the same.",
+        "WAITING": "What the Scout enriches next, in its order: the ones you moved to the top first, then never-run resources, then the ones to try again; inside each part, the most popular first (stars or downloads), then the newest. An action changes the order only: the daily enrichment limit stays the same.",
         "SKIPPED": "The resources you skipped, the latest first. The Scout does not take them until you requeue them.",
         "OUT_OF_RETRIES": "The resources whose runs failed too many times. The Scout does not try them again until you requeue them."
       },
@@ -490,7 +493,9 @@
       "noRun": "None",
       "lastRun": "{{outcome}}, {{at}}",
       "next": "Next page",
-      "first": "First page"
+      "first": "First page",
+      "waitingCount_one": "{{count}} resource waits; the daily limit is {{limit}}.",
+      "waitingCount_other": "{{count}} resources wait; the daily limit is {{limit}}."
     },
     "keys": {
       "open": "Keys (?)",
