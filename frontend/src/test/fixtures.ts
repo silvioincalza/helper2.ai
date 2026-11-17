@@ -338,6 +338,7 @@ export const POLICY: Policy = {
     adminRecordsSeconds: 730 * 86_400,
     handledReportsSeconds: 365 * 86_400,
     runtimeSettingChangesSeconds: 730 * 86_400,
+    pastEventsSeconds: 3650 * 86_400,
   },
   sources: {
     categories: 34,

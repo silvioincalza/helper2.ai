@@ -84,7 +84,8 @@ class PolicyController implements PolicyApi {
         accounts.inactiveAccounts().toSeconds(),
         catalog.handledReports().toSeconds(),
         accounts.adminRecords().toSeconds(),
-        platform.runtimeSettings().toSeconds());
+        platform.runtimeSettings().toSeconds(),
+        catalog.pastEvents().toSeconds());
   }
 
   private static PolicySourcesDto sources(

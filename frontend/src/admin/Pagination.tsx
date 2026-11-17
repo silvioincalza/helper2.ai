@@ -12,7 +12,7 @@ export function Pagination({
   onPage: (p: number) => void;
 }) {
   const { t } = useTranslation();
-  const pages = Math.min(Math.max(1, Math.ceil(total / size)), 51);
+  const pages = Math.max(1, Math.ceil(total / size));
   if (pages <= 1) return null;
   return (
     <nav className="pagination" aria-label={t('pagination.label')}>

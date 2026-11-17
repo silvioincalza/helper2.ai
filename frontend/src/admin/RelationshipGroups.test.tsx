@@ -58,6 +58,7 @@ describe('admin: relationship candidates by target name (S6.2.10)', () => {
     expect(
       await screen.findByText('Cursor: 117 items decided, 0 skipped, 0 left.'),
     ).toBeInTheDocument();
+    expect(m.callsTo('GET', '/admin/overview').length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByRole('region', { name: 'PyTorch' })).toBeInTheDocument();
   });
 

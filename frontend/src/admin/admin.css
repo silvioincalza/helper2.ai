@@ -465,3 +465,6 @@
   color: var(--ink);
   text-decoration-color: var(--accent);
 }
+.h2-admin__excerpt {
+  white-space: normal;
+}

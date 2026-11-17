@@ -30,9 +30,11 @@ function errorOf(e: unknown, t: (k: string) => string): string {
 export function RelationshipGroups({
   page,
   onPage,
+  onDecided,
 }: {
   page: number;
   onPage: (page: number) => void;
+  onDecided: () => void;
 }) {
   const { t } = useTranslation();
   const groups = useApi(
@@ -76,6 +78,7 @@ export function RelationshipGroups({
       const at = list.indexOf(group);
       setSelectedKey((list[at + 1] ?? list[at - 1])?.key);
       groups.reload();
+      onDecided();
     } catch (e) {
       setError(errorOf(e, t));
     } finally {

@@ -33,6 +33,7 @@ class PolicyControllerTest {
                 Duration.ofDays(180),
                 Duration.ofDays(150),
                 Duration.ofDays(20),
+                Duration.ofDays(3650),
                 200),
             new ScoutPolicy(Duration.ofHours(24), Duration.ofDays(30), 4, 300, 400, 2400),
             new PlatformRetentionProperties(Duration.ofDays(90), Duration.ofDays(7)),
@@ -80,6 +81,7 @@ class PolicyControllerTest {
     assertThat(p.getRetention().getHandledReportsSeconds()).isEqualTo(2_592_000);
     assertThat(p.getRetention().getAdminRecordsSeconds()).isEqualTo(63_072_000);
     assertThat(p.getRetention().getRuntimeSettingChangesSeconds()).isEqualTo(7_776_000);
+    assertThat(p.getRetention().getPastEventsSeconds()).isEqualTo(315_360_000);
   }
 
   @Test
