@@ -146,8 +146,9 @@ place to say that.
    The detail page shows the summary claims of the newest `VALIDATED` or `PARTIAL` run that has claims. A run without
    model output (`LLM_UNAVAILABLE`, `FAILED`) leaves the last output and its review items as they are.
 9. **Review queue** (`ReviewQueue`). A `REJECTED` run with a validation error a person can act on, or a `CONFLICTING`
-   field, opens an `ENRICHMENT_VALIDATION` item. A `PARTIAL` run opens none: it keeps what passed and has already
-   dropped what failed, so a person has nothing left to decide; its errors stay on the run. A value its quote does not state is not one of them (`ValidationResult.forReview`): the
+   field, opens an `ENRICHMENT_VALIDATION` item. The errors of a `PARTIAL` run open none: the run keeps what passed and
+   has already dropped what failed, so they leave a person nothing to decide, and they stay on the run. A `CONFLICTING`
+   field of a `PARTIAL` run still opens the item, and its `UNVERIFIED` relationships still open theirs. A value its quote does not state is not one of them (`ValidationResult.forReview`): the
    field stays `UNVERIFIED` and shows "Not stated", the line stays in the run's errors, and the run stays `PARTIAL`, but
    no item opens for it alone. A short source text makes the model guess (a library is "coding", a package is "MIT"), and
    the only decision left to a person would be to reject. When an item opens for another reason, it lists these lines
