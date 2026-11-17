@@ -140,7 +140,7 @@ public class ConfsTechCollector implements Collector {
               POLICY,
               () ->
                   HttpClients.getJson(
-                      () -> raw.get().uri(file).retrieve().body(String.class), clock));
+                      () -> HttpClients.getWithoutRedirect(raw, file, clock), clock));
       for (JsonNode c : conferences) {
         if (byUrl.size() >= maxItems) {
           break;
