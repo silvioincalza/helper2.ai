@@ -106,20 +106,33 @@ class JdbcScoutStore implements ScoutStore, ScheduledRunStore, RunHistoryRetenti
   public List<RunSummary> recent(int limit) {
     return jdbc.sql("SELECT * FROM scout_run ORDER BY started_at DESC LIMIT :n")
         .param("n", limit)
-        .query((rs, i) ->
-            new RunSummary(
-                rs.getObject("id", UUID.class),
-                rs.getString("source_id"),
-                RunStatus.valueOf(rs.getString("status")),
-                rs.getTimestamp("started_at").toInstant(),
-                rs.getTimestamp("finished_at") == null
-                    ? null
-                    : rs.getTimestamp("finished_at").toInstant(),
-                rs.getInt("items_seen"),
-                rs.getInt("items_changed"),
-                rs.getInt("enrichments_queued"),
-                rs.getString("message")))
+        .query(JdbcScoutStore::summary)
         .list();
+  }
+
+  @Override
+  public List<RunSummary> latestPerSource() {
+    return jdbc.sql(
+            """
+            SELECT * FROM (SELECT DISTINCT ON (source_id) * FROM scout_run
+                           ORDER BY source_id, started_at DESC) latest
+            ORDER BY started_at DESC, source_id
+            """)
+        .query(JdbcScoutStore::summary)
+        .list();
+  }
+
+  private static RunSummary summary(java.sql.ResultSet rs, int i) throws java.sql.SQLException {
+    return new RunSummary(
+        rs.getObject("id", UUID.class),
+        rs.getString("source_id"),
+        RunStatus.valueOf(rs.getString("status")),
+        rs.getTimestamp("started_at").toInstant(),
+        rs.getTimestamp("finished_at") == null ? null : rs.getTimestamp("finished_at").toInstant(),
+        rs.getInt("items_seen"),
+        rs.getInt("items_changed"),
+        rs.getInt("enrichments_queued"),
+        rs.getString("message"));
   }
 
   @Override

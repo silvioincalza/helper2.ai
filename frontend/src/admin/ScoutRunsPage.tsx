@@ -19,6 +19,13 @@ const COMMAND = 'helper2 scouts --runs';
 
 export const RUN_POLL_MS = 3000;
 
+const STATUS_ORDER: Record<ScoutRun['status'], number> = {
+  FAILED: 0,
+  RUNNING: 1,
+  SUCCEEDED: 2,
+  SKIPPED: 3,
+};
+
 function firstRunPerSource(runs: ScoutRun[]): Set<string> {
   const seen = new Set<string>();
   const first = new Set<string>();
@@ -34,6 +41,7 @@ export default function ScoutRunsPage() {
   const { t } = useTranslation();
   const [actionError, setActionError] = useState<'failed' | 'runInProgress' | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showSkipped, setShowSkipped] = useState(false);
   const [recheck, setRecheck] = useState<
     EnrichmentRecheck | 'busy' | 'failed' | 'runInProgress' | null
   >(null);
@@ -77,6 +85,10 @@ export default function ScoutRunsPage() {
   };
 
   const withRunNow = firstRunPerSource(runList);
+  const skipped = runList.filter((r) => r.status === 'SKIPPED').length;
+  const shown = runList
+    .filter((r) => showSkipped || r.status !== 'SKIPPED')
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
   const sources = useApi('sources', (s) => api.listSources(s));
   const ran = new Set(runList.map((r) => r.sourceId));
   const neverRan =
@@ -130,6 +142,16 @@ export default function ScoutRunsPage() {
         )}
         <CategoryBackfill />
       </div>
+      {skipped > 0 && (
+        <label className="h2-admin__choice">
+          <input
+            type="checkbox"
+            checked={showSkipped}
+            onChange={(e) => setShowSkipped(e.target.checked)}
+          />{' '}
+          {t('admin.showSkipped', { count: skipped })}
+        </label>
+      )}
       {runs.loading && loaded === undefined ? (
         <AdminLoading command={COMMAND} />
       ) : runs.error !== undefined && loaded === undefined ? (
@@ -166,7 +188,7 @@ export default function ScoutRunsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {runList.map((r) => (
+                  {shown.map((r) => (
                     <tr key={r.id} className="h2-term-row">
                       <th scope="row">{r.sourceId}</th>
                       <td>
