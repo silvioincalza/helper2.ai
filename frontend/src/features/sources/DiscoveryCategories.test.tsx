@@ -125,8 +125,8 @@ describe('Feature: discovery categories in the back office (ADR 0013)', () => {
       }),
     });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE&category=health');
-    const link = await screen.findByRole('link', { name: 'Scribe' });
-    const card = link.closest('dl') as HTMLElement;
+    const links = await screen.findAllByRole('link', { name: 'Scribe' });
+    const card = links.map((l) => l.closest('dl')).find(Boolean) as HTMLElement;
     expect(card).toHaveTextContent('discovery-health, discovery-writing');
     expect(card).toHaveTextContent('Not medical advice.');
     expect(m.callsTo('GET', '/admin/review-items').at(-1)?.search).toContain('category=health');
