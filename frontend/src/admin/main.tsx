@@ -9,6 +9,7 @@ import { claimReloadedPage, followNavigation } from '@/lib/staleChunk';
 import { adminRoutes } from './routes';
 import '@/styles/tokens.css';
 import '@/styles/app.css';
+import '@/styles/shell.css';
 
 claimReloadedPage();
 const router = createBrowserRouter(adminRoutes);

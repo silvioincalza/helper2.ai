@@ -157,8 +157,8 @@ Two kinds of source need more care:
     and the courses (10) both run, discovery has 23 of the 40 left and finishes its categories the day after.
 19. **Retention and titles.** `linkedin-scout` is a web source (`WebSources`, [0013](0013-discovery.md) §12): its titles
     are cleaned as page titles, and its NEWS and ARTICLE records go with the web retention.
-20. **Alert.** `Helper2ScoutCollectorStale` fires when `linkedin-scout` has had no success for more than 8 days (its
-    7-day interval plus a day), as for `course-scout`.
+20. **Alert.** `Helper2ScoutCollectorStale` fires when `linkedin-scout` has had no success for its run interval plus a
+    day (8 days at the default 7), as for every collector ([0009](../foundation/0009-observability.md)).
 
 ### Events
 21. **Stated days only.** An event has a start (and maybe an end) only when a source states it.

@@ -138,6 +138,12 @@ tests:
         values: '3600x96'
       - series: 'helper2_scout_last_success{application="helper2-backoffice", environment="prod", source="mcp-registry"}'
         values: '0+3600x96'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="hf-trending"}'
+        values: '86400x96'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="live-web-scout"}'
+        values: '432000x96'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="mcp-registry"}'
+        values: '3600x96'
     alert_rule_test:
       - eval_time: 49h
         alertname: Helper2ScoutCollectorStale
@@ -151,8 +157,8 @@ tests:
               source: hf-trending
             exp_annotations:
               summary: "Scout collector hf-trending: no successful run for 3d 0h 0m 0s (prod)."
-              description: "The catalog misses new resources from hf-trending since its last successful run."
-              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+              description: "The catalog misses new resources from hf-trending since its last successful run: one day more than its run interval (at least one day, the daily Scout run) has passed."
+              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. helper2_scout_interval_seconds gives each collector's interval (H2_SCOUT_*_INTERVAL). A collector disabled on purpose keeps firing until its last value is 9 days old."
 
   - interval: 1h
     input_series:
@@ -162,6 +168,12 @@ tests:
         values: '3600x220'
       - series: 'helper2_scout_last_success{application="helper2-backoffice", environment="prod", source="discovery-writing"}'
         values: '0+3600x220'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="discovery-coding"}'
+        values: '604800x220'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="discovery-legal"}'
+        values: '604800x220'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="discovery-writing"}'
+        values: '604800x220'
     alert_rule_test:
       - eval_time: 193h
         alertname: Helper2DiscoveryStale
@@ -176,7 +188,7 @@ tests:
               severity: warning
               environment: prod
             exp_annotations:
-              summary: "2 discovery categories: no successful run for more than 8 days (prod)."
+              summary: "2 discovery categories: no successful run for one day more than their run interval (prod)."
               description: "No new products or list articles from: discovery-coding discovery-legal "
               runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
 
@@ -184,6 +196,8 @@ tests:
     input_series:
       - series: 'helper2_scout_last_success{application="helper2-backoffice", environment="prod", source="linkedin-scout"}'
         values: '3600x220'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="linkedin-scout"}'
+        values: '604800x220'
     alert_rule_test:
       - eval_time: 73h
         alertname: Helper2ScoutCollectorStale
@@ -200,13 +214,15 @@ tests:
               source: linkedin-scout
             exp_annotations:
               summary: "Scout collector linkedin-scout: no successful run for 8d 7h 0m 0s (prod)."
-              description: "The catalog misses new resources from linkedin-scout since its last successful run."
-              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+              description: "The catalog misses new resources from linkedin-scout since its last successful run: one day more than its run interval (at least one day, the daily Scout run) has passed."
+              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. helper2_scout_interval_seconds gives each collector's interval (H2_SCOUT_*_INTERVAL). A collector disabled on purpose keeps firing until its last value is 9 days old."
 
   - interval: 1h
     input_series:
       - series: 'helper2_scout_last_success{application="helper2-backoffice", environment="prod", source="hf-trending", instance="old"}'
         values: '3600x10'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="hf-trending", instance="new"}'
+        values: '86400x60'
     alert_rule_test:
       - eval_time: 50h
         alertname: Helper2ScoutCollectorStale
@@ -217,8 +233,33 @@ tests:
               source: hf-trending
             exp_annotations:
               summary: "Scout collector hf-trending: no successful run for 2d 1h 0m 0s (prod)."
-              description: "The catalog misses new resources from hf-trending since its last successful run."
-              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+              description: "The catalog misses new resources from hf-trending since its last successful run: one day more than its run interval (at least one day, the daily Scout run) has passed."
+              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. helper2_scout_interval_seconds gives each collector's interval (H2_SCOUT_*_INTERVAL). A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+  - interval: 1h
+    input_series:
+      - series: 'helper2_scout_last_success{application="helper2-backoffice", environment="prod", source="github-topic-leaders"}'
+        values: '3600x220'
+      - series: 'helper2_scout_interval_seconds{application="helper2-backoffice", environment="prod", source="github-topic-leaders"}'
+        values: '604800x220'
+    alert_rule_test:
+      - eval_time: 73h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts: []
+      - eval_time: 193h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts: []
+      - eval_time: 200h
+        alertname: Helper2ScoutCollectorStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              environment: prod
+              source: github-topic-leaders
+            exp_annotations:
+              summary: "Scout collector github-topic-leaders: no successful run for 8d 7h 0m 0s (prod)."
+              description: "The catalog misses new resources from github-topic-leaders since its last successful run: one day more than its run interval (at least one day, the daily Scout run) has passed."
+              runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. helper2_scout_interval_seconds gives each collector's interval (H2_SCOUT_*_INTERVAL). A collector disabled on purpose keeps firing until its last value is 9 days old."
 
   - interval: 1h
     input_series:
