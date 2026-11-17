@@ -294,6 +294,11 @@ describe('Feature: a long Settings page is quick to move through', () => {
     expect(screen.queryByRole('table', { name: 'Search' })).not.toBeInTheDocument();
 
     await userEvent.clear(screen.getByRole('searchbox'));
+    await userEvent.type(screen.getByRole('searchbox'), 'changed at runtime');
+    expect(screen.queryByRole('table', { name: 'Models' })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/changed at runtime/).length).toBeGreaterThan(0);
+
+    await userEvent.clear(screen.getByRole('searchbox'));
     await userEvent.type(screen.getByRole('searchbox'), 'no such setting');
     expect(screen.getByText('No setting matches these words.')).toBeInTheDocument();
   });

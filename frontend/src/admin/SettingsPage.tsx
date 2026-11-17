@@ -13,6 +13,34 @@ import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
 import { KnownTargetsPanel } from './KnownTargetsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
 
+function settingText(
+  setting: ConfigSetting,
+  runtime: RuntimeSettingState | undefined,
+  t: TFunction,
+): string {
+  if (runtime) {
+    const now =
+      runtime.value === null ? t('admin.settings.noCap') : `${runtime.value} ${runtime.unit}`;
+    return runtime.overridden ? `${now} (${t('admin.settings.changedAtRuntime')})` : now;
+  }
+  const { kind, value, unit } = setting;
+  switch (kind) {
+    case 'FLAG':
+      return value === 'true' ? t('admin.settings.on') : t('admin.settings.off');
+    case 'CAP':
+      if (value === null) return t('admin.settings.noCap');
+      return unit ? `${value} ${unit}` : value;
+    case 'COUNT':
+      return unit ? `${value} ${unit}` : (value ?? '');
+    case 'DURATION':
+      return value === null ? t('admin.settings.none') : formatDuration(Number(value), t);
+    case 'NAMES':
+      return value ? value.split(',').join(', ') : t('admin.settings.none');
+    default:
+      return value ?? t('admin.settings.none');
+  }
+}
+
 function SettingValue({
   setting,
   runtime,
@@ -22,40 +50,23 @@ function SettingValue({
   runtime: RuntimeSettingState | undefined;
   t: TFunction;
 }) {
-  if (runtime) {
-    const now =
-      runtime.value === null ? t('admin.settings.noCap') : `${runtime.value} ${runtime.unit}`;
-    return <>{runtime.overridden ? `${now} (${t('admin.settings.changedAtRuntime')})` : now}</>;
-  }
-  const { kind, value, unit } = setting;
-  switch (kind) {
-    case 'FLAG':
-      return <>{value === 'true' ? t('admin.settings.on') : t('admin.settings.off')}</>;
-    case 'CAP':
-      if (value === null) return <>{t('admin.settings.noCap')}</>;
-      return <>{unit ? `${value} ${unit}` : value}</>;
-    case 'COUNT':
-      return <>{unit ? `${value} ${unit}` : value}</>;
-    case 'DURATION':
-      return <>{value === null ? t('admin.settings.none') : formatDuration(Number(value), t)}</>;
-    case 'NAMES':
-      return <>{value ? value.split(',').join(', ') : t('admin.settings.none')}</>;
-    default:
-      return value === null ? <>{t('admin.settings.none')}</> : <code>{value}</code>;
-  }
+  const text = settingText(setting, runtime, t);
+  const plain = runtime || setting.value === null || setting.kind in PLAIN_KINDS;
+  return plain ? <>{text}</> : <code>{text}</code>;
 }
 
-function matches(setting: ConfigSetting, words: string): boolean {
-  if (!words) return true;
-  return [setting.label, setting.variable ?? '', setting.value ?? '', setting.key]
-    .join(' ')
-    .toLowerCase()
-    .includes(words);
-}
+const PLAIN_KINDS = { FLAG: true, CAP: true, COUNT: true, DURATION: true, NAMES: true };
 
-function filtered(groups: ConfigGroup[], words: string): ConfigGroup[] {
+function filtered(
+  groups: ConfigGroup[],
+  words: string,
+  shownValue: (setting: ConfigSetting) => string,
+): ConfigGroup[] {
+  if (!words) return groups;
+  const matches = (s: ConfigSetting) =>
+    [s.label, s.variable ?? '', shownValue(s), s.key].join(' ').toLowerCase().includes(words);
   return groups
-    .map((g) => ({ ...g, settings: g.settings.filter((s) => matches(s, words)) }))
+    .map((g) => ({ ...g, settings: g.settings.filter(matches) }))
     .filter((g) => g.settings.length > 0);
 }
 
@@ -72,7 +83,7 @@ export default function SettingsPage() {
   const runtimeByKey = new Map(runtimeSettings.map((r) => [r.key, r]));
   const [find, setFind] = useState('');
   const words = find.trim().toLowerCase();
-  const shown = filtered(groups, words);
+  const shown = filtered(groups, words, (s) => settingText(s, runtimeByKey.get(s.key), t));
 
   return (
     <section aria-labelledby="settings-h" className="h2-admin__part">
