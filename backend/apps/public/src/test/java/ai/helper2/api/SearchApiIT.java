@@ -389,7 +389,10 @@ class SearchApiIT extends ApiTestBase {
 
     mvc.perform(get("/api/v1/search").param("q", q)).andExpect(status().isOk());
 
-    eventually(() -> assertThat(newThisWeek("fake-live")).isEqualTo(before + 1));
+    eventually(() ->
+        assertThat(newThisWeek("fake-live"))
+            .as("the new resource counts, next to what other tests still write")
+            .isGreaterThanOrEqualTo(before + 1));
     assertThat(newThisWeek("helper2-index"))
         .as("the index counts every resource it serves")
         .isGreaterThanOrEqualTo(indexBefore + 1);
