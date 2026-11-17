@@ -237,8 +237,8 @@ class EvidenceGateTest {
     }
 
   @Test
-  fun `the validator's fingerprint, which keys the stored answers, is the one before the gate had its own class`() {
-    assertEquals("3/40/6/300/400/5/words/secrets", validator.fingerprint)
+  fun `the validator's fingerprint, which keys the stored answers, names the proposed and the shown limit`() {
+    assertEquals("5/3/40/6/300/400/5/words/secrets", validator.fingerprint)
   }
 
   @Test

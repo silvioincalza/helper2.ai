@@ -435,6 +435,9 @@ class ResourceEmbeddingTest {
     indexer.tick();
     assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isEqualTo(1);
 
+    jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id")
+        .param("id", alpha)
+        .update();
     embedEverythingSoFar();
     indexer.tick();
 

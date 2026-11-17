@@ -45,6 +45,7 @@ class ResourceAiFieldsTest {
           "card.foundIn.headingPath",
           "sourceRecords[].url",
           "sourceRecords[].externalId",
+          "sourceRecords[].repositoryUrl",
         ),
       QUOTE_OF_THE_SOURCE to
         listOf(

@@ -5,6 +5,7 @@ import ai.helper2.platform.quota.QuotaCounter.Counter
 import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WordLists
 import java.time.Duration
 import java.util.function.Supplier
 
@@ -45,34 +46,9 @@ enum class IntentClass {
 
     private val TIME_BOUND_TYPES = setOf(ResourceType.NEWS, ResourceType.EVENT, ResourceType.COURSE)
 
-    private val TIME_BOUND_WORDS =
-      setOf(
-        "news",
-        "course",
-        "courses",
-        "certification",
-        "certifications",
-        "hackathon",
-        "hackathons",
-        "conference",
-        "conferences",
-        "event",
-        "events",
-        "meetup",
-        "meetups",
-        "summit",
-        "webinar",
-        "webinars",
-        "workshop",
-        "workshops",
-        "notizie",
-        "corso",
-        "corsi",
-        "conferenza",
-        "conferenze",
-        "evento",
-        "eventi",
-      )
+    private val WORDS = WordLists.load("query-words")
+
+    private val TIME_BOUND_WORDS = WORDS.words("time-bound")
 
     @JvmStatic
     fun of(request: SearchRequest, analyzed: AnalyzedQuery): IntentClass {

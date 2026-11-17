@@ -1,6 +1,7 @@
 package ai.helper2.eval
 
 import ai.helper2.search.MergedResult
+import ai.helper2.search.RepositoryJoin
 import java.util.Locale
 
 data class QueryScore(
@@ -276,7 +277,7 @@ class SearchEvaluation(
 
     fun urlsOf(r: MergedResult): Set<String> =
       (listOf(r.canonicalUrl.value) +
-          r.hits.flatMap { listOfNotNull(it.canonicalUrl.value, it.repositoryUrl?.value) })
+          r.hits.flatMap { listOfNotNull(it.canonicalUrl.value, RepositoryJoin.of(it)?.value) })
         .toSet()
 
     fun mean(xs: List<Double>) = meanOrNull(xs) ?: 0.0

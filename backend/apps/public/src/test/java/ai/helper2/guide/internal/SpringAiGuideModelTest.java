@@ -147,7 +147,7 @@ class SpringAiGuideModelTest {
   void promptsStateTheLimitsTheCodeEnforces() {
     assertThat(SpringAiGuideModel.chooseSystem())
         .doesNotContain("{{")
-        .contains("Return at most " + GuideValidator.MAX_PICKS + ".")
+        .contains("Return at most\n   " + GuideValidator.MAX_PROPOSED + ", best first")
         .contains(
             " "
                 + GuideValidator.MIN_QUOTE_CHARS
@@ -208,7 +208,7 @@ class SpringAiGuideModelTest {
         .isEqualTo(
             Map.of(
                 "guide/plan.txt", "cbb55ef0",
-                "guide/choose.txt", "c4ac02df",
+                "guide/choose.txt", "f9d7a3e2",
                 "guide/compare.txt", "14806e21",
                 "guide/explain.txt", "180b36ae",
                 "guide/verify-reasons.txt", "eae9e99b"));

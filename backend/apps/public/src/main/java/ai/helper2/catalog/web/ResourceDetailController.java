@@ -101,11 +101,12 @@ class ResourceDetailController implements ResourceDetailApi {
                 d.sourceRecords().stream()
                     .map(s ->
                         new SourceRecordInfoDto(
-                            s.sourceId(),
-                            s.externalId(),
-                            s.url(),
-                            UtcTimes.odt(s.retrievedAt()),
-                            s.fingerprint()))
+                                s.sourceId(),
+                                s.externalId(),
+                                s.url(),
+                                UtcTimes.odt(s.retrievedAt()),
+                                s.fingerprint())
+                            .repositoryUrl(s.repositoryUrl()))
                     .toList())
             .enrichmentStatus(
                 ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()))
