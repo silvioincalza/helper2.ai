@@ -1,3 +1,33 @@
+.h2-admin__bar {
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+.h2-admin__bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 3rem;
+}
+.h2-app .h2-admin__brand,
+.h2-admin__brand {
+  font: 600 0.9375rem/1 var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+}
+.h2-admin__brand span {
+  color: var(--accent-ink);
+}
+.h2-admin.h2-term {
+  padding-top: var(--space-4);
+}
+.h2-admin .h2-term__head {
+  margin-bottom: var(--space-3);
+}
+.h2-admin .h2-term__head h1 {
+  font-size: 1.75rem;
+}
+
 .h2-admin__part {
   display: flex;
   flex-direction: column;
@@ -267,6 +297,15 @@
   .h2-admin__review {
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;
+  }
+  /* The detail stays in view while the list scrolls: the decision is
+     always one look away, whatever row is current. */
+  .h2-admin__detail {
+    position: sticky;
+    top: var(--space-3);
+    max-height: calc(100vh - 2 * var(--space-3));
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 .h2-admin__list {
