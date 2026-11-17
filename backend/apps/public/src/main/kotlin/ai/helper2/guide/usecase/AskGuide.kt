@@ -268,10 +268,9 @@ class AskGuide(
         subjects.values +
         explanation?.sentences.orEmpty().map { it.source }
     if (quoted.isEmpty()) return this
-    val records = quoteRecords.of(quoted.map { it.id }.distinct())
+    val records = quoteRecords.of(quoted.flatMap(quoteOrigins::storedResourcesOf).distinct())
     fun from(quote: String?, result: MergedResult?) =
-      if (quote.isNullOrBlank() || result == null) null
-      else quoteOrigins.of(quote, result, records[result.id].orEmpty())
+      if (quote.isNullOrBlank() || result == null) null else quoteOrigins.of(quote, result, records)
     return copy(
       recommendations = recommendations.map { it.copy(quotedFrom = from(it.quote, it.result)) },
       comparison =

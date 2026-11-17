@@ -3,6 +3,8 @@ package ai.helper2.guide
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.contexts
 import ai.helper2.search.hit
+import ai.helper2.shared.CanonicalUrl
+import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ValueOrigin
 import java.net.URI
 import kotlin.test.Test
@@ -31,7 +33,7 @@ class QuoteOriginsTest {
         .single()
     assertEquals(repo, result.canonicalUrl.value)
 
-    val from = origins.of("Chat with your PDF files locally, with no account", result, emptyList())
+    val from = origins.of("Chat with your PDF files locally, with no account", result, emptyMap())
 
     assertEquals(QuotedFrom("npm", URI(npm)), from)
   }
@@ -46,7 +48,7 @@ class QuoteOriginsTest {
     val result = merger.merge(hits, contexts("npm", "github")).single()
 
     val from =
-      origins.of("answers questions about PDF documents on your own machine", result, emptyList())
+      origins.of("answers questions about PDF documents on your own machine", result, emptyMap())
 
     assertEquals(QuotedFrom("github", URI(repo)), from)
   }
@@ -61,20 +63,22 @@ class QuoteOriginsTest {
     val result = merger.merge(hits, contexts("npm", "github")).single()
 
     val from =
-      origins.of("answers questions about PDF documents on your own machine", result, emptyList())
+      origins.of("answers questions about PDF documents on your own machine", result, emptyMap())
 
     assertEquals(QuotedFrom("github", URI(repo)), from)
   }
 
   @Test
   fun `a catalog row is not a source, the stored record that holds the text is`() {
-    val row = hit("catalog", repo, title = "acme/pdfchat", description = npmText)
+    val id = ResourceId.of(CanonicalUrl.of(repo)!!)
+    val row =
+      hit("catalog", repo, title = "acme/pdfchat", description = npmText)
+        .copy(externalId = id.toString())
     val result = merger.merge(listOf(row), contexts("catalog")).single()
-    val catalogRow =
-      result.copy(hits = result.hits.map { it.copy(externalId = result.id.toString()) })
-    val records = listOf(hit("npm", npm, title = "pdfchat", repo = repo, description = npmText))
+    val records =
+      mapOf(id to listOf(hit("npm", npm, title = "pdfchat", repo = repo, description = npmText)))
 
-    val from = origins.of("Chat with your PDF files locally, with no account", catalogRow, records)
+    val from = origins.of("Chat with your PDF files locally, with no account", result, records)
 
     assertEquals(QuotedFrom("npm", URI(npm)), from)
   }
@@ -86,7 +90,7 @@ class QuoteOriginsTest {
         .copy(descriptionOrigin = ValueOrigin.AI_SUMMARY)
     val result = merger.merge(listOf(written), contexts("npm")).single()
 
-    assertNull(origins.of("Chat with your PDF files locally, with no account", result, emptyList()))
+    assertNull(origins.of("Chat with your PDF files locally, with no account", result, emptyMap()))
   }
 
   @Test
@@ -95,7 +99,7 @@ class QuoteOriginsTest {
       merger.merge(listOf(hit("github", repo, description = repoText)), contexts("github")).single()
 
     assertNull(
-      origins.of("a sentence that no source ever wrote about this tool", result, emptyList())
+      origins.of("a sentence that no source ever wrote about this tool", result, emptyMap())
     )
   }
 
@@ -109,6 +113,49 @@ class QuoteOriginsTest {
         )
         .single()
 
-    assertNull(origins.of("Runs on a local", result, emptyList()))
+    assertNull(origins.of("Runs on a local", result, emptyMap()))
+  }
+
+  @Test
+  fun `a catalog row merged under another identity is still not a source, its stored records are`() {
+    val pkgUrl = "https://www.npmjs.com/package/pdfchat"
+    val pkgId = ResourceId.of(CanonicalUrl.of(pkgUrl)!!)
+    val row =
+      hit(
+          "curated",
+          pkgUrl,
+          title = "pdfchat",
+          repo = repo,
+          description = "Curated words nobody else wrote here",
+        )
+        .copy(externalId = pkgId.toString())
+    val live = hit("github", repo, title = "acme/pdfchat", description = repoText)
+    val result = merger.merge(listOf(row, live), contexts("curated", "github")).single()
+    assertEquals(setOf(result.id, pkgId), origins.storedResourcesOf(result))
+
+    assertNull(origins.of("Curated words nobody else wrote here", result, emptyMap()))
+    val stored =
+      mapOf(pkgId to listOf(hit("npm", pkgUrl, title = "pdfchat", description = npmText)))
+    assertEquals(
+      QuotedFrom("npm", URI(pkgUrl)),
+      origins.of("Chat with your PDF files locally, with no account", result, stored),
+    )
+  }
+
+  @Test
+  fun `a quote of a Hacker News title names the story's page, not the article it links`() {
+    val story =
+      hit(
+          "hacker-news",
+          "https://example.com/post",
+          title = "Show HN: PDF chat that runs on your own laptop",
+        )
+        .copy(externalId = "41234567")
+    val result = merger.merge(listOf(story), contexts("hacker-news")).single()
+
+    assertEquals(
+      QuotedFrom("hacker-news", URI("https://news.ycombinator.com/item?id=41234567")),
+      origins.of("Show HN: PDF chat that runs on your own laptop", result, emptyMap()),
+    )
   }
 }

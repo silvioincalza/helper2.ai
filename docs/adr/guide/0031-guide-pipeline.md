@@ -99,8 +99,9 @@ wrote one. So every quote of an answer names the page that holds it: a pick (AI 
 comparison cell (looked up in its subject) and an explanation sentence (in its source). `QuoteOrigins` looks the
 quote up, with the gate's own whole-word rule, in the title and source-written description of each record of the
 resource, the record at the resource's own address first, then the others in source order. A live hit is its own
-record; a catalog row (a hit whose external id is the resource id) is the resource, not a source, so its stored
-records stand in for it: `QuoteRecords` reads them with `Resources.recordsOf`, one read per answer for all its quotes,
+record, and its page is the one that holds its text (a Hacker News hit: the story's page, not the article it links);
+a catalog row (a hit whose external id is the id of its own address, also when the merge puts it under another
+resource) is a resource, not a source, so the stored records of that resource and of the result stand in for it: `QuoteRecords` reads them with `Resources.recordsOf`, one read per answer for all its quotes,
 in `AskGuide.withQuoteOrigins` before the answer is cached. The answer carries `quotedFrom` (`sourceId`, `url`) per
 pick, cell and sentence; the result row, the resource page, the comparison and the explanation link "read it on
 {host}" to that page, and the resource page names that host under the highlighted quote. `quotedFrom` is null when no
