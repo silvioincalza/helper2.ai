@@ -12,6 +12,7 @@ shape: sequence_diagram
 owner: Owner {class: person}
 github: "GitHub\n(repository, Actions,\nrulesets)" {class: ext}
 runner: "release-prepare, release\n(GitHub-hosted runner)" {class: app}
+staging: "Staging job\n(deploy.yml, self-hosted)" {class: app}
 prod: "Prod job\n(deploy.yml, self-hosted)" {class: app}
 releases: "GitHub Releases\n(gh CLI)" {class: ext}
 visitor: "Visitor\n(site footer)" {class: person}
@@ -36,6 +37,9 @@ release: Release YYYY.N.P {
   runner -> runner: "release-version.sh check (year window);\nseven files = YYYY.N.P; only the version\nbeside main, staging ran its commit; canary present"
   runner -> github: "job built: CD run of the head (waits while it runs);\non main for a commit of main unchanged"
   github -> runner: "completed, success"
+  github -> staging: "deploy.yml env staging, tag = commit,\nstaging-release YYYY.N.P" {class: hot}
+  staging -> staging: "the head of release/YYYY.N by digest,\ncheck after the rollout (rollback when it fails)"
+  staging -> github: "job succeeded"
   github -> owner: "job prod waits for the\napproval on environment prod"
   owner -> github: "approve"
   github -> prod: "deploy.yml env prod, tag = commit,\nrelease-version YYYY.N.P" {class: hot}
