@@ -33,6 +33,13 @@ class RepositoryJoinTest {
   }
 
   @Test
+  fun `a GitLab group named tree is a repository, its folder is after the dash`() {
+    val nested = "https://gitlab.com/group/subgroup/tree/tools/transformers"
+    assertNull(RepositoryJoin.of(npm("@someone/agents-kit", nested)))
+    assertJoins(npm("@someone/agents-kit", "https://gitlab.com/group/tools/-/tree/main/agents-kit"))
+  }
+
+  @Test
   fun `an owner or a repository named tree is not taken for a folder marker`() {
     assertJoins(pypi("tree-client", "https://github.com/acme/tree/tree/HEAD/python"))
     assertJoins(pypi("tree-client", "https://github.com/tree/tree-client"))

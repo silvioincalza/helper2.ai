@@ -37,7 +37,8 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
    server's `repository.url`. `RepositoryJoin` decides whether the record joins it. The names are compared by
    words (lower case, split on anything that is not a letter or a digit), so `@langchain` is the owner
    `langchain-ai` and `@tanstack` is `TanStack`. A record joins the repository it states when:
-   - the stated repository is a sub-directory (`/tree/HEAD/{path}`): one folder is one package or one server. A
+   - the stated repository is a sub-directory (GitHub's `/tree/{ref}/{path}` right after owner and repository,
+     GitLab's `/-/tree/{ref}/{path}`): one folder is one package or one server. A
      repository in a nested group (`gitlab.com/group/subgroup/name`) is a repository, named by its last part, and
      a repository stated by its host alone is named by the host;
    - its scope is the repository's owner (`@langchain/core` under `langchain-ai/langchainjs`,
