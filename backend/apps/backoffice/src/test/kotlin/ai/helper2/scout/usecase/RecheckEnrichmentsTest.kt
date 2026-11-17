@@ -102,7 +102,7 @@ class RecheckEnrichmentsTest {
 
     var closings = 0
 
-    override fun closeItemsOfUnstatedValues(): Int = if (closings++ == 0) 4 else 0
+    override fun closeItemsWithNothingToDecide(): Int = if (closings++ == 0) 4 else 0
   }
 
   private val enrichment =

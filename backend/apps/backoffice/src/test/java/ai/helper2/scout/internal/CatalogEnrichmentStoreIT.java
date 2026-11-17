@@ -272,17 +272,36 @@ class CatalogEnrichmentStoreIT {
         unstated,
         "field pricing: " + ai.helper2.catalog.ScoutPolicy.UNSTATED_VALUE);
 
-    int closed = storedEnrichments.closeItemsOfUnstatedValues("scout", "no review needed");
+    int closed = storedEnrichments.closeItemsWithNothingToDecide("scout", "no review needed");
 
     assertThat(closed).isGreaterThanOrEqualTo(1);
     assertThat(itemState(resource)).isEqualTo("SUPERSEDED:scout");
 
-    saveWithErrors(
-        "run-mixed", List.of(), unstated, "field pricing: excerpt not found in cited evidence");
-    saveConflicting("run-conflict", unstated);
-    storedEnrichments.closeItemsOfUnstatedValues("scout", "no review needed");
-
+    save(
+        "run-rejected",
+        EnrichmentOutcome.REJECTED,
+        new ValidationResult(
+            EnrichmentOutcome.REJECTED,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(unstated, "field pricing: excerpt not found in cited evidence")));
+    storedEnrichments.closeItemsWithNothingToDecide("scout", "no review needed");
     assertThat(itemState(resource)).isEqualTo("OPEN:-");
+
+    saveConflicting("run-conflict", unstated);
+    storedEnrichments.closeItemsWithNothingToDecide("scout", "no review needed");
+    assertThat(itemState(resource)).isEqualTo("OPEN:-");
+  }
+
+  @Test
+  void anItemAPartialRunOpenedUnderTheOldRuleIsClosed() {
+    saveWithErrors("run-partial", List.of(), "field pricing: excerpt not found in cited evidence");
+    assertThat(itemState(resource)).isEqualTo("OPEN:-");
+
+    storedEnrichments.closeItemsWithNothingToDecide("scout", "no review needed");
+
+    assertThat(itemState(resource)).isEqualTo("SUPERSEDED:scout");
   }
 
   private void saveConflicting(String fingerprint, String error) {

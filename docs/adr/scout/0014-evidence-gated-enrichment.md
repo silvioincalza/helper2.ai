@@ -307,8 +307,9 @@ place to say that.
       stated");
     - a field writing does not keep (point 20) is rejected, whatever its verification;
     - a summary sentence that fails the claim check is dropped, with the evidence only it used;
-    - an open `ENRICHMENT_VALIDATION` item whose run has no issue but values the quote does not state, and no
-      `CONFLICTING` field, is closed (`closeItemsOfUnstatedValues`; counter result `items_closed`);
+    - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its
+      only issues are values the quote does not state; never when the run has a `CONFLICTING` field
+      (`closeItemsWithNothingToDecide`; counter result `items_closed`);
     - a resource goes back to the model only when it still misses a target fact (`FieldTargets`), has more to read (a
       README or model card, or its own pages) and its last run used an older prompt label. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps. `resource.enrichment_rerun_requested_at`
