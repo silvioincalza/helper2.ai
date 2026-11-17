@@ -35,7 +35,7 @@ public interface StoredEnrichments {
 
   void requestRun(UUID resourceId);
 
-  int closeItemsOfUnstatedValues(String by, String note);
+  int closeItemsWithNothingToDecide(String by, String note);
 
   boolean done(String name);
 

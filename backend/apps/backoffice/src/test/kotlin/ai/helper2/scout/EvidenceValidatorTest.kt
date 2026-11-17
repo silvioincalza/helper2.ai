@@ -833,7 +833,7 @@ class EvidenceValidatorTest {
   }
 
   @Test
-  fun `another problem in the same answer is still for review, without the unstated values`() {
+  fun `a partial answer asks nobody to review it, and still records every issue`() {
     val r =
       validator.validate(
         input,
@@ -846,14 +846,31 @@ class EvidenceValidatorTest {
             )
         ),
       )
+    assertEquals(EnrichmentOutcome.PARTIAL, r.outcome)
     assertEquals(2, r.errors.size)
+    assertEquals(emptyList(), r.forReview)
+  }
+
+  @Test
+  fun `a rejected answer is for review, without the unstated values`() {
+    val r =
+      validator.validate(
+        input,
+        EnrichmentProposal(
+          fields =
+            listOf(
+              field("useCase", "coding", "Works with Claude Desktop and Cursor"),
+              field("pricing", "FREE", "Completely free forever"),
+            )
+        ),
+      )
+    assertEquals(EnrichmentOutcome.REJECTED, r.outcome)
     assertEquals(
       listOf(
         "field pricing: excerpt not found in cited evidence (record): \"Completely free forever\""
       ),
       r.forReview,
     )
-    assertEquals(EnrichmentOutcome.PARTIAL, r.outcome)
   }
 
   @Test
