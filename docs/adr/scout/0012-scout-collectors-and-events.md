@@ -240,6 +240,10 @@ Two kinds of source need more care:
       (`catalog:undated-events@<discovered at>/<id>`), and the next call reads on from there. The pass is complete
       only when the searches are done and a batch comes back short. Such a page goes through the same reader and gate;
       `extra.query` is `catalog:undated-events`.
+    - **Progress counts only pages read.** A page found by a search and in the catalog is read once, as a catalog page.
+      A search is done when every chosen page it found was read; the catalog cursor moves only past pages read. A
+      failed Extract call, the credit cap or a missing model ends the call and leaves the rest for the next one. A page
+      that Extract answers as failed is not tried again.
     - **A model reads the page.** The reasoning model, thinking off ([0008](../foundation/0008-llm-integration.md)),
       prompt `prompts/sources/read-event.txt`: how many events the page is about, the first and last day, and the
       words of the page that state them; kind, format and place, each with its own words. The page is untrusted data:

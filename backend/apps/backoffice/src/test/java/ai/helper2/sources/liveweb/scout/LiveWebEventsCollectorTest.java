@@ -215,9 +215,9 @@ class LiveWebEventsCollectorTest {
     assertThat(server.requests).as("two searches, no page read").hasSize(2);
     assertThat(batch.getHits()).isEmpty();
     assertThat(batch.getCheckpoint()).as("the pass stays open").isNull();
-    assertThat(batch.getNextCursor())
-        .as("no query is done: its pages were not read")
-        .isEqualTo(QueryProgress.cursor(java.util.List.of()));
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .as("no query is done: its pages were not read; the empty catalog is")
+        .containsExactly(LiveWebEventsCollector.UNDATED);
   }
 
   @Test
@@ -238,7 +238,8 @@ class LiveWebEventsCollectorTest {
         .extracting(SourceHit::getTitle)
         .containsExactly("Zurich AI Builders Hackathon 2027");
     assertThat(batch.getCheckpoint()).isNull();
-    assertThat(QueryProgress.done(batch.getNextCursor())).isEmpty();
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .containsExactly(LiveWebEventsCollector.UNDATED);
   }
 
   @Test
@@ -463,5 +464,74 @@ class LiveWebEventsCollectorTest {
         .contains("\"https://hack.example/zurich-2027\"")
         .contains("\"https://summit.example/ai\"")
         .contains("agenticdays.com");
+  }
+
+  @Test
+  void a_failed_page_read_keeps_the_catalog_position_for_the_next_call() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", new FixtureServer.Reply(500, "{}", java.util.Map.of(), 0));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://www.agenticdays.com/",
+                    "Agentic Engineering Days Zurich 2026",
+                    position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(batch.getCheckpoint()).isNull();
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .doesNotContain(LiveWebEventsCollector.UNDATED)
+        .noneMatch(key -> key.startsWith(LiveWebEventsCollector.UNDATED_AFTER));
+  }
+
+  @Test
+  void a_page_found_by_search_and_in_the_catalog_is_read_once_as_a_catalog_page() {
+    server.route("/search", FixtureServer.Reply.ok(SEARCH));
+    server.route("/extract", FixtureServer.Reply.ok(EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://hack.example/zurich-2027",
+                    "Zurich AI Builders Hackathon 2027",
+                    position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsBoth), undated)
+            .collect(null, null, 500);
+
+    assertThat(pagesRead).containsOnlyOnce("Zurich AI Builders Hackathon 2027");
+    assertThat(batch.getHits())
+        .filteredOn(h -> h.getTitle().startsWith("Zurich"))
+        .singleElement()
+        .satisfies(
+            h -> assertThat(h.getFacts()).containsEntry("query", LiveWebEventsCollector.UNDATED));
+  }
+
+  @Test
+  void searches_whose_pages_were_all_read_stay_done_when_the_model_runs_out_on_catalog_pages() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(CONFERENCE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://www.agenticdays.com/",
+                    "Agentic Engineering Days Zurich 2026",
+                    position(1)));
+    EventReader out =
+        reader(title -> {
+          throw new LlmUnavailable("daily event reader budget used up");
+        });
+
+    CollectedBatch batch = collector(40, out, undated).collect(null, null, 500);
+
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .contains("AI hackathons", "AI conferences and summits")
+        .doesNotContain(LiveWebEventsCollector.UNDATED);
   }
 }
