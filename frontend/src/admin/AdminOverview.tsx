@@ -118,6 +118,8 @@ function OverviewParts({
         </li>
       </ul>
 
+      {data.validationIssues && <ValidationIssues issues={data.validationIssues} />}
+
       <HomeExampleCounts counts={data.homeExamples} />
 
       <p>
@@ -240,5 +242,42 @@ function Usage({ used, limit }: { used: number | null; limit: number | null }) {
         aria-hidden="true"
       />
     </span>
+  );
+}
+
+function ValidationIssues({ issues }: { issues: NonNullable<Overview['validationIssues']> }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <h3 className="h2-admin__h3" id="ov-issues">
+        {t('admin.overview.issues.title', { count: issues.runs, days: issues.days })}
+      </h3>
+      {issues.top.length === 0 ? (
+        <p className="muted">{t('admin.overview.issues.none')}</p>
+      ) : (
+        <ScrollBox label={t('admin.overview.issues.label')}>
+          <table className="h2-table h2-admin__table" aria-labelledby="ov-issues">
+            <thead>
+              <tr>
+                <th scope="col">{t('admin.overview.issues.col.subject')}</th>
+                <th scope="col">{t('admin.overview.issues.col.rule')}</th>
+                <th scope="col" className="is-num">
+                  {t('admin.overview.issues.col.runs')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {issues.top.map((i) => (
+                <tr key={`${i.subject}|${i.rule}`}>
+                  <th scope="row">{i.subject}</th>
+                  <td>{i.rule}</td>
+                  <td className="is-num">{i.runs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollBox>
+      )}
+    </>
   );
 }

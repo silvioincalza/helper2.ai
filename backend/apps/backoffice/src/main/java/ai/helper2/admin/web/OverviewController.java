@@ -13,6 +13,9 @@ import ai.helper2.api.generated.model.ExamplePathCountDto;
 import ai.helper2.api.generated.model.HomeExampleCountsDto;
 import ai.helper2.api.generated.model.ReviewKindCountDto;
 import ai.helper2.api.generated.model.ReviewKindDto;
+import ai.helper2.api.generated.model.ValidationIssueCountDto;
+import ai.helper2.api.generated.model.ValidationIssueSummaryDto;
+import ai.helper2.catalog.enrichment.ValidationIssues;
 import ai.helper2.examples.PoolCounts;
 import ai.helper2.shared.UtcTimes;
 import java.net.URI;
@@ -89,12 +92,22 @@ class OverviewController implements OverviewApi {
                 o.failedRunsLast24h(),
                 dto(o.homeExamples()),
                 o.overridesActive())
-            .grafanaUrl(grafanaUrl);
+            .grafanaUrl(grafanaUrl)
+            .validationIssues(dto(o.validationIssues()));
     if (o.webCredits() != null) {
       dto.webCredits(
           new WebCreditsDto(o.webCredits().getUsedToday()).dailyCap(o.webCredits().getDailyCap()));
     }
     return ResponseEntity.ok(dto);
+  }
+
+  static ValidationIssueSummaryDto dto(ValidationIssues.Summary issues) {
+    return new ValidationIssueSummaryDto(
+        Math.toIntExact(GetOverview.ISSUE_WINDOW.toDays()),
+        issues.runs(),
+        issues.top().stream()
+            .map(c -> new ValidationIssueCountDto(c.subject(), c.rule(), c.runs()))
+            .toList());
   }
 
   static HomeExampleCountsDto dto(PoolCounts counts) {

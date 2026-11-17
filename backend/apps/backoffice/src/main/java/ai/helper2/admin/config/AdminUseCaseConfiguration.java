@@ -16,6 +16,7 @@ import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.enrichment.ValidationIssues;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
@@ -58,6 +59,7 @@ class AdminUseCaseConfiguration {
       ObjectProvider<WebSearchQuota> webSearchQuota,
       CountHomeExamples homeExamples,
       RuntimeSettings runtimeSettings,
+      ValidationIssues validationIssues,
       AdminProperties admin,
       Clock clock) {
     budgets.declare("guide", guideDailyModelCalls(runtimeSettings, admin));
@@ -69,6 +71,7 @@ class AdminUseCaseConfiguration {
         webSearchQuota::getIfAvailable,
         homeExamples,
         runtimeSettings,
+        validationIssues,
         clock);
   }
 
