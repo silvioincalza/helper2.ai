@@ -28,6 +28,18 @@ class RepositoryJoinTest {
   }
 
   @Test
+  fun `a package joins when its name holds the repository's telling words`() {
+    assertJoins(npm("firecrawl-mcp", "https://github.com/firecrawl/firecrawl-mcp-server"))
+    assertJoins(pypi("postgres-mcp", "https://github.com/crystaldba/postgres-mcp-server"))
+    assertNull(
+      RepositoryJoin.of(npm("other-mcp", "https://github.com/firecrawl/firecrawl-mcp-server"))
+    )
+    assertNull(
+      RepositoryJoin.of(npm("mcp-server", "https://github.com/someone/weather-mcp-server"))
+    )
+  }
+
+  @Test
   fun `a package of another owner whose name does not hold the repository's name does not join`() {
     assertNull(RepositoryJoin.of(pypi("alpha-go", "https://github.com/lazy-punk/ml-utils")))
     assertNull(

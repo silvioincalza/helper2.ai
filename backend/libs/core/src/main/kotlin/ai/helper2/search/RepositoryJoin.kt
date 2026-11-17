@@ -2,6 +2,7 @@ package ai.helper2.search
 
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.CollectorIds
+import ai.helper2.shared.WordLists
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -59,7 +60,7 @@ object RepositoryJoin {
 
   private class PackageName(val scope: Set<String>, val name: Set<String>) : StatedName {
     override fun belongsTo(root: RepositoryRoot): Boolean =
-      name.containsAll(root.name) || sameOwner(root.owner)
+      name.containsAll(telling(root.name)) || sameOwner(root.owner)
 
     private fun sameOwner(owner: Set<String>): Boolean =
       scope.isNotEmpty() &&
@@ -74,12 +75,12 @@ object RepositoryJoin {
       return server.isNotEmpty() &&
         (server.containsAll(repository) || repository.containsAll(server))
     }
-
-    private fun telling(words: Set<String>) = (words - GENERIC_REPOSITORY_WORDS).ifEmpty { words }
   }
 
+  private fun telling(words: Set<String>) = (words - GENERIC_REPOSITORY_WORDS).ifEmpty { words }
+
   private val GENERIC_REPOSITORY_WORDS =
-    setOf("mcp", "server", "servers", "model", "context", "protocol", "modelcontextprotocol")
+    WordLists.load("query-words").wordsIn("en", "repository.generic")
 
   private val PACKAGE_PAGE = Regex("^https://(?:npmjs\\.com/package|pypi\\.org/project)/([^?#]+)$")
 

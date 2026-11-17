@@ -42,11 +42,12 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
      a repository stated by its host alone is named by the host;
    - its scope is the repository's owner (`@langchain/core` under `langchain-ai/langchainjs`,
      `@microsoft/postgres-mcp-darwin-arm64` under `microsoft/postgres-mcp`); or
-   - its name holds the repository's name (`@ai-sdk/openai` under `vercel/ai`, `langchain-openai` under
-     `langchain-ai/langchain`).
+   - its name holds the repository's telling words, the words of its name without the generic words of §5
+     (`@ai-sdk/openai` under `vercel/ai`, `langchain-openai` under `langchain-ai/langchain`, `firecrawl-mcp` under
+     `firecrawl/firecrawl-mcp-server`).
 
    Any other record does not join: a package whose scope is not the repository's owner and whose name does not
-   hold the repository's name (`alpha-go` stating `lazy-punk/ml-utils`) is a resource of its own. A joined record
+   hold the repository's telling words (`alpha-go` stating `lazy-punk/ml-utils`) is a resource of its own. A joined record
    takes the repository's address as its resource's identity; every other record takes its own. `ResultMerger`
    joins each hit's canonical URL with the repository `RepositoryJoin` gives it (union-find) and names the group by
    that repository, else by the canonical URL of one of its own hits, a GitHub URL first. The join and the identity
