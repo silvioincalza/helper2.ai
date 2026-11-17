@@ -69,10 +69,12 @@ paths:
         For the home page "Coming up" list. Only EVENTs whose source states when they take place and
         that have not ended yet; an event without a stated date is never listed. With `days`, only events
         that start before the end of that window (counted from the start of today, UTC); an event already
-        running is listed until it ends. Served from the index.
+        running is listed until it ends. Served from the index. `offset` skips that many events of the same order,
+        so the Events page reads pages of the largest `size` until it holds `total` events.
       parameters:
         - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 366 } }
-        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 6 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 6 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
       responses:
         '200':
           description: Upcoming events (possibly empty).

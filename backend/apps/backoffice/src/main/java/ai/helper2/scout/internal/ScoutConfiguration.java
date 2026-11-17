@@ -39,6 +39,7 @@ import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
 import ai.helper2.scout.KnownTargetProposals;
 import ai.helper2.scout.KnownTargets;
+import ai.helper2.scout.LastSuccesses;
 import ai.helper2.scout.ListIndex;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.LlmUnavailable;
@@ -81,6 +82,7 @@ import ai.helper2.shared.CollectorIds;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import java.time.Clock;
@@ -281,6 +283,15 @@ class ScoutConfiguration {
   }
 
   static final Duration RUN_LOCK_LEASE = Duration.ofMinutes(2);
+
+  static final Duration LAST_SUCCESS_FRESH_FOR = Duration.ofSeconds(30);
+
+  @Bean
+  MeterBinder scoutLastSuccessGauges(
+      List<Collector> collectors, LastSuccesses lastSuccesses, Clock clock) {
+    List<String> sources = collectors.stream().map(c -> c.getDescriptor().getId()).toList();
+    return new LastSuccessGauges(sources, lastSuccesses, clock, LAST_SUCCESS_FRESH_FOR);
+  }
 
   @Bean
   AdmissionRules admissionRules(ScoutAdmissionProperties admission) {

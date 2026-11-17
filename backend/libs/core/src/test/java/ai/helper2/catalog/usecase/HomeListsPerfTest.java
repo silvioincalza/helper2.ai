@@ -34,7 +34,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class HomeListsPerfTest {
 
   static final int RESOURCES = 25_000;
-  static final int EVENTS = 200;
+  static final int EVENTS = 500;
   static final int WARMUP = 30;
   static final int CALLS = 200;
   static final Instant SINCE = Instant.parse("2098-12-01T00:00:00Z");
@@ -189,13 +189,18 @@ class HomeListsPerfTest {
         60);
     measure(
         "/upcoming size=6",
-        () -> oneByOne(store.upcomingEvents(TODAY, null, 6)),
-        () -> upcoming.list(TODAY, null, 6).items(),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 6, 0)),
+        () -> upcoming.list(TODAY, null, 6, 0).items(),
         6);
     measure(
         "/upcoming size=60",
-        () -> oneByOne(store.upcomingEvents(TODAY, null, 60)),
-        () -> upcoming.list(TODAY, null, 60).items(),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 60, 0)),
+        () -> upcoming.list(TODAY, null, 60, 0).items(),
         60);
+    measure(
+        "/upcoming size=500",
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 500, 0)),
+        () -> upcoming.list(TODAY, null, 500, 0).items(),
+        500);
   }
 }

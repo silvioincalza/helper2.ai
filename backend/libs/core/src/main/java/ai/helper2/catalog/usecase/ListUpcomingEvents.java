@@ -19,8 +19,8 @@ public class ListUpcomingEvents {
 
   public record Page(List<MergedResult> items, int total) {}
 
-  public Page list(Instant today, @Nullable Instant until, int limit) {
-    List<MergedResult> items = cards.cardsOf(store.upcomingEvents(today, until, limit));
+  public Page list(Instant today, @Nullable Instant until, int limit, int offset) {
+    List<MergedResult> items = cards.cardsOf(store.upcomingEvents(today, until, limit, offset));
     return new Page(items, store.countUpcomingEvents(today, until));
   }
 }
