@@ -628,6 +628,43 @@ tests:
 
   - interval: 1m
     input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="helper2-prod", pod="redis-0", container="redis"}'
+        values: '0x10 1x50'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="helper2-prod", pod="redis-0", container="redis", reason="OOMKilled"}'
+        values: '_x10 1x50'
+      - series: 'kube_pod_container_status_restarts_total{namespace="helper2-prod", pod="helper2-abc", container="app"}'
+        values: '0x10 1x50'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="helper2-prod", pod="helper2-abc", container="app", reason="Error"}'
+        values: '_x10 1x50'
+      - series: 'kube_pod_container_status_restarts_total{namespace="other", pod="x-0", container="x"}'
+        values: '0x10 1x50'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="other", pod="x-0", container="x", reason="OOMKilled"}'
+        values: '_x10 1x50'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: Helper2ContainerOOMKilled
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: Helper2ContainerOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: helper2-prod
+              pod: redis-0
+              container: redis
+            exp_annotations:
+              summary: "Container redis of pod redis-0 was killed for using more memory than its limit (helper2-prod)."
+              description: "The container restarted in the last 10 minutes after an out-of-memory kill. Its memory limit is too low for its peak: for Redis, an AOF rewrite under a burst of writes (ADR 0005)."
+              runbook: "kubectl -n helper2-prod describe pod redis-0 (Last State: OOMKilled), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'. Raise the container's memory limit in values.yaml; for Redis keep it at least 3.5 times redis.maxMemory."
+      - eval_time: 40m
+        alertname: Helper2ContainerOOMKilled
+        exp_alerts: []
+      - eval_time: 12m
+        alertname: Helper2PodRestarting
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
       - series: 'kube_deployment_spec_replicas{namespace="helper2-prod", deployment="helper2"}'
         values: '3x30'
       - series: 'kube_deployment_status_replicas_available{namespace="helper2-prod", deployment="helper2"}'

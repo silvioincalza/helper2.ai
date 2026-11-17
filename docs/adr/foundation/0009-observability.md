@@ -126,6 +126,8 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2BackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
      `Helper2BackupStale` (critical): no successful backup for 36 h;
      `Helper2PodRestarting`: more than 2 restarts of a container in an hour;
+     `Helper2ContainerOOMKilled`: a container restarted in the last 10 min and its last termination was `OOMKilled`
+     (kube-state-metrics), so a single out-of-memory kill is not silent;
    - `Helper2ReplicasMissing`: the `helper2` Deployment has had fewer available replicas than wanted for 10 min;
      `Helper2NoReplica` (critical): none for 2 min, the site is down. Both read kube-state-metrics, not `up{}`:
      the scrape job's labels live outside this repository; `Helper2BackofficeDown`: no back office replica for
