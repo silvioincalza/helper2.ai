@@ -1,11 +1,15 @@
 package ai.helper2.admin.web;
 
+import ai.helper2.admin.usecase.CheckAiWords;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
 import ai.helper2.api.generated.EnrichmentQueueApi;
+import ai.helper2.api.generated.model.AiCheckPageDto;
+import ai.helper2.api.generated.model.AiCheckRowDto;
 import ai.helper2.api.generated.model.EnrichmentQueueEntryDto;
 import ai.helper2.api.generated.model.EnrichmentQueuePageDto;
 import ai.helper2.api.generated.model.EnrichmentQueueViewDto;
 import ai.helper2.api.generated.model.EnrichmentSkipDto;
+import ai.helper2.catalog.AiCheckReport;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogEntry;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Part;
@@ -39,12 +43,15 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
   private final RequeueEnrichment requeue;
   private final SkipEnrichment skip;
   private final PrioritiseEnrichment prioritise;
+  private final CheckAiWords aiCheck;
 
   EnrichmentQueueController(
       ListEnrichmentQueue queue,
       RequeueEnrichment requeue,
       SkipEnrichment skip,
-      PrioritiseEnrichment prioritise) {
+      PrioritiseEnrichment prioritise,
+      CheckAiWords aiCheck) {
+    this.aiCheck = aiCheck;
     this.queue = queue;
     this.requeue = requeue;
     this.skip = skip;
@@ -63,6 +70,45 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
         new EnrichmentQueuePageDto(
                 page.items().stream().map(EnrichmentQueueController::entry).toList())
             .next(page.next() == null ? null : encode(page.next())));
+  }
+
+  @Override
+  public ResponseEntity<AiCheckPageDto> checkAiWords(@Nullable String after, Integer size) {
+    CheckAiWords.Page page = aiCheck.next(after == null ? null : aiCursor(after), size);
+    return ResponseEntity.ok(
+        new AiCheckPageDto(
+                page.notAboutAi().stream()
+                    .map(r ->
+                        new AiCheckRowDto(
+                            r.resourceId(), r.title(), r.type(), r.popularity(), r.waiting()))
+                    .toList(),
+                page.checked())
+            .next(page.next() == null ? null : aiCursor(page.next())));
+  }
+
+  static String aiCursor(AiCheckReport.Cursor cursor) {
+    return Base64.getUrlEncoder()
+        .withoutPadding()
+        .encodeToString(
+            (cursor.popularity().toPlainString() + "|" + cursor.id())
+                .getBytes(StandardCharsets.UTF_8));
+  }
+
+  static AiCheckReport.Cursor aiCursor(String cursor) {
+    try {
+      String[] parts =
+          new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8)
+              .split("\\|", -1);
+      BigDecimal popularity = new BigDecimal(parts[0]);
+      if (parts.length != 2
+          || popularity.signum() < 0
+          || popularity.compareTo(BigDecimal.ONE) > 0) {
+        throw new IllegalArgumentException("cursor");
+      }
+      return new AiCheckReport.Cursor(popularity, UUID.fromString(parts[1]));
+    } catch (RuntimeException unreadable) {
+      throw new BadRequestException("after is not a cursor from this check");
+    }
   }
 
   @Override

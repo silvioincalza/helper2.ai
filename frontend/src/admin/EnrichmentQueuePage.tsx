@@ -14,6 +14,7 @@ import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
 import { oneOf, QUEUE_TONE, QUEUE_VIEWS } from './adminModel';
 import { REASON_MAX } from './limits';
+import { AiCheckPanel } from './AiCheckPanel';
 
 const PAGE_SIZE = 20;
 
@@ -268,6 +269,7 @@ export default function EnrichmentQueuePage() {
           </button>
         )}
       </div>
+      <AiCheckPanel />
     </section>
   );
 }

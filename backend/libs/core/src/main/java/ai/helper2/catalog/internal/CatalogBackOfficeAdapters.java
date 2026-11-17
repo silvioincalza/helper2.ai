@@ -31,6 +31,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcAiCheckReport jdbcAiCheckReport(JdbcClient jdbc) {
+    return new JdbcAiCheckReport(jdbc);
+  }
+
+  @Bean
   JdbcKnownTargets jdbcKnownTargets(JdbcClient jdbc) {
     return new JdbcKnownTargets(jdbc);
   }

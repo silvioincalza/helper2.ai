@@ -3,6 +3,7 @@ import type {
   ReviewItemPage,
   ReviewBulkResolution,
   ReviewBulkResult,
+  AiCheckPage,
   ReviewEvidence,
   RelationshipTargetChange,
   RelationshipTargetGroupPage,
@@ -179,6 +180,10 @@ export const adminApi = {
     request<void>('POST', `/admin/known-targets/${encodeURIComponent(id)}/remove`),
   requeueEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),
+  checkAiWords: (after: string | null, size: number) =>
+    request<AiCheckPage>('GET', '/admin/ai-check', {
+      query: new URLSearchParams({ ...(after ? { after } : {}), size: String(size) }),
+    }),
   skipEnrichment: (resourceId: string, reason: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
       body: reason.trim() ? { reason: reason.trim() } : {},

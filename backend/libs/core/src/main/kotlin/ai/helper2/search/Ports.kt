@@ -100,3 +100,7 @@ fun interface QueryTranslator {
     @JvmField val NONE: QueryTranslator = QueryTranslator { _, _ -> null }
   }
 }
+
+fun interface AiTopicCheck {
+  fun isAboutAi(title: String?, description: String?, labels: Collection<String>): Boolean
+}
