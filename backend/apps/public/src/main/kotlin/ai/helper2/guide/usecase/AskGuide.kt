@@ -75,8 +75,8 @@ class AskGuide(
   private val similar: SimilarQuestions? = null,
   private val stopsWhenNobodyWaits: Boolean = false,
   private val quoteRecords: QuoteRecords = QuoteRecords.NONE,
-  private val quoteOrigins: QuoteOrigins = QuoteOrigins(),
 ) {
+  private val quoteOrigins = QuoteOrigins()
 
   val answersWithModel: Boolean
     get() = model != null

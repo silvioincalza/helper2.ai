@@ -6,13 +6,11 @@ import ai.helper2.catalog.Resources;
 import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.CallTimeLimit;
 import ai.helper2.guide.ClientQuota;
-import ai.helper2.guide.EvidenceGate;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.guide.GuideModel;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.guide.GuideValidator;
-import ai.helper2.guide.QuoteOrigins;
 import ai.helper2.guide.QuoteRecords;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestions;
@@ -33,9 +31,7 @@ import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.usecase.SearchResources;
-import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceId;
-import ai.helper2.sources.config.SourcesProperties;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -161,8 +157,7 @@ class GuideConfiguration {
       LlmProperties llmProperties,
       BuildInfoProperties build,
       GuideProperties settings,
-      Resources resources,
-      SourcesProperties sources) {
+      Resources resources) {
     boolean nativeSchema = llmProperties.nativeSchema();
     int chooseMaxTokens = settings.chooseMaxTokens();
     int maxCandidates = settings.maxCandidates();
@@ -237,8 +232,7 @@ class GuideConfiguration {
             clock,
             build.version()),
         settings.stopsAQuestionNobodyWaitsFor(),
-        quoteRecords(resources),
-        new QuoteOrigins(new EvidenceGate(), sources.get(CollectorIds.MCP_REGISTRY).baseUrl()));
+        quoteRecords(resources));
   }
 
   static QuoteRecords quoteRecords(Resources resources) {

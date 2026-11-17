@@ -9,7 +9,6 @@ import ai.helper2.search.Vitality;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
-import ai.helper2.shared.McpRegistryEntry;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.config.CollectorDescriptors;
@@ -170,7 +169,11 @@ public class McpRegistryCollector implements Collector {
     String repo = HttpClients.text(s.path("repository"), "url");
     String server = serverFolder(repo, HttpClients.text(s.path("repository"), "subfolder"));
     String website = HttpClients.text(s, "websiteUrl");
-    String registryEntry = McpRegistryEntry.url(baseUrl, name);
+    String registryEntry =
+        baseUrl
+            + "/v0.1/servers/"
+            + URLEncoder.encode(name, StandardCharsets.UTF_8)
+            + "/versions/latest";
     String link =
         server != null && CanonicalUrl.of(server) != null
             ? server

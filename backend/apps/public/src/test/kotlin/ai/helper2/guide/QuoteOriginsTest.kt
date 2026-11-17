@@ -5,7 +5,6 @@ import ai.helper2.search.contexts
 import ai.helper2.search.hit
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceId
-import ai.helper2.shared.ResourceType
 import ai.helper2.shared.ValueOrigin
 import java.net.URI
 import kotlin.test.Test
@@ -157,31 +156,6 @@ class QuoteOriginsTest {
     assertEquals(
       QuotedFrom("hacker-news", URI("https://news.ycombinator.com/item?id=41234567")),
       origins.of("Show HN: PDF chat that runs on your own laptop", result, emptyMap()),
-    )
-  }
-
-  @Test
-  fun `a quote of an MCP Registry record names its Registry entry, not the repository it links`() {
-    val server =
-      hit(
-        "mcp-registry",
-        repo,
-        title = "PDF chat",
-        type = ResourceType.MCP_SERVER,
-        description = npmText,
-        name = "io.github.acme/pdfchat",
-      )
-    val result = merger.merge(listOf(server), contexts("mcp-registry")).single()
-
-    assertEquals(
-      QuotedFrom(
-        "mcp-registry",
-        URI(
-          "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.acme%2Fpdfchat/versions/latest"
-        ),
-      ),
-      QuoteOrigins(mcpRegistry = "https://registry.modelcontextprotocol.io")
-        .of(npmText, result, emptyMap()),
     )
   }
 
