@@ -1,8 +1,8 @@
 package ai.helper2.search
 
+import ai.helper2.shared.WordLists
 import com.github.pemistahl.lingua.api.Language
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder
-import java.text.Normalizer
 
 class LanguageDetector {
   private val detector =
@@ -70,31 +70,6 @@ class LanguageDetector {
       )
 
     private val FUNCTION_WORDS: Map<String, Set<String>> =
-      mapOf(
-        "it" to
-          "per di da con che il lo la gli le un una del della dei delle come cosa quale su".words(),
-        "es" to "para de del con que el la los las un una unos como qué cuál en por sin".words(),
-        "pt" to "para de do da dos das com que o os as um uma como em por sem".words(),
-        "fr" to
-          "pour de du des avec que le la les un une comment quel quelle en sans sur d' l'".words(),
-        "de" to
-          "für zum zur von mit und der die das ein eine einen wie was welche im ohne auf".words(),
-        "nl" to "voor van met en de het een hoe wat welke zonder op naar".words(),
-        "ca" to "per de amb que el la els les un una com en sense".words(),
-        "ro" to "pentru de cu și că un o cum ce care în fără la".words(),
-        "da" to "til af med og en et hvordan hvad som uden på".words(),
-        "sv" to "för av med och en ett hur vad som utan på till".words(),
-        "no" to "av med og et hvordan hva som uten på til".words(),
-        "fi" to "ja tai kanssa miten mikä joka ilman".words(),
-        "hu" to "és az egy hogyan mi ami nélkül".words(),
-        "tr" to "için ile ve bir nasıl ne hangi olmadan".words(),
-        "id" to "untuk dari dengan dan yang cara apa tanpa".words(),
-        "lt" to "ir su be kaip kas".words(),
-        "ga" to "do le agus an na conas cad gan".words(),
-        "eu" to "eta bat nola zer gabe".words(),
-      )
-
-    private fun String.words(): Set<String> =
-      split(' ').map { Normalizer.normalize(it, Normalizer.Form.NFC) }.toSet()
+      WordLists.table("i18n/language-function-words.properties")
   }
 }
