@@ -159,6 +159,21 @@ class JdbcResources implements Resources {
   }
 
   @Override
+  public List<UndatedEvent> undatedEvents(Instant since, int limit) {
+    return jdbc.sql(
+            """
+            SELECT url, title FROM resource
+            WHERE type = 'EVENT' AND event_starts_at IS NULL AND first_discovered_at >= :since
+            ORDER BY first_discovered_at DESC, id
+            LIMIT :limit
+            """)
+        .param("since", Timestamp.from(since))
+        .param("limit", limit)
+        .query((rs, i) -> new UndatedEvent(rs.getString("url"), rs.getString("title")))
+        .list();
+  }
+
+  @Override
   public int countUpcomingEvents(Instant today, @Nullable Instant until) {
     return jdbc.sql(
             """

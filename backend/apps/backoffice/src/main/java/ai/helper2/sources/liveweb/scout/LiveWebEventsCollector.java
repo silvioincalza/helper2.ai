@@ -9,23 +9,29 @@ import ai.helper2.scout.PageScope;
 import ai.helper2.scout.UntrustedPageText;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebSources;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.events.EventQuoteGate;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
+import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.TavilySource;
+import java.net.URI;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -50,6 +56,12 @@ public class LiveWebEventsCollector implements Collector {
   static final int EXTRACT_BATCH = 4;
   private static final int MAX_EXTRACT_BYTES = 2 * 1024 * 1024;
 
+  /** The cursor key of the undated catalog events, next to the queries. */
+  static final String UNDATED = "catalog:undated-events";
+
+  /** How far back the first pass looks for undated events; later passes start at the last pass. */
+  static final Duration UNDATED_LOOKBACK = Duration.ofDays(30);
+
   private static final Logger log = LoggerFactory.getLogger(LiveWebEventsCollector.class);
 
   private final RestClient http;
@@ -60,6 +72,7 @@ public class LiveWebEventsCollector implements Collector {
   private final int maxPages;
   private final ScoutLiveWebCredits credits;
   private final @Nullable EventReader reader;
+  private final UndatedEvents undated;
   private final EventQuoteGate gate = new EventQuoteGate();
   private final SourceDescriptor descriptor;
 
@@ -72,8 +85,10 @@ public class LiveWebEventsCollector implements Collector {
       List<String> queries,
       int maxPages,
       ScoutLiveWebCredits credits,
-      @Nullable EventReader reader) {
+      @Nullable EventReader reader,
+      UndatedEvents undated) {
     this.clock = clock;
+    this.undated = undated;
     this.resilience = resilience;
     this.interval = interval;
     this.queries = List.copyOf(queries);
@@ -112,12 +127,15 @@ public class LiveWebEventsCollector implements Collector {
     Set<String> doneBefore = QueryProgress.done(resumeCursor);
     Found found =
         pagesToRead(
-            startedAt, Math.min(maxPages, Math.max(1, maxItems)), new LinkedHashSet<>(doneBefore));
+            startedAt,
+            Math.min(maxPages, Math.max(1, maxItems)),
+            new LinkedHashSet<>(doneBefore),
+            undatedSince(checkpoint, startedAt));
     Reading reading = readAll(found.pages(), startedAt);
     log.info(
         "{}: {} pages found, {} events kept", ID, found.pages().size(), reading.events().size());
     Set<String> done = reading.pagesLeftUnread() ? doneBefore : found.done();
-    boolean complete = done.containsAll(queries);
+    boolean complete = done.containsAll(queries) && done.contains(UNDATED);
     return new CollectedBatch(
         reading.events(),
         complete ? null : QueryProgress.cursor(done),
@@ -133,8 +151,70 @@ public class LiveWebEventsCollector implements Collector {
     return next == null ? "Not due yet (run interval)" : "Not due yet: next pass on " + next;
   }
 
-  private Found pagesToRead(Instant now, int limit, Set<String> done) {
+  static Instant undatedSince(@Nullable String checkpoint, Instant now) {
+    if (checkpoint != null) {
+      try {
+        return Instant.parse(checkpoint);
+      } catch (DateTimeParseException e) {
+        log.debug("{}: checkpoint {} is not an instant", ID, checkpoint);
+      }
+    }
+    return now.minus(UNDATED_LOOKBACK);
+  }
+
+  private List<SourceHit> undatedPages(Instant since, Instant now, int limit) {
+    List<SourceHit> pages = new ArrayList<>();
+    for (UndatedEvents.Page p : undated.discoveredSince(since, limit)) {
+      CanonicalUrl canonical = CanonicalUrl.of(p.url());
+      URI url;
+      try {
+        url = URI.create(p.url());
+      } catch (IllegalArgumentException e) {
+        continue;
+      }
+      if (canonical == null || PageScope.plainUrlProblem(url) != null) {
+        continue;
+      }
+      pages.add(
+          new SourceHit(
+              ID,
+              canonical.getValue(),
+              url,
+              canonical,
+              null,
+              p.title(),
+              null,
+              ValueOrigin.SOURCE_PROVIDED,
+              ResourceType.EVENT,
+              Audience.BOTH,
+              null,
+              Set.of(),
+              Set.of(),
+              null,
+              null,
+              Set.of(),
+              null,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              List.of(),
+              now,
+              pages.size(),
+              DateFact.unknown(),
+              DateFact.unknown(),
+              null,
+              null,
+              null,
+              Map.of("query", UNDATED)));
+    }
+    return pages;
+  }
+
+  private Found pagesToRead(Instant now, int limit, Set<String> done, Instant undatedSince) {
     List<List<SourceHit>> perQuery = new ArrayList<>();
+    if (!done.contains(UNDATED)) {
+      perQuery.add(undatedPages(undatedSince, now, limit));
+      done.add(UNDATED);
+    }
     RuntimeException lastFailure = null;
     int failed = 0;
     for (String query : queries) {

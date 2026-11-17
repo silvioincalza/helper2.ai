@@ -1,5 +1,6 @@
 package ai.helper2.sources.config.scout;
 
+import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.config.HttpClientProperties;
 import ai.helper2.platform.http.ObservedHttp;
@@ -29,6 +30,7 @@ import ai.helper2.sources.depsdev.DepsDevClient;
 import ai.helper2.sources.depsdev.PackageFinder;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.SpringAiEventReader;
+import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
@@ -197,7 +199,8 @@ class CollectorsConfiguration {
       LlmSettings llm,
       CallCounter budgetCounter,
       ModelCallMetrics metrics,
-      MeterRegistry meters) {
+      MeterRegistry meters,
+      Resources catalog) {
     SourceSettings s = p.get(LiveWebEventsCollector.ID);
     ChatModel model = chatModel.getIfAvailable();
     EventReader reader = null;
@@ -220,7 +223,11 @@ class CollectorsConfiguration {
         c.queries(),
         c.maxPages(),
         credits,
-        reader);
+        reader,
+        (since, limit) ->
+            catalog.undatedEvents(since, limit).stream()
+                .map(e -> new UndatedEvents.Page(e.url(), e.title()))
+                .toList());
   }
 
   @Bean

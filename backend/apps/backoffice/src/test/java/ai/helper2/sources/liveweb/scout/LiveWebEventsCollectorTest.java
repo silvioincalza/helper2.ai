@@ -13,6 +13,7 @@ import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
+import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
@@ -120,6 +121,10 @@ class LiveWebEventsCollectorTest {
   }
 
   LiveWebEventsCollector collector(long creditCap, EventReader reader) {
+    return collector(creditCap, reader, UndatedEvents.NONE);
+  }
+
+  LiveWebEventsCollector collector(long creditCap, EventReader reader, UndatedEvents undated) {
     return new LiveWebEventsCollector(
         new SourceSettings(
             true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO),
@@ -131,7 +136,8 @@ class LiveWebEventsCollectorTest {
         List.of("AI hackathons", "AI conferences and summits"),
         20,
         new ScoutLiveWebCredits(counter, keys, creditCap, new SimpleMeterRegistry()),
-        reader);
+        reader,
+        undated);
   }
 
   @Test
@@ -304,5 +310,95 @@ class LiveWebEventsCollectorTest {
             "https://w.example/1",
             "https://h.example/2",
             "https://h.example/3");
+  }
+
+  static final String NO_RESULTS = "{\"results\":[],\"usage\":{\"credits\":1}}";
+
+  static final String CONFERENCE_PAGE =
+      "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station";
+
+  static final String CONFERENCE_EXTRACT =
+      """
+      {"results":[
+        {"url":"https://www.agenticdays.com/","raw_content":"%s"}
+      ],"failed_results":[],"usage":{"credits":1}}\
+      """
+          .formatted(CONFERENCE_PAGE);
+
+  static Optional<EventReading> readsConference(String title) {
+    return Optional.of(
+        new EventReading(
+            1,
+            LocalDate.parse("2026-11-20"),
+            LocalDate.parse("2026-11-20"),
+            CONFERENCE_PAGE,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null));
+  }
+
+  @Test
+  void an_undated_catalog_event_gets_the_days_its_own_page_states() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(CONFERENCE_EXTRACT));
+    List<java.time.Instant> asked = new ArrayList<>();
+    UndatedEvents undated =
+        (since, limit) -> {
+          asked.add(since);
+          return List.of(
+              new UndatedEvents.Page(
+                  "https://www.agenticdays.com/", "Agentic Engineering Days Zurich 2026"));
+        };
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(asked)
+        .containsExactly(
+            SourceFixtures.CLOCK.instant().minus(LiveWebEventsCollector.UNDATED_LOOKBACK));
+    assertThat(batch.getHits()).hasSize(1);
+    SourceHit event = batch.getHits().getFirst();
+    assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
+    assertThat(event.getType()).isEqualTo(ResourceType.EVENT);
+    assertThat(event.getEventStart().getValue()).hasToString("2026-11-20T00:00:00Z");
+    assertThat(event.getFacts()).containsEntry("query", LiveWebEventsCollector.UNDATED);
+    assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  @Test
+  void a_later_pass_reads_only_the_undated_events_found_since_the_last_pass() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    List<java.time.Instant> asked = new ArrayList<>();
+    UndatedEvents undated =
+        (since, limit) -> {
+          asked.add(since);
+          return List.of();
+        };
+    String lastPass = SourceFixtures.CLOCK.instant().minus(Duration.ofDays(8)).toString();
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+        .collect(lastPass, null, 500);
+
+    assertThat(asked).containsExactly(java.time.Instant.parse(lastPass));
+  }
+
+  @Test
+  void a_pass_that_already_read_the_undated_events_does_not_read_them_again() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    List<java.time.Instant> asked = new ArrayList<>();
+    UndatedEvents undated =
+        (since, limit) -> {
+          asked.add(since);
+          return List.of();
+        };
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+        .collect(null, QueryProgress.cursor(List.of(LiveWebEventsCollector.UNDATED)), 500);
+
+    assertThat(asked).isEmpty();
   }
 }
