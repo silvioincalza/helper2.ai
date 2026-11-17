@@ -46,6 +46,19 @@ whether a query finds a resource there:
    [0025](0025-ranking.md)).
 
 ### Languages
+0. **The word files** (`i18n/query-words_{en,it,de,fr,es}.properties` and `i18n/language-function-words.properties`,
+   read by `WordLists`). Comma-separated, matched case-insensitively as whole words; every language file is loaded and
+   the languages are joined. A word that is also a common English word is left out of the other languages (German
+   `was`, `will`; French `on`, `son`; Spanish `sin`): it would change how an English query is read. The keys of
+   `query-words`: `usecases` and `usecase.*` (use cases, in the order a result lists them) with `usecase.*.query`
+   (the English term a query in another language is expanded with, English only); `type.*` (a word that names the
+   kind of resource asked for); `server` (names an MCP server only next to "mcp"); `repository.generic`, `function`
+   and `request` (words that carry no subject of their own); `synonyms` (names of one thing: a query with one also
+   searches the others; groups comma-separated, names space-separated); `time-bound` (a query with one asks for news,
+   courses or events, `IntentClass.TIME_BOUND`); `ranking.stop` (words ranking leaves out when it counts the query's
+   words in a title; English and Italian only, since words of another language would change how those queries rank).
+   `language-function-words`: short words that tell a short Latin-script query's language when `LanguageDetector` is
+   not sure, one line per language code, words space-separated.
 3. **Detect, with evidence** (`LanguageDetector`, Lingua, 27 languages that have a PostgreSQL stemmer).
    No language for fewer than 6 letters. English means no translation. A short Latin-script text (under 8 words) must
    also contain a function word of that language ("per", "para", "zum"…) or a letter with a diacritic. Longer or
