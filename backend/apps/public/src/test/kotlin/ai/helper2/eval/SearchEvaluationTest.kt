@@ -92,6 +92,35 @@ class SearchEvaluationTest {
   }
 
   @Test
+  fun `a package that does not join the repository it states does not take that repository's grade`() {
+    val stranger =
+      SearchSnapshot(
+        "q1",
+        "go engine",
+        Instant.parse("2026-10-30T10:00:00Z"),
+        listOf("go", "engine"),
+        emptySet(),
+        listOf(
+          source(
+            "npm",
+            hit(
+              0,
+              "https://www.npmjs.com/package/alpha-go",
+              repo = "https://github.com/lazy/ml-utils",
+            ),
+          )
+        ),
+      )
+    val e =
+      SearchEvaluation(
+        queries,
+        mapOf("q1" to stranger),
+        Qrels.parse(listOf("query_id\turl\tgrade", "q1\thttps://github.com/lazy/ml-utils\t3")),
+      )
+    assertNull(e.grade("q1", SearchReplay().rank(stranger).single()))
+  }
+
+  @Test
   fun `ablation measures what the left-out source alone brought`() {
     val e =
       evaluation(

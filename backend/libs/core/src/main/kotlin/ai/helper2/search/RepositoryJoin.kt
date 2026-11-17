@@ -25,7 +25,8 @@ object RepositoryJoin {
       fun of(repository: CanonicalUrl): RepositoryRoot? {
         val segments = (URI(repository.value).rawPath ?: "").split('/').filter { it.isNotEmpty() }
         if (isFolder(segments)) return null
-        val name = segments.lastOrNull() ?: repository.host.substringBefore('.')
+        val name =
+          segments.lastOrNull()?.removeSuffix(CLONE) ?: repository.host.substringBefore('.')
         return RepositoryRoot(words(segments.dropLast(1).joinToString(" ")), words(name))
       }
 
@@ -33,12 +34,19 @@ object RepositoryJoin {
 
       private const val GITLAB_PAGES = "-"
 
-      private fun isFolder(segments: List<String>): Boolean {
-        val at = segments.indexOf(FOLDER)
-        val refAndPath = at >= 0 && segments.size >= at + 3
-        val afterRepository = at == 2 || (at >= 3 && segments[at - 1] == GITLAB_PAGES)
-        return refAndPath && afterRepository
-      }
+      private const val CLONE = ".git"
+
+      private const val GITHUB_FOLDER_AT = 2
+
+      private fun isFolder(segments: List<String>): Boolean =
+        segments.indices.any { at ->
+          segments[at] == FOLDER && hasRefAndPath(segments, at) && isAfterRepository(segments, at)
+        }
+
+      private fun hasRefAndPath(segments: List<String>, at: Int) = segments.size >= at + 3
+
+      private fun isAfterRepository(segments: List<String>, at: Int) =
+        at == GITHUB_FOLDER_AT || (at > GITHUB_FOLDER_AT && segments[at - 1] == GITLAB_PAGES)
     }
   }
 

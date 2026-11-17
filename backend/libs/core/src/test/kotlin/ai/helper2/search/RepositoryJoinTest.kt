@@ -28,6 +28,17 @@ class RepositoryJoinTest {
   }
 
   @Test
+  fun `a clone address is read without its git suffix`() {
+    assertJoins(pypi("transformers", "https://gitlab.com/group/subgroup/transformers.git"))
+  }
+
+  @Test
+  fun `an owner or a repository named tree is not taken for a folder marker`() {
+    assertJoins(pypi("tree-client", "https://github.com/acme/tree/tree/HEAD/python"))
+    assertJoins(pypi("tree-client", "https://github.com/tree/tree-client"))
+  }
+
+  @Test
   fun `a package joins when its name holds the repository's telling words`() {
     assertJoins(npm("firecrawl-mcp", "https://github.com/firecrawl/firecrawl-mcp-server"))
     assertJoins(pypi("postgres-mcp", "https://github.com/crystaldba/postgres-mcp-server"))
