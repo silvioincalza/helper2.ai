@@ -271,7 +271,6 @@ export function parseCandidate(details: string | null | undefined): Candidate | 
   }
 }
 
-/** A search excerpt as plain text: no markdown headings, emphasis or link targets. */
 function plainText(markdown: string): string {
   return markdown
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')

@@ -58,7 +58,6 @@ function openPicks(
 
 const RELATIONSHIP = /^Unverified relationship: ([A-Z_]+) (.+)$/;
 
-/** What a row says: the reason without what the other columns already show. */
 function rowText(
   t: TFunction,
   item: ReviewItem,
