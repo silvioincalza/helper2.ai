@@ -7,6 +7,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
@@ -533,5 +534,50 @@ class LiveWebEventsCollectorTest {
     assertThat(QueryProgress.done(batch.getNextCursor()))
         .contains("AI hackathons", "AI conferences and summits")
         .doesNotContain(LiveWebEventsCollector.UNDATED);
+  }
+
+  static final String POST_URL =
+      "https://www.linkedin.com/posts/aimlevents_agentic-engineering-days-zurich-2026-activity-1";
+
+  static final String POST_AND_SITE_EXTRACT =
+      """
+      {"results":[
+        {"url":"%s","raw_content":"Agentic Engineering Days Zurich 2026 is coming. [Details](https://www.agenticdays.com/) Tickets https://lnkd.in/abc"},
+        {"url":"https://www.agenticdays.com/","raw_content":"%s"}
+      ],"failed_results":[],"usage":{"credits":1}}\
+      """
+          .formatted(POST_URL, CONFERENCE_PAGE);
+
+  @Test
+  void an_undated_linkedin_post_leads_to_the_event_on_its_own_site() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(POST_AND_SITE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    POST_URL,
+                    "Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference | AI & ML Events",
+                    position(1)));
+    EventReader onlyTheSite =
+        reader(title ->
+            title.equals("Agentic Engineering Days Zurich 2026")
+                ? readsConference(title)
+                : Optional.empty());
+
+    CollectedBatch batch = collector(40, onlyTheSite, undated).collect(null, null, 500);
+
+    assertThat(batch.getHits())
+        .singleElement()
+        .satisfies(event -> {
+          assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
+          assertThat(event.getTitle()).isEqualTo("Agentic Engineering Days Zurich 2026");
+          assertThat(event.getEventStart().getValue()).hasToString("2026-11-20T00:00:00Z");
+          assertThat(event.getFacts())
+              .containsEntry("query", LiveWebEventsCollector.UNDATED)
+              .containsEntry("linkedFrom", CanonicalUrl.of(POST_URL).getValue());
+        });
+    assertThat(server.requestBodies.getLast()).contains("agenticdays.com");
+    assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
   }
 }

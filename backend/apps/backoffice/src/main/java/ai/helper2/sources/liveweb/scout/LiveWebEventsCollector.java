@@ -339,6 +339,17 @@ public class LiveWebEventsCollector implements Collector {
   }
 
   private Reading readAll(List<SourceHit> pages, Instant now) {
+    List<SourceHit> eventSites = new ArrayList<>();
+    Reading reading = readPages(pages, now, eventSites);
+    if (eventSites.isEmpty() || reading.processed().size() < pages.size()) {
+      return reading;
+    }
+    List<SourceHit> events = new ArrayList<>(reading.events());
+    events.addAll(readPages(onePerUrl(eventSites, List.of()), now, new ArrayList<>()).events());
+    return new Reading(events, reading.processed());
+  }
+
+  private Reading readPages(List<SourceHit> pages, Instant now, List<SourceHit> eventSites) {
     List<SourceHit> events = new ArrayList<>();
     Set<String> processed = new LinkedHashSet<>();
     LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
@@ -363,7 +374,11 @@ public class LiveWebEventsCollector implements Collector {
       }
       try {
         for (JsonNode r : root.path("results")) {
-          readPage(r, byUrl, today).ifPresent(events::add);
+          Optional<SourceHit> event = readPage(r, byUrl, today);
+          event.ifPresent(events::add);
+          if (event.isEmpty()) {
+            eventSiteOfPost(r, byUrl, now).ifPresent(eventSites::add);
+          }
           CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
           if (url != null) {
             processed.add(url.getValue());
@@ -380,6 +395,50 @@ public class LiveWebEventsCollector implements Collector {
       }
     }
     return new Reading(events, processed);
+  }
+
+  private static Optional<SourceHit> eventSiteOfPost(
+      JsonNode r, Map<String, SourceHit> byUrl, Instant now) {
+    CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
+    SourceHit post = url == null ? null : byUrl.get(url.getValue());
+    String raw = HttpClients.text(r, "raw_content");
+    if (post == null || raw == null || !LinkedInPosts.isPost(post.getCanonicalUrl())) {
+      return Optional.empty();
+    }
+    return LinkedInPosts.eventSite(raw)
+        .map(site -> {
+          Map<String, Object> facts = new LinkedHashMap<>(post.getFacts());
+          facts.put("linkedFrom", post.getCanonicalUrl().getValue());
+          return new SourceHit(
+              ID,
+              CanonicalUrl.of(site.toString()).getValue(),
+              site,
+              CanonicalUrl.of(site.toString()),
+              null,
+              LinkedInPosts.eventTitle(post.getTitle()),
+              null,
+              ValueOrigin.SOURCE_PROVIDED,
+              ResourceType.EVENT,
+              Audience.BOTH,
+              null,
+              Set.of(),
+              Set.of(),
+              null,
+              null,
+              Set.of(),
+              null,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              List.of(),
+              now,
+              0,
+              DateFact.unknown(),
+              DateFact.unknown(),
+              null,
+              null,
+              null,
+              facts);
+        });
   }
 
   private Optional<SourceHit> readPage(JsonNode r, Map<String, SourceHit> byUrl, LocalDate today) {
