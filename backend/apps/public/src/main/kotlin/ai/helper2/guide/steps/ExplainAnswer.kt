@@ -19,6 +19,7 @@ import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.isSubject
 import ai.helper2.guide.ownDescription
+import ai.helper2.guide.wholeWordExcerpt
 import ai.helper2.search.MergedResult
 import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
@@ -236,7 +237,7 @@ internal class ExplainAnswer(
           Recommendation(
             it.result,
             if (isSubject(it.result, subject)) SUBJECT_REASON else RELATED_REASON,
-            (it.result.ownDescription ?: it.result.title).take(160),
+            wholeWordExcerpt(it.result.ownDescription ?: it.result.title),
             aiReasoned = false,
           )
         },
