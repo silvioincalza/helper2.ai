@@ -379,7 +379,12 @@ export default function ReviewQueuePage() {
               </tbody>
             </table>
           </ScrollBox>
-          <section id={DETAIL_ID} aria-labelledby="rq-detail-h" className="h2-admin__detail">
+          <section
+            key={selected.id}
+            id={DETAIL_ID}
+            aria-labelledby="rq-detail-h"
+            className="h2-admin__detail"
+          >
             <h3 id="rq-detail-h" className="h2-admin__reason">
               {reason}
             </h3>
@@ -436,7 +441,7 @@ export default function ReviewQueuePage() {
                 </StatusPill>
               </p>
             )}
-            <ReviewEvidencePanel key={selected.id} itemId={selected.id} onReason={retell} />
+            <ReviewEvidencePanel itemId={selected.id} onReason={retell} />
           </section>
         </div>
       )}
