@@ -31,6 +31,10 @@ on:
         description: release.yml only, the full commit its checks passed, the head of release/YYYY.N
         type: string
         default: ''
+      staging-release:
+        description: release.yml only, the version YYYY.N.P whose branch head (tag, release-commit) staging runs before prod; no canary, no version tag
+        type: string
+        default: ''
     outputs:
       tag:
         description: the tag that was deployed
@@ -89,6 +93,7 @@ jobs:
           ROLLBACK: ${{ inputs.rollback }}
           RELEASE_COMMIT: ${{ inputs.release-commit }}
           RELEASE_VERSION: ${{ inputs.release-version }}
+          STAGING_RELEASE: ${{ inputs.staging-release }}
         run: |
           set -euo pipefail
           tag=$INPUT_TAG
@@ -121,7 +126,17 @@ jobs:
           git fetch --quiet origin +refs/heads/main:refs/remotes/origin/main '+refs/heads/release/*:refs/remotes/origin/release/*'
           sha=$(commit_of "$tag") || exit 1
           release=false
-          if [[ -n $RELEASE_VERSION || -n $RELEASE_COMMIT ]]; then
+          rehearsal=false
+          if [[ -n $STAGING_RELEASE ]]; then
+            [[ $ENV == staging && -z $RELEASE_VERSION ]] || { echo "staging-release is for staging only"; exit 1; }
+            [[ $STAGING_RELEASE =~ ^[0-9]{4}\.[1-9][0-9]*\.[0-9]+$ ]] || { echo "staging-release must be YYYY.N.P, got '$STAGING_RELEASE'"; exit 1; }
+            [[ $tag =~ ^[0-9a-f]{12}$ ]] || { echo "staging runs the commit of the release branch, got tag '$tag'"; exit 1; }
+            [[ $sha == "$RELEASE_COMMIT" ]] || { echo "::error::$tag is $sha, release.yml checked $RELEASE_COMMIT"; exit 1; }
+            head=$(git rev-parse --verify --quiet "refs/remotes/origin/release/${STAGING_RELEASE%.*}") \
+              || { echo "::error::no branch release/${STAGING_RELEASE%.*}"; exit 1; }
+            [[ $head == "$sha" ]] || { echo "::error::release/${STAGING_RELEASE%.*} moved to ${head::12} after the checks of ${sha::12}: run the release again"; exit 1; }
+            rehearsal=true
+          elif [[ -n $RELEASE_VERSION || -n $RELEASE_COMMIT ]]; then
             [[ $ENV == prod ]] || { echo "release-version is for prod"; exit 1; }
             [[ $RELEASE_VERSION =~ ^[0-9]{4}\.[1-9][0-9]*\.[0-9]+$ ]] || { echo "release-version must be YYYY.N.P, got '$RELEASE_VERSION'"; exit 1; }
             [[ $tag =~ ^[0-9a-f]{12}$ ]] || { echo "a release deploys the commit of its branch first, got tag '$tag'"; exit 1; }
@@ -131,7 +146,7 @@ jobs:
             [[ $head == "$sha" ]] || { echo "::error::release/${RELEASE_VERSION%.*} moved to ${head::12} after the checks of ${sha::12}: run the release again"; exit 1; }
             release=true
           fi
-          if [[ $release != true ]] && ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
+          if [[ $release != true && $rehearsal != true ]] && ! git merge-base --is-ancestor "$sha" refs/remotes/origin/main; then
             if [[ ! $tag =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "$tag is not on main (a release/* commit deploys only as its release version)"; exit 1
             fi
@@ -144,9 +159,10 @@ jobs:
           running=${running##*:}
           order=$tag
           [[ $release != true ]] || order=$RELEASE_VERSION
-          if [[ -n $running && $running != "$tag" && $ROLLBACK != true ]] \
+          if [[ $rehearsal != true && -n $running && $running != "$tag" && $ROLLBACK != true ]] \
             && running_sha=$(commit_of "$running" 2>/dev/null) \
             && [[ $running_sha != "$sha" ]] \
+            && { [[ $ENV != staging ]] || git merge-base --is-ancestor "$running_sha" refs/remotes/origin/main; } \
             && ! git merge-base --is-ancestor "$running_sha" "$sha"; then
             semver='^[0-9]+\.[0-9]+\.[0-9]+$'
             if git merge-base --is-ancestor "$sha" "$running_sha"; then

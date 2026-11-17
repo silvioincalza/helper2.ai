@@ -4,7 +4,7 @@
 # release.yml (branch, version rule with its year window, seven files, staging or a fix release, canary present),
 # the CD run of the branch, the approval, then canary and prod (flow 0045 release branches), the tag, and the
 # merge back into main.
-# Source of truth: .github/workflows/release-prepare.yml, .github/workflows/release.yml (check, built, prod, used-up, publish),
+# Source of truth: .github/workflows/release-prepare.yml, .github/workflows/release.yml (check, built, staging, prod, used-up, publish),
 #   .github/scripts/release-version.sh, .github/scripts/bump-version.sh, deploy/k8s/CI.md (Releases).
 # Render: cd docs/diagrams && d2 fmt flow-0045-release-versioning.d2 && d2 flow-0045-release-versioning.d2 flow-0045-release-versioning.svg
 
@@ -39,11 +39,13 @@ e_files: "Fail: merge the\nversion pull request" {class: fail}
 only: "a commit of main unchanged,\nor a .0 with only the version\nfiles beside its commit of main?" {class: decision}
 staged: "that commit's CD run\non main deployed staging?" {class: decision}
 e_staged: "Fail: staging\nnever ran it" {class: fail}
-fix: "A patch: warning,\nstaging never ran the fix" {class: app}
+fix: "A patch or a fix release:\nthe staging job runs it" {class: app}
 canary: "canary: in the Makefile\nof the head?" {class: decision}
 e_canary: "Fail: the fix must carry\ndeploy/ and .github/ of main" {class: fail}
 built: "CD run of the head passed?\n(on main for a commit of\nmain unchanged)" {class: decision}
 e_built: "Fail: fix the branch,\nrun release again" {class: fail}
+stage: "staging job: deploy.yml staging,\nthe head by commit (staging-release),\nhealthy after the rollout?" {class: decision}
+e_stage: "Fail: staging rolled back,\nprod untouched" {class: fail}
 approve: "Approval on\nenvironment prod" {class: decision}
 prod: "deploy.yml: canary, smoke test,\nHarbor tag, prod by version\n(flow 0045 release branches)" {class: app}
 e_prod: "Fail: no tag, no release;\nprod runs the release before;\nafter the Harbor tag: used-up tags\nthe commit used/vYYYY.N.P" {class: fail}
@@ -88,7 +90,9 @@ fix -> canary
 canary -> e_canary: no
 canary -> built: yes {class: hot}
 built -> e_built: no
-built -> approve: yes {class: hot}
+built -> stage: yes {class: hot}
+stage -> e_stage: no
+stage -> approve: yes {class: hot}
 approve -> prod: yes {class: hot}
 prod -> e_prod: fails
 prod -> tag: healthy {class: hot}
