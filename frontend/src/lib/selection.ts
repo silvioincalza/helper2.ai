@@ -6,6 +6,7 @@ export interface GuidePick {
   title: string;
   reason: string;
   quote: string;
+  quotedFrom: { sourceId: string; url: string } | null;
   reasonCheck: Recommendation['reasonCheck'];
   checks: NonNullable<Recommendation['checks']>;
 }
@@ -22,6 +23,7 @@ export function guidePicks(answer: GuideResponse | null): GuidePick[] {
       title: r.title,
       reason: r.reason.trim(),
       quote: r.quote,
+      quotedFrom: r.quotedFrom ?? null,
       reasonCheck: r.reasonCheck,
       checks: r.checks ?? [],
     }));

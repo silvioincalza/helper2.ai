@@ -208,6 +208,39 @@ describe('results: one column, a row opens the resource page', () => {
     expect(r.getByText('Checked word for word in the source')).toBeInTheDocument();
   });
 
+  it('a checked quote links the page where it can be read, even when that is not the row link', async () => {
+    const npm = 'https://www.npmjs.com/package/postgres-mcp';
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () =>
+        sse({
+          ...guide(),
+          recommendations: [
+            { ...guide().recommendations[0]!, quotedFrom: { sourceId: 'npm', url: npm } },
+          ],
+        }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    const link = within(rowOf('Postgres MCP')).getByRole('link', { name: /read it on npmjs\.com/ });
+    expect(link).toHaveAttribute('href', npm);
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow ugc');
+  });
+
+  it('a quote no source text holds names no page', async () => {
+    mockApi({
+      'GET /search': () => search(),
+      'POST /guide/stream': () =>
+        sse({
+          ...guide(),
+          recommendations: [{ ...guide().recommendations[0]!, quotedFrom: null }],
+        }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    expect(within(rowOf('Postgres MCP')).queryByText(/read it on/)).not.toBeInTheDocument();
+  });
+
   it('a pick chip on this page jumps to its row; it keeps its full title, however long', async () => {
     const long = 'davidmoserai/AzureDocumentIntelligenceChunkerForVeryLongPdfDocuments';
     mockApi({
@@ -271,6 +304,7 @@ describe('results: one column, a row opens the resource page', () => {
         rank: 1,
         reason: 'Read-only access fits an agent that only reads.',
         quote: 'gives agents read-only access to a PostgreSQL database',
+        quotedFrom: null,
         reasonCheck: 'NOT_CHECKED',
         checks: [{ constraint: 'read-only', status: 'CONFIRMED', quote: 'read-only access' }],
       },
@@ -372,6 +406,31 @@ describe('results: one column, a row opens the resource page', () => {
     expect(within(r).getByText(/Easy to set up\./)).toHaveAttribute('data-ai-generated', 'true');
     expect(within(r).getByText('Extracted by AI')).toBeInTheDocument();
     expect(within(r).queryByText('Checked word for word in the source')).not.toBeInTheDocument();
+  });
+
+  it('a pick on an AI-written description still links the page that holds its quote', async () => {
+    const aiB = { ...B, descriptionOrigin: 'AI_EXTRACTED' as const };
+    const npm = 'https://www.npmjs.com/package/postgres-mcp';
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, aiB], total: 2, sources: [makeStatus()] }),
+      'POST /guide/stream': () =>
+        sse({
+          ...guide(),
+          recommendations: [
+            { ...guide().recommendations[0]!, quotedFrom: { sourceId: 'npm', url: npm } },
+          ],
+        }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    const r = within(rowOf('Postgres MCP'));
+    expect(r.getByText(/Easy to set up\./)).toHaveAttribute('data-ai-generated', 'true');
+    expect(
+      r
+        .getByText('gives agents read-only access to a PostgreSQL database')
+        .closest('[data-ai-generated]'),
+    ).toBeNull();
+    expect(r.getByRole('link', { name: /read it on npmjs\.com/ })).toHaveAttribute('href', npm);
   });
 
   it('keeps a line for "web searches left" while the guide reads, and the count takes its place', async () => {

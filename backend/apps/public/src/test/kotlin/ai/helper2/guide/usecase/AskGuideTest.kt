@@ -22,6 +22,8 @@ import ai.helper2.guide.ModelStep
 import ai.helper2.guide.Need
 import ai.helper2.guide.PlannedQueries
 import ai.helper2.guide.ProposedPick
+import ai.helper2.guide.QuoteRecords
+import ai.helper2.guide.QuotedFrom
 import ai.helper2.guide.READING_TYPES
 import ai.helper2.guide.ReasonCheck
 import ai.helper2.guide.ReasonClaim
@@ -45,6 +47,8 @@ import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
+import ai.helper2.shared.CanonicalUrl
+import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
 import ai.helper2.testing.MovableClock
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
@@ -52,6 +56,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import java.net.URI
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
@@ -220,6 +225,71 @@ class AskGuideTest {
     assertTrue(answer.planned)
     assertTrue(!answer.modelUsed)
     assertTrue(!GuideAnswerCache.isCacheable(answer))
+  }
+
+  @Test
+  fun `every pick names the source page its quote comes from`() {
+    val answer = AskGuide(search, null, clock).ask(need, null)
+
+    val whisper = answer.recommendations.first { it.result.title == "whisper-small" }
+    assertEquals(
+      QuotedFrom("hf", URI("https://huggingface.co/acme/whisper-small")),
+      whisper.quotedFrom,
+    )
+  }
+
+  @Test
+  fun `a catalog pick is named by the stored record that holds its text, read once`() {
+    val repo = "https://github.com/acme/pdfchat"
+    val npm = "https://www.npmjs.com/package/pdfchat"
+    val text = "Chat with your PDF files locally, with no account and no upload to a server."
+    val id = ResourceId.of(CanonicalUrl.of(repo)!!)
+    val catalog =
+      object : SearchSource {
+        override val descriptor = descriptor("catalog")
+
+        override fun search(query: SourceQuery): List<SourceHit> =
+          listOf(
+            hit("catalog", repo, title = "acme/pdfchat", description = text)
+              .copy(externalId = id.toString())
+          )
+      }
+    val reads = mutableListOf<Collection<ResourceId>>()
+    val records = QuoteRecords { ids ->
+      reads += ids
+      mapOf(id to listOf(hit("npm", npm, title = "pdfchat", repo = repo, description = text)))
+    }
+    val catalogSearch =
+      SearchResources(listOf(catalog), noCache, ResultObserver { emptyMap() }, executor, clock)
+
+    val answer =
+      AskGuide(catalogSearch, null, clock, quoteRecords = records)
+        .ask("chat with a pdf locally", null)
+
+    assertEquals(QuotedFrom("npm", URI(npm)), answer.recommendations.single().quotedFrom)
+    assertEquals(listOf<Collection<ResourceId>>(listOf(id)), reads)
+  }
+
+  @Test
+  fun `a fallback quote of a long text ends on a whole word, so it still names its page`() {
+    val url = "https://huggingface.co/acme/long-card"
+    val long =
+      ("Connect your speech recognition pipeline to every meeting tool you use ".repeat(4)).trim()
+    val longSource =
+      object : SearchSource {
+        override val descriptor = descriptor("hf")
+
+        override fun search(query: SourceQuery): List<SourceHit> =
+          listOf(hit("hf", url, title = "long-card", type = ResourceType.MODEL, description = long))
+      }
+    val longSearch =
+      SearchResources(listOf(longSource), noCache, ResultObserver { emptyMap() }, executor, clock)
+
+    val pick = AskGuide(longSearch, null, clock).ask(need, null).recommendations.single()
+
+    assertTrue(pick.quote.length <= 160)
+    assertTrue(long.startsWith(pick.quote) && long[pick.quote.length] == ' ')
+    assertEquals(QuotedFrom("hf", URI(url)), pick.quotedFrom)
   }
 
   @Test

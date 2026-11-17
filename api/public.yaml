@@ -833,6 +833,14 @@ components:
         description:
           type: [string, 'null']
           description: The resource's own description, the text the quote was checked against, so a client can show the quote in context.
+        quotedFrom:
+          oneOf:
+            - $ref: '#/components/schemas/QuotedFrom'
+            - type: 'null'
+          description: |
+            The source page whose own title or description holds the quote (ADR 0031). It can differ from `url`: a
+            package's text shown under its repository's link names the package page. null when no stored source text
+            holds it (a curated description); an answer cached before the field existed lacks it.
         sourceIds: { type: array, items: { type: string } }
         compatibleWith:
           type: array
@@ -857,6 +865,13 @@ components:
             and the confirmed checks. SUPPORTED: no claim beyond that evidence was found (a model check, not a
             proof). REMOVED: it found one, so `reason` is empty. NOT_CHECKED: no check ran (no model, budget,
             failure) or this is a fallback result.
+
+    QuotedFrom:
+      type: object
+      required: [sourceId, url]
+      properties:
+        sourceId: { type: string, description: The source that wrote the quoted text. }
+        url: { type: string, format: uri, description: The page where the quote can be read. }
 
     GuideCheck:
       type: object
@@ -998,6 +1013,9 @@ components:
                     subjectKey: { type: string }
                     text: { type: [string, 'null'], description: AI-written; null when the subject's own text does not state it. }
                     quote: { type: [string, 'null'], description: Exact text from that subject's own description. }
+                    quotedFrom:
+                      oneOf: [{ $ref: '#/components/schemas/QuotedFrom' }, { type: 'null' }]
+                      description: The source page whose own text holds the quote (ADR 0031); null when no stored source text holds it or the cell has no quote.
                     reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
 
     GuideExplanation:
@@ -1015,6 +1033,9 @@ components:
               resourceId: { type: string, format: uuid }
               title: { type: string }
               url: { type: string, format: uri }
+              quotedFrom:
+                oneOf: [{ $ref: '#/components/schemas/QuotedFrom' }, { type: 'null' }]
+                description: The source page whose own text holds the quote (ADR 0031); it can differ from `url`. null when no stored source text holds it.
               reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
 
     GuideStreamEvent:
