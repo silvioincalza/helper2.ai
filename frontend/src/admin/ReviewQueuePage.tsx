@@ -66,7 +66,7 @@ function rowText(
 ): string {
   if (candidate) {
     const type = t(`type.${candidate.type}`, { defaultValue: candidate.type });
-    return [type, ...candidate.foundBy].join(' · ');
+    return [type, ...candidate.tags, ...candidate.foundBy].join(' · ');
   }
   const relationship = item.kind === 'RELATIONSHIP_CANDIDATE' ? RELATIONSHIP.exec(reason) : null;
   if (relationship) {
@@ -108,7 +108,11 @@ export default function ReviewQueuePage() {
   );
   const { retry, focusRef: heading } = useRetry(items.reload, items.loading);
   const sources = useApi('sources', (s) => api.listSources(s));
-  const overview = useApi('admin-overview', (s) => adminApi.getAdminOverview(s));
+  const overview = useApi('admin-overview', (s) => adminApi.getAdminOverview(s), { cache: false });
+  const reloadQueue = () => {
+    items.reload();
+    overview.reload();
+  };
   const openCounts = new Map(
     (overview.data?.openReviewItems ?? []).map(({ kind: k, count }) => [k, count] as const),
   );
@@ -183,11 +187,11 @@ export default function ReviewQueuePage() {
       setAnnouncement(t(`admin.review.decided.${decision}`, { count: left }));
       setSelectedId(nextAfter(list, item.id));
       focusAfterLoad.current = true;
-      items.reload();
+      reloadQueue();
     } catch (e) {
       const error = actionErrorOf(e);
       setActionError(error);
-      if (error.kind === 'alreadyDecided') items.reload();
+      if (error.kind === 'alreadyDecided') reloadQueue();
     } finally {
       setBusy(false);
     }
@@ -207,10 +211,10 @@ export default function ReviewQueuePage() {
       setPicked((p) => new Map([...p].filter(([id]) => failed.has(id))));
       setBulkResult(bulkSummary(t, result));
       focusAfterLoad.current = true;
-      items.reload();
+      reloadQueue();
     } catch {
       setActionError({ kind: 'failed' });
-      items.reload();
+      reloadQueue();
     } finally {
       setBusy(false);
     }

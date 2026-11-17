@@ -197,7 +197,7 @@ describe('admin: a review row reads as a title (S6.2.9)', () => {
     });
     renderAdmin('/admin/review');
     const row = (
-      await screen.findByRole('button', { name: 'Product · discovery-self-hosted' })
+      await screen.findByRole('button', { name: 'Product · self-hosted · discovery-self-hosted' })
     ).closest('tr') as HTMLElement;
     expect(within(row).getByRole('link', { name: 'Open WebUI' })).toHaveAttribute(
       'href',
