@@ -148,8 +148,8 @@ place to say that.
 9. **Review queue** (`ReviewQueue`). A `REJECTED` run with a validation error a person can act on, or a `CONFLICTING`
    field, opens an `ENRICHMENT_VALIDATION` item. The errors of a `PARTIAL` run open none: the run keeps what passed and
    has already dropped what failed, so they leave a person nothing to decide, and they stay on the run. A `CONFLICTING`
-   field of a `PARTIAL` run still opens the item, and its `UNVERIFIED` relationships still open theirs. A value its quote does not state is not one of them (`ValidationResult.forReview`): the
-   field stays `UNVERIFIED` and shows "Not stated", the line stays in the run's errors, and the run stays `PARTIAL`, but
+   field of a `PARTIAL` run still opens the item, and its `UNVERIFIED` relationships still open theirs. A value its quote does not state opens no item on any run (`ValidationResult.forReview`):
+   the field stays `UNVERIFIED` and shows "Not stated", the line stays in the run's errors, and the run stays `PARTIAL`, but
    no item opens for it alone. A short source text makes the model guess (a library is "coding", a package is "MIT"), and
    the only decision left to a person would be to reject. When an item opens for another reason, it lists these lines
    too. The re-check (point 23) closes the items an earlier rule opened for such values alone: `SUPERSEDED`, resolved
@@ -309,8 +309,9 @@ place to say that.
       stated");
     - a field writing does not keep (point 20) is rejected, whatever its verification;
     - a summary sentence that fails the claim check is dropped, with the evidence only it used;
-    - an open `ENRICHMENT_VALIDATION` item whose run has no issue but values the quote does not state, and no
-      `CONFLICTING` field, is closed (`closeItemsOfUnstatedValues`; counter result `items_closed`);
+    - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its
+      only issues are values the quote does not state; never when the run has a `CONFLICTING` field
+      (`closeItemsWithNothingToDecide`; counter result `items_closed`);
     - a resource goes back to the model only when it still misses a target fact (`FieldTargets`), has more to read (a
       README or model card, or its own pages) and its last run used an older prompt label. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps. `resource.enrichment_rerun_requested_at`

@@ -17,7 +17,8 @@ class CatalogStoredAnswers implements StoredAnswers {
   static final String CLOSED_BY = "scout";
 
   static final String CLOSED_NOTE =
-      "Its only issues were values the quote does not state: they need no review";
+      "Nothing to decide: a partial run already dropped what failed, or its only issues were"
+          + " values the quote does not state";
 
   private final StoredEnrichments stored;
 
@@ -67,8 +68,8 @@ class CatalogStoredAnswers implements StoredAnswers {
   }
 
   @Override
-  public int closeItemsOfUnstatedValues() {
-    return stored.closeItemsOfUnstatedValues(CLOSED_BY, CLOSED_NOTE);
+  public int closeItemsWithNothingToDecide() {
+    return stored.closeItemsWithNothingToDecide(CLOSED_BY, CLOSED_NOTE);
   }
 
   @Override
