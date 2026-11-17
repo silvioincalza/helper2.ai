@@ -621,6 +621,44 @@
         "NOT_ALLOWED": "not allowed in bulk"
       }
     },
+    "groups": {
+      "title": "Relationship candidates by target name",
+      "caption_one": "{{count}} target name with open relationship candidates",
+      "caption_other": "{{count}} target names with open relationship candidates",
+      "view": {
+        "label": "Show",
+        "groups": "By target name",
+        "items": "Each item"
+      },
+      "col": {
+        "name": "Target name",
+        "items": "Items",
+        "examples": "Named by"
+      },
+      "summary_one": "{{count}} open item",
+      "summary_other": "{{count}} open items",
+      "kind": {
+        "INTEGRATES_WITH": "integrates with",
+        "USES": "uses",
+        "SUPPORTS": "supports",
+        "COMPATIBLE_WITH": "compatible with",
+        "ABOUT": "about"
+      },
+      "examples": "Named by",
+      "why": "Each quote already names this target. The only open question is what the name is: answer it once for every item.",
+      "link": "It is a resource in the catalog…",
+      "linkHint_one": "Points the item at the resource you choose and accepts it.",
+      "linkHint_other": "Points all {{count}} items at the resource you choose and accepts them.",
+      "service_one": "It is a service (1 item)",
+      "service_other": "It is a service ({{count}} items)",
+      "vendor_one": "It is a vendor (1 item)",
+      "vendor_other": "It is a vendor ({{count}} items)",
+      "reject_one": "Not a real target: reject (1 item)",
+      "reject_other": "Not a real target: reject ({{count}} items)",
+      "done_one": "{{name}}: {{count}} item decided, {{skipped}} skipped, {{left}} left.",
+      "done_other": "{{name}}: {{count}} items decided, {{skipped}} skipped, {{left}} left.",
+      "failed": "Could not save the decision. Try again."
+    },
     "kindCount": "{{kind}} ({{count}})"
   },
   "nav": {

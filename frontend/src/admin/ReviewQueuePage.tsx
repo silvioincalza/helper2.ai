@@ -22,6 +22,7 @@ import { BulkBar, bulkSummary, type Decision } from './ReviewBulk';
 import { ReviewEvidencePanel } from './ReviewEvidence';
 import { ItemDetails, parseCandidate, type Candidate } from './ReviewItemDetails';
 import { ReviewKeysHelp } from './ReviewKeysHelp';
+import { RelationshipGroups } from './RelationshipGroups';
 import { NOTE_MAX } from './limits';
 
 const PAGE_SIZE = 50;
@@ -89,6 +90,8 @@ export default function ReviewQueuePage() {
   const wanted = params.get('category');
   const category = wanted && CATEGORY.test(wanted) ? wanted : undefined;
   const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
+  const byTarget =
+    status === 'OPEN' && kind === 'RELATIONSHIP_CANDIDATE' && params.get('view') !== 'items';
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<ActionError | null>(null);
   const [listed, setListed] = useState<ReviewItem['alreadyListed'] | null>(null);
@@ -146,7 +149,10 @@ export default function ReviewQueuePage() {
     else heading.current?.focus();
   }, [items.loading, selected, heading]);
 
-  const setFilter = (name: 'status' | 'kind' | 'category' | 'page', value: string | undefined) => {
+  const setFilter = (
+    name: 'status' | 'kind' | 'category' | 'page' | 'view',
+    value: string | undefined,
+  ) => {
     const next = new URLSearchParams(params);
     if (value === undefined) next.delete(name);
     else next.set(name, value);
@@ -301,7 +307,7 @@ export default function ReviewQueuePage() {
             })}
           </select>
         </label>
-        {categories.length > 0 && (
+        {categories.length > 0 && !byTarget && (
           <label>
             {t('admin.categoryFilter')}
             <select
@@ -317,11 +323,37 @@ export default function ReviewQueuePage() {
             </select>
           </label>
         )}
+        {status === 'OPEN' && kind === 'RELATIONSHIP_CANDIDATE' && (
+          <span className="h2-admin__views" role="group" aria-label={t('admin.groups.view.label')}>
+            <button
+              type="button"
+              className="btn"
+              aria-pressed={byTarget}
+              onClick={() => setFilter('view', undefined)}
+            >
+              {t('admin.groups.view.groups')}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-pressed={!byTarget}
+              onClick={() => setFilter('view', 'items')}
+            >
+              {t('admin.groups.view.items')}
+            </button>
+          </span>
+        )}
         <button type="button" className="btn" aria-keyshortcuts="?" onClick={() => setHelp(true)}>
           {t('admin.keys.open')}
         </button>
       </div>
-      {items.loading ? (
+      {byTarget ? (
+        <RelationshipGroups
+          page={page}
+          onPage={(p) => setFilter('page', String(p))}
+          onDecided={overview.reload}
+        />
+      ) : items.loading ? (
         <AdminLoading command={command} />
       ) : items.error !== undefined ? (
         <StatePanel
@@ -501,7 +533,7 @@ export default function ReviewQueuePage() {
           onClear={() => setPicked(new Map())}
         />
       )}
-      {items.data && (
+      {items.data && !byTarget && (
         <Pagination
           page={page}
           size={PAGE_SIZE}
