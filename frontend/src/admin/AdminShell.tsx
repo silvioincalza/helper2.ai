@@ -39,8 +39,13 @@ export function AdminShell() {
       <a className="skip-link" href="#main">
         {t('nav.skip')}
       </a>
-      <header className="h2-wrap h2-admin__bar">
-        <SignOut />
+      <header className="h2-admin__bar">
+        <div className="h2-wrap h2-admin__bar-row">
+          <a className="h2-admin__brand" href="/admin">
+            helper2.ai <span>admin</span>
+          </a>
+          <SignOut />
+        </div>
       </header>
       <main id="main" tabIndex={-1} className="h2-wrap main">
         <Outlet />
