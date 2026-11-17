@@ -1,8 +1,10 @@
 # Flowchart: one pass of the live web events scout, from the searches to an event in Coming up, and how its days are
 # merged with a source's and shown.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/LiveWebEventsCollector.java (collect, pagesToRead,
-#   readAll, readPage, eventHit), backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java (check),
-#   QuotedDays.java (find), SpringAiEventReader.java, backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt
+#   undatedBatch, readAll, readPages, eventSiteOfPost, readPage, eventHit), LinkedInPosts.java (isPost, eventSite,
+#   eventTitle), backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java (check),
+#   QuotedDays.java (find), SpringAiEventReader.java, UndatedEvents.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcResources.java (undatedEvents), backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt
 #   (UntrustedPageText.clean), backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt (eventSources, eventFacts),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java (event days),
 #   backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java (eventOrigin),
@@ -21,6 +23,10 @@ cap: "Scout credits today\nunder the daily cap (40)?" {class: decision}
 capped: "Left open (deferred):\ncap reached, next try tomorrow" {class: end}
 search: "4 Tavily searches\n(general, basic, 10 results):\nhackathons, meetups and talks,\nconferences and summits, workshops;\ncap checked before each, every\nattempt counted; searches done in\nthis pass skipped (resume cursor);\ncheckpoint only when all answered\nand their pages were read" {class: ext}
 keep: "About AI, plain https link;\nonce per URL; at most 20 pages" {class: app}
+undated: "Catalog EVENTs with no start day,\nfirst found since the last pass\n(first pass: 30 days), oldest first,\nafter the cursor position; at most 20" {class: data}
+full: "20 returned?" {class: decision}
+more: "Cursor keeps the last one read:\nthe pass stays open, the next\ncall reads on from there" {class: app}
+alldone: "Undated events done\nfor this pass" {class: app}
 capagain: "Cap reached before\nthe next Extract call?" {class: decision}
 stop: "Stop reading: keep what was read;\nthe queries are not done, so the\npages left are found and read\nagain on the next run" {class: end}
 retry: "Stop reading: keep what was read,\npass stays open, next Scout run\ntries again" {class: end}
@@ -29,6 +35,8 @@ clean: "Clean the page: hidden text out,\nemails → [email], phones → [phone]
 model: "Model reads the page\n(reasoning model, thinking off,\nbudget 40 a day): events on it,\ndays + quote, kind, format, place + quotes" {class: ext}
 nomodel: "No model now\n(budget, circuit)?" {class: decision}
 gate: "EventQuoteGate" {class: decision}
+post: "A LinkedIn post with\none https link that is not\nLinkedIn, lnkd.in or social?" {class: decision}
+site: "Read that event site in a second\nExtract round, same reader and gate;\nkept at the site, linkedFrom = post.\nThe post counts as read only\nonce its site was read" {class: app}
 reject: "Not listed\n(one event? quote 20-300 chars on the page?\ncode reads one range with its year?\nsame days as the model?\nstarts within 6 months? ≤ 31 days?)" {class: fail}
 hit: "EVENT hit: days from the quote;\nkind, format, place only with\ntheir own quote on the page;\nquote, model, prompt in extra" {class: data}
 merge: "Another source states\nthis event's days?" {class: decision}
@@ -44,13 +52,21 @@ due -> cap: yes
 cap -> capped: no
 cap -> search: yes
 search -> keep -> capagain
+cap -> undated: yes
+undated -> full
+full -> more: yes
+full -> alldone: no
+undated -> capagain: "their pages,\nread like search pages"
 capagain -> stop: yes
 capagain -> extract: no
 extract -> clean -> nomodel
 nomodel -> retry: yes
 nomodel -> model: no
 model -> gate
-gate -> reject: no
+gate -> post: no
+post -> site: yes
+post -> reject: no
+site -> hit: kept
 gate -> hit: yes
 hit -> capagain: next pages
 hit -> merge
