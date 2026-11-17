@@ -141,11 +141,16 @@ describe('GuideAnswer intents (ADR 0031)', () => {
             resourceId: '11111111-1111-5111-8111-111111111111',
             title: 'ollama',
             url: 'https://github.com/ollama/ollama',
+            quotedFrom: { sourceId: 'npm', url: 'https://www.npmjs.com/package/ollama' },
             reasonCheck: 'SUPPORTED',
           },
         ],
       },
     });
+    expect(screen.getByRole('link', { name: /read it on npmjs\.com/ })).toHaveAttribute(
+      'href',
+      'https://www.npmjs.com/package/ollama',
+    );
     expect(screen.getByRole('heading', { name: /What it is/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'ollama' })).toHaveAttribute(
       'href',
