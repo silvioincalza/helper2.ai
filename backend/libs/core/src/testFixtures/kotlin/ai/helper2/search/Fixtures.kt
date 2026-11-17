@@ -48,10 +48,11 @@ fun hit(
   description: String? = null,
   tags: Set<String> = emptySet(),
   vitality: Vitality = Vitality.UNKNOWN,
+  name: String? = null,
 ) =
   SourceHit(
     sourceId = source,
-    externalId = "$source:$url",
+    externalId = name ?: "$source:$url",
     url = URI(url),
     canonicalUrl = CanonicalUrl.of(url)!!,
     repositoryUrl = repo?.let { CanonicalUrl.of(it) },

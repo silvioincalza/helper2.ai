@@ -83,7 +83,7 @@ class SpringAiGuideModel implements GuideModel {
         .render(
             Map.of(
                 "security", security(),
-                "maxPicks", GuideValidator.MAX_PICKS,
+                "maxProposed", GuideValidator.MAX_PROPOSED,
                 "minQuoteChars", GuideValidator.MIN_QUOTE_CHARS,
                 "minQuoteWords", GuideValidator.MIN_QUOTE_WORDS,
                 "maxQuoteChars", GuideValidator.MAX_QUOTE_CHARS,
