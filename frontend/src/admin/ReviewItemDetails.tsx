@@ -1,4 +1,5 @@
 import './adminText';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DraftedExample as Draft, ReviewItem } from '@/api/types';
 import { safeHref } from '@/lib/format';
@@ -187,7 +188,9 @@ function ResourceCandidate({
       {candidate.snippet && (
         <>
           <dt>{t('admin.review.candidate.excerpt')}</dt>
-          <dd>{candidate.snippet}</dd>
+          <dd>
+            <Excerpt key={candidate.url} text={plainText(candidate.snippet)} />
+          </dd>
         </>
       )}
       {notices.map((c) => (
@@ -220,7 +223,7 @@ function ResourceCandidate({
   );
 }
 
-interface Candidate {
+export interface Candidate {
   url: string;
   title: string;
   type: string;
@@ -245,7 +248,7 @@ function findersOf(d: { foundBy?: unknown; sourceId?: unknown }): string[] {
   return typeof d.sourceId === 'string' ? [d.sourceId] : [];
 }
 
-function parseCandidate(details: string | null | undefined): Candidate | null {
+export function parseCandidate(details: string | null | undefined): Candidate | null {
   if (!details) return null;
   try {
     const d = JSON.parse(details) as Partial<Record<keyof Candidate | 'sourceId', unknown>>;
@@ -266,4 +269,35 @@ function parseCandidate(details: string | null | undefined): Candidate | null {
   } catch {
     return null;
   }
+}
+
+/** A search excerpt as plain text: no markdown headings, emphasis or link targets. */
+function plainText(markdown: string): string {
+  return markdown
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/(^|\s)#{1,6}\s+/g, '$1')
+    .replace(/(\*\*|__|`)/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const EXCERPT_SHORT = 280;
+
+function Excerpt({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const [all, setAll] = useState(false);
+  if (text.length <= EXCERPT_SHORT) return <span className="h2-admin__excerpt">{text}</span>;
+  return (
+    <span className="h2-admin__excerpt">
+      {all ? text : `${text.slice(0, EXCERPT_SHORT).trimEnd()}…`}{' '}
+      <button
+        type="button"
+        className="btn-text"
+        aria-expanded={all}
+        onClick={() => setAll((v) => !v)}
+      >
+        {t(all ? 'admin.review.candidate.less' : 'admin.review.candidate.more')}
+      </button>
+    </span>
+  );
 }
