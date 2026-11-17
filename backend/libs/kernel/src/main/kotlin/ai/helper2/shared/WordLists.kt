@@ -31,20 +31,13 @@ private constructor(private val name: String, private val byLanguage: Map<String
       .distinct()
       .sorted()
 
-  fun allPhrases(): List<String> =
-    byLanguage.keys
-      .flatMap { lang ->
-        byLanguage.getValue(lang).stringPropertyNames().flatMap { phrasesIn(lang, it) }
-      }
-      .distinct()
-
   fun anywhere(key: String): Regex = anywhere(phrases(key))
 
   fun atStart(key: String): Regex =
     Regex("(?iu)^\\s*(?:${alternation(phrases(key))})${WordBounds.END}")
 
   companion object {
-    @JvmField val LANGUAGES = listOf("en", "it", "de", "fr", "es", "zh")
+    @JvmField val LANGUAGES = listOf("en", "it", "de", "fr", "es")
 
     @JvmStatic
     fun load(name: String): WordLists =
@@ -68,17 +61,6 @@ private constructor(private val name: String, private val byLanguage: Map<String
           .filter { it.isNotEmpty() }
           .mapTo(linkedSetOf()) { Normalizer.normalize(it, Normalizer.Form.NFC) }
       }
-    }
-
-    @JvmStatic
-    fun separator(words: Collection<String>): (String) -> String {
-      val spaceless = words.filter { w -> w.any { WordBounds.isSpaceless(it.code) } }
-      if (spaceless.isEmpty()) return { it }
-      val any =
-        Regex(
-          spaceless.sortedByDescending { it.length }.joinToString("|", transform = Regex::escape)
-        )
-      return { text -> any.replace(text) { " ${it.value} " } }
     }
 
     private fun pattern(phrase: String): String =

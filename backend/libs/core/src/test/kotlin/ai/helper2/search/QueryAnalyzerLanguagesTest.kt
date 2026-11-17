@@ -20,7 +20,6 @@ class QueryAnalyzerLanguagesTest {
         "de | Dokumente übersetzen | translation",
         "fr | traduire des documents | translation",
         "es | traducir documentos | translation",
-        "zh | 翻译文档 | translation",
       ],
   )
   fun `a use case word names its use case and a non-English one adds the English term`(
@@ -43,7 +42,6 @@ class QueryAnalyzerLanguagesTest {
         "de | Modell für Bilder",
         "fr | modèle d'images",
         "es | modelo de voz",
-        "zh | 图像模型",
       ],
   )
   fun `a word for a kind of resource hints the type`(lang: String, query: String) {
@@ -60,7 +58,6 @@ class QueryAnalyzerLanguagesTest {
         "de | Datensatz für Audio | audio",
         "fr | jeu de données audio | audio",
         "es | conjunto de datos de audio | audio",
-        "zh | 音频数据集 | 音频",
       ],
   )
   fun `a word or phrase for a dataset hints the type and is not required`(
@@ -86,7 +83,6 @@ class QueryAnalyzerLanguagesTest {
         "de | finden ein Werkzeug für Notizen von Meetings | notizen meetings",
         "fr | trouver un outil pour notes des réunions | notes réunions",
         "es | encontrar una herramienta para notas de reuniones | notas reuniones",
-        "zh | 工具的会议笔记 | 会议 笔记",
       ],
   )
   fun `filler and request words are not content`(lang: String, query: String, content: String) {
@@ -122,7 +118,6 @@ class QueryAnalyzerLanguagesTest {
         "de | Kurse zu KI",
         "fr | cours d'IA",
         "es | cursos de IA",
-        "zh | 人工智能课程",
       ],
   )
   fun `a word for news, courses or events makes the search time-bound`(
@@ -146,25 +141,10 @@ class QueryAnalyzerLanguagesTest {
         "de | Assistent zum Programmieren im Gespräch",
         "fr | assistant de programmation et conversation",
         "es | asistente de programación y conversación",
-        "zh | 编程助手聊天",
       ],
   )
   fun `two use case words in a text derive its use cases`(lang: String, text: String) {
     assertTrue("chat" in analyzer.useCasesOf(text), lang)
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @CsvSource(value = ["新加坡的数据集 | 新加坡", "有道翻译 | 有道", "用户手册 | 用户手册"], delimiter = '|')
-  fun `a Chinese name is not cut at a single character`(query: String, name: String) {
-    assertTrue(name in analyzer.analyze(query).contentTerms, query)
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @CsvSource(value = ["向量数据库", "代码库搜索", "知识库问答"])
-  fun `a Chinese word that holds a shorter known word is read whole`(query: String) {
-    val analyzed = analyzer.analyze(query)
-    assertEquals(emptySet(), analyzed.typeHints, query)
-    assertTrue("data-analysis" !in analyzed.useCases, query)
   }
 
   @ParameterizedTest(name = "{0}")

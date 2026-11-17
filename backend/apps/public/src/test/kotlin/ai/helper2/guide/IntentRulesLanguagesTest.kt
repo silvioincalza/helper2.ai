@@ -18,7 +18,6 @@ class IntentRulesLanguagesTest {
         "de | die neuesten Modelle",
         "fr | les modèles les plus récents",
         "es | los modelos más recientes",
-        "zh | 最新的图像模型",
       ],
   )
   fun `a question for the newest asks for the newest`(lang: String, question: String) {
@@ -35,9 +34,6 @@ class IntentRulesLanguagesTest {
         "de | neue Modelle für Text",
         "fr | nouveaux modèles de traduction",
         "es | nuevas herramientas de diseño",
-        "zh | 新模型",
-        "zh | 有新模型吗",
-        "zh | 新的工具",
       ],
   )
   fun `new right before a kind of resource asks for the newest`(lang: String, question: String) {
@@ -54,7 +50,6 @@ class IntentRulesLanguagesTest {
         "de | Alternativen zu Cursor",
         "fr | alternatives à Cursor",
         "es | alternativas a Cursor",
-        "zh | Cursor的替代品",
       ],
   )
   fun `a question for alternatives asks for alternatives`(lang: String, question: String) {
@@ -71,7 +66,6 @@ class IntentRulesLanguagesTest {
         "de | Vergleich Ollama und LM Studio",
         "fr | comparer Ollama et LM Studio",
         "es | comparar Ollama y LM Studio",
-        "zh | 对比Ollama和LM Studio",
       ],
   )
   fun `a comparison asks to compare`(lang: String, question: String) {
@@ -88,7 +82,6 @@ class IntentRulesLanguagesTest {
         "de | was ist LangGraph",
         "fr | qu'est-ce que LangGraph",
         "es | qué es LangGraph",
-        "zh | 什么是LangGraph",
       ],
   )
   fun `a question that starts with what is asks what it is`(lang: String, question: String) {
@@ -105,7 +98,6 @@ class IntentRulesLanguagesTest {
         "de | wann ist NeurIPS",
         "fr | quand est NeurIPS",
         "es | cuándo es NeurIPS",
-        "zh | 什么时候举办NeurIPS",
       ],
   )
   fun `a question that starts with when asks when`(lang: String, question: String) {
@@ -122,7 +114,6 @@ class IntentRulesLanguagesTest {
         "de | wie kann ich Llama nutzen",
         "fr | comment faire tourner Llama",
         "es | cómo usar Llama",
-        "zh | 如何运行Llama",
       ],
   )
   fun `a question that starts with how asks how to`(lang: String, question: String) {
@@ -139,7 +130,6 @@ class IntentRulesLanguagesTest {
         "de | ein Kurs über RAG",
         "fr | une formation sur RAG",
         "es | un curso de RAG",
-        "zh | RAG课程",
       ],
   )
   fun `a question for a course asks to learn`(lang: String, question: String) {
@@ -156,7 +146,6 @@ class IntentRulesLanguagesTest {
         "de | Modelle der letzten 7 Tage",
         "fr | les modèles des 7 derniers jours",
         "es | modelos de los últimos 7 días",
-        "zh | 最近7天的模型",
       ],
   )
   fun `a past period with a number is that many units back`(lang: String, question: String) {
@@ -173,7 +162,6 @@ class IntentRulesLanguagesTest {
         "de | Werkzeuge der letzten Woche",
         "fr | les outils de la semaine dernière",
         "es | herramientas de la semana pasada",
-        "zh | 上周的工具",
       ],
   )
   fun `a past period without a number is one unit back`(lang: String, question: String) {
@@ -190,7 +178,6 @@ class IntentRulesLanguagesTest {
         "de | Events in den nächsten 2 Wochen",
         "fr | les événements des 2 prochaines semaines",
         "es | eventos de las próximas 2 semanas",
-        "zh | 未来2周的活动",
       ],
   )
   fun `a next period looks ahead`(lang: String, question: String) {
@@ -211,7 +198,6 @@ class IntentRulesLanguagesTest {
         "de | Modelle von diesem Monat",
         "fr | les modèles de ce mois",
         "es | modelos de este mes",
-        "zh | 本月的模型",
       ],
   )
   fun `this period is the current unit`(lang: String, question: String) {
@@ -228,7 +214,6 @@ class IntentRulesLanguagesTest {
         "de | KI Nachrichten heute",
         "fr | les actualités IA d'aujourd'hui",
         "es | noticias de IA de hoy",
-        "zh | 今天的人工智能新闻",
       ],
   )
   fun `today is one day`(lang: String, question: String) {
@@ -245,7 +230,6 @@ class IntentRulesLanguagesTest {
         "de | Modelle seit gestern",
         "fr | modèles sortis hier",
         "es | modelos publicados ayer",
-        "zh | 昨天发布的模型",
       ],
   )
   fun `a question that names a time mentions time`(lang: String, question: String) {
@@ -262,7 +246,6 @@ class IntentRulesLanguagesTest {
         "de | kürzlich erschienene Modelle",
         "fr | modèles récents",
         "es | modelos recientes",
-        "zh | 新推出的工具",
       ],
   )
   fun `a question for something new mentions newness`(lang: String, question: String) {
@@ -273,15 +256,12 @@ class IntentRulesLanguagesTest {
   @ParameterizedTest(name = "{0}: {1}")
   @CsvSource(
     delimiter = '|',
-    value =
-      [
-        "zh | 新加坡的模型",
-        "zh | 创新工具",
-        "zh | 更新数据库的工具",
-        "fr | sortie structurée pour LLM",
-      ],
+    value = ["fr | sortie structurée pour LLM"],
   )
-  fun `a word that holds new does not ask for something new`(lang: String, question: String) {
+  fun `a word that also means output does not ask for something new`(
+    lang: String,
+    question: String,
+  ) {
     assertTrue(!IntentRules.mentionsNewness(question), question)
     assertNotEquals(GuideIntent.NEWEST, IntentRules.intentOf(question), question)
   }
@@ -296,7 +276,6 @@ class IntentRulesLanguagesTest {
         "de | ein kostenloses OCR",
         "fr | un OCR gratuit",
         "es | un OCR gratis",
-        "zh | 免费的OCR工具",
       ],
   )
   fun `a free requirement is stated in every language`(lang: String, question: String) {
@@ -313,7 +292,6 @@ class IntentRulesLanguagesTest {
         "de | Spracherkennung ohne Internet",
         "fr | transcription hors ligne",
         "es | transcripción sin conexión",
-        "zh | 离线语音识别",
       ],
   )
   fun `an offline requirement is stated in every language`(lang: String, question: String) {
@@ -330,7 +308,6 @@ class IntentRulesLanguagesTest {
         "de | Konferenzen in Berlin",
         "fr | conférences à Paris",
         "es | conferencias en Madrid",
-        "zh | 北京的黑客松",
       ],
   )
   fun `a word for an event names an event`(lang: String, question: String) {
@@ -347,7 +324,6 @@ class IntentRulesLanguagesTest {
         "de | das Gemini Modell",
         "fr | le modèle Gemini",
         "es | el modelo Gemini",
-        "zh | Gemini模型",
       ],
   )
   fun `a word for a kind names the subject's kind`(lang: String, question: String) {
@@ -364,17 +340,10 @@ class IntentRulesLanguagesTest {
         "de | die besten neuen KI Werkzeuge für Ollama | Ollama",
         "fr | les meilleurs outils pour Ollama | Ollama",
         "es | las mejores herramientas para Ollama | Ollama",
-        "zh | 最新的工具Ollama | Ollama",
       ],
   )
   fun `generic words name no subject`(lang: String, question: String, subject: String) {
     assertEquals(subject, IntentRules.subjectWords(question), lang)
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @CsvSource(value = ["新加坡的模型 | 新加坡 模型", "有道词典 | 有道词典"], delimiter = '|')
-  fun `a Chinese subject is not cut at a single character`(question: String, subject: String) {
-    assertEquals(subject, IntentRules.subjectWords(question), question)
   }
 
   @ParameterizedTest(name = "{0}: {1}")
@@ -387,7 +356,6 @@ class IntentRulesLanguagesTest {
         "de | die neuesten KI Werkzeuge",
         "fr | les nouveaux outils",
         "es | las nuevas herramientas",
-        "zh | 最新的人工智能工具",
       ],
   )
   fun `a question of only generic words names no subject`(lang: String, question: String) {
@@ -404,7 +372,6 @@ class IntentRulesLanguagesTest {
         "de | OCR kostenlos",
         "fr | OCR gratuit",
         "es | OCR gratuito",
-        "zh | 免费OCR",
       ],
   )
   fun `a requirement is dropped from a planned query`(lang: String, query: String) {
@@ -421,7 +388,6 @@ class IntentRulesLanguagesTest {
         "de | Artikel über RAG",
         "fr | articles sur RAG",
         "es | artículos sobre RAG",
-        "zh | 关于RAG的论文",
       ],
   )
   fun `a question for things to read wants reading`(lang: String, question: String) {

@@ -5,7 +5,6 @@ import ai.helper2.shared.LinkText
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.WordBounds.END
 import ai.helper2.shared.WordBounds.GAP
-import ai.helper2.shared.WordBounds.SPACED_WORD
 import ai.helper2.shared.WordBounds.START
 import ai.helper2.shared.WordLists
 import java.text.Normalizer
@@ -219,8 +218,8 @@ object IntentRules {
 
   private val NEW_KIND =
     Regex(
-      "(?iu)$START(?:${alternation("intent.new-word")})${notInside("intent.new-word-inside")}$GAP" +
-        "(?:(?!(?:${alternation("intent.new-skip")})$END)$SPACED_WORD$GAP)?(?:${alternation("intent.new-kind")})$END"
+      "(?iu)$START(?:${alternation("intent.new-word")})$GAP" +
+        "(?:(?!(?:${alternation("intent.new-skip")})$END)[\\p{L}\\d.'-]+?$GAP)?(?:${alternation("intent.new-kind")})$END"
     )
   private val ALTERNATIVES = anywhere("intent.alternatives")
   private val COMPARE = anywhere("intent.compare")
@@ -231,16 +230,11 @@ object IntentRules {
 
   private val GENERIC: Set<String> = IntentWords.words("query.generic")
 
-  private val SEPARATE_GENERIC = WordLists.separator(GENERIC)
-
   private fun anywhere(key: String) = IntentWords.anywhere(key)
 
   private fun atStart(key: String) = IntentWords.atStart(key)
 
   private fun alternation(key: String) = alternation(IntentWords.phrases(key))
-
-  private fun notInside(key: String) =
-    IntentWords.phrases(key).takeIf { it.isNotEmpty() }?.let { "(?<!${alternation(it)})" }.orEmpty()
 
   private fun alternation(phrases: Collection<String>): String = WordLists.alternation(phrases)
 
@@ -323,7 +317,7 @@ object IntentRules {
 
   @JvmStatic
   fun subjectWords(query: String): String =
-    SEPARATE_GENERIC(query)
+    query
       .split(Regex("\\s+"))
       .filter { it.isNotBlank() && it.lowercase().trim('.', ',', '?', '!') !in GENERIC }
       .joinToString(" ")

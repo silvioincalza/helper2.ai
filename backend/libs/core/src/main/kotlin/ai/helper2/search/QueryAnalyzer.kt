@@ -96,7 +96,7 @@ class QueryAnalyzer {
 
   private fun tokensOf(normalized: String): List<String> {
     val tokens =
-      SEPARATE(normalized)
+      normalized
         .split(TOKEN_SEPARATOR)
         .map { it.replace(EDGE_PUNCTUATION, "") }
         .filter { it.isNotEmpty() }
@@ -125,7 +125,6 @@ class QueryAnalyzer {
     val TOKEN_SEPARATOR = Regex("[^\\p{L}\\p{N}\\-_./@:]+")
     val EDGE_PUNCTUATION = Regex("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$")
     val WORDS = WordLists.load("query-words")
-    val SEPARATE = WordLists.separator(WORDS.allPhrases())
     val SERVER_WORDS = WORDS.words("server")
     val TYPE_WORDS: Map<String, ResourceType> =
       WORDS.keys("type.")
@@ -163,7 +162,7 @@ class QueryAnalyzer {
   }
 
   private fun padded(normalized: String) =
-    " ${SEPARATE(normalized).replace(Regex("[^\\p{L}\\p{N}-]+"), " ")} "
+    " ${normalized.replace(Regex("[^\\p{L}\\p{N}-]+"), " ")} "
 
   private fun contains(padded: String, term: String) = padded.contains(" $term ")
 }

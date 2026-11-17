@@ -13,8 +13,6 @@ object WordBounds {
 
   const val WORD_ENDING = "[$WORD_PART]*"
 
-  const val SPACED_WORD = "[\\p{L}\\d.'\\-&&[^$SPACELESS]]+?"
-
   const val GAP = "(?:(?<=[$SPACELESS])\\s*|\\s*(?=[$SPACELESS])|\\s+)"
 
   const val HYPHENATED_START = "(?:(?<![$WORD_PART-])|(?<=[$SPACELESS])|(?=[$SPACELESS]))"
@@ -63,7 +61,5 @@ object WordBounds {
   private fun isWordPart(cp: Int) =
     Character.isLetterOrDigit(cp) || cp == '_'.code || Character.getType(cp) in MARKS
 
-  @JvmStatic fun isSpaceless(cp: Int): Boolean = Character.UnicodeScript.of(cp) in WITHOUT_SPACES
-
-  private fun writtenWithoutSpaces(cp: Int) = isSpaceless(cp)
+  private fun writtenWithoutSpaces(cp: Int) = Character.UnicodeScript.of(cp) in WITHOUT_SPACES
 }
