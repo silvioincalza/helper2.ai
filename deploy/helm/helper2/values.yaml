@@ -84,7 +84,7 @@ web:
 postgres:
   image:
     repository: ""
-    tag: 18.6-pgvector0.8.6-7
+    tag: 18.6-pgvector0.8.6-8
     digest: ""
   storageClassName: ""
   storage: 5Gi
