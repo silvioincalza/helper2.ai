@@ -240,10 +240,14 @@ class GuideConfiguration {
       Map<UUID, ResourceId> byUuid = new HashMap<>();
       ids.forEach(id -> byUuid.put(id.getValue(), id));
       Map<ResourceId, List<SourceHit>> records = new HashMap<>();
-      resources
-          .recordsOf(byUuid.keySet())
-          .forEach((uuid, rows) ->
-              records.put(byUuid.get(uuid), rows.stream().map(RecordRow::hit).toList()));
+      try {
+        resources
+            .recordsOf(byUuid.keySet())
+            .forEach((uuid, rows) ->
+                records.put(byUuid.get(uuid), rows.stream().map(RecordRow::hit).toList()));
+      } catch (org.springframework.dao.DataAccessException e) {
+        log.warn("quote records unavailable: {}", e.getClass().getSimpleName());
+      }
       return records;
     };
   }
