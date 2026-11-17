@@ -169,8 +169,8 @@
             "withoutNumbers": "Articles and news found by web search, LinkedIn articles and posts included, with their titles, excerpts and what the search said about them: for a limited time after we last retrieved them. Posts from the news feeds of AI companies, with their title, link, date and the feed's short summary: for a limited time after their feed last listed them. Product pages we accepted from a web search or from an awesome list, with the same: as long as we list the product. LinkedIn company pages and events we accepted: as long as we list them. Pages waiting for our review: until we decide, then for a limited time. After that we keep only a one-way key of the page's address, our decision and its date, for as long as the catalog runs, so we never propose the same page twice. The same holds for an owner name proposed as a vendor: the proposal until we decide, then for a limited time, then only a one-way key of the name, our decision and its date. Events found by web search, with the sentence that states their dates: until ten years after they end."
           },
           {
-            "text": "Events we list (conferences, hackathons, meetups, talks and workshops), from any source: {{pastEvents}} after they ended.",
-            "withoutNumbers": "Events we list (conferences, hackathons, meetups, talks and workshops), from any source: for a set time after they ended."
+            "text": "Events we list (conferences, hackathons, meetups, talks and workshops), from any source: {{pastEvents}} after they ended. An event that a report or a review item still points at stays until that report or review item is deleted.",
+            "withoutNumbers": "Events we list (conferences, hackathons, meetups, talks and workshops), from any source: for a set time after they ended. An event that a report or a review item still points at stays until that report or review item is deleted."
           },
           {
             "text": "The search index of awesome lists and their section headings: as long as we list the list and the tool, and {{listIndex}} after a list was last read.",

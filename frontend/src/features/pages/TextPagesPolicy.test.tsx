@@ -95,6 +95,9 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent('the reason or note they wrote: 18 months.');
     expect(keep).toHaveTextContent('from any source: 24 months after they ended.');
     expect(keep).toHaveTextContent(
+      'An event that a report or a review item still points at stays until that report or review item is deleted.',
+    );
+    expect(keep).toHaveTextContent(
       'the reason they wrote: 12 months. The latest change of each limit stays',
     );
     expect(keep).toHaveTextContent(
