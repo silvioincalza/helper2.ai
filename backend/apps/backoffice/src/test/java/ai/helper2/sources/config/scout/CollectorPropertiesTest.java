@@ -25,6 +25,7 @@ class CollectorPropertiesTest {
     CollectorProperties.GitHubAwesome.class,
     CollectorProperties.HfProviderOrgs.class,
     CollectorProperties.AiDeadlines.class,
+    CollectorProperties.ConfsTech.class,
     CollectorProperties.McpRegistry.class
   })
   static class Binding {}
@@ -138,6 +139,8 @@ class CollectorPropertiesTest {
                       "kyutai"),
                   20));
       assertThat(c.getBean(CollectorProperties.AiDeadlines.class).interval())
+          .isEqualTo(Duration.ofDays(1));
+      assertThat(c.getBean(CollectorProperties.ConfsTech.class).interval())
           .isEqualTo(Duration.ofDays(1));
       assertThat(c.getBean(CollectorProperties.McpRegistry.class).interval())
           .isEqualTo(Duration.ofHours(1));

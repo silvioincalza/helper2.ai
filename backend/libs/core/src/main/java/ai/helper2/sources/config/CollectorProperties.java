@@ -203,6 +203,10 @@ public final class CollectorProperties {
   public record AiDeadlines(@NotNull Duration interval) implements Scheduled {}
 
   @Validated
+  @ConfigurationProperties("helper2.scout.confs-tech")
+  public record ConfsTech(@NotNull Duration interval) implements Scheduled {}
+
+  @Validated
   @ConfigurationProperties("helper2.scout.mcp-registry")
   public record McpRegistry(@NotNull Duration interval, @PositiveOrZero int itemsPerRun)
       implements Scheduled {}

@@ -223,8 +223,9 @@ Harbor could put an image under a tag first.
    the check, and so does a job the script has no rule for. On a push (`full: true`) every part in the tree is
    selected; `postgres-tag` is selected on pull requests only. A manual run of `ci.yml` selects every part too, and
    with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check of CI to require on `main` and `release/*`. It is required by
-   the rulesets "main: pull requests only" and "release branches: pull requests only", and a pull request must be up to date with `main` before it merges:
-   two pull requests that are green alone can break `main` together.
+   the rulesets "main: pull requests only" and "release branches: pull requests only". A pull request need not be up to date with its base before it
+   merges: the owner updates the branch on demand. Two pull requests that are green alone can still break `main` together; CI on the push to
+   `main` catches it.
 10. **CD per component.** The `image` job maps the push against the commit pushed before (`github.event.before`).
     `make ci-images` gives all three images the new commit tag, always, so they keep one tag (the public pod copies
     its shell from the web image of `image.tag`). A changed component is built and pushed. An unchanged one gets the
@@ -367,6 +368,9 @@ Harbor could put an image under a tag first.
 - GitHub Actions secrets for the kubeconfig and app env — long-lived values in GitHub; OIDC avoids them.
 - Argo CD or Flux (GitOps) — a controller in the cluster and a second repository of state for one app.
 - Build on every deploy — prod would run a fresh build, not the image staging tested.
+- A pull request up to date with its base before it merges — every merge sends the other green pull requests back
+  to a rebase and a full CI run. GitHub's merge queue tests them together, but a repository owned by a user account
+  cannot use it.
 - `dorny/paths-filter` or a workflow-level `paths:` — a third-party action in every run, or a skipped workflow that
   leaves a required check waiting forever.
 - Build all three images on every push — simple, but a docs change costs three builds and an admin change rebuilds the
@@ -411,6 +415,9 @@ Harbor could put an image under a tag first.
 ## Consequences
 
 - A green PR has run the same checks that guard `main`; CD repeats every CI job before it builds anything.
+- A pull request merges without being up to date with its base, so no green pull request waits for a rebase. Two
+  of them that are green alone can break `main` together: CI on the push to `main` shows it, and CD builds nothing
+  from a red commit.
 - A pull request that changes one part runs that part's checks; a docs change runs the diagrams only. A path the map
   does not know runs all of CI: slower, never wrong.
 - A change in one app's tests, resources or build file runs that app's chain alone. A change in an app's main
