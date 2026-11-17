@@ -128,10 +128,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E7 Site and frontend
 
-### Now
-
-- [S7.5.3 The Coming up list shows every upcoming event](https://github.com/silvioincalza/helper2.ai/issues/512)
-
 ### Next
 
 - [S7.2.3 The open points of design system version 1 closed](https://github.com/silvioincalza/helper2.ai/issues/316)
@@ -162,7 +158,6 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Next
 
 - [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
-- [S9.1.4 The Privacy page says how long past events are kept](https://github.com/silvioincalza/helper2.ai/issues/539)
 - [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
 - [S9.6.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/340)
 - [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
