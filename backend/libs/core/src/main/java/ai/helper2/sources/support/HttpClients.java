@@ -202,6 +202,28 @@ public final class HttpClients {
     Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", reason).increment();
   }
 
+  public static final class RedirectRefused extends RuntimeException {
+    public RedirectRefused() {
+      super("redirect refused", null, false, false);
+    }
+  }
+
+  public static String getWithoutRedirect(RestClient client, URI url, Clock clock) {
+    return getText(
+        () ->
+            client
+                .get()
+                .uri(url)
+                .retrieve()
+                .onStatus(
+                    status -> status.is3xxRedirection(),
+                    (request, response) -> {
+                      throw new RedirectRefused();
+                    })
+                .body(String.class),
+        clock);
+  }
+
   public static Optional<URI> onHost(URI host, String raw) {
     try {
       URI u = new URI(raw.strip());

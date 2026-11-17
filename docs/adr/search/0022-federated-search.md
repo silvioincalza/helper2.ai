@@ -202,6 +202,7 @@ and how many web credits the day has used. Two sources can describe the same res
 ### Known limits
 
 - All packages of one repository are one resource ([0021](../scout/0021-resource-identity-one-resource-per-repository.md)), so the result shows one link per source: with several packages of one source, one of them (the first by external id). Download counts of several packages are kept per record and one is shown. Until the repository's own record arrives, the resource carries the first package's title and description.
+- A merged result takes its title and link from the hit of the source with the highest priority, and its description from the first hit by that order that has one (`ResultMerger.mergeGroup`). When the two are different hits, the result shows one source's link with another source's text. The guide's quotes name the page that holds them ([0031](../guide/0031-guide-pipeline.md)), but the result card does not (S3.1.6).
 - A search waits for the slowest answering source up to its deadline: Tavily (6 s) sets the worst case, and a non-English query can start most sources up to 2.5 s later for translation.
 - Facets and filters see only the hits fetched for this query (at most 30 per source), not the whole catalog.
 - A package found without its repository is a result of its own until a search finds both. Once joined, its record stays with the repository; a later batch where a second package of the same source links to the repository splits it off again, though the stored join was not ambiguous.
@@ -217,6 +218,7 @@ and how many web credits the day has used. Two sources can describe the same res
 
 - Features: [F3.1](https://github.com/silvioincalza/helper2.ai/issues/47) Federated search: parallel fan-out, deadlines, partial results, source status, [F3.10](https://github.com/silvioincalza/helper2.ai/issues/56) Hugging Face Spaces found by meaning.
 - Open issues that change this decision:
+  - [#559](https://github.com/silvioincalza/helper2.ai/issues/559) S3.1.6 A result card whose link and text come from one source
   - [#178](https://github.com/silvioincalza/helper2.ai/issues/178) S1.10.2 To know when per-replica limits hurt
   - [#249](https://github.com/silvioincalza/helper2.ai/issues/249) S3.10.2 A strong Space on the first page
   - [#250](https://github.com/silvioincalza/helper2.ai/issues/250) S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin

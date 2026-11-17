@@ -67,15 +67,17 @@ public class AiDeadlinesCollector implements Collector {
   public AiDeadlinesCollector(
       SourceSettings settings,
       RestClient.Builder builder,
+      RestClient.Builder rawWithoutRedirects,
       Clock clock,
       Resilience resilience,
       RunInterval interval) {
-    this(settings, builder, clock, resilience, interval, RAW_HOST);
+    this(settings, builder, rawWithoutRedirects, clock, resilience, interval, RAW_HOST);
   }
 
   AiDeadlinesCollector(
       SourceSettings settings,
       RestClient.Builder builder,
+      RestClient.Builder rawWithoutRedirects,
       Clock clock,
       Resilience resilience,
       RunInterval interval,
@@ -87,7 +89,7 @@ public class AiDeadlinesCollector implements Collector {
     }
     this.interval = interval;
     this.rawHost = rawHost;
-    this.raw = builder.clone().build();
+    this.raw = rawWithoutRedirects.build();
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor = CollectorDescriptors.aiDeadlines(settings);
   }
@@ -133,11 +135,7 @@ public class AiDeadlinesCollector implements Collector {
       }
       try {
         String yaml =
-            resilience.call(
-                POLICY,
-                () ->
-                    HttpClients.getText(
-                        () -> raw.get().uri(url.get()).retrieve().body(String.class), clock));
+            resilience.call(POLICY, () -> HttpClients.getWithoutRedirect(raw, url.get(), clock));
         Optional<SourceHit> hit =
             nextEdition(name.substring(0, name.length() - 4), yaml, today, startedAt, rank);
         if (hit.isPresent()) {

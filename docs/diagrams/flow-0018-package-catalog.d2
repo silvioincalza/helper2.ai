@@ -2,6 +2,7 @@
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubSdkCollector.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/SdkSearchPlan.java, SdkFacts.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/depsdev/PackageFinder.java, PackageSelection.java, NameGuesses.java,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/PlatformBuild.kt,
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java,
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt (PackageFacts),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (refreshPackageTerms), SdkSearchTerms.java.
@@ -45,7 +46,7 @@ finder: "PackageFinder (deps.dev, cached for the interval)" {
   class: group
   direction: down
   map: "Project -> package versions\n(404 = none; at most 1,500)" {class: ext}
-  filter: "Drop: Go module of a non-Go repo,\nbundled copies, boms, parents,\nexamples, samples; unverified look-alikes\n(scope or group not near the owner,\nplain name not the repo's)" {class: app}
+  filter: "Drop: Go module of a non-Go repo,\nbundled copies, boms, parents,\nexamples, samples, builds for one\nsystem (-linux-x64); unverified look-alikes\n(scope or group not near the owner,\nplain name not the repo's)" {class: app}
   latest: "Keep 3; default version: date,\nlicences, source repo\n(a failed lookup drops only that one)" {class: ext}
   back: "Points back to\nthis repo?" {class: decision}
   guess: "Capped, or no package named\nlike the repo? Try the repo name\n(not Maven, not Go); first if found" {class: app}
