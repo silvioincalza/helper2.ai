@@ -58,11 +58,12 @@ class HomeListsController implements HomeListsApi {
 
   @Override
   public ResponseEntity<UpcomingEventsResponseDto> listUpcomingEvents(
-      @Nullable Integer days, Integer size) {
+      @Nullable Integer days, Integer size, Integer offset) {
     Instant now = clock.instant();
     Instant today = now.truncatedTo(ChronoUnit.DAYS);
     Instant until = days == null ? null : today.plus(Duration.ofDays(days));
-    ListUpcomingEvents.Page page = upcoming.list(today, until, size == null ? 6 : size);
+    ListUpcomingEvents.Page page =
+        upcoming.list(today, until, size == null ? 6 : size, offset == null ? 0 : offset);
     List<ResultCardDto> items = page.items().stream().map(CardMapper::card).toList();
     return ResponseEntity.ok()
         .cacheControl(PublicCache.SHORT)

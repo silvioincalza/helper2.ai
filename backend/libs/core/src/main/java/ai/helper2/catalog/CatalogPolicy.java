@@ -8,4 +8,5 @@ public record CatalogPolicy(
     Duration webNews,
     Duration pendingReviewPages,
     Duration listIndex,
+    Duration pastEvents,
     int errorLogChars) {}

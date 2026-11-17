@@ -8,9 +8,15 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E1 Foundation
 
+### Now
+
+- [S1.4.5 A Redis memory limit that also holds the page cache of an AOF rewrite](https://github.com/silvioincalza/helper2.ai/issues/541)
+- [S1.8.5 Scout stale alerts that follow each collector's run interval](https://github.com/silvioincalza/helper2.ai/issues/537)
+
 ### Next
 
 - [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
+- [S1.8.6 An alert on a single out-of-memory kill](https://github.com/silvioincalza/helper2.ai/issues/542)
 - [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/helper2.ai/issues/179)
 
 ### Later
@@ -27,12 +33,16 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
+- [S2.2.9 An undated event from the live web search read by the Scout event reader](https://github.com/silvioincalza/helper2.ai/issues/511)
+- [S2.2.12 Upcoming AI conferences from confs.tech](https://github.com/silvioincalza/helper2.ai/issues/527)
 - [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
-- [S2.10.5 Each MCP server of a collection repository, and a stranger's package, as a result of its own](https://github.com/silvioincalza/helper2.ai/issues/489)
 
 ### Next
 
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
+- [S2.2.10 A structured source of AI events chosen](https://github.com/silvioincalza/helper2.ai/issues/513)
+- [S2.2.11 A LinkedIn post about an event leads to the event's own site](https://github.com/silvioincalza/helper2.ai/issues/516)
+- [S2.2.13 ai-deadlines reads raw files without following redirects](https://github.com/silvioincalza/helper2.ai/issues/540)
 - [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
@@ -73,8 +83,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S4.1.6 Each pick to link the page where its quote can be read](https://github.com/silvioincalza/helper2.ai/issues/480)
-- [S4.1.7 Comparison cells and explanation sentences to link the page that holds their quote](https://github.com/silvioincalza/helper2.ai/issues/481)
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
 
 ### Next
@@ -113,7 +121,17 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S6.2.6 The review page to read a typed resource candidate](https://github.com/silvioincalza/helper2.ai/issues/304)
 - [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
 
+### No priority
+
+- [S6.2.9 A review row reads as a title, with kind and source as chips](https://github.com/silvioincalza/helper2.ai/issues/519)
+- [S6.2.10 To decide relationship candidates once per target name](https://github.com/silvioincalza/helper2.ai/issues/520)
+- [S6.2.14 The Overview shows enrichment validation issues grouped by issue](https://github.com/silvioincalza/helper2.ai/issues/525)
+
 ## E7 Site and frontend
+
+### Now
+
+- [S7.5.3 The Coming up list shows every upcoming event](https://github.com/silvioincalza/helper2.ai/issues/512)
 
 ### Next
 
@@ -145,6 +163,7 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Next
 
 - [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
+- [S9.1.4 The Privacy page says how long past events are kept](https://github.com/silvioincalza/helper2.ai/issues/539)
 - [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
 - [S9.6.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/340)
 - [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
@@ -155,7 +174,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.2.16 The sources test that counts this week's results without a race](https://github.com/silvioincalza/helper2.ai/issues/500)
+- [S10.3.3 v2026.11.5 on prod: main's fixes since v2026.11.4](https://github.com/silvioincalza/helper2.ai/issues/508)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 

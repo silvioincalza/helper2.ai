@@ -107,6 +107,11 @@ public class LiveWebEventsCollector implements Collector {
   }
 
   @Override
+  public Duration runEvery() {
+    return interval.every();
+  }
+
+  @Override
   public CollectedBatch collect(
       @Nullable String checkpoint, @Nullable String resumeCursor, int maxItems) {
     Instant startedAt = clock.instant();

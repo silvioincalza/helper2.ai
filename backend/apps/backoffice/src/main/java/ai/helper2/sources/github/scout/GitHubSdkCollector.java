@@ -132,6 +132,11 @@ public class GitHubSdkCollector implements Collector {
   }
 
   @Override
+  public Duration runEvery() {
+    return interval.every();
+  }
+
+  @Override
   public CollectedBatch collect(
       @Nullable String checkpoint, @Nullable String resumeCursor, int maxItems) {
     return collect(new ScoutCursor(checkpoint, resumeCursor, null), maxItems);

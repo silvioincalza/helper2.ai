@@ -206,7 +206,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     - **Terms**: "How we describe resources" and "Health and legal tools". **Privacy**: the weekly category searches
       and what is kept from them.
 14. **Alerts.** `Helper2ScoutCollectorStale` leaves out `discovery-*`. One rule, `Helper2DiscoveryStale`, fires once per
-    environment when any category has had no success for more than 8 days, and lists them.
+    environment when any category has had no success for its run interval plus a day (8 days at the default 7),
+    and lists them.
 
 ### Deep search in awesome lists
 15. **Follow nested lists.** A run reads the seed lists, then the lists they link to, then the lists those link to: at

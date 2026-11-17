@@ -117,7 +117,8 @@ Both are about the public site itself, and only the public app serves them.
      (`H2_RETENTION_INACTIVE_ACCOUNTS`), handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators'
      records in the audit trail (`H2_RETENTION_ADMIN_AUDIT`, [0038](../backoffice/0038-back-office-and-review.md)), and runtime
      setting changes (`H2_RETENTION_RUNTIME_SETTINGS`, [0007](../foundation/0007-configuration-secrets-runtime-settings.md); each setting's newest change
-     stays while it applies).
+     stays while it applies), and events after they ended (`H2_RETENTION_PAST_EVENTS`,
+     [0010](../foundation/0010-data-retention.md)), for every source of events.
    - `sources`: what the Scout reads, as the Privacy page states it: how many categories the discovery searches cover
      and how many searches that is (`helper2.categories`), the longest quote (`EvidenceValidator.MAX_EXCERPT_CHARS`),
      the excerpt kept of an article and of a product page, how many pages of a product's own website one read takes
