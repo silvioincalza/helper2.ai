@@ -217,6 +217,25 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
     expect(screen.getByText('Accepted. 2 left.')).toBeInTheDocument();
   });
 
+  it('Scenario: a decision asks the overview again, so the open counts by kind follow the queue', async () => {
+    let items = [item(1), item(2)];
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page(items),
+      'GET /admin/review-items/*': () => makeReviewEvidence(items[0]!),
+      'PUT /admin/review-items/*': ({ url }) => {
+        items = items.filter((i) => !url.pathname.includes(i.id));
+        return { ...item(1), status: 'ACCEPTED' };
+      },
+    });
+    renderAdmin('/admin/review');
+    await screen.findByRole('region', { name: 'Item 1' });
+    await waitFor(() => expect(m.callsTo('GET', '/admin/overview')).toHaveLength(1));
+    await userEvent.click(rowButton('Item 1'));
+    await userEvent.keyboard('a');
+    await waitFor(() => expect(m.callsTo('GET', '/admin/overview')).toHaveLength(2));
+  });
+
   it('Scenario: r rejects with the note; n goes to the note, where keys are text, and Escape goes back', async () => {
     const m = threeItems({
       'PUT /admin/review-items/*': () => ({ ...item(1), status: 'REJECTED' }),

@@ -3,6 +3,8 @@
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/ResourceId.kt (of),
 #   backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt (joiningRepositories, group, identity),
 #   backend/libs/core/src/main/kotlin/ai/helper2/search/RepositoryJoin.kt (of),
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/PlatformBuild.kt (isPlatformBuild),
+#   backend/libs/core/src/main/java/ai/helper2/sources/npm/NpmSource.java (toHit),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java (identity),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsertResources, upsertRecords).
 # Render: cd docs/diagrams && d2 fmt flow-0021-resource-identity.d2 && d2 flow-0021-resource-identity.d2 flow-0021-resource-identity.svg
@@ -12,6 +14,8 @@
 direction: down
 
 hit: "A hit from a source\n(its URL, the repository it states;\nan MCP Registry server: its stated folder,\nelse its registry name)" {class: end}
+build: "PlatformBuild: an npm name that ends\nwith a system and a processor\n(-darwin-arm64, -linux-x64-musl)?" {class: decision}
+buildout: "A build for one system:\nthe hit is left out,\nthe package it is built for stays" {class: end}
 canon: "CanonicalUrl.of: https, host in lower case,\nno www, port, fragment, tracking\nparameters or trailing slash" {class: app}
 none: "No canonical URL\n(dot segment, no host):\nthe hit is left out" {class: end}
 host: "GitHub, arXiv or\nHugging Face?" {class: decision}
@@ -28,7 +32,9 @@ insert: "Insert the resource" {class: data}
 merge: "Same row, same id:\nnew facts are merged,\na stronger origin keeps its fields" {class: data}
 record: "source_record (source_id, external_id)\nis a record of that resource" {class: data}
 
-hit -> canon
+hit -> build
+build -> buildout: yes
+build -> canon: no
 canon -> none: none
 canon -> host: a URL
 host -> rules: yes

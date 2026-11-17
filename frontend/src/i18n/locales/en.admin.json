@@ -244,7 +244,9 @@
         "excerpt": "Search excerpt",
         "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it.",
-        "edited": "Changed by an admin: {{fields}}."
+        "edited": "Changed by an admin: {{fields}}.",
+        "more": "Show all",
+        "less": "Show less"
       },
       "decided": {
         "ACCEPTED_one": "Accepted. {{count}} left.",
@@ -275,6 +277,15 @@
           "failed": "Could not save the changes. Try again."
         },
         "note": "Found by a rule, not by a person. Accept adds it to the known vendors and services. Reject a person's account: a person is not a vendor."
+      },
+      "row": {
+        "relationship": {
+          "INTEGRATES_WITH": "integrates with {{target}}",
+          "USES": "uses {{target}}",
+          "SUPPORTS": "supports {{target}}",
+          "COMPATIBLE_WITH": "compatible with {{target}}",
+          "ABOUT": "about {{target}}"
+        }
       }
     },
     "settings": {
@@ -421,12 +432,15 @@
         "confirmRemove": "Remove name",
         "cancel": "Cancel",
         "discovered": "proposed by a rule"
-      }
+      },
+      "contents": "On this page",
+      "find": "Find a setting (name, variable or value)",
+      "noMatch": "No setting matches these words."
     },
     "enrichment": {
       "title": "Enrichment queue",
       "lede": {
-        "WAITING": "What the Scout enriches next, in its order: the ones you moved to the top first, then never-run resources, then the ones to try again, newest first. An action changes the order only: the daily enrichment limit stays the same.",
+        "WAITING": "What the Scout enriches next, in its order: the ones you moved to the top first, then never-run resources, then the ones to try again; inside each part, the most popular first (stars or downloads), then the newest. An action changes the order only: the daily enrichment limit stays the same.",
         "SKIPPED": "The resources you skipped, the latest first. The Scout does not take them until you requeue them.",
         "OUT_OF_RETRIES": "The resources whose runs failed too many times. The Scout does not try them again until you requeue them."
       },
@@ -479,7 +493,9 @@
       "noRun": "None",
       "lastRun": "{{outcome}}, {{at}}",
       "next": "Next page",
-      "first": "First page"
+      "first": "First page",
+      "waitingCount_one": "{{count}} resource waits; the daily limit is {{limit}}.",
+      "waitingCount_other": "{{count}} resources wait; the daily limit is {{limit}}."
     },
     "keys": {
       "open": "Keys (?)",
@@ -513,7 +529,11 @@
       "save": "Save the changes",
       "saving": "Saving…",
       "cancel": "Cancel",
-      "fields": { "title": "title", "type": "type", "tags": "tags" },
+      "fields": {
+        "title": "title",
+        "type": "type",
+        "tags": "tags"
+      },
       "errors": {
         "alreadyDecided": "Someone decided this item meanwhile. Reload the list.",
         "changedMeanwhile": "The candidate changed since you opened it. Reload the list, then edit again.",
@@ -605,7 +625,46 @@
         "NOT_FOUND": "not found",
         "NOT_ALLOWED": "not allowed in bulk"
       }
-    }
+    },
+    "groups": {
+      "title": "Relationship candidates by target name",
+      "caption_one": "{{count}} target name with open relationship candidates",
+      "caption_other": "{{count}} target names with open relationship candidates",
+      "view": {
+        "label": "Show",
+        "groups": "By target name",
+        "items": "Each item"
+      },
+      "col": {
+        "name": "Target name",
+        "items": "Items",
+        "examples": "Named by"
+      },
+      "summary_one": "{{count}} open item",
+      "summary_other": "{{count}} open items",
+      "kind": {
+        "INTEGRATES_WITH": "integrates with",
+        "USES": "uses",
+        "SUPPORTS": "supports",
+        "COMPATIBLE_WITH": "compatible with",
+        "ABOUT": "about"
+      },
+      "examples": "Named by",
+      "why": "Each quote already names this target. The only open question is what the name is: answer it once for every item.",
+      "link": "It is a resource in the catalog…",
+      "linkHint_one": "Points the item at the resource you choose and accepts it.",
+      "linkHint_other": "Points all {{count}} items at the resource you choose and accepts them.",
+      "service_one": "It is a service (1 item)",
+      "service_other": "It is a service ({{count}} items)",
+      "vendor_one": "It is a vendor (1 item)",
+      "vendor_other": "It is a vendor ({{count}} items)",
+      "reject_one": "Not a real target: reject (1 item)",
+      "reject_other": "Not a real target: reject ({{count}} items)",
+      "done_one": "{{name}}: {{count}} item decided, {{skipped}} skipped, {{left}} left.",
+      "done_other": "{{name}}: {{count}} items decided, {{skipped}} skipped, {{left}} left.",
+      "failed": "Could not save the decision. Try again."
+    },
+    "kindCount": "{{kind}} ({{count}})"
   },
   "nav": {
     "admin": "Admin"

@@ -218,6 +218,31 @@ On a review item, accept and reject were not enough:
 18. **Back office.** The evidence of an open relationship candidate has "Change the target": find the resource with
     the visitor search (as the home examples do), add it, or give another name. Errors say why; the form stays open.
 
+### One decision per target name
+A relationship candidate is open because its target is not a known resource; its quotes already passed
+([0014](../scout/0014-evidence-gated-enrichment.md)). Most names come back for many resources (on prod, Cursor for more
+than a hundred), so the question is the same for each of them: what is this name?
+
+- **Groups.** `GET /admin/relationship-targets` lists the open relationship candidates grouped by the known-target key
+  of their target (`KnownTarget.KEY_OF_TITLE_SQL`: lower case, spaces folded, a trailing 's dropped), the largest
+  group first, with the name most of them write, the count, the relationship kinds and up to three resources that
+  name it.
+- **One decision.** `POST /admin/relationship-targets/decision` with the key and LINK (a catalog resource), VENDOR,
+  SERVICE or REJECT. LINK runs §12 on each item and accepts it: the quote already names the target, the admin answers
+  which resource the name is, so the check §12 waits for is the one the admin just made. VENDOR or SERVICE adds the
+  name as a known target ([0019](../scout/0019-known-targets-vendors-and-services.md)) and closes the items of this
+  batch (SUPERSEDED, relationship `VERIFIED` with the target's kind); other names the list already matches wait for
+  their own decision or the Scout's run. REJECT rejects each item and its relationship.
+- **Each item on its own**, as in §9: one transaction per item (`DecideRelationshipItem`) holds the item's lock from the
+  target change to the decision, so a LINK changes the target and accepts the item together or not at all. Each item
+  has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR and SERVICE). An item
+  decided meanwhile, one whose resource already has this target, or the target resource itself, is skipped and stays
+  open. At most 1000 items per call, the oldest first; the answer's `left` counts the items of the name still open
+  after the call.
+- **Back office.** The review page opens the kind "Relationship candidate" by target name; "Each item" shows them one
+  by one as before. A group spans every category, so the category filter is not shown there. When a decision empties
+  the last page, the list moves back to the last page that has groups.
+
 ### A resource candidate edited before it is accepted: title, type and tags
 19. **One call edits an open resource candidate:** `PUT /admin/review-items/{id}/candidate` with at least one of
     `title` (1 to 300 characters, one line), `type` (any candidate type: products and tools, MODEL, DATASET,
@@ -341,6 +366,9 @@ The target of a relationship candidate:
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`relationship.target_origin`, the audit actions).
 - `frontend/src/admin/RelationshipTarget.tsx`, `ReviewEvidence.tsx`.
 - Tests: `RelationshipTargetApiIT`, `RelationshipTarget.test.tsx`, `ReviewEvidence.test.tsx`.
+- One decision per target name: `admin/usecase/DecideRelationshipTargetGroup.java`, `DecideRelationshipItem.java`,
+  `admin/web/RelationshipTargetsController.java`, `frontend/src/admin/RelationshipGroups.tsx`; tests
+  `RelationshipTargetGroupsApiIT`, `RelationshipGroups.test.tsx`.
 
 A candidate edit:
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt`; `IndexAcceptedCandidate.kt`
@@ -536,7 +564,7 @@ The back office calls no model itself. It shows model output and lets a person d
 
 ### Known limits
 
-- Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person. A relationship target two catalog resources share by title waits for a person, and its review item says only that the target is not a known resource. The oldest-waiting gauge is set when the Scout reads a batch, not at each scrape.
+- Strict enrichment rules reject some correct values; the errors of a `PARTIAL` run open no review item, only its `CONFLICTING` fields and `UNVERIFIED` relationships do ([0014](../scout/0014-evidence-gated-enrichment.md)). A relationship target two catalog resources share by title waits for a person, and its review item says only that the target is not a known resource. The oldest-waiting gauge is set when the Scout reads a batch, not at each scrape.
 - The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute; 1.7 to 1.9 s with 37 500 REJECTED resources and the queue decisions). A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000), and so does the out-of-retries view (1.1 to 1.6 s with 37 500 REJECTED); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed.
 - The catalog's backlog query reads the Scout's `enrichment_queue_control` (a listed exception in the table-owner test). If it starts to hurt, the catalog can own the table behind a port, as for the re-run request of ADR 0014. ([ADR 0038](0038-back-office-and-review.md) §8)
 - Privacy check (privacy-legal): the skip reason in the enrichment queue is free text, like the review note. The form says "No personal data" and the code drops control characters, but nothing stops a name. Confirm whether the Privacy page must list the skip reason, and whether it needs a retention rule (today it stays until a requeue, a new skip or the resource's delete). ([ADR 0038](0038-back-office-and-review.md) §8)
@@ -552,6 +580,7 @@ The back office calls no model itself. It shows model output and lets a person d
 
 The back office: [flow](../../diagrams/flow-0038-back-office.svg) · [sequence](../../diagrams/sequence-0038-back-office.svg) ·
 the target of a relationship candidate: [flow](../../diagrams/flow-0038-relationship-target-in-review.svg) · [sequence](../../diagrams/sequence-0038-relationship-target-in-review.svg) ·
+one decision per target name: [flow](../../diagrams/flow-0038-relationship-groups.svg) · [sequence](../../diagrams/sequence-0038-relationship-groups.svg) ·
 a candidate edit: [flow](../../diagrams/flow-0038-candidate-edit-in-review.svg) · [sequence](../../diagrams/sequence-0038-candidate-edit-in-review.svg) ·
 a curated field: [flow](../../diagrams/flow-0038-curated-field.svg) · [sequence](../../diagrams/sequence-0038-curated-field.svg) ·
 the settings of both apps: [flow](../../diagrams/flow-0038-settings-of-both-apps.svg) · [sequence](../../diagrams/sequence-0038-settings-of-both-apps.svg)

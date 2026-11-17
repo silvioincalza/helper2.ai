@@ -18,8 +18,8 @@ import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -67,15 +67,17 @@ public class AiDeadlinesCollector implements Collector {
   public AiDeadlinesCollector(
       SourceSettings settings,
       RestClient.Builder builder,
+      RestClient.Builder rawWithoutRedirects,
       Clock clock,
       Resilience resilience,
       RunInterval interval) {
-    this(settings, builder, clock, resilience, interval, RAW_HOST);
+    this(settings, builder, rawWithoutRedirects, clock, resilience, interval, RAW_HOST);
   }
 
   AiDeadlinesCollector(
       SourceSettings settings,
       RestClient.Builder builder,
+      RestClient.Builder rawWithoutRedirects,
       Clock clock,
       Resilience resilience,
       RunInterval interval,
@@ -87,7 +89,7 @@ public class AiDeadlinesCollector implements Collector {
     }
     this.interval = interval;
     this.rawHost = rawHost;
-    this.raw = builder.clone().build();
+    this.raw = rawWithoutRedirects.build();
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor = CollectorDescriptors.aiDeadlines(settings);
   }
@@ -95,6 +97,11 @@ public class AiDeadlinesCollector implements Collector {
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   @Override
@@ -128,11 +135,7 @@ public class AiDeadlinesCollector implements Collector {
       }
       try {
         String yaml =
-            resilience.call(
-                POLICY,
-                () ->
-                    HttpClients.getText(
-                        () -> raw.get().uri(url.get()).retrieve().body(String.class), clock));
+            resilience.call(POLICY, () -> HttpClients.getWithoutRedirect(raw, url.get(), clock));
         Optional<SourceHit> hit =
             nextEdition(name.substring(0, name.length() - 4), yaml, today, startedAt, rank);
         if (hit.isPresent()) {
@@ -154,17 +157,7 @@ public class AiDeadlinesCollector implements Collector {
   }
 
   Optional<URI> allowed(String download) {
-    try {
-      URI u = new URI(download.strip());
-      boolean sameHost =
-          rawHost.getScheme().equalsIgnoreCase(u.getScheme())
-              && rawHost.getHost().equalsIgnoreCase(u.getHost())
-              && rawHost.getPort() == u.getPort()
-              && u.getUserInfo() == null;
-      return sameHost ? Optional.of(u) : Optional.empty();
-    } catch (URISyntaxException e) {
-      return Optional.empty();
-    }
+    return HttpClients.onHost(rawHost, download);
   }
 
   static Optional<SourceHit> nextEdition(

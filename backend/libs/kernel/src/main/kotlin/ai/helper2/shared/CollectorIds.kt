@@ -2,6 +2,7 @@ package ai.helper2.shared
 
 object CollectorIds {
   const val AI_DEADLINES = "ai-deadlines"
+  const val CONFS_TECH = "confs-tech"
   const val GITHUB_AWESOME = "github-awesome"
   const val GITHUB_TOPIC_LEADERS = "github-topic-leaders"
   const val GITHUB_SDKS = "github-sdks"

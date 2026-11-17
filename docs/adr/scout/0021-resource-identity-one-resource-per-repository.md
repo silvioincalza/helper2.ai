@@ -42,7 +42,7 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
      repository in a nested group (`gitlab.com/group/subgroup/name`) is a repository, named by its last part, and
      a repository stated by its host alone is named by the host;
    - its scope is the repository's owner (`@langchain/core` under `langchain-ai/langchainjs`,
-     `@microsoft/postgres-mcp-darwin-arm64` under `microsoft/postgres-mcp`); or
+     `@microsoft/postgres-mcp` under `microsoft/postgres-mcp`); or
    - its name holds the repository's telling words, the words of its name without the generic words of §5
      (`@ai-sdk/openai` under `vercel/ai`, `langchain-openai` under `langchain-ai/langchain`, `firecrawl-mcp` under
      `firecrawl/firecrawl-mcp-server`).
@@ -60,6 +60,11 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 4. **All packages that join one repository merge into it.** Every package that joins the same repository is a
    record of that repository's resource, so a monorepo with many packages is one result. The result shows one link
    per source.
+
+   A build of a package for one system is not a package: a name that ends with an operating system and a processor,
+   and optionally a C library (`-linux-x64-musl`, `-darwin-arm64`, `@esbuild/linux-x64`; `PlatformBuild`), is not
+   read by the npm source and not picked by deps.dev (`PackageSelection`). The package it is built for stays. A name
+   that only mentions a system (`linux-mcp-server`, `windows-mcp`) is a package.
 5. **An MCP Registry server is its own resource, keyed on its registry name.** A server that states a
    sub-directory is the resource of that sub-directory (§2). Any other server is the resource of its registry
    name, `https://registry.modelcontextprotocol.io/v0.1/servers/{name}` (`McpRegistryCollector.identity`), whatever
@@ -93,6 +98,8 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   the id.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/RepositoryJoin.kt` (`of`) — whether a record joins the
   repository it states.
+- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/PlatformBuild.kt` — a build for one system; read by
+  `NpmSource` and `PackageSelection`.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`joiningRepositories`, `group`,
   `identity`) — the package joins its repository.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java` (`identity`) — the
@@ -156,6 +163,8 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
   pick that quotes that text names the package page as the place to read it, not the repository
   ([0031](../guide/0031-guide-pipeline.md)).
 - A package found without a stated repository is a result of its own until a source states the repository.
+- Builds for one system written before `PlatformBuild` stay in the catalog until an admin skips them in the enrichment
+  queue.
 - A resource left without records is deleted only when it is `OBSERVED` and no report, review item or curated
   field holds it; an `INDEXED` or `CURATED` one stays as a row without records. Its relationships and labels do not
   move with the records.

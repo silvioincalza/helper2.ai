@@ -66,6 +66,16 @@ public final class ObservedHttp {
             new BoundedResponse(http.maxResponseSize().toBytes(), deadline, System::nanoTime));
   }
 
+  public static RestClient.Builder restClientBuilderWithoutRedirects(
+      Duration timeout,
+      Duration deadline,
+      ObservationRegistry registry,
+      HttpClientProperties http) {
+    return observed(requestFactory(timeout, http.poolWait(), false, http), registry)
+        .requestInterceptor(
+            new BoundedResponse(http.maxResponseSize().toBytes(), deadline, System::nanoTime));
+  }
+
   public static ClientHttpRequestInterceptor deadlineOnly(Duration deadline) {
     return new BoundedResponse(Long.MAX_VALUE, deadline, System::nanoTime);
   }

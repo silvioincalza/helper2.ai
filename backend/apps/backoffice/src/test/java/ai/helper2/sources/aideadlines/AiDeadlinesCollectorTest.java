@@ -96,6 +96,8 @@ class AiDeadlinesCollectorTest {
         new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
+        TestHttp.restClientBuilderWithoutRedirects(
+            Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         resilience,
         new RunInterval(Duration.ofDays(1)),
@@ -119,6 +121,8 @@ class AiDeadlinesCollectorTest {
         new AiDeadlinesCollector(
             new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
             TestHttp.restClientBuilder(
+                Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
+            TestHttp.restClientBuilderWithoutRedirects(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             SourceFixtures.CLOCK,
             Resilience.NONE,
@@ -164,6 +168,8 @@ class AiDeadlinesCollectorTest {
                 true, server.baseUrl(), "secret-token", Duration.ofSeconds(2), Duration.ZERO),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
+            TestHttp.restClientBuilderWithoutRedirects(
+                Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             SourceFixtures.CLOCK,
             Resilience.NONE,
             new RunInterval(Duration.ofDays(1)),
@@ -190,6 +196,8 @@ class AiDeadlinesCollectorTest {
             new SourceSettings(
                 true, "https://api.github.com", "", Duration.ofSeconds(2), Duration.ZERO),
             TestHttp.restClientBuilder(
+                Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
+            TestHttp.restClientBuilderWithoutRedirects(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             SourceFixtures.CLOCK,
             Resilience.NONE,
@@ -289,5 +297,27 @@ class AiDeadlinesCollectorTest {
         .isInstanceOf(CallRefused.class);
     assertThat(calls).hasValue(3);
     assertThat(droppedInAll()).isZero();
+  }
+
+  @Test
+  void aRawFileThatRedirectsIsNotFollowedAndCountsAsDropped() {
+    server.route(
+        AiDeadlinesCollector.CONFERENCES_PATH,
+        FixtureServer.Reply.ok(
+            """
+            [{"name":"neurips.yml","download_url":"%s/raw/neurips.yml"}]\
+            """
+                .formatted(server.baseUrl())));
+    server.route(
+        "/raw/neurips.yml",
+        new FixtureServer.Reply(
+            302, "", Map.of("Location", server.baseUrl() + "/elsewhere.yml"), 0));
+    server.route("/elsewhere.yml", FixtureServer.Reply.ok(NEURIPS));
+
+    CollectedBatch batch = collector(Resilience.NONE).collect(null, null, 500);
+
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(server.requests).doesNotContain("/elsewhere.yml");
+    assertThat(droppedInAll()).isEqualTo(1.0);
   }
 }

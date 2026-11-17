@@ -8,6 +8,10 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E1 Foundation
 
+### Now
+
+- [S1.8.6 An alert on a single out-of-memory kill](https://github.com/silvioincalza/helper2.ai/issues/542)
+
 ### Next
 
 - [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
@@ -27,12 +31,16 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
+- [S2.2.9 An undated event from the live web search read by the Scout event reader](https://github.com/silvioincalza/helper2.ai/issues/511)
+- [S2.2.12 Upcoming AI conferences from confs.tech](https://github.com/silvioincalza/helper2.ai/issues/527)
 - [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
-- [S2.10.5 Each MCP server of a collection repository, and a stranger's package, as a result of its own](https://github.com/silvioincalza/helper2.ai/issues/489)
 
 ### Next
 
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
+- [S2.2.10 A structured source of AI events chosen](https://github.com/silvioincalza/helper2.ai/issues/513)
+- [S2.2.11 A LinkedIn post about an event leads to the event's own site](https://github.com/silvioincalza/helper2.ai/issues/516)
+- [S2.2.13 ai-deadlines reads raw files without following redirects](https://github.com/silvioincalza/helper2.ai/issues/540)
 - [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
@@ -42,6 +50,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Later
 
+- [S2.2.14 A LinkedIn post about an event is NEWS, and its short links are resolved](https://github.com/silvioincalza/helper2.ai/issues/546)
 - [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
 - [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
 - [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
@@ -73,8 +82,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S4.1.6 Each pick to link the page where its quote can be read](https://github.com/silvioincalza/helper2.ai/issues/480)
-- [S4.1.7 Comparison cells and explanation sentences to link the page that holds their quote](https://github.com/silvioincalza/helper2.ai/issues/481)
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
 
 ### Next
@@ -112,6 +119,11 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S6.2.6 The review page to read a typed resource candidate](https://github.com/silvioincalza/helper2.ai/issues/304)
 - [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
+
+### No priority
+
+- [S6.2.10 To decide relationship candidates once per target name](https://github.com/silvioincalza/helper2.ai/issues/520)
+- [S6.2.14 The Overview shows enrichment validation issues grouped by issue](https://github.com/silvioincalza/helper2.ai/issues/525)
 
 ## E7 Site and frontend
 
@@ -155,7 +167,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.2.16 The sources test that counts this week's results without a race](https://github.com/silvioincalza/helper2.ai/issues/500)
+- [S10.3.3 v2026.11.5 on prod: main's fixes since v2026.11.4](https://github.com/silvioincalza/helper2.ai/issues/508)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 

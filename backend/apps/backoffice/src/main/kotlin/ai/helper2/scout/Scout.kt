@@ -58,6 +58,10 @@ interface ScoutStore {
   fun markInterrupted(at: Instant): Int
 }
 
+fun interface LastSuccesses {
+  fun bySource(): Map<String, Instant>
+}
+
 interface ScheduledRunStore {
   fun lastScheduledRunEnd(): Instant?
 

@@ -57,6 +57,27 @@ describe('Feature: the enrichment queue shows what the Scout takes next', () => 
     ).toHaveAttribute('aria-current', 'page');
   });
 
+  it('Scenario: the waiting view says how many resources wait and the daily limit', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/enrichment-queue': () => ({ items: [entry()], next: null }),
+      'GET /admin/overview': () => ({
+        generatedAt: '2026-11-17T22:00:00Z',
+        openReviewItems: [],
+        enrichmentBacklog: 36643,
+        budgets: [{ name: 'enrichment', dailyLimit: 3000, usedToday: 3000 }],
+        recentRuns: [],
+        failedRunsLast24h: 0,
+        homeExamples: { shown: [], hidden: [], paused: 0 },
+        overridesActive: 0,
+      }),
+    });
+    renderAdmin('/admin/enrichment');
+    expect(
+      await screen.findByText('36643 resources wait; the daily limit is 3000.'),
+    ).toBeInTheDocument();
+  });
+
   it('Scenario: Next page follows the server cursor in the address, and First page goes back', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,

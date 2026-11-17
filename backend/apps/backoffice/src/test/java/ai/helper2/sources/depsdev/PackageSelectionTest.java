@@ -72,6 +72,27 @@ class PackageSelectionTest {
   }
 
   @Test
+  void theBuildsForOneSystemAreDroppedAndTheBasePackageStays() {
+    List<PackageName> picked =
+        PackageSelection.select(
+            "anthropics/claude-agent-sdk-typescript",
+            Ecosystem.NPM,
+            all(
+                List.of(
+                    versions(
+                        Ecosystem.NPM, "@anthropic-ai/claude-agent-sdk-linux-x64-musl", "SLSA", 9),
+                    versions(Ecosystem.NPM, "@anthropic-ai/claude-agent-sdk-linux-x64", "SLSA", 9),
+                    versions(
+                        Ecosystem.NPM, "@anthropic-ai/claude-agent-sdk-darwin-arm64", "SLSA", 9),
+                    versions(Ecosystem.NPM, "@anthropic-ai/claude-agent-sdk", "SLSA", 3))),
+            5);
+
+    assertThat(picked)
+        .extracting(PackageName::name)
+        .containsExactly("@anthropic-ai/claude-agent-sdk");
+  }
+
+  @Test
   void anUnverifiedPackageThatSharesNoWordWithTheRepoIsALookAlike() {
     List<PackageName> picked =
         PackageSelection.select(

@@ -106,6 +106,14 @@ class SpringAiEventReaderTest {
   }
 
   @Test
+  void the_prompt_counts_side_events_as_part_of_the_main_event() {
+    String system = SpringAiEventReader.systemPrompt();
+
+    assertThat(system).contains("side events such as a speaker dinner");
+    assertThat(system).contains("never the days of a side event");
+  }
+
+  @Test
   void a_spent_daily_budget_makes_the_model_unavailable() {
     var reader = reader("{\"events\":0}", 1);
     reader.read("t", "page");

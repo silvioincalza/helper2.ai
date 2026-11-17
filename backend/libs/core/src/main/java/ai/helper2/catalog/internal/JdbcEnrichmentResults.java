@@ -177,16 +177,17 @@ public class JdbcEnrichmentResults
   }
 
   @Override
-  public int closeItemsOfUnstatedValues(String by, String note) {
+  public int closeItemsWithNothingToDecide(String by, String note) {
     return jdbc.sql(
             """
             UPDATE review_item i
             SET status = 'SUPERSEDED', resolved_at = now(), resolved_by = :by, resolution_note = :note
             FROM enrichment_run r
             WHERE i.kind = 'ENRICHMENT_VALIDATION' AND i.status = 'OPEN' AND r.id = i.enrichment_run_id
-              AND jsonb_array_length(r.validation_errors) > 0
-              AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements_text(r.validation_errors) AS e(line)
-                              WHERE right(e.line, length(:unstated)) <> :unstated)
+              AND (r.outcome = 'PARTIAL'
+                   OR (jsonb_array_length(r.validation_errors) > 0
+                       AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements_text(r.validation_errors) AS e(line)
+                                       WHERE right(e.line, length(:unstated)) <> :unstated)))
               AND NOT EXISTS (SELECT 1 FROM field_assertion f
                               WHERE f.enrichment_run_id = r.id AND f.verification = 'CONFLICTING')
             """)
