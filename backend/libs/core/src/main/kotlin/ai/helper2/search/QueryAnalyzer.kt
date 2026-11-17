@@ -116,7 +116,7 @@ class QueryAnalyzer {
         else -> true
       }
     }
-    return terms.distinct().ifEmpty { words }
+    return terms.distinct().ifEmpty { words }.flatMap { TYPE_PHRASE_WORDS[it] ?: listOf(it) }
   }
 
   private companion object {
@@ -142,6 +142,9 @@ class QueryAnalyzer {
         .associate { " $it " to " ${asOneWord(it)} " }
 
     fun asOneWord(phrase: String) = phrase.replace(' ', '-')
+
+    val TYPE_PHRASE_WORDS: Map<String, List<String>> =
+      TYPE_PHRASES.keys.map { it.trim() }.associate { asOneWord(it) to it.split(' ') }
 
     fun joinedTypes(padded: String) =
       TYPE_PHRASES.entries.fold(padded) { text, (phrase, word) -> text.replace(phrase, word) }

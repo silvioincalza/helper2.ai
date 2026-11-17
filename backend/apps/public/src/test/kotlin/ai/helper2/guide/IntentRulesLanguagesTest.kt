@@ -272,6 +272,21 @@ class IntentRulesLanguagesTest {
     delimiter = '|',
     value =
       [
+        "zh | 新加坡的模型",
+        "zh | 创新工具",
+        "zh | 更新数据库的工具",
+        "fr | sortie structurée pour LLM",
+      ],
+  )
+  fun `a word that holds new does not ask for something new`(lang: String, question: String) {
+    assertTrue(!IntentRules.mentionsNewness(question), question)
+  }
+
+  @ParameterizedTest(name = "{0}: {1}")
+  @CsvSource(
+    delimiter = '|',
+    value =
+      [
         "en | a free OCR tool",
         "it | un OCR gratuito",
         "de | ein kostenloses OCR",

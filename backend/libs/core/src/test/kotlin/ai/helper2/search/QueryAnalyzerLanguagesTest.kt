@@ -98,6 +98,25 @@ class QueryAnalyzerLanguagesTest {
     delimiter = '|',
     value =
       [
+        "fr | jeu de données climat suisse | données",
+        "es | conjunto de datos clima suiza | datos",
+      ],
+  )
+  fun `a type phrase reaches the sources as its own words`(
+    lang: String,
+    query: String,
+    word: String,
+  ) {
+    val terms = analyzer.analyze(query).contentTerms
+    assertTrue(word in terms, lang)
+    assertTrue(terms.none { '-' in it }, lang)
+  }
+
+  @ParameterizedTest(name = "{0}: {1}")
+  @CsvSource(
+    delimiter = '|',
+    value =
+      [
         "en | ai courses",
         "it | corsi di ai",
         "de | Kurse zu KI",
