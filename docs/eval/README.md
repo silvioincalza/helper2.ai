@@ -86,9 +86,10 @@ grades from the saved answers (`backend/eval-data/guide-runs.json`), with no new
 
 ## Classifier (`classifier-labels.tsv`)
 
-Columns: `source` (github, npm, live-web), `title`, `description`, `labels` (topics or keywords, comma-separated),
-`ai_related` (1, 0, or empty while not judged). Take about 200 items as the sources return them, before the AI gate:
-about 70 from GitHub search, 70 from npm search and 60 from Tavily, for the queries of `search-queries.json`, and
+Columns: `source` (github, npm, hackernews, live-web), `title`, `description`, `labels` (topics or keywords,
+comma-separated), `ai_related` (1, 0, or empty while not judged). A Hacker News row has no description: the source
+checks the title only. Take about 200 items as the sources return them, before the AI gate: about 70 from GitHub
+search, 70 from npm search and 60 from a web source (Hacker News or Tavily), for the queries of `search-queries.json`, and
 label each by hand (about 1.5 hours). Then add two lines with the floor the rules must keep, for example
 `# min-precision 0.90` and `# min-recall 0.80`, chosen from the first measurement. `ClassificationLabelsTest` (part of
 `test`) then fails when a rule change goes below them.
