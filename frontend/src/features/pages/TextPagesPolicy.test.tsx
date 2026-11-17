@@ -32,6 +32,7 @@ const CHANGED = {
     handledReportsSeconds: 6 * 30 * DAY,
     adminRecordsSeconds: 547 * DAY,
     runtimeSettingChangesSeconds: 365 * DAY,
+    pastEventsSeconds: 730 * DAY,
   },
   sources: {
     categories: 41,
@@ -92,6 +93,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent('or 18 months after you last signed in');
     expect(keep).toHaveTextContent('Reports: 180 days after they were handled.');
     expect(keep).toHaveTextContent('the reason or note they wrote: 18 months.');
+    expect(keep).toHaveTextContent('from any source: 24 months after they ended.');
     expect(keep).toHaveTextContent(
       'the reason they wrote: 12 months. The latest change of each limit stays',
     );

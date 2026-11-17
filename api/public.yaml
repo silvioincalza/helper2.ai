@@ -461,7 +461,7 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0010), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds, pastEventsSeconds]
           properties:
             webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0027)." }
             guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0032)." }
@@ -480,6 +480,7 @@ components:
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
             adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0038)." }
             runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0007). Each setting's newest change stays while it applies." }
+            pastEventsSeconds: { type: integer, format: int64, minimum: 0, description: "An event of the catalog, after it ended (`H2_RETENTION_PAST_EVENTS`)." }
         sources:
           type: object
           description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0013).
