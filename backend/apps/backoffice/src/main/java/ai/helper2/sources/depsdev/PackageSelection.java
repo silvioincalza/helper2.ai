@@ -1,5 +1,6 @@
 package ai.helper2.sources.depsdev;
 
+import ai.helper2.shared.PlatformBuild;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -64,6 +65,9 @@ public final class PackageSelection {
   }
 
   private static boolean isLibrary(String name) {
+    if (PlatformBuild.isPlatformBuild(name)) {
+      return false;
+    }
     String last = lastSegment(name);
     if (last.equals("bom")
         || last.equals("parent")
