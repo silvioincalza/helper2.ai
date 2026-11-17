@@ -145,8 +145,9 @@ place to say that.
 
    The detail page shows the summary claims of the newest `VALIDATED` or `PARTIAL` run that has claims. A run without
    model output (`LLM_UNAVAILABLE`, `FAILED`) leaves the last output and its review items as they are.
-9. **Review queue** (`ReviewQueue`). A validation error a person can act on, or a `CONFLICTING` field, opens an
-   `ENRICHMENT_VALIDATION` item. A value its quote does not state is not one of them (`ValidationResult.forReview`): the
+9. **Review queue** (`ReviewQueue`). A `REJECTED` run with a validation error a person can act on, or a `CONFLICTING`
+   field, opens an `ENRICHMENT_VALIDATION` item. A `PARTIAL` run opens none: it keeps what passed and has already
+   dropped what failed, so a person has nothing left to decide; its errors stay on the run. A value its quote does not state is not one of them (`ValidationResult.forReview`): the
    field stays `UNVERIFIED` and shows "Not stated", the line stays in the run's errors, and the run stays `PARTIAL`, but
    no item opens for it alone. A short source text makes the model guess (a library is "coding", a package is "MIT"), and
    the only decision left to a person would be to reject. When an item opens for another reason, it lists these lines
@@ -436,7 +437,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 ### Known limits
 - Vendors and services as relationship targets ([0019](0019-known-targets-vendors-and-services.md)): the public API does not expose `relationship.target_kind`, so no search filter and no vendor page reads it.
 - Relationship targets by title: the list of types a title may match (tools, models, libraries, MCP servers, agents, skills, datasets) is not checked against the real UNVERIFIED relationship review items.
-- Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person ([0038](../backoffice/0038-back-office-and-review.md)).
+- Strict enrichment rules reject some correct values. A value dropped from a `PARTIAL` run is not shown to a person: it waits for the next run of that resource.
 - A relationship target two catalog resources share by title waits for a person, and its review item says only that the target is not a known resource.
 - The oldest-waiting gauge is set when the Scout reads a batch, not at each scrape.
 - The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim.

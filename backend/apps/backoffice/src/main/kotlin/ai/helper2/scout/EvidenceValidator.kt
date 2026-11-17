@@ -288,7 +288,10 @@ class EvidenceValidator(
             EnrichmentOutcome.VALIDATED
           else -> EnrichmentOutcome.PARTIAL
         }
-      return ValidationResult(outcome, fields, relationships, claims, errors, errors - unstated)
+      // A PARTIAL run keeps what passed and has already dropped what failed:
+      // there is nothing left for a person to decide (S6.2.11).
+      val forReview = if (outcome == EnrichmentOutcome.PARTIAL) emptyList() else errors - unstated
+      return ValidationResult(outcome, fields, relationships, claims, errors, forReview)
     }
 
     private fun repeatsTheType(f: ProposedField): Boolean =
