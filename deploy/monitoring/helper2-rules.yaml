@@ -332,30 +332,30 @@ groups:
     rules:
       - alert: Helper2ScoutCollectorStale
         expr: |
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source!~"live-web-scout|course-scout|linkedin-scout|discovery-.*"}[9d]))) > 2 * 86400
-          or
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source="live-web-scout"}[9d]))) > 6 * 86400
-          or
-          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source=~"course-scout|linkedin-scout"}[9d]))) > 8 * 86400
+          (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source!~"discovery-.*"}[9d])))
+          >
+          max by (environment, source) (clamp_min(max_over_time(helper2_scout_interval_seconds{application="helper2-backoffice", source!~"discovery-.*"}[9d]), 86400)) + 86400
         for: 0m
         labels:
           severity: warning
         annotations:
           summary: "Scout collector {{ $labels.source }}: no successful run for {{ $value | humanizeDuration }} ({{ $labels.environment }})."
-          description: "The catalog misses new resources from {{ $labels.source }} since its last successful run."
-          runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. A collector disabled on purpose keeps firing until its last value is 9 days old."
+          description: "The catalog misses new resources from {{ $labels.source }} since its last successful run: one day more than its run interval (at least one day, the daily Scout run) has passed."
+          runbook: "Dashboard helper2-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. helper2_scout_interval_seconds gives each collector's interval (H2_SCOUT_*_INTERVAL). A collector disabled on purpose keeps firing until its last value is 9 days old."
 
       - alert: Helper2DiscoveryStale
         expr: |
           count by (environment) (
-            (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source=~"discovery-.*"}[9d]))) > 8 * 86400
+            (time() - max by (environment, source) (max_over_time(helper2_scout_last_success{application="helper2-backoffice", source=~"discovery-.*"}[9d])))
+            >
+            max by (environment, source) (clamp_min(max_over_time(helper2_scout_interval_seconds{application="helper2-backoffice", source=~"discovery-.*"}[9d]), 86400)) + 86400
           ) > 0
         for: 0m
         labels:
           severity: warning
         annotations:
-          summary: "{{ $value }} discovery categories: no successful run for more than 8 days ({{ $labels.environment }})."
-          description: "No new products or list articles from: {{ range query (printf \"(time() - max by (source) (max_over_time(helper2_scout_last_success{application='helper2-backoffice', environment='%s', source=~'discovery-.*'}[9d]))) > 8 * 86400\" $labels.environment) }}{{ .Labels.source }} {{ end }}"
+          summary: "{{ $value }} discovery categories: no successful run for one day more than their run interval ({{ $labels.environment }})."
+          description: "No new products or list articles from: {{ range query (printf \"(time() - max by (source) (max_over_time(helper2_scout_last_success{application='helper2-backoffice', environment='%s', source=~'discovery-.*'}[9d]))) > max by (source) (clamp_min(max_over_time(helper2_scout_interval_seconds{application='helper2-backoffice', environment='%s', source=~'discovery-.*'}[9d]), 86400)) + 86400\" $labels.environment $labels.environment) }}{{ .Labels.source }} {{ end }}"
           runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
 
       - alert: Helper2ScoutRunsFailing

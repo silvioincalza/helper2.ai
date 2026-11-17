@@ -84,6 +84,11 @@ public class McpRegistryCollector implements Collector {
   }
 
   @Override
+  public Duration runEvery() {
+    return interval.every();
+  }
+
+  @Override
   public CollectedBatch collect(String checkpoint, String resumeCursor, int runBudget) {
     int maxItems = Math.max(runBudget, itemsPerRun);
     Instant startedAt = clock.instant();
