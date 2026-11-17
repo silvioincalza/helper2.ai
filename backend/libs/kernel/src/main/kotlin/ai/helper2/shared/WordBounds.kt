@@ -13,6 +13,8 @@ object WordBounds {
 
   const val WORD_ENDING = "[$WORD_PART]*"
 
+  const val SPACED_WORD = "[\\p{L}\\d.'\\-&&[^$SPACELESS]]+?"
+
   const val GAP = "(?:(?<=[$SPACELESS])\\s*|\\s*(?=[$SPACELESS])|\\s+)"
 
   const val HYPHENATED_START = "(?:(?<![$WORD_PART-])|(?<=[$SPACELESS])|(?=[$SPACELESS]))"

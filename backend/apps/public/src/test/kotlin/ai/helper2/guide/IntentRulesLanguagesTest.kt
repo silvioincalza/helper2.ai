@@ -1,6 +1,7 @@
 package ai.helper2.guide
 
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -35,6 +36,8 @@ class IntentRulesLanguagesTest {
         "fr | nouveaux modèles de traduction",
         "es | nuevas herramientas de diseño",
         "zh | 新模型",
+        "zh | 有新模型吗",
+        "zh | 新的工具",
       ],
   )
   fun `new right before a kind of resource asks for the newest`(lang: String, question: String) {
@@ -280,6 +283,7 @@ class IntentRulesLanguagesTest {
   )
   fun `a word that holds new does not ask for something new`(lang: String, question: String) {
     assertTrue(!IntentRules.mentionsNewness(question), question)
+    assertNotEquals(GuideIntent.NEWEST, IntentRules.intentOf(question), question)
   }
 
   @ParameterizedTest(name = "{0}: {1}")
