@@ -5,7 +5,8 @@
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml, deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
 #   deploy/grafana/helper2.json; the guide block: backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java,
 #   deploy/monitoring/helper2-rules.yaml (Helper2GuideFirstUsefulSlow, Helper2RedisEvicting, Helper2ScoutCollectorStale); the Scout block:
-#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt; the exporters:
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/LastSuccessGauges.java, JdbcScoutStore.java; the exporters:
 #   deploy/helm/helper2/templates/exporters.yaml, files/redis-users.acl.
 # Render: cd docs/diagrams && d2 fmt sequence-0009-observability.d2 && d2 sequence-0009-observability.d2 sequence-0009-observability.svg
 
@@ -23,6 +24,7 @@ stdout: "stdout (JSON logs)" {class: data}
 alloy: "Grafana Alloy\n(observability ns)" {class: ext}
 tempo: Tempo {class: data}
 prom: Prometheus {class: data}
+pg: "Postgres\n(scout_run)" {class: data}
 rexp: "redis-exporter\n(:9121)" {class: app}
 redis: "Redis\n(maxmemory, allkeys-lru)" {class: data}
 graf: Grafana {class: ext}
@@ -62,8 +64,9 @@ scrape: Every scrape {
 
 scout: The Scout's stale check {
   bo -> reg: "start-up: helper2.scout.interval{source}\nfor every collector"
-  bo -> reg: "a SUCCEEDED run: helper2.scout.last.success{source};\na run not due is SKIPPED and leaves it"
   alloy -> bo: "GET :8081/actuator/prometheus"
+  bo -> pg: "SELECT newest SUCCEEDED scout_run\nper source (at most every 30 s)"
+  pg -> bo: "helper2.scout.last.success{source};\na run not due is SKIPPED and leaves it"
   alloy -> prom: "remote write"
   prom -> prom: "now - max last success over 9 d >\nmax(interval, 1 d) + 1 d → Helper2ScoutCollectorStale" {class: hot}
 }

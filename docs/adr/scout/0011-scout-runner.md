@@ -125,8 +125,9 @@ at the same time. Prod runs 3 replicas ([0043](../operations/0043-runtime-topolo
    fails the run.
 8. **Records and metrics.** Each run is a `scout_run` row (`GET /api/v1/admin/scout-runs` lists the last 50); a store
    failure is logged and does not stop collection. Meters: `helper2.scout.cycle`, `helper2.scout.run` (source, status),
-   `helper2.scout.items` (seen, changed, queued), gauges `helper2.scout.last.success` and
-   `helper2.scout.interval` (every collector's run interval, registered at start-up), counter `helper2.scout.enrichment`.
+   `helper2.scout.items` (seen, changed, queued), gauges `helper2.scout.last.success` (the newest
+   SUCCEEDED run in `scout_run`, cached 30 s, `LastSuccessGauges`) and `helper2.scout.interval` (every collector's run
+   interval), both registered at start-up, counter `helper2.scout.enrichment`.
 
 **The gap round and the budget.** A gap call is part of its resource's attempt: the per-run budget counts resources,
 the daily gap cap counts gap calls ([0014](0014-evidence-gated-enrichment.md)).

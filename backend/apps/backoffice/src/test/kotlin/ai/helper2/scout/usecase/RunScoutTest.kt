@@ -306,7 +306,7 @@ class RunScoutTest {
   }
 
   @Test
-  fun `items counters and last success gauge follow succeeded runs only`() {
+  fun `items counters follow succeeded runs only`() {
     val meters = SimpleMeterRegistry()
     val bad = FakeCollector(descriptor("bad")) { throw IllegalStateException("boom") }
     val hits = (0 until 2).map { hit("good", "https://github.com/a/r$it") }
@@ -317,11 +317,7 @@ class RunScoutTest {
     assertEquals(2.0, items("seen"))
     assertEquals(2.0, items("changed"))
     assertEquals(0.0, items("queued"))
-    assertEquals(
-      NOW.epochSecond.toDouble(),
-      meters.get("helper2.scout.last.success").tag("source", "good").gauge().value(),
-    )
-    assertNull(meters.find("helper2.scout.last.success").tag("source", "bad").gauge())
+    assertNull(meters.find("helper2.scout.items").tag("source", "bad").counter())
   }
 
   @Test

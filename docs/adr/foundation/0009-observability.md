@@ -51,7 +51,8 @@ the guide work long before that, and what makes the wait feel long is the first 
      `helper2.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
      [0008](0008-llm-integration.md), or `time`, [0035](../guide/0035-guide-model-stream.md)), `helper2.guide.budget.remaining`,
      `helper2.search.translation.budget.remaining`;
-   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}`,
+   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
+     each collector, read from Postgres at most every 30 s, so every replica reports it from start-up),
      `helper2.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
      `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
      `helper2.scout.classifier.budget.remaining`;
@@ -108,9 +109,10 @@ the guide work long before that, and what makes the wait feel long is the first 
    - `Helper2ScoutCollectorStale`: a collector's last success older than its run interval plus a day. The rule
      reads the interval from `helper2.scout.interval`, never from a list of names, so a new or retuned collector
      needs no rule change. An interval under a day counts as a day: the Scout runs once a day. A run that is not
-     due is SKIPPED and does not move the last success, so a 7-day collector fires after 8 days, not 2. Both gauges
-     are read over a 9-day lookback, so a deploy or a restart does not change the result; the discovery categories
-     are left out;
+     due is SKIPPED and does not move the last success, so a 7-day collector fires after 8 days, not 2. The last
+     success comes from `scout_run`, not from the memory of the replica that ran it: a success stays visible when
+     that replica stops before a scrape, or when Prometheus misses hours of scrapes. Both gauges are read over a
+     9-day lookback; the discovery categories are left out;
    - `Helper2DiscoveryStale`: one alert per environment when any discovery category (`discovery-*`) has had no
      success for its run interval plus a day, by the same two gauges; the description lists them
      ([0013](../scout/0013-discovery.md));
