@@ -264,6 +264,41 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
   });
 });
 
+describe('Feature: a long Settings page is quick to move through', () => {
+  it('Scenario: a contents list links every part, and Find keeps only the matching settings', async () => {
+    mockApi({
+      ...NO_HOSTS,
+      'GET /me': () => ADMIN,
+      'GET /admin/config': () => CONFIG,
+      'GET /admin/runtime-settings': () => runtime(GUIDE, CREDITS),
+    });
+    renderAdmin('/admin/settings');
+    await screen.findByRole('table', { name: 'Models' });
+    const contents = screen.getByRole('navigation', { name: 'On this page' });
+    expect(within(contents).getByRole('link', { name: 'Models' })).toHaveAttribute(
+      'href',
+      '#settings-models',
+    );
+    expect(within(contents).getByRole('link', { name: 'Discovery hosts' })).toHaveAttribute(
+      'href',
+      '#dh-h',
+    );
+
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: 'Find a setting (name, variable or value)' }),
+      'nebius_fast',
+    );
+    const models = screen.getByRole('table', { name: 'Models' });
+    expect(within(models).getByText('Fast model')).toBeInTheDocument();
+    expect(within(models).queryByText('Reasoning model')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Search' })).not.toBeInTheDocument();
+
+    await userEvent.clear(screen.getByRole('searchbox'));
+    await userEvent.type(screen.getByRole('searchbox'), 'no such setting');
+    expect(screen.getByText('No setting matches these words.')).toBeInTheDocument();
+  });
+});
+
 describe('Feature: an administrator changes a spending limit without a deploy', () => {
   it('Scenario: each limit shows its value now, its default, its range and one line of help', async () => {
     mockApi({
