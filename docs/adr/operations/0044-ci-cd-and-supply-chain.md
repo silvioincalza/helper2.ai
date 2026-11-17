@@ -368,6 +368,9 @@ Harbor could put an image under a tag first.
 - GitHub Actions secrets for the kubeconfig and app env — long-lived values in GitHub; OIDC avoids them.
 - Argo CD or Flux (GitOps) — a controller in the cluster and a second repository of state for one app.
 - Build on every deploy — prod would run a fresh build, not the image staging tested.
+- A pull request up to date with its base before it merges — every merge sends the other green pull requests back
+  to a rebase and a full CI run. GitHub's merge queue tests them together, but a repository owned by a user account
+  cannot use it.
 - `dorny/paths-filter` or a workflow-level `paths:` — a third-party action in every run, or a skipped workflow that
   leaves a required check waiting forever.
 - Build all three images on every push — simple, but a docs change costs three builds and an admin change rebuilds the
