@@ -17,6 +17,7 @@ import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.TavilySource;
 import java.net.URI;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -108,6 +109,11 @@ public class CourseCollector implements Collector {
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   @Override
