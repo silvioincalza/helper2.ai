@@ -34,7 +34,8 @@ HOW TO DECIDE
    they do.
    For new or recent resources, a NEWS or ARTICLE candidate that announces or launches a new AI
    tool, model or product also fits: the reason says what it announces, from its quote.
-4. Rank the kept candidates by how directly their text matches the need. Return at most {{maxPicks}}.
+4. Rank the kept candidates by how directly their text matches the need. Return at most
+   {{maxProposed}}, best first: code shows the user the first ones that pass its checks.
 5. If none fits, or the need is unclear, not about AI resources, or nonsense, return
    an empty "picks" list. Never pick a candidate just because it is the closest one.
    A broad need is not unclear: for "new AI tools from last month", pick the candidates whose

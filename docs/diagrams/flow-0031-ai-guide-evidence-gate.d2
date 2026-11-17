@@ -27,7 +27,7 @@ degraded: "LLM_UNAVAILABLE:\ntop 3 search results,\nmarked not AI-reasoned" {cla
 choose: "choose(): reasoning model,\nJSON schema, picks only,\neach with a quote" {class: ai}
 chooseOk: "Choose call ok?" {class: decision}
 chosen: "event: chosen" {class: config}
-validator: "GuideValidator.validate\n(EvidenceGate.claimProblem):\nknown key, quote verbatim on whole words,\n≥ 40 chars and 6 words,\nno link (LinkText), ≤ 3 picks" {class: app}
+validator: "GuideValidator.validate\n(EvidenceGate.claimProblem):\nknown key, quote verbatim on whole words,\n≥ 40 chars and 6 words,\nno link (LinkText),\n≤ 5 proposed picks" {class: app}
 validated: "event: validated" {class: config}
 kept: "Any pick kept?" {class: decision}
 partial: "PARTIAL:\ntop 3 search results" {class: fail}

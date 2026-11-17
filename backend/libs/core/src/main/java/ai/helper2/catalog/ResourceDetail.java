@@ -1,6 +1,7 @@
 package ai.helper2.catalog;
 
 import ai.helper2.search.MergedResult;
+import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
 import java.net.URI;
@@ -76,5 +77,22 @@ public record ResourceDetail(
       List<SummaryClaim> claims, String model, String promptVersion, Instant generatedAt) {}
 
   public record SourceRecordInfo(
-      String sourceId, String externalId, URI url, Instant retrievedAt, String fingerprint) {}
+      String sourceId,
+      String externalId,
+      URI url,
+      @Nullable URI repositoryUrl,
+      Instant retrievedAt,
+      String fingerprint) {
+
+    public static SourceRecordInfo of(RecordRow r) {
+      CanonicalUrl repository = r.hit().getRepositoryUrl();
+      return new SourceRecordInfo(
+          r.sourceId(),
+          r.externalId(),
+          URI.create(r.sourceUrl()),
+          repository == null ? null : URI.create(repository.getValue()),
+          r.retrievedAt(),
+          r.fingerprint());
+    }
+  }
 }

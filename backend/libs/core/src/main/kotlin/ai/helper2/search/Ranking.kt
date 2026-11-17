@@ -3,6 +3,7 @@ package ai.helper2.search
 import ai.helper2.shared.Audience
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.WordLists
 import kotlin.math.ln
 import kotlin.math.min
 
@@ -139,34 +140,7 @@ constructor(
         else -> null
       }
 
-    internal val STOPWORDS =
-      setOf(
-        "a",
-        "an",
-        "and",
-        "as",
-        "at",
-        "by",
-        "for",
-        "from",
-        "in",
-        "into",
-        "of",
-        "on",
-        "or",
-        "the",
-        "to",
-        "with",
-        "per",
-        "di",
-        "il",
-        "la",
-        "le",
-        "un",
-        "una",
-        "con",
-        "da",
-      )
+    internal val STOPWORDS: Set<String> = WordLists.load("query-words").words("ranking.stop")
 
     internal fun popularity(metrics: List<PopularityMetric>): Double =
       metrics.maxOfOrNull { m ->
