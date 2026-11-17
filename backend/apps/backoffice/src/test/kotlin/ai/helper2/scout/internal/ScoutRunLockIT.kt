@@ -106,6 +106,8 @@ class ScoutRunLockIT {
     val release = CountDownLatch(1)
     val collector =
       object : Collector {
+        override fun runEvery(): Duration = Duration.ZERO
+
         override val descriptor = descriptor("mcp")
 
         override fun collect(
@@ -146,6 +148,8 @@ class ScoutRunLockIT {
     val hold: CountDownLatch = CountDownLatch(0),
     val maxHold: Duration = Duration.ofSeconds(10),
   ) : Collector {
+    override fun runEvery(): Duration = Duration.ZERO
+
     val collections = AtomicInteger()
     override val descriptor = descriptor("mcp")
 

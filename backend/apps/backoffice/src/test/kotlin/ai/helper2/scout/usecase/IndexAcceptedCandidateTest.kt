@@ -14,6 +14,7 @@ import ai.helper2.search.Vitality
 import ai.helper2.search.descriptor
 import ai.helper2.shared.ResourceType
 import java.time.Clock
+import java.time.Duration
 import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -24,6 +25,8 @@ import org.junit.jupiter.api.assertThrows
 class IndexAcceptedCandidateTest {
 
   private class Found(override val descriptor: SourceDescriptor) : Collector {
+    override fun runEvery(): Duration = Duration.ZERO
+
     override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =
       CollectedBatch(emptyList(), null, null)
   }

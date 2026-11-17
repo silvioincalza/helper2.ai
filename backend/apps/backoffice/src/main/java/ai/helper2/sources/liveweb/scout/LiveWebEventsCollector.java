@@ -23,6 +23,7 @@ import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.TavilySource;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -91,6 +92,11 @@ public class LiveWebEventsCollector implements Collector {
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   @Override

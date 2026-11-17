@@ -20,6 +20,7 @@ import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -95,6 +96,11 @@ public class AiDeadlinesCollector implements Collector {
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   @Override

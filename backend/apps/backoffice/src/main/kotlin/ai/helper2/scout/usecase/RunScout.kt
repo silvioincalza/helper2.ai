@@ -43,9 +43,7 @@ import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
-import java.util.concurrent.atomic.AtomicLong
 import java.util.function.IntSupplier
 import java.util.function.Supplier
 import org.slf4j.LoggerFactory
@@ -106,8 +104,19 @@ class RunScout(
   private val targetProposals: KnownTargetProposals? = null,
 ) {
   private val log = LoggerFactory.getLogger(RunScout::class.java)
-  private val lastSuccess = ConcurrentHashMap<String, AtomicLong>()
   private val merger = ResultMerger()
+
+  init {
+    collectors.forEach(::publishInterval)
+  }
+
+  private fun publishInterval(collector: Collector) {
+    Gauge.builder("helper2.scout.interval", collector) { it.runEvery().seconds.toDouble() }
+      .tag("source", collector.descriptor.id)
+      .baseUnit("seconds")
+      .strongReference(true)
+      .register(meters)
+  }
 
   fun tryStart(onlySourceId: String? = null): List<RunSummary>? {
     if (onlySourceId != null && collectors.none { it.descriptor.id == onlySourceId }) {
@@ -319,22 +328,12 @@ class RunScout(
     countItems(source, "seen", summary.itemsSeen)
     countItems(source, "changed", summary.itemsChanged)
     countItems(source, "queued", summary.enrichmentsQueued)
-    lastSuccessOf(source).set((summary.finishedAt ?: summary.startedAt).epochSecond)
   }
 
   private fun countItems(source: String, kind: String, count: Int) =
     meters
       .counter("helper2.scout.items", "source", source, "kind", kind)
       .increment(count.toDouble())
-
-  private fun lastSuccessOf(source: String): AtomicLong =
-    lastSuccess.computeIfAbsent(source) {
-      AtomicLong().also {
-        Gauge.builder("helper2.scout.last.success", it, AtomicLong::toDouble)
-          .tag("source", source)
-          .register(meters)
-      }
-    }
 
   private fun runCollector(
     collector: Collector,
