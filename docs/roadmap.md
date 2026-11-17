@@ -122,7 +122,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### No priority
 
-- [S6.2.9 A review row reads as a title, with kind and source as chips](https://github.com/silvioincalza/helper2.ai/issues/519)
 - [S6.2.10 To decide relationship candidates once per target name](https://github.com/silvioincalza/helper2.ai/issues/520)
 - [S6.2.14 The Overview shows enrichment validation issues grouped by issue](https://github.com/silvioincalza/helper2.ai/issues/525)
 
