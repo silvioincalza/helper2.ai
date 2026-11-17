@@ -260,10 +260,6 @@ class AskGuide(
     return answer.copy(notices = answer.notices + notice)
   }
 
-  /**
-   * Names the source page of every quote of the answer (ADR 0031): picks, comparison cells and
-   * explanation sentences. Catalog resources need their stored records: one read for all of them.
-   */
   private fun GuideAnswer.withQuoteOrigins(): GuideAnswer {
     val subjects =
       comparison?.subjects.orEmpty().mapNotNull { s -> s.result?.let { s.key to it } }.toMap()

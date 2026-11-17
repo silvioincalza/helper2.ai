@@ -96,7 +96,7 @@ function ResourceBody({
         )}
         {quote && (!aiDescription || pick?.quotedFrom) && (
           <p className="h2-res__note">
-            {!aiDescription && t('resource.checkedNote')}
+            {aiDescription ? <q>{quote}</q> : t('resource.checkedNote')}
             <QuotedFromLink from={pick?.quotedFrom} />
           </p>
         )}

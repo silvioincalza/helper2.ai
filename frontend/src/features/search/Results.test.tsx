@@ -408,6 +408,31 @@ describe('results: one column, a row opens the resource page', () => {
     expect(within(r).queryByText('Checked word for word in the source')).not.toBeInTheDocument();
   });
 
+  it('a pick on an AI-written description still links the page that holds its quote', async () => {
+    const aiB = { ...B, descriptionOrigin: 'AI_EXTRACTED' as const };
+    const npm = 'https://www.npmjs.com/package/postgres-mcp';
+    mockApi({
+      'GET /search': () => makeSearch({ results: [A, aiB], total: 2, sources: [makeStatus()] }),
+      'POST /guide/stream': () =>
+        sse({
+          ...guide(),
+          recommendations: [
+            { ...guide().recommendations[0]!, quotedFrom: { sourceId: 'npm', url: npm } },
+          ],
+        }),
+    });
+    renderApp('/search?q=postgres+mcp&ask=postgres+mcp');
+    await screen.findByRole('link', { name: '#1 Postgres MCP' });
+    const r = within(rowOf('Postgres MCP'));
+    expect(r.getByText(/Easy to set up\./)).toHaveAttribute('data-ai-generated', 'true');
+    expect(
+      r
+        .getByText('gives agents read-only access to a PostgreSQL database')
+        .closest('[data-ai-generated]'),
+    ).toBeNull();
+    expect(r.getByRole('link', { name: /read it on npmjs\.com/ })).toHaveAttribute('href', npm);
+  });
+
   it('keeps a line for "web searches left" while the guide reads, and the count takes its place', async () => {
     let answer: (r: Response) => void = () => undefined;
     mockApi({

@@ -19,6 +19,7 @@ import ai.helper2.guide.QuestionDeadline
 import ai.helper2.guide.Recommendation
 import ai.helper2.guide.SimilarQuestions
 import ai.helper2.guide.ownDescription
+import ai.helper2.guide.wholeWordExcerpt
 import ai.helper2.search.Asker
 import ai.helper2.search.IntentClass
 import ai.helper2.search.Notice
@@ -258,7 +259,7 @@ internal fun degraded(
         Recommendation(
           c.result,
           "Top search result (no AI reasoning available).",
-          (c.result.ownDescription ?: c.result.title).take(160),
+          wholeWordExcerpt(c.result.ownDescription ?: c.result.title),
           aiReasoned = false,
           checks = constraints.map { ConstraintCheck(it, CheckStatus.NOT_CONFIRMED, null) },
         )

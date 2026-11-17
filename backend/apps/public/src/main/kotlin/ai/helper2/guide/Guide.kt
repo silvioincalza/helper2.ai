@@ -19,6 +19,14 @@ data class Candidate(val key: String, val result: MergedResult) {
 val MergedResult.ownDescription: String?
   get() = description.takeUnless { descriptionOrigin.isAiWritten }
 
+const val FALLBACK_QUOTE_CHARS = 160
+
+fun wholeWordExcerpt(text: String, max: Int = FALLBACK_QUOTE_CHARS): String {
+  if (text.length <= max) return text
+  val cut = text.lastIndexOf(' ', max).takeIf { it > 0 } ?: return text.take(max)
+  return text.substring(0, cut).trimEnd()
+}
+
 data class GuideSearchPlan
 @JvmOverloads
 constructor(

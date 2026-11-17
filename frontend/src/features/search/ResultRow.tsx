@@ -109,9 +109,17 @@ function RowText({
   const quote = plainText(pick?.quote ?? '');
   if (text && isAiOrigin(card.descriptionOrigin))
     return (
-      <p className="h2-row__text">
-        <OriginLabel origin={card.descriptionOrigin} /> <span {...aiMark()}>{text}</span>
-      </p>
+      <>
+        <p className="h2-row__text">
+          <OriginLabel origin={card.descriptionOrigin} /> <span {...aiMark()}>{text}</span>
+        </p>
+        {quote && pick?.quotedFrom && (
+          <p className="h2-row__checked">
+            <q>{quote}</q>
+            <QuotedFromLink from={pick.quotedFrom} />
+          </p>
+        )}
+      </>
     );
   if (!quote)
     return text ? <p className="h2-row__text is-clamped">{withSearchTerms(text, terms)}</p> : null;

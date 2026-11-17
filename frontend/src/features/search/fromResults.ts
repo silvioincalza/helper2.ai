@@ -80,7 +80,6 @@ function readPick(value: unknown): PickForPage | undefined {
   });
 }
 
-/** Navigation state is user-controllable: keep the source page only when it is a safe http(s) link. */
 function readQuotedFrom(value: unknown): PickForPage['quotedFrom'] {
   if (!value || typeof value !== 'object') return null;
   const q = value as Record<string, unknown>;

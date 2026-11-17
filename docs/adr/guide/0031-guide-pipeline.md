@@ -106,7 +106,12 @@ pick, cell and sentence; the result row, the resource page, the comparison and t
 {host}" to that page, and the resource page names that host under the highlighted quote. `quotedFrom` is null when no
 record holds the quote (a curated description, a cell without a quote): the page then names the resource's own host,
 as before. AI-written descriptions are never a record's text here, as in the gate. The lookup only names a page: it
-never keeps or drops a pick, a cell or a sentence.
+never keeps or drops a pick, a cell or a sentence. When the stored records cannot be read (the database is down), the
+answer stands: `GuideConfiguration.quoteRecords` logs the failure and returns no records, so live hits still name
+their page and catalog quotes get null. A fallback result's quote (no AI pick) is the source's text cut
+at 160 characters on a whole word (`wholeWordExcerpt`), so the whole-word lookup still finds it. A pick on a resource
+whose card shows an AI-written description still shows its quote and the link to its page, beside the labelled AI
+text.
 
 **Constraint checks.** Each constraint gets CONFIRMED or NOT_CONFIRMED per pick. Licence constraints are decided by the
 licence the source states: a named licence must match as a whole word ("mit" does not match "Limited"), and a stated

@@ -6,7 +6,6 @@ export interface GuidePick {
   title: string;
   reason: string;
   quote: string;
-  /** The source page whose own text holds the quote; null when no source text holds it (ADR 0031). */
   quotedFrom: { sourceId: string; url: string } | null;
   reasonCheck: Recommendation['reasonCheck'];
   checks: NonNullable<Recommendation['checks']>;

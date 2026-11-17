@@ -271,6 +271,28 @@ class AskGuideTest {
   }
 
   @Test
+  fun `a fallback quote of a long text ends on a whole word, so it still names its page`() {
+    val url = "https://huggingface.co/acme/long-card"
+    val long =
+      ("Connect your speech recognition pipeline to every meeting tool you use ".repeat(4)).trim()
+    val longSource =
+      object : SearchSource {
+        override val descriptor = descriptor("hf")
+
+        override fun search(query: SourceQuery): List<SourceHit> =
+          listOf(hit("hf", url, title = "long-card", type = ResourceType.MODEL, description = long))
+      }
+    val longSearch =
+      SearchResources(listOf(longSource), noCache, ResultObserver { emptyMap() }, executor, clock)
+
+    val pick = AskGuide(longSearch, null, clock).ask(need, null).recommendations.single()
+
+    assertTrue(pick.quote.length <= 160)
+    assertTrue(long.startsWith(pick.quote) && long[pick.quote.length] == ' ')
+    assertEquals(QuotedFrom("hf", URI(url)), pick.quotedFrom)
+  }
+
+  @Test
   fun `without a model nothing is marked as planned`() {
     val answer = AskGuide(search, null, clock).ask(need, null)
 
