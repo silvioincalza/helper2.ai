@@ -152,7 +152,9 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 ### Known limits
 - The result shows one link per source: with several packages of one source, one of them (the first by external
   id).
-- Until the repository's own record arrives, the resource carries the first package's title and description.
+- Until the repository's own record arrives, the resource carries the first package's title and description. A guide
+  pick that quotes that text names the package page as the place to read it, not the repository
+  ([0031](../guide/0031-guide-pipeline.md)).
 - A package found without a stated repository is a result of its own until a source states the repository.
 - A resource left without records is deleted only when it is `OBSERVED` and no report, review item or curated
   field holds it; an `INDEXED` or `CURATED` one stays as a row without records. Its relationships and labels do not

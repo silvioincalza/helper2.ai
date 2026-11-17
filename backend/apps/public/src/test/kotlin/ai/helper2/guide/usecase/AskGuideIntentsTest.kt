@@ -19,6 +19,7 @@ import ai.helper2.guide.ProposedCell
 import ai.helper2.guide.ProposedPick
 import ai.helper2.guide.ProposedRow
 import ai.helper2.guide.ProposedSentence
+import ai.helper2.guide.QuotedFrom
 import ai.helper2.guide.ReasonClaim
 import ai.helper2.guide.ReasonVerdict
 import ai.helper2.guide.RemovedSuggestion
@@ -42,6 +43,7 @@ import ai.helper2.shared.ResourceType
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.micrometer.observation.ObservationRegistry
+import java.net.URI
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDate
@@ -714,7 +716,13 @@ class AskGuideIntentsTest {
     assertEquals("ollama", c.subjects[0].result?.title)
     val licence = c.rows.first { it.aspect == "Licence" }
     assertEquals("MIT", licence.cells[0].text)
+    assertEquals(
+      QuotedFrom("s", URI("https://github.com/ollama/ollama")),
+      licence.cells[0].quotedFrom,
+      "a quoted cell names the page that holds its quote",
+    )
     assertNull(licence.cells[1].text)
+    assertNull(licence.cells[1].quotedFrom, "a cell without a quote names no page")
     assertEquals(1, a.rejected)
     assertEquals(
       listOf(RemovedSuggestion("LM Studio", TrailCheck.QUOTE_NOT_FOUND)),
@@ -919,6 +927,10 @@ class AskGuideIntentsTest {
     val a = guide(model).ask("what is Ollama?", null)
     val e = assertNotNull(a.explanation)
     assertEquals(1, e.sentences.size)
+    assertEquals(
+      QuotedFrom("s", URI("https://github.com/ollama/ollama")),
+      e.sentences.single().quotedFrom,
+    )
     assertEquals("ollama", a.recommendations.first().result.title)
     assertEquals(1, a.rejected)
     assertEquals(

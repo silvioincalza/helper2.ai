@@ -21,6 +21,7 @@ import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.TrailCheck
 import ai.helper2.guide.isSubject
 import ai.helper2.guide.ownDescription
+import ai.helper2.guide.wholeWordExcerpt
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
@@ -277,7 +278,7 @@ internal class CompareAnswer(
         Recommendation(
           it.result,
           "",
-          (it.result.ownDescription ?: it.result.title).take(160),
+          wholeWordExcerpt(it.result.ownDescription ?: it.result.title),
           aiReasoned = false,
         )
       },
