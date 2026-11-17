@@ -166,3 +166,40 @@ describe('admin: known target proposals in the review queue', () => {
     expect(await screen.findByText(details)).toBeInTheDocument();
   });
 });
+
+describe('admin: the review detail', () => {
+  it('opens at the top for the next row, wherever the last one was scrolled', async () => {
+    const item = (id: string, reason: string) => ({
+      id,
+      kind: 'RESOURCE_CANDIDATE',
+      status: 'OPEN',
+      reason,
+      details: '{}',
+      resourceId: null,
+      resourceTitle: null,
+      createdAt: '2026-11-05T03:20:00Z',
+    });
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({
+        items: [
+          item('66666666-6666-6666-8666-666666666661', 'First candidate'),
+          item('66666666-6666-6666-8666-666666666662', 'Second candidate'),
+        ],
+        total: 2,
+      }),
+    });
+    const user = userEvent.setup();
+    renderAdmin('/admin/review');
+    const detail = (await screen.findByRole('heading', { name: 'First candidate' })).closest(
+      'section',
+    ) as HTMLElement;
+    detail.scrollTop = 400;
+    await user.click(screen.getByRole('button', { name: 'Second candidate' }));
+    const next = (await screen.findByRole('heading', { name: 'Second candidate' })).closest(
+      'section',
+    ) as HTMLElement;
+    expect(next).not.toBe(detail);
+    expect(next.scrollTop).toBe(0);
+  });
+});
