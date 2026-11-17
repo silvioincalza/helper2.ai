@@ -209,7 +209,7 @@ class HomeListsIT {
 
   @Test
   void theUpcomingListTakesSevenStatementsForAnyNumberOfCards() {
-    var counted = StatementCounting.count(() -> upcoming.list(SINCE, null, 60));
+    var counted = StatementCounting.count(() -> upcoming.list(SINCE, null, 60, 0));
 
     assertThat(counted.result().items()).hasSize(6);
     assertThat(counted.result().total()).isEqualTo(6);
@@ -217,8 +217,16 @@ class HomeListsIT {
   }
 
   @Test
+  void anOffsetSkipsThatManyEventsOfTheSameOrder() {
+    List<UUID> all = store.upcomingEvents(SINCE, null, 500, 0);
+    List<UUID> afterTwo = store.upcomingEvents(SINCE, null, 500, 2);
+
+    assertThat(afterTwo).containsExactlyElementsOf(all.subList(2, all.size()));
+  }
+
+  @Test
   void theUpcomingWindowEndsBeforeItsLastDayAndTheTotalFollowsIt() {
-    ListUpcomingEvents.Page page = upcoming.list(SINCE, SINCE.plus(Duration.ofDays(3)), 2);
+    ListUpcomingEvents.Page page = upcoming.list(SINCE, SINCE.plus(Duration.ofDays(3)), 2, 0);
 
     assertThat(page.items()).hasSize(2);
     assertThat(page.total()).isEqualTo(3);
@@ -305,7 +313,7 @@ class HomeListsIT {
         new ArrayList<>(
             store.recentlyPublished(SINCE, UNTIL, Set.of(), Set.of(DataOrigin.OBSERVED), 24));
     ids.add(1, UUID.randomUUID());
-    ids.addAll(store.upcomingEvents(SINCE, null, 60));
+    ids.addAll(store.upcomingEvents(SINCE, null, 60, 0));
 
     List<MergedResult> batched = cards.cardsOf(ids);
 

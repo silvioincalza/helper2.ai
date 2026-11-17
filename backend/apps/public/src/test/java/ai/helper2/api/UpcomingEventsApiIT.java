@@ -182,4 +182,14 @@ class UpcomingEventsApiIT extends ApiTestBase {
     mvc.perform(get("/api/v1/events/upcoming").param("days", "0"))
         .andExpect(status().isBadRequest());
   }
+
+  @Test
+  void theEventsPageCanAskForEveryEventUpToTheLargestSize() throws Exception {
+    mvc.perform(get("/api/v1/events/upcoming").param("size", "500")).andExpect(status().isOk());
+    mvc.perform(get("/api/v1/events/upcoming").param("size", "501"))
+        .andExpect(status().isBadRequest());
+    mvc.perform(get("/api/v1/events/upcoming").param("offset", "500")).andExpect(status().isOk());
+    mvc.perform(get("/api/v1/events/upcoming").param("offset", "-1"))
+        .andExpect(status().isBadRequest());
+  }
 }

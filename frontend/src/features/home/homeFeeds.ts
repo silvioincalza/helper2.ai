@@ -26,6 +26,7 @@ const NEWS_TYPES: ResourceType[] = [
 const NEWS_SIZE = 60;
 const NEWS_DAYS = 7;
 const EVENTS_SIZE = 60;
+export const MAX_EVENTS = 500;
 const EVENTS_DAYS = 90;
 
 type DateKind = 'published' | 'updated' | 'firstSeen';
@@ -124,12 +125,33 @@ export function useNewsFeed(): Feed<NewsRow> {
   };
 }
 
-export function useEventsFeed(days = EVENTS_DAYS): Feed<EventRow> {
-  const feed = useApi<UpcomingEventsResponse>(`next-events?days=${days}`, (signal) =>
+async function allUpcomingEvents(
+  days: number,
+  size: number,
+  signal: AbortSignal,
+): Promise<UpcomingEventsResponse> {
+  const page = (offset: number) =>
     api.listUpcomingEvents(
-      new URLSearchParams({ days: String(days), size: String(EVENTS_SIZE) }),
+      new URLSearchParams({ days: String(days), size: String(size), offset: String(offset) }),
       signal,
-    ),
+    );
+  const first = await page(0);
+  const items = [...first.items];
+  for (let offset = size; offset < first.total; offset += size) {
+    const next = await page(offset);
+    items.push(...next.items);
+  }
+  return { ...first, items };
+}
+
+export function useEventsFeed(days = EVENTS_DAYS, size = EVENTS_SIZE): Feed<EventRow> {
+  const feed = useApi<UpcomingEventsResponse>(`next-events?days=${days}&size=${size}`, (signal) =>
+    size === MAX_EVENTS
+      ? allUpcomingEvents(days, size, signal)
+      : api.listUpcomingEvents(
+          new URLSearchParams({ days: String(days), size: String(size) }),
+          signal,
+        ),
   );
   const now = Date.parse(feed.data?.generatedAt ?? '');
   const rows = (feed.data?.items ?? []).map((card) => toEventRow(card, now));

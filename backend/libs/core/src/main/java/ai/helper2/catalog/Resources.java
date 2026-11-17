@@ -39,7 +39,7 @@ public interface Resources {
 
   List<Indexable> indexable(Collection<String> types, int promptMin, int limit);
 
-  List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit);
+  List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit, int offset);
 
   int countUpcomingEvents(Instant today, @Nullable Instant until);
 

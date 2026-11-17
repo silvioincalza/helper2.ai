@@ -52,6 +52,7 @@ class CatalogConfiguration {
         retention.webNews(),
         retention.resolvedReviewItems(),
         retention.listIndex(),
+        retention.pastEvents(),
         NvidiaEmbedder.MAX_REASON);
   }
 

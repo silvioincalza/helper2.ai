@@ -44,7 +44,7 @@ interface StoredAnswers {
 
   fun requestRun(resourceId: UUID)
 
-  fun closeItemsOfUnstatedValues(): Int = 0
+  fun closeItemsWithNothingToDecide(): Int = 0
 
   fun done(name: String): Boolean
 
@@ -116,7 +116,7 @@ constructor(
       for (id in ids) total = total.plus(recheck(id))
       after = ids.last()
     }
-    total = total.copy(itemsClosed = answers.closeItemsOfUnstatedValues())
+    total = total.copy(itemsClosed = answers.closeItemsWithNothingToDecide())
     count(total)
     log.info(
       "enrichment re-check: {} resources, {} fields rejected, {} claims dropped, {} runs requested, " +
