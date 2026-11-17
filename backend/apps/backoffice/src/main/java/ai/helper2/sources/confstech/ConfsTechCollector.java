@@ -65,15 +65,17 @@ public class ConfsTechCollector implements Collector {
   public ConfsTechCollector(
       SourceSettings settings,
       RestClient.Builder builder,
+      RestClient.Builder rawWithoutRedirects,
       Clock clock,
       Resilience resilience,
       RunInterval interval) {
-    this(settings, builder, clock, resilience, interval, RAW_HOST);
+    this(settings, builder, rawWithoutRedirects, clock, resilience, interval, RAW_HOST);
   }
 
   ConfsTechCollector(
       SourceSettings settings,
       RestClient.Builder builder,
+      RestClient.Builder rawWithoutRedirects,
       Clock clock,
       Resilience resilience,
       RunInterval interval,
@@ -85,7 +87,7 @@ public class ConfsTechCollector implements Collector {
     }
     this.interval = interval;
     this.rawHost = rawHost;
-    this.raw = builder.clone().build();
+    this.raw = rawWithoutRedirects.build();
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor = CollectorDescriptors.confsTech(settings);
   }
@@ -106,27 +108,15 @@ public class ConfsTechCollector implements Collector {
     Map<String, SourceHit> byUrl = new LinkedHashMap<>();
     int skipped = 0;
     for (int year : List.of(today.getYear(), today.getYear() + 1)) {
+      if (byUrl.size() >= maxItems) {
+        break;
+      }
       for (URI file : topicFiles(year)) {
-        try {
-          JsonNode conferences =
-              resilience.call(
-                  POLICY,
-                  () ->
-                      HttpClients.getJson(
-                          () -> raw.get().uri(file).retrieve().body(String.class), clock));
-          for (JsonNode c : conferences) {
-            if (byUrl.size() >= maxItems) {
-              break;
-            }
-            toHit(c, today, startedAt, byUrl.size())
-                .ifPresent(h -> byUrl.putIfAbsent(h.getCanonicalUrl().getValue(), h));
-          }
-        } catch (CallRefused e) {
-          throw e;
-        } catch (RuntimeException e) {
+        if (byUrl.size() >= maxItems) {
+          break;
+        }
+        if (!readFile(file, today, startedAt, maxItems, byUrl)) {
           skipped++;
-          HttpClients.dropped(ID, e);
-          log.warn("confs-tech: {} skipped: {}", file.getPath(), e.getClass().getSimpleName());
         }
       }
     }
@@ -134,6 +124,32 @@ public class ConfsTechCollector implements Collector {
       log.warn("confs-tech: {} of the topic files were skipped in this pass", skipped);
     }
     return new CollectedBatch(List.copyOf(byUrl.values()), null, startedAt.toString());
+  }
+
+  private boolean readFile(
+      URI file, LocalDate today, Instant now, int maxItems, Map<String, SourceHit> byUrl) {
+    try {
+      JsonNode conferences =
+          resilience.call(
+              POLICY,
+              () ->
+                  HttpClients.getJson(
+                      () -> raw.get().uri(file).retrieve().body(String.class), clock));
+      for (JsonNode c : conferences) {
+        if (byUrl.size() >= maxItems) {
+          break;
+        }
+        toHit(c, today, now, byUrl.size())
+            .ifPresent(h -> byUrl.putIfAbsent(h.getCanonicalUrl().getValue(), h));
+      }
+      return true;
+    } catch (CallRefused e) {
+      throw e;
+    } catch (RuntimeException e) {
+      HttpClients.dropped(ID, e);
+      log.warn("confs-tech: {} skipped: {}", file.getPath(), e.getClass().getSimpleName());
+      return false;
+    }
   }
 
   private List<URI> topicFiles(int year) {

@@ -380,6 +380,8 @@ class CollectorsConfiguration {
     return new ConfsTechCollector(
         s,
         collectorClient(s, observations, http),
+        ObservedHttp.restClientBuilderWithoutRedirects(
+            s.timeout(), s.deadline(), observations, http),
         clock,
         resilience,
         new RunInterval(c.interval()));

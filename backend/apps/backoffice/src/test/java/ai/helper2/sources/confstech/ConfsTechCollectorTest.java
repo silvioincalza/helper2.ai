@@ -59,6 +59,7 @@ class ConfsTechCollectorTest {
     return new ConfsTechCollector(
         new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+        TestHttp.restClientBuilderWithoutRedirects(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         Resilience.NONE,
         new RunInterval(Duration.ofDays(1)),
@@ -148,5 +149,37 @@ class ConfsTechCollectorTest {
 
     assertThatThrownBy(() -> collector().collect(null, null, 500))
         .isInstanceOf(SourceFailure.class);
+  }
+
+  @Test
+  void a_raw_file_that_redirects_is_not_followed() {
+    server.route(
+        ConfsTechCollector.YEAR_PATH + "2026",
+        FixtureServer.Reply.ok(
+            """
+            [{"name":"general.json","download_url":"%s/raw/general.json"}]\
+            """
+                .formatted(server.baseUrl())));
+    server.route(
+        "/raw/general.json",
+        new FixtureServer.Reply(
+            302, "", java.util.Map.of("Location", server.baseUrl() + "/elsewhere.json"), 0));
+    server.route("/elsewhere.json", FixtureServer.Reply.ok(GENERAL_2026));
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(server.requests).doesNotContain("/elsewhere.json");
+  }
+
+  @Test
+  void once_the_item_limit_is_reached_no_further_file_or_year_is_requested() {
+    serve2026("https://evil.example/evil.json");
+
+    CollectedBatch batch = collector().collect(null, null, 1);
+
+    assertThat(batch.getHits()).hasSize(1);
+    assertThat(server.requests)
+        .containsExactly(ConfsTechCollector.YEAR_PATH + "2026", "/raw/general.json");
   }
 }
