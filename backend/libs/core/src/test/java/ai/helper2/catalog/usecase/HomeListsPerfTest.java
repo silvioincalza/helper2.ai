@@ -189,18 +189,18 @@ class HomeListsPerfTest {
         60);
     measure(
         "/upcoming size=6",
-        () -> oneByOne(store.upcomingEvents(TODAY, null, 6)),
-        () -> upcoming.list(TODAY, null, 6).items(),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 6, 0)),
+        () -> upcoming.list(TODAY, null, 6, 0).items(),
         6);
     measure(
         "/upcoming size=60",
-        () -> oneByOne(store.upcomingEvents(TODAY, null, 60)),
-        () -> upcoming.list(TODAY, null, 60).items(),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 60, 0)),
+        () -> upcoming.list(TODAY, null, 60, 0).items(),
         60);
     measure(
         "/upcoming size=500",
-        () -> oneByOne(store.upcomingEvents(TODAY, null, 500)),
-        () -> upcoming.list(TODAY, null, 500).items(),
+        () -> oneByOne(store.upcomingEvents(TODAY, null, 500, 0)),
+        () -> upcoming.list(TODAY, null, 500, 0).items(),
         500);
   }
 }

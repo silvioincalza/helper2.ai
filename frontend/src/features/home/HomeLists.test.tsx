@@ -230,6 +230,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
     expect(meetup).toHaveTextContent('Zurich, Switzerland');
     expect(unlabelled).not.toHaveTextContent(/Hackathon|Meetup|Conference|Talk|Workshop/);
     expect(m.callsTo('GET', '/events/upcoming')[0]?.search).toContain('days=90');
+    expect(m.callsTo('GET', '/events/upcoming')[0]?.search).toContain('size=60');
     expect(section).toBeInTheDocument();
   });
 

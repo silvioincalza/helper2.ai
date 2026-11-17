@@ -260,12 +260,15 @@ Two kinds of source need more care:
     `eventOrigin: AI_EXTRACTED` when its start comes from this source, and the UI (Coming up, the Events page, the
     resource page) shows the days, kind and place with the AI label and `data-ai-generated`. Server pages leave days
     and place a model read out: their facts and schema.org data cannot carry the label.
-31. **The API.** `GET /api/v1/events/upcoming?days=&size=` (`size` 1–60, default 6): resources of type EVENT with a
-    start whose end (or start) is on or after today 00:00 UTC, soonest first, then by title. With `days` (1–366), only
+31. **The API.** `GET /api/v1/events/upcoming?days=&size=&offset=` (`size` 1–500, default 6; `offset` 0–100,000,
+    default 0): resources of type EVENT with a start whose end (or start) is on or after today 00:00 UTC, soonest
+    first, then by title and id; `offset` skips that many of them. With `days` (1–366), only
     events that start before today 00:00 UTC plus `days`; the response says that end in `until` (null without
     `days`). An event already running stays listed until it ends. `total` counts every event in the window, so "Show
     all N" is a real number ([0040](../frontend/0040-design-system.md)). `Cache-Control: public, max-age=300`. The home
     page (`useEventsFeed` in `homeFeeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
+    The Events page asks for the next 366 days in pages of 500 (`offset` 0, 500, …) until it holds `total` events, so
+    its list and its kind and format counts cover the whole window.
 
 **An admin's edit wins.** A type an admin sets need not be declared by a finder, and the events seed overwrites only
 the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
