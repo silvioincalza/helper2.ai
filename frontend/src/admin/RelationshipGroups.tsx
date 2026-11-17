@@ -1,5 +1,5 @@
 import './adminText';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/client';
@@ -27,10 +27,6 @@ function errorOf(e: unknown, t: (k: string) => string): string {
   return t('admin.groups.failed');
 }
 
-/**
- * The open relationship candidates grouped by target name (S6.2.10): one decision closes every
- * item of the name.
- */
 export function RelationshipGroups({
   page,
   onPage,
@@ -51,6 +47,16 @@ export function RelationshipGroups({
   const [done, setDone] = useState('');
   const list = groups.data?.items ?? [];
   const selected = list.find((g) => g.key === selectedKey) ?? list[0];
+  const total = groups.data?.total ?? 0;
+  const lastPage = Math.max(0, Math.ceil(total / GROUP_PAGE_SIZE) - 1);
+  const pastTheEnd = groups.data !== undefined && list.length === 0 && page > lastPage;
+
+  const movedFrom = useRef<number | null>(null);
+  useEffect(() => {
+    if (!pastTheEnd || movedFrom.current === page) return;
+    movedFrom.current = page;
+    onPage(lastPage);
+  }, [pastTheEnd, page, lastPage, onPage]);
 
   const decide = async (group: Group, decision: Omit<Decision, 'key'>) => {
     if (busy) return;
@@ -77,7 +83,7 @@ export function RelationshipGroups({
     }
   };
 
-  if (groups.loading) return <AdminLoading command={COMMAND} />;
+  if (groups.loading || pastTheEnd) return <AdminLoading command={COMMAND} />;
   if (groups.error !== undefined)
     return (
       <StatePanel

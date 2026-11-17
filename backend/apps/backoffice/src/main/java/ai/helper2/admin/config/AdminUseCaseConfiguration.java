@@ -1,6 +1,7 @@
 package ai.helper2.admin.config;
 
 import ai.helper2.admin.usecase.ChangeRuntimeSetting;
+import ai.helper2.admin.usecase.DecideRelationshipItem;
 import ai.helper2.admin.usecase.DecideRelationshipTargetGroup;
 import ai.helper2.admin.usecase.GetEffectiveSettings;
 import ai.helper2.admin.usecase.GetOverview;
@@ -15,7 +16,6 @@ import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
-import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
@@ -121,11 +121,14 @@ class AdminUseCaseConfiguration {
 
   @Bean
   DecideRelationshipTargetGroup decideRelationshipTargetGroup(
-      RelationshipTargets targets,
-      ChangeRelationshipTarget changeTarget,
-      ResolveReview resolve,
-      ManageKnownTargets knownTargets) {
-    return new DecideRelationshipTargetGroup(targets, changeTarget, resolve, knownTargets);
+      RelationshipTargets targets, DecideRelationshipItem item, ManageKnownTargets knownTargets) {
+    return new DecideRelationshipTargetGroup(targets, item, knownTargets);
+  }
+
+  @Bean
+  DecideRelationshipItem decideRelationshipItem(
+      RelationshipTargets targets, ResolveReview resolve, AuditTrail audit) {
+    return new TransactionalDecideRelationshipItem(targets, resolve, audit);
   }
 
   @Bean
@@ -158,6 +161,32 @@ class AdminUseCaseConfiguration {
       AuditTrail audit,
       Clock clock) {
     return new TransactionalResetRuntimeSetting(store, settings, runtime, audit, clock);
+  }
+
+  static class TransactionalDecideRelationshipItem extends DecideRelationshipItem {
+
+    TransactionalDecideRelationshipItem(
+        RelationshipTargets targets, ResolveReview resolve, AuditTrail audit) {
+      super(targets, resolve, audit);
+    }
+
+    @Override
+    @Transactional
+    public boolean link(UUID id, UUID resourceId, String by, @Nullable String note, UUID batch) {
+      return super.link(id, resourceId, by, note, batch);
+    }
+
+    @Override
+    @Transactional
+    public boolean reject(UUID id, String by, @Nullable String note, UUID batch) {
+      return super.reject(id, by, note, batch);
+    }
+
+    @Override
+    @Transactional
+    public boolean confirmKnown(UUID id, String by, UUID batch) {
+      return super.confirmKnown(id, by, batch);
+    }
   }
 
   static class TransactionalResolveReview extends ResolveReview {

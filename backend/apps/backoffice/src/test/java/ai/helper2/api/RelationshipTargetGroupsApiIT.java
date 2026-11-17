@@ -22,7 +22,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.web.servlet.ResultActions;
 
-/** S6.2.10: one decision for every open relationship candidate of one target name. */
 class RelationshipTargetGroupsApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
@@ -40,7 +39,6 @@ class RelationshipTargetGroupsApiIT extends ApiTestBase {
 
   @BeforeEach
   void insert() {
-    // Three resources name the same target, written three ways.
     for (String written : List.of(name, name.toLowerCase(), " " + name.toUpperCase() + " ")) {
       relationships.add(candidate(resource("Uses " + written), written));
     }
@@ -201,12 +199,18 @@ class RelationshipTargetGroupsApiIT extends ApiTestBase {
             .andReturn()
             .getResponse()
             .getContentAsString();
-    assertThat(JsonPath.<Integer>read(body, "$.decided")).isGreaterThanOrEqualTo(3);
+    assertThat(JsonPath.<Integer>read(body, "$.decided")).isEqualTo(3);
+    assertThat(JsonPath.<Integer>read(body, "$.left")).isZero();
+    String batch = JsonPath.read(body, "$.batch");
     assertThat(states())
         .allSatisfy(s ->
             assertThat(s)
                 .containsEntry("verification", "VERIFIED")
                 .containsEntry("status", "SUPERSEDED"));
+    assertThat(audit())
+        .filteredOn(a -> a.startsWith("RESOLVE_REVIEW_ITEM"))
+        .containsOnly("RESOLVE_REVIEW_ITEM SUPERSEDED bulk:" + batch)
+        .hasSize(3);
     assertThat(
             jdbc.sql("SELECT kind FROM known_target WHERE lower(name) = :key")
                 .param("key", key)
@@ -214,6 +218,41 @@ class RelationshipTargetGroupsApiIT extends ApiTestBase {
                 .single())
         .isEqualTo("SERVICE");
     assertThat(audit()).anyMatch(a -> a.startsWith("ADD_KNOWN_TARGET"));
+  }
+
+  @Test
+  void aServiceClosesOnlyItsOwnGroupNotTheOtherKnownTargetsWaiting() throws Exception {
+    UUID other = candidate(resource("Uses OpenAI"), "OpenAI");
+
+    decide("{\"key\":\"" + key + "\",\"decision\":\"SERVICE\"}").andExpect(status().isOk());
+
+    assertThat(
+            jdbc.sql("SELECT i.status FROM review_item i WHERE i.relationship_id = :rel")
+                .param("rel", other)
+                .query(String.class)
+                .single())
+        .isEqualTo("OPEN");
+  }
+
+  @Test
+  void aDecidedGroupLeavesNothingAndNewItemsOfTheNameFormTheNextBatch() throws Exception {
+    String body =
+        decide("{\"key\":\"" + key + "\",\"decision\":\"REJECT\"}")
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(JsonPath.<Integer>read(body, "$.left")).isZero();
+    candidate(resource("Uses " + name + " again"), name);
+    candidate(resource("Uses " + name + " once more"), name);
+    assertThat(
+            JsonPath.<Integer>read(
+                decide("{\"key\":\"" + key + "\",\"decision\":\"REJECT\"}")
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString(),
+                "$.decided"))
+        .isEqualTo(2);
   }
 
   @Test

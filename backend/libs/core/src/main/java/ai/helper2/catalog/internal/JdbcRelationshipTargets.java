@@ -168,31 +168,53 @@ class JdbcRelationshipTargets implements RelationshipTargets {
   @Transactional
   public int confirmOpenKnownTargetCandidates(String by, String vendorNote, String serviceNote) {
     KnownTargetLock.forUse(jdbc);
-    return jdbc.sql(
-            """
-            WITH candidate AS (
-                   SELECT i.id AS item, rel.id AS relationship, t.kind
-                   FROM review_item i JOIN relationship rel ON rel.id = i.relationship_id
-                        JOIN known_target_name n ON n.name_key = %s
-                        JOIN known_target t ON t.id = n.target_id
-                   WHERE i.status = 'OPEN' AND i.kind = 'RELATIONSHIP_CANDIDATE'
-                     AND rel.to_resource_id IS NULL AND rel.target_origin IS NULL
-                     AND rel.origin = 'AI_EXTRACTED' AND rel.verification = 'UNVERIFIED'
-                   FOR UPDATE OF i),
-                 confirmed AS (
-                   UPDATE relationship rel SET verification = 'VERIFIED', target_kind = c.kind
-                   FROM candidate c WHERE rel.id = c.relationship
-                   RETURNING c.item, c.kind)
-            UPDATE review_item i
-            SET status = 'SUPERSEDED', resolved_at = now(), resolved_by = :by,
-                resolution_note = CASE c.kind WHEN 'SERVICE' THEN :serviceNote ELSE :vendorNote END
-            FROM confirmed c WHERE i.id = c.item
-            """
-                .formatted(KnownTarget.KEY_OF_TITLE_SQL.formatted("rel.to_title")))
+    return jdbc.sql(CONFIRM_KNOWN.formatted(KEY, ""))
         .param("by", by)
         .param("vendorNote", vendorNote)
         .param("serviceNote", serviceNote)
         .update();
+  }
+
+  @Override
+  public boolean confirmKnownTargetCandidate(
+      UUID itemId, String by, String vendorNote, String serviceNote) {
+    KnownTargetLock.forUse(jdbc);
+    return jdbc.sql(CONFIRM_KNOWN.formatted(KEY, "AND i.id = :item"))
+            .param("item", itemId)
+            .param("by", by)
+            .param("vendorNote", vendorNote)
+            .param("serviceNote", serviceNote)
+            .update()
+        == 1;
+  }
+
+  private static final String CONFIRM_KNOWN =
+      """
+      WITH candidate AS (
+             SELECT i.id AS item, rel.id AS relationship, t.kind
+             FROM review_item i JOIN relationship rel ON rel.id = i.relationship_id
+                  JOIN known_target_name n ON n.name_key = %s
+                  JOIN known_target t ON t.id = n.target_id
+             WHERE i.status = 'OPEN' AND i.kind = 'RELATIONSHIP_CANDIDATE'
+               AND rel.to_resource_id IS NULL AND rel.target_origin IS NULL
+               AND rel.origin = 'AI_EXTRACTED' AND rel.verification = 'UNVERIFIED' %s
+             FOR UPDATE OF i),
+           confirmed AS (
+             UPDATE relationship rel SET verification = 'VERIFIED', target_kind = c.kind
+             FROM candidate c WHERE rel.id = c.relationship
+             RETURNING c.item, c.kind)
+      UPDATE review_item i
+      SET status = 'SUPERSEDED', resolved_at = now(), resolved_by = :by,
+          resolution_note = CASE c.kind WHEN 'SERVICE' THEN :serviceNote ELSE :vendorNote END
+      FROM confirmed c WHERE i.id = c.item
+      """;
+
+  @Override
+  public long openItemCountNamed(String key) {
+    return jdbc.sql("SELECT count(*) %s AND %s = :key".formatted(OPEN_CANDIDATES, KEY))
+        .param("key", key)
+        .query(Long.class)
+        .single();
   }
 
   private void retell(UUID itemId, String kind, String title, @Nullable UUID targetId) {

@@ -90,3 +90,35 @@ describe('admin: relationship candidates by target name (S6.2.10)', () => {
     expect(m.callsTo('GET', '/admin/relationship-targets')).toHaveLength(0);
   });
 });
+
+describe('admin: the grouped view keeps the admin on reachable work', () => {
+  it('Scenario: deciding the last group of a later page moves back to the last page that has groups', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items: [], total: 60 }),
+      'GET /admin/relationship-targets': ({ url }) =>
+        url.searchParams.get('page') === '1'
+          ? { items: [], total: 50 }
+          : { items: [cursor, pytorch], total: 50 },
+    });
+    renderAdmin('/admin/review?kind=RELATIONSHIP_CANDIDATE&page=1');
+    expect(await screen.findByRole('button', { name: 'Cursor' })).toBeInTheDocument();
+    expect(m.callsTo('GET', '/admin/relationship-targets').at(-1)?.search).toContain('page=0');
+  });
+
+  it('Scenario: the category filter is not offered, since a group spans every category', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items: [], total: 1 }),
+      'GET /admin/relationship-targets': () => ({ items: [cursor], total: 1 }),
+      'GET /sources': () => [
+        { id: 'discovery-coding', name: 'Coding', shortName: 'Coding', family: 'developers' },
+      ],
+    });
+    renderAdmin('/admin/review?kind=RELATIONSHIP_CANDIDATE');
+    expect(await screen.findByRole('button', { name: 'Cursor' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Category' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Each item' }));
+    expect(await screen.findByRole('combobox', { name: 'Category' })).toBeInTheDocument();
+  });
+});

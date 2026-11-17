@@ -273,7 +273,7 @@ export default function ReviewQueuePage() {
             ))}
           </select>
         </label>
-        {categories.length > 0 && (
+        {categories.length > 0 && !byTarget && (
           <label>
             {t('admin.categoryFilter')}
             <select
