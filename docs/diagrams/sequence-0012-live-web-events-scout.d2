@@ -1,7 +1,7 @@
 # Sequence: a weekly pass of the live web events scout that keeps one hackathon, and a visitor who sees it in Coming up.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/LiveWebEventsCollector.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/events/SpringAiEventReader.java, EventQuoteGate.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/ScoutLiveWebCredits.java, UndatedEvents.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/ScoutLiveWebCredits.java, UndatedEvents.java, LinkedInPosts.java,
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert), ProjectedReconciliation.java (event days), JdbcResources.java (undatedEvents, upcomingEvents),
 #   backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java, frontend/src/features/home/TermList.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0012-live-web-events-scout.d2 && d2 sequence-0012-live-web-events-scout.d2 sequence-0012-live-web-events-scout.svg
@@ -34,6 +34,15 @@ pass: Weekly pass {
   model -> scout: "events 1, 2027-03-12..14,\n\"When: 12–14 March 2027\", HACKATHON + quote"
   scout -> gate: "check page, reading, today"
   gate -> scout: "kept: quote on the page,\ncode reads 12–14 March 2027, same days,\nwithin 6 months"
+  scout -> model: "read the LinkedIn post"
+  model -> scout: "no stated days"
+  scout -> scout: "the post's one event link:\nhttps://www.agenticdays.com/"
+  scout -> tavily: "extract the event site (second round)"
+  tavily -> scout: "site text: November 20, 2026 · Zurich"
+  scout -> model: "read the site"
+  model -> scout: "events 1, 2026-11-20"
+  scout -> gate: "check site, reading, today"
+  gate -> scout: "kept; the post now counts as read"
   scout -> db: "upsert EVENT, extra.eventEvidence\n(quote, model, prompt version)"
   db -> db: "event days of the card: AI-read days only\nwhen no other record states a start"
 }
