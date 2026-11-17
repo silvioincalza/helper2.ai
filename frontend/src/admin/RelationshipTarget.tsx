@@ -114,7 +114,7 @@ export function RelationshipTarget({
   );
 }
 
-function ExistingPicker({
+export function ExistingPicker({
   initial,
   saving,
   onPick,

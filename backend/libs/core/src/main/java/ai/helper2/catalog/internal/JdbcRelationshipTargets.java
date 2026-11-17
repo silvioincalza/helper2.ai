@@ -3,6 +3,7 @@ package ai.helper2.catalog.internal;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ScoutPolicy;
+import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -57,6 +58,74 @@ class JdbcRelationshipTargets implements RelationshipTargets {
     retell(itemId, item.relKind(), newTitle, targetId);
     return new Outcome.Changed(targetId, newTitle);
   }
+
+  private static final String OPEN_CANDIDATES =
+      """
+      FROM review_item i JOIN relationship rel ON rel.id = i.relationship_id
+      WHERE i.status = 'OPEN' AND i.kind = 'RELATIONSHIP_CANDIDATE'
+      """;
+
+  @Override
+  public List<Group> openGroups(int offset, int limit) {
+    return jdbc.sql(
+            """
+            SELECT %s AS name_key, mode() WITHIN GROUP (ORDER BY btrim(rel.to_title)) AS name,
+                   count(*) AS items, array_agg(DISTINCT rel.kind ORDER BY rel.kind) AS kinds,
+                   (array_agg(res.title ORDER BY i.created_at, i.id))[1 : 3] AS examples
+            FROM review_item i JOIN relationship rel ON rel.id = i.relationship_id
+                 JOIN resource res ON res.id = rel.from_resource_id
+            WHERE i.status = 'OPEN' AND i.kind = 'RELATIONSHIP_CANDIDATE'
+            GROUP BY 1
+            ORDER BY items DESC, name_key
+            OFFSET :offset LIMIT :limit
+            """
+                .formatted(KEY))
+        .param("offset", offset)
+        .param("limit", limit)
+        .query((rs, n) ->
+            new Group(
+                rs.getString("name_key"),
+                rs.getString("name"),
+                rs.getInt("items"),
+                List.of((String[]) rs.getArray("kinds").getArray()),
+                List.of((String[]) rs.getArray("examples").getArray())))
+        .list();
+  }
+
+  @Override
+  public long openGroupCount() {
+    return jdbc.sql("SELECT count(DISTINCT %s) %s".formatted(KEY, OPEN_CANDIDATES))
+        .query(Long.class)
+        .single();
+  }
+
+  @Override
+  public java.util.Optional<String> openGroupName(String key) {
+    return jdbc.sql(
+            "SELECT mode() WITHIN GROUP (ORDER BY btrim(rel.to_title)) %s AND %s = :key HAVING count(*) > 0"
+                .formatted(OPEN_CANDIDATES, KEY))
+        .param("key", key)
+        .query(String.class)
+        .optional();
+  }
+
+  @Override
+  public boolean resourceExists(UUID resourceId) {
+    return titleOf(resourceId) != null;
+  }
+
+  @Override
+  public List<UUID> openItemsNamed(String key, int limit) {
+    return jdbc.sql(
+            "SELECT i.id %s AND %s = :key ORDER BY i.created_at, i.id LIMIT :limit"
+                .formatted(OPEN_CANDIDATES, KEY))
+        .param("key", key)
+        .param("limit", limit)
+        .query(UUID.class)
+        .list();
+  }
+
+  private static final String KEY = KnownTarget.KEY_OF_TITLE_SQL.formatted("rel.to_title");
 
   @Override
   public int linkOpenCandidates(String by, String note) {

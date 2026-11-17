@@ -1,6 +1,7 @@
 package ai.helper2.admin.config;
 
 import ai.helper2.admin.usecase.ChangeRuntimeSetting;
+import ai.helper2.admin.usecase.DecideRelationshipTargetGroup;
 import ai.helper2.admin.usecase.GetEffectiveSettings;
 import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.admin.usecase.GetReviewEvidence;
@@ -10,8 +11,10 @@ import ai.helper2.admin.usecase.ResetRuntimeSetting;
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.catalog.KnownTargetCandidates;
+import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
@@ -113,6 +116,15 @@ class AdminUseCaseConfiguration {
   ResolveReviewItems resolveReviewItems(
       ReviewQueue queue, ReviewEvidence evidence, ResolveReview resolve, AuditTrail audit) {
     return new ResolveReviewItems(queue, evidence, resolve, audit);
+  }
+
+  @Bean
+  DecideRelationshipTargetGroup decideRelationshipTargetGroup(
+      RelationshipTargets targets,
+      ChangeRelationshipTarget changeTarget,
+      ResolveReview resolve,
+      ManageKnownTargets knownTargets) {
+    return new DecideRelationshipTargetGroup(targets, changeTarget, resolve, knownTargets);
   }
 
   @Bean
