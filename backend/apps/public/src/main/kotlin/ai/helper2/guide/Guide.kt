@@ -319,7 +319,7 @@ data class GuideAnswer(
 )
 
 class GuideValidator(
-  private val maxPicks: Int = MAX_PICKS,
+  private val maxProposed: Int = MAX_PROPOSED,
   private val minQuoteChars: Int = MIN_QUOTE_CHARS,
   private val minQuoteWords: Int = MIN_QUOTE_WORDS,
   private val maxQuote: Int = MAX_QUOTE_CHARS,
@@ -333,15 +333,16 @@ class GuideValidator(
     val checks: Map<String, List<ConstraintCheck>> = emptyMap(),
     val rejectedBy: Map<Rejection, Int> = emptyMap(),
     val rejectedPicks: List<RejectedPick> = emptyList(),
+    val rejectionsAt: List<Pair<Int, Rejection>> = emptyList(),
   )
 
-  data class RejectedPick(val candidate: Candidate, val rejection: Rejection)
+  data class RejectedPick(val candidate: Candidate, val rejection: Rejection, val position: Int = 0)
 
-  data class KeptPick(val candidate: Candidate, val pick: ProposedPick)
+  data class KeptPick(val candidate: Candidate, val pick: ProposedPick, val position: Int = 0)
 
   val fingerprint: String
     get() =
-      "$maxPicks/$minQuoteChars/$minQuoteWords/$maxQuote/$MAX_REASON_CHARS/$MIN_CHECK_QUOTE/words/secrets"
+      "$maxProposed/$MAX_PICKS/$minQuoteChars/$minQuoteWords/$maxQuote/$MAX_REASON_CHARS/$MIN_CHECK_QUOTE/words/secrets"
 
   enum class Rejection {
     UNKNOWN_CANDIDATE,
@@ -391,28 +392,31 @@ class GuideValidator(
     val byKey = candidates.associateBy { it.key }
     val rejectedBy = mutableMapOf<Rejection, Int>()
     val rejectedPicks = mutableListOf<RejectedPick>()
-    fun reject(r: Rejection, c: Candidate? = null) {
-      rejectedBy.merge(r, 1, Int::plus)
-      if (c != null) rejectedPicks += RejectedPick(c, r)
-    }
+    val rejectionsAt = mutableListOf<Pair<Int, Rejection>>()
     val picks = mutableListOf<KeptPick>()
-    for (p in proposal.picks) {
+    for ((position, p) in proposal.picks.withIndex()) {
+      fun reject(r: Rejection, c: Candidate? = null) {
+        rejectedBy.merge(r, 1, Int::plus)
+        rejectionsAt += position to r
+        if (c != null) rejectedPicks += RejectedPick(c, r, position)
+      }
       val c = byKey[p.candidateKey.trim()]
       val problem =
         when {
+          position >= maxProposed -> Rejection.OVER_LIMIT
           c == null -> Rejection.UNKNOWN_CANDIDATE
           picks.any { it.candidate.key == c.key } -> Rejection.DUPLICATE
           !allowReading && c.result.type in READING_TYPES -> Rejection.READING_TYPE
           else -> evidenceGate.claimProblem(p.reason, p.quote, c, MAX_REASON_CHARS)
         }
       when {
-        problem != null -> reject(problem, c)
-        picks.size >= maxPicks -> reject(Rejection.OVER_LIMIT)
-        else -> picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = p.quote.trim()))
+        problem != null -> reject(problem, c.takeIf { problem != Rejection.OVER_LIMIT })
+        else ->
+          picks += KeptPick(c!!, p.copy(reason = p.reason.trim(), quote = p.quote.trim()), position)
       }
     }
     val checks = picks.associate { (c, p) -> c.key to checkConstraints(constraints, c, p.evidence) }
-    return Result(picks, rejectedBy.values.sum(), checks, rejectedBy, rejectedPicks)
+    return Result(picks, rejectedBy.values.sum(), checks, rejectedBy, rejectedPicks, rejectionsAt)
   }
 
   fun checkConstraints(
@@ -473,6 +477,7 @@ class GuideValidator(
 
   companion object {
     const val MAX_PICKS = 3
+    const val MAX_PROPOSED = 5
     const val MIN_QUOTE_CHARS = 40
     const val MIN_QUOTE_WORDS = 6
     const val MAX_QUOTE_CHARS = 300
