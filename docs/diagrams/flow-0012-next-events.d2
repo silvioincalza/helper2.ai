@@ -31,11 +31,11 @@ noDate: "No stated dates" {class: app}
 
 resource: "resource.event_starts_at =\nearliest record start;\nevent_ends_at = latest end" {class: data}
 
-get: "GET /api/v1/events/upcoming\n?days= (1–366, optional)\n&size=6 (1–60)" {class: person}
+get: "GET /api/v1/events/upcoming\n?days= (1–366, optional)\n&size=6 (1–500)\n&offset=0" {class: person}
 listed: "type EVENT, start stated,\nend (or start) ≥ today 00:00 UTC?" {class: decision}
 window: "days given: start before\ntoday 00:00 UTC + days?" {class: decision}
 hidden: "Not listed" {class: end}
-out: "Soonest first, first size items;\ntotal = all listed, until = window end;\nCache-Control max-age 5 min" {class: end}
+out: "Soonest first (start, title, id),\nsize items after offset;\ntotal = all listed, until = window end;\nCache-Control max-age 5 min" {class: end}
 
 conf -> edition
 edition -> noEdition: no
