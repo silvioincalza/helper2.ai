@@ -140,6 +140,7 @@ describe('Feature: one name, one spelling, plain words', () => {
     ['detail.sourceRecords', 'Source records'],
     ['detail.col.fingerprint', 'Content hash'],
     ['detail.col.externalId', 'ID at the source'],
+    ['detail.col.repository', 'Repository'],
     [
       'guide.notice.networkQuotaBackAt',
       "Your network has used today's AI answers. Showing the top search results instead. AI answers are back at {{time}}.",

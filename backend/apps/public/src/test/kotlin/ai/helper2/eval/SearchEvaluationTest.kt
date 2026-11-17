@@ -42,7 +42,10 @@ class SearchEvaluationTest {
       emptySet(),
       listOf(
         source("github", hit(0, "https://github.com/o/a"), hit(1, "https://github.com/o/b")),
-        source("npm", hit(0, "https://www.npmjs.com/package/c", repo = "https://github.com/o/b")),
+        source(
+          "npm",
+          hit(0, "https://www.npmjs.com/package/b-js", repo = "https://github.com/o/b"),
+        ),
       ),
     )
   private val queries =
@@ -77,7 +80,7 @@ class SearchEvaluationTest {
       evaluation(
         """
             query_id	url	grade
-            q1	https://npmjs.com/package/c	3
+            q1	https://npmjs.com/package/b-js	3
             q1	https://github.com/o/a	0
         """
       )
@@ -86,6 +89,35 @@ class SearchEvaluationTest {
     assertEquals(1.0, score.mrr!!, 1e-9)
     assertEquals(1.0, score.recall20!!, 1e-9)
     assertEquals(0.0, score.unjudged10, 1e-9)
+  }
+
+  @Test
+  fun `a package that does not join the repository it states does not take that repository's grade`() {
+    val stranger =
+      SearchSnapshot(
+        "q1",
+        "go engine",
+        Instant.parse("2026-10-30T10:00:00Z"),
+        listOf("go", "engine"),
+        emptySet(),
+        listOf(
+          source(
+            "npm",
+            hit(
+              0,
+              "https://www.npmjs.com/package/alpha-go",
+              repo = "https://github.com/lazy/ml-utils",
+            ),
+          )
+        ),
+      )
+    val e =
+      SearchEvaluation(
+        queries,
+        mapOf("q1" to stranger),
+        Qrels.parse(listOf("query_id\turl\tgrade", "q1\thttps://github.com/lazy/ml-utils\t3")),
+      )
+    assertNull(e.grade("q1", SearchReplay().rank(stranger).single()))
   }
 
   @Test

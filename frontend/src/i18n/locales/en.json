@@ -494,6 +494,7 @@
       "verification": "Verification",
       "evidence": "Evidence",
       "externalId": "ID at the source",
+      "repository": "Repository",
       "retrieved": "Retrieved",
       "fingerprint": "Content hash"
     },

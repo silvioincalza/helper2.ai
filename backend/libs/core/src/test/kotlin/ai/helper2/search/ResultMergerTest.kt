@@ -519,6 +519,60 @@ class ResultMergerTest {
   }
 
   @Test
+  fun `two registry servers in sub-folders of one repository are two results at their folders`() {
+    val repo = "https://github.com/awslabs/mcp"
+    val merged =
+      merger.merge(
+        listOf(
+          hit("github", repo),
+          hit(
+            "mcp-registry",
+            "$repo/tree/HEAD/src/a-server",
+            repo = repo,
+            name = "io.github.awslabs/a",
+          ),
+          hit(
+            "mcp-registry",
+            "$repo/tree/HEAD/src/b-server",
+            repo = repo,
+            name = "io.github.awslabs/b",
+          ),
+        ),
+        contexts("github", "mcp-registry"),
+      )
+    assertEquals(
+      setOf(repo, "$repo/tree/HEAD/src/a-server", "$repo/tree/HEAD/src/b-server"),
+      merged.map { it.canonicalUrl.value }.toSet(),
+    )
+  }
+
+  @Test
+  fun `the servers of a collection repository are a result each`() {
+    val repo = "https://github.com/codespar/mcp-dev-latam"
+    val registry = "https://registry.modelcontextprotocol.io/v0.1/servers/"
+    val merged =
+      merger.merge(
+        listOf(
+          hit("github", repo),
+          hit(
+            "mcp-registry",
+            "${registry}io.github.codespar%2Fmcp-adyen",
+            repo = repo,
+            name = "io.github.codespar/mcp-adyen",
+          ),
+          hit(
+            "mcp-registry",
+            "${registry}io.github.codespar%2Fmcp-afip",
+            repo = repo,
+            name = "io.github.codespar/mcp-afip",
+          ),
+        ),
+        contexts("github", "mcp-registry"),
+      )
+    assertEquals(3, merged.size)
+  }
+
+  @Test
   fun `the same package listed twice still joins its repository`() {
     val pkg =
       hit(

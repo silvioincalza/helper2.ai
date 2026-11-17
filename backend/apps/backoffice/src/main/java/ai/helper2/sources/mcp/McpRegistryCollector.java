@@ -173,7 +173,7 @@ public class McpRegistryCollector implements Collector {
         server != null && CanonicalUrl.of(server) != null
             ? server
             : website != null && CanonicalUrl.of(website) != null ? website : registryEntry;
-    CanonicalUrl canonical = CanonicalUrl.of(link);
+    CanonicalUrl canonical = identity(name, repo, server);
     if (canonical == null) {
       return null;
     }
@@ -202,6 +202,17 @@ public class McpRegistryCollector implements Collector {
         List.of(),
         now,
         rank);
+  }
+
+  private static final String REGISTRY_ENTRY =
+      "https://registry.modelcontextprotocol.io/v0.1/servers/";
+
+  static CanonicalUrl identity(String name, String repo, String server) {
+    boolean statesFolder = server != null && !server.equals(repo);
+    CanonicalUrl folder = statesFolder ? CanonicalUrl.of(server) : null;
+    return folder != null
+        ? folder
+        : CanonicalUrl.of(REGISTRY_ENTRY + URLEncoder.encode(name, StandardCharsets.UTF_8));
   }
 
   private static final Set<String> WITHDRAWN = Set.of("deleted");

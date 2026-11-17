@@ -41,8 +41,8 @@ constructor(
 
   private fun joiningRepositories(hits: List<SourceHit>): Map<CanonicalUrl, CanonicalUrl> =
     hits
-      .filter { it.repositoryUrl != null && it.repositoryUrl != it.canonicalUrl }
-      .groupBy({ it.canonicalUrl }, { it.repositoryUrl!! })
+      .mapNotNull { hit -> RepositoryJoin.of(hit)?.let { hit.canonicalUrl to it } }
+      .groupBy({ it.first }, { it.second })
       .mapValues { (_, repositories) -> repositories.minWith(GITHUB_FIRST) }
 
   private fun group(
@@ -84,7 +84,7 @@ constructor(
     val primary = group.first()
     val identity =
       group
-        .mapNotNull { it.repositoryUrl }
+        .mapNotNull { RepositoryJoin.of(it) }
         .ifEmpty { group.map { it.canonicalUrl } }
         .minWith(GITHUB_FIRST)
     val conflicts = mutableListOf<FieldConflict>()
