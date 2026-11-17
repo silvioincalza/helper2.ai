@@ -16,7 +16,7 @@ waits: "Owner waits\n(not enforced by GitHub)" {class: fail}
 fallback: "Owner requests the\nCopilot review again" {class: person}
 threads: "Every review thread\nresolved?" {class: decision}
 open: "Merge blocked until\nthe threads are resolved" {class: fail}
-ci: "ci-ok green and the branch\nup to date with main?" {class: decision}
+ci: "ci-ok green?\n(the branch may be\nbehind main)" {class: decision}
 merge: "Owner merges\n(squash)" {class: end}
 
 push -> ask: {class: hot}

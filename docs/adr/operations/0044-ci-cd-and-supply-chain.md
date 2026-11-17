@@ -223,8 +223,8 @@ Harbor could put an image under a tag first.
    the check, and so does a job the script has no rule for. On a push (`full: true`) every part in the tree is
    selected; `postgres-tag` is selected on pull requests only. A manual run of `ci.yml` selects every part too, and
    with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check of CI to require on `main` and `release/*`. It is required by
-   the rulesets "main: pull requests only" and "release branches: pull requests only", and a pull request must be up to date with `main` before it merges:
-   two pull requests that are green alone can break `main` together.
+   the rulesets "main: pull requests only" and "release branches: pull requests only". A pull request to `main` may
+   merge when it is behind `main`; a pull request to a release branch must be up to date with that branch.
 10. **CD per component.** The `image` job maps the push against the commit pushed before (`github.event.before`).
     `make ci-images` gives all three images the new commit tag, always, so they keep one tag (the public pod copies
     its shell from the web image of `image.tag`). A changed component is built and pushed. An unchanged one gets the
@@ -404,6 +404,11 @@ Harbor could put an image under a tag first.
   started by the Copilot review only after an approval, since the repository asks one for every outside contributor:
   the check would wait for a click on every pull request. A job of `ci.yml` has the same problem, and `ci-ok` ends
   before Copilot posts.
+- A pull request to `main` that must be up to date with `main` before it merges — two pull requests that are green
+  alone cannot break `main` together, but auto-merge is off and several pull requests land on `main` each hour: each
+  one would fall behind while its CI runs, and need `main` merged in and a new CI run before every try.
+- GitHub's merge queue — tests each pull request on top of `main` and merges them in order, but `ci.yml` and `ci-ok`
+  would also have to run on `merge_group` events, and every merge waits for one more CI run.
 - Wait in a job until Copilot posts — a runner held for minutes on each push, and a time-out still has to fail.
 - Verify in the cluster with an admission controller (Kyverno, the Sigstore policy controller) — stronger, but a
   controller to run and a dependency on one cluster; the deploy stays generic (open point, infra side).
@@ -494,6 +499,9 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 ### Open points
 
 - Signatures are not verified in the cluster (admission controller, infra side).
+
+- A pull request to `main` can merge while it is behind `main`. Two pull requests that are green alone can break
+  `main` together; the CI of the CD run on `main` then fails after the merge, and no image is built from that commit.
 
 ## Diagrams
 
