@@ -266,11 +266,16 @@ class CatalogEnrichmentStoreIT {
   @Test
   void itemsOpenForUnstatedValuesOnlyAreClosedAndTheOthersStay() {
     String unstated = "field useCase: " + ai.helper2.catalog.ScoutPolicy.UNSTATED_VALUE;
-    saveWithErrors(
+    save(
         "run-old-rule",
-        List.of(),
-        unstated,
-        "field pricing: " + ai.helper2.catalog.ScoutPolicy.UNSTATED_VALUE);
+        EnrichmentOutcome.REJECTED,
+        new ValidationResult(
+            EnrichmentOutcome.REJECTED,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(unstated, "field pricing: " + ai.helper2.catalog.ScoutPolicy.UNSTATED_VALUE)));
+    assertThat(itemState(resource)).isEqualTo("OPEN:-");
 
     int closed = storedEnrichments.closeItemsWithNothingToDecide("scout", "no review needed");
 
