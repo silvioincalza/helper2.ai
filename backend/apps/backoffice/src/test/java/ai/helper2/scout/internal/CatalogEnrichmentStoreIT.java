@@ -222,14 +222,14 @@ class CatalogEnrichmentStoreIT {
     String missing = "field pricing: excerpt not found in cited evidence";
     ValidationResult result =
         new ValidationResult(
-            EnrichmentOutcome.PARTIAL,
+            EnrichmentOutcome.REJECTED,
             List.of(),
             List.of(),
             List.of(),
             List.of(unstated, missing),
             List.of(missing));
 
-    save("run-for-review", EnrichmentOutcome.PARTIAL, result);
+    save("run-for-review", EnrichmentOutcome.REJECTED, result);
 
     assertThat(reviewStatuses(ReviewQueue.Kind.ENRICHMENT_VALIDATION)).containsExactly("OPEN");
     assertThat(
