@@ -236,4 +236,32 @@ class EventQuoteGateTest {
     assertThat(event.format()).isNull();
     assertThat(event.location()).isNull();
   }
+
+  static final String CONFERENCE_WITH_SIDE_EVENTS =
+      """
+      Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference in Switzerland
+      Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station
+      08:30 Welcome Session 16:45 – 18:45 Apéro
+      Speaker & Sponsor Exclusive Events Nov 19 Speaker Adventure in Zurich 13:00 — excursion close to Zurich
+      Nov 19 Speaker & Sponsor Dinner Evening before the conference — invite only
+      Call for Papers Closed — 23 July 2026
+      """;
+
+  @Test
+  void a_conference_page_with_side_events_keeps_the_main_day() {
+    var verdict =
+        gate.check(
+            CONFERENCE_WITH_SIDE_EVENTS,
+            reading(
+                "2026-11-20",
+                "2026-11-20",
+                "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main"
+                    + " Station"),
+            TODAY);
+
+    assertThat(verdict.reason()).isNull();
+    var event = verdict.event().orElseThrow();
+    assertThat(event.start()).isEqualTo(LocalDate.parse("2026-11-20"));
+    assertThat(event.end()).isEqualTo(LocalDate.parse("2026-11-20"));
+  }
 }
