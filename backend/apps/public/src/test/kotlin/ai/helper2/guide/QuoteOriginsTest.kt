@@ -158,4 +158,15 @@ class QuoteOriginsTest {
       origins.of("Show HN: PDF chat that runs on your own laptop", result, emptyMap()),
     )
   }
+
+  @Test
+  fun `a curated record is editorial text, never the page that holds a quote`() {
+    val id = ResourceId.of(CanonicalUrl.of(repo)!!)
+    val result =
+      merger.merge(listOf(hit("github", repo, description = repoText)), contexts("github")).single()
+    val curated =
+      mapOf(id to listOf(hit("curated", repo, title = "PDF chat for teams that keep data at home")))
+
+    assertNull(origins.of("PDF chat for teams that keep data at home", result, curated))
+  }
 }

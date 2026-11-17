@@ -30,6 +30,7 @@ class QuoteOrigins(private val gate: EvidenceGate = EvidenceGate()) {
   ): List<SourceHit> =
     (result.hits.filterNot(::isCatalogRow) +
         storedResourcesOf(result).flatMap { records[it].orEmpty() })
+      .filterNot { it.sourceId == CURATED }
       .distinctBy { it.sourceId to it.externalId }
       .sortedBy { if (it.canonicalUrl == result.canonicalUrl) 0 else 1 }
 
@@ -47,5 +48,6 @@ class QuoteOrigins(private val gate: EvidenceGate = EvidenceGate()) {
 
   private companion object {
     const val HACKER_NEWS = "hacker-news"
+    const val CURATED = "curated"
   }
 }

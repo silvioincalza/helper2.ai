@@ -106,7 +106,8 @@ in `AskGuide.withQuoteOrigins` before the answer is cached. The answer carries `
 pick, cell and sentence; the result row, the resource page, the comparison and the explanation link "read it on
 {host}" to that page, and the resource page names that host under the highlighted quote. `quotedFrom` is null when no
 record holds the quote (a curated description, a cell without a quote): the page then names the resource's own host,
-as before. AI-written descriptions are never a record's text here, as in the gate. The lookup only names a page: it
+as before. AI-written descriptions are never a record's text here, as in the gate, and a `curated` record (a title or text a
+curator wrote, `AddCuratedResource`) is never a page that holds a quote. The lookup only names a page: it
 never keeps or drops a pick, a cell or a sentence. When the stored records cannot be read (the database is down), the
 answer stands: `GuideConfiguration.quoteRecords` logs the failure and returns no records, so live hits still name
 their page and catalog quotes get null. A fallback result's quote (no AI pick) is the source's text cut
