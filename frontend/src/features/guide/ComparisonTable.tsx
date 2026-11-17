@@ -5,6 +5,7 @@ import type { GuideResponse } from '@/api/types';
 import { aiMark } from '@/lib/aiMark';
 import { resourcePath } from '@/lib/searchState';
 import { AiLabel } from '@/ui/AiLabel';
+import { QuotedFromLink } from '@/ui/QuotedFromLink';
 
 export function ComparisonTable({
   comparison,
@@ -55,6 +56,7 @@ export function ComparisonTable({
                       <>
                         <span {...aiMark()}>{cell.text}</span>
                         {cell.quote && <q>{cell.quote}</q>}
+                        {cell.quote && <QuotedFromLink from={cell.quotedFrom} />}
                       </>
                     ) : (
                       <span className="muted small">{t('guide.comparison.notStated')}</span>

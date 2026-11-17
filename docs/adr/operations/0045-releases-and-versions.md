@@ -74,13 +74,16 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    - the seven files at the head of the branch carry the version;
    - a release `.0` must be the commit of `main` plus the version files only (`bump-version.sh only-version-files`):
      then that commit's CD run on `main` must have deployed staging. A branch that is a commit of `main` unchanged
-     (the first release) is checked the same way, whatever its patch number. A patch reaches prod without a staging
-     run, with a warning;
+     (the first release) is checked the same way, whatever its patch number. A patch is not a commit staging ran on
+     `main`: the `staging` job below runs it there;
    - the head of the branch has the canary (`canary:` in `deploy/k8s/Makefile`);
    - it waits for the CD run of the head of the branch, which must pass. For a commit of `main` unchanged it is that
      commit's CD run on `main`: its images are built, signed and scanned there, and its SBOMs go with the release.
-   Then the `prod` job calls `deploy.yml` with the commit, the version and the commit the checks passed. It waits
-   for the approval on the `prod` environment; the canary, the rollout and the version tag in Harbor all come after
+   Then the `staging` job calls `deploy.yml` for staging with the head of the branch (`staging-release`): staging runs
+   the exact commit prod will get, by digest, and its check after the rollout must pass (a failure rolls staging back
+   and stops the release before prod). No canary and no version tag there. Only then the `prod` job calls
+   `deploy.yml` with the commit, the version and the commit the checks passed. It waits for the approval on the
+   `prod` environment; the canary, the rollout and the version tag in Harbor all come after
    that one approval.
 6. **Canary and smoke test.** After the approval `deploy.yml` installs the Helm release `helper2-canary` in the prod
    namespace: the same chart with `canary.only=true`, the images of the commit, by digest.
@@ -143,7 +146,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 14. **Release branches: `release/YYYY.N`, one per release.** It is cut from `main` for the release `YYYY.N.0`, and
     every later deploy to prod from it is the next patch: fixes by pull request into the branch, then
     `release-prepare` with `patch-of`, then `release`. A push runs `cd.yml`: CI, then the `image` and `scan` jobs,
-    with the commit tag. No staging deploy: staging follows `main`. A patch of a release made before the canary must
+    with the commit tag. A push deploys nothing: staging follows `main`, and runs a release branch only in the
+    `staging` job of `release` (§5), until the next push to `main` deploys `main` again. A patch of a release made before the canary must
     carry `deploy/` and `.github/` of `main`. A release branch is never deleted (ruleset), so a version that was
     prepared is released. Every change to a release branch needs a pull request with `ci-ok`; creating the branch does
     not: on `main` CI runs inside `cd.yml`, where the check is named `ci / ci-ok`, so the commit `release-prepare` cuts
@@ -164,8 +168,9 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 
 - `.github/workflows/release-prepare.yml` — a release or a patch: the commit, the version, the release branch, the
   version pull request.
-- `.github/workflows/release.yml` (`check`, `built`, `prod`, `publish`) — branch, version rule, seven files, staging
-  of the commit a release is cut from, the CD run of the branch, prod through `deploy.yml`, then the tag, the GitHub
+- `.github/workflows/release.yml` (`check`, `built`, `staging`, `prod`, `publish`) — branch, version rule, seven
+  files, staging of the commit a release is cut from, the CD run of the branch, staging then prod through
+  `deploy.yml`, then the tag, the GitHub
   release, the SBOMs and the pull request back into `main`.
 - `.github/workflows/deploy.yml` (Resolve tag, Canary and smoke test, Version tag in Harbor, Remove the canary) — the
   release commit, the order by version, the canary, `make retag`, prod by version.
@@ -216,8 +221,11 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 - A version derived from Git at build time — the seven files would not show it, and the frontend build would need Git
   history inside the image build.
 - Tag images with the version only — staging and the commits between two releases would have no name.
-- Release branches that deploy staging too — staging would jump between `main` and an old line, and every push to
-  `main` would overwrite the release under test.
+- Every push to a release branch deploys staging — staging would jump between `main` and an old line at every push,
+  and a push to `main` would overwrite the release under test. Staging runs a release branch only right before its
+  prod approval.
+- A release reaches prod without staging when it is a commit staging ran on `main` — the version commit builds new
+  images, and a patch is a commit staging never ran: the image prod gets would have no run on a cluster before.
 
 ## Consequences
 
@@ -239,8 +247,10 @@ read as a fix of that release. What a release branch gained must reach `main` ag
   migration must keep the release before working (§11); the smoke test without the header checks that it does.
 - The canary pod runs the public app's start-up work against prod: it publishes its build to the settings the back
   office shows, until the next pods of the release start. It runs no scheduled job (those are in the back office).
-- A patch reaches prod without a staging run, after its canary: the one exception to "prod never gets an untested
-  image" ([0044](0044-ci-cd-and-supply-chain.md)).
+- Every release and patch runs on staging, with the images and digests prod will get, before the prod approval.
+  Staging then runs the release branch until the next push to `main`: its footer shows the release's version, and a
+  deploy of `main` after it is not ordered against it (`deploy.yml` orders staging only against a commit of `main`).
+- A release waits for one more deploy (staging) before the approval: a few minutes.
 - A manual run (staging or prod, a rollback) deploys a version only once its release has tagged it.
 - The guide-answer cache is kept per build (`H2_BUILD_VERSION`, the image tag): the canary and the release by
   version each start with an empty cache, once.
@@ -282,7 +292,8 @@ release branches, the canary and version tags: [flow](../../diagrams/flow-0045-r
 
 ## Backlog
 
-- Features: [F10.3](https://github.com/silvioincalza/helper2.ai/issues/109) Release branches, versions, canary.
+- Features: [F10.3](https://github.com/silvioincalza/helper2.ai/issues/109) Release branches, versions, canary. Decides [#506](https://github.com/silvioincalza/helper2.ai/issues/506)
+  S10.3.2 (every release and patch runs on staging before the prod approval).
 - Open issues that change this decision:
   - [#352](https://github.com/silvioincalza/helper2.ai/issues/352) S10.7.1 V2026.11.3, the first release of the new repository, on prod
   - [#452](https://github.com/silvioincalza/helper2.ai/issues/452) T10.7.1 release-prepare and release make the first release of a repository
