@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
@@ -39,7 +39,8 @@ describe('admin: resource candidates in the review queue', () => {
         ),
     });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
-    const link = await screen.findByRole('link', { name: 'Open WebUI' });
+    const detail = await screen.findByRole('region', { name: /Open WebUI/ });
+    const link = within(detail).getByRole('link', { name: 'Open WebUI' });
     expect(link).toHaveAttribute('href', 'https://openwebui.com/');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow');
     const candidate = link.closest('dl') as HTMLElement;
@@ -164,6 +165,79 @@ describe('admin: known target proposals in the review queue', () => {
     });
     renderAdmin('/admin/review?kind=KNOWN_TARGET_CANDIDATE');
     expect(await screen.findByText(details)).toBeInTheDocument();
+  });
+});
+
+describe('admin: a review row reads as a title (S6.2.9)', () => {
+  const relationship = {
+    id: '77777777-7777-4777-8777-777777777777',
+    kind: 'RELATIONSHIP_CANDIDATE',
+    status: 'OPEN',
+    reason: 'Unverified relationship: INTEGRATES_WITH Cursor',
+    details: 'Evidence supports the text, but the target is not a known resource.',
+    resourceId: '88888888-8888-4888-8888-888888888888',
+    resourceTitle: 'Figma MCP',
+    createdAt: '2026-11-17T08:02:00Z',
+  };
+
+  it('Scenario: a resource candidate shows its title in the Resource column, and type and finder as the check', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () =>
+        candidateItem(
+          JSON.stringify({
+            sourceId: 'discovery-self-hosted',
+            url: 'https://openwebui.com/',
+            title: 'Open WebUI',
+            type: 'PRODUCT',
+            tags: ['self-hosted'],
+            snippet: '### 1. Install it **now** with [the guide](https://openwebui.com/docs).',
+          }),
+        ),
+    });
+    renderAdmin('/admin/review');
+    const row = (
+      await screen.findByRole('button', { name: 'Product · self-hosted · discovery-self-hosted' })
+    ).closest('tr') as HTMLElement;
+    expect(within(row).getByRole('link', { name: 'Open WebUI' })).toHaveAttribute(
+      'href',
+      'https://openwebui.com/',
+    );
+    expect(screen.getByText('1. Install it now with the guide.')).toBeInTheDocument();
+  });
+
+  it('Scenario: a relationship candidate row says the relationship in words', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items: [relationship], total: 1 }),
+    });
+    renderAdmin('/admin/review');
+    expect(
+      await screen.findByRole('button', { name: 'integrates with Cursor' }),
+    ).toBeInTheDocument();
+  });
+
+  it('Scenario: 50 rows a page, every page reachable, and each kind shows how many are open', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => ({ items: [relationship], total: 19190 }),
+      'GET /admin/overview': () => ({
+        generatedAt: '2026-11-17T20:41:00Z',
+        openReviewItems: [{ kind: 'RELATIONSHIP_CANDIDATE', count: 10932 }],
+        enrichmentBacklog: 0,
+        budgets: [],
+        recentRuns: [],
+        failedRunsLast24h: 0,
+        homeExamples: { shown: [], hidden: [], paused: 0 },
+        overridesActive: 0,
+      }),
+    });
+    renderAdmin('/admin/review');
+    expect(await screen.findByText('Page 1 of 384')).toBeInTheDocument();
+    expect(m.callsTo('GET', '/admin/review-items')[0]?.search).toContain('size=50');
+    expect(
+      await screen.findByRole('option', { name: 'Relationship candidate (10932)' }),
+    ).toBeInTheDocument();
   });
 });
 
