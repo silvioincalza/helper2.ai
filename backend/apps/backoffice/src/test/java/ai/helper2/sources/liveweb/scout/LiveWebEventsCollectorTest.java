@@ -7,12 +7,14 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
+import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
@@ -120,6 +122,10 @@ class LiveWebEventsCollectorTest {
   }
 
   LiveWebEventsCollector collector(long creditCap, EventReader reader) {
+    return collector(creditCap, reader, UndatedEvents.NONE);
+  }
+
+  LiveWebEventsCollector collector(long creditCap, EventReader reader, UndatedEvents undated) {
     return new LiveWebEventsCollector(
         new SourceSettings(
             true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO),
@@ -131,7 +137,8 @@ class LiveWebEventsCollectorTest {
         List.of("AI hackathons", "AI conferences and summits"),
         20,
         new ScoutLiveWebCredits(counter, keys, creditCap, new SimpleMeterRegistry()),
-        reader);
+        reader,
+        undated);
   }
 
   @Test
@@ -209,9 +216,9 @@ class LiveWebEventsCollectorTest {
     assertThat(server.requests).as("two searches, no page read").hasSize(2);
     assertThat(batch.getHits()).isEmpty();
     assertThat(batch.getCheckpoint()).as("the pass stays open").isNull();
-    assertThat(batch.getNextCursor())
-        .as("no query is done: its pages were not read")
-        .isEqualTo(QueryProgress.cursor(java.util.List.of()));
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .as("no query is done: its pages were not read; the empty catalog is")
+        .containsExactly(LiveWebEventsCollector.UNDATED);
   }
 
   @Test
@@ -232,7 +239,8 @@ class LiveWebEventsCollectorTest {
         .extracting(SourceHit::getTitle)
         .containsExactly("Zurich AI Builders Hackathon 2027");
     assertThat(batch.getCheckpoint()).isNull();
-    assertThat(QueryProgress.done(batch.getNextCursor())).isEmpty();
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .containsExactly(LiveWebEventsCollector.UNDATED);
   }
 
   @Test
@@ -304,5 +312,301 @@ class LiveWebEventsCollectorTest {
             "https://w.example/1",
             "https://h.example/2",
             "https://h.example/3");
+  }
+
+  static final String NO_RESULTS = "{\"results\":[],\"usage\":{\"credits\":1}}";
+
+  static final String CONFERENCE_PAGE =
+      "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station";
+
+  static final String CONFERENCE_EXTRACT =
+      """
+      {"results":[
+        {"url":"https://www.agenticdays.com/","raw_content":"%s"}
+      ],"failed_results":[],"usage":{"credits":1}}\
+      """
+          .formatted(CONFERENCE_PAGE);
+
+  static Optional<EventReading> readsConference(String title) {
+    return Optional.of(
+        new EventReading(
+            1,
+            LocalDate.parse("2026-11-20"),
+            LocalDate.parse("2026-11-20"),
+            CONFERENCE_PAGE,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null));
+  }
+
+  @Test
+  void an_undated_catalog_event_gets_the_days_its_own_page_states() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(CONFERENCE_EXTRACT));
+    List<java.time.Instant> asked = new ArrayList<>();
+    UndatedEvents undated =
+        (since, after, limit) -> {
+          asked.add(since);
+          return List.of(
+              new UndatedEvents.Page(
+                  "https://www.agenticdays.com/",
+                  "Agentic Engineering Days Zurich 2026",
+                  position(1)));
+        };
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(asked)
+        .containsExactly(
+            SourceFixtures.CLOCK.instant().minus(LiveWebEventsCollector.UNDATED_LOOKBACK));
+    assertThat(batch.getHits()).hasSize(1);
+    SourceHit event = batch.getHits().getFirst();
+    assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
+    assertThat(event.getType()).isEqualTo(ResourceType.EVENT);
+    assertThat(event.getEventStart().getValue()).hasToString("2026-11-20T00:00:00Z");
+    assertThat(event.getFacts()).containsEntry("query", LiveWebEventsCollector.UNDATED);
+    assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  @Test
+  void a_later_pass_reads_only_the_undated_events_found_since_the_last_pass() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    List<java.time.Instant> asked = new ArrayList<>();
+    UndatedEvents undated =
+        (since, after, limit) -> {
+          asked.add(since);
+          return List.of();
+        };
+    String lastPass = SourceFixtures.CLOCK.instant().minus(Duration.ofDays(8)).toString();
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+        .collect(lastPass, null, 500);
+
+    assertThat(asked).containsExactly(java.time.Instant.parse(lastPass));
+  }
+
+  @Test
+  void a_pass_that_already_read_the_undated_events_does_not_read_them_again() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    List<java.time.Instant> asked = new ArrayList<>();
+    UndatedEvents undated =
+        (since, after, limit) -> {
+          asked.add(since);
+          return List.of();
+        };
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+        .collect(null, QueryProgress.cursor(List.of(LiveWebEventsCollector.UNDATED)), 500);
+
+    assertThat(asked).isEmpty();
+  }
+
+  static UndatedEvents.Position position(int n) {
+    return new UndatedEvents.Position(
+        SourceFixtures.CLOCK.instant().minus(Duration.ofDays(10)).plusSeconds(n),
+        new java.util.UUID(0L, n));
+  }
+
+  @Test
+  void a_full_batch_of_undated_events_keeps_the_pass_open_and_the_next_call_reads_on() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(NO_RESULTS));
+    List<UndatedEvents.Position> askedAfter = new ArrayList<>();
+    UndatedEvents undated =
+        (since, after, limit) -> {
+          askedAfter.add(after);
+          int from = after == null ? 0 : (int) after.id().getLeastSignificantBits();
+          int count = after == null ? limit : 1;
+          List<UndatedEvents.Page> batch = new ArrayList<>();
+          for (int n = from + 1; n <= from + count; n++) {
+            batch.add(
+                new UndatedEvents.Page(
+                    "https://event" + n + ".example/", "AI event " + n, position(n)));
+          }
+          return batch;
+        };
+    LiveWebEventsCollector collector =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated);
+
+    CollectedBatch first = collector.collect(null, null, 500);
+
+    assertThat(first.getCheckpoint()).as("the pass stays open").isNull();
+    assertThat(QueryProgress.done(first.getNextCursor()))
+        .contains(LiveWebEventsCollector.UNDATED_AFTER + position(20).token())
+        .doesNotContain(LiveWebEventsCollector.UNDATED);
+
+    CollectedBatch second = collector.collect(null, first.getNextCursor(), 500);
+
+    assertThat(askedAfter).containsExactly(null, position(20));
+    assertThat(second.getNextCursor()).isNull();
+    assertThat(second.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  @Test
+  void undated_events_have_their_own_page_budget_next_to_the_search_pages() {
+    server.route("/search", FixtureServer.Reply.ok(SEARCH));
+    server.route("/extract", FixtureServer.Reply.ok(EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://www.agenticdays.com/",
+                    "Agentic Engineering Days Zurich 2026",
+                    position(1)));
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsBoth), undated).collect(null, null, 500);
+
+    assertThat(server.requestBodies.getLast())
+        .contains("\"https://hack.example/zurich-2027\"")
+        .contains("\"https://summit.example/ai\"")
+        .contains("agenticdays.com");
+  }
+
+  @Test
+  void a_failed_page_read_keeps_the_catalog_position_for_the_next_call() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", new FixtureServer.Reply(500, "{}", java.util.Map.of(), 0));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://www.agenticdays.com/",
+                    "Agentic Engineering Days Zurich 2026",
+                    position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(batch.getCheckpoint()).isNull();
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .doesNotContain(LiveWebEventsCollector.UNDATED)
+        .noneMatch(key -> key.startsWith(LiveWebEventsCollector.UNDATED_AFTER));
+  }
+
+  @Test
+  void a_page_found_by_search_and_in_the_catalog_is_read_once_as_a_catalog_page() {
+    server.route("/search", FixtureServer.Reply.ok(SEARCH));
+    server.route("/extract", FixtureServer.Reply.ok(EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://hack.example/zurich-2027",
+                    "Zurich AI Builders Hackathon 2027",
+                    position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsBoth), undated)
+            .collect(null, null, 500);
+
+    assertThat(pagesRead).containsOnlyOnce("Zurich AI Builders Hackathon 2027");
+    assertThat(batch.getHits())
+        .filteredOn(h -> h.getTitle().startsWith("Zurich"))
+        .singleElement()
+        .satisfies(
+            h -> assertThat(h.getFacts()).containsEntry("query", LiveWebEventsCollector.UNDATED));
+  }
+
+  @Test
+  void searches_whose_pages_were_all_read_stay_done_when_the_model_runs_out_on_catalog_pages() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(CONFERENCE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://www.agenticdays.com/",
+                    "Agentic Engineering Days Zurich 2026",
+                    position(1)));
+    EventReader out =
+        reader(title -> {
+          throw new LlmUnavailable("daily event reader budget used up");
+        });
+
+    CollectedBatch batch = collector(40, out, undated).collect(null, null, 500);
+
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .contains("AI hackathons", "AI conferences and summits")
+        .doesNotContain(LiveWebEventsCollector.UNDATED);
+  }
+
+  static final String POST_URL =
+      "https://www.linkedin.com/posts/aimlevents_agentic-engineering-days-zurich-2026-activity-1";
+
+  static final String POST_AND_SITE_EXTRACT =
+      """
+      {"results":[
+        {"url":"%s","raw_content":"Agentic Engineering Days Zurich 2026 is coming. [Details](https://www.agenticdays.com/) Tickets https://lnkd.in/abc"},
+        {"url":"https://www.agenticdays.com/","raw_content":"%s"}
+      ],"failed_results":[],"usage":{"credits":1}}\
+      """
+          .formatted(POST_URL, CONFERENCE_PAGE);
+
+  @Test
+  void an_undated_linkedin_post_leads_to_the_event_on_its_own_site() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(POST_AND_SITE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    POST_URL,
+                    "Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference | AI & ML Events",
+                    position(1)));
+    EventReader onlyTheSite =
+        reader(title ->
+            title.equals("Agentic Engineering Days Zurich 2026")
+                ? readsConference(title)
+                : Optional.empty());
+
+    CollectedBatch batch = collector(40, onlyTheSite, undated).collect(null, null, 500);
+
+    assertThat(batch.getHits())
+        .singleElement()
+        .satisfies(event -> {
+          assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
+          assertThat(event.getTitle()).isEqualTo("Agentic Engineering Days Zurich 2026");
+          assertThat(event.getEventStart().getValue()).hasToString("2026-11-20T00:00:00Z");
+          assertThat(event.getFacts())
+              .containsEntry("query", LiveWebEventsCollector.UNDATED)
+              .containsEntry("linkedFrom", CanonicalUrl.of(POST_URL).getValue());
+        });
+    assertThat(server.requestBodies.getLast()).contains("agenticdays.com");
+    assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  @Test
+  void a_post_whose_event_site_was_not_read_yet_keeps_the_catalog_position() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(POST_AND_SITE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    POST_URL,
+                    "Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference | AI & ML Events",
+                    position(1)));
+    EventReader onlyTheSite =
+        reader(title ->
+            title.equals("Agentic Engineering Days Zurich 2026")
+                ? readsConference(title)
+                : Optional.empty());
+
+    CollectedBatch batch = collector(3, onlyTheSite, undated).collect(null, null, 500);
+
+    assertThat(server.requests)
+        .as("two searches, one extract, the cap stops the site read")
+        .hasSize(3);
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCheckpoint()).isNull();
+    assertThat(QueryProgress.done(batch.getNextCursor()))
+        .doesNotContain(LiveWebEventsCollector.UNDATED)
+        .noneMatch(key -> key.startsWith(LiveWebEventsCollector.UNDATED_AFTER));
   }
 }

@@ -23,6 +23,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 class JdbcResources implements Resources {
 
+  private static final UUID NO_ID = new UUID(0L, 0L);
+
   private final JdbcClient jdbc;
   private final ResourceRows rows;
 
@@ -156,6 +158,31 @@ class JdbcResources implements Resources {
         .param("limit", limit)
         .param("offset", offset)
         .query((rs, i) -> rs.getObject(1, UUID.class))
+        .list();
+  }
+
+  @Override
+  public List<UndatedEvent> undatedEvents(
+      Instant since, @Nullable Instant afterDiscoveredAt, @Nullable UUID afterId, int limit) {
+    Instant afterAt = afterDiscoveredAt == null ? since : afterDiscoveredAt;
+    return jdbc.sql(
+            """
+            SELECT id, url, title, first_discovered_at FROM resource
+            WHERE type = 'EVENT' AND event_starts_at IS NULL AND first_discovered_at >= :since
+              AND (first_discovered_at, id) > (:afterAt, :afterId)
+            ORDER BY first_discovered_at, id
+            LIMIT :limit
+            """)
+        .param("since", Timestamp.from(since))
+        .param("afterAt", Timestamp.from(afterAt))
+        .param("afterId", afterId == null ? NO_ID : afterId)
+        .param("limit", limit)
+        .query((rs, i) ->
+            new UndatedEvent(
+                rs.getObject("id", UUID.class),
+                rs.getString("url"),
+                rs.getString("title"),
+                rs.getTimestamp("first_discovered_at").toInstant()))
         .list();
   }
 

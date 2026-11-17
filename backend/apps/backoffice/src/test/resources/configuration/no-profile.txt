@@ -603,6 +603,7 @@ helper2.scout.admission.github-topic-leaders.index-min-stars = ${H2_SCOUT_TOPIC_
 helper2.scout.admission.github-topic-leaders.index-pushed-within = ${H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN:P90D}  =>  P90D
 helper2.scout.admission.hf-trending.index-min-likes = 20
 helper2.scout.ai-deadlines.interval = ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}  =>  P1D
+helper2.scout.confs-tech.interval = ${H2_SCOUT_CONFS_TECH_INTERVAL:P1D}  =>  P1D
 helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
 helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
 helper2.scout.courses.query = new artificial intelligence course or certification
@@ -703,6 +704,12 @@ helper2.sources.arxiv.base-url = https://export.arxiv.org
 helper2.sources.arxiv.cache-ttl = 6h
 helper2.sources.arxiv.enabled = ${H2_SOURCE_ARXIV_ENABLED:true}  =>  true
 helper2.sources.arxiv.timeout = 3s
+helper2.sources.confs-tech.base-url = https://api.github.com
+helper2.sources.confs-tech.cache-ttl = 30m
+helper2.sources.confs-tech.deadline = ${H2_SOURCE_CONFS_TECH_DEADLINE:}  =>  <empty>
+helper2.sources.confs-tech.enabled = ${H2_SOURCE_CONFS_TECH_ENABLED:true}  =>  true
+helper2.sources.confs-tech.timeout = 15s
+helper2.sources.confs-tech.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
 helper2.sources.course-scout.base-url = https://api.tavily.com
 helper2.sources.course-scout.cache-ttl = 30m
 helper2.sources.course-scout.deadline = ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}  =>  <empty>
@@ -879,6 +886,7 @@ resilience4j.circuitbreaker.configs.store.sliding-window-size = 10
 resilience4j.circuitbreaker.configs.store.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.configs.store.wait-duration-in-open-state = ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}  =>  30s
 resilience4j.circuitbreaker.instances.collector-ai-deadlines.base-config = collector
+resilience4j.circuitbreaker.instances.collector-confs-tech.base-config = collector
 resilience4j.circuitbreaker.instances.collector-course-scout.base-config = collector
 resilience4j.circuitbreaker.instances.collector-deps-dev.base-config = collector
 resilience4j.circuitbreaker.instances.collector-discovery.base-config = collector
@@ -928,6 +936,7 @@ resilience4j.retry.configs.collector.randomized-wait-factor = 0.5
 resilience4j.retry.configs.collector.retry-exception-predicate = ai.helper2.sources.support.TransientSourceFailure
 resilience4j.retry.configs.collector.wait-duration = 1s
 resilience4j.retry.instances.collector-ai-deadlines.base-config = collector
+resilience4j.retry.instances.collector-confs-tech.base-config = collector
 resilience4j.retry.instances.collector-course-scout.base-config = collector
 resilience4j.retry.instances.collector-deps-dev.base-config = collector
 resilience4j.retry.instances.collector-discovery.base-config = collector
