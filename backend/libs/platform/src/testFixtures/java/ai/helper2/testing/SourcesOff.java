@@ -30,6 +30,7 @@ import org.springframework.test.context.TestPropertySource;
       "helper2.sources.github-awesome.enabled=false",
       "helper2.sources.hf-provider-orgs.enabled=false",
       "helper2.sources.ai-deadlines.enabled=false",
+      "helper2.sources.confs-tech.enabled=false",
       "helper2.sources.news-feeds.enabled=false",
       "helper2.sources.pypi.enabled=false",
     })

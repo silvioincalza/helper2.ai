@@ -5,7 +5,7 @@
 #   huggingface/scout/HuggingFaceTrendingCollector, huggingface/scout/HuggingFaceProviderOrgsCollector,
 #   tavily/scout/LiveWebNewsCollector, tavily/scout/CourseCollector, tavily/scout/DiscoveryCollector,
 #   github/scout/GitHubAwesomeCollector, classifier/SpringAiRepoClassifier, classifier/RepoClassifier,
-#   aideadlines/AiDeadlinesCollector, config/scout/CollectorsConfiguration),
+#   aideadlines/AiDeadlinesCollector, confstech/ConfsTechCollector, config/scout/CollectorsConfiguration),
 #   backend/libs/core/src/main/java/ai/helper2/sources/support/RunInterval.java,
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml, backend/apps/backoffice/src/main/resources/application.yaml (helper2.scout.*, helper2.sources.*).
 # Render: cd docs/diagrams && d2 fmt flow-0012-scout-collectors.d2 && d2 flow-0012-scout-collectors.d2 flow-0012-scout-collectors.svg
@@ -29,6 +29,7 @@ courses: "Courses (7 d): one Tavily search\nper platform (include_domains);\nkee
 disc: "Tavily discovery: 34 categories,\none collector each (7 d, staggered,\n39 searches); lists → ARTICLE,\nproduct sites → candidates;\nevery category's tag (ADR 0013)" {class: ext}
 both: "CollectedBatch(list hits,\ncheckpoint, candidates)" {class: end}
 aid: "ai-deadlines (1 d): one YAML\nper conference, raw host only,\nnext edition not ended" {class: ext}
+confs: "confs.tech (1 d): JSON per topic,\nthis and next year, raw host only;\nAI name, not ended, one per URL" {class: ext}
 
 awesome: GitHub awesome lists (1 d) {
   class: group
@@ -66,6 +67,7 @@ which -> tav
 which -> courses
 which -> disc
 which -> aid
+which -> confs
 which -> awesome.lists
 mcp -> batch
 hft -> batch
@@ -74,4 +76,5 @@ tav -> batch
 courses -> candidates
 disc -> both
 aid -> batch
+confs -> batch
 awesome.keep -> batch

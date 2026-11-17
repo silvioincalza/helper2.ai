@@ -18,7 +18,6 @@ import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -154,17 +153,7 @@ public class AiDeadlinesCollector implements Collector {
   }
 
   Optional<URI> allowed(String download) {
-    try {
-      URI u = new URI(download.strip());
-      boolean sameHost =
-          rawHost.getScheme().equalsIgnoreCase(u.getScheme())
-              && rawHost.getHost().equalsIgnoreCase(u.getHost())
-              && rawHost.getPort() == u.getPort()
-              && u.getUserInfo() == null;
-      return sameHost ? Optional.of(u) : Optional.empty();
-    } catch (URISyntaxException e) {
-      return Optional.empty();
-    }
+    return HttpClients.onHost(rawHost, download);
   }
 
   static Optional<SourceHit> nextEdition(
