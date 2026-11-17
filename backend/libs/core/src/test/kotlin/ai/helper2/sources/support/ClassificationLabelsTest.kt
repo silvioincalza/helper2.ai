@@ -55,7 +55,7 @@ class ClassificationLabelsTest {
           HEADER,
           "github\tacme/llm-router\tRoute prompts between models\t\t1",
           "npm\tleft-pad\tPad a string\t\t0",
-          "github\tacme/agentur\tWebsite of a travel agent\tagent\t0",
+          "github\tacme/ai-cafe\tWebsite of the AI cafe in town\t\t0",
           "github\tacme/sd-ui\tA web UI for image synthesis\t\t1",
           "# min-precision 0.9",
         )

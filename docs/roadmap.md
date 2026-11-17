@@ -46,7 +46,7 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
 - [S2.11.4 The Scout to visit every record that has a repository link](https://github.com/silvioincalza/helper2.ai/issues/216)
-- [S2.12.1 `Classification.isAiRelated` measured and then applied to `github-topic-leaders`](https://github.com/silvioincalza/helper2.ai/issues/217)
+- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563): the rows already in the catalog that fail the rule, listed for the admin
 
 ### Later
 

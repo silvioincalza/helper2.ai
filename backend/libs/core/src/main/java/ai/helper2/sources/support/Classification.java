@@ -1,20 +1,30 @@
 package ai.helper2.sources.support;
 
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.WordLists;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public final class Classification {
 
-  private static final Pattern AI_TERMS =
-      Pattern.compile(
-          "\\b(ai|a\\.i\\.|llm|llms|gpt|genai|generative|mcp|model context protocol|agent|agents|agentic|machine[- ]learning|"
-              + "deep[- ]learning|ml|neural|transformer|transformers|openai|anthropic|claude|gemini|ollama|llama|mistral|"
-              + "mixtral|deepseek|qwen|gemma|nemotron|nvidia|langchain|llamaindex|rag|embedding|embeddings|diffusion|"
-              + "chatbot|prompt|prompts|copilot|nlp|vector)\\d*\\b",
-          Pattern.CASE_INSENSITIVE);
+  private static final WordLists WORDS = WordLists.load("ai-words");
+
+  private static final Pattern STRONG = terms("ai.strong");
+
+  private static final Pattern WEAK = terms("ai.weak");
+
+  private static final int WEAK_WORDS_NEEDED = 2;
+
+  private static Pattern terms(String key) {
+    return Pattern.compile(
+        "(?<![\\p{L}\\p{N}])(?:"
+            + WordLists.alternation(WORDS.phrases(key))
+            + ")\\d*(?![\\p{L}\\p{N}])",
+        Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+  }
 
   private static final Set<String> OSI =
       Set.of(
@@ -38,13 +48,28 @@ public final class Classification {
   private Classification() {}
 
   public static boolean isAiRelated(String title, String description, Collection<String> labels) {
-    String text =
-        String.join(
-            " ",
-            title == null ? "" : title.replace('-', ' ').replace('_', ' '),
-            description == null ? "" : description,
-            String.join(" ", labels).replace('-', ' '));
-    return AI_TERMS.matcher(text).find();
+    String text = text(title, description, labels);
+    return STRONG.matcher(text).find() || aiWords(text) >= WEAK_WORDS_NEEDED;
+  }
+
+  private static String text(String title, String description, Collection<String> labels) {
+    return String.join(
+        " ",
+        title == null ? "" : title.replace('-', ' ').replace('_', ' '),
+        description == null ? "" : description,
+        String.join(" ", labels).replace('-', ' '));
+  }
+
+  private static long aiWords(String text) {
+    return Stream.concat(found(STRONG, text), found(WEAK, text)).distinct().count();
+  }
+
+  private static Stream<String> found(Pattern terms, String text) {
+    return terms.matcher(text).results().map(m -> stem(m.group()));
+  }
+
+  private static String stem(String word) {
+    return word.toLowerCase(Locale.ROOT).replaceAll("\\d+$", "").replaceAll("s$", "");
   }
 
   public static ResourceType typeOf(
@@ -63,7 +88,7 @@ public final class Classification {
     if (all.contains("agent-skill") || all.contains("claude-skills") || all.contains("skills")) {
       return ResourceType.SKILL;
     }
-    if (all.contains("prompt")) {
+    if (all.contains("prompt") && aiWords(all + " " + desc) >= WEAK_WORDS_NEEDED) {
       return ResourceType.PROMPT;
     }
     if (all.contains("agent")) {
