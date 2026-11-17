@@ -26,6 +26,7 @@ import ai.helper2.sources.classifier.SpringAiRepoClassifier;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.config.CollectorProperties;
 import ai.helper2.sources.config.SourcesProperties;
+import ai.helper2.sources.confstech.ConfsTechCollector;
 import ai.helper2.sources.depsdev.DepsDevClient;
 import ai.helper2.sources.depsdev.PackageFinder;
 import ai.helper2.sources.events.EventReader;
@@ -84,6 +85,7 @@ import org.springframework.web.client.RestClient;
   CollectorProperties.GitHubTopicLeaders.class,
   CollectorProperties.GitHubSdks.class,
   CollectorProperties.AiDeadlines.class,
+  CollectorProperties.ConfsTech.class,
   CollectorProperties.McpRegistry.class,
   CollectorProperties.NewsFeeds.class,
   CollectorProperties.Pypi.class
@@ -361,6 +363,25 @@ class CollectorsConfiguration {
     return new AiDeadlinesCollector(
         s,
         collectorClient(s, observations, http),
+        clock,
+        resilience,
+        new RunInterval(c.interval()));
+  }
+
+  @Bean
+  ConfsTechCollector confsTechCollector(
+      SourcesProperties p,
+      CollectorProperties.ConfsTech c,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    SourceSettings s = p.get(CollectorIds.CONFS_TECH);
+    return new ConfsTechCollector(
+        s,
+        collectorClient(s, observations, http),
+        ObservedHttp.restClientBuilderWithoutRedirects(
+            s.timeout(), s.deadline(), observations, http),
         clock,
         resilience,
         new RunInterval(c.interval()));

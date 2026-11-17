@@ -162,6 +162,7 @@ resilience4j:
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
+      collector-confs-tech: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
       collector-news-feeds: {base-config: collector}
       collector-pypi: {base-config: collector}
@@ -232,6 +233,7 @@ resilience4j:
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
+      collector-confs-tech: {base-config: collector}
       collector-mcp-registry: {base-config: collector}
       collector-news-feeds: {base-config: collector}
       collector-pypi: {base-config: collector}
@@ -367,6 +369,8 @@ helper2:
           chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
     ai-deadlines:
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
+    confs-tech:
+      interval: ${H2_SCOUT_CONFS_TECH_INTERVAL:P1D}
     mcp-registry:
       interval: ${H2_SCOUT_MCP_INTERVAL:PT1H}
     news-feeds:
@@ -567,6 +571,13 @@ helper2:
       timeout: 15s
       cache-ttl: 30m
       deadline: ${H2_SOURCE_AI_DEADLINES_DEADLINE:}
+    confs-tech:
+      enabled: ${H2_SOURCE_CONFS_TECH_ENABLED:true}
+      base-url: https://api.github.com
+      token: ${H2_GITHUB_TOKEN:}
+      timeout: 15s
+      cache-ttl: 30m
+      deadline: ${H2_SOURCE_CONFS_TECH_DEADLINE:}
     mcp-registry:
       enabled: ${H2_SOURCE_MCP_ENABLED:true}
       base-url: https://registry.modelcontextprotocol.io

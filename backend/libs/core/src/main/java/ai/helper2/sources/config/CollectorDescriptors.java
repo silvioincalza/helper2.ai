@@ -35,6 +35,23 @@ public final class CollectorDescriptors {
         40);
   }
 
+  public static SourceDescriptor confsTech(SourceSettings settings) {
+    return new SourceDescriptor(
+        CollectorIds.CONFS_TECH,
+        "Tech conferences (confs.tech)",
+        "confs.tech",
+        true,
+        SourceMode.INDEXED,
+        URI.create("https://confs.tech"),
+        URI.create("https://github.com/tech-conferences/conference-data/blob/main/LICENSE.md"),
+        "Conference dates and places from confs.tech, tech-conferences/conference-data (MIT License)",
+        EnumSet.of(ResourceType.EVENT),
+        settings.timeout(),
+        settings.cacheTtl(),
+        settings.enabled(),
+        40);
+  }
+
   public static SourceDescriptor gitHubAwesome(SourceSettings settings) {
     return new SourceDescriptor(
         CollectorIds.GITHUB_AWESOME,
