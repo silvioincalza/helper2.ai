@@ -76,6 +76,7 @@ export type AdminOverview = A['AdminOverview'];
 export type EnrichmentQueuePage = A['EnrichmentQueuePage'];
 export type EffectiveConfig = A['EffectiveConfig'];
 export type ConfigSetting = A['ConfigSetting'];
+export type ConfigGroup = A['ConfigGroup'];
 export type EnrichmentQueueEntry = A['EnrichmentQueueEntry'];
 export type EnrichmentQueueView = A['EnrichmentQueueView'];
 export type RuntimeSettings = A['RuntimeSettings'];
