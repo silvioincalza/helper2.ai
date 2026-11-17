@@ -20,6 +20,8 @@ class ClassificationTest {
         "global-agent|Global HTTP/HTTPS proxy agent configurable using environment variables|agent,proxy",
         "@expo/vector-icons|Built-in icon library for Expo|icons,vector",
         "prompts|Lightweight, beautiful and user-friendly prompts|prompt,prompts,cli,tty",
+        "acme/agenti|Un agente e i suoi agenti di viaggio|viaggi",
+        "acme/agenten|Ein Agent für Reisebüros und ihre Agenten|reisen",
       ],
   )
   fun `one weak word, or one weak word twice, does not make a resource about AI`(

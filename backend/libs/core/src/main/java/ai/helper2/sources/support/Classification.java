@@ -4,8 +4,10 @@ import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WordLists;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Classification {
@@ -14,7 +16,9 @@ public final class Classification {
 
   private static final Pattern STRONG = terms("ai.strong");
 
-  private static final Pattern WEAK = terms("ai.weak");
+  private static final Map<String, Pattern> WEAK =
+      WORDS.keys("ai.weak.").stream()
+          .collect(Collectors.toUnmodifiableMap(key -> key, Classification::terms));
 
   private static final int WEAK_WORDS_NEEDED = 2;
 
@@ -61,7 +65,11 @@ public final class Classification {
   }
 
   private static long aiWords(String text) {
-    return Stream.concat(found(STRONG, text), found(WEAK, text)).distinct().count();
+    Stream<String> weak =
+        WEAK.entrySet().stream()
+            .filter(e -> e.getValue().matcher(text).find())
+            .map(Map.Entry::getKey);
+    return Stream.concat(found(STRONG, text), weak).distinct().count();
   }
 
   private static Stream<String> found(Pattern terms, String text) {

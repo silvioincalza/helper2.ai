@@ -23,7 +23,8 @@ A research pass (9 Nov 2026) compared more sources. Most are later steps or out 
    (DeepSeek, Qwen, Gemma, Nemotron, Mixtral among them), with digits right after a name ("Qwen3", "Llama3.3"), in
    `i18n/ai-words_<language>.properties`. A strong word is enough (`llm`, `openai`, `pytorch`, "intelligenza
    artificiale"). A weak word has a common meaning outside AI (`prompt`, `agent`, `vector`, `transformer`,
-   `embedding`, `nvidia`, `copilot`) and counts only next to a second, different AI word: `agent-base` (an
+   `embedding`, `nvidia`, `copilot`) and counts only next to a second, different AI word. A weak word is one key
+   (`ai.weak.agent`) with its plural and its translations, so "agent agents" or "agente agenti" is one word: `agent-base` (an
    `http.Agent`) and `paper` (vector graphics) are not about AI. Measured on `docs/eval/classifier-labels.tsv`
    (`ClassificationLabelsTest`). The word lists are shared with GitHub, npm, live web and the Scout collectors.
 3. **Wiring.** A live source like npm: settings under `helper2.sources.hacker-news` (`H2_SOURCE_HACKER_NEWS_ENABLED`,
