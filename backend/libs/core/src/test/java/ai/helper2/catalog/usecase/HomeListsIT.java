@@ -240,13 +240,45 @@ class HomeListsIT {
         .update();
 
     List<String> urls =
-        store.undatedEvents(since, 500).stream().map(Resources.UndatedEvent::url).toList();
+        store.undatedEvents(since, null, null, 500).stream()
+            .map(Resources.UndatedEvent::url)
+            .toList();
 
     assertThat(urls)
         .contains("https://github.com/acme/undated-" + run)
         .doesNotContain("https://github.com/acme/old-undated-" + run)
         .noneMatch(u -> u.contains("/event-" + run))
         .noneMatch(u -> u.contains("/home-" + run));
+  }
+
+  @Test
+  void undatedEventsArePagedOldestFirstAfterTheLastOneRead() {
+    Instant since = now.minus(Duration.ofMinutes(5));
+    List<UUID> ids = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      UUID id =
+          upsert(hit("github", "https://github.com/acme/page-undated-" + run + "-" + i, null, 0))
+              .getFirst();
+      jdbc.sql("UPDATE resource SET type = 'EVENT', first_discovered_at = :at WHERE id = :id")
+          .param("at", Timestamp.from(now.minus(Duration.ofMinutes(3 - i))))
+          .param("id", id)
+          .update();
+      ids.add(id);
+    }
+
+    List<Resources.UndatedEvent> mine =
+        store.undatedEvents(since, null, null, 500).stream()
+            .filter(e -> ids.contains(e.id()))
+            .toList();
+    Resources.UndatedEvent first = mine.getFirst();
+    List<UUID> rest =
+        store.undatedEvents(since, first.discoveredAt(), first.id(), 500).stream()
+            .map(Resources.UndatedEvent::id)
+            .filter(ids::contains)
+            .toList();
+
+    assertThat(mine).extracting(Resources.UndatedEvent::id).containsExactlyElementsOf(ids);
+    assertThat(rest).containsExactly(ids.get(1), ids.get(2));
   }
 
   @Test

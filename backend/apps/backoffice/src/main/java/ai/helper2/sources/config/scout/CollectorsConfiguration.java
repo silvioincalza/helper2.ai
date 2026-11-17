@@ -224,9 +224,17 @@ class CollectorsConfiguration {
         c.maxPages(),
         credits,
         reader,
-        (since, limit) ->
-            catalog.undatedEvents(since, limit).stream()
-                .map(e -> new UndatedEvents.Page(e.url(), e.title()))
+        (since, after, limit) ->
+            catalog
+                .undatedEvents(
+                    since,
+                    after == null ? null : after.discoveredAt(),
+                    after == null ? null : after.id(),
+                    limit)
+                .stream()
+                .map(e ->
+                    new UndatedEvents.Page(
+                        e.url(), e.title(), new UndatedEvents.Position(e.discoveredAt(), e.id())))
                 .toList());
   }
 

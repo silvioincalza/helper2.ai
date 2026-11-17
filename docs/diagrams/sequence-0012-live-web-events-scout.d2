@@ -1,8 +1,8 @@
 # Sequence: a weekly pass of the live web events scout that keeps one hackathon, and a visitor who sees it in Coming up.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/LiveWebEventsCollector.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/events/SpringAiEventReader.java, EventQuoteGate.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/ScoutLiveWebCredits.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert), ProjectedReconciliation.java (event days), JdbcResources.java (upcomingEvents),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/ScoutLiveWebCredits.java, UndatedEvents.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert), ProjectedReconciliation.java (event days), JdbcResources.java (undatedEvents, upcomingEvents),
 #   backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java, frontend/src/features/home/TermList.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0012-live-web-events-scout.d2 && d2 sequence-0012-live-web-events-scout.d2 sequence-0012-live-web-events-scout.svg
 
@@ -25,7 +25,9 @@ pass: Weekly pass {
   scout -> tavily: "4 searches: upcoming AI hackathons, …"
   tavily -> scout: "titles, links, excerpts (+4 credits)"
   scout -> credits: "spent 4"
-  scout -> tavily: "extract 4 pages (markdown)"
+  scout -> db: "undated EVENTs first found since the last pass,\noldest first, after the cursor (≤ 20)"
+  db -> scout: "1 page: a LinkedIn post about a conference"
+  scout -> tavily: "extract the search and catalog pages,\n4 a call (markdown)"
   tavily -> scout: "page text (+1 credit)"
   scout -> scout: "clean: hidden text out, emails and phones masked"
   scout -> model: "read this page (untrusted data)"

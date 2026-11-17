@@ -346,11 +346,13 @@ class LiveWebEventsCollectorTest {
     server.route("/extract", FixtureServer.Reply.ok(CONFERENCE_EXTRACT));
     List<java.time.Instant> asked = new ArrayList<>();
     UndatedEvents undated =
-        (since, limit) -> {
+        (since, after, limit) -> {
           asked.add(since);
           return List.of(
               new UndatedEvents.Page(
-                  "https://www.agenticdays.com/", "Agentic Engineering Days Zurich 2026"));
+                  "https://www.agenticdays.com/",
+                  "Agentic Engineering Days Zurich 2026",
+                  position(1)));
         };
 
     CollectedBatch batch =
@@ -374,7 +376,7 @@ class LiveWebEventsCollectorTest {
     server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
     List<java.time.Instant> asked = new ArrayList<>();
     UndatedEvents undated =
-        (since, limit) -> {
+        (since, after, limit) -> {
           asked.add(since);
           return List.of();
         };
@@ -391,7 +393,7 @@ class LiveWebEventsCollectorTest {
     server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
     List<java.time.Instant> asked = new ArrayList<>();
     UndatedEvents undated =
-        (since, limit) -> {
+        (since, after, limit) -> {
           asked.add(since);
           return List.of();
         };
@@ -400,5 +402,66 @@ class LiveWebEventsCollectorTest {
         .collect(null, QueryProgress.cursor(List.of(LiveWebEventsCollector.UNDATED)), 500);
 
     assertThat(asked).isEmpty();
+  }
+
+  static UndatedEvents.Position position(int n) {
+    return new UndatedEvents.Position(
+        SourceFixtures.CLOCK.instant().minus(Duration.ofDays(10)).plusSeconds(n),
+        new java.util.UUID(0L, n));
+  }
+
+  @Test
+  void a_full_batch_of_undated_events_keeps_the_pass_open_and_the_next_call_reads_on() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(NO_RESULTS));
+    List<UndatedEvents.Position> askedAfter = new ArrayList<>();
+    UndatedEvents undated =
+        (since, after, limit) -> {
+          askedAfter.add(after);
+          int from = after == null ? 0 : (int) after.id().getLeastSignificantBits();
+          int count = after == null ? limit : 1;
+          List<UndatedEvents.Page> batch = new ArrayList<>();
+          for (int n = from + 1; n <= from + count; n++) {
+            batch.add(
+                new UndatedEvents.Page(
+                    "https://event" + n + ".example/", "AI event " + n, position(n)));
+          }
+          return batch;
+        };
+    LiveWebEventsCollector collector =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated);
+
+    CollectedBatch first = collector.collect(null, null, 500);
+
+    assertThat(first.getCheckpoint()).as("the pass stays open").isNull();
+    assertThat(QueryProgress.done(first.getNextCursor()))
+        .contains(LiveWebEventsCollector.UNDATED_AFTER + position(20).token())
+        .doesNotContain(LiveWebEventsCollector.UNDATED);
+
+    CollectedBatch second = collector.collect(null, first.getNextCursor(), 500);
+
+    assertThat(askedAfter).containsExactly(null, position(20));
+    assertThat(second.getNextCursor()).isNull();
+    assertThat(second.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  @Test
+  void undated_events_have_their_own_page_budget_next_to_the_search_pages() {
+    server.route("/search", FixtureServer.Reply.ok(SEARCH));
+    server.route("/extract", FixtureServer.Reply.ok(EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://www.agenticdays.com/",
+                    "Agentic Engineering Days Zurich 2026",
+                    position(1)));
+
+    collector(40, reader(LiveWebEventsCollectorTest::readsBoth), undated).collect(null, null, 500);
+
+    assertThat(server.requestBodies.getLast())
+        .contains("\"https://hack.example/zurich-2027\"")
+        .contains("\"https://summit.example/ai\"")
+        .contains("agenticdays.com");
   }
 }

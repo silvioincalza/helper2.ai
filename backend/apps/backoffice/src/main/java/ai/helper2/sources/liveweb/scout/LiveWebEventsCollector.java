@@ -56,10 +56,8 @@ public class LiveWebEventsCollector implements Collector {
   static final int EXTRACT_BATCH = 4;
   private static final int MAX_EXTRACT_BYTES = 2 * 1024 * 1024;
 
-  /** The cursor key of the undated catalog events, next to the queries. */
   static final String UNDATED = "catalog:undated-events";
-
-  /** How far back the first pass looks for undated events; later passes start at the last pass. */
+  static final String UNDATED_AFTER = UNDATED + "@";
   static final Duration UNDATED_LOOKBACK = Duration.ofDays(30);
 
   private static final Logger log = LoggerFactory.getLogger(LiveWebEventsCollector.class);
@@ -125,16 +123,23 @@ public class LiveWebEventsCollector implements Collector {
               + " credits); next try tomorrow");
     }
     Set<String> doneBefore = QueryProgress.done(resumeCursor);
-    Found found =
-        pagesToRead(
-            startedAt,
-            Math.min(maxPages, Math.max(1, maxItems)),
-            new LinkedHashSet<>(doneBefore),
-            undatedSince(checkpoint, startedAt));
-    Reading reading = readAll(found.pages(), startedAt);
+    int limit = Math.min(maxPages, Math.max(1, maxItems));
+    Set<String> done = new LinkedHashSet<>(doneBefore);
+    Found found = pagesToRead(startedAt, limit, done);
+    List<SourceHit> undatedPages =
+        undatedBatch(undatedSince(checkpoint, startedAt), startedAt, limit, done);
+    List<SourceHit> pages = new ArrayList<>(found.pages());
+    pages.addAll(undatedPages);
+    Reading reading = readAll(pages, startedAt);
     log.info(
-        "{}: {} pages found, {} events kept", ID, found.pages().size(), reading.events().size());
-    Set<String> done = reading.pagesLeftUnread() ? doneBefore : found.done();
+        "{}: {} search and {} undated catalog pages, {} events kept",
+        ID,
+        found.pages().size(),
+        undatedPages.size(),
+        reading.events().size());
+    if (reading.pagesLeftUnread()) {
+      done = doneBefore;
+    }
     boolean complete = done.containsAll(queries) && done.contains(UNDATED);
     return new CollectedBatch(
         reading.events(),
@@ -142,7 +147,7 @@ public class LiveWebEventsCollector implements Collector {
         complete ? startedAt.toString() : null);
   }
 
-  private record Found(List<SourceHit> pages, Set<String> done) {}
+  private record Found(List<SourceHit> pages) {}
 
   private record Reading(List<SourceHit> events, boolean pagesLeftUnread) {}
 
@@ -162,9 +167,32 @@ public class LiveWebEventsCollector implements Collector {
     return now.minus(UNDATED_LOOKBACK);
   }
 
-  private List<SourceHit> undatedPages(Instant since, Instant now, int limit) {
+  private List<SourceHit> undatedBatch(Instant since, Instant now, int limit, Set<String> done) {
+    if (done.contains(UNDATED)) {
+      return List.of();
+    }
+    UndatedEvents.Position after = undatedPosition(done);
+    List<UndatedEvents.Page> batch = undated.discoveredSince(since, after, limit);
+    done.removeIf(key -> key.startsWith(UNDATED_AFTER));
+    if (batch.size() < limit) {
+      done.add(UNDATED);
+    } else {
+      done.add(UNDATED_AFTER + batch.getLast().position().token());
+    }
+    return asPages(batch, now);
+  }
+
+  private static UndatedEvents.@Nullable Position undatedPosition(Set<String> done) {
+    return done.stream()
+        .filter(key -> key.startsWith(UNDATED_AFTER))
+        .findFirst()
+        .flatMap(key -> UndatedEvents.Position.parse(key.substring(UNDATED_AFTER.length())))
+        .orElse(null);
+  }
+
+  private static List<SourceHit> asPages(List<UndatedEvents.Page> batch, Instant now) {
     List<SourceHit> pages = new ArrayList<>();
-    for (UndatedEvents.Page p : undated.discoveredSince(since, limit)) {
+    for (UndatedEvents.Page p : batch) {
       CanonicalUrl canonical = CanonicalUrl.of(p.url());
       URI url;
       try {
@@ -209,12 +237,8 @@ public class LiveWebEventsCollector implements Collector {
     return pages;
   }
 
-  private Found pagesToRead(Instant now, int limit, Set<String> done, Instant undatedSince) {
+  private Found pagesToRead(Instant now, int limit, Set<String> done) {
     List<List<SourceHit>> perQuery = new ArrayList<>();
-    if (!done.contains(UNDATED)) {
-      perQuery.add(undatedPages(undatedSince, now, limit));
-      done.add(UNDATED);
-    }
     RuntimeException lastFailure = null;
     int failed = 0;
     for (String query : queries) {
@@ -246,7 +270,7 @@ public class LiveWebEventsCollector implements Collector {
     if (lastFailure != null && failed * 2 >= queries.size()) {
       throw lastFailure;
     }
-    return new Found(interleaved(perQuery, limit), done);
+    return new Found(interleaved(perQuery, limit));
   }
 
   static List<SourceHit> interleaved(List<List<SourceHit>> perQuery, int limit) {
