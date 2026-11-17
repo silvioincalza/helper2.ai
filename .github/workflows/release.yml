@@ -79,12 +79,12 @@ jobs:
             echo "release/$LINE is ${base::12} of main unchanged: staging ran that commit, and its CD run on main built the images"
           elif [[ ${VERSION##*.} != 0 ]]; then
             fix=true
-            echo "::warning::$VERSION is a patch of release/$LINE: staging never ran its fixes (ADR 0045)"
+            echo "$VERSION is a patch of release/$LINE: the staging job runs its fixes before prod (ADR 0045)"
           elif other=$(.github/scripts/bump-version.sh only-version-files "$base" "$sha"); then
             echo "release/$LINE is ${base::12} of main plus the version: staging ran that commit"
           else
             fix=true
-            echo "::warning::release/$LINE changes $other and more beside the version: a fix release, staging never ran it (ADR 0045)"
+            echo "release/$LINE changes $other and more beside the version: a fix release, the staging job runs it before prod (ADR 0045)"
           fi
           { echo "sha=$sha"; echo "commit=${sha::12}"; echo "base=$base"; echo "fix=$fix"; echo "line=$LINE"; } >> "$GITHUB_OUTPUT"
           echo "Release $VERSION: commit ${sha::12} of release/$LINE, cut from ${base::12}" >> "$GITHUB_STEP_SUMMARY"
@@ -147,8 +147,21 @@ jobs:
           done
           echo "::error::the CD run of ${SHA::12} did not finish in 40 minutes"; exit 1
 
-  prod:
+  staging:
     needs: [check, built]
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    with:
+      environment: staging
+      tag: ${{ needs.check.outputs.commit }}
+      staging-release: ${{ inputs.version }}
+      release-commit: ${{ needs.check.outputs.sha }}
+
+  prod:
+    needs: [check, built, staging]
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read
