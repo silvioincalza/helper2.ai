@@ -348,7 +348,7 @@ paths:
       operationId: listScoutRuns
       responses:
         '200':
-          description: Recent AI Resource Scout runs.
+          description: The latest run of each source, newest first.
           content:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/ScoutRun' } }

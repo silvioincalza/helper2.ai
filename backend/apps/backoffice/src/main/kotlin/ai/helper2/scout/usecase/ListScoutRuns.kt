@@ -5,9 +5,5 @@ import ai.helper2.scout.ScoutStore
 
 class ListScoutRuns(private val store: ScoutStore) {
 
-  companion object {
-    const val LATEST = 50
-  }
-
-  fun latest(): List<RunSummary> = store.recent(LATEST)
+  fun latest(): List<RunSummary> = store.latestPerSource()
 }
