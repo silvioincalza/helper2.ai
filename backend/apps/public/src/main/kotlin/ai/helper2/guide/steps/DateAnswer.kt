@@ -9,6 +9,7 @@ import ai.helper2.guide.IntentRules
 import ai.helper2.guide.Recommendation
 import ai.helper2.guide.isSubject
 import ai.helper2.guide.ownDescription
+import ai.helper2.guide.wholeWordExcerpt
 import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
@@ -105,7 +106,7 @@ internal class DateAnswer(
         Recommendation(
           it,
           eventReason(it),
-          (it.ownDescription ?: it.title).take(160),
+          wholeWordExcerpt(it.ownDescription ?: it.title),
           aiReasoned = false,
         )
       },
@@ -132,7 +133,12 @@ internal class DateAnswer(
       if (date == null) GuideStatus.PARTIAL else GuideStatus.OK,
       text,
       listOf(
-        Recommendation(own, reason, (own.ownDescription ?: own.title).take(160), aiReasoned = false)
+        Recommendation(
+          own,
+          reason,
+          wholeWordExcerpt(own.ownDescription ?: own.title),
+          aiReasoned = false,
+        )
       ),
       !r.modelFailed,
       outcome.results.size,

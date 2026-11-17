@@ -19,6 +19,14 @@ data class Candidate(val key: String, val result: MergedResult) {
 val MergedResult.ownDescription: String?
   get() = description.takeUnless { descriptionOrigin.isAiWritten }
 
+const val FALLBACK_QUOTE_CHARS = 160
+
+fun wholeWordExcerpt(text: String, max: Int = FALLBACK_QUOTE_CHARS): String {
+  if (text.length <= max) return text
+  val cut = text.lastIndexOf(' ', max).takeIf { it > 0 } ?: return text.take(max)
+  return text.substring(0, cut).trimEnd()
+}
+
 data class GuideSearchPlan
 @JvmOverloads
 constructor(
@@ -201,6 +209,7 @@ data class ComparisonCell(
   val text: String?,
   val quote: String?,
   val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED,
+  val quotedFrom: QuotedFrom? = null,
 )
 
 data class ComparisonRow(val aspect: String, val cells: List<ComparisonCell>)
@@ -222,6 +231,7 @@ data class ExplainedSentence(
   val quote: String,
   val source: MergedResult,
   val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED,
+  val quotedFrom: QuotedFrom? = null,
 )
 
 data class Explanation(val sentences: List<ExplainedSentence>)
@@ -250,6 +260,7 @@ constructor(
   val aiReasoned: Boolean,
   val checks: List<ConstraintCheck> = emptyList(),
   val reasonCheck: ReasonCheck = ReasonCheck.NOT_CHECKED,
+  val quotedFrom: QuotedFrom? = null,
 )
 
 enum class TrailCheck {

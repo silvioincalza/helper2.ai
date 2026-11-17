@@ -4,6 +4,7 @@ import type { GuideResponse } from '@/api/types';
 import { aiMark } from '@/lib/aiMark';
 import { resourcePath } from '@/lib/searchState';
 import { AiLabel } from '@/ui/AiLabel';
+import { QuotedFromLink } from '@/ui/QuotedFromLink';
 import { ComparisonTable } from './ComparisonTable';
 
 export function AnswerBlocks({ answer }: { answer: GuideResponse }) {
@@ -40,6 +41,7 @@ function ExplanationBlock({
               {x.title}
             </Link>
             <q>{x.quote}</q>
+            <QuotedFromLink from={x.quotedFrom} />
           </li>
         ))}
       </ol>
