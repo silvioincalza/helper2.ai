@@ -122,7 +122,7 @@ class CatalogEnrichmentStoreTest {
     }
 
     @Override
-    public int closeItemsOfUnstatedValues(String by, String note) {
+    public int closeItemsWithNothingToDecide(String by, String note) {
       return 0;
     }
 
