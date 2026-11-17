@@ -48,6 +48,7 @@ class SourcesPropertiesBindingTest {
             "github-awesome",
             "hf-provider-orgs",
             "ai-deadlines",
+            "confs-tech",
             "mcp-registry"
           }) {
         assertThat(sources.get(collector).cacheTtl()).isEqualTo(Duration.ofMinutes(30));

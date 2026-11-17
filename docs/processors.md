@@ -30,7 +30,7 @@ the Swiss-U.S. Data Privacy Framework and the UK Extension, each `Active`.
 Every line of the Privacy page that names the list matches it.
 
 **Not on this table, and why.** Y Combinator receives nothing: Hacker News search is Algolia's. The MCP Registry, the
-news feeds of AI companies and `huggingface/ai-deadlines` are read by our server with a plain `GET` that carries nothing
+news feeds of AI companies, `huggingface/ai-deadlines` and `tech-conferences/conference-data` (confs.tech) are read by our server with a plain `GET` that carries nothing
 about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
 setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/helper2.ai/issues/433)).
 
