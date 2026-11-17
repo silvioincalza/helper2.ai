@@ -9,9 +9,10 @@ object RankingCode {
   private const val WORDS = "backend/libs/core/src/main/resources/i18n"
 
   val files =
-    listOf("Ranking.kt", "ResultMerger.kt", "QueryAnalyzer.kt", "Vitality.kt").map {
-      "$SEARCH/$it"
-    } +
+    listOf("Ranking.kt", "ResultMerger.kt", "QueryAnalyzer.kt", "Vitality.kt", "RepositoryJoin.kt")
+      .map {
+        "$SEARCH/$it"
+      } +
       listOf("WordLists.kt", "WordBounds.kt").map { "$KERNEL/$it" } +
       WordLists.LANGUAGES.map { "$WORDS/query-words_$it.properties" }
 

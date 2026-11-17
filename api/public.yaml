@@ -578,6 +578,10 @@ components:
         sourceId: { type: string }
         externalId: { type: string }
         url: { type: string, format: uri }
+        repositoryUrl:
+          type: [string, 'null']
+          format: uri
+          description: The repository the record states, when it states one.
         retrievedAt: { type: string, format: date-time }
         fingerprint: { type: string }
 
