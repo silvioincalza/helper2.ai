@@ -96,7 +96,7 @@ class QueryAnalyzer {
 
   private fun tokensOf(normalized: String): List<String> {
     val tokens =
-      SEPARATE(normalized)
+      normalized
         .split(TOKEN_SEPARATOR)
         .map { it.replace(EDGE_PUNCTUATION, "") }
         .filter { it.isNotEmpty() }
@@ -116,7 +116,7 @@ class QueryAnalyzer {
         else -> true
       }
     }
-    return terms.distinct().ifEmpty { words }
+    return terms.distinct().ifEmpty { words }.flatMap { TYPE_PHRASE_WORDS[it] ?: listOf(it) }
   }
 
   private companion object {
@@ -125,7 +125,6 @@ class QueryAnalyzer {
     val TOKEN_SEPARATOR = Regex("[^\\p{L}\\p{N}\\-_./@:]+")
     val EDGE_PUNCTUATION = Regex("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$")
     val WORDS = WordLists.load("query-words")
-    val SEPARATE = WordLists.separator(WORDS.allPhrases())
     val SERVER_WORDS = WORDS.words("server")
     val TYPE_WORDS: Map<String, ResourceType> =
       WORDS.keys("type.")
@@ -142,6 +141,9 @@ class QueryAnalyzer {
         .associate { " $it " to " ${asOneWord(it)} " }
 
     fun asOneWord(phrase: String) = phrase.replace(' ', '-')
+
+    val TYPE_PHRASE_WORDS: Map<String, List<String>> =
+      TYPE_PHRASES.keys.map { it.trim() }.associate { asOneWord(it) to it.split(' ') }
 
     fun joinedTypes(padded: String) =
       TYPE_PHRASES.entries.fold(padded) { text, (phrase, word) -> text.replace(phrase, word) }
@@ -160,7 +162,7 @@ class QueryAnalyzer {
   }
 
   private fun padded(normalized: String) =
-    " ${SEPARATE(normalized).replace(Regex("[^\\p{L}\\p{N}-]+"), " ")} "
+    " ${normalized.replace(Regex("[^\\p{L}\\p{N}-]+"), " ")} "
 
   private fun contains(padded: String, term: String) = padded.contains(" $term ")
 }
