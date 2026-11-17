@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -199,6 +200,20 @@ public final class HttpClients {
   public static void dropped(String sourceId, String reason) {
     log.debug("{}: item dropped: {}", sourceId, reason);
     Metrics.counter(ITEMS_DROPPED, "source", sourceId, "reason", reason).increment();
+  }
+
+  public static Optional<URI> onHost(URI host, String raw) {
+    try {
+      URI u = new URI(raw.strip());
+      boolean sameHost =
+          host.getScheme().equalsIgnoreCase(u.getScheme())
+              && host.getHost().equalsIgnoreCase(u.getHost())
+              && host.getPort() == u.getPort()
+              && u.getUserInfo() == null;
+      return sameHost ? Optional.of(u) : Optional.empty();
+    } catch (URISyntaxException e) {
+      return Optional.empty();
+    }
   }
 
   public static String text(JsonNode n, String field) {

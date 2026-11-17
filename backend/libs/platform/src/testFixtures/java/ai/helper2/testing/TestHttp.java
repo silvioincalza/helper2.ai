@@ -26,4 +26,9 @@ public final class TestHttp {
       Duration timeout, Duration deadline, ObservationRegistry registry) {
     return ObservedHttp.restClientBuilder(timeout, deadline, registry, SETTINGS);
   }
+
+  public static RestClient.Builder restClientBuilderWithoutRedirects(
+      Duration timeout, ObservationRegistry registry) {
+    return ObservedHttp.restClientBuilderWithoutRedirects(timeout, timeout, registry, SETTINGS);
+  }
 }

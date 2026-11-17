@@ -93,6 +93,15 @@ Two kinds of source need more care:
    is on another host, is logged, skipped and counted in `helper2.source.items.dropped{source=ai-deadlines, reason}`
    (the exception type, or `ForeignDownloadUrl`). A conference with no upcoming edition is not counted. When the
    circuit breaker refuses a file, the pass ends there: the run fails and the next run tries again.
+8a. **confs.tech** (`confs-tech`, 1 day). The crowd-sourced conference list of confs.tech,
+   `tech-conferences/conference-data` (MIT). One GitHub contents call per year (this year and the next) lists its
+   topic files; each JSON file is read only from `raw.githubusercontent.com`, by a client that does not follow
+   redirects (`ObservedHttp.restClientBuilderWithoutRedirects`), so a redirect cannot lead to another host. The pass stops
+   asking for files and years once it holds `maxItems` conferences. A conference is kept when its name passes
+   the AI check (`Classification.isAiRelated`) and it has not ended; a conference listed under several topics is kept
+   once, by canonical URL. Its days, city and country are the file's own (DAY precision); `online` with a city is
+   HYBRID, without one ONLINE. A year with no folder yet gives nothing; an unreadable file is logged, skipped and
+   counted in `helper2.source.items.dropped{source=confs-tech, reason}`.
 9. **Tavily discovery** (`discovery-<category>`): one collector per category of the AI world, 34 categories in 7
    families, list pages indexed, products reviewed ([0013](0013-discovery.md)).
 
