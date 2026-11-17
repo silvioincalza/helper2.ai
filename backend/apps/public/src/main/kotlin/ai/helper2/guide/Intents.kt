@@ -208,7 +208,7 @@ object IntentRules {
     return listOf(
       Regex("(?iu)$START(?:$period)$GAP(?:$amount$GAP)?($UNIT)$END"),
       Regex("(?iu)$START$amount$GAP(?:$period)$GAP($UNIT)$END"),
-      Regex("(?iu)$START(?:$amount$GAP)?($UNIT)$GAP(?:$period)$END"),
+      Regex("(?iu)$START()($UNIT)$GAP(?:$period)$END"),
     )
   }
 
