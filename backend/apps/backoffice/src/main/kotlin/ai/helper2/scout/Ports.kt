@@ -8,6 +8,7 @@ import ai.helper2.search.Vitality
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.DateFact
 import ai.helper2.shared.ResourceType
+import java.time.Duration
 import java.time.Instant
 
 data class CollectedBatch
@@ -38,6 +39,8 @@ constructor(
 }
 
 interface Collector : DescribedSource {
+  fun runEvery(): Duration
+
   fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int): CollectedBatch
 
   fun collect(cursor: ScoutCursor, maxItems: Int): CollectedBatch =

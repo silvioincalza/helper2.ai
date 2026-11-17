@@ -20,6 +20,7 @@ import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.tavily.DiscoveryCategory;
 import ai.helper2.sources.tavily.TavilySource;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -102,6 +103,11 @@ public class DiscoveryCollector implements Collector {
 
   public DiscoveryCategory category() {
     return category;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   public RunInterval interval() {

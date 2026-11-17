@@ -141,19 +141,20 @@ class JdbcResources implements Resources {
   private static final Instant NO_END = Instant.parse("9999-12-31T00:00:00Z");
 
   @Override
-  public List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit) {
+  public List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit, int offset) {
     return jdbc.sql(
             """
             SELECT id FROM resource
             WHERE type = 'EVENT' AND event_starts_at IS NOT NULL
               AND coalesce(event_ends_at, event_starts_at) >= :today
               AND event_starts_at < :until
-            ORDER BY event_starts_at, title
-            LIMIT :limit
+            ORDER BY event_starts_at, title, id
+            LIMIT :limit OFFSET :offset
             """)
         .param("today", Timestamp.from(today))
         .param("until", Timestamp.from(until == null ? NO_END : until))
         .param("limit", limit)
+        .param("offset", offset)
         .query((rs, i) -> rs.getObject(1, UUID.class))
         .list();
   }

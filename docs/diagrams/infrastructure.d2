@@ -47,7 +47,7 @@ cluster: KUBERNETES {
       shape: cylinder
       class: data
     }
-    redis: "redis StatefulSet\nRedis 8.10.2 · requirepass (admin) +\nan ACL user per app (redis-users.acl)\nAOF everysec, no RDB · 128mb LRU\nlimit 320Mi (2× maxmemory + buffers)\nPVC 1Gi local-path\ncache, sessions, rate limits" {
+    redis: "redis StatefulSet\nRedis 8.10.2 · requirepass (admin) +\nan ACL user per app (redis-users.acl)\nAOF everysec, no RDB · 128mb LRU\nlimit 448Mi (3.5× maxmemory: fork + page cache)\nPVC 1Gi local-path\ncache, sessions, rate limits" {
       shape: cylinder
       class: data
     }
