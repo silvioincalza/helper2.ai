@@ -244,7 +244,9 @@
         "excerpt": "Search excerpt",
         "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it.",
-        "edited": "Changed by an admin: {{fields}}."
+        "edited": "Changed by an admin: {{fields}}.",
+        "more": "Show all",
+        "less": "Show less"
       },
       "decided": {
         "ACCEPTED_one": "Accepted. {{count}} left.",
@@ -275,6 +277,15 @@
           "failed": "Could not save the changes. Try again."
         },
         "note": "Found by a rule, not by a person. Accept adds it to the known vendors and services. Reject a person's account: a person is not a vendor."
+      },
+      "row": {
+        "relationship": {
+          "INTEGRATES_WITH": "integrates with {{target}}",
+          "USES": "uses {{target}}",
+          "SUPPORTS": "supports {{target}}",
+          "COMPATIBLE_WITH": "compatible with {{target}}",
+          "ABOUT": "about {{target}}"
+        }
       }
     },
     "settings": {
@@ -513,7 +524,11 @@
       "save": "Save the changes",
       "saving": "Saving…",
       "cancel": "Cancel",
-      "fields": { "title": "title", "type": "type", "tags": "tags" },
+      "fields": {
+        "title": "title",
+        "type": "type",
+        "tags": "tags"
+      },
       "errors": {
         "alreadyDecided": "Someone decided this item meanwhile. Reload the list.",
         "changedMeanwhile": "The candidate changed since you opened it. Reload the list, then edit again.",
@@ -605,7 +620,8 @@
         "NOT_FOUND": "not found",
         "NOT_ALLOWED": "not allowed in bulk"
       }
-    }
+    },
+    "kindCount": "{{kind}} ({{count}})"
   },
   "nav": {
     "admin": "Admin"
