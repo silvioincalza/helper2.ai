@@ -70,6 +70,7 @@ export type PolicyValues = Record<
   | 'handledReports'
   | 'adminRecords'
   | 'runtimeSettingChanges'
+  | 'pastEvents'
   | 'categories'
   | 'categorySearches'
   | 'quoteChars'
@@ -120,6 +121,7 @@ export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValue
     handledReports: d(r.handledReportsSeconds),
     adminRecords: d(r.adminRecordsSeconds),
     runtimeSettingChanges: d(r.runtimeSettingChangesSeconds),
+    pastEvents: d(r.pastEventsSeconds),
     categories: n(s.categories),
     categorySearches: n(s.categorySearches),
     quoteChars: n(s.quoteChars),
