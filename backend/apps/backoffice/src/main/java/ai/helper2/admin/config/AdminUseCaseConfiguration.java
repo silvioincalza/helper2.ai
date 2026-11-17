@@ -7,6 +7,7 @@ import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.GetRuntimeSettings;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
+import ai.helper2.admin.usecase.ListRelationshipTargetGroups;
 import ai.helper2.admin.usecase.ResetRuntimeSetting;
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.admin.usecase.ResolveReviewItems;
@@ -125,6 +126,11 @@ class AdminUseCaseConfiguration {
       ResolveReview resolve,
       ManageKnownTargets knownTargets) {
     return new DecideRelationshipTargetGroup(targets, changeTarget, resolve, knownTargets);
+  }
+
+  @Bean
+  ListRelationshipTargetGroups listRelationshipTargetGroups(RelationshipTargets targets) {
+    return new ListRelationshipTargetGroups(targets);
   }
 
   @Bean

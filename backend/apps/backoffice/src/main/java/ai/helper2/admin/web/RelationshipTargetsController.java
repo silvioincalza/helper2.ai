@@ -2,6 +2,7 @@ package ai.helper2.admin.web;
 
 import ai.helper2.admin.usecase.DecideRelationshipTargetGroup;
 import ai.helper2.admin.usecase.DecideRelationshipTargetGroup.Choice;
+import ai.helper2.admin.usecase.ListRelationshipTargetGroups;
 import ai.helper2.api.generated.RelationshipTargetsApi;
 import ai.helper2.api.generated.model.RelationshipTargetGroupDecisionDto;
 import ai.helper2.api.generated.model.RelationshipTargetGroupDto;
@@ -20,23 +21,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class RelationshipTargetsController implements RelationshipTargetsApi {
 
-  private final RelationshipTargets targets;
+  private final ListRelationshipTargetGroups groups;
   private final DecideRelationshipTargetGroup decide;
 
-  RelationshipTargetsController(RelationshipTargets targets, DecideRelationshipTargetGroup decide) {
-    this.targets = targets;
+  RelationshipTargetsController(
+      ListRelationshipTargetGroups groups, DecideRelationshipTargetGroup decide) {
+    this.groups = groups;
     this.decide = decide;
   }
 
   @Override
   public ResponseEntity<RelationshipTargetGroupPageDto> listRelationshipTargetGroups(
       Integer page, Integer size) {
+    ListRelationshipTargetGroups.Page read = groups.list(page, size);
     return ResponseEntity.ok(
         new RelationshipTargetGroupPageDto(
-            targets.openGroups(Math.multiplyExact(page, size), size).stream()
-                .map(RelationshipTargetsController::dto)
-                .toList(),
-            Math.toIntExact(targets.openGroupCount())));
+            read.groups().stream().map(RelationshipTargetsController::dto).toList(),
+            Math.toIntExact(read.total())));
   }
 
   @Override
