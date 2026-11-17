@@ -108,6 +108,18 @@ groups:
           summary: "Container {{ $labels.container }} of pod {{ $labels.pod }} restarted more than twice in an hour ({{ $labels.namespace }})."
           description: "{{ $value }} restarts in the last hour. A crash loop or an out-of-memory kill."
           runbook: "kubectl -n {{ $labels.namespace }} describe pod {{ $labels.pod }} (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
+      - alert: Helper2ContainerOOMKilled
+        expr: |
+          sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total{namespace=~"helper2-.+"}[10m])) > 0
+          and on (namespace, pod, container)
+          max by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{namespace=~"helper2-.+", reason="OOMKilled"}) == 1
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} of pod {{ $labels.pod }} was killed for using more memory than its limit ({{ $labels.namespace }})."
+          description: "The container restarted in the last 10 minutes after an out-of-memory kill. Its memory limit is too low for its peak: for Redis, an AOF rewrite under a burst of writes (ADR 0005)."
+          runbook: "kubectl -n {{ $labels.namespace }} describe pod {{ $labels.pod }} (Last State: OOMKilled), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'. Raise the container's memory limit in values.yaml; for Redis keep it at least 3.5 times redis.maxMemory."
       - alert: Helper2ReplicasMissing
         expr: |
           kube_deployment_status_replicas_available{namespace=~"helper2-.+", deployment="helper2"}

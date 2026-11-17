@@ -10,13 +10,11 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S1.4.5 A Redis memory limit that also holds the page cache of an AOF rewrite](https://github.com/silvioincalza/helper2.ai/issues/541)
-- [S1.8.5 Scout stale alerts that follow each collector's run interval](https://github.com/silvioincalza/helper2.ai/issues/537)
+- [S1.8.6 An alert on a single out-of-memory kill](https://github.com/silvioincalza/helper2.ai/issues/542)
 
 ### Next
 
 - [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
-- [S1.8.6 An alert on a single out-of-memory kill](https://github.com/silvioincalza/helper2.ai/issues/542)
 - [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/helper2.ai/issues/179)
 
 ### Later
@@ -52,6 +50,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Later
 
+- [S2.2.14 A LinkedIn post about an event is NEWS, and its short links are resolved](https://github.com/silvioincalza/helper2.ai/issues/546)
 - [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
 - [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
 - [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
@@ -123,15 +122,10 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### No priority
 
-- [S6.2.9 A review row reads as a title, with kind and source as chips](https://github.com/silvioincalza/helper2.ai/issues/519)
 - [S6.2.10 To decide relationship candidates once per target name](https://github.com/silvioincalza/helper2.ai/issues/520)
 - [S6.2.14 The Overview shows enrichment validation issues grouped by issue](https://github.com/silvioincalza/helper2.ai/issues/525)
 
 ## E7 Site and frontend
-
-### Now
-
-- [S7.5.3 The Coming up list shows every upcoming event](https://github.com/silvioincalza/helper2.ai/issues/512)
 
 ### Next
 
@@ -163,7 +157,6 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Next
 
 - [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
-- [S9.1.4 The Privacy page says how long past events are kept](https://github.com/silvioincalza/helper2.ai/issues/539)
 - [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
 - [S9.6.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/340)
 - [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
