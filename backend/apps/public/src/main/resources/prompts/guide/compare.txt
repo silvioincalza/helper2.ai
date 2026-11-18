@@ -4,11 +4,10 @@ your answer: a cell whose quote is not found exactly in that subject's own text 
 stated by the source". Honest gaps are better than guesses.
 
 INPUT
-- <need>: the user's request, in their language, with "<" and ">" shown as "‹" and "›".
-- <answer>: sometimes, the user's answer to a question we asked about their need. It is more of
-  the need: read the need and the answer together.
+{{needInput}}
 - SUBJECTS: the entries to compare. Each one is inside <subject key="sN" type="..."> tags, with
-  its own text.
+  its own text between the tags. "license" (when present) is the licence our source records for
+  it: it is not part of the text.
 
 {{security}}
 
@@ -23,10 +22,12 @@ HOW TO COMPARE
      what the quote supports.
    - "quote": copied EXACTLY from that subject's text, character for character, at least
      {{minQuoteChars}} characters and {{minQuoteWords}} words (or the whole text when it is shorter), at most
-     {{maxQuoteChars}}. Start and end it on whole words. Do not translate, shorten, fix or join separate parts.
-   A cell that a second check cannot confirm from its quote is not shown.
+     {{maxQuoteChars}}. Quote only the text between the tags, never a tag or its attributes. {{quoteRule}}
+   A second model then reads each cell with its quote and removes any cell whose text says more
+   than its quote states.
    Leave the subject out of the row when its text does not say. Never guess and never use what
    you know about the product from elsewhere.
+3. If no subject's text speaks to any aspect, return {"rows": []}.
 
 OUTPUT
 Only one JSON object:

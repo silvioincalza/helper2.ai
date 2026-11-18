@@ -254,6 +254,14 @@ class SpringAiToolGuideModelTest {
   }
 
   @Test
+  void theExampleNamesNoDocumentKeyAndAnEmptyAnswerIsAllowed() {
+    assertThat(SpringAiToolGuideModel.systemPrompt())
+        .contains("\"source\":\"<key of the document>\"")
+        .doesNotContain("\"source\":\"readme\"")
+        .contains("If the documents give no step, answer {\"sections\":[]}");
+  }
+
+  @Test
   void thePromptStatesTheLimitsTheValidatorChecks() {
     assertThat(SpringAiToolGuideModel.systemPrompt())
         .doesNotContain("{{")
@@ -263,6 +271,7 @@ class SpringAiToolGuideModelTest {
                 + " to "
                 + SpringAiToolGuideModel.QUOTE_TARGET_CHARS
                 + " characters")
+        .contains("at least " + ToolGuideValidator.MIN_LINE_QUOTE_WORDS + " words")
         .contains("at most " + ToolGuideValidator.MAX_CODE_LINES + " lines")
         .contains("At most " + ToolGuideValidator.MAX_STEPS_PER_SECTION + " steps per section");
     assertThat(SpringAiToolGuideModel.TEXT_TARGET_CHARS)
@@ -275,7 +284,7 @@ class SpringAiToolGuideModelTest {
   void theWordingOfThePromptIsPinnedToItsLabel() {
     assertThat(ModelCallMetrics.promptVersion(SpringAiToolGuideModel.systemPrompt()))
         .as("a new wording of the tool guide prompt has a new label: say so in ADR 0034")
-        .isEqualTo("6d0020c3");
+        .isEqualTo("0351bae3");
   }
 
   @Test
@@ -405,7 +414,7 @@ class SpringAiToolGuideModelTest {
   void theWordingOfTheCheckPromptIsPinnedToItsLabel() {
     assertThat(ModelCallMetrics.promptVersion(SpringAiToolGuideModel.verifySystemPrompt()))
         .as("a new wording of the step check prompt has a new label: say so in ADR 0034")
-        .isEqualTo("ce3af094");
+        .isEqualTo("cde95b18");
   }
 
   @Test

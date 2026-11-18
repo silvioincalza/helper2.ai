@@ -136,7 +136,7 @@ components:
         Tools (PRODUCT…DATASET), knowledge about AI (ARTICLE, PAPER, NEWS, EVENT) and learning (COURSE: a course or
         a certification, its platform in `platforms`, its credential and format in `tags`).
         helper2.ai only covers the AI world; non-AI content is filtered out.
-      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE, OTHER]
+      enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE, AWESOME_LIST, OTHER]
     TechLevel:
       type: string
       enum: [BEGINNER, INTERMEDIATE, ADVANCED]

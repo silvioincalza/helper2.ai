@@ -233,6 +233,30 @@ class QueryTranslationTest {
   }
 
   @Test
+  fun `an answer that echoes the query, punctuation aside, is no translation`() {
+    val (_, out) =
+      run("¿herramienta para traducir documentos?") { _, _ ->
+        "Herramienta para traducir documentos"
+      }
+    assertNull(out.interpretation.translation)
+  }
+
+  @Test
+  fun `an answer about the query instead of a query is refused`() {
+    val (q, out) =
+      run("herramienta para traducir documentos") { _, _ -> "The query is already in English." }
+    assertNull(out.interpretation.translation)
+    assertTrue(q.requiredVariants.none { "english" in it })
+  }
+
+  @Test
+  fun `a translation that asks to translate is kept`() {
+    val (q, _) =
+      run("herramienta para traducir documentos") { _, _ -> "Translate documents to English" }
+    assertEquals("translate documents to english", q.requiredVariants.first())
+  }
+
+  @Test
   fun `keyword sources search the content words of the translation (ADR 0029)`() {
     val (q, _) =
       run("biblioteca para crear agentes de ia") { _, _ -> "Library to create AI agents" }

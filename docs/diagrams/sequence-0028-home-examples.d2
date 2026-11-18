@@ -24,9 +24,9 @@ model: "Nemotron\n(fast)" {class: ai}
 draft: "Draft with AI (optional)" {
   owner -> api: "POST /api/v1/admin/home-examples/drafts"
   api -> db: "well-known resources no example expects\nand no waiting draft is about"
-  api -> model: "titles and descriptions in their own tags\n(< > masked, one call, own budget)" {class: ai-call}
+  api -> model: "titles and descriptions in their own tags\n(< > masked, one call, own budget;\nno call when no resource is left)" {class: ai-call}
   model -> api: "JSON drafts"
-  api -> db: "kept drafts: review items EXAMPLE_CANDIDATE\n(examples writes the details)"
+  api -> db: "kept drafts (query lowercased):\nreview items EXAMPLE_CANDIDATE\n(examples writes the details)"
   owner -> api: "GET /api/v1/admin/review-items"
   api -> owner: "each draft typed (ReadExampleDraft):\nlabel, query, path, model"
   owner -> api: "accept a draft"

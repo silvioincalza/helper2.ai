@@ -25,6 +25,7 @@ const CANDIDATE_TYPES: ReadonlySet<string> = new Set([
   'NEWS',
   'EVENT',
   'COURSE',
+  'AWESOME_LIST',
 ]);
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 

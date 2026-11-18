@@ -1,0 +1,1 @@
+Start and end it on whole words: code finds a quote only as whole words of the text. Do not translate, shorten, fix or join separate parts.

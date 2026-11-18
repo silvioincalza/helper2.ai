@@ -68,14 +68,31 @@ class SpringAiGuideModel implements GuideModel {
     return PromptTemplate.fromClasspath("guide/plan.txt")
         .render(
             Map.of(
+                "needInput", needInput(),
+                "security", security(),
                 "maxQueryWords", PlannedQueries.MAX_QUERY_WORDS,
-                "maxWebQueryWords", PlannedQueries.MAX_WEB_QUERY_WORDS));
+                "maxWebQueryWords", PlannedQueries.MAX_WEB_QUERY_WORDS,
+                "maxClarifyQuestionChars", Clarification.MAX_QUESTION_CHARS,
+                "maxClarifyOptions", Clarification.MAX_OPTIONS,
+                "maxClarifyOptionChars", Clarification.MAX_OPTION_CHARS));
   }
 
   static final int REASON_TARGET_CHARS = 300;
 
   static String security() {
-    return PromptTemplate.fromClasspath("guide/security.txt").render().strip();
+    return fragment("guide/security.txt");
+  }
+
+  static String needInput() {
+    return fragment("guide/need-input.txt");
+  }
+
+  static String quoteRule() {
+    return fragment("guide/quote-rule.txt");
+  }
+
+  private static String fragment(String name) {
+    return PromptTemplate.fromClasspath(name).render().strip();
   }
 
   static String chooseSystem() {
@@ -83,10 +100,13 @@ class SpringAiGuideModel implements GuideModel {
         .render(
             Map.of(
                 "security", security(),
+                "needInput", needInput(),
+                "quoteRule", quoteRule(),
                 "maxProposed", GuideValidator.MAX_PROPOSED,
                 "minQuoteChars", GuideValidator.MIN_QUOTE_CHARS,
                 "minQuoteWords", GuideValidator.MIN_QUOTE_WORDS,
                 "maxQuoteChars", GuideValidator.MAX_QUOTE_CHARS,
+                "minCheckQuoteChars", GuideValidator.MIN_CHECK_QUOTE,
                 "reasonTargetChars", REASON_TARGET_CHARS));
   }
 
@@ -97,6 +117,10 @@ class SpringAiGuideModel implements GuideModel {
             Map.of(
                 "security",
                 security(),
+                "needInput",
+                needInput(),
+                "quoteRule",
+                quoteRule(),
                 "minQuoteChars",
                 GuideValidator.MIN_QUOTE_CHARS,
                 "minQuoteWords",
@@ -118,6 +142,10 @@ class SpringAiGuideModel implements GuideModel {
             Map.of(
                 "security",
                 security(),
+                "needInput",
+                needInput(),
+                "quoteRule",
+                quoteRule(),
                 "maxSentences",
                 limits.getMaxSentences(),
                 "maxSentenceChars",
@@ -132,7 +160,7 @@ class SpringAiGuideModel implements GuideModel {
 
   static String verifySystem() {
     return PromptTemplate.fromClasspath("guide/verify-reasons.txt")
-        .render(Map.of("security", security()));
+        .render(Map.of("security", security(), "needInput", needInput()));
   }
 
   record Verdicts(List<Verdict> verdicts) {

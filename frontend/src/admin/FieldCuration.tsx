@@ -21,6 +21,7 @@ const CHOICES: Partial<Record<ResourceField, readonly string[]>> = {
     'NEWS',
     'EVENT',
     'COURSE',
+    'AWESOME_LIST',
   ],
   pricing: ['FREE', 'FREEMIUM', 'PAID', 'OPEN_SOURCE_SELF_HOSTED'],
   openSource: ['true', 'false'],

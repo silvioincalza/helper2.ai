@@ -37,6 +37,7 @@ public final class SpringAiRepoClassifier implements RepoClassifier {
           ResourceType.PRODUCT,
           ResourceType.LIBRARY,
           ResourceType.ARTICLE,
+          ResourceType.AWESOME_LIST,
           ResourceType.OTHER);
 
   static String systemPrompt() {

@@ -15,7 +15,8 @@ public final class CuratedTypes {
               ResourceType.SKILL,
               ResourceType.MCP_SERVER,
               ResourceType.LIBRARY,
-              ResourceType.DATASET));
+              ResourceType.DATASET,
+              ResourceType.AWESOME_LIST));
 
   private CuratedTypes() {}
 }
