@@ -256,7 +256,7 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     when it is the category's id ("Voice and audio") or has one of its words ("Vector databases"). A category that
     needs a word (health, legal) never comes from a heading alone. No new matcher, no model.
     - On a candidate, the matched categories are its tags, at most `Candidate.MAX_TAGS` (12), in the configured order.
-    - On an indexed resource, `JdbcCatalogWriter` reads the heading paths the list index already keeps
+    - On an indexed resource, `JdbcCategoryLabels` reads the heading paths the list index already keeps
       (`awesome_list_entry.heading_path`). `IndexAwesomeLists` assigns the categories of a list's entries again after
       it writes them, so a new heading counts in the same run.
 19. **Metrics.** `helper2.scout.awesome.lists{depth=seed|nested}` counts lists read, `helper2.scout.awesome.candidates`
@@ -327,7 +327,7 @@ No new table for deep search, no new dependency.
   `backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (open candidate, category filter,
   `candidatesOpenedToday`), `catalog/usecase/IndexAwesomeLists.java`, `catalog/internal/JdbcCatalogWriter.java`
-  (`extra`, `assignCategories`), `JdbcAwesomeListIndex.java`, `JdbcCatalogRetention.java`.
+  (`extra`), `JdbcCategoryLabels.java` (`of`), `catalog/usecase/RefreshCategories.java`, `JdbcAwesomeListIndex.java`, `JdbcCatalogRetention.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `RESOURCE_CANDIDATE` review kind,
   `discovery_host` and its seed rows, `candidate_decision`); `catalog/internal/JdbcReviewQueue.java`
   (`proposeCandidate`, `candidateKnown`, `listedAs`), `JdbcReviewDecisions.java`; `R__curated_seed.sql` — the directories, linked, not copied;
