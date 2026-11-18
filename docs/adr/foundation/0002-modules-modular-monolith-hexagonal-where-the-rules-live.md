@@ -121,7 +121,9 @@ to reach into the other's code.
    `@Bean` methods in `config`/`internal`; so are the Java use cases of identity and catalog (catalog's in
    `catalog.config`, with the transactions on subclasses there).
 8. **Rules as tests.** `ModularityTest` runs in each app on every build, over the app's code and the libraries it
-   takes:
+   takes. The rules both apps share are written once, in `ModularityRules`, a test fixture of `platform`. The
+   `ModularityTest` of an app extends it, gives its application class and its domain packages, and adds the rules
+   only that app has. The shared rules:
    - `ApplicationModules.verify()`: no cycles, only public types of other modules are used;
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
@@ -131,13 +133,20 @@ to reach into the other's code.
    - no class outside `sources` depends on a class of `sources`;
    - `theLlmLayerIsUsedOnlyThroughItsNamedInterface`: no class outside `platform.llm` depends on a class of
      `platform.llm` or below it that is not in the named interface `llm`. The test reads the interface from the
-     modules, so a new sub-package of `platform.llm` is closed with no change to the test;
-   - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
-     module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
+     modules, so a new sub-package of `platform.llm` is closed with no change to the test.
+
+   The tests that read the sources of every backend project are in a project of their own, `backend/architecture`.
+   It has no main code and its own CI job ([0044](../operations/0044-ci-cd-and-supply-chain.md)), so a change in one
+   app runs these tests and that app's tests, not the other app's:
+   - `TableOwnersTest`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
+     module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`);
+   - `SchemaUseTest`: the code names every table and column of the schema
+     ([0004](0004-persistence-and-the-schema.md));
+   - `SourceBoundariesTest`, below.
 
    `SourceBoundariesTest` checks the same boundaries on the source files. The compiler copies a constant into the
    class that uses it and leaves no reference in the bytecode, so a rule on classes cannot see an import of a
-   constant; a rule on the text of the file does. It runs in the public app and reads every `ai.helper2` name in
+   constant; a rule on the text of the file does. It reads every `ai.helper2` name in
    the main sources of every project, and in the test and fixture sources of the libraries:
    - a context uses only itself and the contexts below it (§3), by package: `shared` (kernel), `platform`,
      `identity`, `search`, `search.web` and `api` (the shared web part, `web-contract` in the test), `catalog`,
@@ -177,8 +186,11 @@ to reach into the other's code.
     own: `helper2-shared.yaml` names classes of `search` and `sources` in the resilience rules, so the platform's
     integration tests run in an app.
     Helpers several projects need are test fixtures of the lowest library that owns them: the Testcontainers
-    setup and the recorded responses in `platform`, the search and source fakes and `ReviewEvidenceFixture` in
-    `core`.
+    setup, the recorded responses, `Eventually` (a check tried again until a time limit) and the shared
+    architecture rules (§8) in `platform`; the search and source fakes, `ReviewEvidenceFixture` and
+    `SharedApiTestBase` in `core`. `SharedApiTestBase` holds what the API tests of both apps share: the Spring
+    context, the fake live source and the reset of the rate limits. The `ApiTestBase` of an app extends it with what
+    only that app needs.
 11. **No code outside a project.** A file in `backend/src/` stops the build (`checkNoRootSources`): it
     would compile nowhere.
 
@@ -187,15 +199,21 @@ to reach into the other's code.
 - `backend/build-logic/build.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.*.gradle.kts`,
   `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/SpringContract.kt` — the conventions.
 - `backend/build.gradle.kts` — the version ([0045](../operations/0045-releases-and-versions.md)) and `checkNoRootSources`.
-- `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts`
-  — each project's dependencies.
+- `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts`,
+  `backend/architecture/build.gradle.kts` — each project's dependencies.
 - `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/package-info.java` — the named interface `llm`;
   `.../platform/llm/internal/` — what only the LLM layer uses.
-- `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon
-  rules; `backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
+- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the module
+  and hexagon rules both apps share;
+  `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — each app's packages
+  and its own rules;
+  `backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
   boundaries read from the source, over the roots `BackendSources`
-  (`backend/libs/platform/src/testFixtures/java/ai/helper2/testing/BackendSources.java`) lists;
+  (`backend/libs/platform/src/testFixtures/java/ai/helper2/testing/BackendSources.java`) lists; `TableOwnersTest.java`
+  and `SchemaUseTest.java` next to it — the table owners and the schema the code uses;
+  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/Eventually.java`,
+  `backend/libs/core/src/testFixtures/java/ai/helper2/search/SharedApiTestBase.java` — the shared test helpers;
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CollectorIds.kt` — the collectors' ids;
   `backend/libs/core/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java`,
   `backend/libs/core/src/test/java/ai/helper2/catalog/architecture/CatalogArchitectureTest.java`,
@@ -257,6 +275,7 @@ to reach into the other's code.
   (`search/usecase/SearchResourcesTest`, `guide/usecase/AskGuideTest`, `scout/usecase/RunScoutTest`).
 - A boundary break fails the build, not a review: a wrong Gradle dependency at configuration time, a wrong class
   dependency in `ModularityTest` or in a context's own architecture test, a wrong import in `SourceBoundariesTest`.
+- A shared rule or a shared test helper is written once, so a fix to it reaches both apps.
 - Kotlin stays in the rule packages, so most framework code is Java.
 - Each app takes only the libraries it needs, and neither can import the other's code. The shared web adapters are
   compiled once; both apps run the same classes.
@@ -267,7 +286,7 @@ to reach into the other's code.
   every job runs in one app
   ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)). Only the per-replica runtime-settings refresh stays in the
   platform library.
-- Six build files to read, one per project, and three convention plugins. The shared contexts have one test setup
+- Seven build files to read, one per project, and three convention plugins. The shared contexts have one test setup
   and one set of test fixtures.
 
 ### Known limits

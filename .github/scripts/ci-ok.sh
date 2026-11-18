@@ -13,6 +13,7 @@ SELECTED_BY='{
   "backend-public-test": "backend-public",
   "backend-backoffice-build": "backend-backoffice",
   "backend-backoffice-test": "backend-backoffice",
+  "backend-architecture-test": "backend-architecture",
   "chart": "chart",
   "monitoring": "monitoring",
   "postgres-tag": "postgres",
@@ -87,9 +88,13 @@ self_test() {
   done << 'EOF'
 nothing selected, every job skipped|pr||{"postgres-tag":{"result":"skipped"}}|ok
 diagrams selected and green|pr|diagrams|{}|ok
-everything selected and green|pr|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{}|ok
+everything selected and green|pr|frontend backend-libs backend-public backend-backoffice backend-architecture chart monitoring postgres diagrams|{}|ok
 one app chain selected and green, the others skipped|pr|backend-public|{}|ok
 the libs chain and one app chain selected and green|pr|backend-libs backend-backoffice|{}|ok
+one app chain and the architecture tests selected and green, the other app chain skipped|pr|backend-public backend-architecture|{}|ok
+the architecture tests were skipped because the libs build failed|pr|backend-libs backend-architecture|{"backend-libs-build":{"result":"failure"},"backend-libs-test":{"result":"skipped"},"backend-architecture-test":{"result":"skipped"}}|fail
+the architecture tests ran that were not selected|pr|backend-public|{"backend-architecture-test":{"result":"success"}}|fail
+the other app chain ran with the architecture tests|pr|backend-public backend-architecture|{"backend-backoffice-build":{"result":"success"},"backend-backoffice-test":{"result":"success"}}|fail
 a selected job failed|pr|diagrams|{"diagrams":{"result":"failure"}}|fail
 a selected job was cancelled|pr|backend-public|{"backend-public-test":{"result":"cancelled"}}|fail
 a selected build was skipped|pr|backend-public|{"backend-public-build":{"result":"skipped"}}|fail
@@ -106,11 +111,11 @@ a job with no rule|pr|diagrams|{"deploy":{"result":"success"}}|fail
 a push: postgres selected, postgres-tag skipped|push|postgres chart|{"postgres-tag":{"result":"skipped"}}|ok
 a push: postgres-tag ran|push|postgres chart|{}|fail
 a pull request: postgres selected, postgres-tag skipped|pr|postgres chart|{"postgres-tag":{"result":"skipped"}}|fail
-a push: everything else selected and green|push|frontend backend-libs backend-public backend-backoffice chart monitoring diagrams|{}|ok
-a push: a selected job skipped|push|frontend backend-libs backend-public backend-backoffice chart monitoring diagrams|{"monitoring":{"result":"skipped"}}|fail
-a full run: package ran and is green|full|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"}}|ok
-a full run: package skipped|full|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"skipped"}}|fail
-a full run: package failed|full|frontend backend-libs backend-public backend-backoffice chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"failure"}}|fail
+a push: everything else selected and green|push|frontend backend-libs backend-public backend-backoffice backend-architecture chart monitoring diagrams|{}|ok
+a push: a selected job skipped|push|frontend backend-libs backend-public backend-backoffice backend-architecture chart monitoring diagrams|{"monitoring":{"result":"skipped"}}|fail
+a full run: package ran and is green|full|frontend backend-libs backend-public backend-backoffice backend-architecture chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"}}|ok
+a full run: package skipped|full|frontend backend-libs backend-public backend-backoffice backend-architecture chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"skipped"}}|fail
+a full run: package failed|full|frontend backend-libs backend-public backend-backoffice backend-architecture chart monitoring postgres diagrams|{"postgres-tag":{"result":"skipped"},"package":{"result":"failure"}}|fail
 a full run of a tree with no frontend: package skipped|full|backend-libs backend-public backend-backoffice diagrams|{}|ok
 a full run of a tree with no frontend: package ran|full|backend-libs backend-public backend-backoffice diagrams|{"package":{"result":"success"}}|fail
 a full run of a tree with one app: package skipped|full|frontend backend-libs backend-public diagrams|{}|ok

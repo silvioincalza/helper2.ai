@@ -142,7 +142,7 @@ On a review item, accept and reject were not enough:
      case per action. They are stored in a Scout table, `enrichment_queue_control`, one row per resource I touched,
      gone with the resource. The Scout is its only writer. The backlog SQL stays in the catalog (`BacklogRule`), and
      it reads the control rows through a join. This is a known exception in the table-owner test
-     (`ModularityTest`): the catalog reads a Scout table, read only. I chose it because the order must stay one rule
+     (`TableOwnersTest`): the catalog reads a Scout table, read only. I chose it because the order must stay one rule
      for the Scout's next batch, the page and the count. Two copies of the rule would drift apart.
    - Measured on synthetic data (250 000 resources, 37 500 REJECTED, 50 at the top), with `EXPLAIN ANALYZE`: the next 20
      in 2 ms (0.9 ms before; 5 ms in the worst case, 500 skips at the head of the never-run part), the count 1.7 to
@@ -386,7 +386,8 @@ than a hundred), so the question is the same for each of them: what is this name
   `api/AdminConfigApiIT.java` (fake secrets bound, none in the answer), `platform/settings/SettingTest.java`,
   `admin/usecase/GetEffectiveSettingsTest.java`, `platform/settings/JdbcPublicAppSettingsIT.java`,
   `site/settings/PublishSettingsAtStartupTest.java`,
-  `architecture/ModularityTest.java` (the table-owner exception; in the back office, admin names no internal class),
+  `architecture/ModularityTest.java` (in the back office, admin names no internal class),
+  `backend/architecture/src/test/java/ai/helper2/architecture/TableOwnersTest.java` (the table-owner exception),
   `examples/usecase/ReadExampleDraftTest.java`, `api/HomeExamplesApiIT.java` (the typed draft and its markers, checked against the contract),
   `frontend/src/admin/ExamplesPage.test.tsx`, `admin/config/SpaPropertiesBindingTest.java`,
   `frontend/src/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `ReviewBulk.test.tsx`,

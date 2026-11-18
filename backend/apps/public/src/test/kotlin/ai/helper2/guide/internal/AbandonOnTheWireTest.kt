@@ -17,6 +17,7 @@ import ai.helper2.search.SearchCache
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.Presence
 import ai.helper2.shared.SingleFlight
+import ai.helper2.testing.Eventually.eventually
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
@@ -86,12 +87,6 @@ class AbandonOnTheWireTest {
       stopsWhenNobodyWaits = true,
     )
 
-  private fun eventually(check: () -> Boolean): Boolean {
-    val giveUp = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
-    while (!check() && System.nanoTime() < giveUp) Thread.sleep(10)
-    return check()
-  }
-
   @Test
   fun `the streamed model call of a question its last asker left is closed at the provider, stays paid and is no provider failure`() {
     provider.then(Reply.stallsAfter("{\"searchQuery\":\"MCP"))
@@ -101,7 +96,7 @@ class AbandonOnTheWireTest {
         { guide.ask("postgres MCP server", null, GuideProgress.NONE, presence = asker) },
         executor,
       )
-    assertTrue(eventually { provider.bodies.size == 1 }, "the plan call reached the provider")
+    eventually { assertTrue(provider.bodies.size == 1, "the plan call reached the provider") }
 
     asker.leave()
 

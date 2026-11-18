@@ -54,13 +54,4 @@ tasks.named<Test>("test") {
     .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
     .withPropertyName("redisUsers")
     .withPathSensitivity(PathSensitivity.RELATIVE)
-  inputs
-    .files(
-      rootProject.fileTree(".") {
-        include("libs/*/src/main/java/**", "libs/*/src/main/kotlin/**")
-        include("apps/*/src/main/java/**", "apps/*/src/main/kotlin/**")
-      }
-    )
-    .withPropertyName("backendSources")
-    .withPathSensitivity(PathSensitivity.RELATIVE)
 }

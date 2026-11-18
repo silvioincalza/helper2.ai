@@ -1,10 +1,10 @@
-package ai.helper2.architecture;
+package ai.helper2.testing.architecture;
 
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.core.importer.Location;
 import java.util.regex.Pattern;
 
-final class DoNotIncludeTestFixtures implements ImportOption {
+public final class DoNotIncludeTestFixtures implements ImportOption {
 
   private static final Pattern TEST_FIXTURES =
       Pattern.compile(".*(/build/classes/[^/]+/testFixtures/|-test-fixtures\\.jar).*");

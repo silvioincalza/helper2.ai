@@ -31,6 +31,7 @@ jobs:
       backend-libs: ${{ steps.map.outputs.backend-libs }}
       backend-public: ${{ steps.map.outputs.backend-public }}
       backend-backoffice: ${{ steps.map.outputs.backend-backoffice }}
+      backend-architecture: ${{ steps.map.outputs.backend-architecture }}
       chart: ${{ steps.map.outputs.chart }}
       monitoring: ${{ steps.map.outputs.monitoring }}
       postgres: ${{ steps.map.outputs.postgres }}
@@ -309,6 +310,28 @@ jobs:
           path: backend/**/build/reports/tests/
           retention-days: 7
 
+  backend-architecture-test:
+    needs: [changes, backend-libs-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-architecture == 'true' && contains(fromJSON('["success", "skipped"]'), needs.backend-libs-build.result) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/backend-setup
+        with:
+          build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
+      - name: Format, compile and run the tests that read every backend project
+        run: ./gradlew --no-daemon -p architecture spotlessCheck test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: backend-architecture-test-reports
+          path: backend/**/build/reports/tests/
+          retention-days: 7
+
   package:
     needs: [changes, frontend-public-build, frontend-backoffice-build, backend-public-build, backend-backoffice-build]
     if: >-
@@ -458,6 +481,7 @@ jobs:
       - backend-public-test
       - backend-backoffice-build
       - backend-backoffice-test
+      - backend-architecture-test
       - package
       - postgres-tag
       - chart

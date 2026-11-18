@@ -24,6 +24,8 @@ dependencies {
   testFixturesApi("org.testcontainers:testcontainers-junit-jupiter")
   testFixturesApi("org.testcontainers:testcontainers-postgresql")
   testFixturesApi("net.ttddyy:datasource-proxy:1.11.1")
+  testFixturesApi("com.tngtech.archunit:archunit-junit5:${property("archunitVersion")}")
+  testFixturesApi("org.springframework.modulith:spring-modulith-core")
   testFixturesApi(project(":libs:schema"))
 }
 
