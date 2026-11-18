@@ -37,10 +37,11 @@ public interface RelationshipTargets {
 
   int linkOpenCandidates(String by, String note);
 
-  int confirmOpenKnownTargetCandidates(String by, String vendorNote, String serviceNote);
+  int confirmOpenKnownTargetCandidates(
+      String by, String vendorNote, String serviceNote, String toolNote);
 
   boolean confirmKnownTargetCandidate(
-      UUID itemId, String by, String vendorNote, String serviceNote);
+      UUID itemId, String by, String vendorNote, String serviceNote, String toolNote);
 
   long openItemCountNamed(String key);
 }

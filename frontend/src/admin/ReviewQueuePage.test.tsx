@@ -108,7 +108,7 @@ describe('admin: known target proposals in the review queue', () => {
     expect(card).toHaveTextContent('Vendor');
     expect(card).toHaveTextContent('22 GitHub or Hugging Face resources have this owner');
     expect(card).toHaveTextContent('deepseek-ai/DeepSeek-V3, deepseek-ai/Janus');
-    expect(card).toHaveTextContent('Accept adds it to the known vendors and services');
+    expect(card).toHaveTextContent('Accept adds it to the known vendors, services and tools');
   });
 
   it('saves a changed name, kind and other names, and reloads the list', async () => {
