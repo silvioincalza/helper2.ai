@@ -346,7 +346,8 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/` — the collectors: `mcp/McpRegistryCollector.java`,
   `huggingface/scout/HuggingFaceTrendingCollector.java`, `HuggingFaceProviderOrgsCollector.java`,
   `tavily/scout/LiveWebNewsCollector.java`, `CourseCollector.java`, `LinkedInCollector.java`, `LiveWebEventsCollector.java`,
-  `ScoutLiveWebCredits.java`, `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`,
+  `ScoutLiveWebCredits.java`, `ScoutLiveWebSearch.java`, `QueryProgress.java`,
+  `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`,
   `aideadlines/AiDeadlinesCollector.java` (`nextEdition`, `toHit`); `classifier/RepoClassifier.java`,
   `SpringAiRepoClassifier.java`; `config/scout/CollectorsConfiguration.java` (beans).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`,

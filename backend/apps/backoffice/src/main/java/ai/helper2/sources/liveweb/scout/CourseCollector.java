@@ -74,14 +74,12 @@ public class CourseCollector implements Collector {
     }
   }
 
-  private final RestClient http;
   private final Clock clock;
-  private final Resilience resilience;
   private final RunInterval interval;
   private final String query;
   private final List<Platform> platforms;
   private final SourceDescriptor descriptor;
-  private final ScoutLiveWebCredits credits;
+  private final ScoutLiveWebSearch liveWeb;
 
   public CourseCollector(
       SourceSettings settings,
@@ -93,8 +91,6 @@ public class CourseCollector implements Collector {
       List<String> platformSpecs,
       ScoutLiveWebCredits credits) {
     this.clock = clock;
-    this.credits = credits.forFeature(FEATURE);
-    this.resilience = resilience;
     if (settings.enabled()) {
       resilience.require(POLICY);
     }
@@ -102,7 +98,14 @@ public class CourseCollector implements Collector {
     this.query = query == null ? "" : query.strip();
     this.platforms =
         platformSpecs.stream().map(Platform::parse).filter(java.util.Objects::nonNull).toList();
-    this.http = HttpClients.client(builder, settings);
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            HttpClients.client(builder, settings),
+            clock,
+            resilience,
+            credits.forFeature(FEATURE),
+            POLICY,
+            SEARCH_DEPTH);
     this.descriptor = CollectorDescriptors.courses(settings, this.query, this.platforms);
   }
 
@@ -122,25 +125,22 @@ public class CourseCollector implements Collector {
     if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
       return CollectedBatch.notDue();
     }
-    if (credits.capReached()) {
-      return CollectedBatch.deferred(
-          "Daily live web credit cap of the Scout reached ("
-              + credits.dailyCap()
-              + " credits); next try tomorrow");
+    if (liveWeb.capReached()) {
+      return liveWeb.deferred();
     }
     Map<String, Candidate> byUrl = new LinkedHashMap<>();
     int perPlatform =
         Math.max(1, Math.min(MAX_RESULTS_PER_PLATFORM, maxItems / Math.max(1, platforms.size())));
-    String since = LiveWebNewsCollector.startDate(checkpoint);
+    String since = QueryProgress.startDate(checkpoint);
     Set<String> done = QueryProgress.done(resumeCursor);
     for (Platform p : platforms) {
       if (done.contains(p.where())) {
         continue;
       }
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         break;
       }
-      JsonNode root = search(requestBody(p, since, perPlatform));
+      JsonNode root = liveWeb.search(requestBody(p, since, perPlatform));
       for (JsonNode r : root.path("results")) {
         Candidate c = candidate(r, p);
         if (c != null) {
@@ -171,18 +171,6 @@ public class CourseCollector implements Collector {
       body.put("time_range", "month");
     }
     return body;
-  }
-
-  private JsonNode search(Map<String, Object> body) {
-    return resilience.call(
-        POLICY,
-        () ->
-            credits.countedAttempt(
-                SEARCH_DEPTH,
-                () ->
-                    HttpClients.getJson(
-                        () -> http.post().uri("/search").body(body).retrieve().body(String.class),
-                        clock)));
   }
 
   static Candidate candidate(JsonNode r, Platform p) {

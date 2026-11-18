@@ -63,13 +63,11 @@ public class LiveWebEventsCollector implements Collector {
 
   private static final Logger log = LoggerFactory.getLogger(LiveWebEventsCollector.class);
 
-  private final RestClient http;
   private final Clock clock;
-  private final Resilience resilience;
   private final RunInterval interval;
   private final List<String> queries;
   private final int maxPages;
-  private final ScoutLiveWebCredits credits;
+  private final ScoutLiveWebSearch liveWeb;
   private final @Nullable EventReader reader;
   private final UndatedEvents undated;
   private final ShadowLibraries shadowLibraries;
@@ -91,17 +89,22 @@ public class LiveWebEventsCollector implements Collector {
     this.clock = clock;
     this.shadowLibraries = shadowLibraries;
     this.undated = undated;
-    this.resilience = resilience;
     this.interval = interval;
     this.queries = List.copyOf(queries);
     this.maxPages = maxPages;
-    this.credits = credits.forFeature("scout-events");
     this.reader = reader;
     boolean enabled = CollectorDescriptors.liveWebEventsOn(settings, this.queries, reader != null);
     if (enabled) {
       resilience.require(POLICY);
     }
-    this.http = HttpClients.client(builder, settings);
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            HttpClients.client(builder, settings),
+            clock,
+            resilience,
+            credits.forFeature("scout-events"),
+            POLICY,
+            SEARCH_DEPTH);
     this.descriptor = CollectorDescriptors.liveWebEvents(settings, this.queries, reader != null);
   }
 
@@ -125,11 +128,8 @@ public class LiveWebEventsCollector implements Collector {
     if (reader == null) {
       return CollectedBatch.skipped("No AI model configured to read event pages");
     }
-    if (credits.capReached()) {
-      return CollectedBatch.deferred(
-          "Daily live web credit cap of the Scout reached ("
-              + credits.dailyCap()
-              + " credits); next try tomorrow");
+    if (liveWeb.capReached()) {
+      return liveWeb.deferred();
     }
     Set<String> done = QueryProgress.done(resumeCursor);
     int limit = Math.min(maxPages, Math.max(1, maxItems));
@@ -305,7 +305,7 @@ public class LiveWebEventsCollector implements Collector {
       if (done.contains(query)) {
         continue;
       }
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         log.info("{}: credit cap reached, the pass stays open", ID);
         break;
       }
@@ -376,7 +376,7 @@ public class LiveWebEventsCollector implements Collector {
     Set<String> processed = new LinkedHashSet<>();
     LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
     for (int i = 0; i < pages.size(); i += EXTRACT_BATCH) {
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         log.info("{}: credit cap reached, {} pages left unread", ID, pages.size() - i);
         return new Reading(events, processed);
       }
@@ -544,20 +544,6 @@ public class LiveWebEventsCollector implements Collector {
   }
 
   private JsonNode post(String path, Map<String, Object> body) {
-    return resilience.call(
-        POLICY,
-        () ->
-            credits.countedAttempt(
-                SEARCH_DEPTH,
-                () ->
-                    HttpClients.getJson(
-                        () ->
-                            http.post()
-                                .uri(path)
-                                .attributes(ObservedHttp.maxResponseBytes(MAX_EXTRACT_BYTES))
-                                .body(body)
-                                .retrieve()
-                                .body(String.class),
-                        clock)));
+    return liveWeb.post(path, body, ObservedHttp.maxResponseBytes(MAX_EXTRACT_BYTES));
   }
 }
