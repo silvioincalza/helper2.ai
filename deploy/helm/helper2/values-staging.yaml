@@ -33,6 +33,7 @@ app:
     guideNetworkQuestions: 1000
   guideCacheTtl: PT1S
   guideJudge:
+    model: nvidia/Nemotron-3-Ultra-550b-a55b
     dailyCalls: 300
 web:
   image:

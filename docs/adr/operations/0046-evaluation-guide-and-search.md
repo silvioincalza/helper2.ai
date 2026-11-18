@@ -230,8 +230,8 @@ repository. Relevance needs a human judgement per result, and judging every resu
     - **Model and cap.** `H2_GUIDE_JUDGE_MODEL` names the judge model, a different model than the one that writes and
       verifies; empty keeps the judge off. `H2_GUIDE_JUDGE_DAILY_CALLS` (default 300) is its own daily cap
       (`DailyBudget` "guide-judge") and `llm-chat-guide-judge` its own circuit breaker, so the judge never spends the
-      guide's cap and a judge outage never opens the guide's breaker. Staging sets the cap to 300 (the core set, about
-      130 calls, and a rerun); prod sets no model.
+      guide's cap and a judge outage never opens the guide's breaker. Staging sets `nvidia/Nemotron-3-Ultra-550b-a55b`
+      (Nebius, United States) and a cap of 300 (the core set, about 130 calls, and a rerun); prod sets no model.
     - **Results.** The meter `helper2.guide.judge{kind, evaluator, verdict, verify, prompt}` counts each verdict, with
       the verify step's verdict next to it (`supported`, `removed`, `not_checked`, `unchecked`). No tag holds text. The
       guide row of the Grafana dashboard shows the verdicts and the share of claims where verify and the fact judge
@@ -327,8 +327,8 @@ Search:
 - The judge reads a bare yes or no: a judge model that explains first counts as `unclear`. Spring AI's prompts are
   short and not written for hostile text; the escaping keeps our tags, not the judge's own instructions, safe, and a
   tricked judge changes a meter, never an answer. Agreement with the verify step is not accuracy: both can be wrong
-  the same way. The results are meters only: the run report does not show them. The judge runs only when staging
-  sets `app.guideJudge.model`.
+  the same way. The results are meters only: the run report does not show them. The judge's id is taken from Nebius's
+  catalog; a wrong id fails every judge call as `error` and changes no answer.
 - Frozen search snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling takes about 5 hours per judge; Tavily credits are spent once per recorded query.
 
 ## Diagrams
