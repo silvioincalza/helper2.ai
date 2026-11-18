@@ -66,17 +66,26 @@ tool answered, and must confirm every value before it reaches the catalog.
      `NOT_FOUND`: no supported value. A citation that fails the rules is dropped, and the step says why.
    The attributes are the resource's catalog fields: verdict, canonical URL, title, type, audience, tech level, pricing,
    open source, licence, description, tags, language, published date, duplicate of.
-7. **Applying.** The research result fills the candidate edit form. The admin confirms, edits or keeps each changed
-   attribute; Accept is enabled when every changed attribute has a decision. The confirmed values go into the candidate
-   (`ResourceCandidateJson`, extended with the new fields) and reach the catalog through the existing accept path. A
-   description written by the model keeps `description_origin = AI_SUMMARY`, so the public site labels it as AI-written
-   (EU AI Act Art. 50).
-8. **Batch apply: rejects only.** On a selection, the admin can reject the items whose verdict is reject. The list of
-   items with their reasons is shown first; nothing is rejected before the admin confirms it. Keep and duplicate are
-   decided one item at a time.
+7. **Applying.** The detail pane of the review queue shows the verdict and one row per attribute: the value now, the
+   proposed value, its status and its quotes. The admin confirms, edits or keeps each changed attribute (keys `c`, `e`
+   and `u`: `k` stays "previous item"); a conflict needs a pick first. Accept is enabled when every changed attribute
+   has a decision, and says how many are left. On Accept, a confirmed title, type and tags go into the candidate
+   through `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path. The
+   candidate holds no other field: the other confirmed values (pricing, licence, description and the rest) go into the
+   decision's note, `Research confirmed: name=value; …`, and the catalog does not take them yet. The pane is marked
+   `data-ai-generated` with the model, and labelled "Proposed with AI" (EU AI Act Art. 50).
+8. **Batch apply: rejects only.** The research bar offers to reject the items of the page whose verdict is reject. The
+   list of items with their reasons is shown first, and the admin can untick any; nothing is rejected before the admin
+   confirms it. Keep and duplicate are decided one item at a time. The research bar also starts research for the
+   picked items, the page, or every open candidate after the count and the most model calls are shown. Each row
+   shows its research (queued, running with its step, the verdict, failed with the reason, cancel, research again),
+   read every 2 seconds while a run is active. The Research filter (done keep, done reject, not researched) reads the
+   loaded page only.
 9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
    changes, and ends with the run. It reads new rows from Postgres once a second, so it works with any number of back
-   office pods and needs no broker. The queue rows read their status from `GET /admin/review-research?itemId=…`. A
+   office pods and needs no broker. The page `/admin/review/research/{runId}` shows every step, request and response
+   as plain text, filtered by kind or errors, and follows a running run on this stream. The queue rows read their
+   status from `GET /admin/review-research?itemId=…`. A
    result carries `aiWritten: true`, the machine-readable AI marking.
 10. **Measured before it is used.** Before the UI ships, an offline eval runs the agent on 100 items the admin has
     already decided, once with `H2_NEBIUS_FAST_MODEL` and once with `H2_NEBIUS_REASONING_MODEL`. It reports verdict
