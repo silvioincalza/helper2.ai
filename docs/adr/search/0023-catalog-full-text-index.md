@@ -72,7 +72,7 @@ whether a query finds a resource there:
    Each source's deadline and latency count from its own start, so the wait never eats a source's budget.
 6. **Translator** (`SpringAiQueryTranslator` in `search.internal`, the search module's adapter of its port
    `QueryTranslator`; model calls as in [0008](../foundation/0008-llm-integration.md)): the fast model (`H2_NEBIUS_FAST_MODEL`), prompt
-   `prompts/search/translate-query.txt` (label `73c073ff`, the hash of the rendered prompt, pinned by a test), at most 12
+   `prompts/search/translate-query.txt` (label `ecc182c3`, the hash of the rendered prompt, pinned by a test), at most 12
    words (`QueryTranslator.MAX_WORDS`), 400 output tokens, thinking off. The query is data: it goes between `<query>` tags
    through `UntrustedText` (cut to 500 characters, the guide's limit for a need), so it cannot close the tag. The language
    is a code from the detector's closed list; any other value is not sent.
@@ -84,9 +84,13 @@ whether a query finds a resource there:
    is not cached, and a database error or a lookup over its time limit is a miss, so a query any replica translated costs no model call on the others. On whenever a model is configured, off without one.
    The call runs under the `llm-chat` circuit ([0006](../foundation/0006-outbound-calls-and-resilience.md)); the budget is taken inside it, so
    a call the open circuit refuses costs no translation.
-7. **Untrusted answer.** The answer is dropped if it looks like a link. Only letters, digits, spaces and hyphens stay;
-   at most 12 words and 120 characters again. It is dropped if it equals the normalized query. Any failure, timeout or open
-   circuit means the search runs untranslated.
+7. **Untrusted answer.** The prompt asks the model to give back a query that is already English, or has nothing to
+   translate, unchanged. The answer is dropped if it looks like a link, or if it talks about the query instead of being
+   one ("already in English", "nothing to translate", "cannot be translated"; the phrases are in
+   `i18n/translation-words_en.properties`). Only letters, digits, spaces and hyphens
+   stay; at most 12 words and 120 characters again. It is dropped if it equals the query reduced the same way, so an
+   echo that differs only in case or punctuation adds no variant. Any failure, timeout or open circuit means the search
+   runs untranslated.
 8. **Disclosed.** The English words go first into the expansions and the required-word variants, so live sources
    receive them as extra terms. The notice "Also searched for: …" (`QUERY_EXPANDED`) lists the word-list terms only, never
    the translation, so the notice stays in our own words. In the index each

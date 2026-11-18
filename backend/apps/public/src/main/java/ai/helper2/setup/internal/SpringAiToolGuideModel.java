@@ -76,6 +76,7 @@ class SpringAiToolGuideModel implements ToolGuideModel {
                 "textTargetChars", TEXT_TARGET_CHARS,
                 "minQuoteChars", ToolGuideValidator.MIN_QUOTE_CHARS,
                 "minQuoteWords", ToolGuideValidator.MIN_QUOTE_WORDS,
+                "minLineQuoteWords", ToolGuideValidator.MIN_LINE_QUOTE_WORDS,
                 "quoteTargetChars", QUOTE_TARGET_CHARS,
                 "maxCodeLines", ToolGuideValidator.MAX_CODE_LINES,
                 "maxSteps", ToolGuideValidator.MAX_STEPS_PER_SECTION));
