@@ -12,9 +12,10 @@ feature, in the order a reader should learn them. Open work is in the
 
 ![Hexagonal architecture](diagrams/hexagonal-architecture.svg)
 
-The Kotlin domain (search, guide, scout) holds the rules and depends only on its ports, the Kotlin interfaces on its
-edge. Java adapters implement those ports and talk to the outside: REST controllers on the driving side; sources,
-Redis, PostgreSQL and the NVIDIA models on the driven side.
+The Kotlin domain (search, guide, setup, scout and the shared kernel) holds the rules and depends only on its ports,
+the Kotlin interfaces on its edge. Java adapters implement those ports and talk to the outside: REST controllers and
+schedules of both apps on the driving side; the public web, the NVIDIA Nemotron models, Redis and PostgreSQL on the
+driven side.
 
 ### The same system, one view at a time
 
