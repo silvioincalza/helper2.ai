@@ -7,7 +7,9 @@
 #   frontend/src/admin/EnrichmentQueuePage.tsx, admin/web/EnrichmentQueueController.java,
 #   scout/usecase/PrioritiseEnrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
 #   admin/usecase/ResolveReviewItems.java, admin/usecase/ResearchedAcceptance.java, frontend/src/admin/ReviewBulk.tsx,
-#   admin/web/ReviewItemMapper.java, examples/usecase/ReadExampleDraft.java, frontend/src/admin/ReviewItemDetails.tsx.
+#   admin/usecase/ListReviewQueue.java, admin/usecase/ReviewItemViews.java, admin/web/ReviewItemMapper.java,
+#   examples/usecase/ReadExampleDraft.java, scout/internal/ResourceCandidateJson.java (shown),
+#   catalog/internal/KnownTargetProposalJson.java, frontend/src/admin/ReviewItemDetails.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0038-back-office.d2 && d2 sequence-0038-back-office.d2 sequence-0038-back-office.svg
 
 ...@style
@@ -33,7 +35,7 @@ follow: Follow a count {
   owner -> spa: "12 User report"
   spa -> api: "GET /api/v1/admin/review-items?status=OPEN&kind=USER_REPORT"
   api -> db: "page of open user reports"
-  api -> spa: "items (a drafted example with its draft,\nread by the examples module, and its aiContent)"
+  api -> spa: "items, each a view of ListReviewQueue:\nits details typed by shape (TEXT, CANDIDATE,\nKNOWN_TARGET_PROPOSAL), a drafted example\nwith its draft and its aiContent"
   spa -> owner: "/admin/review?kind=USER_REPORT"
 }
 

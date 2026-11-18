@@ -276,7 +276,7 @@ paths:
         candidate is indexed at, and an already listed URL closes the item as listed). The type may be any candidate type,
         not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
         `not-applicable` for an item that is not a resource candidate, `already-decided` for one no longer open,
-        `version-conflict` when the candidate changed since it was shown (`expectedDetails`; reload, then edit
+        `version-conflict` when the candidate changed since it was shown (`expectedRevision`; reload, then edit
         again).
       parameters:
         - {
@@ -1423,13 +1423,14 @@ components:
     ReviewKind:
       type: string
       description: >-
-        COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; URL in details).
+        COURSE_CANDIDATE is a course page found by Scout and not yet in the catalog (no resource; the candidate in
+        `details`).
         EXAMPLE_CANDIDATE is a home example a model drafted for the resource (the draft in `draft`: label, query,
         path, model); accepting it adds the example. RESOURCE_CANDIDATE is a product page found by the Scout's
-        discovery and not yet in the catalog (no resource; the candidate as JSON in details: sourceId, url,
-        title, type, tags, snippet); accepting it indexes it, unless another source listed the page
+        discovery and not yet in the catalog (no resource; the candidate in `details`: url, title, type, tags,
+        snippet, foundBy); accepting it indexes it, unless another source listed the page
         meanwhile. KNOWN_TARGET_CANDIDATE is a vendor or service a rule proposes as a known target (no resource; the
-        proposal as JSON in details: key, name, kind, rule, count, otherNames, examples with id and title);
+        proposal in `details`: name, kind, rule, count, otherNames, examples);
         accepting it adds the known target, or adds its names to the target of the same kind that holds its
         name; a 409 says a name is taken. It is accepted one at a time.
       enum:
@@ -2135,13 +2136,18 @@ components:
         resourceId: { type: [string, "null"], format: uuid }
         resourceTitle: { type: [string, "null"] }
         reason: { type: string }
-        details: { type: [string, "null"] }
+        details:
+          oneOf:
+            [{ $ref: "#/components/schemas/ReviewDetails" }, { type: "null" }]
+          description: >-
+            What the item holds besides its reason, by shape. Null when it holds nothing, and for an EXAMPLE_CANDIDATE
+            whose draft is in `draft`.
         draft:
           oneOf:
             [{ $ref: "#/components/schemas/DraftedExample" }, { type: "null" }]
           description: >-
             The drafted example of an EXAMPLE_CANDIDATE (ADR 0028, 0038); null for every other kind, and when the item
-            holds no readable draft (then `details` is shown as text).
+            holds no readable draft (then `details` has the TEXT shape).
         aiContent:
           oneOf:
             [
@@ -2166,6 +2172,87 @@ components:
           description: >-
             Only in the answer to accepting a resource candidate whose address the catalog already lists (ADR 0013):
             the listed resource, so the page can link to it. Null otherwise.
+
+    ReviewDetails:
+      description: >-
+        The details of a review item, one shape each (`shape` says which). CANDIDATE: a RESOURCE_CANDIDATE, and a
+        COURSE_CANDIDATE found as a candidate. KNOWN_TARGET_PROPOSAL: a KNOWN_TARGET_CANDIDATE. TEXT: every other
+        kind (the validation errors of an ENRICHMENT_VALIDATION, why a RELATIONSHIP_CANDIDATE is not verified, the
+        note of a USER_REPORT), and under any kind a stored value that does not read as its shape: the page shows it
+        as it is stored.
+      oneOf:
+        - $ref: "#/components/schemas/ReviewTextDetails"
+        - $ref: "#/components/schemas/ReviewCandidateDetails"
+        - $ref: "#/components/schemas/ReviewKnownTargetProposalDetails"
+      discriminator:
+        propertyName: shape
+        mapping:
+          TEXT: "#/components/schemas/ReviewTextDetails"
+          CANDIDATE: "#/components/schemas/ReviewCandidateDetails"
+          KNOWN_TARGET_PROPOSAL: "#/components/schemas/ReviewKnownTargetProposalDetails"
+
+    ReviewDetailsShape:
+      type: string
+      description: Which shape the details have. Each shape holds its own value, and only that one.
+      enum: [TEXT, CANDIDATE, KNOWN_TARGET_PROPOSAL]
+
+    ReviewTextDetails:
+      type: object
+      required: [shape, text]
+      properties:
+        shape: { $ref: "#/components/schemas/ReviewDetailsShape" }
+        text: { type: string }
+
+    ReviewCandidateDetails:
+      type: object
+      description: A page a collector found and the catalog does not list yet (ADR 0013, 0038).
+      required: [shape, revision, url, title, type, tags, foundBy, edited]
+      properties:
+        shape: { $ref: "#/components/schemas/ReviewDetailsShape" }
+        revision:
+          type: string
+          description: >-
+            Names the candidate as stored now. It changes when a collector finds the page again or an admin edits it.
+            An edit sends it back as `expectedRevision`.
+        url: { type: string, description: An https address. }
+        title: { type: string }
+        type:
+          type: string
+          description: A resource type, as stored (an old candidate may hold a type the catalog no longer has).
+        tags:
+          type: array
+          items: { type: string }
+        snippet: { type: [string, "null"] }
+        foundBy:
+          type: array
+          description: The ids of the sources that found the page, first finder first.
+          items: { type: string }
+        edited:
+          type: array
+          description: The values an admin changed (`title`, `type`, `tags`, `canonicalUrl`, a confirmed value).
+          items: { type: string }
+
+    ReviewKnownTargetProposalDetails:
+      type: object
+      description: A vendor, service or tool a rule proposes as a known target (ADR 0019).
+      required: [shape, name, kind, rule, count, examples, otherNames, edited]
+      properties:
+        shape: { $ref: "#/components/schemas/ReviewDetailsShape" }
+        name: { type: string }
+        kind: { $ref: "#/components/schemas/KnownTargetKind" }
+        rule:
+          type: string
+          description: "The rule that found it. OWNER: it owns `count` resources."
+          enum: [OWNER]
+        count: { type: integer }
+        examples:
+          type: array
+          description: The titles of some of the resources the rule counted.
+          items: { type: string }
+        otherNames:
+          type: array
+          items: { type: string }
+        edited: { type: boolean, description: An admin changed the name, the kind or the other names. }
 
     AlreadyListed:
       type: object
@@ -2305,14 +2392,14 @@ components:
     CandidateEdit:
       type: object
       description: At least one value; null leaves it as it is.
-      required: [expectedDetails]
+      required: [expectedRevision]
       properties:
-        expectedDetails:
-          type: [string, "null"]
+        expectedRevision:
+          type: string
           description: >-
-            The item's `details` as the admin saw them, unchanged. The edit applies only to these: when the candidate
-            changed since (a collector found the page again, another admin edited it), it is refused with 409
-            `version-conflict`.
+            The `revision` of the item's `details` as the admin saw them. The edit applies only to that revision: when
+            the candidate changed since (a collector found the page again, another admin edited it), it is refused
+            with 409 `version-conflict`.
         title: { type: [string, "null"], minLength: 1, maxLength: 300 }
         type:
           oneOf:

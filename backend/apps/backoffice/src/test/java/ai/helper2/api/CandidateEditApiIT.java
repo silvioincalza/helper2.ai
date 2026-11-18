@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
 import java.util.List;
@@ -76,8 +77,7 @@ class CandidateEditApiIT extends ApiTestBase {
   }
 
   ResultActions edit(UUID id, String seen, String fields) throws Exception {
-    String expected =
-        "{\"expectedDetails\":\"" + seen.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    String expected = "{\"expectedRevision\":\"" + CandidateRevision.of(seen) + "\"";
     String body = fields.equals("{}") ? expected + "}" : expected + "," + fields.substring(1);
     return mvc.perform(
         put("/api/v1/admin/review-items/" + id + "/candidate")

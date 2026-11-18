@@ -110,7 +110,9 @@ to reach into the other's code.
    dispatch by intent, and `QuestionReader`, `PickAnswer`, `CompareAnswer`, `ExplainAnswer`, `DateAnswer` and
    `ReasonCheckStep` do the work; no other module sees them. Controllers and schedulers call use cases for what a
    module does, a read-only lookup too (`GetReviewItem`, `ListScoutRuns`); the back office's `ModularityTest`
-   fails when a controller calls a port of catalog, scout, examples or research. Models, ports
+   fails when a controller calls a port of catalog, scout, examples or research, and when a controller uses one
+   of the port records the review and enrichment queues are made of: those use cases answer with views they own
+   ([0038](../backoffice/0038-back-office-and-review.md) §1). Models, ports
    and rules (for example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so
    adapters never depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
    (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). The Scout reads and
@@ -129,6 +131,9 @@ to reach into the other's code.
      no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
      `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
+   - `controllersAnswerWithViewsNotPortRecords` (back office): no class of a `web` package uses `ReviewQueue.Status`,
+     `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
+     `ReviewEvidence.Evidence` ([0038](../backoffice/0038-back-office-and-review.md) §1);
    - `theLlmLayerIsUsedOnlyThroughItsNamedInterface`: no class outside `platform.llm` depends on a class of
      `platform.llm` or below it that is not in the named interface `llm`. The test reads the interface from the
      modules, so a new sub-package of `platform.llm` is closed with no change to the test;
@@ -287,6 +292,6 @@ Modules, ports and adapters: one view per module group, [context](../../diagrams
 ## Backlog
 - Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20),
   [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (the closed LLM layer,
-  [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180)).
-- Open issues that change it:
-  - [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181): controllers return views owned by the use cases.
+  [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180); controllers that answer with views owned by
+  the use cases, [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181)).
+- Open issues that change it: none.

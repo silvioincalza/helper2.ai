@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -115,9 +116,16 @@ class KnownTargetProposalApiIT extends ApiTestBase {
             .getContentAsString();
 
     ContractValidator.assertMatches("ReviewItemPage", listed);
-    List<String> details = JsonPath.read(listed, "$.items[?(@.id=='" + item + "')].details");
+    List<Map<String, Object>> details =
+        JsonPath.read(listed, "$.items[?(@.id=='" + item + "')].details");
     assertThat(details).hasSize(1);
-    assertThat((String) JsonPath.read(details.getFirst(), "$.name")).isEqualTo(name);
+    assertThat(details.getFirst())
+        .containsEntry("shape", "KNOWN_TARGET_PROPOSAL")
+        .containsEntry("name", name)
+        .containsEntry("kind", "VENDOR")
+        .containsEntry("rule", "OWNER")
+        .containsEntry("edited", false)
+        .doesNotContainKey("key");
   }
 
   @Test
@@ -214,10 +222,9 @@ class KnownTargetProposalApiIT extends ApiTestBase {
             .getResponse()
             .getContentAsString();
     ContractValidator.assertMatches("ReviewItem", changed);
-    String details = JsonPath.read(changed, "$.details");
-    assertThat((String) JsonPath.read(details, "$.name")).isEqualTo(shown);
-    assertThat((String) JsonPath.read(details, "$.key")).isEqualTo(name);
-    assertThat((Boolean) JsonPath.read(details, "$.edited")).isTrue();
+    assertThat((String) JsonPath.read(changed, "$.details.name")).isEqualTo(shown);
+    assertThat((String) JsonPath.read(changed, "$.details.kind")).isEqualTo("SERVICE");
+    assertThat((Boolean) JsonPath.read(changed, "$.details.edited")).isTrue();
 
     decide(item, "ACCEPTED").andExpect(status().isOk());
 

@@ -493,7 +493,14 @@ describe('Feature: deciding review items', () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () =>
-        page([{ ...item, status: 'ACCEPTED', resourceId: 'a/b c', details: 'It is free' }]),
+        page([
+          {
+            ...item,
+            status: 'ACCEPTED',
+            resourceId: 'a/b c',
+            details: { shape: 'TEXT', text: 'It is free' },
+          },
+        ]),
     });
     renderAdmin('/admin/review?status=ACCEPTED');
     const queue = await screen.findByRole('table', { name: 'Review queue' });

@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axeViolations } from '@/test/a11y';
+import type { ReviewItem } from '@/api/types';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi, type Handler } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
@@ -17,15 +18,18 @@ const FRESH = '33333333-3333-4333-8333-333333333333';
 const RUN_ACME = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const RUN_LIST = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
-const acmeDetails = JSON.stringify({
-  sourceId: 'discovery-meetings-and-transcription',
+const acmeDetails: ReviewItem['details'] = {
+  shape: 'CANDIDATE',
+  revision: 'acme-seen',
   url: 'https://acmenotes.example/ai-meeting-notetaker',
   title: 'AI Meeting Notetaker | Transcripts | AcmeTeam',
   type: 'PRODUCT',
   tags: ['meetings-and-transcription'],
-});
+  foundBy: ['discovery-meetings-and-transcription'],
+  edited: [],
+};
 
-function item(id: string, reason: string, details: string | null = null) {
+function item(id: string, reason: string, details: ReviewItem['details'] = null) {
   return {
     id,
     kind: 'RESOURCE_CANDIDATE',
@@ -199,7 +203,7 @@ describe('admin: research in the review queue (ADR 0048)', () => {
       expect(m.callsTo('PUT', `/admin/review-items/${ACME}/resolution`)).toHaveLength(1),
     );
     expect(m.callsTo('PUT', `/admin/review-items/${ACME}/candidate`)[0]?.body).toEqual({
-      expectedDetails: acmeDetails,
+      expectedRevision: 'acme-seen',
       title: 'Acme Notes',
       pricing: 'FREEMIUM',
       publishedAt: '2025-03-02',
