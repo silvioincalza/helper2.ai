@@ -35,6 +35,12 @@ public final class RunResearch {
   public static final int MAX_TEXT_TO_MODEL = 6_000;
   static final int MAX_URL_TO_MODEL = 2_000;
   static final String NO_TEXT = "the tool returned no readable text";
+  static final String NOT_RUN = "not run: the tool calls are used up";
+  static final String ANSWER_NOW =
+      "You have used all "
+          + MAX_TOOL_CALLS
+          + " tool calls. Answer now with the JSON object only. Propose only what the evidence you"
+          + " have read supports; leave out the rest.";
 
   private final ResearchRuns runs;
   private final ResearchItems items;
@@ -110,6 +116,7 @@ public final class RunResearch {
       conversation.add(new Message.Instructions(instructions));
       conversation.add(new Message.User(subjectText.apply(subject)));
       boolean retried = false;
+      boolean answerNow = false;
       while (true) {
         if (runs.isCancelled(run.id())) {
           return;
@@ -118,15 +125,23 @@ public final class RunResearch {
           fail("stopped after " + MAX_DURATION.toMinutes() + " minutes");
           return;
         }
-        Turn turn = modelCall();
+        Turn turn = modelCall(answerNow ? List.of() : List.copyOf(tools.values()));
         if (!turn.calls().isEmpty()) {
+          if (answerNow) {
+            fail("no final answer after " + MAX_TOOL_CALLS + " tool calls");
+            return;
+          }
           conversation.add(new Message.Assistant(turn.text(), turn.calls()));
           for (ToolCall call : turn.calls()) {
-            if (toolCalls >= MAX_TOOL_CALLS) {
-              fail("stopped after " + MAX_TOOL_CALLS + " tool calls with no final answer");
-              return;
+            if (toolCalls < MAX_TOOL_CALLS) {
+              toolCall(call);
+            } else {
+              notRun(call);
             }
-            toolCall(call);
+          }
+          if (toolCalls >= MAX_TOOL_CALLS) {
+            answerNow = true;
+            conversation.add(new Message.User(ANSWER_NOW));
           }
           continue;
         }
@@ -150,11 +165,11 @@ public final class RunResearch {
       }
     }
 
-    private Turn modelCall() {
+    private Turn modelCall(List<ResearchTool> offered) {
       Instant at = clock.instant();
       String request = render(conversation.subList(sent, conversation.size()));
       sent = conversation.size();
-      Turn turn = model.next(List.copyOf(conversation), List.copyOf(tools.values()));
+      Turn turn = model.next(List.copyOf(conversation), offered);
       promptTokens += turn.promptTokens();
       completionTokens += turn.completionTokens();
       step(
@@ -209,6 +224,20 @@ public final class RunResearch {
           call.arguments(),
           (out.url() == null ? "" : "url: " + out.url() + "\n\n") + out.text(),
           error,
+          at,
+          null,
+          null);
+    }
+
+    private void notRun(ToolCall call) {
+      Instant at = clock.instant();
+      conversation.add(new Message.ToolResult(call.id(), call.name(), NOT_RUN));
+      step(
+          ResearchStep.Kind.TOOL_CALL,
+          call.name(),
+          call.arguments(),
+          NOT_RUN,
+          NOT_RUN,
           at,
           null,
           null);

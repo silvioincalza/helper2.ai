@@ -22,6 +22,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
@@ -197,15 +198,75 @@ class RunResearchTest {
   }
 
   @Test
-  void aRunStopsAfterTwelveToolCalls() {
-    for (int i = 0; i < 20; i++) {
+  void afterTwelveToolCallsTheModelAnswersWithWhatItFoundAndNoTools() {
+    for (int i = 0; i < RunResearch.MAX_TOOL_CALLS; i++) {
+      model.turns.add(callTool("read_page"));
+    }
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    research(tool("read_page", () -> new ResearchTool.Output(PAGE, "https://acme.dev"))).runNext();
+
+    assertThat(runs.error).isNull();
+    assertThat(runs.steps)
+        .filteredOn(s -> s.kind() == ResearchStep.Kind.TOOL_CALL)
+        .hasSize(RunResearch.MAX_TOOL_CALLS);
+    assertThat(model.toolsOffered.getLast()).isEmpty();
+    assertThat(model.toolsOffered.getFirst()).hasSize(1);
+    assertThat(model.seen.getLast().getLast())
+        .isInstanceOfSatisfying(
+            ResearchModel.Message.User.class,
+            u -> assertThat(u.text()).contains("12 tool calls").contains("JSON object"));
+    assertThat(runs.result.attributes())
+        .filteredOn(a -> a.name().equals("title"))
+        .singleElement()
+        .matches(a -> a.status() == ResearchResult.Status.CONFIRMED);
+  }
+
+  @Test
+  void aToolCallBeyondTheBudgetIsNotRunButStillAnswered() {
+    AtomicInteger ran = new AtomicInteger();
+    List<ResearchModel.ToolCall> calls = new ArrayList<>();
+    for (int i = 0; i <= RunResearch.MAX_TOOL_CALLS; i++) {
+      calls.add(new ResearchModel.ToolCall("c" + i, "check_url", "{}"));
+    }
+    model.turns.add(new ResearchModel.Turn("", calls, null, null, 1, 1));
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    research(
+            tool(
+                "check_url",
+                () -> {
+                  ran.incrementAndGet();
+                  return new ResearchTool.Output("200", null);
+                }))
+        .runNext();
+
+    assertThat(ran).hasValue(RunResearch.MAX_TOOL_CALLS);
+    String last = "c" + RunResearch.MAX_TOOL_CALLS;
+    assertThat(model.seen.getLast())
+        .anyMatch(m ->
+            m instanceof ResearchModel.Message.ToolResult r
+                && r.callId().equals(last)
+                && r.text().equals(RunResearch.NOT_RUN));
+    assertThat(runs.steps)
+        .filteredOn(s -> s.kind() == ResearchStep.Kind.TOOL_CALL && s.error() != null)
+        .singleElement()
+        .matches(s -> s.error().equals(RunResearch.NOT_RUN));
+    assertThat(runs.error).isNull();
+  }
+
+  @Test
+  void aModelThatStillCallsToolsAfterTheBudgetFailsTheRun() {
+    for (int i = 0; i <= RunResearch.MAX_TOOL_CALLS; i++) {
       model.turns.add(callTool("check_url"));
     }
     runs.queue();
 
     research(tool("check_url", () -> new ResearchTool.Output("200", null))).runNext();
 
-    assertThat(runs.error).contains("12 tool calls");
+    assertThat(runs.error).isEqualTo("no final answer after 12 tool calls");
     assertThat(runs.steps)
         .filteredOn(s -> s.kind() == ResearchStep.Kind.TOOL_CALL)
         .hasSize(RunResearch.MAX_TOOL_CALLS);
@@ -274,6 +335,7 @@ class RunResearchTest {
   static final class Model implements ResearchModel {
     final Deque<Turn> turns = new ArrayDeque<>();
     final List<List<Message>> seen = new ArrayList<>();
+    final List<List<ResearchTool>> toolsOffered = new ArrayList<>();
     boolean unavailable;
 
     @Override
@@ -287,6 +349,7 @@ class RunResearchTest {
         throw new Unavailable("no model");
       }
       seen.add(conversation);
+      toolsOffered.add(tools);
       return turns.removeFirst();
     }
   }
