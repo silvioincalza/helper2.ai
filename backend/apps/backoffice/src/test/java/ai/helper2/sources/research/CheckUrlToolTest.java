@@ -152,7 +152,7 @@ class CheckUrlToolTest {
 
     ResearchTool.Output out = tool().call(url("https://acme.dev/"));
 
-    assertThat(out.text()).contains("stopped after 20 seconds");
+    assertThat(out.text()).contains("stopped: one check takes at most 20000 ms");
     assertThat(timeLeft)
         .containsExactly(Duration.ofSeconds(20), Duration.ofSeconds(12), Duration.ofSeconds(4));
   }
@@ -185,5 +185,56 @@ class CheckUrlToolTest {
     } catch (IOException | InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  @Test
+  void aSlowLookupUsesUpTheDeadlineAndNoRequestIsSent() {
+    CheckUrlTool slow =
+        new CheckUrlTool(
+            new PublicAddresses(
+                ShadowLibraries.of("z-lib"),
+                host -> {
+                  try {
+                    Thread.sleep(Duration.ofSeconds(10));
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                  }
+                  return new InetAddress[] {InetAddress.getLoopbackAddress()};
+                }),
+            (url, checked, left) -> {
+              connectedTo.add(checked);
+              return new CheckUrlTool.Hop(200, null);
+            },
+            Duration.ofMillis(300),
+            System::nanoTime);
+    long started = System.nanoTime();
+
+    ResearchTool.Output out = slow.call(url("https://acme.dev/"));
+
+    assertThat(out.text()).contains("stopped: one check takes at most 300 ms");
+    assertThat(connectedTo).isEmpty();
+    assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(3));
+  }
+
+  @Test
+  void theTimeTheLookupTookIsTakenFromTheRequest() throws Exception {
+    CheckUrlTool tool =
+        new CheckUrlTool(
+            new PublicAddresses(
+                ShadowLibraries.of("z-lib"),
+                host -> {
+                  now.addAndGet(Duration.ofSeconds(5).toNanos());
+                  return new InetAddress[] {ip("93.184.216.34")};
+                }),
+            (url, checked, left) -> {
+              timeLeft.add(left);
+              return new CheckUrlTool.Hop(200, null);
+            },
+            Duration.ofSeconds(20),
+            now::get);
+
+    tool.call(url("https://acme.dev/"));
+
+    assertThat(timeLeft).containsExactly(Duration.ofSeconds(15));
   }
 }

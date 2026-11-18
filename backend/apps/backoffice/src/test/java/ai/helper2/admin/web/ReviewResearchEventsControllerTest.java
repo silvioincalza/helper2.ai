@@ -141,13 +141,16 @@ class ReviewResearchEventsControllerTest {
     runs.stepList = List.of(step(runId, 1));
     runs.startedAt = Instant.parse("2026-11-19T00:00:01Z");
 
-    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(4));
+    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(5));
+    assertThat(emitters.getFirst().names)
+        .containsExactly("status", "step", "step", "status", "step");
     emitters.getFirst().complete();
   }
 
   static final class Recording extends SseEmitter {
     final AtomicInteger events = new AtomicInteger();
     final AtomicInteger comments = new AtomicInteger();
+    final List<String> names = new CopyOnWriteArrayList<>();
     volatile boolean done;
 
     @Override
@@ -158,6 +161,10 @@ class ReviewResearchEventsControllerTest {
       boolean comment =
           event.build().stream().anyMatch(d -> String.valueOf(d.getData()).startsWith(":"));
       (comment ? comments : events).incrementAndGet();
+      if (!comment) {
+        String head = String.valueOf(event.build().iterator().next().getData());
+        names.add(head.substring(head.indexOf(':') + 1, head.indexOf('\n')));
+      }
     }
 
     @Override

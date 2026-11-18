@@ -9,10 +9,13 @@ import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.LongSupplier;
 import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.classic.methods.HttpHead;
@@ -88,9 +91,8 @@ public final class CheckUrlTool implements ResearchTool {
     String current = url.strip();
     long endsAt = nanos.getAsLong() + deadline.toNanos();
     for (int hop = 0; hop <= MAX_HOPS; hop++) {
-      Duration timeLeft = Duration.ofNanos(endsAt - nanos.getAsLong());
-      if (timeLeft.isNegative() || timeLeft.isZero()) {
-        return Output.error(out + "stopped after " + deadline.toSeconds() + " seconds");
+      if (timeLeft(endsAt) == null) {
+        return Output.error(out + stopped());
       }
       URI uri;
       try {
@@ -104,9 +106,15 @@ public final class CheckUrlTool implements ResearchTool {
       }
       List<InetAddress> checked;
       try {
-        checked = addresses.resolve(uri.getHost());
+        checked = resolveWithin(uri.getHost(), timeLeft(endsAt));
       } catch (PublicAddresses.NotPublic e) {
         return Output.error(out + "not checked: " + current + ": " + e.getMessage());
+      } catch (TimeoutException e) {
+        return Output.error(out + current + ": " + stopped());
+      }
+      Duration timeLeft = timeLeft(endsAt);
+      if (timeLeft == null) {
+        return Output.error(out + current + ": " + stopped());
       }
       Hop response;
       try {
@@ -123,6 +131,37 @@ public final class CheckUrlTool implements ResearchTool {
       current = uri.resolve(response.location()).toString();
     }
     return Output.error(out + "more than " + MAX_HOPS + " redirects");
+  }
+
+  private @Nullable Duration timeLeft(long endsAt) {
+    Duration left = Duration.ofNanos(endsAt - nanos.getAsLong());
+    return left.isNegative() || left.isZero() ? null : left;
+  }
+
+  private String stopped() {
+    return "stopped: one check takes at most " + deadline.toMillis() + " ms";
+  }
+
+  private List<InetAddress> resolveWithin(String host, @Nullable Duration timeLeft)
+      throws PublicAddresses.NotPublic, TimeoutException {
+    if (timeLeft == null) {
+      throw new TimeoutException();
+    }
+    FutureTask<List<InetAddress>> lookup = new FutureTask<>(() -> addresses.resolve(host));
+    Thread.ofVirtual().name("check-url-lookup").start(lookup);
+    try {
+      return lookup.get(timeLeft.toNanos(), TimeUnit.NANOSECONDS);
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof PublicAddresses.NotPublic notPublic) {
+        throw notPublic;
+      }
+      throw new IllegalStateException(e.getCause());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new TimeoutException();
+    } finally {
+      lookup.cancel(true);
+    }
   }
 
   private @Nullable String problem(URI uri) {

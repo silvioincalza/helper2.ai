@@ -131,12 +131,12 @@ class ReviewResearchEventsController {
     private void follow() throws IOException, InterruptedException {
       long deadline = System.nanoTime() + TIMEOUT.toNanos();
       while (!stopped && System.nanoTime() < deadline) {
-        sendSteps();
         ResearchRun run = runs.find(runId).orElse(null);
         if (run == null) {
           return;
         }
         sendStatus(run);
+        sendSteps();
         if (!run.status().active() && runs.steps(runId, seq).isEmpty()) {
           return;
         }
@@ -157,11 +157,12 @@ class ReviewResearchEventsController {
     }
 
     private void sendStatus(ResearchRun run) throws IOException {
-      if (run.status() == ResearchRun.Status.QUEUED || startedAgain(run)) {
+      boolean again = startedAgain(run);
+      if (run.status() == ResearchRun.Status.QUEUED || again) {
         seq = 0;
       }
       started = run.startedAt();
-      if (run.status() != sent) {
+      if (run.status() != sent || again) {
         send(
             SseEmitter.event()
                 .name("status")
