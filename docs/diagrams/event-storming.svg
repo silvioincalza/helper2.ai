@@ -1,0 +1,646 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3920" height="4572" viewBox="0 0 3920 4572" font-family="Inter, DejaVu Sans, sans-serif">
+<style>.n{rx:2}.sh{fill:#000;opacity:.06}.t{font-size:12px;text-anchor:middle;dominant-baseline:central}.s{font-size:11px}.l{stroke:#555;stroke-width:2;marker-end:url(#a)}.po{fill:#D0A8F5}.ev{fill:#FFA94D}.ex{fill:#F7A8C8}.cm{fill:#74C0FC}.ag{fill:#FFE8A3}.rm{fill:#A5E5A0}.ac{fill:#FFF176}.hs{fill:#E64980}.fpo{fill:#2a1145}.fev{fill:#3b1d00}.fex{fill:#4b1528}.fcm{fill:#062a45}.fag{fill:#4a3300}.frm{fill:#173404}.fac{fill:#3a3300}.fhs{fill:#ffffff}</style><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#555"/></marker></defs>
+<rect width="3920" height="4572" fill="#f1eee6"/>
+<text x="16" y="52" font-size="40" font-weight="700" fill="#1b1a17">helper2.ai — Big Picture Event Storming</text>
+<text x="16" y="88" font-size="20" fill="#4a4842">Seven app contexts: the public app, the web site and the back office. 18 November 2026, after v2026.11.5. Read each lane left to right; arrows mean "triggers".</text>
+<rect class="n ac" x="16" y="104" width="64" height="28"/><text x="48" y="118" font-size="13" fill="#3a3300" text-anchor="middle" dominant-baseline="central">Actor</text>
+<rect class="n cm" x="90" y="104" width="80" height="28"/><text x="130" y="118" font-size="13" fill="#062a45" text-anchor="middle" dominant-baseline="central">Command</text>
+<rect class="n ex" x="180" y="104" width="144" height="28"/><text x="252" y="118" font-size="13" fill="#4b1528" text-anchor="middle" dominant-baseline="central">External system</text>
+<rect class="n ag" x="334" y="104" width="96" height="28"/><text x="382" y="118" font-size="13" fill="#4a3300" text-anchor="middle" dominant-baseline="central">Aggregate</text>
+<rect class="n ev" x="440" y="104" width="120" height="28"/><text x="500" y="118" font-size="13" fill="#3b1d00" text-anchor="middle" dominant-baseline="central">Domain event</text>
+<rect class="n po" x="570" y="104" width="72" height="28"/><text x="606" y="118" font-size="13" fill="#2a1145" text-anchor="middle" dominant-baseline="central">Policy</text>
+<rect class="n rm" x="652" y="104" width="104" height="28"/><text x="704" y="118" font-size="13" fill="#173404" text-anchor="middle" dominant-baseline="central">Read model</text>
+<rect class="n hs" x="766" y="104" width="184" height="28"/><text x="858" y="118" font-size="13" fill="#ffffff" text-anchor="middle" dominant-baseline="central">Hotspot (open story)</text>
+<rect x="8" y="150" width="3904" height="676" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="180" font-size="20" font-weight="600" fill="#2b2a26">E2 · Scout and catalog: how the index grows</text>
+<rect class="n po" x="32" y="330" width="128" height="128"/>
+<rect class="sh" x="32" y="452" width="128" height="6"/>
+<text class="t fpo" x="96" y="379">Every day at a</text>
+<text class="t fpo" x="96" y="394">fixed time → start</text>
+<text class="t fpo" x="96" y="409">a Scout run</text>
+<line class="l" x1="160" y1="394" x2="204" y2="394"/>
+<rect class="n ev" x="208" y="330" width="128" height="128"/>
+<rect class="sh" x="208" y="452" width="128" height="6"/>
+<text class="t fev" x="272" y="394">Scout run started</text>
+<line class="l" x1="336" y1="394" x2="380" y2="394"/>
+<rect class="n ex" x="384" y="330" width="128" height="128"/>
+<rect class="sh" x="384" y="452" width="128" height="6"/>
+<text class="t fex" x="448" y="371.5">MCP Registry · HF ·</text>
+<text class="t fex" x="448" y="386.5">GitHub · npm · PyPI</text>
+<text class="t fex" x="448" y="401.5">· Maven · RSS ·</text>
+<text class="t fex" x="448" y="416.5">LinkedIn · Live web</text>
+<line class="l" x1="512" y1="394" x2="556" y2="394"/>
+<rect class="n ev" x="560" y="330" width="128" height="128"/>
+<rect class="sh" x="560" y="452" width="128" height="6"/>
+<text class="t fev" x="624" y="386.5">Candidate</text>
+<text class="t fev" x="624" y="401.5">discovered</text>
+<line class="l" x1="688" y1="394" x2="732" y2="394"/>
+<rect class="n po" x="736" y="330" width="128" height="128"/>
+<rect class="sh" x="736" y="452" width="128" height="6"/>
+<text class="t fpo" x="800" y="371.5">Whenever it has a</text>
+<text class="t fpo" x="800" y="386.5">repo link → read</text>
+<text class="t fpo" x="800" y="401.5">README and repo</text>
+<text class="t fpo" x="800" y="416.5">facts</text>
+<line class="l" x1="864" y1="394" x2="908" y2="394"/>
+<rect class="n ev" x="912" y="330" width="128" height="128"/>
+<rect class="sh" x="912" y="452" width="128" height="6"/>
+<text class="t fev" x="976" y="386.5">Repository facts</text>
+<text class="t fev" x="976" y="401.5">read</text>
+<line class="l" x1="1040" y1="394" x2="1084" y2="394"/>
+<rect class="n ex" x="1088" y="330" width="128" height="128"/>
+<rect class="sh" x="1088" y="452" width="128" height="6"/>
+<text class="t fex" x="1152" y="379">NVIDIA model</text>
+<text class="t fex" x="1152" y="394">(Nemotron on</text>
+<text class="t fex" x="1152" y="409">Nebius, EU)</text>
+<line class="l" x1="1216" y1="394" x2="1260" y2="394"/>
+<rect class="n ev" x="1264" y="330" width="128" height="128"/>
+<rect class="sh" x="1264" y="452" width="128" height="6"/>
+<text class="t fev" x="1328" y="394">Candidate enriched</text>
+<line class="l" x1="1392" y1="394" x2="1436" y2="394"/>
+<rect class="n po" x="1440" y="330" width="128" height="128"/>
+<rect class="sh" x="1440" y="452" width="128" height="6"/>
+<text class="t fpo" x="1504" y="379">Whenever new or</text>
+<text class="t fpo" x="1504" y="394">doubtful → send to</text>
+<text class="t fpo" x="1504" y="409">admin review</text>
+<line class="l" x1="1568" y1="394" x2="1612" y2="394"/>
+<rect class="n ev" x="1616" y="330" width="128" height="128"/>
+<rect class="sh" x="1616" y="452" width="128" height="6"/>
+<text class="t fev" x="1680" y="386.5">Candidate sent to</text>
+<text class="t fev" x="1680" y="401.5">review</text>
+<rect class="n cm" x="1840" y="330" width="128" height="128"/>
+<rect class="sh" x="1840" y="452" width="128" height="6"/>
+<text class="t fcm" x="1904" y="394">Decide candidate</text>
+<line class="l" x1="1968" y1="394" x2="2012" y2="394"/>
+<rect class="n ag" x="2016" y="330" width="128" height="128"/>
+<rect class="sh" x="2016" y="452" width="128" height="6"/>
+<text class="t fag" x="2080" y="394">Review item</text>
+<line class="l" x1="2144" y1="394" x2="2188" y2="394"/>
+<rect class="n ev" x="2192" y="330" width="128" height="128"/>
+<rect class="sh" x="2192" y="452" width="128" height="6"/>
+<text class="t fev" x="2256" y="394">Candidate approved</text>
+<line class="l" x1="2320" y1="394" x2="2364" y2="394"/>
+<rect class="n ev" x="2368" y="330" width="128" height="128"/>
+<rect class="sh" x="2368" y="452" width="128" height="6"/>
+<text class="t fev" x="2432" y="386.5">Resource added to</text>
+<text class="t fev" x="2432" y="401.5">catalog</text>
+<line class="l" x1="2496" y1="394" x2="2540" y2="394"/>
+<rect class="n po" x="2544" y="330" width="128" height="128"/>
+<rect class="sh" x="2544" y="452" width="128" height="6"/>
+<text class="t fpo" x="2608" y="371.5">Whenever same repo,</text>
+<text class="t fpo" x="2608" y="386.5">owner or name →</text>
+<text class="t fpo" x="2608" y="401.5">join, else its own</text>
+<text class="t fpo" x="2608" y="416.5">result; never move</text>
+<line class="l" x1="2672" y1="394" x2="2716" y2="394"/>
+<rect class="n ev" x="2720" y="330" width="128" height="128"/>
+<rect class="sh" x="2720" y="452" width="128" height="6"/>
+<text class="t fev" x="2784" y="394">Resource merged</text>
+<line class="l" x1="2848" y1="394" x2="2892" y2="394"/>
+<rect class="n ev" x="2896" y="330" width="128" height="128"/>
+<rect class="sh" x="2896" y="452" width="128" height="6"/>
+<text class="t fev" x="2960" y="394">Resource embedded</text>
+<line class="l" x1="3024" y1="394" x2="3068" y2="394"/>
+<rect class="n rm" x="3072" y="330" width="128" height="128"/>
+<rect class="sh" x="3072" y="452" width="128" height="6"/>
+<text class="t frm" x="3136" y="386.5">Catalog (PostgreSQL</text>
+<text class="t frm" x="3136" y="401.5">+ pgvector)</text>
+<rect class="n ev" x="3296" y="330" width="128" height="128"/>
+<rect class="sh" x="3296" y="452" width="128" height="6"/>
+<text class="t fev" x="3360" y="386.5">Resource marked</text>
+<text class="t fev" x="3360" y="401.5">dead or deprecated</text>
+<rect class="n ev" x="3520" y="330" width="128" height="128"/>
+<rect class="sh" x="3520" y="452" width="128" height="6"/>
+<text class="t fev" x="3584" y="386.5">Event dated from</text>
+<text class="t fev" x="3584" y="401.5">its own page</text>
+<rect class="n ev" x="3744" y="330" width="128" height="128"/>
+<rect class="sh" x="3744" y="452" width="128" height="6"/>
+<text class="t fev" x="3808" y="379">Resource listed as</text>
+<text class="t fev" x="3808" y="394">not about AI (admin</text>
+<text class="t fev" x="3808" y="409">decides)</text>
+<line class="l" x1="2080" y1="458" x2="2080" y2="498"/>
+<rect class="n ev" x="2016" y="502" width="128" height="128"/>
+<rect class="sh" x="2016" y="624" width="128" height="6"/>
+<text class="t fev" x="2080" y="558.5">Candidate rejected</text>
+<text class="t fev" x="2080" y="573.5">(hashed URL kept)</text>
+<rect class="n ac" x="1862" y="206" width="84" height="84"/>
+<rect class="sh" x="1862" y="284" width="84" height="6"/>
+<text class="t s fac" x="1904" y="248">Admin</text>
+<line class="l" x1="1904" y1="290" x2="1904" y2="326"/>
+<rect class="n hs" x="32" y="670" width="128" height="128"/>
+<rect class="sh" x="32" y="792" width="128" height="6"/>
+<text class="t fhs" x="96" y="719">HF Spaces likes</text>
+<text class="t fhs" x="96" y="734">minimum: not</text>
+<text class="t fhs" x="96" y="749">measured yet</text>
+<rect class="n hs" x="176" y="670" width="128" height="128"/>
+<rect class="sh" x="176" y="792" width="128" height="6"/>
+<text class="t fhs" x="240" y="719">LinkedIn and</text>
+<text class="t fhs" x="240" y="734">courses collectors:</text>
+<text class="t fhs" x="240" y="749">kept, need fixes</text>
+<rect class="n hs" x="320" y="670" width="128" height="128"/>
+<rect class="sh" x="320" y="792" width="128" height="6"/>
+<text class="t fhs" x="384" y="719">Lawyer: hashed</text>
+<text class="t fhs" x="384" y="734">rejected URLs kept</text>
+<text class="t fhs" x="384" y="749">with no time limit</text>
+<rect class="n hs" x="464" y="670" width="128" height="128"/>
+<rect class="sh" x="464" y="792" width="128" height="6"/>
+<text class="t fhs" x="528" y="711.5">S2.10.3 (#360): a</text>
+<text class="t fhs" x="528" y="726.5">source record moves</text>
+<text class="t fhs" x="528" y="741.5">to another resource</text>
+<text class="t fhs" x="528" y="756.5">today</text>
+<rect class="n hs" x="608" y="670" width="128" height="128"/>
+<rect class="sh" x="608" y="792" width="128" height="6"/>
+<text class="t fhs" x="672" y="711.5">S2.10.6 (#490): a</text>
+<text class="t fhs" x="672" y="726.5">refused package</text>
+<text class="t fhs" x="672" y="741.5">join has no review</text>
+<text class="t fhs" x="672" y="756.5">list yet</text>
+<rect x="8" y="854" width="3904" height="676" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="884" font-size="20" font-weight="600" fill="#2b2a26">E3 · Search: one box</text>
+<rect class="n cm" x="32" y="1034" width="128" height="128"/>
+<rect class="sh" x="32" y="1156" width="128" height="6"/>
+<text class="t fcm" x="96" y="1098">Search</text>
+<line class="l" x1="160" y1="1098" x2="204" y2="1098"/>
+<rect class="n ev" x="208" y="1034" width="128" height="128"/>
+<rect class="sh" x="208" y="1156" width="128" height="6"/>
+<text class="t fev" x="272" y="1098">Search requested</text>
+<line class="l" x1="336" y1="1098" x2="380" y2="1098"/>
+<rect class="n po" x="384" y="1034" width="128" height="128"/>
+<rect class="sh" x="384" y="1156" width="128" height="6"/>
+<text class="t fpo" x="448" y="1075.5">Whenever a search →</text>
+<text class="t fpo" x="448" y="1090.5">fan out to sources</text>
+<text class="t fpo" x="448" y="1105.5">in parallel, with</text>
+<text class="t fpo" x="448" y="1120.5">deadlines</text>
+<line class="l" x1="512" y1="1098" x2="556" y2="1098"/>
+<rect class="n ex" x="560" y="1034" width="128" height="128"/>
+<rect class="sh" x="560" y="1156" width="128" height="6"/>
+<text class="t fex" x="624" y="1083">Catalog · Hacker</text>
+<text class="t fex" x="624" y="1098">News · Maven · HF ·</text>
+<text class="t fex" x="624" y="1113">Live web</text>
+<line class="l" x1="688" y1="1098" x2="732" y2="1098"/>
+<rect class="n ev" x="736" y="1034" width="128" height="128"/>
+<rect class="sh" x="736" y="1156" width="128" height="6"/>
+<text class="t fev" x="800" y="1098">Source answered</text>
+<line class="l" x1="864" y1="1098" x2="908" y2="1098"/>
+<rect class="n po" x="912" y="1034" width="128" height="128"/>
+<rect class="sh" x="912" y="1156" width="128" height="6"/>
+<text class="t fpo" x="976" y="1075.5">Whenever a web</text>
+<text class="t fpo" x="976" y="1090.5">result is on a</text>
+<text class="t fpo" x="976" y="1105.5">shadow library →</text>
+<text class="t fpo" x="976" y="1120.5">drop it</text>
+<line class="l" x1="1040" y1="1098" x2="1084" y2="1098"/>
+<rect class="n po" x="1088" y="1034" width="128" height="128"/>
+<rect class="sh" x="1088" y="1156" width="128" height="6"/>
+<text class="t fpo" x="1152" y="1075.5">Whenever all</text>
+<text class="t fpo" x="1152" y="1090.5">sources are done →</text>
+<text class="t fpo" x="1152" y="1105.5">merge, dedupe, rank</text>
+<text class="t fpo" x="1152" y="1120.5">(two lanes)</text>
+<line class="l" x1="1216" y1="1098" x2="1260" y2="1098"/>
+<rect class="n ev" x="1264" y="1034" width="128" height="128"/>
+<rect class="sh" x="1264" y="1156" width="128" height="6"/>
+<text class="t fev" x="1328" y="1090.5">Results merged and</text>
+<text class="t fev" x="1328" y="1105.5">deduplicated</text>
+<line class="l" x1="1392" y1="1098" x2="1436" y2="1098"/>
+<rect class="n ev" x="1440" y="1034" width="128" height="128"/>
+<rect class="sh" x="1440" y="1156" width="128" height="6"/>
+<text class="t fev" x="1504" y="1098">Results ranked</text>
+<line class="l" x1="1568" y1="1098" x2="1612" y2="1098"/>
+<rect class="n rm" x="1616" y="1034" width="128" height="128"/>
+<rect class="sh" x="1616" y="1156" width="128" height="6"/>
+<text class="t frm" x="1680" y="1090.5">Results list +</text>
+<text class="t frm" x="1680" y="1105.5">source status</text>
+<line class="l" x1="1744" y1="1098" x2="1788" y2="1098"/>
+<rect class="n ev" x="1792" y="1034" width="128" height="128"/>
+<rect class="sh" x="1792" y="1156" width="128" height="6"/>
+<text class="t fev" x="1856" y="1098">Results shown</text>
+<rect class="n cm" x="2016" y="1034" width="128" height="128"/>
+<rect class="sh" x="2016" y="1156" width="128" height="6"/>
+<text class="t fcm" x="2080" y="1090.5">Filter, sort, pick</text>
+<text class="t fcm" x="2080" y="1105.5">&#x27;Best for&#x27;</text>
+<line class="l" x1="2144" y1="1098" x2="2188" y2="1098"/>
+<rect class="n ev" x="2192" y="1034" width="128" height="128"/>
+<rect class="sh" x="2192" y="1156" width="128" height="6"/>
+<text class="t fev" x="2256" y="1098">Search refined</text>
+<line class="l" x1="2320" y1="1098" x2="2364" y2="1098"/>
+<rect class="n ev" x="2368" y="1034" width="128" height="128"/>
+<rect class="sh" x="2368" y="1156" width="128" height="6"/>
+<text class="t fev" x="2432" y="1090.5">Search counted</text>
+<text class="t fev" x="2432" y="1105.5">(aggregate)</text>
+<line class="l" x1="448" y1="1162" x2="448" y2="1202"/>
+<rect class="n ev" x="384" y="1206" width="128" height="128"/>
+<rect class="sh" x="384" y="1328" width="128" height="6"/>
+<text class="t fev" x="448" y="1262.5">Live web daily</text>
+<text class="t fev" x="448" y="1277.5">quota reached</text>
+<line class="l" x1="624" y1="1162" x2="624" y2="1202"/>
+<rect class="n ev" x="560" y="1206" width="128" height="128"/>
+<rect class="sh" x="560" y="1328" width="128" height="6"/>
+<text class="t fev" x="624" y="1262.5">Source timed out or</text>
+<text class="t fev" x="624" y="1277.5">rate-limited</text>
+<line class="l" x1="688" y1="1270" x2="732" y2="1270"/>
+<rect class="n ev" x="736" y="1206" width="128" height="128"/>
+<rect class="sh" x="736" y="1328" width="128" height="6"/>
+<text class="t fev" x="800" y="1270">Stale cache served</text>
+<rect class="n ac" x="54" y="910" width="84" height="84"/>
+<rect class="sh" x="54" y="988" width="84" height="6"/>
+<text class="t s fac" x="96" y="952">Visitor</text>
+<line class="l" x1="96" y1="994" x2="96" y2="1030"/>
+<rect class="n ac" x="2038" y="910" width="84" height="84"/>
+<rect class="sh" x="2038" y="988" width="84" height="6"/>
+<text class="t s fac" x="2080" y="952">Visitor</text>
+<line class="l" x1="2080" y1="994" x2="2080" y2="1030"/>
+<rect class="n hs" x="32" y="1374" width="128" height="128"/>
+<rect class="sh" x="32" y="1496" width="128" height="6"/>
+<text class="t fhs" x="96" y="1415.5">Call live sources</text>
+<text class="t fhs" x="96" y="1430.5">only when catalog</text>
+<text class="t fhs" x="96" y="1445.5">item is &gt; 1 month</text>
+<text class="t fhs" x="96" y="1460.5">old (roadmap)</text>
+<rect class="n hs" x="176" y="1374" width="128" height="128"/>
+<rect class="sh" x="176" y="1496" width="128" height="6"/>
+<text class="t fhs" x="240" y="1415.5">Ranking constants</text>
+<text class="t fhs" x="240" y="1430.5">change only after</text>
+<text class="t fhs" x="240" y="1445.5">more graded eval</text>
+<text class="t fhs" x="240" y="1460.5">slices</text>
+<rect class="n hs" x="320" y="1374" width="128" height="128"/>
+<rect class="sh" x="320" y="1496" width="128" height="6"/>
+<text class="t fhs" x="384" y="1423">Lawyer: is an HMAC</text>
+<text class="t fhs" x="384" y="1438">of address or query</text>
+<text class="t fhs" x="384" y="1453">personal data?</text>
+<rect class="n hs" x="464" y="1374" width="128" height="128"/>
+<rect class="sh" x="464" y="1496" width="128" height="6"/>
+<text class="t fhs" x="528" y="1415.5">S3.1.6 (#559): a</text>
+<text class="t fhs" x="528" y="1430.5">result can show one</text>
+<text class="t fhs" x="528" y="1445.5">source&#x27;s link with</text>
+<text class="t fhs" x="528" y="1460.5">another&#x27;s text</text>
+<rect x="8" y="1558" width="3904" height="676" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="1588" font-size="20" font-weight="600" fill="#2b2a26">E4 · AI guide</text>
+<rect class="n cm" x="32" y="1738" width="128" height="128"/>
+<rect class="sh" x="32" y="1860" width="128" height="6"/>
+<text class="t fcm" x="96" y="1802">Ask the guide</text>
+<line class="l" x1="160" y1="1802" x2="204" y2="1802"/>
+<rect class="n po" x="208" y="1738" width="128" height="128"/>
+<rect class="sh" x="208" y="1860" width="128" height="6"/>
+<text class="t fpo" x="272" y="1779.5">Whenever asked →</text>
+<text class="t fpo" x="272" y="1794.5">check per-minute,</text>
+<text class="t fpo" x="272" y="1809.5">daily and global</text>
+<text class="t fpo" x="272" y="1824.5">caps</text>
+<line class="l" x1="336" y1="1802" x2="380" y2="1802"/>
+<rect class="n ev" x="384" y="1738" width="128" height="128"/>
+<rect class="sh" x="384" y="1860" width="128" height="6"/>
+<text class="t fev" x="448" y="1802">Guide asked</text>
+<line class="l" x1="512" y1="1802" x2="556" y2="1802"/>
+<rect class="n po" x="560" y="1738" width="128" height="128"/>
+<rect class="sh" x="560" y="1860" width="128" height="6"/>
+<text class="t fpo" x="624" y="1787">Whenever a fresh</text>
+<text class="t fpo" x="624" y="1802">answer is cached →</text>
+<text class="t fpo" x="624" y="1817">serve it</text>
+<line class="l" x1="688" y1="1802" x2="732" y2="1802"/>
+<rect class="n ev" x="736" y="1738" width="128" height="128"/>
+<rect class="sh" x="736" y="1860" width="128" height="6"/>
+<text class="t fev" x="800" y="1794.5">Evidence gathered</text>
+<text class="t fev" x="800" y="1809.5">(search reused)</text>
+<line class="l" x1="864" y1="1802" x2="908" y2="1802"/>
+<rect class="n ex" x="912" y="1738" width="128" height="128"/>
+<rect class="sh" x="912" y="1860" width="128" height="6"/>
+<text class="t fex" x="976" y="1794.5">Nemotron on Nebius</text>
+<text class="t fex" x="976" y="1809.5">(EU)</text>
+<line class="l" x1="1040" y1="1802" x2="1084" y2="1802"/>
+<rect class="n po" x="1088" y="1738" width="128" height="128"/>
+<rect class="sh" x="1088" y="1860" width="128" height="6"/>
+<text class="t fpo" x="1152" y="1772">Whenever five picks</text>
+<text class="t fpo" x="1152" y="1787">are proposed → show</text>
+<text class="t fpo" x="1152" y="1802">the first three</text>
+<text class="t fpo" x="1152" y="1817">that pass every</text>
+<text class="t fpo" x="1152" y="1832">check</text>
+<line class="l" x1="1216" y1="1802" x2="1260" y2="1802"/>
+<rect class="n ev" x="1264" y="1738" width="128" height="128"/>
+<rect class="sh" x="1264" y="1860" width="128" height="6"/>
+<text class="t fev" x="1328" y="1794.5">Answer streamed</text>
+<text class="t fev" x="1328" y="1809.5">(SSE)</text>
+<line class="l" x1="1392" y1="1802" x2="1436" y2="1802"/>
+<rect class="n ev" x="1440" y="1738" width="128" height="128"/>
+<rect class="sh" x="1440" y="1860" width="128" height="6"/>
+<text class="t fev" x="1504" y="1794.5">Answer labelled AI-</text>
+<text class="t fev" x="1504" y="1809.5">written (Art. 50)</text>
+<line class="l" x1="1568" y1="1802" x2="1612" y2="1802"/>
+<rect class="n ev" x="1616" y="1738" width="128" height="128"/>
+<rect class="sh" x="1616" y="1860" width="128" height="6"/>
+<text class="t fev" x="1680" y="1794.5">Quote linked to the</text>
+<text class="t fev" x="1680" y="1809.5">page that holds it</text>
+<line class="l" x1="1744" y1="1802" x2="1788" y2="1802"/>
+<rect class="n ev" x="1792" y="1738" width="128" height="128"/>
+<rect class="sh" x="1792" y="1860" width="128" height="6"/>
+<text class="t fev" x="1856" y="1802">Answer cached</text>
+<rect class="n cm" x="2016" y="1738" width="128" height="128"/>
+<rect class="sh" x="2016" y="1860" width="128" height="6"/>
+<text class="t fcm" x="2080" y="1802">Set it up</text>
+<line class="l" x1="2144" y1="1802" x2="2188" y2="1802"/>
+<rect class="n ev" x="2192" y="1738" width="128" height="128"/>
+<rect class="sh" x="2192" y="1860" width="128" height="6"/>
+<text class="t fev" x="2256" y="1794.5">Setup guide</text>
+<text class="t fev" x="2256" y="1809.5">generated</text>
+<line class="l" x1="2320" y1="1802" x2="2364" y2="1802"/>
+<rect class="n ev" x="2368" y="1738" width="128" height="128"/>
+<rect class="sh" x="2368" y="1860" width="128" height="6"/>
+<text class="t fev" x="2432" y="1802">Step check failed</text>
+<line class="l" x1="2496" y1="1802" x2="2540" y2="1802"/>
+<rect class="n po" x="2544" y="1738" width="128" height="128"/>
+<rect class="sh" x="2544" y="1860" width="128" height="6"/>
+<text class="t fpo" x="2608" y="1787">Whenever a step</text>
+<text class="t fpo" x="2608" y="1802">check fails →</text>
+<text class="t fpo" x="2608" y="1817">remove from cache</text>
+<line class="l" x1="2672" y1="1802" x2="2716" y2="1802"/>
+<rect class="n ev" x="2720" y="1738" width="128" height="128"/>
+<rect class="sh" x="2720" y="1860" width="128" height="6"/>
+<text class="t fev" x="2784" y="1802">Setup guide evicted</text>
+<line class="l" x1="272" y1="1866" x2="272" y2="1906"/>
+<rect class="n ev" x="208" y="1910" width="128" height="128"/>
+<rect class="sh" x="208" y="2032" width="128" height="6"/>
+<text class="t fev" x="272" y="1966.5">Guide quota</text>
+<text class="t fev" x="272" y="1981.5">exhausted</text>
+<line class="l" x1="624" y1="1866" x2="624" y2="1906"/>
+<rect class="n ev" x="560" y="1910" width="128" height="128"/>
+<rect class="sh" x="560" y="2032" width="128" height="6"/>
+<text class="t fev" x="624" y="1966.5">Answer served from</text>
+<text class="t fev" x="624" y="1981.5">cache</text>
+<rect class="n ac" x="54" y="1614" width="84" height="84"/>
+<rect class="sh" x="54" y="1692" width="84" height="6"/>
+<text class="t s fac" x="96" y="1656">Visitor</text>
+<line class="l" x1="96" y1="1698" x2="96" y2="1734"/>
+<rect class="n ac" x="2038" y="1614" width="84" height="84"/>
+<rect class="sh" x="2038" y="1692" width="84" height="6"/>
+<text class="t s fac" x="2080" y="1656">Visitor</text>
+<line class="l" x1="2080" y1="1698" x2="2080" y2="1734"/>
+<rect class="n hs" x="32" y="2078" width="128" height="128"/>
+<rect class="sh" x="32" y="2200" width="128" height="6"/>
+<text class="t fhs" x="96" y="2119.5">Link filter on</text>
+<text class="t fhs" x="96" y="2134.5">planner text:</text>
+<text class="t fhs" x="96" y="2149.5">strict, measure in</text>
+<text class="t fhs" x="96" y="2164.5">eval</text>
+<rect class="n hs" x="176" y="2078" width="128" height="128"/>
+<rect class="sh" x="176" y="2200" width="128" height="6"/>
+<text class="t fhs" x="240" y="2134.5">Signed provenance</text>
+<text class="t fhs" x="240" y="2149.5">manifest (roadmap)</text>
+<rect class="n hs" x="320" y="2078" width="128" height="128"/>
+<rect class="sh" x="320" y="2200" width="128" height="6"/>
+<text class="t fhs" x="384" y="2127">Lawyer: provider</text>
+<text class="t fhs" x="384" y="2142">role and metadata-</text>
+<text class="t fhs" x="384" y="2157">only marking</text>
+<rect x="8" y="2262" width="3904" height="504" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="2292" font-size="20" font-weight="600" fill="#2b2a26">E5 · Identity and the signed-in user</text>
+<rect class="n cm" x="32" y="2442" width="128" height="128"/>
+<rect class="sh" x="32" y="2564" width="128" height="6"/>
+<text class="t fcm" x="96" y="2506">Sign in</text>
+<line class="l" x1="160" y1="2506" x2="204" y2="2506"/>
+<rect class="n ex" x="208" y="2442" width="128" height="128"/>
+<rect class="sh" x="208" y="2564" width="128" height="6"/>
+<text class="t fex" x="272" y="2506">GitHub (OAuth)</text>
+<line class="l" x1="336" y1="2506" x2="380" y2="2506"/>
+<rect class="n ev" x="384" y="2442" width="128" height="128"/>
+<rect class="sh" x="384" y="2564" width="128" height="6"/>
+<text class="t fev" x="448" y="2506">User signed in</text>
+<rect class="n cm" x="608" y="2442" width="128" height="128"/>
+<rect class="sh" x="608" y="2564" width="128" height="6"/>
+<text class="t fcm" x="672" y="2506">Save resource</text>
+<line class="l" x1="736" y1="2506" x2="780" y2="2506"/>
+<rect class="n ag" x="784" y="2442" width="128" height="128"/>
+<rect class="sh" x="784" y="2564" width="128" height="6"/>
+<text class="t fag" x="848" y="2506">Bookmarks</text>
+<line class="l" x1="912" y1="2506" x2="956" y2="2506"/>
+<rect class="n ev" x="960" y="2442" width="128" height="128"/>
+<rect class="sh" x="960" y="2564" width="128" height="6"/>
+<text class="t fev" x="1024" y="2506">Resource saved</text>
+<rect class="n cm" x="1184" y="2442" width="128" height="128"/>
+<rect class="sh" x="1184" y="2564" width="128" height="6"/>
+<text class="t fcm" x="1248" y="2506">Report wrong info</text>
+<line class="l" x1="1312" y1="2506" x2="1356" y2="2506"/>
+<rect class="n ev" x="1360" y="2442" width="128" height="128"/>
+<rect class="sh" x="1360" y="2564" width="128" height="6"/>
+<text class="t fev" x="1424" y="2506">Wrong info reported</text>
+<line class="l" x1="1488" y1="2506" x2="1532" y2="2506"/>
+<rect class="n po" x="1536" y="2442" width="128" height="128"/>
+<rect class="sh" x="1536" y="2564" width="128" height="6"/>
+<text class="t fpo" x="1600" y="2491">Whenever reported →</text>
+<text class="t fpo" x="1600" y="2506">create a review</text>
+<text class="t fpo" x="1600" y="2521">item</text>
+<line class="l" x1="1664" y1="2506" x2="1708" y2="2506"/>
+<rect class="n ev" x="1712" y="2442" width="128" height="128"/>
+<rect class="sh" x="1712" y="2564" width="128" height="6"/>
+<text class="t fev" x="1776" y="2498.5">Report sent to</text>
+<text class="t fev" x="1776" y="2513.5">review</text>
+<rect class="n ac" x="54" y="2318" width="84" height="84"/>
+<rect class="sh" x="54" y="2396" width="84" height="6"/>
+<text class="t s fac" x="96" y="2360">Visitor</text>
+<line class="l" x1="96" y1="2402" x2="96" y2="2438"/>
+<rect class="n hs" x="32" y="2610" width="128" height="128"/>
+<rect class="sh" x="32" y="2732" width="128" height="6"/>
+<text class="t fhs" x="96" y="2651.5">Larger daily quota</text>
+<text class="t fhs" x="96" y="2666.5">for signed-in</text>
+<text class="t fhs" x="96" y="2681.5">users: decided, not</text>
+<text class="t fhs" x="96" y="2696.5">built</text>
+<rect class="n hs" x="176" y="2610" width="128" height="128"/>
+<rect class="sh" x="176" y="2732" width="128" height="6"/>
+<text class="t fhs" x="240" y="2659">One sign-in</text>
+<text class="t fhs" x="240" y="2674">provider now; the</text>
+<text class="t fhs" x="240" y="2689">others later</text>
+<rect class="n hs" x="320" y="2610" width="128" height="128"/>
+<rect class="sh" x="320" y="2732" width="128" height="6"/>
+<text class="t fhs" x="384" y="2666.5">Keycloak or Spring</text>
+<text class="t fhs" x="384" y="2681.5">Security: parked</text>
+<rect x="8" y="2794" width="3904" height="504" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="2824" font-size="20" font-weight="600" fill="#2b2a26">E6 · Back office</text>
+<rect class="n rm" x="32" y="2974" width="128" height="128"/>
+<rect class="sh" x="32" y="3096" width="128" height="6"/>
+<text class="t frm" x="96" y="3030.5">Dashboard, review</text>
+<text class="t frm" x="96" y="3045.5">list, Settings page</text>
+<line class="l" x1="160" y1="3038" x2="204" y2="3038"/>
+<rect class="n cm" x="208" y="2974" width="128" height="128"/>
+<rect class="sh" x="208" y="3096" width="128" height="6"/>
+<text class="t fcm" x="272" y="3030.5">Change runtime</text>
+<text class="t fcm" x="272" y="3045.5">setting</text>
+<line class="l" x1="336" y1="3038" x2="380" y2="3038"/>
+<rect class="n ev" x="384" y="2974" width="128" height="128"/>
+<rect class="sh" x="384" y="3096" width="128" height="6"/>
+<text class="t fev" x="448" y="3030.5">Runtime setting</text>
+<text class="t fev" x="448" y="3045.5">changed</text>
+<rect class="n cm" x="608" y="2974" width="128" height="128"/>
+<rect class="sh" x="608" y="3096" width="128" height="6"/>
+<text class="t fcm" x="672" y="3023">Add known target</text>
+<text class="t fcm" x="672" y="3038">(vendor, service or</text>
+<text class="t fcm" x="672" y="3053">tool)</text>
+<line class="l" x1="736" y1="3038" x2="780" y2="3038"/>
+<rect class="n ev" x="784" y="2974" width="128" height="128"/>
+<rect class="sh" x="784" y="3096" width="128" height="6"/>
+<text class="t fev" x="848" y="3038">Known target added</text>
+<rect class="n cm" x="1008" y="2974" width="128" height="128"/>
+<rect class="sh" x="1008" y="3096" width="128" height="6"/>
+<text class="t fcm" x="1072" y="3038">Requeue enrichment</text>
+<line class="l" x1="1136" y1="3038" x2="1180" y2="3038"/>
+<rect class="n ev" x="1184" y="2974" width="128" height="128"/>
+<rect class="sh" x="1184" y="3096" width="128" height="6"/>
+<text class="t fev" x="1248" y="3038">Resource requeued</text>
+<rect class="n cm" x="1408" y="2974" width="128" height="128"/>
+<rect class="sh" x="1408" y="3096" width="128" height="6"/>
+<text class="t fcm" x="1472" y="3023">Decide relationship</text>
+<text class="t fcm" x="1472" y="3038">candidates per</text>
+<text class="t fcm" x="1472" y="3053">target name</text>
+<line class="l" x1="1536" y1="3038" x2="1580" y2="3038"/>
+<rect class="n ev" x="1584" y="2974" width="128" height="128"/>
+<rect class="sh" x="1584" y="3096" width="128" height="6"/>
+<text class="t fev" x="1648" y="3030.5">Relationship</text>
+<text class="t fev" x="1648" y="3045.5">candidates decided</text>
+<rect class="n cm" x="1808" y="2974" width="128" height="128"/>
+<rect class="sh" x="1808" y="3096" width="128" height="6"/>
+<text class="t fcm" x="1872" y="3023">Research a</text>
+<text class="t fcm" x="1872" y="3038">candidate (ADR</text>
+<text class="t fcm" x="1872" y="3053">0048)</text>
+<rect class="n po" x="2032" y="2974" width="128" height="128"/>
+<rect class="sh" x="2032" y="3096" width="128" height="6"/>
+<text class="t fpo" x="2096" y="3023">Whenever an admin</text>
+<text class="t fpo" x="2096" y="3038">acts → write an</text>
+<text class="t fpo" x="2096" y="3053">audit row</text>
+<line class="l" x1="2160" y1="3038" x2="2204" y2="3038"/>
+<rect class="n ev" x="2208" y="2974" width="128" height="128"/>
+<rect class="sh" x="2208" y="3096" width="128" height="6"/>
+<text class="t fev" x="2272" y="3030.5">Admin action</text>
+<text class="t fev" x="2272" y="3045.5">audited</text>
+<rect class="n po" x="2432" y="2974" width="128" height="128"/>
+<rect class="sh" x="2432" y="3096" width="128" height="6"/>
+<text class="t fpo" x="2496" y="3023">Every day → purge</text>
+<text class="t fpo" x="2496" y="3038">expired data per</text>
+<text class="t fpo" x="2496" y="3053">module</text>
+<line class="l" x1="2560" y1="3038" x2="2604" y2="3038"/>
+<rect class="n ev" x="2608" y="2974" width="128" height="128"/>
+<rect class="sh" x="2608" y="3096" width="128" height="6"/>
+<text class="t fev" x="2672" y="3038">Expired data purged</text>
+<rect class="n ac" x="230" y="2850" width="84" height="84"/>
+<rect class="sh" x="230" y="2928" width="84" height="6"/>
+<text class="t s fac" x="272" y="2878.25">Admin</text>
+<text class="t s fac" x="272" y="2892">(WireGuard</text>
+<text class="t s fac" x="272" y="2905.75">only)</text>
+<line class="l" x1="272" y1="2934" x2="272" y2="2970"/>
+<rect class="n hs" x="32" y="3142" width="128" height="128"/>
+<rect class="sh" x="32" y="3264" width="128" height="6"/>
+<text class="t fhs" x="96" y="3191">Lawyer: is a</text>
+<text class="t fhs" x="96" y="3206">24-month audit</text>
+<text class="t fhs" x="96" y="3221">period right?</text>
+<rect class="n hs" x="176" y="3142" width="128" height="128"/>
+<rect class="sh" x="176" y="3264" width="128" height="6"/>
+<text class="t fhs" x="240" y="3191">S6.2.16–18:</text>
+<text class="t fhs" x="240" y="3206">research assistant</text>
+<text class="t fhs" x="240" y="3221">decided, not built</text>
+<rect x="8" y="3326" width="3904" height="676" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="3356" font-size="20" font-weight="600" fill="#2b2a26">E8 · Money and consent</text>
+<rect class="n ex" x="32" y="3506" width="128" height="128"/>
+<rect class="sh" x="32" y="3628" width="128" height="6"/>
+<text class="t fex" x="96" y="3562.5">Google consent tool</text>
+<text class="t fex" x="96" y="3577.5">(CMP)</text>
+<line class="l" x1="160" y1="3570" x2="204" y2="3570"/>
+<rect class="n ev" x="208" y="3506" width="128" height="128"/>
+<rect class="sh" x="208" y="3628" width="128" height="6"/>
+<text class="t fev" x="272" y="3570">Consent given</text>
+<line class="l" x1="336" y1="3570" x2="380" y2="3570"/>
+<rect class="n po" x="384" y="3506" width="128" height="128"/>
+<rect class="sh" x="384" y="3628" width="128" height="6"/>
+<text class="t fpo" x="448" y="3547.5">Whenever consent</text>
+<text class="t fpo" x="448" y="3562.5">given (EEA, UK, CH)</text>
+<text class="t fpo" x="448" y="3577.5">→ load GA4 and</text>
+<text class="t fpo" x="448" y="3592.5">AdSense</text>
+<line class="l" x1="512" y1="3570" x2="556" y2="3570"/>
+<rect class="n ev" x="560" y="3506" width="128" height="128"/>
+<rect class="sh" x="560" y="3628" width="128" height="6"/>
+<text class="t fev" x="624" y="3570">Visit counted (GA4)</text>
+<line class="l" x1="688" y1="3570" x2="732" y2="3570"/>
+<rect class="n ex" x="736" y="3506" width="128" height="128"/>
+<rect class="sh" x="736" y="3628" width="128" height="6"/>
+<text class="t fex" x="800" y="3570">AdSense</text>
+<line class="l" x1="864" y1="3570" x2="908" y2="3570"/>
+<rect class="n ev" x="912" y="3506" width="128" height="128"/>
+<rect class="sh" x="912" y="3628" width="128" height="6"/>
+<text class="t fev" x="976" y="3562.5">Ad shown (results,</text>
+<text class="t fev" x="976" y="3577.5">loading)</text>
+<rect class="n ex" x="1136" y="3506" width="128" height="128"/>
+<rect class="sh" x="1136" y="3628" width="128" height="6"/>
+<text class="t fex" x="1200" y="3562.5">GitHub Sponsors ·</text>
+<text class="t fex" x="1200" y="3577.5">Stripe</text>
+<line class="l" x1="1264" y1="3570" x2="1308" y2="3570"/>
+<rect class="n ev" x="1312" y="3506" width="128" height="128"/>
+<rect class="sh" x="1312" y="3628" width="128" height="6"/>
+<text class="t fev" x="1376" y="3570">Donation made</text>
+<line class="l" x1="96" y1="3634" x2="96" y2="3674"/>
+<rect class="n ev" x="32" y="3678" width="128" height="128"/>
+<rect class="sh" x="32" y="3800" width="128" height="6"/>
+<text class="t fev" x="96" y="3742">Consent refused</text>
+<rect class="n ac" x="54" y="3382" width="84" height="84"/>
+<rect class="sh" x="54" y="3460" width="84" height="6"/>
+<text class="t s fac" x="96" y="3424">Visitor</text>
+<line class="l" x1="96" y1="3466" x2="96" y2="3502"/>
+<rect class="n hs" x="32" y="3846" width="128" height="128"/>
+<rect class="sh" x="32" y="3968" width="128" height="6"/>
+<text class="t fhs" x="96" y="3887.5">10 CHF</text>
+<text class="t fhs" x="96" y="3902.5">subscription: not</text>
+<text class="t fhs" x="96" y="3917.5">designed yet</text>
+<text class="t fhs" x="96" y="3932.5">(roadmap)</text>
+<rect class="n hs" x="176" y="3846" width="128" height="128"/>
+<rect class="sh" x="176" y="3968" width="128" height="6"/>
+<text class="t fhs" x="240" y="3895">Tracking cookies</text>
+<text class="t fhs" x="240" y="3910">must match the</text>
+<text class="t fhs" x="240" y="3925">Privacy page</text>
+<rect x="8" y="4030" width="3904" height="504" fill="#fbfaf6" stroke="#d8d4c8" rx="10"/>
+<text x="28" y="4060" font-size="20" font-weight="600" fill="#2b2a26">E7 · Site and frontend</text>
+<rect class="n cm" x="32" y="4210" width="128" height="128"/>
+<rect class="sh" x="32" y="4332" width="128" height="6"/>
+<text class="t fcm" x="96" y="4266.5">Open a resource</text>
+<text class="t fcm" x="96" y="4281.5">page</text>
+<line class="l" x1="160" y1="4274" x2="204" y2="4274"/>
+<rect class="n ev" x="208" y="4210" width="128" height="128"/>
+<rect class="sh" x="208" y="4332" width="128" height="6"/>
+<text class="t fev" x="272" y="4259">Resource page</text>
+<text class="t fev" x="272" y="4274">served with a real</text>
+<text class="t fev" x="272" y="4289">head</text>
+<rect class="n cm" x="432" y="4210" width="128" height="128"/>
+<rect class="sh" x="432" y="4332" width="128" height="6"/>
+<text class="t fcm" x="496" y="4274">Fetch the sitemap</text>
+<line class="l" x1="560" y1="4274" x2="604" y2="4274"/>
+<rect class="n ev" x="608" y="4210" width="128" height="128"/>
+<rect class="sh" x="608" y="4332" width="128" height="6"/>
+<text class="t fev" x="672" y="4274">Sitemap served</text>
+<rect class="n ev" x="832" y="4210" width="128" height="128"/>
+<rect class="sh" x="832" y="4332" width="128" height="6"/>
+<text class="t fev" x="896" y="4266.5">Unknown address</text>
+<text class="t fev" x="896" y="4281.5">answered 404</text>
+<rect class="n cm" x="1056" y="4210" width="128" height="128"/>
+<rect class="sh" x="1056" y="4332" width="128" height="6"/>
+<text class="t fcm" x="1120" y="4274">Switch the theme</text>
+<line class="l" x1="1184" y1="4274" x2="1228" y2="4274"/>
+<rect class="n ev" x="1232" y="4210" width="128" height="128"/>
+<rect class="sh" x="1232" y="4332" width="128" height="6"/>
+<text class="t fev" x="1296" y="4274">Theme changed</text>
+<rect class="n rm" x="1456" y="4210" width="128" height="128"/>
+<rect class="sh" x="1456" y="4332" width="128" height="6"/>
+<text class="t frm" x="1520" y="4266.5">Policy numbers (GET</text>
+<text class="t frm" x="1520" y="4281.5">/policy)</text>
+<rect class="n ev" x="1680" y="4210" width="128" height="128"/>
+<rect class="sh" x="1680" y="4332" width="128" height="6"/>
+<text class="t fev" x="1744" y="4266.5">Every upcoming</text>
+<text class="t fev" x="1744" y="4281.5">event listed</text>
+<rect class="n ac" x="54" y="4086" width="84" height="84"/>
+<rect class="sh" x="54" y="4164" width="84" height="6"/>
+<text class="t s fac" x="96" y="4128">Visitor</text>
+<line class="l" x1="96" y1="4170" x2="96" y2="4206"/>
+<rect class="n ac" x="454" y="4086" width="84" height="84"/>
+<rect class="sh" x="454" y="4164" width="84" height="6"/>
+<text class="t s fac" x="496" y="4128">Crawler</text>
+<line class="l" x1="496" y1="4170" x2="496" y2="4206"/>
+<rect class="n hs" x="32" y="4378" width="128" height="128"/>
+<rect class="sh" x="32" y="4500" width="128" height="6"/>
+<text class="t fhs" x="96" y="4427">S7.6.3: moving home</text>
+<text class="t fhs" x="96" y="4442">lists and WCAG</text>
+<text class="t fhs" x="96" y="4457">2.2.2</text>
+<rect class="n hs" x="176" y="4378" width="128" height="128"/>
+<rect class="sh" x="176" y="4500" width="128" height="6"/>
+<text class="t fhs" x="240" y="4427">S7.6.2: manual</text>
+<text class="t fhs" x="240" y="4442">accessibility pass</text>
+<text class="t fhs" x="240" y="4457">not done</text>
+<rect class="n hs" x="320" y="4378" width="128" height="128"/>
+<rect class="sh" x="320" y="4500" width="128" height="6"/>
+<text class="t fhs" x="384" y="4427">S7.2.3: design</text>
+<text class="t fhs" x="384" y="4442">system version 1</text>
+<text class="t fhs" x="384" y="4457">open points</text>
+</svg>
