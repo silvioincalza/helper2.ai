@@ -174,13 +174,18 @@ The schema is one file, and from the first release tag on that file must never c
      sign-in, a report or its own jobs write: `resource`, `resource_label`, `source_record` (the live results it
      observes), `source` (its sources at startup and their outcome), `issue_report` and `review_item` (a user's report),
      `live_web_query_result`, `app_user`, `bookmark` (sign-in, account deletion, the account purge),
-     `guide_similar_question`, `ai_cache`, `shedlock` and `public_app_setting` (its settings for the back office's
+     `guide_similar_question`, `ai_cache`, `public_app_lock` (the locks of its own daily jobs) and `public_app_setting` (its settings for the back office's
      page, at startup, [0038](../backoffice/0038-back-office-and-review.md) §10), with `DELETE` only where its code deletes.
      No sequence.
    - `h2_backoffice` reads and writes rows on every table, and uses the settings' identity sequence.
-   - New tables (default privileges of the owner): both apps read them, only the back office writes them. A new table
-     the public app writes needs its own `GRANT ... TO h2_public` in the migration that creates it, and its row in
-     `AppRolesGrantsIT`.
+   - The public app has no right on `shedlock`. That table holds the back office's locks (`scout-run`, the indexer,
+     its daily jobs), so the public app cannot hold or free them. Its own daily jobs lock in `public_app_lock`, the
+     same columns (`helper2.cluster-lock.table`, `ClusterLockProperties`: `shedlock` by default, `public_app_lock` in
+     the public app). The two apps share no lock name.
+   - New tables (default privileges of the owner): the back office reads and writes them, the public app has no right
+     on them. A new table the public app reads or writes needs its own `GRANT ... TO h2_public` in the migration that
+     creates it, and its row in `AppRolesGrantsIT`. So a new queue or bookkeeping table of the back office stays out
+     of the public app's reach without a `REVOKE`.
    - `AppRolesGrantsIT` holds one row per table and checks every privilege of both roles against the database: a new
      table fails it until it is classified. The app tests connect as these roles, so they show the rows are enough for
      the code; the tests of library code only the back office runs connect as `h2_backoffice` (`@AsBackOffice`).
@@ -359,6 +364,11 @@ The schema is one file, and from the first release tag on that file must never c
 - A record stays until its source withdraws it: an item a source only stops listing (it left the top awesome lists, trending, a Hugging Face organisation's newest models) stays, and so does a Hugging Face model that was deleted.
 - The row the index search reads takes its type, licence, pricing, open-source flag and event days from the card of the resource page, but not its title: the row keeps the title of the last write, the page shows the title of the first source by priority. `IndexHitAndCardParityIT` lists that gap. The test covers resources of two indexed sources: the page of a curated resource merges every record, while its row keeps what the curated write set, and no test compares the two ([0022](../search/0022-federated-search.md)).
 - The limits of resource identity (a package without its repository, a single file, a sub-folder under two branches) are in [0021](../scout/0021-resource-identity-one-resource-per-repository.md).
+- A public image older than `V2026.11.6.7` locks in `shedlock`, where its role now has no right. ShedLock logs the
+  refusal at ERROR and reports "not locked", so every daily job of that image is skipped: the account purge and the
+  guide and search retention stop. A rollback across that migration is a short window only: roll forward, or for
+  the window run `GRANT SELECT, INSERT, UPDATE ON shedlock TO h2_public` as the owner and revoke it after. In a
+  rolling upgrade, an old public pod whose job fires after the migration Job skips that day's run once.
 
 ### AI architecture check
 | # | Layer | Status |
