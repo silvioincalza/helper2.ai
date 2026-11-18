@@ -25,6 +25,11 @@ management:
   opentelemetry:
     resource-attributes:
       service.name: helper2-backoffice
+resilience4j:
+  circuitbreaker:
+    instances:
+      research-web-search: {base-config: collector}
+      research-huggingface: {base-config: collector}
 helper2:
   spa:
     location: classpath:/static/admin/

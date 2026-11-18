@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode;
 public final class WebSearchTool implements ResearchTool {
 
   public static final String FEATURE = "review-research";
-  static final String POLICY = "source-discovery";
+  static final String POLICY = "research-web-search";
   private static final int RESULTS = 8;
 
   private final RestClient http;
@@ -35,6 +35,7 @@ public final class WebSearchTool implements ResearchTool {
     this.resilience = resilience;
     this.clock = clock;
     this.shadowLibraries = shadowLibraries;
+    resilience.require(POLICY);
   }
 
   @Override

@@ -24,6 +24,7 @@ public final class GitHubRepoTool implements ResearchTool {
     this.http = http;
     this.resilience = resilience;
     this.clock = clock;
+    resilience.require(POLICY);
   }
 
   @Override
