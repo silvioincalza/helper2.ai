@@ -166,24 +166,27 @@ class JdbcRelationshipTargets implements RelationshipTargets {
 
   @Override
   @Transactional
-  public int confirmOpenKnownTargetCandidates(String by, String vendorNote, String serviceNote) {
+  public int confirmOpenKnownTargetCandidates(
+      String by, String vendorNote, String serviceNote, String toolNote) {
     KnownTargetLock.forUse(jdbc);
     return jdbc.sql(CONFIRM_KNOWN.formatted(KEY, ""))
         .param("by", by)
         .param("vendorNote", vendorNote)
         .param("serviceNote", serviceNote)
+        .param("toolNote", toolNote)
         .update();
   }
 
   @Override
   public boolean confirmKnownTargetCandidate(
-      UUID itemId, String by, String vendorNote, String serviceNote) {
+      UUID itemId, String by, String vendorNote, String serviceNote, String toolNote) {
     KnownTargetLock.forUse(jdbc);
     return jdbc.sql(CONFIRM_KNOWN.formatted(KEY, "AND i.id = :item"))
             .param("item", itemId)
             .param("by", by)
             .param("vendorNote", vendorNote)
             .param("serviceNote", serviceNote)
+            .param("toolNote", toolNote)
             .update()
         == 1;
   }
@@ -205,7 +208,7 @@ class JdbcRelationshipTargets implements RelationshipTargets {
              RETURNING c.item, c.kind)
       UPDATE review_item i
       SET status = 'SUPERSEDED', resolved_at = now(), resolved_by = :by,
-          resolution_note = CASE c.kind WHEN 'SERVICE' THEN :serviceNote ELSE :vendorNote END
+          resolution_note = CASE c.kind WHEN 'SERVICE' THEN :serviceNote WHEN 'TOOL' THEN :toolNote ELSE :vendorNote END
       FROM confirmed c WHERE i.id = c.item
       """;
 

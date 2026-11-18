@@ -280,14 +280,14 @@
         "edited": "Changed by an admin.",
         "edit": {
           "open": "Change the proposal",
-          "hint": "The item stays open. Accept it to add the name as you wrote it. If the name is one a vendor or service of the same kind already has, accepting adds the other names to it.",
+          "hint": "The item stays open. Accept it to add the name as you wrote it. If the name is one a known target of the same kind already has, accepting adds the other names to it.",
           "save": "Save the changes",
           "saving": "Saving…",
           "cancel": "Cancel",
           "alreadyDecided": "Someone decided this item meanwhile. Reload the list.",
           "failed": "Could not save the changes. Try again."
         },
-        "note": "Found by a rule, not by a person. Accept adds it to the known vendors and services. Reject a person's account: a person is not a vendor."
+        "note": "Found by a rule, not by a person. Accept adds it to the known vendors, services and tools. Reject a person's account: a person is not a vendor."
       },
       "row": {
         "relationship": {
@@ -396,9 +396,9 @@
         "cancel": "Cancel"
       },
       "targets": {
-        "title": "Known vendors and services",
-        "lede": "Names a relationship may point at without a catalog resource. A vendor is a company. A service is what a resource connects to, such as Slack or GitHub; where a resource runs is a platform, not a service. The next Scout run confirms the waiting relationships that name what you add.",
-        "addTitle": "Add a vendor or a service",
+        "title": "Known vendors, services and tools",
+        "lede": "Names a relationship may point at without a catalog resource. A vendor is a company. A service is what a resource connects to, such as Slack or GitHub. A tool is an application a resource runs in or plugs into, such as VS Code or Claude Desktop. Where a resource runs (Python, the command line) is a platform, not a target. The next Scout run confirms the waiting relationships that name what you add.",
+        "addTitle": "Add a vendor, a service or a tool",
         "kindLabel": "Kind",
         "name": "Name",
         "otherNames": "Other names, one per line (optional)",
@@ -409,16 +409,19 @@
         "removed": "Removed: {{name}}.",
         "refused": "Not saved: {{detail}}",
         "failed": "The action failed. Please try again.",
-        "loadError": "Could not load the known vendors and services.",
+        "loadError": "Could not load the known vendors, services and tools.",
         "kind": {
           "VENDOR": "Vendor",
-          "SERVICE": "Service"
+          "SERVICE": "Service",
+          "TOOL": "Tool"
         },
         "listTitle": {
           "VENDOR_one": "Vendors ({{count}})",
           "VENDOR_other": "Vendors ({{count}})",
           "SERVICE_one": "Services ({{count}})",
-          "SERVICE_other": "Services ({{count}})"
+          "SERVICE_other": "Services ({{count}})",
+          "TOOL_one": "Tools ({{count}})",
+          "TOOL_other": "Tools ({{count}})"
         },
         "none": "None yet.",
         "col": {
@@ -667,6 +670,8 @@
       "linkHint_other": "Points all {{count}} items at the resource you choose and accepts them.",
       "service_one": "It is a service (1 item)",
       "service_other": "It is a service ({{count}} items)",
+      "tool_one": "It is a tool (1 item)",
+      "tool_other": "It is a tool ({{count}} items)",
       "vendor_one": "It is a vendor (1 item)",
       "vendor_other": "It is a vendor ({{count}} items)",
       "reject_one": "Not a real target: reject (1 item)",

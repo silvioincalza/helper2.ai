@@ -188,6 +188,14 @@ export function RelationshipGroups({
               type="button"
               className="btn"
               aria-disabled={busy || undefined}
+              onClick={() => void decide(selected, { decision: 'TOOL' })}
+            >
+              {t('admin.groups.tool', { count: selected.items })}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-disabled={busy || undefined}
               onClick={() => void decide(selected, { decision: 'VENDOR' })}
             >
               {t('admin.groups.vendor', { count: selected.items })}

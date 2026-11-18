@@ -5,6 +5,7 @@ CALVER='^v([0-9]{4})\.([1-9][0-9]*)\.(0|[1-9][0-9]*)$'
 VERSIONED='^V[0-9][0-9._]*__.*\.sql$'
 MIGRATIONS=backend/libs/schema/src/main/resources/db/migration
 FIRST=V1__schema.sql
+NAMED='^V([0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*))\.[1-9][0-9]*__.+\.sql$'
 SELF=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")
 
 releases_in() {
@@ -42,12 +43,46 @@ released_migrations_unchanged() {
   echo "the versioned migrations of $release are unchanged"
 }
 
+newer() { [[ $1 != "$2" && $(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1) == "$1" ]]; }
+
+next_patch() {
+  local version=${1#v}
+  echo "${version%.*}.$((${version##*.} + 1))"
+}
+
+new_migrations_named_after_their_release() {
+  local head=$1 latest=$2 file bad=0
+  for file in $(versioned_in "$head"); do
+    [[ $file == "$FIRST" ]] && continue
+    [[ -n $(blob "$latest" "$file") ]] && continue
+    if [[ $file =~ $NAMED ]] && newer "${BASH_REMATCH[1]}" "${latest#v}"; then
+      continue
+    fi
+    echo "::error file=$MIGRATIONS/$file::$file: a new migration carries the version of the release that ships it, above $latest (for example V$(next_patch "$latest").1__what.sql), ADR 0004 §5"
+    bad=1
+  done
+  ((bad == 0)) || return 1
+  echo "the new migrations carry a version above $latest"
+}
+
+carried_release() {
+  local head=$1 version
+  version=$(git show "$head:backend/build.gradle.kts" 2> /dev/null | sed -n 's/^version = "\(.*\)"$/\1/p' || true)
+  if [[ v$version =~ $CALVER ]] && git rev-parse --verify --quiet "refs/tags/v$version^{commit}" > /dev/null; then
+    echo "v$version"
+  fi
+}
+
 check() {
-  local head=${1:-HEAD} releases release bad=0
+  local head=${1:-HEAD} releases release carried bad=0
   git rev-parse --verify --quiet "$head^{commit}" > /dev/null || { echo "no commit $head" >&2; return 2; }
   [[ $(git rev-parse --is-shallow-repository) == false ]] \
     || { echo "a shallow clone hides the release tags: fetch the full history (fetch-depth: 0)" >&2; return 2; }
   releases=$(releases_in "$head")
+  carried=$(carried_release "$head")
+  if [[ -n $carried ]] && ! grep -qFx "$carried" <<< "$releases"; then
+    releases=$(printf '%s\n%s\n' "$releases" "$carried" | sed '/^$/d')
+  fi
   if [[ -z $releases ]]; then
     only_the_first_migration "$head"
     return
@@ -55,6 +90,7 @@ check() {
   for release in $releases; do
     released_migrations_unchanged "$head" "$release" || bad=1
   done
+  new_migrations_named_after_their_release "$head" "$(sort -V <<< "$releases" | tail -1)" || bad=1
   return "$bad"
 }
 
@@ -74,6 +110,11 @@ self_test() {
       g add -A && g commit -qm "$1 is $2"
     }
     remove() { g rm -q "$MIGRATIONS/$1" && g commit -qm "$1 is removed"; }
+    carry() {
+      mkdir -p backend
+      echo "version = \"$1\"" > backend/build.gradle.kts
+      g add -A && g commit -qm "carries $1"
+    }
     expect() {
       local want=$1 what=$2 got=ok
       "$SELF" check > /dev/null 2>&1 || got=fail
@@ -109,27 +150,55 @@ self_test() {
     remove "$FIRST"
     expect fail "released: V1 is removed"
     g switch -q main
-    write V2__more.sql one
-    expect ok "released: a V2 is added"
-    write V2__more.sql two
-    expect ok "released: a V2 no release holds changes"
+    write V2026.11.2.1__more.sql one
+    expect ok "released: a migration of the next release is added"
+    write V2026.11.2.1__more.sql two
+    expect ok "released: a migration no release holds changes"
     g tag v2026.11.2
-    write V3__more.sql one
-    expect ok "second release: a V3 is added"
-    write V2__more.sql three
-    expect fail "second release: its V2 changes"
-    write V2__more.sql two
+    write V2026.11.3.1__more.sql one
+    expect ok "second release: a migration of the next release is added"
+    write V2026.11.2.5__late.sql one
+    expect fail "second release: a new migration named for a shipped version"
+    remove V2026.11.2.5__late.sql
+    write V9__x.sql one
+    expect fail "second release: a new migration with no release version"
+    remove V9__x.sql
+    write V2026.11.3.2__y.sql one
+    expect ok "second release: a second migration of the next release"
+    write V2026.11.2.1__more.sql three
+    expect fail "second release: its migration changes"
+    write V2026.11.2.1__more.sql two
     g switch -qc release/2026.11.3
     write version.txt 2026.11.3
     g tag v2026.12.0
     g switch -q main
     expect ok "a release tagged on its release branch, off main"
-    write V3__more.sql two
-    expect fail "a release tagged on its release branch, off main: its V3 changes on main"
-    write V3__more.sql one
+    write V2026.11.3.1__more.sql two
+    expect fail "a release tagged on its release branch, off main: its migration changes on main"
+    write V2026.11.3.1__more.sql one
     g switch -qc fix-of-an-old-release v2026.11.1
-    write V2__fix.sql one
+    write V2026.11.2.2__fix.sql one
     expect ok "a fix branch from an older release: the migrations of later releases are not in it"
+    g switch -q main
+    g switch -qc side-release
+    write V2026.12.1.1__side.sql one
+    carry 2026.12.1
+    g tag v2026.12.1
+    g switch -q main && g switch -qc squashed-into-main
+    carry 2026.12.1
+    write V2026.12.1.1__side.sql one
+    expect ok "a release merged into main by squash"
+    write V2026.12.1.2__late.sql one
+    expect fail "squashed release: a new migration named for its version"
+    remove V2026.12.1.2__late.sql
+    write V2026.12.2.1__next.sql one
+    expect ok "squashed release: a new migration of the next patch"
+    write V2026.12.1.1__side.sql two
+    expect fail "squashed release: a migration it holds changes"
+    write V2026.12.1.1__side.sql one
+    carry 2026.12.3
+    write V2026.12.1.3__z.sql one
+    expect ok "a carried version with no tag does not count"
     g switch -q main
     g switch -qc before-the-reset v2.0.0
     write "$FIRST" five

@@ -6,7 +6,7 @@ import { ApiError } from '@/api/client';
 import type { KnownTargetKind } from '@/api/types';
 import { namesOf } from './KnownTargetsPanel';
 
-const KINDS: KnownTargetKind[] = ['VENDOR', 'SERVICE'];
+const KINDS: KnownTargetKind[] = ['VENDOR', 'SERVICE', 'TOOL'];
 
 function errorOf(e: unknown, t: (k: string) => string): string {
   if (e instanceof ApiError) {

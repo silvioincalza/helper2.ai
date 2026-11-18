@@ -34,7 +34,7 @@ export function ItemDetails({ item, onChanged }: { item: ReviewItem; onChanged?:
 
 interface Proposal {
   name: string;
-  kind: 'VENDOR' | 'SERVICE';
+  kind: 'VENDOR' | 'SERVICE' | 'TOOL';
   rule: 'OWNER';
   count: number;
   examples: string[];
@@ -47,7 +47,7 @@ function parseProposal(details: string | null | undefined): Proposal | null {
   try {
     const d = JSON.parse(details) as Record<string, unknown>;
     return typeof d.name === 'string' &&
-      (d.kind === 'VENDOR' || d.kind === 'SERVICE') &&
+      (d.kind === 'VENDOR' || d.kind === 'SERVICE' || d.kind === 'TOOL') &&
       d.rule === 'OWNER' &&
       typeof d.count === 'number'
       ? {
