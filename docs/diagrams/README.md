@@ -10,6 +10,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 |---|---|
 | [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin domain) inside, ports on its edge, adapters around it, driving side left and driven side right. Hand-drawn SVG: edit the file itself. |
 | [context-map](context-map.svg) | Context map: the 10 bounded contexts of the backlog (Foundation, Scout and catalog, Search, AI guide, Identity and the signed-in user, Back office, Site and frontend, Money and consent, Legal and compliance, Release and operations), the modules that hold each one, and the direction of each dependency, as `ApplicationModules.verify()` lets them pass. |
+| [event-storming](event-storming.svg) | Big picture event storming of the seven contexts the apps run, one lane each: actors, commands, external systems, aggregates, domain events, policies, read models and the open stories (hotspots), with the arrows of what triggers what. Hand-drawn SVG: edit the file itself. |
 | [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included, and the public app's site with pages, policy, monetisation and the CSP), who calls helper2 and what it calls. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
