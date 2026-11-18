@@ -36,7 +36,7 @@ public final class CheckAwesomeLists {
         keptCurated++;
         continue;
       }
-      Optional<Boolean> list = reader.isAwesomeList(s.repoFullName());
+      Optional<Boolean> list = reader.isAwesomeList(s.repoFullName(), s.topics());
       if (list.isEmpty()) {
         unavailable++;
       } else if (list.get()) {

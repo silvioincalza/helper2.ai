@@ -88,8 +88,14 @@ whether a query finds a resource there:
    translate, unchanged. The answer is dropped if it looks like a link, or if it talks about the query instead of being
    one. Some phrases count anywhere in the answer ("already in English", "nothing to translate", "no translation
    required"); others only when the answer opens with them ("The query is", "This cannot be translated", "No
-   translation", "Sorry", "I cannot", "Unable to"), because "words that cannot be translated" is a real translation. Both lists are in
-   `i18n/translation-words_en.properties` and are matched on the answer reduced to plain words. Only letters, digits,
+   translation", "Sorry", "I cannot", "Unable to"), because "words that cannot be translated" is a real translation.
+   The model can also refuse in the user's language ("Nessuna traduzione necessaria", "Keine Übersetzung nötig", "Lo
+   siento, no puedo traducir", "Aucune traduction nécessaire"), so each of the five languages has both lists, in
+   `i18n/translation-words_<language>.properties`, and every list counts for every answer. Apologies and "I cannot"
+   ("mi dispiace", "lo siento", "désolé", "leider") count only at the start, because "How to say lo siento in English"
+   is a real translation. The lists are matched on the answer reduced to plain words, so they are written that way:
+   lower case, accents kept (NFC, on both sides), an apostrophe as a space ("c est en anglais"), and a few phrases
+   also without their accents ("gia in inglese"). Only letters, digits,
    spaces and hyphens stay; at most 12 words and 120 characters again. It is dropped if it equals the query reduced the same way, so an
    echo that differs only in case or punctuation adds no variant. Any failure, timeout or open circuit means the search
    runs untranslated.
