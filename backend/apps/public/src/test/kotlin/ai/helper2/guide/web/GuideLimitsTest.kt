@@ -223,7 +223,7 @@ class GuideLimitsTest {
         it.bulkhead("guide")
       }
     val shared =
-      GuideLimits(
+      guideLimits(
           Resilience4jPolicies(
             CircuitBreakerRegistry.ofDefaults(),
             bulkheads,
@@ -358,7 +358,7 @@ class GuideLimitsTest {
   }
 
   private fun limitsOf(slots: Int, perClient: Int) =
-    GuideLimits(
+    guideLimits(
         Resilience4jPolicies(
           CircuitBreakerRegistry.ofDefaults(),
           BulkheadRegistry.of(
@@ -371,8 +371,7 @@ class GuideLimitsTest {
           RetryRegistry.ofDefaults(),
         ),
         Duration.ofSeconds(30),
-        Clock.systemUTC(),
-        perClient,
+        questionsPerClient = perClient,
       )
       .also { limits += it }
 

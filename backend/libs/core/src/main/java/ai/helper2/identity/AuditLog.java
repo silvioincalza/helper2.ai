@@ -19,17 +19,7 @@ public interface AuditLog {
       String outcome,
       @Nullable String before,
       @Nullable String after,
-      @Nullable String reason) {
-    public Entry(
-        UUID id,
-        String adminId,
-        AuditTrail.Action action,
-        @Nullable String targetId,
-        Instant at,
-        String outcome) {
-      this(id, adminId, action, targetId, at, outcome, null, null, null);
-    }
-  }
+      @Nullable String reason) {}
 
   record Page(List<Entry> items, long total) {}
 

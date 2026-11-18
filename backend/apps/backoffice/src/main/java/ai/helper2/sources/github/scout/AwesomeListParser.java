@@ -17,10 +17,6 @@ final class AwesomeListParser {
   record Entry(
       String fullName, String section, String headingPath, String text, boolean inListOfLists) {
 
-    Entry(String fullName, String section, String headingPath, String text) {
-      this(fullName, section, headingPath, text, false);
-    }
-
     boolean pointsAtList() {
       String name = fullName.substring(fullName.indexOf('/') + 1).toLowerCase(Locale.ROOT);
       return name.contains("awesome") || inListOfLists;
@@ -35,14 +31,6 @@ final class AwesomeListParser {
       List<Link> links,
       int textLines,
       int linkedItems) {
-
-    Parsed(List<Entry> entries, List<String> headings) {
-      this(entries, headings, List.of());
-    }
-
-    Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
-      this(entries, headings, links, 0, 0);
-    }
 
     List<Entry> searchEntries(int maxEntries, int maxBytes) {
       List<Entry> kept = new ArrayList<>();

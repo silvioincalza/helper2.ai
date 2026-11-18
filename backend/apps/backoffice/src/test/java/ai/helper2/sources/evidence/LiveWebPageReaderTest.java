@@ -27,7 +27,8 @@ class LiveWebPageReaderTest {
 
   private LiveWebPageReader extract(String token) {
     SourceSettings settings =
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO);
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null);
     return new LiveWebPageReader(
         settings,
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),

@@ -111,7 +111,7 @@ class GitHubAwesomeDeepSearchTest {
 
   GitHubAwesomeCollector collector() {
     return new GitHubAwesomeCollector(
-        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -244,7 +244,8 @@ class GitHubAwesomeDeepSearchTest {
         FixtureServer.Reply.ok("# T\n## " + words + "\n- [Many](https://many.ai)\n"));
     GitHubAwesomeCollector c =
         new GitHubAwesomeCollector(
-            new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+            new SourceSettings(
+                true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             SourceFixtures.CLOCK,

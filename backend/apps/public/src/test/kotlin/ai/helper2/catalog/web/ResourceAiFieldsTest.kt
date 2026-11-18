@@ -330,7 +330,7 @@ class ResourceAiFieldsTest {
 
   private fun summary(model: String, vararg claims: String) =
     ResourceDetail.Summary(
-      claims.map { ResourceDetail.SummaryClaim(it, emptyList()) },
+      claims.map { ResourceDetail.SummaryClaim(it, emptyList(), false) },
       model,
       "v1",
       Instant.EPOCH,

@@ -72,7 +72,7 @@ class CourseCandidateReviewTest {
         .isFalse();
 
     ReviewQueue.Item item =
-        queue.list(ReviewQueue.Status.OPEN, null, 0, 100).items().stream()
+        queue.list(ReviewQueue.Status.OPEN, null, null, null, 0, 100).items().stream()
             .filter(i -> i.kind() == ReviewQueue.Kind.COURSE_CANDIDATE && i.details().contains(URL))
             .findFirst()
             .orElseThrow();

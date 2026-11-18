@@ -46,32 +46,9 @@ public record ResourceDetail(
       Verification verification,
       List<Evidence> evidence,
       ValueOrigin origin,
-      @Nullable String model) {
-    public Relationship(
-        String kind,
-        UUID targetId,
-        String targetTitle,
-        Verification verification,
-        List<Evidence> evidence,
-        ValueOrigin origin) {
-      this(kind, targetId, targetTitle, verification, evidence, origin, null);
-    }
+      @Nullable String model) {}
 
-    public Relationship(
-        String kind,
-        UUID targetId,
-        String targetTitle,
-        Verification verification,
-        List<Evidence> evidence) {
-      this(kind, targetId, targetTitle, verification, evidence, ValueOrigin.AI_EXTRACTED);
-    }
-  }
-
-  public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {
-    public SummaryClaim(String text, List<Evidence> evidence) {
-      this(text, evidence, false);
-    }
-  }
+  public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {}
 
   public record Summary(
       List<SummaryClaim> claims, String model, String promptVersion, Instant generatedAt) {}

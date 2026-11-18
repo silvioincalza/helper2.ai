@@ -228,13 +228,6 @@ class AdminUseCaseConfiguration {
     @Override
     @Transactional(noRollbackFor = ApiProblem.class)
     public ResolveReviewItem.Outcome resolve(
-        UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note) {
-      return super.resolve(id, decision, adminId, note);
-    }
-
-    @Override
-    @Transactional(noRollbackFor = ApiProblem.class)
-    public ResolveReviewItem.Outcome resolve(
         UUID id,
         ReviewQueue.Status decision,
         String adminId,
