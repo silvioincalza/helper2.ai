@@ -124,7 +124,6 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
 - Models (Whisper, SAM, rerankers) are not covered: no collector reads the most liked models per `pipeline_tag`.
 - Seminal papers are not covered: no source is sorted by citations ([S3.13.1](https://github.com/silvioincalza/helper2.ai/issues/255)).
 - A reference project no topic reaches is not found: there is no seed list for it.
-- A topic leader is indexed without the "is it about AI" check ([S2.12.1](https://github.com/silvioincalza/helper2.ai/issues/217)).
 
 ### STRIDE
 | Threat | Answer |
@@ -163,5 +162,3 @@ Tracked privately (S9.6.3).
 
 ## Backlog
 - Decides: [F2.5](https://github.com/silvioincalza/helper2.ai/issues/35).
-- Open issues that change it:
-  - [S2.12.1](https://github.com/silvioincalza/helper2.ai/issues/217): `Classification.isAiRelated` measured, then applied to `github-topic-leaders`.
