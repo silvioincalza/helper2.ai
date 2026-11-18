@@ -194,7 +194,6 @@ describe('Feature: an admin manages the vendors, services and tools a relationsh
     await user.click(within(review).getByRole('button', { name: 'Remove name' }));
 
     expect(await screen.findByText('Removed: Slack.')).toBeInTheDocument();
-    // The services and the tools are both empty now.
     await waitFor(() => expect(screen.getAllByText('None yet.')).toHaveLength(2));
   });
 
