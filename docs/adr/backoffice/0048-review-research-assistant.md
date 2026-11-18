@@ -88,7 +88,7 @@ tool answered, and must confirm every value before it reaches the catalog.
    open source, licence, description, tags, language, published date, duplicate of.
 7. **Applying.** The detail pane of the review queue shows the verdict and one row per attribute: the value now, the
    proposed value, its status and its quotes. The admin confirms, edits or keeps each changed attribute (keys `c`, `e`
-   and `u`: `k` stays "previous item"); a conflict needs a pick first. Accept is enabled when every changed attribute
+   and `u`; the queue keys do nothing inside the proposal); a conflict needs a pick first. Accept is enabled when every changed attribute
    has a decision, and says how many are left. On Accept, every confirmed value goes into the candidate through
    `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path
    ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is
@@ -101,10 +101,11 @@ tool answered, and must confirm every value before it reaches the catalog.
 8. **Batch apply: rejects only.** The research bar offers to reject the items of the page whose verdict is reject. The
    list of items with their reasons is shown first, and the admin can untick any; nothing is rejected before the admin
    confirms it. Keep and duplicate are decided one item at a time. The research bar also starts research for the
-   picked items, the page, or every open candidate after the count and the most model calls are shown. Each row
-   shows its research (queued, running with its step, the verdict, failed with the reason, cancel, research again),
-   read every 2 seconds while a run is active. The Research filter (done keep, done reject, not researched) reads the
-   loaded page only.
+   picked items, the page, or every open candidate after the count and the most model calls are shown. The picked
+   items and the page leave out the items already researched or running; a row keeps its own research again. Each
+   row shows its research (queued, running with its step, the verdict, failed with the reason, cancel, watch live,
+   research again), read every 2 seconds while a run is active. The Research filter (keep, reject,
+   duplicate, queued or running, not researched) is the server's filter of §7.
 9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
    changes, and ends with the run or when the browser leaves. It reads new rows from Postgres once a second, so it
    works with any number of back office pods and needs no broker. A comment line every 15 seconds keeps a quiet

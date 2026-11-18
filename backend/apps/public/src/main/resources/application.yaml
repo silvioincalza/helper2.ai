@@ -38,6 +38,8 @@ resilience4j:
         max-concurrent-calls: ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}
         max-wait-duration: 0
 helper2:
+  cluster-lock:
+    table: public_app_lock
   guide:
     thinking:
       plan-tokens: ${H2_GUIDE_THINK_PLAN_TOKENS:0}

@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { adminApi } from '@/api/admin';
+import { ApiError, GUIDE_IDLE_TIMEOUT_MS } from '@/api/client';
 import type { ReviewResearchDetail, ReviewResearchRun, ReviewResearchStep } from '@/api/types';
+import { RetryButton } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { isActive } from './ReviewResearch';
 
 type Kind = ReviewResearchStep['kind'];
+type Translate = ReturnType<typeof useTranslation>['t'];
+type Followed = 'ended' | 'stalled';
 const KINDS: Kind[] = ['MODEL_CALL', 'TOOL_CALL', 'CHECK'];
 const UUID = /^[0-9a-f-]{36}$/i;
+const QUEUE = '/admin/review';
 
 export function parseEvents(text: string): {
   events: { event: string; data: string }[];
@@ -43,77 +48,148 @@ async function follow(
   signal: AbortSignal,
   onStep: (s: ReviewResearchStep) => void,
   onRun: (r: ReviewResearchRun) => void,
-) {
-  const res = await adminApi.reviewResearchEvents(runId, afterSeq, signal);
-  const reader = res.body?.getReader();
-  if (!reader) return;
-  const decoder = new TextDecoder();
-  let buffer = '';
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    const parsed = parseEvents(buffer + decoder.decode(value, { stream: true }));
-    buffer = parsed.rest;
-    for (const e of parsed.events) {
-      if (e.event === 'step') onStep(JSON.parse(e.data) as ReviewResearchStep);
-      if (e.event === 'status') onRun(JSON.parse(e.data) as ReviewResearchRun);
+): Promise<Followed> {
+  const ctrl = new AbortController();
+  const stop = () => ctrl.abort();
+  signal.addEventListener('abort', stop, { once: true });
+  let stalled = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const arm = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      stalled = true;
+      stop();
+      void reader?.cancel().catch(() => undefined);
+    }, GUIDE_IDLE_TIMEOUT_MS);
+  };
+  arm();
+  try {
+    const res = await adminApi.reviewResearchEvents(runId, afterSeq, ctrl.signal);
+    reader = res.body?.getReader();
+    if (!reader) return 'ended';
+    const decoder = new TextDecoder();
+    let buffer = '';
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      arm();
+      const parsed = parseEvents(buffer + decoder.decode(value, { stream: true }));
+      buffer = parsed.rest;
+      for (const e of parsed.events) {
+        if (e.event === 'step') onStep(JSON.parse(e.data) as ReviewResearchStep);
+        if (e.event === 'status') onRun(JSON.parse(e.data) as ReviewResearchRun);
+      }
     }
+    return stalled ? 'stalled' : 'ended';
+  } catch (e) {
+    if (stalled) return 'stalled';
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener('abort', stop);
   }
 }
 
 export default function ResearchTracePage() {
   const { runId = '' } = useParams();
   const { t } = useTranslation();
-  if (!UUID.test(runId)) return <TraceFailed />;
+  if (!UUID.test(runId)) return <TraceFailed gone />;
   return <Trace key={runId} runId={runId} t={t} />;
 }
 
-function TraceFailed() {
+function queueOf(state: unknown): string | null {
+  const from = (state as { from?: unknown } | null)?.from;
+  return typeof from === 'string' && from.startsWith(QUEUE) && !from.startsWith('//') ? from : null;
+}
+
+function BackLink() {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const from = queueOf(location.state);
+  const back = (e: MouseEvent) => {
+    if (!from || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    void navigate(-1);
+  };
+  return (
+    <Link to={from ?? QUEUE} onClick={back}>
+      <span aria-hidden="true">← </span>
+      {t('admin.research.trace.back')}
+    </Link>
+  );
+}
+
+function TraceFailed({ gone, onRetry }: { gone: boolean; onRetry?: () => void }) {
   const { t } = useTranslation();
   return (
     <section className="h2-admin__part" aria-labelledby="rt-h">
+      <BackLink />
       <h2 id="rt-h">{t('admin.research.trace.title')}</h2>
-      <p role="alert">{t('admin.research.loadFailed')}</p>
-      <Link to="/admin/review">{t('admin.research.trace.back')}</Link>
+      <p role="alert">{t(gone ? 'admin.research.trace.gone' : 'admin.research.loadFailed')}</p>
+      {!gone && onRetry && <RetryButton onClick={onRetry} />}
     </section>
   );
 }
 
-function Trace({ runId, t }: { runId: string; t: ReturnType<typeof useTranslation>['t'] }) {
+function Trace({ runId, t }: { runId: string; t: Translate }) {
   const loaded = useApi(
     `review-research-trace/${runId}`,
     (signal) => adminApi.getReviewResearch(runId, signal),
     { cache: false },
   );
-  const detail: ReviewResearchDetail | undefined = loaded.data;
+  const detail: ReviewResearchDetail | undefined = loaded.data ?? loaded.previous;
   const [streamed, setStreamed] = useState<ReviewResearchStep[]>([]);
   const [live, setLive] = useState<ReviewResearchRun | null>(null);
+  const [stopped, setStopped] = useState(false);
   const [shown, setShown] = useState<Kind | 'ERRORS' | null>(null);
   const [open, setOpen] = useState<ReadonlySet<number>>(new Set());
   const reload = loaded.reload;
+  const lastSeq = useRef(0);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     if (!detail || !isActive(detail.run)) return;
     const ctrl = new AbortController();
-    const last = detail.steps.at(-1)?.seq ?? 0;
+    let finished = false;
     follow(
       runId,
-      last,
+      Math.max(lastSeq.current, detail.steps.at(-1)?.seq ?? 0),
       ctrl.signal,
-      (s) => setStreamed((all) => merged(all, s)),
+      (s) => {
+        lastSeq.current = Math.max(lastSeq.current, s.seq);
+        setStreamed((all) => merged(all, s));
+      },
       (r) => {
         setLive(r);
-        if (!isActive(r)) reload();
+        if (isActive(r)) return;
+        finished = true;
+        reload();
       },
-    ).catch(() => undefined);
+    )
+      .then((how) => {
+        if (how === 'stalled' || !finished) setStopped(true);
+      })
+      .catch(() => {
+        if (!ctrl.signal.aborted) setStopped(true);
+      });
     return () => ctrl.abort();
   }, [detail, runId, reload]);
 
-  if (loaded.error !== undefined) return <TraceFailed />;
+  if (loaded.error !== undefined) {
+    const gone = loaded.error instanceof ApiError && loaded.error.status === 404;
+    return <TraceFailed gone={gone} onRetry={reload} />;
+  }
   if (!detail) return <p role="status">{t('admin.research.loading')}</p>;
 
   const run = live && isActive(detail.run) ? live : detail.run;
   const steps = streamed.reduce(merged, detail.steps);
+  const reconnect = () => {
+    setStopped(false);
+    heading.current?.focus();
+    reload();
+  };
 
   const visible = steps.filter((s) =>
     shown === null ? true : shown === 'ERRORS' ? !!s.error : s.kind === shown,
@@ -128,8 +204,10 @@ function Trace({ runId, t }: { runId: string; t: ReturnType<typeof useTranslatio
 
   return (
     <section className="h2-admin__part h2-admin__trace" aria-labelledby="rt-h">
-      <Link to="/admin/review">{t('admin.research.trace.back')}</Link>
-      <h2 id="rt-h">{t('admin.research.trace.title')}</h2>
+      <BackLink />
+      <h2 id="rt-h" ref={heading} tabIndex={-1}>
+        {t('admin.research.trace.title')}
+      </h2>
       <p className="h2-admin__trace-meta">
         <StatusPill
           tone={run.status === 'DONE' ? 'ok' : run.status === 'FAILED' ? 'warn' : 'later'}
@@ -145,8 +223,16 @@ function Trace({ runId, t }: { runId: string; t: ReturnType<typeof useTranslatio
         </span>
       </p>
       <p aria-live="polite" className="sr-only">
-        {isActive(run) ? t('admin.research.trace.live', { count: steps.length }) : ''}
+        {isActive(run) && !stopped ? t('admin.research.trace.live', { count: steps.length }) : ''}
       </p>
+      {stopped && isActive(run) && (
+        <div role="alert" className="banner banner-warn">
+          <span>{t('admin.research.trace.stopped')}</span>{' '}
+          <button type="button" className="btn btn-sm" onClick={reconnect}>
+            {t('admin.research.trace.reconnect')}
+          </button>
+        </div>
+      )}
       {run.error && <p role="alert">{run.error}</p>}
       <p className="h2-admin__research-ai">{t('admin.research.trace.plain')}</p>
       <div className="h2-admin__views" role="group" aria-label={t('admin.research.trace.filter')}>
@@ -179,70 +265,90 @@ function Trace({ runId, t }: { runId: string; t: ReturnType<typeof useTranslatio
         </button>
       </div>
       <ol className="h2-admin__trace-steps" aria-label={t('admin.research.trace.stepsLabel')}>
-        {visible.map((s) => {
-          const expanded = open.has(s.seq);
-          return (
-            <li key={s.seq} className="h2-admin__trace-step">
-              <span className="h2-admin__mono">{s.seq}</span>
-              <div>
-                <div className="h2-admin__trace-step-head">
-                  <StatusPill
-                    tone={s.kind === 'CHECK' ? 'ok' : s.kind === 'TOOL_CALL' ? 'next' : 'later'}
-                  >
-                    {t(`admin.research.trace.kind.${s.kind}`)}
-                  </StatusPill>
-                  <strong>{s.name}</strong>
-                  <span className="h2-admin__mono">
-                    {t('admin.research.trace.took', { ms: s.durationMs })}
-                    {s.promptTokens != null
-                      ? ` · ${t('admin.research.trace.tokens', {
-                          prompt: s.promptTokens,
-                          completion: s.completionTokens ?? 0,
-                        })}`
-                      : ''}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    aria-expanded={expanded}
-                    onClick={() => toggle(s.seq)}
-                  >
-                    {t(expanded ? 'admin.research.trace.less' : 'admin.research.trace.more')}{' '}
-                    <span className="sr-only">{s.seq}</span>
-                  </button>
-                </div>
-                {s.error && <p className="h2-admin__research-error">{s.error}</p>}
-                <div className="h2-admin__trace-io">
-                  <div>
-                    <p className="h2-admin__trace-label">{t('admin.research.trace.request')}</p>
-                    <pre
-                      className={
-                        expanded
-                          ? 'h2-admin__trace-pre h2-admin__trace-pre--open'
-                          : 'h2-admin__trace-pre'
-                      }
-                    >
-                      {s.request}
-                    </pre>
-                  </div>
-                  <div>
-                    <p className="h2-admin__trace-label">{t('admin.research.trace.response')}</p>
-                    <pre
-                      className={
-                        expanded
-                          ? 'h2-admin__trace-pre h2-admin__trace-pre--open'
-                          : 'h2-admin__trace-pre'
-                      }
-                    >
-                      {s.response ?? ''}
-                    </pre>
-                  </div>
-                </div>
-              </div>
-            </li>
-          );
-        })}
+        {visible.map((s) => (
+          <TraceStep key={s.seq} step={s} expanded={open.has(s.seq)} onToggle={toggle} t={t} />
+        ))}
       </ol>
     </section>
+  );
+}
+
+function TraceStep({
+  step: s,
+  expanded,
+  onToggle,
+  t,
+}: {
+  step: ReviewResearchStep;
+  expanded: boolean;
+  onToggle: (seq: number) => void;
+  t: Translate;
+}) {
+  const byModel = s.kind === 'MODEL_CALL';
+  const pre = expanded ? 'h2-admin__trace-pre h2-admin__trace-pre--open' : 'h2-admin__trace-pre';
+  return (
+    <li className="h2-admin__trace-step">
+      <span className="h2-admin__mono">{s.seq}</span>
+      <div>
+        <div className="h2-admin__trace-step-head">
+          <StatusPill tone={s.kind === 'CHECK' ? 'ok' : s.kind === 'TOOL_CALL' ? 'next' : 'later'}>
+            {t(`admin.research.trace.kind.${s.kind}`)}
+          </StatusPill>
+          <strong>{s.name}</strong>
+          <span className="h2-admin__mono">
+            {t('admin.research.trace.took', { ms: s.durationMs })}
+            {s.promptTokens != null
+              ? ` · ${t('admin.research.trace.tokens', {
+                  prompt: s.promptTokens,
+                  completion: s.completionTokens ?? 0,
+                })}`
+              : ''}
+          </span>
+          <button
+            type="button"
+            className="btn btn-sm"
+            aria-expanded={expanded}
+            onClick={() => onToggle(s.seq)}
+          >
+            {t(expanded ? 'admin.research.trace.less' : 'admin.research.trace.more')}{' '}
+            <span className="sr-only">{s.seq}</span>
+          </button>
+        </div>
+        {s.error && <p className="h2-admin__research-error">{s.error}</p>}
+        <div className="h2-admin__trace-io">
+          <div>
+            <p id={`rt-${s.seq}-request`} className="h2-admin__trace-label">
+              {t('admin.research.trace.request')}
+              <span className="sr-only">{t('admin.research.trace.stepOf', { seq: s.seq })}</span>
+            </p>
+            <pre
+              className={pre}
+              role="group"
+              aria-labelledby={`rt-${s.seq}-request`}
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+              tabIndex={0}
+            >
+              {s.request}
+            </pre>
+          </div>
+          <div {...(byModel ? { 'data-ai-generated': 'true', 'data-ai-model': s.name } : {})}>
+            <p id={`rt-${s.seq}-response`} className="h2-admin__trace-label">
+              {t('admin.research.trace.response')}
+              <span className="sr-only">{t('admin.research.trace.stepOf', { seq: s.seq })}</span>
+              {byModel && <> · {t('admin.research.trace.byModel')}</>}
+            </p>
+            <pre
+              className={pre}
+              role="group"
+              aria-labelledby={`rt-${s.seq}-response`}
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+              tabIndex={0}
+            >
+              {s.response ?? ''}
+            </pre>
+          </div>
+        </div>
+      </div>
+    </li>
   );
 }

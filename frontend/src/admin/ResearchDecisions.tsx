@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { adminApi } from '@/api/admin';
 import type {
   CandidateEdit,
@@ -11,6 +11,7 @@ import type {
 import { useApi } from '@/hooks/useApi';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { tagsOf } from './CandidateEditForm';
+import { useRunDecisions, type Decision } from './researchDecisionsStore';
 
 const CANDIDATE_TYPES: ReadonlySet<string> = new Set([
   'PRODUCT',
@@ -35,9 +36,6 @@ const STATUS_TONE: Record<ReviewResearchAttribute['status'], StatusTone> = {
   CONFLICT: 'warn',
   NOT_FOUND: 'later',
 };
-
-export type Decision =
-  { kind: 'confirm'; value: string } | { kind: 'edit'; value: string } | { kind: 'keep' };
 
 export interface ResearchOutcome {
   complete: boolean;
@@ -106,14 +104,52 @@ function put(edit: Edit, a: ReviewResearchAttribute, value: string, asProposed: 
   }
 }
 
+type FocusTarget = { to: 'next' } | { to: 'row'; name: string };
+
+const WEB_ADDRESS = /^https?:\/\//i;
+
+function Missing() {
+  const { t } = useTranslation();
+  return (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">{t('admin.research.none')}</span>
+    </>
+  );
+}
+
+function DuplicateOf({ value }: { value: string }) {
+  const { t } = useTranslation();
+  return (
+    <p>
+      {t('admin.research.duplicateOf')}{' '}
+      {WEB_ADDRESS.test(value) ? (
+        <a
+          className="h2-admin__mono"
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+        >
+          {value}
+        </a>
+      ) : (
+        <span className="h2-admin__mono">{value}</span>
+      )}
+    </p>
+  );
+}
+
 export function ResearchDecisions({
   run,
   onOutcome,
+  onDone,
 }: {
   run: ReviewResearchRun;
   onOutcome: (outcome: ResearchOutcome | null) => void;
+  onDone: () => void;
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const loaded = useApi(
     `review-research/${run.id}`,
     (signal) => adminApi.getReviewResearch(run.id, signal),
@@ -121,19 +157,16 @@ export function ResearchDecisions({
   );
   const detail = loaded.data ?? null;
   const failed = loaded.error !== undefined;
-  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  const [{ decisions, picks }, change] = useRunDecisions(run.id);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
-  const [picks, setPicks] = useState<Record<string, string>>({});
-  const [moveFocus, setMoveFocus] = useState(0);
+  const [focusTo, setFocusTo] = useState<{ target: FocusTarget; n: number } | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (moveFocus === 0) return;
-    box.current?.querySelector<HTMLElement>('.h2-admin__research-next button')?.focus();
-  }, [moveFocus]);
 
   const result = detail?.result ?? null;
   const attributes = useMemo(() => result?.attributes ?? [], [result]);
+  const pending = useMemo(() => attributes.filter(changed), [attributes]);
+  const next = pending.find((a) => !decisions[a.name]);
   const outcome = useMemo(
     () => (result ? outcomeOf(attributes, decisions) : null),
     [result, attributes, decisions],
@@ -142,18 +175,45 @@ export function ResearchDecisions({
     onOutcome(outcome);
   }, [outcome, onOutcome]);
   useEffect(() => () => onOutcome(null), [onOutcome]);
+  const nextName = next?.name;
+  useEffect(() => {
+    if (!focusTo) return;
+    const name = focusTo.target.to === 'row' ? focusTo.target.name : nextName;
+    if (!name) {
+      onDone();
+      return;
+    }
+    box.current
+      ?.querySelector<HTMLElement>(`[data-attr="${CSS.escape(name)}"] [data-first-action]`)
+      ?.focus();
+  }, [focusTo, nextName, onDone]);
 
   if (failed) return <p role="alert">{t('admin.research.loadFailed')}</p>;
   if (!detail) return <p role="status">{t('admin.research.loading')}</p>;
   if (!result) return null;
 
-  const pending = attributes.filter(changed);
-  const next = pending.find((a) => !decisions[a.name]);
+  const moveFocus = (target: FocusTarget) => setFocusTo((f) => ({ target, n: (f?.n ?? 0) + 1 }));
+  const setDecisions = (update: (all: Record<string, Decision>) => Record<string, Decision>) =>
+    change((all) => ({ ...all, decisions: update({ ...all.decisions }) }));
   const decide = (name: string, d: Decision) => {
     setDecisions((all) => ({ ...all, [name]: d }));
     setEditing(null);
-    setMoveFocus((n) => n + 1);
+    moveFocus({ to: 'next' });
   };
+  const keepRest = () => {
+    setDecisions((all) => {
+      for (const a of pending) if (!all[a.name]) all[a.name] = { kind: 'keep' };
+      return all;
+    });
+    setEditing(null);
+    moveFocus({ to: 'next' });
+  };
+  const undo = (name: string) => {
+    setDecisions(({ [name]: _, ...rest }) => rest);
+    moveFocus({ to: 'row', name });
+  };
+  const pick = (name: string, value: string) =>
+    change((all) => ({ ...all, picks: { ...all.picks, [name]: value } }));
   const confirm = (a: ReviewResearchAttribute) => {
     const value = a.proposed.length > 1 ? picks[a.name] : a.proposed[0];
     if (value) decide(a.name, { kind: 'confirm', value });
@@ -181,7 +241,8 @@ export function ResearchDecisions({
     e.stopPropagation();
     action();
   };
-  const decided = pending.length - (outcome?.left.length ?? 0);
+  const left = outcome?.left.length ?? 0;
+  const decided = pending.length - left;
 
   return (
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
@@ -192,6 +253,9 @@ export function ResearchDecisions({
       data-ai-model={run.model}
       onKeyDown={onKeyDown}
     >
+      <p className="h2-admin__research-ai">
+        <strong>{t('admin.research.aiLabel')}</strong> {t('admin.research.aiHint')}
+      </p>
       <div className="h2-admin__research-head">
         <StatusPill
           tone={result.verdict === 'KEEP' ? 'ok' : result.verdict === 'REJECT' ? 'next' : 'warn'}
@@ -200,22 +264,19 @@ export function ResearchDecisions({
         </StatusPill>
         <span>{result.reason}</span>
       </div>
-      {result.duplicateOf && (
-        <p>
-          {t('admin.research.duplicateOf')}{' '}
-          <span className="h2-admin__mono">{result.duplicateOf}</span>
-        </p>
-      )}
+      {result.duplicateOf && <DuplicateOf value={result.duplicateOf} />}
       <p className="h2-admin__research-meta">
         {t('admin.research.meta', {
           model: run.model,
           steps: run.steps,
           tokens: (run.promptTokens + run.completionTokens).toLocaleString('en'),
         })}{' '}
-        <Link to={`/admin/review/research/${run.id}`}>{t('admin.research.everyStep')}</Link>
-      </p>
-      <p className="h2-admin__research-ai" aria-label={t('admin.research.aiLabel')}>
-        <strong>{t('admin.research.aiLabel')}</strong> {t('admin.research.aiHint')}
+        <Link
+          to={`/admin/review/research/${run.id}`}
+          state={{ from: `${location.pathname}${location.search}` }}
+        >
+          {t('admin.research.everyStep')}
+        </Link>
       </p>
       <div className="h2-admin__research-table">
         <table className="h2-table">
@@ -236,16 +297,16 @@ export function ResearchDecisions({
               return (
                 <tr
                   key={a.name}
+                  data-attr={a.name}
                   className={next?.name === a.name ? 'h2-admin__research-next' : undefined}
                 >
-                  <th scope="row">
-                    {t(`admin.research.attr.${a.name}`, { defaultValue: a.name })}
-                  </th>
+                  <th scope="row">{label}</th>
                   <td>
                     {isChanged ? (
                       <>
                         <div className="h2-admin__research-now">
-                          {a.current ?? t('admin.research.none')}
+                          <span className="sr-only">{t('admin.research.nowLabel')} </span>
+                          {a.current ?? <Missing />}
                         </div>
                         {conflict ? (
                           <fieldset className="h2-admin__research-pick">
@@ -259,18 +320,21 @@ export function ResearchDecisions({
                                   name={`pick-${a.name}`}
                                   value={v}
                                   checked={picks[a.name] === v}
-                                  onChange={() => setPicks((p) => ({ ...p, [a.name]: v }))}
+                                  onChange={() => pick(a.name, v)}
                                 />{' '}
                                 {v}
                               </label>
                             ))}
                           </fieldset>
                         ) : (
-                          <div className="h2-admin__research-proposed">{a.proposed[0]}</div>
+                          <div className="h2-admin__research-proposed">
+                            <span className="sr-only">{t('admin.research.proposedLabel')} </span>
+                            {a.proposed[0]}
+                          </div>
                         )}
                       </>
                     ) : (
-                      <div>{a.current ?? a.proposed[0] ?? t('admin.research.none')}</div>
+                      <div>{a.current ?? a.proposed[0] ?? <Missing />}</div>
                     )}
                     {a.sources.map((s) => (
                       <blockquote
@@ -296,11 +360,7 @@ export function ResearchDecisions({
                     ) : d ? (
                       <span className="h2-admin__research-done">
                         <StatusPill tone="ok">{t(`admin.research.decided.${d.kind}`)}</StatusPill>{' '}
-                        <button
-                          type="button"
-                          className="btn btn-sm"
-                          onClick={() => setDecisions(({ [a.name]: _, ...rest }) => rest)}
-                        >
+                        <button type="button" className="btn btn-sm" onClick={() => undo(a.name)}>
                           {t('admin.research.undo')} <span className="sr-only">{label}</span>
                         </button>
                       </span>
@@ -347,6 +407,7 @@ export function ResearchDecisions({
                         <button
                           type="button"
                           className="btn btn-sm btn-primary"
+                          data-first-action=""
                           aria-keyshortcuts="c"
                           aria-disabled={(conflict && !picks[a.name]) || undefined}
                           onClick={() => confirm(a)}
@@ -390,13 +451,20 @@ export function ResearchDecisions({
         </details>
       )}
       {pending.length > 0 && (
-        <div className="h2-admin__research-progress" role="status">
-          <span>{t('admin.research.progress', { done: decided, count: pending.length })}</span>
+        <div className="h2-admin__research-progress">
+          <span role="status">
+            {t('admin.research.progress', { done: decided, count: pending.length })}
+          </span>
           <progress
             max={pending.length}
             value={decided}
             aria-label={t('admin.research.progressLabel')}
           />
+          {left > 1 && (
+            <button type="button" className="btn btn-sm" onClick={keepRest}>
+              {t('admin.research.keepRest', { count: left })}
+            </button>
+          )}
         </div>
       )}
     </div>

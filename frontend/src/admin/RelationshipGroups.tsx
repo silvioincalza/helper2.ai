@@ -47,6 +47,8 @@ export function RelationshipGroups({
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState('');
+  const doneLine = useRef<HTMLParagraphElement>(null);
+  const focusDone = useRef(false);
   const list = groups.data?.items ?? [];
   const selected = list.find((g) => g.key === selectedKey) ?? list[0];
   const total = groups.data?.total ?? 0;
@@ -59,6 +61,12 @@ export function RelationshipGroups({
     movedFrom.current = page;
     onPage(lastPage);
   }, [pastTheEnd, page, lastPage, onPage]);
+
+  useEffect(() => {
+    if (groups.loading || !focusDone.current) return;
+    focusDone.current = false;
+    doneLine.current?.focus();
+  }, [groups.loading]);
 
   const decide = async (group: Group, decision: Omit<Decision, 'key'>) => {
     if (busy) return;
@@ -75,6 +83,7 @@ export function RelationshipGroups({
         }),
       );
       setLinking(false);
+      focusDone.current = true;
       const at = list.indexOf(group);
       setSelectedKey((list[at + 1] ?? list[at - 1])?.key);
       groups.reload();
@@ -86,23 +95,41 @@ export function RelationshipGroups({
     }
   };
 
-  if (groups.loading || pastTheEnd) return <AdminLoading command={COMMAND} />;
+  const doneStatus = (
+    <p ref={doneLine} tabIndex={-1} className="h2-admin__bulk-result">
+      {done}
+    </p>
+  );
+  if (groups.loading || pastTheEnd)
+    return (
+      <>
+        {doneStatus}
+        <AdminLoading command={COMMAND} />
+      </>
+    );
   if (groups.error !== undefined)
     return (
-      <StatePanel
-        tone="error"
-        level={3}
-        title={t('admin.loadError')}
-        next={<RetryButton onClick={groups.reload} />}
-      />
+      <>
+        {doneStatus}
+        <StatePanel
+          tone="error"
+          level={3}
+          title={t('admin.loadError')}
+          next={<RetryButton onClick={groups.reload} />}
+        />
+      </>
     );
-  if (!selected) return <AdminEmpty command={COMMAND} text={t('admin.queueEmpty')} />;
+  if (!selected)
+    return (
+      <>
+        {doneStatus}
+        <AdminEmpty command={COMMAND} text={t('admin.queueEmpty')} />
+      </>
+    );
 
   return (
     <>
-      <p role="status" className="h2-admin__bulk-result">
-        {done}
-      </p>
+      {doneStatus}
       <div className="h2-admin__review">
         <ScrollBox label={t('admin.groups.title')}>
           <table className="h2-table h2-admin__table h2-admin__list">
