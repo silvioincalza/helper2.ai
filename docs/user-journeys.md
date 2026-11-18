@@ -5,6 +5,11 @@ from them. Each journey names its states (empty, loading, partial, error, succes
 stories that build it. The success criteria at the end say which tests verify each journey. The decisions are in
 [the ADRs](adr/README.md).
 
+Every loading state is a skeleton in the shape of what comes next, so little moves when it arrives. It shows only
+after 180 ms, so a fast load does not flash, and it does not pulse under reduced motion. A screen reader hears one
+"Loading…" (or the part's own words) and never the skeleton. A part that keeps its content on screen while it reloads
+(the results, the admin Overview, the shadow libraries) shows no skeleton over it.
+
 ## Personas
 
 | Persona | Looks for | Goal | Vocabulary | Main risk |
@@ -40,7 +45,7 @@ stories that build it. The success criteria at the end say which tests verify ea
 
 | Variant | Behavior |
 |---|---|
-| Loading | The first search shows skeleton rows and one "Searching the listed sources…" line; a later search keeps the previous results on screen, at full contrast, under the same line until the new ones arrive. |
+| Loading | The first search shows skeleton rows of the list's shape and one "Searching the listed sources…" line; a later search keeps the previous results on screen, at full contrast, under the same line until the new ones arrive. |
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the sources searched" + the list of sources + suggestions: remove filters, ask the guide, "Try different or fewer words." Never "nothing exists". |
 | Partial | One quiet line under the heading, no banner: "2 of 5 sources did not answer · Which?". On a phone (up to 520px) it is shorter, "2 sources did not answer · Which? · Try again", so it stays on one line; up to 359px Which? and Try again go together on the line below. **Which?** lists those sources and why, in words: took too long, returned an error, paused after a rate limit, paused after repeated errors, busy. **Try again** shows only when a retry can help (an error, a timeout, a busy source); never while a source is paused or its circuit is open. The line is not announced to screen readers: it is read with the heading. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. This line and the one under the results use the same two numbers. |
@@ -68,7 +73,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | The results show at once; the picks bar above them says the guide is reading. |
+| Loading | The results show at once; the picks bar above them says the guide is reading, with skeleton lines where the picks will be. |
 | Success | The picks in the bar, each with its reason (labelled AI-written) and its quote, checked word for word; a comparison or a "what it is" answer shows open. |
 | Empty | Nothing fits: the bar says why in one line and offers **Ask without “…”** and **Rephrase**. |
 | Partial | Not specified. |
@@ -88,7 +93,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | Category says that the names are loading. |
+| Loading | Category shows skeleton lines where the names will be; a screen reader hears "Loading categories…". |
 | Success | Each facet with its counts and a **Not stated** bucket; the list in the chosen order, unknown dates last. |
 | Empty | The filters produce zero results: the empty state lists the active filters with one-click removal. |
 | Partial | As in UJ-1: the line under the heading says which sources did not answer. |
@@ -107,7 +112,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | Not specified. |
+| Loading | Skeleton sections in the shape of the page. Opened from a list, the title shows at once and only the rest waits. **Set it up** shows skeleton steps under "Reading its documentation… (up to half a minute)". |
 | Success | The user can answer "who says so, and when?" for every displayed fact. |
 | Empty | A fact no source states is not shown as a fact: one line says "Not stated by any source: pricing, platforms". No AI summary: one line says so and why. |
 | Partial | Sources disagree: "Sources disagree on license: MIT (GitHub) vs Apache-2.0 (npm)", never silently resolved. |
@@ -140,7 +145,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | Not specified. |
+| Loading | Signed in, skeleton rows of the list while the saved items load. |
 | Success | The resource is on **Saved**; signed in, saved items follow the account across devices. |
 | Empty | Not specified. |
 | Partial | The merge into the account fails: the browser's items stay on screen with **Try again**. |
@@ -158,11 +163,11 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
 
 **Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again." with a link to the sign-in page; anonymous use is unaffected.
 
-**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, the AI answers, AI setups and web searches left today with their reset time (from GET /me; a count the server does not give is not shown), the setting **Home page motion: radar and lists**, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete, links to Privacy and, when the site has a provider, to the sign-in page.
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, the AI answers, AI setups and web searches left today with their reset time (from GET /me; a count the server does not give is not shown), the setting **Home page motion: radar and lists**, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it shows a skeleton of the page. Signed out, the page says there is no account to delete, links to Privacy and, when the site has a provider, to the sign-in page.
 
 | State | Behavior |
 |---|---|
-| Loading | While the page asks who is signed in it says "Loading…". |
+| Loading | While the page asks who is signed in, the sign-in and account pages show a skeleton of the page. |
 | Success | The user comes back to the page they were on, signed in; saved items merge (UJ-6). |
 | Empty | No provider is configured: the header shows no **Sign in**, and the sign-in page says sign-in is not offered here. Signed out, the account page says there is no account to delete. |
 | Partial | Does not apply. |
@@ -177,7 +182,7 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
 
 | State | Behavior |
 |---|---|
-| Loading | Back on the tab after a minute or more, the page asks again and keeps the list on screen meanwhile. |
+| Loading | Skeleton rows of the table on the first load. Back on the tab after a minute or more, the page asks again and keeps the list on screen meanwhile. |
 | Success | Every configured source with its mode, what it covers, terms, attribution, last outcome and check time. |
 | Empty | A live source before its first call says "No calls yet". |
 | Partial | A source whose circuit is open says "Paused after repeated failures, since HH:MM:SS UTC. It tries again on its own."; web credits the server cannot read say "Not available right now". |
@@ -280,9 +285,9 @@ Each item is a row: the kind, the resource, the reason, the date and the status 
 | State | Behavior |
 |---|---|
 | Success | After a decision the next item is selected and takes focus, and a screen reader hears "Accepted. 11 left." |
-| Loading | "Loading…" in each part; "Loading the evidence…" in the selected item. On Refresh the overview keeps showing the last counts. |
+| Loading | Skeleton rows in each part, said as "Loading…"; "Loading the evidence…" and "Loading the research…" where those load. On Refresh the overview keeps showing the last counts, and the shadow libraries keep their rows while they reload. On Settings a screen reader hears one "Loading…" for the page, not one per part. |
 | Empty | "Nothing in this queue." / "No runs yet." / "No entries yet." A research filter that matches nothing: "No item matches this research filter." with **Clear the research filter**. After the last decision focus goes to the queue's heading. An item with no run: "No run or relationship behind this item." A decided run whose fields a newer run replaced: "This run has no stored fields left." |
-| Error | "Could not load the overview." (or the review queue, the Scout runs, or the audit trail) with Try again; focus stays on the part's heading. "Could not load the evidence." with Try again in the selected item; the list and the decision still work. A reload of the Scout runs that fails keeps the last list and says so, with Try again. An action that fails says so above the queue or the runs; a start refused because a run holds the lock says a run is in progress. |
+| Error | "Could not load the overview." (or the review queue, the Scout runs, or the audit trail) with Try again; focus stays on the part's heading. "Could not load the evidence." with Try again in the selected item; the list and the decision still work. A reload of the Scout runs that fails keeps the last list and says so, with Try again. A Refresh of the overview that fails keeps the last counts and says so. An action that fails says so above the queue or the runs; a start refused because a run holds the lock says a run is in progress. |
 | Already decided | Someone else decided the item first (or a newer enrichment run replaced it): "This item was already decided." The list reloads and shows its current status. |
 | Queue action refused | The resource changed meanwhile, or the top is full: "Nothing changed: 50 resources already wait at the top." (or: is already skipped, does not wait, is neither skipped nor out of retries). The message takes focus and the list reloads. |
 | Partial: bulk decision partly done | "11 done, 1 failed (already decided)." or, with several reasons, "(1 already decided, 2 not allowed in bulk)". The failed items stay picked; the list reloads. A request that fails says "The action failed." and keeps the items picked. |
@@ -313,7 +318,7 @@ Each item is a row: the kind, the resource, the reason, the date and the status 
 
 | State | Behavior |
 |---|---|
-| Loading | Skeleton rows. |
+| Loading | Skeleton rows, one for each row the list shows. |
 | Success | Each list shows its first six rows under the API's total. |
 | Partial | The API counts more than it sends (at most 60): the heading shows the total and **show all** counts only the rows it opens. |
 | Empty | The list says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
@@ -398,7 +403,7 @@ shared link with its filters (`/news?site=…`, `/events?kind=HACKATHON&format=O
 
 | State | Behavior |
 |---|---|
-| Loading | The loading lines under the heading, announced once. |
+| Loading | Under the heading, a skeleton of the page: headlines on News, the chips, a month and its rows on Events. Announced once. |
 | Success | News: one lead story, six under it, five in **Latest**, then **Earlier this week**. Events: every event with stated dates in the next year, by month. |
 | Partial | Not specified. |
 | Empty | "No AI news in the last week." / "No events with stated dates in the next year." |

@@ -110,6 +110,7 @@
   --header-height: 74px;
   --motion: 160ms;
   --fold: 450ms;
+  --skeleton-delay: 180ms;
   --z-raised: 1;
   --z-list-columns: 1;
   --z-list-head: 2;

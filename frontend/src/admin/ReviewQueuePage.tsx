@@ -16,7 +16,8 @@ import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
 import { categoryOf } from '@/features/sources/DiscoveryCategories';
-import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
+import { AdminEmpty, AdminHead } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE, oneOf } from './adminModel';
 import { BulkBar, bulkSummary, type Decision } from './ReviewBulk';
 import { ReviewEvidencePanel } from './ReviewEvidence';
@@ -465,7 +466,7 @@ export default function ReviewQueuePage() {
           onDecided={overview.reload}
         />
       ) : items.loading ? (
-        <AdminLoading command={command} />
+        <TableSkeleton />
       ) : items.error !== undefined ? (
         <StatePanel
           tone="error"

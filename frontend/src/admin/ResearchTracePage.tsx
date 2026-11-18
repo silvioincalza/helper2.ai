@@ -8,6 +8,7 @@ import { RetryButton } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { isActive } from './ReviewResearch';
+import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 type Kind = ReviewResearchStep['kind'];
 type Translate = ReturnType<typeof useTranslation>['t'];
@@ -193,7 +194,19 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
     const gone = loaded.error instanceof ApiError && loaded.error.status === 404;
     return <TraceFailed gone={gone} onRetry={reload} />;
   }
-  if (!detail) return <p role="status">{t('admin.research.loading')}</p>;
+  if (!detail)
+    return (
+      <section className="h2-admin__part h2-admin__trace">
+        <BackLink />
+        <Loading label={t('admin.research.loading')}>
+          <Skeleton>
+            <SkeletonBar size="heading" width="half" />
+            <SkeletonBar size="meta" width="wide" />
+            <SkeletonRows rows={8} bars={[{ size: 'meta', width: 'full' }]} ruled />
+          </Skeleton>
+        </Loading>
+      </section>
+    );
 
   const run = live && isActive(detail.run) ? live : detail.run;
   const steps =

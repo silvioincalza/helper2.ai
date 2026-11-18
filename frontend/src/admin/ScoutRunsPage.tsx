@@ -11,7 +11,8 @@ import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
-import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
+import { AdminEmpty, AdminHead } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { RUN_TONE } from './adminModel';
 import { CategoryBackfill } from './CategoryBackfill';
 
@@ -153,7 +154,7 @@ export default function ScoutRunsPage() {
         </label>
       )}
       {runs.loading && loaded === undefined ? (
-        <AdminLoading command={COMMAND} />
+        <TableSkeleton />
       ) : runs.error !== undefined && loaded === undefined ? (
         <StatePanel
           tone="error"

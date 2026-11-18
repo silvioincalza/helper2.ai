@@ -7,6 +7,7 @@ import type { RuntimeSettingState } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { formatDate } from '@/lib/format';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 interface Pending {
   setting: RuntimeSettingState;
@@ -162,9 +163,7 @@ export function RuntimeSettingsPanel({
         </div>
       )}
       {loading && settings.length === 0 ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={4} quiet />
       ) : error !== undefined && settings.length === 0 ? (
         <StatePanel
           tone="error"

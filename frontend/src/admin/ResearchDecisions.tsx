@@ -12,6 +12,7 @@ import { useApi } from '@/hooks/useApi';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { tagsOf } from './CandidateEditForm';
 import { useRunDecisions, type Decision } from './researchDecisionsStore';
+import { Loading, Skeleton, SkeletonRows } from '@/ui/Skeleton';
 
 const CANDIDATE_TYPES: ReadonlySet<string> = new Set([
   'PRODUCT',
@@ -189,7 +190,21 @@ export function ResearchDecisions({
   }, [focusTo, nextName, onDone]);
 
   if (failed) return <p role="alert">{t('admin.research.loadFailed')}</p>;
-  if (!detail) return <p role="status">{t('admin.research.loading')}</p>;
+  if (!detail)
+    return (
+      <Loading label={t('admin.research.loading')}>
+        <Skeleton>
+          <SkeletonRows
+            rows={4}
+            bars={[
+              { size: 'meta', width: 'short' },
+              { size: 'small', width: 'wide' },
+            ]}
+            ruled
+          />
+        </Skeleton>
+      </Loading>
+    );
   if (!result) return null;
 
   const moveFocus = (target: FocusTarget) => setFocusTo((f) => ({ target, n: (f?.n ?? 0) + 1 }));

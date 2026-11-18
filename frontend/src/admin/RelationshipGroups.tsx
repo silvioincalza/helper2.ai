@@ -11,7 +11,8 @@ import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';
-import { AdminEmpty, AdminLoading } from './AdminHead';
+import { AdminEmpty } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { Pagination } from './Pagination';
 import { ExistingPicker } from './RelationshipTarget';
 
@@ -104,7 +105,7 @@ export function RelationshipGroups({
     return (
       <>
         {doneStatus}
-        <AdminLoading command={COMMAND} />
+        <TableSkeleton />
       </>
     );
   if (groups.error !== undefined)

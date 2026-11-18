@@ -1,5 +1,4 @@
 import type { ReactNode, Ref } from 'react';
-import { useTranslation } from 'react-i18next';
 import { TermCommand } from '@/features/home/TermList';
 
 export function AdminHead({
@@ -22,16 +21,6 @@ export function AdminHead({
       </h2>
       <TermCommand command={command} total={total} />
     </div>
-  );
-}
-
-export function AdminLoading({ command }: { command: string }) {
-  const { t } = useTranslation();
-  return (
-    <p role="status" className="h2-term__state">
-      <span aria-hidden="true">$ {command} · </span>
-      <span>{t('common.loading')}</span>
-    </p>
   );
 }
 
