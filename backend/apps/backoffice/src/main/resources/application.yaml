@@ -56,12 +56,13 @@ helper2:
     evidence:
       daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
     enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
+    enrichment-model: ${H2_SCOUT_ENRICHMENT_MODEL:FAST}
     known-targets:
       owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
       per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}
   research:
     enabled: ${H2_RESEARCH_ENABLED:true}
-    model: ${H2_RESEARCH_MODEL:REASONING}
+    model: ${H2_RESEARCH_MODEL:FAST}
     max-tokens: ${H2_RESEARCH_MAX_TOKENS:4096}
     daily-model-calls: ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}
     daily-page-reads: ${H2_RESEARCH_DAILY_PAGE_READS:300}

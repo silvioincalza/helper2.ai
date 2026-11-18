@@ -77,14 +77,12 @@ class ResearchConfiguration {
     IntSupplier limit =
         runtime.declare(RuntimeSetting.REVIEW_RESEARCH_DAILY_MODEL_CALLS, p.dailyModelCalls());
     ChatModel model = chatModel.getIfAvailable();
-    String name =
-        p.model() == ResearchProperties.Model.FAST ? llm.fastModel() : llm.reasoningModel();
-    if (!p.enabled() || model == null || !llm.usable(model) || name == null || name.isBlank()) {
+    if (!p.enabled() || !llm.usable(model) || !llm.has(p.model())) {
       return new UnavailableResearchModel();
     }
     return new SpringAiResearchModel(
         model,
-        name,
+        llm.model(p.model()),
         prompt(),
         p.maxTokens(),
         new DailyBudget(limit, clock, "review-research", counter),

@@ -134,7 +134,7 @@ class ScoutConfiguration {
     int dailyCalls = scout.dailyEnrichmentCalls();
     IntSupplier limit = runtime.declare(RuntimeSetting.SCOUT_DAILY_ENRICHMENT_CALLS, dailyCalls);
     ChatModel model = chatModel.getIfAvailable();
-    if (!llm.usable(model) || !llm.hasReasoningModel()) {
+    if (!llm.usable(model) || !llm.has(scout.enrichmentModel())) {
       log.info("No LLM configured: enrichment disabled, deterministic source metadata only");
       return new UnavailableModel();
     }
@@ -143,13 +143,20 @@ class ScoutConfiguration {
         .description("Scout enrichment model calls left under today's cap (UTC day)")
         .register(meters);
     log.info(
-        "LLM enrichment enabled: provider={}, model={}, maxTokens={}, dailyCalls={}",
+        "LLM enrichment enabled: provider={}, model={} ({}), maxTokens={}, dailyCalls={}",
         llm.provider(),
-        llm.reasoningModel(),
+        llm.model(scout.enrichmentModel()),
+        scout.enrichmentModel(),
         maxTokens,
         dailyCalls);
     return new SpringAiEnrichmentModel(
-        model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics, resilience);
+        model,
+        llm.provider(),
+        llm.model(scout.enrichmentModel()),
+        maxTokens,
+        budget,
+        metrics,
+        resilience);
   }
 
   @Bean
@@ -213,7 +220,8 @@ class ScoutConfiguration {
                 scout.enrichMaxTokens(),
                 "tokens",
                 "H2_NEBIUS_ENRICH_MAX_TOKENS"),
-            Setting.model("scout.enrichmentModel", "Enrichment model", model, null),
+            Setting.model(
+                "scout.enrichmentModel", "Enrichment model", model, "H2_SCOUT_ENRICHMENT_MODEL"),
             Setting.version("scout.enrichmentPrompt", "Enrichment prompt version", promptVersion)));
   }
 

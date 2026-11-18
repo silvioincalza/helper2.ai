@@ -210,7 +210,7 @@ class CollectorsConfiguration {
     SourceSettings s = p.get(LiveWebEventsCollector.ID);
     ChatModel model = chatModel.getIfAvailable();
     EventReader reader = null;
-    if (llm.usable(model)) {
+    if (llm.usable(model) && llm.has(c.readModel())) {
       DailyBudget budget =
           new DailyBudget(c.readerDailyCalls(), clock, "event-reader", budgetCounter);
       Gauge.builder("helper2.scout.event-reader.budget.remaining", budget, DailyBudget::remaining)
@@ -218,7 +218,7 @@ class CollectorsConfiguration {
           .register(meters);
       reader =
           new SpringAiEventReader(
-              model, llm.reasoningModel(), c.readMaxTokens(), budget, metrics, resilience);
+              model, llm.model(c.readModel()), c.readMaxTokens(), budget, metrics, resilience);
     }
     return new LiveWebEventsCollector(
         s,

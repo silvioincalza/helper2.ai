@@ -1,5 +1,6 @@
 package ai.helper2.scout.config;
 
+import ai.helper2.platform.llm.ModelTier;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,7 @@ public record ScoutProperties(
     @PositiveOrZero int dailyEnrichmentCalls,
     @PositiveOrZero int gapDailyCalls,
     @Positive int enrichMaxTokens,
+    @NotNull ModelTier enrichmentModel,
     @Valid @NotNull Evidence evidence,
     @Valid @NotNull KnownTargets knownTargets) {
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}
