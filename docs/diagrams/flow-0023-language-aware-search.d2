@@ -42,7 +42,7 @@ model: "Translator configured?" {class: decision}
 start: "Start model call (fast model)\nand sources with usesTranslation = false\n(helper2-semantic)" {class: ai}
 budget: "Answer in ai_cache (24 h, shared\nby the replicas), or llm-chat\ncircuit closed and daily\ntranslation budget left (300)?" {class: decision}
 wait: "Wait for the answer,\nat most 2500 ms" {class: app}
-check: "Answer arrived, no link,\nnot equal to the query?" {class: decision}
+check: "Answer arrived, no link,\nnot a sentence about the query,\nnot equal to the query\n(case and punctuation aside)?" {class: decision}
 clean: "Keep letters, digits, spaces, hyphens;\n≤ 12 words, ≤ 120 chars" {class: app}
 untranslated: "Search untranslated" {class: fail}
 expand: "English words first in expansions\nand required variants\n(QUERY_EXPANDED: \"Also searched for\")" {class: app}

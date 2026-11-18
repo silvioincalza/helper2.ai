@@ -88,7 +88,8 @@ object DraftRules {
 
   private fun valid(p: ProposedDraft, id: UUID): ExampleInput? {
     if (p.label == null || p.query == null || p.path == null) return null
-    return (ExampleInput.of(p.label, p.query, p.path, listOf(id)) as? ExampleInput.Checked.Valid)
+    return (ExampleInput.of(p.label, p.query.lowercase(), p.path, listOf(id))
+        as? ExampleInput.Checked.Valid)
       ?.input
   }
 }

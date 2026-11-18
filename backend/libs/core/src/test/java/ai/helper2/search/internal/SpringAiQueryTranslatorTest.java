@@ -72,7 +72,7 @@ class SpringAiQueryTranslatorTest {
   void theWordingOfThePromptIsPinnedToItsLabel() {
     assertThat(ModelCallMetrics.promptVersion(SpringAiQueryTranslator.systemPrompt()))
         .as("a new wording of search/translate-query.txt has a new label: say so in ADR 0023")
-        .isEqualTo("73c073ff");
+        .isEqualTo("ecc182c3");
   }
 
   @Test
