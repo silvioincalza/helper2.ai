@@ -35,6 +35,9 @@ public final class CheckResearch {
           "language",
           "publishedAt");
 
+  public static final int MIN_TAG_CHARS = 2;
+  public static final int MAX_TAG_CHARS = 60;
+
   private static final Set<String> STATED = Set.of("type", "pricing", "openSource", "license");
 
   private static final Set<String> REGISTRY_TOOLS =
@@ -148,7 +151,11 @@ public final class CheckResearch {
       case "tags" ->
           List.of(value.split(",")).stream().map(String::strip).allMatch(CheckResearch::tagLength)
               ? null
-              : "a tag is shorter than 2 or longer than 60 characters";
+              : "a tag is shorter than "
+                  + MIN_TAG_CHARS
+                  + " or longer than "
+                  + MAX_TAG_CHARS
+                  + " characters";
       case "language" -> LANGUAGE.matcher(value).matches() ? null : "not a language code";
       case "publishedAt" -> DATE.matcher(value).matches() ? null : "not a date (YYYY-MM-DD)";
       default -> "not an attribute research proposes";
@@ -160,7 +167,7 @@ public final class CheckResearch {
   }
 
   private static boolean tagLength(String tag) {
-    return tag.length() >= 2 && tag.length() <= 60;
+    return tag.length() >= MIN_TAG_CHARS && tag.length() <= MAX_TAG_CHARS;
   }
 
   private static @Nullable String current(ResearchSubject s, String name) {

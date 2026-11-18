@@ -75,16 +75,19 @@ Two kinds of source need more care:
      `response_format`. Its own daily cap `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300), gauge
      `helper2.scout.classifier.budget.remaining`; calls are timed and their tokens counted with step `classify`. An id
      the model did not answer (error, spent budget, missing id), and every id in a run without a model, goes to
-     keyword rules (`RepoClassifier.Heuristic`).
+     keyword rules (`RepoClassifier.Heuristic`). The allowed types include `AWESOME_LIST`: a linked repository whose
+     description calls it a curated list of AI links is `ai` true, type `AWESOME_LIST`; the name alone is not enough.
+     A repository whose facts say nothing gets `ai` false, type OTHER, and is not indexed.
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
    - Each list read is a resource too (tag `awesome-list`), and its entry lines and headings become a search
      index ([0023](../search/0023-catalog-full-text-index.md)).
    - **An awesome list is its own type, `AWESOME_LIST`** ("Awesome list" on the site): a curated list of links to other
-     resources, not a library, a tool or an MCP server. The rule is in one place, `AwesomeLists`, and reads the README:
+     resources, not a library, a tool or an MCP server. The README rule is in one place, `AwesomeLists`, and reads the README:
      the repository name starts with "awesome", at least 20 list items carry a link, and these items are at least half
      of the README's text lines (headings, code blocks and lines with only images or badges are not counted). The name
      alone never decides: a product called "Awesome Notes" has a normal README and stays what it is. 20 items is about
-     the smallest awesome list worth listing; a product README has a few links, mostly in prose and badges, so half
+     The classifier of linked repositories (above) is the one other path to `AWESOME_LIST`, and it reads the
+     description, not the README. 20 items is about the smallest awesome list worth listing; a product README has a few links, mostly in prose and badges, so half
      of the lines being linked list items separates the two. A list the collector reads and that fails the rule stays
      ARTICLE.
    - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
