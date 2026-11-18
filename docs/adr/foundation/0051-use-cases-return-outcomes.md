@@ -134,6 +134,9 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
   `@Transactional(noRollbackFor = ApiProblem.class)` (`AdminUseCaseConfiguration`).
 - A `Refused` result inside a transaction this unit joined does not roll back: the caller that opened the
   transaction must look at the outcome. `TransactionalUnitOfWorkTest` holds both halves of the rule.
+- A refusal must be the top-level result of the unit. A `Refused` value wrapped in another result (an `Optional`, a
+  record) is committed: `TransactionalUnitOfWorkTest` pins it. `ModularityRules` holds the pairing: a class that
+  declares a `Refused` outcome depends on `UnitOfWork`.
 - `ResolveReview` opens the transaction in which `CurateField` writes the values an admin confirmed on a candidate.
   Its transaction does not roll back for an `ApiProblem`, so it throws `IllegalStateException` when `CurateField`
   refuses one: the answer is a 500, the indexed resource is undone and the item stays open. Such a value is in a

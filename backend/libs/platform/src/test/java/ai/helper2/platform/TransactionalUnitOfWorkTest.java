@@ -7,6 +7,7 @@ import ai.helper2.shared.Refused;
 import ai.helper2.shared.UnitOfWork;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
@@ -91,6 +92,16 @@ class TransactionalUnitOfWorkTest {
 
     assertThat(result).isSameAs(refused);
     assertThat(transactions.events).containsExactly("begin", "rollback");
+  }
+
+  @Test
+  void commitsWhenTheRefusalIsWrappedInAnotherResult() {
+    Optional<OverLimit> wrapped = Optional.of(new OverLimit());
+
+    Optional<OverLimit> result = unitOfWork.run(() -> wrapped);
+
+    assertThat(result).isSameAs(wrapped);
+    assertThat(transactions.events).containsExactly("begin", "commit");
   }
 
   @Test
