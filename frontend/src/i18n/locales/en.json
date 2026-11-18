@@ -402,6 +402,7 @@
     "NEWS": "News",
     "EVENT": "Event",
     "COURSE": "Course",
+    "AWESOME_LIST": "Awesome list",
     "OTHER": "Other"
   },
   "techLevel": {

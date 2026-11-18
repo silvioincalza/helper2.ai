@@ -2,6 +2,7 @@ package ai.helper2.admin.config;
 
 import ai.helper2.admin.usecase.ChangeRuntimeSetting;
 import ai.helper2.admin.usecase.CheckAiWords;
+import ai.helper2.admin.usecase.CheckAwesomeLists;
 import ai.helper2.admin.usecase.DecideRelationshipItem;
 import ai.helper2.admin.usecase.DecideRelationshipTargetGroup;
 import ai.helper2.admin.usecase.GetEffectiveSettings;
@@ -14,6 +15,7 @@ import ai.helper2.admin.usecase.ResetRuntimeSetting;
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.catalog.AiCheckReport;
+import ai.helper2.catalog.AwesomeListSuspects;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ReviewEvidence;
@@ -32,6 +34,7 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.scout.AwesomeListReader;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
@@ -147,6 +150,12 @@ class AdminUseCaseConfiguration {
   @Bean
   CheckAiWords checkAiWords(AiCheckReport report, AiTopicCheck aboutAi, EnrichmentBacklog backlog) {
     return new CheckAiWords(report, aboutAi, backlog);
+  }
+
+  @Bean
+  CheckAwesomeLists checkAwesomeLists(
+      AwesomeListSuspects suspects, AwesomeListReader reader, CurateField curateField) {
+    return new CheckAwesomeLists(suspects, reader, curateField);
   }
 
   @Bean

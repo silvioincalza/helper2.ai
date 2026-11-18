@@ -229,4 +229,24 @@ class AwesomeListParserTest {
         .extracting(AwesomeListParser.Entry::fullName)
         .containsExactly("acme/Awesome-RAG", "acme/llm-survey", "acme/deeper");
   }
+
+  @Test
+  void aListItemThatIsOnlyAUrlIsStillAnEntryAndALinkedLine() {
+    String readme =
+        """
+        # Awesome agents
+        ## Tools
+        - https://github.com/acme/tool
+        - <https://github.com/acme/agent>
+        - [Runner](https://github.com/acme/runner) - Runs agents.
+        """;
+
+    AwesomeListParser.Parsed parsed = AwesomeListParser.parse(readme, "acme/awesome-agents");
+
+    assertThat(parsed.entries())
+        .extracting(AwesomeListParser.Entry::fullName)
+        .containsExactly("acme/tool", "acme/agent", "acme/runner");
+    assertThat(parsed.linkedItems()).isEqualTo(3);
+    assertThat(parsed.textLines()).isEqualTo(3);
+  }
 }

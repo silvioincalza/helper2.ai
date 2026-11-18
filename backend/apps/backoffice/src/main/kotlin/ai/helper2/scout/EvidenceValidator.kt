@@ -183,6 +183,8 @@ class EvidenceValidator(
             "news" to listOf("announced", "announces", "launches", "released"),
             "event" to listOf("conference", "meetup", "summit", "hackathon", "workshop", "webinar"),
             "course" to listOf("courses", "certification", "training", "lessons"),
+            "awesome_list" to
+              listOf("awesome lists", "curated list of", "curated list", "a list of awesome"),
             "other" to listOf(),
           ),
         "useCase" to
