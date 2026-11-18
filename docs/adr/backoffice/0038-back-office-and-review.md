@@ -349,7 +349,7 @@ than a hundred), so the question is the same for each of them: what is this name
   `api/admin.yaml` (`ReviewItem.draft`, `ReviewItem.aiContent`, `DraftedExample`); `admin/web/ReviewController.java` (the
   evidence view's marker); `frontend/src/admin/ReviewItemDetails.tsx`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in
-  `platform/llm/LlmConfiguration.java`, `guide/internal/GuideConfiguration.java`,
+  `platform/llm/internal/LlmConfiguration.java`, `guide/internal/GuideConfiguration.java`,
   `search/internal/SearchSettingsConfiguration.java`, `scout/internal/ScoutConfiguration.java`,
   `sources/config/scout/CollectorsConfiguration.java` (back office), `setup/internal/SetupConfiguration.java`,
   `examples/internal/ExamplesBackOfficeAdapters.java` (back office). The public app's groups in the database:
@@ -365,7 +365,7 @@ than a hundred), so the question is the same for each of them: what is this name
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
-  `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
+  `internal/RedisCallCounter.java` (`current`), `internal/LlmConfiguration.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
 - `backend/libs/core/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.

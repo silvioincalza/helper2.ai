@@ -1,4 +1,4 @@
-package ai.helper2.platform.llm;
+package ai.helper2.platform.llm.internal;
 
 import java.util.ArrayList;
 import java.util.List;

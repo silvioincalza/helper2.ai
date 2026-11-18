@@ -7,7 +7,7 @@ import ai.helper2.guide.config.ModelStream;
 import ai.helper2.guide.internal.FakeProvider.Reply;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
-import ai.helper2.platform.llm.StreamThreads;
+import ai.helper2.platform.llm.internal.StreamThreads;
 import ai.helper2.platform.resilience.Resilience;
 import java.time.Clock;
 import java.time.Duration;

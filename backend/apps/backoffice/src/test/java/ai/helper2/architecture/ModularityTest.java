@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.BackOfficeApplication;
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 
@@ -127,6 +130,36 @@ class ModularityTest {
         .dependOnClassesThat()
         .resideInAPackage("ai.helper2.sources..")
         .check(CLASSES);
+  }
+
+  private static final String LLM = "ai.helper2.platform.llm";
+
+  @Test
+  void theLlmLayerIsUsedOnlyThroughItsNamedInterface() {
+    Set<String> api =
+        MODULES
+            .getModuleByName("platform")
+            .flatMap(platform -> platform.getNamedInterfaces().getByName("llm"))
+            .orElseThrow()
+            .asJavaClasses()
+            .map(JavaClass::getName)
+            .collect(Collectors.toSet());
+    assertThat(api).contains(LLM + ".BudgetedChat");
+    noClasses()
+        .that()
+        .resideOutsideOfPackage(LLM + "..")
+        .should()
+        .dependOnClassesThat(
+            DescribedPredicate.describe(
+                "are llm classes outside the named interface 'llm'",
+                (JavaClass used) ->
+                    used.getPackageName().startsWith(LLM)
+                        && !api.contains(outermost(used).getName())))
+        .check(CLASSES);
+  }
+
+  private static JavaClass outermost(JavaClass type) {
+    return type.getEnclosingClass().map(ModularityTest::outermost).orElse(type);
   }
 
   @Test

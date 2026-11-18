@@ -1,15 +1,14 @@
-package ai.helper2.platform.llm;
+package ai.helper2.platform.llm.internal;
 
+import ai.helper2.platform.llm.BudgetLedger;
+import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.resilience.Resilience;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 
 public final class RedisCallCounter implements CallCounter {
-  public static final Duration KEEP = Duration.ofDays(2);
-
   private static final RedisScript<Long> INCREMENT =
       RedisScript.of(
           """
@@ -84,7 +83,7 @@ public final class RedisCallCounter implements CallCounter {
               redis.execute(
                   INCREMENT,
                   List.of(key(name, day)),
-                  Long.toString(KEEP.toMillis()),
+                  Long.toString(BudgetLedger.KEEP.toMillis()),
                   Integer.toString(limit)));
     } catch (RuntimeException e) {
       return null;
@@ -103,7 +102,7 @@ public final class RedisCallCounter implements CallCounter {
                       List.of(key(name, day), givenBackKey(name, day)),
                       once,
                       Integer.toString(dailyCap),
-                      Long.toString(KEEP.toMillis())));
+                      Long.toString(BudgetLedger.KEEP.toMillis())));
       return outcome == null ? null : GIVE_BACKS[outcome.intValue()];
     } catch (RuntimeException e) {
       return null;

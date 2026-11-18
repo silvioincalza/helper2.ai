@@ -49,7 +49,11 @@ Without a configured model the application must still work.
    budget. Token Factory ignores `reasoning_budget`, `thinking_budget` and `reasoning_effort` for Lightning.
 6. **Daily budget per use, per attempt.** `DailyBudget.tryAcquire()` runs before each provider attempt, retries
    included. Every model adapter makes its call through one `BudgetedChat` (circuit, then budget, then the
-   observed call and its token counts); the adapter keeps only the mapping of errors to its own port's failures. The only retry is ours: the guide tries once more when it cannot use an answer, for example malformed
+   observed call and its token counts); the adapter keeps only the mapping of errors to its own port's failures.
+   An adapter that sends one system prompt and one user text and reads the answer as text uses `TextCall` over
+   its `BudgetedChat`: the repository classifier, the event reader and the Scout's enrichment. `TextCall` builds
+   the request and names the adapter's own error for a spent budget and for a refused call. The only retry is
+   ours: the guide tries once more when it cannot use an answer, for example malformed
    JavaScript Object Notation (JSON) (`SpringAiGuideModel`). An answer the provider cut at the output limit (finish
    reason `length`, seen by `CutAnswerWatch`, an advisor on each call; a guide call read as a stream gives it the
    finish reason of its chunks) is not tried again: the same prompt with the
@@ -99,9 +103,12 @@ Without a configured model the application must still work.
    README config examples only. An open `llm-chat` circuit gives every feature the same fallback at once.
 
 ### Code
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `NvidiaOnly`, `LlmPolicies`,
-  `CallOptions`, `BudgetedChat`, `ChatStream`, `StreamThreads`, `CutAnswerWatch`, `DailyBudget`, `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`,
-  `UntrustedText`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — what the modules use (the named interface `llm`,
+  [0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §4): `LlmSettings`, `LlmPolicies`,
+  `CallOptions`, `BudgetedChat`, `TextCall`, `ChatStream`, `CutAnswerWatch`, `DailyBudget`, `CallCounter`, `BudgetLedger`,
+  `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`, `UntrustedText`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/` — what only the layer uses:
+  `LlmConfiguration`, `NvidiaOnly`, `StreamThreads`, `RedisCallCounter`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
 - `backend/apps/public/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
   `guide/verify-reasons.txt`, `setup/tool-guide.txt`, `setup/verify-steps.txt`; `backend/apps/backoffice/src/main/resources/prompts/` —
