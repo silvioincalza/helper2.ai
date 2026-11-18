@@ -14,7 +14,8 @@ object RankingCode {
         "$SEARCH/$it"
       } +
       listOf("WordLists.kt", "WordBounds.kt").map { "$KERNEL/$it" } +
-      WordLists.LANGUAGES.map { "$WORDS/query-words_$it.properties" }
+      WordLists.LANGUAGES.map { "$WORDS/query-words_$it.properties" } +
+      "backend/libs/core/src/main/resources/catalog/repository-joins.properties"
 
   private val WHITESPACE = Regex("\\s+")
 

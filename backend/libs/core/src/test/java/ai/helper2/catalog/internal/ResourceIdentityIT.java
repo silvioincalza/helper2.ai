@@ -145,6 +145,21 @@ class ResourceIdentityIT {
   }
 
   @Test
+  void anOfficialPackageWithoutAScopeAndItsCuratedRepositoryAreOneResource() {
+    String repository = "https://github.com/openai/openai-python";
+    String registryPage = "https://pypi.org/project/openai/";
+
+    write(
+        stating(repositories, repository, null, null),
+        stating(packages, registryPage, repository, null));
+
+    assertThat(resourcesWithRecordsOfThisRun()).containsExactly(idOf(repository));
+    assertThat(sourcesOfTheRecordsOf(idOf(repository)))
+        .filteredOn(sources::contains)
+        .containsExactly(packages, repositories);
+  }
+
+  @Test
   void thePackagesOfOneRepositoryAreRecordsOfTheRepositoryInAnyOrderOfArrival() {
     String repository = "https://github.com/acme/monorepo-" + run;
     String first = "https://www.npmjs.com/package/@acme/first-" + run;
