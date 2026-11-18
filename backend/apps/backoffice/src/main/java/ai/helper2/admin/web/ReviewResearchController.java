@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -51,7 +50,7 @@ class ReviewResearchController implements ReviewResearchApi {
     }
     List<ResearchRun> queued;
     try {
-      queued = allOpen ? start.startAllOpen(adminId()) : start.start(ids, adminId());
+      queued = allOpen ? start.startAllOpen(Admins.id()) : start.start(ids, Admins.id());
     } catch (StartResearch.ResearchOff e) {
       throw new ApiProblem(
           ProblemType.UNAVAILABLE,
@@ -161,9 +160,5 @@ class ReviewResearchController implements ReviewResearchApi {
                         s.authoritative()))
                 .toList())
         .current(a.current());
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 }

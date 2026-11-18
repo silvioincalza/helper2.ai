@@ -158,23 +158,15 @@ public class ResolveReview {
             .of(item.id())
             .orElseThrow(
                 () -> new ApiProblem(ProblemType.INVALID_REQUEST, "The proposal cannot be read."));
-    switch (knownTargets.addDiscovered(
-        adminId, candidate.kind(), candidate.name(), candidate.otherNames())) {
-      case ManageKnownTargets.Saved.Done d -> {}
-      case ManageKnownTargets.Saved.Taken t ->
+    KnownTargetAnswer.requireAdded(
+        knownTargets.addDiscovered(
+            adminId, candidate.kind(), candidate.name(), candidate.otherNames()),
+        taken -> {
           throw new ApiProblem(
               ProblemType.DUPLICATE,
-              t.name() + " already means " + t.holder() + ". Reject the proposal.");
-      case ManageKnownTargets.Saved.Full f ->
-          throw new ApiProblem(
-              ProblemType.DUPLICATE,
-              "The list holds at most " + ManageKnownTargets.MAX_TARGETS + " known targets.");
-      case ManageKnownTargets.Saved.Invalid i ->
-          throw new ApiProblem(
-              ProblemType.INVALID_REQUEST, "The proposed name cannot be a known target.");
-      case ManageKnownTargets.Saved.NotFound n ->
-          throw new IllegalStateException("adding a known target cannot miss one");
-    }
+              taken.name() + " already means " + taken.holder() + ". Reject the proposal.");
+        },
+        "The proposed name cannot be a known target.");
   }
 
   private void addDrafted(ReviewQueue.Item item, String adminId) {
