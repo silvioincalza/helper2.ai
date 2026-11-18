@@ -22,14 +22,16 @@ repository. Relevance needs a human judgement per result, and judging every resu
 ## Decision
 
 ### The guide
-1. **Fixed question set.** `docs/eval/guide-queries.json`: 51 fixed queries, all written before any run and never
+1. **Fixed question set.** `docs/eval/guide-queries.json`: 60 fixed queries, all written before any run and never
    tuned to the results.
    - The 21 core questions: 14 for building with AI (`b01`–`b14`, `b14` in Italian), 5 for using AI (`u01`–`u05`;
      `u05` asks for three properties a hostile-text rule must not drop: offline, no account, no API key),
      one news question (`n01`) and one nonsense question (`x01`).
-   - 30 more, marked `"extended": true`: 8 questions across the intents of [0031](../guide/0031-guide-pipeline.md)
+   - 39 more, marked `"extended": true`: 8 questions across the intents of [0031](../guide/0031-guide-pipeline.md)
      (`i01`–`i08`), 10 Hugging Face model questions (speech recognition, text to speech, OCR, embeddings, a reranker, a
-     vision model: `h01`–`h10`), 8 questions with several requirements at once (`m01`–`m08`), and 4 that must stay
+     vision model: `h01`–`h10`), 8 questions with several requirements at once (`m01`–`m08`), 9 questions on
+     topics with popular awesome lists (`a01`–`a09`): 7 ask for a tool, where the list is a likely wrong pick
+     (`a01`–`a06`, `a09`), and 2 ask for a list, where the list is the answer (`a07`, `a08`), and 4 that must stay
      empty (`e01`–`e04`).
    - 6 questions must stay empty (`"expectNoPick": true`, with a `why`): `x01`, `u04` (a writing task, not a resource
      to find) and `e01`–`e04`.
@@ -115,7 +117,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
 8. **Cost of a run.** A question costs 3 model calls (plan, choose, reason check; a compare or explain question the
    same), and each call is retried at most once, for an answer the guide cannot use
    ([0008](../foundation/0008-llm-integration.md)): 3 to 6 calls from the guide's daily cap. The core set costs about
-   63, the full set of 51 about 153 (459 with `--repeat 3`), the intent cases up to 78 (a case asked back stops after
+   63, the full set of 60 about 180 (540 with `--repeat 3`), the intent cases up to 78 (a case asked back stops after
    the plan), the adversarial set 39; the setup set costs up to 30 calls (a `tool-guide` and a `tool-guide-verify` call per resource). Each question also counts against
    the client's daily questions (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), so the backend under test sets a quota that
    covers the sets it runs.
@@ -214,14 +216,45 @@ repository. Relevance needs a human judgement per result, and judging every resu
     it reaches the top 10, its marginal Recall@20, its ΔnDCG@10 with interval, and its p50 latency, per query group. A
     source whose absence costs no measurable quality for a group is not called for that group.
 
-No evaluation runs on the request path: the guide sets run against a running app from outside, the search harness
-offline in a test task. The two sequence diagrams show those runs.
+### The guide judge
+21. **Judge on staging.** The staging backend scores every claim the reason check read (a pick reason, a comparison
+    cell, an explanation sentence) with two Spring AI evaluators and a second, larger NVIDIA model. The nightly core
+    set drives it, like any staging visitor.
+    - **When.** `ReasonCheckStep` hands the claims and their verdicts to `GuideJudge` after the `checked` event and goes
+      on. `SpringAiGuideJudge` judges them on a virtual thread of its own, so the answer never waits for it and the
+      judge never changes it ([0031](../guide/0031-guide-pipeline.md), reason check, 9).
+    - **Evaluators.** `FactCheckingEvaluator`: is the reason supported by its evidence (the candidate's text, the
+      quote, the confirmed constraint checks, the same block the verify step reads)? `RelevancyEvaluator`: is the
+      reason in line with the need, given the candidate's text? Both get their text through `UntrustedText`, like
+      every model input of the guide. One call per claim and evaluator, thinking off, 16 output tokens.
+    - **Verdicts.** The first word of the answer counts: `yes` is `pass`, `no` is `fail`, anything else `unclear`. A
+      failed call is `error`, a spent cap `skipped`. A failed call never stops the next one.
+    - **Model and cap.** `H2_GUIDE_JUDGE_MODEL` names the judge model, a different model than the one that writes and
+      verifies; empty keeps the judge off. `H2_GUIDE_JUDGE_DAILY_CALLS` (default 300) is its own daily cap
+      (`DailyBudget` "guide-judge") and `llm-chat-guide-judge` its own circuit breaker, so the judge never spends the
+      guide's cap and a judge outage never opens the guide's breaker. Staging sets `nvidia/Nemotron-3-Ultra-550b-a55b`
+      (Nebius, United States) and a cap of 300 (the core set, about 130 calls, and a rerun); prod sets no model.
+    - **Results.** The meter `helper2.guide.judge{kind, evaluator, verdict, verify, prompt}` counts each verdict, with
+      the verify step's verdict next to it (`supported`, `removed`, `not_checked`, `unchecked`). No tag holds text. The
+      guide row of the Grafana dashboard shows the verdicts and the share of claims where verify and the fact judge
+      agree. The judge's calls are in `helper2.llm.call` and `helper2.llm.tokens` under the steps `judge-fact` and
+      `judge-relevance`.
+    - **Prompts.** The evaluators keep Spring AI's own prompts. `SpringAiGuideJudgeTest` pins the label of each one
+      rendered on a fixed claim (fact `3a78745f`, relevance `ea2869f0`), and the meter carries it, so a Spring AI
+      upgrade that changes one shows in the test and in the series.
+
+No evaluation blocks the request path: the guide sets run against a running app from outside, the judge after the
+answer on its own thread, the search harness offline in a test task. The two sequence diagrams show those runs.
 
 ### Code
 
 The guide:
 - `.github/workflows/guide-eval.yml` — the nightly run on staging; `deploy/helm/helper2/values-staging.yaml`
-  (`app.guideCacheTtl`, `app.dailyLimits`) — what staging runs with.
+  (`app.guideCacheTtl`, `app.dailyLimits`, `app.guideJudge`) — what staging runs with.
+- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideJudge.kt` (`GuideJudge`, `ClaimKind`),
+  `guide/steps/ReasonCheckStep.kt` (the hand-over), `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java`
+  (the evaluators, verdicts and meter), `GuideConfiguration.guideJudge`, `guide/config/GuideProperties.Judge`;
+  `SpringAiGuideJudgeTest`; the guide row of `deploy/grafana/helper2.json`.
 - `scripts/eval-guide.mjs` — the guide runner, pass rate and report writer; `scripts/eval-setup.mjs` — the setup
   runner; `scripts/eval-lib.mjs` — session token, resource id, judgements, P@k and nDCG@k shared by both, and the
   guide run's stop rule (`guideRunStop`); `scripts/eval-lib.test.mjs` — its tests (`node --test`, run by CI).
@@ -247,8 +280,12 @@ Search:
 
 ## Alternatives considered
 
-- Automatic relevance scoring by a model ("LLM as judge") — it has the same blind spots as the chooser and the other
-  models the product uses; useful later only once checked against human labels on these sets.
+- A model judge as the quality score in place of human grades — it shares the blind spots of the models it judges. The
+  staging judge is a second opinion on the verify step, not a grade: P@3 and nDCG@3 still come from people.
+- The judge offline, on the saved runs (`guide-runs.json`) — no production code, but it sees only the 3 shown picks
+  and their short description, not the text and evidence the verify step read, and only when someone runs it.
+- The judge in `eval-guide.mjs` — fits the nightly job, but copies the evaluators' prompts into Node and owns them.
+- The same model as judge — no new setting, but a model that judges its own work agrees with itself.
 - A large public benchmark — not about finding AI resources; no fit with the guide's task.
 - Only unit tests with a fake model — they test the gate, not the answer quality.
 - A guide run after every deploy to staging — several deploys a day would spend 102 calls each; one run a night tests
@@ -274,6 +311,8 @@ Search:
 - A drop in the guide's quality on `main` fails the nightly run within a day, on staging, before a release.
 - The nightly run depends on the staging address being reachable from GitHub's runners and on staging's `app.env`.
 - The hand-written notes survive a regenerated report.
+- The verify step has a measured second opinion on staging every day: how often a second, larger model agrees with it,
+  per kind of claim, without a cent of the guide's cap and without a millisecond on the answer.
 - Every ranking and routing change is compared on the same frozen input with the same labels, and the report states
   the uncertainty, not only the difference.
 - Third-party data never enters git: snapshots, pools and reports live in `backend/eval-data/` on the machine that
@@ -286,7 +325,12 @@ Search:
 ### Known limits
 
 - `H2_LLM_MAX_RETRIES` above 0 adds attempts that no budget counts. Thinking off makes the chooser return fewer picks. A guide step cut while thinking answers with thinking off, and the answer does not say so: `GuideModelInfo` and the `guide timings` line name the models, not the thinking of each step; only `helper2.llm.thinking_fallback{step}` and a WARN line do. The first, cut call is paid in full (tokens, time, one budget unit) before the second starts; no alert yet on a high fallback rate, which means the step's token limit is too low for thinking.
-- 51 guide questions is still a small sample, and the nightly run keeps 21 of them; the script measures the stream's last event, not the browser; an ungraded pick counts as not relevant; the candidates of a question with no answer come from its search terms sent again to `/api/v1/search`, not from the guide's own 24 (the answer carries only 3), so they are close, not exact; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners.
+- 60 guide questions is still a small sample, and the nightly run keeps 21 of them; the script measures the stream's last event, not the browser; an ungraded pick counts as not relevant; the candidates of a question with no answer come from its search terms sent again to `/api/v1/search`, not from the guide's own 24 (the answer carries only 3), so they are close, not exact; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners.
+- The judge reads a bare yes or no: a judge model that explains first counts as `unclear`. Spring AI's prompts are
+  short and not written for hostile text; the escaping keeps our tags, not the judge's own instructions, safe, and a
+  tricked judge changes a meter, never an answer. Agreement with the verify step is not accuracy: both can be wrong
+  the same way. The results are meters only: the run report does not show them. The judge's id is taken from Nebius's
+  catalog; a wrong id fails every judge call as `error` and changes no answer.
 - Frozen search snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling takes about 5 hours per judge; Tavily credits are spent once per recorded query.
 
 ## Diagrams
@@ -301,3 +345,4 @@ search: [flow](../../diagrams/flow-0046-search-evaluation-harness.svg) · [seque
   - [#348](https://github.com/silvioincalza/helper2.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded
   - [#349](https://github.com/silvioincalza/helper2.ai/issues/349) S10.4.3 Guide relevance judged by a second person
   - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
+  - [#607](https://github.com/silvioincalza/helper2.ai/issues/607) S10.4.5 A guide judge on staging that scores the claims the verify step checked

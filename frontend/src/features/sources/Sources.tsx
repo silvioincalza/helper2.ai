@@ -9,6 +9,7 @@ import { toneOf, type DotTone } from '@/features/home/radarLayout';
 import { bounds } from '@/features/home/radarRotation';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
 import { useRefreshOnReturn } from '@/hooks/useRefreshOnReturn';
@@ -82,12 +83,7 @@ export function Sources() {
           </h2>
           <TermCommand command="helper2 sources --all" total={list ? all.length : null} />
         </div>
-        {q.loading && !list && (
-          <p role="status" className="h2-term__state">
-            <span aria-hidden="true">$ helper2 sources --all · </span>
-            {t('common.loading')}
-          </p>
-        )}
+        {q.loading && !list && <TableSkeleton rows={8} />}
         {!q.loading && q.error !== undefined && !list && (
           <StatePanel
             tone="error"

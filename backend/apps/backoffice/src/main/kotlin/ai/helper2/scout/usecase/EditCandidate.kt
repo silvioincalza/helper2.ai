@@ -3,14 +3,42 @@ package ai.helper2.scout.usecase
 import ai.helper2.platform.AuditTrail
 import ai.helper2.scout.Candidate
 import ai.helper2.scout.UnitOfWork
+import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceType
+import java.time.Clock
+import java.time.LocalDate
 import java.util.UUID
 
-data class CandidateEdit(
+data class CandidateEdit
+@JvmOverloads
+constructor(
   val title: String? = null,
   val type: ResourceType? = null,
   val tags: Set<String>? = null,
-)
+  val canonicalUrl: String? = null,
+  val pricing: String? = null,
+  val openSource: Boolean? = null,
+  val license: String? = null,
+  val audience: String? = null,
+  val techLevel: String? = null,
+  val description: String? = null,
+  val descriptionByAi: Boolean? = null,
+  val language: String? = null,
+  val publishedAt: LocalDate? = null,
+) {
+  fun confirmed(): Map<String, String> =
+    listOfNotNull(
+        pricing?.let { "pricing" to it },
+        openSource?.let { "openSource" to it.toString() },
+        license?.let { "license" to it },
+        audience?.let { "audience" to it },
+        techLevel?.let { "techLevel" to it },
+        description?.let { "description" to it },
+        language?.let { "language" to it },
+        publishedAt?.let { "publishedAt" to it.toString() },
+      )
+      .toMap()
+}
 
 data class CandidateItem(val open: Boolean, val resourceCandidate: Boolean, val details: String?)
 
@@ -22,10 +50,13 @@ interface CandidateItems {
   fun replace(itemId: UUID, oldDetails: String?, newDetails: String): Boolean
 }
 
-class EditCandidate(
+class EditCandidate
+@JvmOverloads
+constructor(
   private val items: CandidateItems,
   private val audit: AuditTrail,
   private val unitOfWork: UnitOfWork,
+  private val clock: Clock = Clock.systemUTC(),
 ) {
 
   sealed interface Outcome {
@@ -78,9 +109,22 @@ class EditCandidate(
   }
 
   private fun checked(change: CandidateEdit): CandidateEdit {
-    require(change.title != null || change.type != null || change.tags != null) {
-      "Change at least one of the title, the type and the tags."
+    require(
+      change.title != null ||
+        change.type != null ||
+        change.tags != null ||
+        change.canonicalUrl != null ||
+        change.confirmed().isNotEmpty()
+    ) {
+      "Change at least one value."
     }
+    val url = change.canonicalUrl?.trim()
+    if (url != null) {
+      require(url.startsWith("https://") && url.length <= 2000 && CanonicalUrl.of(url) != null) {
+        "The canonical URL must be an https URL."
+      }
+    }
+    CandidateRules.checkConfirmed(change, clock)
     val title = change.title?.trim()
     if (title != null) {
       require(
@@ -99,14 +143,21 @@ class EditCandidate(
         "At most ${Candidate.MAX_TAGS} tags, each in lower case words joined by hyphens (local-ai)."
       }
     }
-    return change.copy(title = title, tags = change.tags?.toSortedSet())
+    return change.copy(
+      title = title,
+      tags = change.tags?.toSortedSet(),
+      canonicalUrl = url,
+      description = change.description?.trim(),
+      license = change.license?.trim(),
+    )
   }
 
   private fun fields(c: CandidateEdit): String =
-    listOfNotNull(
+    (listOfNotNull(
         "title".takeIf { c.title != null },
         "type".takeIf { c.type != null },
         "tags".takeIf { c.tags != null },
-      )
+        "canonicalUrl".takeIf { c.canonicalUrl != null },
+      ) + c.confirmed().keys)
       .joinToString(", ")
 }

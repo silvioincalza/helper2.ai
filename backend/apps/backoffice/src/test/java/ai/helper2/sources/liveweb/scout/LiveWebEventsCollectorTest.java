@@ -138,7 +138,8 @@ class LiveWebEventsCollectorTest {
         20,
         new ScoutLiveWebCredits(counter, keys, creditCap, new SimpleMeterRegistry()),
         reader,
-        undated);
+        undated,
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   @Test
@@ -374,6 +375,24 @@ class LiveWebEventsCollectorTest {
   }
 
   @Test
+  void an_undated_catalog_page_on_a_shadow_library_is_never_read() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(CONFERENCE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    "https://de.z-lib.fm/book/agentic-days", "Agentic Days 2026", position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(server.requestBodies).noneMatch(body -> body.contains("z-lib"));
+  }
+
+  @Test
   void a_later_pass_reads_only_the_undated_events_found_since_the_last_pass() {
     server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
     List<java.time.Instant> asked = new ArrayList<>();
@@ -579,6 +598,34 @@ class LiveWebEventsCollectorTest {
         });
     assertThat(server.requestBodies.getLast()).contains("agenticdays.com");
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  @Test
+  void a_linkedin_post_leading_to_a_shadow_library_leads_nowhere() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route(
+        "/extract",
+        FixtureServer.Reply.ok(
+            """
+            {"results":[
+              {"url":"%s","raw_content":"Agentic Engineering Days Zurich 2026 is coming. [Details](https://de.z-lib.fm/agentic-days)"}
+            ],"failed_results":[],"usage":{"credits":1}}\
+            """
+                .formatted(POST_URL)));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    POST_URL,
+                    "Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference | AI & ML Events",
+                    position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(batch.getHits()).noneMatch(h -> h.getCanonicalUrl().getHost().contains("z-lib"));
+    assertThat(server.requestBodies).noneMatch(body -> body.contains("z-lib"));
   }
 
   @Test

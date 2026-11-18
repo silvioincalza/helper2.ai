@@ -1,6 +1,6 @@
 # Architecture, view 1 of 6: context. helper2 as two apps over shared libraries (ADR 0043), what calls them, and
 # what they call.
-# The internals of each module are in the other views (search, guide, index, setup, platform).
+# The internals of each module are in the other views (search, guide, index, setup, platform, review research).
 # Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
 #   backend/settings.gradle.kts (apps and libraries), backend/libs/core (the shared contexts and web adapters),
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml (base URLs, llm-nebius profile, helper2.embedding).
@@ -37,7 +37,8 @@ app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0043)" {
     class: group
     backoffice: "admin\nback office: review, runs, overview,\nsettings; the admin web app" {class: app}
     scout: "scout\nindex growth, enrichment" {class: app}
-    collectors: "sources (collectors)\nScout's collectors, evidence readers" {class: app}
+    collectors: "sources (collectors)\nScout's collectors, evidence readers,\nresearch tools" {class: app}
+    research: "research\nreview research agent:\nruns, steps, evidence check" {class: app}
   }
   libs: "libraries · in both apps" {
     class: group
@@ -63,6 +64,10 @@ app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0043)" {
   public.setup -> libs.platform: "model calls" {class: ai-call}
   bo.backoffice -> libs.catalog: "review queue; imports\nCatalogBackOfficeConfiguration\n(curation, review, indexing, purge)"
   bo.backoffice -> bo.scout: "runs, backlog"
+  bo.backoffice -> bo.research: "start, cancel, steps (SSE)"
+  bo.collectors -> bo.research: "ResearchTool" {class: config}
+  bo.research -> libs.catalog: "ReviewQueue, KnownTargets"
+  bo.research -> libs.platform: "model calls" {class: ai-call}
   bo.backoffice -> libs.platform: "budgets today"
   bo.backoffice -> libs.examples: "examples, the check; imports\nExamplesBackOfficeConfiguration\n(pool writes, check, drafts)"
   libs.examples -> libs.search: "check: the example's search" {class: config}
@@ -96,6 +101,7 @@ admin -> app.bo.backoffice: "sign-in, /admin\n(admin host only)"
 
 app.libs.catalog -> pg: JDBC
 app.bo.scout -> pg: JDBC
+app.bo.research -> pg: "review_research, steps"
 app.libs.identity -> pg: "bookmarks, users"
 app.libs.examples -> pg: "home_example"
 app.libs.search -> redis: "source cache"

@@ -128,6 +128,10 @@ canary is its first run. Its pull request back into `main` brings the fix to `ma
 release, `main` keeps its own version. A patch of a release made before the canary (`release/2026.11`, from
 `v2026.11.1`) must also carry `deploy/` and `.github/` of `main`.
 
+A patch that carries a migration is `main` merged into the release branch by pull request: a migration reaches a
+release branch only with `main`. CI fails a pull request into `release/*` whose new migration is not the file `main`
+holds (`released-migrations.sh`, ADR 0045 §16).
+
 A release branch and a release tag are never deleted or moved. Setup, once: a branch ruleset on `release/*`
 (pull requests only, no force push, no deletion), the OpenBao role `deploy` bound to `refs/heads/main` and
 `refs/heads/release/*`, the role `deploy-prod` allowed to read `ci/harbor`, a Harbor robot that may create tags, and

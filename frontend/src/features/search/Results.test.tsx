@@ -112,6 +112,22 @@ describe('results: one column, a row opens the resource page', () => {
     expect(screen.queryByText(/PUBLISHED/i)).not.toBeInTheDocument();
   });
 
+  it('an awesome list is shown with its own type', async () => {
+    const list = makeCard({
+      id: 'eeeeeeee-eeee-5eee-8eee-eeeeeeeeeeee',
+      title: 'awesome-llm-tools',
+      type: 'AWESOME_LIST',
+      url: 'https://github.com/acme/awesome-llm-tools',
+      description: 'A curated list of tools for large language models.',
+    });
+    mockApi({
+      'GET /search': () => makeSearch({ results: [list], total: 1, sources: [makeStatus()] }),
+    });
+    renderApp('/search?q=llm tools');
+    await screen.findByText('awesome-llm-tools');
+    expect(within(rowOf('awesome-llm-tools')).getByText('Awesome list')).toBeInTheDocument();
+  });
+
   it('a result found only inside an awesome list says where, without an AI label', async () => {
     const listed = makeCard({
       id: 'cccccccc-cccc-5ccc-8ccc-cccccccccccc',

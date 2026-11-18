@@ -101,11 +101,21 @@ The schema is one file, and from the first release tag on that file must never c
      the database so (`POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=en_US.utf8`).
    - **Forward-only from the first release tag.** While the history has no release tag `vYYYY.N.P`, V1 is edited in
      place. From the tag on, an applied migration is never edited: an edit changes its checksum, and Flyway refuses
-     to start. A change is a new versioned migration (`V2__…`), forward-only.
+     to start. A change is a new versioned migration, forward-only, named after the app version that ships it:
+     `V<version>.<n>__<what>.sql`, with the version of the release that ships it, the one it carries on its release
+     branch (after 2026.11.5, the next patch of `release/2026.11`: 2026.11.6), and `n` counting from 1 within it
+     (`V2026.11.6.1__known_target_tool.sql`). Flyway compares the versions part by part, so they run in release order.
+     A pull request whose migration did not ship in a release renames it to the version after that release.
+     A migration reaches a release branch only with `main` merged into it, never by a fix of its own
+     ([0045](../operations/0045-releases-and-versions.md) §16).
+     `backend/build.gradle.kts` is not changed for it: the release workflow sets the version.
    - **CI holds both halves of the rule** (`.github/scripts/released-migrations.sh`, job `changes`, every pull
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other
      than `V1__schema.sql` fails. Once it has one, every versioned migration the latest release holds must be the same
-     file, byte for byte: an edit or a removal fails, a new `V2__…` passes. The seeds (`R__…`) may change. The check
+     file, byte for byte: an edit or a removal fails. The latest release is the highest of the release tags in the
+     history and the version `backend/build.gradle.kts` carries, when that version is tagged: a release merged into
+     `main` by squash is not in its history. Every versioned migration the latest release does not hold must be named
+     `V<YYYY>.<N>.<P>.<n>__…` with a version above it; any other name fails. The seeds (`R__…`) may change. The check
      compares with the tag, not with the base of the pull request.
    - **Until the tag, every schema change edits V1. There is no V2.** Prod gets V1 on an empty database at the tag.
      A database that already ran an older V1 is refused by Flyway when V1 changes (checksum mismatch): no step
@@ -164,13 +174,18 @@ The schema is one file, and from the first release tag on that file must never c
      sign-in, a report or its own jobs write: `resource`, `resource_label`, `source_record` (the live results it
      observes), `source` (its sources at startup and their outcome), `issue_report` and `review_item` (a user's report),
      `live_web_query_result`, `app_user`, `bookmark` (sign-in, account deletion, the account purge),
-     `guide_similar_question`, `ai_cache`, `shedlock` and `public_app_setting` (its settings for the back office's
+     `guide_similar_question`, `ai_cache`, `public_app_lock` (the locks of its own daily jobs) and `public_app_setting` (its settings for the back office's
      page, at startup, [0038](../backoffice/0038-back-office-and-review.md) §10), with `DELETE` only where its code deletes.
      No sequence.
    - `h2_backoffice` reads and writes rows on every table, and uses the settings' identity sequence.
-   - New tables (default privileges of the owner): both apps read them, only the back office writes them. A new table
-     the public app writes needs its own `GRANT ... TO h2_public` in the migration that creates it, and its row in
-     `AppRolesGrantsIT`.
+   - The public app has no right on `shedlock`. That table holds the back office's locks (`scout-run`, the indexer,
+     its daily jobs), so the public app cannot hold or free them. Its own daily jobs lock in `public_app_lock`, the
+     same columns (`helper2.cluster-lock.table`, `ClusterLockProperties`: `shedlock` by default, `public_app_lock` in
+     the public app). The two apps share no lock name.
+   - New tables (default privileges of the owner): the back office reads and writes them, the public app has no right
+     on them. A new table the public app reads or writes needs its own `GRANT ... TO h2_public` in the migration that
+     creates it, and its row in `AppRolesGrantsIT`. So a new queue or bookkeeping table of the back office stays out
+     of the public app's reach without a `REVOKE`.
    - `AppRolesGrantsIT` holds one row per table and checks every privilege of both roles against the database: a new
      table fails it until it is classified. The app tests connect as these roles, so they show the rows are enough for
      the code; the tests of library code only the back office runs connect as `h2_backoffice` (`@AsBackOffice`).
@@ -349,6 +364,11 @@ The schema is one file, and from the first release tag on that file must never c
 - A record stays until its source withdraws it: an item a source only stops listing (it left the top awesome lists, trending, a Hugging Face organisation's newest models) stays, and so does a Hugging Face model that was deleted.
 - The row the index search reads takes its type, licence, pricing, open-source flag and event days from the card of the resource page, but not its title: the row keeps the title of the last write, the page shows the title of the first source by priority. `IndexHitAndCardParityIT` lists that gap. The test covers resources of two indexed sources: the page of a curated resource merges every record, while its row keeps what the curated write set, and no test compares the two ([0022](../search/0022-federated-search.md)).
 - The limits of resource identity (a package without its repository, a single file, a sub-folder under two branches) are in [0021](../scout/0021-resource-identity-one-resource-per-repository.md).
+- A public image older than `V2026.11.6.7` locks in `shedlock`, where its role now has no right. ShedLock logs the
+  refusal at ERROR and reports "not locked", so every daily job of that image is skipped: the account purge and the
+  guide and search retention stop. A rollback across that migration is a short window only: roll forward, or for
+  the window run `GRANT SELECT, INSERT, UPDATE ON shedlock TO h2_public` as the owner and revoke it after. In a
+  rolling upgrade, an old public pod whose job fires after the migration Job skips that day's run once.
 
 ### AI architecture check
 | # | Layer | Status |

@@ -19,8 +19,9 @@ Without a configured model the application must still work.
    NVIDIA Nemotron models only. `H2_NEBIUS_API_KEY`, `H2_NEBIUS_REASONING_MODEL` (default
    `nvidia/Nemotron-3.5-Super-VL`), `H2_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; it
    plans the guide's search, translates queries and classifies awesome lists). Both give JSON schema output, with thinking
-   off through `chat_template_kwargs`. The reasoning model is served in `us-north1` (US), the fast model in
-   `eu-north1` (Finland). `LlmSettings` holds the fallbacks:
+   off through `chat_template_kwargs`. Both are public endpoints: Nebius shows their region as global and
+   can move them at any time (Legal quick guide, read 2026-11-18). Zero Data Retention is off, so Nebius keeps
+   inputs and outputs in Finland for up to one year. `LlmSettings` holds the fallbacks:
    an empty fast model means the reasoning model does these calls too. NVIDIA-only is checked at startup
    (`NvidiaOnly`): the application does not start when a chat model id sent through the OpenAI-compatible client
    (`spring.ai.openai.chat.model`, `helper2.llm.fast-model`, `helper2.llm.reasoning-model`) or the embedding model id

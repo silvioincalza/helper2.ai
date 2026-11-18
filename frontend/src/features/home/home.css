@@ -436,20 +436,6 @@
   text-underline-offset: 3px;
 }
 
-.h2-termlist__skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-}
-.h2-termlist__skeleton-line {
-  display: block;
-  height: 14px;
-  border-radius: var(--radius-xs);
-  background: var(--surface-tint);
-  animation: h2-pulse 1.6s ease-in-out 3;
-}
-
 .h2-tabs {
   padding: var(--space-4) 0 var(--space-5);
 }

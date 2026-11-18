@@ -19,7 +19,7 @@ done
 
 orphans=0
 for s in *.svg; do
-  [[ $s == hexagonal-architecture.svg ]] && continue
+  [[ $s == hexagonal-architecture.svg || $s == event-storming.svg ]] && continue
   if [[ ! -f ${s%.svg}.d2 ]]; then
     echo "orphan SVG without a .d2 source: $s" >&2
     orphans=1

@@ -1,6 +1,7 @@
 package ai.helper2.scout.usecase
 
 import ai.helper2.platform.AuditTrail
+import ai.helper2.scout.EnrichmentMaterial
 import ai.helper2.scout.EnrichmentStore
 import ai.helper2.scout.EvidenceRules
 import ai.helper2.scout.FieldTargets
@@ -74,7 +75,7 @@ constructor(
   private val log = LoggerFactory.getLogger(RecheckEnrichments::class.java)
 
   companion object {
-    const val TASK = "recheck-enrichment-enrich-v7"
+    const val TASK = "recheck-enrichment-enrich-v12"
     const val BATCH = 200
     private val ALREADY_DONE = RecheckResult(0, 0, 0, 0)
     private val AI_FACTS = setOf(ValueOrigin.AI_EXTRACTED, ValueOrigin.SELF_DECLARED)
@@ -139,7 +140,9 @@ constructor(
       }
     val rejected = answers.rejectFields(failing.map { it.id })
     val gone = answers.dropClaims(dropped.map { it.id })
-    val rerun = canEnrich && stillMissesFacts(stored, failing.map { it.id }.toSet())
+    val rerun =
+      canEnrich &&
+        needsAnotherRun(stored, failing.map { it.id }.toSet(), dropped.map { it.id }.toSet())
     if (rerun) answers.requestRun(resourceId)
     return RecheckResult(1, rejected, gone, if (rerun) 1 else 0)
   }
@@ -155,9 +158,27 @@ constructor(
       f.origin != ValueOrigin.CURATED &&
       !FieldsByType.allowsField(type, f.field)
 
-  private fun stillMissesFacts(stored: StoredAnswer, rejected: Set<UUID>): Boolean {
+  private fun needsAnotherRun(
+    stored: StoredAnswer,
+    rejected: Set<UUID>,
+    dropped: Set<UUID>,
+  ): Boolean {
     if (stored.promptVersion == promptVersion) return false
     val material = enrichment.load(stored.resourceId) ?: return false
+    return missesFacts(material, stored, rejected) || missesSummary(material, stored, dropped)
+  }
+
+  private fun missesSummary(
+    material: EnrichmentMaterial,
+    stored: StoredAnswer,
+    dropped: Set<UUID>,
+  ): Boolean = material.gapTarget != null && stored.claims.none { it.id !in dropped }
+
+  private fun missesFacts(
+    material: EnrichmentMaterial,
+    stored: StoredAnswer,
+    rejected: Set<UUID>,
+  ): Boolean {
     if (material.gapTarget == null && material.pageTarget == null) return false
     val verified =
       stored.fields

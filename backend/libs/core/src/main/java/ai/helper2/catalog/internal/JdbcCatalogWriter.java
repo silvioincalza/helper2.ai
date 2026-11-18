@@ -184,23 +184,23 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
             modified_at = now(),
             url = CASE WHEN %2$s THEN resource.url ELSE EXCLUDED.url END,
             title = CASE WHEN %2$s THEN resource.title ELSE EXCLUDED.title END,
-            description = CASE WHEN %2$s THEN resource.description ELSE coalesce(EXCLUDED.description, resource.description) END,
-            description_origin = CASE WHEN %2$s OR EXCLUDED.description IS NULL THEN resource.description_origin ELSE EXCLUDED.description_origin END,
+            description = CASE WHEN 'description' = ANY(resource.curated_fields) OR %2$s THEN resource.description ELSE coalesce(EXCLUDED.description, resource.description) END,
+            description_origin = CASE WHEN 'description' = ANY(resource.curated_fields) OR %2$s OR EXCLUDED.description IS NULL THEN resource.description_origin ELSE EXCLUDED.description_origin END,
             type = CASE WHEN 'type' = ANY(resource.curated_fields) OR %1$s THEN resource.type ELSE EXCLUDED.type END,
             audience = CASE WHEN 'audience' = ANY(resource.curated_fields) OR %1$s THEN resource.audience ELSE EXCLUDED.audience END,
             tech_level = CASE WHEN 'techLevel' = ANY(resource.curated_fields) THEN resource.tech_level ELSE coalesce(resource.tech_level, EXCLUDED.tech_level) END,
             license = CASE WHEN 'license' = ANY(resource.curated_fields) OR %1$s THEN resource.license ELSE coalesce(EXCLUDED.license, resource.license) END,
             pricing = CASE WHEN 'pricing' = ANY(resource.curated_fields) OR %1$s THEN resource.pricing ELSE coalesce(EXCLUDED.pricing, resource.pricing) END,
             open_source = CASE WHEN 'openSource' = ANY(resource.curated_fields) OR %1$s THEN resource.open_source ELSE coalesce(EXCLUDED.open_source, resource.open_source) END,
-            published_at = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_at ELSE EXCLUDED.published_at END,
-            published_precision = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_precision ELSE EXCLUDED.published_precision END,
-            published_source_id = CASE WHEN %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_source_id ELSE EXCLUDED.published_source_id END,
+            published_at = CASE WHEN 'publishedAt' = ANY(resource.curated_fields) OR %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_at ELSE EXCLUDED.published_at END,
+            published_precision = CASE WHEN 'publishedAt' = ANY(resource.curated_fields) OR %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_precision ELSE EXCLUDED.published_precision END,
+            published_source_id = CASE WHEN 'publishedAt' = ANY(resource.curated_fields) OR %1$s OR EXCLUDED.published_at IS NULL THEN resource.published_source_id ELSE EXCLUDED.published_source_id END,
             updated_at = CASE WHEN EXCLUDED.updated_at IS NOT NULL AND (resource.updated_at IS NULL OR EXCLUDED.updated_at > resource.updated_at)
                               THEN EXCLUDED.updated_at ELSE resource.updated_at END,
             updated_source_id = CASE WHEN EXCLUDED.updated_at IS NOT NULL AND (resource.updated_at IS NULL OR EXCLUDED.updated_at > resource.updated_at)
                               THEN EXCLUDED.updated_source_id ELSE resource.updated_source_id END,
             data_origin = CASE WHEN %1$s THEN resource.data_origin ELSE EXCLUDED.data_origin END,
-            language = CASE WHEN %2$s THEN resource.language ELSE EXCLUDED.language END
+            language = CASE WHEN 'language' = ANY(resource.curated_fields) OR %2$s THEN resource.language ELSE EXCLUDED.language END
         """
             .formatted(STORED_ORIGIN_IS_STRONGER, STORED_RESOURCE_KEEPS_WHAT_IT_SHOWS),
         args);

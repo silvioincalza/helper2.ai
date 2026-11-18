@@ -121,6 +121,41 @@ class RecentApiIT extends ApiTestBase {
   }
 
   @Test
+  void filtersByTheAwesomeListType() throws Exception {
+    FAKE.set(q ->
+        List.of(
+            fakeHit(
+                "https://github.com/acme/awesome-typed-tools",
+                "awesome-typed-tools",
+                "A curated list of AI tools",
+                ResourceType.AWESOME_LIST,
+                "CC0-1.0",
+                daysAgo(2),
+                null,
+                0),
+            fakeHit(
+                "https://github.com/acme/typed-lib",
+                "typed-lib",
+                "Library published recently",
+                ResourceType.LIBRARY,
+                "MIT",
+                daysAgo(2),
+                null,
+                1)));
+    mvc.perform(get("/api/v1/search").param("q", "typed tools")).andExpect(status().isOk());
+
+    eventually(() -> {
+      String body =
+          mvc.perform(get("/api/v1/recent").param("type", "AWESOME_LIST"))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      assertThat(titles(body)).contains("awesome-typed-tools").doesNotContain("typed-lib");
+    });
+  }
+
+  @Test
   void rejectsOutOfRangeParameters() throws Exception {
     mvc.perform(get("/api/v1/recent").param("days", "31")).andExpect(status().isBadRequest());
     mvc.perform(get("/api/v1/recent").param("size", "0")).andExpect(status().isBadRequest());

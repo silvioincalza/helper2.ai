@@ -4,6 +4,8 @@
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
 #   backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, platform/quota/RedisQuotaCounter.java,
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/ShadowLibraries.kt, search/internal/JdbcShadowLibraryStore.java,
+#   search/internal/ShadowLibrariesConfiguration.java (ADR 0049),
 #   backend/libs/core/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, TranslationConfiguration.java
 #   (prompt: backend/libs/core/src/main/resources/prompts/search/translate-query.txt),
 #   backend/libs/core/src/main/java/ai/helper2/search/web/CategoriesController.java,
@@ -35,6 +37,9 @@ search: "search (Kotlin domain)" {
   p_translate: QueryTranslator {class: port}
   cache: "RedisSearchCache" {class: app}
   translator: "SpringAiQueryTranslator\n(Nemotron Nano)" {class: app}
+  libs: "ShadowLibraries\n(names no result may have,\nread again every 30 s)" {class: app}
+  p_libs: ShadowLibraryStore {class: port}
+  jlibs: "JdbcShadowLibraryStore" {class: app}
   ctl -> core: {class: hot}
   core -> p_source: {class: hot}
   core -> p_cache
@@ -45,6 +50,9 @@ search: "search (Kotlin domain)" {
   core -> p_translate
   cache -> p_cache: implements {class: config}
   translator -> p_translate: implements {class: config}
+  core -> libs: "drops every hit\non a shadow library"
+  libs -> p_libs
+  jlibs -> p_libs: implements {class: config}
 }
 
 sources: "sources (Java adapters)" {
@@ -92,3 +100,5 @@ catalog.semantic -> pg: "vector search"
 catalog.semantic -> nvapi: "query vector" {class: ai-call}
 catalog.catalog -> pg: "what each search saw"
 search.translator -> nebius: "translate query" {class: ai-call}
+sources.live -> search.libs: "TavilySource, HackerNewsSource\ndrop a shadow library's host"
+search.jlibs -> pg: "shadow_library"

@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Loading, Skeleton, SkeletonRows } from '@/ui/Skeleton';
 import type { Category, FacetValue } from '@/api/types';
 import type { Categories } from '@/hooks/useCategories';
 import { isSelected } from '@/lib/searchState';
@@ -43,9 +44,11 @@ export function CategoryFacet({ counts, selected, categories, onToggle }: Props)
     <fieldset className="filter-group filter-group--category">
       <legend className="filter-legend">{t('facet.category')}</legend>
       {categories.loading ? (
-        <p role="status" className="muted small">
-          {t('categories.loading')}
-        </p>
+        <Loading label={t('categories.loading')}>
+          <Skeleton>
+            <SkeletonRows rows={6} bars={[{ size: 'small', width: 'half' }]} />
+          </Skeleton>
+        </Loading>
       ) : categories.error !== undefined ? (
         <p role="alert" className="muted small">
           {t('categories.error')}{' '}

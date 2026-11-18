@@ -2,7 +2,8 @@
 # Source of truth: backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt (of, github),
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/ResourceId.kt (of),
 #   backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt (joiningRepositories, group, identity),
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/RepositoryJoin.kt (of),
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/RepositoryJoin.kt (of, byRule, CURATED),
+#   backend/libs/core/src/main/resources/catalog/repository-joins.properties,
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/PlatformBuild.kt (isPlatformBuild),
 #   backend/libs/core/src/main/java/ai/helper2/sources/npm/NpmSource.java (toHit),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java (identity),
@@ -20,6 +21,7 @@ canon: "CanonicalUrl.of: https, host in lower case,\nno www, port, fragment, tra
 none: "No canonical URL\n(dot segment, no host):\nthe hit is left out" {class: end}
 host: "GitHub, arXiv or\nHugging Face?" {class: decision}
 rules: "Host rule: owner/repo in lower case;\na file or an issue names the repository;\ntree/{ref}/{path} -> tree/HEAD/{path};\nevery view of a paper -> arxiv.org/abs/{id}" {class: app}
+curated: "An npm or PyPI page on the\ncurated join list?\n(catalog/repository-joins.properties)" {class: decision}
 states: "States a repository?\n(npm links.repository,\nPyPI source link,\nMCP Registry repository)" {class: decision}
 folder: "Inside the repository\n(its stated sub-directory)?" {class: decision}
 subdir: "The stated repository\nis a sub-directory?" {class: decision}
@@ -38,8 +40,10 @@ build -> canon: no
 canon -> none: none
 canon -> host: a URL
 host -> rules: yes
-host -> states: no
-rules -> states
+host -> curated: no
+rules -> curated
+curated -> repo: "yes: its curated repository"
+curated -> states: no
 states -> folder: yes
 states -> own: no
 folder -> own: yes

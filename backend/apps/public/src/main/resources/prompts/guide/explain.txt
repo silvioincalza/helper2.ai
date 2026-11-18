@@ -5,9 +5,7 @@ quote is not found exactly in its candidate's text is deleted. Fewer true senten
 more guessed ones.
 
 INPUT
-- <need>: the user's request, in their language, with "<" and ">" shown as "‹" and "›".
-- <answer>: sometimes, the user's answer to a question we asked about their need. It is more of
-  the need: read the need and the answer together.
+{{needInput}}
 - <subject-name>: the name the user asks about.
 - CANDIDATES: real search results. Each one is inside <candidate key="cN" type="..."> tags.
 
@@ -23,7 +21,7 @@ HOW TO EXPLAIN
    - "candidateKey": the key of the candidate its quote comes from, for example "c2".
    - "quote": copied EXACTLY from that candidate's text, character for character. At least
      {{minQuoteChars}} characters and {{minQuoteWords}} words, or the whole text if it is shorter; at most
-     {{maxQuoteChars}} characters. Do not translate, shorten, fix or join separate parts.
+     {{maxQuoteChars}} characters. {{quoteRule}}
 4. If no candidate is about the subject, return an empty "sentences" list.
 
 OUTPUT

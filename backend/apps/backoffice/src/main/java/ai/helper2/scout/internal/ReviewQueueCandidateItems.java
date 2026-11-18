@@ -26,10 +26,7 @@ class ReviewQueueCandidateItems implements CandidateItems {
     return queue
         .find(itemId)
         .map(i ->
-            new CandidateItem(
-                i.status() == ReviewQueue.Status.OPEN,
-                i.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE,
-                i.details()))
+            new CandidateItem(i.status() == ReviewQueue.Status.OPEN, structured(i), i.details()))
         .orElse(null);
   }
 
@@ -46,5 +43,12 @@ class ReviewQueueCandidateItems implements CandidateItems {
         oldDetails,
         reason.length() > MAX_REASON ? reason.substring(0, MAX_REASON) : reason,
         newDetails);
+  }
+
+  static boolean structured(ReviewQueue.Item item) {
+    return item.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE
+        || (item.kind() == ReviewQueue.Kind.COURSE_CANDIDATE
+            && item.details() != null
+            && item.details().strip().startsWith("{"));
   }
 }

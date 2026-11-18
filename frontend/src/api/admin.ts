@@ -27,6 +27,8 @@ import type {
   DiscoveryHosts,
   DiscoveryHostEntry,
   DiscoveryHostKind,
+  ShadowLibraries,
+  ShadowLibraryEntry,
   KnownTargets,
   KnownTargetEntry,
   KnownTargetWrite,
@@ -35,6 +37,10 @@ import type {
   ExampleDrafts,
   HomeExampleChange,
   HomeExampleInput,
+  ReviewResearchDetail,
+  ReviewResearchEstimate,
+  ReviewResearchRuns,
+  ReviewResearchStart,
 } from './types';
 
 import { absolute, API_BASE, request, send } from './client';
@@ -45,6 +51,7 @@ export const adminApi = {
       status?: ReviewStatus | undefined;
       kind?: ReviewKind | undefined;
       category?: string | undefined;
+      research?: string | undefined;
     },
     page: number,
     size: number,
@@ -52,6 +59,7 @@ export const adminApi = {
   ) =>
     request<ReviewItemPage>('GET', '/admin/review-items', {
       query: new URLSearchParams({
+        ...(filter.research ? { research: filter.research } : {}),
         ...(filter.status ? { status: filter.status } : {}),
         ...(filter.kind ? { kind: filter.kind } : {}),
         ...(filter.category ? { category: filter.category } : {}),
@@ -105,6 +113,30 @@ export const adminApi = {
       {},
     );
   },
+  startReviewResearch: (body: ReviewResearchStart) =>
+    request<ReviewResearchRuns>('POST', '/admin/review-research', { body }),
+  listReviewResearch: (itemIds: string[], signal?: AbortSignal) =>
+    request<ReviewResearchRuns>('GET', '/admin/review-research', {
+      query: new URLSearchParams(itemIds.map((id) => ['itemId', id])),
+      signal,
+    }),
+  estimateReviewResearch: (signal?: AbortSignal) =>
+    request<ReviewResearchEstimate>('GET', '/admin/review-research/estimate', { signal }),
+  getReviewResearch: (runId: string, signal?: AbortSignal) =>
+    request<ReviewResearchDetail>('GET', `/admin/review-research/${encodeURIComponent(runId)}`, {
+      signal,
+    }),
+  cancelReviewResearch: (runId: string) =>
+    request<void>('POST', `/admin/review-research/${encodeURIComponent(runId)}/cancel`),
+  reviewResearchEvents: (runId: string, afterSeq: number, signal?: AbortSignal) =>
+    send(
+      'GET',
+      absolute(
+        `${API_BASE}/admin/review-research/${encodeURIComponent(runId)}/events`,
+        new URLSearchParams({ afterSeq: String(afterSeq) }),
+      ),
+      { accept: 'text/event-stream', signal },
+    ),
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
       signal,
@@ -168,6 +200,14 @@ export const adminApi = {
     request<DiscoveryHostEntry>('POST', '/admin/discovery-hosts', { body }),
   removeDiscoveryHost: (host: string, reason: string | null) =>
     request<void>('POST', `/admin/discovery-hosts/${encodeURIComponent(host)}/remove`, {
+      body: { reason },
+    }),
+  listShadowLibraries: (signal?: AbortSignal) =>
+    request<ShadowLibraries>('GET', '/admin/shadow-libraries', { signal }),
+  addShadowLibrary: (body: { name: string; reason: string | null }) =>
+    request<ShadowLibraryEntry>('POST', '/admin/shadow-libraries', { body }),
+  removeShadowLibrary: (name: string, reason: string | null) =>
+    request<void>('POST', `/admin/shadow-libraries/${encodeURIComponent(name)}/remove`, {
       body: { reason },
     }),
   listKnownTargets: (signal?: AbortSignal) =>

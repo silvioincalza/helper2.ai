@@ -44,7 +44,8 @@ public class DecideRelationshipItem {
         id,
         by,
         LinkKnownRelationshipTargets.VENDOR_NOTE,
-        LinkKnownRelationshipTargets.SERVICE_NOTE)) {
+        LinkKnownRelationshipTargets.SERVICE_NOTE,
+        LinkKnownRelationshipTargets.TOOL_NOTE)) {
       return false;
     }
     audit.record(

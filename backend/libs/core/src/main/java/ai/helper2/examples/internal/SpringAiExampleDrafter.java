@@ -83,6 +83,9 @@ class SpringAiExampleDrafter implements ExampleDrafter {
 
   @Override
   public List<ProposedDraft> draft(List<DraftSource> sources) {
+    if (sources.isEmpty()) {
+      return List.of();
+    }
     Answer answer = call(user(sources));
     if (answer == null || answer.drafts() == null) {
       return List.of();

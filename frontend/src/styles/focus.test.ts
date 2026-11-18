@@ -44,6 +44,12 @@ describe('Feature: keyboard focus is never hidden (WCAG 2.4.7, 2.4.11)', () => {
     expect(declared('body')).toMatch(/padding-bottom:\s*var\(--sticky-bottom, 0px\)/);
   });
 
+  it('Scenario: the review detail keeps a focused item clear of its decide bar, as tall as the bar is', () => {
+    expect(declared('.h2-admin__detail')).toMatch(
+      /scroll-padding-bottom:\s*calc\(var\(--decide-h, 0px\) \+ var\(--space-3\)\)/,
+    );
+  });
+
   it('Scenario: the focus ring keeps the shape of its control: no rule changes the radius on focus', () => {
     const reshaped = rules.filter(
       (r) =>

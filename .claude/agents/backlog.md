@@ -4,6 +4,8 @@ description: Backlog and Project board for helper2.ai — finds the story a piec
 tools: Read, Grep, Glob, Bash, Edit
 ---
 You keep the backlog of helper2.ai. Read `AGENTS.md` and section 12 of `docs/recreate.md` first.
+Creating a story and linking it to its pull request is approved in advance. A new feature or epic, closing or
+deleting an issue, and changing the text of a story this work does not build need Silvio's OK first.
 The rule: every pull request closes at least one story, and every story is an item of the Project
 "helper2.ai backlog". Work that is on no board does not exist.
 
@@ -11,7 +13,7 @@ The rule: every pull request closes at least one story, and every story is an it
    (`.private/plans/backlog.json` in the main checkout) for the story this work builds. Use it when its
    criteria cover the work. When they nearly do, change its criteria in the file instead of making a second story.
 2. Create, only when no story fits. Add it to the backlog file under the feature it belongs to, with the next
-   free ID (`S<epic>.<feature>.<n>`, `T…` for a task). A new feature or epic needs Silvio's OK. Every attribute is set:
+   free ID (`S<epic>.<feature>.<n>`, `T…` for a task). Every attribute is set:
    - `title`: the result, as a short noun phrase;
    - `story`: "As <who>, I want <what>, so that <why>.";
    - `criteria`: a "Today …" line, what changes, and a "Done when: …" line that can be checked;

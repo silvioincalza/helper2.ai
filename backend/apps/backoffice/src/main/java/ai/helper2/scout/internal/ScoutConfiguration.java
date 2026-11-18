@@ -472,8 +472,8 @@ class ScoutConfiguration {
 
   @Bean
   EditCandidate editCandidate(
-      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork scoutUnitOfWork) {
-    return new EditCandidate(items, audit, scoutUnitOfWork);
+      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
+    return new EditCandidate(items, audit, scoutUnitOfWork, clock);
   }
 
   @Bean

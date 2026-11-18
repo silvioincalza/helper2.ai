@@ -12,7 +12,8 @@ import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
-import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
+import { AdminEmpty, AdminHead } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { CHECK_OUTCOMES, CHECK_TONE, oneOf, PATHS, SHOWN_PER_PATH } from './adminModel';
 import { EXPECTED_MAX } from './limits';
 
@@ -220,7 +221,7 @@ export default function ExamplesPage() {
       </div>
 
       {examples.loading ? (
-        <AdminLoading command={COMMAND} />
+        <TableSkeleton />
       ) : examples.error !== undefined ? (
         <StatePanel
           tone="error"

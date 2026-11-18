@@ -1,5 +1,4 @@
-import type { Ref } from 'react';
-import { useTranslation } from 'react-i18next';
+import type { ReactNode, Ref } from 'react';
 import { TermCommand } from '@/features/home/TermList';
 
 export function AdminHead({
@@ -25,21 +24,20 @@ export function AdminHead({
   );
 }
 
-export function AdminLoading({ command }: { command: string }) {
-  const { t } = useTranslation();
-  return (
-    <p role="status" className="h2-term__state">
-      <span aria-hidden="true">$ {command} · </span>
-      <span>{t('common.loading')}</span>
-    </p>
-  );
-}
-
-export function AdminEmpty({ command, text }: { command: string; text: string }) {
+export function AdminEmpty({
+  command,
+  text,
+  next,
+}: {
+  command: string;
+  text: string;
+  next?: ReactNode;
+}) {
   return (
     <p className="h2-term__state">
       <span aria-hidden="true">$ {command} · 0 · </span>
       <span>{text}</span>
+      {next && <> {next}</>}
     </p>
   );
 }

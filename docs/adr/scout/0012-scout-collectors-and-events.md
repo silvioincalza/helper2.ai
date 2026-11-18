@@ -75,10 +75,49 @@ Two kinds of source need more care:
      `response_format`. Its own daily cap `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300), gauge
      `helper2.scout.classifier.budget.remaining`; calls are timed and their tokens counted with step `classify`. An id
      the model did not answer (error, spent budget, missing id), and every id in a run without a model, goes to
-     keyword rules (`RepoClassifier.Heuristic`).
+     keyword rules (`RepoClassifier.Heuristic`). The allowed types include `AWESOME_LIST`: a linked repository whose
+     description calls it a curated list of AI links is `ai` true, type `AWESOME_LIST`; the name alone is not enough.
+     The answer counts only when the README rule below passes too: the collector reads that repository's README.
+     When the rule fails (not named like a list, no README, a README that is not a list), the keyword rules give the
+     type instead, so a collection of MCP servers in one repository stays `MCP_SERVER` though its description calls it
+     a curated list. When the README cannot be read now (timeout, 5xx), or the pass has spent the README time or size
+     budget the crawl of lists draws on too, the repository is left out of this run and read again at the next one; it
+     is not withdrawn. A rate limit on that README stops the pass, like a GraphQL rate limit (cursor kept).
+     A repository whose facts say nothing gets `ai` false, type OTHER, and is not indexed.
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
-   - Each list read is a resource too (ARTICLE, tag `awesome-list`), and its entry lines and headings become a search
+   - Each list read is a resource too (tag `awesome-list`), and its entry lines and headings become a search
      index ([0023](../search/0023-catalog-full-text-index.md)).
+   - **An awesome list is its own type, `AWESOME_LIST`** ("Awesome list" on the site): a curated list of links to other
+     resources, not a library, a tool or an MCP server. The README rule is in one place, `AwesomeLists`, and reads the README:
+     the repository name starts with "awesome" or "best-of-", or the repository has the topic `awesome-list`; at least
+     20 list items carry a web link, and these items are at least half of the README's text lines. An item is a Markdown list item, a table row or an HTML `<li>`; the lines under
+     it that are indented more (a summary, the authors, a `[[pdf]](…)` link, a sub-item without its own link) belong to
+     it and are not counted on their own. A web link is an `http` or `https` link: an anchor to a section, a link to a
+     file of the repository, an image and a badge are not. Headings and code blocks are not counted. The name alone
+     never decides: a product called "Awesome Notes" has a normal README and stays what it is. A list with fewer than
+     20 items is too small to be worth listing. A product README has a few links, mostly in prose and badges, so half
+     of the lines being linked items separates the two. A list written as paragraphs, bold lines or tables under one
+     heading per entry has no list items and fails the rule. The classifier of linked repositories (above) is the one
+     other path to `AWESOME_LIST`, and it passes the same rule. A list the collector reads and that fails the rule
+     stays ARTICLE.
+   - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
+     resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
+     §3). That is why every path to it passes the README rule. Other sources that see a GitHub repository have no
+     README at hand and keep their own type, so a repository a record wrongly calls ARTICLE still takes their type.
+   - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` (`CheckAwesomeLists`) reads the README of every
+     catalog resource at `github.com/<owner>/<repo>` that is not `AWESOME_LIST` yet and that the rule names: the
+     repository name starts with "awesome" or "best-of-", or a record of the resource carries the tag `awesome-list`
+     (at most 2000, most popular first). The SQL (`JdbcAwesomeListSuspects`) reads the tags from `source_record.extra`,
+     where the GitHub collectors put the repository's topics, all of them and in any case. The tags go with each
+     suspect to the reader, which applies the same rule. A list that passes gets the curated type `AWESOME_LIST` with a
+     `SET_FIELD` audit entry that holds the type before and after. A type an admin curated is never changed. A list
+     known only by its topic is found only when a record of it carries its topics: a source that saw the repository
+     without them gives the backfill nothing to go on until such a record comes in.
+     Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
+     is counted and read at the next run.
+   - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its
+     excerpt states `AWESOME_LIST` with "awesome list", "curated list of" or "a list of awesome". A mis-typed list
+     (LIBRARY, MCP_SERVER…) is fixed by the rule and the backfill, a new one by the collector.
 7. **Courses** (`course-scout`, every `H2_SCOUT_COURSES_INTERVAL`, 7 days; [0031](../guide/0031-guide-pipeline.md)).
    One Tavily search per learning platform (`helper2.scout.courses.platforms`, 10 platforms), restricted to its domain
    with `include_domains`, `search_depth basic`, published since the last complete pass (the last month on the first).
@@ -263,8 +302,10 @@ Two kinds of source need more care:
       that Extract answers as failed is not tried again.
     - **A model reads the page.** The reasoning model, thinking off ([0008](../foundation/0008-llm-integration.md)),
       prompt `prompts/sources/read-event.txt`: how many events the page is about, the first and last day, and the
-      words of the page that state them; kind, format and place, each with its own words. The page is untrusted data:
-      it is cut to 12,000 characters, it cannot close its block, and the prompt says to ignore instructions in it. The
+      words of the page that state them; kind, format and place, each with its own words. The title and the page are
+      untrusted data: the title is flattened, cut to 200 characters and escaped (`UntrustedText`), the page is cut to
+      12,000 characters and cannot close its block, and the prompt says to ignore instructions in both. The prompt
+      states the rules `EventQuoteGate` applies (point 27), so the model gives the days the page states. The
       prompt's version is a hash of its rendered text. One call per page, at most `H2_SCOUT_EVENT_READER_DAILY_CALLS`
       (40) a UTC day, inside the `llm-chat` circuit. When no model can be called (cap, circuit), the pass keeps what
       it read and stays open, so the next Scout run tries again.

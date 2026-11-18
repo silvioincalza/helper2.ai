@@ -26,7 +26,8 @@ at the same time. Prod runs 3 replicas ([0043](../operations/0043-runtime-topolo
    every 3 s while a row is `RUNNING`. Admin runs are not recorded in `scout_schedule`.
 2. **One run at a time, across all replicas.** `RunScout` runs through the port `RunLock`; the adapter
    `ScoutConfiguration.ClusterRunLock` uses `platform.ClusterLock` named `scout-run`. `ClusterLock` wraps ShedLock 7.10.1
-   (`JdbcTemplateLockProvider`, one row per lock in the PostgreSQL table `shedlock`, expiry computed with database
+   (`JdbcTemplateLockProvider`, one row per lock in the PostgreSQL table `shedlock`, which the public app cannot touch
+   ([0004](../foundation/0004-persistence-and-the-schema.md) §9), expiry computed with database
    time, `locked_by` = pod hostname). A task runs only while its replica holds the lock; otherwise it is skipped, never
    queued. If a run is in progress on any replica, a tick returns `BUSY` and the admin call gets 409 Conflict.
    - The due check, the run and the new end time all happen under `scout-run`. So replicas that tick in the same

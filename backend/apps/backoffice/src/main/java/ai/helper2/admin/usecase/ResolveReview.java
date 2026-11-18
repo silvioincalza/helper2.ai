@@ -2,6 +2,7 @@ package ai.helper2.admin.usecase;
 
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
@@ -11,6 +12,7 @@ import ai.helper2.scout.usecase.AcceptOutcome;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.scout.usecase.ListedResource;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -23,6 +25,7 @@ public class ResolveReview {
   private final IndexAcceptedCandidate indexCandidate;
   private final KnownTargetCandidates targetCandidates;
   private final ManageKnownTargets knownTargets;
+  private final CurateField curate;
 
   public ResolveReview(
       ReviewQueue queue,
@@ -30,7 +33,9 @@ public class ResolveReview {
       AcceptExampleDraft acceptDraft,
       IndexAcceptedCandidate indexCandidate,
       KnownTargetCandidates targetCandidates,
-      ManageKnownTargets knownTargets) {
+      ManageKnownTargets knownTargets,
+      CurateField curate) {
+    this.curate = curate;
     this.targetCandidates = targetCandidates;
     this.knownTargets = knownTargets;
     this.queue = queue;
@@ -75,7 +80,7 @@ public class ResolveReview {
             .find(id)
             .filter(i -> i.status() == ReviewQueue.Status.OPEN)
             .filter(i -> decision == ReviewQueue.Status.ACCEPTED);
-    Optional<ReviewQueue.Item> addition = accepted.filter(i -> addsOnAccept(i.kind()));
+    Optional<ReviewQueue.Item> addition = accepted.filter(ResolveReview::addsOnAccept);
     ListedResource listed = addition.map(item -> addAccepted(item, adminId)).orElse(null);
     ResolveReviewItem.Outcome outcome =
         resolve.resolve(id, decision, adminId, noteWith(note, listed), batch);
@@ -93,15 +98,22 @@ public class ResolveReview {
     return note == null || note.isBlank() ? already : note + " " + already;
   }
 
-  private static boolean addsOnAccept(ReviewQueue.Kind kind) {
-    return kind == ReviewQueue.Kind.EXAMPLE_CANDIDATE
-        || kind == ReviewQueue.Kind.RESOURCE_CANDIDATE
-        || kind == ReviewQueue.Kind.KNOWN_TARGET_CANDIDATE;
+  private static boolean addsOnAccept(ReviewQueue.Item item) {
+    return switch (item.kind()) {
+      case EXAMPLE_CANDIDATE, RESOURCE_CANDIDATE, KNOWN_TARGET_CANDIDATE -> true;
+      case COURSE_CANDIDATE -> structuredCourse(item);
+      default -> false;
+    };
+  }
+
+  private static boolean structuredCourse(ReviewQueue.Item item) {
+    return item.details() != null && item.details().strip().startsWith("{");
   }
 
   private @Nullable ListedResource addAccepted(ReviewQueue.Item item, String adminId) {
-    if (item.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE) {
-      return indexCandidate(item);
+    if (item.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE
+        || item.kind() == ReviewQueue.Kind.COURSE_CANDIDATE) {
+      return indexCandidate(item, adminId);
     }
     if (item.kind() == ReviewQueue.Kind.KNOWN_TARGET_CANDIDATE) {
       addKnownTarget(item, adminId);
@@ -111,14 +123,33 @@ public class ResolveReview {
     return null;
   }
 
-  private @Nullable ListedResource indexCandidate(ReviewQueue.Item item) {
+  private @Nullable ListedResource indexCandidate(ReviewQueue.Item item, String adminId) {
     AcceptOutcome outcome;
     try {
       outcome = indexCandidate.accept(item.details());
     } catch (InvalidCandidate e) {
       throw new ApiProblem(ProblemType.INVALID_REQUEST, "The candidate cannot be read.");
     }
+    if (outcome instanceof AcceptOutcome.Indexed indexed) {
+      applyConfirmed(indexed, adminId);
+      return null;
+    }
     return outcome instanceof AcceptOutcome.AlreadyListed listed ? listed.getResource() : null;
+  }
+
+  private void applyConfirmed(AcceptOutcome.Indexed indexed, String adminId) {
+    indexed
+        .getConfirmed()
+        .forEach((field, value) -> {
+          switch (field) {
+            case "description" ->
+                curate.setDescription(
+                    indexed.getId(), value, indexed.getDescriptionByAi(), adminId);
+            case "publishedAt" ->
+                curate.setPublished(indexed.getId(), LocalDate.parse(value), adminId);
+            default -> curate.set(indexed.getId(), field, value, adminId);
+          }
+        });
   }
 
   private void addKnownTarget(ReviewQueue.Item item, String adminId) {

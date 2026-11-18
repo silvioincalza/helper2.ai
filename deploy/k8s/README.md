@@ -179,6 +179,7 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 | Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
 | Replicas | `app.replicas` (public app, default 3), `backoffice.replicas` (default 1), `web.replicas` (default 2) |
 | Scout | `backoffice.scoutEnabled`, `backoffice.scoutCron`, `backoffice.scoutMaxEnrichments` |
+| Review research | `backoffice.researchEnabled` (default true, false on prod until the #588 eval passes) |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |
 
@@ -192,7 +193,7 @@ The web pods run `web.replicas` replicas, the public app `app.replicas` and the 
 `backoffice.replicas`, each replaced one at a time on upgrade, with a PodDisruptionBudget when there is more than one replica. Every scheduled job runs
 in one of the two apps: the Scout, the collectors, the embedding indexer and the catalog jobs in the back
 office, the guide, account and search retention in the public app. Each runs on one replica at a time (lock
-table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. What is still per replica:
+table `shedlock` in Postgres for the back office, `public_app_lock` for the public app); rate limits and sign-in sessions are in Redis. What is still per replica:
 [F1.10](https://github.com/silvioincalza/helper2.ai/issues/29).
 
 **Never `helm uninstall`:** it deletes the Postgres and Redis StatefulSets and the Secret. Their PVCs

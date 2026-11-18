@@ -9,6 +9,7 @@ import ai.helper2.guide.ClientQuota;
 import ai.helper2.guide.EvidenceGate;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
+import ai.helper2.guide.GuideJudge;
 import ai.helper2.guide.GuideModel;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.guide.GuideValidator;
@@ -31,6 +32,7 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.shared.ResourceId;
@@ -159,7 +161,9 @@ class GuideConfiguration {
       LlmProperties llmProperties,
       BuildInfoProperties build,
       GuideProperties settings,
-      Resources resources) {
+      Resources resources,
+      CallCounter budgetCounter,
+      ShadowLibraries shadowLibraries) {
     boolean nativeSchema = llmProperties.nativeSchema();
     int chooseMaxTokens = settings.chooseMaxTokens();
     int maxCandidates = settings.maxCandidates();
@@ -235,7 +239,58 @@ class GuideConfiguration {
             build.version()),
         settings.stopsAQuestionNobodyWaitsFor(),
         quoteRecords(resources),
-        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()));
+        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()),
+        guideModel == null
+            ? GuideJudge.NONE
+            : guideJudge(
+                model,
+                settings.judge(),
+                llm.reasoningModel(),
+                clock,
+                budgetCounter,
+                metrics,
+                resilience,
+                meters),
+        shadowLibraries);
+  }
+
+  static GuideJudge guideJudge(
+      ChatModel model,
+      GuideProperties.Judge judge,
+      String reasoningModel,
+      Clock clock,
+      CallCounter counter,
+      ModelCallMetrics metrics,
+      Resilience resilience,
+      MeterRegistry meters) {
+    if (!judge.on()) {
+      log.info("AI guide judge off: no judge model (H2_GUIDE_JUDGE_MODEL) or no daily calls");
+      return GuideJudge.NONE;
+    }
+    if (judge.model().strip().equals(reasoningModel)) {
+      log.error(
+          "AI guide judge off: H2_GUIDE_JUDGE_MODEL is the reasoning model {}; a model does not judge"
+              + " its own answers",
+          reasoningModel);
+      return GuideJudge.NONE;
+    }
+    log.info(
+        "AI guide judge on: model={}, {} calls a day, at most {} answers at a time, after each"
+            + " answer, never changing it",
+        judge.model(),
+        judge.dailyCalls(),
+        judge.concurrent());
+    return new SpringAiGuideJudge(
+        model,
+        judge.model(),
+        new DailyBudget(judge.dailyCalls(), clock, "guide-judge", counter),
+        metrics,
+        resilience,
+        meters,
+        new JudgeBulkhead(
+            judge.concurrent(),
+            task -> Thread.ofVirtual().name("guide-judge").start(task),
+            meters.counter(SpringAiGuideJudge.METER + ".dropped")::increment));
   }
 
   static QuoteRecords quoteRecords(Resources resources) {

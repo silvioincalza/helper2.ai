@@ -8,7 +8,8 @@ import { ScrollBox } from '@/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
-import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
+import { AdminEmpty, AdminHead } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 const PAGE_SIZE = 20;
 const COMMAND = 'helper2 audit';
@@ -37,7 +38,7 @@ export default function AuditPage() {
         headingRef={heading}
       />
       {entries.loading ? (
-        <AdminLoading command={COMMAND} />
+        <TableSkeleton />
       ) : entries.error !== undefined ? (
         <StatePanel
           tone="error"

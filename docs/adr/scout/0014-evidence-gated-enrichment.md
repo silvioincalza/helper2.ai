@@ -41,14 +41,15 @@ place to say that.
 3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
    apart from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192),
-   prompt `prompts/scout/enrich.txt`, label `enrich-v10` (stored with every run). A test pins the rendered prompt to
+   prompt `prompts/scout/enrich.txt`, label `enrich-v12` (stored with every run). A test pins the rendered prompt to
    its label, so a new wording needs a new label. For a relationship the model also states what its target is
    (`targetKind`, [0019](0019-known-targets-vendors-and-services.md) §6): a judgement that verifies nothing. The user message has the
    resource's type next to its title (`Type: NEWS`); the type comes from the catalog, never from the model. Under it
    are the fields and the relationship kinds that type keeps (`FieldsByType.fieldsFor`, `kindsFor`): writing gets
    three fields and `ABOUT`; a course and an event get every field and every kind; every other type gets every field
    and no `ABOUT`; only `OTHER` is asked for a `type`. The prompt asks for the whole sentence or line as a quote (its
-   examples are all 20 characters or more), says a README backs fields and relationships but never a summary sentence,
+   examples are all 20 characters or more), says the opening of a README backs fields, relationships and summary sentences and the rest of a README never a
+   summary sentence,
    and says a licence states no price. It also says a short description states few facts, that an answer with only
    audience and tech level is a good one, and that the kind of thing a resource is (a package) is not a fact about its
    licence, price, platform or use case. Material goes in `<material evidenceId=… kind=…>` tags through
@@ -176,7 +177,8 @@ place to say that.
    known vendor (point 6): `VERIFIED`, `target_kind = 'VENDOR'`, item `SUPERSEDED` with the note "The target is a
    known vendor"; the title stays as the model wrote it until the resource's next run.
 10. **When it climbs.** After the first run, inside the same `EnrichResource` attempt, when the run is `PARTIAL` or
-    `REJECTED`, or a target fact of the type is still missing (`FieldTargets.forType`, pure code):
+    `REJECTED`, when it has no summary sentence and the resource has a README or model card to read, or when a target
+    fact of the type is still missing (`FieldTargets.forType`, pure code):
     - `PRODUCT`, `AGENT`: pricing, platforms, use case;
     - `MCP_SERVER`, `SKILL`: licence, open source, platforms, use case;
     - `LIBRARY`: licence, open source, platforms (no use case, point 6);
@@ -221,8 +223,14 @@ place to say that.
       to another host is refused and counts as a failure. Reading a README needs `H2_GITHUB_TOKEN` (without it GitHub
       allows 60 calls an hour); a model card needs no token.
     - The licence the GitHub API or the card states is a source fact, so a README that says something else is
-      `CONFLICTING`. README text may support fields and relationships, never summary claims: a claim is the model's own
-      sentence, and it could cite any true excerpt.
+      `CONFLICTING`. The README is read in two parts (`UntrustedPageText.split`):
+      - the opening (`kind="readme-opening"`): the first prose of the README, up to 600 characters, where its authors
+        say what the resource is. It is section 0, or the first of the first three sections headed About, Overview,
+        Introduction, What is or Description; lines that are headings, code, tables, blockquotes (tips, notes, sponsored lines), badges or under 4 words are not
+        prose. It may support fields, relationships and summary claims, like the record's own description;
+      - the rest (`kind="readme"`), windowed to 4000 characters: fields and relationships, never summary claims. A
+        claim is the model's own sentence, and in a long README it could cite any true excerpt. The opening is cut out
+        of the rest, so the model cannot cite the same sentence from the part that may not support it.
 14. **Which pages, chosen by code** (`PageTargets`, `OfficialPages`, `PageScope`, `OfficialLinks`), for a record that is
     a product's own page (`discovery-<category>` and `curated` records; not a registry, a repository or an article).
     The model never picks a URL or a query.
@@ -312,13 +320,14 @@ place to say that.
     - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its
       only issues are values the quote does not state; never when the run has a `CONFLICTING` field
       (`closeItemsWithNothingToDecide`; counter result `items_closed`);
-    - a resource goes back to the model only when it still misses a target fact (`FieldTargets`), has more to read (a
-      README or model card, or its own pages) and its last run used an older prompt label. It is set back to `NOT_RUN`:
+    - a resource goes back to the model only when its last run used an older prompt label and it still misses a
+      target fact (`FieldTargets`) with more to read (a README or model card, or its own pages), or it has no summary
+      sentence and a README or model card to read. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps. `resource.enrichment_rerun_requested_at`
       makes the runs judged before the request not count for the UNCHANGED skip; the next run after it does again.
 
     It runs once after the first start where the Scout is scheduled, under the Scout's run lock (`scout-run`), so it
-    never changes answers a run is writing; the marker `recheck-enrichment-enrich-v7` in `job_marker` is written when it
+    never changes answers a run is writing; the marker `recheck-enrichment-enrich-v12` in `job_marker` is written when it
     is done. A start while a run holds the lock, or a re-check that fails half way, leaves no marker: the next start
     tries again. It also runs whenever an admin presses "Re-check stored answers"
     (`POST /api/v1/admin/enrichment-recheck`, audit action `RECHECK_ENRICHMENT`), under the same lock: while a Scout
@@ -408,6 +417,12 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - **A `subject_id` column or a mention table for writing** — one subject only, or the same data as a relationship with
   its own retention, API and review flow.
 - **Create a resource for an unknown ABOUT target** — a resource needs its own URL, and the article gives only a name.
+- **Ask for the JSON through the provider's native schema** (`response_format` json_schema, Spring AI `outputSchema`,
+  as the guide's choose step does) instead of the format text in the user message — measured by
+  `EnrichmentNativeSchemaLiveTest` on `nvidia/Nemotron-3.5-Super-VL`, 10 resources of 10 types, 3 rounds: both modes
+  gave 0 invalid answers in 30 calls; the schema gave 96 accepted items against 126 with the format text (−24%), in
+  2.8 s against 3.3 s a call. The format text never fails on this model, so the schema only costs facts. The test
+  stays: it is run again before a change of model or prompt.
 
 ## Consequences
 - Nothing the model says is shown as verified without a quoted excerpt from retrieved text. A page never mixes AI
@@ -442,7 +457,8 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - Strict enrichment rules reject some correct values. A value dropped from a `PARTIAL` run is not shown to a person: it waits for the next run of that resource.
 - A relationship target two catalog resources share by title waits for a person, and its review item says only that the target is not a known resource.
 - The oldest-waiting gauge is set when the Scout reads a batch, not at each scrape.
-- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim.
+- The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. Only the opening of a README supports a summary claim. A README whose first prose is a heading, badges or code has no
+  opening, so a resource whose only text is such a README still gets no summary.
 
 ### STRIDE
 | Threat | Risk | Control |

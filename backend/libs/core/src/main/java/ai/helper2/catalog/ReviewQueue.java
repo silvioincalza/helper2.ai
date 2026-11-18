@@ -20,6 +20,7 @@ public interface ReviewQueue {
 
     public boolean detailsAreJson() {
       return this == RESOURCE_CANDIDATE
+          || this == COURSE_CANDIDATE
           || this == EXAMPLE_CANDIDATE
           || this == KNOWN_TARGET_CANDIDATE;
     }
@@ -76,6 +77,14 @@ public interface ReviewQueue {
   Page list(Status status, Kind kind, int page, int size);
 
   Page list(Status status, Kind kind, String category, int page, int size);
+
+  Page list(Status status, Kind kind, String category, Only only, int page, int size);
+
+  record Only(java.util.Set<UUID> ids, boolean except) {
+    public Only {
+      ids = java.util.Set.copyOf(ids);
+    }
+  }
 
   Map<Kind, Long> openCountsByKind();
 

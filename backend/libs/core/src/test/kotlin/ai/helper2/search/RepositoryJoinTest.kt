@@ -68,9 +68,9 @@ class RepositoryJoinTest {
 
   @Test
   fun `an unscoped package whose name does not hold the repository's name does not join`() {
-    assertNull(RepositoryJoin.of(pypi("openai", "https://github.com/openai/openai-python")))
-    assertNull(RepositoryJoin.of(pypi("torch", "https://github.com/pytorch/pytorch")))
-    assertNull(RepositoryJoin.of(pypi("mcp", "https://github.com/modelcontextprotocol/python-sdk")))
+    assertNull(RepositoryJoin.of(pypi("agentkit", "https://github.com/acme/agentkit-python")))
+    assertNull(RepositoryJoin.of(npm("agentkit", "https://github.com/acme/agentkit-node")))
+    assertNull(RepositoryJoin.byRule(pypi("openai", "https://github.com/openai/openai-python")))
   }
 
   @Test
@@ -208,6 +208,39 @@ class RepositoryJoinTest {
     assertNull(
       RepositoryJoin.of(hit("github", "https://github.com/a/b", repo = "https://github.com/a/b"))
     )
+  }
+
+  @Test
+  fun `an official package without a scope joins its curated repository`() {
+    assertJoins(pypi("openai", "https://github.com/openai/openai-python"))
+    assertJoins(pypi("torch", "https://github.com/pytorch/pytorch"))
+    assertJoins(pypi("mcp", "https://github.com/modelcontextprotocol/python-sdk"))
+    assertJoins(npm("openai", "https://github.com/openai/openai-node"))
+  }
+
+  @Test
+  fun `a curated package joins its repository whatever it states, and its name is read as PyPI reads it`() {
+    assertEquals(
+      canonical("https://github.com/openai/openai-python"),
+      RepositoryJoin.of(pypi("OpenAI", "https://github.com/someone/openai-python")),
+    )
+    assertEquals(
+      canonical("https://github.com/googleapis/python-genai"),
+      RepositoryJoin.of(pypi("google_genai", "https://github.com/googleapis/python-genai")),
+    )
+  }
+
+  @Test
+  fun `a fork published under another name still does not join the official repository`() {
+    assertNull(RepositoryJoin.of(pypi("openai-fork", "https://github.com/openai/openai-python")))
+  }
+
+  @Test
+  fun `every curated join is one the rule alone would refuse`() {
+    RepositoryJoin.CURATED.forEach { (page, repository) ->
+      val hit = hit("curated", "https://$page", repo = repository.value)
+      assertNull(RepositoryJoin.byRule(hit), "$page already joins by the rule, drop it")
+    }
   }
 
   private fun assertJoins(hit: SourceHit) = assertEquals(hit.repositoryUrl, RepositoryJoin.of(hit))

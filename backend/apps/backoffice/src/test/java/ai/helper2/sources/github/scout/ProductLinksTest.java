@@ -3,6 +3,7 @@ package ai.helper2.sources.github.scout;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.scout.SeedDiscoveryHosts;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.sources.github.scout.ProductLinks.Skip;
 import ai.helper2.sources.liveweb.scout.DiscoveryPages;
 import java.util.List;
@@ -14,7 +15,8 @@ class ProductLinksTest {
 
   private static final DiscoveryPages PAGES = new DiscoveryPages(SeedDiscoveryHosts.LISTS);
 
-  final ProductLinks links = new ProductLinks(List.of("youtube.com", "producthunt.com"));
+  final ProductLinks links =
+      new ProductLinks(List.of("youtube.com", "producthunt.com"), ShadowLibraries.of("z-lib"));
 
   @ParameterizedTest
   @CsvSource({
@@ -66,6 +68,8 @@ class ProductLinksTest {
     "https://raw.githubusercontent.com/acme/x/main/a.md, GITHUB",
     "https://www.youtube.com/watch?v=1, EXCLUDED_DOMAIN",
     "https://producthunt.com/posts/acme, EXCLUDED_DOMAIN",
+    "https://z-lib.fm/, SHADOW_LIBRARY",
+    "https://de.z-lib.fm/book/1, SHADOW_LIBRARY",
     "https://acme.ai/blog/launch, NOT_A_PRODUCT_PAGE",
     "https://docs.acme.ai/start, NOT_A_PRODUCT_PAGE",
     "https://acme.ai/docs, NOT_A_PRODUCT_PAGE",

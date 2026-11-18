@@ -352,7 +352,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .h2-app *,
+  .h2-app *:not(.h2-skel),
   .h2-app *::before,
   .h2-app *::after {
     animation: none !important;
