@@ -1,5 +1,6 @@
 package ai.helper2.sources.config;
 
+import ai.helper2.platform.llm.ModelTier;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
@@ -71,7 +72,8 @@ public final class CollectorProperties {
       @NotNull List<String> queries,
       @Positive int maxPages,
       @PositiveOrZero int readerDailyCalls,
-      @Positive int readMaxTokens)
+      @Positive int readMaxTokens,
+      @NotNull ModelTier readModel)
       implements Scheduled {
 
     public LiveWebEvents {

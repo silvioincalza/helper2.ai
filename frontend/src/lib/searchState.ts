@@ -269,3 +269,5 @@ export function askToken(state: unknown): number | undefined {
   const at = (state as Record<string, unknown>).askedAt;
   return typeof at === 'number' && Number.isFinite(at) ? at : undefined;
 }
+
+export const rowAnchor = (id: string) => `result-${id}`;

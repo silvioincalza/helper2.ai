@@ -4,7 +4,7 @@ import {
   claimReloadedPage,
   followNavigation,
   loadChunk,
-} from '@/lib/staleChunk';
+} from './staleChunk';
 
 type Listener = (state: {
   navigation: { location?: { pathname: string; search: string; hash: string } };

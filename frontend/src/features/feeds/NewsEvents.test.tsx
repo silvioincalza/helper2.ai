@@ -6,8 +6,8 @@ import { makeCard, makeRecent } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderApp } from '@/test/render';
 import { topHosts } from './NewsPage';
-import { byMonth } from '../events/EventsPage';
-import type { EventRow, NewsRow } from '@/features/home/homeFeeds';
+import { byMonth } from './EventsPage';
+import type { EventRow, NewsRow } from './feeds';
 
 const day = (value: string) => ({
   value,

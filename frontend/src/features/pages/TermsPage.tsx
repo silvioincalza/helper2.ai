@@ -2,9 +2,9 @@ import { useTranslation } from 'react-i18next';
 import '@/i18n/legal';
 import { Link } from 'react-router';
 import { useTitle } from '@/hooks/useTitle';
-import { TextPage } from '@/features/pages/TextPage';
+import { TextPage } from './TextPage';
 import { usePolicyText } from '@/hooks/usePolicy';
-import { PRIVACY_CONTACT } from '@/features/pages/PrivacyPage';
+import { PRIVACY_CONTACT } from './PrivacyPage';
 
 export default function TermsPage() {
   const { t } = useTranslation();

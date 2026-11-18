@@ -4,7 +4,7 @@ import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
-import { RUN_POLL_MS } from '@/admin/ScoutRunsPage';
+import { RUN_POLL_MS } from './ScoutRunsPage';
 import { SIGN_IN_RETURN_KEY } from '@/lib/signInReturn';
 import { getCommandLine } from '@/test/queries';
 

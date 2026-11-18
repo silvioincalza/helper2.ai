@@ -698,6 +698,7 @@ helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D
 helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
 helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
 helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen

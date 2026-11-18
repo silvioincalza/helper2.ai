@@ -22,7 +22,13 @@ Without a configured model the application must still work.
    off through `chat_template_kwargs`. Both are public endpoints: Nebius shows their region as global and
    can move them at any time (Legal quick guide, read 2026-11-18). Zero Data Retention is off, so Nebius keeps
    inputs and outputs in Finland for up to one year. `LlmSettings` holds the fallbacks:
-   an empty fast model means the reasoning model does these calls too. NVIDIA-only is checked at startup
+   an empty fast model means the reasoning model does these calls too. Each feature names a tier, not a model id
+   (`ModelTier`: FAST or REASONING; `LlmSettings.model(tier)`). Bulk and back-office work runs on FAST by default:
+   Scout enrichment and its gap rounds (`H2_SCOUT_ENRICHMENT_MODEL`), the event page reader
+   (`H2_SCOUT_EVENT_READER_MODEL`) and review research (`H2_RESEARCH_MODEL`). Lightning costs about a fifth of
+   Super VL per token ($0.06 / $0.24 against $0.30 / $0.90 per MTok), and these features make most of the calls. Each
+   variable moves one feature back to REASONING. REASONING stays on the steps that decide an answer: the guide's
+   choose and verify steps. NVIDIA-only is checked at startup
    (`NvidiaOnly`): the application does not start when a chat model id sent through the OpenAI-compatible client
    (`spring.ai.openai.chat.model`, `helper2.llm.fast-model`, `helper2.llm.reasoning-model`) or the embedding model id
    ([0024](../search/0024-vector-search.md)) does not start with `nvidia/`; the error names the property.
@@ -127,6 +133,8 @@ Without a configured model the application must still work.
 - Several providers at once with failover — more setup and secrets for a demo; the degraded mode already covers an outage.
 - Prompts in Java strings — wording changes would need code review of escaped text; a strict template catches drift.
 - One global budget for all features — a busy Scout or a flood of foreign-language searches could spend the guide's calls.
+- One model for everything — simple, but bulk work (enrichment, research, event pages) pays the reasoning model's
+  price for extraction that a small model can do. A tier per feature keeps one switch per feature.
 - Spring AI's `PromptTemplate` — its `{name}` syntax collides with the JSON examples in the prompts.
 
 ## Consequences
@@ -139,10 +147,14 @@ Without a configured model the application must still work.
   trial call succeeds.
 - A model id of another vendor stops the deploy at startup instead of reaching that vendor.
 - Thinking off makes calls faster and repeatable.
+- Bulk work on the fast model can be less accurate. The research eval (`docs/eval/README.md`, FAST against REASONING)
+  and the enrichment checks decide if a feature moves back; moving back is one variable, no code change.
 - One provider keeps setup and image small. A second provider needs only a dependency and a profile; the ports stay the same.
 
 ## Diagrams
 [flow](../../diagrams/flow-0008-llm-integration.svg) · [sequence](../../diagrams/sequence-0008-llm-integration.svg)
+
+Model tiers change no flow: a call goes the same way, only the model id differs. The diagrams stay as they are.
 
 ## Backlog
 - Decides: [F1.7](https://github.com/silvioincalza/helper2.ai/issues/26).

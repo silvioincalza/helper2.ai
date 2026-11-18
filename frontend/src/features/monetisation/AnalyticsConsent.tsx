@@ -11,7 +11,7 @@ import {
   watchConsent,
   type ConsentDecision,
 } from '@/lib/googleConsent';
-import '@/features/monetisation/consent.css';
+import './consent.css';
 
 const OPEN_EVENT = 'h2:consent-open';
 

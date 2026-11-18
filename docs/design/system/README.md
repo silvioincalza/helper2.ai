@@ -2,7 +2,7 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New in the catalog and Coming up, resource pages, saved resources, sign-in, the sources page and admin. From the November 2026 redesign ([ADR 0040](../../adr/frontend/0040-design-system.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-[`tokens.json`](tokens.json) is the one source of the tokens. `frontend/src/styles/tokens.css` writes them as CSS variables under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`), and `frontend/src/lib/breakpoints.ts` the breakpoints. A test (`frontend/src/styles/tokens.test.ts`) fails when they differ, when a colour is written by its hex value anywhere else, or when a media query uses a width that is not a breakpoint. In the public CSS it also fails on a font size, a `z-index` or a corner radius written as a number, and on `rgba()`. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`features/pages/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
+[`tokens.json`](tokens.json) is the one source of the tokens. `frontend/src/styles/tokens.css` writes them as CSS variables under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`), and `frontend/src/lib/breakpoints.ts` the breakpoints. A test (`frontend/src/styles/tokens.test.ts`) fails when they differ, when a colour is written by its hex value anywhere else, or when a media query uses a width that is not a breakpoint. In the public CSS it also fails on a font size, a `z-index` or a corner radius written as a number, and on `rgba()`. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`ui/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
 
 ## Principles
 
@@ -244,9 +244,9 @@ The shared parts are React components in `frontend/src/ui/` (ADR 0040). Where th
 
 | Design system | Code today |
 |---|---|
-| HomeLists (New in the catalog, Coming up) | `TermList`, used by `HomeLists` (tables) and `HomeTabs` (phone), fed by `homeFeeds.ts` (`features/home/`) |
+| HomeLists (New in the catalog, Coming up) | `TermList`, used by `HomeLists` (tables) and `HomeTabs` (phone), fed by `feeds.ts` and `feedCells.tsx` (`features/feeds/`) |
 | Radar | `HomeRadar` (`features/home/`) |
-| ListPages | `TermCommand` (from `TermList`), the `h2-table`, `ScrollBox` and `ui/term.css`; `AdminHead` in the back office |
+| ListPages | `TermCommand` and `ListState` (`ui/`), the `h2-table`, `ScrollBox` and `ui/term.css`; `AdminHead` in the back office |
 | PickCard | `PicksBar` (the list of picks, each with its reason) and the picked rows: the reason and the quote are in the row, in search order |
 | ResultRow | `ResultRow` (`features/search/`): the title's link covers the row |
 | FiltersPanel | `FiltersPanel` (in place, or a drawer up to 720px) around `FilterFacets` |
@@ -256,7 +256,7 @@ The shared parts are React components in `frontend/src/ui/` (ADR 0040). Where th
 | Button, Chip, Field | `.btn` with `.btn-primary`, `.btn-ink`, `.btn-ghost`, `.btn-on-term`, `.btn-danger`, `.btn-danger-fill`, `.btn-icon`; `.btn-text`; `.chip` in `.chips`; the plain form elements. One definition each, in `styles/app.css`, on every page |
 | AiLabel | `AiLabel` (`ui/`), styled once by `.ai-label` (`styles/app.css`) |
 | Badges | `.badge` (`styles/app.css`), `StatusPill` (`ui/`) |
-| Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `features/pages/text.css` |
+| Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `ui/text.css` |
 
 New components are added with the page that first needs them.
 

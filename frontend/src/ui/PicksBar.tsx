@@ -1,8 +1,8 @@
 import { useId, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import './ui.css';
-import { AiLabel } from '@/ui/AiLabel';
-import { Skeleton, SkeletonRows } from '@/ui/Skeleton';
+import { AiLabel } from './AiLabel';
+import { Skeleton, SkeletonRows } from './Skeleton';
 
 export interface ModelActivity {
   phase: 'reasoning' | 'writing';

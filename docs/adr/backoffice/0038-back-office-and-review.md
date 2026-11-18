@@ -535,7 +535,7 @@ A curated field:
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
 - The public JavaScript does not carry the back office: its pages, its API calls (`api/admin.ts`) and its copy
   (`en.admin.json`) are only in the admin web app, and the public app has no admin route at all.
-  `api/adminBundle.test.ts` keeps the shared client and the public translations free of them. The back office refuses
+  `adminBundle.test.ts` keeps the shared client and the public translations free of them. The back office refuses
   every admin call without ADMIN anyway.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.

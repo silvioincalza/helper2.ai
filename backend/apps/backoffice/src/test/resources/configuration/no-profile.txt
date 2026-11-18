@@ -590,7 +590,7 @@ helper2.research.daily-page-reads = ${H2_RESEARCH_DAILY_PAGE_READS:300}  =>  300
 helper2.research.enabled = ${H2_RESEARCH_ENABLED:true}  =>  true
 helper2.research.max-streams = ${H2_RESEARCH_MAX_STREAMS:8}  =>  8
 helper2.research.max-tokens = ${H2_RESEARCH_MAX_TOKENS:4096}  =>  4096
-helper2.research.model = ${H2_RESEARCH_MODEL:REASONING}  =>  REASONING
+helper2.research.model = ${H2_RESEARCH_MODEL:FAST}  =>  FAST
 helper2.research.tick = ${H2_RESEARCH_TICK:PT2S}  =>  PT2S
 helper2.retention.admin-audit = ${H2_RETENTION_ADMIN_AUDIT:P730D}  =>  P730D
 helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
@@ -627,6 +627,7 @@ helper2.scout.discovery.min-score = 0.4
 helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
 helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
 helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
+helper2.scout.enrichment-model = ${H2_SCOUT_ENRICHMENT_MODEL:FAST}  =>  FAST
 helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}  =>  20
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
@@ -681,6 +682,7 @@ helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D
 helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
 helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
 helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen

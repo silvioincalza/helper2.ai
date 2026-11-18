@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ANY_TEXT, templatesIn } from '../test/templates';
+import { ANY_TEXT, templatesIn } from '@/test/templates';
 
 const WRITTEN_BY_THE_BACKEND = ['h2-prerender'];
 

@@ -2,6 +2,7 @@ package ai.helper2.scout.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.platform.llm.ModelTier;
 import ai.helper2.testing.ConfigBinding;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ class ScoutPropertiesBindingTest {
                   500,
                   400,
                   8192,
+                  ModelTier.FAST,
                   new ScoutProperties.Evidence(20),
                   new ScoutProperties.KnownTargets(5, 25)));
       assertThat(c.getBean(ScoutRetentionProperties.class))
@@ -59,6 +61,7 @@ class ScoutPropertiesBindingTest {
             "H2_SCOUT_CRON=0 30 4 * * *",
             "H2_SCOUT_MAX_ENRICHMENTS=5",
             "H2_NEBIUS_ENRICH_MAX_TOKENS=4096",
+            "H2_SCOUT_ENRICHMENT_MODEL=REASONING",
             "H2_SCOUT_PAGE_READER_DAILY_CREDITS=7",
             "H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES=8",
             "H2_SCOUT_KNOWN_TARGETS_PER_DAY=0",
@@ -71,6 +74,7 @@ class ScoutPropertiesBindingTest {
           assertThat(scout.cron()).isEqualTo("0 30 4 * * *");
           assertThat(scout.maxEnrichmentsPerRun()).isEqualTo(5);
           assertThat(scout.enrichMaxTokens()).isEqualTo(4096);
+          assertThat(scout.enrichmentModel()).isEqualTo(ModelTier.REASONING);
           assertThat(c.getBean(ScoutRetentionProperties.class).scoutRuns())
               .isEqualTo(Duration.ofDays(30));
         });

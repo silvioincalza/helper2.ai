@@ -1,14 +1,9 @@
 import { above } from '@/lib/breakpoints';
 import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  sectionAnchor,
-  TextSections,
-  useTextSections,
-  type TextValues,
-} from '@/features/pages/TextSections';
+import { sectionAnchor, TextSections, useTextSections, type TextValues } from './TextSections';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import '@/features/pages/text.css';
+import '@/ui/text.css';
 
 const WIDE = above('split');
 

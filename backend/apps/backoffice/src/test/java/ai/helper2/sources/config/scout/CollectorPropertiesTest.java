@@ -2,6 +2,7 @@ package ai.helper2.sources.config.scout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.platform.llm.ModelTier;
 import ai.helper2.sources.config.CollectorProperties;
 import ai.helper2.testing.ConfigBinding;
 import java.time.Duration;
@@ -19,6 +20,7 @@ class CollectorPropertiesTest {
   @EnableConfigurationProperties({
     CollectorProperties.HfTrending.class,
     CollectorProperties.LiveWebScout.class,
+    CollectorProperties.LiveWebEvents.class,
     CollectorProperties.Courses.class,
     CollectorProperties.ScoutCredits.class,
     CollectorProperties.Discovery.class,
@@ -31,6 +33,18 @@ class CollectorPropertiesTest {
   static class Binding {}
 
   final ApplicationContextRunner context = ConfigBinding.of(Binding.class);
+
+  @Test
+  void theEventReaderRunsOnTheFastModelUnlessTold() {
+    context.run(c ->
+        assertThat(c.getBean(CollectorProperties.LiveWebEvents.class).readModel())
+            .isEqualTo(ModelTier.FAST));
+    context
+        .withSystemProperties("H2_SCOUT_EVENT_READER_MODEL=REASONING")
+        .run(c ->
+            assertThat(c.getBean(CollectorProperties.LiveWebEvents.class).readModel())
+                .isEqualTo(ModelTier.REASONING));
+  }
 
   @Test
   void theYamlDefaultsBind() {

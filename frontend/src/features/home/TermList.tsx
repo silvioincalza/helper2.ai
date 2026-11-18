@@ -1,21 +1,14 @@
 import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import type { Feed } from './homeFeeds';
-import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
+import type { Feed } from '@/features/feeds/feeds';
+import type { TermCells } from '@/features/feeds/feedCells';
+import { ShowAll, useFirstRows, type ListId } from './listParts';
+import { FIRST_ROWS, ListState } from '@/ui/ListState';
+import { TermCommand } from '@/ui/TermCommand';
 import { tickerWindow, useTicker } from './ticker';
 import { OriginLabel } from '@/ui/Badges';
 import { AI_ORIGIN, aiMark } from '@/lib/aiMark';
-import { useFromHere } from '@/features/search/fromResults';
-
-export interface TermCells {
-  when: ReactNode;
-  type: string;
-  title: string;
-  href: string;
-  where: string;
-  note?: string;
-  ai?: boolean;
-}
+import { useFromHere } from '@/lib/fromResults';
 
 function Ai({ ai, children }: { ai?: boolean | undefined; children: ReactNode }) {
   return ai ? <span {...aiMark()}>{children}</span> : <>{children}</>;
@@ -151,18 +144,6 @@ function TermHead({
       </h2>
       <TermCommand command={command} total={total} />
     </div>
-  );
-}
-
-export function TermCommand({ command, total }: { command: string; total: number | null }) {
-  return (
-    <p className="h2-termlist__cmd">
-      <span aria-hidden="true">
-        <span className="h2-prompt">$</span> {command}
-        {total !== null && ' · '}
-      </span>
-      {total !== null && <span className="h2-termlist__total">{total}</span>}
-    </p>
   );
 }
 

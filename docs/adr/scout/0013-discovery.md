@@ -339,8 +339,8 @@ No new table for deep search, no new dependency.
   `discovery_host` and its seed rows, `candidate_decision`); `catalog/internal/JdbcReviewQueue.java`
   (`proposeCandidate`, `candidateKnown`, `listedAs`), `JdbcReviewDecisions.java`; `R__curated_seed.sql` — the directories, linked, not copied;
   `platform/AuditTrail.java` (the two host actions).
-- `frontend/src/features/sources/Sources.tsx` (family row groups), `DiscoveryCategories.tsx` (the notices),
-  `frontend/src/features/home/radarLayout.ts` (`placeDot`), `radarRotation.ts` (groups), `HomeRadar.tsx`,
+- `frontend/src/features/sources/Sources.tsx` (family row groups), `frontend/src/ui/DiscoveryCategories.tsx` (the notices),
+  `frontend/src/features/home/radarLayout.ts` (`placeDot`), `frontend/src/lib/radarRotation.ts` (groups), `HomeRadar.tsx`,
   `frontend/src/admin/ReviewQueuePage.tsx`, `ScoutRunsPage.tsx`, `DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`;
   `frontend/src/i18n/locales/en.legal.json` (the Privacy and Terms pages).
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2DiscoveryStale`.

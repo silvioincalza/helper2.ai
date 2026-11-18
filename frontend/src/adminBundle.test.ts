@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import client from './client.ts?raw';
+import client from '@/api/client.ts?raw';
 import en from '@/i18n/locales/en.json';
 import enLegal from '@/i18n/locales/en.legal.json';
 
@@ -21,7 +21,7 @@ describe('the public bundle', () => {
 
 describe('the public routes', () => {
   it('have no back office route', async () => {
-    const { routes } = await import('@/routes');
+    const { routes } = await import('./routes');
     const paths = JSON.stringify(routes, (key, value) => (key === 'element' ? undefined : value));
     expect(paths).not.toMatch(/"path":"admin/);
   });

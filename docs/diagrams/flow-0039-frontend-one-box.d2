@@ -3,11 +3,11 @@
 # (always a search), Shift+Enter (always asks the guide), Enter in an empty box, and what each choice writes to the URL. The box itself: line breaks become
 # spaces, it grows up to six lines, Enter during IME composition is left alone, × or Esc empties it (results stay),
 # "/" from anywhere puts the cursor in it.
-# Every writer goes through the URL: HomePage (frontend/src/features/search/HomeOrResultsPage.tsx) renders from it
+# Every writer goes through the URL: HomePage (frontend/src/shell/HomeOrResultsPage.tsx) renders from it
 # (useSearchParams + parseSearchParams), so live search, Search and Ask only change the URL.
-# Source of truth: frontend/src/features/search/OneBox.tsx, frontend/src/features/search/HomeOrResultsPage.tsx,
+# Source of truth: frontend/src/features/search/OneBox.tsx, frontend/src/shell/HomeOrResultsPage.tsx,
 #   frontend/src/lib/searchState.ts, frontend/src/features/search/Results.tsx, frontend/src/hooks/useApi.ts,
-#   frontend/src/hooks/useGuideStream.ts.
+#   frontend/src/features/guide/useGuideStream.ts.
 # Render: cd docs/diagrams && d2 fmt flow-0039-frontend-one-box.d2 && d2 flow-0039-frontend-one-box.d2 flow-0039-frontend-one-box.svg
 
 ...@style

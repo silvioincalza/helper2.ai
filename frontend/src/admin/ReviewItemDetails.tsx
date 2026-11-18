@@ -9,7 +9,7 @@ import type {
 } from '@/api/types';
 import { aiMark } from '@/lib/aiMark';
 import { safeHref } from '@/lib/format';
-import { CATEGORY_NOTICES, CategoryNotice } from '@/features/sources/DiscoveryCategories';
+import { CATEGORY_NOTICES, CategoryNotice } from '@/ui/DiscoveryCategories';
 import { CandidateEditForm } from './CandidateEditForm';
 import { KnownTargetProposalForm } from './KnownTargetProposalForm';
 
