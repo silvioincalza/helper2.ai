@@ -390,13 +390,90 @@ object UntrustedPageText {
     return kept.values.joinToString(SEPARATOR)
   }
 
+  const val MAX_OPENING_CHARS = 600
+
+  private const val MIN_OPENING_CHARS = 40
+
+  private const val MIN_PROSE_WORDS = 4
+
+  private const val OPENING_SECTIONS = 3
+
+  private val INTRO_HEADING =
+    Regex(
+      "^#{1,6}\\s*(about|overview|introduction|what is|description)\\b",
+      RegexOption.IGNORE_CASE,
+    )
+
+  private val WORD = Regex("[\\p{L}\\p{N}]+")
+
+  data class ReadmeParts(val opening: String, val rest: String)
+
+  fun split(text: String): ReadmeParts {
+    val sections = sections(text)
+    val index = openingIndex(sections) ?: return ReadmeParts("", text)
+    val opening = upTo(prose(sections[index]), MAX_OPENING_CHARS)
+    if (opening.isEmpty()) return ReadmeParts("", text)
+    val rest =
+      sections
+        .mapIndexed { i, s -> if (i == index) without(s, opening) else s }
+        .filter { it.isNotBlank() }
+        .joinToString(SEPARATOR)
+    return ReadmeParts(opening.joinToString("\n"), rest)
+  }
+
+  private fun without(section: String, taken: List<String>): String {
+    val left = taken.toMutableList()
+    return section.lines().filterNot { left.remove(it) }.joinToString("\n").trim()
+  }
+
+  private fun openingIndex(sections: List<String>): Int? =
+    sections.indices.take(OPENING_SECTIONS).firstOrNull { i ->
+      (i == 0 || INTRO_HEADING.containsMatchIn(sections[i].lineSequence().first())) &&
+        prose(sections[i]).joinToString("\n").length >= MIN_OPENING_CHARS
+    }
+
+  private fun prose(section: String): List<String> {
+    var inCode = false
+    return section.lines().filter { line ->
+      val trimmed = line.trim()
+      if (isFence(line)) {
+        inCode = !inCode
+        return@filter false
+      }
+      !inCode &&
+        !trimmed.startsWith("#") &&
+        !trimmed.startsWith("|") &&
+        !trimmed.startsWith(">") &&
+        WORD.findAll(trimmed).count() >= MIN_PROSE_WORDS
+    }
+  }
+
+  private fun isFence(line: String): Boolean {
+    val trimmed = line.trim()
+    return trimmed.startsWith("```") || trimmed.startsWith("~~~")
+  }
+
+  private fun upTo(lines: List<String>, maxChars: Int): List<String> {
+    val kept = mutableListOf<String>()
+    var used = 0
+    for (line in lines) {
+      val cost = line.length + if (kept.isEmpty()) 0 else 1
+      if (used + cost > maxChars) break
+      kept += line
+      used += cost
+    }
+    return kept
+  }
+
   private const val SEPARATOR = "\n\n"
   private const val MIN_CUT = 200
 
   private fun sections(text: String): List<String> {
     val out = mutableListOf<StringBuilder>(StringBuilder())
+    var inCode = false
     for (line in text.lines()) {
-      if (line.startsWith("#") && out.last().isNotBlank()) out += StringBuilder()
+      if (isFence(line)) inCode = !inCode
+      if (!inCode && line.startsWith("#") && out.last().isNotBlank()) out += StringBuilder()
       out.last().append(line).append('\n')
     }
     return out.map { it.toString().trim() }.filter { it.isNotEmpty() }

@@ -90,7 +90,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
    proposed, becomes a proposal of kind `VENDOR`. No model call. MCP Registry namespaces and npm scopes are not
    owners: anyone can register one. A failure of this step is logged and does not fail the run.
 6. **The model states the kind of a target, and agreement proposes it.**
-   - The enrichment prompt (label `enrich-v11`) asks for one more value per relationship, `targetKind`, decided
+   - The enrichment prompt (label `enrich-v12`) asks for one more value per relationship, `targetKind`, decided
      from the target's name alone: `VENDOR` when the name is only a company's or an organisation's name
      ("OpenAI"), also when the text means its API or its models; `SERVICE` when it names a general service or
      tool that is not an AI resource itself (Slack, GitHub, Docker); `PRODUCT` for everything else, a named

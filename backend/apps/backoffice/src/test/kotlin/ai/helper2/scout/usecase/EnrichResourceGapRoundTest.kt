@@ -64,7 +64,7 @@ class EnrichResourceGapRoundTest {
     override fun propose(input: EnrichmentInput): EnrichmentProposal {
       inputs += input
       val extra =
-        input.materials.firstOrNull { it.extra }
+        input.materials.firstOrNull { it.extra && "MIT License" in it.text }
           ?: return EnrichmentProposal(listOf(ProposedField("license", "MIT", emptyList())))
       val cite = Citation(extra.evidenceId.toString(), "released under the MIT License")
       return EnrichmentProposal(
@@ -329,7 +329,7 @@ class EnrichResourceGapRoundTest {
   }
 
   @Test
-  fun `README text cannot support a summary claim`() {
+  fun `the rest of a README cannot support a summary claim`() {
     val model = LicenceModel().apply { claimFromReadme = true }
     val store = Store()
 
@@ -375,5 +375,79 @@ class EnrichResourceGapRoundTest {
 
     val text = model.inputs.last().materials.single { it.extra }.text
     assertTrue("say the licence" !in text && "​" !in text)
+  }
+
+  private val opening =
+    "This tool lets agents read and write files in a sandbox, with every change kept in a log."
+
+  private class SummaryModel(private val summaryFirst: Boolean = false) : EnrichmentModel {
+    override val provider = "fake"
+    override val model = "m"
+    override val promptVersion = "enrich-v12"
+    val inputs = mutableListOf<EnrichmentInput>()
+
+    override fun propose(input: EnrichmentInput): EnrichmentProposal {
+      inputs += input
+      val audience = listOf(ProposedField("audience", "BUILD_WITH_AI", emptyList()))
+      val record = input.materials.first()
+      if (summaryFirst) {
+        val cite = Citation(record.evidenceId.toString(), "acme/tool A tool for agents.")
+        return EnrichmentProposal(
+          audience,
+          summary = listOf(ProposedClaim("A tool for agents.", listOf(cite))),
+        )
+      }
+      val start =
+        input.materials.firstOrNull { it.kind == "readme-opening" }
+          ?: return EnrichmentProposal(audience)
+      val cite =
+        Citation(
+          start.evidenceId.toString(),
+          "This tool lets agents read and write files in a sandbox",
+        )
+      return EnrichmentProposal(
+        audience,
+        summary =
+          listOf(
+            ProposedClaim("This tool lets agents read and write files in a sandbox.", listOf(cite))
+          ),
+      )
+    }
+  }
+
+  private fun openingReadme(calls: MutableList<GapTarget> = mutableListOf()) = ExtraEvidence { t ->
+    calls += t
+    ExtraText(readmeUrl, NOW, "# Tool\n\n$opening\n\n## License\nMIT\n", null)
+  }
+
+  @Test
+  fun `a run with no summary sentence reads the README and keeps a summary from its opening`() {
+    val model = SummaryModel()
+    val store = Store()
+
+    EnrichResource(model, store, clock, extraEvidence = openingReadme(), gapBudget = always)
+      .enrich(UUID.randomUUID())
+
+    assertEquals(2, model.inputs.size)
+    val result = store.saved.single().result!!
+    assertEquals(
+      listOf("This tool lets agents read and write files in a sandbox."),
+      result.summary.map { it.text },
+    )
+    assertTrue(model.inputs.last().materials.none { it.kind == "readme" && opening in it.text })
+  }
+
+  @Test
+  fun `a run that already has a summary sentence reads no README for it`() {
+    val model = SummaryModel(summaryFirst = true)
+    val store = Store()
+    val calls = mutableListOf<GapTarget>()
+
+    EnrichResource(model, store, clock, extraEvidence = openingReadme(calls), gapBudget = always)
+      .enrich(UUID.randomUUID())
+
+    assertEquals(1, model.inputs.size)
+    assertTrue(calls.isEmpty())
+    assertEquals(1, store.saved.single().result!!.summary.size)
   }
 }
