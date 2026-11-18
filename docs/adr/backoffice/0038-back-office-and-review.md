@@ -158,7 +158,8 @@ On a review item, accept and reject were not enough:
    CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class; the conflicts come from their own
    query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows), and for a resource or course
    candidate whose newest research ([0048](0048-review-research-assistant.md)) is DONE with verdict KEEP and no CONFLICT
-   value: the research read the item, so the admin is not adding something nobody read. Its CONFIRMED changed values go
+   value, and that research still describes it: the URL, title, type and tags it saw are the candidate's now (an admin
+   edit since then refuses the item). The research read the item, so the admin is not adding something nobody read. Its CONFIRMED changed values go
    into the candidate through `EditCandidate` first, as one Accept with them confirmed would; values only one source or
    no source states stay as they were (`ResearchedAcceptance`). When the candidate edit refuses a value, the item is not
    accepted. Every other kind verifies a relationship, publishes an example or closes a user's report, and a new kind is

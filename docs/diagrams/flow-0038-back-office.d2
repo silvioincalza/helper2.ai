@@ -162,6 +162,7 @@ bulk: "ResolveReviewItems, per item" {
   reject: "Reject?" {class: decision}
   kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?\n(ReviewEvidence.conflictingFields)" {class: decision}
   researched: "Resource or course candidate whose\nnewest research is DONE, KEEP,\nno CONFLICT value? (ResearchedAcceptance)" {class: decision}
+  describes: "Research still describes it?\n(the URL, title, type and tags it saw\nare the candidate's now)" {class: decision}
   apply: "CONFIRMED changed values\ninto the candidate (EditCandidate)" {class: app}
   applied: "Edit taken, or nothing to change?" {class: decision}
   refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
@@ -173,7 +174,9 @@ bulk: "ResolveReviewItems, per item" {
   reject -> kind: "no (accept)"
   kind -> one: yes
   kind -> researched: no
-  researched -> apply: yes
+  researched -> describes: yes
+  describes -> apply: yes
+  describes -> refused: "no (edited since)"
   researched -> refused: no
   apply -> applied
   applied -> one: yes

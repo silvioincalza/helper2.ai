@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.helper2.research.ResearchAnswer;
 import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
+import ai.helper2.research.ResearchSubject;
 import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.shared.ResourceType;
 import java.time.Instant;
@@ -97,6 +98,48 @@ class ResearchedAcceptanceTest {
     assertThat(edit.getDescriptionByAi()).isTrue();
     assertThat(edit.getLanguage()).isNull();
     assertThat(edit.getPricing()).isNull();
+  }
+
+  @Test
+  void theResearchDescribesTheCandidateOnlyWhileWhatItSawIsUnchanged() {
+    ResearchResult result =
+        result(
+            ResearchAnswer.Verdict.KEEP,
+            confirmed("title", "Acme | AI", "Acme"),
+            confirmed("canonicalUrl", "https://acme.example/x", "https://acme.example/"),
+            confirmed("license", null, "MIT"));
+    UUID id = UUID.randomUUID();
+    ResearchSubject same =
+        new ResearchSubject(
+            id,
+            "RESOURCE_CANDIDATE",
+            "https://acme.example/x",
+            "Acme | AI",
+            "PRODUCT",
+            List.of(),
+            null);
+    ResearchSubject editedUrl =
+        new ResearchSubject(
+            id,
+            "RESOURCE_CANDIDATE",
+            "https://acme.example/other",
+            "Acme | AI",
+            "PRODUCT",
+            List.of(),
+            null);
+    ResearchSubject editedTitle =
+        new ResearchSubject(
+            id,
+            "RESOURCE_CANDIDATE",
+            "https://acme.example/x",
+            "Acme Notes",
+            "PRODUCT",
+            List.of(),
+            null);
+
+    assertThat(ResearchedAcceptance.describes(result, same)).isTrue();
+    assertThat(ResearchedAcceptance.describes(result, editedUrl)).isFalse();
+    assertThat(ResearchedAcceptance.describes(result, editedTitle)).isFalse();
   }
 
   @Test

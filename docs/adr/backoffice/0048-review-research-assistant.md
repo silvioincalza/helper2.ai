@@ -93,7 +93,8 @@ tool answered, and must confirm every value before it reaches the catalog.
    has a decision the candidate can take, and says how many are left. A value is checked against the candidate edit's
    rules (`api/admin.yaml`) before it is saved or confirmed: one it cannot take is refused next to its field, and a
    decision with such a value still counts as left. Bulk Accept takes a candidate whose newest research is DONE with
-   verdict KEEP and no CONFLICT value, with its CONFIRMED changed values applied on the server
+   verdict KEEP and no CONFLICT value, and that still describes the candidate (the URL, title, type and tags it saw are
+   unchanged), with its CONFIRMED changed values applied on the server
    ([0038](0038-back-office-and-review.md) §9). On Accept, every confirmed value goes into the candidate through
    `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path
    ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is

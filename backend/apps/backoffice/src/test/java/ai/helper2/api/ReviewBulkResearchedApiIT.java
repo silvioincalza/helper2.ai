@@ -107,6 +107,37 @@ class ReviewBulkResearchedApiIT extends ApiTestBase {
         .getContentAsString();
   }
 
+  @Test
+  void aCandidateEditedAfterItsResearchIsNotAcceptedWithThatResearch() throws Exception {
+    UUID edited = candidate("edited");
+    researched(
+        edited,
+        ResearchAnswer.Verdict.KEEP,
+        attribute(
+            "title",
+            "Acme Notes takes meeting notes | Engadget",
+            "Acme Notes",
+            ResearchResult.Status.CONFIRMED),
+        attribute("license", null, "MIT", ResearchResult.Status.CONFIRMED));
+    jdbc.sql(
+            "UPDATE review_item SET details = jsonb_set(details, '{title}', '\"Acme Meeting Notes\"')"
+                + " WHERE id = :id")
+        .param("id", edited)
+        .update();
+
+    String body = bulkAccept(List.of(edited));
+
+    assertThat(JsonPath.<List<String>>read(body, "$.items[*].outcome"))
+        .containsExactly("NOT_ALLOWED");
+    assertThat(itemStatus(edited)).isEqualTo("OPEN");
+    assertThat(
+            jdbc.sql("SELECT details ->> 'title' FROM review_item WHERE id = :id")
+                .param("id", edited)
+                .query(String.class)
+                .single())
+        .isEqualTo("Acme Meeting Notes");
+  }
+
   private String itemStatus(UUID item) {
     return jdbc.sql("SELECT status FROM review_item WHERE id = :id")
         .param("id", item)

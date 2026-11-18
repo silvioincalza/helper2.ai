@@ -34,6 +34,7 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.research.ResearchItems;
 import ai.helper2.research.ResearchRuns;
 import ai.helper2.scout.AwesomeListReader;
 import ai.helper2.scout.EnrichmentBacklog;
@@ -134,10 +135,11 @@ class AdminUseCaseConfiguration {
       ResolveReview resolve,
       AuditTrail audit,
       ResearchRuns research,
+      ResearchItems researchItems,
       CandidateItems candidates,
       EditCandidate editCandidate) {
     return new ResolveReviewItems(
-        queue, evidence, resolve, audit, research, candidates, editCandidate);
+        queue, evidence, resolve, audit, research, researchItems, candidates, editCandidate);
   }
 
   @Bean

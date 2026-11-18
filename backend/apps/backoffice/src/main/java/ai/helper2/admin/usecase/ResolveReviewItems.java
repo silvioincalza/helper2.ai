@@ -6,8 +6,10 @@ import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.BadRequestException;
+import ai.helper2.research.ResearchItems;
 import ai.helper2.research.ResearchRun;
 import ai.helper2.research.ResearchRuns;
+import ai.helper2.research.ResearchSubject;
 import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.scout.usecase.CandidateItem;
 import ai.helper2.scout.usecase.CandidateItems;
@@ -37,6 +39,7 @@ public class ResolveReviewItems {
   private final ResolveReview resolve;
   private final AuditTrail audit;
   private final ResearchRuns research;
+  private final ResearchItems researchItems;
   private final CandidateItems candidates;
   private final EditCandidate editCandidate;
 
@@ -46,6 +49,7 @@ public class ResolveReviewItems {
       ResolveReview resolve,
       AuditTrail audit,
       ResearchRuns research,
+      ResearchItems researchItems,
       CandidateItems candidates,
       EditCandidate editCandidate) {
     this.queue = queue;
@@ -53,6 +57,7 @@ public class ResolveReviewItems {
     this.resolve = resolve;
     this.audit = audit;
     this.research = research;
+    this.researchItems = researchItems;
     this.candidates = candidates;
     this.editCandidate = editCandidate;
   }
@@ -136,6 +141,10 @@ public class ResolveReviewItems {
       ReviewQueue.Item item, Optional<ResearchRun> run, String adminId) {
     if (run.isEmpty() || run.get().result() == null) {
       return true;
+    }
+    Optional<ResearchSubject> now = researchItems.subject(item.id());
+    if (now.isEmpty() || !ResearchedAcceptance.describes(run.get().result(), now.get())) {
+      return false;
     }
     Optional<CandidateEdit> edit;
     try {

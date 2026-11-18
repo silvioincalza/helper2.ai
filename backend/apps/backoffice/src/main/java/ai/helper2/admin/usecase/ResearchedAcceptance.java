@@ -1,8 +1,10 @@
 package ai.helper2.admin.usecase;
 
+import ai.helper2.research.CheckResearch;
 import ai.helper2.research.ResearchAnswer;
 import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
+import ai.helper2.research.ResearchSubject;
 import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.shared.ResourceType;
 import java.time.LocalDate;
@@ -12,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -30,6 +33,11 @@ public final class ResearchedAcceptance {
     return result.verdict() == ResearchAnswer.Verdict.KEEP
         && result.attributes().stream()
             .noneMatch(a -> a.status() == ResearchResult.Status.CONFLICT);
+  }
+
+  public static boolean describes(ResearchResult result, ResearchSubject now) {
+    return result.attributes().stream()
+        .allMatch(a -> Objects.equals(CheckResearch.currentValue(now, a.name()), a.current()));
   }
 
   public static Optional<CandidateEdit> edit(ResearchResult result) {
