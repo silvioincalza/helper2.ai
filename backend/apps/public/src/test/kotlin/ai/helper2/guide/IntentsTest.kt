@@ -58,6 +58,14 @@ class IntentsTest {
     assertNull(IntentRules.intentOf("I'm new to MCP, which server should I start with?"))
     assertNull(IntentRules.intentOf("a new project with MCP servers"))
     assertNull(IntentRules.intentOf("sono nuovo con gli agenti"))
+  }
+
+  @Test
+  fun `the words between new and a kind are skipped by the rule of their own language only`() {
+    assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("new art tools"))
+    assertEquals(GuideIntent.NEWEST, IntentRules.intentOf("new MIT models"))
+    assertNull(IntentRules.intentOf("eine neue Art von Tools"))
+    assertNull(IntentRules.intentOf("neue mit Tools"))
     assertNull(IntentRules.intentOf("a new way to summarise PDFs"))
     assertNull(IntentRules.windowOf("a new way to summarise PDFs"))
   }

@@ -6,11 +6,13 @@ import ai.helper2.catalog.Resources;
 import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.CallTimeLimit;
 import ai.helper2.guide.ClientQuota;
+import ai.helper2.guide.EvidenceGate;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.guide.GuideModel;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.guide.GuideValidator;
+import ai.helper2.guide.QuoteOrigins;
 import ai.helper2.guide.QuoteRecords;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestions;
@@ -232,7 +234,8 @@ class GuideConfiguration {
             clock,
             build.version()),
         settings.stopsAQuestionNobodyWaitsFor(),
-        quoteRecords(resources));
+        quoteRecords(resources),
+        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()));
   }
 
   static QuoteRecords quoteRecords(Resources resources) {
