@@ -22,8 +22,10 @@ import ai.helper2.examples.config.ExamplesProperties;
 import ai.helper2.examples.usecase.DraftHomeExamples;
 import ai.helper2.examples.usecase.ListHomeExamples;
 import ai.helper2.platform.AuditTrail;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.shared.AudiencePath;
 import ai.helper2.shared.UnitOfWork;
+import com.jayway.jsonpath.JsonPath;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +38,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -546,5 +549,79 @@ class HomeExamplesApiIT extends ApiTestBase {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.detail").value("The draft cannot be read."));
     assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.OPEN);
+  }
+
+  private ResultActions accept(UUID item) throws Exception {
+    return mvc.perform(
+        put("/api/v1/admin/review-items/" + item + "/resolution")
+            .with(admin)
+            .with(csrf().asHeader())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"status\":\"ACCEPTED\"}"));
+  }
+
+  private List<String> auditOfTheAdmin() {
+    return jdbc.sql(
+            "SELECT action || ' ' || outcome FROM admin_audit WHERE admin_id = :a ORDER BY at, id")
+        .param("a", adminId)
+        .query(String.class)
+        .list();
+  }
+
+  @Test
+  void aRefusedDraftIsAProblemTheItemStaysOpenAndOnlyTheRefusalOfTheExampleIsAudited()
+      throws Exception {
+    added("Pinned " + tag, "translate a sonnet " + tag);
+    UUID repeated =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: pinned " + tag,
+            """
+            {"label":"pinned %s","query":"another sonnet %s","path":"USE_AI","model":"nemotron-test"}
+            """
+                .formatted(tag, tag),
+            ReviewQueue.Links.NONE);
+    UUID unreadable =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: unreadable pin " + tag,
+            "{\"label\":\"Broken\"}",
+            ReviewQueue.Links.NONE);
+    UUID invalid =
+        queue.open(
+            ReviewQueue.Kind.EXAMPLE_CANDIDATE,
+            deepl(),
+            "Drafted example: invalid pin " + tag,
+            """
+            {"label":"%s","query":"a long label %s","path":"USE_AI","model":"nemotron-test"}
+            """
+                .formatted("L".repeat(200), tag),
+            ReviewQueue.Links.NONE);
+    List<String> before = auditOfTheAdmin();
+
+    accept(repeated)
+        .andExpect(
+            problem(
+                ProblemType.DUPLICATE,
+                "Another example already has this label or this query. Reject the draft, or change"
+                    + " the example first."));
+    accept(unreadable).andExpect(problem(ProblemType.INVALID_REQUEST, "The draft cannot be read."));
+    String refusal =
+        accept(invalid)
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("invalid-request"))
+            .andExpect(jsonPath("$.title").value(ProblemType.INVALID_REQUEST.title()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertThat(JsonPath.<String>read(refusal, "$.detail")).isEqualTo("label: 2 to 32 characters.");
+    for (UUID item : List.of(repeated, unreadable, invalid)) {
+      assertThat(queue.find(item).orElseThrow().status()).isEqualTo(ReviewQueue.Status.OPEN);
+    }
+    assertThat(auditOfTheAdmin().subList(before.size(), auditOfTheAdmin().size()))
+        .containsExactly("ADD_HOME_EXAMPLE DUPLICATE", "ADD_HOME_EXAMPLE INVALID");
   }
 }

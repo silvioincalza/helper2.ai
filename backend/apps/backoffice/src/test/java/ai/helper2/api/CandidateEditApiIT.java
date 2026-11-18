@@ -386,4 +386,34 @@ class CandidateEditApiIT extends ApiTestBase {
     edit(item, "{\"publishedAt\":\"2999-01-01\"}").andExpect(status().isBadRequest());
     assertThat(audit()).isEmpty();
   }
+
+  @Test
+  void anAcceptOfACandidateThatCannotBeReadIsTheInvalidRequestProblemAndTheItemStaysOpen()
+      throws Exception {
+    jdbc.sql("UPDATE review_item SET details = '{\"version\":2}' WHERE id = :id")
+        .param("id", item)
+        .update();
+
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "The candidate cannot be read."));
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(
+            jdbc.sql("SELECT status FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo("OPEN");
+    assertThat(audit()).isEmpty();
+  }
 }
