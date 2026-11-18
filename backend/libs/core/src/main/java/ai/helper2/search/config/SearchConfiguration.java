@@ -17,6 +17,7 @@ import ai.helper2.search.ResultObserver;
 import ai.helper2.search.SearchCache;
 import ai.helper2.search.SearchPolicy;
 import ai.helper2.search.SearchSource;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceHealth;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.search.WebFreshness;
@@ -128,7 +129,8 @@ class SearchConfiguration {
       SearchRetentionProperties retention,
       CategoryMatcher categories,
       Ranking ranking,
-      VitalityPolicy vitality) {
+      VitalityPolicy vitality,
+      ShadowLibraries shadowLibraries) {
     List<SearchSource> ordered =
         sources.stream()
             .sorted(
@@ -161,6 +163,7 @@ class SearchConfiguration {
         quota,
         new WebFreshness(
             search.web().freshTimeBound(), search.web().freshGeneral(), retention.liveWebResults()),
-        vitality);
+        vitality,
+        shadowLibraries);
   }
 }

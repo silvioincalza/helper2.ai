@@ -13,6 +13,9 @@ import ai.helper2.search.SearchFilters
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.ShadowLibraries
+import ai.helper2.search.ShadowLibrary
+import ai.helper2.search.ShadowLibraryStore
 import ai.helper2.search.SkipReason
 import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceFailure
@@ -83,6 +86,7 @@ class SearchResourcesTest {
     cache: SearchCache = MapCache(),
     observer: ResultObserver = ResultObserver { emptyMap() },
     resilience: Resilience = Resilience.NONE,
+    shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
   ) =
     SearchResources(
       sources,
@@ -92,6 +96,7 @@ class SearchResourcesTest {
       clock,
       staleFor = Duration.ofHours(24),
       resilience = resilience,
+      shadowLibraries = shadowLibraries,
     )
 
   private fun policies(vararg ids: String, concurrent: Int = 10): Resilience {
@@ -394,6 +399,54 @@ class SearchResourcesTest {
 
     assertEquals(listOf("https://github.com/a/kept"), out.results.map { it.canonicalUrl.value })
     assertEquals(1, out.statuses.single().resultCount)
+  }
+
+  @Test
+  fun `a hit on a shadow library is no result, whichever source returns it`() {
+    val web = ok("web", "https://de.z-lib.fm/book/1", "https://example.com/rag")
+    val index = catalog("index", SourceMode.CURATED, "https://libgen.rs/book/2")
+
+    val out =
+      service(listOf(web, index), shadowLibraries = ShadowLibraries.of("z-lib", "libgen"))
+        .search(req())
+
+    assertEquals(listOf("https://example.com/rag"), out.results.map { it.canonicalUrl.value })
+  }
+
+  @Test
+  fun `a stored hit on a name listed after it was stored is no result`() {
+    val libraries = MutableShadowLibraries()
+    val web = ok("web", "https://de.z-lib.fm/book/1", "https://example.com/rag")
+    val svc = service(listOf(web), shadowLibraries = libraries.libraries)
+    svc.search(req())
+    libraries.add("z-lib")
+    clock.now = clock.now.plusSeconds(30)
+
+    val out = svc.search(req())
+
+    assertEquals(1, web.calls.get())
+    assertEquals(ServedFrom.CACHE, out.statuses.single().servedFrom)
+    assertEquals(listOf("https://example.com/rag"), out.results.map { it.canonicalUrl.value })
+  }
+
+  private class MutableShadowLibraries {
+    private val names = mutableSetOf<String>()
+    val libraries = ShadowLibraries.readFrom(Names(names)).also { it.reload() }
+
+    fun add(name: String) {
+      names += name
+      libraries.reload()
+    }
+
+    private class Names(private val names: Set<String>) : ShadowLibraryStore {
+      override fun all() = emptyList<ShadowLibrary>()
+
+      override fun names() = names.toSet()
+
+      override fun add(library: ShadowLibrary) = false
+
+      override fun remove(name: String) = null
+    }
   }
 
   @Test

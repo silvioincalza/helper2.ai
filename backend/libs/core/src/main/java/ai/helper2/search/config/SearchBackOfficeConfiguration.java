@@ -1,11 +1,14 @@
 package ai.helper2.search.config;
 
 import ai.helper2.platform.AuditTrail;
+import ai.helper2.search.DescribedSource;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.ShadowLibraryStore;
 import ai.helper2.search.UnitOfWork;
 import ai.helper2.search.usecase.ManageShadowLibraries;
 import java.time.Clock;
+import java.util.List;
+import java.util.Objects;
 import org.springframework.context.annotation.Bean;
 import org.springframework.modulith.NamedInterface;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -31,7 +34,16 @@ public class SearchBackOfficeConfiguration {
       ShadowLibraries libraries,
       AuditTrail audit,
       UnitOfWork searchUnitOfWork,
-      Clock clock) {
-    return new ManageShadowLibraries(store, libraries, audit, searchUnitOfWork, clock);
+      Clock clock,
+      List<DescribedSource> sources) {
+    return new ManageShadowLibraries(
+        store, libraries, audit, searchUnitOfWork, clock, hostsOf(sources));
+  }
+
+  private static List<String> hostsOf(List<DescribedSource> sources) {
+    return sources.stream()
+        .map(s -> s.getDescriptor().getHomepage().getHost())
+        .filter(Objects::nonNull)
+        .toList();
   }
 }

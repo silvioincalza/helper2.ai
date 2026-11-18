@@ -17,6 +17,7 @@ import ai.helper2.search.SearchMetrics
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.SkipReason
 import ai.helper2.search.SortOrder
 import ai.helper2.search.SourceDescriptor
@@ -134,7 +135,11 @@ class MeteredSourceTest {
 
   private val quota = WebSearchQuota(counter, QuotaKeys("test-secret", clock))
 
-  private fun service(vararg others: SearchSource, resilience: Resilience = Resilience.NONE) =
+  private fun service(
+    vararg others: SearchSource,
+    resilience: Resilience = Resilience.NONE,
+    shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
+  ) =
     SearchResources(
       listOf(web) + others,
       NoCache,
@@ -145,6 +150,7 @@ class MeteredSourceTest {
       resilience = resilience,
       webResults = store,
       quota = quota,
+      shadowLibraries = shadowLibraries,
     )
 
   private fun req(text: String = "rag frameworks", client: String = "203.0.113.7") =
@@ -173,6 +179,25 @@ class MeteredSourceTest {
     assertEquals(NOW, stored.fetchedAt)
     assertEquals(2, stored.hits.size)
     assertEquals(NOW.plus(Duration.ofHours(48)), out.webFreshUntil)
+  }
+
+  @Test
+  fun `a stored row on a shadow library is never a result when the set is replayed`() {
+    web.hits =
+      listOf(
+        hit("live-web", "https://de.z-lib.fm/book/1"),
+        hit("live-web", "https://news.example/a"),
+      )
+    val svc = service(shadowLibraries = ShadowLibraries.of("z-lib"))
+    svc.search(req())
+    clock.now = NOW.plusSeconds(60)
+
+    val out = svc.search(req())
+
+    assertEquals(ServedFrom.CACHE, out.statuses.single().servedFrom)
+    assertEquals(1, web.calls.get())
+    assertEquals(2, store.sets.values.single().hits.size)
+    assertEquals(listOf("https://news.example/a"), out.results.map { it.canonicalUrl.value })
   }
 
   @Test

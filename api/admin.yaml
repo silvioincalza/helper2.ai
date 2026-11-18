@@ -763,8 +763,8 @@ paths:
       summary: Add a name to the list.
       description: >-
         The name is kept in lower case. 400 when it is not one host label (a dot, a space, a scheme), when it is
-        shorter than 3 characters or a label many sites use ("www", "com", "blog"), for a reason that is not one
-        plain line, and when the list is full (200 names). 409 when the name is listed already. Recorded in the audit
+        shorter than 3 characters, a label many sites use ("www", "com", "blog") or a label of a source's host
+        ("github", "huggingface"), for a reason that is not one plain line, and when the list is full (200 names). 409 when the name is listed already. Recorded in the audit
         trail. The search on this host uses it at once, the public app within 30 seconds.
       requestBody:
         required: true

@@ -56,6 +56,7 @@ object ShadowLibraryNames {
     NOT_A_NAME,
     TOO_SHORT,
     TOO_COMMON,
+    A_SOURCE,
   }
 
   sealed interface Checked {
@@ -75,12 +76,18 @@ object ShadowLibraryNames {
     }
   }
 
+  fun namesIn(hosts: Collection<String>): Set<String> =
+    hosts.flatMap { labelsBeforeTheLast(it) }.toSet()
+
   fun anyNames(names: Set<String>, host: String?): Boolean {
     if (host.isNullOrBlank() || names.isEmpty()) {
       return false
     }
-    return host.lowercase(Locale.ROOT).split(".").dropLast(1).any { it in names }
+    return labelsBeforeTheLast(host).any { it in names }
   }
+
+  private fun labelsBeforeTheLast(host: String): List<String> =
+    host.lowercase(Locale.ROOT).split(".").dropLast(1)
 }
 
 class ShadowLibraries private constructor(private val source: () -> Set<String>) {

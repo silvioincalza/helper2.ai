@@ -115,7 +115,8 @@ class GitHubAwesomeCollectorTest {
         classifier,
         ai.helper2.shared.CategoryMatcher.NONE,
         new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
-        SeedDiscoveryHosts.store());
+        SeedDiscoveryHosts.store(),
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   static final GitHubAwesomeCollector.Deep DEEP =

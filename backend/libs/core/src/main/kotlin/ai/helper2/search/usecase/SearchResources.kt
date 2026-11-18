@@ -19,9 +19,11 @@ import ai.helper2.search.SearchOutcome
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.Sorting
 import ai.helper2.search.SourceContext
 import ai.helper2.search.SourceDescriptor
+import ai.helper2.search.SourceHit
 import ai.helper2.search.SourceQuery
 import ai.helper2.search.SourceStatus
 import ai.helper2.search.VitalityPolicy
@@ -59,6 +61,7 @@ constructor(
   private val quota: WebSearchQuota? = null,
   webFreshness: WebFreshness = WebFreshness(),
   vitality: VitalityPolicy = VitalityPolicy(),
+  private val shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
 ) {
   private val log = LoggerFactory.getLogger(SearchResources::class.java)
   private val fanOut =
@@ -159,8 +162,12 @@ constructor(
     val contexts = attempts.associate {
       it.status.source.id to SourceContext(it.status.source, it.status.servedFrom)
     }
-    return merger.merge(attempts.flatMap { it.hits }, contexts)
+    return merger.merge(attempts.flatMap { it.hits }.filterNot(::onShadowLibrary), contexts)
   }
+
+  private fun onShadowLibrary(hit: SourceHit): Boolean =
+    shadowLibraries.isShadowLibrary(hit.url.host) ||
+      shadowLibraries.isShadowLibrary(hit.canonicalUrl.host)
 
   private fun confirmedNow(merged: List<MergedResult>): List<MergedResult> {
     val prefixes = sources.mapNotNull { it.descriptor.confirmsUrlPrefix }

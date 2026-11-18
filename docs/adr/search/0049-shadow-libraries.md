@@ -12,22 +12,33 @@ A live web search finds copies of books and papers on shadow libraries: sites th
 holder's permission (Z-Library, Library Genesis, Sci-Hub, Anna's Archive, PDF Drive). Staging held 14 copies of one
 RAG book, each on a language subdomain of `z-lib.fm`.
 
-Such a result is a risk and a bad result. A link to a copy published without consent can itself infringe copyright in
-the EU, and a link put up for profit is presumed to be made with knowledge (CJEU, C-160/15, *GS Media*, 2016). The
-sites carry ads and redirects, and the same book comes back once per mirror. The publisher's page is the result a person
-needs.
+helper2.ai does not show links to such copies. They are also bad results: the sites carry ads and redirects, and the
+same book comes back once per mirror. The publisher's page is the result a person needs.
 
 The sites change names and mirrors often. A new mirror must be blocked the same day, without a release.
 
 ## Decision
 
-1. **A web result on a shadow library is never shown.** A host matches when one of its labels, before the last, is a
+1. **A result on a shadow library is never shown.** A host matches when one of its labels, before the last, is a
    name on the list: `libgen` matches `libgen.rs`, `libgen.is` and `ka.libgen.is`, not `my-libgen-notes.dev` and not
-   `libgen` alone (`ShadowLibraryNames.anyNames`). The check runs where a Tavily result becomes a hit
-   (`TavilySource.toHit`, so the live web search, the Scout's news and its events collectors) and where discovery sorts
-   a result (`DiscoveryCollector.keep`): such a page is never a hit, never a list page and never a candidate. The other
-   sources (GitHub, Hugging Face, npm, arXiv, Hacker News, the courses collector's providers) return pages of their own
-   or of known hosts, so they do not check.
+   `libgen` alone (`ShadowLibraryNames.anyNames`). The check runs in these places:
+   - **Every search, at read time.** `SearchResources.mergeHits` drops every hit whose address or canonical address is
+     on a shadow library, from every source, live or replayed: catalog full-text and vector hits, stored live web
+     results (`JdbcWebResultStore.find`), the source cache. It runs before ranking, so a dropped hit is never a result
+     and never reaches the guide. A row stored before its name was added is hidden at the next search.
+   - **Where a hit is made.** A Tavily result (`TavilySource.toHit`, so the live web search and the Scout's news and
+     events collectors) and a Hacker News story (`HackerNewsSource.aiStories`): a link story points to any site, so
+     its link is checked.
+   - **Where the Scout makes a candidate.** Discovery (`DiscoveryCollector.keep`), the events collector's catalog
+     pages and the event site a LinkedIn post links to (`LiveWebEventsCollector`), and the links in awesome lists
+     (`ProductLinks.check`, skip `shadow-library`). Such a page is never a hit, never a list page and never a
+     candidate in the review queue.
+   - **Where research reads a page.** The review research assistant
+     ([0048](../backoffice/0048-review-research-assistant.md)) checks the address it is asked to read, and
+     `ReadPageTool` checks the address the page ends on: a page that ends on a shadow library is never evidence.
+
+   GitHub, Hugging Face, npm and arXiv return their own pages, and the courses collector reads known providers, so
+   they do not check where the hit is made. The read-time check covers them anyway.
 2. **The list is data, in table `shadow_library`.** One row per name: `name` (one host label, 3 to 63 characters,
    lower case, checked in the database too), `added_by`, `added_at`, `reason`. Migration
    `V2026.11.6.2__shadow_library.sql` creates it with the first nine names (`z-lib`, `z-library`, `zlibrary`, `1lib`,
@@ -39,8 +50,9 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
    Use case `ManageShadowLibraries`:
    - a name is trimmed and kept in lower case;
    - refused with a 400: not one host label (a dot, a space, a scheme, `_`), shorter than 3 characters, a label many
-     sites use (`www`, `com`, `org`, `blog`, `news`, `docs`, `api`, `cdn`, …), a reason that is not one plain line of
-     at most 500 characters, or a full list (200 names);
+     sites use (`www`, `com`, `org`, `blog`, `news`, `docs`, `api`, `cdn`, …), a label of a source's host before the
+     last (`github`, `huggingface`, `npmjs`, `arxiv`, `ycombinator`, …, read from the homepages of the sources the
+     back office runs), a reason that is not one plain line of at most 500 characters, or a full list (200 names);
    - 409 when the name is listed already; 404 when a name to remove is not listed;
    - each add and remove is one transaction with its row in `admin_audit` (`ADD_SHADOW_LIBRARY`,
      `REMOVE_SHADOW_LIBRARY`), also when it changes nothing.
@@ -68,9 +80,11 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
 
 - A new mirror is blocked from the Settings page in seconds, with an audit row saying who and why.
 - A name blocks every site with that label before the last. A legitimate site with the same label (`libgen.example`)
-  is blocked too; the 3-character minimum and the common labels keep the risk small.
-- The list only filters new results. Rows stored before a name is added stay until their retention ends
-  ([0010](../foundation/0010-data-retention.md)), or an admin removes them.
+  is blocked too; the 3-character minimum, the common labels and the sources' own labels keep the risk small. A typo
+  can never hide a whole source.
+- Rows stored before a name is added stay in the database until their retention ends
+  ([0010](../foundation/0010-data-retention.md)), but no search shows them: the read-time check hides them at once.
+- The read-time check is one set lookup per hit, with no database call.
 - The migration creates the table and redefines the `admin_audit.action` check with the two new actions.
 - Privacy: no personal data beyond the admin's subject in `added_by`, the same as the other admin lists. The Privacy page
   does not change. Terms: no new rule for users.
@@ -84,10 +98,10 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
 | Orchestration | 30-second refresh per app; reload after commit in the back office (4) |
 | Tool & API | Admin API, three operations (3) |
 | Memory | None. Safe to defer |
-| Knowledge & RAG | Keeps shadow-library pages out of the results the guide answers from (1) |
+| Knowledge & RAG | Keeps shadow-library pages out of the results the guide answers from, stored or live (1) |
 | Data | `shadow_library`, seeded by its migration; audit rows (2, 3) |
 | Browser & computer use | None. Safe to defer |
-| Guardrails | Host check before a result is kept; name checks in code and in the database (1, 2, 3) |
+| Guardrails | Host check on every search before ranking, and where a hit or a candidate is made; name checks in code and in the database (1, 2, 3) |
 | Observability | Audit trail; a warning when a read fails (3, 4) |
 | Evaluation | Unit and integration tests; no offline metric needed for a block list. Safe to defer |
 | Deployment | No new setting; the migration runs in the migrate step |

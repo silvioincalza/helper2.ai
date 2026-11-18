@@ -282,7 +282,8 @@ class CollectorsConfiguration {
       CallCounter budgetCounter,
       ModelCallMetrics metrics,
       MeterRegistry meters,
-      DiscoveryHostStore hosts) {
+      DiscoveryHostStore hosts,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -320,7 +321,8 @@ class CollectorsConfiguration {
         classifier,
         categories,
         meters,
-        hosts);
+        hosts,
+        shadowLibraries);
   }
 
   private static GitHubAwesomeCollector.Deep deep(
