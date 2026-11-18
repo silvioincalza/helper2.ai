@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class IndexAwesomeListsTest {
@@ -20,11 +19,6 @@ class IndexAwesomeListsTest {
 
   static class RefreshedCategories implements CategoryLabels {
     final List<UUID> refreshed = new ArrayList<>();
-
-    @Override
-    public List<UUID> resourceIdsAfter(@Nullable UUID after, int limit) {
-      return List.of();
-    }
 
     @Override
     public int refreshCategories(Collection<UUID> resourceIds) {
