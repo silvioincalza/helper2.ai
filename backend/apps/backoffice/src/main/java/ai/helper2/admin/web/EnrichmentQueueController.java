@@ -13,9 +13,7 @@ import ai.helper2.api.generated.model.EnrichmentQueueViewDto;
 import ai.helper2.api.generated.model.EnrichmentSkipDto;
 import ai.helper2.catalog.AiCheckReport;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor;
-import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogEntry;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Part;
-import ai.helper2.catalog.enrichment.EnrichmentCandidates.View;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
@@ -67,7 +65,9 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
       @Nullable EnrichmentQueueViewDto view, @Nullable String after, Integer size) {
     ListEnrichmentQueue.Page page =
         queue.list(
-            view == null ? View.WAITING : View.valueOf(view.getValue()),
+            view == null
+                ? ListEnrichmentQueue.Section.WAITING
+                : ListEnrichmentQueue.Section.valueOf(view.getValue()),
             after == null ? null : decode(after),
             size);
     return ResponseEntity.ok(
@@ -161,7 +161,7 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
     throw new ApiProblem(ProblemType.NOT_APPLICABLE, detail);
   }
 
-  private static EnrichmentQueueEntryDto entry(BacklogEntry e) {
+  private static EnrichmentQueueEntryDto entry(ListEnrichmentQueue.Entry e) {
     return new EnrichmentQueueEntryDto(
             e.id(),
             e.title(),

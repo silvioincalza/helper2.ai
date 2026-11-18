@@ -33,7 +33,7 @@ place to say that.
    `sourceStated`. The first 16 bytes of a SHA-256 of the material text are its text hash.
 2. **The fingerprint and the UNCHANGED skip.** The input fingerprint (`EnrichmentMaterial.fingerprintFor`) is the same
    kind of hash over the text hash, a fixed epoch (`FINGERPRINT_EPOCH`, `enrich-v3`) and the model id. The prompt's
-   label is not in it: a new prompt alone sends nothing to the model; a new model or new source text does. To enrich
+   version is not in it: a new prompt alone sends nothing to the model; a new model or new source text does. To enrich
    every resource again on purpose, change the epoch. If the resource's last run that judged an answer (any outcome but
    `LLM_UNAVAILABLE` and `FAILED`) has the same fingerprint, there is no model call and nothing is recorded: a new star
    count or version costs no call, and a `REJECTED` answer is not asked for again on the same text. `RunScout` gives the
@@ -41,8 +41,11 @@ place to say that.
 3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
    apart from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192),
-   prompt `prompts/scout/enrich.txt`, label `enrich-v12` (stored with every run). A test pins the rendered prompt to
-   its label, so a new wording needs a new label. For a relationship the model also states what its target is
+   prompt `prompts/scout/enrich.txt`. The prompt's version is the hash of the rendered system prompt
+   (`ModelCallMetrics.promptVersion`, [0008](../foundation/0008-llm-integration.md) §9): the same value is stored with
+   every run (`enrichment_run.prompt_version`), tags the meters and shows in the settings. A test pins the version
+   (`128470b5`), so a new wording is seen before it ships: it makes the stored runs older (point 23). For a
+   relationship the model also states what its target is
    (`targetKind`, [0019](0019-known-targets-vendors-and-services.md) §6): a judgement that verifies nothing. The user message has the
    resource's type next to its title (`Type: NEWS`); the type comes from the catalog, never from the model. Under it
    are the fields and the relationship kinds that type keeps (`FieldsByType.fieldsFor`, `kindsFor`): writing gets
@@ -322,7 +325,7 @@ place to say that.
     - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its
       only issues are values the quote does not state; never when the run has a `CONFLICTING` field
       (`closeItemsWithNothingToDecide`; counter result `items_closed`);
-    - a resource goes back to the model only when its last run used an older prompt label and it still misses a
+    - a resource goes back to the model only when its last run used another prompt version and it still misses a
       target fact (`FieldTargets`) with more to read (a README or model card, or its own pages), or it has no summary
       sentence and a README or model card to read. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps. `resource.enrichment_rerun_requested_at`
@@ -336,7 +339,10 @@ place to say that.
     run holds it, the call answers 409 `run-in-progress` ("A Scout run is in progress. Try again later."), changes
     nothing and writes no audit entry. Idempotent: a second run changes
     nothing. Log line and counter `helper2.scout.recheck{result=checked|fields_rejected|claims_dropped|runs_requested}`.
-    A prompt with new rules gets a new label and a new marker, so the re-check runs once for it.
+    A prompt with new rules gets a new marker (`RecheckEnrichments.TASK`), so the re-check runs once for it.
+    The runs stored under the label `enrich-v12` carry the version of the prompt that label named:
+    `V2026.11.8.1__prompt_version_is_the_prompt_hash.sql` writes `128470b5` on them, so they are not older than
+    the prompt. Runs under any other label stay older.
 
 ### What people see
 24. **Observability.** Counter `helper2.scout.fields{type,field,state,step}` per target and judgement field of the kept
@@ -368,7 +374,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java` (the stored answers through `StoredEnrichments`, the
   done mark of the task through the catalog's `JobMarkers`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java` (`PROMPT`,
-  `PROMPT_VERSION`, material kind), `CatalogEnrichmentStore.java`, `ScoutConfiguration.java` (budgets,
+  `promptVersion`, material kind), `CatalogEnrichmentStore.java`, `ScoutConfiguration.java` (budgets,
   `officialPages`), `RedisPageTextCache.java`, `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`.
 - `backend/apps/backoffice/src/main/resources/prompts/scout/enrich.txt`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`, `LiveWebPageReader.java`,
@@ -387,10 +393,10 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - `frontend/src/features/resource/FieldStates.tsx`, `frontend/src/features/resource/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`,
   `evidenceSource.ts`, `frontend/src/features/resource/EvidenceList.tsx`, `frontend/src/admin/ScoutRunsPage.tsx`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
-- Tests: `SpringAiEnrichmentModelTest` (`theWordingOfThePromptIsPinnedToItsLabel`), `EnrichResourceTest`,
+- Tests: `SpringAiEnrichmentModelTest` (`aNewWordingOfThePromptIsANewVersionAndMakesTheStoredRunsStale`), `EnrichResourceTest`,
   `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `FieldTargetsTest`, `EvidenceValidatorLadderTest`,
   `EvidenceValidatorWritingTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
-  `LiveWebPageReaderTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`,
+  `LiveWebPageReaderTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`, `PromptVersionOfStoredRunsIT`,
   `RedisPageTextCacheIT`, `RedisPageTextCacheTest`, `ScoutPropertiesBindingTest`, `ScoutEvidencePropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
   `JdbcEnrichmentCandidatesIT`, `SecurityIT`, `ResourcePage.test.tsx`, `Admin.test.tsx`, `evidenceSource.test.ts`.
 
@@ -437,6 +443,12 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   products), inside the global cap. See [cost-analysis](../../cost-analysis.md).
 - A new prompt does not re-enrich the catalog: the code re-check cleans the stored answers once; only resources that
   still miss facts and have something new to read go to the model again, accepted products first.
+- Any new wording of the enrichment prompt is a new version, a typo fix too. From then on a re-check sends every
+  resource that still misses facts and has more to read back to the model, inside the daily caps. The pinned version
+  in `SpringAiEnrichmentModelTest` fails first, so the change is a choice.
+- A back office older than `V2026.11.8.1` still writes and expects the label `enrich-v12`. A run it stores after the
+  migration counts as older, and after a rollback to it a re-check sends the resources that miss facts to the model
+  again, inside the daily caps.
 - A resource is read again only when its source records change, or the model changes. A page is read once in 30 days:
   a price that changes later is not seen until then. A retry after the 24-hour text expired pays Tavily
   again (one or two credits).

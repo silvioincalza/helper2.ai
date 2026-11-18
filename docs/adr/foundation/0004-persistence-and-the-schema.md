@@ -234,8 +234,9 @@ The schema is one file, and from the first release tag on that file must never c
 ### Code
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `IssueReports.java`, `Resources.java`, `ReviewQueue.java`,
-  `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps), `CatalogBackOfficeConfiguration.java` and
-  `catalog/internal/CatalogBackOfficeAdapters.java` (the back office only).
+  `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps),
+  `catalog/config/EnableCatalogBackOfficeAdapters.java` and `catalog/internal/CatalogBackOfficeAdapters.java` (the
+  back office only); `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.

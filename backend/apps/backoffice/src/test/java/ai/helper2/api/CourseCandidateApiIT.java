@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceId;
@@ -69,8 +70,8 @@ class CourseCandidateApiIT extends ApiTestBase {
     UUID item = propose();
     String seen = queue.find(item).orElseThrow().details();
     String body =
-        "{\"expectedDetails\":\""
-            + seen.replace("\\", "\\\\").replace("\"", "\\\"")
+        "{\"expectedRevision\":\""
+            + CandidateRevision.of(seen)
             + "\",\"title\":\"Generative AI for Everyone\",\"pricing\":\"FREEMIUM\","
             + "\"techLevel\":\"BEGINNER\",\"language\":\"en\"}";
     mvc.perform(

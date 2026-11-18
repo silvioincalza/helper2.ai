@@ -13,6 +13,7 @@ import ai.helper2.research.ResearchSubject;
 import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.scout.usecase.CandidateItem;
 import ai.helper2.scout.usecase.CandidateItems;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.scout.usecase.EditCandidate;
 import java.util.List;
 import java.util.Optional;
@@ -63,7 +64,8 @@ public class ResolveReviewItems {
   }
 
   public Outcome resolve(
-      List<UUID> ids, ReviewQueue.Status decision, String adminId, @Nullable String note) {
+      List<UUID> ids, ReviewItemView.Status status, String adminId, @Nullable String note) {
+    ReviewQueue.Status decision = status.inQueue();
     requireValid(ids, decision);
     UUID batch = UUID.randomUUID();
     List<ItemResult> results =
@@ -157,7 +159,8 @@ public class ResolveReviewItems {
     }
     CandidateItem candidate = candidates.find(item.id());
     return candidate != null
-        && editCandidate.edit(item.id(), candidate.getDetails(), edit.get(), adminId)
+        && editCandidate.edit(
+                item.id(), CandidateRevision.of(candidate.getDetails()), edit.get(), adminId)
             instanceof EditCandidate.Outcome.Edited;
   }
 }

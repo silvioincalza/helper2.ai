@@ -618,7 +618,7 @@ class ScoutConfiguration {
 
     @Override
     public String getPromptVersion() {
-      return SpringAiEnrichmentModel.PROMPT_VERSION;
+      return SpringAiEnrichmentModel.promptVersion();
     }
 
     @Override

@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-@SpringBootTest
+@SpringBootTest(properties = "helper2.catalog.categories.backfill-at-startup=false")
 @Import(TestcontainersConfiguration.class)
 @AsBackOffice
 class BackfillCategoriesIT {

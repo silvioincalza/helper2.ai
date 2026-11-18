@@ -32,6 +32,11 @@ database connections. A change to the web app would rebuild and redeploy the bac
 3. **Shared code is a library in this repo** ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). Apps
    hold the driving adapters (controllers, schedules) and the wiring. The public app has no admin and no Scout code;
    the back office has no guide, setup or SEO pages. Libraries and apps keep their package names.
+   - The wiring only the back office loads is in the back office app: `CatalogBackOfficeConfiguration`,
+     `ExamplesBackOfficeConfiguration` and `SearchBackOfficeConfiguration`, each in its context's `config` package.
+     The adapters they need stay closed in `libs/core`; the app reaches them through one public entry per context,
+     `@EnableCatalogBackOfficeAdapters` and `@EnableExamplesBackOfficeAdapters`
+     ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §5).
    - The `sources` package of `libs/core` holds the live search sources (GitHub, Hugging Face, npm, arXiv, the live web), their HTTP mapping
      and settings, the demo sources, and the descriptors of the Scout's collectors. Both apps search, and both list
      every source on `GET /api/v1/sources`. The collectors themselves stay in the back office.
@@ -249,6 +254,11 @@ The apps:
   `H2_PAGES_TEMPLATE`, `H2_SCOUT_TICK`.
 - `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `SchemaCheck.java` — the migrate
   step and the apps' schema check.
+- `backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java`,
+  `catalog/config/CatalogBackOfficeConfiguration.java`, `examples/config/ExamplesBackOfficeConfiguration.java`,
+  `search/config/SearchBackOfficeConfiguration.java` — the back office's wiring of the shared contexts;
+  `backend/libs/core/src/main/java/ai/helper2/catalog/config/EnableCatalogBackOfficeAdapters.java`,
+  `examples/config/EnableExamplesBackOfficeAdapters.java` — the library's entries.
 - `backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java`,
   `BackOfficeEdge.java`, `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminWebApp.java`.
 - `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java`.

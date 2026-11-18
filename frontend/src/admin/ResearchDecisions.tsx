@@ -54,10 +54,10 @@ const STATUS_TONE: Record<ReviewResearchAttribute['status'], StatusTone> = {
 export interface ResearchOutcome {
   complete: boolean;
   left: string[];
-  edit: Omit<CandidateEdit, 'expectedDetails'> | null;
+  edit: Omit<CandidateEdit, 'expectedRevision'> | null;
 }
 
-type Edit = Omit<CandidateEdit, 'expectedDetails'>;
+type Edit = Omit<CandidateEdit, 'expectedRevision'>;
 
 function changed(a: ReviewResearchAttribute): boolean {
   if (a.status === 'NOT_FOUND' || a.proposed.length === 0) return false;

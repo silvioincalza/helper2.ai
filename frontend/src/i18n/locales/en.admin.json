@@ -864,6 +864,7 @@
       "progress": "{{done}} of {{count}} changes decided",
       "progressLabel": "Changes decided",
       "accept": "Accept with the confirmed values",
+      "unreadable": "The candidate cannot be read, so the confirmed values cannot be saved.",
       "acceptWhy_one": "Decide {{count}} more change to accept.",
       "acceptWhy_other": "Decide {{count}} more changes to accept.",
       "trace": {

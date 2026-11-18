@@ -11,7 +11,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
 import java.io.ByteArrayInputStream;
@@ -50,24 +49,21 @@ public class ArxivSource implements SearchSource {
     this.throttle = throttle;
     this.http = builder.baseUrl(settings.baseUrl()).build();
     this.descriptor =
-        new SourceDescriptor(
-            "arxiv",
-            "arXiv",
-            "arXiv",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://arxiv.org"),
-            URI.create("https://info.arxiv.org/help/api/tou.html"),
-            "Thank you to arXiv for use of its open access interoperability.",
-            EnumSet.of(ResourceType.PAPER),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            45,
-            false,
-            true,
-            true,
-            true);
+        SourceDescriptor.external(
+                "arxiv",
+                "arXiv",
+                "arXiv",
+                SourceMode.LIVE,
+                URI.create("https://arxiv.org"),
+                EnumSet.of(ResourceType.PAPER),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://info.arxiv.org/help/api/tou.html"))
+            .withAttribution("Thank you to arXiv for use of its open access interoperability.")
+            .enabledWhen(settings.enabled())
+            .withPriority(45)
+            .filteringByDate()
+            .browsing();
   }
 
   @Override
@@ -154,30 +150,22 @@ public class ArxivSource implements SearchSource {
       String summary = clean(text(e, "summary"));
       hits.add(
           new SourceHit(
-              "arxiv",
-              canonical.getValue(),
-              URI.create(canonical.getValue()),
-              canonical,
-              null,
-              title,
-              summary == null
-                  ? null
-                  : summary.length() > 600 ? summary.substring(0, 597) + "…" : summary,
-              ValueOrigin.SOURCE_PROVIDED,
-              ResourceType.PAPER,
-              Audience.BUILD_WITH_AI,
-              null,
-              Set.of(),
-              tags,
-              null,
-              null,
-              Set.of(),
-              null,
-              DateFact.fromSource(instant(text(e, "published")), "arxiv", now),
-              DateFact.fromSource(instant(text(e, "updated")), "arxiv", now),
-              List.of(),
-              now,
-              i));
+                  "arxiv",
+                  canonical.getValue(),
+                  URI.create(canonical.getValue()),
+                  canonical,
+                  title,
+                  ResourceType.PAPER,
+                  now)
+              .withDescription(
+                  summary == null
+                      ? null
+                      : summary.length() > 600 ? summary.substring(0, 597) + "…" : summary)
+              .withAudience(Audience.BUILD_WITH_AI)
+              .withTags(tags)
+              .withPublished(DateFact.fromSource(instant(text(e, "published")), "arxiv", now))
+              .withUpdated(DateFact.fromSource(instant(text(e, "updated")), "arxiv", now))
+              .withRank(i));
     }
     return hits;
   }
