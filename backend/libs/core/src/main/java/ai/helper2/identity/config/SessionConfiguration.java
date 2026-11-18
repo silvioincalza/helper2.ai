@@ -88,6 +88,7 @@ class SessionConfiguration {
   static final class FailSoftSessionRepository<S extends Session> implements SessionRepository<S> {
 
     private static final Logger log = LoggerFactory.getLogger(FailSoftSessionRepository.class);
+    private static final String INVALIDATED = "Session was invalidated";
 
     private final SessionRepository<S> delegate;
     private final Resilience resilience;
@@ -104,7 +105,14 @@ class SessionConfiguration {
 
     @Override
     public void save(S session) {
-      delegate.save(session);
+      try {
+        delegate.save(session);
+      } catch (IllegalStateException e) {
+        if (!INVALIDATED.equals(e.getMessage())) {
+          throw e;
+        }
+        log.debug("Session was invalidated by another request, nothing to save");
+      }
     }
 
     @Override
