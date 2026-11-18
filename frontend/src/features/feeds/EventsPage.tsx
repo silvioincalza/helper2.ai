@@ -1,9 +1,10 @@
 import { Link, useSearchParams } from 'react-router';
-import { useFromHere } from '@/features/search/fromResults';
+import { useFromHere } from '@/lib/fromResults';
 import { useTranslation } from 'react-i18next';
-import { MAX_EVENTS, useEventsFeed, type EventRow } from '@/features/home/homeFeeds';
-import { ListState, useEventText } from '@/features/home/listParts';
-import { TermCommand } from '@/features/home/TermList';
+import { MAX_EVENTS, useEventsFeed, type EventRow } from './feeds';
+import { useEventText } from './feedCells';
+import { ListState } from '@/ui/ListState';
+import { TermCommand } from '@/ui/TermCommand';
 import { OriginLabel } from '@/ui/Badges';
 import { StatusPill } from '@/ui/StatusPill';
 import { Skeleton, SkeletonBar, SkeletonChips, SkeletonRows } from '@/ui/Skeleton';
@@ -11,7 +12,7 @@ import { AI_ORIGIN, aiMarkWhen } from '@/lib/aiMark';
 import { formatMonth, weekDay } from '@/lib/format';
 import { useTitle } from '@/hooks/useTitle';
 import '@/ui/term.css';
-import '../../ui/listing.css';
+import '@/ui/listing.css';
 
 const EVENTS_PAGE_DAYS = 366;
 

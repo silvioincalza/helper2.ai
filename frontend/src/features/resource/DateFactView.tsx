@@ -1,9 +1,9 @@
-import { OriginLabel } from '../../ui/Badges';
+import { OriginLabel } from '@/ui/Badges';
 import { AI_ORIGIN, aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import type { DateFact } from '@/api/types';
 import { formatDate } from '@/lib/format';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '@/ui/Icon';
 
 function fmtAlt(v: string): string {
   return /^\d{4}-\d{2}-\d{2}/.test(v) ? formatDate(v, 'DAY') : v;

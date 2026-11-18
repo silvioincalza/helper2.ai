@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { MemoryRouter, useNavigate } from 'react-router';
 import { api } from '@/api/client';
 import type { GuideResponse } from '@/api/types';
-import { clearApiCache } from './useApi';
+import { clearApiCache } from '@/hooks/useApi';
 import { useGuideStream } from './useGuideStream';
 
 const at =

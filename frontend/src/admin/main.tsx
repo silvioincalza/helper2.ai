@@ -4,7 +4,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import '@/i18n';
-import '@/admin/adminText';
+import './adminText';
 import { claimReloadedPage, followNavigation } from '@/lib/staleChunk';
 import { adminRoutes } from './routes';
 import '@/styles/tokens.css';

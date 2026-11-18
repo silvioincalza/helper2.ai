@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
 import { useBookmarks } from '@/context/BookmarksContext';
-import { Icon } from '../../ui/Icon';
+import { Icon } from './Icon';
 
 export function BookmarkButton({
   card,

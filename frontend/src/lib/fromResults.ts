@@ -1,9 +1,9 @@
 import { useLocation, type Location } from 'react-router';
 import { resourceTypeValues } from '@/api/schema';
 import type { ResourceType, ResultCard } from '@/api/types';
-import { safeHref } from '@/lib/format';
-import { isSameSitePath } from '@/lib/sameSitePath';
-import type { GuidePick } from '@/lib/selection';
+import { safeHref } from './format';
+import { isSameSitePath } from './sameSitePath';
+import type { GuidePick } from './selection';
 
 export type PickForPage = Pick<
   GuidePick,

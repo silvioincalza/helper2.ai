@@ -7,16 +7,14 @@ import { displayHost, safeHref } from '@/lib/format';
 import { locateQuote } from '@/lib/locateQuote';
 import { plainText } from '@/lib/plainText';
 import { rowSourceNames } from '@/lib/rowSources';
-import { resourcePath } from '@/lib/searchState';
+import { resourcePath, rowAnchor } from '@/lib/searchState';
 import { withSearchTerms } from '@/lib/searchTerms';
 import { pickReasonState, type GuidePick } from '@/lib/selection';
-import { BookmarkButton } from '../saved/BookmarkButton';
-import { toFromResults } from './fromResults';
-import { ResultDate } from './ResultDate';
+import { BookmarkButton } from '@/ui/BookmarkButton';
+import { toFromResults } from '@/lib/fromResults';
+import { ResultDate } from '@/ui/ResultDate';
 import { AiLabel } from '@/ui/AiLabel';
 import { QuotedFromLink } from '@/ui/QuotedFromLink';
-
-export const rowAnchor = (id: string) => `result-${id}`;
 
 export function ResultRow({
   card,

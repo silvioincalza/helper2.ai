@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Robots } from '@/shell/Robots';
+import { Robots } from '@/ui/Robots';
 import { useTitle } from '@/hooks/useTitle';
-import '../features/pages/text.css';
+import '@/ui/text.css';
 
 export default function NotFoundPage() {
   const { t } = useTranslation();

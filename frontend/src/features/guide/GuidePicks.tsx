@@ -7,7 +7,7 @@ import type { GuideResponse } from '@/api/types';
 import { PicksBar, type PicksState } from '@/ui/PicksBar';
 import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
-import type { GuideStream } from '@/hooks/useGuideStream';
+import type { GuideStream } from './useGuideStream';
 import { useRetry } from '@/hooks/useRetry';
 import { aiMark } from '@/lib/aiMark';
 import { guidePicks, pickReasonState } from '@/lib/selection';
@@ -16,9 +16,8 @@ import { GuideAnswer, noPickReason } from './GuideAnswer';
 import { progressOf, readingParts } from './reading';
 import type { Refine } from './types';
 import { WebSearchesLeft } from './WebSearchesLeft';
-import { resourcePath } from '@/lib/searchState';
-import { rowAnchor } from '@/features/search/ResultRow';
-import { toFromResults, type CardHead } from '@/features/search/fromResults';
+import { resourcePath, rowAnchor } from '@/lib/searchState';
+import { toFromResults, type CardHead } from '@/lib/fromResults';
 import { AiLabel } from '@/ui/AiLabel';
 
 export function GuidePicks({

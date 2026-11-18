@@ -187,7 +187,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`CATEGORY` labels, `job_marker`); the `R__` seeds keep `CATEGORY` labels.
 - `frontend/src/features/search/CategoryFacet.tsx`, `FilterFacets.tsx`, `FiltersPanel.tsx`, `ActiveFilters.tsx`,
   `features/resource/CategoryLinks.tsx`, `Resource.tsx`, `Results.tsx`, `hooks/useCategories.ts`,
-  `hooks/useGuideStream.ts`, `lib/searchState.ts`, `admin/CategoryBackfill.tsx`.
+  `features/guide/useGuideStream.ts`, `lib/searchState.ts`, `admin/CategoryBackfill.tsx`.
 - Tests: `CategoryMatcherTest`, `CategoryFilterTest`, `AskGuideCategoryTest`, `CategoryEvaluationTest`,
   `CategoriesPropertiesBindingTest`, `JdbcCatalogWriterIT`, `BackfillCategoriesIT`, `CategoriesApiIT`,
   `CategoryFilter.test.tsx`, `CategoryBackfill.test.tsx`, `searchState.test.ts`; eval: `CategoryEvalTest`.

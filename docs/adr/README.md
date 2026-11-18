@@ -57,3 +57,4 @@ Folders, one per context: `foundation`, `scout`, `search`, `guide`, `identity`, 
 | [0047](operations/0047-code-format-and-dead-code-audit.md) | Code format and dead-code audit | [`operations`](operations/) | [F10.5](https://github.com/silvioincalza/helper2.ai/issues/111) | 0044 |
 | [0048](backoffice/0048-review-research-assistant.md) | Review research assistant | [`backoffice`](backoffice/) | [F6.2](https://github.com/silvioincalza/helper2.ai/issues/82) | 0011, 0014, 0038, 0043, 0046 |
 | [0049](search/0049-shadow-libraries.md) | Shadow libraries | [`search`](search/) | [F3.6](https://github.com/silvioincalza/helper2.ai/issues/52) | 0004, 0007, 0010, 0013, 0022, 0027, 0036, 0038, 0048 |
+| [0050](frontend/0050-frontend-feature-boundaries.md) | Frontend: feature boundaries and import style | [`frontend`](frontend/) | [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) | 0039, 0044, 0047 |
