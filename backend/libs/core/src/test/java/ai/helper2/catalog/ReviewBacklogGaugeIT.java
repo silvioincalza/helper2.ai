@@ -40,9 +40,9 @@ class ReviewBacklogGaugeIT {
   void countsOpenItems_notDecidedOnes() {
     double before = gauge();
     queue.proposeCandidate(
-        ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-1", "New course", "");
+        ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-1", "New course", "{}");
     queue.proposeCandidate(
-        ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-2", "New course", "");
+        ReviewQueue.Kind.COURSE_CANDIDATE, "https://example.com/backlog-2", "New course", "{}");
     assertThat(gauge()).isEqualTo(before + 2);
 
     ReviewQueue.Item first =

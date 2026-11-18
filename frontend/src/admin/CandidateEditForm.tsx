@@ -17,6 +17,7 @@ const TYPES: CandidateType[] = [
   'ARTICLE',
   'NEWS',
   'EVENT',
+  'COURSE',
 ];
 
 export function tagsOf(text: string): string[] {

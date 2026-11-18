@@ -8,6 +8,10 @@ import ai.helper2.shared.Audience;
 import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.TechLevel;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -17,6 +21,13 @@ import java.util.regex.Pattern;
 public class CurateField {
 
   private static final Pattern SPDX = Pattern.compile("^[A-Za-z0-9.+-]{2,40}$");
+
+  public static final int MAX_DESCRIPTION = 4000;
+
+  private static final java.util.Set<String> LANGUAGES =
+      java.util.Set.of(
+          "simple", "ar", "hy", "eu", "ca", "da", "nl", "en", "fi", "fr", "de", "el", "hi", "hu",
+          "id", "ga", "it", "lt", "no", "pt", "ro", "ru", "sr", "es", "sv", "ta", "tr");
 
   private record Rule(String column, Predicate<String> allowed) {}
 
@@ -33,7 +44,9 @@ public class CurateField {
           "techLevel",
           new Rule("tech_level", v -> isOneOf(TechLevel.class, v)),
           "audience",
-          new Rule("audience", v -> isOneOf(Audience.class, v) && !"UNKNOWN".equals(v)));
+          new Rule("audience", v -> isOneOf(Audience.class, v) && !"UNKNOWN".equals(v)),
+          "language",
+          new Rule("language", LANGUAGES::contains));
 
   private static final java.util.Set<String> AI_FIELDS =
       java.util.Set.of(
@@ -48,13 +61,23 @@ public class CurateField {
 
   private final CuratedFields fields;
   private final AuditTrail audit;
+  private final Clock clock;
 
-  public CurateField(CuratedFields fields, AuditTrail audit) {
+  public CurateField(CuratedFields fields, AuditTrail audit, Clock clock) {
     this.fields = fields;
     this.audit = audit;
+    this.clock = clock;
   }
 
   public void set(UUID resourceId, String field, String value, String by) {
+    if ("description".equals(field)) {
+      setDescription(resourceId, value, false, by);
+      return;
+    }
+    if ("publishedAt".equals(field)) {
+      setPublished(resourceId, publishedDate(value), by);
+      return;
+    }
     Rule rule = FIELDS.get(field);
     if (rule == null) {
       throw new BadRequestException("This field cannot be set: " + field + ".");
@@ -68,6 +91,27 @@ public class CurateField {
     }
     fields.rejectAiValues(resourceId, field);
     audit.record(by, AuditTrail.Action.SET_FIELD, resourceId.toString(), "SET " + field);
+  }
+
+  public void setDescription(UUID resourceId, String description, boolean writtenByAi, String by) {
+    String d = description == null ? "" : description.strip();
+    if (d.isEmpty() || d.length() > MAX_DESCRIPTION) {
+      throw new BadRequestException(
+          "The description must be 1 to " + MAX_DESCRIPTION + " characters.");
+    }
+    String origin = writtenByAi ? "AI_SUMMARY" : "CURATED";
+    if (!fields.setDescription(resourceId, d, origin)) {
+      throw new NotFoundException("Resource not found.");
+    }
+    audit.record(
+        by, AuditTrail.Action.SET_FIELD, resourceId.toString(), "SET description " + origin);
+  }
+
+  public void setPublished(UUID resourceId, LocalDate publishedAt, String by) {
+    if (!fields.setPublished(resourceId, publishedAt)) {
+      throw new NotFoundException("Resource not found.");
+    }
+    audit.record(by, AuditTrail.Action.SET_FIELD, resourceId.toString(), "SET publishedAt");
   }
 
   public int drop(UUID resourceId, String field, String by) {
@@ -84,6 +128,19 @@ public class CurateField {
         resourceId.toString(),
         "DROPPED " + field + " " + dropped);
     return dropped;
+  }
+
+  private LocalDate publishedDate(String value) {
+    LocalDate date;
+    try {
+      date = LocalDate.parse(value == null ? "" : value.strip());
+    } catch (DateTimeParseException e) {
+      throw new BadRequestException("The published date must be YYYY-MM-DD.");
+    }
+    if (date.isAfter(LocalDate.now(clock.withZone(ZoneOffset.UTC)).plusDays(1))) {
+      throw new BadRequestException("The published date is in the future.");
+    }
+    return date;
   }
 
   private static <E extends Enum<E>> boolean isOneOf(Class<E> type, String v) {

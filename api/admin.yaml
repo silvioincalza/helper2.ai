@@ -40,6 +40,8 @@ tags:
   - name: known-targets
   - name: relationship-targets
   - name: examples-admin
+  - name: review-research
+  - name: review-research-events
 
 paths:
   /search:
@@ -74,6 +76,12 @@ paths:
           description: >-
             Only resource candidates in this discovery category (its id, e.g. `coding`); omit for every item.
           schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+        - name: research
+          in: query
+          description: >-
+            Only items whose newest research run is DONE with this verdict (KEEP, REJECT, DUPLICATE), items with a
+            queued or running run (ACTIVE), or items never researched (NONE). Omit for every item (ADR 0048).
+          schema: { type: string, enum: [KEEP, REJECT, DUPLICATE, ACTIVE, NONE] }
         - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
@@ -169,8 +177,9 @@ paths:
       summary: Set a resource's own value of a field (ADR 0038).
       description: >-
         The value is written to the resource and wins over every source and every enrichment run: no record changes
-        it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel and
-        audience (400 for the others). The value must be one the field takes.
+        it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel,
+        audience, language, publishedAt (YYYY-MM-DD, not in the future) and description (1 to 4000 characters,
+        stored as written by the admin) (400 for the others). The value must be one the field takes.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: field, in: path, required: true, schema: { $ref: '#/components/schemas/ResourceField' } }
@@ -207,9 +216,12 @@ paths:
     put:
       tags: [review]
       operationId: editCandidate
-      summary: Fix an open resource candidate's title, type or tags before accepting it (ADR 0038).
+      summary: Fix an open resource candidate's values before accepting it (ADR 0038, 0048).
       description: >-
-        At least one of the three; what is left out stays as the collector wrote it. The type may be any candidate type,
+        At least one value; what is left out stays as the collector wrote it. Title, type and tags replace the
+        candidate's own. The other values are kept as confirmed by the admin: accepting writes them to the resource
+        as the admin's own values, which no source or enrichment run changes (`canonicalUrl` replaces the page the
+        candidate is indexed at, and an already listed URL closes the item as listed). The type may be any candidate type,
         not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
         `not-applicable` for an item that is not a resource candidate, `already-decided` for one no longer open,
         `version-conflict` when the candidate changed since it was shown (`expectedDetails`; reload, then edit
@@ -946,6 +958,116 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
 
+  /admin/review-research:
+    post:
+      tags: [review-research]
+      operationId: startReviewResearch
+      summary: Start research on review items (ADR 0048).
+      description: >-
+        Queues a run for each item that is an open RESOURCE_CANDIDATE or COURSE_CANDIDATE and has no queued or
+        running run; other ids are skipped. With `allOpen`, queues every such item (at most 20,000): ask
+        `/admin/review-research/estimate` first. Runs are async: the answer lists the queued runs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewResearchStart' }
+      responses:
+        '202':
+          description: The runs queued now.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchRuns' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+    get:
+      tags: [review-research]
+      operationId: listReviewResearch
+      summary: The newest run of each given item, for the status of the queue rows.
+      parameters:
+        - name: itemId
+          in: query
+          required: true
+          schema: { type: array, minItems: 1, maxItems: 200, items: { type: string, format: uuid } }
+          explode: true
+      responses:
+        '200':
+          description: One run per item that has one.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchRuns' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/estimate:
+    get:
+      tags: [review-research]
+      operationId: estimateReviewResearch
+      summary: How many items research on every open candidate would queue, and the most model calls it can take.
+      responses:
+        '200':
+          description: The estimate.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchEstimate' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/{runId}:
+    get:
+      tags: [review-research]
+      operationId: getReviewResearch
+      summary: One run with its checked result and every step, request and response as plain text.
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The run.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchDetail' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/{runId}/cancel:
+    post:
+      tags: [review-research]
+      operationId: cancelReviewResearch
+      summary: Cancel a queued or running run. A running one stops before its next step.
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Cancelled. }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/{runId}/events:
+    get:
+      tags: [review-research-events]
+      operationId: streamReviewResearch
+      summary: The steps of one run as they are stored, then its end.
+      description: >-
+        `text/event-stream`. Event `step`: one ReviewResearchStep, in order, from `afterSeq` on. Event `status`: the
+        run (ReviewResearchRun) when its status changes. The stream ends after the run is DONE, FAILED or CANCELLED.
+        New rows are read once a second.
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: afterSeq, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200':
+          description: The event stream.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
 components:
   schemas:
     HomeExampleInput:
@@ -1566,7 +1688,7 @@ components:
 
     CandidateEdit:
       type: object
-      description: At least one of title, type and tags; null leaves it as it is.
+      description: At least one value; null leaves it as it is.
       required: [expectedDetails]
       properties:
         expectedDetails:
@@ -1582,22 +1704,39 @@ components:
           type: [array, 'null']
           maxItems: 12
           items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+        canonicalUrl: { type: [string, 'null'], maxLength: 2000, description: An https URL. }
+        pricing: { type: [string, 'null'], maxLength: 40, description: 'FREE, FREEMIUM, PAID or OPEN_SOURCE_SELF_HOSTED.' }
+        openSource: { type: [boolean, 'null'] }
+        license: { type: [string, 'null'], pattern: '^[A-Za-z0-9.+-]{2,40}$' }
+        audience: { type: [string, 'null'], maxLength: 40, description: 'USE_AI, BUILD_WITH_AI or BOTH.' }
+        techLevel: { type: [string, 'null'], maxLength: 40, description: 'BEGINNER, INTERMEDIATE or ADVANCED.' }
+        description: { type: [string, 'null'], minLength: 1, maxLength: 4000 }
+        descriptionWrittenByAi:
+          type: [boolean, 'null']
+          description: >-
+            True when the description is the research model's text, confirmed as it is: the resource keeps it as
+            AI-written (AI_SUMMARY) and the public site labels it. False or null: the admin wrote it (CURATED).
+        language: { type: [string, 'null'], pattern: '^(simple|[a-z]{2})$' }
+        publishedAt: { type: [string, 'null'], format: date }
 
     ResourceField:
       type: string
-      description: A field the enrichment fills (ADR 0014); an admin sets the first six (ADR 0038).
-      enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms]
+      description: >-
+        A field of a resource. The enrichment fills type to platforms (ADR 0014), and only those can be dropped. An
+        admin sets every field but useCase and platforms (ADR 0038).
+      enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms, language, publishedAt,
+        description]
 
     ResourceFieldValue:
       type: object
       required: [value]
       properties:
-        value: { type: string, minLength: 1, maxLength: 40 }
+        value: { type: string, minLength: 1, maxLength: 4000 }
 
     CandidateType:
       type: string
-      description: The types a resource candidate may have (ADR 0013, 0012, 0038).
-      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT]
+      description: The types a resource or course candidate may have (ADR 0013, 0012, 0031, 0038).
+      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE]
 
     RelationshipTargetChange:
       type: object
@@ -1748,3 +1887,98 @@ components:
         itemsChanged: { type: integer }
         enrichmentsQueued: { type: integer }
         message: { type: [string, 'null'] }
+
+    ReviewResearchStart:
+      type: object
+      properties:
+        itemIds: { type: array, maxItems: 500, items: { type: string, format: uuid } }
+        allOpen: { type: boolean, default: false, description: Every open resource and course candidate with no active run. }
+
+    ReviewResearchEstimate:
+      type: object
+      required: [items, maxModelCalls]
+      properties:
+        items: { type: integer, description: Open resource and course candidates with no queued or running run. }
+        maxModelCalls: { type: integer, format: int64, description: At most 14 model calls per item. }
+
+    ReviewResearchRuns:
+      type: object
+      required: [runs]
+      properties:
+        runs: { type: array, items: { $ref: '#/components/schemas/ReviewResearchRun' } }
+
+    ReviewResearchRun:
+      type: object
+      required: [id, itemId, status, model, requestedAt, steps, promptTokens, completionTokens]
+      properties:
+        id: { type: string, format: uuid }
+        itemId: { type: string, format: uuid }
+        status: { type: string, enum: [QUEUED, RUNNING, DONE, FAILED, CANCELLED] }
+        model: { type: string }
+        requestedAt: { type: string, format: date-time }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        steps: { type: integer }
+        promptTokens: { type: integer }
+        completionTokens: { type: integer }
+        verdict: { type: [string, 'null'], enum: [KEEP, REJECT, DUPLICATE, null] }
+        error: { type: [string, 'null'] }
+
+    ReviewResearchDetail:
+      type: object
+      required: [run, steps]
+      properties:
+        run: { $ref: '#/components/schemas/ReviewResearchRun' }
+        result: { oneOf: [{ $ref: '#/components/schemas/ReviewResearchResult' }, { type: 'null' }] }
+        steps: { type: array, items: { $ref: '#/components/schemas/ReviewResearchStep' } }
+
+    ReviewResearchResult:
+      type: object
+      description: >-
+        The checked answer (ADR 0048 §6). The status of each attribute is computed by code from the citations that
+        are found in the evidence of this run; `dropped` says which citations did not count and why. Every value is a
+        proposal written with AI: the admin confirms it before it reaches the catalog.
+      required: [verdict, reason, attributes, dropped, aiWritten]
+      properties:
+        verdict: { type: string, enum: [KEEP, REJECT, DUPLICATE] }
+        reason: { type: string }
+        duplicateOf: { type: [string, 'null'] }
+        aiWritten: { type: boolean, description: 'Always true: machine-readable AI marking (EU AI Act Art. 50).' }
+        attributes:
+          type: array
+          items:
+            type: object
+            required: [name, proposed, status, sources]
+            properties:
+              name: { type: string }
+              current: { type: [string, 'null'] }
+              proposed: { type: array, items: { type: string } }
+              status: { type: string, enum: [CONFIRMED, SINGLE_SOURCE, CONFLICT, NOT_FOUND] }
+              sources:
+                type: array
+                items:
+                  type: object
+                  required: [evidenceId, tool, url, excerpt, value, authoritative]
+                  properties:
+                    evidenceId: { type: string }
+                    tool: { type: string }
+                    url: { type: string }
+                    excerpt: { type: string }
+                    value: { type: string }
+                    authoritative: { type: boolean }
+        dropped: { type: array, items: { type: string } }
+
+    ReviewResearchStep:
+      type: object
+      required: [seq, kind, name, request, durationMs, at]
+      properties:
+        seq: { type: integer }
+        kind: { type: string, enum: [MODEL_CALL, TOOL_CALL, CHECK] }
+        name: { type: string }
+        request: { type: string, description: Plain text. Show it as text, never as HTML. }
+        response: { type: [string, 'null'], description: Plain text. Show it as text, never as HTML. }
+        error: { type: [string, 'null'] }
+        durationMs: { type: integer, format: int64 }
+        promptTokens: { type: [integer, 'null'] }
+        completionTokens: { type: [integer, 'null'] }
+        at: { type: string, format: date-time }

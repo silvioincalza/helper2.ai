@@ -34,6 +34,10 @@ import tools.jackson.databind.node.ObjectNode;
 class ResourceCandidateJson implements CandidateDetails {
   static final String EDITED = "edited";
 
+  static final String CONFIRMED = "confirmed";
+
+  static final String DESCRIPTION_BY_AI = "descriptionByAi";
+
   static final int MAX_TITLE = CatalogLimits.TITLE_CHARS;
 
   static final int MAX_SNIPPET = ScoutPolicy.PRODUCT_PAGE_EXCERPT_CHARS;
@@ -59,6 +63,9 @@ class ResourceCandidateJson implements CandidateDetails {
     String snippet = c.getSnippet() == null ? null : c.getSnippet().strip();
     if (snippet != null && !snippet.isEmpty()) {
       d.put("snippet", cut(snippet, MAX_SNIPPET));
+    }
+    if (c.getPlatform() != null && !c.getPlatform().isBlank()) {
+      d.put("platform", c.getPlatform().strip());
     }
     d.put("foundBy", List.of(finder(sourceId, c)));
     return json.writeValueAsString(d);
@@ -139,6 +146,20 @@ class ResourceCandidateJson implements CandidateDetails {
       d.putPOJO("tags", change.getTags().stream().sorted().toList());
       edited.add("tags");
     }
+    if (change.getCanonicalUrl() != null) {
+      d.put("url", change.getCanonicalUrl());
+      edited.add("canonicalUrl");
+    }
+    Map<String, String> confirmed = change.confirmed();
+    if (!confirmed.isEmpty()) {
+      ObjectNode stored =
+          d.get(CONFIRMED) instanceof ObjectNode existing ? existing : d.putObject(CONFIRMED);
+      confirmed.forEach(stored::put);
+      edited.addAll(confirmed.keySet());
+    }
+    if (change.getDescription() != null) {
+      d.put(DESCRIPTION_BY_AI, Boolean.TRUE.equals(change.getDescriptionByAi()));
+    }
     d.putPOJO(EDITED, List.copyOf(edited));
     read(json.writeValueAsString(d));
     return json.writeValueAsString(d);
@@ -146,6 +167,10 @@ class ResourceCandidateJson implements CandidateDetails {
 
   String reason(String details) {
     AcceptedCandidate c = read(details);
+    if (c.getType() == ResourceType.COURSE) {
+      return ReviewQueueCandidateReview.courseReason(
+          String.join(", ", finders(details)), c.getTitle());
+    }
     String tags = c.getTags().isEmpty() ? "" : " (" + String.join(", ", c.getTags()) + ")";
     return "New "
         + c.getType().name()
@@ -154,6 +179,15 @@ class ResourceCandidateJson implements CandidateDetails {
         + String.join(", ", finders(details))
         + ": "
         + c.getTitle();
+  }
+
+  private static Map<String, String> confirmed(JsonNode d) {
+    Map<String, String> values = new LinkedHashMap<>();
+    JsonNode c = d.get(CONFIRMED);
+    if (c != null && c.isObject()) {
+      c.properties().forEach(e -> values.put(e.getKey(), e.getValue().asString("")));
+    }
+    return values;
   }
 
   private static Set<String> edited(JsonNode d) {
@@ -186,7 +220,9 @@ class ResourceCandidateJson implements CandidateDetails {
           facts(d, tags),
           finders(d),
           edited(d).contains("type"),
-          signals(d));
+          signals(d),
+          confirmed(d),
+          d.path(DESCRIPTION_BY_AI).asBoolean(false));
     } catch (JacksonException e) {
       throw new InvalidCandidate("the candidate is not JSON");
     }

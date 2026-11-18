@@ -240,6 +240,8 @@ class EvidenceValidator(
     }
   }
 
+  fun allows(field: String, value: String): Boolean = allowed[field]?.invoke(value) ?: false
+
   private val spdx = Regex("^[A-Za-z0-9.+-]{2,40}$")
 
   private val allowed: Map<String, (String) -> Boolean> =
@@ -517,8 +519,7 @@ class EvidenceValidator(
       else CheckedCitation(m.evidenceId, excerpt)
     }
 
-    private fun holds(m: Material, excerpt: String): Boolean =
-      normalize(m.text).contains(normalize(excerpt))
+    private fun holds(m: Material, excerpt: String): Boolean = quotes(m.text, excerpt)
 
     private fun notFound(cited: Material, excerpt: String): String {
       val elsewhere = input.materials.firstOrNull { it !== cited && holds(it, excerpt) }
@@ -547,7 +548,18 @@ object EvidenceRules {
   @JvmStatic
   fun claimProblem(sentence: String, excerpts: List<String>, title: String): String? =
     ClaimCheck.problem(sentence, excerpts, title)
+
+  @JvmStatic
+  fun quoteProblem(excerpt: String, text: String): String? {
+    val e = excerpt.trim()
+    val min = EvidenceValidator.MIN_EXCERPT_CHARS
+    val max = EvidenceValidator.MAX_EXCERPT_CHARS
+    if (e.length !in min..max) return "excerpt length ${e.length} outside $min..$max"
+    return if (quotes(text, e)) null else "excerpt not found in the cited evidence"
+  }
 }
+
+internal fun quotes(text: String, excerpt: String) = normalize(text).contains(normalize(excerpt))
 
 internal fun normalize(s: String) =
   s.replace('‹', '<').replace('›', '>').lowercase().replace(Regex("\\s+"), " ").trim()

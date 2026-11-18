@@ -258,17 +258,26 @@ than a hundred), so the question is the same for each of them: what is this name
   by one as before. A group spans every category, so the category filter is not shown there. When a decision empties
   the last page, the list moves back to the last page that has groups.
 
-### A resource candidate edited before it is accepted: title, type and tags
-19. **One call edits an open resource candidate:** `PUT /admin/review-items/{id}/candidate` with at least one of
-    `title` (1 to 300 characters, one line), `type` (any candidate type: products and tools, MODEL, DATASET,
-    ARTICLE, NEWS, EVENT; never COURSE or OTHER) and `tags` (at most 12, tag-shaped). What is left out stays as the
-    collector wrote it. It answers the item, with its new reason line. The item stays open.
+### A resource or course candidate edited before it is accepted
+19. **One call edits an open resource or course candidate:** `PUT /admin/review-items/{id}/candidate` with at least
+    one of `title` (1 to 300 characters, one line), `type` (any candidate type: products and tools, MODEL, DATASET,
+    ARTICLE, NEWS, EVENT, COURSE; never OTHER) and `tags` (at most 12, tag-shaped), or a value the admin confirms:
+    `canonicalUrl` (https), `pricing`, `openSource`, `license` (SPDX), `audience`, `techLevel`, `description` (1 to
+    4000 characters, with `descriptionWrittenByAi`), `language` and `publishedAt` (a date, not in the future). The
+    values follow the catalog's rules (`EvidenceValidator.allows`). What is left out stays as the collector wrote it.
+    It answers the item, with its new reason line. The item stays open.
+    - A course candidate holds the same structured candidate as a resource candidate, with type COURSE and its
+      platform (`ReviewQueueCandidateReview`). Accepting it indexes the course like a resource candidate, with every
+      confirmed value. `V2026.11.6.5__course_candidate_details.sql` turns the open course candidates held as text
+      into structured ones; a decided one keeps its text.
 20. **The edit is marked in the details** (`edited`: the fields the admin changed).
     - When another collector finds the page later ([0013](../scout/0013-discovery.md) §8 and
       §17), it joins the candidate's finders. It does not change an edited
       type or edited tags, and never the title.
     - Accepting indexes what the admin wrote. A type the admin set need not be one a finder declares; it must still be
-      a candidate type. When the page was listed meanwhile (as a resource or as a source record of one), accepting
+      a candidate type. A confirmed canonical URL is the page it is indexed at, and the listed check uses it. Every
+      other confirmed value becomes a curated value of the new resource (§25), with its own `SET_FIELD` entry: a
+      description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the page was listed meanwhile (as a resource or as a source record of one), accepting
       adds nothing: the item is closed as ACCEPTED with the note "Already listed as <title>.", and the review page says
       so and links to the listed resource. The edits are not applied; the admin makes them on the listed page.
     - The accepted record keeps the signals its collector stated (stars, last push, archived, fork:
@@ -293,9 +302,12 @@ than a hundred), so the question is the same for each of them: what is this name
 
 ### A curated field: an admin sets a resource's own value, over every source and every run
 25. **Set a value:** `PUT /admin/resources/{id}/fields/{field}` with `value`, for the fields that have a column of
-    their own: type, pricing, license, openSource, techLevel and audience. The value must be one the field takes
-    (an SPDX id for a licence; no OTHER type, no UNKNOWN audience).
+    their own: type, pricing, license, openSource, techLevel, audience, language, publishedAt and description. The
+    value must be one the field takes (an SPDX id for a licence; no OTHER type, no UNKNOWN audience; a catalog
+    language; a date `YYYY-MM-DD`, not in the future; a description of 1 to 4000 characters, stored as `CURATED`).
     - The value is written to the resource's column, and the field is listed in `resource.curated_fields`.
+    - Accepting a candidate also curates its description, language and published date
+      (`V2026.11.6.4__curated_description_language_published.sql`); no source or run changes them after.
     - A CURATED, VERIFIED field assertion says where it came from; the page shows "Curated by Helper2".
     - The AI's values of the field are rejected.
 26. **It wins everywhere, and stays.**
@@ -311,12 +323,12 @@ than a hundred), so the question is the same for each of them: what is this name
     - The events seed overwrites only the fields it asserts (eventDates, eventFormat), so it leaves an admin's value
       on the same event alone (`scripts/industry-events-seed.mjs`).
 27. **Drop the AI's value:** `POST /admin/resources/{id}/fields/{field}/drop`, for any field the AI writes, use case
-    and platforms too. It rejects the AI's values, as the code re-check does
+    and platforms too. Language, published date and description are no field the AI writes: 400. It rejects the AI's values, as the code re-check does
     ([0014](../scout/0014-evidence-gated-enrichment.md)). A value a source states or an admin set stays. The page then shows the
     source's value, or "Not stated": a rejected estimate is not shown (`FieldStates`).
 28. **Audit:** `SET_FIELD` (`SET <field>`) and `DROP_FIELD` (`DROPPED <field> <count>`), with the resource id.
-29. **Back office:** next to each field of an enrichment check, "Set the value" (a list of the field's values, or the
-    licence id) and "Drop the AI value". Both read the evidence again.
+29. **Back office:** next to each field of an enrichment check, "Set the value" (a list of the field's values, the
+    licence id, a date, or a text box for a description) and "Drop the AI value". Both read the evidence again.
 
 ### Code
 

@@ -2,7 +2,7 @@ import './adminText';
 import { useTranslation } from 'react-i18next';
 import { AdminDialog } from './AdminDialog';
 
-const REVIEW_KEYS = ['j', 'k', 'x', 'a', 'r', 'n', '?'] as const;
+const REVIEW_KEYS = ['j', 'k', 'x', 'a', 'r', 'n', 'c', 'e', 'u', '?'] as const;
 
 export function ReviewKeysHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();

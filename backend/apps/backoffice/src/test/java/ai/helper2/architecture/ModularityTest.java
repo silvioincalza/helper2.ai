@@ -35,7 +35,9 @@ class ModularityTest {
     "ai.helper2.catalog.usecase",
     "ai.helper2.catalog.enrichment",
     "ai.helper2.admin",
-    "ai.helper2.admin.usecase"
+    "ai.helper2.admin.usecase",
+    "ai.helper2.research",
+    "ai.helper2.research.usecase"
   };
 
   @Test

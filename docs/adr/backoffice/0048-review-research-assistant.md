@@ -23,22 +23,32 @@ tool answered, and must confirm every value before it reaches the catalog.
    attribute. Nothing changes until the admin confirms, edits or keeps each changed attribute and then accepts the item.
    Other kinds are out of scope until this one has paid for itself.
 2. **The admin starts it, the runs are async.** The admin starts research for one item, a selection, the current filter
-   page, or every open item of the two kinds; for more than one page the count and the estimated tokens are shown first.
+   page, or every open item of the two kinds; for every open item the count and the most model calls it can take (14
+   an item) are shown first (`GET /admin/review-research/estimate`).
    There is no background job that researches the queue on its own. A run is a row in `review_research` with the status
    `QUEUED`, `RUNNING`, `DONE`, `FAILED` or `CANCELLED`. Workers on virtual threads take the oldest queued row with
-   `FOR UPDATE SKIP LOCKED`, so two back office pods never run the same item. The number of workers is the runtime
-   setting `review-research.concurrency` (start: 4). The admin can cancel a queued or running run and start it again.
+   `FOR UPDATE SKIP LOCKED`, so two back office pods never run the same item, and a partial unique index allows one
+   queued or running run per item. The number of workers per pod is `H2_RESEARCH_CONCURRENCY` (4); the daily cap of
+   model calls is the runtime setting `research.dailyModelCalls` (`H2_RESEARCH_DAILY_MODEL_CALLS`, 3,000), and page
+   reads have their own cap (`H2_RESEARCH_DAILY_PAGE_READS`, 300). A running run with no step for 5 minutes lost its
+   worker and fails. The admin can cancel a queued or running run and start it again. The tables come with
+   `V2026.11.6.3__review_research.sql`, after `V2026.11.6.2__shadow_library.sql`.
 3. **Read-only tools, from the adapters we have.** The agent calls these tools and nothing else:
-   `read_page` (the page reader, its daily credits and its Redis cache), `web_search` (the live web search),
+   `read_page` (the page reader, with its own daily cap), `web_search` (the live web search, on the Scout's live-web
+   credits; its results are leads, not evidence: the model reads a page before it cites it),
    `find_package` (deps.dev: npm, PyPI and the other ecosystems), `github_repo` (the GitHub client), `huggingface`
-   (the Hugging Face client), `catalog_lookup` (canonical URL, host, name, known targets) and `check_url` (status and
+   (the Hugging Face client), `catalog_lookup` (a resource listed at the URL or at its site's root, a known target by name) and `check_url` (status and
    final URL after redirects; private, loopback and link-local addresses are refused). A shadow library is never read
-   (`ShadowLibraries`). The back office reaches the source connectors only through ports of the new module, as for the
-   AI check.
-4. **Our loop, the model's tool calls.** The agent uses Spring AI tool calling with internal tool execution turned off:
-   our code runs each tool, stores the step and sends the result back. So every step is stored before the next one, the
-   limits are ours (at most 12 tool calls, 3 minutes, the daily token budget), and the loop works with any
-   OpenAI-compatible model. A model that cannot call tools fails the eval and is not used.
+   (`ShadowLibraries`). `ResearchTool` is the research module's port: `catalog_lookup` lives in the module, the other
+   six in the sources module (`ai.helper2.sources.research`), which implements the port, as for the AI check. The
+   module runs SQL only on its own two tables; it reads the review queue and the catalog through the catalog's ports
+   (`ReviewQueue`, `KnownTargets`).
+4. **Our loop, the model's tool calls.** The agent sends the tool definitions through Spring AI; its chat model
+   returns the tool calls and runs none of them. Our code (`RunResearch`) runs each tool, stores the step and sends the
+   result back. So every step is stored before the next one, the limits are ours (at most 12 tool calls, 3 minutes,
+   the daily cap of model calls, one more call when the final answer is not the JSON asked for), and the loop works
+   with any OpenAI-compatible model. A model that cannot call tools fails the eval and is not used. The prompt is
+   `prompts/research/research.txt`.
 5. **Every step is stored and shown.** `review_research_step` holds, per step: the sequence, the kind (`MODEL_CALL`,
    `TOOL_CALL`, `CHECK`), the request, the response, the duration, the tokens and the error. A response is cut at
    200 KB. The admin sees the steps as a timeline, live while the run is going, and expands any request or response.
@@ -50,29 +60,49 @@ tool answered, and must confirm every value before it reaches the catalog.
    20–300 characters found verbatim in that evidence, and for licence, open source, pricing and type an excerpt that
    states the value itself. On top of it, per attribute:
    - `CONFIRMED`: an authoritative source supports the value (the registry or GitHub for a licence or a repository, the
-     product's own site for its name, price and description), or two sources on different registrable domains agree;
+     product's own site, read with `read_page`, for its URL, name, type, price, description, language and date), or two
+     sources on different hosts (`www.` ignored) agree;
    - `SINGLE_SOURCE`: one non-authoritative source; `CONFLICT`: supported values disagree, all are shown;
      `NOT_FOUND`: no supported value. A citation that fails the rules is dropped, and the step says why.
    The attributes are the resource's catalog fields: verdict, canonical URL, title, type, audience, tech level, pricing,
    open source, licence, description, tags, language, published date, duplicate of.
-7. **Applying.** The research result fills the candidate edit form. The admin confirms, edits or keeps each changed
-   attribute; Accept is enabled when every changed attribute has a decision. The confirmed values go into the candidate
-   (`ResourceCandidateJson`, extended with the new fields) and reach the catalog through the existing accept path. A
-   description written by the model keeps `description_origin = AI_SUMMARY`, so the public site labels it as AI-written
-   (EU AI Act Art. 50).
-8. **Batch apply: rejects only.** On a selection, the admin can reject the items whose verdict is reject. The list of
-   items with their reasons is shown first; nothing is rejected before the admin confirms it. Keep and duplicate are
-   decided one item at a time.
-9. **Live view over SSE.** `GET /admin/review-research/events` streams the status of the runs on the admin's page, and
-   `GET /admin/review-research/{itemId}/events` streams the steps of one run. The endpoint reads new rows from Postgres
-   once a second, so it works with any number of back office pods and needs no broker.
+7. **Applying.** The detail pane of the review queue shows the verdict and one row per attribute: the value now, the
+   proposed value, its status and its quotes. The admin confirms, edits or keeps each changed attribute (keys `c`, `e`
+   and `u`: `k` stays "previous item"); a conflict needs a pick first. Accept is enabled when every changed attribute
+   has a decision, and says how many are left. On Accept, every confirmed value goes into the candidate through
+   `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path
+   ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is
+   indexed at the confirmed canonical URL, and the other values become the resource's curated values. A description
+   the model wrote and the admin confirmed as it is stays AI-written (`AI_SUMMARY`); one the admin rewrote is
+   `CURATED`. A course candidate holds the same structured candidate, so its confirmed values reach the catalog the
+   same way ([0038](0038-back-office-and-review.md) §19). The queue's research filter is
+   `GET /admin/review-items?research=KEEP|REJECT|DUPLICATE|ACTIVE|NONE`, answered by the server across pages. The pane is marked
+   `data-ai-generated` with the model, and labelled "Proposed with AI" (EU AI Act Art. 50).
+8. **Batch apply: rejects only.** The research bar offers to reject the items of the page whose verdict is reject. The
+   list of items with their reasons is shown first, and the admin can untick any; nothing is rejected before the admin
+   confirms it. Keep and duplicate are decided one item at a time. The research bar also starts research for the
+   picked items, the page, or every open candidate after the count and the most model calls are shown. Each row
+   shows its research (queued, running with its step, the verdict, failed with the reason, cancel, research again),
+   read every 2 seconds while a run is active. The Research filter (done keep, done reject, not researched) reads the
+   loaded page only.
+9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
+   changes, and ends with the run. It reads new rows from Postgres once a second, so it works with any number of back
+   office pods and needs no broker. The page `/admin/review/research/{runId}` shows every step, request and response
+   as plain text, filtered by kind or errors, and follows a running run on this stream. The queue rows read their
+   status from `GET /admin/review-research?itemId=…`. A
+   result carries `aiWritten: true`, the machine-readable AI marking.
 10. **Measured before it is used.** Before the UI ships, an offline eval runs the agent on 100 items the admin has
     already decided, once with `H2_NEBIUS_FAST_MODEL` and once with `H2_NEBIUS_REASONING_MODEL`. It reports verdict
     agreement, accuracy per attribute, the share of `CONFIRMED` values that are right, time per item and tokens per
     item. The admin chooses the model and the bar from these numbers. In production every research result is kept next
-    to the admin's final decision, so the same numbers are measured on live use.
-11. **Retention.** Runs and steps are deleted 90 days after the item is decided, or 90 days after the run when the item
-    is still open. The steps hold public web pages and catalog data; no user data is sent to the model.
+    to the admin's final decision, so the same numbers are measured on live use. The labels are the admin's decisions
+    (`docs/eval/research-labels.tsv`, exported by `scripts/research-eval-labels.sql`) and items a person labels by
+    hand (`research-labels-manual.tsv`). `ResearchEvalRecorder` (`evalRecord`) runs the real tools and model on them;
+    the eval's catalog is empty, so a duplicate verdict is not measured. The report says when the set is under 100
+    items or 20 rejects; then it decides nothing. How to run it: `docs/eval/README.md`.
+11. **Retention.** Runs and their steps are deleted 90 days after the run ends (the daily job `review-research`), and
+    with their review item. The steps hold public web pages and catalog data; no user data is sent to the model. The
+    public app's database role cannot read the two tables.
 
 ## Alternatives considered
 
@@ -95,8 +125,8 @@ tool answered, and must confirm every value before it reaches the catalog.
   descriptions.
 - New tables `review_research` and `review_research_step`; a new back office module with ports to the sources; the first
   SSE endpoint of the back office.
-- Cost: model tokens and page-reader credits per item. The daily budget stops new runs when it is spent; the estimate is
-  shown before a large start.
+- Cost: model calls, page reads and web search credits per item. When a daily cap is spent, a run fails with the
+  reason and can be started again the next day; the estimate is shown before a large start.
 - Security: page text is untrusted. The tools only read, the model's output is a validated schema, the quote check
   drops what was not fetched, and the agent can never accept or reject an item. `check_url` refuses private addresses.
 - Privacy: a new processing purpose (research on public pages with a model provider) and a 90-day retention. The
@@ -121,7 +151,7 @@ tool answered, and must confirm every value before it reaches the catalog.
 | Deployment | Back office only, behind the VPN; concurrency setting (2) |
 | Security & identity | Admin only; GitHub sign-in; no write tool (3) |
 | Human-in-the-loop | Per-attribute confirmation; batch only for rejects, after the list (7, 8) |
-| Cost & reliability | Step and time limits, daily token budget, page-reader credits, retry by the admin (2, 4) |
+| Cost & reliability | Step and time limits, daily caps of model calls and page reads, retry by the admin (2, 4) |
 
 ## Diagrams
 

@@ -28,6 +28,16 @@ public class ListReviewItems {
       @Nullable String category,
       int page,
       int size) {
+    return list(status, kind, category, null, page, size);
+  }
+
+  public ReviewQueue.Page list(
+      ReviewQueue.Status status,
+      ReviewQueue.Kind kind,
+      @Nullable String category,
+      ReviewQueue.@Nullable Only only,
+      int page,
+      int size) {
     if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
       throw new BadRequestException(
           "page must be 0 or more and size between 1 and " + MAX_PAGE_SIZE);
@@ -35,6 +45,6 @@ public class ListReviewItems {
     if (category != null && (category.length() > 40 || !CATEGORY.matcher(category).matches())) {
       throw new BadRequestException("category must be lower-case words with hyphens");
     }
-    return queue.list(status, kind, category, page, size);
+    return queue.list(status, kind, category, only, page, size);
   }
 }

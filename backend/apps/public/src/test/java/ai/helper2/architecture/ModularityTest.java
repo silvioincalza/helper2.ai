@@ -159,6 +159,8 @@ class ModularityTest {
           Map.entry("guide_similar_question", "guide"),
           Map.entry("source_cursor", "scout"),
           Map.entry("scout_run", "scout"),
+          Map.entry("review_research", "research"),
+          Map.entry("review_research_step", "research"),
           Map.entry("scout_schedule", "scout"),
           Map.entry("enrichment_queue_control", "scout"),
           Map.entry("discovery_host", "scout"),
@@ -184,7 +186,7 @@ class ModularityTest {
       for (Path migration :
           migrations
               .filter(m -> m.getFileName().toString().matches("V\\d+(\\.\\d+)*__.*\\.sql"))
-              .sorted(ModularityTest::byVersion)
+              .sorted(java.util.Comparator.comparing(ModularityTest::version))
               .toList()) {
         String sql = Files.readString(migration);
         Matcher created = CREATE_TABLE.matcher(sql);
@@ -241,14 +243,9 @@ class ModularityTest {
     }
   }
 
-  private static int byVersion(Path left, Path right) {
-    return java.util.Arrays.compare(version(left), version(right));
-  }
-
-  private static int[] version(Path migration) {
+  private static org.flywaydb.core.api.MigrationVersion version(Path migration) {
     String name = migration.getFileName().toString();
-    return java.util.Arrays.stream(name.substring(1, name.indexOf("__")).split("\\."))
-        .mapToInt(Integer::parseInt)
-        .toArray();
+    return org.flywaydb.core.api.MigrationVersion.fromVersion(
+        name.substring(1, name.indexOf("__")));
   }
 }

@@ -22,6 +22,10 @@ export const adminRoutes: RouteObject[] = [
         children: [
           { index: true, lazy: page(() => import('@/admin/AdminOverview')) },
           { path: 'review', lazy: page(() => import('@/admin/ReviewQueuePage')) },
+          {
+            path: 'review/research/:runId',
+            lazy: page(() => import('@/admin/ResearchTracePage')),
+          },
           { path: 'runs', lazy: page(() => import('@/admin/ScoutRunsPage')) },
           { path: 'enrichment', lazy: page(() => import('@/admin/EnrichmentQueuePage')) },
           { path: 'examples', lazy: page(() => import('@/admin/ExamplesPage')) },

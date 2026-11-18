@@ -37,6 +37,18 @@ public final class BudgetedChat {
         });
   }
 
+  public @Nullable ChatResponse response(
+      Call call, Supplier<? extends RuntimeException> budgetSpent, Supplier<ChatResponse> chat) {
+    return run(
+        call,
+        budgetSpent,
+        () -> {
+          ChatResponse response = chat.get();
+          metrics.tokens(call.step(), call.promptVersion(), response);
+          return response;
+        });
+  }
+
   public <T> @Nullable T entity(
       Call call,
       Supplier<? extends RuntimeException> budgetSpent,
