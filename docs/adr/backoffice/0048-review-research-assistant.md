@@ -79,7 +79,7 @@ tool answered, and must confirm every value before it reaches the catalog.
 - **One model call per item, no tools.** Cheap and fast, but the model would guess the licence, the repository and the
   duplicates from the candidate text alone. Rejected: the point is to check facts.
 - **A background job that researches the whole queue under a daily budget.** Instant for the admin, but it pays for
-  items nobody opens and its results go stale. Rejected by the owner.
+  items nobody opens and its results go stale. Rejected: research runs only for the items the admin starts it for.
 - **Spring AI tool calling with internal execution.** Less code, but the loop runs inside the client: the steps are not
   stored one by one, and the limits are harder to hold.
 - **An agent framework (LangGraph4j, Embabel).** More features than one loop with seven read-only tools needs, and one
