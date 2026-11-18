@@ -41,6 +41,11 @@ public final class RunResearch {
   static final String NO_TEXT = "the tool returned no readable text";
   static final String NOT_RUN = "not run: the tool calls are used up";
   static final String REPEATED = "not run: the same call was made before; use its earlier result";
+  static final int MAX_REFUSED_TURNS = 2;
+  static final String ANSWER_NOW_REFUSED =
+      "Your last calls were not run: they repeat earlier calls or pass a tool's limit. Answer now with"
+          + " the JSON object only. Propose only what the evidence you have read supports; leave out the"
+          + " rest.";
   static final String ANSWER_NOW =
       "You have used all "
           + MAX_TOOL_CALLS
@@ -125,6 +130,7 @@ public final class RunResearch {
       conversation.add(new Message.User(subjectText.apply(subject)));
       boolean retried = false;
       boolean answerNow = false;
+      int refusedTurns = 0;
       while (true) {
         if (runs.isCancelled(run.id())) {
           return;
@@ -140,12 +146,17 @@ public final class RunResearch {
             return;
           }
           conversation.add(new Message.Assistant(turn.text(), turn.calls()));
+          boolean anyRan = false;
           for (ToolCall call : turn.calls()) {
-            handle(call);
+            anyRan |= handle(call);
           }
+          refusedTurns = anyRan ? 0 : refusedTurns + 1;
           if (toolCalls >= MAX_TOOL_CALLS) {
             answerNow = true;
             conversation.add(new Message.User(ANSWER_NOW));
+          } else if (refusedTurns >= MAX_REFUSED_TURNS) {
+            answerNow = true;
+            conversation.add(new Message.User(ANSWER_NOW_REFUSED));
           }
           continue;
         }
@@ -236,18 +247,19 @@ public final class RunResearch {
           null);
     }
 
-    private void handle(ToolCall call) {
+    private boolean handle(ToolCall call) {
       if (toolCalls >= MAX_TOOL_CALLS) {
         notRun(call, NOT_RUN);
-        return;
+        return false;
       }
       String refused = refusal(call);
       if (refused != null) {
         toolCalls++;
         notRun(call, refused);
-        return;
+        return false;
       }
       toolCall(call);
+      return true;
     }
 
     private @Nullable String refusal(ToolCall call) {

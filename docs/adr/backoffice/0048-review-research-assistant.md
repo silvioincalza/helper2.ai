@@ -52,7 +52,8 @@ tool answered, and must confirm every value before it reaches the catalog.
    value it cannot cite. On that call the model must answer in the JSON schema of the answer when the provider
    supports it (`H2_NEBIUS_NATIVE_SCHEMA`), so the answer can be read. A tool call past the 12th is not run: it is
    stored with the error "not run". So is the same call made a second time, and a call past a tool's own limit for
-   the run (`web_search`: 4); both still count among the 12. A model that still asks for a tool fails the run. A model that cannot call tools fails the eval and is not used. The prompt is
+   the run (`web_search`: 4); both still count among the 12. After two turns in which no call ran, the model gets the
+   same last call with no tools at once. A model that still asks for a tool fails the run. A model that cannot call tools fails the eval and is not used. The prompt is
    `prompts/research/research.txt`.
 5. **Every step is stored and shown.** `review_research_step` holds, per step: the sequence, the kind (`MODEL_CALL`,
    `TOOL_CALL`, `CHECK`), the request, the response, the duration, the tokens and the error. A response is cut at
