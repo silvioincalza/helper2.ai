@@ -33,21 +33,14 @@ export function aiMarkWhen(
   return condition ? aiMark(model) : {};
 }
 
-type AiProviderAttribute = { 'data-ai-provider'?: string };
-type AiSourceAttributes = AiProviderAttribute & { 'data-ai-models'?: string };
-
-export function aiProvider(marker: AiContentMarker | null | undefined): AiProviderAttribute {
-  return marker ? { 'data-ai-provider': marker.provider } : {};
-}
+type AiSourceAttributes = { 'data-ai-provider'?: string; 'data-ai-models'?: string };
 
 export function aiSource(marker: AiContentMarker | null | undefined): AiSourceAttributes {
   if (!marker) return {};
-  return marker.models.length > 0 ? aiSourceWithModels(marker) : aiProvider(marker);
-}
-
-export function aiSourceWithModels(marker: AiContentMarker | null | undefined): AiSourceAttributes {
-  if (!marker) return {};
-  return { ...aiProvider(marker), 'data-ai-models': marker.models.join(' ') };
+  const provider = { 'data-ai-provider': marker.provider };
+  return marker.models.length > 0
+    ? { ...provider, 'data-ai-models': marker.models.join(' ') }
+    : provider;
 }
 
 export function marksFieldsOf(marker: AiContentMarker | null | undefined, part: string): boolean {
