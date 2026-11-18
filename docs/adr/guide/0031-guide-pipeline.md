@@ -469,7 +469,8 @@ either, and most platform courses end with a certificate.
   edX's Discovery API answer 401 without an enterprise or client key, and Udemy's API answers 403.
 - **Scout collector** `CourseCollector` ([0012](../scout/0012-scout-collectors-and-events.md)): Tavily searches restricted to each
   platform's domain for new AI courses and certification pages. New pages go to the admin review list
-  ([0014](../scout/0014-evidence-gated-enrichment.md)), never straight to the catalog.
+  ([0014](../scout/0014-evidence-gated-enrichment.md)), never straight to the catalog. Accepting one indexes the
+  course with the values the admin confirmed ([0038](../backoffice/0038-back-office-and-review.md) §19).
 - A course's `published` is its launch date where the platform states it; otherwise unknown, and §4's strict rule
   drops it from "new courses" answers.
 

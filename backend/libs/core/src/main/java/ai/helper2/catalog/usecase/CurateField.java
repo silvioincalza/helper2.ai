@@ -8,7 +8,10 @@ import ai.helper2.shared.Audience;
 import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.TechLevel;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
@@ -58,13 +61,23 @@ public class CurateField {
 
   private final CuratedFields fields;
   private final AuditTrail audit;
+  private final Clock clock;
 
-  public CurateField(CuratedFields fields, AuditTrail audit) {
+  public CurateField(CuratedFields fields, AuditTrail audit, Clock clock) {
     this.fields = fields;
     this.audit = audit;
+    this.clock = clock;
   }
 
   public void set(UUID resourceId, String field, String value, String by) {
+    if ("description".equals(field)) {
+      setDescription(resourceId, value, false, by);
+      return;
+    }
+    if ("publishedAt".equals(field)) {
+      setPublished(resourceId, publishedDate(value), by);
+      return;
+    }
     Rule rule = FIELDS.get(field);
     if (rule == null) {
       throw new BadRequestException("This field cannot be set: " + field + ".");
@@ -115,6 +128,19 @@ public class CurateField {
         resourceId.toString(),
         "DROPPED " + field + " " + dropped);
     return dropped;
+  }
+
+  private LocalDate publishedDate(String value) {
+    LocalDate date;
+    try {
+      date = LocalDate.parse(value == null ? "" : value.strip());
+    } catch (DateTimeParseException e) {
+      throw new BadRequestException("The published date must be YYYY-MM-DD.");
+    }
+    if (date.isAfter(LocalDate.now(clock.withZone(ZoneOffset.UTC)).plusDays(1))) {
+      throw new BadRequestException("The published date is in the future.");
+    }
+    return date;
   }
 
   private static <E extends Enum<E>> boolean isOneOf(Class<E> type, String v) {

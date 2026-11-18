@@ -94,7 +94,7 @@ class JdbcReviewQueue implements ReviewQueue {
                 """
                 UPDATE review_item SET reason = :reason, details = CAST(:details AS jsonb)
                 WHERE id = :id AND status = 'OPEN' AND candidate_url IS NOT NULL
-                  AND kind IN ('RESOURCE_CANDIDATE', 'EXAMPLE_CANDIDATE')
+                  AND kind IN ('RESOURCE_CANDIDATE', 'COURSE_CANDIDATE', 'EXAMPLE_CANDIDATE')
                   AND details IS NOT DISTINCT FROM CAST(:old AS jsonb)
                 """)
             .param("id", id)
@@ -177,7 +177,8 @@ class JdbcReviewQueue implements ReviewQueue {
       """
       SELECT i.*, r.title AS resource_title,
              ARRAY(SELECT jsonb_array_elements_text(CASE
-                     WHEN i.kind = 'RESOURCE_CANDIDATE' AND jsonb_typeof(i.details -> 'tags') = 'array'
+                     WHEN i.kind IN ('RESOURCE_CANDIDATE', 'COURSE_CANDIDATE')
+                          AND jsonb_typeof(i.details -> 'tags') = 'array'
                      THEN i.details -> 'tags' ELSE '[]'::jsonb END)) AS categories
       FROM review_item i LEFT JOIN resource r ON r.id = i.resource_id
       """;
@@ -247,7 +248,7 @@ class JdbcReviewQueue implements ReviewQueue {
       (CAST(:status AS text) IS NULL OR i.status = :status)
         AND (CAST(:kind AS text) IS NULL OR i.kind = :kind)
         AND (CAST(:category AS text) IS NULL OR CASE
-              WHEN i.kind = 'RESOURCE_CANDIDATE'
+              WHEN i.kind IN ('RESOURCE_CANDIDATE', 'COURSE_CANDIDATE')
               THEN coalesce(i.details -> 'tags' @> jsonb_build_array(CAST(:category AS text)), false)
               ELSE false END)
         AND (NOT CAST(:only AS boolean)

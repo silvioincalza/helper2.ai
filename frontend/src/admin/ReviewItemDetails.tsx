@@ -10,7 +10,7 @@ import { KnownTargetProposalForm } from './KnownTargetProposalForm';
 export function ItemDetails({ item, onChanged }: { item: ReviewItem; onChanged?: () => void }) {
   if (item.kind === 'EXAMPLE_CANDIDATE')
     return <DraftedExample draft={item.draft} details={item.details} />;
-  if (item.kind === 'RESOURCE_CANDIDATE')
+  if (item.kind === 'RESOURCE_CANDIDATE' || item.kind === 'COURSE_CANDIDATE')
     return (
       <ResourceCandidate
         details={item.details}

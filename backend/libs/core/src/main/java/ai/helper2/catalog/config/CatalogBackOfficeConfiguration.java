@@ -100,8 +100,8 @@ public class CatalogBackOfficeConfiguration {
   }
 
   @Bean
-  CurateField curateField(CuratedFields fields, AuditTrail audit) {
-    return new TransactionalCurateField(fields, audit);
+  CurateField curateField(CuratedFields fields, AuditTrail audit, Clock clock) {
+    return new TransactionalCurateField(fields, audit, clock);
   }
 
   @Bean
@@ -240,8 +240,8 @@ public class CatalogBackOfficeConfiguration {
 
   static class TransactionalCurateField extends CurateField {
 
-    TransactionalCurateField(CuratedFields fields, AuditTrail audit) {
-      super(fields, audit);
+    TransactionalCurateField(CuratedFields fields, AuditTrail audit, Clock clock) {
+      super(fields, audit, clock);
     }
 
     @Override

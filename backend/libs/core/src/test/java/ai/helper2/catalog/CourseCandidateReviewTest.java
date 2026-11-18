@@ -64,11 +64,11 @@ class CourseCandidateReviewTest {
   void aPageIsProposedOnceEvenAfterItWasRejected() {
     assertThat(
             queue.proposeCandidate(
-                ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", "URL: " + URL))
+                ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", course(URL)))
         .isTrue();
     assertThat(
             queue.proposeCandidate(
-                ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", "URL: " + URL))
+                ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", course(URL)))
         .isFalse();
 
     ReviewQueue.Item item =
@@ -81,7 +81,7 @@ class CourseCandidateReviewTest {
 
     assertThat(
             queue.proposeCandidate(
-                ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", "URL: " + URL))
+                ReviewQueue.Kind.COURSE_CANDIDATE, URL, "New course", course(URL)))
         .isFalse();
   }
 
@@ -98,7 +98,11 @@ class CourseCandidateReviewTest {
         .update();
     assertThat(
             queue.proposeCandidate(
-                ReviewQueue.Kind.COURSE_CANDIDATE, url, "New course", "URL: " + url))
+                ReviewQueue.Kind.COURSE_CANDIDATE, url, "New course", course(url)))
         .isFalse();
+  }
+
+  private static String course(String url) {
+    return "{\"url\":\"" + url + "\",\"title\":\"A course\",\"type\":\"COURSE\"}";
   }
 }

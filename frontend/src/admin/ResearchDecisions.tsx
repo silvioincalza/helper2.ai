@@ -24,6 +24,7 @@ const CANDIDATE_TYPES: ReadonlySet<string> = new Set([
   'ARTICLE',
   'NEWS',
   'EVENT',
+  'COURSE',
 ]);
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -41,7 +42,6 @@ export interface ResearchOutcome {
   complete: boolean;
   left: string[];
   edit: Omit<CandidateEdit, 'expectedDetails'> | null;
-  note: string;
 }
 
 type Edit = Omit<CandidateEdit, 'expectedDetails'>;
@@ -70,24 +70,20 @@ function slugTags(value: string): string[] | null {
 export function outcomeOf(
   attributes: ReviewResearchAttribute[],
   decisions: Readonly<Record<string, Decision>>,
-  candidateEditable: boolean,
 ): ResearchOutcome {
   const pending = attributes.filter(changed);
   const left = pending.filter((a) => !decisions[a.name]).map((a) => a.name);
   const edit: Edit = {};
-  const noted: string[] = [];
   for (const a of pending) {
     const d = decisions[a.name];
     if (!d || d.kind === 'keep') continue;
     const value = d.value.trim();
-    if (candidateEditable) put(edit, a, value, d.kind === 'confirm' || a.proposed.includes(value));
-    else noted.push(`${a.name}=${value}`);
+    put(edit, a, value, d.kind === 'confirm' || a.proposed.includes(value));
   }
   return {
     complete: left.length === 0,
     left,
     edit: Object.keys(edit).length > 0 ? edit : null,
-    note: noted.length > 0 ? `Research confirmed: ${noted.join('; ')}` : '',
   };
 }
 
@@ -111,11 +107,9 @@ function put(edit: Edit, a: ReviewResearchAttribute, value: string, asProposed: 
 
 export function ResearchDecisions({
   run,
-  candidateEditable,
   onOutcome,
 }: {
   run: ReviewResearchRun;
-  candidateEditable: boolean;
   onOutcome: (outcome: ResearchOutcome | null) => void;
 }) {
   const { t } = useTranslation();
@@ -140,8 +134,8 @@ export function ResearchDecisions({
   const result = detail?.result ?? null;
   const attributes = useMemo(() => result?.attributes ?? [], [result]);
   const outcome = useMemo(
-    () => (result ? outcomeOf(attributes, decisions, candidateEditable) : null),
-    [result, attributes, decisions, candidateEditable],
+    () => (result ? outcomeOf(attributes, decisions) : null),
+    [result, attributes, decisions],
   );
   useEffect(() => {
     onOutcome(outcome);

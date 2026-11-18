@@ -196,6 +196,44 @@ class CuratedFieldApiIT extends ApiTestBase {
   }
 
   @Test
+  void aDescriptionLanguageAndPublishedDateAreSetAsTheAdminsOwn() throws Exception {
+    set(fixture.resource, "description", "Writes meeting notes for small teams.")
+        .andExpect(status().isNoContent());
+    set(fixture.resource, "language", "de").andExpect(status().isNoContent());
+    set(fixture.resource, "publishedAt", "2025-03-02").andExpect(status().isNoContent());
+
+    assertThat(column("description")).isEqualTo("Writes meeting notes for small teams.");
+    assertThat(column("description_origin")).isEqualTo("CURATED");
+    assertThat(column("language")).isEqualTo("de");
+    assertThat(column("to_char(published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')"))
+        .isEqualTo("2025-03-02");
+    assertThat(column("published_precision")).isEqualTo("DAY");
+    assertThat(column("array_to_string(curated_fields, ',')").split(","))
+        .containsExactlyInAnyOrder("description", "language", "publishedAt");
+    assertThat(audit())
+        .containsExactly(
+            "SET_FIELD SET description CURATED",
+            "SET_FIELD SET language",
+            "SET_FIELD SET publishedAt");
+  }
+
+  @Test
+  void aBadDescriptionLanguageOrDateIsRefusedAndTheyCannotBeDropped() throws Exception {
+    set(fixture.resource, "language", "xx").andExpect(status().isBadRequest());
+    set(fixture.resource, "publishedAt", "2 March").andExpect(status().isBadRequest());
+    set(fixture.resource, "publishedAt", "2999-01-01").andExpect(status().isBadRequest());
+    set(fixture.resource, "description", " ").andExpect(status().isBadRequest());
+    mvc.perform(
+            post("/api/v1/admin/resources/" + fixture.resource + "/fields/description/drop")
+                .with(admin)
+                .with(csrf().asHeader()))
+        .andExpect(status().isBadRequest());
+
+    assertThat(column("curated_fields")).isEqualTo("{}");
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
   void onlyAdminsSetAFieldAndOnlyWithTheCsrfToken() throws Exception {
     String path = "/api/v1/admin/resources/" + fixture.resource + "/fields/pricing";
     String body = "{\"value\":\"PAID\"}";

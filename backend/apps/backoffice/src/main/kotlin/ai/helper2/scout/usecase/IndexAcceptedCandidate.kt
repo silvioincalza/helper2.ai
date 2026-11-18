@@ -128,6 +128,7 @@ object CandidateRules {
       ResourceType.ARTICLE,
       ResourceType.NEWS,
       ResourceType.EVENT,
+      ResourceType.COURSE,
     )
 
   @JvmStatic

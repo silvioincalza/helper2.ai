@@ -646,6 +646,93 @@ class JdbcCatalogWriterIT {
   }
 
   @Test
+  void aCuratedDescriptionLanguageAndPublishedDateStayWhenASourceRefreshes() {
+    String repo = "https://github.com/acme/curated-text-" + run;
+    indexed(withText("npm", repo, "An AI tool for notes.", Instant.parse("2024-01-10T00:00:00Z")));
+    curate(repo, "AI_SUMMARY");
+
+    indexed(
+        withText(
+            "github",
+            repo,
+            "A completely different description from the source.",
+            Instant.parse("2023-05-05T00:00:00Z")));
+
+    assertThat(textOf(repo))
+        .containsEntry("description", "Ein Werkzeug, das Notizen schreibt.")
+        .containsEntry("description_origin", "AI_SUMMARY")
+        .containsEntry("language", "de")
+        .containsEntry("published", "2025-03-02")
+        .containsEntry("published_precision", "DAY");
+  }
+
+  @Test
+  void aDescriptionTheAdminWroteStaysCuratedWhenASourceRefreshes() {
+    String repo = "https://github.com/acme/curated-by-hand-" + run;
+    indexed(withText("npm", repo, "An AI tool for notes.", Instant.parse("2024-01-10T00:00:00Z")));
+    curate(repo, "CURATED");
+
+    indexed(withText("npm", repo, "Another text the source sends.", null));
+
+    assertThat(textOf(repo))
+        .containsEntry("description", "Ein Werkzeug, das Notizen schreibt.")
+        .containsEntry("description_origin", "CURATED");
+  }
+
+  private SourceHit withText(String source, String url, String description, Instant published) {
+    return new SourceHit(
+        source,
+        source + ":" + url,
+        URI.create(url),
+        CanonicalUrl.of(url),
+        null,
+        "tool " + run,
+        description,
+        ValueOrigin.SOURCE_PROVIDED,
+        ResourceType.LIBRARY,
+        Audience.BUILD_WITH_AI,
+        null,
+        Set.of(),
+        Set.of(),
+        null,
+        null,
+        Set.of(),
+        null,
+        published == null ? DateFact.unknown() : DateFact.fromSource(published, source, now),
+        DateFact.unknown(),
+        List.of(),
+        now,
+        0);
+  }
+
+  private void curate(String url, String origin) {
+    jdbc.sql(
+            """
+            UPDATE resource SET description = 'Ein Werkzeug, das Notizen schreibt.',
+                   description_origin = :origin, language = 'de',
+                   published_at = '2025-03-02T00:00:00Z', published_precision = 'DAY',
+                   published_source_id = NULL,
+                   curated_fields = ARRAY['description', 'language', 'publishedAt']
+             WHERE id = :id
+            """)
+        .param("origin", origin)
+        .param("id", ResourceId.of(CanonicalUrl.of(url)).getValue())
+        .update();
+  }
+
+  private Map<String, Object> textOf(String url) {
+    return jdbc.sql(
+            """
+            SELECT description, description_origin, language,
+                   to_char(published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS published, published_precision
+            FROM resource WHERE id = :id
+            """)
+        .param("id", ResourceId.of(CanonicalUrl.of(url)).getValue())
+        .query()
+        .singleRow();
+  }
+
+  @Test
   void onlyChangedRecordsAreReportedAndAListingTwiceIsOneRecord() {
     String repo = "https://github.com/acme/changes-" + run;
     SourceHit h = hit("github", repo, null, Set.of(), List.of());

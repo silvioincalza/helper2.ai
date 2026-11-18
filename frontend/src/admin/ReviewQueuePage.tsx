@@ -215,10 +215,7 @@ export default function ReviewQueuePage() {
           ...accepted.edit,
         });
       }
-      const text = [notes[item.id]?.trim(), accepted?.note]
-        .filter(Boolean)
-        .join(' · ')
-        .slice(0, NOTE_MAX);
+      const text = (notes[item.id]?.trim() ?? '').slice(0, NOTE_MAX);
       const decided = await adminApi.resolveReviewItem(item.id, {
         status: decision,
         ...(text ? { note: text } : {}),
@@ -583,7 +580,6 @@ export default function ReviewQueuePage() {
               <ResearchDecisions
                 key={research.runs.get(selected.id)!.id}
                 run={research.runs.get(selected.id)!}
-                candidateEditable={selected.kind === 'RESOURCE_CANDIDATE'}
                 onOutcome={setOutcome}
               />
             )}

@@ -74,8 +74,8 @@ tool answered, and must confirm every value before it reaches the catalog.
    ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is
    indexed at the confirmed canonical URL, and the other values become the resource's curated values. A description
    the model wrote and the admin confirmed as it is stays AI-written (`AI_SUMMARY`); one the admin rewrote is
-   `CURATED`. A course candidate holds no values (its details are text): its confirmed values go into the decision's
-   note, `Research confirmed: name=value; …`. The queue's research filter is
+   `CURATED`. A course candidate holds the same structured candidate, so its confirmed values reach the catalog the
+   same way ([0038](0038-back-office-and-review.md) §19). The queue's research filter is
    `GET /admin/review-items?research=KEEP|REJECT|DUPLICATE|ACTIVE|NONE`, answered by the server across pages. The pane is marked
    `data-ai-generated` with the model, and labelled "Proposed with AI" (EU AI Act Art. 50).
 8. **Batch apply: rejects only.** The research bar offers to reject the items of the page whose verdict is reject. The

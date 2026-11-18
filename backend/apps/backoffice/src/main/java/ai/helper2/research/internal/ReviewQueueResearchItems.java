@@ -50,7 +50,8 @@ class ReviewQueueResearchItems implements ResearchItems {
 
   ResearchSubject subject(ReviewQueue.Item item) {
     String title = afterColon(item.reason());
-    if (item.kind() == ReviewQueue.Kind.COURSE_CANDIDATE) {
+    if (item.kind() == ReviewQueue.Kind.COURSE_CANDIDATE
+        && (item.details() == null || !item.details().strip().startsWith("{"))) {
       return new ResearchSubject(
           item.id(),
           item.kind().name(),
