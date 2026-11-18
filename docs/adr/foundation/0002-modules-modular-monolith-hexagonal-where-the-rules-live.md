@@ -77,16 +77,23 @@ to reach into the other's code.
    The platform has its one adapter, `TransactionalUnitOfWork`, and `UnitOfWorkConfiguration` makes its one bean in
    the back office.
    A `@Bean` method in `config` wires each use case; a use case only one app runs (a scheduled purge) is wired next
-   to its schedule, in that app. The catalog's back office part is not scanned: `CatalogBackOfficeConfiguration`
-   (the curation, review, indexing and purge use cases) and `CatalogBackOfficeAdapters` (their JDBC stores, with no
-   stereotype) carry no `@Configuration`, and only `BackOfficeApplication` imports them (the named interface
-   `backoffice`). The public app's context
-   has none of them (`NoBackOfficeCatalogIT`). The examples context is split the same way: the public app builds
-   `ListHomeExamples` over the read port `ServedExamples` (`JdbcServedExamples`) and nothing else;
+   to its schedule, in that app. The wiring only the back office loads is in the back office app, in the context's
+   own `config` package ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md) §3):
+   `CatalogBackOfficeConfiguration` (the curation, review, indexing and purge use cases),
    `ExamplesBackOfficeConfiguration` (the admin list and counts, add, change, remove, the check, the drafts) and
-   `ExamplesBackOfficeAdapters` (the pool's store `JdbcHomeExamples`, the search, the titles, the draft sources, the
-   draft queue, the drafter with its budget and settings) are imported only by `BackOfficeApplication`
-   (`NoBackOfficeExamplesIT`, `BackOfficeExamplesIT`). A use case that must be all or nothing gets its transaction there, on a subclass
+   `SearchBackOfficeConfiguration` (`ManageShadowLibraries`). They carry no `@Configuration`, and only
+   `BackOfficeApplication` imports them (the named interface `backoffice`). The public app's jar has none of the
+   three classes.
+   The adapters these use cases need stay in the library, closed: `CatalogBackOfficeAdapters` (the JDBC stores, with
+   no stereotype) and `ExamplesBackOfficeAdapters` (the pool's store `JdbcHomeExamples`, the search, the titles, the
+   draft sources, the draft queue, the drafter with its budget and settings) are in `internal` and build
+   package-private classes. The app does not name them. Each context has one public entry in its `config` package,
+   an annotation of the named interface `backoffice` that imports the adapters: `@EnableCatalogBackOfficeAdapters`
+   and `@EnableExamplesBackOfficeAdapters`. The app's configuration class carries it. No entry is scanned, so the
+   public app's context has none of these beans (`NoBackOfficeCatalogIT`, `NoBackOfficeExamplesIT`); the back office
+   has them all (`BackOfficeExamplesIT`). The public app builds `ListHomeExamples` over the read port
+   `ServedExamples` (`JdbcServedExamples`) and nothing else of the examples.
+   A use case that must be all or nothing gets its transaction in its configuration class, on a subclass
    with `@Transactional`, so the use case itself has no Spring type.
 6. **Adapters in Java, in sub-packages.** `web` (controllers), `cache`, `config` and `internal` (Spring AI, Redis,
    Java Database Connectivity (JDBC)). The `sources` module implements `SearchSource` and `Collector` for each public
@@ -208,7 +215,9 @@ to reach into the other's code.
   `backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
   context's own rules.
 - `backend/libs/core/src/test/java/ai/helper2/CoreTestApplication.java`, `PublicParts.java`, `BackOfficeParts.java`,
-  `backend/libs/core/src/test/resources/application.yaml` — the test-only application of `core`.
+  `backend/libs/core/src/test/resources/application.yaml` — the test-only application of `core`. As the back office
+  it has the catalog's back office adapters (`@EnableCatalogBackOfficeAdapters`) and no back office use case: a test
+  that needs one is in `backend/apps/backoffice/src/test`, in the context's package.
 - `backend/libs/core/src/main/java/ai/helper2/search/web/` (`SearchController`, `SourcesController`, `CategoriesController`,
   `CardMapper`), `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
   web adapters.
@@ -220,8 +229,13 @@ to reach into the other's code.
   of the Java use cases; `backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java`,
   `UnitOfWorkConfiguration.java` (the back office only) — the transaction adapter; `.../identity/config/IdentityUseCaseConfiguration.java`,
   `.../examples/config/ExamplesUseCaseConfiguration.java` (both apps),
-  `.../examples/config/ExamplesBackOfficeConfiguration.java` (the back office only),
   `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.
+- `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`,
+  `.../examples/config/ExamplesBackOfficeConfiguration.java`, `.../search/config/SearchBackOfficeConfiguration.java`,
+  `backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java` — the wiring only the back office
+  loads; `backend/libs/core/src/main/java/ai/helper2/catalog/config/EnableCatalogBackOfficeAdapters.java`,
+  `.../examples/config/EnableExamplesBackOfficeAdapters.java` — the library's entries to
+  `.../catalog/internal/CatalogBackOfficeAdapters.java` and `.../examples/internal/ExamplesBackOfficeAdapters.java`.
 - `backend/{libs,apps}/*/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`,
   `backend/{libs,apps}/*/src/main/java/ai/helper2/{catalog,identity,examples,admin}/usecase/` — use cases;
   `.../{search,catalog}/usecase/package-info.java` — named interfaces.

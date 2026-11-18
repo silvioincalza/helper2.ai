@@ -3,6 +3,10 @@
 # The internals of each module are in the other views (search, guide, index, setup, platform, review research).
 # Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
 #   backend/settings.gradle.kts (apps and libraries), backend/libs/core (the shared contexts and web adapters),
+#   backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java, catalog/config/CatalogBackOfficeConfiguration.java,
+#   examples/config/ExamplesBackOfficeConfiguration.java, search/config/SearchBackOfficeConfiguration.java (the back office's wiring),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/config/EnableCatalogBackOfficeAdapters.java,
+#   examples/config/EnableExamplesBackOfficeAdapters.java (the library's entries to its back office adapters),
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml (base URLs, llm-nebius profile, helper2.embedding).
 # Render: cd docs/diagrams && d2 fmt architecture-context.d2 && d2 architecture-context.d2 architecture-context.svg
 
@@ -62,14 +66,14 @@ app: "helper2 · Spring Boot 4.1 · two apps, one database (ADR 0043)" {
   public.guide -> public.setup: "setup guides left (GET /me)"
   public.setup -> libs.catalog: "resource detail"
   public.setup -> libs.platform: "model calls" {class: ai-call}
-  bo.backoffice -> libs.catalog: "review queue; imports\nCatalogBackOfficeConfiguration\n(curation, review, indexing, purge)"
+  bo.backoffice -> libs.catalog: "review queue; wires curation, review,\nindexing, purge (CatalogBackOfficeConfiguration)\nover @EnableCatalogBackOfficeAdapters"
   bo.backoffice -> bo.scout: "runs, backlog"
   bo.backoffice -> bo.research: "start, cancel, steps (SSE)"
   bo.collectors -> bo.research: "ResearchTool" {class: config}
   bo.research -> libs.catalog: "ReviewQueue, KnownTargets"
   bo.research -> libs.platform: "model calls" {class: ai-call}
   bo.backoffice -> libs.platform: "budgets today"
-  bo.backoffice -> libs.examples: "examples, the check; imports\nExamplesBackOfficeConfiguration\n(pool writes, check, drafts)"
+  bo.backoffice -> libs.examples: "examples, the check; wires pool writes,\ncheck, drafts (ExamplesBackOfficeConfiguration)\nover @EnableExamplesBackOfficeAdapters"
   libs.examples -> libs.search: "check: the example's search" {class: config}
   libs.examples -> libs.catalog: "expected results' titles,\ndrafts in the review queue"
   public.site.pages -> libs.catalog: "resource detail, indexable pages"

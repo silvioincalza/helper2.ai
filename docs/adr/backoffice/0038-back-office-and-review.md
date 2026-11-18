@@ -377,7 +377,8 @@ than a hundred), so the question is the same for each of them: what is this name
   `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ModularityTest.java`
   (`controllersAnswerWithViewsNotPortRecords`), `api/ReviewItemDetailsApiIT.java` (a stored row of each kind).
 - The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java`,
-  `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON), `examples/config/ExamplesBackOfficeConfiguration.java`;
+  `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON),
+  `backend/apps/backoffice/src/main/java/ai/helper2/examples/config/ExamplesBackOfficeConfiguration.java`;
   `api/admin.yaml` (`ReviewItem.draft`, `ReviewItem.aiContent`, `DraftedExample`); `admin/web/ReviewController.java` (the
   evidence view's marker); `frontend/src/admin/ReviewItemDetails.tsx`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in

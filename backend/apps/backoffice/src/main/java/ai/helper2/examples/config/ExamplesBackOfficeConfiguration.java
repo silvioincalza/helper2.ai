@@ -8,7 +8,6 @@ import ai.helper2.examples.ExampleSearch;
 import ai.helper2.examples.ExampleStatus;
 import ai.helper2.examples.HomeExamples;
 import ai.helper2.examples.ResourceTitles;
-import ai.helper2.examples.internal.ExamplesBackOfficeAdapters;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
 import ai.helper2.examples.usecase.AddHomeExample;
 import ai.helper2.examples.usecase.ChangeHomeExample;
@@ -27,12 +26,11 @@ import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.NamedInterface;
 import org.springframework.transaction.annotation.Transactional;
 
 @NamedInterface("backoffice")
-@Import(ExamplesBackOfficeAdapters.class)
+@EnableExamplesBackOfficeAdapters
 public class ExamplesBackOfficeConfiguration {
 
   @Bean
