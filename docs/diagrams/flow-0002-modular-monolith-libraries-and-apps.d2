@@ -62,6 +62,7 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   domain: "A in a domain package?\n(every ..usecase.. package,\nand shared, search, scout, guide,\nsetup, examples, site,\nsite.pages, site.monetisation,\nidentity, catalog, admin,\nresearch)" {class: decision}
   fw: "B in org.springframework..,\ntools.jackson.. or java.sql..?" {class: decision}
   adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
+  http: "B is ApiProblem, a subtype,\nProblemType or Problems,\nand A is not in STILL_THROWING?" {class: decision}
   same: "B in A's own module?" {class: decision}
   src: "B in sources?\n(no API: its base\npackage is empty)" {class: decision}
   gen: "A in the shared web part (api, search.web)\nand B an app's generated type (api.generated)?" {class: decision}
@@ -71,6 +72,7 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   ok: "Allowed" {class: end}
   e_fw: "Build fails:\ndomainIsFrameworkFree" {class: fail}
   e_ad: "Build fails:\ndomainDoesNotDependOnItsAdapters" {class: fail}
+  e_http: "Build fails:\nuseCasesDoNotSpeakHttp\n(ADR 0051)" {class: fail}
   e_mod: "Build fails:\nApplicationModules.verify()" {class: fail}
   e_src: "Build fails:\nsourcesIsReachedOnlyThroughPorts" {class: fail}
   e_gen: "Build fails:\nWebContractArchitectureTest" {class: fail}
@@ -81,7 +83,9 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   fw -> e_fw: yes
   fw -> adapter: no
   adapter -> e_ad: yes
-  adapter -> same: no
+  adapter -> http: no
+  http -> e_http: yes
+  http -> same: no
   same -> ok: yes {class: hot}
   same -> src: no
   src -> e_src: yes

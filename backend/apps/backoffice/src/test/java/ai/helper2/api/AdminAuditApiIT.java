@@ -111,4 +111,17 @@ class AdminAuditApiIT extends ApiTestBase {
     mvc.perform(get("/api/v1/admin/audit")).andExpect(status().isUnauthorized());
     mvc.perform(get("/api/v1/admin/audit").with(oauth2Login())).andExpect(status().isForbidden());
   }
+
+  @Test
+  void aPageOutsideTheBoundsOfTheContractIsABadRequest() throws Exception {
+    for (String[] outside :
+        new String[][] {{"size", "101"}, {"size", "0"}, {"size", "-1"}, {"page", "-1"}}) {
+      mvc.perform(get("/api/v1/admin/audit").param(outside[0], outside[1]).with(admin))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("invalid-request"))
+          .andExpect(jsonPath("$.type").value("https://helper2.ai/problems/invalid-request"))
+          .andExpect(jsonPath("$.title").value("Invalid request"))
+          .andExpect(jsonPath("$.detail").value("Invalid request parameters."));
+    }
+  }
 }

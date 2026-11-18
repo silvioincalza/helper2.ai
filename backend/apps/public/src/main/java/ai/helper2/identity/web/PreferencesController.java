@@ -5,6 +5,8 @@ import ai.helper2.api.generated.PreferencesApi;
 import ai.helper2.api.generated.model.PreferencesChangeDto;
 import ai.helper2.identity.Users.Preferences;
 import ai.helper2.identity.usecase.ChangePreferences;
+import ai.helper2.platform.ApiProblem;
+import ai.helper2.platform.ProblemType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +25,12 @@ class PreferencesController implements PreferencesApi {
 
   @Override
   public ResponseEntity<PreferencesDto> changePreferences(PreferencesChangeDto body) {
-    return ResponseEntity.ok(dto(changePreferences.change(signIn.userId(), body.getRadarMotion())));
+    return switch (changePreferences.change(signIn.userId(), body.getRadarMotion())) {
+      case ChangePreferences.Outcome.Changed changed ->
+          ResponseEntity.ok(dto(changed.preferences()));
+      case ChangePreferences.Outcome.NoSuchUser none ->
+          throw new ApiProblem(ProblemType.SIGN_IN_REQUIRED, null);
+    };
   }
 
   static PreferencesDto dto(Preferences p) {

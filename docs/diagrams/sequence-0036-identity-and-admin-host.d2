@@ -7,7 +7,7 @@
 #   BackOfficeEdge.java, backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java,
 #   backend/libs/core/src/main/java/ai/helper2/identity/config/WebSecurity.java (oauthUsers, roles), NoProviderTokens.java,
 #   identity/CurrentUser.java, identity/internal/SignedInUser.java, JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
-#   identity/config/KnownAccountOnly.java, identity/SignInAgain.java,
+#   identity/config/KnownAccountOnly.java, identity/internal/SignInAgain.java,
 #   identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java, PurgeExpiredAuditEntries.java,
 #   backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java, BookmarksController.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java,
@@ -60,7 +60,7 @@ publichost: Public host {
   apub -> redis: "SESSION (h2:v1:session:public), no token"
   apub -> owner: "302 /"
   owner -> apub: "POST /api/v1/me/bookmarks (local list)\nX-XSRF-TOKEN" {class: hot}
-  apub -> db: "MergeLocalBookmarks: INSERT … ON CONFLICT DO NOTHING;\ncount ≤ 500 or 400 + rollback"
+  apub -> db: "MergeLocalBookmarks: INSERT … ON CONFLICT DO NOTHING;\ncount ≤ 500, or OverLimit:\nrollback and 400"
   owner -> apub: "DELETE /api/v1/me, X-XSRF-TOKEN" {class: hot}
   apub -> apub: "end the session first"
   apub -> db: "DeleteMyAccount: DELETE app_user,\nbookmarks cascade (reports were never linked)"
