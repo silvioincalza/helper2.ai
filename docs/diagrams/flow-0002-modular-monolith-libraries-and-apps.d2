@@ -135,10 +135,12 @@ source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so 
   lib: "A in a library and B in a context\nnot below A's? (kernel ← platform ←\nidentity, search ← catalog ← examples,\nsearch ← sources, the shared web part;\ninside libs/core only this test holds it)" {class: decision}
   src: "B in sources\nand A outside it?" {class: decision}
   api: "B in another closed module, outside\nits base package and its\nnamed interfaces?" {class: decision}
+  app: "A in the main code of an app and B\nin an internal package of a library,\nor A in that package itself?" {class: decision}
   ok: "Allowed" {class: end}
   e_lib: "Build fails:\naLibraryContextUsesOnly\nTheContextsBelowIt" {class: fail}
   e_src: "Build fails:\nnothingOutsideSourcesNamesIt" {class: fail}
   e_api: "Build fails:\naModuleUsesOnlyTheApi\nOfAnotherModule" {class: fail}
+  e_app: "Build fails:\nnoAppMainCodeNamesAnInternal\nPackageOfALibrary,\nnoAppMainCodeIsInAnInternal\nPackageOfALibrary" {class: fail}
 
   name -> lib
   lib -> e_lib: yes
@@ -146,7 +148,9 @@ source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so 
   src -> e_src: yes
   src -> api: no
   api -> e_api: yes
-  api -> ok: no {class: hot}
+  api -> app: no
+  app -> e_app: yes
+  app -> ok: no {class: hot}
 }
 
 rules.ok -> source.name: "the same dependency,\nread from the source" {class: config}
