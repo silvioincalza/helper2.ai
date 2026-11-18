@@ -31,7 +31,6 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -69,7 +68,7 @@ class HomeExamplesAdminController implements ExamplesAdminApi {
   @Override
   public ResponseEntity<AdminHomeExampleDto> addHomeExample(HomeExampleInputDto body) {
     return switch (add.add(
-        adminId(),
+        Admins.id(),
         body.getLabel(),
         body.getQuery(),
         AudiencePath.valueOf(body.getPath().getValue()),
@@ -84,7 +83,7 @@ class HomeExamplesAdminController implements ExamplesAdminApi {
   @Override
   public ResponseEntity<AdminHomeExampleDto> changeHomeExample(UUID id, HomeExampleChangeDto body) {
     return switch (change.change(
-        adminId(),
+        Admins.id(),
         id,
         body.getLabel(),
         body.getQuery(),
@@ -106,14 +105,14 @@ class HomeExamplesAdminController implements ExamplesAdminApi {
 
   @Override
   public ResponseEntity<Void> removeHomeExample(UUID id) {
-    remove.remove(adminId(), id);
+    remove.remove(Admins.id(), id);
     return ResponseEntity.noContent().build();
   }
 
   @Override
   public ResponseEntity<ExampleDraftsDto> draftHomeExamples() {
     try {
-      DraftHomeExamples.Drafted drafted = drafts.draft(adminId());
+      DraftHomeExamples.Drafted drafted = drafts.draft(Admins.id());
       return ResponseEntity.status(HttpStatus.ACCEPTED)
           .body(new ExampleDraftsDto(drafted.count(), drafted.model()));
     } catch (DraftsUnavailable e) {
@@ -137,10 +136,6 @@ class HomeExamplesAdminController implements ExamplesAdminApi {
   private static ApiProblem duplicate() {
     return new ApiProblem(
         ProblemType.DUPLICATE, "Another example already has this label or this query.");
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   private static AdminHomeExampleDto dto(ExampleView view) {

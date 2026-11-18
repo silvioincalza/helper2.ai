@@ -1,5 +1,6 @@
 package ai.helper2.admin.web;
 
+import ai.helper2.admin.usecase.KnownTargetAnswer;
 import ai.helper2.api.generated.KnownTargetsApi;
 import ai.helper2.api.generated.model.KnownTargetEntryDto;
 import ai.helper2.api.generated.model.KnownTargetKindDto;
@@ -15,7 +16,6 @@ import ai.helper2.shared.UtcTimes;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,7 +40,8 @@ class KnownTargetsController implements KnownTargetsApi {
   @Override
   public ResponseEntity<KnownTargetEntryDto> addKnownTarget(KnownTargetWriteDto body) {
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(dto(saved(targets.add(adminId(), kind(body), body.getName(), body.getOtherNames()))));
+        .body(
+            dto(saved(targets.add(Admins.id(), kind(body), body.getName(), body.getOtherNames()))));
   }
 
   @Override
@@ -48,12 +49,13 @@ class KnownTargetsController implements KnownTargetsApi {
     return ResponseEntity.ok(
         dto(
             saved(
-                targets.change(adminId(), id, kind(body), body.getName(), body.getOtherNames()))));
+                targets.change(
+                    Admins.id(), id, kind(body), body.getName(), body.getOtherNames()))));
   }
 
   @Override
   public ResponseEntity<Void> removeKnownTarget(UUID id) {
-    if (targets.remove(adminId(), id) instanceof ManageKnownTargets.Removed.NotFound) {
+    if (targets.remove(Admins.id(), id) instanceof ManageKnownTargets.Removed.NotFound) {
       throw new NotFoundException("Known target not found.");
     }
     return ResponseEntity.noContent().build();
@@ -75,10 +77,7 @@ class KnownTargetsController implements KnownTargetsApi {
       case ManageKnownTargets.Saved.Taken t ->
           throw new ApiProblem(
               ProblemType.DUPLICATE, t.name() + " already means " + t.holder() + ".");
-      case ManageKnownTargets.Saved.Full f ->
-          throw new ApiProblem(
-              ProblemType.DUPLICATE,
-              "The list holds at most " + ManageKnownTargets.MAX_TARGETS + " known targets.");
+      case ManageKnownTargets.Saved.Full f -> throw KnownTargetAnswer.listIsFull();
       case ManageKnownTargets.Saved.NotFound n ->
           throw new NotFoundException("Known target not found.");
     };
@@ -86,10 +85,6 @@ class KnownTargetsController implements KnownTargetsApi {
 
   private static KnownTarget.Kind kind(KnownTargetWriteDto body) {
     return KnownTarget.Kind.valueOf(body.getKind().getValue());
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   private static KnownTargetEntryDto dto(Entry e) {
