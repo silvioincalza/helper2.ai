@@ -52,7 +52,6 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
                   + ManageShadowLibraries.MAX_NAMES
                   + " names. Remove one first.");
       case ManageShadowLibraries.Added.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 
@@ -65,7 +64,6 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
       case ManageShadowLibraries.Removed.NotFound n ->
           throw new NotFoundException(name + " is not in the list.");
       case ManageShadowLibraries.Removed.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 

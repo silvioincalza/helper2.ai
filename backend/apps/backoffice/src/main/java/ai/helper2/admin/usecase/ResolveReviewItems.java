@@ -5,7 +5,6 @@ import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.AuditTrail;
-import ai.helper2.platform.BadRequestException;
 import ai.helper2.research.ResearchItems;
 import ai.helper2.research.ResearchRun;
 import ai.helper2.research.ResearchRuns;
@@ -15,14 +14,13 @@ import ai.helper2.scout.usecase.CandidateItem;
 import ai.helper2.scout.usecase.CandidateItems;
 import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.scout.usecase.EditCandidate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 public class ResolveReviewItems {
-
-  public static final int MAX_ITEMS = 100;
 
   public enum Result {
     RESOLVED,
@@ -33,7 +31,19 @@ public class ResolveReviewItems {
 
   public record ItemResult(UUID id, Result result) {}
 
-  public record Outcome(UUID batch, List<ItemResult> items) {}
+  public sealed interface Outcome {
+    record Decided(UUID batch, List<ItemResult> items) implements Outcome {}
+
+    record RepeatedId() implements Outcome {}
+
+    record NotAdded(ResolveReview.Outcome.NotAdded why) implements Outcome {}
+  }
+
+  private sealed interface One {
+    record Done(Result result) implements One {}
+
+    record Stopped(ResolveReview.Outcome.NotAdded why) implements One {}
+  }
 
   private final ReviewQueue queue;
   private final ReviewEvidence evidence;
@@ -65,42 +75,38 @@ public class ResolveReviewItems {
 
   public Outcome resolve(
       List<UUID> ids, ReviewItemView.Status status, String adminId, @Nullable String note) {
-    ReviewQueue.Status decision = status.inQueue();
-    requireValid(ids, decision);
-    UUID batch = UUID.randomUUID();
-    List<ItemResult> results =
-        ids.stream()
-            .map(id -> new ItemResult(id, decideOne(id, decision, adminId, note, batch)))
-            .toList();
-    return new Outcome(batch, results);
-  }
-
-  private static void requireValid(List<UUID> ids, ReviewQueue.Status decision) {
-    if (ids.isEmpty() || ids.size() > MAX_ITEMS) {
-      throw new BadRequestException("ids must hold 1 to " + MAX_ITEMS + " items");
-    }
     if (ids.stream().distinct().count() != ids.size()) {
-      throw new BadRequestException("ids must be unique");
+      return new Outcome.RepeatedId();
     }
-    if (decision != ReviewQueue.Status.ACCEPTED && decision != ReviewQueue.Status.REJECTED) {
-      throw new BadRequestException("decision must be ACCEPTED or REJECTED");
+    ReviewQueue.Status decision = status.inQueue();
+    UUID batch = UUID.randomUUID();
+    List<ItemResult> results = new ArrayList<>();
+    for (UUID id : ids) {
+      switch (decideOne(id, decision, adminId, note, batch)) {
+        case One.Done done -> results.add(new ItemResult(id, done.result()));
+        case One.Stopped stopped -> {
+          return new Outcome.NotAdded(stopped.why());
+        }
+      }
     }
+    return new Outcome.Decided(batch, List.copyOf(results));
   }
 
-  private Result decideOne(
+  private One decideOne(
       UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note, UUID batch) {
     Optional<ReviewQueue.Item> item = queue.find(id);
     if (item.isPresent() && item.get().status() == ReviewQueue.Status.OPEN) {
       Optional<ResearchRun> run = latestResearch(item.get(), decision);
       if (!allowed(item.get(), decision, run)
           || !researchedValuesApplied(item.get(), run, adminId)) {
-        return notAllowed(id, adminId, batch);
+        return new One.Done(notAllowed(id, adminId, batch));
       }
     }
     return switch (resolve.resolve(id, decision, adminId, note, batch)) {
-      case ResolveReviewItem.Outcome.Resolved r -> Result.RESOLVED;
-      case ResolveReviewItem.Outcome.NotOpen n -> Result.NOT_OPEN;
-      case ResolveReviewItem.Outcome.NotFound f -> Result.NOT_FOUND;
+      case ResolveReview.Outcome.Resolved r -> new One.Done(Result.RESOLVED);
+      case ResolveReview.Outcome.NotOpen n -> new One.Done(Result.NOT_OPEN);
+      case ResolveReview.Outcome.NotFound f -> new One.Done(Result.NOT_FOUND);
+      case ResolveReview.Outcome.NotAdded why -> new One.Stopped(why);
     };
   }
 

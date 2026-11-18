@@ -114,7 +114,7 @@ Two kinds of source need more care:
      known only by its topic is found only when a record of it carries its topics: a source that saw the repository
      without them gives the backfill nothing to go on until such a record comes in.
      Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
-     is counted and read at the next run.
+     is counted and read at the next run. A resource that is gone when its turn comes is not set, and the run goes on.
    - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its
      excerpt states `AWESOME_LIST` with "awesome list", "curated list of" or "a list of awesome". A mis-typed list
      (LIBRARY, MCP_SERVER…) is fixed by the rule and the backfill, a new one by the collector.

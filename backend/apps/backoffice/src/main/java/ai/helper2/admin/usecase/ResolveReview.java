@@ -6,18 +6,57 @@ import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
-import ai.helper2.platform.ApiProblem;
-import ai.helper2.platform.ProblemType;
 import ai.helper2.scout.usecase.AcceptOutcome;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.scout.usecase.ListedResource;
+import ai.helper2.shared.Refused;
+import ai.helper2.shared.UnitOfWork;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 public class ResolveReview {
+
+  public sealed interface Outcome {
+    record Resolved(ReviewQueue.Item item, @Nullable ListedResource alreadyListed)
+        implements Outcome {}
+
+    record NotOpen(ReviewQueue.Item item) implements Outcome {}
+
+    record NotFound() implements Outcome {}
+
+    sealed interface NotAdded extends Outcome {}
+
+    record UnreadableCandidate() implements NotAdded {}
+
+    record ConfirmedValueRefused(String field) implements NotAdded, Refused {}
+
+    record UnreadableProposal() implements NotAdded {}
+
+    record InvalidKnownTargetName() implements NotAdded {}
+
+    record KnownTargetNameTaken(String name, String holder) implements NotAdded {}
+
+    record KnownTargetListFull(int limit) implements NotAdded {}
+
+    record UnreadableDraft() implements NotAdded {}
+
+    record DuplicateExample() implements NotAdded {}
+
+    record InvalidExample(List<String> problems) implements NotAdded {}
+  }
+
+  private sealed interface Addition {
+    record Done(@Nullable ListedResource alreadyListed) implements Addition {}
+
+    record Stopped(Outcome.NotAdded why) implements Addition {}
+  }
+
+  private static final Addition ADDED = new Addition.Done(null);
 
   private final ReviewQueue queue;
   private final ResolveReviewItem resolve;
@@ -26,6 +65,7 @@ public class ResolveReview {
   private final KnownTargetCandidates targetCandidates;
   private final ManageKnownTargets knownTargets;
   private final CurateField curate;
+  private final UnitOfWork unitOfWork;
 
   public ResolveReview(
       ReviewQueue queue,
@@ -34,7 +74,8 @@ public class ResolveReview {
       IndexAcceptedCandidate indexCandidate,
       KnownTargetCandidates targetCandidates,
       ManageKnownTargets knownTargets,
-      CurateField curate) {
+      CurateField curate,
+      UnitOfWork unitOfWork) {
     this.curate = curate;
     this.targetCandidates = targetCandidates;
     this.knownTargets = knownTargets;
@@ -42,26 +83,19 @@ public class ResolveReview {
     this.resolve = resolve;
     this.acceptDraft = acceptDraft;
     this.indexCandidate = indexCandidate;
+    this.unitOfWork = unitOfWork;
   }
 
-  public record Decision(
-      ResolveReviewItem.Outcome outcome, @Nullable ListedResource alreadyListed) {}
-
-  public ResolveReviewItem.Outcome resolve(
+  public Outcome resolve(
       UUID id,
       ReviewQueue.Status decision,
       String adminId,
       @Nullable String note,
       @Nullable UUID batch) {
-    return decide(id, decision, adminId, note, batch).outcome();
+    return unitOfWork.run(() -> decide(id, decision, adminId, note, batch));
   }
 
-  public Decision decide(
-      UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note) {
-    return decide(id, decision, adminId, note, null);
-  }
-
-  private Decision decide(
+  private Outcome decide(
       UUID id,
       ReviewQueue.Status decision,
       String adminId,
@@ -70,19 +104,48 @@ public class ResolveReview {
     if (decision == ReviewQueue.Status.ACCEPTED) {
       queue.lock(id);
     }
-    Optional<ReviewQueue.Item> accepted =
+    Optional<ReviewQueue.Item> addition =
         queue
             .find(id)
             .filter(i -> i.status() == ReviewQueue.Status.OPEN)
-            .filter(i -> decision == ReviewQueue.Status.ACCEPTED);
-    Optional<ReviewQueue.Item> addition = accepted.filter(ResolveReview::addsOnAccept);
-    ListedResource listed = addition.map(item -> addAccepted(item, adminId)).orElse(null);
-    ResolveReviewItem.Outcome outcome =
-        resolve.resolve(id, decision, adminId, noteWith(note, listed), batch);
-    if (addition.isPresent() && !(outcome instanceof ResolveReviewItem.Outcome.Resolved)) {
+            .filter(i -> decision == ReviewQueue.Status.ACCEPTED)
+            .filter(ResolveReview::addsOnAccept);
+    if (addition.isEmpty()) {
+      return resolved(id, decision, adminId, note, batch, null);
+    }
+    return switch (addAccepted(addition.get(), adminId)) {
+      case Addition.Stopped stopped -> stopped.why();
+      case Addition.Done done ->
+          resolvedAfterAdding(id, decision, adminId, note, batch, done.alreadyListed());
+    };
+  }
+
+  private Outcome resolvedAfterAdding(
+      UUID id,
+      ReviewQueue.Status decision,
+      String adminId,
+      @Nullable String note,
+      @Nullable UUID batch,
+      @Nullable ListedResource listed) {
+    Outcome outcome = resolved(id, decision, adminId, note, batch, listed);
+    if (!(outcome instanceof Outcome.Resolved)) {
       throw new IllegalStateException("review item " + id + " was decided concurrently");
     }
-    return new Decision(outcome, listed);
+    return outcome;
+  }
+
+  private Outcome resolved(
+      UUID id,
+      ReviewQueue.Status decision,
+      String adminId,
+      @Nullable String note,
+      @Nullable UUID batch,
+      @Nullable ListedResource listed) {
+    return switch (resolve.resolve(id, decision, adminId, noteWith(note, listed), batch)) {
+      case ResolveReviewItem.Outcome.Resolved r -> new Outcome.Resolved(r.item(), listed);
+      case ResolveReviewItem.Outcome.NotOpen n -> new Outcome.NotOpen(n.item());
+      case ResolveReviewItem.Outcome.NotFound f -> new Outcome.NotFound();
+    };
   }
 
   private static @Nullable String noteWith(@Nullable String note, @Nullable ListedResource listed) {
@@ -105,77 +168,78 @@ public class ResolveReview {
     return item.details() != null && item.details().strip().startsWith("{");
   }
 
-  private @Nullable ListedResource addAccepted(ReviewQueue.Item item, String adminId) {
-    if (item.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE
-        || item.kind() == ReviewQueue.Kind.COURSE_CANDIDATE) {
-      return indexCandidate(item, adminId);
-    }
-    if (item.kind() == ReviewQueue.Kind.KNOWN_TARGET_CANDIDATE) {
-      addKnownTarget(item, adminId);
-      return null;
-    }
-    addDrafted(item, adminId);
-    return null;
+  private Addition addAccepted(ReviewQueue.Item item, String adminId) {
+    return switch (item.kind()) {
+      case RESOURCE_CANDIDATE, COURSE_CANDIDATE -> indexCandidate(item, adminId);
+      case KNOWN_TARGET_CANDIDATE -> addKnownTarget(item, adminId);
+      default -> addDrafted(item, adminId);
+    };
   }
 
-  private @Nullable ListedResource indexCandidate(ReviewQueue.Item item, String adminId) {
+  private Addition indexCandidate(ReviewQueue.Item item, String adminId) {
     AcceptOutcome outcome;
     try {
       outcome = indexCandidate.accept(item.details());
     } catch (InvalidCandidate e) {
-      throw new ApiProblem(ProblemType.INVALID_REQUEST, "The candidate cannot be read.");
+      return new Addition.Stopped(new Outcome.UnreadableCandidate());
     }
     if (outcome instanceof AcceptOutcome.Indexed indexed) {
-      applyConfirmed(indexed, adminId);
-      return null;
+      return applyConfirmed(indexed, adminId);
     }
-    return outcome instanceof AcceptOutcome.AlreadyListed listed ? listed.getResource() : null;
+    return new Addition.Done(
+        outcome instanceof AcceptOutcome.AlreadyListed listed ? listed.getResource() : null);
   }
 
-  private void applyConfirmed(AcceptOutcome.Indexed indexed, String adminId) {
-    indexed
-        .getConfirmed()
-        .forEach((field, value) -> {
-          switch (field) {
-            case "description" ->
-                curate.setDescription(
-                    indexed.getId(), value, indexed.getDescriptionByAi(), adminId);
-            case "publishedAt" ->
-                curate.setPublished(indexed.getId(), LocalDate.parse(value), adminId);
-            default -> curate.set(indexed.getId(), field, value, adminId);
-          }
-        });
+  private Addition applyConfirmed(AcceptOutcome.Indexed indexed, String adminId) {
+    for (Map.Entry<String, String> confirmed : indexed.getConfirmed().entrySet()) {
+      String field = confirmed.getKey();
+      if (!(confirm(indexed, field, confirmed.getValue(), adminId)
+          instanceof CurateField.Outcome.Curated)) {
+        return new Addition.Stopped(new Outcome.ConfirmedValueRefused(field));
+      }
+    }
+    return ADDED;
   }
 
-  private void addKnownTarget(ReviewQueue.Item item, String adminId) {
-    KnownTargetCandidates.Candidate candidate =
-        targetCandidates
-            .of(item.id())
-            .orElseThrow(
-                () -> new ApiProblem(ProblemType.INVALID_REQUEST, "The proposal cannot be read."));
-    KnownTargetAnswer.requireAdded(
-        knownTargets.addDiscovered(
-            adminId, candidate.kind(), candidate.name(), candidate.otherNames()),
-        taken -> {
-          throw new ApiProblem(
-              ProblemType.DUPLICATE,
-              taken.name() + " already means " + taken.holder() + ". Reject the proposal.");
-        },
-        "The proposed name cannot be a known target.");
+  private CurateField.Outcome confirm(
+      AcceptOutcome.Indexed indexed, String field, String value, String adminId) {
+    return switch (field) {
+      case "description" ->
+          curate.setDescription(indexed.getId(), value, indexed.getDescriptionByAi(), adminId);
+      case "publishedAt" -> curate.setPublished(indexed.getId(), LocalDate.parse(value), adminId);
+      default -> curate.set(indexed.getId(), field, value, adminId);
+    };
   }
 
-  private void addDrafted(ReviewQueue.Item item, String adminId) {
-    switch (acceptDraft.accept(adminId, item)) {
-      case AcceptExampleDraft.Outcome.Added a -> {}
+  private Addition addKnownTarget(ReviewQueue.Item item, String adminId) {
+    Optional<KnownTargetCandidates.Candidate> proposal = targetCandidates.of(item.id());
+    if (proposal.isEmpty()) {
+      return new Addition.Stopped(new Outcome.UnreadableProposal());
+    }
+    KnownTargetCandidates.Candidate candidate = proposal.get();
+    return switch (knownTargets.addDiscovered(
+        adminId, candidate.kind(), candidate.name(), candidate.otherNames())) {
+      case ManageKnownTargets.Saved.Done d -> ADDED;
+      case ManageKnownTargets.Saved.Taken t ->
+          new Addition.Stopped(new Outcome.KnownTargetNameTaken(t.name(), t.holder()));
+      case ManageKnownTargets.Saved.Full f ->
+          new Addition.Stopped(new Outcome.KnownTargetListFull(ManageKnownTargets.MAX_TARGETS));
+      case ManageKnownTargets.Saved.Invalid i ->
+          new Addition.Stopped(new Outcome.InvalidKnownTargetName());
+      case ManageKnownTargets.Saved.NotFound n ->
+          throw new IllegalStateException("adding a known target cannot miss one");
+    };
+  }
+
+  private Addition addDrafted(ReviewQueue.Item item, String adminId) {
+    return switch (acceptDraft.accept(adminId, item)) {
+      case AcceptExampleDraft.Outcome.Added a -> ADDED;
       case AcceptExampleDraft.Outcome.Unreadable u ->
-          throw new ApiProblem(ProblemType.INVALID_REQUEST, "The draft cannot be read.");
+          new Addition.Stopped(new Outcome.UnreadableDraft());
       case AcceptExampleDraft.Outcome.Duplicate d ->
-          throw new ApiProblem(
-              ProblemType.DUPLICATE,
-              "Another example already has this label or this query. Reject the draft, or change"
-                  + " the example first.");
+          new Addition.Stopped(new Outcome.DuplicateExample());
       case AcceptExampleDraft.Outcome.Invalid i ->
-          throw new ApiProblem(ProblemType.INVALID_REQUEST, String.join("; ", i.problems()) + ".");
-    }
+          new Addition.Stopped(new Outcome.InvalidExample(i.problems()));
+    };
   }
 }

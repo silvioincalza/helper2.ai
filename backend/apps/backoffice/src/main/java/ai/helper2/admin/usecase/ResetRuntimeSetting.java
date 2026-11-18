@@ -13,6 +13,8 @@ public class ResetRuntimeSetting {
     record Reset(GetRuntimeSettings.State state) implements Outcome {}
 
     record Conflict(GetRuntimeSettings.State current) implements Outcome {}
+
+    record InvalidReason() implements Outcome {}
   }
 
   private final RuntimeSettingStore store;
@@ -36,6 +38,9 @@ public class ResetRuntimeSetting {
 
   public Outcome reset(
       String adminId, RuntimeSetting setting, long expectedVersion, @Nullable String reason) {
+    if (!ChangeRuntimeSetting.Reasons.isPlain(reason)) {
+      return new Outcome.InvalidReason();
+    }
     GetRuntimeSettings.State before = settings.of(setting);
     String why = ChangeRuntimeSetting.Reasons.clean(reason);
     Outcome outcome = tryReset(adminId, setting, expectedVersion, why);

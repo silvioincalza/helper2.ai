@@ -21,7 +21,6 @@ import ai.helper2.examples.usecase.ReadExampleDraft;
 import ai.helper2.examples.usecase.RemoveHomeExample;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.settings.SettingsGroup;
-import ai.helper2.shared.UnitOfWork;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -52,8 +51,7 @@ class NoBackOfficeExamplesIT extends ApiTestBase {
             DraftSources.class,
             ExampleDrafter.class,
             ExampleSearch.class,
-            ResourceTitles.class,
-            UnitOfWork.class);
+            ResourceTitles.class);
 
     assertThat(backOffice)
         .allSatisfy(

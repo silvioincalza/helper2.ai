@@ -10,7 +10,10 @@ import ai.helper2.api.generated.model.RelationshipTargetGroupOutcomeDto;
 import ai.helper2.api.generated.model.RelationshipTargetGroupPageDto;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.RelationshipTargets;
+import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
+import ai.helper2.platform.NotFoundException;
+import ai.helper2.platform.ProblemType;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,11 +45,19 @@ class RelationshipTargetsController implements RelationshipTargetsApi {
   @Override
   public ResponseEntity<RelationshipTargetGroupOutcomeDto> decideRelationshipTargetGroup(
       RelationshipTargetGroupDecisionDto body) {
-    DecideRelationshipTargetGroup.Outcome outcome =
-        decide.decide(body.getKey(), choice(body), Admins.id(), body.getNote());
-    return ResponseEntity.ok(
-        new RelationshipTargetGroupOutcomeDto(
-            outcome.batch(), outcome.decided(), outcome.skipped(), outcome.left()));
+    return switch (decide.decide(body.getKey(), choice(body), Admins.id(), body.getNote())) {
+      case DecideRelationshipTargetGroup.Outcome.Decided d ->
+          ResponseEntity.ok(
+              new RelationshipTargetGroupOutcomeDto(d.batch(), d.decided(), d.skipped(), d.left()));
+      case DecideRelationshipTargetGroup.Outcome.NoOpenItems none ->
+          throw new NotFoundException("No open relationship candidate has this target.");
+      case DecideRelationshipTargetGroup.Outcome.UnknownResource unknown ->
+          throw new BadRequestException("No resource has this id.");
+      case DecideRelationshipTargetGroup.Outcome.InvalidKnownTargetName name ->
+          throw new ApiProblem(ProblemType.INVALID_REQUEST, "This name cannot be a known target.");
+      case DecideRelationshipTargetGroup.Outcome.KnownTargetListFull full ->
+          throw KnownTargetProblems.listIsFull(full.limit());
+    };
   }
 
   private static Choice choice(RelationshipTargetGroupDecisionDto body) {

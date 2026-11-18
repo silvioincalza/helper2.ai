@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.internal.ReviewEvidenceFixture;
+import ai.helper2.platform.ProblemType;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
 import java.util.UUID;
@@ -163,5 +164,28 @@ class ReviewBulkApiIT extends ApiTestBase {
     assertThat(JsonPath.<List<String>>read(again, "$.items[*].outcome"))
         .containsExactly("NOT_OPEN");
     assertThat(audit(fixture.reportItem)).hasSize(2).last().asString().startsWith("NOT_OPEN bulk:");
+  }
+
+  @Test
+  void aBulkOutsideTheContractOrWithARepeatedIdIsTheInvalidRequestProblemAndDecidesNothing()
+      throws Exception {
+    List<UUID> many = IntStream.range(0, 101).mapToObj(i -> UUID.randomUUID()).toList();
+    List<UUID> one = List.of(fixture.reportItem);
+    List<UUID> twice = List.of(fixture.reportItem, fixture.validationItem, fixture.reportItem);
+    for (MockHttpServletRequestBuilder refused :
+        List.of(
+            bulk("REJECTED", List.of()),
+            bulk("REJECTED", many),
+            bulk("OPEN", one),
+            bulk("SUPERSEDED", one),
+            bulk("REJECTED", twice))) {
+      mvc.perform(refused.with(ADMIN).with(csrf().asHeader()))
+          .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+    }
+
+    assertThat(itemStatus(fixture.reportItem)).isEqualTo("OPEN");
+    assertThat(itemStatus(fixture.validationItem)).isEqualTo("OPEN");
+    assertThat(audit(fixture.reportItem)).isEmpty();
+    assertThat(audit(fixture.validationItem)).isEmpty();
   }
 }

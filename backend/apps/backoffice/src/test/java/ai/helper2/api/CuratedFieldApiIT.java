@@ -12,6 +12,7 @@ import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.internal.ReviewEvidenceFixture;
 import ai.helper2.catalog.usecase.CurateField;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceContext;
@@ -260,6 +261,39 @@ class CuratedFieldApiIT extends ApiTestBase {
     set(fixture.resource, "license", "not a licence").andExpect(status().isBadRequest());
     set(UUID.randomUUID(), "pricing", "PAID").andExpect(status().isNotFound());
     set(fixture.resource, "nonsense", "x").andExpect(status().isBadRequest());
+
+    assertThat(column("curated_fields")).isEqualTo("{}");
+    assertThat(audit()).isEmpty();
+  }
+
+  ResultActions drop(UUID resource, String field) throws Exception {
+    return mvc.perform(
+        post("/api/v1/admin/resources/" + resource + "/fields/" + field + "/drop")
+            .with(admin)
+            .with(csrf().asHeader()));
+  }
+
+  @Test
+  void aRefusedSetOrDropAnswersTheSameProblemForEveryReason() throws Exception {
+    String invalid = "Invalid request parameters.";
+    String missing = "Resource not found.";
+    UUID unknown = UUID.randomUUID();
+
+    set(fixture.resource, "useCase", "coding")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    set(fixture.resource, "pricing", "CHEAP")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    set(fixture.resource, "description", " ")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    set(fixture.resource, "publishedAt", "2 March")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    set(fixture.resource, "publishedAt", "2999-01-01")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    set(unknown, "pricing", "PAID").andExpect(problem(ProblemType.NOT_FOUND, missing));
+    set(unknown, "description", "Writes notes.").andExpect(problem(ProblemType.NOT_FOUND, missing));
+    set(unknown, "publishedAt", "2025-03-02").andExpect(problem(ProblemType.NOT_FOUND, missing));
+    drop(fixture.resource, "description").andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    drop(unknown, "license").andExpect(problem(ProblemType.NOT_FOUND, missing));
 
     assertThat(column("curated_fields")).isEqualTo("{}");
     assertThat(audit()).isEmpty();

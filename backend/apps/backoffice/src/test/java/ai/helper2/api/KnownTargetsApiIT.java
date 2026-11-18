@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.ProblemType;
 import com.jayway.jsonpath.JsonPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -216,5 +217,33 @@ class KnownTargetsApiIT extends ApiTestBase {
                 .with(oauth2Login())
                 .with(csrf().asHeader()))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void aFullListIsTheDuplicateProblemAndTheRefusalIsAudited() throws Exception {
+    jdbc.sql(
+            """
+            INSERT INTO known_target (id, kind, name, added_by)
+            SELECT gen_random_uuid(), 'VENDOR', 'f' || g || ' ' || :tag, 'filler'
+            FROM generate_series(1, 1000) g
+            """)
+        .param("tag", tag)
+        .update();
+
+    mvc.perform(
+            post(BASE)
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(write("SERVICE", "One more " + tag)))
+        .andExpect(problem(ProblemType.DUPLICATE, "The list holds at most 1000 known targets."));
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM known_target WHERE name = :name")
+                .param("name", "One more " + tag)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(audit()).containsExactly("ADD_KNOWN_TARGET FULL - -");
   }
 }

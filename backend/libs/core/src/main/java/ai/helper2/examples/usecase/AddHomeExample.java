@@ -69,7 +69,6 @@ public class AddHomeExample {
     return switch (ExampleInput.Companion.of(label, query, path, expected)) {
       case ExampleInput.Checked.Invalid invalid -> new Outcome.Invalid(invalid.getProblems());
       case ExampleInput.Checked.Valid valid -> store(valid.getInput(), origin, model);
-      default -> throw new IllegalStateException();
     };
   }
 
@@ -83,7 +82,6 @@ public class AddHomeExample {
       case HomeExamples.Added.Done done ->
           new Outcome.Added(ListAdminHomeExamples.view(done.getExample(), known));
       case HomeExamples.Added.Duplicate d -> new Outcome.Duplicate();
-      default -> throw new IllegalStateException();
     };
   }
 }

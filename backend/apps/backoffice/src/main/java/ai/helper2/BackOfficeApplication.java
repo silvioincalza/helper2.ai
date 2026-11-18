@@ -2,7 +2,6 @@ package ai.helper2;
 
 import ai.helper2.catalog.config.CatalogBackOfficeConfiguration;
 import ai.helper2.examples.config.ExamplesBackOfficeConfiguration;
-import ai.helper2.platform.UnitOfWorkConfiguration;
 import ai.helper2.search.config.SearchBackOfficeConfiguration;
 import java.time.Clock;
 import org.springframework.boot.SpringApplication;
@@ -18,8 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Import({
   CatalogBackOfficeConfiguration.class,
   ExamplesBackOfficeConfiguration.class,
-  SearchBackOfficeConfiguration.class,
-  UnitOfWorkConfiguration.class
+  SearchBackOfficeConfiguration.class
 })
 public class BackOfficeApplication {
 

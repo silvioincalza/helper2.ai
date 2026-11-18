@@ -1,7 +1,8 @@
 # Flowchart: an admin decides every open relationship candidate of one target name at once.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/DecideRelationshipTargetGroup.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/DecideRelationshipItem.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/admin/config/AdminUseCaseConfiguration.java (one transaction per item),
+#   backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java (one unit of work per item,
+#   rolled back for a Refused outcome),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java,
 #   frontend/src/admin/RelationshipGroups.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0038-relationship-groups.d2 && d2 flow-0038-relationship-groups.d2 flow-0038-relationship-groups.svg
@@ -18,11 +19,12 @@ exists: "Resource in the catalog?" {class: decision}
 bad: "400, nothing changes" {class: fail}
 known: "Known target added\n(or already there);\nADD_KNOWN_TARGET" {class: data}
 full: "409 list full / 400 name:\nnothing changes" {class: fail}
-each: "Each item, one transaction\nholding its lock" {class: app}
+each: "Each item, one unit of work\nholding its lock" {class: app}
 linked: "Target changes to the resource,\nCHANGE_RELATIONSHIP_TARGET,\nthen ACCEPTED, link VERIFIED\n(both or neither)" {class: data}
 reject: "REJECTED" {class: data}
 confirm: "This item only: VERIFIED with\nthe target's kind, SUPERSEDED,\nRESOLVE_REVIEW_ITEM bulk:<batch>" {class: data}
-skip: "Decided meanwhile, the resource\nitself or a duplicate: skipped,\nnothing written" {class: app}
+skip: "The resource itself, a duplicate or\ndecided before: outcome Skipped,\nno change (a rejection keeps its\nNOT_OPEN audit entry)" {class: app}
+undone: "Decided between the target change\nand the decision: outcome LinkUndone,\na Refused record: the unit rolls back,\nnothing written; counted as skipped" {class: fail}
 remaining: "Left = open candidates of the\nname still open after the batch" {class: app}
 done: "Batch id, decided, skipped, left;\nan emptied page moves back to\nthe last page with groups" {class: end}
 
@@ -40,8 +42,10 @@ each -> linked: link
 each -> reject: REJECT {class: hot}
 each -> confirm: "VENDOR / SERVICE / TOOL"
 each -> skip: "item refused"
+each -> undone: "link, decided meanwhile"
 linked -> remaining
 reject -> remaining: {class: hot}
 confirm -> remaining
 skip -> remaining
+undone -> remaining
 remaining -> done: {class: hot}

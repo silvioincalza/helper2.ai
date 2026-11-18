@@ -1,12 +1,10 @@
 package ai.helper2.catalog.usecase;
 
 import ai.helper2.catalog.RelationshipTargets;
-import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.AuditTrail;
-import ai.helper2.platform.BadRequestException;
-import ai.helper2.platform.NotFoundException;
-import ai.helper2.platform.ProblemType;
+import ai.helper2.shared.Refused;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.UnitOfWork;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
@@ -22,69 +20,109 @@ public class ChangeRelationshipTarget {
     record Renamed(String title) implements Target {}
   }
 
+  public sealed interface Outcome {
+    record Changed() implements Outcome {}
+
+    record InvalidName(int maxLength) implements Outcome {}
+
+    record InvalidResourceTitle(int maxLength) implements Outcome {}
+
+    record InvalidResourceUrl() implements Outcome {}
+
+    record InvalidResourceType(ResourceType type) implements Outcome {}
+
+    record NotFound() implements Outcome, Refused {}
+
+    record NotOpen() implements Outcome, Refused {}
+
+    record NotARelationship() implements Outcome, Refused {}
+
+    record TitleTaken() implements Outcome, Refused {}
+
+    record UnknownTarget() implements Outcome, Refused {}
+
+    record SelfLink() implements Outcome, Refused {}
+  }
+
   private final RelationshipTargets targets;
   private final AddCuratedResource add;
   private final AuditTrail audit;
+  private final UnitOfWork unitOfWork;
 
   public ChangeRelationshipTarget(
-      RelationshipTargets targets, AddCuratedResource add, AuditTrail audit) {
+      RelationshipTargets targets,
+      AddCuratedResource add,
+      AuditTrail audit,
+      UnitOfWork unitOfWork) {
     this.targets = targets;
     this.add = add;
     this.audit = audit;
+    this.unitOfWork = unitOfWork;
   }
 
-  public void change(UUID itemId, Target target, String by) {
-    RelationshipTargets.Outcome outcome =
+  public Outcome change(UUID itemId, Target target, String by) {
+    return unitOfWork.run(() ->
         switch (target) {
-          case Target.Existing e -> targets.change(itemId, e.resourceId(), null);
-          case Target.Added a -> linkToAdded(itemId, a, by);
-          case Target.Renamed r -> targets.change(itemId, null, checkedName(r.title()));
-        };
-    if (!(outcome instanceof RelationshipTargets.Outcome.Changed changed)) {
-      throw refused(outcome);
-    }
-    audit.record(
-        by,
-        AuditTrail.Action.CHANGE_RELATIONSHIP_TARGET,
-        itemId.toString(),
-        changed.targetId() == null ? "RENAMED" : "LINKED " + changed.targetId());
+          case Target.Existing existing -> link(itemId, existing.resourceId(), by);
+          case Target.Added added -> linkToAdded(itemId, added, by);
+          case Target.Renamed renamed -> rename(itemId, renamed.title(), by);
+        });
   }
 
-  private RelationshipTargets.Outcome linkToAdded(UUID itemId, Target.Added a, String by) {
-    AddCuratedResource.Outcome resource = add.add(a.title(), a.url(), a.type());
-    RelationshipTargets.Outcome outcome = targets.change(itemId, resource.id(), null);
-    if (resource.added() && outcome instanceof RelationshipTargets.Outcome.Changed) {
-      audit.record(by, AuditTrail.Action.ADD_RESOURCE, resource.id().toString(), "ADDED");
-    }
-    return outcome;
+  private Outcome link(UUID itemId, UUID resourceId, String by) {
+    return recorded(itemId, targets.change(itemId, resourceId, null), by);
   }
 
-  private static String checkedName(@Nullable String title) {
+  private Outcome linkToAdded(UUID itemId, Target.Added resource, String by) {
+    return switch (add.add(resource.title(), resource.url(), resource.type())) {
+      case AddCuratedResource.Outcome.Added added -> linkToNew(itemId, added.id(), by);
+      case AddCuratedResource.Outcome.AlreadyListed listed -> link(itemId, listed.id(), by);
+      case AddCuratedResource.Outcome.InvalidTitle title ->
+          new Outcome.InvalidResourceTitle(title.maxLength());
+      case AddCuratedResource.Outcome.InvalidUrl url -> new Outcome.InvalidResourceUrl();
+      case AddCuratedResource.Outcome.NotACuratedType type ->
+          new Outcome.InvalidResourceType(type.type());
+    };
+  }
+
+  private Outcome linkToNew(UUID itemId, UUID resourceId, String by) {
+    RelationshipTargets.Outcome linked = targets.change(itemId, resourceId, null);
+    if (linked instanceof RelationshipTargets.Outcome.Changed) {
+      audit.record(by, AuditTrail.Action.ADD_RESOURCE, resourceId.toString(), "ADDED");
+    }
+    return recorded(itemId, linked, by);
+  }
+
+  private Outcome rename(UUID itemId, @Nullable String title, String by) {
     String name = title == null ? "" : title.strip();
-    if (name.isEmpty()
-        || name.length() > MAX_NAME
-        || name.chars().anyMatch(Character::isISOControl)) {
-      throw new BadRequestException("The name must be 1 to " + MAX_NAME + " characters.");
+    if (!isAName(name)) {
+      return new Outcome.InvalidName(MAX_NAME);
     }
-    return name;
+    return recorded(itemId, targets.change(itemId, null, name), by);
   }
 
-  private static RuntimeException refused(RelationshipTargets.Outcome outcome) {
+  private static boolean isAName(String name) {
+    return !name.isEmpty()
+        && name.length() <= MAX_NAME
+        && name.chars().noneMatch(Character::isISOControl);
+  }
+
+  private Outcome recorded(UUID itemId, RelationshipTargets.Outcome outcome, String by) {
     return switch (outcome) {
-      case RelationshipTargets.Outcome.NotFound n ->
-          new NotFoundException("Review item not found.");
-      case RelationshipTargets.Outcome.NotOpen n ->
-          new ApiProblem(ProblemType.ALREADY_DECIDED, "The item is no longer open.");
-      case RelationshipTargets.Outcome.NotARelationship n ->
-          new ApiProblem(ProblemType.NOT_APPLICABLE, "The item is not a relationship candidate.");
-      case RelationshipTargets.Outcome.TitleTaken t ->
-          new ApiProblem(
-              ProblemType.DUPLICATE, "The resource already has a relationship with this target.");
-      case RelationshipTargets.Outcome.UnknownTarget u ->
-          new BadRequestException("No resource has this id.");
-      case RelationshipTargets.Outcome.SelfLink s ->
-          new BadRequestException("A resource cannot point at itself.");
-      case RelationshipTargets.Outcome.Changed c -> new IllegalStateException("changed");
+      case RelationshipTargets.Outcome.Changed changed -> {
+        audit.record(
+            by,
+            AuditTrail.Action.CHANGE_RELATIONSHIP_TARGET,
+            itemId.toString(),
+            changed.targetId() == null ? "RENAMED" : "LINKED " + changed.targetId());
+        yield new Outcome.Changed();
+      }
+      case RelationshipTargets.Outcome.NotFound notFound -> new Outcome.NotFound();
+      case RelationshipTargets.Outcome.NotOpen notOpen -> new Outcome.NotOpen();
+      case RelationshipTargets.Outcome.NotARelationship other -> new Outcome.NotARelationship();
+      case RelationshipTargets.Outcome.TitleTaken taken -> new Outcome.TitleTaken();
+      case RelationshipTargets.Outcome.UnknownTarget unknown -> new Outcome.UnknownTarget();
+      case RelationshipTargets.Outcome.SelfLink self -> new Outcome.SelfLink();
     };
   }
 }

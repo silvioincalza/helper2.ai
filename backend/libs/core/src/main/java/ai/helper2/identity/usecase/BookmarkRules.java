@@ -1,6 +1,5 @@
 package ai.helper2.identity.usecase;
 
-import ai.helper2.platform.BadRequestException;
 import java.net.URI;
 
 final class BookmarkRules {
@@ -10,18 +9,14 @@ final class BookmarkRules {
 
   private BookmarkRules() {}
 
-  static void requireWebUrl(URI url) {
+  static boolean isWebUrl(URI url) {
     String scheme = url.getScheme();
-    if (url.toString().length() > MAX_URL_LENGTH
-        || scheme == null
-        || !(scheme.equals("https") || scheme.equals("http"))) {
-      throw new BadRequestException("invalid bookmark url");
-    }
+    return url.toString().length() <= MAX_URL_LENGTH
+        && scheme != null
+        && (scheme.equals("https") || scheme.equals("http"));
   }
 
-  static void requireWithinCap(long total) {
-    if (total > MAX_PER_USER) {
-      throw new BadRequestException("At most " + MAX_PER_USER + " bookmarks per account.");
-    }
+  static boolean isOverTheCap(long total) {
+    return total > MAX_PER_USER;
   }
 }

@@ -3,16 +3,13 @@ package ai.helper2;
 import ai.helper2.catalog.config.EnableCatalogBackOfficeAdapters;
 import ai.helper2.identity.config.SignInPages;
 import ai.helper2.platform.RateLimitKey;
-import ai.helper2.platform.UnitOfWorkConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = TestcontainersConfiguration.CLIENT, havingValue = "h2_backoffice")
 @EnableCatalogBackOfficeAdapters
-@Import(UnitOfWorkConfiguration.class)
 class BackOfficeParts {
 
   @Bean

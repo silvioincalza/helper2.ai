@@ -14,7 +14,7 @@ person: "Admin" {class: person}
 ui: "Back office\n(RelationshipGroups)" {class: app}
 api: RelationshipTargetsController {class: app}
 group: DecideRelationshipTargetGroup {class: app}
-item: "DecideRelationshipItem\n(one transaction per item)" {class: app}
+item: "DecideRelationshipItem\n(one unit of work per item)" {class: app}
 db: "PostgreSQL\n(review_item, relationship,\nknown_target, admin_audit)" {class: data}
 
 person -> ui: "It is a tool (117 items)"
@@ -25,6 +25,7 @@ group -> db: "add known target Cursor (TOOL), ADD_KNOWN_TARGET"
 group -> item: "confirmKnown(item, admin, batch), for each item"
 item -> db: "lock item; relationship VERIFIED (TOOL);\nitem SUPERSEDED"
 item -> db: "RESOLVE_REVIEW_ITEM SUPERSEDED bulk:<batch>"
+item -> group: "outcome Decided\n(Skipped, or LinkUndone rolled back, is counted as skipped)"
 group -> db: "count open candidates named cursor"
 group -> api: "batch, decided 117, skipped 0, left 0"
 api -> ui: "200"

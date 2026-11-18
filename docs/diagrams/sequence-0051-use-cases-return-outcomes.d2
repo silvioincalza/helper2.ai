@@ -1,0 +1,49 @@
+# Sequence: a signed-in user saves bookmark number 501: the use case answers OverLimit, its unit of work rolls the
+#   row back, and the controller turns the outcome into the 400 problem (ADR 0051).
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java (addBookmark),
+#   backend/libs/core/src/main/java/ai/helper2/identity/usecase/AddBookmark.java, BookmarkRules.java,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt, Refused.kt,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java,
+#   backend/libs/core/src/main/java/ai/helper2/identity/internal/JdbcBookmarks.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java, BadRequestException.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0051-use-cases-return-outcomes.d2 && d2 sequence-0051-use-cases-return-outcomes.d2 sequence-0051-use-cases-return-outcomes.svg
+
+...@style
+
+shape: sequence_diagram
+
+browser: "Browser\n(signed-in user)" {class: person}
+web: "BookmarksController\n(public app)" {class: app}
+usecase: "AddBookmark\n(identity.usecase)" {class: app}
+work: "UnitOfWork\n(TransactionalUnitOfWork)" {class: port}
+db: PostgreSQL {class: data}
+errors: "ApiExceptionHandler\n(platform)" {class: app}
+
+refused: "Bookmark 501 is refused" {
+  browser -> web: "PUT /api/v1/me/bookmarks/{id}\n{resourceId, title, url}" {class: hot}
+  web -> usecase: "add(userId, bookmark)" {class: hot}
+  usecase -> usecase: "BookmarkRules.isWebUrl: yes"
+  usecase -> work: "run(addWithinTheCap)" {class: hot}
+  work -> db: BEGIN
+  usecase -> db: "lock the app_user row;\nINSERT bookmark ON CONFLICT DO NOTHING;\ncount: 501"
+  usecase -> work: "OverLimit(500), a Refused record"
+  work -> db: "ROLLBACK (this unit opened the transaction)"
+  work -> usecase: "OverLimit(500)"
+  usecase -> web: "Outcome.OverLimit(500)"
+  web -> web: "switch over the outcome:\nthrow BadRequestException"
+  web -> errors: BadRequestException
+  errors -> browser: "400 application/problem+json\n{type …/invalid-request, code invalid-request,\ndetail: Invalid request parameters.}"
+}
+
+kept: "Bookmark 500 is kept" {
+  browser -> web: "PUT /api/v1/me/bookmarks/{id}" {class: hot}
+  web -> usecase: "add(userId, bookmark)" {class: hot}
+  usecase -> work: "run(addWithinTheCap)" {class: hot}
+  work -> db: BEGIN
+  usecase -> db: "lock, INSERT, count: 500;\nread the saved row"
+  usecase -> work: "Added(bookmark)"
+  work -> db: COMMIT
+  work -> usecase: "Added(bookmark)"
+  usecase -> web: "Outcome.Added(bookmark)"
+  web -> browser: "200 {resourceId, title, url, savedAt}"
+}
