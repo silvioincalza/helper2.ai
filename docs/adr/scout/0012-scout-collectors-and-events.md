@@ -335,7 +335,7 @@ Two kinds of source need more care:
     events that start before today 00:00 UTC plus `days`; the response says that end in `until` (null without
     `days`). An event already running stays listed until it ends. `total` counts every event in the window, so "Show
     all N" is a real number ([0040](../frontend/0040-design-system.md)). `Cache-Control: public, max-age=300`. The home
-    page (`useEventsFeed` in `homeFeeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
+    page (`useEventsFeed` in `features/feeds/feeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
     The Events page asks for the next 366 days in pages of 500 (`offset` 0, 500, …) until it holds `total` events, so
     its list and its kind and format counts cover the whole window.
 
@@ -368,7 +368,7 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `scripts/industry-events-seed.mjs`, `scripts/industry-events-seed.test.mjs`,
   `docs/research/industry-events-2026-11-12.json`,
   `backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql`.
-- `frontend/src/features/home/HomeLists.tsx`, `homeFeeds.ts`, `TermList.tsx`, `listParts.tsx`, `frontend/src/features/events/EventsPage.tsx`,
+- `frontend/src/features/home/HomeLists.tsx`, `TermList.tsx`, `frontend/src/features/feeds/feeds.ts`, `feedCells.tsx`, `EventsPage.tsx`,
   `frontend/src/features/resource/DateTimeline.tsx`, `DateFactView.tsx` — the AI label.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`;
   `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2LiveWebCreditsHigh`.

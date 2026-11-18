@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { HowItWorks, useHowItWorksToc } from '@/features/pages/HowItWorks';
-import { REPO_URL } from '@/shell/Layout';
+import { HowItWorks, useHowItWorksToc } from './HowItWorks';
+import { REPO_URL } from '@/lib/repoUrl';
 import { useTitle } from '@/hooks/useTitle';
-import { TextPage } from '@/features/pages/TextPage';
+import { TextPage } from './TextPage';
 import { usePolicyText } from '@/hooks/usePolicy';
 
 export default function MissionPage() {

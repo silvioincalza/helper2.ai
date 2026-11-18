@@ -1,10 +1,10 @@
 import type { ComponentType } from 'react';
 import type { RouteObject } from 'react-router';
 import { Layout } from '@/shell/Layout';
-import { AppProviders } from '@/AppProviders';
+import { AppProviders } from './AppProviders';
 import { RouteError } from '@/shell/RouteError';
 import { loadChunk } from '@/lib/staleChunk';
-import HomeOrResultsPage from '@/features/search/HomeOrResultsPage';
+import HomeOrResultsPage from '@/shell/HomeOrResultsPage';
 import ResourcePage from '@/features/resource/ResourcePage';
 
 const page =
@@ -38,8 +38,8 @@ export const routes: RouteObject[] = [
           { path: 'search', element: <HomeOrResultsPage /> },
           { path: 'resource/:id/:slug?', element: <ResourcePage /> },
           { path: 'saved', lazy: page(() => import('@/features/saved/SavedPage')) },
-          { path: 'news', lazy: page(() => import('@/features/news/NewsPage')) },
-          { path: 'events', lazy: page(() => import('@/features/events/EventsPage')) },
+          { path: 'news', lazy: page(() => import('@/features/feeds/NewsPage')) },
+          { path: 'events', lazy: page(() => import('@/features/feeds/EventsPage')) },
           { path: 'sources', lazy: page(() => import('@/features/sources/SourcesPage')) },
           { path: 'account', lazy: page(() => import('@/features/account/AccountPage')) },
           { path: 'signin', lazy: page(() => import('@/features/account/SignInPage')) },

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Home from '@/features/home/Home';
 import { OneBox } from '@/features/search/OneBox';
 import { ResultsSkeleton } from '@/features/search/ResultsSkeleton';
-import { Robots } from '@/shell/Robots';
+import { Robots } from '@/ui/Robots';
 import { useTitle } from '@/hooks/useTitle';
 import { askedQuestion, parseSearchParams, showsHome } from '@/lib/searchState';
 

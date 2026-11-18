@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { useMonetisation } from '@/context/MonetisationContext';
 import { asksForConsent, loadGoogleConsent } from '@/lib/googleConsent';
-import '@/features/monetisation/sponsor.css';
+import './sponsor.css';
 
 const SCRIPT_ID = 'h2-adsense';
 

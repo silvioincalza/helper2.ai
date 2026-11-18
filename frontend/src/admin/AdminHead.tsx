@@ -1,5 +1,5 @@
 import type { ReactNode, Ref } from 'react';
-import { TermCommand } from '@/features/home/TermList';
+import { TermCommand } from '@/ui/TermCommand';
 
 export function AdminHead({
   id,

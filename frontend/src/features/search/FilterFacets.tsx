@@ -11,7 +11,7 @@ import {
 } from '@/lib/searchState';
 import type { Categories } from '@/hooks/useCategories';
 import { CategoryFacet } from './CategoryFacet';
-import { Term, type GlossaryKey } from '../../ui/Term';
+import { Term, type GlossaryKey } from '@/ui/Term';
 
 type FacetKey = Exclude<MultiKey, 'category'> | 'openSource';
 

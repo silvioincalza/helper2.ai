@@ -2,7 +2,7 @@ import './adminText';
 import { NavLink, Outlet, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
-import { SignIn } from '@/features/account/SignIn';
+import { SignIn } from '@/ui/SignIn';
 import { useMe } from '@/context/MeContext';
 import { StatePanel } from '@/ui/StatePanel';
 import { useTitle } from '@/hooks/useTitle';
