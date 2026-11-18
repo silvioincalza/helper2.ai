@@ -51,6 +51,19 @@ describe('BackLink', () => {
     expect(router.state.historyAction).toBe('PUSH');
   });
 
+  it.each(['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)'])(
+    'links to the fallback page when the list is %s',
+    (from) => {
+      renderAt(['/list', '/page'], from);
+      expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/home');
+    },
+  );
+
+  it('keeps a same-site path with its query', () => {
+    renderAt(['/list', '/page'], '/path?x=1');
+    expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/path?x=1');
+  });
+
   it('links to the fallback page when no list is known', () => {
     renderAt(['/list', '/page'], undefined);
     expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/home');
