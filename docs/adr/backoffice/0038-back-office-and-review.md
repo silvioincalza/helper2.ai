@@ -311,7 +311,9 @@ than a hundred), so the question is the same for each of them: what is this name
       trail, not in the catalog.
 21. **No lost update.**
     - The form sends back the revision of the details it showed (`expectedRevision`). The revision is the SHA-256
-      of the stored details (`CandidateRevision`), so it changes with any change to them. The edit applies only to
+      of the stored details (`CandidateRevision`), so it changes with any change to them. The contract takes 64
+      lower-case hex characters and nothing else (400). The page sends no edit for a candidate it has no revision
+      for: it says the candidate cannot be read, and the item stays open. The edit applies only to
       that revision: when the candidate changed since the form opened (a collector, another admin), it is 409
       `version-conflict`: reload, edit again.
     - The edit and a collector's merge both save only when the item still holds the details they read

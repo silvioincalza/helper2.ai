@@ -313,6 +313,36 @@ class CandidateEditApiIT extends ApiTestBase {
   }
 
   @Test
+  void aRevisionThatIsNot64HexCharactersIsRefusedAndNothingChanges() throws Exception {
+    String seen = CandidateRevision.of(details);
+    for (String revision :
+        List.of(
+            "",
+            "abc",
+            seen.toUpperCase(java.util.Locale.ROOT),
+            seen + "0",
+            seen.substring(1),
+            "g" + seen.substring(1),
+            seen + "\\n")) {
+      mvc.perform(
+              put("/api/v1/admin/review-items/" + item + "/candidate")
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"expectedRevision\":\"" + revision + "\",\"title\":\"x\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("invalid-request"));
+    }
+    assertThat(
+            jdbc.sql("SELECT details FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo(details);
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
   void aValueTheCatalogDoesNotTakeIsRefused() throws Exception {
     edit(item, "{\"pricing\":\"CHEAP\"}").andExpect(status().isBadRequest());
     edit(item, "{\"license\":\"MIT license\"}").andExpect(status().isBadRequest());

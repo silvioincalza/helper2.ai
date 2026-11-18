@@ -2211,6 +2211,7 @@ components:
         shape: { $ref: "#/components/schemas/ReviewDetailsShape" }
         revision:
           type: string
+          pattern: "^[0-9a-f]{64}$"
           description: >-
             Names the candidate as stored now. It changes when a collector finds the page again or an admin edits it.
             An edit sends it back as `expectedRevision`.
@@ -2396,10 +2397,11 @@ components:
       properties:
         expectedRevision:
           type: string
+          pattern: "^[0-9a-f]{64}$"
           description: >-
-            The `revision` of the item's `details` as the admin saw them. The edit applies only to that revision: when
-            the candidate changed since (a collector found the page again, another admin edited it), it is refused
-            with 409 `version-conflict`.
+            The `revision` of the item's `details` as the admin saw them: 64 lower-case hex characters, or the edit is
+            refused with 400. The edit applies only to that revision: when the candidate changed since (a collector
+            found the page again, another admin edited it), it is refused with 409 `version-conflict`.
         title: { type: [string, "null"], minLength: 1, maxLength: 300 }
         type:
           oneOf:

@@ -58,16 +58,18 @@ export function useReviewActions({
       setAnnouncement(t('admin.research.acceptWhy', { count: researched?.left.length ?? 0 }));
       return;
     }
+    const edit = decision === 'ACCEPTED' ? researched?.edit : null;
+    const revision = candidateOf(item)?.revision;
+    if (edit && !revision) {
+      setError({ kind: 'refused', detail: t('admin.research.unreadable') });
+      return;
+    }
     setBusy(true);
     setError(null);
     setListed(null);
     try {
-      const accepted = decision === 'ACCEPTED' ? researched : null;
-      if (accepted?.edit) {
-        await adminApi.editCandidate(item.id, {
-          expectedRevision: candidateOf(item)?.revision ?? '',
-          ...accepted.edit,
-        });
+      if (edit && revision) {
+        await adminApi.editCandidate(item.id, { expectedRevision: revision, ...edit });
       }
       const text = (notes[item.id]?.trim() ?? '').slice(0, NOTE_MAX);
       const decided = await adminApi.resolveReviewItem(item.id, {

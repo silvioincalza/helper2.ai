@@ -168,6 +168,34 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     await settle();
   });
 
+  it('Scenario: confirmed values for a candidate with no revision are not sent, and the item stays open', async () => {
+    const unread = { ...ITEMS.items[0], details: { shape: 'TEXT', text: '{"title": "Acme"}' } };
+    const m = researchApi({
+      'GET /admin/review-items': () => ({ ...ITEMS, items: [unread, ...ITEMS.items.slice(1)] }),
+      [`GET /admin/review-research/${RUN_ACME}`]: () => ({
+        ...ACME_DETAIL,
+        result: { ...ACME_DETAIL.result, attributes: ACME_DETAIL.result.attributes.slice(0, 1) },
+      }),
+      [`PUT /admin/review-items/${ACME}/candidate`]: () => unread,
+      [`PUT /admin/review-items/${ACME}/resolution`]: () => ({ ...unread, status: 'ACCEPTED' }),
+    });
+    renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
+    const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+    await userEvent.click(await within(detail).findByRole('button', { name: 'Confirm Title' }));
+    await userEvent.click(
+      within(detail).getByRole('button', { name: /Accept with the confirmed values/ }),
+    );
+
+    expect(
+      await screen.findByText(
+        'Not accepted, the item stays open: The candidate cannot be read, so the confirmed values cannot be saved.',
+      ),
+    ).toBeInTheDocument();
+    expect(m.callsTo('PUT', `/admin/review-items/${ACME}/candidate`)).toHaveLength(0);
+    expect(m.callsTo('PUT', `/admin/review-items/${ACME}/resolution`)).toHaveLength(0);
+    await settle();
+  });
+
   it('Scenario: the proposal is marked as written with AI, and Accept waits until every change is decided', async () => {
     const m = researchApi({
       [`PUT /admin/review-items/${ACME}/candidate`]: () => ITEMS.items[0],
