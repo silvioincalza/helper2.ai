@@ -1,5 +1,6 @@
 package ai.helper2.research.usecase;
 
+import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.research.CheckResearch;
 import ai.helper2.research.Evidence;
 import ai.helper2.research.ResearchAnswer;
@@ -14,6 +15,7 @@ import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchStep;
 import ai.helper2.research.ResearchSubject;
 import ai.helper2.research.ResearchTool;
+import ai.helper2.scout.UntrustedPageText;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,6 +33,8 @@ public final class RunResearch {
   public static final Duration MAX_DURATION = Duration.ofMinutes(3);
 
   public static final int MAX_TEXT_TO_MODEL = 6_000;
+  static final int MAX_URL_TO_MODEL = 2_000;
+  static final String NO_TEXT = "the tool returned no readable text";
 
   private final ResearchRuns runs;
   private final ResearchItems items;
@@ -183,14 +187,20 @@ public final class RunResearch {
           error = out.text();
         }
       }
-      String toModel = out.text();
-      if (out.url() != null && error == null) {
+      String text = safe(out.text());
+      String toModel;
+      if (out.url() != null && error == null && !text.isBlank()) {
         String id = "e" + (evidence.size() + 1);
-        evidence.put(id, new Evidence(id, call.name(), out.url(), out.text()));
+        evidence.put(id, new Evidence(id, call.name(), out.url(), text));
         toModel =
-            "evidenceId=" + id + " url=" + out.url() + "\n" + clipTo(out.text(), MAX_TEXT_TO_MODEL);
+            "evidenceId="
+                + id
+                + " url="
+                + UntrustedText.untrusted(out.url(), MAX_URL_TO_MODEL)
+                + "\n"
+                + clipTo(text, MAX_TEXT_TO_MODEL);
       } else {
-        toModel = clipTo(toModel, MAX_TEXT_TO_MODEL);
+        toModel = text.isBlank() ? NO_TEXT : clipTo(text, MAX_TEXT_TO_MODEL);
       }
       conversation.add(new Message.ToolResult(call.id(), call.name(), toModel));
       step(
@@ -298,6 +308,11 @@ public final class RunResearch {
       out.append("dropped: ").append(d).append('\n');
     }
     return out.toString().strip();
+  }
+
+  static String safe(String toolText) {
+    String cleaned = UntrustedPageText.INSTANCE.clean(toolText == null ? "" : toolText);
+    return UntrustedText.untrusted(cleaned, cleaned.length());
   }
 
   private static String clip(String s) {

@@ -6,6 +6,7 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.platform.prompt.PromptTemplate;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
@@ -92,10 +93,9 @@ public final class SpringAiEventReader implements EventReader {
   }
 
   static String userText(String title, String pageText) {
-    String flatTitle = title == null ? "" : title.replaceAll("[\\r\\n]+", " ").strip();
-    if (flatTitle.length() > MAX_TITLE) {
-      flatTitle = flatTitle.substring(0, MAX_TITLE);
-    }
+    String flatTitle =
+        UntrustedText.untrusted(
+            title == null ? "" : title.replaceAll("[\\r\\n]+", " ").strip(), MAX_TITLE);
     String page = pageText.replaceAll("(?i)</?page>", " ");
     if (page.length() > MAX_PAGE_CHARS) {
       page = page.substring(0, MAX_PAGE_CHARS);

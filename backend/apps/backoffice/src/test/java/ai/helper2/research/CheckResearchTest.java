@@ -92,6 +92,27 @@ class CheckResearchTest {
   }
 
   @Test
+  void anExcerptMatchesEvidenceWhoseAngleBracketsWereEscapedForTheModel() {
+    evidence.put(
+        "e5",
+        new Evidence(
+            "e5",
+            "read_page",
+            "https://acme.dev/docs",
+            "Acme Notetaker works for x ‹ y teams today."));
+
+    ResearchResult r =
+        check(
+            new Claim(
+                "title",
+                "Acme Notetaker",
+                List.of(new Cite("e5", "Acme Notetaker works for x < y teams"))));
+
+    assertThat(r.dropped()).isEmpty();
+    assertThat(attribute(r, "title").sources()).hasSize(1);
+  }
+
+  @Test
   void aStatedFieldNeedsAnExcerptThatStatesTheValue() {
     ResearchResult r =
         check(
