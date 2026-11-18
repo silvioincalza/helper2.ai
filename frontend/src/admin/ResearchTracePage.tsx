@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'react-router';
 import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/client';
 import type { ReviewResearchDetail, ReviewResearchRun, ReviewResearchStep } from '@/api/types';
+import { aiMarkWhen } from '@/lib/aiMark';
 import { BackLink } from '@/ui/BackLink';
 import { RetryButton } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
@@ -287,7 +288,7 @@ function TraceStep({
               {s.request}
             </pre>
           </div>
-          <div {...(byModel ? { 'data-ai-generated': 'true', 'data-ai-model': s.name } : {})}>
+          <div {...aiMarkWhen(byModel, s.name)}>
             <p id={`rt-${s.seq}-response`} className="h2-admin__trace-label">
               {t('admin.research.trace.response')}
               <span className="sr-only">{t('admin.research.trace.stepOf', { seq: s.seq })}</span>

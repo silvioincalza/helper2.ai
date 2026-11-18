@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
+import org.apache.commons.lang3.EnumUtils;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -98,7 +98,7 @@ final class SourceHitCodec {
         String sourceId = n.path("sourceId").asString();
         List<PopularityMetric> pop = new ArrayList<>();
         for (JsonNode p : n.path("popularity")) {
-          PopularityKind kind = known(PopularityKind.class, p.path("kind").asString(), null);
+          PopularityKind kind = EnumUtils.getEnum(PopularityKind.class, p.path("kind").asString());
           if (kind != null) {
             pop.add(
                 new PopularityMetric(
@@ -117,17 +117,18 @@ final class SourceHitCodec {
                 CanonicalUrl.of(text(n, "repositoryUrl")),
                 n.path("title").asString(),
                 text(n, "description"),
-                known(
+                EnumUtils.getEnum(
                     ValueOrigin.class,
                     n.path("descriptionOrigin").asString(),
                     ValueOrigin.SOURCE_PROVIDED),
-                known(ResourceType.class, n.path("type").asString(), ResourceType.OTHER),
-                known(Audience.class, n.path("audience").asString(), Audience.UNKNOWN),
-                known(TechLevel.class, text(n, "techLevel"), null),
+                EnumUtils.getEnum(
+                    ResourceType.class, n.path("type").asString(), ResourceType.OTHER),
+                EnumUtils.getEnum(Audience.class, n.path("audience").asString(), Audience.UNKNOWN),
+                EnumUtils.getEnum(TechLevel.class, text(n, "techLevel")),
                 strings(n.path("useCases")),
                 strings(n.path("tags")),
                 text(n, "license"),
-                known(Pricing.class, text(n, "pricing"), null),
+                EnumUtils.getEnum(Pricing.class, text(n, "pricing")),
                 strings(n.path("platforms")),
                 n.has("openSource") ? n.path("openSource").asBoolean() : null,
                 readDate(n.path("published")),
@@ -138,8 +139,8 @@ final class SourceHitCodec {
                 readDate(n.path("eventStart")),
                 readDate(n.path("eventEnd")),
                 text(n, "location"),
-                known(EventKind.class, text(n, "eventKind"), null),
-                known(EventFormat.class, text(n, "eventFormat"), null),
+                EnumUtils.getEnum(EventKind.class, text(n, "eventKind")),
+                EnumUtils.getEnum(EventFormat.class, text(n, "eventFormat")),
                 java.util.Map.of(),
                 java.util.Set.of(),
                 foundIn(n.path("foundIn"))));
@@ -165,7 +166,8 @@ final class SourceHitCodec {
     }
     return new DateFact(
         Instant.parse(n.path("value").asString()),
-        known(DatePrecision.class, n.path("precision").asString(), DatePrecision.UNKNOWN),
+        EnumUtils.getEnum(
+            DatePrecision.class, n.path("precision").asString(), DatePrecision.UNKNOWN),
         n.path("sourceId").asString(),
         List.of(),
         false);
@@ -176,18 +178,6 @@ final class SourceHitCodec {
       return null;
     }
     return new ListMatch(n.path("listTitle").asString(), n.path("headingPath").asString(""));
-  }
-
-  private static <E extends Enum<E>> @Nullable E known(
-      Class<E> type, @Nullable String value, @Nullable E whenUnknown) {
-    if (value == null) {
-      return whenUnknown;
-    }
-    try {
-      return Enum.valueOf(type, value);
-    } catch (IllegalArgumentException e) {
-      return whenUnknown;
-    }
   }
 
   private static String text(JsonNode n, String field) {

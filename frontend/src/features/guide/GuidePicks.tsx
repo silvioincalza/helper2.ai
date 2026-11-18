@@ -10,7 +10,7 @@ import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import type { GuideStream } from '@/hooks/useGuideStream';
 import { useRetry } from '@/hooks/useRetry';
 import { aiMark } from '@/lib/aiMark';
-import { guidePicks } from '@/lib/selection';
+import { guidePicks, pickReasonState } from '@/lib/selection';
 import { AnswerBlocks } from './AnswerBlocks';
 import { GuideAnswer, noPickReason } from './GuideAnswer';
 import { progressOf, readingParts } from './reading';
@@ -78,7 +78,7 @@ export function GuidePicks({
                       <b>#{p.rank}</b> <span className="h2-pick-chip__title">{p.title}</span>
                     </Link>
                   )}
-                  {p.reason && p.reasonCheck !== 'REMOVED' && (
+                  {pickReasonState(p) === 'shown' && (
                     <p className="h2-pick__reason" {...aiMark()}>
                       {p.reason}
                     </p>

@@ -7,7 +7,7 @@ import { TermCommand } from '@/features/home/TermList';
 import { OriginLabel } from '@/ui/Badges';
 import { StatusPill } from '@/ui/StatusPill';
 import { Skeleton, SkeletonBar, SkeletonChips, SkeletonRows } from '@/ui/Skeleton';
-import { aiMark } from '@/lib/aiMark';
+import { AI_ORIGIN, aiMarkWhen } from '@/lib/aiMark';
 import { formatMonth, weekDay } from '@/lib/format';
 import { useTitle } from '@/hooks/useTitle';
 import '@/ui/term.css';
@@ -172,24 +172,18 @@ export default function EventsPage() {
               const left = text.left(r, feed.now);
               return (
                 <li key={r.id} className="h2-term-row h2-event">
-                  <time
-                    className="h2-event__day"
-                    dateTime={r.start}
-                    {...(r.aiRead ? aiMark() : {})}
-                  >
+                  <time className="h2-event__day" dateTime={r.start} {...aiMarkWhen(r.aiRead)}>
                     {weekDay(r.start)}
                   </time>
                   <div className="h2-event__main">
                     <p className="h2-event__meta">
                       {r.kind && (
-                        <span className="h2-event__kind" {...(r.aiRead ? aiMark() : {})}>
+                        <span className="h2-event__kind" {...aiMarkWhen(r.aiRead)}>
                           {text.kind(r)}
                         </span>
                       )}
-                      {text.where(r) && (
-                        <span {...(r.aiRead ? aiMark() : {})}>{text.where(r)}</span>
-                      )}
-                      {r.aiRead && <OriginLabel origin="AI_EXTRACTED" />}
+                      {text.where(r) && <span {...aiMarkWhen(r.aiRead)}>{text.where(r)}</span>}
+                      {r.aiRead && <OriginLabel origin={AI_ORIGIN.read} />}
                     </p>
                     <Link className="h2-event__title" to={r.href} state={from}>
                       {r.title}

@@ -30,7 +30,8 @@ class ReadmeEvidenceTest {
 
   private ReadmeEvidence evidence() {
     SourceSettings settings =
-        new SourceSettings(true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO);
+        new SourceSettings(
+            true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO, null);
     return ReadmeEvidence.of(
         settings,
         settings,
@@ -77,7 +78,8 @@ class ReadmeEvidenceTest {
   @Test
   void noGitHubCallsWithoutAToken() {
     SourceSettings anonymous =
-        new SourceSettings(true, server.baseUrl(), null, Duration.ofSeconds(2), Duration.ZERO);
+        new SourceSettings(
+            true, server.baseUrl(), null, Duration.ofSeconds(2), Duration.ZERO, null);
     ReadmeEvidence evidence =
         ReadmeEvidence.of(
             anonymous,

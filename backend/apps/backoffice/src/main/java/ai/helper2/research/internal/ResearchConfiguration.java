@@ -22,7 +22,9 @@ import ai.helper2.research.ResearchTool;
 import ai.helper2.research.config.ResearchProperties;
 import ai.helper2.research.usecase.CancelResearch;
 import ai.helper2.research.usecase.FailStaleResearch;
+import ai.helper2.research.usecase.FindLatestResearch;
 import ai.helper2.research.usecase.FindResearchedItems;
+import ai.helper2.research.usecase.FollowResearchRun;
 import ai.helper2.research.usecase.PurgeResearch;
 import ai.helper2.research.usecase.RunResearch;
 import ai.helper2.research.usecase.StartResearch;
@@ -118,6 +120,16 @@ class ResearchConfiguration {
   @Bean
   FindResearchedItems findResearchedItems(ResearchRuns runs) {
     return new FindResearchedItems(runs);
+  }
+
+  @Bean
+  FindLatestResearch findLatestResearch(ResearchRuns runs) {
+    return new FindLatestResearch(runs);
+  }
+
+  @Bean
+  FollowResearchRun followResearchRun(ResearchRuns runs) {
+    return new FollowResearchRun(runs);
   }
 
   @Bean

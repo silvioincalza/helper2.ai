@@ -179,7 +179,6 @@
         "BUILD_WITH_AI": "Builders"
       },
       "status": {
-        "ACTIVE": "Active",
         "PAUSED": "Paused"
       },
       "origin": {
@@ -663,7 +662,7 @@
         "REJECTED_one": "Reject {{count}}",
         "REJECTED_other": "Reject {{count}}"
       },
-      "acceptRule": "Only enrichment checks with no conflict on license, open source or pricing are accepted together. The others stay open: accept them one by one.",
+      "acceptRule": "Accepted together: enrichment checks with no conflict on license, open source or pricing, and candidates the AI research kept with no conflict, with the values it confirmed. The others stay open: accept them one by one.",
       "final": "A decision is final.",
       "allDone_one": "{{count}} done.",
       "allDone_other": "{{count}} done.",

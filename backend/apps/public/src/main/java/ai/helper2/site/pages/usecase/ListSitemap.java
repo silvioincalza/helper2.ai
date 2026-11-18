@@ -3,15 +3,12 @@ package ai.helper2.site.pages.usecase;
 import ai.helper2.catalog.usecase.ListIndexableResources;
 import ai.helper2.site.pages.IndexPolicy;
 import ai.helper2.site.pages.ResourcePathsKt;
-import ai.helper2.site.pages.config.PagesProperties;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import org.springframework.stereotype.Service;
 
-@Service
 public class ListSitemap {
 
   static final Duration KEEP = Duration.ofHours(1);
@@ -27,11 +24,12 @@ public class ListSitemap {
 
   private volatile Built built;
 
-  public ListSitemap(ListIndexableResources resources, Clock clock, PagesProperties properties) {
+  public ListSitemap(
+      ListIndexableResources resources, Clock clock, String publicBaseUrl, int limit) {
     this.resources = resources;
     this.clock = clock;
-    this.base = properties.publicBaseUrl();
-    this.limit = properties.sitemapLimit();
+    this.base = publicBaseUrl;
+    this.limit = limit;
   }
 
   public String xml() {

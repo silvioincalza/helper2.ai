@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -73,7 +74,9 @@ class ResourceRows {
 
   private static DataOrigin strongestOriginThatWrote(JsonNode extra) {
     String recorded = extra.path("dataOrigin").asString(null);
-    return recorded == null ? null : known(DataOrigin.class, recorded, DataOrigin.OBSERVED);
+    return recorded == null
+        ? null
+        : EnumUtils.getEnum(DataOrigin.class, recorded, DataOrigin.OBSERVED);
   }
 
   ResourceRow mapResource(ResultSet rs, int i) throws SQLException {
@@ -83,15 +86,17 @@ class ResourceRows {
         rs.getString("url"),
         rs.getString("title"),
         originIsKnown(rs.getString("description_origin")) ? rs.getString("description") : null,
-        known(ValueOrigin.class, rs.getString("description_origin"), ValueOrigin.SOURCE_PROVIDED),
-        known(ResourceType.class, rs.getString("type"), ResourceType.OTHER),
-        known(Audience.class, rs.getString("audience"), Audience.UNKNOWN),
-        enumOrNull(TechLevel.class, rs.getString("tech_level")),
+        EnumUtils.getEnum(
+            ValueOrigin.class, rs.getString("description_origin"), ValueOrigin.SOURCE_PROVIDED),
+        EnumUtils.getEnum(ResourceType.class, rs.getString("type"), ResourceType.OTHER),
+        EnumUtils.getEnum(Audience.class, rs.getString("audience"), Audience.UNKNOWN),
+        EnumUtils.getEnum(TechLevel.class, rs.getString("tech_level")),
         rs.getString("license"),
-        enumOrNull(Pricing.class, rs.getString("pricing")),
+        EnumUtils.getEnum(Pricing.class, rs.getString("pricing")),
         (Boolean) rs.getObject("open_source"),
         instant(rs.getTimestamp("published_at")),
-        known(DatePrecision.class, rs.getString("published_precision"), DatePrecision.UNKNOWN),
+        EnumUtils.getEnum(
+            DatePrecision.class, rs.getString("published_precision"), DatePrecision.UNKNOWN),
         rs.getString("published_source_id"),
         instant(rs.getTimestamp("updated_at")),
         rs.getString("updated_source_id"),
@@ -204,8 +209,8 @@ class ResourceRows {
                       starts,
                       eventDay(rs.getTimestamp("ends"), sourceId),
                       rs.getString("location"),
-                      enumOrNull(EventKind.class, rs.getString("kind")),
-                      enumOrNull(EventFormat.class, rs.getString("format")),
+                      EnumUtils.getEnum(EventKind.class, rs.getString("kind")),
+                      EnumUtils.getEnum(EventFormat.class, rs.getString("format")),
                       !rs.getBoolean("a_source_states_the_days") || starts.getValue() != null));
         })
         .list();
@@ -337,14 +342,15 @@ class ResourceRows {
             CanonicalUrl.of(rs.getString("repository_url")),
             WebPageTitle.forSource(sourceId, rs.getString("title"), canonical),
             originIsKnown(origin) ? rs.getString("description") : null,
-            known(ValueOrigin.class, origin, ValueOrigin.SOURCE_PROVIDED),
-            known(ResourceType.class, rs.getString("type"), ResourceType.OTHER),
-            known(Audience.class, x.path("audience").asString("UNKNOWN"), Audience.UNKNOWN),
-            enumOrNull(TechLevel.class, x.path("techLevel").asString(null)),
+            EnumUtils.getEnum(ValueOrigin.class, origin, ValueOrigin.SOURCE_PROVIDED),
+            EnumUtils.getEnum(ResourceType.class, rs.getString("type"), ResourceType.OTHER),
+            EnumUtils.getEnum(
+                Audience.class, x.path("audience").asString("UNKNOWN"), Audience.UNKNOWN),
+            EnumUtils.getEnum(TechLevel.class, x.path("techLevel").asString(null)),
             strings(x.path("useCases")),
             strings(x.path("tags")),
             rs.getString("license"),
-            enumOrNull(Pricing.class, x.path("pricing").asString(null)),
+            EnumUtils.getEnum(Pricing.class, x.path("pricing").asString(null)),
             strings(x.path("platforms")),
             x.has("openSource") ? x.path("openSource").asBoolean() : null,
             date(pub, x.path("publishedPrecision").asString("INSTANT"), sourceId),
@@ -355,8 +361,8 @@ class ResourceRows {
             eventDay(rs.getTimestamp("source_event_starts_at"), sourceId),
             eventDay(rs.getTimestamp("source_event_ends_at"), sourceId),
             x.path("location").asString(null),
-            enumOrNull(EventKind.class, x.path("eventKind").asString(null)),
-            enumOrNull(EventFormat.class, x.path("eventFormat").asString(null)))
+            EnumUtils.getEnum(EventKind.class, x.path("eventKind").asString(null)),
+            EnumUtils.getEnum(EventFormat.class, x.path("eventFormat").asString(null)))
         .withVitality(statedVitality(x.path("vitality")));
   }
 
@@ -400,22 +406,7 @@ class ResourceRows {
     return t == null ? null : t.toInstant();
   }
 
-  static <E extends Enum<E>> E enumOrNull(Class<E> type, String v) {
-    return known(type, v, null);
-  }
-
   private static boolean originIsKnown(String origin) {
-    return known(ValueOrigin.class, origin, null) != null;
-  }
-
-  static <E extends Enum<E>> E known(Class<E> type, String value, E whenUnknown) {
-    if (value == null) {
-      return whenUnknown;
-    }
-    try {
-      return Enum.valueOf(type, value);
-    } catch (IllegalArgumentException e) {
-      return whenUnknown;
-    }
+    return EnumUtils.isValidEnum(ValueOrigin.class, origin);
   }
 }

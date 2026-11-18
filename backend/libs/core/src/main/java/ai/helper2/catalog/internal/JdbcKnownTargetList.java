@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.EnumUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
@@ -61,12 +62,12 @@ class JdbcKnownTargetList implements KnownTargetList {
   private static Entry entry(ResultSet rs, int row) throws SQLException {
     return new Entry(
         rs.getObject("id", UUID.class),
-        ResourceRows.known(KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL),
+        EnumUtils.getEnum(KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL),
         rs.getString("name"),
         Arrays.asList((String[]) rs.getArray("other_names").getArray()),
         rs.getString("added_by"),
         rs.getTimestamp("added_at").toInstant(),
-        ResourceRows.known(
+        EnumUtils.getEnum(
             KnownTarget.Origin.class, rs.getString("origin"), KnownTarget.Origin.DISCOVERED),
         rs.getInt("relationships"));
   }

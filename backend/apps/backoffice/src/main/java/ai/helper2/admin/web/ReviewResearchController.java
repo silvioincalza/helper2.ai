@@ -15,9 +15,10 @@ import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
-import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchStep;
 import ai.helper2.research.usecase.CancelResearch;
+import ai.helper2.research.usecase.FindLatestResearch;
+import ai.helper2.research.usecase.FollowResearchRun;
 import ai.helper2.research.usecase.StartResearch;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
@@ -34,12 +35,18 @@ class ReviewResearchController implements ReviewResearchApi {
 
   private final StartResearch start;
   private final CancelResearch cancel;
-  private final ResearchRuns runs;
+  private final FindLatestResearch latest;
+  private final FollowResearchRun follow;
 
-  ReviewResearchController(StartResearch start, CancelResearch cancel, ResearchRuns runs) {
+  ReviewResearchController(
+      StartResearch start,
+      CancelResearch cancel,
+      FindLatestResearch latest,
+      FollowResearchRun follow) {
     this.start = start;
     this.cancel = cancel;
-    this.runs = runs;
+    this.latest = latest;
+    this.follow = follow;
   }
 
   @Override
@@ -62,7 +69,7 @@ class ReviewResearchController implements ReviewResearchApi {
 
   @Override
   public ResponseEntity<ReviewResearchRunsDto> listReviewResearch(List<UUID> itemId) {
-    return ResponseEntity.ok(runsDto(runs.latest(itemId)));
+    return ResponseEntity.ok(runsDto(latest.of(itemId)));
   }
 
   @Override
@@ -78,7 +85,7 @@ class ReviewResearchController implements ReviewResearchApi {
     ReviewResearchDetailDto dto =
         new ReviewResearchDetailDto(
             runDto(run),
-            runs.steps(runId, 0).stream().map(ReviewResearchController::stepDto).toList());
+            follow.steps(runId, 0).stream().map(ReviewResearchController::stepDto).toList());
     if (run.result() != null) {
       dto.result(resultDto(run.result()));
     }
@@ -95,7 +102,7 @@ class ReviewResearchController implements ReviewResearchApi {
   }
 
   private ResearchRun found(UUID runId) {
-    return runs.find(runId).orElseThrow(() -> new NotFoundException("Research run not found."));
+    return follow.run(runId).orElseThrow(() -> new NotFoundException("Research run not found."));
   }
 
   static ReviewResearchRunsDto runsDto(List<ResearchRun> list) {

@@ -71,7 +71,7 @@ describe('Feature: deciding several review items at once (ADR 0038)', () => {
     await userEvent.click(accept);
     const dialog = await screen.findByRole('dialog', { name: 'Accept 3 items?' });
     expect(dialog).toHaveTextContent('2 Enrichment validation · 1 User report');
-    expect(dialog).toHaveTextContent('Only enrichment checks with no conflict');
+    expect(dialog).toHaveTextContent('candidates the AI research kept with no conflict');
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('Feature: deciding several review items at once (ADR 0038)', () => {
     await userEvent.click(box(3));
     await userEvent.click(within(bar()).getByRole('button', { name: 'Reject' }));
     const dialog = await screen.findByRole('dialog', { name: 'Reject 2 items?' });
-    expect(dialog).not.toHaveTextContent('Only enrichment checks');
+    expect(dialog).not.toHaveTextContent('Accepted together');
     await userEvent.type(within(dialog).getByRole('textbox', { name: 'Note (optional)' }), ' dup ');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Reject 2' }));
     expect(await screen.findByText('2 done.')).toBeInTheDocument();

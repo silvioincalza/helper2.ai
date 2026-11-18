@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router';
 import { adminApi } from '@/api/admin';
 import type { ReviewItem, ReviewResearchRun } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
+import { aiMark, aiModel } from '@/lib/aiMark';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { AdminDialog } from './AdminDialog';
 import { NOTE_MAX } from './limits';
@@ -385,9 +386,9 @@ function BatchRejectBody({
       <p className="h2-admin__research-ai">
         <strong>{t('admin.research.rejectAi')}</strong>
       </p>
-      <ul className="h2-admin__reject-list" data-ai-generated="true">
+      <ul className="h2-admin__reject-list" {...aiMark()}>
         {items.map((i) => (
-          <li key={i.id} data-ai-model={runs.get(i.id)?.model}>
+          <li key={i.id} {...aiModel(runs.get(i.id)?.model)}>
             <input
               id={`${prefix}-${i.id}`}
               type="checkbox"

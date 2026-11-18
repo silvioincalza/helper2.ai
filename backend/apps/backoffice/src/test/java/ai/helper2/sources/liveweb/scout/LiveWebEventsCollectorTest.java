@@ -128,7 +128,7 @@ class LiveWebEventsCollectorTest {
   LiveWebEventsCollector collector(long creditCap, EventReader reader, UndatedEvents undated) {
     return new LiveWebEventsCollector(
         new SourceSettings(
-            true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO),
+            true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,

@@ -646,86 +646,17 @@
   },
   "glossary": {
     "whatIs": "What does this mean?",
-    "mcp_server": {
-      "term": "MCP server",
-      "def": "A small program that lets an AI assistant use an outside tool or data source through the Model Context Protocol, an open standard."
-    },
-    "model": {
-      "term": "Model",
-      "def": "The trained AI system that produces text, images or other output. Products and agents are built on top of models."
-    },
-    "agent": {
-      "term": "Agent",
-      "def": "Software that uses a model to carry out multi-step tasks on its own, often by calling tools."
-    },
-    "prompt": {
-      "term": "Prompt",
-      "def": "The instructions or text you give an AI model. A prompt template is a reusable one."
-    },
-    "skill": {
-      "term": "Skill",
-      "def": "A packaged set of instructions and files that teaches an AI assistant to do a specific task."
-    },
-    "library": {
-      "term": "Library",
-      "def": "Reusable code that developers add to their own software."
-    },
-    "dataset": {
-      "term": "Dataset",
-      "def": "A collection of data used to train or test AI models."
-    },
-    "product": {
-      "term": "Product",
-      "def": "A finished AI app or service that you use directly, without writing code."
-    },
-    "article": {
-      "term": "Article",
-      "def": "Writing about AI: a guide, tutorial or blog post."
-    },
-    "paper": {
-      "term": "Paper",
-      "def": "A research paper, usually from arXiv."
-    },
-    "news": {
-      "term": "News",
-      "def": "A news story about AI."
-    },
-    "event": {
-      "term": "Event",
-      "def": "A conference, meetup, webinar or hackathon."
-    },
-    "course": {
-      "term": "Course",
-      "def": "A course or a certification about AI. Its platform is listed under Platforms; tags say whether it gives a certification (a proctored exam) or a certificate of completion, and whether it is self-paced, instructor-led, a live event or an exam only."
-    },
-    "other": {
-      "term": "Other",
-      "def": "An AI resource that fits none of the other types."
-    },
-    "typeAssigned": "The type comes from the source's data, keyword rules or an AI model, so it can be wrong.",
     "license": {
-      "term": "License",
       "def": "The rules for using, changing and sharing the resource. Always read the license itself before relying on it."
     },
     "open_source": {
-      "term": "Open source",
       "def": "The source code is public under a license that lets others use and modify it. It does not always mean free of charge."
     },
     "tech_level": {
-      "term": "Technical level",
       "def": "How much technical skill is needed to get started."
     },
     "platform": {
-      "term": "Platform",
       "def": "Where it runs, for example web, desktop, mobile, command line, or a language runtime such as Python or Java."
-    },
-    "popularity": {
-      "term": "Popularity",
-      "def": "Counts such as stars or downloads reported by one source. They are never combined into a single score."
-    },
-    "provenance": {
-      "term": "Provenance",
-      "def": "Where a piece of information came from and when it was retrieved."
     }
   },
   "guide": {

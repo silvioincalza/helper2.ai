@@ -31,25 +31,22 @@ class ModularityTest {
           .withImportOption(new DoNotIncludeTestFixtures())
           .importPackages("ai.helper2");
 
+  private static final String USE_CASES = "ai.helper2..usecase..";
+
   private static final String[] DOMAIN = {
     "ai.helper2.shared",
     "ai.helper2.search",
     "ai.helper2.guide",
     "ai.helper2.setup",
     "ai.helper2.examples",
-    "ai.helper2.examples.usecase",
     "ai.helper2.site",
     "ai.helper2.site.pages",
     "ai.helper2.site.monetisation",
-    "ai.helper2.search.usecase",
-    "ai.helper2.guide.usecase",
     "ai.helper2.guide.steps",
-    "ai.helper2.setup.usecase",
     "ai.helper2.identity",
-    "ai.helper2.identity.usecase",
     "ai.helper2.catalog",
-    "ai.helper2.catalog.usecase",
-    "ai.helper2.catalog.enrichment"
+    "ai.helper2.catalog.enrichment",
+    USE_CASES
   };
 
   @Test
@@ -106,7 +103,7 @@ class ModularityTest {
   void useCasesDoNotNameJdbcAdapters() {
     noClasses()
         .that()
-        .resideInAPackage("ai.helper2..usecase..")
+        .resideInAPackage(USE_CASES)
         .should()
         .dependOnClassesThat()
         .haveSimpleNameStartingWith("Jdbc")

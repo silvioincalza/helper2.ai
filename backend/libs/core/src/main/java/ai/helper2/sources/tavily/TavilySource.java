@@ -108,7 +108,8 @@ public class TavilySource implements SearchSource {
     if (query.getWebQuery() != null) {
       return query.getWebQuery();
     }
-    String text = HttpClients.queryText(query);
+    String text =
+        String.join(" ", query.getText(), String.join(" ", query.getExpandedTerms())).trim();
     return text + " artificial intelligence";
   }
 
