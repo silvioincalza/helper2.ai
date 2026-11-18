@@ -10,8 +10,6 @@ import { NOTE_MAX } from './limits';
 
 const POLL_MS = 2000;
 export const RESEARCH_FILTERS = ['KEEP', 'REJECT', 'NONE'] as const;
-export type ResearchFilter = (typeof RESEARCH_FILTERS)[number];
-
 const RESEARCHABLE = new Set<ReviewItem['kind']>(['RESOURCE_CANDIDATE', 'COURSE_CANDIDATE']);
 
 export function researchable(item: ReviewItem): boolean {

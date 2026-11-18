@@ -71,8 +71,8 @@ tool answered, and must confirm every value before it reaches the catalog.
    and `u`: `k` stays "previous item"); a conflict needs a pick first. Accept is enabled when every changed attribute
    has a decision, and says how many are left. On Accept, every confirmed value goes into the candidate through
    `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path
-   ([0038](0038-back-office-and-review.md) §19 to §20): title, type and tags replace the candidate's own, a canonical
-   URL replaces the page it is indexed at, and the other values become the resource's curated values. A description
+   ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is
+   indexed at the confirmed canonical URL, and the other values become the resource's curated values. A description
    the model wrote and the admin confirmed as it is stays AI-written (`AI_SUMMARY`); one the admin rewrote is
    `CURATED`. A course candidate holds no values (its details are text): its confirmed values go into the decision's
    note, `Research confirmed: name=value; …`. The queue's research filter is
