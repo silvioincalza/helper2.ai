@@ -220,7 +220,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-libs-build-cache
-      - run: ./gradlew --no-daemon -p libs test
+      - run: ./gradlew --no-daemon -p libs :spotlessCheck spotlessCheck test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -261,7 +261,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-public-build-cache
-      - run: ./gradlew --no-daemon -p apps/public test
+      - run: ./gradlew --no-daemon -p apps/public spotlessCheck test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -302,7 +302,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-backoffice-build-cache
-      - run: ./gradlew --no-daemon -p apps/backoffice test
+      - run: ./gradlew --no-daemon -p apps/backoffice spotlessCheck test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
