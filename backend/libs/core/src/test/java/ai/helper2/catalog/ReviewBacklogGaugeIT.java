@@ -46,7 +46,7 @@ class ReviewBacklogGaugeIT {
     assertThat(gauge()).isEqualTo(before + 2);
 
     ReviewQueue.Item first =
-        queue.list(ReviewQueue.Status.OPEN, null, 0, 100).items().stream()
+        queue.list(ReviewQueue.Status.OPEN, null, null, null, 0, 100).items().stream()
             .filter(i -> "New course".equals(i.reason()))
             .findFirst()
             .orElseThrow();

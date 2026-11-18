@@ -59,7 +59,7 @@ public final class SourceFixtures {
 
   public static SourceSettings live(String baseUrl, String tokenVariable) {
     String token = tokenVariable == null ? "" : System.getenv().getOrDefault(tokenVariable, "");
-    return new SourceSettings(true, baseUrl, token, LIVE_TIMEOUT, Duration.ZERO);
+    return new SourceSettings(true, baseUrl, token, LIVE_TIMEOUT, Duration.ZERO, null);
   }
 
   public static RestClient.Builder liveHttp() {

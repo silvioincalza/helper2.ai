@@ -111,7 +111,8 @@ class GitHubAwesomeCollectorTest {
   GitHubAwesomeCollector collector(
       RepoClassifier classifier, int perRun, String token, GitHubAwesomeCollector.Deep deep) {
     return new GitHubAwesomeCollector(
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -467,10 +468,10 @@ class GitHubAwesomeCollectorTest {
     var json = tools.jackson.databind.json.JsonMapper.builder().build();
     List<AwesomeListParser.Entry> slice =
         List.of(
-            new AwesomeListParser.Entry("someone/deleted", "s", "h", "t"),
-            new AwesomeListParser.Entry("Acme/Old-Tool", "s", "h", "t"),
-            new AwesomeListParser.Entry("KillianLucas/open-interpreter", "s", "h", "t"),
-            new AwesomeListParser.Entry("acme/live", "s", "h", "t"));
+            new AwesomeListParser.Entry("someone/deleted", "s", "h", "t", false),
+            new AwesomeListParser.Entry("Acme/Old-Tool", "s", "h", "t", false),
+            new AwesomeListParser.Entry("KillianLucas/open-interpreter", "s", "h", "t", false),
+            new AwesomeListParser.Entry("acme/live", "s", "h", "t", false));
     Map<String, tools.jackson.databind.JsonNode> facts =
         Map.of(
             "acme/old-tool",
@@ -514,8 +515,8 @@ class GitHubAwesomeCollectorTest {
     var json = tools.jackson.databind.json.JsonMapper.builder().build();
     List<AwesomeListParser.Entry> batch =
         List.of(
-            new AwesomeListParser.Entry("a/live", "s", "h", "t"),
-            new AwesomeListParser.Entry("b/gone", "s", "h", "t"));
+            new AwesomeListParser.Entry("a/live", "s", "h", "t", false),
+            new AwesomeListParser.Entry("b/gone", "s", "h", "t", false));
     var data = json.readTree("{\"r0\":{\"nameWithOwner\":\"a/live\"},\"r1\":null}");
 
     assertThat(

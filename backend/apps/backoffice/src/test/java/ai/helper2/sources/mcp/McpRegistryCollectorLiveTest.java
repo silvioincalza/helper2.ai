@@ -24,7 +24,8 @@ class McpRegistryCollectorLiveTest {
             liveHttp(),
             Clock.systemUTC(),
             Resilience.NONE,
-            new RunInterval(Duration.ZERO));
+            new RunInterval(Duration.ZERO),
+            0);
 
     CollectedBatch batch = collector.collect(null, null, 20);
 

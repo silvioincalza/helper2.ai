@@ -151,26 +151,24 @@ export default function ReviewQueuePage() {
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const loaded = items.data?.items ?? [];
   const research = useResearchRuns(loaded.filter(researchable).map((i) => i.id));
-  const list = loaded;
   const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
     of: undefined,
     reasons: {},
   });
   const reasons = retold.of === items.data ? retold.reasons : {};
-  const shownList = items.data;
   const retell = useCallback(
     (id: string, reason: string) =>
       setRetold((r) => {
-        const base = r.of === shownList ? r.reasons : {};
-        return r.of === shownList && base[id] === reason
+        const base = r.of === items.data ? r.reasons : {};
+        return r.of === items.data && base[id] === reason
           ? r
-          : { of: shownList, reasons: { ...base, [id]: reason } };
+          : { of: items.data, reasons: { ...base, [id]: reason } };
       }),
-    [shownList],
+    [items.data],
   );
-  const selected = list.find((i) => i.id === selectedId) ?? list[0];
+  const selected = loaded.find((i) => i.id === selectedId) ?? loaded[0];
   const reason = selected ? (reasons[selected.id] ?? selected.reason) : '';
-  const picked = items.data ? openPicks(pickedIds, list) : pickedIds;
+  const picked = items.data ? openPicks(pickedIds, loaded) : pickedIds;
 
   useEffect(() => {
     if (items.loading || !focusAfterLoad.current) return;
@@ -243,7 +241,7 @@ export default function ReviewQueuePage() {
       setNotes(({ [item.id]: _, ...rest }) => rest);
       const left = Math.max(0, (items.data?.total ?? 1) - 1);
       setAnnouncement(t(`admin.review.decided.${decision}`, { count: left }));
-      setSelectedId(nextAfter(list, item.id));
+      setSelectedId(nextAfter(loaded, item.id));
       focusAfterLoad.current = true;
       reloadQueue();
     } catch (e) {
@@ -312,10 +310,10 @@ export default function ReviewQueuePage() {
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.repeat || !isCommandKey(e)) return;
-    const at = selected ? list.indexOf(selected) : -1;
+    const at = selected ? loaded.indexOf(selected) : -1;
     const act: Record<string, () => void> = {
-      j: () => select(list[at + 1]?.id, true),
-      k: () => select(list[at - 1]?.id, true),
+      j: () => select(loaded[at + 1]?.id, true),
+      k: () => select(loaded[at - 1]?.id, true),
       x: () => selected && toggle(selected),
       a: () => selected && void resolve(selected, 'ACCEPTED'),
       r: () => selected && void resolve(selected, 'REJECTED'),
@@ -474,7 +472,7 @@ export default function ReviewQueuePage() {
           title={t('admin.loadError')}
           next={<RetryButton onClick={retry} />}
         />
-      ) : list.length === 0 || !selected ? (
+      ) : loaded.length === 0 || !selected ? (
         researchFilter ? (
           <AdminEmpty
             command={command}
@@ -514,7 +512,7 @@ export default function ReviewQueuePage() {
                 </tr>
               </thead>
               <tbody>
-                {list.map((it) => {
+                {loaded.map((it) => {
                   const current = it.id === selected.id;
                   const candidate =
                     it.kind === 'RESOURCE_CANDIDATE' ? parseCandidate(it.details) : null;

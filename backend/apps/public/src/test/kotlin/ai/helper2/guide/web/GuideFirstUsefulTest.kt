@@ -114,7 +114,7 @@ class GuideFirstUsefulTest {
       )
     bulkheads.bulkhead("guide")
     val limits =
-      GuideLimits(
+      guideLimits(
         Resilience4jPolicies(
           CircuitBreakerRegistry.ofDefaults(),
           bulkheads,

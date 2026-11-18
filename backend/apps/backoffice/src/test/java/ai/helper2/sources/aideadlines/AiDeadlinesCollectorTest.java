@@ -93,7 +93,7 @@ class AiDeadlinesCollectorTest {
 
   private AiDeadlinesCollector collector(Resilience resilience) {
     return new AiDeadlinesCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         TestHttp.restClientBuilderWithoutRedirects(
@@ -119,7 +119,8 @@ class AiDeadlinesCollectorTest {
     server.route("/raw/futureconf.yml", FixtureServer.Reply.ok(TBA));
     AiDeadlinesCollector collector =
         new AiDeadlinesCollector(
-            new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+            new SourceSettings(
+                true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             TestHttp.restClientBuilderWithoutRedirects(
@@ -165,7 +166,7 @@ class AiDeadlinesCollectorTest {
     AiDeadlinesCollector collector =
         new AiDeadlinesCollector(
             new SourceSettings(
-                true, server.baseUrl(), "secret-token", Duration.ofSeconds(2), Duration.ZERO),
+                true, server.baseUrl(), "secret-token", Duration.ofSeconds(2), Duration.ZERO, null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             TestHttp.restClientBuilderWithoutRedirects(
@@ -194,7 +195,7 @@ class AiDeadlinesCollectorTest {
     AiDeadlinesCollector collector =
         new AiDeadlinesCollector(
             new SourceSettings(
-                true, "https://api.github.com", "", Duration.ofSeconds(2), Duration.ZERO),
+                true, "https://api.github.com", "", Duration.ofSeconds(2), Duration.ZERO, null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             TestHttp.restClientBuilderWithoutRedirects(

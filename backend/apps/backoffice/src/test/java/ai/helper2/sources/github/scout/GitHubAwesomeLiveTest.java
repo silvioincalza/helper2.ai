@@ -55,7 +55,8 @@ class GitHubAwesomeLiveTest {
                 "https://api.github.com",
                 System.getenv("H2_GITHUB_TOKEN"),
                 Duration.ofSeconds(30),
-                Duration.ZERO),
+                Duration.ZERO,
+                null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(30), io.micrometer.observation.ObservationRegistry.NOOP),
             Clock.systemUTC(),
