@@ -17,7 +17,7 @@ import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
 import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
+import { aiMark, aiProvider, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
 import {
   activeFilterCount,
@@ -311,9 +311,7 @@ function ResultsBody({
       ) : (
         <div
           ref={listRef}
-          {...(marksFieldsOf(res.aiContent, 'results[')
-            ? { 'data-ai-provider': res.aiContent?.provider }
-            : {})}
+          {...aiProvider(marksFieldsOf(res.aiContent, 'results[') ? res.aiContent : null)}
         >
           {state.view === 'timeline' ? (
             <ResultsTimeline cards={more.cards} />

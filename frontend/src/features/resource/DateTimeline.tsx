@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
+import { AI_ORIGIN } from '@/lib/aiMark';
 import { DateFactRow } from './DateFactView';
 
 export function DateTimeline({
@@ -12,7 +13,7 @@ export function DateTimeline({
   eventOrigin?: ResultCard['eventOrigin'];
 }) {
   const { t } = useTranslation();
-  const aiRead = eventOrigin === 'AI_EXTRACTED';
+  const aiRead = eventOrigin === AI_ORIGIN.read;
   if (compact) {
     return (
       <div role="group" aria-label={t('card.timeline')}>

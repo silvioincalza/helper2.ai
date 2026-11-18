@@ -1,5 +1,5 @@
 import type { GuideResponse } from '@/api/types';
-import { guidePicks, picksById } from './selection';
+import { guidePicks, pickReasonState, picksById } from './selection';
 
 const rows = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
@@ -38,5 +38,19 @@ describe('guidePicks', () => {
       recommendations: [{ ...rec('a'), reason: '  ', reasonCheck: 'REMOVED' }],
     } as unknown as GuideResponse;
     expect(guidePicks(answer)[0]).toMatchObject({ reason: '', reasonCheck: 'REMOVED', checks: [] });
+  });
+});
+
+describe('pickReasonState', () => {
+  it('shows a reason that passed its check', () => {
+    expect(pickReasonState({ reason: 'fits the task', reasonCheck: 'SUPPORTED' })).toBe('shown');
+    expect(pickReasonState({ reason: 'fits the task', reasonCheck: 'NOT_CHECKED' })).toBe('shown');
+  });
+  it('has none when the pick has no reason', () => {
+    expect(pickReasonState({ reason: '', reasonCheck: 'NOT_CHECKED' })).toBe('none');
+  });
+  it('is removed when the check removed the reason, with or without its text', () => {
+    expect(pickReasonState({ reason: 'fits the task', reasonCheck: 'REMOVED' })).toBe('removed');
+    expect(pickReasonState({ reason: '', reasonCheck: 'REMOVED' })).toBe('removed');
   });
 });

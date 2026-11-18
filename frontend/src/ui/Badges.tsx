@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { SourceMode, ValueOrigin, Verification } from '@/api/types';
+import { AI_ORIGIN, isAiOrigin, type AiOrigin } from '@/lib/aiMark';
 import { AiLabel, type AiKind } from './AiLabel';
 import { Icon, type IconName } from './Icon';
 
@@ -12,17 +13,16 @@ export function ModeBadge({ mode }: { mode: SourceMode }) {
   );
 }
 
-const AI_KIND: Partial<Record<ValueOrigin, AiKind>> = {
-  AI_SUMMARY: 'written',
-  AI_EXTRACTED: 'read',
-  SELF_DECLARED: 'read',
-  AI_ESTIMATED: 'estimated',
+const AI_KIND: Record<AiOrigin, AiKind> = {
+  [AI_ORIGIN.written]: 'written',
+  [AI_ORIGIN.read]: 'read',
+  [AI_ORIGIN.declared]: 'read',
+  [AI_ORIGIN.estimated]: 'estimated',
 };
 
 export function OriginLabel({ origin }: { origin: ValueOrigin }) {
   const { t } = useTranslation();
-  const kind = AI_KIND[origin];
-  if (kind) return <AiLabel kind={kind}>{t(`origin.${origin}`)}</AiLabel>;
+  if (isAiOrigin(origin)) return <AiLabel kind={AI_KIND[origin]}>{t(`origin.${origin}`)}</AiLabel>;
   return <span className="origin">{t(`origin.${origin}`)}</span>;
 }
 

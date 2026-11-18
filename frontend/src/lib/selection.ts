@@ -29,6 +29,13 @@ export function guidePicks(answer: GuideResponse | null): GuidePick[] {
     }));
 }
 
+export type PickReasonState = 'shown' | 'removed' | 'none';
+
+export function pickReasonState(pick: Pick<GuidePick, 'reason' | 'reasonCheck'>): PickReasonState {
+  if (pick.reasonCheck === 'REMOVED') return 'removed';
+  return pick.reason ? 'shown' : 'none';
+}
+
 export function picksById(picks: readonly GuidePick[]): ReadonlyMap<string, GuidePick> {
   return new Map(picks.map((p) => [p.resourceId, p]));
 }
