@@ -22,14 +22,15 @@ repository. Relevance needs a human judgement per result, and judging every resu
 ## Decision
 
 ### The guide
-1. **Fixed question set.** `docs/eval/guide-queries.json`: 51 fixed queries, all written before any run and never
+1. **Fixed question set.** `docs/eval/guide-queries.json`: 57 fixed queries, all written before any run and never
    tuned to the results.
    - The 21 core questions: 14 for building with AI (`b01`–`b14`, `b14` in Italian), 5 for using AI (`u01`–`u05`;
      `u05` asks for three properties a hostile-text rule must not drop: offline, no account, no API key),
      one news question (`n01`) and one nonsense question (`x01`).
-   - 30 more, marked `"extended": true`: 8 questions across the intents of [0031](../guide/0031-guide-pipeline.md)
+   - 36 more, marked `"extended": true`: 8 questions across the intents of [0031](../guide/0031-guide-pipeline.md)
      (`i01`–`i08`), 10 Hugging Face model questions (speech recognition, text to speech, OCR, embeddings, a reranker, a
-     vision model: `h01`–`h10`), 8 questions with several requirements at once (`m01`–`m08`), and 4 that must stay
+     vision model: `h01`–`h10`), 8 questions with several requirements at once (`m01`–`m08`), 6 tool questions on
+     topics with popular awesome lists, where the list is a likely wrong pick (`a01`–`a06`), and 4 that must stay
      empty (`e01`–`e04`).
    - 6 questions must stay empty (`"expectNoPick": true`, with a `why`): `x01`, `u04` (a writing task, not a resource
      to find) and `e01`–`e04`.
@@ -115,7 +116,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
 8. **Cost of a run.** A question costs 3 model calls (plan, choose, reason check; a compare or explain question the
    same), and each call is retried at most once, for an answer the guide cannot use
    ([0008](../foundation/0008-llm-integration.md)): 3 to 6 calls from the guide's daily cap. The core set costs about
-   63, the full set of 51 about 153 (459 with `--repeat 3`), the intent cases up to 78 (a case asked back stops after
+   63, the full set of 57 about 171 (513 with `--repeat 3`), the intent cases up to 78 (a case asked back stops after
    the plan), the adversarial set 39; the setup set costs up to 30 calls (a `tool-guide` and a `tool-guide-verify` call per resource). Each question also counts against
    the client's daily questions (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), so the backend under test sets a quota that
    covers the sets it runs.
@@ -323,7 +324,7 @@ Search:
 ### Known limits
 
 - `H2_LLM_MAX_RETRIES` above 0 adds attempts that no budget counts. Thinking off makes the chooser return fewer picks. A guide step cut while thinking answers with thinking off, and the answer does not say so: `GuideModelInfo` and the `guide timings` line name the models, not the thinking of each step; only `helper2.llm.thinking_fallback{step}` and a WARN line do. The first, cut call is paid in full (tokens, time, one budget unit) before the second starts; no alert yet on a high fallback rate, which means the step's token limit is too low for thinking.
-- 51 guide questions is still a small sample, and the nightly run keeps 21 of them; the script measures the stream's last event, not the browser; an ungraded pick counts as not relevant; the candidates of a question with no answer come from its search terms sent again to `/api/v1/search`, not from the guide's own 24 (the answer carries only 3), so they are close, not exact; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners.
+- 57 guide questions is still a small sample, and the nightly run keeps 21 of them; the script measures the stream's last event, not the browser; an ungraded pick counts as not relevant; the candidates of a question with no answer come from its search terms sent again to `/api/v1/search`, not from the guide's own 24 (the answer carries only 3), so they are close, not exact; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners.
 - The judge reads a bare yes or no: a judge model that explains first counts as `unclear`. Spring AI's prompts are
   short and not written for hostile text; the escaping keeps our tags, not the judge's own instructions, safe, and a
   tricked judge changes a meter, never an answer. Agreement with the verify step is not accuracy: both can be wrong

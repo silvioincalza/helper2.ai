@@ -624,7 +624,7 @@ public class GitHubAwesomeCollector implements Collector {
     for (RepoClassifier.Facts f : candidates) {
       RepoClassifier.Verdict v = verdicts.get(f.id());
       if (v != null && v.ai()) {
-        SourceHit hit = toHit(byId.get(f.id()), v.type(), rankById.get(f.id()), now);
+        SourceHit hit = toHit(byId.get(f.id()), typeOf(f, v), rankById.get(f.id()), now);
         if (hit != null) {
           hits.add(hit);
         }
@@ -632,6 +632,29 @@ public class GitHubAwesomeCollector implements Collector {
     }
     hits.sort(Comparator.comparingInt(SourceHit::getRank));
     return hits;
+  }
+
+  private ResourceType typeOf(RepoClassifier.Facts repo, RepoClassifier.Verdict verdict) {
+    if (verdict.type() != ResourceType.AWESOME_LIST || readsAsAwesomeList(repo.fullName())) {
+      return verdict.type();
+    }
+    return ResourceType.ARTICLE;
+  }
+
+  private boolean readsAsAwesomeList(String fullName) {
+    if (fullName == null || !AwesomeLists.named(fullName)) {
+      return false;
+    }
+    try {
+      String readme = readme(fullName);
+      return readme != null && AwesomeLists.isAwesomeList(fullName, readme);
+    } catch (RuntimeException e) {
+      log.info(
+          "awesome lists: README of {} unavailable ({}), typed ARTICLE",
+          fullName,
+          e.getClass().getSimpleName());
+      return false;
+    }
   }
 
   private Map<String, RepoClassifier.Verdict> classify(List<RepoClassifier.Facts> candidates) {

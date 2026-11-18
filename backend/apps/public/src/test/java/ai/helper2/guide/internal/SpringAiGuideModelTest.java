@@ -230,7 +230,7 @@ class SpringAiGuideModelTest {
         .isEqualTo(
             Map.of(
                 "guide/plan.txt", "a0b9683a",
-                "guide/choose.txt", "c9afbc45",
+                "guide/choose.txt", "07b0c3cd",
                 "guide/compare.txt", "b813f8b5",
                 "guide/explain.txt", "68a93456",
                 "guide/verify-reasons.txt", "3ab524f4"));

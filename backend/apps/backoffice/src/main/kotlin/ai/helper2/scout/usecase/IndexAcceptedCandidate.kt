@@ -129,6 +129,7 @@ object CandidateRules {
       ResourceType.NEWS,
       ResourceType.EVENT,
       ResourceType.COURSE,
+      ResourceType.AWESOME_LIST,
     )
 
   @JvmStatic
