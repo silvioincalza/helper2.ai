@@ -6,7 +6,7 @@ import ai.helper2.scout.EnrichmentBacklog
 import ai.helper2.scout.EnrichmentQueueControl
 import ai.helper2.scout.QueueOutcome
 import ai.helper2.scout.QueuePlace
-import ai.helper2.scout.UnitOfWork
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset

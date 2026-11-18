@@ -53,7 +53,6 @@ import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.ScoutStore;
-import ai.helper2.scout.UnitOfWork;
 import ai.helper2.scout.Withdrawal;
 import ai.helper2.scout.WithdrawnRecords;
 import ai.helper2.scout.admission.AdmissionPolicy;
@@ -79,6 +78,7 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.search.WebSearchQuota;
 import ai.helper2.shared.CollectorIds;
+import ai.helper2.shared.UnitOfWork;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -111,8 +111,6 @@ import org.springframework.scheduling.config.FixedDelayTask;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -472,8 +470,8 @@ class ScoutConfiguration {
 
   @Bean
   EditCandidate editCandidate(
-      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
-    return new EditCandidate(items, audit, scoutUnitOfWork, clock);
+      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
+    return new EditCandidate(items, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -482,24 +480,13 @@ class ScoutConfiguration {
   }
 
   @Bean
-  UnitOfWork scoutUnitOfWork(PlatformTransactionManager transactions) {
-    TransactionTemplate template = new TransactionTemplate(transactions);
-    return new UnitOfWork() {
-      @Override
-      public <T> T run(Supplier<T> work) {
-        return template.execute(status -> work.get());
-      }
-    };
-  }
-
-  @Bean
   RequeueEnrichment requeueEnrichment(
       EnrichmentBacklog backlog,
       EnrichmentQueueControl control,
       AuditTrail audit,
-      UnitOfWork scoutUnitOfWork,
+      UnitOfWork unitOfWork,
       Clock clock) {
-    return new RequeueEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+    return new RequeueEnrichment(backlog, control, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -512,15 +499,15 @@ class ScoutConfiguration {
       EnrichmentBacklog backlog,
       EnrichmentQueueControl control,
       AuditTrail audit,
-      UnitOfWork scoutUnitOfWork,
+      UnitOfWork unitOfWork,
       Clock clock) {
-    return new SkipEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+    return new SkipEnrichment(backlog, control, audit, unitOfWork, clock);
   }
 
   @Bean
   ManageDiscoveryHosts manageDiscoveryHosts(
-      DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
-    return new ManageDiscoveryHosts(hosts, audit, scoutUnitOfWork, clock);
+      DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
+    return new ManageDiscoveryHosts(hosts, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -528,9 +515,9 @@ class ScoutConfiguration {
       EnrichmentBacklog backlog,
       EnrichmentQueueControl control,
       AuditTrail audit,
-      UnitOfWork scoutUnitOfWork,
+      UnitOfWork unitOfWork,
       Clock clock) {
-    return new PrioritiseEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+    return new PrioritiseEnrichment(backlog, control, audit, unitOfWork, clock);
   }
 
   @Bean

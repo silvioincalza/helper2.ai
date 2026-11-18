@@ -355,7 +355,8 @@ than a hundred), so the question is the same for each of them: what is this name
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
 - Queue actions: `enrichment_queue_control` in `V1__schema.sql`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
-  (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
+  (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`),
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt`, `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,

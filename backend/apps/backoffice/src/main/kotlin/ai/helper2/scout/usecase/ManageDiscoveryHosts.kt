@@ -5,7 +5,7 @@ import ai.helper2.scout.DiscoveryHost
 import ai.helper2.scout.DiscoveryHostStore
 import ai.helper2.scout.HostKind
 import ai.helper2.scout.HostNames
-import ai.helper2.scout.UnitOfWork
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 
 class ManageDiscoveryHosts(

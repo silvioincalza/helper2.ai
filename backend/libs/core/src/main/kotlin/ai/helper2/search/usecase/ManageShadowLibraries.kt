@@ -5,7 +5,7 @@ import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.ShadowLibrary
 import ai.helper2.search.ShadowLibraryNames
 import ai.helper2.search.ShadowLibraryStore
-import ai.helper2.search.UnitOfWork
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 import org.slf4j.LoggerFactory
 
