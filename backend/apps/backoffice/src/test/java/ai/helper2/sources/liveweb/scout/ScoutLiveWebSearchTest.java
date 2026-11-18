@@ -169,6 +169,44 @@ class ScoutLiveWebSearchTest {
   }
 
   @Test
+  void aSearchAtTheDailyCapIsRefusedBeforeAnyRequestAndCountsNoCredit() {
+    server.route("/search", FixtureServer.Reply.ok("{\"usage\":{\"credits\":1},\"results\":[]}"));
+    counter.counts.put(scoutCredits(), 40L);
+    ScoutLiveWebSearch search = search("basic", Resilience.NONE);
+
+    assertThatThrownBy(() -> search.search(body()))
+        .isInstanceOf(ScoutLiveWebSearch.CapReached.class)
+        .hasMessage(
+            "Daily live web credit cap of the Scout reached (40 credits); next try tomorrow");
+
+    assertThat(server.requests).isEmpty();
+    assertThat(counter.counts).containsOnly(Map.entry(scoutCredits(), 40L));
+    assertThat(meters.find("helper2.live-web.credits").counter()).isNull();
+  }
+
+  @Test
+  void aPostToAnotherPathAtTheDailyCapIsRefusedTheSameWay() {
+    server.route("/extract", FixtureServer.Reply.ok("{\"usage\":{\"credits\":2},\"results\":[]}"));
+    counter.counts.put(scoutCredits(), 40L);
+    ScoutLiveWebSearch search = search("basic", Resilience.NONE);
+
+    assertThatThrownBy(() -> search.post("/extract", body(), attributes -> {}))
+        .isInstanceOf(ScoutLiveWebSearch.CapReached.class);
+
+    assertThat(server.requests).isEmpty();
+    assertThat(counter.counts).containsOnly(Map.entry(scoutCredits(), 40L));
+  }
+
+  @Test
+  void aSearchAtTheDailyCapDoesNotReachItsResiliencePolicy() {
+    counter.counts.put(scoutCredits(), 40L);
+    ScoutLiveWebSearch search = search("basic", LiveWebNewsCollectorTest.REFUSES);
+
+    assertThatThrownBy(() -> search.search(body()))
+        .isInstanceOf(ScoutLiveWebSearch.CapReached.class);
+  }
+
+  @Test
   void theDeferredBatchKeepsThePassOpenAndSaysTheCap() {
     CollectedBatch batch = search("basic", Resilience.NONE).deferred();
 

@@ -41,10 +41,7 @@ public final class ScoutLiveWebSearch {
   }
 
   public CollectedBatch deferred() {
-    return CollectedBatch.deferred(
-        "Daily live web credit cap of the Scout reached ("
-            + credits.dailyCap()
-            + " credits); next try tomorrow");
+    return CollectedBatch.deferred(capReachedMessage());
   }
 
   public JsonNode search(Map<String, Object> body) {
@@ -57,8 +54,24 @@ public final class ScoutLiveWebSearch {
   }
 
   private JsonNode counted(Supplier<String> request) {
+    if (credits.capReached()) {
+      throw new CapReached(capReachedMessage());
+    }
     return resilience.call(
         policy,
         () -> credits.countedAttempt(searchDepth, () -> HttpClients.getJson(request, clock)));
+  }
+
+  private String capReachedMessage() {
+    return "Daily live web credit cap of the Scout reached ("
+        + credits.dailyCap()
+        + " credits); next try tomorrow";
+  }
+
+  public static final class CapReached extends RuntimeException {
+
+    private CapReached(String message) {
+      super(message, null, false, false);
+    }
   }
 }
