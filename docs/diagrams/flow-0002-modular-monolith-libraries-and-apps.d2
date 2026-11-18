@@ -62,7 +62,7 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   domain: "A in a domain package?\n(every ..usecase.. package,\nand shared, search, scout, guide,\nsetup, examples, site,\nsite.pages, site.monetisation,\nidentity, catalog, admin,\nresearch)" {class: decision}
   fw: "B in org.springframework..,\ntools.jackson.. or java.sql..?" {class: decision}
   adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
-  http: "B is ApiProblem, a subtype,\nProblemType or Problems,\nand A is not in STILL_THROWING?" {class: decision}
+  http: "B is ApiProblem, a subtype,\nProblemType or Problems?" {class: decision}
   same: "B in A's own module?" {class: decision}
   src: "B in sources?\n(no API: its base\npackage is empty)" {class: decision}
   gen: "A in the shared web part (api, search.web)\nand B an app's generated type (api.generated)?" {class: decision}

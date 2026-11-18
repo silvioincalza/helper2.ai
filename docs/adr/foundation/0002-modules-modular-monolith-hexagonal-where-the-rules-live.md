@@ -142,8 +142,7 @@ to reach into the other's code.
      `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
    - `useCasesDoNotSpeakHttp`: no class of a domain package depends on `ApiProblem`, a subtype of it, `ProblemType`
-     or `Problems`, but the classes named in `STILL_THROWING`; `everyClassInStillThrowingStillSpeaksHttp` fails when
-     a named class is clean ([0051](0051-use-cases-return-outcomes.md) §7);
+     or `Problems`, with no exception ([0051](0051-use-cases-return-outcomes.md) §7);
    - `controllersAnswerWithViewsNotPortRecords` (back office): no class of a `web` package uses `ReviewQueue.Status`,
      `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
      `ReviewEvidence.Evidence` ([0038](../backoffice/0038-back-office-and-review.md) §1);

@@ -290,7 +290,7 @@ class CandidateEditApiIT extends ApiTestBase {
                 .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
-        .andExpect(problem(ProblemType.INTERNAL, "Something went wrong on our side."));
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
 
     assertThat(
             jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")

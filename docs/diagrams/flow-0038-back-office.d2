@@ -166,7 +166,8 @@ bulk: "ResolveReviewItems, per item" {
   apply: "CONFIRMED changed values\ninto the candidate (EditCandidate)" {class: app}
   applied: "Edit taken, or nothing to change?" {class: decision}
   refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
-  one: "ResolveReview, its own transaction\n(audit: ACCEPTED bulk:<batch>)" {class: app}
+  one: "ResolveReview, its own unit of work\n(audit: ACCEPTED bulk:<batch>)" {class: app}
+  stopped: "The candidate cannot be read, or the\ncatalog refuses a confirmed value:\n400, the batch stops; the items\nbefore it stay decided" {class: fail}
   other: "ResolveReview: NOT_OPEN or NOT_FOUND" {class: end}
   open -> reject: yes
   open -> other: "no, or no item"
@@ -181,6 +182,7 @@ bulk: "ResolveReviewItems, per item" {
   apply -> applied
   applied -> one: yes
   applied -> refused: "no (a value refused)"
+  one -> stopped: "outcome NotAdded"
 }
 
 bulk_req -> bulk.open

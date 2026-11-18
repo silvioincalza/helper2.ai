@@ -1,6 +1,5 @@
 package ai.helper2.testing.architecture;
 
-import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -13,7 +12,6 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,25 +26,10 @@ public abstract class ModularityRules {
 
   private static final String LLM = "ai.helper2.platform.llm";
 
-  private static final List<String> STILL_THROWING =
-      List.of(
-          "ai.helper2.admin.usecase.ChangeRuntimeSetting",
-          "ai.helper2.admin.usecase.DecideRelationshipItem",
-          "ai.helper2.admin.usecase.DecideRelationshipTargetGroup",
-          "ai.helper2.admin.usecase.KnownTargetAnswer",
-          "ai.helper2.admin.usecase.ListEnrichmentQueue",
-          "ai.helper2.admin.usecase.ResolveReview",
-          "ai.helper2.admin.usecase.ResolveReviewItems");
-
   private static final DescribedPredicate<JavaClass> SPEAK_HTTP =
       assignableTo(ApiProblem.class)
           .or(belongToAnyOf(ProblemType.class, Problems.class))
           .as("speak HTTP (ApiProblem and its subtypes, ProblemType, Problems)");
-
-  private static final DescribedPredicate<JavaClass> STILL_THROW =
-      DescribedPredicate.describe(
-          "are in STILL_THROWING",
-          (JavaClass type) -> STILL_THROWING.contains(outermost(type).getName()));
 
   private final ApplicationModules modules;
 
@@ -115,29 +98,9 @@ public abstract class ModularityRules {
     noClasses()
         .that()
         .resideInAnyPackage(domain)
-        .and(not(STILL_THROW))
         .should()
         .dependOnClassesThat(SPEAK_HTTP)
         .check(classes());
-  }
-
-  @Test
-  public void everyClassInStillThrowingStillSpeaksHttp() {
-    Set<String> here = outermostNames(classes().stream());
-    Set<String> speaking = outermostNames(classes().stream().filter(ModularityRules::speaksHttp));
-    assertThat(STILL_THROWING)
-        .filteredOn(here::contains)
-        .as("classes that no longer speak HTTP: take each one out of STILL_THROWING")
-        .allMatch(speaking::contains);
-  }
-
-  private static boolean speaksHttp(JavaClass type) {
-    return type.getDirectDependenciesFromSelf().stream()
-        .anyMatch(dependency -> SPEAK_HTTP.test(dependency.getTargetClass()));
-  }
-
-  private static Set<String> outermostNames(Stream<JavaClass> types) {
-    return types.map(type -> outermost(type).getName()).collect(Collectors.toSet());
   }
 
   @Test

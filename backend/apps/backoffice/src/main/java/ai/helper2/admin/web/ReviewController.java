@@ -146,6 +146,7 @@ class ReviewController implements ReviewApi {
               ProblemType.ALREADY_DECIDED, "This item was already decided: " + n.status() + ".");
       case DecideReviewItem.Decided.NotFound f ->
           throw new NotFoundException("Review item not found.");
+      case DecideReviewItem.Decided.NotAdded n -> throw ReviewProblems.notAdded(n.why());
     };
   }
 
@@ -306,20 +307,26 @@ class ReviewController implements ReviewApi {
 
   @Override
   public ResponseEntity<ReviewBulkResultDto> resolveReviewItems(ReviewBulkResolutionDto body) {
-    ResolveReviewItems.Outcome outcome =
-        resolveMany.resolve(
-            List.copyOf(body.getIds()),
-            ReviewItemView.Status.valueOf(body.getStatus().getValue()),
-            Admins.id(),
-            body.getNote());
-    return ResponseEntity.ok(
-        new ReviewBulkResultDto(
-            outcome.batch(),
-            outcome.items().stream()
-                .map(i ->
-                    new ReviewBulkItemDto(
-                        i.id(), ReviewBulkItemDto.OutcomeEnum.fromValue(i.result().name())))
-                .toList()));
+    return switch (resolveMany.resolve(
+        List.copyOf(body.getIds()),
+        ReviewItemView.Status.valueOf(body.getStatus().getValue()),
+        Admins.id(),
+        body.getNote())) {
+      case ResolveReviewItems.Outcome.Decided decided -> ResponseEntity.ok(bulkResult(decided));
+      case ResolveReviewItems.Outcome.RepeatedId repeated ->
+          throw new BadRequestException("ids must be unique");
+      case ResolveReviewItems.Outcome.NotAdded n -> throw ReviewProblems.notAdded(n.why());
+    };
+  }
+
+  private static ReviewBulkResultDto bulkResult(ResolveReviewItems.Outcome.Decided decided) {
+    return new ReviewBulkResultDto(
+        decided.batch(),
+        decided.items().stream()
+            .map(i ->
+                new ReviewBulkItemDto(
+                    i.id(), ReviewBulkItemDto.OutcomeEnum.fromValue(i.result().name())))
+            .toList());
   }
 
   @Override
