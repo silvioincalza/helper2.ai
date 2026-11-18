@@ -131,6 +131,21 @@ class ManageShadowLibrariesTest {
   }
 
   @Test
+  fun `a listed name that a source uses is named, so startup can warn of it`() {
+    val guarded =
+      ManageShadowLibraries(
+        store,
+        libraries,
+        trail,
+        unitOfWork,
+        Clock.fixed(now, ZoneOffset.UTC),
+        listOf("libgen.example", "github.com"),
+      )
+
+    assertEquals(setOf("libgen"), guarded.namesThatHideASource())
+  }
+
+  @Test
   fun `a reason on more than one line is refused`() {
     assertEquals(ManageShadowLibraries.Added.BadReason, manage.add("42", "sci-hub", "one\ntwo"))
     assertEquals(

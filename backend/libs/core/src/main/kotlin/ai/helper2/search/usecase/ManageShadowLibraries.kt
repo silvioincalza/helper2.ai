@@ -52,6 +52,8 @@ class ManageShadowLibraries(
 
   fun list(): List<ShadowLibrary> = store.all()
 
+  fun namesThatHideASource(): Set<String> = store.names().intersect(sourceNames)
+
   fun add(adminId: String, rawName: String?, reason: String?): Added {
     val note = clean(reason) ?: return Added.BadReason
     val checked = ShadowLibraryNames.check(rawName)

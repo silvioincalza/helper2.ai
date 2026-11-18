@@ -12,6 +12,7 @@ import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceContext;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
@@ -60,6 +61,10 @@ class HomeListsIT {
   @Autowired ListUpcomingEvents upcoming;
 
   @Autowired JdbcClient jdbc;
+
+  @Autowired ShadowLibraries shadowLibraries;
+
+  @Autowired GetResourceDetail details;
 
   final String run = UUID.randomUUID().toString().substring(0, 8);
   final Instant now = Instant.now();
@@ -178,9 +183,43 @@ class HomeListsIT {
 
   @AfterEach
   void clean() {
+    TestcontainersConfiguration.ownerJdbc()
+        .sql("DELETE FROM shadow_library WHERE name = :name")
+        .param("name", mirror())
+        .update();
+    shadowLibraries.reload();
     jdbc.sql("DELETE FROM resource WHERE id = ANY(:ids)")
         .param("ids", created.toArray(UUID[]::new))
         .update();
+  }
+
+  private String mirror() {
+    return "mirror-" + run;
+  }
+
+  @Test
+  void aStoredResourceOnANameListedAfterwardsLeavesTheHomeListsAndItsDetail() {
+    UUID book =
+        upsert(hit("github", "https://de." + mirror() + ".fm/book/rag", null, 0)).getFirst();
+    publish(book, 22);
+    UUID fair = upsert(hit("github", "https://" + mirror() + ".fm/fair", null, 0)).getFirst();
+    schedule(fair, 1);
+    assertThat(recent.list(SINCE, UNTIL, Set.of(), 24).items())
+        .anyMatch(c -> c.getId().getValue().equals(book));
+    assertThat(details.find(book)).isPresent();
+
+    TestcontainersConfiguration.ownerJdbc()
+        .sql(
+            "INSERT INTO shadow_library (name, added_by, added_at) VALUES (:name, 'home-lists-it', now())")
+        .param("name", mirror())
+        .update();
+    shadowLibraries.reload();
+
+    assertThat(recent.list(SINCE, UNTIL, Set.of(), 24).items())
+        .noneMatch(c -> c.getId().getValue().equals(book));
+    assertThat(upcoming.list(SINCE, null, 60, 0).items())
+        .noneMatch(c -> c.getId().getValue().equals(fair));
+    assertThat(details.find(book)).isEmpty();
   }
 
   private Optional<MergedResult> oneByOne(UUID id) {

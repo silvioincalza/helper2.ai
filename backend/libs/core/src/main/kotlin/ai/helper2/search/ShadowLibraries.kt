@@ -23,6 +23,20 @@ interface ShadowLibraryStore {
 }
 
 object ShadowLibraryNames {
+  @JvmField
+  val SEEDED =
+    setOf(
+      "z-lib",
+      "z-library",
+      "zlibrary",
+      "1lib",
+      "singlelogin",
+      "libgen",
+      "sci-hub",
+      "annas-archive",
+      "pdfdrive",
+    )
+
   const val MIN_LENGTH = 3
   const val MAX_LENGTH = 63
   private val LABEL = Regex("[a-z0-9]([a-z0-9-]*[a-z0-9])?")
@@ -90,9 +104,10 @@ object ShadowLibraryNames {
     host.lowercase(Locale.ROOT).split(".").dropLast(1)
 }
 
-class ShadowLibraries private constructor(private val source: () -> Set<String>) {
+class ShadowLibraries
+private constructor(first: Set<String>, private val source: () -> Set<String>) {
 
-  private val names = AtomicReference<Set<String>>(emptySet())
+  private val names = AtomicReference(first)
 
   fun isShadowLibrary(host: String?): Boolean = ShadowLibraryNames.anyNames(names.get(), host)
 
@@ -102,13 +117,11 @@ class ShadowLibraries private constructor(private val source: () -> Set<String>)
 
   companion object {
     @JvmStatic
-    fun readFrom(store: ShadowLibraryStore): ShadowLibraries = ShadowLibraries(store::names)
+    fun readFrom(store: ShadowLibraryStore): ShadowLibraries =
+      ShadowLibraries(ShadowLibraryNames.SEEDED, store::names)
 
     @JvmStatic
-    fun of(vararg names: String): ShadowLibraries = ShadowLibraries {
-      names.toSet()
-    }
-      .also { it.reload() }
+    fun of(vararg names: String): ShadowLibraries = names.toSet().let { ShadowLibraries(it) { it } }
   }
 }
 

@@ -50,7 +50,7 @@ public class GetResourceDetail {
     if (row.isEmpty()) {
       return Optional.empty();
     }
-    return cards.card(row.get(), records).map(card -> detailOf(id, row.get(), card, records));
+    return cards.shownCard(row.get(), records).map(card -> detailOf(id, row.get(), card, records));
   }
 
   private ResourceDetail detailOf(

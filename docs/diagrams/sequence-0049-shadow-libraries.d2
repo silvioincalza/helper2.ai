@@ -29,7 +29,7 @@ add: Add {
   spa -> owner: "Added: results on sci-hub sites are no longer shown."
 }
 
-refresh: Every 30 seconds {
+refresh: Every 30 seconds (the nine seeded names until the first read) {
   public -> db: "SELECT name FROM shadow_library" {class: hot}
   public -> public: "the list in force: {libgen, sci-hub, z-lib, …}"
 }

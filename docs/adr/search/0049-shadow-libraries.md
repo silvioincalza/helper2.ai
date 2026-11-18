@@ -26,6 +26,14 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
      on a shadow library, from every source, live or replayed: catalog full-text and vector hits, stored live web
      results (`JdbcWebResultStore.find`), the source cache. It runs before ranking, so a dropped hit is never a result
      and never reaches the guide. A row stored before its name was added is hidden at the next search.
+   - **Every catalog card, at read time.** The home lists (`ListRecentResources`, `ListUpcomingEvents`) read their
+     cards through `ResourceCards.cardsOf`, and a resource page reads its card through `GetResourceDetail`. Both use
+     `ResourceCards.shownCard`: a card whose address or canonical address is on a shadow library is left out, and its
+     resource page is not found. The live results the catalog keeps as observed rows are hidden the same way.
+   - **Every cached guide answer.** The guide's answer cache and its similar-question reuse (`AskGuide.cached`) count
+     an answer as a miss when one of the results, sources or quotes it cites is on a shadow library; the question is
+     answered again. The setup guide (`ToolGuides`) never reads a document on a shadow library, so its cache key
+     changes and a guide written from such a document is not served.
    - **Where a hit is made.** A Tavily result (`TavilySource.toHit`, so the live web search and the Scout's news and
      events collectors) and a Hacker News story (`HackerNewsSource.aiStories`): a link story points to any site, so
      its link is checked.
@@ -59,8 +67,9 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
 4. **Each app holds the list in memory.** `ShadowLibraries` keeps the names as an immutable set and checks a host with
    no database call. It reads the table at startup and again every 30 seconds (`ShadowLibrariesConfiguration`). The
    back office also reads it right after a change commits, so its own collectors follow at once; the public app follows
-   within 30 seconds. A read that fails keeps the last list and logs a warning; at startup that list is empty until the
-   next read works.
+   within 30 seconds. A read that fails keeps the last list and logs a warning. Before the first read works, the list
+   is the nine names the migration seeds (`ShadowLibraryNames.SEEDED`), never an empty one. At startup the back office
+   logs a warning for each listed name that is a label of a source's host.
 
 ## Alternatives considered
 
@@ -83,8 +92,11 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
   is blocked too; the 3-character minimum, the common labels and the sources' own labels keep the risk small. A typo
   can never hide a whole source.
 - Rows stored before a name is added stay in the database until their retention ends
-  ([0010](../foundation/0010-data-retention.md)), but no search shows them: the read-time check hides them at once.
+  ([0010](../foundation/0010-data-retention.md)), but no search, home list, resource page or cached answer shows them.
 - The read-time check is one set lookup per hit, with no database call.
+- The check reads the host of the address a source gives. A link through a redirect or a shortener (`t.co`, `bit.ly`,
+  `google.com/url?q=`) is not caught when the source gives that address and not the target's. A mirror on a bare IP
+  address has no label to match, so a name cannot block it.
 - The migration creates the table and redefines the `admin_audit.action` check with the two new actions.
 - Privacy: no personal data beyond the admin's subject in `added_by`, the same as the other admin lists. The Privacy page
   does not change. Terms: no new rule for users.

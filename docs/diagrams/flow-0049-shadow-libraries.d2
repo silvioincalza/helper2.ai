@@ -7,7 +7,10 @@
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java (keep),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/LiveWebEventsCollector.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ProductLinks.java (check),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/research/ReadPageTool.java.
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/research/ReadPageTool.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/ResourceCards.java (shownCard),
+#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (cached),
+#   backend/apps/public/src/main/kotlin/ai/helper2/setup/ToolGuides.kt (shown).
 # Render: cd docs/diagrams && d2 fmt flow-0049-shadow-libraries.d2 && d2 flow-0049-shadow-libraries.d2 flow-0049-shadow-libraries.svg
 
 ...@style
@@ -26,7 +29,7 @@ duplicate: "409 duplicate\n(audit: ALREADY_LISTED)" {class: fail}
 stored: "Row in shadow_library;\naudit ADD_SHADOW_LIBRARY\n(one transaction)" {class: data}
 reload: "Back office reads the list again;\nthe public app within 30 s" {class: app}
 
-result: "A hit or a link\n(any source, live or stored;\nScout links; research pages)" {class: app}
+result: "A hit, a card or a link\n(any source, live or stored; home lists,\nresource page, cached guide answers;\nScout links; research pages)" {class: app}
 hostname: "A label of its host,\nbefore the last, is a name?" {class: decision}
 dropped: "Never a result, never a candidate,\nnever evidence" {class: end}
 rules: "The source's own rules\n(AI words, Tavily's own pages …)" {class: end}

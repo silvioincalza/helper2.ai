@@ -54,7 +54,7 @@ class ShadowLibrariesTest {
 
   @Test
   fun `a list read from the store holds what the store holds after each reload`() {
-    val names = mutableSetOf("libgen")
+    val names = mutableSetOf("mirror-one")
     val store =
       object : ShadowLibraryStore {
         override fun all(): List<ShadowLibrary> = emptyList()
@@ -67,13 +67,15 @@ class ShadowLibrariesTest {
       }
     val read = ShadowLibraries.readFrom(store)
 
+    assertTrue(read.isShadowLibrary("libgen.rs"), "before the first read: the names seeded")
+    assertFalse(read.isShadowLibrary("mirror-one.fm"))
+    read.reload()
+    assertTrue(read.isShadowLibrary("mirror-one.fm"))
     assertFalse(read.isShadowLibrary("libgen.rs"))
+    names += "mirror-two"
+    assertFalse(read.isShadowLibrary("mirror-two.se"))
     read.reload()
-    assertTrue(read.isShadowLibrary("libgen.rs"))
-    names += "sci-hub"
-    assertFalse(read.isShadowLibrary("sci-hub.se"))
-    read.reload()
-    assertTrue(read.isShadowLibrary("sci-hub.se"))
+    assertTrue(read.isShadowLibrary("mirror-two.se"))
   }
 
   @ParameterizedTest

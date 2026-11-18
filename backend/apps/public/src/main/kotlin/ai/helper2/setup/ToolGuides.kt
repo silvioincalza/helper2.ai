@@ -2,6 +2,7 @@ package ai.helper2.setup
 
 import ai.helper2.platform.quota.ClientDayQuota
 import ai.helper2.platform.resilience.Resilience
+import ai.helper2.search.ShadowLibraries
 import ai.helper2.shared.SingleFlight
 import java.security.MessageDigest
 import java.time.Clock
@@ -22,6 +23,7 @@ constructor(
   private val visitors: ClientDayQuota? = null,
   private val resilience: Resilience = Resilience.NONE,
   private val stepText: StepTextMode = StepTextMode.VERIFIED,
+  private val shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
 ) {
   private val writing = SingleFlight<ToolGuideAnswer>()
 
@@ -31,7 +33,7 @@ constructor(
 
   @JvmOverloads
   fun answer(resourceId: String, ref: ToolRef, client: String? = null): ToolGuideAnswer {
-    val docs = if (ref.hasDocs) materials.load(ref) else emptyList()
+    val docs = if (ref.hasDocs) shown(materials.load(ref)) else emptyList()
     if (docs.isEmpty()) return empty(ToolGuideStatus.NO_MATERIAL, docs)
     val writer = model ?: return empty(ToolGuideStatus.LLM_UNAVAILABLE, docs, "error")
     val key = keyOf(resourceId, writer, docs)
@@ -48,6 +50,10 @@ constructor(
     } finally {
       if (!written) turn.giveBack()
     }
+  }
+
+  private fun shown(docs: List<Material>): List<Material> = docs.filterNot {
+    shadowLibraries.isShadowLibrary(it.url.host)
   }
 
   fun guidesLeft(client: String): SetupGuidesLeft? {

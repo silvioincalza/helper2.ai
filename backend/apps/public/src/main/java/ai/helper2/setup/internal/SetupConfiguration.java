@@ -14,6 +14,7 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.setup.McpServerSpecs;
 import ai.helper2.setup.ReadmeConfigs;
 import ai.helper2.setup.SetupGuides;
@@ -171,7 +172,8 @@ class SetupConfiguration {
       LlmProperties llmProperties,
       CallCounter budgetCounter,
       QuotaKeys quotaKeys,
-      SetupProperties setup) {
+      SetupProperties setup,
+      ShadowLibraries shadowLibraries) {
     boolean nativeSchema = llmProperties.nativeSchema();
     ChatModel model = chatModel.getIfAvailable();
     ToolGuideModel guideModel = null;
@@ -215,6 +217,7 @@ class SetupConfiguration {
                 budgetCounter,
                 ClientBudgets.MAX_CLIENTS)),
         resilience,
-        setup.guide().stepText());
+        setup.guide().stepText(),
+        shadowLibraries);
   }
 }

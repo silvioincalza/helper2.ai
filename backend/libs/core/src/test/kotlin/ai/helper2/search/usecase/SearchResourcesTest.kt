@@ -4,6 +4,7 @@ import ai.helper2.platform.resilience.Resilience
 import ai.helper2.platform.resilience.Resilience4jPolicies
 import ai.helper2.search.CachedHits
 import ai.helper2.search.Freshness
+import ai.helper2.search.ListedNames
 import ai.helper2.search.MergedResult
 import ai.helper2.search.NOW
 import ai.helper2.search.NoticeCode
@@ -14,8 +15,6 @@ import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
 import ai.helper2.search.ShadowLibraries
-import ai.helper2.search.ShadowLibrary
-import ai.helper2.search.ShadowLibraryStore
 import ai.helper2.search.SkipReason
 import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceFailure
@@ -415,7 +414,7 @@ class SearchResourcesTest {
 
   @Test
   fun `a stored hit on a name listed after it was stored is no result`() {
-    val libraries = MutableShadowLibraries()
+    val libraries = ListedNames()
     val web = ok("web", "https://de.z-lib.fm/book/1", "https://example.com/rag")
     val svc = service(listOf(web), shadowLibraries = libraries.libraries)
     svc.search(req())
@@ -427,26 +426,6 @@ class SearchResourcesTest {
     assertEquals(1, web.calls.get())
     assertEquals(ServedFrom.CACHE, out.statuses.single().servedFrom)
     assertEquals(listOf("https://example.com/rag"), out.results.map { it.canonicalUrl.value })
-  }
-
-  private class MutableShadowLibraries {
-    private val names = mutableSetOf<String>()
-    val libraries = ShadowLibraries.readFrom(Names(names)).also { it.reload() }
-
-    fun add(name: String) {
-      names += name
-      libraries.reload()
-    }
-
-    private class Names(private val names: Set<String>) : ShadowLibraryStore {
-      override fun all() = emptyList<ShadowLibrary>()
-
-      override fun names() = names.toSet()
-
-      override fun add(library: ShadowLibrary) = false
-
-      override fun remove(name: String) = null
-    }
   }
 
   @Test
