@@ -33,12 +33,12 @@ which -> exists: link
 exists -> bad: no
 exists -> each: yes
 which -> each: REJECT {class: hot}
-which -> known: "VENDOR / SERVICE"
+which -> known: "VENDOR / SERVICE / TOOL"
 known -> full: refused
 known -> each: saved
 each -> linked: link
 each -> reject: REJECT {class: hot}
-each -> confirm: "VENDOR / SERVICE"
+each -> confirm: "VENDOR / SERVICE / TOOL"
 each -> skip: "item refused"
 linked -> remaining
 reject -> remaining: {class: hot}

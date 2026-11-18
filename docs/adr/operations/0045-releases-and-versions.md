@@ -158,8 +158,9 @@ read as a fix of that release. What a release branch gained must reach `main` ag
     `release-prepare` run from `main` only, and the `prod` environment accepts the ref `main`.
 
 ### Migrations after a release
-16. **After the first tag, forward only.** A schema change is a new `V2__…`, never an edit of `V1__schema.sql`; a fix to
-    what runs is a new patch (§12). CI holds the rule on every pull request
+16. **After the first tag, forward only.** A schema change is a new versioned migration named after the app
+    version that ships it (`V<version>.<n>__…`, [0004](../foundation/0004-persistence-and-the-schema.md) §5),
+    never an edit of `V1__schema.sql`; a fix to what runs is a new patch (§12). CI holds the rule on every pull request
     (`.github/scripts/released-migrations.sh`, [0004](../foundation/0004-persistence-and-the-schema.md) §5). A
     release tag sits on its release branch, beside `main`: the check reads every release whose commit, or the commit
     before it, is in the history it checks.

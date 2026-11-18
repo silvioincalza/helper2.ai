@@ -243,14 +243,14 @@ than a hundred), so the question is the same for each of them: what is this name
   group first, with the name most of them write, the count, the relationship kinds and up to three resources that
   name it.
 - **One decision.** `POST /admin/relationship-targets/decision` with the key and LINK (a catalog resource), VENDOR,
-  SERVICE or REJECT. LINK runs §12 on each item and accepts it: the quote already names the target, the admin answers
-  which resource the name is, so the check §12 waits for is the one the admin just made. VENDOR or SERVICE adds the
+  SERVICE, TOOL or REJECT. LINK runs §12 on each item and accepts it: the quote already names the target, the admin answers
+  which resource the name is, so the check §12 waits for is the one the admin just made. VENDOR, SERVICE or TOOL adds the
   name as a known target ([0019](../scout/0019-known-targets-vendors-and-services.md)) and closes the items of this
   batch (SUPERSEDED, relationship `VERIFIED` with the target's kind); other names the list already matches wait for
   their own decision or the Scout's run. REJECT rejects each item and its relationship.
 - **Each item on its own**, as in §9: one transaction per item (`DecideRelationshipItem`) holds the item's lock from the
   target change to the decision, so a LINK changes the target and accepts the item together or not at all. Each item
-  has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR and SERVICE). An item
+  has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR, SERVICE and TOOL). An item
   decided meanwhile, one whose resource already has this target, or the target resource itself, is skipped and stays
   open. At most 1000 items per call, the oldest first; the answer's `left` counts the items of the name still open
   after the call.
@@ -258,17 +258,22 @@ than a hundred), so the question is the same for each of them: what is this name
   by one as before. A group spans every category, so the category filter is not shown there. When a decision empties
   the last page, the list moves back to the last page that has groups.
 
-### A resource candidate edited before it is accepted: title, type and tags
+### A resource candidate edited before it is accepted
 19. **One call edits an open resource candidate:** `PUT /admin/review-items/{id}/candidate` with at least one of
     `title` (1 to 300 characters, one line), `type` (any candidate type: products and tools, MODEL, DATASET,
-    ARTICLE, NEWS, EVENT; never COURSE or OTHER) and `tags` (at most 12, tag-shaped). What is left out stays as the
-    collector wrote it. It answers the item, with its new reason line. The item stays open.
+    ARTICLE, NEWS, EVENT; never COURSE or OTHER) and `tags` (at most 12, tag-shaped), or a value the admin confirms:
+    `canonicalUrl` (https), `pricing`, `openSource`, `license` (SPDX), `audience`, `techLevel`, `description` (1 to
+    4000 characters, with `descriptionWrittenByAi`), `language` and `publishedAt` (a date, not in the future). The
+    values follow the catalog's rules (`EvidenceValidator.allows`). What is left out stays as the collector wrote it.
+    It answers the item, with its new reason line. The item stays open.
 20. **The edit is marked in the details** (`edited`: the fields the admin changed).
     - When another collector finds the page later ([0013](../scout/0013-discovery.md) §8 and
       §17), it joins the candidate's finders. It does not change an edited
       type or edited tags, and never the title.
     - Accepting indexes what the admin wrote. A type the admin set need not be one a finder declares; it must still be
-      a candidate type. When the page was listed meanwhile (as a resource or as a source record of one), accepting
+      a candidate type. A confirmed canonical URL is the page it is indexed at, and the listed check uses it. Every
+      other confirmed value becomes a curated value of the new resource (§25), with its own `SET_FIELD` entry: a
+      description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the page was listed meanwhile (as a resource or as a source record of one), accepting
       adds nothing: the item is closed as ACCEPTED with the note "Already listed as <title>.", and the review page says
       so and links to the listed resource. The edits are not applied; the admin makes them on the listed page.
     - The accepted record keeps the signals its collector stated (stars, last push, archived, fork:
@@ -296,6 +301,8 @@ than a hundred), so the question is the same for each of them: what is this name
     their own: type, pricing, license, openSource, techLevel and audience. The value must be one the field takes
     (an SPDX id for a licence; no OTHER type, no UNKNOWN audience).
     - The value is written to the resource's column, and the field is listed in `resource.curated_fields`.
+    - Accepting a candidate also curates its description, language and published date
+      (`V2026.11.6.3__curated_description_language_published.sql`); no source or run changes them after.
     - A CURATED, VERIFIED field assertion says where it came from; the page shows "Curated by Helper2".
     - The AI's values of the field are rejected.
 26. **It wins everywhere, and stays.**

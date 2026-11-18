@@ -48,8 +48,11 @@ class EditCandidateTest {
   private fun open(details: String = "d") =
     CandidateItem(open = true, resourceCandidate = true, details)
 
+  private val clock =
+    java.time.Clock.fixed(java.time.Instant.parse("2026-11-18T03:00:00Z"), java.time.ZoneOffset.UTC)
+
   private fun edit(items: Items, change: CandidateEdit, seen: String? = items.item?.details) =
-    EditCandidate(items, trail, unitOfWork).edit(id, seen, change, "42")
+    EditCandidate(items, trail, unitOfWork, clock).edit(id, seen, change, "42")
 
   @Test
   fun `a new title, type and tags are saved and audited`() {
@@ -85,6 +88,57 @@ class EditCandidateTest {
         CandidateEdit(type = ResourceType.OTHER),
         CandidateEdit(tags = setOf("Not A Tag")),
         CandidateEdit(tags = (1..21).map { "t$it" }.toSet()),
+      )) {
+      val items = Items(open())
+      assertIs<EditCandidate.Outcome.Invalid>(edit(items, bad), bad.toString())
+      assertTrue(items.saved.isEmpty())
+    }
+    assertTrue(audit.isEmpty())
+  }
+
+  @Test
+  fun `confirmed values the catalog takes are saved and each is audited`() {
+    val items = Items(open())
+    val r =
+      edit(
+        items,
+        CandidateEdit(
+          canonicalUrl = "https://acmenotes.example/",
+          pricing = "FREEMIUM",
+          openSource = false,
+          license = " MIT ",
+          audience = "USE_AI",
+          techLevel = "BEGINNER",
+          description = " Acme Notes writes meeting notes. ",
+          descriptionByAi = true,
+          language = "en",
+          publishedAt = java.time.LocalDate.parse("2025-03-02"),
+        ),
+      )
+    assertIs<EditCandidate.Outcome.Edited>(r)
+    assertEquals(
+      listOf(
+        "42 EDIT_CANDIDATE $id EDITED canonicalUrl, pricing, openSource, license, audience," +
+          " techLevel, description, language, publishedAt"
+      ),
+      audit,
+    )
+  }
+
+  @Test
+  fun `a confirmed value the catalog does not take is refused`() {
+    for (bad in
+      listOf(
+        CandidateEdit(canonicalUrl = "http://acmenotes.example/"),
+        CandidateEdit(canonicalUrl = "not a url"),
+        CandidateEdit(pricing = "CHEAP"),
+        CandidateEdit(license = "MIT license"),
+        CandidateEdit(audience = "UNKNOWN"),
+        CandidateEdit(techLevel = "EXPERT"),
+        CandidateEdit(description = " "),
+        CandidateEdit(description = "x".repeat(4001)),
+        CandidateEdit(language = "xx"),
+        CandidateEdit(publishedAt = java.time.LocalDate.parse("2026-11-20")),
       )) {
       val items = Items(open())
       assertIs<EditCandidate.Outcome.Invalid>(edit(items, bad), bad.toString())

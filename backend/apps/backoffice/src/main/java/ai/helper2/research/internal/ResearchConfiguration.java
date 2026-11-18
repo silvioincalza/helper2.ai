@@ -19,6 +19,7 @@ import ai.helper2.research.ResearchSubject;
 import ai.helper2.research.ResearchTool;
 import ai.helper2.research.config.ResearchProperties;
 import ai.helper2.research.usecase.CancelResearch;
+import ai.helper2.research.usecase.FindResearchedItems;
 import ai.helper2.research.usecase.PurgeResearch;
 import ai.helper2.research.usecase.RunResearch;
 import ai.helper2.research.usecase.StartResearch;
@@ -108,6 +109,11 @@ class ResearchConfiguration {
   @Bean
   StartResearch startResearch(ResearchRuns runs, ResearchItems items, ResearchModel model) {
     return new StartResearch(runs, items, model.model());
+  }
+
+  @Bean
+  FindResearchedItems findResearchedItems(ResearchRuns runs) {
+    return new FindResearchedItems(runs);
   }
 
   @Bean

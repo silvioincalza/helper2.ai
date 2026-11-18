@@ -101,11 +101,19 @@ The schema is one file, and from the first release tag on that file must never c
      the database so (`POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=en_US.utf8`).
    - **Forward-only from the first release tag.** While the history has no release tag `vYYYY.N.P`, V1 is edited in
      place. From the tag on, an applied migration is never edited: an edit changes its checksum, and Flyway refuses
-     to start. A change is a new versioned migration (`V2__…`), forward-only.
+     to start. A change is a new versioned migration, forward-only, named after the app version that ships it:
+     `V<version>.<n>__<what>.sql`, with the version of the release that ships it, the one it carries on its release
+     branch (after 2026.11.5, the next patch of `release/2026.11`: 2026.11.6), and `n` counting from 1 within it
+     (`V2026.11.6.1__known_target_tool.sql`). Flyway compares the versions part by part, so they run in release order.
+     A pull request whose migration did not ship in a release renames it to the version after that release.
+     `backend/build.gradle.kts` is not changed for it: the release workflow sets the version.
    - **CI holds both halves of the rule** (`.github/scripts/released-migrations.sh`, job `changes`, every pull
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other
      than `V1__schema.sql` fails. Once it has one, every versioned migration the latest release holds must be the same
-     file, byte for byte: an edit or a removal fails, a new `V2__…` passes. The seeds (`R__…`) may change. The check
+     file, byte for byte: an edit or a removal fails. The latest release is the highest of the release tags in the
+     history and the version `backend/build.gradle.kts` carries, when that version is tagged: a release merged into
+     `main` by squash is not in its history. Every versioned migration the latest release does not hold must be named
+     `V<YYYY>.<N>.<P>.<n>__…` with a version above it; any other name fails. The seeds (`R__…`) may change. The check
      compares with the tag, not with the base of the pull request.
    - **Until the tag, every schema change edits V1. There is no V2.** Prod gets V1 on an empty database at the tag.
      A database that already ran an older V1 is refused by Flyway when V1 changes (checksum mismatch): no step
