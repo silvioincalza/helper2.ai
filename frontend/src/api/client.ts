@@ -142,7 +142,7 @@ const STEP_EVENTS: ReadonlySet<string> = new Set(
   guideStreamEventValues.filter((e): e is GuideStepEvent => e !== 'answer' && e !== 'error'),
 );
 
-const GUIDE_IDLE_TIMEOUT_MS = 45_000;
+export const GUIDE_IDLE_TIMEOUT_MS = 45_000;
 
 async function askGuideStream(
   body: GuideRequest,

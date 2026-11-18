@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
@@ -53,11 +53,10 @@ describe('admin: relationship candidates by target name (S6.2.10)', () => {
       key: 'cursor',
       decision: 'TOOL',
     });
-    expect(
-      await screen.findByText('Cursor: 117 items decided, 0 skipped, 0 left.'),
-    ).toBeInTheDocument();
+    const done = await screen.findByText('Cursor: 117 items decided, 0 skipped, 0 left.');
     expect(m.callsTo('GET', '/admin/overview').length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByRole('region', { name: 'PyTorch' })).toBeInTheDocument();
+    await waitFor(() => expect(done).toHaveFocus());
   });
 
   it('Scenario: linking a name to a catalog resource sends the resource for the whole group', async () => {

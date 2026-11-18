@@ -314,6 +314,7 @@
     max-height: calc(100vh - 2 * var(--space-3));
     overflow-y: auto;
     overscroll-behavior: contain;
+    scroll-padding-bottom: 10rem;
   }
   .h2-admin__detail > .h2-admin__decide {
     position: sticky;
@@ -566,7 +567,7 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--surface-tint);
-  font-size: var(--text-13);
+  font: 400 var(--text-13) / 1.45 var(--font-body);
   color: var(--ink-2);
 }
 .h2-admin__research-table {
@@ -582,7 +583,7 @@
   vertical-align: top;
 }
 .h2-admin__research-next {
-  background: var(--quote-bg);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 .h2-admin__research-now {
   color: var(--muted);
@@ -598,7 +599,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  font-size: var(--text-13);
+  font: 400 var(--text-13) / 1.45 var(--font-body);
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
@@ -669,8 +670,6 @@
 .h2-admin__reject-list li {
   padding: var(--space-2) 0;
   border-top: 1px solid var(--border);
-}
-.h2-admin__reject-list li {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: var(--space-2);
@@ -700,7 +699,7 @@
 }
 .h2-admin__trace-io {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: var(--space-3);
   margin-top: var(--space-2);
 }

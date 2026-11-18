@@ -137,6 +137,20 @@ describe('Feature: an admin keeps the list of shadow libraries no search shows (
     await waitFor(() =>
       expect(screen.getByRole('table', { name: 'Names (1 of 200)' })).toBeInTheDocument(),
     );
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Names (1 of 200)' })).toHaveFocus(),
+    );
+  });
+
+  it('Scenario: Cancel closes the review and gives focus back to the Remove button', async () => {
+    open({ 'GET /admin/shadow-libraries': () => SEED });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Names (2 of 200)' });
+    await user.click(screen.getByRole('button', { name: 'Remove z-lib' }));
+    const review = screen.getByRole('group', { name: 'Remove z-lib?' });
+    await user.click(within(review).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('group', { name: 'Remove z-lib?' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Remove z-lib' })).toHaveFocus());
   });
 
   it('Scenario: a list that cannot load offers a retry', async () => {

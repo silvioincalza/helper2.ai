@@ -1,5 +1,5 @@
 import './adminText';
-import { useCallback, useState, type FormEvent } from 'react';
+import { useCallback, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/client';
@@ -27,6 +27,14 @@ export function ShadowLibrariesPanel() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
+  const removeButtons = useRef(new Map<string, HTMLButtonElement>());
+  const listHeading = useRef<HTMLHeadingElement>(null);
+  const closeRemove = (name: string, removed: boolean) => {
+    setRemoving(null);
+    requestAnimationFrame(() =>
+      (removed ? listHeading.current : removeButtons.current.get(name))?.focus(),
+    );
+  };
 
   const all = libraries.data?.libraries ?? [];
   const max = libraries.data?.max ?? 0;
@@ -69,10 +77,11 @@ export function ShadowLibrariesPanel() {
         removeReason.trim() === '' ? null : removeReason.trim(),
       );
       setNotice({ kind: 'removed', name: removing.name });
+      closeRemove(removing.name, true);
     } catch (err) {
       setNotice(refused(err));
+      closeRemove(removing.name, false);
     } finally {
-      setRemoving(null);
       setBusy(false);
       libraries.reload();
     }
@@ -130,7 +139,7 @@ export function ShadowLibrariesPanel() {
           />
         </label>
         <div className="h2-admin__tools">
-          <button type="submit" className="btn btn-primary" disabled={busy}>
+          <button type="submit" className="btn btn-primary" aria-disabled={busy || undefined}>
             {t('admin.settings.shadow.add')}
           </button>
         </div>
@@ -154,12 +163,17 @@ export function ShadowLibrariesPanel() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={busy}
-              onClick={confirmRemove}
+              aria-disabled={busy || undefined}
+              onClick={() => void confirmRemove()}
             >
               {t('admin.settings.shadow.confirmRemove')}
             </button>
-            <button type="button" className="btn" disabled={busy} onClick={() => setRemoving(null)}>
+            <button
+              type="button"
+              className="btn"
+              aria-disabled={busy || undefined}
+              onClick={() => !busy && closeRemove(removing.name, false)}
+            >
               {t('admin.settings.shadow.cancel')}
             </button>
           </div>
@@ -178,7 +192,7 @@ export function ShadowLibrariesPanel() {
         />
       ) : (
         <section aria-labelledby="sl-list-h">
-          <h4 id="sl-list-h" className="h2-admin__h">
+          <h4 id="sl-list-h" ref={listHeading} tabIndex={-1} className="h2-admin__h">
             {t('admin.settings.shadow.listTitle', { count: all.length, max })}
           </h4>
           {all.length === 0 ? (
@@ -208,11 +222,16 @@ export function ShadowLibrariesPanel() {
                       </td>
                       <td>
                         <button
+                          ref={(el) => {
+                            if (el) removeButtons.current.set(l.name, el);
+                            else removeButtons.current.delete(l.name);
+                          }}
                           type="button"
                           className="btn"
-                          disabled={busy}
+                          aria-disabled={busy || undefined}
                           aria-label={t('admin.settings.shadow.removeLabel', { name: l.name })}
                           onClick={() => {
+                            if (busy) return;
                             setRemoving(l);
                             setRemoveReason('');
                             setNotice(null);
