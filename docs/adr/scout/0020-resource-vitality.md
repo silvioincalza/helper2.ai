@@ -77,6 +77,30 @@ the product: the next source does not get it.
    - Only `archived` is taken from a repository that a package merely links. Stars and `fork` are not: a package
      that links a famous repository would borrow its stars.
    - A repository that is no longer archived is admitted again at the next visit.
+   - **The sweep visits every record, not only the ones the Scout enriches** (`SweepRepositories`). Every
+     `H2_SCOUT_REPOSITORY_SWEEP_EVERY` (10 minutes) it takes the `H2_SCOUT_REPOSITORY_SWEEP_BATCH` (50) records
+     visited longest ago, never visited first (`JdbcRepositoryVisits.due`): a record that links a GitHub repository
+     (`repository_url`), and a record that is one (its own address is `github.com/owner/name`). One GitHub GraphQL
+     call answers for the whole batch (`GitHubRepositoryStates`); two records of one repository cost one question.
+     It runs under the cluster lock `scout-repository-sweep`, and only when the `github` source is on and has a
+     token.
+   - What the sweep stores, in `extra.vitality`: `visitedAt` on every record of the batch; `archived` and
+     `checkedAt` under the newest-wins rule above; `lastReleaseAt`; and for a fork, `parent` and `parentArchived`.
+     A name that is not `owner/name` in GitHub's own characters is never sent to GitHub.
+     The fork rule of §2 does not read the parent: a fork with stars or a recent push is already a result.
+   - **A repository GitHub does not find twice is `gone`.** The first "not found" stores only `notFoundAt`. A
+     second one at least 24 hours later stores `gone`, and only on the record that is the repository: a record
+     that merely links it (a package whose repository has no record of its own) never becomes `gone`. A source
+     that states `archived` again, or a later visit that finds the repository, removes `gone` and `notFoundAt`.
+     An answer where more than one repository in five is not found, in a batch of 10 or more, is not believed:
+     those repositories count as unanswered and get only `visitedAt`, so the sweep moves on to the next batch. The catalog search reads a `gone` record as `archived` (`ResourceRows.statedVitality`), so
+     the rule of §2 refuses it with the reason `archived`: the rule itself has no new fact. As with `archived`,
+     one such record refuses the whole resource, so a package stored on the repository's resource goes with it.
+   - A repository that gives no answer and no "not found" (blocked, or an error for that one name) gets only
+     `visitedAt`, so it does not stay first in line. A rate limit or an answer without data stores nothing: the
+     same records are due at the next tick.
+   - The sweep counts `helper2.scout.repository_sweep{outcome}` per record: `found`, `archived`, `not_found`,
+     `unanswered`; and `failed` once for a batch that stored nothing.
 
 8. **The numbers, measured on 11 Nov 2026.**
    - **Maintained within 1,095 days (36 months).** The 707 GitHub repositories of the graded results
@@ -185,8 +209,10 @@ the product: the next source does not get it.
 - A new source gets the rule by stating facts. A new fact (a yanked release, a disabled model) is one field and
   one line of the rule.
 - A resource is visited when the Scout enriches it and its records left a field unproven, inside the daily
-  budget of the gap round. A resource whose records fill every field is not visited, and the catalog is not swept:
-  an archived repository stays a result until its turn comes.
+  budget of the gap round, and by the sweep, which reaches every record with a GitHub repository in turn:
+  35,000 records at 50 every 10 minutes take about 5 days (ESTIMATE, 144 GraphQL calls a day).
+- A repository that is gone stops being a result at the second visit that does not find it, about two rounds
+  after it went. It comes back at the first visit that finds it again, up to one round later.
 - Each catalog search reads the stored facts of its rows: one more query by `resource_id` (indexed), not
   measured.
 - A stored fact is as old as its record. A Space stored as not running, or a model stored as deprecated, stays
@@ -208,7 +234,17 @@ the product: the next source does not get it.
 
 ### Known limits
 - The effect of the rank penalty on nDCG is not measured: the eval snapshots hold no dates ([S2.11.3](https://github.com/silvioincalza/helper2.ai/issues/215)).
-- The Scout visits only the resources it enriches, so an archived repository stays a result until its resource is enriched ([S2.11.4](https://github.com/silvioincalza/helper2.ai/issues/216)).
+- The sweep visits GitHub only: a record that links a repository on another host (GitLab, Codeberg) is not visited
+  and has no `visitedAt`.
+- An archived repository stays a result until the sweep reaches it: up to one full round.
+- `due` sorts every record with a GitHub repository at each tick, with no index on `visitedAt`. Not measured.
+- A renamed repository is found under its new name by GitHub, so it is not `gone`; the record keeps the old link.
+- A batch keeps its records from one round to the next. One where more than one repository in five is truly
+  gone never marks them `gone`; it shows as `outcome="unanswered"`.
+- No alert reads `helper2.scout.repository_sweep` yet: a sweep that fails every tick shows only in
+  `outcome="failed"` and a log line.
+- The lock holds for the length of one batch. With two back office replicas and a short batch, both could sweep
+  inside one interval; the chart runs one.
 - Hugging Face `gated`, npm `deprecated`, PyPI `yanked` and a product homepage that no longer answers are not read ([S2.11.3](https://github.com/silvioincalza/helper2.ai/issues/215)).
 
 ### AI architecture check
@@ -228,4 +264,3 @@ the product: the next source does not get it.
 - Decides: [F2.11](https://github.com/silvioincalza/helper2.ai/issues/41).
 - Open issues that change it:
   - [S2.11.3](https://github.com/silvioincalza/helper2.ai/issues/215): every source and collector states its vitality facts.
-  - [S2.11.4](https://github.com/silvioincalza/helper2.ai/issues/216): the Scout visits every record that has a repository link.

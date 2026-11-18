@@ -154,7 +154,8 @@ class ResourceRows {
     jdbc.sql(
             """
             SELECT resource_id,
-                   bool_or(CAST(extra -> 'vitality' ->> 'archived' AS boolean)) AS archived,
+                   bool_or(CAST(extra -> 'vitality' ->> 'archived' AS boolean)
+                           OR coalesce(CAST(extra -> 'vitality' ->> 'gone' AS boolean), false)) AS archived,
                    bool_or(CAST(extra -> 'vitality' ->> 'fork' AS boolean)) AS fork,
                    bool_or(CAST(extra -> 'vitality' ->> 'deprecated' AS boolean)) AS deprecated,
                    bool_and(CAST(extra -> 'vitality' ->> 'running' AS boolean)) AS running

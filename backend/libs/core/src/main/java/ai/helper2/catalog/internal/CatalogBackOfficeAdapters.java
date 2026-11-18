@@ -83,6 +83,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcRepositoryVisits jdbcRepositoryVisits(JdbcClient jdbc) {
+    return new JdbcRepositoryVisits(jdbc);
+  }
+
+  @Bean
   JdbcEnrichmentCandidates jdbcEnrichmentCandidates(JdbcClient jdbc) {
     return new JdbcEnrichmentCandidates(jdbc);
   }

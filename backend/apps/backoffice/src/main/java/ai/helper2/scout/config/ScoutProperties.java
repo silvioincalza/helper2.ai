@@ -3,6 +3,8 @@ package ai.helper2.scout.config;
 import ai.helper2.platform.llm.ModelTier;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -25,7 +27,14 @@ public record ScoutProperties(
     @Positive int enrichMaxTokens,
     @NotNull ModelTier enrichmentModel,
     @Valid @NotNull Evidence evidence,
-    @Valid @NotNull KnownTargets knownTargets) {
+    @Valid @NotNull KnownTargets knownTargets,
+    @Valid @NotNull RepositorySweep repositorySweep) {
+  public record RepositorySweep(
+      boolean enabled,
+      @NotNull Duration every,
+      @NotNull Duration initialDelay,
+      @Min(1) @Max(100) int batch) {}
+
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}
 
   public record Evidence(@PositiveOrZero int dailyPageReadCredits) {}

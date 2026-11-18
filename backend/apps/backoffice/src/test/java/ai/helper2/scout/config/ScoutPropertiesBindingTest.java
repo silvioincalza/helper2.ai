@@ -40,7 +40,9 @@ class ScoutPropertiesBindingTest {
                   8192,
                   ModelTier.FAST,
                   new ScoutProperties.Evidence(20),
-                  new ScoutProperties.KnownTargets(5, 25)));
+                  new ScoutProperties.KnownTargets(5, 25),
+                  new ScoutProperties.RepositorySweep(
+                      true, Duration.ofMinutes(10), Duration.ofMinutes(2), 50)));
       assertThat(c.getBean(ScoutRetentionProperties.class))
           .isEqualTo(new ScoutRetentionProperties(Duration.ofDays(90)));
     });
