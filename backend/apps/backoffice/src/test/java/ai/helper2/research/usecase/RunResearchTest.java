@@ -324,6 +324,37 @@ class RunResearchTest {
   }
 
   @Test
+  void twoTurnsOfRefusedCallsGoStraightToTheAnswer() {
+    AtomicInteger ran = new AtomicInteger();
+    String same = "{\"url\":\"https://acme.dev\"}";
+    for (String id : List.of("a", "b", "c")) {
+      model.turns.add(
+          new ResearchModel.Turn(
+              "", List.of(new ResearchModel.ToolCall(id, "read_page", same)), null, null, 1, 1));
+    }
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    research(
+            tool(
+                "read_page",
+                () -> {
+                  ran.incrementAndGet();
+                  return new ResearchTool.Output(PAGE, "https://acme.dev");
+                }))
+        .runNext();
+
+    assertThat(ran).hasValue(1);
+    assertThat(model.toolsOffered).hasSize(4);
+    assertThat(model.toolsOffered.getLast()).isEmpty();
+    assertThat(model.seen.getLast().getLast())
+        .isInstanceOfSatisfying(
+            ResearchModel.Message.User.class,
+            u -> assertThat(u.text()).isEqualTo(RunResearch.ANSWER_NOW_REFUSED));
+    assertThat(runs.error).isNull();
+  }
+
+  @Test
   void aToolPastItsOwnLimitForTheRunIsNotRun() {
     AtomicInteger ran = new AtomicInteger();
     ResearchTool search =
