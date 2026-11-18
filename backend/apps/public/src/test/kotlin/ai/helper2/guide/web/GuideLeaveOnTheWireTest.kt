@@ -35,6 +35,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.retry.RetryRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.net.Socket
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.time.Clock
@@ -164,6 +165,7 @@ class GuideLeaveOnTheWireTest {
       stream,
       thinking,
       GuideProperties.Fairness(300, 2, 12),
+      URI.create("https://registry.modelcontextprotocol.io"),
     )
 
   private val planThinks = GuideProperties.Thinking(2048, 0, 0, 0)

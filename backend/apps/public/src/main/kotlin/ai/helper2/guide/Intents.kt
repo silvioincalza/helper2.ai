@@ -208,7 +208,7 @@ object IntentRules {
     return listOf(
       Regex("(?iu)$START(?:$period)$GAP(?:$amount$GAP)?($UNIT)$END"),
       Regex("(?iu)$START$amount$GAP(?:$period)$GAP($UNIT)$END"),
-      Regex("(?iu)$START()($UNIT)$GAP(?:$period)$END"),
+      Regex("(?iu)$START(?:$amount$GAP)?($UNIT)$GAP(?:$period)$END"),
     )
   }
 
@@ -216,11 +216,19 @@ object IntentRules {
 
   private val NEWEST = anywhere("intent.newest")
 
-  private val NEW_KIND =
-    Regex(
-      "(?iu)$START(?:${alternation("intent.new-word")})$GAP" +
-        "(?:(?!(?:${alternation("intent.new-skip")})$END)[\\p{L}\\d.'-]+?$GAP)?(?:${alternation("intent.new-kind")})$END"
-    )
+  private val NEW_KIND: List<Regex> =
+    WordLists.LANGUAGES.mapNotNull { language ->
+      val newWords = IntentWords.phrasesIn(language, "intent.new-word")
+      if (newWords.isEmpty()) return@mapNotNull null
+      val skip = IntentWords.phrasesIn(language, "intent.new-skip")
+      val between =
+        if (skip.isEmpty()) "[\\p{L}\\d.'-]+?$GAP"
+        else "(?!(?:${WordLists.alternation(skip)})$END)[\\p{L}\\d.'-]+?$GAP"
+      Regex(
+        "(?iu)$START(?:${WordLists.alternation(newWords)})$GAP" +
+          "(?:$between)?(?:${alternation("intent.new-kind")})$END"
+      )
+    }
   private val ALTERNATIVES = anywhere("intent.alternatives")
   private val COMPARE = anywhere("intent.compare")
   private val WHAT_IS = atStart("intent.what-is")
@@ -248,7 +256,7 @@ object IntentRules {
       windowOf(request) != null || NEWEST.containsMatchIn(request) -> GuideIntent.NEWEST
       WHAT_IS.containsMatchIn(request) -> GuideIntent.WHAT_IS
       HOW_TO.containsMatchIn(request) -> GuideIntent.HOW_TO
-      NEW_KIND.containsMatchIn(request) -> GuideIntent.NEWEST
+      NEW_KIND.any { it.containsMatchIn(request) } -> GuideIntent.NEWEST
       else -> null
     }
 
