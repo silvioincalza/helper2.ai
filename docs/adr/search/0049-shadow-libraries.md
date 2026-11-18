@@ -105,5 +105,5 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
 ## Backlog
 
 - Features: [F3.6](https://github.com/silvioincalza/helper2.ai/issues/52) Live web: store first, daily quota per
-  feature. Decides STORY_ID (this ADR).
+  feature. Decides [#593](https://github.com/silvioincalza/helper2.ai/issues/593) S3.6.4 (this ADR).
 - Open issues that change this decision: none.
