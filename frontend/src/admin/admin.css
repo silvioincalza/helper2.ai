@@ -103,7 +103,6 @@
 .h2-admin__resource {
   min-width: 12rem;
 }
-/* The back office shows wide tables next to a detail pane: it uses more of a wide screen than the public site. */
 .h2-wrap.h2-admin__wide {
   max-width: calc(var(--content-admin) + 2 * var(--space-4));
 }
@@ -312,7 +311,6 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
-  /* Accept and Reject stay on screen while the details scroll above them. */
   .h2-admin__detail > .h2-admin__decide {
     position: sticky;
     bottom: calc(-1 * var(--space-4));
