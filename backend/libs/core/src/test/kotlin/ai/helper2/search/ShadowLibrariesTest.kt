@@ -52,6 +52,20 @@ class ShadowLibrariesTest {
     assertFalse(libraries.isShadowLibrary(host))
   }
 
+  @ParameterizedTest
+  @CsvSource(
+    "https://libgen.is/book, true",
+    "https://user@ka.libgen.is:8443/x, true",
+    "https://my_mirror.libgen.is/x, true",
+    "https://arxiv.org/abs/1, false",
+  )
+  fun `an address is hidden when its host is listed or cannot be read`(
+    address: String,
+    hidden: Boolean,
+  ) {
+    assertEquals(hidden, libraries.hides(java.net.URI.create(address)))
+  }
+
   @Test
   fun `a list read from the store holds what the store holds after each reload`() {
     val names = mutableSetOf("mirror-one")

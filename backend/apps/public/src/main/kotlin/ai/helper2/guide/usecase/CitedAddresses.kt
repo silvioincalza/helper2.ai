@@ -7,7 +7,7 @@ import ai.helper2.search.ShadowLibraries
 import java.net.URI
 
 internal fun GuideAnswer.citesAShadowLibrary(libraries: ShadowLibraries): Boolean =
-  citedAddresses().any { libraries.isShadowLibrary(it.host) }
+  citedAddresses().any(libraries::hides)
 
 private fun GuideAnswer.citedAddresses(): List<URI> =
   citedResults().flatMap { addressesOf(it) } + quotes().map { it.url }

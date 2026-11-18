@@ -53,7 +53,7 @@ constructor(
   }
 
   private fun shown(docs: List<Material>): List<Material> = docs.filterNot {
-    shadowLibraries.isShadowLibrary(it.url.host)
+    shadowLibraries.hides(it.url)
   }
 
   fun guidesLeft(client: String): SetupGuidesLeft? {

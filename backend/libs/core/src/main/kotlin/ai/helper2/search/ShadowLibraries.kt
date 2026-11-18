@@ -1,5 +1,6 @@
 package ai.helper2.search
 
+import java.net.URI
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
@@ -110,6 +111,8 @@ private constructor(first: Set<String>, private val source: () -> Set<String>) {
   private val names = AtomicReference(first)
 
   fun isShadowLibrary(host: String?): Boolean = ShadowLibraryNames.anyNames(names.get(), host)
+
+  fun hides(address: URI): Boolean = address.host == null || isShadowLibrary(address.host)
 
   fun reload() {
     names.set(source().toSet())
