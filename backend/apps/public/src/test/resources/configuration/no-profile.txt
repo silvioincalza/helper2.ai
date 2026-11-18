@@ -571,6 +571,7 @@ helper2.guide.fairness.budget-pace-slots = ${H2_GUIDE_BUDGET_PACE_SLOTS:12}  => 
 helper2.guide.fairness.client-concurrent-questions = ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}  =>  2
 helper2.guide.fairness.network-daily-questions = ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}  =>  300
 helper2.guide.heartbeat = ${H2_GUIDE_HEARTBEAT:PT15S}  =>  PT15S
+helper2.guide.judge.concurrent = ${H2_GUIDE_JUDGE_CONCURRENT:2}  =>  2
 helper2.guide.judge.daily-calls = ${H2_GUIDE_JUDGE_DAILY_CALLS:300}  =>  300
 helper2.guide.judge.model = ${H2_GUIDE_JUDGE_MODEL:}  =>  <empty>
 helper2.guide.max-candidates = ${H2_GUIDE_MAX_CANDIDATES:24}  =>  24

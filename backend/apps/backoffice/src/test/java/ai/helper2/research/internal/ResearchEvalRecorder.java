@@ -125,7 +125,12 @@ class ResearchEvalRecorder {
     }
 
     @Override
-    public List<UUID> openWithoutActiveRun(int limit) {
+    public int openResearchedDone() {
+      return 0;
+    }
+
+    @Override
+    public List<UUID> openNotResearched(int limit) {
       return List.of(label.itemId());
     }
   }
@@ -194,6 +199,18 @@ class ResearchEvalRecorder {
     @Override
     public Set<UUID> activeItems() {
       return status.active() ? Set.of(run.itemId()) : Set.of();
+    }
+
+    @Override
+    public Set<UUID> doneItems() {
+      return status == ResearchRun.Status.DONE ? Set.of(run.itemId()) : Set.of();
+    }
+
+    @Override
+    public boolean requeue(UUID runId) {
+      status = ResearchRun.Status.QUEUED;
+      steps.clear();
+      return true;
     }
 
     @Override

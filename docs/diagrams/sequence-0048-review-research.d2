@@ -1,5 +1,7 @@
 # Sequence: the admin researches one resource candidate; a worker runs the agent; the admin confirms and accepts.
-# Source of truth: docs/adr/backoffice/0048-review-research-assistant.md (the code follows in the backend pull request).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewResearchController.java,
+#   ReviewResearchEventsController.java (SSE), ai/helper2/research/internal/ResearchWorkers.java,
+#   ai/helper2/research/usecase/RunResearch.java, ai/helper2/research/CheckResearch.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0048-review-research.d2 && d2 sequence-0048-review-research.d2 sequence-0048-review-research.svg
 
 ...@style
@@ -9,8 +11,9 @@ shape: sequence_diagram
 person: "Admin" {class: person}
 ui: "Back office\n(review queue)" {class: app}
 api: "ReviewResearchController" {class: app}
+events: "ReviewResearchEventsController\n(SSE, a few streams at a time)" {class: app}
 db: "PostgreSQL\n(review_research,\nreview_research_step)" {class: data}
-worker: "ResearchWorker\n(virtual thread)" {class: app}
+worker: "ResearchWorkers\n(virtual thread)" {class: app}
 model: "Nebius model\n(tool calls)" {class: ai}
 tools: "Research tools\n(read only, through ports)" {class: app}
 check: "EvidenceValidator" {class: app}
@@ -19,7 +22,8 @@ person -> ui: "Research"
 ui -> api: "POST /admin/review-research {itemIds}"
 api -> db: "INSERT review_research QUEUED"
 api -> ui: "202 runs"
-ui -> api: "GET /admin/review-research/{itemId}/events (SSE)"
+ui -> events: "GET /admin/review-research/{runId}/events (SSE)"
+worker -> worker: "model calls left today? none: claim nothing,\nthe rows stay QUEUED"
 worker -> db: "SELECT … FOR UPDATE SKIP LOCKED → RUNNING"
 worker -> model: "the item, the tools, no evidence yet"
 worker -> db: "step 1 MODEL_CALL: request, response, tokens"
@@ -27,7 +31,8 @@ model -> worker: "call read_page(url)"
 worker -> tools: "read_page(url)"
 tools -> worker: "page text (evidence e1)"
 worker -> db: "step 2 TOOL_CALL"
-api -> ui: "event: step 1, step 2"
+events -> db: "new steps after seq, the run (once a second)"
+events -> ui: "event: step 1, step 2 (a comment line while quiet)"
 worker -> model: "e1 cleaned and escaped"
 model -> worker: "call find_package(name, npm)"
 worker -> tools: "find_package"
@@ -38,7 +43,7 @@ model -> worker: "final: verdict, attributes, citations"
 worker -> check: "each citation against e1, e2"
 check -> worker: "kept or dropped (why); status per attribute"
 worker -> db: "step 6 CHECK; review_research DONE"
-api -> ui: "event: DONE, the attribute table"
+events -> ui: "event: DONE, the attribute table; the stream ends"
 person -> ui: "Confirm, Edit or Keep each changed attribute; Accept"
 ui -> api: "PUT /admin/review-items/{id}/candidate, then resolution ACCEPTED"
 api -> db: "candidate with the confirmed values; indexed through 0038"

@@ -29,6 +29,7 @@ driven side.
 | [One guide question](diagrams/architecture-guide.svg) | AskGuide, the search it reuses, the evidence gate and the LLM layer's guards. |
 | [How the index grows](diagrams/architecture-index.svg) | Scout, its collectors, enrichment and its gap round (README, model card), and how the catalog stores and embeds. |
 | [Set it up](diagrams/architecture-setup.svg) | The setup module on a resource page: run options from the registry and the README, the tool guide, its budgets and caches. |
+| [Review research](diagrams/architecture-review-research.svg) | The research module in the back office: its ports, the agent loop, the read-only tools and the live steps. |
 | [Edge and shared services](diagrams/architecture-platform.svg) | Identity, rate limits, errors and the SPA, and the platform services every module uses, with their Redis keys and tables. |
 | [Data model](diagrams/data-model.svg) | Every PostgreSQL table with its columns, keys and delete rules, grouped by area. |
 | [Deployment](diagrams/infrastructure.svg) | The hosted helper2 on Kubernetes: hosts, namespaces, workloads, what each may reach, delivery, observability and backup. |

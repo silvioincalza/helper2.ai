@@ -38,14 +38,27 @@ class ReviewQueueResearchItems implements ResearchItems {
   }
 
   @Override
-  public List<UUID> openWithoutActiveRun(int limit) {
+  public List<UUID> openNotResearched(int limit) {
     Set<UUID> active = runs.activeItems();
+    Set<UUID> done = runs.doneItems();
     return Stream.of(ReviewQueue.Kind.RESOURCE_CANDIDATE, ReviewQueue.Kind.COURSE_CANDIDATE)
         .flatMap(k -> queue.openItems(k).stream())
         .map(ReviewQueue.Item::id)
-        .filter(id -> !active.contains(id))
+        .filter(id -> !active.contains(id) && !done.contains(id))
         .limit(limit)
         .toList();
+  }
+
+  @Override
+  public int openResearchedDone() {
+    Set<UUID> active = runs.activeItems();
+    Set<UUID> done = runs.doneItems();
+    return (int)
+        RESEARCHABLE.stream()
+            .flatMap(k -> queue.openItems(k).stream())
+            .map(ReviewQueue.Item::id)
+            .filter(id -> done.contains(id) && !active.contains(id))
+            .count();
   }
 
   ResearchSubject subject(ReviewQueue.Item item) {

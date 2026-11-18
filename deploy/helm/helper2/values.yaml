@@ -70,6 +70,7 @@ backoffice:
   scoutInitialDelay: PT20S
   scoutCron: "0 7 3 * * *"
   scoutMaxEnrichments: 200
+  researchEnabled: true
   resources:
     requests: { cpu: 250m, memory: 768Mi }
     limits: { memory: 1Gi }

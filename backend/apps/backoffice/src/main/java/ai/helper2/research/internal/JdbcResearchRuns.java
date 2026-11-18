@@ -79,6 +79,25 @@ class JdbcResearchRuns implements ResearchRuns {
   }
 
   @Override
+  public boolean requeue(UUID runId) {
+    return jdbc.sql(
+                """
+                WITH requeued AS (
+                  UPDATE review_research SET status = 'QUEUED', started_at = NULL, heartbeat_at = NULL,
+                         steps = 0, prompt_tokens = 0, completion_tokens = 0
+                   WHERE id = :id AND status = 'RUNNING'
+                  RETURNING id),
+                removed AS (
+                  DELETE FROM review_research_step WHERE research_id IN (SELECT id FROM requeued))
+                SELECT count(*) FROM requeued
+                """)
+            .param("id", runId)
+            .query(Integer.class)
+            .single()
+        == 1;
+  }
+
+  @Override
   public void step(ResearchStep s) {
     jdbc.sql(
             """
@@ -211,6 +230,20 @@ class JdbcResearchRuns implements ResearchRuns {
           case NONE -> "SELECT DISTINCT review_item_id FROM review_research";
         };
     return Set.copyOf(jdbc.sql(sql).param("verdict", filter.name()).query(UUID.class).list());
+  }
+
+  @Override
+  public Set<UUID> doneItems() {
+    return Set.copyOf(
+        jdbc.sql(
+                """
+                SELECT review_item_id FROM (
+                  SELECT DISTINCT ON (review_item_id) review_item_id, status FROM review_research
+                   ORDER BY review_item_id, requested_at DESC, id DESC) latest
+                 WHERE status = 'DONE'
+                """)
+            .query(UUID.class)
+            .list());
   }
 
   @Override

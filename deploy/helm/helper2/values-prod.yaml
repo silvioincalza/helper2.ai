@@ -34,6 +34,7 @@ backoffice:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
   adminBaseUrl: https://admin.helper2.ai
   scoutCron: "0 7 3 * * *"
+  researchEnabled: false
 backup:
   enabled: true
   timeZone: Europe/Zurich

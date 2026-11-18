@@ -42,7 +42,7 @@ class GuidePropertiesBindingTest {
                     ModelStream.OFF,
                     new GuideProperties.Thinking(0, 0, 0, 2048),
                     new GuideProperties.Fairness(300, 2, 12),
-                    new GuideProperties.Judge("", 300),
+                    new GuideProperties.Judge("", 300, 2),
                     URI.create("https://registry.modelcontextprotocol.io"))));
   }
 

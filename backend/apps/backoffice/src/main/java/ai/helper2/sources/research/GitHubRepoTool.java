@@ -83,6 +83,7 @@ public final class GitHubRepoTool implements ResearchTool {
             + r.path("pushed_at").asString("")
             + "\narchived: "
             + r.path("archived").asBoolean(false),
-        "https://github.com/" + fullName);
+        "https://github.com/" + fullName,
+        List.of("https://github.com/" + fullName));
   }
 }

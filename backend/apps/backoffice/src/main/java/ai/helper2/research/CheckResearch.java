@@ -48,6 +48,28 @@ public final class CheckResearch {
   private static final Set<String> OWN_SITE_ATTRIBUTES =
       Set.of("canonicalUrl", "title", "pricing", "description", "type", "language", "publishedAt");
 
+  private static final Map<String, Integer> SHARED_HOSTS =
+      Map.ofEntries(
+          Map.entry("github.com", 2),
+          Map.entry("gitlab.com", 2),
+          Map.entry("codeberg.org", 2),
+          Map.entry("bitbucket.org", 2),
+          Map.entry("sourceforge.net", 2),
+          Map.entry("huggingface.co", 2),
+          Map.entry("pypi.org", 2),
+          Map.entry("npmjs.com", 2),
+          Map.entry("crates.io", 2),
+          Map.entry("pkg.go.dev", 3),
+          Map.entry("medium.com", 1),
+          Map.entry("dev.to", 1),
+          Map.entry("x.com", 1),
+          Map.entry("twitter.com", 1),
+          Map.entry("youtube.com", 1),
+          Map.entry("linkedin.com", 2),
+          Map.entry("reddit.com", 2));
+
+  private static final Set<String> HUGGING_FACE_KINDS = Set.of("datasets", "spaces");
+
   private static final Pattern URL = Pattern.compile("^https://[^\\s]{4,2000}$");
   private static final Pattern DATE = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
   private static final Pattern LANGUAGE = Pattern.compile("^(simple|[a-z]{2})$");
@@ -59,7 +81,6 @@ public final class CheckResearch {
     List<String> dropped = new ArrayList<>();
     Map<String, List<Source>> kept = new LinkedHashMap<>();
     Map<String, Set<String>> proposed = new LinkedHashMap<>();
-    String ownHost = host(subject.url());
     for (Claim claim : answer.attributes()) {
       String name = claim.attribute();
       String value = claim.value() == null ? "" : claim.value().strip();
@@ -96,7 +117,7 @@ public final class CheckResearch {
                     e.url(),
                     cite.excerpt().strip(),
                     value,
-                    authoritative(name, e, ownHost)));
+                    authoritative(name, e, subject.url())));
         proposed.computeIfAbsent(name, k -> new LinkedHashSet<>()).add(value);
       }
     }
@@ -128,14 +149,87 @@ public final class CheckResearch {
     return hosts >= 2 ? Status.CONFIRMED : Status.SINGLE_SOURCE;
   }
 
-  private static boolean authoritative(String attribute, Evidence e, @Nullable String ownHost) {
+  private static boolean authoritative(String attribute, Evidence e, String subjectUrl) {
     if (REGISTRY_ATTRIBUTES.contains(attribute) && REGISTRY_TOOLS.contains(e.tool())) {
-      return true;
+      return e.recordOf().stream().anyMatch(record -> sameSite(record, subjectUrl));
     }
     return OWN_SITE_ATTRIBUTES.contains(attribute)
         && e.tool().equals("read_page")
-        && ownHost != null
-        && ownHost.equals(host(e.url()));
+        && sameSite(e.url(), subjectUrl);
+  }
+
+  static boolean sameSite(@Nullable String a, @Nullable String b) {
+    String host = host(withScheme(a));
+    if (host == null || !host.equals(host(withScheme(b)))) {
+      return false;
+    }
+    Integer segments = SHARED_HOSTS.get(host);
+    if (segments == null) {
+      return true;
+    }
+    List<String> first = segments(withScheme(a));
+    List<String> second = segments(withScheme(b));
+    if (first == null || second == null) {
+      return false;
+    }
+    int n = segments + (longerOwner(host, first) ? 1 : 0);
+    return first.size() >= n
+        && second.size() >= n
+        && first.subList(0, n).equals(second.subList(0, n));
+  }
+
+  private static boolean longerOwner(String host, List<String> segments) {
+    return switch (host) {
+      case "huggingface.co" ->
+          !segments.isEmpty() && HUGGING_FACE_KINDS.contains(segments.getFirst());
+      case "npmjs.com" ->
+          segments.size() > 1
+              && (segments.get(1).startsWith("@") || segments.get(1).startsWith("%40"));
+      default -> false;
+    };
+  }
+
+  private static @Nullable List<String> segments(@Nullable String url) {
+    if (url == null) {
+      return null;
+    }
+    String path;
+    try {
+      URI uri = URI.create(url.strip());
+      path = uri.normalize().getRawPath();
+      if (path != null && !path.equals(uri.getRawPath())) {
+        return null;
+      }
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+    if (path == null) {
+      return List.of();
+    }
+    List<String> out = new ArrayList<>();
+    for (String segment : path.split("/")) {
+      if (segment.isEmpty()) {
+        continue;
+      }
+      String s = segment.toLowerCase(Locale.ROOT);
+      if (s.equals(".")
+          || s.equals("..")
+          || s.contains("%2f")
+          || s.contains("%5c")
+          || s.contains("%2e")
+          || s.contains("\\")) {
+        return null;
+      }
+      out.add(s.endsWith(".git") ? s.substring(0, s.length() - 4) : s);
+    }
+    return out;
+  }
+
+  private static @Nullable String withScheme(@Nullable String url) {
+    if (url == null || url.isBlank() || url.contains("://")) {
+      return url;
+    }
+    return "https://" + url.strip();
   }
 
   private @Nullable String valueProblem(String name, String value) {

@@ -5,7 +5,8 @@ import { axeViolations } from '@/test/a11y';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin, settle } from '@/test/render';
-import { parseEvents } from './ResearchTracePage';
+import type { ReviewResearchRun } from '@/api/types';
+import { parseEvents, restarted } from './ResearchTracePage';
 
 const RUN = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ITEM = '11111111-1111-4111-8111-111111111111';
@@ -176,6 +177,57 @@ describe('admin: every step of a research run (ADR 0048)', () => {
     fail = false;
     await userEvent.click(screen.getByRole('button', { name: /Try again/ }));
     expect(await screen.findByText('Done')).toBeInTheDocument();
+  });
+
+  it('Scenario: a run put back in the queue shows only the steps of its new attempt', async () => {
+    let loads = 0;
+    let streams = 0;
+    const again = { ...run('RUNNING', 1), startedAt: '2026-11-19T00:00:01Z' };
+    mockApi({
+      'GET /me': () => ADMIN,
+      [`GET /admin/review-research/${RUN}`]: () => {
+        loads += 1;
+        return loads === 1
+          ? {
+              run: run('RUNNING', 1),
+              result: null,
+              steps: [step(1, 'TOOL_CALL', 'web_search', '{"query":"old"}', 'old attempt')],
+            }
+          : {
+              run: again,
+              result: null,
+              steps: [step(1, 'TOOL_CALL', 'read_page', '{"url":"new"}', 'new attempt')],
+            };
+      },
+      [`GET /admin/review-research/${RUN}/events`]: () => {
+        streams += 1;
+        const body =
+          streams === 1
+            ? `event:status\ndata:${JSON.stringify(again)}\n\n` +
+              `event:step\ndata:${JSON.stringify(step(1, 'TOOL_CALL', 'read_page', '{"url":"new"}', 'new attempt'))}\n\n`
+            : '';
+        return new Response(body, {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        });
+      },
+    });
+    renderAdmin(`/admin/review/research/${RUN}`);
+    expect(await screen.findByText('read_page')).toBeInTheDocument();
+    expect(screen.queryByText('web_search')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('list', { name: 'Steps' })).getAllByRole('listitem'),
+    ).toHaveLength(1);
+  });
+
+  it('a new attempt is a run back in the queue or one that started again', () => {
+    const running: ReviewResearchRun = { ...run('RUNNING', 2), status: 'RUNNING', verdict: null };
+    const queued: ReviewResearchRun = { ...running, status: 'QUEUED', startedAt: null };
+    expect(restarted(running, queued)).toBe(true);
+    expect(restarted(running, { ...running, startedAt: '2026-11-19T00:00:01Z' })).toBe(true);
+    expect(restarted(running, { ...running, steps: 3 })).toBe(false);
+    expect(restarted(queued, queued)).toBe(false);
+    expect(restarted(queued, running)).toBe(false);
   });
 
   it('reads server-sent events across chunks', () => {
