@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
@@ -453,6 +453,28 @@ describe('Feature: deciding review items', () => {
         'aria-disabled',
       ),
     );
+  });
+
+  it('Scenario: a second decision sent before the page redraws sends nothing', async () => {
+    let status: ReviewItem['status'] = 'OPEN';
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page(status === 'OPEN' ? [item] : []),
+      'PUT /admin/review-items/*': ({ body }) => {
+        status = (body as { status: ReviewItem['status'] }).status;
+        return { ...item, status };
+      },
+    });
+    renderAdmin('/admin/review');
+    const accept = await screen.findByRole('button', { name: /Accept/ });
+
+    act(() => {
+      fireEvent.click(accept);
+      fireEvent.click(accept);
+    });
+
+    expect(await screen.findByText('Nothing in this queue.')).toBeInTheDocument();
+    expect(m.calls.filter((c) => c.method === 'PUT')).toHaveLength(1);
   });
 
   it('Scenario: filters and the page live in the address; a new filter starts on the first page', async () => {
