@@ -443,6 +443,7 @@ object UntrustedPageText {
       !inCode &&
         !trimmed.startsWith("#") &&
         !trimmed.startsWith("|") &&
+        !trimmed.startsWith(">") &&
         WORD.findAll(trimmed).count() >= MIN_PROSE_WORDS
     }
   }

@@ -226,7 +226,7 @@ place to say that.
       `CONFLICTING`. The README is read in two parts (`UntrustedPageText.split`):
       - the opening (`kind="readme-opening"`): the first prose of the README, up to 600 characters, where its authors
         say what the resource is. It is section 0, or the first of the first three sections headed About, Overview,
-        Introduction, What is or Description; lines that are headings, code, tables, badges or under 4 words are not
+        Introduction, What is or Description; lines that are headings, code, tables, blockquotes (tips, notes, sponsored lines), badges or under 4 words are not
         prose. It may support fields, relationships and summary claims, like the record's own description;
       - the rest (`kind="readme"`), windowed to 4000 characters: fields and relationships, never summary claims. A
         claim is the model's own sentence, and in a long README it could cite any true excerpt. The opening is cut out

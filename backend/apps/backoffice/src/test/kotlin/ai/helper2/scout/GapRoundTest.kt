@@ -393,4 +393,16 @@ class GapRoundTest {
     assertTrue(parts.opening.lines().all { it in lines })
     assertTrue(lines.last() in parts.rest)
   }
+
+  @Test
+  fun `a blockquote, such as a tip or a sponsored line, is never part of the opening`() {
+    val readme =
+      "# Tool\n\n> ray.run – from idea to a production-grade server in under a minute!\n\n" +
+        opening +
+        "\n\n> Just getting started? Check out the higher-level package built on this one.\n"
+    val parts = UntrustedPageText.split(readme)
+    assertEquals(opening, parts.opening)
+    assertTrue("ray.run" in parts.rest)
+    assertTrue("Just getting started?" in parts.rest)
+  }
 }
