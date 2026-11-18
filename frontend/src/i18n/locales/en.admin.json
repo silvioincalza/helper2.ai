@@ -894,6 +894,21 @@
         "response": "Response",
         "byModel": "Written with AI",
         "stepsLabel": "Steps"
+      },
+      "invalid": {
+        "title": "Write a title of 1 to 300 characters.",
+        "type": "Use one of: PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE, AWESOME_LIST.",
+        "tags": "Write 1 to 12 tags, separated by commas: lowercase letters, digits and hyphens, each up to 40 characters.",
+        "openSource": "Write true or false.",
+        "canonicalUrl": "Write an https address.",
+        "pricing": "Use one of: FREE, FREEMIUM, PAID, OPEN_SOURCE_SELF_HOSTED.",
+        "license": "Write an SPDX id such as MIT or Apache-2.0.",
+        "audience": "Use one of: USE_AI, BUILD_WITH_AI, BOTH.",
+        "techLevel": "Use one of: BEGINNER, INTERMEDIATE, ADVANCED.",
+        "description": "Write a description of 1 to 4,000 characters.",
+        "language": "Write a two-letter language code such as en, or simple.",
+        "publishedAt": "Write a date as YYYY-MM-DD.",
+        "other": "This value cannot be saved."
       }
     }
   },
