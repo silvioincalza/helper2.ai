@@ -7,6 +7,7 @@ import ai.helper2.scout.Collector;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.PageScope;
 import ai.helper2.scout.UntrustedPageText;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
@@ -71,6 +72,7 @@ public class LiveWebEventsCollector implements Collector {
   private final ScoutLiveWebCredits credits;
   private final @Nullable EventReader reader;
   private final UndatedEvents undated;
+  private final ShadowLibraries shadowLibraries;
   private final EventQuoteGate gate = new EventQuoteGate();
   private final SourceDescriptor descriptor;
 
@@ -84,8 +86,10 @@ public class LiveWebEventsCollector implements Collector {
       int maxPages,
       ScoutLiveWebCredits credits,
       @Nullable EventReader reader,
-      UndatedEvents undated) {
+      UndatedEvents undated,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
+    this.shadowLibraries = shadowLibraries;
     this.undated = undated;
     this.resilience = resilience;
     this.interval = interval;
@@ -243,7 +247,7 @@ public class LiveWebEventsCollector implements Collector {
         .orElse(null);
   }
 
-  private static List<SourceHit> asPages(List<UndatedEvents.Page> batch, Instant now) {
+  private List<SourceHit> asPages(List<UndatedEvents.Page> batch, Instant now) {
     List<SourceHit> pages = new ArrayList<>();
     for (UndatedEvents.Page p : batch) {
       CanonicalUrl canonical = CanonicalUrl.of(p.url());
@@ -253,7 +257,9 @@ public class LiveWebEventsCollector implements Collector {
       } catch (IllegalArgumentException e) {
         continue;
       }
-      if (canonical == null || PageScope.plainUrlProblem(url) != null) {
+      if (canonical == null
+          || PageScope.plainUrlProblem(url) != null
+          || shadowLibraries.isShadowLibrary(canonical.getHost())) {
         continue;
       }
       pages.add(
@@ -308,7 +314,8 @@ public class LiveWebEventsCollector implements Collector {
         List<SourceHit> found = new ArrayList<>();
         for (JsonNode r : root.path("results")) {
           SourceHit hit =
-              TavilySource.toHit(r, ID, now, found.size(), ResourceType.EVENT, Set.of());
+              TavilySource.toHit(
+                  r, ID, now, found.size(), ResourceType.EVENT, Set.of(), shadowLibraries);
           if (hit != null && PageScope.plainUrlProblem(hit.getUrl()) == null) {
             found.add(hit.withFacts(Map.of("query", query)));
           }
@@ -414,7 +421,7 @@ public class LiveWebEventsCollector implements Collector {
     return new Reading(events, processed);
   }
 
-  private static Optional<SourceHit> eventSiteOfPost(
+  private Optional<SourceHit> eventSiteOfPost(
       JsonNode r, Map<String, SourceHit> byUrl, Instant now) {
     CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
     SourceHit post = url == null ? null : byUrl.get(url.getValue());
@@ -423,6 +430,7 @@ public class LiveWebEventsCollector implements Collector {
       return Optional.empty();
     }
     return LinkedInPosts.eventSite(raw)
+        .filter(site -> !shadowLibraries.isShadowLibrary(site.getHost()))
         .map(site -> {
           Map<String, Object> facts = new LinkedHashMap<>(post.getFacts());
           facts.put("linkedFrom", post.getCanonicalUrl().getValue());

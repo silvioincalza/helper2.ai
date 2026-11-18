@@ -1,7 +1,8 @@
 # Flowchart: the reason check that runs after GuideValidator, and the verdict each kept pick gets.
 # Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/ReasonCheckStep.kt (verdicts), guide/Guide.kt (ReasonCheck, GuideValidator.namesUnstatedSecret), guide/HostileText.kt (SecretWords), guide/steps/PickAnswer.kt (shownToUser), guide/GuideCost.kt (GuideAnswerCache.isCacheable),
 #   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (verifyReasons),
-#   backend/apps/public/src/main/resources/prompts/guide/verify-reasons.txt, security.txt.
+#   backend/apps/public/src/main/resources/prompts/guide/verify-reasons.txt, security.txt, need-input.txt,
+#   guide/GuideJudge.kt, guide/internal/SpringAiGuideJudge.java, guide/internal/GuideConfiguration.java (guideJudge).
 # Render: cd docs/diagrams && d2 fmt flow-0031-guide-reason-check.d2 && d2 flow-0031-guide-reason-check.d2 flow-0031-guide-reason-check.svg
 
 ...@style
@@ -27,6 +28,8 @@ notChecked: "NOT_CHECKED (also when the\nquestion ran out of time):\nUI says it 
 event: "event: checked\n(supported, removed, notChecked)" {class: config}
 shown: "First 3 picks still in,\nin the model's order\n(spares are no rejection)" {class: app}
 cache: "Answer cached only when\nno AI pick is NOT_CHECKED" {class: data}
+judgeOn: "Judge model set?\n(H2_GUIDE_JUDGE_MODEL,\nstaging only)" {class: decision}
+judge: "Background thread: fact and\nrelevance evaluators per claim,\nown daily cap; counts\nhelper2.guide.judge" {class: ai}
 
 kept -> anyKept
 anyKept -> skip: no
@@ -51,5 +54,8 @@ notChecked -> event
 secretOnly -> removed: yes
 secretOnly -> allNot: no
 allNot -> event
-event -> shown
+event -> judgeOn
+judgeOn -> shown: "no (prod)"
+judgeOn -> judge: yes {class: ai-call}
+judgeOn -> shown: "yes: does not wait"
 shown -> cache

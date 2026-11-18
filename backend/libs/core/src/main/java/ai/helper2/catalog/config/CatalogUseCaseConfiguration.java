@@ -10,6 +10,7 @@ import ai.helper2.catalog.usecase.ListRecentResources;
 import ai.helper2.catalog.usecase.ListUpcomingEvents;
 import ai.helper2.catalog.usecase.ReportIssue;
 import ai.helper2.search.DescribedSource;
+import ai.helper2.search.ShadowLibraries;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,9 @@ import org.springframework.context.annotation.Configuration;
 class CatalogUseCaseConfiguration {
 
   @Bean
-  ResourceCards resourceCards(Resources resources, List<DescribedSource> sources) {
-    return new ResourceCards(resources, sources);
+  ResourceCards resourceCards(
+      Resources resources, List<DescribedSource> sources, ShadowLibraries shadowLibraries) {
+    return new ResourceCards(resources, sources, shadowLibraries);
   }
 
   @Bean

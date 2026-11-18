@@ -102,10 +102,6 @@ code {
   padding-bottom: var(--space-7);
   outline: none;
 }
-.page-loading {
-  min-height: 100dvh;
-  margin: 0;
-}
 
 :focus-visible {
   outline: 3px solid var(--focus);

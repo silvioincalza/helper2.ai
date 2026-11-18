@@ -45,12 +45,13 @@ function open(handlers: Parameters<typeof mockApi>[0]) {
     'GET /admin/config': () => ({ groups: [] }),
     'GET /admin/runtime-settings': () => ({ overridesActive: 0, settings: [] }),
     'GET /admin/discovery-hosts': () => ({ max: 500, hosts: [] }),
+    'GET /admin/shadow-libraries': () => ({ max: 200, libraries: [] }),
     ...handlers,
   });
   return { api, ...renderAdmin('/admin/settings') };
 }
 
-describe('Feature: an admin manages the vendors and services a relationship may name (ADR 0019)', () => {
+describe('Feature: an admin manages the vendors, services and tools a relationship may name (ADR 0019)', () => {
   it('Scenario: the two lists show each name with its other names and its relationships', async () => {
     const { container } = open({ 'GET /admin/known-targets': () => SEED });
 
@@ -76,7 +77,7 @@ describe('Feature: an admin manages the vendors and services a relationship may 
     });
     const user = userEvent.setup();
     await screen.findByRole('table', { name: 'Services (1)' });
-    const form = screen.getByRole('form', { name: 'Add a vendor or a service' });
+    const form = screen.getByRole('form', { name: 'Add a vendor, a service or a tool' });
 
     await user.selectOptions(within(form).getByRole('combobox', { name: 'Kind' }), 'SERVICE');
     await user.type(within(form).getByRole('textbox', { name: 'Name' }), ' GitHub ');
@@ -102,7 +103,7 @@ describe('Feature: an admin manages the vendors and services a relationship may 
     });
     const user = userEvent.setup();
     await screen.findByRole('table', { name: 'Vendors (1)' });
-    const form = screen.getByRole('form', { name: 'Add a vendor or a service' });
+    const form = screen.getByRole('form', { name: 'Add a vendor, a service or a tool' });
 
     await user.click(within(form).getByRole('button', { name: 'Add name' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a name');
@@ -194,7 +195,7 @@ describe('Feature: an admin manages the vendors and services a relationship may 
     await user.click(within(review).getByRole('button', { name: 'Remove name' }));
 
     expect(await screen.findByText('Removed: Slack.')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText('None yet.')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText('None yet.')).toHaveLength(2));
   });
 
   it('Scenario: a list that cannot load offers a retry', async () => {
@@ -203,7 +204,7 @@ describe('Feature: an admin manages the vendors and services a relationship may 
         new Response('{}', { status: 500, headers: { 'content-type': 'application/json' } }),
     });
     expect(
-      await screen.findByText('Could not load the known vendors and services.'),
+      await screen.findByText('Could not load the known vendors, services and tools.'),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /try again/i }).length).toBeGreaterThan(0);
   });

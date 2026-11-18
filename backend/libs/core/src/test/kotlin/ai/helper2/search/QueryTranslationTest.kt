@@ -233,6 +233,161 @@ class QueryTranslationTest {
   }
 
   @Test
+  fun `an answer that echoes the query, punctuation aside, is no translation`() {
+    val (_, out) =
+      run("¿herramienta para traducir documentos?") { _, _ ->
+        "Herramienta para traducir documentos"
+      }
+    assertNull(out.interpretation.translation)
+  }
+
+  @Test
+  fun `an answer about the query instead of a query is refused`() {
+    val (q, out) =
+      run("herramienta para traducir documentos") { _, _ -> "The query is already in English." }
+    assertNull(out.interpretation.translation)
+    assertTrue(q.requiredVariants.none { "english" in it })
+  }
+
+  @Test
+  fun `a translation about words that cannot be translated is kept`() {
+    val (q, out) =
+      run("parole che non possono essere tradotte") { _, _ -> "Words that cannot be translated" }
+    assertEquals("words that cannot be translated", out.interpretation.translation)
+    assertEquals("words that cannot be translated", q.requiredVariants.first())
+  }
+
+  @Test
+  fun `answers that say no translation is needed are refused`() {
+    for (answer in
+      listOf(
+        "No translation required.",
+        "\"The query is in English.\"",
+        "This cannot be translated.",
+        "It is already in English",
+        "The query cannot be translated.",
+        "Sorry, this cannot be translated.",
+        "I cannot translate this.",
+        "I'm unable to translate this query",
+        "Unable to translate.",
+      )) {
+      val (q, out) = run("herramienta para traducir documentos") { _, _ -> answer }
+      assertNull(out.interpretation.translation, answer)
+      assertNull(q.translation, answer)
+    }
+  }
+
+  private fun assertRefused(text: String, language: String, answers: List<String>) {
+    for (answer in answers) {
+      val calls = AtomicInteger()
+      val (q, out) =
+        run(text) { _, _ ->
+          calls.incrementAndGet()
+          answer
+        }
+      assertEquals(language, q.language, answer)
+      assertEquals(1, calls.get(), answer)
+      assertNull(out.interpretation.translation, answer)
+      assertNull(q.translation, answer)
+    }
+  }
+
+  private fun assertKept(text: String, language: String, answer: String) {
+    val (q, out) = run(text) { _, _ -> answer }
+    assertEquals(language, q.language)
+    assertEquals(answer.lowercase(), out.interpretation.translation)
+  }
+
+  @Test
+  fun `an Italian answer that says no translation is needed is refused`() {
+    assertRefused(
+      "uno strumento per tradurre i documenti",
+      "it",
+      listOf(
+        "Nessuna traduzione necessaria.",
+        "La query è già in inglese.",
+        "Mi dispiace, non posso tradurre questa query.",
+        "Questo testo non ha bisogno di traduzione",
+        "L'input è in inglese.",
+        "Non può essere tradotta.",
+      ),
+    )
+  }
+
+  @Test
+  fun `a translation that quotes Italian words of regret is kept`() {
+    assertKept("uno strumento per tradurre i documenti", "it", "How to say mi dispiace in English")
+  }
+
+  @Test
+  fun `a German answer that says no translation is needed is refused`() {
+    assertRefused(
+      "Werkzeug zum Übersetzen von Dokumenten",
+      "de",
+      listOf(
+        "Keine Übersetzung nötig.",
+        "Die Anfrage ist bereits auf Englisch.",
+        "Es tut mir leid, ich kann das nicht übersetzen.",
+        "Dieser Text muss nicht übersetzt werden",
+        "Leider kann ich das nicht übersetzen.",
+      ),
+    )
+  }
+
+  @Test
+  fun `a translation that quotes German words of regret is kept`() {
+    assertKept("Werkzeug zum Übersetzen von Dokumenten", "de", "How to say leider in English")
+  }
+
+  @Test
+  fun `a Spanish answer that says no translation is needed is refused`() {
+    assertRefused(
+      "herramienta para traducir documentos",
+      "es",
+      listOf(
+        "Lo siento, no puedo traducir.",
+        "La consulta ya está en inglés.",
+        "Este texto no necesita traducción",
+        "No es necesario traducir.",
+        "No puedo traducir esta consulta.",
+      ),
+    )
+  }
+
+  @Test
+  fun `a translation that quotes Spanish words of regret is kept`() {
+    assertKept("herramienta para traducir documentos", "es", "How to say lo siento in English")
+  }
+
+  @Test
+  fun `a French answer that says no translation is needed is refused`() {
+    assertRefused(
+      "outil pour traduire des documents",
+      "fr",
+      listOf(
+        "Aucune traduction nécessaire.",
+        "La requête est déjà en anglais.",
+        "Désolé, je ne peux pas traduire cette requête.",
+        "Ce texte n'a pas besoin de traduction",
+        "C'est en anglais.",
+        "Déjà en anglais",
+      ),
+    )
+  }
+
+  @Test
+  fun `a translation that quotes French words of regret is kept`() {
+    assertKept("outil pour traduire des documents", "fr", "How to say désolé in English")
+  }
+
+  @Test
+  fun `a translation that asks to translate is kept`() {
+    val (q, _) =
+      run("herramienta para traducir documentos") { _, _ -> "Translate documents to English" }
+    assertEquals("translate documents to english", q.requiredVariants.first())
+  }
+
+  @Test
   fun `keyword sources search the content words of the translation (ADR 0029)`() {
     val (q, _) =
       run("biblioteca para crear agentes de ia") { _, _ -> "Library to create AI agents" }

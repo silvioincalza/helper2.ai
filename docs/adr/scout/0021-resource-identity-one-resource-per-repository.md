@@ -47,6 +47,13 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
      (`@ai-sdk/openai` under `vercel/ai`, `langchain-openai` under `langchain-ai/langchain`, `firecrawl-mcp` under
      `firecrawl/firecrawl-mcp-server`).
 
+   An official npm or PyPI package whose scope and name do not say where it belongs joins the repository the
+   curated join list names (`catalog/repository-joins.properties`: `openai` on PyPI under `openai/openai-python`,
+   `torch` under `pytorch/pytorch`, `mcp` under `modelcontextprotocol/python-sdk`), whatever repository it states.
+   The list is read before the rule and is keyed on the package page, its PyPI name read as PyPI reads it
+   (`Google_GenAI` is `google-genai`). It holds only joins the rule refuses: `RepositoryJoinTest` fails on an entry
+   the rule already makes. It is code, so a change is a pull request and changes the ranking fingerprint.
+
    Any other record does not join: a package whose scope is not the repository's owner and whose name does not
    hold the repository's telling words (`alpha-go` stating `lazy-punk/ml-utils`) is a resource of its own. A joined record
    takes the repository's address as its resource's identity; every other record takes its own. `ResultMerger`
@@ -96,8 +103,9 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 ### Code
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt` — the canonical URL and
   the id.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/RepositoryJoin.kt` (`of`) — whether a record joins the
-  repository it states.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/RepositoryJoin.kt` (`of`, `byRule`, `CURATED`) — whether
+  a record joins the repository it states, or the one the curated join list names.
+- `backend/libs/core/src/main/resources/catalog/repository-joins.properties` — the curated join list.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/PlatformBuild.kt` — a build for one system; read by
   `NpmSource` and `PackageSelection`.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`joiningRepositories`, `group`,
@@ -151,8 +159,10 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 - A collection repository of MCP servers is one result per server, each with a link to the repository; a
   repository with one server is one result.
 - A package that only states someone else's repository is a result of its own, not the original.
-- No data migration: a record follows its resource (§6), so the next write of a server or a package moves its
-  record to the resource the rule names.
+- No SQL data migration: a record follows its resource (§6), so the next write of a server or a package moves its
+  record to the resource the rule names. A source read with a checkpoint (`updated_since`) writes again only what
+  changed upstream, so after a change to the rule its full pass is started again by deleting its row in
+  `source_cursor`.
 - Download counts of several packages are kept per record and one is shown.
 - The id of a repository can be computed from its address alone, in Kotlin and in SQL.
 
@@ -177,12 +187,11 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 - A fork or a copy whose name holds the repository's name still joins it (`vllm-npu` under `vllm-project/vllm`,
   `divyanx-transformers` under `huggingface/transformers`), and a short repository name is held by many package
   names (`ai-toolkit` joins `vercel/ai`).
-- An official package without a scope whose name does not hold the repository's name is a result of its own: `openai`
-  under `openai/openai-python`, `torch` under `pytorch/pytorch`, `mcp` under `modelcontextprotocol/python-sdk`. The
-  collectors do not read who publishes a package (no personal data, [0017](0017-pypi-through-bigquery.md)), so the
-  owner of an unscoped package is unknown.
-- A record that does not join its repository does not reach the admin review list, and an admin cannot join it by
-  hand (S2.10.6).
+- An official package without a scope whose name does not hold the repository's name joins only when it is on the
+  curated join list. The collectors do not read who publishes a package (no personal data,
+  [0017](0017-pypi-through-bigquery.md)); S2.10.7 reads the repository that built it from its provenance.
+- A record that does not join its repository does not reach the admin review list, and an admin joins it only by
+  adding it to the curated join list in a pull request (S2.10.6: the review list).
 - A registry server whose telling words are all in a collection repository's name, or the other way round, joins
   it (`airtable` under `acme/airtable-tools`); about 4% of the servers of repositories with five or more (staging,
   16 Nov 2026).
@@ -195,8 +204,8 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 
 ## Backlog
 - Decides: [F2.10](https://github.com/silvioincalza/helper2.ai/issues/40), S2.10.5 (each MCP server of a
-  collection repository, and a stranger's package, as a result of its own).
+  collection repository, and a stranger's package, as a result of its own), S2.10.9 (the curated join list).
 - Open issues that change it:
   - [S2.10.3](https://github.com/silvioincalza/helper2.ai/issues/360): a source record stays with its resource.
   - S2.10.6: a refused package join on the admin review list, and accepting it joins.
-  - S2.10.7: an official package without a scope joins its repository by its publisher.
+  - S2.10.7: an official package without a scope joins the repository its provenance names.

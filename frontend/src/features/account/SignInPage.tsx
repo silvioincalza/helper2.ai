@@ -7,6 +7,7 @@ import { useMe } from '@/context/MeContext';
 import { useTitle } from '@/hooks/useTitle';
 import { rememberSignInReturn } from '@/lib/signInReturn';
 import '../pages/text.css';
+import { Loading, Skeleton, SkeletonBar } from '@/ui/Skeleton';
 
 function useReturnPath(): string {
   const state = useLocation().state as Partial<SignInFrom> | null;
@@ -47,9 +48,13 @@ function Ways() {
   const back = useReturnPath();
   if (!loaded)
     return (
-      <p role="status" className="h2-card">
-        {t('common.loading')}
-      </p>
+      <Loading className="h2-card">
+        <Skeleton>
+          <SkeletonBar size="title" width="half" />
+          <SkeletonBar size="control" width="full" />
+          <SkeletonBar size="control" width="full" />
+        </Skeleton>
+      </Loading>
     );
   if (me.authenticated)
     return (

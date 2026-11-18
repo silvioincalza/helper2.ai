@@ -7,6 +7,7 @@ import { Robots } from '@/shell/Robots';
 import { useTitle } from '@/hooks/useTitle';
 import { clockTime } from '@/lib/format';
 import '../pages/text.css';
+import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 function RadarMotionSetting({ on, onSaved }: { on: boolean; onSaved: () => void }) {
   const { t } = useTranslation();
@@ -143,7 +144,24 @@ function Account() {
     return undefined;
   }, [confirming]);
 
-  if (!loaded) return <p role="status">{t('common.loading')}</p>;
+  if (!loaded)
+    return (
+      <div className="h2-prose h2-text-page h2-account">
+        <Loading>
+          <Skeleton>
+            <SkeletonBar size="heading" width="half" />
+            <SkeletonRows
+              rows={3}
+              bars={[
+                { size: 'title', width: 'short' },
+                { size: 'body', width: 'wide' },
+              ]}
+              roomy
+            />
+          </Skeleton>
+        </Loading>
+      </div>
+    );
   if (!me.authenticated) {
     return (
       <div className="h2-prose h2-text-page h2-account">

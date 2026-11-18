@@ -4,6 +4,7 @@ import ai.helper2.search.DescribedSource;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceContext;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.CanonicalUrl;
@@ -24,11 +25,14 @@ public class ResourceCards {
 
   private final Resources store;
   private final List<DescribedSource> sources;
+  private final ShadowLibraries shadowLibraries;
   private final ResultMerger merger = new ResultMerger();
 
-  public ResourceCards(Resources store, List<DescribedSource> sources) {
+  public ResourceCards(
+      Resources store, List<DescribedSource> sources, ShadowLibraries shadowLibraries) {
     this.store = store;
     this.sources = sources;
+    this.shadowLibraries = shadowLibraries;
   }
 
   public List<MergedResult> cardsOf(List<UUID> ids) {
@@ -43,10 +47,19 @@ public class ResourceCards {
     for (UUID id : ids) {
       ResourceRow row = rows.get(id);
       if (row != null) {
-        card(row, records.getOrDefault(id, List.of())).ifPresent(out::add);
+        shownCard(row, records.getOrDefault(id, List.of())).ifPresent(out::add);
       }
     }
     return out;
+  }
+
+  public Optional<MergedResult> shownCard(ResourceRow row, List<RecordRow> records) {
+    return card(row, records).filter(card -> !isOnAShadowLibrary(card));
+  }
+
+  private boolean isOnAShadowLibrary(MergedResult card) {
+    return shadowLibraries.isShadowLibrary(card.getCanonicalUrl().getHost())
+        || shadowLibraries.isShadowLibrary(card.getUrl().getHost());
   }
 
   public Optional<MergedResult> card(ResourceRow row, List<RecordRow> records) {

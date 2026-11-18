@@ -3,6 +3,7 @@ package ai.helper2.sources.liveweb.scout;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CollectorIds;
@@ -39,6 +40,7 @@ public class LiveWebNewsCollector implements Collector {
   private final List<String> queries;
   private final SourceDescriptor descriptor;
   private final ScoutLiveWebCredits credits;
+  private final ShadowLibraries shadowLibraries;
 
   public LiveWebNewsCollector(
       SourceSettings settings,
@@ -47,8 +49,10 @@ public class LiveWebNewsCollector implements Collector {
       Resilience resilience,
       RunInterval interval,
       List<String> queries,
-      ScoutLiveWebCredits credits) {
+      ScoutLiveWebCredits credits,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
+    this.shadowLibraries = shadowLibraries;
     this.credits = credits.forFeature(FEATURE);
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -98,7 +102,7 @@ public class LiveWebNewsCollector implements Collector {
       }
       JsonNode root = search(requestBody(query, since, perQuery));
       for (JsonNode r : root.path("results")) {
-        SourceHit hit = TavilySource.toHit(r, ID, startedAt, byUrl.size());
+        SourceHit hit = TavilySource.toHit(r, ID, startedAt, byUrl.size(), shadowLibraries);
         if (hit != null) {
           byUrl.putIfAbsent(hit.getExternalId(), hit);
         }

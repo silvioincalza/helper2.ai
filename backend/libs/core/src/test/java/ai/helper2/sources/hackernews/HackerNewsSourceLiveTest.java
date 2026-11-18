@@ -5,6 +5,7 @@ import static ai.helper2.sources.SourceFixtures.liveHttp;
 import static ai.helper2.sources.SourceFixtures.query;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceHit;
 import java.time.Clock;
 import java.util.List;
@@ -17,7 +18,11 @@ class HackerNewsSourceLiveTest {
   @Test
   void searchFindsStoriesThatLinkAPage() {
     HackerNewsSource source =
-        new HackerNewsSource(live("https://hn.algolia.com", null), liveHttp(), Clock.systemUTC());
+        new HackerNewsSource(
+            live("https://hn.algolia.com", null),
+            liveHttp(),
+            Clock.systemUTC(),
+            ShadowLibraries.of("z-lib"));
 
     List<SourceHit> hits = source.search(query("llm"));
 

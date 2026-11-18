@@ -11,7 +11,8 @@ import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';
-import { AdminEmpty, AdminLoading } from './AdminHead';
+import { AdminEmpty } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { Pagination } from './Pagination';
 import { ExistingPicker } from './RelationshipTarget';
 
@@ -47,6 +48,8 @@ export function RelationshipGroups({
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState('');
+  const doneLine = useRef<HTMLParagraphElement>(null);
+  const focusDone = useRef(false);
   const list = groups.data?.items ?? [];
   const selected = list.find((g) => g.key === selectedKey) ?? list[0];
   const total = groups.data?.total ?? 0;
@@ -59,6 +62,12 @@ export function RelationshipGroups({
     movedFrom.current = page;
     onPage(lastPage);
   }, [pastTheEnd, page, lastPage, onPage]);
+
+  useEffect(() => {
+    if (groups.loading || !focusDone.current) return;
+    focusDone.current = false;
+    doneLine.current?.focus();
+  }, [groups.loading]);
 
   const decide = async (group: Group, decision: Omit<Decision, 'key'>) => {
     if (busy) return;
@@ -75,6 +84,7 @@ export function RelationshipGroups({
         }),
       );
       setLinking(false);
+      focusDone.current = true;
       const at = list.indexOf(group);
       setSelectedKey((list[at + 1] ?? list[at - 1])?.key);
       groups.reload();
@@ -86,23 +96,41 @@ export function RelationshipGroups({
     }
   };
 
-  if (groups.loading || pastTheEnd) return <AdminLoading command={COMMAND} />;
+  const doneStatus = (
+    <p ref={doneLine} tabIndex={-1} className="h2-admin__bulk-result">
+      {done}
+    </p>
+  );
+  if (groups.loading || pastTheEnd)
+    return (
+      <>
+        {doneStatus}
+        <TableSkeleton />
+      </>
+    );
   if (groups.error !== undefined)
     return (
-      <StatePanel
-        tone="error"
-        level={3}
-        title={t('admin.loadError')}
-        next={<RetryButton onClick={groups.reload} />}
-      />
+      <>
+        {doneStatus}
+        <StatePanel
+          tone="error"
+          level={3}
+          title={t('admin.loadError')}
+          next={<RetryButton onClick={groups.reload} />}
+        />
+      </>
     );
-  if (!selected) return <AdminEmpty command={COMMAND} text={t('admin.queueEmpty')} />;
+  if (!selected)
+    return (
+      <>
+        {doneStatus}
+        <AdminEmpty command={COMMAND} text={t('admin.queueEmpty')} />
+      </>
+    );
 
   return (
     <>
-      <p role="status" className="h2-admin__bulk-result">
-        {done}
-      </p>
+      {doneStatus}
       <div className="h2-admin__review">
         <ScrollBox label={t('admin.groups.title')}>
           <table className="h2-table h2-admin__table h2-admin__list">
@@ -183,6 +211,14 @@ export function RelationshipGroups({
               onClick={() => void decide(selected, { decision: 'SERVICE' })}
             >
               {t('admin.groups.service', { count: selected.items })}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-disabled={busy || undefined}
+              onClick={() => void decide(selected, { decision: 'TOOL' })}
+            >
+              {t('admin.groups.tool', { count: selected.items })}
             </button>
             <button
               type="button"

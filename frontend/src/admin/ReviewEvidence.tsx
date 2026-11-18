@@ -10,6 +10,7 @@ import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { formatDate, localDay, safeHref } from '@/lib/format';
 import { FieldCuration } from './FieldCuration';
 import { RelationshipTarget } from './RelationshipTarget';
+import { Loading, Skeleton, SkeletonRows } from '@/ui/Skeleton';
 
 const VERIFICATION_TONE: Record<Verification, StatusTone> = {
   CONFLICTING: 'warn',
@@ -43,9 +44,19 @@ export function ReviewEvidencePanel({
         {t('admin.evidence.title')}
       </h4>
       {evidence.loading ? (
-        <p role="status" className="muted">
-          {t('admin.evidence.loading')}
-        </p>
+        <Loading label={t('admin.evidence.loading')}>
+          <Skeleton>
+            <SkeletonRows
+              rows={2}
+              bars={[
+                { size: 'meta', width: 'short' },
+                { size: 'small', width: 'full' },
+                { size: 'small', width: 'wide' },
+              ]}
+              ruled
+            />
+          </Skeleton>
+        </Loading>
       ) : evidence.error !== undefined || !evidence.data ? (
         <StatePanel
           tone="error"

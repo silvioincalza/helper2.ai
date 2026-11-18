@@ -5,6 +5,11 @@ from them. Each journey names its states (empty, loading, partial, error, succes
 stories that build it. The success criteria at the end say which tests verify each journey. The decisions are in
 [the ADRs](adr/README.md).
 
+Every loading state is a skeleton in the shape of what comes next, so little moves when it arrives. It shows only
+after 180 ms, so a fast load does not flash, and it does not pulse under reduced motion. A screen reader hears one
+"Loading…" (or the part's own words) and never the skeleton. A part that keeps its content on screen while it reloads
+(the results, the admin Overview, the shadow libraries) shows no skeleton over it.
+
 ## Personas
 
 | Persona | Looks for | Goal | Vocabulary | Main risk |
@@ -40,12 +45,12 @@ stories that build it. The success criteria at the end say which tests verify ea
 
 | Variant | Behavior |
 |---|---|
-| Loading | The first search shows skeleton rows and one "Searching the listed sources…" line; a later search keeps the previous results on screen, at full contrast, under the same line until the new ones arrive. |
+| Loading | The first search shows skeleton rows of the list's shape and one "Searching the listed sources…" line; a later search keeps the previous results on screen, at full contrast, under the same line until the new ones arrive. |
 | Success | Aggregated, deduplicated results; every configured source listed with outcome. |
 | Empty | "No results from the sources searched" + the list of sources + suggestions: remove filters, ask the guide, "Try different or fewer words." Never "nothing exists". |
 | Partial | One quiet line under the heading, no banner: "2 of 5 sources did not answer · Which?". On a phone (up to 520px) it is shorter, "2 sources did not answer · Which? · Try again", so it stays on one line; up to 359px Which? and Try again go together on the line below. **Which?** lists those sources and why, in words: took too long, returned an error, paused after a rate limit, paused after repeated errors, busy. **Try again** shows only when a retry can help (an error, a timeout, a busy source); never while a source is paused or its circuit is open. The line is not announced to screen readers: it is read with the heading. Coverage marked `partial`. A source that is paused or failing counts as queried; a source left out on purpose (disabled, no web credits left) does not, and its tile says why. This line and the one under the results use the same two numbers. |
 | Stale cache | Source failed live but a recent cached response exists: results shown, badge "cached 14 min ago — live check failed". |
-| Found only in a list | A result whose own text does not match but an awesome list's words around it do ([ADR 0023](adr/search/0023-catalog-full-text-index.md)) ranks below direct matches and shows one small muted line under its text: "Found in owner/awesome-llm under Tools > Vector databases". No AI label: it is the list's own words. A list itself can be a result (type Article), found by its headings. |
+| Found only in a list | A result whose own text does not match but an awesome list's words around it do ([ADR 0023](adr/search/0023-catalog-full-text-index.md)) ranks below direct matches and shows one small muted line under its text: "Found in owner/awesome-llm under Tools > Vector databases". No AI label: it is the list's own words. A list itself can be a result (type Awesome list), found by its headings. |
 | All failed / API down | A prominent error state: "No source responded", not an empty result; no fake results. It offers Try again, except when every source is paused (a retry cannot help then), and a link to the Sources page. |
 | Rate-limited | Source marked RATE_LIMITED (not hidden), others continue. |
 | Invalid input | A query longer than 200 characters is cut to 200 in the URL and the request (the guide takes 3–500); an empty box plus Enter returns to the empty home page. The **Search** button is never disabled: pressed with an empty box, it puts the cursor in the box and says "Type what you need first." under it (read as the box's description and as a polite status), and searches nothing. The API answers an invalid `q` with 400 problem+json. |
@@ -68,7 +73,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | The results show at once; the picks bar above them says the guide is reading. |
+| Loading | The results show at once; the picks bar above them says the guide is reading, with skeleton lines where the picks will be. |
 | Success | The picks in the bar, each with its reason (labelled AI-written) and its quote, checked word for word; a comparison or a "what it is" answer shows open. |
 | Empty | Nothing fits: the bar says why in one line and offers **Ask without “…”** and **Rephrase**. |
 | Partial | Not specified. |
@@ -88,7 +93,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | Category says that the names are loading. |
+| Loading | Category shows skeleton lines where the names will be; a screen reader hears "Loading categories…". |
 | Success | Each facet with its counts and a **Not stated** bucket; the list in the chosen order, unknown dates last. |
 | Empty | The filters produce zero results: the empty state lists the active filters with one-click removal. |
 | Partial | As in UJ-1: the line under the heading says which sources did not answer. |
@@ -107,7 +112,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | Not specified. |
+| Loading | Skeleton sections in the shape of the page. Opened from a list, the title shows at once and only the rest waits. **Set it up** shows skeleton steps under "Reading its documentation… (up to half a minute)". |
 | Success | The user can answer "who says so, and when?" for every displayed fact. |
 | Empty | A fact no source states is not shown as a fact: one line says "Not stated by any source: pricing, platforms". No AI summary: one line says so and why. |
 | Partial | Sources disagree: "Sources disagree on license: MIT (GitHub) vs Apache-2.0 (npm)", never silently resolved. |
@@ -140,7 +145,7 @@ Changing the words in the box searches again and drops the old question with its
 
 | State | Behavior |
 |---|---|
-| Loading | Not specified. |
+| Loading | Signed in, skeleton rows of the list while the saved items load. |
 | Success | The resource is on **Saved**; signed in, saved items follow the account across devices. |
 | Empty | Not specified. |
 | Partial | The merge into the account fails: the browser's items stay on screen with **Try again**. |
@@ -158,11 +163,11 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
 
 **Failure case:** sign-in fails or the provider is down → the user lands back with `?signin=failed`, and the page says "Sign-in did not work. Please try again." with a link to the sign-in page; anonymous use is unaffected.
 
-**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, the AI answers, AI setups and web searches left today with their reset time (from GET /me; a count the server does not give is not shown), the setting **Home page motion: radar and lists**, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it says "Loading…". Signed out, the page says there is no account to delete, links to Privacy and, when the site has a provider, to the sign-in page.
+**Delete the account.** The signed-in name in the header opens the account page (`/account`): who is signed in, the AI answers, AI setups and web searches left today with their reset time (from GET /me; a count the server does not give is not shown), the setting **Home page motion: radar and lists**, and **Delete my account**. A dialog asks to confirm, with focus on Cancel; Escape closes it and focus goes back to the button. On confirm the account and its saved items are deleted and the page reloads, signed out. If the deletion fails, an alert says so and the account stays. While the page asks who is signed in it shows a skeleton of the page. Signed out, the page says there is no account to delete, links to Privacy and, when the site has a provider, to the sign-in page.
 
 | State | Behavior |
 |---|---|
-| Loading | While the page asks who is signed in it says "Loading…". |
+| Loading | While the page asks who is signed in, the sign-in and account pages show a skeleton of the page. |
 | Success | The user comes back to the page they were on, signed in; saved items merge (UJ-6). |
 | Empty | No provider is configured: the header shows no **Sign in**, and the sign-in page says sign-in is not offered here. Signed out, the account page says there is no account to delete. |
 | Partial | Does not apply. |
@@ -177,7 +182,7 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
 
 | State | Behavior |
 |---|---|
-| Loading | Back on the tab after a minute or more, the page asks again and keeps the list on screen meanwhile. |
+| Loading | Skeleton rows of the table on the first load. Back on the tab after a minute or more, the page asks again and keeps the list on screen meanwhile. |
 | Success | Every configured source with its mode, what it covers, terms, attribution, last outcome and check time. |
 | Empty | A live source before its first call says "No calls yet". |
 | Partial | A source whose circuit is open says "Paused after repeated failures, since HH:MM:SS UTC. It tries again on its own."; web credits the server cannot read say "Not available right now". |
@@ -195,6 +200,35 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    the run (model, prompt, outcome, when it finished, the README it also read), what the code check refused (labelled "Includes model output", since it quotes the model), and the fields the run stored, conflicts first, each with its origin in words ("Extracted by AI", "AI-estimated") and up to 5 quotes, each labelled "Source quote", with their source and date. A relationship candidate shows the relationship and its quotes. A user report or a candidate page has no run: the panel says so.
    Keys, only while focus is in the queue and never in a field: **j** / **k** next and previous item, **a** accept, **r** reject, **n** the note (Escape goes back to the list), **?** the list of keys (**Keys (?)** opens it too). A held key counts once: holding **a** accepts nothing more. After a decision the next item is selected and takes focus, and a screen reader hears "Accepted. 11 left."
    **Several at once**: each open row has a box (**x** picks the selected item). A bar under the list says "4 selected · Accept · Reject · Clear". Accept or Reject opens a dialog that repeats the count by kind ("3 Enrichment validation · 1 User report"), with focus on Cancel. Accept says that only enrichment checks with no conflict on licence, open source or pricing are accepted together; the others stay open. After the decision a line says "11 done, 1 failed (already decided)"; the items that failed stay picked. A new filter, or Clear, unpicks everything. Decisions are final.
+   **By target name**: with the kind Relationship candidate, the queue opens grouped by the name the relationships
+   point at, the largest group first, with how many open items each has. One answer decides the whole group: **It is a
+   resource in the catalog…** (pick it), **It is a service**, **It is a tool**, **It is a vendor**, or **Not a real
+   target: reject**. A tool is an application a resource runs in or plugs into, such as VS Code. After the answer a
+   line says "Cursor: 117 items decided, 0 skipped, 0 left." and takes focus, and the next group is shown.
+   **Each item** goes back to the items one by one.
+   **Research with AI** ([ADR 0048](adr/backoffice/0048-review-research-assistant.md)): for a resource or course
+   candidate. The research bar starts it for the picked items, for this page, or for every open candidate. This page
+   and the picked items leave out what is already researched or running: "Research this page (12)" says "12 new, 8
+   already researched". **Research all open…** shows how many items it queues and the most model calls they can
+   take before anything starts. Each row shows its research in a pill: Queued, "Running · step 4", Failed with the
+   reason, Cancelled, or the verdict ("AI: Keep", "AI: Reject", "AI: Duplicate"). A queued or running row has
+   **Watch live** and **Cancel**; a finished or cancelled one links to its steps and offers **Research again**.
+   The **Research** filter asks the server across every page: AI: Keep, AI: Reject, AI: Duplicate, Queued
+   or running, Not researched. A new filter goes back to the first page.
+   A researched item shows the proposal under "Proposed with AI.", then the verdict and its reason, "Already listed
+   as" with a link for a duplicate, and one row per value: now (struck through), proposed, its status (Confirmed,
+   One source, Conflict, Not found) and the source quotes. Each changed value needs a decision: **Confirm** (a
+   conflict needs a pick first), **Edit** or **Keep now**; keys **c**, **e**, **u**, and the queue keys do nothing
+   inside the proposal. Focus moves to the next value; **Undo** gives it back to that value; **Keep the rest as now**
+   keeps every value left. After the last decision focus moves to **Accept with the confirmed values**. Until then
+   Accept says "Decide 3 more changes to accept.", also when **a** is pressed. The decisions stay with the run when
+   another item is selected and after a look at the steps. **Show every step** opens the steps page: every request
+   and response as plain text, filtered by kind or errors, each box scrollable with the keyboard; the model's
+   answers are marked "Written with AI". A running research is followed live. **Back to the review queue** returns
+   to the same filter and page.
+   **Reject 3 the AI marked as reject…** lists those items of the page with their reasons, under "Reasons
+   written with AI."; any can be unticked, and nothing is rejected before **Reject 3 items**. Keep and duplicate are
+   decided one item at a time.
 4. **Scout runs**: sees run history with items seen/changed and failures. **Run all now** starts every enabled collector; **Run now** on a source's newest run starts only that source. The listing follows a started run until it ends. One run at a time: while a start is pending or a run is running, every start button waits, and the page says a run is in progress.
    **Enrichment**: what the Scout enriches next, in its order: the ones I moved to the top first, then never-run resources, then the ones to try again, the most popular first. Each row: the resource (a link to its page), its status in words (At the top, Not run yet, Model was unavailable, Retry after a failure), when it was found, how many runs failed, the last run, and its actions. **Move to top** puts it first until its next run (at most 50 at the top). **Skip** asks first, with an optional reason (the hint says "No personal data") and focus on the reason field; Cancel gives focus back to Skip. **Show** switches the view: waiting, **Skipped** (the latest skip first, with when and why) or **Out of retries** (its runs failed 3 times). In those two views **Requeue** puts the resource back in its own place; one out of retries gets 3 more tries. After an action a line says what happened ("“Acme MCP” is at the top. The Scout takes it in its next run, within the daily limit.") and takes focus, and the list reloads. An action changes the order only, never the daily limit. Next page and First page; the view and the page live in the address. The overview's backlog count links here. Empty: "Nothing waits for enrichment." / "No resource is skipped." / "No resource is out of retries."
 5. **Examples** ([ADR 0028](adr/search/0028-home-examples.md)): the example searches the home page picks from. One line
@@ -224,8 +258,8 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    first." and the row shows the current value. Every replica applies a change within about 20 seconds. The
    overview says "2 spending limits changed at runtime", a link to this page; the audit trail shows each change
    as "default 600 → 50" with its reason.
-   **Known vendors and services** ([ADR 0019](adr/scout/0019-known-targets-vendors-and-services.md)): the names a relationship may point
-   at with no catalog resource, one table of vendors and one of services. Each row: the name, its other names, how
+   **Known vendors, services and tools** ([ADR 0019](adr/scout/0019-known-targets-vendors-and-services.md)): the names a relationship may point
+   at with no catalog resource, one table each for vendors, services and tools. Each row: the name, its other names, how
    many relationships carry it, who added it and when. **Add name** takes a kind, a name and other names, one per
    line; an empty name says "Enter a name, such as Slack." and nothing is sent; a name another target holds
    says "Not saved: Open AI already means OpenAI." **Change** opens the stored kind and names and says that a
@@ -240,19 +274,27 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    same kind already has, Accept adds the other names to it instead. A name a target of another kind holds says so
    and the item stays open. **Reject** is remembered: the name is not proposed again.
    A person's account is rejected.
+   **Shadow libraries** ([ADR 0049](adr/search/0049-shadow-libraries.md)): sites that copy books and papers without
+   the rights holder's permission. A web result on one of them is never shown, and the Scout never proposes it.
+   **Add shadow library** takes a name and an optional reason; an empty name says "Enter a name, such as libgen."
+   and nothing is sent. Each row says who added it and when. **Remove** asks first, with an optional reason; Cancel
+   gives focus back to that row's Remove, and after the removal focus moves to the list heading.
 
 Each item is a row: the kind, the resource, the reason, the date and the status in words in a pill. The selected row has a saffron bar. Each run shows its status in a pill too. One action runs at a time; the other buttons wait.
 
 | State | Behavior |
 |---|---|
 | Success | After a decision the next item is selected and takes focus, and a screen reader hears "Accepted. 11 left." |
-| Loading | "Loading…" in each part; "Loading the evidence…" in the selected item. On Refresh the overview keeps showing the last counts. |
-| Empty | "Nothing in this queue." / "No runs yet." / "No entries yet." After the last decision focus goes to the queue's heading. An item with no run: "No run or relationship behind this item." A decided run whose fields a newer run replaced: "This run has no stored fields left." |
-| Error | "Could not load the overview." (or the review queue, the Scout runs, or the audit trail) with Try again; focus stays on the part's heading. "Could not load the evidence." with Try again in the selected item; the list and the decision still work. A reload of the Scout runs that fails keeps the last list and says so, with Try again. An action that fails says so above the queue or the runs; a start refused because a run holds the lock says a run is in progress. |
+| Loading | Skeleton rows in each part, said as "Loading…"; "Loading the evidence…" and "Loading the research…" where those load. On Refresh the overview keeps showing the last counts, and the shadow libraries keep their rows while they reload. On Settings a screen reader hears one "Loading…" for the page, not one per part. |
+| Empty | "Nothing in this queue." / "No runs yet." / "No entries yet." A research filter that matches nothing: "No item matches this research filter." with **Clear the research filter**. After the last decision focus goes to the queue's heading. An item with no run: "No run or relationship behind this item." A decided run whose fields a newer run replaced: "This run has no stored fields left." |
+| Error | "Could not load the overview." (or the review queue, the Scout runs, or the audit trail) with Try again; focus stays on the part's heading. "Could not load the evidence." with Try again in the selected item; the list and the decision still work. A reload of the Scout runs that fails keeps the last list and says so, with Try again. A Refresh of the overview that fails keeps the last counts and says so. An action that fails says so above the queue or the runs; a start refused because a run holds the lock says a run is in progress. |
 | Already decided | Someone else decided the item first (or a newer enrichment run replaced it): "This item was already decided." The list reloads and shows its current status. |
 | Queue action refused | The resource changed meanwhile, or the top is full: "Nothing changed: 50 resources already wait at the top." (or: is already skipped, does not wait, is neither skipped nor out of retries). The message takes focus and the list reloads. |
 | Partial: bulk decision partly done | "11 done, 1 failed (already decided)." or, with several reasons, "(1 already decided, 2 not allowed in bulk)". The failed items stay picked; the list reloads. A request that fails says "The action failed." and keeps the items picked. |
 | Example refused | The server's rule in words: "Not saved: query: no web addresses." A duplicate label or query: "Another example already has this label or this query." Someone changed the example first: the list reloads, and the change is made again. |
+| Live stream stopped | The steps page heard nothing for 45 seconds, or the stream broke while the research runs: "Live updates stopped." with **Reconnect**, which loads the steps again and follows from the last one. |
+| Research budget spent | The daily model calls for research are used up: queued runs wait for the next day. They can be cancelled at any time. |
+| Research no longer kept | A research run and its steps are kept 90 days. An older or unknown run: "This research is no longer kept (90 days)." Another error: "Could not load the research. Try again." with Try again. |
 | Unknown filter in the address | Falls back to open items of every kind, first page. |
 | Not an admin | A signed-in user without the role sees that an administrator account is needed, with a link to the home page. No admin endpoint is called. |
 
@@ -276,7 +318,7 @@ Each item is a row: the kind, the resource, the reason, the date and the status 
 
 | State | Behavior |
 |---|---|
-| Loading | Skeleton rows. |
+| Loading | Skeleton rows, one for each row the list shows. |
 | Success | Each list shows its first six rows under the API's total. |
 | Partial | The API counts more than it sends (at most 60): the heading shows the total and **show all** counts only the rows it opens. |
 | Empty | The list says there is nothing in its window ("Nothing with a stated publication date in the last 7 days."). The box above is the next step. |
@@ -361,7 +403,7 @@ shared link with its filters (`/news?site=…`, `/events?kind=HACKATHON&format=O
 
 | State | Behavior |
 |---|---|
-| Loading | The loading lines under the heading, announced once. |
+| Loading | Under the heading, a skeleton of the page: headlines on News, the chips, a month and its rows on Events. Announced once. |
 | Success | News: one lead story, six under it, five in **Latest**, then **Earlier this week**. Events: every event with stated dates in the next year, by month. |
 | Partial | Not specified. |
 | Empty | "No AI news in the last week." / "No events with stated dates in the next year." |

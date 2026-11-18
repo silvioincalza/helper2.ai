@@ -33,6 +33,7 @@ import ai.helper2.guide.WorkGate
 import ai.helper2.guide.steps.rankBand
 import ai.helper2.guide.wantsReading
 import ai.helper2.platform.quota.QuotaKeys
+import ai.helper2.search.ListedNames
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
@@ -393,6 +394,26 @@ class AskGuideTest {
     assertEquals(first.copy(search = second.search), second)
     assertEquals(first.search.results, second.search.results)
     assertEquals("", second.search.request.text, "the stored copy keeps no request text")
+  }
+
+  @Test
+  fun `a cached answer that cites a name listed since then is a miss and is answered again`() {
+    val model = CountingModel(whisperPick())
+    val listed = ListedNames()
+    val guide =
+      AskGuide(
+        search,
+        model,
+        clock,
+        cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+        shadowLibraries = listed.libraries,
+      )
+    guide.ask(need, null)
+
+    listed.add("huggingface")
+    guide.ask(need, null)
+
+    assertEquals(4, model.calls)
   }
 
   @Test

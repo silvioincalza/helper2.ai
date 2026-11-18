@@ -19,10 +19,37 @@ import { AtAGlance } from './AtAGlance';
 import './resource.css';
 import { OpenButton } from './OpenButton';
 import { AiLabel } from '@/ui/AiLabel';
+import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 export function cardHeadFor(id: string, state: unknown): CardHead | undefined {
   const { card } = fromResults(state);
   return card?.id === id ? card : undefined;
+}
+
+export function ResourceSkeleton({ withHead = false }: { withHead?: boolean }) {
+  return (
+    <Loading className="h2-res__loading">
+      <Skeleton>
+        {withHead && (
+          <>
+            <SkeletonBar size="meta" width="short" />
+            <SkeletonBar size="heading" width="wide" />
+            <SkeletonBar size="body" width="half" />
+          </>
+        )}
+        <SkeletonRows
+          rows={3}
+          bars={[
+            { size: 'title', width: 'short' },
+            { size: 'body', width: 'full' },
+            { size: 'body', width: 'full' },
+            { size: 'body', width: 'half' },
+          ]}
+          roomy
+        />
+      </Skeleton>
+    </Loading>
+  );
 }
 
 export function Resource({
@@ -34,7 +61,6 @@ export function Resource({
   detail: ResourceDetail | undefined;
   children?: ReactNode;
 }) {
-  const { t } = useTranslation();
   const { from, pick } = fromResults(useLocation().state);
   const card = detail?.card;
   return (
@@ -48,9 +74,7 @@ export function Resource({
           {children}
         </ResourceBody>
       ) : (
-        <p role="status" aria-busy="true" className="page-loading">
-          {t('common.loading')}
-        </p>
+        <ResourceSkeleton />
       )}
     </div>
   );

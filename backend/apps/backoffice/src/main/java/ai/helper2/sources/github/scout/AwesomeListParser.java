@@ -29,10 +29,19 @@ final class AwesomeListParser {
 
   record Link(String url, String text, String section, String headingPath) {}
 
-  record Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
+  record Parsed(
+      List<Entry> entries,
+      List<String> headings,
+      List<Link> links,
+      int textLines,
+      int linkedItems) {
 
     Parsed(List<Entry> entries, List<String> headings) {
       this(entries, headings, List.of());
+    }
+
+    Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
+      this(entries, headings, links, 0, 0);
     }
 
     List<Entry> searchEntries(int maxEntries, int maxBytes) {
@@ -143,9 +152,11 @@ final class AwesomeListParser {
     Arrays.fill(stack, "");
     String self = listFullName.toLowerCase(Locale.ROOT);
     boolean fenced = false;
+    ListLines lines = new ListLines();
     for (String line : markdown.split("\\R")) {
       if (FENCE.matcher(line).find()) {
         fenced = !fenced;
+        lines.end();
         continue;
       }
       if (fenced) {
@@ -158,17 +169,102 @@ final class AwesomeListParser {
         if (!text.isEmpty()) {
           headings.add(text);
         }
+        lines.end();
         continue;
       }
-      if (LIST_ITEM.matcher(line).find()) {
+      boolean item = LIST_ITEM.matcher(line).find();
+      if (item) {
         addEntries(line, stack, self, unique);
         addLink(line, stack, links);
       }
+      lines.add(line, item);
     }
     return new Parsed(
         new ArrayList<>(unique.values()),
         new ArrayList<>(headings),
-        new ArrayList<>(links.values()));
+        new ArrayList<>(links.values()),
+        lines.textLines,
+        lines.linkedItems);
+  }
+
+  static final class ListLines {
+
+    private static final Pattern HTML_ITEM = Pattern.compile("(?i)^\\s*<li\\b");
+    private static final Pattern IMAGE =
+        Pattern.compile("!\\[[^\\]]{0,300}\\]\\([^)]{0,2000}\\)|(?i)<img\\b[^>]{0,2000}>");
+    private static final Pattern LINKED_IMAGE =
+        Pattern.compile(
+            "\\[\\s*(?:!\\[[^\\]]{0,300}\\]\\([^)]{0,2000}\\)|(?i)<img\\b[^>]{0,2000}>)\\s*\\]\\([^)]{0,2000}\\)");
+    private static final Pattern WEB = Pattern.compile("(?i)https?://");
+
+    private int textLines;
+    private int linkedItems;
+    private boolean inItem;
+    private boolean itemLinked;
+    private int itemIndent;
+
+    void add(String line, boolean listItem) {
+      if (line.isBlank()) {
+        return;
+      }
+      boolean item = listItem || HTML_ITEM.matcher(line).find();
+      boolean web = web(line);
+      int indent = indent(line);
+      if (inItem && indent > itemIndent && !(item && web)) {
+        continueItem(web);
+        return;
+      }
+      if (item) {
+        startItem(indent, web);
+        return;
+      }
+      end();
+      if (!MarkdownText.plain(line).isBlank()) {
+        textLines++;
+      }
+    }
+
+    void end() {
+      inItem = false;
+    }
+
+    private void startItem(int indent, boolean web) {
+      inItem = true;
+      itemIndent = indent;
+      itemLinked = web;
+      textLines++;
+      if (web) {
+        linkedItems++;
+      }
+    }
+
+    private void continueItem(boolean web) {
+      if (web && !itemLinked) {
+        itemLinked = true;
+        linkedItems++;
+      }
+    }
+
+    private static boolean web(String line) {
+      String cut = MarkdownText.cut(line, MarkdownText.MAX_RAW);
+      String noBadges = LINKED_IMAGE.matcher(cut).replaceAll(" ");
+      return WEB.matcher(IMAGE.matcher(noBadges).replaceAll(" ")).find();
+    }
+
+    private static int indent(String line) {
+      int n = 0;
+      for (int i = 0; i < line.length(); i++) {
+        char c = line.charAt(i);
+        if (c == ' ') {
+          n++;
+        } else if (c == '\t') {
+          n += 4;
+        } else {
+          break;
+        }
+      }
+      return n;
+    }
   }
 
   private static void addLink(String line, String[] stack, Map<String, Link> links) {

@@ -12,9 +12,10 @@ feature, in the order a reader should learn them. Open work is in the
 
 ![Hexagonal architecture](diagrams/hexagonal-architecture.svg)
 
-The Kotlin domain (search, guide, scout) holds the rules and depends only on its ports, the Kotlin interfaces on its
-edge. Java adapters implement those ports and talk to the outside: REST controllers on the driving side; sources,
-Redis, PostgreSQL and the NVIDIA models on the driven side.
+The Kotlin domain (search, guide, setup, scout and the shared kernel) holds the rules and depends only on its ports,
+the Kotlin interfaces on its edge. Java adapters implement those ports and talk to the outside: REST controllers and
+schedules of both apps on the driving side; the public web, the NVIDIA Nemotron models, Redis and PostgreSQL on the
+driven side.
 
 ### The same system, one view at a time
 
@@ -22,11 +23,13 @@ Redis, PostgreSQL and the NVIDIA models on the driven side.
 |---|---|
 | [Context](diagrams/architecture-context.svg) | The modules as boxes, who calls helper2, and what it calls. |
 | [Context map](diagrams/context-map.svg) | The 10 bounded contexts of the backlog, the modules that hold each one, and the direction of each dependency. |
+| [Event storming](diagrams/event-storming.svg) | The big picture of the seven contexts the apps run: who does what, which events follow, which policies react, and the open stories. |
 | [Hexagonal layers](diagrams/hexagonal-architecture.svg) | The domain inside, its ports on the edge, the adapters around it. |
 | [One search](diagrams/architecture-search.svg) | The search ports and every source, cache and translator adapter behind them. |
 | [One guide question](diagrams/architecture-guide.svg) | AskGuide, the search it reuses, the evidence gate and the LLM layer's guards. |
 | [How the index grows](diagrams/architecture-index.svg) | Scout, its collectors, enrichment and its gap round (README, model card), and how the catalog stores and embeds. |
 | [Set it up](diagrams/architecture-setup.svg) | The setup module on a resource page: run options from the registry and the README, the tool guide, its budgets and caches. |
+| [Review research](diagrams/architecture-review-research.svg) | The research module in the back office: its ports, the agent loop, the read-only tools and the live steps. |
 | [Edge and shared services](diagrams/architecture-platform.svg) | Identity, rate limits, errors and the SPA, and the platform services every module uses, with their Redis keys and tables. |
 | [Data model](diagrams/data-model.svg) | Every PostgreSQL table with its columns, keys and delete rules, grouped by area. |
 | [Deployment](diagrams/infrastructure.svg) | The hosted helper2 on Kubernetes: hosts, namespaces, workloads, what each may reach, delivery, observability and backup. |
@@ -45,6 +48,16 @@ only through its base package or a named interface (`search.usecase`, `catalog.u
 `examples.usecase`, the search cards). Three contexts have no module of their own: Money and consent lives in
 `site.monetisation`, Legal and compliance is the text pages over `GET /policy`, and Release and operations is the
 chart and the workflows that deploy the three deployables.
+
+### Event storming
+
+![Big picture event storming](diagrams/event-storming.svg)
+
+The big picture of what happens in the public app, the web site and the back office, one lane per context. Read a lane
+from left to right: an actor (small yellow) runs a command (blue), a system or aggregate answers, a domain event
+(orange) happens, and a policy (lilac) reacts. An arrow means "triggers". The other outcomes of a step sit under it.
+The magenta notes are open backlog stories. Foundation, release and legal work are left out: they are not behaviour
+of the apps. The colours are Brandolini's. Update it when a flow of the apps changes.
 
 ## Infrastructure
 

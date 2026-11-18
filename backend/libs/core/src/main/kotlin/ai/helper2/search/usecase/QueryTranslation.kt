@@ -3,6 +3,8 @@ package ai.helper2.search.usecase
 import ai.helper2.search.AnalyzedQuery
 import ai.helper2.search.QueryAnalyzer
 import ai.helper2.search.QueryTranslator
+import ai.helper2.shared.WordLists
+import java.text.Normalizer
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -38,9 +40,20 @@ internal class QueryTranslation(
         null
       } ?: return null
     if (URL_LIKE.containsMatchIn(raw)) return null
-    val words = QueryTranslator.bounded(raw.lowercase().replace(NON_WORD, " "))
-    return words.takeIf { it.isNotBlank() && it != analyzer.analyze(text).normalized }
+    val words = plainWords(raw)
+    if (isAboutTheQuery(words)) return null
+    return words.takeIf {
+      it.isNotBlank() && it != plainWords(analyzer.analyze(text).normalized)
+    }
   }
+
+  private fun isAboutTheQuery(words: String) =
+    ABOUT_THE_QUERY.containsMatchIn(words) || OPENS_ABOUT_THE_QUERY.containsMatchIn(words)
+
+  private fun plainWords(s: String) =
+    QueryTranslator.bounded(
+      Normalizer.normalize(s, Normalizer.Form.NFC).lowercase().replace(NON_WORD, " ")
+    )
 
   fun withTranslation(analyzed: AnalyzedQuery, english: String?): AnalyzedQuery =
     if (english == null) analyzed
@@ -53,6 +66,9 @@ internal class QueryTranslation(
 
   private companion object {
     val URL_LIKE = Regex("(?i)https?:|www\\.|://")
+    val WORDS = WordLists.load("translation-words")
+    val ABOUT_THE_QUERY = WORDS.anywhere("about-query")
+    val OPENS_ABOUT_THE_QUERY = WORDS.atStart("about-query.start")
     val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
   }
 }

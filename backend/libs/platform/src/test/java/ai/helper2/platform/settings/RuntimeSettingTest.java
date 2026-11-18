@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class RuntimeSettingTest {
 
   @Test
-  void onlyTheSixSpendingLimitsMayChange() {
+  void onlyTheSevenSpendingLimitsMayChange() {
     assertThat(Arrays.stream(RuntimeSetting.values()).map(RuntimeSetting::key))
         .containsExactly(
             "scout.maxEnrichmentsPerRun",
@@ -18,7 +18,8 @@ class RuntimeSettingTest {
             "scout.gapDailyCalls",
             "guide.dailyModelCalls",
             "search.dailyTranslations",
-            "search.webGlobalDailyCredits");
+            "search.webGlobalDailyCredits",
+            "research.dailyModelCalls");
   }
 
   @ParameterizedTest

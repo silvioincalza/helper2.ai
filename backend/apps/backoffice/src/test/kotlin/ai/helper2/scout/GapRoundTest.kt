@@ -353,4 +353,67 @@ class GapRoundTest {
     assertFalse(GapTargets.namesPackage("pip install acme-tool-extra", "acme-tool"))
     assertFalse(GapTargets.namesPackage("This tool is great. Install with npm.", "tool"))
   }
+
+  private val opening =
+    "This tool lets agents read and write files in a sandbox, with every change kept in a log."
+
+  @Test
+  fun `the opening of a README is its first prose, without the title, badges or code`() {
+    val readme =
+      "# Tool\n\nCI passing\n\n" +
+        opening +
+        "\n\n```bash\nnpm install tool and more words here\n```\n\n## License\nThis project is MIT licensed.\n"
+    val parts = UntrustedPageText.split(readme)
+    assertEquals(opening, parts.opening)
+    assertFalse(opening in parts.rest)
+    assertTrue("# Tool" in parts.rest)
+    assertTrue("npm install tool" in parts.rest)
+    assertTrue("This project is MIT licensed." in parts.rest)
+  }
+
+  @Test
+  fun `an About section is the opening when the top has no prose`() {
+    val readme = "# Tool\n\nCI\n\n## Install\nnpm i tool\n\n## About\n$opening\n"
+    assertEquals(opening, UntrustedPageText.split(readme).opening)
+  }
+
+  @Test
+  fun `a README with no prose at the top has no opening and keeps all its text`() {
+    val readme = "# Tool\nA tool.\n\n## License\nThis project is MIT licensed.\n"
+    val parts = UntrustedPageText.split(readme)
+    assertEquals("", parts.opening)
+    assertEquals(readme, parts.rest)
+  }
+
+  @Test
+  fun `the opening stops at whole lines within its limit`() {
+    val lines = (1..20).map { "Line $it says what the tool does for its users." }
+    val parts = UntrustedPageText.split("# Tool\n" + lines.joinToString("\n"))
+    assertTrue(parts.opening.length <= UntrustedPageText.MAX_OPENING_CHARS)
+    assertTrue(parts.opening.lines().all { it in lines })
+    assertTrue(lines.last() in parts.rest)
+  }
+
+  @Test
+  fun `a blockquote, such as a tip or a sponsored line, is never part of the opening`() {
+    val readme =
+      "# Tool\n\n> ray.run – from idea to a production-grade server in under a minute!\n\n" +
+        opening +
+        "\n\n> Just getting started? Check out the higher-level package built on this one.\n"
+    val parts = UntrustedPageText.split(readme)
+    assertEquals(opening, parts.opening)
+    assertTrue("ray.run" in parts.rest)
+    assertTrue("Just getting started?" in parts.rest)
+  }
+
+  @Test
+  fun `a heading inside a code block neither splits the README nor makes the example its opening`() {
+    val readme =
+      "# Docs Tool\n\n```markdown\n# About Example\nThis example agent books flights and hotels for its users.\n```\n\n" +
+        opening +
+        "\n"
+    val parts = UntrustedPageText.split(readme)
+    assertEquals(opening, parts.opening)
+    assertTrue("This example agent books flights" in parts.rest)
+  }
 }

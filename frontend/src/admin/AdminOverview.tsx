@@ -10,7 +10,8 @@ import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate, safeHref } from '@/lib/format';
 import { ScrollBox } from '@/ui/ScrollBox';
-import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
+import { AdminEmpty, AdminHead } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { PATHS, RUN_TONE, SHOWN_PER_PATH } from './adminModel';
 
 const SHOWN_RUNS = 5;
@@ -32,7 +33,7 @@ export default function AdminOverview() {
         headingRef={heading}
       />
       {overview.loading && !data ? (
-        <AdminLoading command={COMMAND} />
+        <TableSkeleton />
       ) : overview.error !== undefined && !data ? (
         <StatePanel
           tone="error"

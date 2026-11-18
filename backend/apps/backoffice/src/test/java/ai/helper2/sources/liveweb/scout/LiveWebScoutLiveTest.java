@@ -1,5 +1,6 @@
 package ai.helper2.sources.liveweb.scout;
 
+import static ai.helper2.sources.SourceFixtures.SHADOW_LIBRARIES;
 import static ai.helper2.sources.SourceFixtures.live;
 import static ai.helper2.sources.SourceFixtures.liveHttp;
 import static ai.helper2.sources.SourceFixtures.query;
@@ -26,7 +27,8 @@ class LiveWebScoutLiveTest {
   @Test
   void searchSourceFindsPagesWithTheirAnswerSnippet() {
     TavilySource source =
-        new TavilySource(live(API, "H2_LIVE_WEB_API_KEY"), liveHttp(), Clock.systemUTC());
+        new TavilySource(
+            live(API, "H2_LIVE_WEB_API_KEY"), liveHttp(), Clock.systemUTC(), SHADOW_LIBRARIES);
 
     List<SourceHit> hits = source.search(query("new open-source LLM released"));
 
@@ -45,7 +47,8 @@ class LiveWebScoutLiveTest {
             Resilience.NONE,
             new RunInterval(Duration.ZERO),
             List.of("new MCP server released"),
-            unlimitedCredits());
+            unlimitedCredits(),
+            SHADOW_LIBRARIES);
 
     CollectedBatch batch = collector.collect(null, null, 20);
 

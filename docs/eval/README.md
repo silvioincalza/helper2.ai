@@ -11,13 +11,16 @@ its relevance part with a message.
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
 | `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on (step 5) | `evalTest` |
-| `guide-queries.json` | 51 guide questions: 21 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
+| `guide-queries.json` | 60 guide questions: 21 core ones (the nightly run) and 39 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
 | `guide-intents.json` | 19 intent cases and 7 ask-back cases with pass rules ([ADR 0031](../adr/guide/0031-guide-pipeline.md), intents §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 13 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
 | `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0032](../adr/guide/0032-guide-cost-guard-and-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
 | `guide-similar-vectors.json` | the query embeddings of those questions, recorded once | written by `./gradlew evalRecord --tests '*GuideSimilarRecorder'` |
 | `classifier-labels.tsv` | items labelled AI-related or not, for `Classification.isAiRelated` | `ClassificationLabelsTest` |
+| `research-labels.tsv` | review candidates the admin decided (keep or reject), with the catalog values of the kept ones ([ADR 0048](../adr/backoffice/0048-review-research-assistant.md) §10) | `ResearchEvalRecorder` (`evalRecord`) |
+| `research-labels-manual.tsv` | open candidates a person labelled by hand, same columns | same |
+| `research-report-<model>.md`, `research-baseline-<model>.json` | the last research eval of each model | written by `ResearchEvalRecorder` |
 | `setup-resources.json` | 15 resources for the setup guide ([ADR 0034](../adr/guide/0034-setup-guide.md)) | `scripts/eval-setup.mjs` |
 
 Snapshots, judging pools, TREC files and reports are third-party data and stay in `backend/eval-data/` (git-ignored).
@@ -83,6 +86,29 @@ Grade them with the table above and append the first three columns to `guide-qre
 questions leaves about 100 picks and, for each question with no answer, up to 24 candidates: count on 2–3 hours.
 Later runs only add what changed. Then `node scripts/eval-guide.mjs --rescore` rebuilds the report with the new
 grades from the saved answers (`backend/eval-data/guide-runs.json`), with no new request.
+
+## Review research (`research-labels.tsv`)
+
+The verdict labels are the admin's own decisions in the review queue. The expected values of a kept item are the
+catalog's values of the resource it became (type, URL, title, licence, pricing, open source): they come from the
+sources, not from a person, so a miss on them is a reason to look, not a proof. Columns: `id`, `item_url`, `kind`,
+`title_found`, `type_found`, `decision` (KEEP, REJECT or DUPLICATE; empty: not labelled, skipped), then the expected
+values, empty when unknown.
+
+1. **Export the decisions.** Read-only, from the database with the most decisions (prod):
+   `{ echo 'BEGIN READ ONLY;'; cat scripts/research-eval-labels.sql; echo 'COMMIT;'; } | kubectl -n helper2-prod exec -i postgres-0 -- sh -c 'psql -q -U "$POSTGRES_USER" -d "${POSTGRES_DB:-$POSTGRES_USER}"' > docs/eval/research-labels.tsv`.
+   It holds public page URLs and titles only.
+2. **Label more by hand.** The queue has few rejects. The same command with `scripts/research-eval-pool.sql` writes
+   120 open candidates, about 14 per type, to `backend/eval-data/research-pool.tsv`. Decide each one as you would in
+   the queue, fill the expected values you can check on the page, and move the labelled rows to
+   `research-labels-manual.tsv`. The set decides nothing below 100 items and 20 rejects.
+3. **Run.** In the repo-root `.env`: `H2_NEBIUS_API_KEY`, `H2_LIVE_WEB_API_KEY`, `H2_GITHUB_TOKEN`. Then, once per model:
+   `cd backend && H2_RESEARCH_MODEL=FAST H2_RESEARCH_DAILY_PAGE_READS=1000 ./gradlew :apps:backoffice:evalRecord --tests '*ResearchEvalRecorder'`
+   and the same with `H2_RESEARCH_MODEL=REASONING`. Each item takes up to 14 model calls and spends live web credits.
+   `H2_EVAL_ONLY=r001,r002` runs some items only; `H2_EVAL_PAUSE` (default `PT2S`) is the pause between items. Without
+   a model key the test is skipped.
+4. **Read.** `docs/eval/research-report-<model>.md` (the numbers and each item), `research-baseline-<model>.json`, and
+   every step of every run in `backend/eval-data/research-traces/<model>/`.
 
 ## Classifier (`classifier-labels.tsv`)
 
