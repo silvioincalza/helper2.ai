@@ -5,6 +5,8 @@ public final class LlmPolicies {
 
   public static final String GUIDE = "llm-chat-guide";
 
+  public static final String GUIDE_JUDGE = "llm-chat-guide-judge";
+
   public static final String EMBED = "llm-embed";
 
   public static final String EMBED_INDEX = "llm-embed-index";

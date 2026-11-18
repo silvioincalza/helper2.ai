@@ -7,6 +7,7 @@ import ai.helper2.guide.GuideAnswer
 import ai.helper2.guide.GuideAnswerCache
 import ai.helper2.guide.GuideBusy
 import ai.helper2.guide.GuideIntent
+import ai.helper2.guide.GuideJudge
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProgress
 import ai.helper2.guide.GuideStatus
@@ -76,6 +77,7 @@ class AskGuide(
   private val stopsWhenNobodyWaits: Boolean = false,
   private val quoteRecords: QuoteRecords = QuoteRecords.NONE,
   private val quoteOrigins: QuoteOrigins = QuoteOrigins(),
+  private val judge: GuideJudge = GuideJudge.NONE,
 ) {
 
   val answersWithModel: Boolean
@@ -121,7 +123,7 @@ class AskGuide(
 
   private val steps = GuideSteps(search, observations, clock)
   private val reader = QuestionReader(clock)
-  private val reasonCheck = ReasonCheckStep(steps, validator)
+  private val reasonCheck = ReasonCheckStep(steps, validator, judge)
   private val picks = PickAnswer(steps, reasonCheck, validator, maxCandidates, clock, meters)
   private val comparison =
     CompareAnswer(

@@ -38,6 +38,9 @@ app:
   guideSimilarThreshold: null
   setupGuideStepText: null
   guideModelStream: null
+  guideJudge:
+    model: ""
+    dailyCalls: null
   monetisation:
     githubSponsorsUrl: ""
     stripePaymentUrl: ""
