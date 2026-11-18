@@ -32,6 +32,7 @@ public record GuideProperties(
     @NotNull ModelStream modelStream,
     @Valid @NotNull Thinking thinking,
     @Valid @NotNull Fairness fairness,
+    @Valid @NotNull Judge judge,
     @NotNull URI mcpRegistryUrl) {
   public record Thinking(
       @PositiveOrZero int planTokens,
@@ -48,6 +49,13 @@ public record GuideProperties(
       @PositiveOrZero int networkDailyQuestions,
       @Positive int clientConcurrentQuestions,
       @Min(1) @Max(24) int budgetPaceSlots) {}
+
+  public record Judge(String model, @PositiveOrZero int dailyCalls) {
+
+    public boolean on() {
+      return model != null && !model.isBlank() && dailyCalls > 0;
+    }
+  }
 
   public boolean stopsAQuestionNobodyWaitsFor() {
     return modelStream == ModelStream.ON && thinking.inAGuideStep();

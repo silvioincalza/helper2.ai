@@ -9,6 +9,7 @@ import ai.helper2.guide.ClientQuota;
 import ai.helper2.guide.EvidenceGate;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
+import ai.helper2.guide.GuideJudge;
 import ai.helper2.guide.GuideModel;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.guide.GuideValidator;
@@ -159,7 +160,8 @@ class GuideConfiguration {
       LlmProperties llmProperties,
       BuildInfoProperties build,
       GuideProperties settings,
-      Resources resources) {
+      Resources resources,
+      CallCounter budgetCounter) {
     boolean nativeSchema = llmProperties.nativeSchema();
     int chooseMaxTokens = settings.chooseMaxTokens();
     int maxCandidates = settings.maxCandidates();
@@ -235,7 +237,37 @@ class GuideConfiguration {
             build.version()),
         settings.stopsAQuestionNobodyWaitsFor(),
         quoteRecords(resources),
-        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()));
+        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()),
+        guideModel == null
+            ? GuideJudge.NONE
+            : guideJudge(
+                model, settings.judge(), clock, budgetCounter, metrics, resilience, meters));
+  }
+
+  static GuideJudge guideJudge(
+      ChatModel model,
+      GuideProperties.Judge judge,
+      Clock clock,
+      CallCounter counter,
+      ModelCallMetrics metrics,
+      Resilience resilience,
+      MeterRegistry meters) {
+    if (!judge.on()) {
+      log.info("AI guide judge off: no judge model (H2_GUIDE_JUDGE_MODEL) or no daily calls");
+      return GuideJudge.NONE;
+    }
+    log.info(
+        "AI guide judge on: model={}, {} calls a day, after each answer, never changing it",
+        judge.model(),
+        judge.dailyCalls());
+    return new SpringAiGuideJudge(
+        model,
+        judge.model(),
+        new DailyBudget(judge.dailyCalls(), clock, "guide-judge", counter),
+        metrics,
+        resilience,
+        meters,
+        task -> Thread.ofVirtual().name("guide-judge").start(task));
   }
 
   static QuoteRecords quoteRecords(Resources resources) {

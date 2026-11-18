@@ -90,6 +90,12 @@ spec:
             - { name: {{ $name }}, value: {{ $value | toString | quote }} }
             {{- end }}
             {{- end }}
+            {{- with .Values.app.guideJudge.model }}
+            - { name: H2_GUIDE_JUDGE_MODEL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.guideJudge.dailyCalls }}
+            - { name: H2_GUIDE_JUDGE_DAILY_CALLS, value: {{ . | toString | quote }} }
+            {{- end }}
             {{- with .Values.app.guideCacheTtl }}
             - { name: H2_GUIDE_CACHE_TTL, value: {{ . | quote }} }
             {{- end }}

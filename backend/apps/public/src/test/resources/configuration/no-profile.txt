@@ -570,6 +570,8 @@ helper2.guide.fairness.budget-pace-slots = ${H2_GUIDE_BUDGET_PACE_SLOTS:12}  => 
 helper2.guide.fairness.client-concurrent-questions = ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}  =>  2
 helper2.guide.fairness.network-daily-questions = ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}  =>  300
 helper2.guide.heartbeat = ${H2_GUIDE_HEARTBEAT:PT15S}  =>  PT15S
+helper2.guide.judge.daily-calls = ${H2_GUIDE_JUDGE_DAILY_CALLS:300}  =>  300
+helper2.guide.judge.model = ${H2_GUIDE_JUDGE_MODEL:}  =>  <empty>
 helper2.guide.max-candidates = ${H2_GUIDE_MAX_CANDIDATES:24}  =>  24
 helper2.guide.mcp-registry-url = ${helper2.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
 helper2.guide.model-call-minimum = 10s
@@ -940,6 +942,8 @@ resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
 resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.llm-chat-guide-judge.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat-guide-judge.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-chat-guide.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat-guide.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s

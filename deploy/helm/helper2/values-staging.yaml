@@ -32,6 +32,8 @@ app:
     guideBudgetPaceSlots: 1
     guideNetworkQuestions: 1000
   guideCacheTtl: PT1S
+  guideJudge:
+    dailyCalls: 300
 web:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-web
