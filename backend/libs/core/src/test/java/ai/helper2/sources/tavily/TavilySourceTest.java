@@ -40,7 +40,8 @@ class TavilySourceTest {
             true, server.baseUrl(), "test-token", Duration.ofSeconds(2), Duration.ZERO),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-        SourceFixtures.CLOCK);
+        SourceFixtures.CLOCK,
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   @Test
@@ -111,7 +112,9 @@ class TavilySourceTest {
                  "content":"Speakers talk about LLM agents."}\
                 """);
 
-    var hit = TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0);
+    var hit =
+        TavilySource.toHit(
+            result, "live-web", SourceFixtures.CLOCK.instant(), 0, SourceFixtures.SHADOW_LIBRARIES);
 
     assertThat(hit.getType()).isEqualTo(ResourceType.EVENT);
   }
@@ -128,7 +131,14 @@ class TavilySourceTest {
                  "content":"A guide to retrieval augmented generation and large language models."}\
                 """);
 
-    assertThat(TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0)).isNull();
+    assertThat(
+            TavilySource.toHit(
+                result,
+                "live-web",
+                SourceFixtures.CLOCK.instant(),
+                0,
+                SourceFixtures.SHADOW_LIBRARIES))
+        .isNull();
   }
 
   @Test
@@ -142,7 +152,14 @@ class TavilySourceTest {
                  "content":"# RAG Aktiengesellschaft ID: RDbdtfJgpC3W Website: www.rag.de"}\
                 """);
 
-    assertThat(TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0)).isNull();
+    assertThat(
+            TavilySource.toHit(
+                result,
+                "live-web",
+                SourceFixtures.CLOCK.instant(),
+                0,
+                SourceFixtures.SHADOW_LIBRARIES))
+        .isNull();
     assertThat(
             TavilySource.toHit(
                 result.deepCopy(),
@@ -150,7 +167,8 @@ class TavilySourceTest {
                 SourceFixtures.CLOCK.instant(),
                 0,
                 ResourceType.ARTICLE,
-                Set.of()))
+                Set.of(),
+                SourceFixtures.SHADOW_LIBRARIES))
         .isNull();
   }
 
@@ -165,7 +183,13 @@ class TavilySourceTest {
                  "content":"An article about AI agents and LLM web search."}\
                 """);
 
-    assertThat(TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0))
+    assertThat(
+            TavilySource.toHit(
+                result,
+                "live-web",
+                SourceFixtures.CLOCK.instant(),
+                0,
+                SourceFixtures.SHADOW_LIBRARIES))
         .isNotNull();
   }
 
@@ -187,7 +211,8 @@ class TavilySourceTest {
             SourceFixtures.CLOCK.instant(),
             0,
             ResourceType.ARTICLE,
-            Set.of());
+            Set.of(),
+            SourceFixtures.SHADOW_LIBRARIES);
 
     assertThat(hit.getType()).isEqualTo(ResourceType.ARTICLE);
   }
@@ -214,7 +239,8 @@ class TavilySourceTest {
                     Duration.ofMinutes(30)),
                 TestHttp.restClientBuilder(
                     Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-                SourceFixtures.CLOCK)
+                SourceFixtures.CLOCK,
+                SourceFixtures.SHADOW_LIBRARIES)
             .getDescriptor();
 
     assertThat(descriptor.getMetered()).isTrue();

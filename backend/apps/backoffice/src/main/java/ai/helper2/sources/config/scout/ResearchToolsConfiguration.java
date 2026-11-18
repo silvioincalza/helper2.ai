@@ -6,6 +6,7 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.research.config.ResearchProperties;
 import ai.helper2.scout.PageReader;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.config.CollectorProperties;
 import ai.helper2.sources.config.SourcesProperties;
@@ -35,7 +36,8 @@ class ResearchToolsConfiguration {
       Resilience resilience,
       Clock clock,
       ObservationRegistry observations,
-      HttpClientProperties http) {
+      HttpClientProperties http,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get(DiscoveryCollectorRegistrar.SETTINGS);
     if (!s.enabled() || !s.hasToken()) {
       return null;
@@ -44,7 +46,8 @@ class ResearchToolsConfiguration {
         HttpClients.client(CollectorsConfiguration.collectorClient(s, observations, http), s),
         credits,
         resilience,
-        clock);
+        clock,
+        shadowLibraries);
   }
 
   @Bean
@@ -93,18 +96,20 @@ class ResearchToolsConfiguration {
       ObjectProvider<PageReader> reader,
       ResearchProperties research,
       Clock clock,
-      CallCounter counter) {
+      CallCounter counter,
+      ShadowLibraries shadowLibraries) {
     PageReader r = reader.getIfAvailable();
     if (r == null) {
       return null;
     }
     return new ReadPageTool(
         r,
-        new DailyBudget(research.dailyPageReads(), clock, "review-research-page-reads", counter));
+        new DailyBudget(research.dailyPageReads(), clock, "review-research-page-reads", counter),
+        shadowLibraries);
   }
 
   @Bean
-  CheckUrlTool checkUrlTool() {
-    return new CheckUrlTool();
+  CheckUrlTool checkUrlTool(ShadowLibraries shadowLibraries) {
+    return new CheckUrlTool(shadowLibraries);
   }
 }

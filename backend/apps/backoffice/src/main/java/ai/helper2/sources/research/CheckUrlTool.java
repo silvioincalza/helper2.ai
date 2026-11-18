@@ -1,6 +1,7 @@
 package ai.helper2.sources.research;
 
 import ai.helper2.research.ResearchTool;
+import ai.helper2.search.ShadowLibraries;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,6 +19,11 @@ public final class CheckUrlTool implements ResearchTool {
           .followRedirects(HttpClient.Redirect.NEVER)
           .connectTimeout(TIMEOUT)
           .build();
+  private final PublicAddresses addresses;
+
+  public CheckUrlTool(ShadowLibraries shadowLibraries) {
+    this.addresses = new PublicAddresses(shadowLibraries);
+  }
 
   @Override
   public String name() {
@@ -45,7 +51,7 @@ public final class CheckUrlTool implements ResearchTool {
     StringBuilder out = new StringBuilder();
     String current = url;
     for (int hop = 0; hop <= MAX_HOPS; hop++) {
-      String problem = PublicAddresses.problem(current);
+      String problem = addresses.problem(current);
       if (problem != null) {
         return Output.error(out + "not checked: " + current + ": " + problem);
       }

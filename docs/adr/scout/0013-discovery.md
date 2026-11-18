@@ -91,7 +91,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
    this order:
    - dropped: Tavily score below the category's `min-score`; a page on Tavily's own site (`tavily.com` or a subdomain,
      `TavilySource.isTavilysOwnPage`, the rule live search uses too: Tavily's company profiles are its index, not a
-     publisher's page); not about AI (`Classification.isAiRelated`);
+     publisher's page); a page on a shadow library (`ShadowLibraries`, [0049](../search/0049-shadow-libraries.md));
+     not about AI (`Classification.isAiRelated`);
    - **a GitHub repository or a home page is a product**, whatever its title says ("an open-source alternative to
      ChatGPT" is a product's own words);
    - **list page**: any other page with a list-like title ("12 best ...", "best AI coding tools", "X vs Y", "ChatGPT

@@ -55,6 +55,7 @@ class AppRolesGrantsIT {
               Map.entry("relationship_evidence", R),
               Map.entry("resource_embedding", R),
               Map.entry("runtime_setting", R),
+              Map.entry("shadow_library", R),
               Map.entry("summary_claim", R),
               Map.entry("summary_claim_evidence", R),
               Map.entry("flyway_schema_history", R),

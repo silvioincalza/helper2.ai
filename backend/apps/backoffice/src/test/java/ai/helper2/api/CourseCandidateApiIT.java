@@ -130,7 +130,7 @@ class CourseCandidateApiIT extends ApiTestBase {
         .param("note", note)
         .update();
     String migration =
-        Files.readString(BackendSources.migration("V2026.11.6.4__course_candidate_details.sql"));
+        Files.readString(BackendSources.migration("V2026.11.6.5__course_candidate_details.sql"));
     jdbc.sql(migration.substring(migration.indexOf("UPDATE review_item")).strip()).update();
 
     var row =

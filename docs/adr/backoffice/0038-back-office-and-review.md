@@ -268,7 +268,7 @@ than a hundred), so the question is the same for each of them: what is this name
     It answers the item, with its new reason line. The item stays open.
     - A course candidate holds the same structured candidate as a resource candidate, with type COURSE and its
       platform (`ReviewQueueCandidateReview`). Accepting it indexes the course like a resource candidate, with every
-      confirmed value. `V2026.11.6.4__course_candidate_details.sql` turns the open course candidates held as text
+      confirmed value. `V2026.11.6.5__course_candidate_details.sql` turns the open course candidates held as text
       into structured ones; a decided one keeps its text.
 20. **The edit is marked in the details** (`edited`: the fields the admin changed).
     - When another collector finds the page later ([0013](../scout/0013-discovery.md) §8 and
@@ -307,7 +307,7 @@ than a hundred), so the question is the same for each of them: what is this name
     language; a date `YYYY-MM-DD`, not in the future; a description of 1 to 4000 characters, stored as `CURATED`).
     - The value is written to the resource's column, and the field is listed in `resource.curated_fields`.
     - Accepting a candidate also curates its description, language and published date
-      (`V2026.11.6.3__curated_description_language_published.sql`); no source or run changes them after.
+      (`V2026.11.6.4__curated_description_language_published.sql`); no source or run changes them after.
     - A CURATED, VERIFIED field assertion says where it came from; the page shows "Curated by Helper2".
     - The AI's values of the field are rejected.
 26. **It wins everywhere, and stays.**

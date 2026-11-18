@@ -2,9 +2,9 @@ package ai.helper2.sources.research;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.research.ResearchTool;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.support.HttpClients;
-import ai.helper2.sources.support.ShadowLibraries;
 import java.net.URI;
 import java.time.Clock;
 import java.util.LinkedHashMap;
@@ -22,13 +22,19 @@ public final class WebSearchTool implements ResearchTool {
   private final ScoutLiveWebCredits credits;
   private final Resilience resilience;
   private final Clock clock;
+  private final ShadowLibraries shadowLibraries;
 
   public WebSearchTool(
-      RestClient http, ScoutLiveWebCredits credits, Resilience resilience, Clock clock) {
+      RestClient http,
+      ScoutLiveWebCredits credits,
+      Resilience resilience,
+      Clock clock,
+      ShadowLibraries shadowLibraries) {
     this.http = http;
     this.credits = credits.forFeature(FEATURE);
     this.resilience = resilience;
     this.clock = clock;
+    this.shadowLibraries = shadowLibraries;
   }
 
   @Override
@@ -81,7 +87,7 @@ public final class WebSearchTool implements ResearchTool {
     int n = 0;
     for (JsonNode r : root.path("results")) {
       String url = r.path("url").asString("");
-      if (url.isBlank() || ShadowLibraries.isShadowLibrary(host(url))) {
+      if (url.isBlank() || shadowLibraries.isShadowLibrary(host(url))) {
         continue;
       }
       out.append(++n)

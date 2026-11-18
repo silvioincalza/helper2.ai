@@ -4,6 +4,7 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.research.ResearchTool;
 import ai.helper2.scout.PageReader;
 import ai.helper2.scout.ReadPage;
+import ai.helper2.search.ShadowLibraries;
 import java.net.URI;
 import java.util.List;
 
@@ -11,10 +12,12 @@ public final class ReadPageTool implements ResearchTool {
 
   private final PageReader reader;
   private final DailyBudget reads;
+  private final PublicAddresses addresses;
 
-  public ReadPageTool(PageReader reader, DailyBudget reads) {
+  public ReadPageTool(PageReader reader, DailyBudget reads, ShadowLibraries shadowLibraries) {
     this.reader = reader;
     this.reads = reads;
+    this.addresses = new PublicAddresses(shadowLibraries);
   }
 
   @Override
@@ -41,7 +44,7 @@ public final class ReadPageTool implements ResearchTool {
     if (url == null) {
       return Output.error("url is required");
     }
-    String problem = PublicAddresses.problem(url);
+    String problem = addresses.problem(url);
     if (problem != null) {
       return Output.error("not read: " + problem);
     }

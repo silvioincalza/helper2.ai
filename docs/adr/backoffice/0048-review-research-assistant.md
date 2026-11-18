@@ -32,7 +32,7 @@ tool answered, and must confirm every value before it reaches the catalog.
    model calls is the runtime setting `research.dailyModelCalls` (`H2_RESEARCH_DAILY_MODEL_CALLS`, 3,000), and page
    reads have their own cap (`H2_RESEARCH_DAILY_PAGE_READS`, 300). A running run with no step for 5 minutes lost its
    worker and fails. The admin can cancel a queued or running run and start it again. The tables come with
-   `V2026.11.6.2__review_research.sql`, after `V2026.11.6.1__known_target_tool.sql`.
+   `V2026.11.6.3__review_research.sql`, after `V2026.11.6.2__shadow_library.sql`.
 3. **Read-only tools, from the adapters we have.** The agent calls these tools and nothing else:
    `read_page` (the page reader, with its own daily cap), `web_search` (the live web search, on the Scout's live-web
    credits; its results are leads, not evidence: the model reads a page before it cites it),
