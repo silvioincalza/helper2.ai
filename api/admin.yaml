@@ -322,9 +322,9 @@ paths:
       operationId: decideRelationshipTargetGroup
       summary: One decision for every open relationship candidate of one target name (ADR 0038).
       description: >-
-        LINK points each item at the catalog resource `resourceId` and accepts it (VERIFIED). VENDOR or SERVICE adds
-        the name as a known target and closes the items it now matches (SUPERSEDED). REJECT rejects each item and
-        its relationship. Each item is decided in its own transaction with its own audit entry, `<decision>
+        LINK points each item at the catalog resource `resourceId` and accepts it (VERIFIED). VENDOR, SERVICE or
+        TOOL adds the name as a known target and closes the items it now matches (SUPERSEDED). REJECT rejects each
+        item and its relationship. Each item is decided in its own transaction with its own audit entry, `<decision>
         bulk:<batch>`; an item decided meanwhile, one whose resource already has this target, or the target
         resource itself, is skipped and stays as it is. At most 1000 items per call: `left` says how many wait.
       requestBody:
@@ -714,9 +714,10 @@ paths:
     get:
       tags: [known-targets]
       operationId: listKnownTargets
-      summary: The vendors and services a relationship may name with no catalog resource.
+      summary: The vendors, services and tools a relationship may name with no catalog resource.
       description: >-
-        A VENDOR is a company; a SERVICE is what a resource connects to (Slack, GitHub). A relationship whose target
+        A VENDOR is a company; a SERVICE is what a resource connects to (Slack, GitHub); a TOOL is an application a
+        resource runs in or plugs into (VS Code, Claude Desktop). A relationship whose target
         is one of these names is verified with no target resource (ADR 0019). `relationships` counts the ones that
         carry the target now.
       responses:
@@ -1332,8 +1333,10 @@ components:
 
     KnownTargetKind:
       type: string
-      description: "VENDOR: a company. SERVICE: what a resource connects to, not an AI resource itself."
-      enum: [VENDOR, SERVICE]
+      description: >-
+        VENDOR: a company. SERVICE: what a resource connects to, not an AI resource itself. TOOL: an application a
+        resource runs in or plugs into (an editor, a desktop app), not an AI resource itself.
+      enum: [VENDOR, SERVICE, TOOL]
 
     KnownTargetEntry:
       type: object
@@ -1546,7 +1549,7 @@ components:
       required: [key, decision]
       properties:
         key: { type: string, minLength: 1, maxLength: 300 }
-        decision: { type: string, enum: [LINK, VENDOR, SERVICE, REJECT] }
+        decision: { type: string, enum: [LINK, VENDOR, SERVICE, TOOL, REJECT] }
         resourceId: { type: string, format: uuid, description: Required for LINK, not allowed otherwise. }
         note: { type: [string, 'null'], maxLength: 1000 }
 
