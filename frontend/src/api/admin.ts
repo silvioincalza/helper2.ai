@@ -35,6 +35,10 @@ import type {
   ExampleDrafts,
   HomeExampleChange,
   HomeExampleInput,
+  ReviewResearchDetail,
+  ReviewResearchEstimate,
+  ReviewResearchRuns,
+  ReviewResearchStart,
 } from './types';
 
 import { absolute, API_BASE, request, send } from './client';
@@ -105,6 +109,30 @@ export const adminApi = {
       {},
     );
   },
+  startReviewResearch: (body: ReviewResearchStart) =>
+    request<ReviewResearchRuns>('POST', '/admin/review-research', { body }),
+  listReviewResearch: (itemIds: string[], signal?: AbortSignal) =>
+    request<ReviewResearchRuns>('GET', '/admin/review-research', {
+      query: new URLSearchParams(itemIds.map((id) => ['itemId', id])),
+      signal,
+    }),
+  estimateReviewResearch: (signal?: AbortSignal) =>
+    request<ReviewResearchEstimate>('GET', '/admin/review-research/estimate', { signal }),
+  getReviewResearch: (runId: string, signal?: AbortSignal) =>
+    request<ReviewResearchDetail>('GET', `/admin/review-research/${encodeURIComponent(runId)}`, {
+      signal,
+    }),
+  cancelReviewResearch: (runId: string) =>
+    request<void>('POST', `/admin/review-research/${encodeURIComponent(runId)}/cancel`),
+  reviewResearchEvents: (runId: string, afterSeq: number, signal?: AbortSignal) =>
+    send(
+      'GET',
+      absolute(
+        `${API_BASE}/admin/review-research/${encodeURIComponent(runId)}/events`,
+        new URLSearchParams({ afterSeq: String(afterSeq) }),
+      ),
+      { accept: 'text/event-stream', signal },
+    ),
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
       signal,

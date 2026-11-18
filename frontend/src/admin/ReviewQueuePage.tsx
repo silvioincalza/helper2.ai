@@ -5,7 +5,7 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { api, ApiError } from '@/api/client';
-import type { ReviewItem } from '@/api/types';
+import type { ReviewItem, ReviewResearchStart } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { Pagination } from '@/admin/Pagination';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
@@ -24,6 +24,17 @@ import { ItemDetails, parseCandidate, type Candidate } from './ReviewItemDetails
 import { ReviewKeysHelp } from './ReviewKeysHelp';
 import { RelationshipGroups } from './RelationshipGroups';
 import { NOTE_MAX } from './limits';
+import {
+  BatchRejectDialog,
+  RESEARCH_FILTERS,
+  ResearchBar,
+  ResearchCell,
+  StartAllDialog,
+  matchesFilter,
+  researchable,
+  useResearchRuns,
+} from './ReviewResearch';
+import { ResearchDecisions, type ResearchOutcome } from './ResearchDecisions';
 
 const PAGE_SIZE = 50;
 const CATEGORY = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -90,6 +101,7 @@ export default function ReviewQueuePage() {
   const wanted = params.get('category');
   const category = wanted && CATEGORY.test(wanted) ? wanted : undefined;
   const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
+  const researchFilter = oneOf(params.get('research'), RESEARCH_FILTERS);
   const byTarget =
     status === 'OPEN' && kind === 'RELATIONSHIP_CANDIDATE' && params.get('view') !== 'items';
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -101,6 +113,9 @@ export default function ReviewQueuePage() {
   const [help, setHelp] = useState(false);
   const [pickedIds, setPicked] = useState<ReadonlyMap<string, ReviewItem>>(new Map());
   const [bulkResult, setBulkResult] = useState('');
+  const [startAll, setStartAll] = useState(false);
+  const [rejecting, setRejecting] = useState<ReviewItem[]>([]);
+  const [outcome, setOutcome] = useState<ResearchOutcome | null>(null);
   const focusAfterLoad = useRef(false);
   const rows = useRef(new Map<string, HTMLButtonElement>());
   const note = useRef<HTMLInputElement>(null);
@@ -120,7 +135,9 @@ export default function ReviewQueuePage() {
     (overview.data?.openReviewItems ?? []).map(({ kind: k, count }) => [k, count] as const),
   );
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
-  const list = items.data?.items ?? [];
+  const loaded = items.data?.items ?? [];
+  const research = useResearchRuns(loaded.filter(researchable).map((i) => i.id));
+  const list = loaded.filter((i) => matchesFilter(researchFilter, research.runs.get(i.id)));
   const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
     of: undefined,
     reasons: {},
@@ -150,13 +167,13 @@ export default function ReviewQueuePage() {
   }, [items.loading, selected, heading]);
 
   const setFilter = (
-    name: 'status' | 'kind' | 'category' | 'page' | 'view',
+    name: 'status' | 'kind' | 'category' | 'page' | 'view' | 'research',
     value: string | undefined,
   ) => {
     const next = new URLSearchParams(params);
     if (value === undefined) next.delete(name);
     else next.set(name, value);
-    if (name !== 'page') next.delete('page');
+    if (name !== 'page' && name !== 'research') next.delete('page');
     setParams(next);
     setPicked(new Map());
   };
@@ -176,13 +193,27 @@ export default function ReviewQueuePage() {
     if (focus) rows.current.get(id)?.focus();
   };
 
+  const researched = selected ? outcome : null;
+  const blocked = !!researched && !researched.complete;
+
   const resolve = async (item: ReviewItem, decision: Decision) => {
     if (busy || item.status !== 'OPEN') return;
+    if (decision === 'ACCEPTED' && blocked) return;
     setBusy(true);
     setActionError(null);
     setListed(null);
     try {
-      const text = notes[item.id]?.trim();
+      const accepted = decision === 'ACCEPTED' ? researched : null;
+      if (accepted?.edit) {
+        await adminApi.editCandidate(item.id, {
+          expectedDetails: item.details ?? null,
+          ...accepted.edit,
+        });
+      }
+      const text = [notes[item.id]?.trim(), accepted?.note]
+        .filter(Boolean)
+        .join(' · ')
+        .slice(0, NOTE_MAX);
       const decided = await adminApi.resolveReviewItem(item.id, {
         status: decision,
         ...(text ? { note: text } : {}),
@@ -203,18 +234,50 @@ export default function ReviewQueuePage() {
     }
   };
 
-  const resolveMany = async (decision: Decision, text: string | undefined) => {
-    if (busy || picked.size === 0) return;
+  const startResearch = async (body: ReviewResearchStart) => {
+    if (busy) return;
+    setBusy(true);
+    setActionError(null);
+    try {
+      const started = await adminApi.startReviewResearch(body);
+      setAnnouncement(t('admin.research.queued', { count: started.runs.length }));
+      setStartAll(false);
+      research.reload();
+    } catch (e) {
+      setActionError(actionErrorOf(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancelResearch = async (runId: string) => {
+    try {
+      await adminApi.cancelReviewResearch(runId);
+      setAnnouncement(t('admin.research.cancelled'));
+    } catch (e) {
+      setActionError(actionErrorOf(e));
+    } finally {
+      research.reload();
+    }
+  };
+
+  const resolveMany = async (
+    decision: Decision,
+    text: string | undefined,
+    ids: string[] = [...picked.keys()],
+  ) => {
+    if (busy || ids.length === 0) return;
     setBusy(true);
     setActionError(null);
     try {
       const result = await adminApi.resolveReviewItems({
-        ids: [...picked.keys()],
+        ids,
         status: decision,
         ...(text ? { note: text } : {}),
       });
       const failed = new Set(result.items.filter((i) => i.outcome !== 'RESOLVED').map((i) => i.id));
-      setPicked((p) => new Map([...p].filter(([id]) => failed.has(id))));
+      setPicked((p) => new Map([...p].filter(([id]) => failed.has(id) || !ids.includes(id))));
+      setRejecting([]);
       setBulkResult(bulkSummary(t, result));
       focusAfterLoad.current = true;
       reloadQueue();
@@ -343,10 +406,37 @@ export default function ReviewQueuePage() {
             </button>
           </span>
         )}
+        {!byTarget && (
+          <label>
+            {t('admin.research.filter')}
+            <select
+              value={researchFilter ?? ''}
+              onChange={(e) => setFilter('research', e.target.value || undefined)}
+            >
+              <option value="">{t('admin.research.filterAny')}</option>
+              {RESEARCH_FILTERS.map((f) => (
+                <option key={f} value={f}>
+                  {t(`admin.research.filterOption.${f}`)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button type="button" className="btn" aria-keyshortcuts="?" onClick={() => setHelp(true)}>
           {t('admin.keys.open')}
         </button>
       </div>
+      {!byTarget && status === 'OPEN' && loaded.some(researchable) && (
+        <ResearchBar
+          picked={[...picked.values()]}
+          page={loaded}
+          runs={research.runs}
+          busy={busy}
+          onStart={(itemIds) => void startResearch({ itemIds, allOpen: false })}
+          onStartAll={() => setStartAll(true)}
+          onRejectResearched={setRejecting}
+        />
+      )}
       {byTarget ? (
         <RelationshipGroups
           page={page}
@@ -363,7 +453,11 @@ export default function ReviewQueuePage() {
           next={<RetryButton onClick={retry} />}
         />
       ) : list.length === 0 || !selected ? (
-        <AdminEmpty command={command} text={t('admin.queueEmpty')} />
+        researchFilter && loaded.length > 0 ? (
+          <AdminEmpty command={command} text={t('admin.research.filterEmpty')} />
+        ) : (
+          <AdminEmpty command={command} text={t('admin.queueEmpty')} />
+        )
       ) : (
         // eslint-disable-next-line jsx-a11y/no-static-element-interactions
         <div className="h2-admin__review" onKeyDown={onKeyDown}>
@@ -377,6 +471,7 @@ export default function ReviewQueuePage() {
                   <th scope="col">{t('admin.col.kind')}</th>
                   <th scope="col">{t('admin.col.resource')}</th>
                   <th scope="col">{t('admin.col.check')}</th>
+                  <th scope="col">{t('admin.research.col.research')}</th>
                   <th scope="col">{t('admin.col.opened')}</th>
                   <th scope="col">{t('admin.col.status')}</th>
                 </tr>
@@ -444,6 +539,15 @@ export default function ReviewQueuePage() {
                           {rowText(t, it, reasons[it.id] ?? it.reason, candidate)}
                         </button>
                       </td>
+                      <td>
+                        <ResearchCell
+                          item={it}
+                          run={research.runs.get(it.id)}
+                          busy={busy}
+                          onStart={(id) => void startResearch({ itemIds: [id], allOpen: false })}
+                          onCancel={(run) => void cancelResearch(run.id)}
+                        />
+                      </td>
                       <td className="h2-nowrap">{formatDate(it.createdAt, 'INSTANT')}</td>
                       <td>
                         <StatusPill tone={REVIEW_TONE[it.status]}>
@@ -470,6 +574,14 @@ export default function ReviewQueuePage() {
               {selected.resourceTitle ? ` · ${selected.resourceTitle}` : ''}
             </p>
             <ItemDetails item={selected} onChanged={items.reload} />
+            {research.runs.get(selected.id)?.status === 'DONE' && researchable(selected) && (
+              <ResearchDecisions
+                key={research.runs.get(selected.id)!.id}
+                run={research.runs.get(selected.id)!}
+                candidateEditable={selected.kind === 'RESOURCE_CANDIDATE'}
+                onOutcome={setOutcome}
+              />
+            )}
             {selected.status === 'OPEN' ? (
               <div className="h2-admin__decide">
                 <label className="h2-admin__note">
@@ -492,11 +604,12 @@ export default function ReviewQueuePage() {
                   <button
                     type="button"
                     className="btn btn-primary"
-                    aria-disabled={disabled}
+                    aria-disabled={disabled || blocked || undefined}
+                    aria-describedby={blocked ? 'rq-accept-why' : undefined}
                     aria-keyshortcuts="a"
                     onClick={() => void resolve(selected, 'ACCEPTED')}
                   >
-                    {t('admin.accept')}
+                    {t(researched ? 'admin.research.accept' : 'admin.accept')}
                     <span className="sr-only"> {reason}</span>
                   </button>
                   <button
@@ -509,6 +622,11 @@ export default function ReviewQueuePage() {
                     {t('admin.reject')}
                     <span className="sr-only"> {reason}</span>
                   </button>
+                  {blocked && researched && (
+                    <span id="rq-accept-why" className="h2-admin__research-why">
+                      {t('admin.research.acceptWhy', { count: researched.left.length })}
+                    </span>
+                  )}
                 </div>
               </div>
             ) : (
@@ -542,6 +660,19 @@ export default function ReviewQueuePage() {
         />
       )}
       <ReviewKeysHelp open={help} onClose={() => setHelp(false)} />
+      <StartAllDialog
+        open={startAll}
+        busy={busy}
+        onClose={() => setStartAll(false)}
+        onConfirm={() => void startResearch({ allOpen: true })}
+      />
+      <BatchRejectDialog
+        items={rejecting}
+        runs={research.runs}
+        busy={busy}
+        onClose={() => setRejecting([])}
+        onConfirm={(ids, text) => void resolveMany('REJECTED', text, ids)}
+      />
     </section>
   );
 }
