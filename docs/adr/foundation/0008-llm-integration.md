@@ -20,8 +20,8 @@ Without a configured model the application must still work.
    `nvidia/Nemotron-3.5-Super-VL`), `H2_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; it
    plans the guide's search, translates queries and classifies awesome lists). Both give JSON schema output, with thinking
    off through `chat_template_kwargs`. Both are public endpoints: Nebius shows their region as global and
-   can move them at any time (Legal quick guide, read 2026-11-18). Zero Data Retention is off, so Nebius keeps
-   inputs and outputs in Finland for up to one year. `LlmSettings` holds the fallbacks:
+   can move them at any time (Legal quick guide, read 2026-11-18). Zero Data Retention is on for the
+   organisation: Nebius keeps no input or output once it has answered. `LlmSettings` holds the fallbacks:
    an empty fast model means the reasoning model does these calls too. Each feature names a tier, not a model id
    (`ModelTier`: FAST or REASONING; `LlmSettings.model(tier)`). Bulk and back-office work runs on FAST by default:
    Scout enrichment and its gap rounds (`H2_SCOUT_ENRICHMENT_MODEL`), the event page reader
