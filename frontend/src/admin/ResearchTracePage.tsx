@@ -42,6 +42,13 @@ function merged(steps: ReviewResearchStep[], step: ReviewResearchStep): ReviewRe
     : [...steps, step].sort((a, b) => a.seq - b.seq);
 }
 
+export function restarted(before: ReviewResearchRun, now: ReviewResearchRun): boolean {
+  if (now.status === 'QUEUED') return before.status !== 'QUEUED';
+  return !!before.startedAt && !!now.startedAt && before.startedAt !== now.startedAt;
+}
+
+type Streamed = { attempt: string | null; steps: ReviewResearchStep[] };
+
 async function follow(
   runId: string,
   afterSeq: number,
@@ -140,7 +147,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
     { cache: false },
   );
   const detail: ReviewResearchDetail | undefined = loaded.data ?? loaded.previous;
-  const [streamed, setStreamed] = useState<ReviewResearchStep[]>([]);
+  const [streamed, setStreamed] = useState<Streamed>({ attempt: null, steps: [] });
   const [live, setLive] = useState<ReviewResearchRun | null>(null);
   const [stopped, setStopped] = useState(false);
   const [shown, setShown] = useState<Kind | 'ERRORS' | null>(null);
@@ -152,6 +159,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
   useEffect(() => {
     if (!detail || !isActive(detail.run)) return;
     const ctrl = new AbortController();
+    const attempt = detail.run.startedAt ?? null;
     let finished = false;
     follow(
       runId,
@@ -159,11 +167,15 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
       ctrl.signal,
       (s) => {
         lastSeq.current = Math.max(lastSeq.current, s.seq);
-        setStreamed((all) => merged(all, s));
+        setStreamed((all) => ({
+          attempt,
+          steps: all.attempt === attempt ? merged(all.steps, s) : [s],
+        }));
       },
       (r) => {
         setLive(r);
-        if (isActive(r)) return;
+        if (restarted(detail.run, r)) lastSeq.current = 0;
+        else if (isActive(r)) return;
         finished = true;
         reload();
       },
@@ -184,7 +196,10 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
   if (!detail) return <p role="status">{t('admin.research.loading')}</p>;
 
   const run = live && isActive(detail.run) ? live : detail.run;
-  const steps = streamed.reduce(merged, detail.steps);
+  const steps =
+    streamed.attempt === (detail.run.startedAt ?? null)
+      ? streamed.steps.reduce(merged, detail.steps)
+      : detail.steps;
   const reconnect = () => {
     setStopped(false);
     heading.current?.focus();
