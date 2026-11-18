@@ -24,7 +24,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = "helper2.research.enabled=false")
+@TestPropertySource(
+    properties = {"helper2.research.enabled=true", "helper2.research.concurrency=0"})
 class ReviewResearchApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
@@ -210,7 +211,7 @@ class ReviewResearchApiIT extends ApiTestBase {
             """
             INSERT INTO review_research (id, review_item_id, status, model, requested_by, finished_at, result)
             VALUES (gen_random_uuid(), :item, :status, 'm', 'test',
-                    CASE WHEN :status = 'DONE' THEN now() END,
+                    CASE WHEN :status IN ('DONE', 'FAILED', 'CANCELLED') THEN now() END,
                     CASE WHEN :status = 'DONE'
                          THEN jsonb_build_object('verdict', CAST(:verdict AS text), 'reason', 'r',
                                                  'attributes', jsonb_build_array(), 'dropped', jsonb_build_array())
@@ -236,6 +237,54 @@ class ReviewResearchApiIT extends ApiTestBase {
             .getResponse()
             .getContentAsString();
     return JsonPath.read(body, "$.items[*].id");
+  }
+
+  @Test
+  void allOpenSkipsAnItemResearchedDoneAndResearchAgainRunsIt() throws Exception {
+    UUID done = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID failed = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID never = item("COURSE_CANDIDATE", "OPEN");
+    run(done, "DONE", "KEEP");
+    run(failed, "FAILED", null);
+    String estimate =
+        mvc.perform(get("/api/v1/admin/review-research/estimate").with(admin))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(JsonPath.<Integer>read(estimate, "$.alreadyResearched")).isPositive();
+    assertThat(JsonPath.<Integer>read(estimate, "$.items")).isGreaterThanOrEqualTo(2);
+
+    List<String> queued = JsonPath.read(start("{\"allOpen\":true}"), "$.runs[*].itemId");
+    assertThat(queued)
+        .contains(failed.toString(), never.toString())
+        .doesNotContain(done.toString());
+    jdbc.sql("DELETE FROM review_research WHERE status = 'QUEUED'").update();
+
+    List<String> again =
+        JsonPath.read(start("{\"itemIds\":[\"%s\"]}".formatted(done)), "$.runs[*].itemId");
+    assertThat(again).containsExactly(done.toString());
+  }
+
+  @Test
+  void aRequeuedRunIsQueuedAgainWithoutItsSteps() throws Exception {
+    UUID resource = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID runId =
+        UUID.fromString(
+            JsonPath.read(start("{\"itemIds\":[\"%s\"]}".formatted(resource)), "$.runs[0].id"));
+    runs.claimNext(Instant.now()).orElseThrow();
+    runs.step(
+        new ResearchStep(
+            runId, 1, ResearchStep.Kind.MODEL_CALL, "m", "q", "a", null, 1, 10, 2, Instant.now()));
+
+    assertThat(runs.requeue(runId)).isTrue();
+
+    ResearchRun back = runs.find(runId).orElseThrow();
+    assertThat(back.status()).isEqualTo(ResearchRun.Status.QUEUED);
+    assertThat(back.steps()).isZero();
+    assertThat(runs.steps(runId, 0)).isEmpty();
+    assertThat(runs.requeue(runId)).isFalse();
+    assertThat(runs.claimNext(Instant.now())).map(ResearchRun::id).contains(runId);
   }
 
   @Test

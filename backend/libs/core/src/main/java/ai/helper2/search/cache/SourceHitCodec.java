@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -96,14 +97,17 @@ final class SourceHitCodec {
       for (JsonNode n : root.path("hits")) {
         String sourceId = n.path("sourceId").asString();
         List<PopularityMetric> pop = new ArrayList<>();
-        n.path("popularity")
-            .forEach(p ->
-                pop.add(
-                    new PopularityMetric(
-                        PopularityKind.valueOf(p.path("kind").asString()),
-                        p.path("value").asLong(),
-                        sourceId,
-                        Instant.parse(p.path("asOf").asString()))));
+        for (JsonNode p : n.path("popularity")) {
+          PopularityKind kind = known(PopularityKind.class, p.path("kind").asString(), null);
+          if (kind != null) {
+            pop.add(
+                new PopularityMetric(
+                    kind,
+                    p.path("value").asLong(),
+                    sourceId,
+                    Instant.parse(p.path("asOf").asString())));
+          }
+        }
         hits.add(
             new SourceHit(
                 sourceId,
@@ -113,14 +117,17 @@ final class SourceHitCodec {
                 CanonicalUrl.of(text(n, "repositoryUrl")),
                 n.path("title").asString(),
                 text(n, "description"),
-                ValueOrigin.valueOf(n.path("descriptionOrigin").asString()),
-                ResourceType.valueOf(n.path("type").asString()),
-                Audience.valueOf(n.path("audience").asString()),
-                text(n, "techLevel") == null ? null : TechLevel.valueOf(text(n, "techLevel")),
+                known(
+                    ValueOrigin.class,
+                    n.path("descriptionOrigin").asString(),
+                    ValueOrigin.SOURCE_PROVIDED),
+                known(ResourceType.class, n.path("type").asString(), ResourceType.OTHER),
+                known(Audience.class, n.path("audience").asString(), Audience.UNKNOWN),
+                known(TechLevel.class, text(n, "techLevel"), null),
                 strings(n.path("useCases")),
                 strings(n.path("tags")),
                 text(n, "license"),
-                text(n, "pricing") == null ? null : Pricing.valueOf(text(n, "pricing")),
+                known(Pricing.class, text(n, "pricing"), null),
                 strings(n.path("platforms")),
                 n.has("openSource") ? n.path("openSource").asBoolean() : null,
                 readDate(n.path("published")),
@@ -131,8 +138,8 @@ final class SourceHitCodec {
                 readDate(n.path("eventStart")),
                 readDate(n.path("eventEnd")),
                 text(n, "location"),
-                text(n, "eventKind") == null ? null : EventKind.valueOf(text(n, "eventKind")),
-                text(n, "eventFormat") == null ? null : EventFormat.valueOf(text(n, "eventFormat")),
+                known(EventKind.class, text(n, "eventKind"), null),
+                known(EventFormat.class, text(n, "eventFormat"), null),
                 java.util.Map.of(),
                 java.util.Set.of(),
                 foundIn(n.path("foundIn"))));
@@ -158,7 +165,7 @@ final class SourceHitCodec {
     }
     return new DateFact(
         Instant.parse(n.path("value").asString()),
-        DatePrecision.valueOf(n.path("precision").asString()),
+        known(DatePrecision.class, n.path("precision").asString(), DatePrecision.UNKNOWN),
         n.path("sourceId").asString(),
         List.of(),
         false);
@@ -169,6 +176,18 @@ final class SourceHitCodec {
       return null;
     }
     return new ListMatch(n.path("listTitle").asString(), n.path("headingPath").asString(""));
+  }
+
+  private static <E extends Enum<E>> @Nullable E known(
+      Class<E> type, @Nullable String value, @Nullable E whenUnknown) {
+    if (value == null) {
+      return whenUnknown;
+    }
+    try {
+      return Enum.valueOf(type, value);
+    } catch (IllegalArgumentException e) {
+      return whenUnknown;
+    }
   }
 
   private static String text(JsonNode n, String field) {

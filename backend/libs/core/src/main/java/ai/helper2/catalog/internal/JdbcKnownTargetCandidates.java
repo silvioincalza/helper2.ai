@@ -97,7 +97,8 @@ class JdbcKnownTargetCandidates implements KnownTargetCandidates {
         .query((rs, i) ->
             new Candidate(
                 rs.getString("name"),
-                KnownTarget.Kind.valueOf(rs.getString("kind")),
+                ResourceRows.known(
+                    KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL),
                 Arrays.asList((String[]) rs.getArray("other_names").getArray())))
         .optional();
   }

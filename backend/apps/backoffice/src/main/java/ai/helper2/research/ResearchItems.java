@@ -8,5 +8,7 @@ public interface ResearchItems {
 
   Optional<ResearchSubject> subject(UUID itemId);
 
-  List<UUID> openWithoutActiveRun(int limit);
+  List<UUID> openNotResearched(int limit);
+
+  int openResearchedDone();
 }

@@ -49,8 +49,14 @@ class ReviewResearchController implements ReviewResearchApi {
     if (allOpen == !ids.isEmpty()) {
       throw new ApiProblem(ProblemType.INVALID_REQUEST, "Give itemIds or allOpen, not both.");
     }
-    List<ResearchRun> queued =
-        allOpen ? start.startAllOpen(adminId()) : start.start(ids, adminId());
+    List<ResearchRun> queued;
+    try {
+      queued = allOpen ? start.startAllOpen(adminId()) : start.start(ids, adminId());
+    } catch (StartResearch.ResearchOff e) {
+      throw new ApiProblem(
+          ProblemType.UNAVAILABLE,
+          "Research is off on this back office (H2_RESEARCH_ENABLED). No run was queued.");
+    }
     return ResponseEntity.status(HttpStatus.ACCEPTED).body(runsDto(queued));
   }
 
@@ -62,7 +68,8 @@ class ReviewResearchController implements ReviewResearchApi {
   @Override
   public ResponseEntity<ReviewResearchEstimateDto> estimateReviewResearch() {
     StartResearch.Estimate e = start.estimateAllOpen();
-    return ResponseEntity.ok(new ReviewResearchEstimateDto(e.items(), e.maxModelCalls()));
+    return ResponseEntity.ok(
+        new ReviewResearchEstimateDto(e.items(), e.maxModelCalls(), e.alreadyResearched()));
   }
 
   @Override

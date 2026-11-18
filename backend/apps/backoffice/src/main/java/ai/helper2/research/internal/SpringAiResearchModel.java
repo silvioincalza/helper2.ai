@@ -41,6 +41,7 @@ class SpringAiResearchModel implements ResearchModel {
   private final int maxTokens;
   private final BudgetedChat calls;
   private final JsonMapper json;
+  private final DailyBudget budget;
   private final boolean nativeSchema;
 
   SpringAiResearchModel(
@@ -57,7 +58,13 @@ class SpringAiResearchModel implements ResearchModel {
     this.maxTokens = maxTokens;
     this.calls = new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience);
     this.json = json;
+    this.budget = budget;
     this.nativeSchema = nativeSchema;
+  }
+
+  @Override
+  public int callsLeftToday() {
+    return budget.remaining();
   }
 
   @Override
@@ -124,7 +131,7 @@ class SpringAiResearchModel implements ResearchModel {
     try {
       return calls.response(
           new BudgetedChat.Call("research", model, PROMPT_VERSION),
-          () -> new Unavailable("today's research model calls are used up"),
+          BudgetSpent::new,
           () -> chat.call(prompt));
     } catch (Unavailable e) {
       throw e;

@@ -53,7 +53,12 @@ class RunResearchTest {
           }
 
           @Override
-          public List<UUID> openWithoutActiveRun(int limit) {
+          public int openResearchedDone() {
+            return 0;
+          }
+
+          @Override
+          public List<UUID> openNotResearched(int limit) {
             return List.of(itemId);
           }
         };
@@ -483,6 +488,42 @@ class RunResearchTest {
   }
 
   @Test
+  void fewerCallsLeftThanOneRunTakesClaimsNoRunAndTheQueuedRunWaits() {
+    model.callsLeft = RunResearch.MAX_MODEL_CALLS - 1;
+    runs.queue();
+
+    assertThat(research().runNext()).isFalse();
+
+    assertThat(runs.claimed).isFalse();
+    assertThat(runs.queued).isNotNull();
+    assertThat(runs.error).isNull();
+  }
+
+  @Test
+  void enoughCallsLeftForOneRunClaimsIt() {
+    model.callsLeft = RunResearch.MAX_MODEL_CALLS;
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    assertThat(research().runNext()).isTrue();
+    assertThat(runs.claimed).isTrue();
+  }
+
+  @Test
+  void aBudgetSpentDuringARunPutsItBackInTheQueueWithoutItsSteps() {
+    model.turns.add(callTool("read_page"));
+    model.spentAfter = 1;
+    runs.queue();
+
+    research(tool("read_page", () -> new ResearchTool.Output(PAGE, "https://acme.dev"))).runNext();
+
+    assertThat(runs.requeued).isTrue();
+    assertThat(runs.steps).isEmpty();
+    assertThat(runs.error).isNull();
+    assertThat(runs.result).isNull();
+  }
+
+  @Test
   void nothingQueuedIsNoRun() {
     assertThat(research().runNext()).isFalse();
   }
@@ -492,6 +533,13 @@ class RunResearchTest {
     final List<List<Message>> seen = new ArrayList<>();
     final List<List<ResearchTool>> toolsOffered = new ArrayList<>();
     boolean unavailable;
+    int callsLeft = Integer.MAX_VALUE;
+    int spentAfter = Integer.MAX_VALUE;
+
+    @Override
+    public int callsLeftToday() {
+      return callsLeft;
+    }
 
     @Override
     public String model() {
@@ -502,6 +550,9 @@ class RunResearchTest {
     public Turn next(List<Message> conversation, List<ResearchTool> tools) {
       if (unavailable) {
         throw new Unavailable("no model");
+      }
+      if (seen.size() >= spentAfter) {
+        throw new BudgetSpent();
       }
       seen.add(conversation);
       toolsOffered.add(tools);
@@ -522,6 +573,8 @@ class RunResearchTest {
     String error;
     int promptTokens;
     boolean cancelled;
+    boolean claimed;
+    boolean requeued;
 
     void queue() {
       queued =
@@ -552,8 +605,21 @@ class RunResearchTest {
     }
 
     @Override
+    public java.util.Set<UUID> doneItems() {
+      return java.util.Set.of();
+    }
+
+    @Override
+    public boolean requeue(UUID runId) {
+      requeued = true;
+      steps.clear();
+      return true;
+    }
+
+    @Override
     public Optional<ResearchRun> claimNext(Instant now) {
       Optional<ResearchRun> r = Optional.ofNullable(queued);
+      claimed = r.isPresent();
       queued = null;
       return r;
     }

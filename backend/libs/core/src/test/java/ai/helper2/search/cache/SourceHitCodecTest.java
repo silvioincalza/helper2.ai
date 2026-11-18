@@ -107,6 +107,59 @@ class SourceHitCodecTest {
   }
 
   @Test
+  void aValueANewerReleaseWroteReadsAsItsFallback() {
+    SourceHit hit =
+        new SourceHit(
+            "helper2-index",
+            "z",
+            URI.create("https://github.com/a/awesome"),
+            CanonicalUrl.of("https://github.com/a/awesome"),
+            null,
+            "a/awesome",
+            null,
+            ValueOrigin.SOURCE_PROVIDED,
+            ResourceType.LIBRARY,
+            Audience.BUILD_WITH_AI,
+            null,
+            Set.of(),
+            Set.of(),
+            null,
+            null,
+            Set.of(),
+            null,
+            DateFact.unknown(),
+            DateFact.unknown(),
+            List.of(new PopularityMetric(PopularityKind.GITHUB_STARS, 42, "helper2-index", now)),
+            now,
+            0,
+            DateFact.unknown(),
+            DateFact.unknown(),
+            null,
+            null,
+            null,
+            java.util.Map.of(),
+            java.util.Set.of(),
+            null);
+    String newer =
+        codec
+            .encode(new CachedHits(List.of(hit), now))
+            .replace("\"LIBRARY\"", "\"SOMETHING_NEW\"")
+            .replace("\"BUILD_WITH_AI\"", "\"SOMEONE_NEW\"")
+            .replace("\"GITHUB_STARS\"", "\"NEW_COUNT\"");
+
+    CachedHits back = codec.decode(newer);
+
+    assertThat(back).isNotNull();
+    assertThat(back.getHits())
+        .singleElement()
+        .satisfies(h -> {
+          assertThat(h.getType()).isEqualTo(ResourceType.OTHER);
+          assertThat(h.getAudience()).isEqualTo(Audience.UNKNOWN);
+          assertThat(h.getPopularity()).isEmpty();
+        });
+  }
+
+  @Test
   void entriesOfAnotherVersionAreAMiss() {
     String encoded = codec.encode(new CachedHits(List.of(), now));
     assertThat(

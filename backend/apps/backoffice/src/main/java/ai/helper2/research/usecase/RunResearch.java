@@ -34,6 +34,7 @@ import org.jspecify.annotations.Nullable;
 public final class RunResearch {
 
   public static final int MAX_TOOL_CALLS = 12;
+  public static final int MAX_MODEL_CALLS = MAX_TOOL_CALLS + 2;
   public static final Duration MAX_DURATION = Duration.ofMinutes(3);
 
   public static final int MAX_TEXT_TO_MODEL = 6_000;
@@ -83,6 +84,9 @@ public final class RunResearch {
   }
 
   public boolean runNext() {
+    if (model.callsLeftToday() < MAX_MODEL_CALLS) {
+      return false;
+    }
     Optional<ResearchRun> claimed = runs.claimNext(clock.instant());
     claimed.ifPresent(this::run);
     return claimed.isPresent();
@@ -92,6 +96,8 @@ public final class RunResearch {
     Loop loop = new Loop(run);
     try {
       loop.go();
+    } catch (ResearchModel.BudgetSpent e) {
+      runs.requeue(run.id());
     } catch (ResearchModel.Unavailable e) {
       loop.fail("model unavailable: " + e.getMessage());
     } catch (RuntimeException e) {
@@ -221,7 +227,7 @@ public final class RunResearch {
       String toModel;
       if (out.url() != null && error == null && !text.isBlank()) {
         String id = "e" + (evidence.size() + 1);
-        evidence.put(id, new Evidence(id, call.name(), out.url(), text));
+        evidence.put(id, new Evidence(id, call.name(), out.url(), text, out.recordOf()));
         toModel =
             "evidenceId="
                 + id

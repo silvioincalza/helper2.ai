@@ -15,6 +15,8 @@ public interface ResearchRuns {
 
   Optional<ResearchRun> claimNext(Instant now);
 
+  boolean requeue(UUID runId);
+
   void step(ResearchStep step);
 
   void done(UUID runId, ResearchResult result, int promptTokens, int completionTokens, Instant at);
@@ -32,6 +34,8 @@ public interface ResearchRuns {
   List<ResearchRun> latest(Collection<UUID> itemIds);
 
   Set<UUID> itemsWhere(ResearchFilter filter);
+
+  Set<UUID> doneItems();
 
   List<ResearchStep> steps(UUID runId, int afterSeq);
 

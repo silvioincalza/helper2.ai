@@ -408,7 +408,7 @@ class ResourceRows {
     return known(ValueOrigin.class, origin, null) != null;
   }
 
-  private static <E extends Enum<E>> E known(Class<E> type, String value, E whenUnknown) {
+  static <E extends Enum<E>> E known(Class<E> type, String value, E whenUnknown) {
     if (value == null) {
       return whenUnknown;
     }

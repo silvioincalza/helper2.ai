@@ -66,6 +66,8 @@ helper2:
     daily-model-calls: ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}
     daily-page-reads: ${H2_RESEARCH_DAILY_PAGE_READS:300}
     concurrency: ${H2_RESEARCH_CONCURRENCY:4}
+    max-streams: ${H2_RESEARCH_MAX_STREAMS:8}
+    check-url-deadline: ${H2_RESEARCH_CHECK_URL_DEADLINE:PT20S}
     tick: ${H2_RESEARCH_TICK:PT2S}
   sources:
     page-reader:
