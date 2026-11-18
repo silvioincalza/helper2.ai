@@ -8,10 +8,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E1 Foundation
 
-### Now
-
-- [S1.8.6 An alert on a single out-of-memory kill](https://github.com/silvioincalza/helper2.ai/issues/542)
-
 ### Next
 
 - [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
@@ -31,22 +27,17 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S2.2.9 An undated event from the live web search read by the Scout event reader](https://github.com/silvioincalza/helper2.ai/issues/511)
-- [S2.2.12 Upcoming AI conferences from confs.tech](https://github.com/silvioincalza/helper2.ai/issues/527)
 - [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
 
 ### Next
 
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
-- [S2.2.10 A structured source of AI events chosen](https://github.com/silvioincalza/helper2.ai/issues/513)
-- [S2.2.11 A LinkedIn post about an event leads to the event's own site](https://github.com/silvioincalza/helper2.ai/issues/516)
-- [S2.2.13 ai-deadlines reads raw files without following redirects](https://github.com/silvioincalza/helper2.ai/issues/540)
 - [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
 - [S2.11.4 The Scout to visit every record that has a repository link](https://github.com/silvioincalza/helper2.ai/issues/216)
-- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563): the rows already in the catalog that fail the rule, listed for the admin
+- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563)
 
 ### Later
 
@@ -61,8 +52,13 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E3 Search
 
+### Now
+
+- [S3.15.4 A past period and a newness question read right in every language](https://github.com/silvioincalza/helper2.ai/issues/567)
+
 ### Next
 
+- [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
 - [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
@@ -82,6 +78,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
+- [S4.1.9 A quote from an MCP Registry record linked to its Registry entry](https://github.com/silvioincalza/helper2.ai/issues/566)
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
 
 ### Next
@@ -119,11 +116,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S6.2.6 The review page to read a typed resource candidate](https://github.com/silvioincalza/helper2.ai/issues/304)
 - [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
-
-### No priority
-
-- [S6.2.10 To decide relationship candidates once per target name](https://github.com/silvioincalza/helper2.ai/issues/520)
-- [S6.2.14 The Overview shows enrichment validation issues grouped by issue](https://github.com/silvioincalza/helper2.ai/issues/525)
 
 ## E7 Site and frontend
 

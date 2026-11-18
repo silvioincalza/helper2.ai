@@ -860,6 +860,8 @@ class RunScoutTest {
 
       override fun eligible(resourceIds: List<UUID>) = eligible(resourceIds)
 
+      override fun waiting(resourceIds: List<UUID>) = resourceIds
+
       override fun requestRun(resourceId: UUID) {
         requested += resourceId
       }
