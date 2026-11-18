@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.research.CheckResearch;
+import ai.helper2.research.ResearchFilter;
 import ai.helper2.research.ResearchItems;
 import ai.helper2.research.ResearchModel;
 import ai.helper2.research.ResearchResult;
@@ -261,6 +262,11 @@ class ResearchEvalRecorder {
     @Override
     public int purge(Instant before) {
       return 0;
+    }
+
+    @Override
+    public Set<UUID> itemsWhere(ResearchFilter filter) {
+      return Set.of();
     }
   }
 }
