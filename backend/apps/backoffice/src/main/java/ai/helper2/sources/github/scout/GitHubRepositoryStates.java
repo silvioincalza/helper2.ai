@@ -52,8 +52,7 @@ public final class GitHubRepositoryStates implements RepositoryStates {
       return Map.of();
     }
     JsonNode answer = ask(asked);
-    Set<String> notFound = notFoundAliases(answer);
-    refuseAnAnswerThatFindsTooFew(asked.size(), notFound.size());
+    Set<String> notFound = believed(notFoundAliases(answer), asked.size());
     JsonNode data = answer.path("data");
     if (!data.isObject()) {
       throw new SourceFailure.Unavailable("GraphQL answer without data");
@@ -68,10 +67,10 @@ public final class GitHubRepositoryStates implements RepositoryStates {
     return visits;
   }
 
-  private static void refuseAnAnswerThatFindsTooFew(int asked, int notFound) {
-    if (asked >= SMALLEST_JUDGED_BATCH && notFound * 5 > asked * MOST_NOT_FOUND_IN_FIVE) {
-      throw new SourceFailure.Unavailable("too many repositories not found in one answer");
-    }
+  private static Set<String> believed(Set<String> notFound, int asked) {
+    boolean tooMany =
+        asked >= SMALLEST_JUDGED_BATCH && notFound.size() * 5 > asked * MOST_NOT_FOUND_IN_FIVE;
+    return tooMany ? Set.of() : notFound;
   }
 
   private JsonNode ask(List<String> asked) {

@@ -93,7 +93,7 @@ the product: the next source does not get it.
      that merely links it (a package whose repository has no record of its own) never becomes `gone`. A source
      that states `archived` again, or a later visit that finds the repository, removes `gone` and `notFoundAt`.
      An answer where more than one repository in five is not found, in a batch of 10 or more, is not believed:
-     it fails like an outage and stores nothing. The catalog search reads a `gone` record as `archived` (`ResourceRows.statedVitality`), so
+     those repositories count as unanswered and get only `visitedAt`, so the sweep moves on to the next batch. The catalog search reads a `gone` record as `archived` (`ResourceRows.statedVitality`), so
      the rule of §2 refuses it with the reason `archived`: the rule itself has no new fact. As with `archived`,
      one such record refuses the whole resource, so a package stored on the repository's resource goes with it.
    - A repository that gives no answer and no "not found" (blocked, or an error for that one name) gets only
@@ -239,6 +239,8 @@ the product: the next source does not get it.
 - An archived repository stays a result until the sweep reaches it: up to one full round.
 - `due` sorts every record with a GitHub repository at each tick, with no index on `visitedAt`. Not measured.
 - A renamed repository is found under its new name by GitHub, so it is not `gone`; the record keeps the old link.
+- A batch keeps its records from one round to the next. One where more than one repository in five is truly
+  gone never marks them `gone`; it shows as `outcome="unanswered"`.
 - No alert reads `helper2.scout.repository_sweep` yet: a sweep that fails every tick shows only in
   `outcome="failed"` and a log line.
 - The lock holds for the length of one batch. With two back office replicas and a short batch, both could sweep

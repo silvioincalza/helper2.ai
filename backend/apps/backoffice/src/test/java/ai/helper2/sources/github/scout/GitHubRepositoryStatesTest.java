@@ -117,7 +117,7 @@ class GitHubRepositoryStatesTest {
   }
 
   @Test
-  void anAnswerThatFindsTooFewOfABatchFailsTheWholeQuestion() {
+  void anAnswerThatFindsTooFewOfABatchLeavesThemUnansweredInsteadOfGone() {
     List<String> asked = IntStream.range(0, 10).mapToObj(i -> "acme/tool-" + i).toList();
     String data =
         IntStream.range(0, 10)
@@ -131,7 +131,7 @@ class GitHubRepositoryStatesTest {
         "/graphql",
         FixtureServer.Reply.ok("{\"data\": {" + data + "}, \"errors\": [" + errors + "]}"));
 
-    assertThatThrownBy(() -> states().of(asked)).isInstanceOf(SourceFailure.Unavailable.class);
+    assertThat(states().of(asked)).isEmpty();
   }
 
   @Test
