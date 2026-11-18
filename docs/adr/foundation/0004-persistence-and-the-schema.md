@@ -106,6 +106,8 @@ The schema is one file, and from the first release tag on that file must never c
      branch (after 2026.11.5, the next patch of `release/2026.11`: 2026.11.6), and `n` counting from 1 within it
      (`V2026.11.6.1__known_target_tool.sql`). Flyway compares the versions part by part, so they run in release order.
      A pull request whose migration did not ship in a release renames it to the version after that release.
+     A migration reaches a release branch only with `main` merged into it, never by a fix of its own
+     ([0045](../operations/0045-releases-and-versions.md) §16).
      `backend/build.gradle.kts` is not changed for it: the release workflow sets the version.
    - **CI holds both halves of the rule** (`.github/scripts/released-migrations.sh`, job `changes`, every pull
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other

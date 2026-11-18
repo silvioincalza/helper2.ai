@@ -49,6 +49,8 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: .github/scripts/branch-name.sh "$HEAD_REF"
       - name: Released migrations are unchanged
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
           .github/scripts/released-migrations.sh --self-test

@@ -65,6 +65,20 @@ new_migrations_named_after_their_release() {
   echo "the new migrations carry a version above $latest"
 }
 
+new_migrations_come_from_main() {
+  local head=$1 latest=$2 main=$3 file bad=0
+  git rev-parse --verify --quiet "$main^{commit}" > /dev/null || { echo "no commit $main to compare the release branch with" >&2; return 2; }
+  for file in $(versioned_in "$head"); do
+    [[ $file == "$FIRST" ]] && continue
+    [[ -n $(blob "$latest" "$file") ]] && continue
+    [[ $(blob "$head" "$file") == "$(blob "$main" "$file")" ]] && continue
+    echo "::error file=$MIGRATIONS/$file::$file is not the file main holds: a migration reaches a release branch only with main, so the two lines never hold two scripts of one version (ADR 0045 §16)"
+    bad=1
+  done
+  ((bad == 0)) || return 1
+  echo "the new migrations of this release branch are the files main holds"
+}
+
 carried_release() {
   local head=$1 version
   version=$(git show "$head:backend/build.gradle.kts" 2> /dev/null | sed -n 's/^version = "\(.*\)"$/\1/p' || true)
@@ -91,6 +105,9 @@ check() {
     released_migrations_unchanged "$head" "$release" || bad=1
   done
   new_migrations_named_after_their_release "$head" "$(sort -V <<< "$releases" | tail -1)" || bad=1
+  if [[ ${BASE_REF:-} == release/* ]]; then
+    new_migrations_come_from_main "$head" "$(sort -V <<< "$releases" | tail -1)" "${MAIN_REF:-origin/main}" || bad=1
+  fi
   return "$bad"
 }
 
@@ -180,6 +197,20 @@ self_test() {
     write V2026.11.2.2__fix.sql one
     expect ok "a fix branch from an older release: the migrations of later releases are not in it"
     g switch -q main
+    g switch -qc into-the-release-line v2026.12.0
+    write V2026.12.1.1__fix.sql one
+    expect ok "a pull request into main from a release line: no base given"
+    BASE_REF=release/2026.12 MAIN_REF=main expect fail "a pull request into release/2026.12: a migration main does not hold"
+    remove V2026.12.1.1__fix.sql
+    g switch -q main
+    write V2026.12.1.2__shared.sql one
+    g switch -q into-the-release-line
+    write V2026.12.1.2__shared.sql one
+    BASE_REF=release/2026.12 MAIN_REF=main expect ok "a pull request into release/2026.12: the migration main holds"
+    write V2026.12.1.2__shared.sql two
+    BASE_REF=release/2026.12 MAIN_REF=main expect fail "a pull request into release/2026.12: the migration differs from main's"
+    g switch -q main
+    remove V2026.12.1.2__shared.sql
     g switch -qc side-release
     write V2026.12.1.1__side.sql one
     carry 2026.12.1
