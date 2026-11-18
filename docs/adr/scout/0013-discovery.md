@@ -307,7 +307,9 @@ No new table for deep search, no new dependency.
 ### Code
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java` — one category's
   searches, `keep` (Tavily's own pages, score, AI, shape), what is kept; `DiscoveryPages.java` — list, product or post,
-  by URL and title, built from `HostLists`; `ScoutLiveWebCredits.java` — credits and the daily cap.
+  by URL and title, built from `HostLists`; `ScoutLiveWebCredits.java` — credits and the daily cap;
+  `ScoutLiveWebSearch.java` — the search call, through the policy and the credit counter, and the deferred batch;
+  `QueryProgress.java` — the searches done and the start date of the window.
 - `backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — `isTavilysOwnPage`, `toHit`;
   `DiscoveryCategory.java`, `DiscoveryFamily.java`; `sources/config/DiscoveryCategories.java` — the checked entries, bound by
   `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`;

@@ -14,8 +14,12 @@ const POLL_MS = 2000;
 export const RESEARCH_FILTERS = ['KEEP', 'REJECT', 'DUPLICATE', 'ACTIVE', 'NONE'] as const;
 const RESEARCHABLE = new Set<ReviewItem['kind']>(['RESOURCE_CANDIDATE', 'COURSE_CANDIDATE']);
 
+export function hasResearch(item: ReviewItem): boolean {
+  return RESEARCHABLE.has(item.kind);
+}
+
 export function researchable(item: ReviewItem): boolean {
-  return item.status === 'OPEN' && RESEARCHABLE.has(item.kind);
+  return item.status === 'OPEN' && hasResearch(item);
 }
 
 function startable(item: ReviewItem, run: ReviewResearchRun | undefined): boolean {
@@ -147,7 +151,12 @@ export function ResearchRunLine({ run }: { run: ReviewResearchRun }) {
   const from = useTraceState();
   return (
     <p className="h2-admin__research-meta">
-      {t('admin.research.runLine', { status: t(`admin.research.status.${run.status}`) })}{' '}
+      {t('admin.research.runLine', {
+        status:
+          run.status === 'DONE' && run.verdict
+            ? t(`admin.research.verdict.${run.verdict}`)
+            : t(`admin.research.status.${run.status}`),
+      })}{' '}
       <Link to={`/admin/review/research/${run.id}`} state={from}>
         {isActive(run) ? t('admin.research.watch') : t('admin.research.everyStep')}
       </Link>

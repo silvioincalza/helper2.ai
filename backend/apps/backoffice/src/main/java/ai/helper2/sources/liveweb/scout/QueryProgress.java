@@ -1,5 +1,8 @@
 package ai.helper2.sources.liveweb.scout;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,6 +30,17 @@ final class QueryProgress {
               resumeCursor.substring(PREFIX.length()), new TypeReference<List<String>>() {}));
     } catch (JacksonException e) {
       return new LinkedHashSet<>();
+    }
+  }
+
+  static @Nullable String startDate(@Nullable String checkpoint) {
+    if (checkpoint == null) {
+      return null;
+    }
+    try {
+      return Instant.parse(checkpoint).atZone(ZoneOffset.UTC).toLocalDate().toString();
+    } catch (DateTimeParseException e) {
+      return null;
     }
   }
 

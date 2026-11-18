@@ -110,7 +110,9 @@ tool answered, and must confirm every value before it reaches the catalog.
    picked items, the page, or every open candidate after the count and the most model calls are shown. The picked
    items and the page leave out the items already researched or running; a row keeps its own research again. Each
    row shows its research (queued, running with its step, the verdict, failed with the reason, cancel, watch live,
-   research again), read every 2 seconds while a run is active. The Research filter (keep, reject,
+   research again), read every 2 seconds while a run is active. A candidate that is no longer open keeps
+   its newest research, read only: the row shows the verdict and its steps, the pane the verdict and a link to every
+   step, with no research again and no decisions. The Research filter (keep, reject,
    duplicate, queued or running, not researched) is the server's filter of §7.
 9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
    changes, and ends with the run or when the browser leaves. It reads new rows from Postgres once a second, so it

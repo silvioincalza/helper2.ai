@@ -24,7 +24,7 @@ help: ## this list
 
 API_SERVER ?= $(shell kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null)
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
-	@set -euo pipefail; \
+	@set -euo pipefail; $(NEED_BAO); \
 	test -n "$(API_SERVER)" || { echo "API_SERVER is not set (the platform .env sets it)"; exit 1; }; \
 	if [ -z "$${BAO_TOKEN:-}" ]; then \
 		BAO_TOKEN=$$(bao login -method=oidc -path=oidc -token-only role=helper2-operator); export BAO_TOKEN; \
@@ -45,7 +45,7 @@ credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao f
 	echo "wrote helper2/kv ci/$(ENV) (kubeconfig of $(NS)/deployer, $(ENV)/app.env)"
 
 backup-credentials: ## write ENV's off-site backup Secret (pg-backup-offsite) from OpenBao
-	@set -euo pipefail; \
+	@set -euo pipefail; $(NEED_BAO); \
 	r2=$$(bao kv get -mount=helper2/kv -format=json backup/r2); \
 	fields=$$(jq -er '.data.data as $$d | ("access_key_id", "secret_access_key", "endpoint", "bucket", "crypt_password") | "\(.)=\($$d[.] // error("helper2/kv backup/r2 has no \(.)"))"' <<<"$$r2"); \
 	kubectl -n $(NS) create secret generic pg-backup-offsite --dry-run=client -o yaml \
@@ -53,8 +53,11 @@ backup-credentials: ## write ENV's off-site backup Secret (pg-backup-offsite) fr
 		| kubectl apply -f - >/dev/null; \
 	echo "wrote $(NS)/pg-backup-offsite from helper2/kv backup/r2"
 
+NEED_BAO = test -n "$${BAO_ADDR:-}" || { echo "BAO_ADDR is not set: export BAO_ADDR=https://<your OpenBao> (bao would try 127.0.0.1:8200)"; exit 1; }
+
 HARBOR_KV ?= ci/harbor
 define HARBOR
+$(NEED_BAO); \
 work=$$(mktemp -d); trap 'rm -rf "$$work"' EXIT; \
 creds=$$(bao kv get -mount=helper2/kv -format=json $(HARBOR_KV)); \
 user=$$(jq -r .data.data.harbor_user <<<"$$creds"); pass=$$(jq -r .data.data.harbor_password <<<"$$creds"); \

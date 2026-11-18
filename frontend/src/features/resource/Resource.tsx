@@ -1,5 +1,5 @@
-import type { MouseEvent, ReactNode } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import type { ReactNode } from 'react';
+import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResourceDetail } from '@/api/types';
 import { OriginLabel } from '@/ui/Badges';
@@ -20,6 +20,7 @@ import { AtAGlance } from './AtAGlance';
 import './resource.css';
 import { OpenButton } from './OpenButton';
 import { AiLabel } from '@/ui/AiLabel';
+import { BackLink } from '@/ui/BackLink';
 import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 export function cardHeadFor(id: string, state: unknown): CardHead | undefined {
@@ -66,7 +67,7 @@ export function Resource({
   const card = detail?.card;
   return (
     <div className="h2-app h2-res">
-      <BackLink from={from} />
+      <BackToList from={from} />
       <ResourceHead card={card ?? head} date={card && <ResultDate card={card} separator />}>
         {card && canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
       </ResourceHead>
@@ -188,22 +189,13 @@ function backLabel(from: string | undefined): string {
   return BACK_LABEL.find(([page]) => page.test(path))?.[1] ?? 'resource.backToResults';
 }
 
-function BackLink({ from }: { from: string | undefined }) {
+function BackToList({ from }: { from: string | undefined }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { key } = useLocation();
-  const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    const plain = e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
-    if (!from || key === 'default' || !plain) return;
-    e.preventDefault();
-    void navigate(-1);
-  };
   return (
     <p className="h2-res__back">
-      <Link to={from ?? '/'} onClick={onClick}>
-        <span aria-hidden="true">← </span>
+      <BackLink from={from} fallback="/">
         {t(backLabel(from))}
-      </Link>
+      </BackLink>
     </p>
   );
 }

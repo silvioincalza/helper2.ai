@@ -55,7 +55,7 @@ guide may call the model again. Both cost time and quota for nothing.
    picks dimmed and `aria-busy` instead of the reading line. The step events are the contract's
    `GuideStreamEvent` values other than `answer` and `error`.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic
-   reconnect (each question costs model calls). An idle timer of 45 s (`GUIDE_IDLE_TIMEOUT_MS`) is re-armed on every
+   reconnect (each question costs model calls). An idle timer of 45 s (`SSE_IDLE_TIMEOUT_MS`) is re-armed on every
    chunk. The server sends a `:keep-alive` comment every 15 s while a question runs ([0031](../guide/0031-guide-pipeline.md)),
    so any bytes, a comment included, keep the stream alive. `SseParser` ignores comments.
    Failures: `IDLE_TIMEOUT`, `MALFORMED`, `ENDED_EARLY`, `DROPPED` (the connection broke while reading), or the

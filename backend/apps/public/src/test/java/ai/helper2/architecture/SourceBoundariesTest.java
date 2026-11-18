@@ -99,7 +99,8 @@ class SourceBoundariesTest {
     assertThat(MODULES)
         .contains("search", "catalog", "examples", "identity", "sources", "guide", "scout");
     assertThat(OPEN_MODULES).containsExactlyInAnyOrder("shared", "platform", "api");
-    assertThat(API_PACKAGES).contains("search.usecase", "catalog.usecase", "catalog.enrichment");
+    assertThat(API_PACKAGES)
+        .contains("search.usecase", "catalog.usecase", "catalog.enrichment", "platform.llm");
     assertThat(API_TYPES).contains("search.web.CardMapper");
   }
 
@@ -136,6 +137,15 @@ class SourceBoundariesTest {
   }
 
   @Test
+  void aNamedInterfaceOfAnOpenModuleHidesItsSubPackages() {
+    assertThat(
+            MAIN.stream()
+                .flatMap(file -> file.uses(used -> isHiddenFrom(file, used.packageName()))))
+        .as("source references to a package below a named interface of an open module")
+        .isEmpty();
+  }
+
+  @Test
   void nothingOutsideSourcesNamesIt() {
     assertThat(
             MAIN.stream()
@@ -162,6 +172,20 @@ class SourceBoundariesTest {
         || used.packageName().equals(module)
         || API_PACKAGES.contains(used.packageName())
         || API_TYPES.contains(used.name());
+  }
+
+  private static boolean isHiddenFrom(SourceFile file, String usedPackage) {
+    return API_PACKAGES.stream()
+        .filter(api -> OPEN_MODULES.contains(moduleOf(api)))
+        .anyMatch(api -> isBelow(usedPackage, api) && !isAtOrBelow(file.packageName(), api));
+  }
+
+  private static boolean isBelow(String packageName, String parent) {
+    return packageName.startsWith(parent + ".");
+  }
+
+  private static boolean isAtOrBelow(String packageName, String parent) {
+    return packageName.equals(parent) || isBelow(packageName, parent);
   }
 
   private static Optional<String> libraryOf(String packageName) {
