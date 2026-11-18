@@ -1,6 +1,7 @@
 # Sequence: the admin researches one resource candidate; a worker runs the agent; the admin confirms and accepts.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewResearchController.java,
-#   ReviewResearchEventsController.java (SSE), ai/helper2/research/internal/ResearchWorkers.java,
+#   ReviewResearchEventsController.java (SSE), ai/helper2/research/usecase/FollowResearchRun.java (what the stream
+#   sends next), ai/helper2/research/internal/ResearchWorkers.java,
 #   ai/helper2/research/usecase/RunResearch.java, ai/helper2/research/CheckResearch.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0048-review-research.d2 && d2 sequence-0048-review-research.d2 sequence-0048-review-research.svg
 
@@ -31,7 +32,7 @@ model -> worker: "call read_page(url)"
 worker -> tools: "read_page(url)"
 tools -> worker: "page text (evidence e1)"
 worker -> db: "step 2 TOOL_CALL"
-events -> db: "new steps after seq, the run (once a second)"
+events -> db: "FollowResearchRun: the run, new steps after seq\n(once a second)"
 events -> ui: "event: step 1, step 2 (a comment line while quiet)"
 worker -> model: "e1 cleaned and escaped"
 model -> worker: "call find_package(name, npm)"

@@ -13,7 +13,7 @@ admin: "Admin\n(VPN, GitHub sign-in)" {class: person}
 backoffice: "Back office app" {
   web: "ReviewResearchController\nPOST runs · cancel\nReviewResearchEventsController\nSSE: steps, status (capped)" {class: app}
   research: "research module" {
-    usecase: "StartResearch · CancelResearch\nRunResearch (the loop)\nPurgeResearch · FailStaleResearch" {class: app}
+    usecase: "StartResearch · CancelResearch\nFollowResearchRun · FindLatestResearch\nRunResearch (the loop)\nPurgeResearch · FailStaleResearch" {class: app}
     ports: "Ports: ResearchModel · ResearchTool\nResearchRuns · ResearchItems" {class: app}
     usecase -> ports
   }

@@ -13,16 +13,13 @@ import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
 import ai.helper2.site.pages.ResourcePathsKt;
 import ai.helper2.site.pages.ResourceView;
-import ai.helper2.site.pages.config.PagesProperties;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
-@Service
 public class RenderPage {
   public record Page(int status, @Nullable PageHead head, @Nullable String location) {
     static Page ok(PageHead head) {
@@ -42,10 +39,10 @@ public class RenderPage {
   private final Pages pages;
   private final boolean noindex;
 
-  public RenderPage(GetResourceDetail details, PagesProperties properties) {
+  public RenderPage(GetResourceDetail details, String publicBaseUrl, boolean noindex) {
     this.details = details;
-    this.pages = new Pages(properties.publicBaseUrl());
-    this.noindex = properties.noindex();
+    this.pages = new Pages(publicBaseUrl);
+    this.noindex = noindex;
   }
 
   public Page render(String path, boolean hasQuery) {
