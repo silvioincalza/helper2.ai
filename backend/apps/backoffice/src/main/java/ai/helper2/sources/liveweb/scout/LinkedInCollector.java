@@ -80,12 +80,10 @@ public class LinkedInCollector implements Collector {
   private static final Pattern SITE_SUFFIX =
       Pattern.compile("\\s+[|\\-·—–]\\s+LinkedIn\\b.*$", Pattern.CASE_INSENSITIVE);
 
-  private final RestClient http;
   private final Clock clock;
-  private final Resilience resilience;
   private final RunInterval interval;
   private final List<String> queries;
-  private final ScoutLiveWebCredits credits;
+  private final ScoutLiveWebSearch liveWeb;
   private final SourceDescriptor descriptor;
 
   public LinkedInCollector(
@@ -97,14 +95,19 @@ public class LinkedInCollector implements Collector {
       List<String> queries,
       ScoutLiveWebCredits credits) {
     this.clock = clock;
-    this.credits = credits.forFeature(FEATURE);
-    this.resilience = resilience;
     if (settings.enabled()) {
       resilience.require(POLICY);
     }
     this.interval = interval;
     this.queries = queries.stream().map(String::strip).filter(q -> !q.isEmpty()).toList();
-    this.http = HttpClients.client(builder, settings);
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            HttpClients.client(builder, settings),
+            clock,
+            resilience,
+            credits.forFeature(FEATURE),
+            POLICY,
+            SEARCH_DEPTH);
     this.descriptor = CollectorDescriptors.linkedIn(settings, this.queries);
   }
 
@@ -125,17 +128,13 @@ public class LinkedInCollector implements Collector {
     if (!interval.allowsPass(checkpoint, resumeCursor, startedAt)) {
       return CollectedBatch.skipped(notDueReason(checkpoint, startedAt));
     }
-    if (credits.capReached()) {
-      return CollectedBatch.deferred(
-          "Daily live web credit cap of the Scout reached ("
-              + credits.dailyCap()
-              + " credits); next try tomorrow");
+    if (liveWeb.capReached()) {
+      return liveWeb.deferred();
     }
     int perQuery =
         Math.max(1, Math.min(MAX_RESULTS_PER_QUERY, maxItems / Math.max(1, queries.size())));
     Searched searched =
-        searchAll(
-            LiveWebNewsCollector.startDate(checkpoint), perQuery, QueryProgress.done(resumeCursor));
+        searchAll(QueryProgress.startDate(checkpoint), perQuery, QueryProgress.done(resumeCursor));
     return new CollectedBatch(
         List.of(),
         searched.complete() ? null : QueryProgress.cursor(searched.done()),
@@ -159,12 +158,12 @@ public class LinkedInCollector implements Collector {
       if (done.contains(query)) {
         continue;
       }
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         log.info("{}: credit cap reached, the pass stays open", ID);
         break;
       }
       try {
-        JsonNode root = searchFor(requestBody(query, since, perQuery));
+        JsonNode root = liveWeb.search(requestBody(query, since, perQuery));
         for (JsonNode r : root.path("results")) {
           Candidate c = candidate(r);
           if (c != null) {
@@ -182,18 +181,6 @@ public class LinkedInCollector implements Collector {
       throw lastFailure;
     }
     return new Searched(byUrl, done, done.containsAll(queries));
-  }
-
-  private JsonNode searchFor(Map<String, Object> body) {
-    return resilience.call(
-        POLICY,
-        () ->
-            credits.countedAttempt(
-                SEARCH_DEPTH,
-                () ->
-                    HttpClients.getJson(
-                        () -> http.post().uri("/search").body(body).retrieve().body(String.class),
-                        clock)));
   }
 
   static Map<String, Object> requestBody(String query, @Nullable String since, int maxResults) {

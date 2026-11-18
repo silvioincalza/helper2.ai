@@ -1,4 +1,4 @@
-interface SseEvent {
+export interface SseEvent {
   event: string;
   data: string;
 }
@@ -37,5 +37,65 @@ export class SseParser {
     if (value.startsWith(' ')) value = value.slice(1);
     if (field === 'event') this.event = value;
     else if (field === 'data') this.data.push(value);
+  }
+}
+
+export const SSE_IDLE_TIMEOUT_MS = 45_000;
+
+export type SseEnd = 'ended' | 'idle';
+
+interface ReadSseOptions {
+  signal?: AbortSignal | undefined;
+  idleMs?: number;
+  until?: () => boolean;
+}
+
+export async function readSse(
+  open: (signal: AbortSignal) => Promise<Response>,
+  onEvent: (event: SseEvent) => void,
+  { signal, idleMs = SSE_IDLE_TIMEOUT_MS, until = () => false }: ReadSseOptions = {},
+): Promise<SseEnd> {
+  const ctrl = new AbortController();
+  let reader: ReadableStreamDefaultReader<string> | undefined;
+  let idle = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stop = () => {
+    ctrl.abort();
+    void reader?.cancel().catch(() => undefined);
+  };
+  const arm = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      idle = true;
+      stop();
+    }, idleMs);
+  };
+  signal?.addEventListener('abort', stop, { once: true });
+  if (signal?.aborted) stop();
+
+  const parser = new SseParser();
+  const handle = (text: string) => parser.push(text).forEach(onEvent);
+
+  arm();
+  try {
+    const res = await open(ctrl.signal);
+    reader = res.body?.pipeThrough(new TextDecoderStream()).getReader();
+    while (reader && !until()) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      arm();
+      handle(value);
+    }
+    if (idle) return 'idle';
+    signal?.throwIfAborted();
+    handle('\n\n');
+    return 'ended';
+  } catch (e) {
+    if (idle) return 'idle';
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', stop);
+    void reader?.cancel().catch(() => undefined);
   }
 }

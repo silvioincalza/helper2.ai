@@ -20,4 +20,15 @@ class QueryProgressTest {
     assertThat(QueryProgress.done("held-back")).isEmpty();
     assertThat(QueryProgress.done(QueryProgress.PREFIX + "not json")).isEmpty();
   }
+
+  @Test
+  void theSearchWindowStartsOnTheUtcDayOfTheCheckpoint() {
+    assertThat(QueryProgress.startDate("2026-10-15T23:30:00Z")).isEqualTo("2026-10-15");
+  }
+
+  @Test
+  void aMissingOrUnreadableCheckpointGivesNoStartDate() {
+    assertThat(QueryProgress.startDate(null)).isNull();
+    assertThat(QueryProgress.startDate("held-back")).isNull();
+  }
 }

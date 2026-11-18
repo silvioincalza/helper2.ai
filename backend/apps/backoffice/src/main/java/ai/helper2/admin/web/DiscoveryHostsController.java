@@ -17,7 +17,6 @@ import ai.helper2.shared.UtcTimes;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,7 +41,7 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
   @Override
   public ResponseEntity<DiscoveryHostEntryDto> addDiscoveryHost(DiscoveryHostAddDto body) {
     HostKind kind = HostKind.valueOf(body.getKind().getValue());
-    return switch (hosts.add(adminId(), body.getHost(), kind, body.getReason())) {
+    return switch (hosts.add(Admins.id(), body.getHost(), kind, body.getReason())) {
       case ManageDiscoveryHosts.Added.Done d ->
           ResponseEntity.status(HttpStatus.CREATED).body(dto(d.getHost()));
       case ManageDiscoveryHosts.Added.Invalid i -> throw invalid(i.getProblem());
@@ -68,7 +67,7 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
   public ResponseEntity<Void> removeDiscoveryHost(
       String host, @Nullable DiscoveryHostRemoveDto body) {
     String reason = body == null ? null : body.getReason();
-    return switch (hosts.remove(adminId(), host, reason)) {
+    return switch (hosts.remove(Admins.id(), host, reason)) {
       case ManageDiscoveryHosts.Removed.Done d -> ResponseEntity.noContent().build();
       case ManageDiscoveryHosts.Removed.NotFound n ->
           throw new NotFoundException(host + " is in no list.");
@@ -99,10 +98,6 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
 
   private static String listName(HostKind kind) {
     return kind == HostKind.WRITING ? "writing" : "directory";
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   private static DiscoveryHostEntryDto dto(DiscoveryHost h) {

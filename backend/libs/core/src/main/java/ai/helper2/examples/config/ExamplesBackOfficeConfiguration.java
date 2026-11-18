@@ -8,7 +8,6 @@ import ai.helper2.examples.ExampleSearch;
 import ai.helper2.examples.ExampleStatus;
 import ai.helper2.examples.HomeExamples;
 import ai.helper2.examples.ResourceTitles;
-import ai.helper2.examples.UnitOfWork;
 import ai.helper2.examples.internal.ExamplesBackOfficeAdapters;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
 import ai.helper2.examples.usecase.AddHomeExample;
@@ -21,6 +20,7 @@ import ai.helper2.examples.usecase.ReadExampleDraft;
 import ai.helper2.examples.usecase.RemoveHomeExample;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.shared.AudiencePath;
+import ai.helper2.shared.UnitOfWork;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.util.List;
@@ -29,9 +29,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.NamedInterface;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @NamedInterface("backoffice")
 @Import(ExamplesBackOfficeAdapters.class)
@@ -81,21 +79,15 @@ public class ExamplesBackOfficeConfiguration {
       ExampleDrafter drafter,
       DraftQueue queue,
       AuditTrail audit,
-      UnitOfWork examplesUnitOfWork,
+      UnitOfWork unitOfWork,
       ExamplesProperties properties) {
     return new DraftHomeExamples(
-        examples, sources, drafter, queue, audit, examplesUnitOfWork, properties.draftSources());
+        examples, sources, drafter, queue, audit, unitOfWork, properties.draftSources());
   }
 
   @Bean
   AcceptExampleDraft acceptExampleDraft(DraftQueue drafts, AddHomeExample addHomeExample) {
     return new AcceptExampleDraft(drafts, addHomeExample);
-  }
-
-  @Bean
-  UnitOfWork examplesUnitOfWork(PlatformTransactionManager transactions) {
-    TransactionTemplate template = new TransactionTemplate(transactions);
-    return work -> template.executeWithoutResult(status -> work.run());
   }
 
   static class TransactionalAddHomeExample extends AddHomeExample {

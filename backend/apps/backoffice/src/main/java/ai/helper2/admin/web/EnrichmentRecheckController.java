@@ -7,7 +7,6 @@ import ai.helper2.platform.ProblemType;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RecheckResult;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,7 +22,7 @@ class EnrichmentRecheckController implements EnrichmentRecheckApi {
 
   @Override
   public ResponseEntity<EnrichmentRecheckDto> recheckEnrichments() {
-    RecheckResult r = recheck.runByAdmin(adminId());
+    RecheckResult r = recheck.runByAdmin(Admins.id());
     if (r == null) {
       throw new ApiProblem(
           ProblemType.RUN_IN_PROGRESS, "A Scout run is in progress. Try again later.");
@@ -31,9 +30,5 @@ class EnrichmentRecheckController implements EnrichmentRecheckApi {
     return ResponseEntity.ok(
         new EnrichmentRecheckDto(
             r.getChecked(), r.getFieldsRejected(), r.getClaimsDropped(), r.getRunsRequested()));
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 }

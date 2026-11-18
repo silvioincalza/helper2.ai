@@ -13,7 +13,6 @@ import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.platform.BadRequestException;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,7 +43,7 @@ class RelationshipTargetsController implements RelationshipTargetsApi {
   public ResponseEntity<RelationshipTargetGroupOutcomeDto> decideRelationshipTargetGroup(
       RelationshipTargetGroupDecisionDto body) {
     DecideRelationshipTargetGroup.Outcome outcome =
-        decide.decide(body.getKey(), choice(body), adminId(), body.getNote());
+        decide.decide(body.getKey(), choice(body), Admins.id(), body.getNote());
     return ResponseEntity.ok(
         new RelationshipTargetGroupOutcomeDto(
             outcome.batch(), outcome.decided(), outcome.skipped(), outcome.left()));
@@ -72,9 +71,5 @@ class RelationshipTargetsController implements RelationshipTargetsApi {
         g.items(),
         g.kinds().stream().map(RelationshipTargetGroupDto.KindsEnum::fromValue).toList(),
         g.examples());
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 }

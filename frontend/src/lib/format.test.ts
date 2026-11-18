@@ -4,6 +4,7 @@ import {
   clockTimeOnDay,
   dateLocale,
   displayHost,
+  formatCount,
   formatDate,
   formatMonth,
   localDay,
@@ -18,6 +19,19 @@ const browser = (language: string) =>
   vi.spyOn(window.navigator, 'language', 'get').mockReturnValue(language);
 
 const zone = (timeZone: string) => vi.stubEnv('TZ', timeZone);
+
+describe('formatCount: a whole number, grouped as the given language groups it', () => {
+  it('groups thousands in English', () => {
+    expect(formatCount(1234567, 'en')).toBe('1,234,567');
+    expect(formatCount(0, 'en')).toBe('0');
+  });
+  it('gives what the platform gives for that language', () => {
+    for (const lang of ['en', 'de', 'fr', 'it']) {
+      expect(formatCount(1234567, lang)).toBe((1234567).toLocaleString(lang));
+      expect(formatCount(1234567, lang)).toBe(new Intl.NumberFormat(lang).format(1234567));
+    }
+  });
+});
 
 describe('displayHost', () => {
   it('drops www.', () => expect(displayHost('https://www.acme.example/x')).toBe('acme.example'));

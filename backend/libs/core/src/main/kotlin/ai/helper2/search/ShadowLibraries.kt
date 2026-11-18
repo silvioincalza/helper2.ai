@@ -4,7 +4,6 @@ import java.net.URI
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.Supplier
 
 data class ShadowLibrary(
   val name: String,
@@ -128,8 +127,4 @@ private constructor(first: Set<String>, private val source: () -> Set<String>) {
     @JvmStatic
     fun of(vararg names: String): ShadowLibraries = names.toSet().let { ShadowLibraries(it) { it } }
   }
-}
-
-interface UnitOfWork {
-  fun <T : Any> run(work: Supplier<T>): T
 }
