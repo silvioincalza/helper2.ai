@@ -71,12 +71,9 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
   is blocked too; the 3-character minimum and the common labels keep the risk small.
 - The list only filters new results. Rows stored before a name is added stay until their retention ends
   ([0010](../foundation/0010-data-retention.md)), or an admin removes them.
-- First versioned migration after V1 that creates a table. It replaces the `admin_audit.action` check to add the two
-  actions.
+- The migration creates the table and redefines the `admin_audit.action` check with the two new actions.
 - Privacy: no personal data beyond the admin's subject in `added_by`, the same as the other admin lists. The Privacy page
   does not change. Terms: no new rule for users.
-- Legal: whether linking to these sites is an infringement for helper2.ai, and whether the list is enough care, are for
-  a lawyer to confirm (lawyer brief addendum, 2026-11-18).
 
 ### AI architecture check
 
