@@ -93,7 +93,7 @@ to reach into the other's code.
    application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and
    two `SearchSource`s over PostgreSQL.
    The base package of a Java module holds its ports and what other modules use. `catalog` keeps its ports there
-   (`CatalogWriter`, the public app's one write path; `Resources`, `ReviewQueue`, `JobMarkers`, `EmbeddingStore` and
+   (`CatalogWriter`, `IssueReports` and the category ports, the public app's write path; `Resources`, `ReviewQueue`, `JobMarkers`, `EmbeddingStore` and
    the others), its records (`ResourceRow`, `ResourceDetail`) and `ResourceCards`, and its use cases in
    `catalog.usecase`; its JDBC adapters (`Jdbc*`), `CatalogConfiguration`, `CatalogResultObserver`,
    `CatalogSearchSource` and `SemanticSearchSource` are in `catalog.internal`.

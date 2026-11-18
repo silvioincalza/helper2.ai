@@ -1,19 +1,26 @@
 package ai.helper2.catalog.config;
 
-import ai.helper2.catalog.CatalogWriter;
+import ai.helper2.catalog.CategoryAssignments;
+import ai.helper2.catalog.CategoryInputs;
 import ai.helper2.catalog.EnrichmentFacts;
+import ai.helper2.catalog.IssueReports;
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.catalog.usecase.ListIndexableResources;
 import ai.helper2.catalog.usecase.ListRecentResources;
 import ai.helper2.catalog.usecase.ListUpcomingEvents;
+import ai.helper2.catalog.usecase.RefreshCategories;
 import ai.helper2.catalog.usecase.ReportIssue;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.ShadowLibraries;
+import ai.helper2.shared.CategoryMatcher;
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.Transactional;
 
 @Configuration(proxyBeanMethods = false)
 class CatalogUseCaseConfiguration {
@@ -46,7 +53,27 @@ class CatalogUseCaseConfiguration {
   }
 
   @Bean
-  ReportIssue reportIssue(CatalogWriter writer) {
-    return new ReportIssue(writer);
+  ReportIssue reportIssue(IssueReports reports) {
+    return new ReportIssue(reports);
+  }
+
+  @Bean
+  RefreshCategories refreshCategories(
+      CategoryInputs inputs, CategoryAssignments assignments, CategoryMatcher matcher) {
+    return new TransactionalRefreshCategories(inputs, assignments, matcher);
+  }
+
+  static class TransactionalRefreshCategories extends RefreshCategories {
+
+    TransactionalRefreshCategories(
+        CategoryInputs inputs, CategoryAssignments assignments, CategoryMatcher matcher) {
+      super(inputs, assignments, matcher);
+    }
+
+    @Override
+    @Transactional
+    public int refreshCategories(Collection<UUID> resourceIds) {
+      return super.refreshCategories(resourceIds);
+    }
   }
 }
