@@ -154,7 +154,7 @@ export function toApiParams(s: SearchState): URLSearchParams {
 export function patchState(s: SearchState, patch: Partial<SearchState>): SearchState {
   const next = { ...s, ...patch };
   if (!('page' in patch)) next.page = 0;
-  return patch.q !== undefined && patch.q !== s.q ? withNewWords(next, patch) : next;
+  return patch.q !== undefined && clampQuery(patch.q) !== s.q ? withNewWords(next, patch) : next;
 }
 
 function withNewWords(next: SearchState, patch: Partial<SearchState>): SearchState {

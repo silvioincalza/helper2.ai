@@ -109,6 +109,9 @@ describe('searchState', () => {
 
     expect(patchState(filtered, { q: 'postgres mcp' }).filters.type).toEqual(['MCP_SERVER']);
     expect(patchState(filtered, { page: 2 }).filters.type).toEqual(['MCP_SERVER']);
+    const question = `which mcp server reads postgres ${'safely '.repeat(40)}`.trim();
+    const asked = parseSearchParams(new URLSearchParams({ q: question, type: 'MCP_SERVER' }));
+    expect(patchState(asked, { q: question }).filters.type).toEqual(['MCP_SERVER']);
     expect(
       patchState(empty, { q: 'vector', filters: { ...empty.filters, category: ['databases'] } })
         .filters.category,
