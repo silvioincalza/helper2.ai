@@ -74,10 +74,6 @@ public interface ReviewQueue {
 
   List<Item> openItems(Kind kind);
 
-  Page list(Status status, Kind kind, int page, int size);
-
-  Page list(Status status, Kind kind, String category, int page, int size);
-
   Page list(Status status, Kind kind, String category, Only only, int page, int size);
 
   record Only(java.util.Set<UUID> ids, boolean except) {

@@ -14,11 +14,6 @@ public record SourceSettings(
   @ConstructorBinding
   public SourceSettings {}
 
-  public SourceSettings(
-      boolean enabled, String baseUrl, String token, Duration timeout, Duration cacheTtl) {
-    this(enabled, baseUrl, token, timeout, cacheTtl, null);
-  }
-
   public boolean hasToken() {
     return token != null && !token.isBlank();
   }

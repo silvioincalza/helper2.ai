@@ -196,10 +196,6 @@ public final class ObservedHttp {
     private boolean expired;
     private long read;
 
-    CappedStream(InputStream in, long max, long start, long deadlineNanos, LongSupplier ticker) {
-      this(in, max, start, deadlineNanos, ticker, () -> {});
-    }
-
     CappedStream(
         InputStream in,
         long max,
