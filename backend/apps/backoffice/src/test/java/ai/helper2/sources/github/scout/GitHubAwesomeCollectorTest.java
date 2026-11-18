@@ -253,7 +253,7 @@ class GitHubAwesomeCollectorTest {
           0, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
 
   @Test
-  void aRepositoryTheModelCallsAListIsOneOnlyWhenItsReadmeReadsAsOne() {
+  void aRepositoryTheModelCallsAListIsOneOnlyWhenItsReadmeReadsAsOneAndKeepsItsKindOtherwise() {
     server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
     server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
     server.route("/repos/acme/awesome-mcp/readme", FixtureServer.Reply.ok(listOfServers()));
@@ -272,11 +272,29 @@ class GitHubAwesomeCollectorTest {
         .containsExactly(
             org.assertj.core.groups.Tuple.tuple("acme/awesome-mcp", ResourceType.AWESOME_LIST),
             org.assertj.core.groups.Tuple.tuple(
-                "modelcontextprotocol/servers", ResourceType.ARTICLE));
+                "modelcontextprotocol/servers", ResourceType.MCP_SERVER));
   }
 
   @Test
-  void aListTheModelNamesWhoseReadmeCannotBeReadIsAnArticle() {
+  void aListTheModelNamesWhoseReadmeFailsNowWaitsForTheNextRun() {
+    server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
+    server.route("/repos/acme/awesome-mcp/readme", new FixtureServer.Reply(503, "{}", Map.of(), 0));
+    server.route("/graphql", FixtureServer.Reply.ok(COLLECTIONS));
+    FakeModel model = new FakeModel();
+    model.answers.put(
+        "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
+
+    CollectedBatch batch = collector(model, 200, "t", NO_NESTED_LISTS).collect(null, null, 500);
+
+    assertThat(entryHits(batch))
+        .extracting(SourceHit::getExternalId)
+        .containsExactly("modelcontextprotocol/servers");
+    assertThat(batch.getWithdrawn()).doesNotContain("acme/awesome-mcp");
+  }
+
+  @Test
+  void aListTheModelNamesWithNoReadmeKeepsTheKindItsFactsSay() {
     server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
     server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
     server.route("/graphql", FixtureServer.Reply.ok(COLLECTIONS));
@@ -290,7 +308,7 @@ class GitHubAwesomeCollectorTest {
         .filteredOn(h -> h.getExternalId().equals("acme/awesome-mcp"))
         .singleElement()
         .extracting(SourceHit::getType)
-        .isEqualTo(ResourceType.ARTICLE);
+        .isEqualTo(ResourceType.MCP_SERVER);
   }
 
   static final String README_WITH_A_FORK =

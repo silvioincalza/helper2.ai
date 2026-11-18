@@ -11,7 +11,7 @@ its relevance part with a message.
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
 | `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on (step 5) | `evalTest` |
-| `guide-queries.json` | 57 guide questions: 21 core ones (the nightly run) and 36 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
+| `guide-queries.json` | 60 guide questions: 21 core ones (the nightly run) and 39 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
 | `guide-intents.json` | 19 intent cases and 7 ask-back cases with pass rules ([ADR 0031](../adr/guide/0031-guide-pipeline.md), intents §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 13 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |

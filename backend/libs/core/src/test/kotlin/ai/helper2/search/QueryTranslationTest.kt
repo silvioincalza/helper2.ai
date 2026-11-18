@@ -265,6 +265,11 @@ class QueryTranslationTest {
         "\"The query is in English.\"",
         "This cannot be translated.",
         "It is already in English",
+        "The query cannot be translated.",
+        "Sorry, this cannot be translated.",
+        "I cannot translate this.",
+        "I'm unable to translate this query",
+        "Unable to translate.",
       )) {
       val (q, out) = run("herramienta para traducir documentos") { _, _ -> answer }
       assertNull(out.interpretation.translation, answer)

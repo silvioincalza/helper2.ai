@@ -45,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -444,7 +445,8 @@ public class GitHubAwesomeCollector implements Collector {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
       ResourceType type =
-          AwesomeLists.isAwesomeList(read.list().fullName(), read.parsed())
+          AwesomeLists.isAwesomeList(
+                  read.list().fullName(), restTopics(read.list().facts()), read.parsed())
               ? ResourceType.AWESOME_LIST
               : ResourceType.ARTICLE;
       SourceHit hit = listHit(read.list(), type, now);
@@ -453,6 +455,19 @@ public class GitHubAwesomeCollector implements Collector {
       }
     }
     return hits;
+  }
+
+  private static List<String> restTopics(@Nullable JsonNode repo) {
+    List<String> topics = new ArrayList<>();
+    if (repo != null) {
+      repo.path("topics")
+          .forEach(t -> {
+            if (t.isString()) {
+              topics.add(t.asString());
+            }
+          });
+    }
+    return topics;
   }
 
   private static SourceHit listHit(ListRepo list, ResourceType type, Instant now) {
@@ -624,7 +639,9 @@ public class GitHubAwesomeCollector implements Collector {
     for (RepoClassifier.Facts f : candidates) {
       RepoClassifier.Verdict v = verdicts.get(f.id());
       if (v != null && v.ai()) {
-        SourceHit hit = toHit(byId.get(f.id()), typeOf(f, v), rankById.get(f.id()), now);
+        ResourceType type = typeOf(f, v);
+        SourceHit hit =
+            type == null ? null : toHit(byId.get(f.id()), type, rankById.get(f.id()), now);
         if (hit != null) {
           hits.add(hit);
         }
@@ -634,27 +651,50 @@ public class GitHubAwesomeCollector implements Collector {
     return hits;
   }
 
-  private ResourceType typeOf(RepoClassifier.Facts repo, RepoClassifier.Verdict verdict) {
-    if (verdict.type() != ResourceType.AWESOME_LIST || readsAsAwesomeList(repo.fullName())) {
+  private @Nullable ResourceType typeOf(RepoClassifier.Facts repo, RepoClassifier.Verdict verdict) {
+    if (verdict.type() != ResourceType.AWESOME_LIST) {
       return verdict.type();
     }
-    return ResourceType.ARTICLE;
+    Optional<Boolean> list = readsAsAwesomeList(repo);
+    if (list.isEmpty()) {
+      return null;
+    }
+    return list.get() ? ResourceType.AWESOME_LIST : typeWithoutTheList(repo);
   }
 
-  private boolean readsAsAwesomeList(String fullName) {
-    if (fullName == null || !AwesomeLists.named(fullName)) {
-      return false;
+  private ResourceType typeWithoutTheList(RepoClassifier.Facts repo) {
+    return fallback.classify(List.of(repo)).get(repo.id()).type();
+  }
+
+  private Optional<Boolean> readsAsAwesomeList(RepoClassifier.Facts repo) {
+    String fullName = repo.fullName();
+    if (fullName == null || !AwesomeLists.named(fullName, repo.topics())) {
+      return Optional.of(false);
     }
     try {
       String readme = readme(fullName);
-      return readme != null && AwesomeLists.isAwesomeList(fullName, readme);
+      return Optional.of(
+          readme != null && AwesomeLists.isAwesomeList(fullName, repo.topics(), readme));
+    } catch (SourceFailure.Unavailable e) {
+      if (noReadme(e)) {
+        return Optional.of(false);
+      }
+      log.info(
+          "awesome lists: README of {} unavailable ({}), left for the next run",
+          fullName,
+          e.getMessage());
+      return Optional.empty();
     } catch (RuntimeException e) {
       log.info(
-          "awesome lists: README of {} unavailable ({}), typed ARTICLE",
+          "awesome lists: README of {} unavailable ({}), left for the next run",
           fullName,
           e.getClass().getSimpleName());
-      return false;
+      return Optional.empty();
     }
+  }
+
+  private static boolean noReadme(SourceFailure.Unavailable e) {
+    return !e.getTransient() && e.getMessage() != null && e.getMessage().startsWith("HTTP 4");
   }
 
   private Map<String, RepoClassifier.Verdict> classify(List<RepoClassifier.Facts> candidates) {

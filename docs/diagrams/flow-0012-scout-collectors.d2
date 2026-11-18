@@ -42,8 +42,9 @@ awesome: GitHub awesome lists (1 d) {
   answered: "Model answered\nthis id?" {class: decision}
   heuristic: "RepoClassifier.Heuristic\n(keyword rules)" {class: app}
   list: "Type AWESOME_LIST?" {class: decision}
-  rule: "Named \"awesome…\" and its README\npasses AwesomeLists?" {class: decision}
-  article: "Type ARTICLE" {class: app}
+  rule: "README passes AwesomeLists?\n(name awesome… or best-of-,\nor topic awesome-list)" {class: decision}
+  later: "Left out of this run,\nread at the next one" {class: app}
+  article: "Type from the\nkeyword rules" {class: app}
   keep: "Keep ai=true, with the given type\nand its vitality (RunScout refuses\nan archived one, ADR 0020)" {class: app}
 
   lists -> slice -> facts -> model
@@ -56,7 +57,8 @@ awesome: GitHub awesome lists (1 d) {
   list -> keep: no
   list -> rule: yes
   rule -> keep: yes
-  rule -> article: "no, or README\nunavailable"
+  rule -> article: "no"
+  rule -> later: "README unavailable now"
   article -> keep
 }
 

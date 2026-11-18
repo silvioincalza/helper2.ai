@@ -2,6 +2,7 @@ package ai.helper2.sources.github.scout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -91,6 +92,24 @@ class AwesomeListsTest {
             .collect(Collectors.joining("\n"));
     assertThat(
             AwesomeLists.isAwesomeList("someone/awesome-essay", prose + "\n" + awesomeReadme(25)))
+        .isFalse();
+  }
+
+  @Test
+  void aBestOfListIsAnAwesomeList() {
+    assertThat(AwesomeLists.isAwesomeList("ml-tooling/best-of-ml-python", awesomeReadme(30)))
+        .isTrue();
+  }
+
+  @Test
+  void theAwesomeListTopicStandsForTheName() {
+    assertThat(
+            AwesomeLists.isAwesomeList(
+                "someone/llm-tools", List.of("llm", "awesome-list"), awesomeReadme(30)))
+        .isTrue();
+    assertThat(
+            AwesomeLists.isAwesomeList(
+                "someone/llm-tools", List.of("awesome-list"), PRODUCT_README))
         .isFalse();
   }
 }

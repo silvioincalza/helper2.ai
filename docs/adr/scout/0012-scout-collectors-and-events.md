@@ -77,17 +77,19 @@ Two kinds of source need more care:
      the model did not answer (error, spent budget, missing id), and every id in a run without a model, goes to
      keyword rules (`RepoClassifier.Heuristic`). The allowed types include `AWESOME_LIST`: a linked repository whose
      description calls it a curated list of AI links is `ai` true, type `AWESOME_LIST`; the name alone is not enough.
-     The answer counts only when the README rule below passes too: the collector reads that repository's README, and
-     a repository not named "awesome…", a README that fails the rule or one that cannot be read gives ARTICLE. A
-     description is the owner's words: a collection of MCP servers in one repository can call itself a curated list.
+     The answer counts only when the README rule below passes too: the collector reads that repository's README.
+     When the rule fails (not named like a list, no README, a README that is not a list), the keyword rules give the
+     type instead, so a collection of MCP servers in one repository stays `MCP_SERVER` though its description calls it
+     a curated list. When the README cannot be read now (timeout, 5xx), the repository is left out of this run and read
+     again at the next one; it is not withdrawn.
      A repository whose facts say nothing gets `ai` false, type OTHER, and is not indexed.
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
    - Each list read is a resource too (tag `awesome-list`), and its entry lines and headings become a search
      index ([0023](../search/0023-catalog-full-text-index.md)).
    - **An awesome list is its own type, `AWESOME_LIST`** ("Awesome list" on the site): a curated list of links to other
      resources, not a library, a tool or an MCP server. The README rule is in one place, `AwesomeLists`, and reads the README:
-     the repository name starts with "awesome", at least 20 list items carry a web link, and these items are at least
-     half of the README's text lines. An item is a Markdown list item, a table row or an HTML `<li>`; the lines under
+     the repository name starts with "awesome" or "best-of-", or the repository has the topic `awesome-list`; at least
+     20 list items carry a web link, and these items are at least half of the README's text lines. An item is a Markdown list item, a table row or an HTML `<li>`; the lines under
      it that are indented more (a summary, the authors, a `[[pdf]](…)` link, a sub-item without its own link) belong to
      it and are not counted on their own. A web link is an `http` or `https` link: an anchor to a section, a link to a
      file of the repository, an image and a badge are not. Headings and code blocks are not counted. The name alone
