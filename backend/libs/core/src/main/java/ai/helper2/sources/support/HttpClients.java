@@ -3,7 +3,6 @@ package ai.helper2.sources.support;
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
-import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.CanonicalUrl;
 import io.micrometer.core.instrument.Metrics;
 import java.net.URI;
@@ -22,7 +21,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.util.UriBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -66,32 +64,6 @@ public final class HttpClients {
     return URI.create(canonical.getValue());
   }
 
-  public static String plainWords(String text) {
-    return text.replaceAll("[^\\p{L}\\p{N} -]", " ").trim().replaceAll("\\s+", " ");
-  }
-
-  public static int fetchSize(SourceQuery query) {
-    return Math.min(query.getLimit() * 3, 50);
-  }
-
-  public static List<SourceHit> firstHits(List<SourceHit> hits, SourceQuery query) {
-    return hits.size() <= query.getLimit() ? hits : List.copyOf(hits.subList(0, query.getLimit()));
-  }
-
-  public static String queryText(SourceQuery query) {
-    return String.join(" ", query.getText(), String.join(" ", query.getExpandedTerms())).trim();
-  }
-
-  public static UriBuilder hubListing(UriBuilder u, SourceQuery query, String text) {
-    if (!query.getBrowse() && !text.isBlank()) {
-      u.queryParam("search", text);
-    }
-    if (query.getPublishedAfter() != null) {
-      u.queryParam("sort", "trendingScore");
-    }
-    return u;
-  }
-
   public static String getText(Supplier<String> call, Clock clock) {
     String body = get(call, clock);
     return body == null ? "" : body;
@@ -119,20 +91,10 @@ public final class HttpClients {
         network ? "network error or timeout" : "http error", network);
   }
 
-  public static <T> T fetch(Supplier<T> call, Clock clock) {
-    try {
-      return call.get();
-    } catch (RestClientResponseException e) {
-      throw mapStatus(e, clock);
-    } catch (RestClientException e) {
-      throw networkFailure(e);
-    }
-  }
-
   public static JsonNode getJson(Supplier<String> call, Clock clock) {
     String body = getText(call, clock);
     try {
-      JsonNode node = JSON.readTree(body == null ? "" : body);
+      JsonNode node = JSON.readTree(body);
       if (node == null || node.isMissingNode() || !(node.isObject() || node.isArray())) {
         throw new SourceFailure.Unavailable("unexpected response");
       }
