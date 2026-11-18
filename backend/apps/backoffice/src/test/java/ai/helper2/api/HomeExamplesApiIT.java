@@ -361,7 +361,10 @@ class HomeExamplesApiIT extends ApiTestBase {
     ContractValidator.assertMatches("ReviewEvidence", text);
     JsonNode item = json.readTree(text).path("item");
     assertThat(item.path("draft").isNull()).as("no readable draft").isTrue();
-    assertThat(item.path("details").asString()).as("shown as text").contains("Unreadable");
+    assertThat(item.path("details").path("shape").asString()).isEqualTo("TEXT");
+    assertThat(item.path("details").path("text").asString())
+        .as("shown as text")
+        .contains("Unreadable");
     assertThat(item.path("aiContent").isNull()).as("no draft, no marker").isTrue();
     assertThat(json.readTree(text).path("aiContent").isNull()).isTrue();
 

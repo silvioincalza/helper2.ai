@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceId;
@@ -68,10 +69,7 @@ class AwesomeListCandidateApiIT extends ApiTestBase {
   ResultActions edit(UUID item, String fields) throws Exception {
     String seen = queue.find(item).orElseThrow().details();
     String body =
-        "{\"expectedDetails\":\""
-            + seen.replace("\\", "\\\\").replace("\"", "\\\"")
-            + "\","
-            + fields.substring(1);
+        "{\"expectedRevision\":\"" + CandidateRevision.of(seen) + "\"," + fields.substring(1);
     return mvc.perform(
         put("/api/v1/admin/review-items/" + item + "/candidate")
             .with(admin)

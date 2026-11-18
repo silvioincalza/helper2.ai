@@ -11,7 +11,7 @@ import { Skeleton, SkeletonRows } from '@/ui/Skeleton';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { useMe } from '@/context/MeContext';
-import { backAgain, localDay, type VisitorClock } from '@/lib/format';
+import { backAgain, localDay, type BackAgainKeys, type VisitorClock } from '@/lib/format';
 import { SetupGuidesLeft, useSetupGuidesLeft } from './SetupGuidesLeft';
 
 const CLIENT_KEY = 'h2.setup.client';
@@ -258,9 +258,9 @@ const UNAVAILABLE: Partial<Record<string, string>> = {
   busy: 'setup.status.BUSY',
 };
 
-const BACK_AT: Partial<Record<string, string>> = {
-  budget: 'setup.status.budget',
-  quota: 'setup.status.quota',
+const BACK_AT: Partial<Record<string, BackAgainKeys>> = {
+  budget: { today: 'setup.status.budgetBackAt', tomorrow: 'setup.status.budgetBackTomorrowAt' },
+  quota: { today: 'setup.status.quotaBackAt', tomorrow: 'setup.status.quotaBackTomorrowAt' },
 };
 
 export function toolGuideNotice(
@@ -269,8 +269,8 @@ export function toolGuideNotice(
 ): { key: string; time?: string } {
   if (guide.status !== 'LLM_UNAVAILABLE' || !guide.unavailable)
     return { key: `setup.status.${guide.status}` };
-  const prefix = BACK_AT[guide.unavailable];
-  const back = prefix ? backAgain(prefix, guide.retryAt, clock) : undefined;
+  const keys = BACK_AT[guide.unavailable];
+  const back = keys ? backAgain(keys, guide.retryAt, clock) : undefined;
   return back ?? { key: UNAVAILABLE[guide.unavailable] ?? 'setup.status.LLM_UNAVAILABLE' };
 }
 

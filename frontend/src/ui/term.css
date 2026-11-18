@@ -137,9 +137,6 @@
 .h2-status--answering {
   color: var(--accent-ink);
 }
-.h2-status--ok {
-  color: var(--status-ok-ink);
-}
 .h2-status--warn {
   color: var(--status-warn-ink);
 }

@@ -1,11 +1,6 @@
 import type { AudiencePath, HomeExamplePool } from '@/api/types';
 
-export interface Example {
-  id: string;
-  path: AudiencePath;
-}
-
-export const EXAMPLE_POOL: readonly Example[] = [
+export const EXAMPLE_POOL = [
   { id: 'papers', path: 'USE_AI' },
   { id: 'meetings', path: 'USE_AI' },
   { id: 'images', path: 'USE_AI' },
@@ -17,7 +12,9 @@ export const EXAMPLE_POOL: readonly Example[] = [
   { id: 'local', path: 'BUILD_WITH_AI' },
   { id: 'rag', path: 'BUILD_WITH_AI' },
   { id: 'coding', path: 'BUILD_WITH_AI' },
-];
+] as const satisfies readonly { id: string; path: AudiencePath }[];
+
+export type Example = (typeof EXAMPLE_POOL)[number];
 
 const PER_BUCKET = 2;
 

@@ -5,7 +5,7 @@ import type { GuideResponse, Notice, TrailRemoved } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { NoticeList } from '@/ui/NoticeList';
 import { aiMark, aiMarkWhen, aiSourceWithModels } from '@/lib/aiMark';
-import { backAgain, type VisitorClock } from '@/lib/format';
+import { backAgain, type BackAgainKeys, type VisitorClock } from '@/lib/format';
 import { Clarify } from './Clarify';
 import type { Refine } from './types';
 import { Understood } from './Understood';
@@ -39,10 +39,19 @@ export function noPickCode(answer: GuideResponse): NoPickCode | undefined {
 
 type ComesBackCode = 'GUIDE_DAILY_QUOTA' | 'GUIDE_NETWORK_QUOTA' | 'GUIDE_BUDGET_SPENT';
 
-const BACK_AT: Record<ComesBackCode, string> = {
-  GUIDE_DAILY_QUOTA: 'guide.notice.dailyQuota',
-  GUIDE_NETWORK_QUOTA: 'guide.notice.networkQuota',
-  GUIDE_BUDGET_SPENT: 'guide.notice.budget',
+const BACK_AT: Record<ComesBackCode, BackAgainKeys> = {
+  GUIDE_DAILY_QUOTA: {
+    today: 'guide.notice.dailyQuotaBackAt',
+    tomorrow: 'guide.notice.dailyQuotaBackTomorrowAt',
+  },
+  GUIDE_NETWORK_QUOTA: {
+    today: 'guide.notice.networkQuotaBackAt',
+    tomorrow: 'guide.notice.networkQuotaBackTomorrowAt',
+  },
+  GUIDE_BUDGET_SPENT: {
+    today: 'guide.notice.budgetBackAt',
+    tomorrow: 'guide.notice.budgetBackTomorrowAt',
+  },
 };
 
 function comesBackReason(

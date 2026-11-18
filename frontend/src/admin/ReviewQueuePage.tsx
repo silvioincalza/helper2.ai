@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { api } from '@/api/client';
-import type { ReviewItem } from '@/api/types';
+import type { ReviewCandidateDetails, ReviewItem } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { Pagination } from '@/admin/Pagination';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
@@ -12,7 +12,7 @@ import { ScrollBox } from '@/ui/ScrollBox';
 import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
-import { formatDate } from '@/lib/format';
+import { formatDate, safeHref } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
 import { categoryOf } from '@/features/sources/DiscoveryCategories';
 import { AdminEmpty, AdminHead } from './AdminHead';
@@ -20,7 +20,7 @@ import { TableSkeleton } from '@/ui/Skeleton';
 import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE } from './adminModel';
 import { BulkBar } from './ReviewBulk';
 import { ReviewEvidencePanel } from './ReviewEvidence';
-import { ItemDetails, parseCandidate, type Candidate } from './ReviewItemDetails';
+import { ItemDetails, candidateOf } from './ReviewItemDetails';
 import { ReviewKeysHelp } from './ReviewKeysHelp';
 import { RelationshipGroups } from './RelationshipGroups';
 import { NOTE_MAX } from './limits';
@@ -59,7 +59,7 @@ function rowText(
   t: TFunction,
   item: ReviewItem,
   reason: string,
-  candidate: Candidate | null,
+  candidate: ReviewCandidateDetails | null,
 ): string {
   if (candidate) {
     const type = t(`type.${candidate.type}`, { defaultValue: candidate.type });
@@ -395,8 +395,7 @@ export default function ReviewQueuePage() {
               <tbody>
                 {loaded.map((it) => {
                   const current = it.id === selected.id;
-                  const candidate =
-                    it.kind === 'RESOURCE_CANDIDATE' ? parseCandidate(it.details) : null;
+                  const candidate = it.kind === 'RESOURCE_CANDIDATE' ? candidateOf(it) : null;
                   return (
                     <tr
                       key={it.id}
@@ -429,7 +428,7 @@ export default function ReviewQueuePage() {
                         ) : candidate ? (
                           <a
                             className="h2-title"
-                            href={candidate.url}
+                            href={safeHref(candidate.url)}
                             target="_blank"
                             rel="noopener noreferrer nofollow"
                           >

@@ -5,15 +5,19 @@ import ai.helper2.admin.usecase.CheckAiWords;
 import ai.helper2.admin.usecase.CheckAwesomeLists;
 import ai.helper2.admin.usecase.DecideRelationshipItem;
 import ai.helper2.admin.usecase.DecideRelationshipTargetGroup;
+import ai.helper2.admin.usecase.DecideReviewItem;
 import ai.helper2.admin.usecase.GetEffectiveSettings;
 import ai.helper2.admin.usecase.GetOverview;
 import ai.helper2.admin.usecase.GetReviewEvidence;
 import ai.helper2.admin.usecase.GetRuntimeSettings;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
 import ai.helper2.admin.usecase.ListRelationshipTargetGroups;
+import ai.helper2.admin.usecase.ListReviewQueue;
 import ai.helper2.admin.usecase.ResetRuntimeSetting;
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.admin.usecase.ResolveReviewItems;
+import ai.helper2.admin.usecase.ReviewItemViews;
+import ai.helper2.admin.usecase.ShowReviewItem;
 import ai.helper2.catalog.AiCheckReport;
 import ai.helper2.catalog.AwesomeListSuspects;
 import ai.helper2.catalog.KnownTargetCandidates;
@@ -22,10 +26,13 @@ import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.enrichment.ValidationIssues;
 import ai.helper2.catalog.usecase.CurateField;
+import ai.helper2.catalog.usecase.GetReviewItem;
+import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
 import ai.helper2.examples.usecase.CountHomeExamples;
+import ai.helper2.examples.usecase.ReadExampleDraft;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.llm.BudgetLedger;
@@ -36,12 +43,14 @@ import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.research.ResearchItems;
 import ai.helper2.research.ResearchRuns;
+import ai.helper2.research.usecase.FindResearchedItems;
 import ai.helper2.scout.AwesomeListReader;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.CandidateItems;
 import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
+import ai.helper2.scout.usecase.ShownCandidates;
 import ai.helper2.search.AiTopicCheck;
 import ai.helper2.search.WebSearchQuota;
 import java.time.Clock;
@@ -98,14 +107,37 @@ class AdminUseCaseConfiguration {
   }
 
   @Bean
-  GetReviewEvidence getReviewEvidence(ReviewQueue queue, ReviewEvidence evidence) {
-    return new ReadOnlyGetReviewEvidence(queue, evidence);
+  ReviewItemViews reviewItemViews(
+      ReadExampleDraft drafts, ShownCandidates candidates, KnownTargetCandidates proposals) {
+    return new ReviewItemViews(drafts, candidates, proposals);
+  }
+
+  @Bean
+  ListReviewQueue listReviewQueue(
+      ListReviewItems items, FindResearchedItems researched, ReviewItemViews views) {
+    return new ListReviewQueue(items, researched, views);
+  }
+
+  @Bean
+  ShowReviewItem showReviewItem(GetReviewItem item, ReviewItemViews views) {
+    return new ShowReviewItem(item, views);
+  }
+
+  @Bean
+  DecideReviewItem decideReviewItem(ResolveReview resolve, ReviewItemViews views) {
+    return new DecideReviewItem(resolve, views);
+  }
+
+  @Bean
+  GetReviewEvidence getReviewEvidence(
+      ReviewQueue queue, ReviewEvidence evidence, ReviewItemViews views) {
+    return new ReadOnlyGetReviewEvidence(queue, evidence, views);
   }
 
   static class ReadOnlyGetReviewEvidence extends GetReviewEvidence {
 
-    ReadOnlyGetReviewEvidence(ReviewQueue queue, ReviewEvidence evidence) {
-      super(queue, evidence);
+    ReadOnlyGetReviewEvidence(ReviewQueue queue, ReviewEvidence evidence, ReviewItemViews views) {
+      super(queue, evidence, views);
     }
 
     @Override
