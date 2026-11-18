@@ -172,8 +172,9 @@ public class ResolveReview {
     return switch (item.kind()) {
       case RESOURCE_CANDIDATE, COURSE_CANDIDATE -> indexCandidate(item, adminId);
       case KNOWN_TARGET_CANDIDATE -> addKnownTarget(item, adminId);
-      case EXAMPLE_CANDIDATE, ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT ->
-          addDrafted(item, adminId);
+      case EXAMPLE_CANDIDATE -> addDrafted(item, adminId);
+      case ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT ->
+          throw new IllegalStateException("accepting a " + item.kind() + " adds nothing");
     };
   }
 

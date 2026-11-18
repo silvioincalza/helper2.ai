@@ -61,7 +61,8 @@ place to say that.
    the validator's own sets. The output schema has no estimate field: an estimate is a field with no citation.
 5. **Outcomes of the call.** A spent budget or a transient provider error (timeout, 429, 5xx) → `LLM_UNAVAILABLE`, kept
    in the backlog. Any other provider error, an empty answer or JSON that does not parse → `FAILED` (resource status
-   `REJECTED`), retried by the backlog until 3 failures.
+   `REJECTED`), retried by the backlog until 3 failures. A Scout run counts it as failed, and an answer of which nothing
+   was kept as rejected ([0011](0011-scout-runner.md) §6).
 6. **`EvidenceValidator`** (code, no model). For each proposed field, relationship and summary claim:
    - field and value must be in the allowed lists (type, audience, techLevel, pricing, openSource, a licence id in the
      style of SPDX, useCase, platforms; relationship kinds `INTEGRATES_WITH`, `USES`, `SUPPORTS`, `COMPATIBLE_WITH`,

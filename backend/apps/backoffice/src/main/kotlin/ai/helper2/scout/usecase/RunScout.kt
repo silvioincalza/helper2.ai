@@ -74,7 +74,12 @@ private class EnrichmentBudget(private var remaining: Int) {
 
 private class Planned(val collector: Collector, val summary: RunSummary)
 
-private class EnrichmentCounts(val queued: Int, val failed: Int, val deferred: Int)
+private class EnrichmentCounts(
+  val queued: Int = 0,
+  val failed: Int = 0,
+  val rejected: Int = 0,
+  val deferred: Int = 0,
+)
 
 private const val ITEMS_DROPPED = "helper2.source.items.dropped"
 
@@ -509,9 +514,10 @@ class RunScout(
     changed: List<UUID>,
     budget: EnrichmentBudget,
   ): EnrichmentCounts {
-    if (enrichment == null) return EnrichmentCounts(0, 0, 0)
+    if (enrichment == null) return EnrichmentCounts()
     var queued = 0
     var failed = 0
+    var rejected = 0
     var deferred = 0
     for (resourceId in eligibleForEnrichment(sourceId, changed)) {
       if (resourceId in budget.attempted) continue
@@ -524,15 +530,17 @@ class RunScout(
           failed++
           requestLaterRun(resourceId)
         }
+        EnrichmentOutcome.FAILED -> failed++
+        EnrichmentOutcome.REJECTED -> rejected++
+        EnrichmentOutcome.VALIDATED,
+        EnrichmentOutcome.PARTIAL -> queued++
         EnrichmentOutcome.UNCHANGED,
         EnrichmentOutcome.LLM_UNAVAILABLE -> {}
-        EnrichmentOutcome.VALIDATED,
-        EnrichmentOutcome.PARTIAL,
-        EnrichmentOutcome.REJECTED,
-        EnrichmentOutcome.FAILED -> queued++
       }
     }
-    return EnrichmentCounts(queued, failed, deferred)
+    countItems(sourceId, "failed", failed)
+    countItems(sourceId, "rejected", rejected)
+    return EnrichmentCounts(queued, failed, rejected, deferred)
   }
 
   private fun stillToJudge(enrichment: EnrichResource, resourceId: UUID): Boolean =
@@ -604,6 +612,8 @@ class RunScout(
           .takeIf { batch.nextCursor != null },
         "${enriched.failed} enrichment${if (enriched.failed == 1) "" else "s"} failed; the backlog retries ${if (enriched.failed == 1) "it" else "them"}"
           .takeIf { enriched.failed > 0 },
+        "${enriched.rejected} enrichment${if (enriched.rejected == 1) "" else "s"} rejected; nothing was kept"
+          .takeIf { enriched.rejected > 0 },
         "${enriched.deferred} changed resource${if (enriched.deferred == 1) " waits" else "s wait"} for the backlog (enrichment budget spent)"
           .takeIf { enriched.deferred > 0 },
         "Removed ${cleaned.records} record${if (cleaned.records == 1) "" else "s"} the source withdrew"
