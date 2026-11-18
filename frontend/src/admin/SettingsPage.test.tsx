@@ -76,6 +76,7 @@ const CONFIG: EffectiveConfig = {
 
 const NO_HOSTS = {
   'GET /admin/discovery-hosts': () => ({ max: 500, hosts: [] }),
+  'GET /admin/shadow-libraries': () => ({ max: 200, libraries: [] }),
   'GET /admin/known-targets': () => ({ max: 1000, targets: [] }),
 };
 

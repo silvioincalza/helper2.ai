@@ -1,5 +1,6 @@
 package ai.helper2.sources;
 
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.Audience;
@@ -20,6 +21,8 @@ import java.util.Set;
 import org.springframework.web.client.RestClient;
 
 public final class SourceFixtures {
+  public static final ShadowLibraries SHADOW_LIBRARIES = ShadowLibraries.of("z-lib", "libgen");
+
   public static final Clock CLOCK =
       Clock.fixed(Instant.parse("2026-10-22T10:00:00Z"), ZoneOffset.UTC);
 

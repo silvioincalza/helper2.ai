@@ -1,6 +1,6 @@
 # Data model: every PostgreSQL table, its columns, keys and foreign keys, and what a delete of the target does.
 # Source of truth: backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (the whole schema of v2026.11.1, one
-#   section per context, ADR 0004 §5).
+#   section per context, ADR 0004 §5), and the versioned migrations after it (V2026.11.6.2__shadow_library.sql).
 #   Delete rules on the lines: ADR 0010. Seeds (R__ migrations) add rows, no tables.
 # Lines: solid = foreign key, labelled with its ON DELETE rule; dashed = a link the code keeps, with no foreign key.
 # Render: cd docs/diagrams && d2 fmt data-model.d2 && d2 data-model.d2 data-model.svg
@@ -397,6 +397,18 @@ examples: "examples: the home page's example searches" {
     version: integer
     created_at: timestamptz
     updated_at: timestamptz
+  }
+}
+
+search: "search: sites no search shows (ADR 0049)" {
+  class: group
+
+  shadow_library: {
+    class: table
+    name: "text (one host label, 3-63)" {constraint: primary_key}
+    added_by: "text (provider subject, or migration)"
+    added_at: timestamptz
+    reason: "text (≤ 500)"
   }
 }
 

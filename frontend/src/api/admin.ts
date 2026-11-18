@@ -27,6 +27,8 @@ import type {
   DiscoveryHosts,
   DiscoveryHostEntry,
   DiscoveryHostKind,
+  ShadowLibraries,
+  ShadowLibraryEntry,
   KnownTargets,
   KnownTargetEntry,
   KnownTargetWrite,
@@ -168,6 +170,14 @@ export const adminApi = {
     request<DiscoveryHostEntry>('POST', '/admin/discovery-hosts', { body }),
   removeDiscoveryHost: (host: string, reason: string | null) =>
     request<void>('POST', `/admin/discovery-hosts/${encodeURIComponent(host)}/remove`, {
+      body: { reason },
+    }),
+  listShadowLibraries: (signal?: AbortSignal) =>
+    request<ShadowLibraries>('GET', '/admin/shadow-libraries', { signal }),
+  addShadowLibrary: (body: { name: string; reason: string | null }) =>
+    request<ShadowLibraryEntry>('POST', '/admin/shadow-libraries', { body }),
+  removeShadowLibrary: (name: string, reason: string | null) =>
+    request<void>('POST', `/admin/shadow-libraries/${encodeURIComponent(name)}/remove`, {
       body: { reason },
     }),
   listKnownTargets: (signal?: AbortSignal) =>

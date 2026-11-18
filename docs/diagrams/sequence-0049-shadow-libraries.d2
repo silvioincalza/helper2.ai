@@ -1,0 +1,40 @@
+# Sequence: an admin adds sci-hub, and the public app's next live web search drops sci-hub.se (ADR 0049).
+# Source of truth: frontend/src/admin/ShadowLibrariesPanel.tsx,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ShadowLibrariesController.java,
+#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ManageShadowLibraries.kt,
+#   backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcShadowLibraryStore.java,
+#   backend/libs/core/src/main/java/ai/helper2/search/internal/ShadowLibrariesConfiguration.java,
+#   backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java.
+# Render: cd docs/diagrams && d2 fmt sequence-0049-shadow-libraries.d2 && d2 sequence-0049-shadow-libraries.d2 sequence-0049-shadow-libraries.svg
+
+...@style
+
+shape: sequence_diagram
+
+owner: "Owner\n(admin host)" {class: person}
+spa: "Settings page" {class: app}
+admin: "Back office\n(ManageShadowLibraries)" {class: app}
+db: PostgreSQL {class: data}
+public: "Public app\n(ShadowLibraries, TavilySource)" {class: app}
+tavily: Tavily {class: ext}
+
+add: Add {
+  owner -> spa: "Name sci-hub, reason" {class: hot}
+  spa -> admin: "POST /api/v1/admin/shadow-libraries\n{name, reason}"
+  admin -> admin: "ShadowLibraryNames.check: sci-hub"
+  admin -> db: "INSERT shadow_library ON CONFLICT DO NOTHING;\nINSERT admin_audit (ADD_SHADOW_LIBRARY, ADDED)"
+  admin -> db: "after commit: SELECT name FROM shadow_library"
+  admin -> spa: "201 {name, addedBy, addedAt, reason}"
+  spa -> owner: "Added: results on sci-hub sites are no longer shown."
+}
+
+refresh: Every 30 seconds {
+  public -> db: "SELECT name FROM shadow_library" {class: hot}
+  public -> public: "the list in force: {libgen, sci-hub, z-lib, …}"
+}
+
+search: Next live web search {
+  public -> tavily: "POST /search" {class: hot}
+  tavily -> public: "results (one on sci-hub.se)"
+  public -> public: "toHit: sci-hub.se has the label sci-hub, dropped"
+}

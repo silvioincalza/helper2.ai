@@ -1,0 +1,44 @@
+# Flowchart: an admin adds a shadow library's name, and how a web result is checked against the list (ADR 0049).
+# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/ShadowLibraries.kt (ShadowLibraryNames.check,
+#   ShadowLibraries.isShadowLibrary), backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ManageShadowLibraries.kt,
+#   backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java (toHit),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java (keep).
+# Render: cd docs/diagrams && d2 fmt flow-0049-shadow-libraries.d2 && d2 flow-0049-shadow-libraries.d2 flow-0049-shadow-libraries.svg
+
+...@style
+
+direction: down
+
+admin: "Admin adds a name\n(Settings page, VPN)" {class: person}
+reason: "Reason one plain line,\nat most 500 characters?" {class: decision}
+name: "One host label?\nletters, digits, hyphens;\n3-63 characters, no dot" {class: decision}
+common: "A label many sites use?\nwww, com, blog …" {class: decision}
+listed: "Listed already?" {class: decision}
+full: "200 names already?" {class: decision}
+refused: "400: nothing changes,\nno audit row" {class: fail}
+duplicate: "409 duplicate\n(audit: ALREADY_LISTED)" {class: fail}
+stored: "Row in shadow_library;\naudit ADD_SHADOW_LIBRARY\n(one transaction)" {class: data}
+reload: "Back office reads the list again;\nthe public app within 30 s" {class: app}
+
+result: "A web result\n(live search, news, events, discovery)" {class: app}
+hostname: "A label of its host,\nbefore the last, is a name?" {class: decision}
+dropped: "Never a result,\nnever a candidate" {class: end}
+rules: "The source's own rules\n(AI words, Tavily's own pages …)" {class: end}
+
+admin -> reason: {class: hot}
+reason -> refused: no
+reason -> name: yes {class: hot}
+name -> refused: no
+name -> common: yes {class: hot}
+common -> refused: yes
+common -> listed: no {class: hot}
+listed -> duplicate: yes
+listed -> full: no {class: hot}
+full -> refused: "yes (400)"
+full -> stored: no {class: hot}
+stored -> reload: after commit {class: hot}
+reload -> result: the list in force {class: hot}
+
+result -> hostname: {class: hot}
+hostname -> dropped: yes
+hostname -> rules: no {class: hot}

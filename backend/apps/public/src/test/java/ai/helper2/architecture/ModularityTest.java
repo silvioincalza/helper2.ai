@@ -161,7 +161,8 @@ class ModularityTest {
           Map.entry("scout_run", "scout"),
           Map.entry("scout_schedule", "scout"),
           Map.entry("enrichment_queue_control", "scout"),
-          Map.entry("discovery_host", "scout"));
+          Map.entry("discovery_host", "scout"),
+          Map.entry("shadow_library", "search"));
 
   private static final Set<String> SHARED_TABLES = Set.of("enrichment_queue_control catalog");
 
@@ -182,8 +183,8 @@ class ModularityTest {
     try (Stream<Path> migrations = Files.list(BackendSources.MIGRATIONS)) {
       for (Path migration :
           migrations
-              .filter(m -> m.getFileName().toString().matches("V\\d+__.*\\.sql"))
-              .sorted(java.util.Comparator.comparingInt(ModularityTest::version))
+              .filter(m -> m.getFileName().toString().matches("V\\d+(\\.\\d+)*__.*\\.sql"))
+              .sorted(ModularityTest::byVersion)
               .toList()) {
         String sql = Files.readString(migration);
         Matcher created = CREATE_TABLE.matcher(sql);
@@ -240,8 +241,14 @@ class ModularityTest {
     }
   }
 
-  private static int version(Path migration) {
+  private static int byVersion(Path left, Path right) {
+    return java.util.Arrays.compare(version(left), version(right));
+  }
+
+  private static int[] version(Path migration) {
     String name = migration.getFileName().toString();
-    return Integer.parseInt(name.substring(1, name.indexOf("__")));
+    return java.util.Arrays.stream(name.substring(1, name.indexOf("__")).split("\\."))
+        .mapToInt(Integer::parseInt)
+        .toArray();
   }
 }

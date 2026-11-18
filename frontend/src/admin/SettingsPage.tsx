@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/format';
 import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
 import { KnownTargetsPanel } from './KnownTargetsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
+import { ShadowLibrariesPanel } from './ShadowLibrariesPanel';
 
 function settingText(
   setting: ConfigSetting,
@@ -100,6 +101,9 @@ export default function SettingsPage() {
             <a href="#dh-h">{t('admin.settings.hosts.title')}</a>
           </li>
           <li>
+            <a href="#sl-h">{t('admin.settings.shadow.title')}</a>
+          </li>
+          <li>
             <a href="#kt-h">{t('admin.settings.targets.title')}</a>
           </li>
           {groups.map((g) => (
@@ -116,6 +120,7 @@ export default function SettingsPage() {
         reload={runtime.reload}
       />
       <DiscoveryHostsPanel />
+      <ShadowLibrariesPanel />
       <KnownTargetsPanel />
       {config.loading ? (
         <p role="status" className="muted">
