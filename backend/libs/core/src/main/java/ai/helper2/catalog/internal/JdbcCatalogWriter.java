@@ -108,6 +108,14 @@ class JdbcCatalogWriter implements CatalogWriter {
             new RecordInput(recordId, h, externalId, r.getId().getValue()));
       }
     }
+    Set<UUID> removed =
+        origin == DataOrigin.CURATED
+            ? addedBackByAnAdmin(resources.values())
+            : removedByAnAdmin(resources.values());
+    if (!removed.isEmpty()) {
+      resources.values().removeIf(in -> removed.contains(in.id()));
+      records.values().removeIf(in -> removed.contains(in.owner()));
+    }
     if (resources.isEmpty()) {
       return List.of();
     }
@@ -143,6 +151,29 @@ class JdbcCatalogWriter implements CatalogWriter {
     refreshPackageTerms(touched);
     categories.refreshCategories(touched);
     return changed;
+  }
+
+  private Set<UUID> addedBackByAnAdmin(Collection<ResourceInput> resources) {
+    if (!resources.isEmpty()) {
+      jdbc.sql("DELETE FROM removed_resource WHERE resource_key = ANY(:ids)")
+          .param("ids", resources.stream().map(ResourceInput::id).toArray(UUID[]::new))
+          .update();
+    }
+    return Set.of();
+  }
+
+  private Set<UUID> removedByAnAdmin(Collection<ResourceInput> resources) {
+    if (resources.isEmpty()) {
+      return Set.of();
+    }
+    return new HashSet<>(
+        jdbc.sql(
+                """
+                SELECT resource_key FROM removed_resource WHERE resource_key = ANY(:ids)
+                """)
+            .param("ids", resources.stream().map(ResourceInput::id).toArray(UUID[]::new))
+            .query(UUID.class)
+            .list());
   }
 
   private static boolean isSeenAtItsOwnAddress(MergedResult r) {

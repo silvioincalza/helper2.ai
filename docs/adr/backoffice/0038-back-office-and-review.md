@@ -93,11 +93,23 @@ On a review item, accept and reject were not enough:
    general source (`AiCheckReport.GENERAL_SOURCES`: GitHub, npm, PyPI, Hacker News, live web, confs.tech) are
    checked: a source that only holds AI (Hugging Face, arXiv, the MCP Registry, the AI news feeds, the discovery and
    SDK collectors) says a resource is about AI, whatever its words. Without this rule staging listed 5,067 of 65,521,
-   among them 484 models, 178 papers and 484 news items. It changes nothing: the admin skips a waiting one, row by
-   row, with the reason "Not about AI (word rule)", and requeues it from Skipped to undo. There is no bulk skip: a
-   library's catalog text often has no AI word (the official SDK of a vector database), so each row needs a look. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due and not
-   skipped, as `SkipEnrichment` checks it), so the panel offers Skip only where Skip succeeds. A resource that is not
-   waiting is only listed: no code deletes a catalog row.
+   among them 484 models, 178 papers and 484 news items. The check itself changes nothing; the admin acts row by
+   row. Skip: a waiting one leaves the enrichment queue with the reason "Not about AI (word rule)", and a requeue
+   from Skipped undoes it. There is no bulk skip: a library's catalog text often has no AI word (the official SDK of
+   a vector database), so each row needs a look. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due
+   and not skipped, as `SkipEnrichment` checks it), so the panel offers Skip only where Skip succeeds.
+
+   Remove (`POST /api/v1/admin/ai-check/{id}/remove`, `RemoveResource`), on any listed row, after a dialog that asks
+   for a reason of 1 to 500 characters: in one transaction the audit keeps `REMOVE_RESOURCE` with the address
+   (cut to 100 characters) and the reason, `candidate_decision` keeps a `REJECTED` decision for the address's key,
+   `removed_resource` keeps the key (the same UUID a resource id is made from its address, never the address), and
+   the resource goes with what cascades from it: source records, labels, embedding, enrichment runs, review items,
+   links from it; a link to it loses its target. Saved items keep their own title and address. From then on the
+   catalog writer drops a result whose key is in `removed_resource`, whatever the source and in both apps (the
+   public app's role reads the table, never `candidate_decision`), and the review queue proposes no candidate for
+   the address. An admin who adds the address by hand (`CURATED`) clears the key and the resource comes back.
+   Flow and sequence: [flow](../../diagrams/flow-0038-remove-resource.svg) ·
+   [sequence](../../diagrams/sequence-0038-remove-resource.svg).
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
    (ADMIN, back office) answers what an item is about. A review item already links to its enrichment run and, for a
    relationship candidate, to its relationship (`enrichment_run_id`, `relationship_id`). The view follows that link;
@@ -681,6 +693,7 @@ the target of a relationship candidate: [flow](../../diagrams/flow-0038-relation
 one decision per target name: [flow](../../diagrams/flow-0038-relationship-groups.svg) · [sequence](../../diagrams/sequence-0038-relationship-groups.svg) ·
 a candidate edit: [flow](../../diagrams/flow-0038-candidate-edit-in-review.svg) · [sequence](../../diagrams/sequence-0038-candidate-edit-in-review.svg) ·
 a curated field: [flow](../../diagrams/flow-0038-curated-field.svg) · [sequence](../../diagrams/sequence-0038-curated-field.svg) ·
+a removed resource: [flow](../../diagrams/flow-0038-remove-resource.svg) · [sequence](../../diagrams/sequence-0038-remove-resource.svg) ·
 the settings of both apps: [flow](../../diagrams/flow-0038-settings-of-both-apps.svg) · [sequence](../../diagrams/sequence-0038-settings-of-both-apps.svg)
 
 ## Backlog

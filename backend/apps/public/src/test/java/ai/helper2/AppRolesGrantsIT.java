@@ -44,6 +44,7 @@ class AppRolesGrantsIT {
               Map.entry("ai_cache", RW),
               Map.entry("public_app_lock", RW_NO_DELETE),
               Map.entry("awesome_list", R),
+              Map.entry("removed_resource", R),
               Map.entry("awesome_list_entry", R),
               Map.entry("job_marker", R),
               Map.entry("enrichment_run", R),

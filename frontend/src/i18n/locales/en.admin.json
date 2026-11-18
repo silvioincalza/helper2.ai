@@ -155,7 +155,8 @@
         "ADD_SHADOW_LIBRARY": "Shadow library added",
         "REMOVE_SHADOW_LIBRARY": "Shadow library removed",
         "SET_FIELD": "Field set by an admin",
-        "DROP_FIELD": "AI value of a field dropped"
+        "DROP_FIELD": "AI value of a field dropped",
+        "REMOVE_RESOURCE": "Resource removed"
       }
     },
     "budget": {
@@ -739,7 +740,18 @@
       "skip": "Skip",
       "skipLabel": "Skip {{title}}",
       "reason": "Not about AI (word rule)",
-      "skipFailed": "Could not skip {{title}}."
+      "skipFailed": "Could not skip {{title}}.",
+      "removed": "Removed",
+      "remove": "Remove",
+      "removeLabel": "Remove {{title}} from the catalog",
+      "removeTitle": "Remove {{title}}?",
+      "removeWhat": "It leaves the catalog with its source records, labels and embedding. The Scout and the review queue skip its address from now on.",
+      "removeFinal": "This cannot be undone here. Adding the address by hand brings it back.",
+      "removeReasonLabel": "Reason (kept in the audit trail)",
+      "removeReason": "Not about AI",
+      "removeCancel": "Cancel",
+      "removeConfirm": "Remove",
+      "removeFailed": "Could not remove {{title}}."
     },
     "research": {
       "bar": "Research with AI",

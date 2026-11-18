@@ -40,6 +40,7 @@ class TableOwnersTest {
           Map.entry("issue_report", "catalog"),
           Map.entry("review_item", "catalog"),
           Map.entry("candidate_decision", "catalog"),
+          Map.entry("removed_resource", "catalog"),
           Map.entry("known_target", "catalog"),
           Map.entry("known_target_name", "catalog"),
           Map.entry("home_example", "examples"),

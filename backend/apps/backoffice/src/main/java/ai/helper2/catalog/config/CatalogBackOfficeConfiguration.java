@@ -11,6 +11,7 @@ import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.KnownTargetList;
 import ai.helper2.catalog.RelationshipTargets;
+import ai.helper2.catalog.ResourceRemoval;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.ReviewDecisions;
 import ai.helper2.catalog.ReviewQueue;
@@ -29,6 +30,7 @@ import ai.helper2.catalog.usecase.ListWellKnownResources;
 import ai.helper2.catalog.usecase.LookUpResourceTitles;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.PurgeExpiredData;
+import ai.helper2.catalog.usecase.RemoveResource;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLocks;
@@ -111,6 +113,11 @@ public class CatalogBackOfficeConfiguration {
   }
 
   @Bean
+  RemoveResource removeResource(ResourceRemoval removal, AuditTrail audit) {
+    return new TransactionalRemoveResource(removal, audit);
+  }
+
+  @Bean
   GetReviewItem getReviewItem(ReviewQueue queue) {
     return new GetReviewItem(queue);
   }
@@ -165,6 +172,19 @@ public class CatalogBackOfficeConfiguration {
   ResolveReviewItem resolveReviewItem(
       ReviewDecisions decisions, ReviewQueue queue, AuditTrail audit) {
     return new TransactionalResolveReviewItem(decisions, queue, audit);
+  }
+
+  static class TransactionalRemoveResource extends RemoveResource {
+
+    TransactionalRemoveResource(ResourceRemoval removal, AuditTrail audit) {
+      super(removal, audit);
+    }
+
+    @Override
+    @Transactional
+    public Outcome remove(UUID resourceId, @Nullable String reason, String by) {
+      return super.remove(resourceId, reason, by);
+    }
   }
 
   static class TransactionalEditKnownTargetCandidate extends EditKnownTargetCandidate {
