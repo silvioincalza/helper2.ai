@@ -179,7 +179,7 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 | Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
 | Replicas | `app.replicas` (public app, default 3), `backoffice.replicas` (default 1), `web.replicas` (default 2) |
 | Scout | `backoffice.scoutEnabled`, `backoffice.scoutCron`, `backoffice.scoutMaxEnrichments` |
-| Review research | `backoffice.researchEnabled` (default true, false on prod until the #588 eval passes) |
+| Review research | `backoffice.researchEnabled` (default true, on staging and prod) |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |
 
