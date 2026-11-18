@@ -222,19 +222,20 @@ describe('shortDay', () => {
 
 describe('backAgain', () => {
   const now = Date.parse('2026-11-09T12:30:00Z');
+  const keys = { today: 'x.today', tomorrow: 'x.tomorrow' };
 
   it('reads the time zone of the browser when none is given', () => {
     browser('it-CH');
     zone('Europe/Zurich');
-    expect(backAgain('x', '2026-11-10T00:00:00Z', { now })).toEqual({
-      key: 'xBackTomorrowAt',
+    expect(backAgain(keys, '2026-11-10T00:00:00Z', { now })).toEqual({
+      key: 'x.tomorrow',
       time: '01:00',
     });
 
     browser('en-US');
     zone('America/Los_Angeles');
-    expect(backAgain('x', '2026-11-10T00:00:00Z', { now })).toEqual({
-      key: 'xBackAt',
+    expect(backAgain(keys, '2026-11-10T00:00:00Z', { now })).toEqual({
+      key: 'x.today',
       time: expect.stringMatching(/^4:00\sPM$/),
     });
   });

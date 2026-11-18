@@ -118,7 +118,7 @@ No runtime path: these decisions run in the build and in CI only, so there is no
 
 ### Known limits
 
-- knip does not read locale files or CSS; two tests do (`styles/classesUsed.test.ts`, `i18n/keysUsed.test.ts`). They see a class or a key the code writes whole or under a template prefix (`` `h2-dot--${tone}` ``); one built another way (strings joined with `+`) counts as unused, and a key or class that only dead code uses still counts as used. Moderate `npm audit` advisories in build and test tools are only reported.
+- knip does not read locale files or CSS; two tests do (`styles/classesUsed.test.ts`, `i18n/keysUsed.test.ts`). They see a class or a key the code writes whole, or through a template (`` `h2-dot--${tone}` ``): the TypeScript checker gives the values the template can take, and each key or class is checked against them one by one. Where the code holds a value as a string, the key test takes the values from the generated API enums, or accepts the prefix whole from a short named list that gives the reason (values only the backend knows). One built another way (strings joined with `+`) counts as unused, and a key or class that only dead code uses still counts as used. Moderate `npm audit` advisories in build and test tools are only reported.
 
 ## Diagrams
 
