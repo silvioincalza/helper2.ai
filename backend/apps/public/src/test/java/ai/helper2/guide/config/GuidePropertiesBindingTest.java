@@ -3,6 +3,7 @@ package ai.helper2.guide.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.testing.ConfigBinding;
+import java.net.URI;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,7 +41,8 @@ class GuidePropertiesBindingTest {
                     8192,
                     ModelStream.OFF,
                     new GuideProperties.Thinking(0, 0, 0, 2048),
-                    new GuideProperties.Fairness(300, 2, 12))));
+                    new GuideProperties.Fairness(300, 2, 12),
+                    URI.create("https://registry.modelcontextprotocol.io"))));
   }
 
   @Test

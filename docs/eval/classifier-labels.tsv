@@ -185,5 +185,14 @@ npm	@lernapps/practice	The assistant's side of lernapps practice: the plan templ
 npm	@iconference/cashctrl-mcp	Inoffizieller MCP-Server für CashCtrl: lesen frei, schreiben nur auf gesetzter Stufe und nach Vorschau mit Bestätigung	mcp,model-context-protocol,cashctrl,buchhaltung,accounting,claude,schweiz	1
 npm	cuonztech-agent-harness	Chaos-Proxy für MCP-Server: injiziert F1-F5-Fehlerszenarien (Ghost-Write nach Timeout, 429, defektes JSON, Duplicate Dispatch, 500) vor einem echten Upstream-MCP-Server und prüft, ob ein Agent Schreibvorgänge doppelt ausführt. Mit Resilience Score und Sys	mcp,mcp-server,agent-testing,chaos-engineering,idempotency,llm-agents,ghost-write,resilience,cuonztech	1
 npm	stryker-mcp-reporter	Ein Stryker Reporter Plugin, das Mutation Testing Ergebnisse nativ über das Model Context Protocol (MCP) bereitstellt.	stryker,stryker-plugin,stryker-reporter,mutation-testing,mcp,model-context-protocol	1
+npm	mongodb-connection-string-url	MongoDB connection strings, based on the WhatWG URL API	password,prompt,tty	0
+npm	turbo	Turborepo is the build system for coding agents.		0
+npm	agent-base	Turn a function into an `http.Agent` instance	http,agent,base,barebones,https	0
+npm	global-agent	Global HTTP/HTTPS proxy configurable using environment variables.	http,global,proxy,agent	0
+npm	@expo/vector-icons	Built-in support for popular icon fonts and the tooling to create your own Icon components from your font and glyph map. This is a wrapper around react-native-vector-icons to make it compatible with Expo.	expo	0
+npm	@maplibre/vt-pbf	Serialize mapbox vector tiles to binary protobufs in javascript.		0
+npm	zbsearch	A complete search engine in your browser, server, or edge network with support for full-text, vector, and hybrid search in less than 2kb.	full-text,full-text search,fuzzy search,search,typo-tolerant search,vector database,vector search,vectors	1
+npm	apparatus	various machine learning routines for node	machine,learning,ml,classifier,clustering,bayes,k-means,logistic,regression	1
+npm	agent-install	Install SKILL.md files, MCP servers, and AGENTS.md guidance for any coding agent. Ships both a Node API and a CLI.	agent,agents-md,claude,cli,codex,cursor,install,mcp,model-context-protocol,opencode,skill,skills	1
 # min-precision 0.95
 # min-recall 0.80

@@ -239,7 +239,26 @@ The plan call (fast model, `prompts/guide/plan.txt`) returns:
   of a reason, a prompt, instructions, saying, telling, writing, the user or a password is dropped. "No account
   needed", "no API key required" and "works offline" stay.
 
-**Deterministic backup** (`IntentRules`, English and Italian word lists in `i18n/intent-words_*.properties`). When the
+**The word files** (`i18n/intent-words_{en,it,de,fr,es}.properties`, read by `WordLists`). Comma-separated phrases,
+matched case-insensitively as whole words; a space matches any run of whitespace, and a phrase that ends in `*`
+matches any ending of its last word. Every language file is loaded and the languages are joined, except
+`intent.new-skip`, which is read with the `intent.new-word` of its own language: German `mit` and `art` must not stop
+English "new MIT models" or "new art tools". A word that is also a common word of another language is left out
+(German `Tag`: "last tag" asks for a git tag; French `an`, `ans`: "an upcoming release"). The keys: `period.*` and
+`unit.*` (time expressions); `intent.newest`, `intent.new-word`, `intent.new-kind`, `intent.new-skip` ("new" sets
+`NEWEST` only right before a kind of resource, with at most one word between that is not a skip word: "I am new to
+AI" and "a new way to…" do not); `intent.alternatives`, `intent.compare`, `intent.learn` (anywhere) and
+`intent.what-is`, `intent.when`, `intent.how-to` (at the start only; "what is X" only, "what are the new tools" asks
+for a list); `query.generic` (words that name no subject: a query of only these browses by date and type);
+`when.event` (a WHEN question with one asks for an event's dates) and `when.start` (a start names an event only next
+to a course word: "when did Ollama start?" asks for a release date); `subject.kind` (the kind the subject is: "the
+Gemini model" is never asked which Gemini) and `subject.type-suffix` (a trailing type word that still names the
+subject: "Ollama app"); `time.word` and `new.word` (`mentionsTime`, `mentionsNewness`; a year 20xx also names a time);
+`requirement.*` (a planned constraint counts only when the question states it too, `constraintStated`);
+`constraint.stop` (words of a constraint that say nothing alone); `reading` (`wantsReading`); `qualifier`
+(requirements dropped from a planned query before the search, `withoutQualifiers`, where a hyphen is part of a word).
+
+**Deterministic backup** (`IntentRules`, the word files above). When the
 plan has no grounded intent or window, or there is no model, rules on the user's text set them, so the degraded answer
 for "tools from last month" is still the newest tools. Narrow on purpose, because a false hit changes the whole answer:
 - the intent, most specific shape first: comparison words, then alternatives, courses and certifications, "when",

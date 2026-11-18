@@ -571,6 +571,7 @@ helper2.guide.fairness.client-concurrent-questions = ${H2_GUIDE_CLIENT_CONCURREN
 helper2.guide.fairness.network-daily-questions = ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}  =>  300
 helper2.guide.heartbeat = ${H2_GUIDE_HEARTBEAT:PT15S}  =>  PT15S
 helper2.guide.max-candidates = ${H2_GUIDE_MAX_CANDIDATES:24}  =>  24
+helper2.guide.mcp-registry-url = ${helper2.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
 helper2.guide.model-call-minimum = 10s
 helper2.guide.model-call-timeout = ${H2_LLM_TIMEOUT:40s}  =>  40s
 helper2.guide.model-stream = ${H2_GUIDE_MODEL_STREAM:OFF}  =>  OFF

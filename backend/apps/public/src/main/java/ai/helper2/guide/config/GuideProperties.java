@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.net.URI;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -30,7 +31,8 @@ public record GuideProperties(
     @Positive int chooseMaxTokens,
     @NotNull ModelStream modelStream,
     @Valid @NotNull Thinking thinking,
-    @Valid @NotNull Fairness fairness) {
+    @Valid @NotNull Fairness fairness,
+    @NotNull URI mcpRegistryUrl) {
   public record Thinking(
       @PositiveOrZero int planTokens,
       @PositiveOrZero int chooseTokens,

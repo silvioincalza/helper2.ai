@@ -157,7 +157,7 @@ class NpmSourceTest {
         "/-/v1/search",
         FixtureServer.Reply.ok(
             """
-            {"objects":[{"package":{"name":"@acme/agent-player","description":"Agent player",
+            {"objects":[{"package":{"name":"@acme/agent-player","description":"AI agent player",
               "links":{"npm":"https://www.npmjs.com/package/@acme/agent-player",
                        "repository":"https://github.com/acme/mono/tree/main/packages/player"}}}]}\
             """));
