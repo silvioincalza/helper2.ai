@@ -64,6 +64,8 @@ class AppRolesGrantsIT {
               Map.entry("known_target", NONE),
               Map.entry("known_target_name", NONE),
               Map.entry("enrichment_queue_control", NONE),
+              Map.entry("review_research", NONE),
+              Map.entry("review_research_step", NONE),
               Map.entry("scout_run", NONE),
               Map.entry("scout_schedule", NONE),
               Map.entry("source_cursor", NONE)));

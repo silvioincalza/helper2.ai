@@ -46,7 +46,14 @@ public enum RuntimeSetting {
       "credits a day",
       2_000,
       "H2_LIVE_WEB_DAILY_CREDITS",
-      "Live web calls a UTC day for all of helper2.ai. 0: no live call, stored results only.");
+      "Live web calls a UTC day for all of helper2.ai. 0: no live call, stored results only."),
+  REVIEW_RESEARCH_DAILY_MODEL_CALLS(
+      "research.dailyModelCalls",
+      "Research model calls a day",
+      "calls a day",
+      20_000,
+      "H2_RESEARCH_DAILY_MODEL_CALLS",
+      "Model calls of the review research agent a UTC day. A run takes up to 14. 0: research waits.");
 
   public static final long MIN = 0;
 

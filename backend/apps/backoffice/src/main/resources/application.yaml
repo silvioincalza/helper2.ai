@@ -54,6 +54,14 @@ helper2:
     known-targets:
       owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
       per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}
+  research:
+    enabled: ${H2_RESEARCH_ENABLED:true}
+    model: ${H2_RESEARCH_MODEL:REASONING}
+    max-tokens: ${H2_RESEARCH_MAX_TOKENS:4096}
+    daily-model-calls: ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}
+    daily-page-reads: ${H2_RESEARCH_DAILY_PAGE_READS:300}
+    concurrency: ${H2_RESEARCH_CONCURRENCY:4}
+    tick: ${H2_RESEARCH_TICK:PT2S}
   sources:
     page-reader:
       enabled: ${H2_SOURCE_PAGE_READER_ENABLED:true}

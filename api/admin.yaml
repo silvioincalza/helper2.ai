@@ -39,6 +39,8 @@ tags:
   - name: known-targets
   - name: relationship-targets
   - name: examples-admin
+  - name: review-research
+  - name: review-research-events
 
 paths:
   /search:
@@ -883,6 +885,116 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
 
+  /admin/review-research:
+    post:
+      tags: [review-research]
+      operationId: startReviewResearch
+      summary: Start research on review items (ADR 0048).
+      description: >-
+        Queues a run for each item that is an open RESOURCE_CANDIDATE or COURSE_CANDIDATE and has no queued or
+        running run; other ids are skipped. With `allOpen`, queues every such item (at most 20,000): ask
+        `/admin/review-research/estimate` first. Runs are async: the answer lists the queued runs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewResearchStart' }
+      responses:
+        '202':
+          description: The runs queued now.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchRuns' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+    get:
+      tags: [review-research]
+      operationId: listReviewResearch
+      summary: The newest run of each given item, for the status of the queue rows.
+      parameters:
+        - name: itemId
+          in: query
+          required: true
+          schema: { type: array, minItems: 1, maxItems: 200, items: { type: string, format: uuid } }
+          explode: true
+      responses:
+        '200':
+          description: One run per item that has one.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchRuns' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/estimate:
+    get:
+      tags: [review-research]
+      operationId: estimateReviewResearch
+      summary: How many items research on every open candidate would queue, and the most model calls it can take.
+      responses:
+        '200':
+          description: The estimate.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchEstimate' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/{runId}:
+    get:
+      tags: [review-research]
+      operationId: getReviewResearch
+      summary: One run with its checked result and every step, request and response as plain text.
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The run.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReviewResearchDetail' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/{runId}/cancel:
+    post:
+      tags: [review-research]
+      operationId: cancelReviewResearch
+      summary: Cancel a queued or running run. A running one stops before its next step.
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Cancelled. }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/review-research/{runId}/events:
+    get:
+      tags: [review-research-events]
+      operationId: streamReviewResearch
+      summary: The steps of one run as they are stored, then its end.
+      description: >-
+        `text/event-stream`. Event `step`: one ReviewResearchStep, in order, from `afterSeq` on. Event `status`: the
+        run (ReviewResearchRun) when its status changes. The stream ends after the run is DONE, FAILED or CANCELLED.
+        New rows are read once a second.
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: afterSeq, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200':
+          description: The event stream.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
 components:
   schemas:
     HomeExampleInput:
@@ -1653,3 +1765,98 @@ components:
         itemsChanged: { type: integer }
         enrichmentsQueued: { type: integer }
         message: { type: [string, 'null'] }
+
+    ReviewResearchStart:
+      type: object
+      properties:
+        itemIds: { type: array, maxItems: 500, items: { type: string, format: uuid } }
+        allOpen: { type: boolean, default: false, description: Every open resource and course candidate with no active run. }
+
+    ReviewResearchEstimate:
+      type: object
+      required: [items, maxModelCalls]
+      properties:
+        items: { type: integer, description: Open resource and course candidates with no queued or running run. }
+        maxModelCalls: { type: integer, format: int64, description: At most 14 model calls per item. }
+
+    ReviewResearchRuns:
+      type: object
+      required: [runs]
+      properties:
+        runs: { type: array, items: { $ref: '#/components/schemas/ReviewResearchRun' } }
+
+    ReviewResearchRun:
+      type: object
+      required: [id, itemId, status, model, requestedAt, steps, promptTokens, completionTokens]
+      properties:
+        id: { type: string, format: uuid }
+        itemId: { type: string, format: uuid }
+        status: { type: string, enum: [QUEUED, RUNNING, DONE, FAILED, CANCELLED] }
+        model: { type: string }
+        requestedAt: { type: string, format: date-time }
+        startedAt: { type: [string, 'null'], format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+        steps: { type: integer }
+        promptTokens: { type: integer }
+        completionTokens: { type: integer }
+        verdict: { type: [string, 'null'], enum: [KEEP, REJECT, DUPLICATE, null] }
+        error: { type: [string, 'null'] }
+
+    ReviewResearchDetail:
+      type: object
+      required: [run, steps]
+      properties:
+        run: { $ref: '#/components/schemas/ReviewResearchRun' }
+        result: { oneOf: [{ $ref: '#/components/schemas/ReviewResearchResult' }, { type: 'null' }] }
+        steps: { type: array, items: { $ref: '#/components/schemas/ReviewResearchStep' } }
+
+    ReviewResearchResult:
+      type: object
+      description: >-
+        The checked answer (ADR 0048 §6). The status of each attribute is computed by code from the citations that
+        are found in the evidence of this run; `dropped` says which citations did not count and why. Every value is a
+        proposal written with AI: the admin confirms it before it reaches the catalog.
+      required: [verdict, reason, attributes, dropped, aiWritten]
+      properties:
+        verdict: { type: string, enum: [KEEP, REJECT, DUPLICATE] }
+        reason: { type: string }
+        duplicateOf: { type: [string, 'null'] }
+        aiWritten: { type: boolean, description: 'Always true: machine-readable AI marking (EU AI Act Art. 50).' }
+        attributes:
+          type: array
+          items:
+            type: object
+            required: [name, proposed, status, sources]
+            properties:
+              name: { type: string }
+              current: { type: [string, 'null'] }
+              proposed: { type: array, items: { type: string } }
+              status: { type: string, enum: [CONFIRMED, SINGLE_SOURCE, CONFLICT, NOT_FOUND] }
+              sources:
+                type: array
+                items:
+                  type: object
+                  required: [evidenceId, tool, url, excerpt, value, authoritative]
+                  properties:
+                    evidenceId: { type: string }
+                    tool: { type: string }
+                    url: { type: string }
+                    excerpt: { type: string }
+                    value: { type: string }
+                    authoritative: { type: boolean }
+        dropped: { type: array, items: { type: string } }
+
+    ReviewResearchStep:
+      type: object
+      required: [seq, kind, name, request, durationMs, at]
+      properties:
+        seq: { type: integer }
+        kind: { type: string, enum: [MODEL_CALL, TOOL_CALL, CHECK] }
+        name: { type: string }
+        request: { type: string, description: Plain text. Show it as text, never as HTML. }
+        response: { type: [string, 'null'], description: Plain text. Show it as text, never as HTML. }
+        error: { type: [string, 'null'] }
+        durationMs: { type: integer, format: int64 }
+        promptTokens: { type: [integer, 'null'] }
+        completionTokens: { type: [integer, 'null'] }
+        at: { type: string, format: date-time }
