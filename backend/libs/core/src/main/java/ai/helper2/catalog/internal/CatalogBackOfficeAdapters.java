@@ -36,6 +36,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcAwesomeListSuspects jdbcAwesomeListSuspects(JdbcClient jdbc) {
+    return new JdbcAwesomeListSuspects(jdbc);
+  }
+
+  @Bean
   JdbcKnownTargets jdbcKnownTargets(JdbcClient jdbc) {
     return new JdbcKnownTargets(jdbc);
   }

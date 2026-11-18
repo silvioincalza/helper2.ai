@@ -5,6 +5,7 @@ import { useAiNewsFeed, type NewsRow } from '@/features/home/homeFeeds';
 import { ListState } from '@/features/home/listParts';
 import { TermCommand } from '@/features/home/TermList';
 import { useTitle } from '@/hooks/useTitle';
+import { Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 import { longLocalDay, shortDay } from '@/lib/format';
 import '@/ui/term.css';
 import '../../ui/listing.css';
@@ -22,6 +23,24 @@ const LEAD = 1;
 const SECOND = 6;
 const LATEST = 5;
 const HOST_CHIPS = 6;
+
+function NewsSkeleton() {
+  return (
+    <Skeleton className="h2-news__skeleton">
+      <SkeletonBar size="heading" width="wide" />
+      <SkeletonBar size="heading" width="half" />
+      <SkeletonBar size="meta" width="short" />
+      <SkeletonRows
+        rows={4}
+        bars={[
+          { size: 'title', width: 'wide' },
+          { size: 'meta', width: 'short' },
+        ]}
+        ruled
+      />
+    </Skeleton>
+  );
+}
 
 export default function NewsPage() {
   const { t } = useTranslation();
@@ -110,6 +129,7 @@ export default function NewsPage() {
         level={2}
         errorText={t('newsPage.error')}
         emptyText={t('newsPage.empty')}
+        skeleton={<NewsSkeleton />}
       />
       {feed.rows.length > 0 && rows.length === 0 && (
         <p className="h2-listing__none">{t('newsPage.noneForSite')}</p>

@@ -21,11 +21,41 @@ const CHOICES: Partial<Record<ResourceField, readonly string[]>> = {
     'NEWS',
     'EVENT',
     'COURSE',
+    'AWESOME_LIST',
   ],
   pricing: ['FREE', 'FREEMIUM', 'PAID', 'OPEN_SOURCE_SELF_HOSTED'],
   openSource: ['true', 'false'],
   techLevel: ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'],
   audience: ['USE_AI', 'BUILD_WITH_AI', 'BOTH'],
+  language: [
+    'en',
+    'simple',
+    'ar',
+    'ca',
+    'da',
+    'de',
+    'el',
+    'es',
+    'eu',
+    'fi',
+    'fr',
+    'ga',
+    'hi',
+    'hu',
+    'hy',
+    'id',
+    'it',
+    'lt',
+    'nl',
+    'no',
+    'pt',
+    'ro',
+    'ru',
+    'sr',
+    'sv',
+    'ta',
+    'tr',
+  ],
 };
 
 const SETTABLE: readonly string[] = [
@@ -35,8 +65,20 @@ const SETTABLE: readonly string[] = [
   'openSource',
   'techLevel',
   'audience',
+  'language',
+  'publishedAt',
+  'description',
 ];
-const DROPPABLE: readonly string[] = [...SETTABLE, 'useCase', 'platforms'];
+const AI_FIELDS: readonly string[] = [
+  'type',
+  'pricing',
+  'license',
+  'openSource',
+  'techLevel',
+  'audience',
+];
+const DROPPABLE: readonly string[] = [...AI_FIELDS, 'useCase', 'platforms'];
+const DESCRIPTION_MAX = 4000;
 
 function useWord() {
   const { t } = useTranslation();
@@ -139,8 +181,17 @@ export function FieldCuration({
                   </option>
                 ))}
               </select>
+            ) : field === 'description' ? (
+              <textarea
+                value={chosen}
+                required
+                rows={5}
+                maxLength={DESCRIPTION_MAX}
+                onChange={(e) => setChosen(e.target.value)}
+              />
             ) : (
               <input
+                type={field === 'publishedAt' ? 'date' : 'text'}
                 value={chosen}
                 required
                 maxLength={40}

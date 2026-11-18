@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.FieldConflict;
 import ai.helper2.search.MergedResult;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceRef;
@@ -34,7 +35,10 @@ class ResourceCardsTest {
   private static final Instant NOW = Instant.parse("2026-11-12T10:00:00Z");
 
   private final ResourceCards cards =
-      new ResourceCards(null, Stream.of("npm", "github").map(ResourceCardsTest::source).toList());
+      new ResourceCards(
+          null,
+          Stream.of("npm", "github").map(ResourceCardsTest::source).toList(),
+          ShadowLibraries.of());
 
   private static DescribedSource source(String id) {
     SourceDescriptor descriptor =

@@ -44,7 +44,8 @@ class SchemaContractTest {
 
   static final Path SCHEMA = BackendSources.migration("V1__schema.sql");
 
-  static final Set<String> LIBRARY_TABLES = Set.of("flyway_schema_history", "shedlock");
+  static final Set<String> LIBRARY_TABLES =
+      Set.of("flyway_schema_history", "shedlock", "public_app_lock");
 
   static JdbcClient jdbc;
 
@@ -85,6 +86,8 @@ class SchemaContractTest {
                     Map.entry("scout_run.source_id", "source CASCADE"),
                     Map.entry("enrichment_queue_control.resource_id", "resource CASCADE"),
                     Map.entry("known_target_name.target_id", "known_target CASCADE"),
+                    Map.entry("review_research.review_item_id", "review_item CASCADE"),
+                    Map.entry("review_research_step.research_id", "review_research CASCADE"),
                     Map.entry("resource_label.resource_id", "resource CASCADE"),
                     Map.entry("source_record.resource_id", "resource CASCADE"),
                     Map.entry("resource_embedding.resource_id", "resource CASCADE"),

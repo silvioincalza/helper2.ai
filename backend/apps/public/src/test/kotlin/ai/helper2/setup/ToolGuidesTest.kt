@@ -5,6 +5,7 @@ import ai.helper2.platform.quota.ClientBudgets
 import ai.helper2.platform.quota.ClientDayQuota
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.platform.resilience.Resilience4jPolicies
+import ai.helper2.search.ListedNames
 import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
@@ -114,6 +115,37 @@ class ToolGuidesTest {
         .also { it.bulkhead(ToolGuides.WRITER_SLOTS) },
       RetryRegistry.ofDefaults(),
     )
+
+  @Test
+  fun `a document on a shadow library is never read, so a guide written from it is not served`() {
+    val mirror =
+      Material(
+        "mirror",
+        MaterialKind.README,
+        URI("https://de.z-lib.fm/acme-x"),
+        clock.instant(),
+        doc.text,
+      )
+    val cache = MemoryCache()
+    val model = Model { good }
+    val listed = ListedNames()
+    val guides =
+      ToolGuides(
+        { listOf(mirror, doc) },
+        model,
+        cache,
+        clock,
+        ttls,
+        shadowLibraries = listed.libraries,
+      )
+    guides.answer("r1", ref)
+
+    listed.add("z-lib")
+    val answer = guides.answer("r1", ref)
+
+    assertEquals(2, model.calls)
+    assertEquals(listOf(doc.url), answer.materials.map { it.url })
+  }
 
   @Test
   fun `a visitor past its daily guides gets no new one, but a written one still opens`() {

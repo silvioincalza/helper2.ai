@@ -29,12 +29,17 @@ resilience4j:
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
         slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}
         slow-call-rate-threshold: 50
+      llm-chat-guide-judge:
+        base-config: model
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
   bulkhead:
     instances:
       setup-guide:
         max-concurrent-calls: ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}
         max-wait-duration: 0
 helper2:
+  cluster-lock:
+    table: public_app_lock
   guide:
     thinking:
       plan-tokens: ${H2_GUIDE_THINK_PLAN_TOKENS:0}
@@ -58,6 +63,10 @@ helper2:
       network-daily-questions: ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}
       client-concurrent-questions: ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}
       budget-pace-slots: ${H2_GUIDE_BUDGET_PACE_SLOTS:12}
+    judge:
+      model: ${H2_GUIDE_JUDGE_MODEL:}
+      daily-calls: ${H2_GUIDE_JUDGE_DAILY_CALLS:300}
+      concurrent: ${H2_GUIDE_JUDGE_CONCURRENT:2}
     mcp-registry-url: ${helper2.sources.mcp-registry.base-url}
   identity:
     frontend-url: ${H2_FRONTEND_URL:/}

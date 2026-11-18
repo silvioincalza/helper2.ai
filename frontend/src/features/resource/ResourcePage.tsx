@@ -14,7 +14,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, isAiOrigin } from '@/lib/aiMark';
 import { WhereFrom } from '@/features/resource/WhereFrom';
-import { cardHeadFor, Resource } from '@/features/resource/Resource';
+import { cardHeadFor, Resource, ResourceSkeleton } from '@/features/resource/Resource';
 import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { resourcePath } from '@/lib/searchState';
 
@@ -99,9 +99,9 @@ function ResourceView({ id }: { id: string }) {
 
   if (!head)
     return (
-      <p role="status" aria-busy="true" className="page-loading">
-        {t('common.loading')}
-      </p>
+      <div className="h2-app h2-res">
+        <ResourceSkeleton withHead />
+      </div>
     );
   return (
     <Resource head={head} detail={d}>

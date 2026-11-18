@@ -252,7 +252,7 @@ to reach into the other's code.
 
 ## Diagrams
 [flow](../../diagrams/flow-0002-modular-monolith-libraries-and-apps.svg) · [sequence](../../diagrams/sequence-0002-modular-monolith-libraries-and-apps.svg)
-Modules, ports and adapters: one view per module group, [context](../../diagrams/architecture-context.svg) · [search](../../diagrams/architecture-search.svg) · [guide](../../diagrams/architecture-guide.svg) · [index](../../diagrams/architecture-index.svg) · [setup](../../diagrams/architecture-setup.svg) · [platform](../../diagrams/architecture-platform.svg).
+Modules, ports and adapters: one view per module group, [context](../../diagrams/architecture-context.svg) · [search](../../diagrams/architecture-search.svg) · [guide](../../diagrams/architecture-guide.svg) · [index](../../diagrams/architecture-index.svg) · [setup](../../diagrams/architecture-setup.svg) · [review research](../../diagrams/architecture-review-research.svg) · [platform](../../diagrams/architecture-platform.svg).
 
 ## Backlog
 - Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20).

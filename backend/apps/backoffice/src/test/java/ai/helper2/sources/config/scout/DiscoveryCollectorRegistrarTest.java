@@ -9,6 +9,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.SeedDiscoveryHosts;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.config.CollectorProperties;
@@ -69,6 +70,11 @@ class DiscoveryCollectorRegistrarTest {
     @Bean
     DiscoveryHostStore hosts() {
       return SeedDiscoveryHosts.store();
+    }
+
+    @Bean
+    ShadowLibraries shadowLibraries() {
+      return SourceFixtures.SHADOW_LIBRARIES;
     }
   }
 

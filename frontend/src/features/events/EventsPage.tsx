@@ -6,6 +6,7 @@ import { ListState, useEventText } from '@/features/home/listParts';
 import { TermCommand } from '@/features/home/TermList';
 import { OriginLabel } from '@/ui/Badges';
 import { StatusPill } from '@/ui/StatusPill';
+import { Skeleton, SkeletonBar, SkeletonChips, SkeletonRows } from '@/ui/Skeleton';
 import { aiMark } from '@/lib/aiMark';
 import { formatMonth, weekDay } from '@/lib/format';
 import { useTitle } from '@/hooks/useTitle';
@@ -38,6 +39,23 @@ export function byMonth(rows: readonly EventRow[]): { month: string; rows: Event
     else groups.push({ month, rows: [row] });
   }
   return groups;
+}
+
+function EventsSkeleton() {
+  return (
+    <Skeleton>
+      <SkeletonChips widths={['wide', 'half', 'half', 'short']} />
+      <SkeletonBar size="heading" width="short" />
+      <SkeletonRows
+        rows={5}
+        bars={[
+          { size: 'meta', width: 'short' },
+          { size: 'body', width: 'wide' },
+        ]}
+        ruled
+      />
+    </Skeleton>
+  );
 }
 
 export default function EventsPage() {
@@ -134,6 +152,7 @@ export default function EventsPage() {
         level={2}
         errorText={t('events.error')}
         emptyText={t('eventsPage.empty')}
+        skeleton={<EventsSkeleton />}
       />
       {feed.rows.length > 0 && shown.length === 0 && (
         <p className="h2-listing__none">{t('eventsPage.noneForFilter')}</p>

@@ -3,14 +3,19 @@ package ai.helper2.search
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.CollectorIds
 import ai.helper2.shared.WordLists
+import java.io.InputStreamReader
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Properties
 
 object RepositoryJoin {
 
   @JvmStatic
-  fun of(hit: SourceHit): CanonicalUrl? {
+  fun of(hit: SourceHit): CanonicalUrl? =
+    curatedRepositoryOf(hit.canonicalUrl)?.takeUnless { it == hit.canonicalUrl } ?: byRule(hit)
+
+  internal fun byRule(hit: SourceHit): CanonicalUrl? {
     val repository = hit.repositoryUrl ?: return null
     if (repository == hit.canonicalUrl || isInside(hit.canonicalUrl, repository)) return null
     val root = RepositoryRoot.of(repository) ?: return repository
@@ -96,12 +101,44 @@ object RepositoryJoin {
   private val GENERIC_REPOSITORY_WORDS =
     WordLists.load("query-words").wordsIn("en", "repository.generic")
 
-  private val PACKAGE_PAGE = Regex("^https://(?:npmjs\\.com/package|pypi\\.org/project)/([^?#]+)$")
+  private const val NPM = "npmjs.com/package"
+
+  private const val PYPI = "pypi.org/project"
+
+  private val PACKAGE_PAGE = Regex("^https://($NPM|$PYPI)/([^?#]+)$")
 
   private fun packageName(address: CanonicalUrl): String? =
-    PACKAGE_PAGE.find(address.value)?.groupValues?.get(1)?.let {
+    PACKAGE_PAGE.find(address.value)?.groupValues?.get(2)?.let {
       URLDecoder.decode(it, StandardCharsets.UTF_8)
     }
+
+  private val PYPI_NAME_SEPARATOR = Regex("[-_.]+")
+
+  private fun pageKey(address: String): String? =
+    PACKAGE_PAGE.find(address)?.let { page ->
+      val registry = page.groupValues[1]
+      val name = URLDecoder.decode(page.groupValues[2], StandardCharsets.UTF_8).lowercase()
+      registry + "/" + if (registry == PYPI) name.replace(PYPI_NAME_SEPARATOR, "-") else name
+    }
+
+  private fun curatedRepositoryOf(address: CanonicalUrl): CanonicalUrl? =
+    pageKey(address.value)?.let { CURATED[it] }
+
+  private const val CURATED_JOINS = "catalog/repository-joins.properties"
+
+  internal val CURATED: Map<String, CanonicalUrl> by lazy {
+    val rows = Properties()
+    val stream =
+      checkNotNull(RepositoryJoin::class.java.classLoader.getResourceAsStream(CURATED_JOINS)) {
+        "$CURATED_JOINS is missing"
+      }
+    stream.use { rows.load(InputStreamReader(it, StandardCharsets.UTF_8)) }
+    rows.stringPropertyNames().associate { page ->
+      val key = checkNotNull(pageKey("https://$page")) { "$page is not an npm or PyPI page" }
+      val repository = rows.getProperty(page).trim()
+      key to checkNotNull(CanonicalUrl.of(repository)) { "$repository is not an address" }
+    }
+  }
 
   private val WORD_SEPARATOR = Regex("[^\\p{L}\\p{N}]+")
 

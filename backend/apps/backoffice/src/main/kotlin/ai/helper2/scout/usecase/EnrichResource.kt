@@ -136,13 +136,13 @@ constructor(
     var best = first
     if (readme != null) {
       val source = readme.target.kind.label
-      val next = runWith(resourceId, material, listOf(readme.material), readme.facts, source)
+      val next = runWith(resourceId, material, readme.materials, readme.facts, source)
       best = better(best, next, "readme", listOf(readme.target.label), source)
     }
     val target = material.pageTarget ?: return Climbed(best)
     if (!needsMore(material, best.result)) return Climbed(best)
     val pages = readPages(resourceId, target) ?: return Climbed(best)
-    val extra = listOfNotNull(readme?.material) + pages.map { pageMaterial(it, target) }
+    val extra = readme?.materials.orEmpty() + pages.map { pageMaterial(it, target) }
     val facts = readme?.facts.orEmpty()
     val used =
       listOfNotNull(readme?.target?.label) + "${GapKind.OFFICIAL_PAGE.label}:${target.url.host}"
@@ -156,14 +156,18 @@ constructor(
   )
 
   private class Readme(
-    val material: Material,
+    val materials: List<Material>,
     val target: GapTarget,
     val facts: Map<String, String>,
   )
 
   private fun needsMore(material: EnrichmentMaterial, result: ValidationResult): Boolean =
     result.outcome in GAP_OUTCOMES ||
-      FieldTargets.missing(material.type, material.input.statedBySource, result).isNotEmpty()
+      FieldTargets.missing(material.type, material.input.statedBySource, result).isNotEmpty() ||
+      missesSummary(material, result)
+
+  private fun missesSummary(material: EnrichmentMaterial, result: ValidationResult): Boolean =
+    result.summary.isEmpty() && material.gapTarget != null
 
   private fun better(
     best: Rung,
@@ -218,19 +222,36 @@ constructor(
     rememberIfArchived(target, extra)
     val linkedOnly = target.claimedPackage?.let { !GapTargets.namesPackage(extra.raw, it) } ?: false
     if (linkedOnly) return skipped(source, "package_not_named")
-    val text = UntrustedPageText.window(UntrustedPageText.clean(extra.raw))
-    if (text.isBlank()) return skipped(source, "no_text")
-    val readme =
-      Material(
-        UUID.randomUUID(),
-        extra.sourceUrl,
-        extra.retrievedAt,
-        text,
-        anchorRecordId = target.anchorRecordId,
-        supportsClaims = false,
+    val parts = UntrustedPageText.split(UntrustedPageText.clean(extra.raw))
+    val text = UntrustedPageText.window(parts.rest)
+    if (text.isBlank() && parts.opening.isBlank()) return skipped(source, "no_text")
+    val materials =
+      listOfNotNull(
+        parts.opening.takeIf { it.isNotBlank() }?.let { openingMaterial(extra, target, it) },
+        text.takeIf { it.isNotBlank() }?.let { restMaterial(extra, target, it) },
       )
-    return Readme(readme, target, extra.license?.let { mapOf("license" to it) }.orEmpty())
+    return Readme(materials, target, extra.license?.let { mapOf("license" to it) }.orEmpty())
   }
+
+  private fun openingMaterial(extra: ExtraText, target: GapTarget, text: String): Material =
+    Material(
+      UUID.randomUUID(),
+      extra.sourceUrl,
+      extra.retrievedAt,
+      text,
+      anchorRecordId = target.anchorRecordId,
+      opening = true,
+    )
+
+  private fun restMaterial(extra: ExtraText, target: GapTarget, text: String): Material =
+    Material(
+      UUID.randomUUID(),
+      extra.sourceUrl,
+      extra.retrievedAt,
+      text,
+      anchorRecordId = target.anchorRecordId,
+      supportsClaims = false,
+    )
 
   private fun rememberIfArchived(target: GapTarget, visited: ExtraText) {
     val archived = visited.archived ?: return

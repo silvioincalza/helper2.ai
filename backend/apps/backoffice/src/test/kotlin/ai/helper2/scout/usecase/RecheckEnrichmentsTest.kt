@@ -6,6 +6,8 @@ import ai.helper2.scout.EnrichmentMaterial
 import ai.helper2.scout.EnrichmentModel
 import ai.helper2.scout.EnrichmentOutcome
 import ai.helper2.scout.EnrichmentStore
+import ai.helper2.scout.GapKind
+import ai.helper2.scout.GapTarget
 import ai.helper2.scout.PageTarget
 import ai.helper2.scout.RunLock
 import ai.helper2.scout.ValidationResult
@@ -333,5 +335,55 @@ class RecheckEnrichmentsTest {
         .runByAdmin("42")!!
     assertEquals(setOf(price, type), rejected.toSet())
     assertEquals(2, r.fieldsRejected)
+  }
+
+  private fun summaryCase(prompt: String, claims: List<StoredClaimAnswer>): List<UUID> {
+    val runs = mutableListOf<UUID>()
+    val answers =
+      object : StoredAnswers {
+        override fun judgedAfter(after: UUID?, limit: Int) =
+          if (after == null) listOf(withPage) else emptyList()
+
+        override fun stored(resourceId: UUID) =
+          StoredAnswer(resourceId, "Acme", ResourceType.OTHER, prompt, emptyList(), claims)
+
+        override fun rejectFields(ids: List<UUID>) = 0
+
+        override fun dropClaims(ids: List<UUID>) = 0
+
+        override fun requestRun(resourceId: UUID) {
+          runs += resourceId
+        }
+
+        override fun done(name: String) = false
+
+        override fun markDone(name: String) {}
+      }
+    val withReadme =
+      object : EnrichmentStore by enrichment {
+        override fun load(resourceId: UUID): EnrichmentMaterial =
+          EnrichmentMaterial(
+            EnrichmentInput("Acme", emptyList()),
+            "hash",
+            GapTarget(GapKind.GITHUB_README, "acme", "acme", resourceId),
+            ResourceType.OTHER,
+          )
+      }
+    RecheckEnrichments(answers, withReadme, "enrich-v4", true, trail, meters, free)
+      .runByAdmin("42")!!
+    return runs
+  }
+
+  @Test
+  fun `a resource with a README and no summary sentence runs again under a newer prompt`() {
+    assertEquals(listOf(withPage), summaryCase("enrich-v3", emptyList()))
+  }
+
+  @Test
+  fun `a resource that has a summary sentence, or ran under this prompt, does not run again`() {
+    val claim =
+      StoredClaimAnswer(UUID.randomUUID(), "Acme is a tool.", listOf("Acme is a tool for agents"))
+    assertEquals(emptyList(), summaryCase("enrich-v3", listOf(claim)))
+    assertEquals(emptyList(), summaryCase("enrich-v4", emptyList()))
   }
 }

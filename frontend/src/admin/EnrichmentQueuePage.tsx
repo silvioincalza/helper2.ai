@@ -15,6 +15,7 @@ import { resourcePath } from '@/lib/searchState';
 import { oneOf, QUEUE_TONE, QUEUE_VIEWS } from './adminModel';
 import { REASON_MAX } from './limits';
 import { AiCheckPanel } from './AiCheckPanel';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 const PAGE_SIZE = 20;
 
@@ -137,9 +138,7 @@ export default function EnrichmentQueuePage() {
         </p>
       )}
       {queue.loading ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={6} />
       ) : queue.error !== undefined ? (
         <StatePanel
           tone="error"

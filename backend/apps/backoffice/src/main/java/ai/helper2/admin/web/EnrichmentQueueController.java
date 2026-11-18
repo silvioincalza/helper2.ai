@@ -1,10 +1,12 @@
 package ai.helper2.admin.web;
 
 import ai.helper2.admin.usecase.CheckAiWords;
+import ai.helper2.admin.usecase.CheckAwesomeLists;
 import ai.helper2.admin.usecase.ListEnrichmentQueue;
 import ai.helper2.api.generated.EnrichmentQueueApi;
 import ai.helper2.api.generated.model.AiCheckPageDto;
 import ai.helper2.api.generated.model.AiCheckRowDto;
+import ai.helper2.api.generated.model.AwesomeListCheckDto;
 import ai.helper2.api.generated.model.EnrichmentQueueEntryDto;
 import ai.helper2.api.generated.model.EnrichmentQueuePageDto;
 import ai.helper2.api.generated.model.EnrichmentQueueViewDto;
@@ -44,14 +46,17 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
   private final SkipEnrichment skip;
   private final PrioritiseEnrichment prioritise;
   private final CheckAiWords aiCheck;
+  private final CheckAwesomeLists awesomeLists;
 
   EnrichmentQueueController(
       ListEnrichmentQueue queue,
       RequeueEnrichment requeue,
       SkipEnrichment skip,
       PrioritiseEnrichment prioritise,
-      CheckAiWords aiCheck) {
+      CheckAiWords aiCheck,
+      CheckAwesomeLists awesomeLists) {
     this.aiCheck = aiCheck;
+    this.awesomeLists = awesomeLists;
     this.queue = queue;
     this.requeue = requeue;
     this.skip = skip;
@@ -70,6 +75,14 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
         new EnrichmentQueuePageDto(
                 page.items().stream().map(EnrichmentQueueController::entry).toList())
             .next(page.next() == null ? null : encode(page.next())));
+  }
+
+  @Override
+  public ResponseEntity<AwesomeListCheckDto> checkAwesomeLists() {
+    CheckAwesomeLists.Result r = awesomeLists.run(adminId());
+    return ResponseEntity.ok(
+        new AwesomeListCheckDto(
+            r.checked(), r.set(), r.notAList(), r.keptCurated(), r.unavailable()));
   }
 
   @Override

@@ -17,6 +17,7 @@ import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
@@ -126,7 +127,8 @@ class CollectorsConfiguration {
       Resilience resilience,
       ObservationRegistry observations,
       HttpClientProperties http,
-      ScoutLiveWebCredits credits) {
+      ScoutLiveWebCredits credits,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("live-web-scout");
     return new LiveWebNewsCollector(
         s,
@@ -135,7 +137,8 @@ class CollectorsConfiguration {
         resilience,
         new RunInterval(c.interval()),
         c.queries(),
-        credits);
+        credits,
+        shadowLibraries);
   }
 
   @Bean
@@ -202,7 +205,8 @@ class CollectorsConfiguration {
       CallCounter budgetCounter,
       ModelCallMetrics metrics,
       MeterRegistry meters,
-      Resources catalog) {
+      Resources catalog,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get(LiveWebEventsCollector.ID);
     ChatModel model = chatModel.getIfAvailable();
     EventReader reader = null;
@@ -237,7 +241,8 @@ class CollectorsConfiguration {
                 .map(e ->
                     new UndatedEvents.Page(
                         e.url(), e.title(), new UndatedEvents.Position(e.discoveredAt(), e.id())))
-                .toList());
+                .toList(),
+        shadowLibraries);
   }
 
   @Bean
@@ -277,7 +282,8 @@ class CollectorsConfiguration {
       CallCounter budgetCounter,
       ModelCallMetrics metrics,
       MeterRegistry meters,
-      DiscoveryHostStore hosts) {
+      DiscoveryHostStore hosts,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -315,7 +321,8 @@ class CollectorsConfiguration {
         classifier,
         categories,
         meters,
-        hosts);
+        hosts,
+        shadowLibraries);
   }
 
   private static GitHubAwesomeCollector.Deep deep(

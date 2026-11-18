@@ -13,6 +13,9 @@ problems.
   called services here, not platforms: a platform is already where a resource runs (the `PLATFORM` label: python,
   desktop, cli). A service is what it connects to. The catalog
   will never hold them, so every relationship that names one waits in the review list for ever.
+- **A tool has no place either.** VS Code, Claude Desktop or Cursor are applications a resource runs in or plugs
+  into: not AI resources the catalog lists, not companies, and not online services. Several hundred open
+  relationship candidates name one of them.
 
 The names must be data, a person must be able to change them, and the system should find the new ones itself. But
 a name the system finds is a guess: nothing becomes a known target without a person.
@@ -31,15 +34,18 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 - Not measured: how often the model states the right kind of a target.
 
 ## Decision
-1. **One table holds the known targets.** `known_target`: a name as shown ("Hugging Face"), a kind (`VENDOR` or
-   `SERVICE`), where it came from (`origin`, `CURATED`: a person typed it, and the first 31; `DISCOVERED`: a rule
+1. **One table holds the known targets.** `known_target`: a name as shown ("Hugging Face"), a kind (`VENDOR`,
+   `SERVICE` or `TOOL`), where it came from (`origin`, `CURATED`: a person typed it, and the first 31; `DISCOVERED`: a rule
    proposed it and a person approved it), who added it and when. `known_target_name` holds every name that means
    it, the shown one included, as a key: lower case, spaces as one space, a final "'s" removed (`KnownTarget.key`,
    and the same rule in SQL, `KnownTarget.KEY_OF_TITLE_SQL`). A key belongs to one target. The catalog owns both
    tables; the first migration fills them with the 31 vendors and their other names. There is no list in code. The table says who added a target and when (`migration` for the first 31).
-2. **A service is a target like a vendor.** `relationship.target_kind` allows `SERVICE`. A relationship that names
-   a known service is `VERIFIED` with no target resource, keeps the service's one name as its title and opens no
-   review item. It says "works with service X". Every rule of a vendor target applies
+2. **A service and a tool are targets like a vendor.** `relationship.target_kind` allows `SERVICE` and `TOOL`
+   (`V2026.11.6.1__known_target_tool.sql`). A tool is an application a resource runs in or plugs into: an editor,
+   a desktop app (VS Code, Claude Desktop, Cursor). A relationship that names a known service or tool is `VERIFIED` with no
+   target resource, keeps the target's one name as its title and opens no review item. It says "works with service
+   X" or "works with tool X". The model never states `TOOL` (§6): what it calls a service, a person
+   can decide is a tool. Every rule of a vendor target applies
    ([0014](0014-evidence-gated-enrichment.md) §6): one row per resource, kind and name; the caps; a name only the
    product's own page states stays `UNVERIFIED`. A known target is looked up before a catalog resource of the same
    name.
@@ -84,7 +90,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
    proposed, becomes a proposal of kind `VENDOR`. No model call. MCP Registry namespaces and npm scopes are not
    owners: anyone can register one. A failure of this step is logged and does not fail the run.
 6. **The model states the kind of a target, and agreement proposes it.**
-   - The enrichment prompt (label `enrich-v10`) asks for one more value per relationship, `targetKind`, decided
+   - The enrichment prompt (label `enrich-v12`) asks for one more value per relationship, `targetKind`, decided
      from the target's name alone: `VENDOR` when the name is only a company's or an organisation's name
      ("OpenAI"), also when the text means its API or its models; `SERVICE` when it names a general service or
      tool that is not an AI resource itself (Slack, GitHub, Docker); `PRODUCT` for everything else, a named
@@ -127,7 +133,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
      not a vendor.
 8. **What the site shows.** A relationship to a known target is shown as today's vendor relationship. Its kind of
    relationship is still the model's, with its quote and its AI label
-   ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). That its target is a vendor or a service is a
+   ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). That its target is a vendor, a service or a tool is a
    fact a person put in the table. The public API does not expose `target_kind` (Known limits).
 
 ### Code
@@ -174,6 +180,10 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
   `scout/EvidenceValidator.kt` (`statedKindOf`), `catalog/internal/JdbcEnrichmentResults.java`
 
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (the agreement step)
+
+- `V2026.11.6.1__known_target_tool.sql` (`TOOL` in `known_target.kind` and `relationship.target_kind`),
+  `catalog/KnownTarget.java` (`Kind.TOOL`), `catalog/usecase/LinkKnownRelationshipTargets.java` (`TOOL_NOTE`),
+  `admin/web/RelationshipTargetsController.java`, `api/admin.yaml`, `frontend/src/admin/RelationshipGroups.tsx`
 
 ## Alternatives considered
 - **The list stays in code.** No table, no page. Every new name is a pull request, and services still have no place.

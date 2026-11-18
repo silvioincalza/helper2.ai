@@ -504,6 +504,7 @@ helper2.categories[9].words[1] = chrome extension
 helper2.categories[9].words[2] = firefox add on
 helper2.categories[9].words[3] = firefox extension
 helper2.categories[9].words[4] = extension for chrome
+helper2.cluster-lock.table = shedlock
 helper2.embedding.api-key = ${H2_NVIDIA_API_KEY:}  =>  <empty>
 helper2.embedding.base-url = ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}  =>  https://integrate.api.nvidia.com/v1
 helper2.embedding.dimensions = 1024
@@ -582,6 +583,15 @@ helper2.rate-limit.guide-per-minute = ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}  =>  
 helper2.rate-limit.recent-per-minute = ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}  =>  60
 helper2.rate-limit.report-per-hour = ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}  =>  20
 helper2.rate-limit.search-per-minute = ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}  =>  120
+helper2.research.check-url-deadline = ${H2_RESEARCH_CHECK_URL_DEADLINE:PT20S}  =>  PT20S
+helper2.research.concurrency = ${H2_RESEARCH_CONCURRENCY:4}  =>  4
+helper2.research.daily-model-calls = ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}  =>  3000
+helper2.research.daily-page-reads = ${H2_RESEARCH_DAILY_PAGE_READS:300}  =>  300
+helper2.research.enabled = ${H2_RESEARCH_ENABLED:true}  =>  true
+helper2.research.max-streams = ${H2_RESEARCH_MAX_STREAMS:8}  =>  8
+helper2.research.max-tokens = ${H2_RESEARCH_MAX_TOKENS:4096}  =>  4096
+helper2.research.model = ${H2_RESEARCH_MODEL:REASONING}  =>  REASONING
+helper2.research.tick = ${H2_RESEARCH_TICK:PT2S}  =>  PT2S
 helper2.retention.admin-audit = ${H2_RETENTION_ADMIN_AUDIT:P730D}  =>  P730D
 helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
@@ -917,6 +927,8 @@ resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
 resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$RejectedInput
 resilience4j.circuitbreaker.instances.llm-embed.base-config = model
 resilience4j.circuitbreaker.instances.redis.base-config = store
+resilience4j.circuitbreaker.instances.research-huggingface.base-config = collector
+resilience4j.circuitbreaker.instances.research-web-search.base-config = collector
 resilience4j.circuitbreaker.instances.source-arxiv.base-config = source
 resilience4j.circuitbreaker.instances.source-curated.base-config = source
 resilience4j.circuitbreaker.instances.source-github.base-config = source

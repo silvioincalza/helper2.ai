@@ -4,7 +4,7 @@
 # Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/package-info.java (open module),
 #   backend/libs/core/src/main/java/ai/helper2/api/package-info.java (open module api), ContractEnumConverters.java,
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
-#   ClusterLockConfiguration.java (shedlock), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
+#   ClusterLockConfiguration.java, ClusterLockProperties.java (shedlock, public_app_lock), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
@@ -85,7 +85,7 @@ shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nVocabula
 api: "api (open)\napi.common: common.yaml, generated once\n(libs/core; ContractEnumConverters)\napi.generated: per app, public.yaml\nor admin.yaml" {class: app}
 
 redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nh2:v1:session:public:* · h2:v1:session:backoffice:*" {shape: cylinder; class: data}
-pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · runtime_setting\npublic_app_setting" {shape: cylinder; class: data}
+pg: "PostgreSQL 18\napp_user · bookmark · admin_audit\nai_cache · shedlock · public_app_lock\nruntime_setting · public_app_setting" {shape: cylinder; class: data}
 oauth: "github.com OAuth\n(profile oauth-github; off on\nstaging and prod)" {class: ext}
 
 browser -> edge.spa: "pages, assets"
@@ -115,6 +115,6 @@ platform.resilience -> redis: "h2:v1:outbound:*"
 platform.quota -> redis: "h2:v1:quota:*"
 identity.store -> pg: "app_user, bookmark,\nadmin_audit"
 platform.cache -> pg: "ai_cache"
-platform.locks -> pg: "shedlock"
+platform.locks -> pg: "shedlock (back office),\npublic_app_lock (public app)"
 platform.settings -> pg: "runtime_setting,\npublic_app_setting"
 modules -> platform.settings: "spending limits\n(supplier per limit)"

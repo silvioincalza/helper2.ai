@@ -54,10 +54,22 @@ class FailSoftSessionRepositoryTest {
         .isInstanceOf(IllegalStateException.class);
   }
 
+  @Test
+  void savingASessionThatAnotherRequestInvalidatedSavesNothingAndDoesNotFail() {
+    store.invalidated = true;
+    var sessions = new FailSoftSessionRepository<>(store, Resilience.NONE);
+
+    sessions.save(new MapSession("abc"));
+
+    assertThat(store.saves).isZero();
+  }
+
   private static final class FailingStore implements SessionRepository<MapSession> {
 
     boolean failing;
+    boolean invalidated;
     int reads;
+    int saves;
 
     @Override
     public MapSession createSession() {
@@ -69,6 +81,10 @@ class FailSoftSessionRepositoryTest {
       if (failing) {
         throw new IllegalStateException("store down");
       }
+      if (invalidated) {
+        throw new IllegalStateException("Session was invalidated");
+      }
+      saves++;
     }
 
     @Override

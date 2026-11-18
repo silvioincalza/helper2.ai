@@ -346,6 +346,25 @@ class GuideValidatorTest {
   }
 
   @Test
+  fun `an awesome list is never the tool picked when the user asked for a tool`() {
+    val list =
+      candidate(
+        "c6",
+        "awesome-mcp-servers",
+        "A curated list of awesome MCP servers for Postgres and other databases",
+        ResourceType.AWESOME_LIST,
+      )
+    val result =
+      validator.validate(
+        proposal(pick("c6", "A curated list of awesome MCP servers for Postgres")),
+        all + list,
+        allowReading = false,
+      )
+    assertTrue(result.picks.isEmpty())
+    assertEquals(1, result.rejectedBy[GuideValidator.Rejection.READING_TYPE])
+  }
+
+  @Test
   fun `reading intent comes from the planner or from the user's own words`() {
     assertTrue(wantsReading("latest news about Nemotron", null))
     assertTrue(wantsReading("un articolo sui modelli open", null))

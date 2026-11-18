@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { shortDay } from '@/lib/format';
+import { Skeleton, SkeletonRows } from '@/ui/Skeleton';
 import type { EventRow, Feed, NewsRow } from './homeFeeds';
 import type { TermCells } from './TermList';
 
@@ -42,27 +43,35 @@ export function ShowAll({
   );
 }
 
+function TermListSkeleton() {
+  return (
+    <Skeleton>
+      <SkeletonRows rows={FIRST_ROWS} bars={[{ size: 'meta', width: 'full' }]} ruled />
+    </Skeleton>
+  );
+}
+
 export function ListState({
   feed,
   errorText,
   emptyText,
   level = 3,
+  skeleton,
 }: {
   feed: Feed<unknown>;
   errorText: string;
   emptyText: string;
   level?: number;
+  skeleton?: ReactNode;
 }) {
   const { t } = useTranslation();
   return (
-    <div aria-live="polite" aria-busy={feed.loading}>
+    <div aria-live="polite">
       {feed.loading && (
-        <div className="h2-termlist__skeleton">
+        <>
           <span className="sr-only">{t('common.loading')}</span>
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="h2-termlist__skeleton-line" aria-hidden="true" />
-          ))}
-        </div>
+          <div aria-busy="true">{skeleton ?? <TermListSkeleton />}</div>
+        </>
       )}
       {!feed.loading && feed.error && (
         <StatePanel

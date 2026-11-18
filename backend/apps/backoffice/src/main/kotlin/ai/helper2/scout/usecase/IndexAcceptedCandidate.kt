@@ -6,6 +6,7 @@ import ai.helper2.scout.Candidate
 import ai.helper2.scout.CandidateSignals
 import ai.helper2.scout.CatalogIndex
 import ai.helper2.scout.Collector
+import ai.helper2.scout.EvidenceValidator
 import ai.helper2.search.ResultMerger
 import ai.helper2.search.ServedFrom
 import ai.helper2.search.SourceContext
@@ -32,10 +33,84 @@ constructor(
   val finders: List<String> = emptyList(),
   val typeChosenByAdmin: Boolean = false,
   val signals: CandidateSignals = CandidateSignals.UNKNOWN,
+  val confirmed: Map<String, String> = emptyMap(),
+  val descriptionByAi: Boolean = false,
 )
 
 object CandidateRules {
   const val MAX_TITLE = CatalogLimits.TITLE_CHARS
+
+  const val MAX_DESCRIPTION = 4000
+
+  @JvmField
+  val LANGUAGES =
+    setOf(
+      "simple",
+      "ar",
+      "hy",
+      "eu",
+      "ca",
+      "da",
+      "nl",
+      "en",
+      "fi",
+      "fr",
+      "de",
+      "el",
+      "hi",
+      "hu",
+      "id",
+      "ga",
+      "it",
+      "lt",
+      "no",
+      "pt",
+      "ro",
+      "ru",
+      "sr",
+      "es",
+      "sv",
+      "ta",
+      "tr",
+    )
+
+  private val values = EvidenceValidator()
+
+  fun checkConfirmed(c: CandidateEdit, clock: java.time.Clock) {
+    c.pricing?.let {
+      require(values.allows("pricing", it)) { "The pricing $it is not one the catalog takes." }
+    }
+    c.license?.let {
+      require(values.allows("license", it.trim())) {
+        "The licence must be an SPDX id, such as MIT."
+      }
+    }
+    c.audience?.let {
+      require(values.allows("audience", it)) { "The audience $it is not one the catalog takes." }
+    }
+    c.techLevel?.let {
+      require(values.allows("techLevel", it)) { "The tech level $it is not one the catalog takes." }
+    }
+    c.description?.trim()?.let { d ->
+      require(
+        d.isNotEmpty() &&
+          d.length <= MAX_DESCRIPTION &&
+          d.none { Character.isISOControl(it) && it != '\n' }
+      ) {
+        "The description must be 1 to $MAX_DESCRIPTION characters."
+      }
+    }
+    c.language?.let {
+      require(it in LANGUAGES) { "The language $it is not one the catalog takes." }
+    }
+    c.publishedAt?.let {
+      require(
+        !it.isAfter(java.time.LocalDate.now(clock.withZone(java.time.ZoneOffset.UTC)).plusDays(1))
+      ) {
+        "The published date is in the future."
+      }
+    }
+  }
 
   @JvmField val TAG = Regex("[a-z0-9]+(-[a-z0-9]+)*")
 
@@ -53,6 +128,8 @@ object CandidateRules {
       ResourceType.ARTICLE,
       ResourceType.NEWS,
       ResourceType.EVENT,
+      ResourceType.COURSE,
+      ResourceType.AWESOME_LIST,
     )
 
   @JvmStatic
@@ -65,7 +142,11 @@ class InvalidCandidate(message: String) : IllegalArgumentException(message)
 data class ListedResource(val id: UUID, val title: String)
 
 sealed interface AcceptOutcome {
-  data class Indexed(val id: UUID) : AcceptOutcome
+  data class Indexed(
+    val id: UUID,
+    val confirmed: Map<String, String> = emptyMap(),
+    val descriptionByAi: Boolean = false,
+  ) : AcceptOutcome
 
   data class AlreadyListed(val resource: ListedResource) : AcceptOutcome
 }
@@ -95,7 +176,13 @@ class IndexAcceptedCandidate(
   fun accept(details: String?): AcceptOutcome {
     val candidate = this.details.read(details)
     val url = hitOf(candidate, collectorOf(candidate)).canonicalUrl
-    val listed = lookup.listedAs(url) ?: return AcceptOutcome.Indexed(index(candidate))
+    val listed =
+      lookup.listedAs(url)
+        ?: return AcceptOutcome.Indexed(
+          index(candidate),
+          candidate.confirmed,
+          candidate.descriptionByAi,
+        )
     return AcceptOutcome.AlreadyListed(listed)
   }
 

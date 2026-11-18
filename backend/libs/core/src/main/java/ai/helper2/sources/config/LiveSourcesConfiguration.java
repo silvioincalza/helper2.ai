@@ -3,6 +3,7 @@ package ai.helper2.sources.config;
 import ai.helper2.platform.config.HttpClientProperties;
 import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.OutboundThrottle;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.sources.arxiv.ArxivSource;
 import ai.helper2.sources.github.GitHubSource;
@@ -85,10 +86,11 @@ class LiveSourcesConfiguration {
       SourcesProperties p,
       Clock clock,
       ObservationRegistry observations,
-      HttpClientProperties http) {
+      HttpClientProperties http,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("hacker-news");
     return new HackerNewsSource(
-        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock);
+        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock, shadowLibraries);
   }
 
   @Bean
@@ -96,9 +98,10 @@ class LiveSourcesConfiguration {
       SourcesProperties p,
       Clock clock,
       ObservationRegistry observations,
-      HttpClientProperties http) {
+      HttpClientProperties http,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("live-web");
     return new TavilySource(
-        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock);
+        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock, shadowLibraries);
   }
 }

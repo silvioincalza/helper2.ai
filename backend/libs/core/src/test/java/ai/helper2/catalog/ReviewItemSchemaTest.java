@@ -46,7 +46,8 @@ class ReviewItemSchemaTest {
         .isInstanceOf(DataIntegrityViolationException.class);
     assertThatThrownBy(() -> reviewItem("RESOURCE_CANDIDATE", null, "plain text"))
         .isInstanceOf(DataIntegrityViolationException.class);
-    assertThatThrownBy(() -> reviewItem("COURSE_CANDIDATE", "{}", null))
+    reviewItem("COURSE_CANDIDATE", "{\"title\":\"x\"}", null);
+    assertThatThrownBy(() -> reviewItem("EXAMPLE_CANDIDATE", null, "plain text"))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 }

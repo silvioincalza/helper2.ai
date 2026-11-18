@@ -1,6 +1,7 @@
 package ai.helper2.sources.github.scout;
 
 import ai.helper2.scout.PageScope;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.sources.liveweb.scout.DiscoveryPages;
 import java.net.URI;
@@ -24,6 +25,7 @@ final class ProductLinks {
     PUNYCODE,
     GITHUB,
     EXCLUDED_DOMAIN,
+    SHADOW_LIBRARY,
     REDIRECT,
     NOT_A_PRODUCT_PAGE;
 
@@ -105,8 +107,10 @@ final class ProductLinks {
       Pattern.compile("(?i)https?:|https?%3a|%3a%2f%2f|//|%2f%2f");
 
   private final List<String> excludedDomains;
+  private final ShadowLibraries shadowLibraries;
 
-  ProductLinks(Collection<String> excludedDomains) {
+  ProductLinks(Collection<String> excludedDomains, ShadowLibraries shadowLibraries) {
+    this.shadowLibraries = shadowLibraries;
     this.excludedDomains =
         excludedDomains.stream()
             .map(d -> d.strip().toLowerCase(Locale.ROOT))
@@ -203,6 +207,9 @@ final class ProductLinks {
     }
     if (under(host, excludedDomains)) {
       return Skip.EXCLUDED_DOMAIN;
+    }
+    if (shadowLibraries.isShadowLibrary(host)) {
+      return Skip.SHADOW_LIBRARY;
     }
     return null;
   }

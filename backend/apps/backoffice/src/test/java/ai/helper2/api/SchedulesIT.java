@@ -35,6 +35,7 @@ class SchedulesIT extends ApiTestBase {
     assertThat(jobs(tasks))
         .containsExactlyInAnyOrder(
             "job.retention-audit",
+            "job.retention-review-research",
             "job.retention-catalog",
             "job.home-examples-pending",
             "job.home-examples-nightly",

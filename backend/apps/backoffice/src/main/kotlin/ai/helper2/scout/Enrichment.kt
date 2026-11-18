@@ -21,6 +21,7 @@ constructor(
   val anchorRecordId: UUID = evidenceId,
   val supportsClaims: Boolean = true,
   val selfDeclared: Boolean = false,
+  val opening: Boolean = false,
 ) {
   val extra: Boolean
     get() = anchorRecordId != evidenceId
@@ -29,6 +30,7 @@ constructor(
     get() =
       when {
         selfDeclared -> "vendor-page"
+        opening -> "readme-opening"
         extra -> "readme"
         else -> "record"
       }

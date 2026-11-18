@@ -49,6 +49,7 @@ class NoWordListsInCodeTest {
         "ResultMerger.kt: mapOf(",
         "LanguageDetector.kt: mapOf(",
         "Compatibility.kt: setOf(",
+        "ShadowLibraries.kt: setOf(",
       )
     val STRING = Regex("\"((?:[^\"\\\\\\n]|\\\\.)*)\"")
     val WORD = Regex("\\p{Ll}[\\p{Ll}' -]*")

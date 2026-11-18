@@ -918,4 +918,13 @@ class EvidenceValidatorTest {
       validator.validate(input, EnrichmentProposal()).outcome,
     )
   }
+
+  @Test
+  fun `an awesome list is stated by its own words, not by the word awesome alone`() {
+    fun states(excerpt: String) = EvidenceRules.statesValue(excerpt, "type", "AWESOME_LIST")
+    assertTrue(states("A curated list of awesome LLM tools"))
+    assertTrue(states("An awesome list of agent frameworks and papers"))
+    assertTrue(EvidenceValidator().allows("type", "AWESOME_LIST"))
+    assertEquals(false, states("Awesome performance for agents on any laptop"))
+  }
 }

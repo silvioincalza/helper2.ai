@@ -75,6 +75,8 @@ describe('mission, privacy and terms pages', () => {
     expect(cookies).toHaveTextContent('__Host-XSRF-TOKEN');
     const recipients = screen.getByRole('region', { name: 'Who receives data' });
     expect(recipients).toHaveTextContent('Nebius Token Factory');
+    expect(recipients).toHaveTextContent('Nebius chooses where each request runs');
+    expect(recipients).not.toHaveTextContent('runs in the European Union (Finland)');
     expect(recipients).toHaveTextContent('Germany');
     expect(screen.getByRole('region', { name: 'Your rights' })).toHaveTextContent('FADP');
     expect(screen.getByRole('region', { name: 'Legal basis' })).toHaveTextContent(
@@ -93,6 +95,9 @@ describe('mission, privacy and terms pages', () => {
     );
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent(
       'Technical logs and request traces: up to 3 months.',
+    );
+    expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent(
+      'Text sent to the AI models on Nebius Token Factory, and their answers: up to one year at Nebius, in Finland.',
     );
   });
 

@@ -43,6 +43,8 @@ import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
+import ai.helper2.research.ResearchFilter;
+import ai.helper2.research.usecase.FindResearchedItems;
 import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.ListedResource;
@@ -72,6 +74,7 @@ class ReviewController implements ReviewApi {
   private final ReviewItemMapper reviewItems;
   private final EditKnownTargetCandidate editProposal;
   private final ListReviewItems items;
+  private final FindResearchedItems researched;
   private final ResolveReview resolve;
 
   ReviewController(
@@ -84,8 +87,10 @@ class ReviewController implements ReviewApi {
       ReviewItemMapper reviewItems,
       EditKnownTargetCandidate editProposal,
       ListReviewItems items,
-      ResolveReview resolve) {
+      ResolveReview resolve,
+      FindResearchedItems researched) {
     this.items = items;
+    this.researched = researched;
     this.resolve = resolve;
     this.editProposal = editProposal;
     this.evidence = evidence;
@@ -102,6 +107,7 @@ class ReviewController implements ReviewApi {
       @Nullable ReviewStatusDto status,
       @Nullable ReviewKindDto kind,
       @Nullable String category,
+      @Nullable String research,
       Integer page,
       Integer size) {
     ReviewQueue.Page found =
@@ -109,11 +115,25 @@ class ReviewController implements ReviewApi {
             status == null ? null : ReviewQueue.Status.valueOf(status.getValue()),
             kind == null ? null : ReviewQueue.Kind.valueOf(kind.getValue()),
             category,
+            only(research),
             page,
             size);
     return ResponseEntity.ok(
         new ReviewItemPageDto(
             found.items().stream().map(reviewItems::dto).toList(), Math.toIntExact(found.total())));
+  }
+
+  private ReviewQueue.@Nullable Only only(@Nullable String research) {
+    if (research == null) {
+      return null;
+    }
+    ResearchFilter filter;
+    try {
+      filter = ResearchFilter.valueOf(research);
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestException("research must be KEEP, REJECT, DUPLICATE, ACTIVE or NONE");
+    }
+    return new ReviewQueue.Only(researched.ids(filter), filter.excludes());
   }
 
   @Override
@@ -157,7 +177,17 @@ class ReviewController implements ReviewApi {
         new CandidateEdit(
             body.getTitle(),
             body.getType() == null ? null : ResourceType.valueOf(body.getType().getValue()),
-            body.getTags() == null ? null : Set.copyOf(body.getTags()));
+            body.getTags() == null ? null : Set.copyOf(body.getTags()),
+            body.getCanonicalUrl(),
+            body.getPricing(),
+            body.getOpenSource(),
+            body.getLicense(),
+            body.getAudience(),
+            body.getTechLevel(),
+            body.getDescription(),
+            body.getDescriptionWrittenByAi(),
+            body.getLanguage(),
+            body.getPublishedAt());
     switch (editCandidate.edit(id, body.getExpectedDetails(), change, adminId())) {
       case EditCandidate.Outcome.Edited e -> {}
       case EditCandidate.Outcome.NotFound n ->

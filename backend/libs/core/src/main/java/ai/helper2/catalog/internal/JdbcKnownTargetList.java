@@ -61,12 +61,13 @@ class JdbcKnownTargetList implements KnownTargetList {
   private static Entry entry(ResultSet rs, int row) throws SQLException {
     return new Entry(
         rs.getObject("id", UUID.class),
-        KnownTarget.Kind.valueOf(rs.getString("kind")),
+        ResourceRows.known(KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL),
         rs.getString("name"),
         Arrays.asList((String[]) rs.getArray("other_names").getArray()),
         rs.getString("added_by"),
         rs.getTimestamp("added_at").toInstant(),
-        KnownTarget.Origin.valueOf(rs.getString("origin")),
+        ResourceRows.known(
+            KnownTarget.Origin.class, rs.getString("origin"), KnownTarget.Origin.DISCOVERED),
         rs.getInt("relationships"));
   }
 
