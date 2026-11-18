@@ -11,6 +11,7 @@ Task: $ARGUMENTS
 4. STOP. Present to Silvio: the plan, the trade-offs, the open questions. Explain in simple words
    first, then the technical detail. Wait for his decision.
 5. After his OK: implement with tests, then ask security (and any other specialist the change
-   touches) to review the result. Report what changed and what is still open.
+   touches) to review the result. Before the pull request opens, run backlog for its story and the
+   `Closes` lines. Report what changed and what is still open.
 6. Docs: write them in Silvio's voice and in the style of the existing docs. No AI attribution.
    Working notes and reviews go in `.private/`, never in the repo.
