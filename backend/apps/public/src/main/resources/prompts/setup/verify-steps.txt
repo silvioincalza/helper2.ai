@@ -33,4 +33,4 @@ HOW TO DECIDE "supported"
 
 OUTPUT
 Only one JSON object:
-{"verdicts": [{"key": "s1", "supported": true}, ...]}, one entry per step, with the keys from STEPS.
+{"verdicts": [{"key": "s1", "supported": true}, {"key": "s2", "supported": false}, ...]}, one entry per step, with the keys from STEPS.

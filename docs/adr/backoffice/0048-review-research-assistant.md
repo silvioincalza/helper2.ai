@@ -53,8 +53,11 @@ tool answered, and must confirm every value before it reaches the catalog.
    `TOOL_CALL`, `CHECK`), the request, the response, the duration, the tokens and the error. A response is cut at
    200 KB. The admin sees the steps as a timeline, live while the run is going, and expands any request or response.
    Everything is shown as plain text, never as HTML.
-6. **The status of an attribute is computed by code, not by the model.** Every tool response is evidence with an id,
-   and reaches the model inside `UntrustedText` tags, as in enrichment ([0014](../scout/0014-evidence-gated-enrichment.md) §4). The model returns,
+6. **The status of an attribute is computed by code, not by the model.** Every tool response is evidence with an id.
+   `RunResearch` cleans it with `UntrustedPageText.clean` (hidden text, tags, links, contacts and instruction lines
+   dropped, as in enrichment ([0014](../scout/0014-evidence-gated-enrichment.md) §4)) and escapes it with
+   `UntrustedText`, so no tool text can open or close a block. That cleaned text is both what the model sees and the
+   evidence the check quotes from; a response with no text left is no evidence. The model returns,
    for each attribute, a value and its citations (evidence id and excerpt). Then the `CHECK` step runs the rules of
    `EvidenceValidator` (0014 §6), shared and not copied: the allowed values, the fields the type keeps, an excerpt of
    20–300 characters found verbatim in that evidence, and for licence, open source, pricing and type an excerpt that

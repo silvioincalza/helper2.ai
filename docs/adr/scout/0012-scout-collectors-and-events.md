@@ -285,8 +285,10 @@ Two kinds of source need more care:
       that Extract answers as failed is not tried again.
     - **A model reads the page.** The reasoning model, thinking off ([0008](../foundation/0008-llm-integration.md)),
       prompt `prompts/sources/read-event.txt`: how many events the page is about, the first and last day, and the
-      words of the page that state them; kind, format and place, each with its own words. The page is untrusted data:
-      it is cut to 12,000 characters, it cannot close its block, and the prompt says to ignore instructions in it. The
+      words of the page that state them; kind, format and place, each with its own words. The title and the page are
+      untrusted data: the title is flattened, cut to 200 characters and escaped (`UntrustedText`), the page is cut to
+      12,000 characters and cannot close its block, and the prompt says to ignore instructions in both. The prompt
+      states the rules `EventQuoteGate` applies (point 27), so the model gives the days the page states. The
       prompt's version is a hash of its rendered text. One call per page, at most `H2_SCOUT_EVENT_READER_DAILY_CALLS`
       (40) a UTC day, inside the `llm-chat` circuit. When no model can be called (cap, circuit), the pass keeps what
       it read and stays open, so the next Scout run tries again.

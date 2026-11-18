@@ -165,6 +165,7 @@ class GuideLeaveOnTheWireTest {
       stream,
       thinking,
       GuideProperties.Fairness(300, 2, 12),
+      GuideProperties.Judge("", 300),
       URI.create("https://registry.modelcontextprotocol.io"),
     )
 

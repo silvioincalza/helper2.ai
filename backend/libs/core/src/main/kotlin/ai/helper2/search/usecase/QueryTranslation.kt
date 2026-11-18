@@ -3,6 +3,7 @@ package ai.helper2.search.usecase
 import ai.helper2.search.AnalyzedQuery
 import ai.helper2.search.QueryAnalyzer
 import ai.helper2.search.QueryTranslator
+import ai.helper2.shared.WordLists
 import java.time.Duration
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -37,10 +38,14 @@ internal class QueryTranslation(
         log.info("Query translation failed: {}", e.javaClass.simpleName)
         null
       } ?: return null
-    if (URL_LIKE.containsMatchIn(raw)) return null
-    val words = QueryTranslator.bounded(raw.lowercase().replace(NON_WORD, " "))
-    return words.takeIf { it.isNotBlank() && it != analyzer.analyze(text).normalized }
+    if (URL_LIKE.containsMatchIn(raw) || ABOUT_THE_QUERY.containsMatchIn(raw)) return null
+    val words = plainWords(raw)
+    return words.takeIf {
+      it.isNotBlank() && it != plainWords(analyzer.analyze(text).normalized)
+    }
   }
+
+  private fun plainWords(s: String) = QueryTranslator.bounded(s.lowercase().replace(NON_WORD, " "))
 
   fun withTranslation(analyzed: AnalyzedQuery, english: String?): AnalyzedQuery =
     if (english == null) analyzed
@@ -53,6 +58,8 @@ internal class QueryTranslation(
 
   private companion object {
     val URL_LIKE = Regex("(?i)https?:|www\\.|://")
+    val ABOUT_THE_QUERY =
+      WordLists.anywhere(WordLists.load("translation-words").phrasesIn("en", "about-query"))
     val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
   }
 }

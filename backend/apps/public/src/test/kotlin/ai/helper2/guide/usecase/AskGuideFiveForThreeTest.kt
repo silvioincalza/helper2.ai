@@ -1,6 +1,7 @@
 package ai.helper2.guide.usecase
 
 import ai.helper2.guide.Candidate
+import ai.helper2.guide.GuideJudge
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProposal
 import ai.helper2.guide.GuideSearchPlan
@@ -219,6 +220,42 @@ class AskGuideFiveForThreeTest {
       answer.recommendations.map { it.result.title },
     )
     assertEquals(ReasonCheck.REMOVED, answer.recommendations.first().reasonCheck)
+  }
+
+  @Test
+  fun `the judge gets every claim the reason check saw, with its verdict`() {
+    val model =
+      FiveModel(names.take(5)) { title ->
+        if (title == "alpha") ReasonVerdict(false) else fitting
+      }
+    val judged = mutableListOf<Pair<List<ReasonClaim>, Map<String, ReasonCheck>>>()
+
+    AskGuide(
+        search,
+        model,
+        clock,
+        judge = GuideJudge { _, claims, checks -> judged += claims to checks },
+      )
+      .ask(need, null)
+
+    assertEquals(1, judged.size)
+    assertEquals(model.claimsSeen, judged.single().first)
+    assertEquals(
+      ReasonCheck.REMOVED,
+      judged.single().second.getValue(model.claimsSeen.first().key),
+    )
+  }
+
+  @Test
+  fun `a judge that cannot start leaves the answer as it is`() {
+    val model = FiveModel(names.take(5)) { fitting }
+
+    val answer =
+      AskGuide(search, model, clock, judge = GuideJudge { _, _, _ -> error("no thread") })
+        .ask(need, null)
+
+    assertEquals(GuideValidator.MAX_PICKS, answer.recommendations.size)
+    assertTrue(answer.recommendations.all { it.reasonCheck == ReasonCheck.SUPPORTED })
   }
 
   @Test

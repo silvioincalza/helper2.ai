@@ -1,5 +1,6 @@
 package ai.helper2.guide.steps
 
+import ai.helper2.guide.GuideJudge
 import ai.helper2.guide.GuideModel
 import ai.helper2.guide.GuideProgress
 import ai.helper2.guide.GuideValidator
@@ -21,6 +22,7 @@ internal class ReasonVerdicts(val checks: Map<String, ReasonCheck>, val offNeed:
 internal class ReasonCheckStep(
   private val steps: GuideSteps,
   private val validator: GuideValidator,
+  private val judge: GuideJudge,
 ) {
   private val log = LoggerFactory.getLogger(ReasonCheckStep::class.java)
 
@@ -38,6 +40,7 @@ internal class ReasonCheckStep(
       removed = checks.values.count { it == ReasonCheck.REMOVED },
       notChecked = claims.size - checks.size,
     )
+    judged(q, claims, checks)
     return ReasonVerdicts(checks, offNeed)
   }
 
@@ -52,6 +55,14 @@ internal class ReasonCheckStep(
       log.warn("guide reason check failed: ${failure(e)}")
       emptyMap()
     }
+
+  private fun judged(q: Question, claims: List<ReasonClaim>, checks: Map<String, ReasonCheck>) {
+    try {
+      judge.judge(q.need, claims, checks)
+    } catch (e: RuntimeException) {
+      log.warn("guide judge not started: ${e.javaClass.simpleName}")
+    }
+  }
 
   private fun checkOf(claim: ReasonClaim, verdict: ReasonVerdict?): ReasonCheck? =
     when {

@@ -31,6 +31,14 @@ class DraftRulesTest {
   }
 
   @Test
+  fun `the query is kept in lower case, the label as written`() {
+    val one =
+      keep(draft(deepl.resourceId, "Translate documents", "Translate PDF Documents")).single()
+    assertEquals("translate pdf documents", one.input.query)
+    assertEquals("Translate documents", one.input.label)
+  }
+
+  @Test
   fun `drops a draft for a resource it was not given, or with none`() {
     assertEquals(emptyList(), keep(draft(UUID.randomUUID(), "Translate", "translate text")))
     assertEquals(emptyList(), keep(draft(null, "Translate", "translate text")))

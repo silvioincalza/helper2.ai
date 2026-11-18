@@ -4,10 +4,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.examples.DraftSource;
 import ai.helper2.examples.ExampleInput;
+import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.resilience.Resilience;
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 
 class SpringAiExampleDrafterTest {
 
@@ -34,7 +43,39 @@ class SpringAiExampleDrafterTest {
   void theWordingOfThePromptIsPinnedToItsLabel() {
     assertThat(ModelCallMetrics.promptVersion(SpringAiExampleDrafter.system()))
         .as("a new wording of the draft prompt has a new label: say so in ADR 0028")
-        .isEqualTo("5826f49c");
+        .isEqualTo("d6e72a95");
+  }
+
+  @Test
+  void withoutSourcesTheModelIsNotCalled() {
+    AtomicInteger calls = new AtomicInteger();
+    ChatModel chat =
+        new ChatModel() {
+          @Override
+          public ChatResponse call(Prompt prompt) {
+            calls.incrementAndGet();
+            return new ChatResponse(
+                List.of(new Generation(new AssistantMessage("{\"drafts\": []}"))));
+          }
+        };
+    SpringAiExampleDrafter drafter =
+        new SpringAiExampleDrafter(
+            chat,
+            "fast",
+            new DailyBudget(10, Clock.systemUTC(), "example-drafts"),
+            ModelCallMetrics.none(),
+            Resilience.NONE);
+
+    assertThat(drafter.draft(List.of())).isEmpty();
+    assertThat(calls).hasValue(0);
+  }
+
+  @Test
+  void thePromptAsksForDistinctTextsAndAllowsAnEmptyAnswer() {
+    assertThat(SpringAiExampleDrafter.system())
+        .contains("Give every\nexample its own label and query")
+        .contains("If no resource fits, answer\n{\"drafts\": []}")
+        .contains("When the audience is USE_AI or BUILD_WITH_AI, use it as the path.");
   }
 
   @Test

@@ -590,20 +590,7 @@ class SpringAiGuideModel implements GuideModel {
                     + "\">\n<reason>"
                     + untrusted(c.getReason())
                     + "</reason>\n<evidence>\n"
-                    + "Text: "
-                    + untrusted(c.getText())
-                    + "\nQuote: "
-                    + untrusted(c.getQuote())
-                    + (c.getConfirmed().isEmpty()
-                        ? ""
-                        : "\nConfirmed requirements: "
-                            + c.getConfirmed().stream()
-                                .map(k ->
-                                    untrusted(k.getConstraint())
-                                        + " ("
-                                        + untrusted(String.valueOf(k.getQuote()))
-                                        + ")")
-                                .collect(Collectors.joining("; ")))
+                    + evidence(c)
                     + "\n</evidence>\n</pick>")
             .collect(Collectors.joining("\n"));
     Verdicts answer =
@@ -628,6 +615,23 @@ class SpringAiGuideModel implements GuideModel {
                 && keys.contains(v.key().strip()))
         .collect(
             Collectors.toMap(v -> v.key().strip(), this::verdictOf, SpringAiGuideModel::stricter));
+  }
+
+  static String evidence(ReasonClaim c) {
+    return "Text: "
+        + untrusted(c.getText())
+        + "\nQuote: "
+        + untrusted(c.getQuote())
+        + (c.getConfirmed().isEmpty()
+            ? ""
+            : "\nConfirmed requirements: "
+                + c.getConfirmed().stream()
+                    .map(k ->
+                        untrusted(k.getConstraint())
+                            + " ("
+                            + untrusted(String.valueOf(k.getQuote()))
+                            + ")")
+                    .collect(Collectors.joining("; ")));
   }
 
   private ReasonVerdict verdictOf(Verdicts.Verdict v) {
