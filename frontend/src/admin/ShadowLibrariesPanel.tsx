@@ -7,6 +7,7 @@ import type { ShadowLibraryEntry } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 type Notice =
   | { kind: 'added'; name: string }
@@ -186,9 +187,7 @@ export function ShadowLibrariesPanel() {
         </div>
       )}
       {libraries.loading && all.length === 0 ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={3} quiet />
       ) : libraries.error !== undefined && all.length === 0 ? (
         <StatePanel
           tone="error"

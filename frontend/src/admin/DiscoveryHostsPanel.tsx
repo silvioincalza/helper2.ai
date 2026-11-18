@@ -7,6 +7,7 @@ import type { DiscoveryHostEntry, DiscoveryHostKind } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 const KINDS: DiscoveryHostKind[] = ['WRITING', 'DIRECTORY'];
 
@@ -189,9 +190,7 @@ export function DiscoveryHostsPanel() {
         </div>
       )}
       {hosts.loading && all.length === 0 ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={3} quiet />
       ) : hosts.error !== undefined && all.length === 0 ? (
         <StatePanel
           tone="error"

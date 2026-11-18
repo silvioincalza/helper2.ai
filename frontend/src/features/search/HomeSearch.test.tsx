@@ -48,7 +48,7 @@ describe('search results', () => {
     });
     renderApp(url);
     expect(await screen.findByText('Searching the listed sources…')).toBeInTheDocument();
-    expect(document.querySelector('.h2-skeleton')).toBeInTheDocument();
+    expect(document.querySelector('.h2-skel')).toBeInTheDocument();
     release();
     await (await results()).findByText('Acme Translator');
   });

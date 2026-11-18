@@ -7,6 +7,7 @@ import type { KnownTargetEntry, KnownTargetKind } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 const KINDS: KnownTargetKind[] = ['VENDOR', 'SERVICE', 'TOOL'];
 
@@ -250,9 +251,7 @@ export function KnownTargetsPanel() {
         </div>
       )}
       {targets.loading && all.length === 0 ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={3} quiet />
       ) : targets.error !== undefined && all.length === 0 ? (
         <StatePanel
           tone="error"

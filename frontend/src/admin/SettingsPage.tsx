@@ -13,6 +13,7 @@ import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
 import { KnownTargetsPanel } from './KnownTargetsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
 import { ShadowLibrariesPanel } from './ShadowLibrariesPanel';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 function settingText(
   setting: ConfigSetting,
@@ -123,9 +124,7 @@ export default function SettingsPage() {
       <ShadowLibrariesPanel />
       <KnownTargetsPanel />
       {config.loading ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={6} />
       ) : config.error !== undefined ? (
         <StatePanel
           tone="error"

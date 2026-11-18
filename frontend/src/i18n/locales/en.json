@@ -1027,7 +1027,6 @@
   },
   "setup": {
     "title": "Set up {{title}}",
-    "loading": "Reading how to set it up…",
     "guidesLeft": {
       "some": "{{remaining}} of {{limit}} AI setups left today. Steps that are already written do not count.",
       "none": "No AI setups left today. Steps already written still open; new ones are back at {{time}} your time."

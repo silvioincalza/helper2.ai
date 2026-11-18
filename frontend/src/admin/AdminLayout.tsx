@@ -9,6 +9,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { ResearchDecisionsProvider } from './researchDecisionsStore';
 import '@/ui/term.css';
 import './admin.css';
+import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 const PARTS = [
   { to: '/admin', key: 'overview', end: true },
@@ -29,9 +30,13 @@ export default function AdminLayout() {
   if (!loaded)
     return (
       <div className="h2-app h2-term h2-admin">
-        <p role="status" className="h2-term__state">
-          {t('common.loading')}
-        </p>
+        <Loading>
+          <Skeleton>
+            <SkeletonBar size="heading" width="short" />
+            <SkeletonRows rows={1} bars={[{ size: 'control', width: 'full' }]} />
+            <SkeletonRows rows={6} bars={[{ size: 'meta', width: 'full' }]} ruled />
+          </Skeleton>
+        </Loading>
       </div>
     );
   if (!isAdmin && !me.authenticated && me.loginProviders.length > 0) {
