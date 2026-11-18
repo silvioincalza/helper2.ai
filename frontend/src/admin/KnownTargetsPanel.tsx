@@ -8,7 +8,7 @@ import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
 
-const KINDS: KnownTargetKind[] = ['VENDOR', 'SERVICE'];
+const KINDS: KnownTargetKind[] = ['VENDOR', 'SERVICE', 'TOOL'];
 
 type Notice =
   | { kind: 'added' | 'changed' | 'removed'; name: string }

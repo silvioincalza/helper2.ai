@@ -45,15 +45,13 @@ describe('admin: relationship candidates by target name (S6.2.10)', () => {
     expect(detail).toHaveTextContent('Figma MCP, Linear MCP, Sentry MCP');
   });
 
-  it('Scenario: one click marks every item of the name as a service, and the next name is shown', async () => {
+  it('Scenario: one click marks every item of the name as a tool, and the next name is shown', async () => {
     const m = groupsApi();
     renderAdmin('/admin/review?kind=RELATIONSHIP_CANDIDATE');
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'It is a service (117 items)' }),
-    );
+    await userEvent.click(await screen.findByRole('button', { name: 'It is a tool (117 items)' }));
     expect(m.callsTo('POST', '/admin/relationship-targets/decision')[0]?.body).toEqual({
       key: 'cursor',
-      decision: 'SERVICE',
+      decision: 'TOOL',
     });
     expect(
       await screen.findByText('Cursor: 117 items decided, 0 skipped, 0 left.'),
