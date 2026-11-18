@@ -105,6 +105,16 @@ class AwesomeListsApiIT extends ApiTestBase {
                 .query(Integer.class)
                 .single())
         .isEqualTo(1);
+    assertThat(
+            jdbc.sql(
+                    """
+                    SELECT before_value || ' -> ' || after_value FROM admin_audit
+                     WHERE action = 'SET_FIELD' AND target_id = :t
+                    """)
+                .param("t", list.toString())
+                .query(String.class)
+                .single())
+        .isEqualTo("LIBRARY -> AWESOME_LIST");
 
     mvc.perform(post("/api/v1/admin/ai-check/awesome-lists").with(admin).with(csrf().asHeader()))
         .andExpect(status().isOk())
