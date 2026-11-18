@@ -112,6 +112,8 @@ private constructor(first: Set<String>, private val source: () -> Set<String>) {
 
   fun isShadowLibrary(host: String?): Boolean = ShadowLibraryNames.anyNames(names.get(), host)
 
+  fun names(): Set<String> = names.get()
+
   fun hides(address: URI): Boolean = address.host == null || isShadowLibrary(address.host)
 
   fun reload() {

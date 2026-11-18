@@ -208,18 +208,50 @@ class HomeListsIT {
         .anyMatch(c -> c.getId().getValue().equals(book));
     assertThat(details.find(book)).isPresent();
 
-    TestcontainersConfiguration.ownerJdbc()
-        .sql(
-            "INSERT INTO shadow_library (name, added_by, added_at) VALUES (:name, 'home-lists-it', now())")
-        .param("name", mirror())
-        .update();
-    shadowLibraries.reload();
+    listTheMirror();
 
     assertThat(recent.list(SINCE, UNTIL, Set.of(), 24).items())
         .noneMatch(c -> c.getId().getValue().equals(book));
     assertThat(upcoming.list(SINCE, null, 60, 0).items())
         .noneMatch(c -> c.getId().getValue().equals(fair));
     assertThat(details.find(book)).isEmpty();
+  }
+
+  private void listTheMirror() {
+    TestcontainersConfiguration.ownerJdbc()
+        .sql(
+            "INSERT INTO shadow_library (name, added_by, added_at) VALUES (:name, 'home-lists-it', now())")
+        .param("name", mirror())
+        .update();
+    shadowLibraries.reload();
+  }
+
+  @Test
+  void sixtyNewerBlockedRowsLeaveThePageToTheAllowedOnesAndAreNotCounted() {
+    SourceHit[] books = new SourceHit[60];
+    for (int i = 0; i < books.length; i++) {
+      books[i] = hit("github", "https://de." + mirror() + ".fm/book-" + i, null, 0);
+    }
+    List<UUID> blocked = upsert(books);
+    jdbc.sql(
+            "UPDATE resource SET published_at = :at, published_precision = 'INSTANT', published_source_id = 'github' WHERE id = ANY(:ids)")
+        .param("at", Timestamp.from(SINCE.plus(Duration.ofDays(25))))
+        .param("ids", blocked.toArray(UUID[]::new))
+        .update();
+    blocked.forEach(id -> schedule(id, 0));
+    listTheMirror();
+
+    ListRecentResources.Page recentPage = recent.list(SINCE, UNTIL, Set.of(), 14);
+    ListUpcomingEvents.Page upcomingPage = upcoming.list(SINCE, null, 6, 0);
+
+    assertThat(recentPage.items())
+        .hasSize(13)
+        .noneMatch(c -> blocked.contains(c.getId().getValue()));
+    assertThat(recentPage.total()).isEqualTo(14);
+    assertThat(upcomingPage.items())
+        .hasSize(6)
+        .noneMatch(c -> blocked.contains(c.getId().getValue()));
+    assertThat(upcomingPage.total()).isEqualTo(6);
   }
 
   private Optional<MergedResult> oneByOne(UUID id) {

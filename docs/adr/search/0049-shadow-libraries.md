@@ -29,7 +29,10 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
    - **Every catalog card, at read time.** The home lists (`ListRecentResources`, `ListUpcomingEvents`) read their
      cards through `ResourceCards.cardsOf`, and a resource page reads its card through `GetResourceDetail`. Both use
      `ResourceCards.shownCard`: a card whose address or canonical address is on a shadow library is left out, and its
-     resource page is not found. The live results the catalog keeps as observed rows are hidden the same way.
+     resource page is not found. The live results the catalog keeps as observed rows are hidden the same way. The
+     home list queries (`JdbcResources.recentlyPublished`, `upcomingEvents`) already leave out a row whose address or
+     canonical address has a listed label, in SQL, before their limit and offset, and their totals count the same
+     rows: blocked rows never take a page's places.
    - **Every cached guide answer.** The guide's answer cache and its similar-question reuse (`AskGuide.cached`) count
      an answer as a miss when one of the results, sources or quotes it cites is on a shadow library; the question is
      answered again. The setup guide (`ToolGuides`) never reads a document on a shadow library, so its cache key
