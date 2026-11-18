@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
-import type { EventRow, Feed, NewsRow } from './homeFeeds';
-import { useEventCells, useNewsCells, type ListId } from './listParts';
-import { TermList, type TermCells } from './TermList';
+import type { EventRow, Feed, NewsRow } from '@/features/feeds/feeds';
+import { useEventCells, useNewsCells, type TermCells } from '@/features/feeds/feedCells';
+import type { ListId } from './listParts';
+import { TermList } from './TermList';
 
 const LISTS: readonly ListId[] = ['news', 'events'];
 

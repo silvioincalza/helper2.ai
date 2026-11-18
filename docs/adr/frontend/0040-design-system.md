@@ -154,7 +154,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
     either page opens the resource page.
 14. **Text pages stay prose.** Mission, Privacy, Terms, Not found, Account and the sign-in page have no terminal look:
     Geist for headings and text, Geist Mono only for small labels, a column of about 68 characters, line height 1.65
-    (`features/pages/text.css`). Not found keeps the real 404 (the server answers 404): a `404` label, the title, one
+    (`ui/text.css`). Not found keeps the real 404 (the server answers 404): a `404` label, the title, one
     line that points to the box in the header, and a link home. Account shows who is signed in, the AI answers and
     web searches left today, "Home page motion: radar and lists", and Delete my account with its confirmation (focus on Cancel).
     The sign-in page (`/signin`) says why to sign in and has one button per provider in `loginProviders` on GET /me;
@@ -198,15 +198,15 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
 - `frontend/src/main.tsx` — the fonts. `frontend/vite.config.ts` — the two Latin files preloaded.
 - `frontend/src/shell/` — `Layout` (header, footer, the menu), `RouteError`, `NotFoundPage`, `Robots`.
 - `frontend/src/ui/` — `StatePanel`, `StatusPill`, `ProofQuote`, `SourceTiles`, `PicksBar`, `ScrollBox`, `Badges`,
-  `Logo`, `term.css`, `ui.css`, `listing.css`.
-- `frontend/src/features/home/` — `Home`, `HomeRadar`, `radarLayout.ts`, `radarRotation.ts`, `radarClock.ts`,
-  `useRadarMotion.ts`, `RadarLegend`, `TermList`, `ticker.ts`, `HomeLists`, `HomeTabs`, `homeFeeds.ts`, `home.css`.
-- `frontend/src/features/search/` — `HomeOrResultsPage`, `Results`, `ResultRow`, `ResultsSkeleton`, `TypeTabs`,
+  `Logo`, `TermCommand`, `ListState`, `ResultDate`, `term.css`, `text.css`, `ui.css`, `listing.css`.
+- `frontend/src/features/home/` — `Home`, `HomeRadar`, `radarLayout.ts`, `radarClock.ts`,
+  `useRadarMotion.ts`, `RadarLegend`, `TermList`, `ticker.ts`, `HomeLists`, `HomeTabs`, `home.css`; `frontend/src/lib/radarRotation.ts`.
+- `frontend/src/shell/HomeOrResultsPage.tsx`; `frontend/src/features/search/` — `Results`, `ResultRow`, `ResultsSkeleton`, `TypeTabs`,
   `FiltersPanel`, `FilterFacets`, `CoverageLine`, `AudienceChoice`, `ResultsTimeline`, `morePages.tsx`,
   `results.css`.
 - `frontend/src/features/guide/` — `GuidePicks`, `GuideAnswer`, `GuideAnswersLeft`.
 - `frontend/src/features/resource/` — `ResourcePage`, `Resource`, `ResultFacts`, `DateTimeline`, `resource.css`.
-- `frontend/src/features/news/NewsPage.tsx`, `frontend/src/features/events/EventsPage.tsx`.
+- `frontend/src/features/feeds/` — `feeds.ts`, `feedCells.tsx`, `NewsPage`, `EventsPage`.
 - `frontend/src/features/sources/`, `features/saved/`, `features/account/`, `features/pages/`, `frontend/src/admin/`.
 - `frontend/src/hooks/useRetry.ts`, `usePolicy.ts`, `frontend/src/lib/sourceCounts.ts`, `duration.ts`.
 

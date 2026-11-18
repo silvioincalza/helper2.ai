@@ -11,21 +11,22 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useDropServerHead } from '@/lib/head';
+import { REPO_URL } from '@/lib/repoUrl';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { useMonetisation } from '@/context/MonetisationContext';
-import { AnalyticsConsent, openConsentSettings } from '../features/monetisation/AnalyticsConsent';
+import { AnalyticsConsent, openConsentSettings } from '@/features/monetisation/AnalyticsConsent';
 import { showPrivacyChoices } from '@/lib/googleConsent';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme } from '@/lib/theme';
 import { hasOwnSearchBox, showsHome } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useStickyEdge } from '@/hooks/useStickyEdge';
-import { Logo } from '../ui/Logo';
-import { OneBox } from '../features/search/OneBox';
+import { Logo } from '@/ui/Logo';
+import { OneBox } from '@/features/search/OneBox';
 import '@/styles/shell.css';
-import { SignInLink } from '../features/account/SignIn';
+import { SignInLink } from '@/ui/SignIn';
 
 function ThemeToggle() {
   const { t } = useTranslation();
@@ -177,8 +178,6 @@ function Header() {
     </header>
   );
 }
-
-export const REPO_URL = 'https://github.com/silvioincalza/helper2.ai';
 
 function GitHubMark() {
   return (

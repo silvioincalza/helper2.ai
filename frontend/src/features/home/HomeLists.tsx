@@ -2,8 +2,14 @@ import { upTo } from '@/lib/breakpoints';
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useEventsFeed, useNewsFeed, type EventRow, type Feed, type NewsRow } from './homeFeeds';
-import { useEventCells, useNewsCells } from './listParts';
+import {
+  useEventsFeed,
+  useNewsFeed,
+  type EventRow,
+  type Feed,
+  type NewsRow,
+} from '@/features/feeds/feeds';
+import { useEventCells, useNewsCells } from '@/features/feeds/feedCells';
 import { TermList } from './TermList';
 
 const PHONE_LISTS = upTo('tablet');

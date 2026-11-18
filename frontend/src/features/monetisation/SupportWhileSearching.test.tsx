@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { makeSearch } from '@/test/fixtures';
-import { SUPPORT_WAIT_DELAY_MS } from '@/features/monetisation/SupportWhileSearching';
+import { SUPPORT_WAIT_DELAY_MS } from './SupportWhileSearching';
 import type { Monetisation } from '@/api/types';
 
 const OFF: Monetisation = {

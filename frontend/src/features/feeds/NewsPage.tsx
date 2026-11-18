@@ -1,14 +1,14 @@
 import { Link, useSearchParams } from 'react-router';
-import { useFromHere } from '@/features/search/fromResults';
+import { useFromHere } from '@/lib/fromResults';
 import { useTranslation } from 'react-i18next';
-import { useAiNewsFeed, type NewsRow } from '@/features/home/homeFeeds';
-import { ListState } from '@/features/home/listParts';
-import { TermCommand } from '@/features/home/TermList';
+import { useAiNewsFeed, type NewsRow } from './feeds';
+import { ListState } from '@/ui/ListState';
+import { TermCommand } from '@/ui/TermCommand';
 import { useTitle } from '@/hooks/useTitle';
 import { Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 import { longLocalDay, shortDay } from '@/lib/format';
 import '@/ui/term.css';
-import '../../ui/listing.css';
+import '@/ui/listing.css';
 
 export function topHosts(rows: readonly NewsRow[], max: number): string[] {
   const count = new Map<string, number>();

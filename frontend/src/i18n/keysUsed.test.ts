@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import en from './locales/en.json';
-import enAdmin from './locales/en.admin.json';
-import enLegal from './locales/en.legal.json';
+import en from '@/i18n/locales/en.json';
+import enAdmin from '@/i18n/locales/en.admin.json';
+import enLegal from '@/i18n/locales/en.legal.json';
 
 const src = join(process.cwd(), 'src');
 const files = readdirSync(src, { withFileTypes: true, recursive: true })

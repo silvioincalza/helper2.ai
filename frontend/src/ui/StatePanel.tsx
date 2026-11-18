@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@/ui/Icon';
+import { Icon } from './Icon';
 import './ui.css';
 
 export function StatePanel({

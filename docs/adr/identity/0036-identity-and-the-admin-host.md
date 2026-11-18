@@ -202,7 +202,7 @@ reaches the cluster with an address from the platform's private ranges.
   `api/HttpEdgeIT.java`, `api/RedisDownIT.java`, `identity/security/SignInEventIT.java`;
   `backend/apps/backoffice/src/test/java/ai/helper2/identity/schedule/AuditRetentionIT.java`, `api/AdminAuditApiIT.java`,
   `api/BackOfficeEdgeIT.java`.
-- `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/features/account/SignIn.tsx`,
+- `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/ui/SignIn.tsx`,
   `frontend/src/features/account/AccountPage.tsx`, `frontend/src/admin/`.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/*/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`,
   `helper2.retention.admin-audit`; `deploy/helm/helper2/templates/backoffice.yaml` (Deployment `helper2-backoffice`,

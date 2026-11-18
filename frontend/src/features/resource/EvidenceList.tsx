@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { Evidence } from '@/api/types';
 import { evidenceSource } from '@/lib/evidenceSource';
 import { formatDate } from '@/lib/format';
-import { ExternalLink } from '../../ui/ExternalLink';
+import { ExternalLink } from '@/ui/ExternalLink';
 
 export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
   const { t } = useTranslation();

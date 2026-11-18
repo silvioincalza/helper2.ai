@@ -108,6 +108,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0047](../adr/operations/0047-code-format-and-dead-code-audit.md) | [flow](flow-0047-dead-code-and-dependency-audit.svg) | — (build and CI only, no runtime path) | the two knip runs (whole project, then production code and its dependencies) and the npm audit gate in the frontend CI job. |
 | [0048](../adr/backoffice/0048-review-research-assistant.md) | [flow](flow-0048-review-research.svg) | [sequence](sequence-0048-review-research.svg) | how the admin starts research on review items, how a worker runs the agent and stores each step, and how the admin confirms each attribute and accepts. |
 | [0049](../adr/search/0049-shadow-libraries.md) | [flow](flow-0049-shadow-libraries.svg) | [sequence](sequence-0049-shadow-libraries.svg) | an admin adds a shadow library's name: the name checks, the row and its audit; how each app reads the list and drops a result on one of its hosts, live or stored. |
+| [0050](../adr/frontend/0050-frontend-feature-boundaries.md) | [flow](flow-0050-frontend-feature-boundaries.svg) | — (lint and CI only, no runtime path) | what ESLint decides for one import in `frontend/src`: the import style, the folders a folder may import, the feature boundary and its named compositions. |
 
 ## Colors
 

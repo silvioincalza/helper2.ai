@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { BULK_MAX, EXPECTED_MAX, NOTE_MAX, REASON_MAX } from '../admin/limits';
-import { MAX_EVENTS } from '../features/home/homeFeeds';
-import { MAX_IMPORT } from '../lib/bookmarks';
+import { BULK_MAX, EXPECTED_MAX, NOTE_MAX, REASON_MAX } from '@/admin/limits';
+import { MAX_EVENTS } from '@/features/feeds/feeds';
+import { MAX_IMPORT } from '@/lib/bookmarks';
 import {
   MAX_CLARIFICATION,
   MAX_DROP,
@@ -12,7 +12,7 @@ import {
   MAX_QUERY,
   MAX_QUESTION,
   MIN_QUESTION,
-} from '../lib/searchState';
+} from '@/lib/searchState';
 
 type Node = Record<string, unknown>;
 
