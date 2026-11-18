@@ -97,7 +97,7 @@ describe('mission, privacy and terms pages', () => {
       'Technical logs and request traces: up to 3 months.',
     );
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent(
-      'Text sent to the AI models on Nebius Token Factory, and their answers: up to one year at Nebius, in Finland.',
+      'Text sent to the AI models on Nebius Token Factory, and their answers: not kept at Nebius once it has answered.',
     );
   });
 
