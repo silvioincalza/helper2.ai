@@ -626,6 +626,10 @@
   min-height: 6rem;
   width: 100%;
 }
+.h2-admin__research-edit .h2-admin__research-error {
+  flex-basis: 100%;
+  margin: 0;
+}
 .h2-admin__research-progress {
   display: flex;
   flex-wrap: wrap;

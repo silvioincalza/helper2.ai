@@ -4,7 +4,7 @@ import { axeViolations } from '@/test/a11y';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi, type Handler } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
-import { outcomeOf } from './ResearchDecisions';
+import { fieldOf, outcomeOf } from './ResearchDecisions';
 
 const settle = () =>
   act(async () => {
@@ -207,6 +207,37 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     expect(m.callsTo('PUT', `/admin/review-items/${ACME}/resolution`)[0]?.body).toEqual({
       status: 'ACCEPTED',
     });
+    await settle();
+  });
+
+  it('Scenario: an edited value the candidate cannot take is refused, and Accept keeps waiting', async () => {
+    researchApi();
+    renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
+    const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+    await within(detail).findByText('Proposed with AI.');
+
+    await userEvent.click(within(detail).getByRole('button', { name: 'Edit Pricing' }));
+    const value = within(detail).getByRole('textbox', { name: 'New value for Pricing' });
+    await userEvent.clear(value);
+    await userEvent.type(value, 'cheap');
+    await userEvent.click(within(detail).getByRole('button', { name: 'Save' }));
+
+    const why = within(detail).getByText(
+      'Use one of: FREE, FREEMIUM, PAID, OPEN_SOURCE_SELF_HOSTED.',
+    );
+    expect(why).toHaveAttribute('role', 'alert');
+    expect(value).toHaveAttribute('aria-invalid', 'true');
+    expect(value).toHaveAccessibleDescription(
+      'Use one of: FREE, FREEMIUM, PAID, OPEN_SOURCE_SELF_HOSTED.',
+    );
+    expect(within(detail).getByText('Decide 3 more changes to accept.')).toBeInTheDocument();
+    expect(await axeViolations(detail)).toEqual([]);
+
+    await userEvent.clear(value);
+    await userEvent.type(value, 'PAID');
+    expect(value).not.toHaveAttribute('aria-invalid');
+    await userEvent.click(within(detail).getByRole('button', { name: 'Save' }));
+    expect(within(detail).getByText('Decide 2 more changes to accept.')).toBeInTheDocument();
     await settle();
   });
 
@@ -476,6 +507,52 @@ describe('admin: research outcome (ADR 0048)', () => {
         language: 'en',
       },
     });
+  });
+
+  it('a decided value the candidate cannot take is still left to decide, and is not saved', () => {
+    const out = outcomeOf(
+      [
+        attr('type', 'PRODUCT', ['LIBRARY']),
+        attr('openSource', null, ['true']),
+        attr('tags', 'x', ['meetings']),
+        attr('title', 'Old', ['New']),
+      ],
+      {
+        type: { kind: 'edit', value: 'library' },
+        openSource: { kind: 'edit', value: 'yes' },
+        tags: { kind: 'edit', value: 'Note Taking!' },
+        title: { kind: 'confirm', value: 'New' },
+      },
+    );
+    expect(out).toEqual({
+      complete: false,
+      left: ['type', 'openSource', 'tags'],
+      edit: { title: 'New' },
+    });
+  });
+
+  it('each field takes only what the candidate edit takes', () => {
+    expect(fieldOf('type', 'LIBRARY')).toEqual({ type: 'LIBRARY' });
+    expect(fieldOf('type', 'library')).toBeNull();
+    expect(fieldOf('openSource', 'false')).toEqual({ openSource: false });
+    expect(fieldOf('openSource', 'yes')).toBeNull();
+    expect(fieldOf('tags', 'note taking, rag')).toEqual({ tags: ['note-taking', 'rag'] });
+    expect(fieldOf('tags', 'Note Taking!')).toBeNull();
+    expect(fieldOf('canonicalUrl', 'https://acme.example/')).toEqual({
+      canonicalUrl: 'https://acme.example/',
+    });
+    expect(fieldOf('canonicalUrl', 'http://acme.example/')).toBeNull();
+    expect(fieldOf('pricing', 'FREE')).toEqual({ pricing: 'FREE' });
+    expect(fieldOf('pricing', 'free')).toBeNull();
+    expect(fieldOf('license', 'Apache-2.0')).toEqual({ license: 'Apache-2.0' });
+    expect(fieldOf('license', 'MIT licence')).toBeNull();
+    expect(fieldOf('audience', 'BOTH')).toEqual({ audience: 'BOTH' });
+    expect(fieldOf('techLevel', 'EXPERT')).toBeNull();
+    expect(fieldOf('language', 'de')).toEqual({ language: 'de' });
+    expect(fieldOf('language', 'deu')).toBeNull();
+    expect(fieldOf('publishedAt', '2025-03-02')).toEqual({ publishedAt: '2025-03-02' });
+    expect(fieldOf('publishedAt', '2025-02-30')).toBeNull();
+    expect(fieldOf('title', 'x'.repeat(301))).toBeNull();
   });
 
   it('a description the admin rewrote is not marked as written with AI', () => {
