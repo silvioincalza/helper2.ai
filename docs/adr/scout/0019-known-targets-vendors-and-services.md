@@ -41,7 +41,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
    and the same rule in SQL, `KnownTarget.KEY_OF_TITLE_SQL`). A key belongs to one target. The catalog owns both
    tables; the first migration fills them with the 31 vendors and their other names. There is no list in code. The table says who added a target and when (`migration` for the first 31).
 2. **A service and a tool are targets like a vendor.** `relationship.target_kind` allows `SERVICE` and `TOOL`
-   (`V2026.12.0.1__known_target_tool.sql`). A tool is an application a resource runs in or plugs into: an editor,
+   (`V2026.11.6.1__known_target_tool.sql`). A tool is an application a resource runs in or plugs into: an editor,
    a desktop app (VS Code, Claude Desktop, Cursor). A relationship that names a known service or tool is `VERIFIED` with no
    target resource, keeps the target's one name as its title and opens no review item. It says "works with service
    X" or "works with tool X". The model never states `TOOL` (§6): what it calls a service, a person
@@ -181,7 +181,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (the agreement step)
 
-- `V2026.12.0.1__known_target_tool.sql` (`TOOL` in `known_target.kind` and `relationship.target_kind`),
+- `V2026.11.6.1__known_target_tool.sql` (`TOOL` in `known_target.kind` and `relationship.target_kind`),
   `catalog/KnownTarget.java` (`Kind.TOOL`), `catalog/usecase/LinkKnownRelationshipTargets.java` (`TOOL_NOTE`),
   `admin/web/RelationshipTargetsController.java`, `api/admin.yaml`, `frontend/src/admin/RelationshipGroups.tsx`
 

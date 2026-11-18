@@ -102,9 +102,9 @@ The schema is one file, and from the first release tag on that file must never c
    - **Forward-only from the first release tag.** While the history has no release tag `vYYYY.N.P`, V1 is edited in
      place. From the tag on, an applied migration is never edited: an edit changes its checksum, and Flyway refuses
      to start. A change is a new versioned migration, forward-only, named after the app version that ships it:
-     `V<version>.<n>__<what>.sql`, with the version main will be released as (`backend/build.gradle.kts` carries the
-     last release; the next release of main is the next `N`, `.0`) and `n` counting from 1 within it
-     (`V2026.12.0.1__known_target_tool.sql`). Flyway compares the versions part by part, so they run in release order.
+     `V<version>.<n>__<what>.sql`, with the version of the release that ships it, the one it carries on its release
+     branch (after 2026.11.5, the next patch of `release/2026.11`: 2026.11.6), and `n` counting from 1 within it
+     (`V2026.11.6.1__known_target_tool.sql`). Flyway compares the versions part by part, so they run in release order.
    - **CI holds both halves of the rule** (`.github/scripts/released-migrations.sh`, job `changes`, every pull
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other
      than `V1__schema.sql` fails. Once it has one, every versioned migration the latest release holds must be the same
