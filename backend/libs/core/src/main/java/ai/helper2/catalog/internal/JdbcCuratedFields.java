@@ -4,15 +4,44 @@ import ai.helper2.catalog.CuratedFields;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class JdbcCuratedFields implements CuratedFields {
 
+  private static final Map<String, String> VALUES =
+      Map.of(
+          "type", "type",
+          "pricing", "pricing",
+          "license", "license",
+          "openSource", "CAST(open_source AS text)",
+          "techLevel", "tech_level",
+          "audience", "audience",
+          "language", "language",
+          "description", "description",
+          "publishedAt", "to_char(published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')");
+
   private final JdbcClient jdbc;
 
   JdbcCuratedFields(JdbcClient jdbc) {
     this.jdbc = jdbc;
+  }
+
+  @Override
+  public Optional<Current> current(UUID resourceId, String field) {
+    String value = VALUES.get(field);
+    if (value == null) {
+      return Optional.empty();
+    }
+    return jdbc.sql(
+            "SELECT %s AS value, :field = ANY(curated_fields) AS curated FROM resource WHERE id = :id"
+                .formatted(value))
+        .param("field", field)
+        .param("id", resourceId)
+        .query((rs, i) -> new Current(rs.getString("value"), rs.getBoolean("curated")))
+        .optional();
   }
 
   @Override

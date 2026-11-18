@@ -89,6 +89,17 @@ class CuratedFieldApiIT extends ApiTestBase {
         .list();
   }
 
+  List<String> changes() {
+    return jdbc.sql(
+            """
+            SELECT outcome || ': ' || coalesce(before_value, '-') || ' -> ' || coalesce(after_value, '-')
+              FROM admin_audit WHERE admin_id = :a ORDER BY at, id
+            """)
+        .param("a", adminId)
+        .query(String.class)
+        .list();
+  }
+
   List<String> audit() {
     return jdbc.sql(
             "SELECT action || ' ' || outcome FROM admin_audit WHERE admin_id = :a ORDER BY at, id")
@@ -168,6 +179,20 @@ class CuratedFieldApiIT extends ApiTestBase {
           assertThat(card.getType()).isEqualTo(ResourceType.MODEL);
         });
     assertThat(audit()).containsExactly("SET_FIELD SET pricing", "SET_FIELD SET type");
+  }
+
+  @Test
+  void eachSetSaysTheValueBeforeAndAfterAndWhetherAPersonHadSetItBefore() throws Exception {
+    String before = column("coalesce(pricing, '(none)')");
+    set(fixture.resource, "pricing", "PAID").andExpect(status().isNoContent());
+    set(fixture.resource, "pricing", "FREEMIUM").andExpect(status().isNoContent());
+    set(fixture.resource, "language", "de").andExpect(status().isNoContent());
+
+    assertThat(changes())
+        .containsExactly(
+            "SET pricing: " + before + " -> PAID",
+            "SET pricing: PAID (curated) -> FREEMIUM",
+            "SET language: en -> de");
   }
 
   @Test

@@ -83,19 +83,24 @@ Two kinds of source need more care:
      index ([0023](../search/0023-catalog-full-text-index.md)).
    - **An awesome list is its own type, `AWESOME_LIST`** ("Awesome list" on the site): a curated list of links to other
      resources, not a library, a tool or an MCP server. The README rule is in one place, `AwesomeLists`, and reads the README:
-     the repository name starts with "awesome", at least 20 list items carry a link, and these items are at least half
-     of the README's text lines (headings, code blocks and lines with only images or badges are not counted). The name
-     alone never decides: a product called "Awesome Notes" has a normal README and stays what it is. 20 items is about
-     The classifier of linked repositories (above) is the one other path to `AWESOME_LIST`, and it reads the
-     description, not the README. 20 items is about the smallest awesome list worth listing; a product README has a few links, mostly in prose and badges, so half
-     of the lines being linked list items separates the two. A list the collector reads and that fails the rule stays
-     ARTICLE.
+     the repository name starts with "awesome", at least 20 list items carry a web link, and these items are at least
+     half of the README's text lines. An item is a Markdown list item, a table row or an HTML `<li>`; the lines under
+     it that are indented more (a summary, the authors, a `[[pdf]](…)` link, a sub-item without its own link) belong to
+     it and are not counted on their own. A web link is an `http` or `https` link: an anchor to a section, a link to a
+     file of the repository, an image and a badge are not. Headings and code blocks are not counted. The name alone
+     never decides: a product called "Awesome Notes" has a normal README and stays what it is. 20 items is about the
+     smallest awesome list worth listing; a product README has a few links, mostly in prose and badges, so half of the
+     lines being linked items separates the two. A list written as paragraphs, bold lines or tables under one heading
+     per entry has no list items and fails the rule. The classifier of linked repositories (above) is the one other
+     path to `AWESOME_LIST`, and it reads the description, not the README. A list the collector reads and that fails
+     the rule stays ARTICLE.
    - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
      resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
      §3). Other sources that see a GitHub repository have no README at hand and keep their own type.
    - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` reads the README of every catalog resource at
      `github.com/<owner>/awesome…` that is not `AWESOME_LIST` yet (at most 2000, most popular first), applies the rule,
-     and sets the curated type `AWESOME_LIST` with a `SET_FIELD` audit entry. A type an admin curated is never changed.
+     and sets the curated type `AWESOME_LIST` with a `SET_FIELD` audit entry that holds the type before and after. A type
+     an admin curated is never changed.
      Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
      is counted and read at the next run.
    - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its
