@@ -68,3 +68,8 @@ export function oneOf<T extends string>(
 ): T | undefined {
   return allowed.find((a) => a === value);
 }
+
+export function trimOrNull(text: string): string | null {
+  const trimmed = text.trim();
+  return trimmed === '' ? null : trimmed;
+}
