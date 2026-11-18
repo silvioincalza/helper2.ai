@@ -19,6 +19,7 @@ import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.enrichment.ValidationIssues;
+import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
@@ -114,9 +115,10 @@ class AdminUseCaseConfiguration {
       AcceptExampleDraft acceptDraft,
       IndexAcceptedCandidate indexCandidate,
       KnownTargetCandidates targetCandidates,
-      ManageKnownTargets knownTargets) {
+      ManageKnownTargets knownTargets,
+      CurateField curateField) {
     return new TransactionalResolveReview(
-        queue, resolve, acceptDraft, indexCandidate, targetCandidates, knownTargets);
+        queue, resolve, acceptDraft, indexCandidate, targetCandidates, knownTargets, curateField);
   }
 
   @Bean
@@ -208,8 +210,10 @@ class AdminUseCaseConfiguration {
         AcceptExampleDraft acceptDraft,
         IndexAcceptedCandidate indexCandidate,
         KnownTargetCandidates targetCandidates,
-        ManageKnownTargets knownTargets) {
-      super(queue, resolve, acceptDraft, indexCandidate, targetCandidates, knownTargets);
+        ManageKnownTargets knownTargets,
+        CurateField curateField) {
+      super(
+          queue, resolve, acceptDraft, indexCandidate, targetCandidates, knownTargets, curateField);
     }
 
     @Override

@@ -245,6 +245,12 @@ class RunResearchTest {
   }
 
   final class Runs implements ResearchRuns {
+
+    @Override
+    public java.util.Set<UUID> itemsWhere(ai.helper2.research.ResearchFilter filter) {
+      return java.util.Set.of();
+    }
+
     final List<ResearchStep> steps = new ArrayList<>();
     ResearchRun queued;
     ResearchResult result;

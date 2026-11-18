@@ -30,7 +30,6 @@ import {
   ResearchBar,
   ResearchCell,
   StartAllDialog,
-  matchesFilter,
   researchable,
   useResearchRuns,
 } from './ReviewResearch';
@@ -120,8 +119,14 @@ export default function ReviewQueuePage() {
   const rows = useRef(new Map<string, HTMLButtonElement>());
   const note = useRef<HTMLInputElement>(null);
   const items = useApi(
-    `review/${status}/${kind ?? ''}/${category ?? ''}/${page}`,
-    (s) => adminApi.listReviewItems({ status, kind, category }, page, PAGE_SIZE, s),
+    `review/${status}/${kind ?? ''}/${category ?? ''}/${researchFilter ?? ''}/${page}`,
+    (s) =>
+      adminApi.listReviewItems(
+        { status, kind, category, research: researchFilter },
+        page,
+        PAGE_SIZE,
+        s,
+      ),
     { cache: false },
   );
   const { retry, focusRef: heading } = useRetry(items.reload, items.loading);
@@ -137,7 +142,7 @@ export default function ReviewQueuePage() {
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const loaded = items.data?.items ?? [];
   const research = useResearchRuns(loaded.filter(researchable).map((i) => i.id));
-  const list = loaded.filter((i) => matchesFilter(researchFilter, research.runs.get(i.id)));
+  const list = loaded;
   const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
     of: undefined,
     reasons: {},
@@ -453,7 +458,7 @@ export default function ReviewQueuePage() {
           next={<RetryButton onClick={retry} />}
         />
       ) : list.length === 0 || !selected ? (
-        researchFilter && loaded.length > 0 ? (
+        researchFilter ? (
           <AdminEmpty command={command} text={t('admin.research.filterEmpty')} />
         ) : (
           <AdminEmpty command={command} text={t('admin.queueEmpty')} />

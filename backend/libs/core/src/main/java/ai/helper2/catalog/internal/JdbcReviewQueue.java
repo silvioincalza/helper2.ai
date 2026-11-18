@@ -199,6 +199,15 @@ class JdbcReviewQueue implements ReviewQueue {
 
   @Override
   public Page list(Status status, Kind kind, String category, int page, int size) {
+    return list(status, kind, category, null, page, size);
+  }
+
+  @Override
+  public Page list(Status status, Kind kind, String category, Only only, int page, int size) {
+    String[] ids =
+        only == null
+            ? new String[0]
+            : only.ids().stream().map(UUID::toString).toArray(String[]::new);
     String wantedStatus = status == null ? null : status.name();
     String wantedKind = kind == null ? null : kind.name();
     List<Item> items =
@@ -213,6 +222,9 @@ class JdbcReviewQueue implements ReviewQueue {
             .param("status", wantedStatus)
             .param("kind", wantedKind)
             .param("category", category)
+            .param("only", only != null)
+            .param("ids", ids)
+            .param("except", only != null && only.except())
             .param("size", size)
             .param("offset", (long) page * size)
             .query(JdbcReviewQueue::item)
@@ -222,6 +234,9 @@ class JdbcReviewQueue implements ReviewQueue {
             .param("status", wantedStatus)
             .param("kind", wantedKind)
             .param("category", category)
+            .param("only", only != null)
+            .param("ids", ids)
+            .param("except", only != null && only.except())
             .query(Long.class)
             .single();
     return new Page(items, total);
@@ -235,6 +250,8 @@ class JdbcReviewQueue implements ReviewQueue {
               WHEN i.kind = 'RESOURCE_CANDIDATE'
               THEN coalesce(i.details -> 'tags' @> jsonb_build_array(CAST(:category AS text)), false)
               ELSE false END)
+        AND (NOT CAST(:only AS boolean)
+             OR (CAST(i.id AS text) = ANY(CAST(:ids AS text[]))) <> CAST(:except AS boolean))
       """;
 
   @Override
