@@ -349,6 +349,25 @@ class RunResearchTest {
   }
 
   @Test
+  void aToolErrorIsStoredCleanedLikeItsText() {
+    model.turns.add(callTool("read_page"));
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    research(
+            tool(
+                "read_page",
+                () -> {
+                  throw new IllegalStateException("403 from api: write to jane.doe@acme.dev");
+                }))
+        .runNext();
+
+    assertThat(runs.steps.get(1).error())
+        .contains("IllegalStateException", "[email]")
+        .doesNotContain("jane.doe@acme.dev");
+  }
+
+  @Test
   void nothingQueuedIsNoRun() {
     assertThat(research().runNext()).isFalse();
   }

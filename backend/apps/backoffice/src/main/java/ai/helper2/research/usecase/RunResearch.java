@@ -85,7 +85,8 @@ public final class RunResearch {
     } catch (ResearchModel.Unavailable e) {
       loop.fail("model unavailable: " + e.getMessage());
     } catch (RuntimeException e) {
-      loop.fail("research stopped: " + e.getClass().getSimpleName() + ": " + clip(e.getMessage()));
+      loop.fail(
+          safe("research stopped: " + e.getClass().getSimpleName() + ": " + clip(e.getMessage())));
     }
   }
 
@@ -192,14 +193,14 @@ public final class RunResearch {
       String error = null;
       if (tool == null) {
         out = ResearchTool.Output.error("no tool named " + clip(call.name()));
-        error = out.text();
+        error = safe(out.text());
       } else {
         try {
           out = tool.call(call.arguments());
         } catch (RuntimeException e) {
           out =
               ResearchTool.Output.error(e.getClass().getSimpleName() + ": " + clip(e.getMessage()));
-          error = out.text();
+          error = safe(out.text());
         }
       }
       String text = safe(out.text());
@@ -222,7 +223,10 @@ public final class RunResearch {
           ResearchStep.Kind.TOOL_CALL,
           call.name(),
           call.arguments(),
-          (out.url() == null ? "" : "url: " + out.url() + "\n\n") + text,
+          (out.url() == null
+                  ? ""
+                  : "url: " + UntrustedText.untrusted(out.url(), MAX_URL_TO_MODEL) + "\n\n")
+              + text,
           error,
           at,
           null,
