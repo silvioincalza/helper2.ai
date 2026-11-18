@@ -89,6 +89,8 @@ them assigned by code first, and measured on labelled items before a model is ev
    discovery collectors already used, so the words and their precompiled
    patterns exist once. Startup fails on an id that is not lower-case words with hyphens, on two categories with one
    id, and on the id `unknown`.
+   A category's `family` is written as the family id, exactly (`hosting-and-infra`). Another spelling stops both apps
+   at startup.
 14. **Assigned by code.** `CategoryMatcher` (shared kernel, pure, no model) gives a resource a category when:
    - a collector of that category found it (`discovery-<id>`, as a record's source or in an accepted candidate's
      `foundBy`);
