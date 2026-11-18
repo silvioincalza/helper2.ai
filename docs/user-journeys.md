@@ -208,7 +208,7 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    take before anything starts. Each row shows its research in a pill: Queued, "Running · step 4", Failed with the
    reason, Cancelled, or the verdict ("AI: Keep", "AI: Reject", "AI: Duplicate"). A queued or running row has
    **Watch live** and **Cancel**; a finished or cancelled one links to its steps and offers **Research again**.
-   The **Research** filter asks the server across every page: Done · Keep, Done · Reject, Done · Duplicate, Queued
+   The **Research** filter asks the server across every page: AI: Keep, AI: Reject, AI: Duplicate, Queued
    or running, Not researched. A new filter goes back to the first page.
    A researched item shows the proposal under "Proposed with AI.", then the verdict and its reason, "Already listed
    as" with a link for a duplicate, and one row per value: now (struck through), proposed, its status (Confirmed,
@@ -221,7 +221,7 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    and response as plain text, filtered by kind or errors, each box scrollable with the keyboard; the model's
    answers are marked "Written with AI". A running research is followed live. **Back to the review queue** returns
    to the same filter and page.
-   **Reject 3 the AI marked reject…** lists those items of the page with their reasons, under "Reasons
+   **Reject 3 the AI marked as reject…** lists those items of the page with their reasons, under "Reasons
    written with AI."; any can be unticked, and nothing is rejected before **Reject 3 items**. Keep and duplicate are
    decided one item at a time.
 4. **Scout runs**: sees run history with items seen/changed and failures. **Run all now** starts every enabled collector; **Run now** on a source's newest run starts only that source. The listing follows a started run until it ends. One run at a time: while a start is pending or a run is running, every start button waits, and the page says a run is in progress.

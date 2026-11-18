@@ -96,7 +96,7 @@ export function RelationshipGroups({
   };
 
   const doneStatus = (
-    <p ref={doneLine} role="status" tabIndex={-1} className="h2-admin__bulk-result">
+    <p ref={doneLine} tabIndex={-1} className="h2-admin__bulk-result">
       {done}
     </p>
   );

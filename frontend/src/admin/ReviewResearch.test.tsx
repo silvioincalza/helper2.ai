@@ -231,10 +231,10 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Reject 1 the AI marked reject…' }),
+      await screen.findByRole('button', { name: 'Reject 1 the AI marked as reject…' }),
     );
     const dialog = await screen.findByRole('dialog', {
-      name: 'Reject 1 item researched as reject?',
+      name: 'Reject 1 item the AI marked as reject?',
     });
     expect(
       await within(dialog).findByText('A list of other note takers, not one product.'),
@@ -326,6 +326,26 @@ describe('admin: research journeys in the review queue (ADR 0048)', () => {
     await settle();
   });
 
+  it('Scenario: the detail pane keeps a focused item clear of the decide bar, as tall as it is', async () => {
+    const real = HTMLElement.prototype.getBoundingClientRect;
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('h2-admin__decide')
+          ? ({ height: 172 } as DOMRect)
+          : real.call(this);
+      });
+    try {
+      researchApi();
+      renderAdmin(QUEUE);
+      const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+      await waitFor(() => expect(detail.style.getPropertyValue('--decide-h')).toBe('172px'));
+      await settle();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('Scenario: a while changes wait says why nothing happened', async () => {
     const m = researchApi();
     renderAdmin(QUEUE);
@@ -396,10 +416,10 @@ describe('admin: research journeys in the review queue (ADR 0048)', () => {
     researchApi();
     renderAdmin(QUEUE);
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Reject 1 the AI marked reject…' }),
+      await screen.findByRole('button', { name: 'Reject 1 the AI marked as reject…' }),
     );
     const dialog = await screen.findByRole('dialog', {
-      name: 'Reject 1 item researched as reject?',
+      name: 'Reject 1 item the AI marked as reject?',
     });
     expect(within(dialog).getByText('Reasons written with AI.')).toBeInTheDocument();
     const reason = await within(dialog).findByText('A list of other note takers, not one product.');

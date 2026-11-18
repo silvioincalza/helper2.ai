@@ -139,7 +139,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
     (signal) => adminApi.getReviewResearch(runId, signal),
     { cache: false },
   );
-  const detail: ReviewResearchDetail | undefined = loaded.data;
+  const detail: ReviewResearchDetail | undefined = loaded.data ?? loaded.previous;
   const [streamed, setStreamed] = useState<ReviewResearchStep[]>([]);
   const [live, setLive] = useState<ReviewResearchRun | null>(null);
   const [stopped, setStopped] = useState(false);
@@ -147,6 +147,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
   const [open, setOpen] = useState<ReadonlySet<number>>(new Set());
   const reload = loaded.reload;
   const lastSeq = useRef(0);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     if (!detail || !isActive(detail.run)) return;
@@ -186,6 +187,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
   const steps = streamed.reduce(merged, detail.steps);
   const reconnect = () => {
     setStopped(false);
+    heading.current?.focus();
     reload();
   };
 
@@ -203,7 +205,9 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
   return (
     <section className="h2-admin__part h2-admin__trace" aria-labelledby="rt-h">
       <BackLink />
-      <h2 id="rt-h">{t('admin.research.trace.title')}</h2>
+      <h2 id="rt-h" ref={heading} tabIndex={-1}>
+        {t('admin.research.trace.title')}
+      </h2>
       <p className="h2-admin__trace-meta">
         <StatusPill
           tone={run.status === 'DONE' ? 'ok' : run.status === 'FAILED' ? 'warn' : 'later'}
@@ -313,11 +317,14 @@ function TraceStep({
         {s.error && <p className="h2-admin__research-error">{s.error}</p>}
         <div className="h2-admin__trace-io">
           <div>
-            <p className="h2-admin__trace-label">{t('admin.research.trace.request')}</p>
+            <p id={`rt-${s.seq}-request`} className="h2-admin__trace-label">
+              {t('admin.research.trace.request')}
+              <span className="sr-only">{t('admin.research.trace.stepOf', { seq: s.seq })}</span>
+            </p>
             <pre
               className={pre}
-              role="region"
-              aria-label={t('admin.research.trace.requestOf', { seq: s.seq })}
+              role="group"
+              aria-labelledby={`rt-${s.seq}-request`}
               // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
               tabIndex={0}
             >
@@ -325,14 +332,15 @@ function TraceStep({
             </pre>
           </div>
           <div {...(byModel ? { 'data-ai-generated': 'true', 'data-ai-model': s.name } : {})}>
-            <p className="h2-admin__trace-label">
+            <p id={`rt-${s.seq}-response`} className="h2-admin__trace-label">
               {t('admin.research.trace.response')}
+              <span className="sr-only">{t('admin.research.trace.stepOf', { seq: s.seq })}</span>
               {byModel && <> · {t('admin.research.trace.byModel')}</>}
             </p>
             <pre
               className={pre}
-              role="region"
-              aria-label={t('admin.research.trace.responseOf', { seq: s.seq })}
+              role="group"
+              aria-labelledby={`rt-${s.seq}-response`}
               // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
               tabIndex={0}
             >

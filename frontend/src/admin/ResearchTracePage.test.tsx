@@ -94,14 +94,14 @@ describe('admin: every step of a research run (ADR 0048)', () => {
     renderAdmin(`/admin/review/research/${RUN}`);
     expect(await screen.findByText('web_search')).toBeInTheDocument();
     expect(m.callsTo('GET', `/admin/review-research/${RUN}/events`)[0]?.search).toBe('?afterSeq=1');
-    const answer = screen.getByRole('region', { name: 'Response, step 1' });
+    const answer = screen.getByRole('group', { name: 'Response, step 1 · Written with AI' });
     expect(answer).toHaveAttribute('tabindex', '0');
     expect(answer.closest('[data-ai-generated="true"]')).toHaveAttribute(
       'data-ai-model',
       'nvidia/Nemotron-3.5-Super',
     );
     expect(
-      screen.getByRole('region', { name: 'Response, step 2' }).closest('[data-ai-generated]'),
+      screen.getByRole('group', { name: 'Response, step 2' }).closest('[data-ai-generated]'),
     ).toBeNull();
     await settle();
     expect(await axeViolations(document.body)).toEqual([]);
@@ -133,6 +133,9 @@ describe('admin: every step of a research run (ADR 0048)', () => {
       await act(() => vi.advanceTimersByTimeAsync(GUIDE_IDLE_TIMEOUT_MS + 100));
       expect(await screen.findByRole('alert')).toHaveTextContent('Live updates stopped.');
       await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
+      expect(document.activeElement).toBe(
+        screen.getByRole('heading', { name: 'Every step of the research' }),
+      );
       await vi.waitFor(() =>
         expect(m.callsTo('GET', `/admin/review-research/${RUN}/events`)).toHaveLength(2),
       );
