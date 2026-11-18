@@ -154,8 +154,17 @@ export function toApiParams(s: SearchState): URLSearchParams {
 export function patchState(s: SearchState, patch: Partial<SearchState>): SearchState {
   const next = { ...s, ...patch };
   if (!('page' in patch)) next.page = 0;
-  if (patch.q !== undefined && patch.q !== s.q && !('path' in patch)) next.path = '';
-  return next;
+  return patch.q !== undefined && patch.q !== s.q ? withNewWords(next, patch) : next;
+}
+
+function withNewWords(next: SearchState, patch: Partial<SearchState>): SearchState {
+  return {
+    ...next,
+    path: 'path' in patch ? next.path : '',
+    filters: 'filters' in patch ? next.filters : emptyFilters(),
+    openSource: 'openSource' in patch ? next.openSource : '',
+    updatedAfter: 'updatedAfter' in patch ? next.updatedAfter : '',
+  };
 }
 
 export function toggleFilter(s: SearchState, key: MultiKey, value: string): SearchState {
