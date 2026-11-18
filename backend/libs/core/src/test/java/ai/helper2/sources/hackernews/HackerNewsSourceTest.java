@@ -34,7 +34,8 @@ class HackerNewsSourceTest {
         new SourceSettings(
             true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30)),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
-        SourceFixtures.CLOCK);
+        SourceFixtures.CLOCK,
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   static final String STORIES =
@@ -65,6 +66,25 @@ class HackerNewsSourceTest {
     assertThat(h.getType()).isEqualTo(ResourceType.NEWS);
     assertThat(h.getPublished().getValue()).isEqualTo(Instant.parse("2026-09-03T17:01:22Z"));
     assertThat(h.getRank()).isZero();
+  }
+
+  @Test
+  void aStoryLinkingToAShadowLibraryIsLeftOut() {
+    server.route(
+        "/api/v1/search",
+        FixtureServer.Reply.ok(
+            """
+            {"hits":[
+              {"objectID":"1","title":"LLM engineering: RAG and AI agents, free PDF",
+               "url":"https://de.z-lib.fm/book/123","created_at":"2026-09-03T17:01:22.000Z"},
+              {"objectID":"2","title":"Ollama runs Gemma locally",
+               "url":"https://ollama.com/blog/gemma","created_at":"2026-09-06T08:00:00.000Z"}
+            ]}
+            """));
+
+    List<SourceHit> hits = source().search(new SourceQuery("llm", List.of(), null, 10));
+
+    assertThat(hits).extracting(SourceHit::getExternalId).containsExactly("2");
   }
 
   @Test

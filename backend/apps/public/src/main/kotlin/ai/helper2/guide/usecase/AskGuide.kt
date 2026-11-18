@@ -46,6 +46,7 @@ import ai.helper2.search.NoticeCode
 import ai.helper2.search.QueryAnalyzer
 import ai.helper2.search.SearchFilters
 import ai.helper2.search.SearchOutcome
+import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.Presence
@@ -78,6 +79,7 @@ class AskGuide(
   private val quoteRecords: QuoteRecords = QuoteRecords.NONE,
   private val quoteOrigins: QuoteOrigins = QuoteOrigins(),
   private val judge: GuideJudge = GuideJudge.NONE,
+  private val shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
 ) {
 
   val answersWithModel: Boolean
@@ -192,7 +194,7 @@ class AskGuide(
     tally: Tally,
   ): GuideAnswer {
     val key = cacheKey(q)
-    cache?.get(key)?.let {
+    cached(key)?.let {
       tally.cacheResult = "exact"
       tally.outcome = "cached"
       return it
@@ -231,6 +233,9 @@ class AskGuide(
       turn.settle()
     }
   }
+
+  private fun cached(key: String): GuideAnswer? =
+    cache?.get(key)?.takeUnless { it.citesAShadowLibrary(shadowLibraries) }
 
   private fun cacheKey(q: Question): String {
     val config =
@@ -431,7 +436,7 @@ class AskGuide(
       return null
     val probe = similar.probe(q.text, configHash, q.path, r.key(q)) ?: return null
     asked.probe = probe
-    val stored = similar.nearest(probe)?.let(cache::get) ?: return null
+    val stored = similar.nearest(probe)?.let(::cached) ?: return null
     val answer = stored.inTheWordsOf(r.subjects, r.constraints) ?: return null
     asked.reused = true
     return answer.copy(

@@ -12,6 +12,10 @@ public interface ResearchTool {
 
   Output call(String arguments);
 
+  default int maxCallsPerRun() {
+    return Integer.MAX_VALUE;
+  }
+
   record Output(String text, @Nullable String url) {
 
     public static Output error(String message) {

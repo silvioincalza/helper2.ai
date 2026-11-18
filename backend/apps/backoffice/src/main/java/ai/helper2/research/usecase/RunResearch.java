@@ -20,12 +20,16 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 public final class RunResearch {
 
@@ -36,6 +40,12 @@ public final class RunResearch {
   static final int MAX_URL_TO_MODEL = 2_000;
   static final String NO_TEXT = "the tool returned no readable text";
   static final String NOT_RUN = "not run: the tool calls are used up";
+  static final String REPEATED = "not run: the same call was made before; use its earlier result";
+  static final int MAX_REFUSED_TURNS = 2;
+  static final String ANSWER_NOW_REFUSED =
+      "Your last calls were not run: they repeat earlier calls or pass a tool's limit. Answer now with"
+          + " the JSON object only. Propose only what the evidence you have read supports; leave out the"
+          + " rest.";
   static final String ANSWER_NOW =
       "You have used all "
           + MAX_TOOL_CALLS
@@ -96,6 +106,8 @@ public final class RunResearch {
     private final Instant started;
     private final List<Message> conversation = new ArrayList<>();
     private final Map<String, Evidence> evidence = new LinkedHashMap<>();
+    private final Set<String> made = new HashSet<>();
+    private final Map<String, Integer> callsPerTool = new HashMap<>();
     private int seq;
     private int toolCalls;
     private int promptTokens;
@@ -118,6 +130,7 @@ public final class RunResearch {
       conversation.add(new Message.User(subjectText.apply(subject)));
       boolean retried = false;
       boolean answerNow = false;
+      int refusedTurns = 0;
       while (true) {
         if (runs.isCancelled(run.id())) {
           return;
@@ -133,16 +146,17 @@ public final class RunResearch {
             return;
           }
           conversation.add(new Message.Assistant(turn.text(), turn.calls()));
+          boolean anyRan = false;
           for (ToolCall call : turn.calls()) {
-            if (toolCalls < MAX_TOOL_CALLS) {
-              toolCall(call);
-            } else {
-              notRun(call);
-            }
+            anyRan |= handle(call);
           }
+          refusedTurns = anyRan ? 0 : refusedTurns + 1;
           if (toolCalls >= MAX_TOOL_CALLS) {
             answerNow = true;
             conversation.add(new Message.User(ANSWER_NOW));
+          } else if (refusedTurns >= MAX_REFUSED_TURNS) {
+            answerNow = true;
+            conversation.add(new Message.User(ANSWER_NOW_REFUSED));
           }
           continue;
         }
@@ -233,15 +247,42 @@ public final class RunResearch {
           null);
     }
 
-    private void notRun(ToolCall call) {
+    private boolean handle(ToolCall call) {
+      if (toolCalls >= MAX_TOOL_CALLS) {
+        notRun(call, NOT_RUN);
+        return false;
+      }
+      String refused = refusal(call);
+      if (refused != null) {
+        toolCalls++;
+        notRun(call, refused);
+        return false;
+      }
+      toolCall(call);
+      return true;
+    }
+
+    private @Nullable String refusal(ToolCall call) {
+      if (!made.add(call.name() + " " + call.arguments().strip())) {
+        return REPEATED;
+      }
+      ResearchTool tool = tools.get(call.name());
+      if (tool == null) {
+        return null;
+      }
+      int calls = callsPerTool.merge(call.name(), 1, Integer::sum);
+      return calls > tool.maxCallsPerRun() ? limitReached(tool) : null;
+    }
+
+    private void notRun(ToolCall call, String reason) {
       Instant at = clock.instant();
-      conversation.add(new Message.ToolResult(call.id(), call.name(), NOT_RUN));
+      conversation.add(new Message.ToolResult(call.id(), call.name(), reason));
       step(
           ResearchStep.Kind.TOOL_CALL,
           call.name(),
           call.arguments(),
-          NOT_RUN,
-          NOT_RUN,
+          reason,
+          reason,
           at,
           null,
           null);
@@ -292,6 +333,14 @@ public final class RunResearch {
               completion,
               at));
     }
+  }
+
+  static String limitReached(ResearchTool tool) {
+    return "not run: "
+        + tool.name()
+        + " is limited to "
+        + tool.maxCallsPerRun()
+        + " calls a run; use what you have read, or answer";
   }
 
   static String render(List<Message> messages) {

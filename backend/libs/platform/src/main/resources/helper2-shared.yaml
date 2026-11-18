@@ -679,6 +679,8 @@ resilience4j:
       source-demo-down: {base-config: source}
 ---
 helper2:
+  cluster-lock:
+    table: shedlock
   examples:
     pending-delay: ${H2_EXAMPLES_PENDING_DELAY:PT1M}
     pending-every: ${H2_EXAMPLES_PENDING_EVERY:PT5M}

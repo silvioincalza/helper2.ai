@@ -32,6 +32,7 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.usecase.SearchResources;
 import ai.helper2.shared.ResourceId;
@@ -161,7 +162,8 @@ class GuideConfiguration {
       BuildInfoProperties build,
       GuideProperties settings,
       Resources resources,
-      CallCounter budgetCounter) {
+      CallCounter budgetCounter,
+      ShadowLibraries shadowLibraries) {
     boolean nativeSchema = llmProperties.nativeSchema();
     int chooseMaxTokens = settings.chooseMaxTokens();
     int maxCandidates = settings.maxCandidates();
@@ -241,7 +243,8 @@ class GuideConfiguration {
         guideModel == null
             ? GuideJudge.NONE
             : guideJudge(
-                model, settings.judge(), clock, budgetCounter, metrics, resilience, meters));
+                model, settings.judge(), clock, budgetCounter, metrics, resilience, meters),
+        shadowLibraries);
   }
 
   static GuideJudge guideJudge(

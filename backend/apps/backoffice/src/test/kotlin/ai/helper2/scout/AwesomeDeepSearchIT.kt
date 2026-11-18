@@ -7,6 +7,7 @@ import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.CategoryMatcher
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
+import ai.helper2.sources.SourceFixtures
 import ai.helper2.sources.classifier.RepoClassifier
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector
 import ai.helper2.sources.support.RunInterval
@@ -126,6 +127,7 @@ class AwesomeDeepSearchIT {
       categories,
       SimpleMeterRegistry(),
       SeedDiscoveryHosts.store(),
+      SourceFixtures.SHADOW_LIBRARIES,
     )
 
   private class MemStore : ScoutStore {

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.ShadowLibrary;
+import ai.helper2.search.ShadowLibraryNames;
 import ai.helper2.search.ShadowLibraryStore;
 import ai.helper2.testing.AsBackOffice;
 import java.time.Instant;
@@ -35,16 +36,13 @@ class JdbcShadowLibraryStoreIT {
   @Test
   void theFirstListIsInEveryDatabaseAndTheSearchReadsItAtStartup() {
     assertThat(store.names())
-        .contains(
-            "z-lib",
-            "z-library",
-            "zlibrary",
-            "1lib",
-            "singlelogin",
-            "libgen",
-            "sci-hub",
-            "annas-archive",
-            "pdfdrive");
+        .as("the names a list starts from before its first read")
+        .containsAll(ShadowLibraryNames.SEEDED);
+    assertThat(
+            store.all().stream()
+                .filter(l -> l.getAddedBy().equals("migration"))
+                .map(ShadowLibrary::getName))
+        .containsExactlyInAnyOrderElementsOf(ShadowLibraryNames.SEEDED);
     assertThat(store.all())
         .filteredOn(l -> l.getName().equals("libgen"))
         .extracting(ShadowLibrary::getAddedBy)

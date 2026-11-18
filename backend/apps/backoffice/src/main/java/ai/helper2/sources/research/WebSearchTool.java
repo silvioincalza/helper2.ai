@@ -17,6 +17,7 @@ public final class WebSearchTool implements ResearchTool {
   public static final String FEATURE = "review-research";
   static final String POLICY = "research-web-search";
   private static final int RESULTS = 8;
+  static final int MAX_CALLS_PER_RUN = 4;
 
   private final RestClient http;
   private final ScoutLiveWebCredits credits;
@@ -55,6 +56,11 @@ public final class WebSearchTool implements ResearchTool {
     {"type":"object","properties":{"query":{"type":"string","description":"The search, a few words"}},\
     "required":["query"]}\
     """;
+  }
+
+  @Override
+  public int maxCallsPerRun() {
+    return MAX_CALLS_PER_RUN;
   }
 
   @Override

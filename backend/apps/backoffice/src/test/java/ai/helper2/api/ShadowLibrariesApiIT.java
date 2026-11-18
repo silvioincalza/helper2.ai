@@ -124,6 +124,21 @@ class ShadowLibrariesApiIT extends ApiTestBase {
   }
 
   @Test
+  void aNameASourceUsesIsRefusedSoNoTypoHidesASource() throws Exception {
+    for (String name : new String[] {"github", "huggingface", "npmjs", "arxiv", "ycombinator"}) {
+      mvc.perform(
+              post(BASE)
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"name\":\"" + name + "\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("a source")));
+    }
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
   void onlyAdminsChangeTheListAndOnlyWithTheCsrfToken() throws Exception {
     String body = "{\"name\":\"" + NAME + "\"}";
     mvc.perform(get(BASE)).andExpect(status().isUnauthorized());

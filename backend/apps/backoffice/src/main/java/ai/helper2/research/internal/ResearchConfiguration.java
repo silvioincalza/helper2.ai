@@ -3,6 +3,7 @@ package ai.helper2.research.internal;
 import ai.helper2.catalog.KnownTargets;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.DailyJob;
+import ai.helper2.platform.config.LlmProperties;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
@@ -68,7 +69,8 @@ class ResearchConfiguration {
       Clock clock,
       CallCounter counter,
       ModelCallMetrics metrics,
-      Resilience resilience) {
+      Resilience resilience,
+      LlmProperties llmProperties) {
     IntSupplier limit =
         runtime.declare(RuntimeSetting.REVIEW_RESEARCH_DAILY_MODEL_CALLS, p.dailyModelCalls());
     ChatModel model = chatModel.getIfAvailable();
@@ -84,7 +86,8 @@ class ResearchConfiguration {
         new DailyBudget(limit, clock, "review-research", counter),
         metrics,
         resilience,
-        JsonMapper.builder().build());
+        JsonMapper.builder().build(),
+        llmProperties.nativeSchema());
   }
 
   @Bean

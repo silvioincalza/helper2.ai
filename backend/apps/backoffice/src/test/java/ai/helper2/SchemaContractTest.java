@@ -44,7 +44,8 @@ class SchemaContractTest {
 
   static final Path SCHEMA = BackendSources.migration("V1__schema.sql");
 
-  static final Set<String> LIBRARY_TABLES = Set.of("flyway_schema_history", "shedlock");
+  static final Set<String> LIBRARY_TABLES =
+      Set.of("flyway_schema_history", "shedlock", "public_app_lock");
 
   static JdbcClient jdbc;
 

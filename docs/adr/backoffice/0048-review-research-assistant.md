@@ -49,8 +49,11 @@ tool answered, and must confirm every value before it reaches the catalog.
    the daily cap of model calls, one more call when the final answer is not the JSON asked for), and the loop works
    with any OpenAI-compatible model. After the 12th tool call the model gets one more call with no tools and is told
    to answer with what it has read. The run keeps its evidence instead of failing, and the check still drops every
-   value it cannot cite. A tool call past the 12th is not run: it is stored with the error "not run". A model that
-   still asks for a tool fails the run. A model that cannot call tools fails the eval and is not used. The prompt is
+   value it cannot cite. On that call the model must answer in the JSON schema of the answer when the provider
+   supports it (`H2_NEBIUS_NATIVE_SCHEMA`), so the answer can be read. A tool call past the 12th is not run: it is
+   stored with the error "not run". So is the same call made a second time, and a call past a tool's own limit for
+   the run (`web_search`: 4); both still count among the 12. After two turns in which no call ran, the model gets the
+   same last call with no tools at once. A model that still asks for a tool fails the run. A model that cannot call tools fails the eval and is not used. The prompt is
    `prompts/research/research.txt`.
 5. **Every step is stored and shown.** `review_research_step` holds, per step: the sequence, the kind (`MODEL_CALL`,
    `TOOL_CALL`, `CHECK`), the request, the response, the duration, the tokens and the error. A response is cut at
@@ -74,7 +77,7 @@ tool answered, and must confirm every value before it reaches the catalog.
    open source, licence, description, tags, language, published date, duplicate of.
 7. **Applying.** The detail pane of the review queue shows the verdict and one row per attribute: the value now, the
    proposed value, its status and its quotes. The admin confirms, edits or keeps each changed attribute (keys `c`, `e`
-   and `u`: `k` stays "previous item"); a conflict needs a pick first. Accept is enabled when every changed attribute
+   and `u`; the queue keys do nothing inside the proposal); a conflict needs a pick first. Accept is enabled when every changed attribute
    has a decision, and says how many are left. On Accept, every confirmed value goes into the candidate through
    `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path
    ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is
@@ -87,10 +90,11 @@ tool answered, and must confirm every value before it reaches the catalog.
 8. **Batch apply: rejects only.** The research bar offers to reject the items of the page whose verdict is reject. The
    list of items with their reasons is shown first, and the admin can untick any; nothing is rejected before the admin
    confirms it. Keep and duplicate are decided one item at a time. The research bar also starts research for the
-   picked items, the page, or every open candidate after the count and the most model calls are shown. Each row
-   shows its research (queued, running with its step, the verdict, failed with the reason, cancel, research again),
-   read every 2 seconds while a run is active. The Research filter (done keep, done reject, not researched) reads the
-   loaded page only.
+   picked items, the page, or every open candidate after the count and the most model calls are shown. The picked
+   items and the page leave out the items already researched or running; a row keeps its own research again. Each
+   row shows its research (queued, running with its step, the verdict, failed with the reason, cancel, watch live,
+   research again), read every 2 seconds while a run is active. The Research filter (keep, reject,
+   duplicate, queued or running, not researched) is the server's filter of §7.
 9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
    changes, and ends with the run. It reads new rows from Postgres once a second, so it works with any number of back
    office pods and needs no broker. The page `/admin/review/research/{runId}` shows every step, request and response

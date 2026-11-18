@@ -1,5 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { axeViolations } from '@/test/a11y';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi, type Handler } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
@@ -209,7 +210,7 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     await settle();
   });
 
-  it('Scenario: the keys c and u decide the next change, and k still moves up the list', async () => {
+  it('Scenario: the keys c and u decide the next change, and queue keys stay in the research', async () => {
     researchApi();
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
     const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
@@ -230,10 +231,10 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Reject the 1 researched as reject…' }),
+      await screen.findByRole('button', { name: 'Reject 1 the AI marked as reject…' }),
     );
     const dialog = await screen.findByRole('dialog', {
-      name: 'Reject 1 item researched as reject?',
+      name: 'Reject 1 item the AI marked as reject?',
     });
     expect(
       await within(dialog).findByText('A list of other note takers, not one product.'),
@@ -276,6 +277,156 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     await settle();
     expect(screen.queryByRole('checkbox', { name: /AcmeTeam/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: /Free AI Note Taker/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('admin: research journeys in the review queue (ADR 0048)', () => {
+  const QUEUE = '/admin/review?kind=RESOURCE_CANDIDATE';
+
+  it('Scenario: decisions stay with their run across j, k and the steps page', async () => {
+    researchApi();
+    const { container } = renderAdmin(QUEUE);
+    const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+    await userEvent.click(await within(detail).findByRole('button', { name: 'Confirm Title' }));
+    expect(within(detail).getByText('1 of 3 changes decided')).toBeInTheDocument();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+
+    act(() => screen.getByRole('checkbox', { name: /AcmeTeam/ }).focus());
+    await userEvent.keyboard('j');
+    expect(await screen.findByRole('region', { name: /Free AI Note Taker/ })).toBeInTheDocument();
+    await userEvent.keyboard('k');
+    const back = await screen.findByRole('region', { name: /AcmeTeam/ });
+    expect(await within(back).findByText('1 of 3 changes decided')).toBeInTheDocument();
+
+    await userEvent.click(within(back).getByRole('link', { name: 'Show every step' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Back to the review queue' }));
+    const again = await screen.findByRole('region', { name: /AcmeTeam/ });
+    expect(await within(again).findByText('1 of 3 changes decided')).toBeInTheDocument();
+    await settle();
+  });
+
+  it('Scenario: focus moves to the next change, back to an undone one, and to Accept at the end', async () => {
+    const m = researchApi();
+    renderAdmin(QUEUE);
+    const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+    await userEvent.click(await within(detail).findByRole('button', { name: 'Confirm Title' }));
+    expect(within(detail).getByRole('button', { name: 'Confirm Pricing' })).toHaveFocus();
+    await userEvent.keyboard('a');
+    expect(m.callsTo('PUT', `/admin/review-items/${ACME}/resolution`)).toHaveLength(0);
+
+    await userEvent.click(within(detail).getByRole('button', { name: 'Undo Title' }));
+    expect(within(detail).getByRole('button', { name: 'Confirm Title' })).toHaveFocus();
+
+    await userEvent.click(within(detail).getByRole('button', { name: 'Keep the rest as now (3)' }));
+    expect(within(detail).getByText('3 of 3 changes decided')).toBeInTheDocument();
+    expect(
+      within(detail).getByRole('button', { name: /Accept with the confirmed values/ }),
+    ).toHaveFocus();
+    await settle();
+  });
+
+  it('Scenario: the detail pane keeps a focused item clear of the decide bar, as tall as it is', async () => {
+    const real = HTMLElement.prototype.getBoundingClientRect;
+    const spy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('h2-admin__decide')
+          ? ({ height: 172 } as DOMRect)
+          : real.call(this);
+      });
+    try {
+      researchApi();
+      renderAdmin(QUEUE);
+      const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+      await waitFor(() => expect(detail.style.getPropertyValue('--decide-h')).toBe('172px'));
+      await settle();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('Scenario: a while changes wait says why nothing happened', async () => {
+    const m = researchApi();
+    renderAdmin(QUEUE);
+    const detail = await screen.findByRole('region', { name: /AcmeTeam/ });
+    const accept = await within(detail).findByRole('button', {
+      name: /Accept with the confirmed values/,
+    });
+    act(() => accept.focus());
+    await userEvent.keyboard('a');
+    expect(screen.getAllByText('Decide 3 more changes to accept.')).toHaveLength(2);
+    expect(m.callsTo('PUT', `/admin/review-items/${ACME}/resolution`)).toHaveLength(0);
+    await settle();
+  });
+
+  it('Scenario: research for this page leaves out the items already researched', async () => {
+    const m = researchApi({ 'POST /admin/review-research': () => ({ runs: [] }) });
+    renderAdmin(QUEUE);
+    const page = await screen.findByRole('button', { name: 'Research this page (1)' });
+    await waitFor(() => expect(page).toHaveAccessibleDescription('1 new, 2 already researched'));
+    expect(screen.getAllByRole('button', { name: /^Research again/ })).toHaveLength(2);
+    await userEvent.click(page);
+    expect(m.callsTo('POST', '/admin/review-research')[0]?.body).toEqual({
+      itemIds: [FRESH],
+      allOpen: false,
+    });
+    await settle();
+  });
+
+  it('Scenario: a queued run can be watched live, and a cancelled one still shows its steps', async () => {
+    researchApi({
+      'GET /admin/review-research': () => ({
+        runs: [
+          { ...run(RUN_ACME, ACME, 'KEEP'), status: 'QUEUED', verdict: null },
+          { ...run(RUN_LIST, LIST, 'REJECT'), status: 'CANCELLED', verdict: null },
+        ],
+      }),
+    });
+    renderAdmin(QUEUE);
+    expect(await screen.findAllByRole('link', { name: 'Watch live' })).not.toHaveLength(0);
+    for (const live of screen.getAllByRole('link', { name: 'Watch live' }))
+      expect(live).toHaveAttribute('href', `/admin/review/research/${RUN_ACME}`);
+    expect(screen.getByRole('link', { name: '10 steps' })).toHaveAttribute(
+      'href',
+      `/admin/review/research/${RUN_LIST}`,
+    );
+    expect(
+      screen.getByRole('button', { name: /^Research New ARTICLE found by discovery/ }),
+    ).toBeInTheDocument();
+    await settle();
+  });
+
+  it('Scenario: a research filter that matches nothing can be cleared, and a new filter goes back to the first page', async () => {
+    researchApi({
+      'GET /admin/review-items': ({ url }) =>
+        url.searchParams.get('research') ? { items: [], total: 0 } : ITEMS,
+    });
+    const { params } = renderAdmin(`${QUEUE}&research=DUPLICATE&page=2`);
+    expect(await screen.findByText('No item matches this research filter.')).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Research'), 'Queued or running');
+    expect(params().get('research')).toBe('ACTIVE');
+    expect(params().get('page')).toBeNull();
+    await userEvent.click(await screen.findByRole('button', { name: 'Clear the research filter' }));
+    expect(params().get('research')).toBeNull();
+    await settle();
+  });
+
+  it('Scenario: the reasons in the batch reject are marked as written with AI', async () => {
+    researchApi();
+    renderAdmin(QUEUE);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Reject 1 the AI marked as reject…' }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Reject 1 item the AI marked as reject?',
+    });
+    expect(within(dialog).getByText('Reasons written with AI.')).toBeInTheDocument();
+    const reason = await within(dialog).findByText('A list of other note takers, not one product.');
+    expect(reason.closest('[data-ai-generated="true"]')).not.toBeNull();
+    expect(reason.closest('li')).toHaveAttribute('data-ai-model', 'nvidia/Nemotron-3.5-Super');
+    await settle();
+    expect(await axeViolations(document.body)).toEqual([]);
   });
 });
 

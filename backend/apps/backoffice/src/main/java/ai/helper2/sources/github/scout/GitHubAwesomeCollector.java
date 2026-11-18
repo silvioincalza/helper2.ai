@@ -12,6 +12,7 @@ import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.ResultMerger;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
@@ -114,7 +115,8 @@ public class GitHubAwesomeCollector implements Collector {
       RepoClassifier classifier,
       CategoryMatcher categories,
       MeterRegistry meters,
-      DiscoveryHostStore hosts) {
+      DiscoveryHostStore hosts,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -125,7 +127,7 @@ public class GitHubAwesomeCollector implements Collector {
     this.limits = limits;
     this.classifier = classifier;
     this.deep = deep;
-    this.productLinks = new ProductLinks(deep.excludeDomains());
+    this.productLinks = new ProductLinks(deep.excludeDomains(), shadowLibraries);
     this.categories = categories;
     this.hosts = hosts;
     this.metrics = new AwesomeMetrics(meters);

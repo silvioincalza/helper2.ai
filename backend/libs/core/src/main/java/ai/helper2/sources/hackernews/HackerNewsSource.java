@@ -1,6 +1,7 @@
 package ai.helper2.sources.hackernews;
 
 import ai.helper2.search.SearchSource;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
@@ -31,9 +32,15 @@ public class HackerNewsSource implements SearchSource {
   private final RestClient http;
   private final Clock clock;
   private final SourceDescriptor descriptor;
+  private final ShadowLibraries shadowLibraries;
 
-  public HackerNewsSource(SourceSettings settings, RestClient.Builder builder, Clock clock) {
+  public HackerNewsSource(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
+    this.shadowLibraries = shadowLibraries;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
         new SourceDescriptor(
@@ -91,11 +98,14 @@ public class HackerNewsSource implements SearchSource {
     return day.atStartOfDay(ZoneOffset.UTC).toEpochSecond();
   }
 
-  static List<JsonNode> aiStories(JsonNode hits) {
+  private List<JsonNode> aiStories(JsonNode hits) {
     List<JsonNode> kept = new ArrayList<>();
     for (JsonNode h : hits) {
-      if (CanonicalUrl.of(HttpClients.text(h, "url")) == null) {
+      CanonicalUrl link = CanonicalUrl.of(HttpClients.text(h, "url"));
+      if (link == null) {
         HttpClients.dropped("hacker-news", "no-link");
+      } else if (shadowLibraries.isShadowLibrary(link.getHost())) {
+        HttpClients.dropped("hacker-news", "shadow-library");
       } else if (!Classification.isAiRelated(HttpClients.text(h, "title"), null, Set.of())) {
         HttpClients.dropped("hacker-news", "not-ai");
       } else {

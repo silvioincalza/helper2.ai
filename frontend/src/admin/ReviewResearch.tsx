@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { adminApi } from '@/api/admin';
 import type { ReviewItem, ReviewResearchRun } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
@@ -9,11 +9,24 @@ import { AdminDialog } from './AdminDialog';
 import { NOTE_MAX } from './limits';
 
 const POLL_MS = 2000;
-export const RESEARCH_FILTERS = ['KEEP', 'REJECT', 'NONE'] as const;
+export const RESEARCH_FILTERS = ['KEEP', 'REJECT', 'DUPLICATE', 'ACTIVE', 'NONE'] as const;
 const RESEARCHABLE = new Set<ReviewItem['kind']>(['RESOURCE_CANDIDATE', 'COURSE_CANDIDATE']);
 
 export function researchable(item: ReviewItem): boolean {
   return item.status === 'OPEN' && RESEARCHABLE.has(item.kind);
+}
+
+function startable(item: ReviewItem, run: ReviewResearchRun | undefined): boolean {
+  return researchable(item) && !isActive(run) && run?.status !== 'DONE';
+}
+
+function researched(item: ReviewItem, run: ReviewResearchRun | undefined): boolean {
+  return researchable(item) && run?.status === 'DONE';
+}
+
+function useTraceState(): { from: string } {
+  const location = useLocation();
+  return { from: `${location.pathname}${location.search}` };
 }
 
 export function isActive(run: ReviewResearchRun | undefined): boolean {
@@ -78,19 +91,21 @@ export function ResearchCell({
   onCancel: (run: ReviewResearchRun) => void;
 }) {
   const { t } = useTranslation();
+  const from = useTraceState();
   if (!researchable(item) && !run) return null;
-  if (!run || run.status === 'CANCELLED') {
-    return researchable(item) ? (
+  const start = (key: 'start' | 'again') =>
+    researchable(item) ? (
       <button
         type="button"
         className="btn btn-sm"
         aria-disabled={busy || undefined}
-        onClick={() => onStart(item.id)}
+        onClick={() => !busy && onStart(item.id)}
       >
-        {t('admin.research.start')} <span className="sr-only">{item.reason}</span>
+        {t(`admin.research.${key}`)} <span className="sr-only">{item.reason}</span>
       </button>
     ) : null;
-  }
+  if (!run) return start('start');
+  const active = isActive(run);
   return (
     <div className="h2-admin__research-cell">
       {run.status === 'DONE' && run.verdict ? (
@@ -107,27 +122,34 @@ export function ResearchCell({
       {run.status === 'FAILED' && run.error && (
         <span className="h2-admin__research-error">{run.error}</span>
       )}
-      {isActive(run) && (
+      <Link
+        className="h2-admin__research-link"
+        to={`/admin/review/research/${run.id}`}
+        state={from}
+      >
+        {active ? t('admin.research.watch') : t('admin.research.steps', { count: run.steps })}
+      </Link>
+      {active ? (
         <button type="button" className="btn btn-sm" onClick={() => onCancel(run)}>
           {t('admin.research.cancel')}
         </button>
-      )}
-      {run.status === 'FAILED' && researchable(item) && (
-        <button
-          type="button"
-          className="btn btn-sm"
-          aria-disabled={busy || undefined}
-          onClick={() => onStart(item.id)}
-        >
-          {t('admin.research.again')}
-        </button>
-      )}
-      {!isActive(run) && (
-        <Link className="h2-admin__research-link" to={`/admin/review/research/${run.id}`}>
-          {t('admin.research.steps', { count: run.steps })}
-        </Link>
+      ) : (
+        start(run.status === 'CANCELLED' ? 'start' : 'again')
       )}
     </div>
+  );
+}
+
+export function ResearchRunLine({ run }: { run: ReviewResearchRun }) {
+  const { t } = useTranslation();
+  const from = useTraceState();
+  return (
+    <p className="h2-admin__research-meta">
+      {t('admin.research.runLine', { status: t(`admin.research.status.${run.status}`) })}{' '}
+      <Link to={`/admin/review/research/${run.id}`} state={from}>
+        {isActive(run) ? t('admin.research.watch') : t('admin.research.everyStep')}
+      </Link>
+    </p>
   );
 }
 
@@ -149,14 +171,16 @@ export function ResearchBar({
   onRejectResearched: (items: ReviewItem[]) => void;
 }) {
   const { t } = useTranslation();
-  const pickedIds = picked.filter(researchable).map((i) => i.id);
-  const pageIds = page.filter(researchable).map((i) => i.id);
+  const pickedIds = picked.filter((i) => startable(i, runs.get(i.id))).map((i) => i.id);
+  const pageIds = page.filter((i) => startable(i, runs.get(i.id))).map((i) => i.id);
+  const done = page.filter((i) => researched(i, runs.get(i.id))).length;
   const rejects = page.filter((i) => {
     const r = runs.get(i.id);
     return researchable(i) && r?.status === 'DONE' && r.verdict === 'REJECT';
   });
   const active = [...runs.values()].filter(isActive).length;
   const disabled = busy || undefined;
+  const split = useId();
   return (
     <section className="h2-admin__research-bar" aria-label={t('admin.research.bar')}>
       <span className="h2-admin__research-bar-title">{t('admin.research.bar')}</span>
@@ -164,7 +188,7 @@ export function ResearchBar({
         type="button"
         className="btn btn-sm btn-primary"
         aria-disabled={disabled || pickedIds.length === 0 || undefined}
-        onClick={() => pickedIds.length > 0 && onStart(pickedIds)}
+        onClick={() => !busy && pickedIds.length > 0 && onStart(pickedIds)}
       >
         {t('admin.research.selected', { count: pickedIds.length })}
       </button>
@@ -172,11 +196,22 @@ export function ResearchBar({
         type="button"
         className="btn btn-sm"
         aria-disabled={disabled || pageIds.length === 0 || undefined}
-        onClick={() => pageIds.length > 0 && onStart(pageIds)}
+        aria-describedby={done > 0 ? split : undefined}
+        onClick={() => !busy && pageIds.length > 0 && onStart(pageIds)}
       >
         {t('admin.research.page', { count: pageIds.length })}
       </button>
-      <button type="button" className="btn btn-sm" aria-disabled={disabled} onClick={onStartAll}>
+      {done > 0 && (
+        <span id={split} className="h2-admin__research-why">
+          {t('admin.research.split', { count: pageIds.length, done })}
+        </span>
+      )}
+      <button
+        type="button"
+        className="btn btn-sm"
+        aria-disabled={disabled}
+        onClick={() => !busy && onStartAll()}
+      >
         {t('admin.research.all')}
       </button>
       {rejects.length > 0 && (
@@ -184,7 +219,7 @@ export function ResearchBar({
           type="button"
           className="btn btn-sm"
           aria-disabled={disabled}
-          onClick={() => onRejectResearched(rejects)}
+          onClick={() => !busy && onRejectResearched(rejects)}
         >
           {t('admin.research.rejectResearched', { count: rejects.length })}
         </button>
@@ -253,7 +288,7 @@ function StartAllBody({
           type="button"
           className="btn btn-primary"
           aria-disabled={busy || !found || found.items === 0 || undefined}
-          onClick={() => found && found.items > 0 && onConfirm()}
+          onClick={() => !busy && found && found.items > 0 && onConfirm()}
         >
           {t('admin.research.allConfirm', {
             count: found?.items ?? 0,
@@ -347,9 +382,12 @@ function BatchRejectBody({
   return (
     <>
       <p>{t('admin.research.rejectLede')}</p>
-      <ul className="h2-admin__reject-list">
+      <p className="h2-admin__research-ai">
+        <strong>{t('admin.research.rejectAi')}</strong>
+      </p>
+      <ul className="h2-admin__reject-list" data-ai-generated="true">
         {items.map((i) => (
-          <li key={i.id}>
+          <li key={i.id} data-ai-model={runs.get(i.id)?.model}>
             <input
               id={`${prefix}-${i.id}`}
               type="checkbox"
@@ -377,7 +415,7 @@ function BatchRejectBody({
           type="button"
           className="btn btn-primary"
           aria-disabled={busy || chosen.length === 0 || undefined}
-          onClick={() => chosen.length > 0 && onConfirm(chosen, note.trim() || undefined)}
+          onClick={() => !busy && chosen.length > 0 && onConfirm(chosen, note.trim() || undefined)}
         >
           {t('admin.research.rejectConfirm', { count: chosen.length })}
         </button>

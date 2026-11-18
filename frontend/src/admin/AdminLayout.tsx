@@ -6,6 +6,7 @@ import { SignIn } from '@/features/account/SignIn';
 import { useMe } from '@/context/MeContext';
 import { StatePanel } from '@/ui/StatePanel';
 import { useTitle } from '@/hooks/useTitle';
+import { ResearchDecisionsProvider } from './researchDecisionsStore';
 import '@/ui/term.css';
 import './admin.css';
 
@@ -91,7 +92,9 @@ export default function AdminLayout() {
           ))}
         </ul>
       </nav>
-      <Outlet />
+      <ResearchDecisionsProvider>
+        <Outlet />
+      </ResearchDecisionsProvider>
     </div>
   );
 }

@@ -29,11 +29,13 @@ import {
   RESEARCH_FILTERS,
   ResearchBar,
   ResearchCell,
+  ResearchRunLine,
   StartAllDialog,
   researchable,
   useResearchRuns,
 } from './ReviewResearch';
 import { ResearchDecisions, type ResearchOutcome } from './ResearchDecisions';
+import { useBarHeight } from './useBarHeight';
 
 const PAGE_SIZE = 50;
 const CATEGORY = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -52,6 +54,7 @@ function actionErrorOf(e: unknown): ActionError {
 
 function isCommandKey(e: KeyboardEvent): boolean {
   const target = e.target as HTMLElement;
+  if (target.closest('.h2-admin__research')) return false;
   const box = target instanceof HTMLInputElement && target.type === 'checkbox';
   const typing =
     target.isContentEditable || (!box && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
@@ -118,6 +121,11 @@ export default function ReviewQueuePage() {
   const focusAfterLoad = useRef(false);
   const rows = useRef(new Map<string, HTMLButtonElement>());
   const note = useRef<HTMLInputElement>(null);
+  const accept = useRef<HTMLButtonElement>(null);
+  const decideBar = useRef<HTMLDivElement>(null);
+  const detailBox = useRef<HTMLElement>(null);
+  const researchSelect = useRef<HTMLSelectElement>(null);
+  const focusAccept = useCallback(() => accept.current?.focus(), []);
   const items = useApi(
     `review/${status}/${kind ?? ''}/${category ?? ''}/${researchFilter ?? ''}/${page}`,
     (s) =>
@@ -178,7 +186,7 @@ export default function ReviewQueuePage() {
     const next = new URLSearchParams(params);
     if (value === undefined) next.delete(name);
     else next.set(name, value);
-    if (name !== 'page' && name !== 'research') next.delete('page');
+    if (name !== 'page') next.delete('page');
     setParams(next);
     setPicked(new Map());
   };
@@ -199,11 +207,21 @@ export default function ReviewQueuePage() {
   };
 
   const researched = selected ? outcome : null;
+  const selectedRun = selected ? research.runs.get(selected.id) : undefined;
+  useBarHeight(
+    decideBar,
+    detailBox,
+    '--decide-h',
+    `${selected?.id}/${selected?.status}/${items.loading}`,
+  );
   const blocked = !!researched && !researched.complete;
 
   const resolve = async (item: ReviewItem, decision: Decision) => {
     if (busy || item.status !== 'OPEN') return;
-    if (decision === 'ACCEPTED' && blocked) return;
+    if (decision === 'ACCEPTED' && blocked) {
+      setAnnouncement(t('admin.research.acceptWhy', { count: researched?.left.length ?? 0 }));
+      return;
+    }
     setBusy(true);
     setActionError(null);
     setListed(null);
@@ -412,6 +430,7 @@ export default function ReviewQueuePage() {
           <label>
             {t('admin.research.filter')}
             <select
+              ref={researchSelect}
               value={researchFilter ?? ''}
               onChange={(e) => setFilter('research', e.target.value || undefined)}
             >
@@ -456,7 +475,22 @@ export default function ReviewQueuePage() {
         />
       ) : list.length === 0 || !selected ? (
         researchFilter ? (
-          <AdminEmpty command={command} text={t('admin.research.filterEmpty')} />
+          <AdminEmpty
+            command={command}
+            text={t('admin.research.filterEmpty')}
+            next={
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={() => {
+                  setFilter('research', undefined);
+                  researchSelect.current?.focus();
+                }}
+              >
+                {t('admin.research.filterClear')}
+              </button>
+            }
+          />
         ) : (
           <AdminEmpty command={command} text={t('admin.queueEmpty')} />
         )
@@ -564,6 +598,7 @@ export default function ReviewQueuePage() {
           </ScrollBox>
           <section
             key={selected.id}
+            ref={detailBox}
             id={DETAIL_ID}
             aria-labelledby="rq-detail-h"
             className="h2-admin__detail"
@@ -576,15 +611,17 @@ export default function ReviewQueuePage() {
               {selected.resourceTitle ? ` · ${selected.resourceTitle}` : ''}
             </p>
             <ItemDetails item={selected} onChanged={items.reload} />
-            {research.runs.get(selected.id)?.status === 'DONE' && researchable(selected) && (
+            {selectedRun?.status === 'DONE' && researchable(selected) && (
               <ResearchDecisions
-                key={research.runs.get(selected.id)!.id}
-                run={research.runs.get(selected.id)!}
+                key={selectedRun.id}
+                run={selectedRun}
                 onOutcome={setOutcome}
+                onDone={focusAccept}
               />
             )}
+            {selectedRun && selectedRun.status !== 'DONE' && <ResearchRunLine run={selectedRun} />}
             {selected.status === 'OPEN' ? (
-              <div className="h2-admin__decide">
+              <div ref={decideBar} className="h2-admin__decide">
                 <label className="h2-admin__note">
                   {t('admin.note')}
                   <input
@@ -603,6 +640,7 @@ export default function ReviewQueuePage() {
                 </label>
                 <div className="h2-admin__actions">
                   <button
+                    ref={accept}
                     type="button"
                     className="btn btn-primary"
                     aria-disabled={disabled || blocked || undefined}
