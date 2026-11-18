@@ -1,14 +1,5 @@
 import type { AiContentMarker, ValueOrigin } from '@/api/types';
-import {
-  AI_ORIGIN,
-  aiMark,
-  aiMarkWhen,
-  aiModel,
-  aiProvider,
-  aiSource,
-  aiSourceWithModels,
-  isAiOrigin,
-} from './aiMark';
+import { AI_ORIGIN, aiMark, aiMarkWhen, aiModel, aiSource, isAiOrigin } from './aiMark';
 
 const marker = (models: string[]): AiContentMarker => ({
   aiGenerated: true,
@@ -63,22 +54,12 @@ describe('the source of a block of AI text', () => {
       'data-ai-provider': 'NVIDIA',
       'data-ai-models': 'a b',
     });
-    expect(aiSource(marker([]))).toEqual({ 'data-ai-provider': 'NVIDIA' });
     expect(aiSource(null)).toEqual({});
+    expect(aiSource(undefined)).toEqual({});
   });
-  it('keeps the models attribute of a guide block when no model is known', () => {
-    expect(aiSourceWithModels(marker(['a', 'b']))).toEqual({
-      'data-ai-provider': 'NVIDIA',
-      'data-ai-models': 'a b',
-    });
-    expect(aiSourceWithModels(marker([]))).toEqual({
-      'data-ai-provider': 'NVIDIA',
-      'data-ai-models': '',
-    });
-    expect(aiSourceWithModels(undefined)).toEqual({});
-  });
-  it('names the provider alone', () => {
-    expect(aiProvider(marker(['a']))).toEqual({ 'data-ai-provider': 'NVIDIA' });
-    expect(aiProvider(null)).toEqual({});
+  it('leaves the models attribute out when no model is known', () => {
+    const source = aiSource(marker([]));
+    expect(source).toEqual({ 'data-ai-provider': 'NVIDIA' });
+    expect(source).not.toHaveProperty('data-ai-models');
   });
 });

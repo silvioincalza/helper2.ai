@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import type { GuideResponse } from '@/api/types';
 import { AnswerBlocks } from './AnswerBlocks';
+import { Clarify } from './Clarify';
 import { GuideAnswer } from './GuideAnswer';
 
 const base: GuideResponse = {
@@ -189,6 +190,57 @@ describe('GuideAnswer marks every planner-written text (EU AI Act Art. 50(2), AD
     expect(screen.getByRole('button', { name: 'Search anyway' })).not.toHaveAttribute(
       'data-ai-generated',
     );
+  });
+
+  const explained: GuideResponse = {
+    ...base,
+    intent: 'WHAT_IS',
+    explanation: {
+      sentences: [
+        {
+          text: 'RAG retrieves text before it answers.',
+          quote: 'retrieval-augmented generation',
+          resourceId: '22222222-2222-5222-8222-222222222222',
+          title: 'RAG',
+          url: 'https://example.org/rag',
+          reasonCheck: 'SUPPORTED',
+        },
+      ],
+    },
+  };
+  const guideBlocks = () => [
+    screen.getByText('RAG retrieves text before it answers.').closest('[data-ai-provider]'),
+    document.querySelector('.guide-answer'),
+    screen.getByText('New tools for what?').closest('section'),
+  ];
+
+  it('names the provider and the models on every guide block', () => {
+    view({ ...explained, aiContent: planner });
+    render(
+      <Clarify
+        clarification={{ question: 'New tools for what?', options: [] }}
+        aiContent={planner}
+      />,
+    );
+    for (const block of guideBlocks()) {
+      expect(block).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
+      expect(block).toHaveAttribute('data-ai-models', 'nvidia/nemotron-nano');
+    }
+  });
+
+  it('leaves the models attribute out of a guide block when the marker names no model', () => {
+    const noModels = { ...planner, models: [] };
+    view({ ...explained, aiContent: noModels });
+    render(
+      <Clarify
+        clarification={{ question: 'New tools for what?', options: [] }}
+        aiContent={noModels}
+      />,
+    );
+    for (const block of guideBlocks()) {
+      expect(block).toHaveAttribute('data-ai-provider', 'nebius-token-factory');
+      expect(block).not.toHaveAttribute('data-ai-models');
+    }
   });
 
   it('marks requirement chips and comparison aspects, not the remove button or the subjects', () => {

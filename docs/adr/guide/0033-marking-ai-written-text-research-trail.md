@@ -115,6 +115,9 @@ another person's words.
    `data-ai-models`; so do, from their `aiContent` (`aiSource`), the "Also searched for" line with a translation and
    the details of a resource page (its summary, relationships and sources: not the guide's reason or the setup
    guide, which other models wrote), and the result list carries `data-ai-provider` when a result holds a value from a model.
+   One helper writes both attributes (`aiSource`): `data-ai-models` names the models only when the marker knows them
+   and is left out otherwise, and the result list names none (`listedDescriptionsSource` in `Results.tsx`), because the
+   response's `models` hold the model of the query translation and no model is kept for a stored description.
    Marked: reasons, requirements (chips and checks), the question back and its options, comparison aspects and cells, explanation sentences, the planned search query (not our "Searched the catalog for:" around it)
    and the research trail's queries, AI summaries and values extracted by AI in the result list, the preview and on
    the resource page, the search's translation of the query in "Also searched for", the instructions of the setup
@@ -240,7 +243,7 @@ another person's words.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt`: `ValueOrigin.isAiWritten`, `isFromAModel`.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
 - `frontend/src/lib/aiMark.ts`: the AI origins (`AI_ORIGIN`, `isAiOrigin`) and the page attributes (`aiMark`, `aiMarkWhen`, `aiModel`,
-  `aiProvider`, `aiSource`, `aiSourceWithModels`): no other file writes a `data-ai-*` attribute. Used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
+  `aiSource`): no other file writes a `data-ai-*` attribute. Used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
   `GuidePicks.tsx`, `Understood.tsx`, `Results.tsx`, `ResultRow.tsx`, `Resource.tsx`, `ResultsTimeline.tsx`,
   `FieldStates.tsx`, `ResourcePage.tsx`, `SetupGuide.tsx`. `GuideAnswer.tsx` also has `PlannedQueries` and
   `RemovedList`.
