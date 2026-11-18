@@ -15,7 +15,7 @@ the Swiss-U.S. Data Privacy Framework and the UK Extension, each `Active`.
 |---|---|---|---|---|
 | GitHub | Search words (live search); the sign-in; a gift through GitHub Sponsors | "GitHub", San Francisco: all three. EU-U.S. since 26 January 2017, Swiss-U.S. since 23 July 2019, UK since 16 October 2023; next certification due 3 August 2027. No other covered entity | certified, Swiss-US and EU-US and UK Extension | yes |
 | Cloudflare | Every request and its IP address (network edge); the encrypted backup copy | "Cloudflare, Inc.", San Francisco: all three | certified, all three | yes |
-| Google (deps.dev) | Public repository names, from our server | "Google LLC", Mountain View: all three | certified, all three | yes |
+| Google (deps.dev) | Public repository names, and the public package names the research assistant looks up, from our server | "Google LLC", Mountain View: all three | certified, all three | yes |
 | Google (Analytics, AdSense, the consent tool) | What the browser sends, after consent where the rules ask for it | same entry | certified, Swiss-US and EU-US | yes |
 | Google (BigQuery, `pypi`) | A fixed query; nothing about a visitor | same entry | named; no personal data goes | yes |
 | The AI service for search by meaning (NVIDIA) | Search text, the guide's searches, public text about resources | "NVIDIA Corporation", Santa Clara: all three | certified, all three | yes |
@@ -31,7 +31,8 @@ Every line of the Privacy page that names the list matches it.
 
 **Not on this table, and why.** Y Combinator receives nothing: Hacker News search is Algolia's. The MCP Registry, the
 news feeds of AI companies, `huggingface/ai-deadlines` and `tech-conferences/conference-data` (confs.tech) are read by our server with a plain `GET` that carries nothing
-about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
+about a visitor. The research assistant's `check_url` sends a plain `HEAD` from our server to a public address a review item
+names, with nothing about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
 setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/helper2.ai/issues/433)).
 
 **When to look again.** Before a release that adds a recipient, and when a "next due" date above has passed: an entry
