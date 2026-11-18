@@ -38,7 +38,6 @@ deploy/k8s/*/app.env
 # these lines catch a copy left in it by mistake.
 *.dump
 *.dump.*
-# A JVM heap dump holds the memory of a local run.
 *.hprof
 *.sql.gz
 deleted.txt
