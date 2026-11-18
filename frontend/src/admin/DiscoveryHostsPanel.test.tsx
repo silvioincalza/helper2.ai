@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DiscoveryHostEntry, DiscoveryHosts } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
@@ -258,6 +258,27 @@ describe('Feature: an admin manages the hosts discovery knows by name (ADR 0013)
       await screen.findByText('Added: techcrunch.com is now in Writing sites.'),
     ).toBeInTheDocument();
     expect(add).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('Scenario: a second submit sent before the page redraws sends nothing', async () => {
+    const { api } = open({
+      'GET /admin/discovery-hosts': () => SEED,
+      'POST /admin/discovery-hosts': () => json(entry('techcrunch.com', 'WRITING'), 201),
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Writing sites (1)' });
+    await user.type(screen.getByRole('textbox', { name: 'Host' }), 'techcrunch.com');
+    const form = screen.getByRole('form', { name: 'Add a host' });
+
+    act(() => {
+      fireEvent.submit(form);
+      fireEvent.submit(form);
+    });
+
+    expect(
+      await screen.findByText('Added: techcrunch.com is now in Writing sites.'),
+    ).toBeInTheDocument();
+    expect(api.calls.filter((c) => c.method === 'POST')).toHaveLength(1);
   });
 
   it('Scenario: lists that cannot load offer a retry', async () => {

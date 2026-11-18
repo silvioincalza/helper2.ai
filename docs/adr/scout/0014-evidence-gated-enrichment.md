@@ -132,9 +132,10 @@ place to say that.
    `AI_ESTIMATED`. As in [0033](../guide/0033-marking-ai-written-text-research-trail.md): the page labels them
    "AI-estimated" and marks them `data-ai-generated`; the API says `origin: AI_ESTIMATED` (OpenAPI enum `ValueOrigin`).
 8. **Storage, owned by the catalog.** The Scout hands each run to the catalog's port `EnrichmentResults`
-   (`record(run, checked items)`); the SQL is in `catalog/internal/JdbcEnrichmentResults`, which also reads the results
-   back for the detail page. Every run is an `enrichment_run` row: provider, model, prompt label, fingerprint, outcome,
-   errors, and the extra text it used (`extra_evidence`). In the same transaction, a run with model output:
+   (`record(run, checked items)`); the SQL is in `catalog/internal/JdbcEnrichmentResults`. `JdbcResourceDetailReads`
+   reads the results back for the detail page (port `EnrichmentFacts`). Every run is an `enrichment_run` row:
+   provider, model, prompt label, fingerprint, outcome, errors, and the extra text it used (`extra_evidence`). In the
+   same transaction, a run with model output:
    - closes the resource's `OPEN` review items of earlier runs as `SUPERSEDED` (resolved by the system, with a note
      naming the new run);
    - deletes the resource's older AI field assertions, and its AI relationships that no reviewer decided (no `ACCEPTED`
@@ -364,7 +365,8 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   `PageScope`, `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`,
   `DomainRoots`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt` — the re-check, port
-  `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java`.
+  `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java` (the stored answers through `StoredEnrichments`, the
+  done mark of the task through the catalog's `JobMarkers`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java` (`PROMPT`,
   `PROMPT_VERSION`, material kind), `CatalogEnrichmentStore.java`, `ScoutConfiguration.java` (budgets,
   `officialPages`), `RedisPageTextCache.java`, `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`.
@@ -374,7 +376,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - `backend/libs/core/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java`,
   `StoredEnrichments.java` (named interface `enrichment`); `catalog/internal/JdbcEnrichmentCandidates.java` (each source
   text with its source id, external id and repository link; accepted products first), `JdbcEnrichmentResults.java`
-  (origins, evidence with its own URL, the stored type).
+  (origins, evidence with its own URL, the stored type), `JdbcResourceDetailReads.java` (the detail page's reads).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `GetReviewItem.java`, `ResolveReviewItem.java`;
   `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`.

@@ -1,5 +1,6 @@
 package ai.helper2.catalog.usecase;
 
+import ai.helper2.catalog.CategoryInputs;
 import ai.helper2.catalog.CategoryLabels;
 import ai.helper2.catalog.JobMarkers;
 import ai.helper2.platform.AuditTrail;
@@ -23,6 +24,7 @@ public class BackfillCategories {
 
   public record Result(int resources, int categorized) {}
 
+  private final CategoryInputs inputs;
   private final CategoryLabels labels;
   private final JobMarkers markers;
   private final CategoryCatalog catalog;
@@ -33,6 +35,7 @@ public class BackfillCategories {
   private final Counter uncategorized;
 
   public BackfillCategories(
+      CategoryInputs inputs,
       CategoryLabels labels,
       JobMarkers markers,
       CategoryCatalog catalog,
@@ -40,6 +43,7 @@ public class BackfillCategories {
       AuditTrail audit,
       MeterRegistry meters,
       Executor background) {
+    this.inputs = inputs;
     this.labels = labels;
     this.markers = markers;
     this.catalog = catalog;
@@ -89,7 +93,7 @@ public class BackfillCategories {
     int withCategory = 0;
     UUID after = null;
     List<UUID> batch;
-    while (!(batch = labels.resourceIdsAfter(after, BATCH)).isEmpty()) {
+    while (!(batch = inputs.resourceIdsAfter(after, BATCH)).isEmpty()) {
       int found = labels.refreshCategories(batch);
       resources += batch.size();
       withCategory += found;

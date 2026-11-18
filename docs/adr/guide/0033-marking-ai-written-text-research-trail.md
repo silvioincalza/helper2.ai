@@ -90,7 +90,7 @@ another person's words.
      with its index, `results[2].description` (`AiContentMarking.inEachItem`).
    - **The models.** The fast model when there is a translation; the model of the enrichment run of each listed
      assertion and relationship (`ResourceDetail.Assertion.model`, `Relationship.model`, read with the run in
-     `JdbcEnrichmentResults`) and of the summary. A card keeps no model for a stored description or for event days
+     `JdbcResourceDetailReads`) and of the summary. A card keeps no model for a stored description or for event days
      a model read, so these add none and `models` can be empty.
    - **Every field is classed, by a test.** `SearchAiFieldsTest` and `ResourceAiFieldsTest` walk the generated
      classes the way `GuideAiFieldsTest` does: each leaf field is AI-written (`SearchController.AI_WRITTEN_FIELDS`,
@@ -235,7 +235,7 @@ another person's words.
   `CardMapper.java`: `aiWrittenFields`.
 - `backend/libs/core/src/main/java/ai/helper2/api/AiContentMarking.java`: `marker`, `inEachItem`, `POLICY`.
 - `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`: `aiContent`,
-  `AI_WRITTEN_FIELDS`. `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`: the
+  `AI_WRITTEN_FIELDS`. `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcResourceDetailReads.java`: the
   run's model of an assertion and a relationship.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt`: `ValueOrigin.isAiWritten`, `isFromAModel`.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
