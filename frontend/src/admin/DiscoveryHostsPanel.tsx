@@ -2,20 +2,19 @@ import './adminText';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
 import type { DiscoveryHostEntry, DiscoveryHostKind } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
 import { TableSkeleton } from '@/ui/Skeleton';
+import { trimOrNull } from './adminModel';
+import { useAdminAction } from './useAdminAction';
+import { useFocusReturn } from './useFocusReturn';
 
 const KINDS: DiscoveryHostKind[] = ['WRITING', 'DIRECTORY'];
 
-type Notice =
-  | { kind: 'added'; host: string; list: DiscoveryHostKind }
-  | { kind: 'removed'; host: string }
-  | { kind: 'refused'; detail: string }
-  | { kind: 'failed' };
+type Done =
+  { kind: 'added'; host: string; list: DiscoveryHostKind } | { kind: 'removed'; host: string };
 
 export function DiscoveryHostsPanel() {
   const { t } = useTranslation();
@@ -28,17 +27,17 @@ export function DiscoveryHostsPanel() {
   const [empty, setEmpty] = useState(false);
   const [removing, setRemoving] = useState<DiscoveryHostEntry | null>(null);
   const [removeReason, setRemoveReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { busy, notice, clearNotice, run } = useAdminAction<Done>(hosts.reload);
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
+  const focus = useFocusReturn(removing !== null || hosts.loading);
+  const closeRemove = (entry: DiscoveryHostEntry) => {
+    focus.returnTo(entry.host, entry.kind);
+    setRemoving(null);
+  };
 
-  const all = hosts.data?.hosts ?? [];
-  const refused = (e: unknown): Notice =>
-    e instanceof ApiError && e.problem?.detail
-      ? { kind: 'refused', detail: e.problem.detail }
-      : { kind: 'failed' };
+  const all = (hosts.data ?? hosts.previous)?.hosts ?? [];
 
-  const add = async (e: FormEvent) => {
+  const add = (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     if (host.trim() === '') {
@@ -46,41 +45,32 @@ export function DiscoveryHostsPanel() {
       return;
     }
     setEmpty(false);
-    setBusy(true);
-    try {
+    void run(async () => {
       const saved = await adminApi.addDiscoveryHost({
         host: host.trim(),
         kind,
-        reason: reason.trim() === '' ? null : reason.trim(),
+        reason: trimOrNull(reason),
       });
-      setNotice({ kind: 'added', host: saved.host, list: saved.kind });
       setHost('');
       setReason('');
-    } catch (err) {
-      setNotice(refused(err));
-    } finally {
-      setBusy(false);
-      hosts.reload();
-    }
+      return { kind: 'added', host: saved.host, list: saved.kind };
+    });
   };
 
-  const confirmRemove = async () => {
-    if (!removing || busy) return;
-    setBusy(true);
-    try {
-      await adminApi.removeDiscoveryHost(
-        removing.host,
-        removeReason.trim() === '' ? null : removeReason.trim(),
-      );
-      setNotice({ kind: 'removed', host: removing.host });
-    } catch (err) {
-      setNotice(refused(err));
-    } finally {
-      setRemoving(null);
-      setBusy(false);
-      hosts.reload();
-    }
+  const confirmRemove = () => {
+    if (!removing) return;
+    const gone = removing;
+    void run(async () => {
+      try {
+        await adminApi.removeDiscoveryHost(gone.host, trimOrNull(removeReason));
+        return { kind: 'removed', host: gone.host };
+      } finally {
+        closeRemove(gone);
+      }
+    });
   };
+
+  const done = notice?.kind === 'added' || notice?.kind === 'removed';
 
   return (
     <section aria-labelledby="dh-h">
@@ -89,12 +79,7 @@ export function DiscoveryHostsPanel() {
       </h3>
       <p className="muted">{t('admin.settings.hosts.lede')}</p>
       {notice && (
-        <p
-          role={notice.kind === 'added' || notice.kind === 'removed' ? 'status' : 'alert'}
-          className={
-            notice.kind === 'added' || notice.kind === 'removed' ? 'banner' : 'banner banner-warn'
-          }
-        >
+        <p role={done ? 'status' : 'alert'} className={done ? 'banner' : 'banner banner-warn'}>
           {notice.kind === 'added'
             ? t('admin.settings.hosts.added', {
                 host: notice.host,
@@ -151,7 +136,7 @@ export function DiscoveryHostsPanel() {
           />
         </label>
         <div className="h2-admin__tools">
-          <button type="submit" className="btn btn-primary" disabled={busy}>
+          <button type="submit" className="btn btn-primary" aria-disabled={busy || undefined}>
             {t('admin.settings.hosts.add')}
           </button>
         </div>
@@ -178,12 +163,17 @@ export function DiscoveryHostsPanel() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={confirmRemove}
             >
               {t('admin.settings.hosts.confirmRemove')}
             </button>
-            <button type="button" className="btn" disabled={busy} onClick={() => setRemoving(null)}>
+            <button
+              type="button"
+              className="btn"
+              aria-disabled={busy || undefined}
+              onClick={() => !busy && closeRemove(removing)}
+            >
               {t('admin.settings.hosts.cancel')}
             </button>
           </div>
@@ -204,7 +194,7 @@ export function DiscoveryHostsPanel() {
           const id = `dh-${k.toLowerCase()}`;
           return (
             <section key={k} aria-labelledby={id}>
-              <h4 id={id} className="h2-admin__h">
+              <h4 id={id} ref={focus.fallback(k)} tabIndex={-1} className="h2-admin__h">
                 {t(`admin.settings.hosts.listTitle.${k}`, { count: listed.length })}
               </h4>
               {listed.length === 0 ? (
@@ -234,14 +224,16 @@ export function DiscoveryHostsPanel() {
                           </td>
                           <td>
                             <button
+                              ref={focus.row(h.host)}
                               type="button"
                               className="btn"
-                              disabled={busy}
+                              aria-disabled={busy || undefined}
                               aria-label={t('admin.settings.hosts.removeLabel', { host: h.host })}
                               onClick={() => {
+                                if (busy) return;
                                 setRemoving(h);
                                 setRemoveReason('');
-                                setNotice(null);
+                                clearNotice();
                               }}
                             >
                               {t('admin.settings.hosts.remove')}

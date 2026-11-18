@@ -60,14 +60,12 @@ public class DiscoveryCollector implements Collector {
     }
   }
 
-  private final RestClient http;
   private final Clock clock;
-  private final Resilience resilience;
   private final RunInterval interval;
   private final Search search;
   private final DiscoveryCategory category;
   private final List<DiscoveryCategory> all;
-  private final ScoutLiveWebCredits credits;
+  private final ScoutLiveWebSearch liveWeb;
   private final DiscoveryHostStore hosts;
   private final ShadowLibraries shadowLibraries;
   private final SourceDescriptor descriptor;
@@ -84,7 +82,6 @@ public class DiscoveryCollector implements Collector {
       DiscoveryHostStore hosts,
       ShadowLibraries shadowLibraries) {
     this.clock = clock;
-    this.resilience = resilience;
     boolean enabled = settings.enabled() && category.enabled();
     if (enabled) {
       resilience.require(POLICY);
@@ -93,10 +90,16 @@ public class DiscoveryCollector implements Collector {
     this.search = search;
     this.category = category;
     this.all = List.copyOf(all);
-    this.credits = credits;
     this.hosts = hosts;
     this.shadowLibraries = shadowLibraries;
-    this.http = HttpClients.client(builder, settings);
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            HttpClients.client(builder, settings),
+            clock,
+            resilience,
+            credits,
+            POLICY,
+            search.searchDepth());
     this.descriptor = CollectorDescriptors.discovery(settings, category);
   }
 
@@ -132,17 +135,14 @@ public class DiscoveryCollector implements Collector {
     if (!open && !interval.isDue(checkpoint, startedAt)) {
       return CollectedBatch.skipped(notDueReason(checkpoint, startedAt));
     }
-    if (credits.capReached()) {
-      return CollectedBatch.deferred(
-          "Daily live web credit cap of the Scout reached ("
-              + credits.dailyCap()
-              + " credits); next try tomorrow");
+    if (liveWeb.capReached()) {
+      return liveWeb.deferred();
     }
     DiscoveryPages pages = new DiscoveryPages(hosts.lists());
     Searched searched =
         searchAll(
             pages,
-            LiveWebNewsCollector.startDate(checkpoint),
+            QueryProgress.startDate(checkpoint),
             startedAt,
             QueryProgress.done(cursor.getResumeCursor()));
     Collection<Found> found = searched.found().values();
@@ -174,12 +174,12 @@ public class DiscoveryCollector implements Collector {
       if (done.contains(query)) {
         continue;
       }
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         log.info("{}: credit cap reached, the pass stays open", category.sourceId());
         break;
       }
       try {
-        sort(pages, searchFor(query, since), query, searchedAt)
+        sort(pages, liveWeb.search(requestBody(query, since)), query, searchedAt)
             .forEach(f -> found.putIfAbsent(f.page().url().getValue(), f));
         done.add(query);
       } catch (RuntimeException e) {
@@ -192,19 +192,6 @@ public class DiscoveryCollector implements Collector {
       throw lastFailure;
     }
     return new Searched(found, done, done.containsAll(category.queries()));
-  }
-
-  private JsonNode searchFor(String query, @Nullable String since) {
-    Map<String, Object> body = requestBody(query, since);
-    return resilience.call(
-        POLICY,
-        () ->
-            credits.countedAttempt(
-                search.searchDepth(),
-                () ->
-                    HttpClients.getJson(
-                        () -> http.post().uri("/search").body(body).retrieve().body(String.class),
-                        clock)));
   }
 
   Map<String, Object> requestBody(String query, @Nullable String since) {

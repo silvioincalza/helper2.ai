@@ -2,7 +2,7 @@ import './adminText';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
+import { problemDetail } from '@/api/client';
 import type {
   RelationshipTargetGroup as Group,
   RelationshipTargetGroupDecision as Decision,
@@ -21,11 +21,7 @@ const DETAIL_ID = 'rg-detail';
 const COMMAND = 'helper2 review --open --by-target';
 
 function errorOf(e: unknown, t: (k: string) => string): string {
-  if (e instanceof ApiError) {
-    const detail = e.problem?.detail;
-    if (detail && (e.status === 400 || e.status === 404 || e.status === 409)) return detail;
-  }
-  return t('admin.groups.failed');
+  return problemDetail(e, { status: [400, 404, 409] }) ?? t('admin.groups.failed');
 }
 
 export function RelationshipGroups({

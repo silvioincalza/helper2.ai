@@ -51,14 +51,16 @@ class PolicyControllerTest {
                 "Coding",
                 "Coding tools",
                 List.of("code"),
-                new CategoriesProperties.Discovery(null, null, List.of("q1", "q2"))),
+                new CategoriesProperties.Discovery(
+                    null, List.of("q1", "q2"), null, null, null, null, null, null)),
             new CategoriesProperties.Entry(
                 "writing",
                 "work",
                 "Writing",
                 "Writing tools",
                 List.of("write"),
-                new CategoriesProperties.Discovery(null, null, List.of("q3"))),
+                new CategoriesProperties.Discovery(
+                    null, List.of("q3"), null, null, null, null, null, null)),
             new CategoriesProperties.Entry(
                 "health", "life", "Health", "Health tools", null, null)));
   }

@@ -133,10 +133,6 @@ interface EnrichmentBacklog {
   fun requestRun(resourceId: UUID)
 }
 
-interface UnitOfWork {
-  fun <T : Any> run(work: Supplier<T>): T
-}
-
 interface EnrichmentQueueControl {
   fun lockTop()
 

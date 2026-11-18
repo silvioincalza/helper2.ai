@@ -4,7 +4,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.research.ResearchTool;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
-import ai.helper2.sources.support.HttpClients;
+import ai.helper2.sources.liveweb.scout.ScoutLiveWebSearch;
 import java.net.URI;
 import java.time.Clock;
 import java.util.LinkedHashMap;
@@ -16,13 +16,11 @@ public final class WebSearchTool implements ResearchTool {
 
   public static final String FEATURE = "review-research";
   static final String POLICY = "research-web-search";
+  private static final String SEARCH_DEPTH = "basic";
   private static final int RESULTS = 8;
   static final int MAX_CALLS_PER_RUN = 4;
 
-  private final RestClient http;
-  private final ScoutLiveWebCredits credits;
-  private final Resilience resilience;
-  private final Clock clock;
+  private final ScoutLiveWebSearch liveWeb;
   private final ShadowLibraries shadowLibraries;
 
   public WebSearchTool(
@@ -31,10 +29,9 @@ public final class WebSearchTool implements ResearchTool {
       Resilience resilience,
       Clock clock,
       ShadowLibraries shadowLibraries) {
-    this.http = http;
-    this.credits = credits.forFeature(FEATURE);
-    this.resilience = resilience;
-    this.clock = clock;
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            http, clock, resilience, credits.forFeature(FEATURE), POLICY, SEARCH_DEPTH);
     this.shadowLibraries = shadowLibraries;
     resilience.require(POLICY);
   }
@@ -69,27 +66,17 @@ public final class WebSearchTool implements ResearchTool {
     if (query == null) {
       return Output.error("query is required (1 to 500 characters)");
     }
-    if (credits.capReached()) {
+    if (liveWeb.capReached()) {
       return Output.error("today's web search credits are used up");
     }
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("query", query);
     body.put("topic", "general");
-    body.put("search_depth", "basic");
+    body.put("search_depth", SEARCH_DEPTH);
     body.put("max_results", RESULTS);
     body.put("include_answer", false);
     body.put("include_raw_content", false);
-    JsonNode root =
-        resilience.call(
-            POLICY,
-            () ->
-                credits.countedAttempt(
-                    "basic",
-                    () ->
-                        HttpClients.getJson(
-                            () ->
-                                http.post().uri("/search").body(body).retrieve().body(String.class),
-                            clock)));
+    JsonNode root = liveWeb.search(body);
     StringBuilder out = new StringBuilder();
     int n = 0;
     for (JsonNode r : root.path("results")) {

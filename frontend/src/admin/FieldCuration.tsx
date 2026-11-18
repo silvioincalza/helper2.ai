@@ -2,7 +2,7 @@ import './adminText';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
+import { problemDetail } from '@/api/client';
 import type { ResourceField, ValueOrigin } from '@/api/types';
 import { isAiOrigin } from '@/lib/aiMark';
 
@@ -101,8 +101,7 @@ function useWord() {
 }
 
 function errorOf(e: unknown, t: (k: string) => string): string {
-  if (e instanceof ApiError && e.status === 400 && e.problem?.detail) return e.problem.detail;
-  return t('admin.fieldCuration.failed');
+  return problemDetail(e, { status: [400] }) ?? t('admin.fieldCuration.failed');
 }
 
 export function FieldCuration({

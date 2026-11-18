@@ -2,9 +2,9 @@ package ai.helper2.scout.usecase
 
 import ai.helper2.platform.AuditTrail
 import ai.helper2.scout.Candidate
-import ai.helper2.scout.UnitOfWork
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID

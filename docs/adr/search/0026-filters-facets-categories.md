@@ -84,7 +84,7 @@ them assigned by code first, and measured on labelled items before a model is ev
    apart from `TAG`. They do not count in the 20 tags. A resource can have several.
 13. **The categories come from one list.** `helper2.categories` in `helper2-shared.yaml` stays the one list
    ([0013](../scout/0013-discovery.md)). Search and the catalog read it through `CategoriesProperties`
-   (platform) into a `CategoryCatalog` (shared kernel): id, name, short name, family, words, require-keyword and the
+   (platform, the one record that binds the list; the discovery collectors read the same record) into a `CategoryCatalog` (shared kernel): id, name, short name, family, words, require-keyword and the
    discovery type, in the configured order. The words are `CategoryWords` in the shared kernel. It is the class the
    discovery collectors already used, so the words and their precompiled
    patterns exist once. Startup fails on an id that is not lower-case words with hyphens, on two categories with one
