@@ -112,7 +112,10 @@ tool answered, and must confirm every value before it reaches the catalog.
 9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
    changes, and ends with the run or when the browser leaves. It reads new rows from Postgres once a second, so it
    works with any number of back office pods and needs no broker. A comment line every 15 seconds keeps a quiet
-   stream open. A pod serves `H2_RESEARCH_MAX_STREAMS` (8) streams at a time and answers 429 beyond them. The page `/admin/review/research/{runId}` shows every step, request and response
+   stream open. The use case `FollowResearchRun` reads the run and its steps after a sequence number and holds the
+   rules: a run put back in the queue or started again is read from its first step, and the stream ends when the run
+   has ended and every step is read. The two controllers call the research use cases, never the port `ResearchRuns`
+   (`ModularityTest`). A pod serves `H2_RESEARCH_MAX_STREAMS` (8) streams at a time and answers 429 beyond them. The page `/admin/review/research/{runId}` shows every step, request and response
    as plain text, filtered by kind or errors, and follows a running run on this stream. The queue rows read their
    status from `GET /admin/review-research?itemId=…`. A
    result carries `aiWritten: true`, the machine-readable AI marking.

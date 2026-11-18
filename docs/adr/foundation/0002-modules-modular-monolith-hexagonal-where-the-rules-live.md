@@ -97,7 +97,7 @@ to reach into the other's code.
    dispatch by intent, and `QuestionReader`, `PickAnswer`, `CompareAnswer`, `ExplainAnswer`, `DateAnswer` and
    `ReasonCheckStep` do the work; no other module sees them. Controllers and schedulers call use cases for what a
    module does, a read-only lookup too (`GetReviewItem`, `ListScoutRuns`); the back office's `ModularityTest`
-   fails when a controller calls a port of catalog, scout or examples. Models, ports
+   fails when a controller calls a port of catalog, scout, examples or research. Models, ports
    and rules (for example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so
    adapters never depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
    (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). The Scout reads and
@@ -112,9 +112,9 @@ to reach into the other's code.
    - `ApplicationModules.verify()`: no cycles, only public types of other modules are used;
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
-   - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`), and
-     for `identity`, `identity.usecase`, `catalog`, `catalog.usecase`, `catalog.enrichment`, `admin` and
-     `admin.usecase`;
+   - both rules find the use cases by the pattern `ai.helper2..usecase..`, so a new `usecase` package is checked with
+     no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
+     `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
    - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
      module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
