@@ -79,6 +79,7 @@ public final class HuggingFaceTool implements ResearchTool {
             + m.path("downloads").asLong(0)
             + "\nlast change: "
             + m.path("lastModified").asString(""),
-        "https://huggingface.co/" + m.path("id").asString(id));
+        "https://huggingface.co/" + m.path("id").asString(id),
+        List.of("https://huggingface.co/" + m.path("id").asString(id)));
   }
 }

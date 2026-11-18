@@ -20,6 +20,7 @@ import ai.helper2.research.ResearchSubject;
 import ai.helper2.research.ResearchTool;
 import ai.helper2.research.config.ResearchProperties;
 import ai.helper2.research.usecase.CancelResearch;
+import ai.helper2.research.usecase.FailStaleResearch;
 import ai.helper2.research.usecase.FindResearchedItems;
 import ai.helper2.research.usecase.PurgeResearch;
 import ai.helper2.research.usecase.RunResearch;
@@ -126,13 +127,19 @@ class ResearchConfiguration {
   }
 
   @Bean
+  FailStaleResearch failStaleResearch(ResearchRuns runs, Clock clock) {
+    return new FailStaleResearch(runs, clock);
+  }
+
+  @Bean
   DailyJob researchRetention(PurgeResearch purge) {
     return new DailyJob("review-research", purge::purge);
   }
 
   @Bean
-  ResearchWorkers researchWorkers(RunResearch research, PurgeResearch purge, ResearchProperties p) {
-    return new ResearchWorkers(research, purge, () -> p.enabled() ? p.concurrency() : 0, p.tick());
+  ResearchWorkers researchWorkers(
+      RunResearch research, FailStaleResearch stale, ResearchProperties p) {
+    return new ResearchWorkers(research, stale, () -> p.enabled() ? p.concurrency() : 0, p.tick());
   }
 
   static String prompt() {

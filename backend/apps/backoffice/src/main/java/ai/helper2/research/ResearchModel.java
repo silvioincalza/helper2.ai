@@ -9,6 +9,10 @@ public interface ResearchModel {
 
   Turn next(List<Message> conversation, List<ResearchTool> tools);
 
+  default boolean callsLeftToday() {
+    return true;
+  }
+
   sealed interface Message {
     record Instructions(String text) implements Message {}
 
@@ -29,9 +33,15 @@ public interface ResearchModel {
       int promptTokens,
       int completionTokens) {}
 
-  final class Unavailable extends RuntimeException {
+  class Unavailable extends RuntimeException {
     public Unavailable(String message) {
       super(message);
+    }
+  }
+
+  final class BudgetSpent extends Unavailable {
+    public BudgetSpent() {
+      super("today's research model calls are used up");
     }
   }
 }

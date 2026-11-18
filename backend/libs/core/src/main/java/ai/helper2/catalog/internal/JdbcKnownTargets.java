@@ -38,7 +38,9 @@ class JdbcKnownTargets implements KnownTargets {
             named.put(
                 rs.getString("name_key"),
                 new KnownTarget(
-                    rs.getString("name"), KnownTarget.Kind.valueOf(rs.getString("kind")))))
+                    rs.getString("name"),
+                    ResourceRows.known(
+                        KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL))))
         .list();
     return named;
   }

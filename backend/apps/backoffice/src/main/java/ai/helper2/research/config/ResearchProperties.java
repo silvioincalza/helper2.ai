@@ -16,6 +16,7 @@ public record ResearchProperties(
     @PositiveOrZero int dailyModelCalls,
     @PositiveOrZero int dailyPageReads,
     @PositiveOrZero int concurrency,
+    @Positive int maxStreams,
     @NotNull Duration tick) {
 
   public enum Model {

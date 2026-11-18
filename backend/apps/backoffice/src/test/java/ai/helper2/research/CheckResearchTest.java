@@ -41,7 +41,8 @@ class CheckResearchTest {
             "e2",
             "github_repo",
             "https://github.com/acme/notetaker",
-            "repository: acme/notetaker\nlicense: MIT\ndescription: Meeting notes"));
+            "repository: acme/notetaker\nlicense: MIT\ndescription: Meeting notes",
+            List.of("https://github.com/acme/notetaker")));
     evidence.put(
         "e3",
         new Evidence(
@@ -70,15 +71,178 @@ class CheckResearchTest {
     return r.attributes().stream().filter(a -> a.name().equals(name)).findFirst().orElseThrow();
   }
 
+  private static ResearchSubject repository(String url) {
+    return new ResearchSubject(
+        UUID.randomUUID(), "RESOURCE_CANDIDATE", url, "notetaker", "LIBRARY", List.of(), null);
+  }
+
+  private ResearchResult checkLicence(ResearchSubject subject, String evidenceId, String excerpt) {
+    return new CheckResearch()
+        .check(
+            subject,
+            new ResearchAnswer(
+                Verdict.KEEP,
+                "a library",
+                null,
+                List.of(new Claim("license", "MIT", List.of(new Cite(evidenceId, excerpt))))),
+            evidence);
+  }
+
   @Test
-  void aLicenceTheRepositoryRecordStatesIsConfirmed() {
+  void aLicenceTheSubjectsOwnRepositoryRecordStatesIsConfirmed() {
+    ResearchResult r =
+        checkLicence(
+            repository("https://github.com/Acme/notetaker/tree/main"),
+            "e2",
+            "license: MIT\ndescription: Meeting");
+
+    assertThat(attribute(r, "license").status()).isEqualTo(Status.CONFIRMED);
+    assertThat(attribute(r, "license").sources()).singleElement().matches(s -> s.authoritative());
+  }
+
+  @Test
+  void aRepositoryWhoseHomepageNamesTheSubjectIsNotAuthoritativeForIt() {
     ResearchResult r =
         check(
             new Claim(
                 "license", "MIT", List.of(new Cite("e2", "license: MIT\ndescription: Meeting"))));
 
-    assertThat(attribute(r, "license").status()).isEqualTo(Status.CONFIRMED);
-    assertThat(attribute(r, "license").sources()).singleElement().matches(s -> s.authoritative());
+    assertThat(attribute(r, "license").status()).isEqualTo(Status.SINGLE_SOURCE);
+    assertThat(attribute(r, "license").sources()).noneMatch(ResearchResult.Source::authoritative);
+  }
+
+  @Test
+  void aRecordOfAnUnrelatedRepositoryIsNotAuthoritative() {
+    evidence.put(
+        "e6",
+        new Evidence(
+            "e6",
+            "github_repo",
+            "https://github.com/other/recorder",
+            "repository: other/recorder\nlicense: MIT\ndescription: Other",
+            List.of("https://github.com/other/recorder")));
+
+    ResearchResult r =
+        check(
+            new Claim(
+                "license", "MIT", List.of(new Cite("e6", "license: MIT\ndescription: Other"))));
+
+    assertThat(attribute(r, "license").status()).isEqualTo(Status.SINGLE_SOURCE);
+    assertThat(attribute(r, "license").sources()).noneMatch(ResearchResult.Source::authoritative);
+  }
+
+  @Test
+  void aPackageRecordIsNeverAuthoritativeBecauseItsSourceRepositoryIsSelfDeclared() {
+    evidence.put(
+        "e6",
+        new Evidence(
+            "e6",
+            "find_package",
+            "https://deps.dev/npm/notetaker",
+            "package: notetaker\nlicense: MIT\nsource repository: github.com/acme/notetaker"));
+
+    ResearchResult r =
+        checkLicence(
+            repository("https://github.com/acme/notetaker"),
+            "e6",
+            "package: notetaker\nlicense: MIT");
+
+    assertThat(attribute(r, "license").status()).isEqualTo(Status.SINGLE_SOURCE);
+  }
+
+  @Test
+  void aRecordWhosePathClimbsOrHidesASlashIsNotTheSubjectsOwn() {
+    for (String record :
+        List.of(
+            "https://github.com/acme/notetaker/../../other/repo",
+            "https://github.com/other/repo/../../acme/notetaker",
+            "https://github.com/acme%2fnotetaker/x",
+            "https://github.com/acme/notetaker%5c..%5c..%5cother",
+            "https://github.com/%2e%2e/acme/notetaker")) {
+      evidence.put(
+          "e6",
+          new Evidence(
+              "e6",
+              "github_repo",
+              "https://github.com/other/repo",
+              "repository: other/repo\nlicense: MIT\ndescription: Other",
+              List.of(record)));
+
+      ResearchResult r =
+          checkLicence(
+              repository("https://github.com/acme/notetaker"),
+              "e6",
+              "license: MIT\ndescription: Other");
+
+      assertThat(attribute(r, "license").status()).as(record).isEqualTo(Status.SINGLE_SOURCE);
+    }
+  }
+
+  @Test
+  void aPageOnASharedHostIsTheItemsOwnSiteOnlyUnderTheSameOwner() {
+    assertThat(
+            CheckResearch.sameSite(
+                "https://github.com/acme/notetaker/blob/main/README.md",
+                "https://github.com/acme/notetaker"))
+        .isTrue();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://github.com/acme/other", "https://github.com/acme/notetaker"))
+        .isFalse();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://medium.com/@someone/acme-review", "https://medium.com/@acme/launch"))
+        .isFalse();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://medium.com/@acme/pricing", "https://medium.com/@acme/launch"))
+        .isTrue();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://huggingface.co/datasets/acme/x", "https://huggingface.co/datasets/acme/y"))
+        .isFalse();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://huggingface.co/acme/model", "https://huggingface.co/acme/model/tree/main"))
+        .isTrue();
+    assertThat(CheckResearch.sameSite("https://docs.acme.dev/", "https://acme.dev/")).isFalse();
+  }
+
+  @Test
+  void aPageOfAnotherAuthorOnASharedHostDoesNotConfirmAValue() {
+    ResearchSubject post =
+        new ResearchSubject(
+            UUID.randomUUID(),
+            "RESOURCE_CANDIDATE",
+            "https://medium.com/@acme/notetaker-launch",
+            "Notetaker launch",
+            "ARTICLE",
+            List.of(),
+            null);
+    evidence.put(
+        "e6",
+        new Evidence(
+            "e6",
+            "read_page",
+            "https://medium.com/@someone/acme-notetaker-review",
+            "Acme Notetaker records your meetings, says someone else."));
+
+    ResearchResult r =
+        new CheckResearch()
+            .check(
+                post,
+                new ResearchAnswer(
+                    Verdict.KEEP,
+                    "an article",
+                    null,
+                    List.of(
+                        new Claim(
+                            "title",
+                            "Acme Notetaker",
+                            List.of(new Cite("e6", "Acme Notetaker records your meetings"))))),
+                evidence);
+
+    assertThat(attribute(r, "title").status()).isEqualTo(Status.SINGLE_SOURCE);
   }
 
   @Test

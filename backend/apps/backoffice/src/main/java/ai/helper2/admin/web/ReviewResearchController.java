@@ -62,7 +62,8 @@ class ReviewResearchController implements ReviewResearchApi {
   @Override
   public ResponseEntity<ReviewResearchEstimateDto> estimateReviewResearch() {
     StartResearch.Estimate e = start.estimateAllOpen();
-    return ResponseEntity.ok(new ReviewResearchEstimateDto(e.items(), e.maxModelCalls()));
+    return ResponseEntity.ok(
+        new ReviewResearchEstimateDto(e.items(), e.maxModelCalls(), e.alreadyResearched()));
   }
 
   @Override

@@ -984,7 +984,8 @@ paths:
       summary: Start research on review items (ADR 0048).
       description: >-
         Queues a run for each item that is an open RESOURCE_CANDIDATE or COURSE_CANDIDATE and has no queued or
-        running run; other ids are skipped. With `allOpen`, queues every such item (at most 20,000): ask
+        running run; other ids are skipped. `itemIds` takes at most 500 ids, and an item already researched runs
+        again. With `allOpen`, the server queues every such item whose newest run is not DONE, at most 20,000: ask
         `/admin/review-research/estimate` first. Runs are async: the answer lists the queued runs.
       requestBody:
         required: true
@@ -1072,8 +1073,9 @@ paths:
       summary: The steps of one run as they are stored, then its end.
       description: >-
         `text/event-stream`. Event `step`: one ReviewResearchStep, in order, from `afterSeq` on. Event `status`: the
-        run (ReviewResearchRun) when its status changes. The stream ends after the run is DONE, FAILED or CANCELLED.
-        New rows are read once a second.
+        run (ReviewResearchRun) when its status changes. The stream ends after the run is DONE, FAILED or CANCELLED,
+        or when the browser leaves. New rows are read once a second; a comment line keeps a quiet stream open. A back
+        office serves a few streams at a time (H2_RESEARCH_MAX_STREAMS) and answers 429 beyond them.
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: afterSeq, in: query, schema: { type: integer, minimum: 0, default: 0 } }
@@ -1086,6 +1088,7 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
         '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
 
 components:
   schemas:
@@ -1921,14 +1924,24 @@ components:
       type: object
       properties:
         itemIds: { type: array, maxItems: 500, items: { type: string, format: uuid } }
-        allOpen: { type: boolean, default: false, description: Every open resource and course candidate with no active run. }
+        allOpen:
+          type: boolean
+          default: false
+          description: Every open resource and course candidate with no active run and no DONE run as its newest.
 
     ReviewResearchEstimate:
       type: object
-      required: [items, maxModelCalls]
+      required: [items, maxModelCalls, alreadyResearched]
       properties:
-        items: { type: integer, description: Open resource and course candidates with no queued or running run. }
+        items:
+          type: integer
+          description: Open resource and course candidates with no queued or running run and no DONE run as their newest.
         maxModelCalls: { type: integer, format: int64, description: At most 14 model calls per item. }
+        alreadyResearched:
+          type: integer
+          description: >-
+            Open resource and course candidates with no queued or running run whose newest run is DONE; all open
+            skips them.
 
     ReviewResearchRuns:
       type: object

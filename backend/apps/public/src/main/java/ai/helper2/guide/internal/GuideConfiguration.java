@@ -241,12 +241,20 @@ class GuideConfiguration {
         guideModel == null
             ? GuideJudge.NONE
             : guideJudge(
-                model, settings.judge(), clock, budgetCounter, metrics, resilience, meters));
+                model,
+                settings.judge(),
+                llm.reasoningModel(),
+                clock,
+                budgetCounter,
+                metrics,
+                resilience,
+                meters));
   }
 
   static GuideJudge guideJudge(
       ChatModel model,
       GuideProperties.Judge judge,
+      String reasoningModel,
       Clock clock,
       CallCounter counter,
       ModelCallMetrics metrics,
@@ -256,10 +264,19 @@ class GuideConfiguration {
       log.info("AI guide judge off: no judge model (H2_GUIDE_JUDGE_MODEL) or no daily calls");
       return GuideJudge.NONE;
     }
+    if (judge.model().strip().equals(reasoningModel)) {
+      log.error(
+          "AI guide judge off: H2_GUIDE_JUDGE_MODEL is the reasoning model {}; a model does not judge"
+              + " its own answers",
+          reasoningModel);
+      return GuideJudge.NONE;
+    }
     log.info(
-        "AI guide judge on: model={}, {} calls a day, after each answer, never changing it",
+        "AI guide judge on: model={}, {} calls a day, at most {} answers at a time, after each"
+            + " answer, never changing it",
         judge.model(),
-        judge.dailyCalls());
+        judge.dailyCalls(),
+        judge.concurrent());
     return new SpringAiGuideJudge(
         model,
         judge.model(),
@@ -267,7 +284,10 @@ class GuideConfiguration {
         metrics,
         resilience,
         meters,
-        task -> Thread.ofVirtual().name("guide-judge").start(task));
+        new JudgeBulkhead(
+            judge.concurrent(),
+            task -> Thread.ofVirtual().name("guide-judge").start(task),
+            meters.counter(SpringAiGuideJudge.METER + ".dropped")::increment));
   }
 
   static QuoteRecords quoteRecords(Resources resources) {
