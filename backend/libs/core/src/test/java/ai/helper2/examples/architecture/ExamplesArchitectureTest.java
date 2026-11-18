@@ -30,8 +30,7 @@ class ExamplesArchitectureTest {
                         "ai.helper2.catalog..",
                         "ai.helper2.search..",
                         "ai.helper2.platform..",
-                        "ai.helper2.shared..",
-                        "ai.helper2.kernel..")))
+                        "ai.helper2.shared..")))
         .check(EXAMPLES);
   }
 

@@ -300,7 +300,8 @@ class ReportAndReviewIT extends ApiTestBase {
             "old",
             null,
             ai.helper2.catalog.ReviewQueue.Links.NONE);
-    for (int i = 0; i <= ai.helper2.catalog.usecase.ListReviewItems.MAX_PAGE_SIZE; i++) {
+    int largestPage = 100;
+    for (int i = 0; i <= largestPage; i++) {
       queue.open(
           ai.helper2.catalog.ReviewQueue.Kind.USER_REPORT,
           null,

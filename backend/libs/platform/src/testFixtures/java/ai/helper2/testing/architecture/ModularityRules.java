@@ -30,11 +30,6 @@ public abstract class ModularityRules {
 
   private static final List<String> STILL_THROWING =
       List.of(
-          "ai.helper2.catalog.usecase.AddCuratedResource",
-          "ai.helper2.catalog.usecase.ChangeRelationshipTarget",
-          "ai.helper2.catalog.usecase.CurateField",
-          "ai.helper2.catalog.usecase.ListReviewItems",
-          "ai.helper2.catalog.usecase.ResolveReviewItem",
           "ai.helper2.admin.usecase.ChangeRuntimeSetting",
           "ai.helper2.admin.usecase.DecideRelationshipItem",
           "ai.helper2.admin.usecase.DecideRelationshipTargetGroup",
