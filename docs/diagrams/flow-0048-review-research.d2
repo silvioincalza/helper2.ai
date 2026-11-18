@@ -1,0 +1,51 @@
+# Flowchart: the admin starts research on review items; a worker runs the agent; the admin confirms each attribute.
+# Source of truth: docs/adr/backoffice/0048-review-research-assistant.md (the code follows in the backend pull request).
+# Render: cd docs/diagrams && d2 fmt flow-0048-review-research.d2 && d2 flow-0048-review-research.d2 flow-0048-review-research.svg
+
+...@style
+
+direction: down
+
+start: "Admin: Research\n(one item, a selection, the page,\nor all open resource and course candidates)" {class: app}
+many: "More than one page?" {shape: diamond; class: decision}
+estimate: "Show the count and the estimated tokens;\nthe admin confirms" {class: app}
+queue: "review_research: one row per item,\nQUEUED" {class: data}
+worker: "Worker (virtual thread):\noldest QUEUED row,\nFOR UPDATE SKIP LOCKED → RUNNING" {class: app}
+budget: "Daily token budget left?" {shape: diamond; class: decision}
+waiting: "Stays QUEUED until the budget\nresets; the row says why" {class: fail}
+model: "MODEL_CALL: the item and the evidence so far\n(page text inside UntrustedText)" {class: app}
+next: "Tool call or final answer?" {shape: diamond; class: decision}
+limits: "12 tool calls or 3 minutes reached?" {shape: diamond; class: decision}
+tool: "TOOL_CALL: read_page · web_search · find_package\ngithub_repo · huggingface · catalog_lookup · check_url\n(read only; shadow libraries and private addresses refused)" {class: app}
+step: "review_research_step:\nrequest, response (≤ 200 KB), time, tokens" {class: data}
+check: "CHECK: EvidenceValidator on every citation;\nCONFIRMED · SINGLE_SOURCE · CONFLICT · NOT_FOUND\nper attribute" {class: app}
+done: "DONE: verdict and attributes" {class: data}
+failed: "FAILED: the reason; the admin can start it again" {class: fail}
+review: "Admin: timeline of the steps (SSE)\nand the attribute table" {class: app}
+decide: "Each changed attribute:\nConfirm · Edit · Keep current" {class: app}
+accept: "Accept: the confirmed values go into the candidate,\nthen the existing accept path (0038)" {class: app}
+reject: "Reject (one item), or batch reject:\nthe list with reasons first, then confirm" {class: app}
+
+start -> many
+many -> estimate: "yes"
+many -> queue: "no"
+estimate -> queue: "confirmed"
+queue -> worker
+worker -> budget
+budget -> waiting: "no"
+budget -> model: "yes"
+model -> step
+model -> next
+next -> limits: "tool call"
+limits -> failed: "yes"
+limits -> tool: "no"
+tool -> step
+tool -> model: "the response, as evidence"
+next -> check: "final answer"
+check -> step
+check -> done
+done -> review
+failed -> review
+review -> decide
+decide -> accept: "every changed attribute decided"
+review -> reject: "verdict: reject"
