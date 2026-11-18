@@ -41,7 +41,7 @@ class ScoutLiveWebSearchTest {
   ScoutLiveWebSearch search(String depth, Resilience resilience) {
     SourceSettings settings =
         new SourceSettings(
-            true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO);
+            true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO, null);
     return new ScoutLiveWebSearch(
         HttpClients.client(
             TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), settings),
