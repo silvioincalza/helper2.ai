@@ -1,12 +1,12 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { GUIDE_IDLE_TIMEOUT_MS } from '@/api/client';
 import { axeViolations } from '@/test/a11y';
+import { SSE_IDLE_TIMEOUT_MS } from '@/lib/sse';
 import { ADMIN } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin, settle } from '@/test/render';
 import type { ReviewResearchRun } from '@/api/types';
-import { parseEvents, restarted } from './ResearchTracePage';
+import { restarted } from './ResearchTracePage';
 
 const RUN = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ITEM = '11111111-1111-4111-8111-111111111111';
@@ -131,7 +131,7 @@ describe('admin: every step of a research run (ADR 0048)', () => {
       renderAdmin(`/admin/review/research/${RUN}`);
       expect(await screen.findByText('read_page')).toBeInTheDocument();
       expect(screen.queryByText('Live updates stopped.')).not.toBeInTheDocument();
-      await act(() => vi.advanceTimersByTimeAsync(GUIDE_IDLE_TIMEOUT_MS + 100));
+      await act(() => vi.advanceTimersByTimeAsync(SSE_IDLE_TIMEOUT_MS + 100));
       expect(await screen.findByRole('alert')).toHaveTextContent('Live updates stopped.');
       await userEvent.click(screen.getByRole('button', { name: 'Reconnect' }));
       expect(document.activeElement).toBe(
@@ -230,10 +230,21 @@ describe('admin: every step of a research run (ADR 0048)', () => {
     expect(restarted(queued, running)).toBe(false);
   });
 
-  it('reads server-sent events across chunks', () => {
-    const first = parseEvents('event:step\ndata:{"seq":1}\n\nevent:sta');
-    expect(first.events).toEqual([{ event: 'step', data: '{"seq":1}' }]);
-    const second = parseEvents(`${first.rest}tus\ndata:{"status":"DONE"}\n\n`);
-    expect(second.events).toEqual([{ event: 'status', data: '{"status":"DONE"}' }]);
+  it('Scenario: steps arrive on a stream with keep-alive comments and bare carriage returns', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      [`GET /admin/review-research/${RUN}`]: () => ({
+        run: run('RUNNING', 0),
+        result: null,
+        steps: [],
+      }),
+      [`GET /admin/review-research/${RUN}/events`]: () =>
+        new Response(
+          `: keep-alive\r\revent: step\r: still here\rdata: ${JSON.stringify(step(1, 'TOOL_CALL', 'web_search', '{"query":"Acme"}', '1. Acme'))}\r\r`,
+          { status: 200, headers: { 'content-type': 'text/event-stream' } },
+        ),
+    });
+    renderAdmin(`/admin/review/research/${RUN}`);
+    expect(await screen.findByText('web_search')).toBeInTheDocument();
   });
 });

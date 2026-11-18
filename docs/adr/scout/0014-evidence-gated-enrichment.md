@@ -283,7 +283,8 @@ place to say that.
       `helper2.scout.evidence.credits.remaining`.
     - **The one exception to "no page text stored".** The cleaned text of a product's pages (what `UntrustedPageText`
       left) is kept in Redis only, under a SHA-256 of the accepted page's URL, for `page-text-ttl`
-      (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`, PT24H; more than P1D stops startup). Only to retry: when the model is down or
+      (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`, PT24H; more than P1D stops startup of both apps). One record binds the two
+      periods, `ScoutEvidenceProperties` (catalog); the back office reads them from `ScoutPolicy`. Only to retry: when the model is down or
       the gap cap is spent, the next attempt within the day reads the cache and pays no credit. The raw page is never
       kept, and the text never goes to Postgres, logs or metrics. A cache that cannot be read or written does not stop
       the run: the read is a miss, and a warning names the class of the failure, never the URL or the text.
@@ -390,7 +391,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `FieldTargetsTest`, `EvidenceValidatorLadderTest`,
   `EvidenceValidatorWritingTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
   `LiveWebPageReaderTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`,
-  `RedisPageTextCacheIT`, `RedisPageTextCacheTest`, `ScoutPropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
+  `RedisPageTextCacheIT`, `RedisPageTextCacheTest`, `ScoutPropertiesBindingTest`, `ScoutEvidencePropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
   `JdbcEnrichmentCandidatesIT`, `SecurityIT`, `ResourcePage.test.tsx`, `Admin.test.tsx`, `evidenceSource.test.ts`.
 
 ## Alternatives considered

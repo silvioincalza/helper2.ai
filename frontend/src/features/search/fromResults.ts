@@ -2,6 +2,7 @@ import { useLocation, type Location } from 'react-router';
 import { resourceTypeValues } from '@/api/schema';
 import type { ResourceType, ResultCard } from '@/api/types';
 import { safeHref } from '@/lib/format';
+import { isSameSitePath } from '@/lib/sameSitePath';
 import type { GuidePick } from '@/lib/selection';
 
 export type PickForPage = Pick<
@@ -33,12 +34,10 @@ export function useFromHere(): FromResults {
   return toFromResults(useLocation(), undefined);
 }
 
-const SAME_SITE_PATH = /^\/(?![/\\])/;
-
 export function fromResults(state: unknown): FromResults {
   if (!state || typeof state !== 'object') return {};
   const s = state as Record<string, unknown>;
-  const from = typeof s.from === 'string' && SAME_SITE_PATH.test(s.from) ? s.from : undefined;
+  const from = typeof s.from === 'string' && isSameSitePath(s.from) ? s.from : undefined;
   return { from, pick: readPick(s.pick), card: readCard(s.card) };
 }
 

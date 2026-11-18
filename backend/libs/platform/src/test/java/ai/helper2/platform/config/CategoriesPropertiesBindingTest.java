@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.mock.env.MockEnvironment;
 
 class CategoriesPropertiesBindingTest {
 
@@ -32,5 +33,27 @@ class CategoriesPropertiesBindingTest {
       assertThat(catalog.get("prompt-libraries").getType()).isEqualTo(ResourceType.PROMPT);
       assertThat(catalog.get("image-generation").getWords().words()).contains("text to image");
     });
+  }
+
+  @Test
+  void theEnvironmentBindsTheSameCategoriesAsTheBeanWithEveryDiscoveryOption() {
+    context.run(c -> {
+      CategoriesProperties bound = CategoriesProperties.bind(c.getEnvironment());
+      assertThat(bound).isEqualTo(c.getBean(CategoriesProperties.class));
+      CategoriesProperties.Discovery health =
+          bound.categories().stream()
+              .filter(e -> e.id().equals("health"))
+              .findFirst()
+              .orElseThrow()
+              .discovery();
+      assertThat(health.minScore()).isEqualTo(0.5);
+      assertThat(health.indexLists()).isFalse();
+      assertThat(health.excludeDomains()).contains("webmd.com", "nhs.uk");
+    });
+  }
+
+  @Test
+  void anEnvironmentWithNoCategoriesBindsAnEmptyList() {
+    assertThat(CategoriesProperties.bind(new MockEnvironment()).categories()).isEmpty();
   }
 }

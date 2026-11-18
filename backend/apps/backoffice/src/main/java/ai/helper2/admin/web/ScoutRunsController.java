@@ -15,7 +15,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,7 +39,7 @@ class ScoutRunsController implements ScoutRunsApi {
   public ResponseEntity<List<ScoutRunDto>> startScoutRun(@Nullable ScoutRunRequestDto body) {
     List<RunSummary> runs;
     try {
-      runs = startRun.start(adminId(), body == null ? null : body.getSourceId());
+      runs = startRun.start(Admins.id(), body == null ? null : body.getSourceId());
     } catch (UnknownSource e) {
       throw new NotFoundException("No collector has this source id.");
     }
@@ -51,10 +50,6 @@ class ScoutRunsController implements ScoutRunsApi {
     }
     return ResponseEntity.status(HttpStatus.ACCEPTED)
         .body(runs.stream().map(ScoutRunsController::dto).toList());
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   static ScoutRunDto dto(RunSummary r) {

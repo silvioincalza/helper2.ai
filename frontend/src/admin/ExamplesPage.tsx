@@ -3,7 +3,7 @@ import { useCallback, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { api, ApiError } from '@/api/client';
+import { api, ApiError, problemDetail } from '@/api/client';
 import type { AdminHomeExample, AudiencePath, ResultCard } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
@@ -38,9 +38,8 @@ function noticeOf(e: unknown): Notice {
   const code = e.problem?.code;
   if (code === 'duplicate') return { kind: 'duplicate' };
   if (code === 'version-conflict') return { kind: 'conflict' };
-  if (code === 'invalid-request' && e.problem?.detail)
-    return { kind: 'invalid', detail: e.problem.detail };
-  return { kind: 'failed' };
+  const detail = problemDetail(e, { code: ['invalid-request'] });
+  return detail ? { kind: 'invalid', detail } : { kind: 'failed' };
 }
 
 export default function ExamplesPage() {
@@ -127,9 +126,7 @@ export default function ExamplesPage() {
     try {
       setDrafted((await adminApi.draftHomeExamples()).drafted);
     } catch (e) {
-      setDraftError(
-        e instanceof ApiError && e.problem?.detail ? e.problem.detail : t('admin.examples.failed'),
-      );
+      setDraftError(problemDetail(e) ?? t('admin.examples.failed'));
     } finally {
       setBusy(false);
     }
