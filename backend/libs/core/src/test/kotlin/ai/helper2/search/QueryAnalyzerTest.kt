@@ -118,6 +118,38 @@ class QueryAnalyzerTest {
   }
 
   @Test
+  fun `a word for the user's own device is not a content term, in every language`() {
+    assertEquals(
+      listOf("run", "llms", "locally"),
+      analyzer.analyze("Run LLMs locally on my laptop").contentTerms,
+    )
+    assertEquals(
+      listOf("llm", "offline"),
+      analyzer.analyze("LLM offline portatile").contentTerms,
+    )
+    assertEquals(listOf("llm", "lokal"), analyzer.analyze("LLM lokal Rechner").contentTerms)
+    assertEquals(listOf("llm", "local"), analyzer.analyze("LLM local portátil").contentTerms)
+    assertEquals(
+      listOf("llm", "local"),
+      analyzer.analyze("LLM local ordinateur").contentTerms,
+    )
+  }
+
+  @Test
+  fun `a platform name stays a content term, and a device word alone keeps its words`() {
+    assertEquals(
+      listOf("whisper", "macbook"),
+      analyzer.analyze("whisper app for macbook").contentTerms,
+    )
+    assertEquals(listOf("computer", "vision"), analyzer.analyze("computer vision").contentTerms)
+    assertEquals(listOf("laptop"), analyzer.analyze("laptop").contentTerms)
+    assertEquals(
+      listOf("llama", "laptop"),
+      analyzer.analyze("llama laptop").requiredVariants.first().split(' '),
+    )
+  }
+
+  @Test
   fun `a query of filler words only keeps its words`() {
     assertEquals(listOf("ollama"), analyzer.analyze("ollama").contentTerms)
     assertEquals(listOf("best", "new", "tools"), analyzer.analyze("best new tools").contentTerms)

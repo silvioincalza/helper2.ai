@@ -6,7 +6,7 @@ its relevance part with a message.
 
 | File | What | Read by |
 |---|---|---|
-| `search-queries.json` | 115 search queries in 11 groups: 84 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 20 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `./gradlew evalRecord`, `evalTest` |
+| `search-queries.json` | 116 search queries in 11 groups: 84 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 21 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0046](../adr/operations/0046-evaluation-guide-and-search.md)) | `./gradlew evalRecord`, `evalTest` |
 | `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0024, 0046) | same |
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
@@ -51,7 +51,7 @@ relevant result: a 0 for each pooled result is the label.
    or of any source left out, plus the 10 nearest vectors, that has no grade yet.
 3. **Judge.** Fill the `grade` column, keep the first three columns and append them to `search-qrels.tsv`. Expect
    25–30 pooled results per query; at about 10 s per result, 80 search queries take about 5 hours, the 11 home examples
-   about 45 minutes, the 20 everyday queries about 1.5 hours, the 20 semantic queries about 1.5 hours.
+   about 45 minutes, the 21 everyday queries about 1.5 hours, the 20 semantic queries about 1.5 hours.
 4. **Second judge.** Pick 20 % of the pooled lines at random (`shuf -n` over the pool), have a second person grade them
    without seeing the first grades, and save them as `search-qrels-second.tsv`. The report states Cohen's kappa; below
    0.6, agree on the grade definitions above and re-judge the disagreements.
