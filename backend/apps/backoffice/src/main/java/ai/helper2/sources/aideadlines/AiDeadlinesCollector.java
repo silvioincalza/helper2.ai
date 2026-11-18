@@ -12,7 +12,6 @@ import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
@@ -201,33 +200,20 @@ public class AiDeadlinesCollector implements Collector {
             .collect(Collectors.joining(". "));
     return Optional.of(
         new SourceHit(
-            ID,
-            conference,
-            HttpClients.link(link, canonical),
-            canonical,
-            null,
-            year == null || title.contains(year) ? title : title + " " + year,
-            description.isEmpty() ? null : description,
-            ValueOrigin.SOURCE_PROVIDED,
-            ResourceType.EVENT,
-            Audience.BUILD_WITH_AI,
-            null,
-            Set.of(),
-            Set.of("conference"),
-            null,
-            null,
-            Set.of(),
-            null,
-            DateFact.unknown(),
-            DateFact.unknown(),
-            List.of(),
-            now,
-            position,
-            DateFact.scheduledDay(e.start(), ID),
-            DateFact.scheduledDay(e.end(), ID),
-            location.isEmpty() ? null : location,
-            EventKind.CONFERENCE,
-            null));
+                ID,
+                conference,
+                HttpClients.link(link, canonical),
+                canonical,
+                year == null || title.contains(year) ? title : title + " " + year,
+                ResourceType.EVENT,
+                now)
+            .withDescription(description.isEmpty() ? null : description)
+            .withAudience(Audience.BUILD_WITH_AI)
+            .withTags(Set.of("conference"))
+            .withRank(position)
+            .withEventDays(DateFact.scheduledDay(e.start(), ID), DateFact.scheduledDay(e.end(), ID))
+            .withLocation(location.isEmpty() ? null : location)
+            .withEventKind(EventKind.CONFERENCE));
   }
 
   static LocalDate day(Object v) {

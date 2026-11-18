@@ -1,22 +1,22 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReviewItem } from '@/api/types';
+import type { ReviewCandidateDetails, ReviewItem } from '@/api/types';
 import { ADMIN, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 import { tagsOf } from './CandidateEditForm';
 
-const details = (over: Record<string, unknown> = {}) =>
-  JSON.stringify({
-    version: 2,
-    sourceId: 'discovery-ai-assistants',
-    url: 'https://engadget.com/2300677/google-gemini-carbon',
-    title: 'Google Gemini Carbon promises a leap | Engadget',
-    type: 'PRODUCT',
-    tags: ['ai-assistants'],
-    foundBy: [{ sourceId: 'discovery-ai-assistants' }],
-    ...over,
-  });
+const details = (over: Partial<ReviewCandidateDetails> = {}): ReviewCandidateDetails => ({
+  shape: 'CANDIDATE',
+  revision: 'seen',
+  url: 'https://engadget.com/2300677/google-gemini-carbon',
+  title: 'Google Gemini Carbon promises a leap | Engadget',
+  type: 'PRODUCT',
+  tags: ['ai-assistants'],
+  foundBy: ['discovery-ai-assistants'],
+  edited: [],
+  ...over,
+});
 
 const candidate = (over: Partial<ReviewItem> = {}): ReviewItem => ({
   id: '77777777-7777-5777-8777-777777777771',
@@ -40,7 +40,9 @@ function oneItem(put: () => unknown = () => candidate()) {
     'GET /admin/review-items': () => ({
       items: [
         edited
-          ? candidate({ details: details({ type: 'NEWS', edited: ['title', 'type'] }) })
+          ? candidate({
+              details: details({ revision: 'saved', type: 'NEWS', edited: ['title', 'type'] }),
+            })
           : candidate(),
       ],
       total: 1,
@@ -75,7 +77,7 @@ describe('Feature: an admin fixes a resource candidate before accepting it (ADR 
 
     await waitFor(() =>
       expect(api.callsTo('PUT', PUT_PATH)[0]?.body).toEqual({
-        expectedDetails: details(),
+        expectedRevision: 'seen',
         title: 'Google Gemini Carbon promises a leap',
         type: 'NEWS',
       }),

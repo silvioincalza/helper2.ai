@@ -4,12 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
 import io.micrometer.observation.ObservationRegistry;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -58,6 +64,35 @@ class HackerNewsSourceTest {
     server.route("/api/v1/search", FixtureServer.Reply.ok(STORIES));
 
     SourceHit h = source().search(new SourceQuery("gpt-6 astra", List.of(), null, 10)).getFirst();
+    assertThat(h)
+        .isEqualTo(
+            new SourceHit(
+                "hacker-news",
+                "45112233",
+                URI.create("https://openai.com/index/gpt-6-astra/"),
+                CanonicalUrl.of("https://openai.com/index/gpt-6-astra"),
+                null,
+                "GPT-6 Astra: A new generation of intelligence",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.NEWS,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                new DateFact(
+                    Instant.parse("2026-09-03T17:01:22Z"),
+                    DatePrecision.INSTANT,
+                    "hacker-news",
+                    List.of(),
+                    false),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant()));
 
     assertThat(h.getSourceId()).isEqualTo("hacker-news");
     assertThat(h.getExternalId()).isEqualTo("45112233");

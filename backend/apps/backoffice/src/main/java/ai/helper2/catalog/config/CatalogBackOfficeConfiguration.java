@@ -14,8 +14,6 @@ import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.ReviewDecisions;
 import ai.helper2.catalog.ReviewQueue;
-import ai.helper2.catalog.internal.CatalogBackOfficeAdapters;
-import ai.helper2.catalog.internal.CatalogSearchSource;
 import ai.helper2.catalog.usecase.AddCuratedResource;
 import ai.helper2.catalog.usecase.BackfillCategories;
 import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
@@ -34,6 +32,7 @@ import ai.helper2.catalog.usecase.PurgeExpiredData;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLocks;
+import ai.helper2.search.DescribedSource;
 import ai.helper2.shared.CategoryCatalog;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
@@ -44,19 +43,18 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.modulith.NamedInterface;
 import org.springframework.transaction.annotation.Transactional;
 
 @NamedInterface("backoffice")
-@Import(CatalogBackOfficeAdapters.class)
+@EnableCatalogBackOfficeAdapters
 public class CatalogBackOfficeConfiguration {
 
   @Bean
   AddCuratedResource addCuratedResource(
       CatalogWriter writer,
       Resources resources,
-      @Qualifier("curatedSearchSource") CatalogSearchSource curated,
+      @Qualifier("curatedSearchSource") DescribedSource curated,
       Clock clock) {
     return new AddCuratedResource(writer, resources, curated.getDescriptor(), clock);
   }

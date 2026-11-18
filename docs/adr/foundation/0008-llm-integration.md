@@ -91,7 +91,10 @@ Without a configured model the application must still work.
    the classifier step `classify`).
    The prompt tag is the prompt's version: the first 8 hex characters of the SHA-256 of the rendered system prompt
    (`ModelCallMetrics.promptVersion`), so an edited prompt or limit shows as a new series with no number to keep by
-   hand. Gauges show the calls left under each daily cap ([0009](0009-observability.md)).
+   hand. Every adapter takes its version from this one function, and no adapter names a version by hand. A version
+   stored with data is the same value as the tag: the enrichment run (`enrichment_run.prompt_version`,
+   [0014](../scout/0014-evidence-gated-enrichment.md) §4) and the evidence of an event's days
+   ([0012](../scout/0012-scout-collectors-and-events.md)). Gauges show the calls left under each daily cap ([0009](0009-observability.md)).
 10. **Blocking by default, a stream for the guide.** Every adapter waits for the whole answer
    (`BudgetedChat.text`, `.entity`). The guide can read its calls as a stream instead (`H2_GUIDE_MODEL_STREAM=ON`,
    `BudgetedChat.streamed` and `ChatStream`, [0035](../guide/0035-guide-model-stream.md)): same request, same

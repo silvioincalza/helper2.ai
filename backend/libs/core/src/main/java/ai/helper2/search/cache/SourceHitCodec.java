@@ -110,40 +110,41 @@ final class SourceHitCodec {
         }
         hits.add(
             new SourceHit(
-                sourceId,
-                n.path("externalId").asString(),
-                URI.create(n.path("url").asString()),
-                CanonicalUrl.of(n.path("canonicalUrl").asString()),
-                CanonicalUrl.of(text(n, "repositoryUrl")),
-                n.path("title").asString(),
-                text(n, "description"),
-                EnumUtils.getEnum(
-                    ValueOrigin.class,
-                    n.path("descriptionOrigin").asString(),
-                    ValueOrigin.SOURCE_PROVIDED),
-                EnumUtils.getEnum(
-                    ResourceType.class, n.path("type").asString(), ResourceType.OTHER),
-                EnumUtils.getEnum(Audience.class, n.path("audience").asString(), Audience.UNKNOWN),
-                EnumUtils.getEnum(TechLevel.class, text(n, "techLevel")),
-                strings(n.path("useCases")),
-                strings(n.path("tags")),
-                text(n, "license"),
-                EnumUtils.getEnum(Pricing.class, text(n, "pricing")),
-                strings(n.path("platforms")),
-                n.has("openSource") ? n.path("openSource").asBoolean() : null,
-                readDate(n.path("published")),
-                readDate(n.path("updated")),
-                pop,
-                Instant.parse(n.path("retrievedAt").asString()),
-                n.path("rank").asInt(),
-                readDate(n.path("eventStart")),
-                readDate(n.path("eventEnd")),
-                text(n, "location"),
-                EnumUtils.getEnum(EventKind.class, text(n, "eventKind")),
-                EnumUtils.getEnum(EventFormat.class, text(n, "eventFormat")),
-                java.util.Map.of(),
-                java.util.Set.of(),
-                foundIn(n.path("foundIn"))));
+                    sourceId,
+                    n.path("externalId").asString(),
+                    URI.create(n.path("url").asString()),
+                    CanonicalUrl.of(n.path("canonicalUrl").asString()),
+                    n.path("title").asString(),
+                    EnumUtils.getEnum(
+                        ResourceType.class, n.path("type").asString(), ResourceType.OTHER),
+                    Instant.parse(n.path("retrievedAt").asString()))
+                .withRepository(CanonicalUrl.of(text(n, "repositoryUrl")))
+                .withDescription(
+                    text(n, "description"),
+                    EnumUtils.getEnum(
+                        ValueOrigin.class,
+                        n.path("descriptionOrigin").asString(),
+                        ValueOrigin.SOURCE_PROVIDED))
+                .withAudience(
+                    EnumUtils.getEnum(
+                        Audience.class, n.path("audience").asString(), Audience.UNKNOWN))
+                .withTechLevel(EnumUtils.getEnum(TechLevel.class, text(n, "techLevel")))
+                .withUseCases(strings(n.path("useCases")))
+                .withTags(strings(n.path("tags")))
+                .withLicense(
+                    text(n, "license"),
+                    n.has("openSource") ? n.path("openSource").asBoolean() : null)
+                .withPricing(EnumUtils.getEnum(Pricing.class, text(n, "pricing")))
+                .withPlatforms(strings(n.path("platforms")))
+                .withPublished(readDate(n.path("published")))
+                .withUpdated(readDate(n.path("updated")))
+                .withPopularity(pop)
+                .withRank(n.path("rank").asInt())
+                .withEventDays(readDate(n.path("eventStart")), readDate(n.path("eventEnd")))
+                .withLocation(text(n, "location"))
+                .withEventKind(EnumUtils.getEnum(EventKind.class, text(n, "eventKind")))
+                .withEventFormat(EnumUtils.getEnum(EventFormat.class, text(n, "eventFormat")))
+                .withFoundIn(foundIn(n.path("foundIn"))));
       }
       return new CachedHits(hits, Instant.parse(root.path("fetchedAt").asString()));
     } catch (RuntimeException e) {

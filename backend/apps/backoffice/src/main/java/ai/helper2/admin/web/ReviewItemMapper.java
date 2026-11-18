@@ -1,18 +1,23 @@
 package ai.helper2.admin.web;
 
+import ai.helper2.admin.usecase.ReviewDetails;
+import ai.helper2.admin.usecase.ReviewItemView;
 import ai.helper2.api.common.model.AiContentMarkerDto;
 import ai.helper2.api.common.model.AudiencePathDto;
 import ai.helper2.api.generated.model.DraftedExampleDto;
+import ai.helper2.api.generated.model.KnownTargetKindDto;
+import ai.helper2.api.generated.model.ReviewCandidateDetailsDto;
+import ai.helper2.api.generated.model.ReviewDetailsDto;
+import ai.helper2.api.generated.model.ReviewDetailsShapeDto;
 import ai.helper2.api.generated.model.ReviewItemDto;
 import ai.helper2.api.generated.model.ReviewKindDto;
+import ai.helper2.api.generated.model.ReviewKnownTargetProposalDetailsDto;
 import ai.helper2.api.generated.model.ReviewStatusDto;
-import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.api.generated.model.ReviewTextDetailsDto;
 import ai.helper2.examples.WaitingDraft;
-import ai.helper2.examples.usecase.ReadExampleDraft;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
-import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -20,11 +25,9 @@ import org.springframework.stereotype.Component;
 class ReviewItemMapper {
   static final List<String> DRAFT_FIELDS = List.of("draft.label", "draft.query");
 
-  private final ReadExampleDraft drafts;
   private final LlmSettings llm;
 
-  ReviewItemMapper(ReadExampleDraft drafts, LlmSettings llm) {
-    this.drafts = drafts;
+  ReviewItemMapper(LlmSettings llm) {
     this.llm = llm;
   }
 
@@ -32,8 +35,7 @@ class ReviewItemMapper {
     return llm.provider();
   }
 
-  ReviewItemDto dto(ReviewQueue.Item i) {
-    Optional<WaitingDraft> draft = drafts.in(i);
+  ReviewItemDto dto(ReviewItemView i) {
     return new ReviewItemDto(
             i.id(),
             ReviewKindDto.fromValue(i.kind().name()),
@@ -42,12 +44,40 @@ class ReviewItemMapper {
             UtcTimes.odt(i.createdAt()))
         .resourceId(i.resourceId())
         .resourceTitle(i.resourceTitle())
-        .details(i.details())
-        .draft(draft.map(ReviewItemMapper::draft).orElse(null))
-        .aiContent(marker(draft.orElse(null)))
+        .details(details(i.details()))
+        .draft(i.draft() == null ? null : draft(i.draft()))
+        .aiContent(marker(i.draft()))
         .resolvedAt(UtcTimes.odt(i.resolvedAt()))
         .resolvedBy(i.resolvedBy())
         .categories(i.categories());
+  }
+
+  private static @Nullable ReviewDetailsDto details(@Nullable ReviewDetails details) {
+    return switch (details) {
+      case null -> null;
+      case ReviewDetails.Text t -> new ReviewTextDetailsDto(ReviewDetailsShapeDto.TEXT, t.text());
+      case ReviewDetails.Candidate c ->
+          new ReviewCandidateDetailsDto(
+                  ReviewDetailsShapeDto.CANDIDATE,
+                  c.revision(),
+                  c.url(),
+                  c.title(),
+                  c.type(),
+                  c.tags(),
+                  c.foundBy(),
+                  c.edited())
+              .snippet(c.snippet());
+      case ReviewDetails.KnownTargetProposal p ->
+          new ReviewKnownTargetProposalDetailsDto(
+              ReviewDetailsShapeDto.KNOWN_TARGET_PROPOSAL,
+              p.name(),
+              KnownTargetKindDto.fromValue(p.kind().name()),
+              ReviewKnownTargetProposalDetailsDto.RuleEnum.fromValue(p.rule()),
+              p.count(),
+              p.examples(),
+              p.otherNames(),
+              p.edited());
+    };
   }
 
   private @Nullable AiContentMarkerDto marker(@Nullable WaitingDraft d) {

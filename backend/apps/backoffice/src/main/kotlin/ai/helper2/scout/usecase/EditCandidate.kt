@@ -73,11 +73,11 @@ constructor(
     data class Invalid(val reason: String) : Outcome
   }
 
-  fun edit(itemId: UUID, expectedDetails: String?, change: CandidateEdit, by: String): Outcome {
+  fun edit(itemId: UUID, expectedRevision: String, change: CandidateEdit, by: String): Outcome {
     val item = items.find(itemId) ?: return Outcome.NotFound
     if (!item.open) return Outcome.NotOpen
     if (!item.resourceCandidate) return Outcome.NotACandidate
-    if (item.details != expectedDetails) return Outcome.ChangedMeanwhile
+    if (CandidateRevision.of(item.details) != expectedRevision) return Outcome.ChangedMeanwhile
     val checked =
       try {
         checked(change)

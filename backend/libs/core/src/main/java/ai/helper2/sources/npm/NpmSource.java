@@ -13,7 +13,6 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.PlatformBuild;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
@@ -38,20 +37,19 @@ public class NpmSource implements SearchSource {
     this.clock = clock;
     this.http = builder.baseUrl(settings.baseUrl()).build();
     this.descriptor =
-        new SourceDescriptor(
-            "npm",
-            "npm registry",
-            "npm",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://www.npmjs.com"),
-            URI.create("https://docs.npmjs.com/policies/open-source-terms"),
-            "Package metadata from the npm registry API",
-            EnumSet.of(ResourceType.LIBRARY, ResourceType.MCP_SERVER, ResourceType.AGENT),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            40);
+        SourceDescriptor.external(
+                "npm",
+                "npm registry",
+                "npm",
+                SourceMode.LIVE,
+                URI.create("https://www.npmjs.com"),
+                EnumSet.of(ResourceType.LIBRARY, ResourceType.MCP_SERVER, ResourceType.AGENT),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://docs.npmjs.com/policies/open-source-terms"))
+            .withAttribution("Package metadata from the npm registry API")
+            .enabledWhen(settings.enabled())
+            .withPriority(40);
   }
 
   @Override
@@ -122,27 +120,21 @@ public class NpmSource implements SearchSource {
                     now))
             : List.of();
     return new SourceHit(
-        "npm",
-        name,
-        HttpClients.link(url, canonical),
-        canonical,
-        CanonicalUrl.of(HttpClients.text(p.path("links"), "repository")),
-        name,
-        description,
-        ValueOrigin.SOURCE_PROVIDED,
-        Classification.typeOf(name, description, keywords, ResourceType.LIBRARY),
-        Audience.BUILD_WITH_AI,
-        null,
-        Set.of(),
-        keywords,
-        license,
-        null,
-        Set.of("node"),
-        Classification.openSource(license),
-        DateFact.unknown(),
-        DateFact.fromSource(HttpClients.instant(p, "date"), "npm", now),
-        pop,
-        now,
-        position);
+            "npm",
+            name,
+            HttpClients.link(url, canonical),
+            canonical,
+            name,
+            Classification.typeOf(name, description, keywords, ResourceType.LIBRARY),
+            now)
+        .withRepository(CanonicalUrl.of(HttpClients.text(p.path("links"), "repository")))
+        .withDescription(description)
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(keywords)
+        .withLicense(license, Classification.openSource(license))
+        .withPlatforms(Set.of("node"))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(p, "date"), "npm", now))
+        .withPopularity(pop)
+        .withRank(position);
   }
 }

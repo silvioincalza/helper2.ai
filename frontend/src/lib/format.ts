@@ -150,14 +150,19 @@ function comingTime(
   };
 }
 
+export interface BackAgainKeys {
+  today: string;
+  tomorrow: string;
+}
+
 export function backAgain(
-  keyPrefix: string,
+  keys: BackAgainKeys,
   iso: string | null | undefined,
   clock: VisitorClock,
 ): { key: string; time: string } | undefined {
   const back = comingTime(iso, clock);
   if (!back) return undefined;
-  return { key: `${keyPrefix}${back.tomorrow ? 'BackTomorrowAt' : 'BackAt'}`, time: back.time };
+  return { key: back.tomorrow ? keys.tomorrow : keys.today, time: back.time };
 }
 
 export function displayHost(url: string): string {

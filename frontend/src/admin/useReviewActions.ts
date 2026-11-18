@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { ApiError, problemDetail } from '@/api/client';
@@ -6,6 +6,7 @@ import type { ReviewItem, ReviewResearchStart } from '@/api/types';
 import { bulkSummary, type Decision } from './ReviewBulk';
 import type { ResearchOutcome } from './ResearchDecisions';
 import { NOTE_MAX } from './limits';
+import { candidateOf } from './ReviewItemDetails';
 
 type ActionError = { kind: 'failed' | 'alreadyDecided' } | { kind: 'refused'; detail: string };
 
@@ -41,6 +42,7 @@ export function useReviewActions({
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [error, setError] = useState<ActionError | null>(null);
   const [listed, setListed] = useState<ReviewItem['alreadyListed'] | null>(null);
+  const inFlight = useRef(false);
   const [busy, setBusy] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [bulkResult, setBulkResult] = useState('');
@@ -48,25 +50,38 @@ export function useReviewActions({
   const [rejecting, setRejecting] = useState<ReviewItem[]>([]);
   const acceptBlocked = !!researched && !researched.complete;
 
+  const begin = () => {
+    if (inFlight.current) return false;
+    inFlight.current = true;
+    setBusy(true);
+    return true;
+  };
+  const end = () => {
+    inFlight.current = false;
+    setBusy(false);
+  };
+
   const noteOf = (id: string) => notes[id] ?? '';
   const setNote = (id: string, text: string) => setNotes((n) => ({ ...n, [id]: text }));
 
   const resolve = async (item: ReviewItem, decision: Decision) => {
-    if (busy || item.status !== 'OPEN') return;
+    if (inFlight.current || item.status !== 'OPEN') return;
     if (decision === 'ACCEPTED' && acceptBlocked) {
       setAnnouncement(t('admin.research.acceptWhy', { count: researched?.left.length ?? 0 }));
       return;
     }
-    setBusy(true);
+    const edit = decision === 'ACCEPTED' ? researched?.edit : null;
+    const revision = candidateOf(item)?.revision;
+    if (edit && !revision) {
+      setError({ kind: 'refused', detail: t('admin.research.unreadable') });
+      return;
+    }
+    if (!begin()) return;
     setError(null);
     setListed(null);
     try {
-      const accepted = decision === 'ACCEPTED' ? researched : null;
-      if (accepted?.edit) {
-        await adminApi.editCandidate(item.id, {
-          expectedDetails: item.details ?? null,
-          ...accepted.edit,
-        });
+      if (edit && revision) {
+        await adminApi.editCandidate(item.id, { expectedRevision: revision, ...edit });
       }
       const text = (notes[item.id]?.trim() ?? '').slice(0, NOTE_MAX);
       const decided = await adminApi.resolveReviewItem(item.id, {
@@ -84,7 +99,7 @@ export function useReviewActions({
       setError(failure);
       if (failure.kind === 'alreadyDecided') reloadQueue();
     } finally {
-      setBusy(false);
+      end();
     }
   };
 
@@ -93,8 +108,7 @@ export function useReviewActions({
     text: string | undefined,
     ids: string[] = pickedIds(),
   ) => {
-    if (busy || ids.length === 0) return;
-    setBusy(true);
+    if (ids.length === 0 || !begin()) return;
     setError(null);
     try {
       const result = await adminApi.resolveReviewItems({
@@ -112,13 +126,12 @@ export function useReviewActions({
       setError({ kind: 'failed' });
       reloadQueue();
     } finally {
-      setBusy(false);
+      end();
     }
   };
 
   const startResearch = async (body: ReviewResearchStart) => {
-    if (busy) return;
-    setBusy(true);
+    if (!begin()) return;
     setError(null);
     try {
       const started = await adminApi.startReviewResearch(body);
@@ -128,7 +141,7 @@ export function useReviewActions({
     } catch (e) {
       setError(actionErrorOf(e));
     } finally {
-      setBusy(false);
+      end();
     }
   };
 
