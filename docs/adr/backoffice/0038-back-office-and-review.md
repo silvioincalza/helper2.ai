@@ -309,7 +309,8 @@ than a hundred), so the question is the same for each of them: what is this name
       a candidate type. A confirmed canonical URL is the page it is indexed at, and the listed check uses it. Every
       other confirmed value becomes a curated value of the new resource (§25), with its own `SET_FIELD` entry: a
       description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the
-      catalog refuses a confirmed value, the answer is a 400, nothing is added and the item stays open. When the page was listed meanwhile (as a resource or as a source record of one), accepting
+      catalog refuses a confirmed value, the answer is a 400 that names the field and the reason, nothing is added and
+      the item stays open; the page shows the sentence. When the page was listed meanwhile (as a resource or as a source record of one), accepting
       adds nothing: the item is closed as ACCEPTED with the note "Already listed as <title>.", and the review page says
       so and links to the listed resource. The edits are not applied; the admin makes them on the listed page.
     - The accepted record keeps the signals its collector stated (stars, last push, archived, fork:
@@ -340,6 +341,8 @@ than a hundred), so the question is the same for each of them: what is this name
     their own: type, pricing, license, openSource, techLevel, audience, language, publishedAt and description. The
     value must be one the field takes (an SPDX id for a licence; no OTHER type, no UNKNOWN audience; a catalog
     language; a date `YYYY-MM-DD`, not in the future; a description of 1 to 4000 characters, stored as `CURATED`).
+    A value the field cannot take is a 400 whose `detail` names the field and the reason ("This value is not allowed
+    for pricing.", "The published date must be YYYY-MM-DD."), never the value; the page shows it under the field.
     - The value is written to the resource's column, and the field is listed in `resource.curated_fields`.
     - Accepting a candidate also curates its description, language and published date
       (`V2026.11.6.4__curated_description_language_published.sql`); no source or run changes them after.
@@ -358,7 +361,7 @@ than a hundred), so the question is the same for each of them: what is this name
     - The events seed overwrites only the fields it asserts (eventDates, eventFormat), so it leaves an admin's value
       on the same event alone (`scripts/industry-events-seed.mjs`).
 27. **Drop the AI's value:** `POST /admin/resources/{id}/fields/{field}/drop`, for any field the AI writes, use case
-    and platforms too. Language, published date and description are no field the AI writes: 400. It rejects the AI's values, as the code re-check does
+    and platforms too. Language, published date and description are no field the AI writes: a 400 that names the field. It rejects the AI's values, as the code re-check does
     ([0014](../scout/0014-evidence-gated-enrichment.md)). A value a source states or an admin set stays. The page then shows the
     source's value, or "Not stated": a rejected estimate is not shown (`FieldStates`).
 28. **Audit:** `SET_FIELD` (`SET <field>`) and `DROP_FIELD` (`DROPPED <field> <count>`), with the resource id.

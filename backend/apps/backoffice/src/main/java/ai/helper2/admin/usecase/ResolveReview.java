@@ -33,7 +33,8 @@ public class ResolveReview {
 
     record UnreadableCandidate() implements NotAdded {}
 
-    record ConfirmedValueRefused(String field) implements NotAdded, Refused {}
+    record ConfirmedValueRefused(String field, CurateField.Outcome.ValueRefused why)
+        implements NotAdded, Refused {}
 
     record UnreadableProposal() implements NotAdded {}
 
@@ -193,9 +194,13 @@ public class ResolveReview {
   private Addition applyConfirmed(AcceptOutcome.Indexed indexed, String adminId) {
     for (Map.Entry<String, String> confirmed : indexed.getConfirmed().entrySet()) {
       String field = confirmed.getKey();
-      if (!(confirm(indexed, field, confirmed.getValue(), adminId)
-          instanceof CurateField.Outcome.Curated)) {
-        return new Addition.Stopped(new Outcome.ConfirmedValueRefused(field));
+      switch (confirm(indexed, field, confirmed.getValue(), adminId)) {
+        case CurateField.Outcome.Curated curated -> {}
+        case CurateField.Outcome.ValueRefused why -> {
+          return new Addition.Stopped(new Outcome.ConfirmedValueRefused(field, why));
+        }
+        case CurateField.Outcome.NoSuchResource gone ->
+            throw new IllegalStateException("the added resource is gone: " + indexed.getId());
       }
     }
     return ADDED;

@@ -274,27 +274,71 @@ class CuratedFieldApiIT extends ApiTestBase {
   }
 
   @Test
-  void aRefusedSetOrDropAnswersTheSameProblemForEveryReason() throws Exception {
-    String invalid = "Invalid request parameters.";
+  void aFieldThatCannotBeSetIsRefusedWithItsName() throws Exception {
+    set(fixture.resource, "useCase", "coding")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This field cannot be set: useCase."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aValueTheFieldCannotTakeIsRefusedWithTheFieldsName() throws Exception {
+    set(fixture.resource, "pricing", "CHEAP")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This value is not allowed for pricing."));
+    set(fixture.resource, "language", "xx")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This value is not allowed for language."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void anEmptyDescriptionIsRefusedWithTheLengthItMustHave() throws Exception {
+    set(fixture.resource, "description", " ")
+        .andExpect(
+            problem(ProblemType.INVALID_REQUEST, "The description must be 1 to 4000 characters."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aPublishedDateThatIsNoDateIsRefusedWithTheFormatItMustHave() throws Exception {
+    set(fixture.resource, "publishedAt", "2 March")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "The published date must be YYYY-MM-DD."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aPublishedDateInTheFutureIsRefusedAsSuch() throws Exception {
+    set(fixture.resource, "publishedAt", "2999-01-01")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "The published date is in the future."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aDropOfAFieldTheAiDoesNotWriteIsRefusedWithItsName() throws Exception {
+    drop(fixture.resource, "description")
+        .andExpect(
+            problem(ProblemType.INVALID_REQUEST, "The AI writes no such field: description."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aSetOrDropOnAResourceThatIsGoneIsNotFound() throws Exception {
     String missing = "Resource not found.";
     UUID unknown = UUID.randomUUID();
 
-    set(fixture.resource, "useCase", "coding")
-        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
-    set(fixture.resource, "pricing", "CHEAP")
-        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
-    set(fixture.resource, "description", " ")
-        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
-    set(fixture.resource, "publishedAt", "2 March")
-        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
-    set(fixture.resource, "publishedAt", "2999-01-01")
-        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
     set(unknown, "pricing", "PAID").andExpect(problem(ProblemType.NOT_FOUND, missing));
     set(unknown, "description", "Writes notes.").andExpect(problem(ProblemType.NOT_FOUND, missing));
     set(unknown, "publishedAt", "2025-03-02").andExpect(problem(ProblemType.NOT_FOUND, missing));
-    drop(fixture.resource, "description").andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
     drop(unknown, "license").andExpect(problem(ProblemType.NOT_FOUND, missing));
 
+    assertNothingChanged();
+  }
+
+  private void assertNothingChanged() {
     assertThat(column("curated_fields")).isEqualTo("{}");
     assertThat(audit()).isEmpty();
   }

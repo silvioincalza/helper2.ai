@@ -48,11 +48,16 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    `ApiExceptionHandler` stays the one writer of the problem response: `BookmarksController` throws
    `BadRequestException` for `InvalidUrl` and `OverLimit`, `PreferencesController` throws
    `ApiProblem(SIGN_IN_REQUIRED)` for `NoSuchUser`, `ReviewController` maps `CurateField.Outcome`,
-   `CurateField.DropOutcome` and `ChangeRelationshipTarget.Outcome`. A use case that calls another use case maps its
+   `CurateField.DropOutcome` and `ChangeRelationshipTarget.Outcome`. A refusal whose reason the user must read is an
+   `ApiProblem` with its own sentence as `detail`: `ApiExceptionHandler` answers "Invalid request parameters." for
+   every `BadRequestException`, whatever its text. A use case that calls another use case maps its
    outcome the same way, into its own: `ChangeRelationshipTarget` turns `AddCuratedResource.Outcome.InvalidUrl` into
    its `InvalidResourceUrl`. The sentences of an outcome that two endpoints answer are written once, in the `web`
    package: `ReviewProblems.notAdded` for the single and the bulk decision, `KnownTargetProblems.listIsFull` for the
-   known targets, the review decision and the group decision.
+   known targets, the review decision and the group decision, `CuratedFieldProblems.reason` for a curated field and
+   for a confirmed value of an accepted candidate. The refusals of a value are a sealed part of the outcome,
+   `CurateField.Outcome.ValueRefused` (`UnknownField`, `ValueNotAllowed`, `InvalidDescription`, `NotADate`,
+   `DateInTheFuture`), and `ConfirmedValueRefused` carries the field and that refusal.
 5. **A refusal after a write is a `Refused` record, and it runs in a unit of work.** `Refused` is a marker interface
    of the kernel (`ai.helper2.shared`). `TransactionalUnitOfWork.run` looks at the result of the work: when it is
    `Refused` and this unit opened the transaction, the transaction is rolled back and the result is returned. A unit
@@ -91,7 +96,8 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    curated fields, the relationship targets and their groups, the known targets, the runtime settings and the
    enrichment queue pin them, with the rows and the audit entries a refusal leaves. Accepting a candidate whose
    confirmed value the catalog refuses is a 400 `invalid-request`, the problem `CurateField` gives for that value on
-   its own endpoint.
+   its own endpoint: its `detail` names the field and has the same reason ("The catalog refuses the confirmed pricing.
+   This value is not allowed for pricing. Edit the candidate, then accept again.").
 
 ### Code
 
@@ -111,7 +117,8 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
   `ResolveReviewItems`, `DecideRelationshipItem`, `DecideRelationshipTargetGroup`, `ChangeRuntimeSetting`,
   `ResetRuntimeSetting`, `ListEnrichmentQueue`) — the outcomes; `CheckAwesomeLists.java` (`setAsAwesomeList`) reads
   the outcome of `CurateField`; `.../admin/config/AdminUseCaseConfiguration.java` — the wiring.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewProblems.java`, `KnownTargetProblems.java`,
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewProblems.java`, `CuratedFieldProblems.java`,
+  `KnownTargetProblems.java`,
   `RelationshipTargetsController.java`, `KnownTargetsController.java`, `RuntimeSettingsController.java` — the mapping.
 - `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the rule.
 - Tests: `TransactionalUnitOfWorkTest` (rollback for a `Refused` result, a joined transaction is not marked),
@@ -161,9 +168,8 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 - A refusal must be the top-level result of the unit. A `Refused` value wrapped in another result (an `Optional`, a
   record) is committed: `TransactionalUnitOfWorkTest` pins it. `ModularityRules` holds the pairing: a class that
   declares a `Refused` outcome depends on `UnitOfWork`.
-- The 400 for a confirmed value the catalog refuses has the detail of every `BadRequestException`, "Invalid request
-  parameters.": it does not name the field. Such a value is in a candidate only when the rules of `EditCandidate`
-  and of `CurateField` differ.
+- A confirmed value the catalog refuses is in a candidate only when the rules of `EditCandidate` and of `CurateField`
+  differ. The 400 names the field and the reason; it does not repeat the value.
 - A bulk decision stops at the first item an accept cannot add and answers its problem. The items before it stay
   decided, each in its own unit of work; the ones after it are not tried.
 - `ResolveReview` joined to another unit does not undo a refused confirmed value: only `DecideRelationshipItem`
