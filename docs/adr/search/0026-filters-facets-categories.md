@@ -104,9 +104,10 @@ them assigned by code first, and measured on labelled items before a model is ev
    come from public source data only. So they are code-made values, not AI-made ones, and carry no AI label
    ([0033](../guide/0033-marking-ai-written-text-research-trail.md)). The page says so in one line: "Categories are set by fixed rules
    from what the sources say, not by AI."
-15. **When.** On every catalog upsert, for every source: after the labels are rebuilt, `JdbcCatalogWriter` reads each
-   touched resource's title, its records' descriptions, every tag of every record, its type and its finders, runs the
-   matcher and writes its `CATEGORY` labels again. One extra query per upsert batch, not per resource.
+15. **When.** On every catalog upsert, for every source: after the labels are rebuilt, `JdbcCatalogWriter` calls
+   `RefreshCategories` (catalog use case) in the same transaction. It reads each touched resource's title, its
+   records' descriptions, every tag of every record, its type and its finders (`CategoryInputs`), runs the matcher
+   and writes its `CATEGORY` labels again (`CategoryAssignments`). One extra query per upsert batch, not per resource.
 16. **Backfill.** `BackfillCategories` (catalog use case) assigns the categories of the whole catalog again, 500
    resources a batch, each batch its own transaction, on one replica (cluster lock `category-backfill`). It is
    idempotent. It writes the fingerprint of the category words and rules (`CategoryCatalog.fingerprint`) and the
@@ -173,9 +174,10 @@ them assigned by code first, and measured on labelled items before a model is ev
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Categories.kt` — `Category`, `CategoryCatalog`, `CategoryInput`,
   `CategoryMatcher`; `CategoryWords.kt` — the words and their patterns.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`, `platform/CategoryConfiguration.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`assignCategories`, `refreshCategories`,
-  `resourceIdsAfter`), `JdbcJobMarkers.java` (`marker`, `mark`), `CatalogSearchSource.java`; `catalog/ResourceCards.java`,
-  `CategoryLabels.java`, `JobMarkers.java`; `catalog/usecase/BackfillCategories.java`; `catalog/config/CatalogProperties.java`
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCategoryLabels.java` (`of`, `replace`,
+  `resourceIdsAfter`), `JdbcCatalogWriter.java` (`upsert`), `JdbcJobMarkers.java` (`marker`, `mark`),
+  `CatalogSearchSource.java`; `catalog/ResourceCards.java`, `CategoryLabels.java`, `CategoryInputs.java`,
+  `CategoryAssignments.java`, `JobMarkers.java`; `catalog/usecase/RefreshCategories.java`, `BackfillCategories.java`; `catalog/config/CatalogProperties.java`
   (`categories.backfill-at-startup`); `backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/CategoryBackfillAtStartup.java`.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
   facet), `Model.kt` (`SourceHit.categories`, `MergedResult.categories`).
