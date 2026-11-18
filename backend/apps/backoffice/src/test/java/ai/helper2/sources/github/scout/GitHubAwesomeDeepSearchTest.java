@@ -123,7 +123,8 @@ class GitHubAwesomeDeepSearchTest {
         model,
         categories,
         meters,
-        SeedDiscoveryHosts.store());
+        SeedDiscoveryHosts.store(),
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   double count(String name, String... tags) {
@@ -255,7 +256,8 @@ class GitHubAwesomeDeepSearchTest {
             new GitHubAwesomeCollectorTest.FakeModel(),
             new CategoryMatcher(new CategoryCatalog(many)),
             meters,
-            SeedDiscoveryHosts.store());
+            SeedDiscoveryHosts.store(),
+            SourceFixtures.SHADOW_LIBRARIES);
 
     Candidate candidate = c.collect(null, null, 500).getCandidates().getFirst();
 

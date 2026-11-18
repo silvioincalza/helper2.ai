@@ -21,6 +21,7 @@ import ai.helper2.platform.quota.QuotaCounter.Result
 import ai.helper2.platform.quota.QuotaCounter.Verdict
 import ai.helper2.platform.quota.QuotaKeys
 import ai.helper2.search.CachedHits
+import ai.helper2.search.ListedNames
 import ai.helper2.search.NOW
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
@@ -156,6 +157,8 @@ class AskGuideSimilarTest {
   private val embedder = TableEmbedder(vectors)
   private val meters = SimpleMeterRegistry()
 
+  private val listed = ListedNames()
+
   private fun guide(
     similar: SimilarQuestions? = SimilarQuestions(0.95, "embed", embedder, index, clock)
   ) =
@@ -166,6 +169,7 @@ class AskGuideSimilarTest {
       cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
       meters = meters,
       similar = similar,
+      shadowLibraries = listed.libraries,
     )
 
   private fun cache(result: String) =
@@ -201,6 +205,18 @@ class AskGuideSimilarTest {
     )
     assertEquals(listOf(1.0, 1.0, 0.0), listOf(cache("miss"), cache("similar"), cache("exact")))
     assertEquals(listOf(1.0, 1.0), listOf(questions("answered"), questions("cached")))
+  }
+
+  @Test
+  fun `a similar answer that cites a name listed since then is not reused`() {
+    val guide = guide()
+    guide.ask(original, null)
+
+    listed.add("example")
+    guide.ask(paraphrase, null)
+
+    assertEquals(2, model.chooses, "the paraphrase is answered again")
+    assertEquals(0.0, cache("similar"))
   }
 
   @Test

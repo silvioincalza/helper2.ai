@@ -50,6 +50,7 @@ search: "search (Kotlin domain)" {
   core -> p_translate
   cache -> p_cache: implements {class: config}
   translator -> p_translate: implements {class: config}
+  core -> libs: "drops every hit\non a shadow library"
   libs -> p_libs
   jlibs -> p_libs: implements {class: config}
 }
@@ -99,5 +100,5 @@ catalog.semantic -> pg: "vector search"
 catalog.semantic -> nvapi: "query vector" {class: ai-call}
 catalog.catalog -> pg: "what each search saw"
 search.translator -> nebius: "translate query" {class: ai-call}
-sources.live -> search.libs: "TavilySource drops\na shadow library's host"
+sources.live -> search.libs: "TavilySource, HackerNewsSource\ndrop a shadow library's host"
 search.jlibs -> pg: "shadow_library"

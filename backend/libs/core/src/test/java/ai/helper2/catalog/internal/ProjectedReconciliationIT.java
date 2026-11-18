@@ -14,6 +14,7 @@ import ai.helper2.search.DescribedSource;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceContext;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
@@ -62,7 +63,7 @@ class ProjectedReconciliationIT {
     @Bean
     @Primary
     ResourceCards cardsThatCanFail(Resources resources, List<DescribedSource> sources) {
-      return new ResourceCards(resources, sources) {
+      return new ResourceCards(resources, sources, ShadowLibraries.of()) {
         @Override
         public Optional<MergedResult> card(ResourceRow row, List<RecordRow> records) {
           if (FAILING.get()) {

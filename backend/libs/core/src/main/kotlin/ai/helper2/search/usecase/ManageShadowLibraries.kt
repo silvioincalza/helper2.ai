@@ -15,7 +15,10 @@ class ManageShadowLibraries(
   private val audit: AuditTrail,
   private val unitOfWork: UnitOfWork,
   private val clock: Clock,
+  sourceHosts: Collection<String> = emptyList(),
 ) {
+
+  private val sourceNames = ShadowLibraryNames.namesIn(sourceHosts)
 
   companion object {
     const val MAX_REASON = 500
@@ -49,6 +52,8 @@ class ManageShadowLibraries(
 
   fun list(): List<ShadowLibrary> = store.all()
 
+  fun namesThatHideASource(): Set<String> = store.names().intersect(sourceNames)
+
   fun add(adminId: String, rawName: String?, reason: String?): Added {
     val note = clean(reason) ?: return Added.BadReason
     val checked = ShadowLibraryNames.check(rawName)
@@ -56,6 +61,9 @@ class ManageShadowLibraries(
       return Added.Invalid(checked.problem)
     }
     val name = (checked as ShadowLibraryNames.Checked.Valid).name
+    if (name in sourceNames) {
+      return Added.Invalid(ShadowLibraryNames.Problem.A_SOURCE)
+    }
     val outcome = unitOfWork.run {
       val outcome = tryAdd(adminId, name, note.text)
       audit.record(

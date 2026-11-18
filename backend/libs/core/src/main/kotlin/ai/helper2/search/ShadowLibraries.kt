@@ -1,5 +1,6 @@
 package ai.helper2.search
 
+import java.net.URI
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
@@ -23,6 +24,20 @@ interface ShadowLibraryStore {
 }
 
 object ShadowLibraryNames {
+  @JvmField
+  val SEEDED =
+    setOf(
+      "z-lib",
+      "z-library",
+      "zlibrary",
+      "1lib",
+      "singlelogin",
+      "libgen",
+      "sci-hub",
+      "annas-archive",
+      "pdfdrive",
+    )
+
   const val MIN_LENGTH = 3
   const val MAX_LENGTH = 63
   private val LABEL = Regex("[a-z0-9]([a-z0-9-]*[a-z0-9])?")
@@ -56,6 +71,7 @@ object ShadowLibraryNames {
     NOT_A_NAME,
     TOO_SHORT,
     TOO_COMMON,
+    A_SOURCE,
   }
 
   sealed interface Checked {
@@ -75,19 +91,30 @@ object ShadowLibraryNames {
     }
   }
 
+  fun namesIn(hosts: Collection<String>): Set<String> =
+    hosts.flatMap { labelsBeforeTheLast(it) }.toSet()
+
   fun anyNames(names: Set<String>, host: String?): Boolean {
     if (host.isNullOrBlank() || names.isEmpty()) {
       return false
     }
-    return host.lowercase(Locale.ROOT).split(".").dropLast(1).any { it in names }
+    return labelsBeforeTheLast(host).any { it in names }
   }
+
+  private fun labelsBeforeTheLast(host: String): List<String> =
+    host.lowercase(Locale.ROOT).split(".").dropLast(1)
 }
 
-class ShadowLibraries private constructor(private val source: () -> Set<String>) {
+class ShadowLibraries
+private constructor(first: Set<String>, private val source: () -> Set<String>) {
 
-  private val names = AtomicReference<Set<String>>(emptySet())
+  private val names = AtomicReference(first)
 
   fun isShadowLibrary(host: String?): Boolean = ShadowLibraryNames.anyNames(names.get(), host)
+
+  fun names(): Set<String> = names.get()
+
+  fun hides(address: URI): Boolean = address.host == null || isShadowLibrary(address.host)
 
   fun reload() {
     names.set(source().toSet())
@@ -95,13 +122,11 @@ class ShadowLibraries private constructor(private val source: () -> Set<String>)
 
   companion object {
     @JvmStatic
-    fun readFrom(store: ShadowLibraryStore): ShadowLibraries = ShadowLibraries(store::names)
+    fun readFrom(store: ShadowLibraryStore): ShadowLibraries =
+      ShadowLibraries(ShadowLibraryNames.SEEDED, store::names)
 
     @JvmStatic
-    fun of(vararg names: String): ShadowLibraries = ShadowLibraries {
-      names.toSet()
-    }
-      .also { it.reload() }
+    fun of(vararg names: String): ShadowLibraries = names.toSet().let { ShadowLibraries(it) { it } }
   }
 }
 
