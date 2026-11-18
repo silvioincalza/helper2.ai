@@ -161,7 +161,7 @@ public class ResolveReview {
     return switch (item.kind()) {
       case EXAMPLE_CANDIDATE, RESOURCE_CANDIDATE, KNOWN_TARGET_CANDIDATE -> true;
       case COURSE_CANDIDATE -> structuredCourse(item);
-      default -> false;
+      case ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT -> false;
     };
   }
 
@@ -173,7 +173,8 @@ public class ResolveReview {
     return switch (item.kind()) {
       case RESOURCE_CANDIDATE, COURSE_CANDIDATE -> indexCandidate(item, adminId);
       case KNOWN_TARGET_CANDIDATE -> addKnownTarget(item, adminId);
-      default -> addDrafted(item, adminId);
+      case EXAMPLE_CANDIDATE, ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT ->
+          addDrafted(item, adminId);
     };
   }
 

@@ -58,7 +58,7 @@ public class RenderPage {
       case PageAddress.Page p when p.getKind() == PageKind.HOME && hasQuery ->
           Page.ok(pages.of(PageKind.SEARCH));
       case PageAddress.Page p -> Page.ok(pages.of(p.getKind()));
-      default -> Page.notFound(pages.pageNotFound());
+      case PageAddress.Unknown unknown -> Page.notFound(pages.pageNotFound());
     };
   }
 

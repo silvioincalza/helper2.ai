@@ -28,7 +28,7 @@ public final class BulkDecisionRule {
     return switch (kind) {
       case ENRICHMENT_VALIDATION -> conflictingFields.stream().noneMatch(DECISIVE_FIELDS::contains);
       case RESOURCE_CANDIDATE, COURSE_CANDIDATE -> research == Research.KEEP_WITHOUT_CONFLICT;
-      default -> false;
+      case RELATIONSHIP_CANDIDATE, USER_REPORT, EXAMPLE_CANDIDATE, KNOWN_TARGET_CANDIDATE -> false;
     };
   }
 }
