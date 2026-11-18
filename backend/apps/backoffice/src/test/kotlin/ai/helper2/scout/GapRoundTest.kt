@@ -1,13 +1,27 @@
 package ai.helper2.scout
 
+import java.lang.management.ManagementFactory
 import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.math.ln
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Timeout
 
 class GapRoundTest {
+
+  private companion object {
+    const val INPUT_GROWTH = 8
+    const val MAX_LINEAR_ORDER = 1.5
+    const val ROUNDS = 4
+    const val MAX_LARGE_CPU_MILLIS = 4_000L
+    const val MAX_LONG_RUN_CPU_MILLIS = 500L
+    const val MAX_TEST_MINUTES = 5L
+    val THREADS = ManagementFactory.getThreadMXBean()
+  }
 
   private fun record(sourceId: String, externalId: String, url: String, repo: String? = null) =
     GapSourceRecord(UUID.randomUUID(), sourceId, externalId, url, repo)
@@ -162,10 +176,20 @@ class GapRoundTest {
   }
 
   @Test
+  @Timeout(
+    value = MAX_TEST_MINUTES,
+    unit = TimeUnit.MINUTES,
+    threadMode = Timeout.ThreadMode.SEPARATE_THREAD,
+  )
   fun `cleaning stays fast on a long run without separators`() {
-    val started = System.nanoTime()
-    UntrustedPageText.clean("a".repeat(600_000) + "<a " + "b".repeat(5_000))
-    assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
+    val run = "a".repeat(600_000) + "<a " + "b".repeat(5_000)
+    val cost = (1..ROUNDS).minOf { cpuNanos(run) { UntrustedPageText.clean(it) } }
+    val millis = TimeUnit.NANOSECONDS.toMillis(cost)
+    assertTrue(
+      millis < MAX_LONG_RUN_CPU_MILLIS,
+      "clean on a run of ${run.length} characters cost $millis ms of CPU, " +
+        "over $MAX_LONG_RUN_CPU_MILLIS ms",
+    )
   }
 
   @Test
@@ -259,24 +283,53 @@ class GapRoundTest {
   }
 
   @Test
+  @Timeout(
+    value = MAX_TEST_MINUTES,
+    unit = TimeUnit.MINUTES,
+    threadMode = Timeout.ThreadMode.SEPARATE_THREAD,
+  )
   fun `hidden elements cost linear time`() {
-    for (raw in
+    for (pattern in
       listOf(
-        "<a hidden>x".repeat(6_000),
-        ("<a " + "hidden ".repeat(285) + ">").repeat(32),
-        ("<div hidden>" + "<div>".repeat(2_000)).repeat(4),
-        "<a \"<a '".repeat(16_000),
-        "<a <b ".repeat(10_000),
+        "<a hidden>x",
+        "<a " + "hidden ".repeat(285) + ">",
+        "<div hidden>" + "<div>".repeat(2_000),
+        "<a \"<a '",
+        "<a <b ",
       )) {
-      UntrustedPageText.dropHidden(raw.take(UntrustedPageText.MAX_RAW_CHARS))
-      var started = System.nanoTime()
-      UntrustedPageText.dropHidden(raw.take(UntrustedPageText.MAX_RAW_CHARS))
-      val ms = (System.nanoTime() - started) / 1_000_000
-      assertTrue(ms < 200, "hidden elements took $ms ms on ${raw.take(12)}")
-      started = System.nanoTime()
-      UntrustedPageText.clean(raw)
-      assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
+      assertLinear("dropHidden", pattern) { UntrustedPageText.dropHidden(it) }
+      assertLinear("clean", pattern) { UntrustedPageText.clean(it) }
     }
+  }
+
+  private fun assertLinear(step: String, pattern: String, work: (String) -> Unit) {
+    val small = filled(pattern, UntrustedPageText.MAX_RAW_CHARS / INPUT_GROWTH)
+    val large = filled(pattern, UntrustedPageText.MAX_RAW_CHARS)
+    val rounds = List(ROUNDS) { cpuNanos(small, work) to cpuNanos(large, work) }
+    val smallCost = rounds.minOf { it.first }
+    val largeCost = rounds.minOf { it.second }
+    val order = ln(largeCost.toDouble() / smallCost) / ln(INPUT_GROWTH.toDouble())
+    assertTrue(
+      order < MAX_LINEAR_ORDER,
+      "$step on ${pattern.take(12)}: $INPUT_GROWTH times the input cost " +
+        "${largeCost / smallCost} times the CPU ($smallCost ns, then $largeCost ns), " +
+        "a growth of order ${"%.2f".format(order)}, over $MAX_LINEAR_ORDER",
+    )
+    val largeMillis = TimeUnit.NANOSECONDS.toMillis(largeCost)
+    assertTrue(
+      largeMillis < MAX_LARGE_CPU_MILLIS,
+      "$step on ${pattern.take(12)}: ${large.length} characters cost $largeMillis ms of CPU, " +
+        "over $MAX_LARGE_CPU_MILLIS ms",
+    )
+  }
+
+  private fun filled(pattern: String, chars: Int): String =
+    pattern.repeat(chars / pattern.length + 1).take(chars)
+
+  private fun cpuNanos(input: String, work: (String) -> Unit): Long {
+    val started = THREADS.currentThreadCpuTime
+    work(input)
+    return THREADS.currentThreadCpuTime - started
   }
 
   @Test
