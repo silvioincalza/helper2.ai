@@ -742,7 +742,6 @@
     "requirementsAi": "Read by AI",
     "remove": "Remove “{{part}}” and ask again",
     "intent": {
-      "SUGGEST": "Suggestions",
       "NEWEST": "New resources",
       "ALTERNATIVES": "Alternatives",
       "COMPARE": "Comparison",
@@ -1068,7 +1067,6 @@
       "title": "Coming up"
     },
     "countdown": {
-      "onNow": "On now",
       "today": "Today",
       "tomorrow": "Tomorrow",
       "days_one": "In {{count}} day",
