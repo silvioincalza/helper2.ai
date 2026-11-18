@@ -171,16 +171,17 @@ final class AwesomeListParser {
         }
         continue;
       }
-      if (MarkdownText.plain(line).isBlank()) {
-        continue;
-      }
-      textLines++;
-      if (LIST_ITEM.matcher(line).find()) {
-        if (linked(line)) {
-          linkedItems++;
-        }
+      boolean item = LIST_ITEM.matcher(line).find();
+      if (item) {
         addEntries(line, stack, self, unique);
         addLink(line, stack, links);
+      }
+      boolean linkedItem = item && linked(line);
+      if (linkedItem) {
+        linkedItems++;
+      }
+      if (linkedItem || !MarkdownText.plain(line).isBlank()) {
+        textLines++;
       }
     }
     return new Parsed(
