@@ -1,7 +1,7 @@
 package ai.helper2.identity.config;
 
 import ai.helper2.identity.CurrentUser;
-import ai.helper2.identity.SignInAgain;
+import ai.helper2.identity.internal.SignInAgain;
 import ai.helper2.platform.Problems;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

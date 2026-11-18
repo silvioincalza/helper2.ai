@@ -6,7 +6,7 @@
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
 #   ClusterLockConfiguration.java, ClusterLockProperties.java (shedlock, public_app_lock),
 #   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt (port), platform/TransactionalUnitOfWork.java,
-#   UnitOfWorkConfiguration.java (imported by BackOfficeApplication only), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
+#   UnitOfWorkConfiguration.java (the bean of both apps), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
 #   platform/llm/package-info.java (the named interface llm), platform/llm/* (what the modules use),
 #   platform/llm/internal/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
@@ -86,7 +86,7 @@ platform: "platform (open module)" {
   quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
   cache: "cache: SharedCaches\nJdbcSharedCache\nSharedCacheRetention (daily purge)" {class: app}
   locks: "ClusterLock · ClusterLocks\n(ShedLock, database time)" {class: app}
-  work: "TransactionalUnitOfWork\n(one transaction per use case step;\nbean in the back office only)" {class: app}
+  work: "TransactionalUnitOfWork\n(one transaction per use case step;\na Refused result rolls it back)" {class: app}
   settings: "settings: SettingsGroup · Setting\nRuntimeSetting (allow-list)\nRuntimeSettings (snapshot, 20 s refresh)" {class: app}
 }
 

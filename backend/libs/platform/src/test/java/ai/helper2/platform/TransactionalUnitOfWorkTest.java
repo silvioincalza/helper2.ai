@@ -3,6 +3,7 @@ package ai.helper2.platform;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ai.helper2.shared.Refused;
 import ai.helper2.shared.UnitOfWork;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,42 @@ class TransactionalUnitOfWorkTest {
   }
 
   @Test
+  void rollsBackAndReturnsARefusedResultWhenItOpenedTheTransaction() {
+    OverLimit refused = new OverLimit();
+
+    Object result = unitOfWork.run(() -> refused);
+
+    assertThat(result).isSameAs(refused);
+    assertThat(transactions.events).containsExactly("begin", "rollback");
+  }
+
+  @Test
+  void neverMarksATransactionItJoinedWhenTheResultIsRefused() {
+    OverLimit refused = new OverLimit();
+    List<Object> inner = new ArrayList<>();
+
+    String result =
+        unitOfWork.run(() -> {
+          inner.add(unitOfWork.run(() -> refused));
+          return "done";
+        });
+
+    assertThat(result).isEqualTo("done");
+    assertThat(inner).containsExactly(refused);
+    assertThat(transactions.events).containsExactly("begin", "commit");
+  }
+
+  @Test
+  void rollsBackTheWholeTransactionWhenTheUnitThatOpenedItIsRefused() {
+    OverLimit refused = new OverLimit();
+
+    Object result = unitOfWork.run(() -> unitOfWork.run(() -> refused));
+
+    assertThat(result).isSameAs(refused);
+    assertThat(transactions.events).containsExactly("begin", "rollback");
+  }
+
+  @Test
   void opensARequiredReadWriteTransaction() {
     unitOfWork.run(() -> "done");
 
@@ -71,10 +108,13 @@ class TransactionalUnitOfWorkTest {
         });
   }
 
+  private record OverLimit() implements Refused {}
+
   private static final class RecordingTransactions extends AbstractPlatformTransactionManager {
 
     private final List<String> events = new ArrayList<>();
     private final List<TransactionDefinition> definitions = new ArrayList<>();
+    private boolean open;
 
     @Override
     protected Object doGetTransaction() {
@@ -82,19 +122,32 @@ class TransactionalUnitOfWorkTest {
     }
 
     @Override
+    protected boolean isExistingTransaction(Object transaction) {
+      return open;
+    }
+
+    @Override
     protected void doBegin(Object transaction, TransactionDefinition definition) {
       definitions.add(definition);
       events.add("begin");
+      open = true;
     }
 
     @Override
     protected void doCommit(DefaultTransactionStatus status) {
       events.add("commit");
+      open = false;
     }
 
     @Override
     protected void doRollback(DefaultTransactionStatus status) {
       events.add("rollback");
+      open = false;
+    }
+
+    @Override
+    protected void doSetRollbackOnly(DefaultTransactionStatus status) {
+      events.add("joined transaction marked rollback-only");
     }
   }
 }

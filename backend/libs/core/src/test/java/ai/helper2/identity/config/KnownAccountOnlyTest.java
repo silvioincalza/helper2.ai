@@ -3,7 +3,7 @@ package ai.helper2.identity.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.identity.CurrentUser;
-import ai.helper2.identity.SignInAgain;
+import ai.helper2.identity.internal.SignInAgain;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

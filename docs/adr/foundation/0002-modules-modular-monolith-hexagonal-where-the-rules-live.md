@@ -75,7 +75,8 @@ to reach into the other's code.
    the adapters implement them in `internal` (the JDBC stores, the drafts in the review queue).
    A use case that opens its own transaction takes the port `UnitOfWork` of the kernel (`ai.helper2.shared`).
    The platform has its one adapter, `TransactionalUnitOfWork`, and `UnitOfWorkConfiguration` makes its one bean in
-   the back office.
+   both apps. A use case answers a refusal as an outcome, never as an HTTP problem
+   ([0051](0051-use-cases-return-outcomes.md)).
    A `@Bean` method in `config` wires each use case; a use case only one app runs (a scheduled purge) is wired next
    to its schedule, in that app. The wiring only the back office loads is in the back office app, in the context's
    own `config` package ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md) §3):
@@ -140,6 +141,9 @@ to reach into the other's code.
      no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
      `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
+   - `useCasesDoNotSpeakHttp`: no class of a domain package depends on `ApiProblem`, a subtype of it, `ProblemType`
+     or `Problems`, but the classes named in `STILL_THROWING`; `everyClassInStillThrowingStillSpeaksHttp` fails when
+     a named class is clean ([0051](0051-use-cases-return-outcomes.md) §7);
    - `controllersAnswerWithViewsNotPortRecords` (back office): no class of a `web` package uses `ReviewQueue.Status`,
      `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
      `ReviewEvidence.Evidence` ([0038](../backoffice/0038-back-office-and-review.md) §1);
@@ -245,7 +249,7 @@ to reach into the other's code.
   `backend/libs/core/src/main/kotlin/ai/helper2/examples/ExampleDrafts.kt` (`DraftQueue`),
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt` — ports
   of the Java use cases; `backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java`,
-  `UnitOfWorkConfiguration.java` (the back office only) — the transaction adapter; `.../identity/config/IdentityUseCaseConfiguration.java`,
+  `UnitOfWorkConfiguration.java` (both apps) — the transaction adapter; `.../identity/config/IdentityUseCaseConfiguration.java`,
   `.../examples/config/ExamplesUseCaseConfiguration.java` (both apps),
   `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.
 - `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`,
