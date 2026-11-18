@@ -30,6 +30,17 @@ const CANDIDATE_TYPES: ReadonlySet<string> = new Set([
   'AWESOME_LIST',
 ]);
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const PRICING: ReadonlySet<string> = new Set([
+  'FREE',
+  'FREEMIUM',
+  'PAID',
+  'OPEN_SOURCE_SELF_HOSTED',
+]);
+const AUDIENCE: ReadonlySet<string> = new Set(['USE_AI', 'BUILD_WITH_AI', 'BOTH']);
+const TECH_LEVEL: ReadonlySet<string> = new Set(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']);
+const LICENSE = /^[A-Za-z0-9.+-]{2,40}$/;
+const LANGUAGE = /^(simple|[a-z]{2})$/;
+const DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const STATUS_TONE: Record<ReviewResearchAttribute['status'], StatusTone> = {
   CONFIRMED: 'ok',
@@ -46,15 +57,6 @@ export interface ResearchOutcome {
 
 type Edit = Omit<CandidateEdit, 'expectedDetails'>;
 
-const TEXT_VALUES = [
-  'canonicalUrl',
-  'pricing',
-  'license',
-  'audience',
-  'techLevel',
-  'language',
-] as const;
-
 function changed(a: ReviewResearchAttribute): boolean {
   if (a.status === 'NOT_FOUND' || a.proposed.length === 0) return false;
   return a.proposed.length > 1 || a.proposed[0] !== (a.current ?? '');
@@ -67,42 +69,74 @@ function slugTags(value: string): string[] | null {
     : null;
 }
 
+function isDay(value: string): boolean {
+  const m = DAY.exec(value);
+  if (!m) return false;
+  const day = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return day.toISOString().slice(0, 10) === value;
+}
+
+function lengthWithin(value: string, max: number): string | null {
+  return value.length >= 1 && value.length <= max ? value : null;
+}
+
+function oneOf(values: ReadonlySet<string>, value: string): string | null {
+  return values.has(value) ? value : null;
+}
+
+function matching(pattern: RegExp, value: string): string | null {
+  return pattern.test(value) ? value : null;
+}
+
+const FIELDS: Record<string, (value: string) => Edit | null> = {
+  title: (v) => (lengthWithin(v, 300) ? { title: v } : null),
+  type: (v) => (oneOf(CANDIDATE_TYPES, v) ? { type: v as CandidateType } : null),
+  tags: (v) => {
+    const tags = slugTags(v);
+    return tags ? { tags } : null;
+  },
+  openSource: (v) => (v === 'true' || v === 'false' ? { openSource: v === 'true' } : null),
+  canonicalUrl: (v) => (/^https:\/\/\S+$/.test(v) && v.length <= 2000 ? { canonicalUrl: v } : null),
+  pricing: (v) => (oneOf(PRICING, v) ? { pricing: v } : null),
+  license: (v) => (matching(LICENSE, v) ? { license: v } : null),
+  audience: (v) => (oneOf(AUDIENCE, v) ? { audience: v } : null),
+  techLevel: (v) => (oneOf(TECH_LEVEL, v) ? { techLevel: v } : null),
+  description: (v) => (lengthWithin(v, 4000) ? { description: v } : null),
+  language: (v) => (matching(LANGUAGE, v) ? { language: v } : null),
+  publishedAt: (v) => (isDay(v) ? { publishedAt: v } : null),
+};
+
+export function fieldOf(name: string, value: string): Edit | null {
+  const field = FIELDS[name];
+  return field ? field(value.trim()) : {};
+}
+
 export function outcomeOf(
   attributes: ReviewResearchAttribute[],
   decisions: Readonly<Record<string, Decision>>,
 ): ResearchOutcome {
   const pending = attributes.filter(changed);
-  const left = pending.filter((a) => !decisions[a.name]).map((a) => a.name);
+  const left: string[] = [];
   const edit: Edit = {};
   for (const a of pending) {
     const d = decisions[a.name];
-    if (!d || d.kind === 'keep') continue;
-    const value = d.value.trim();
-    put(edit, a, value, d.kind === 'confirm' || a.proposed.includes(value));
+    if (d?.kind === 'keep') continue;
+    const field = d ? fieldOf(a.name, d.value) : null;
+    if (!field) {
+      left.push(a.name);
+      continue;
+    }
+    Object.assign(edit, field);
+    if (field.description !== undefined) {
+      const value = d!.value.trim();
+      edit.descriptionWrittenByAi = d!.kind === 'confirm' || a.proposed.includes(value);
+    }
   }
   return {
     complete: left.length === 0,
     left,
     edit: Object.keys(edit).length > 0 ? edit : null,
   };
-}
-
-function put(edit: Edit, a: ReviewResearchAttribute, value: string, asProposed: boolean): void {
-  if (value.length === 0) return;
-  if (a.name === 'title' && value.length <= 300) edit.title = value;
-  else if (a.name === 'type' && CANDIDATE_TYPES.has(value)) edit.type = value as CandidateType;
-  else if (a.name === 'tags') {
-    const tags = slugTags(value);
-    if (tags) edit.tags = tags;
-  } else if (a.name === 'openSource' && (value === 'true' || value === 'false')) {
-    edit.openSource = value === 'true';
-  } else if (a.name === 'description') {
-    edit.description = value;
-    edit.descriptionWrittenByAi = asProposed;
-  } else if (a.name === 'publishedAt') edit.publishedAt = value;
-  else if ((TEXT_VALUES as readonly string[]).includes(a.name)) {
-    (edit as Record<string, unknown>)[a.name] = value;
-  }
 }
 
 type FocusTarget = { to: 'next' } | { to: 'row'; name: string };
@@ -161,6 +195,7 @@ export function ResearchDecisions({
   const [{ decisions, picks }, change] = useRunDecisions(run.id);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [draftInvalid, setDraftInvalid] = useState(false);
   const [focusTo, setFocusTo] = useState<{ target: FocusTarget; n: number } | null>(null);
   const box = useRef<HTMLDivElement>(null);
 
@@ -213,6 +248,7 @@ export function ResearchDecisions({
   const decide = (name: string, d: Decision) => {
     setDecisions((all) => ({ ...all, [name]: d }));
     setEditing(null);
+    setDraftInvalid(false);
     moveFocus({ to: 'next' });
   };
   const keepRest = () => {
@@ -231,11 +267,28 @@ export function ResearchDecisions({
     change((all) => ({ ...all, picks: { ...all.picks, [name]: value } }));
   const confirm = (a: ReviewResearchAttribute) => {
     const value = a.proposed.length > 1 ? picks[a.name] : a.proposed[0];
-    if (value) decide(a.name, { kind: 'confirm', value });
+    if (!value) return;
+    if (fieldOf(a.name, value)) {
+      decide(a.name, { kind: 'confirm', value });
+      return;
+    }
+    setEditing(a.name);
+    setDraft(value);
+    setDraftInvalid(true);
   };
   const startEdit = (a: ReviewResearchAttribute) => {
     setEditing(a.name);
     setDraft(picks[a.name] ?? a.proposed[0] ?? a.current ?? '');
+    setDraftInvalid(false);
+  };
+  const saveEdit = (name: string) => {
+    const value = draft.trim();
+    if (!value) return;
+    if (!fieldOf(name, value)) {
+      setDraftInvalid(true);
+      return;
+    }
+    decide(name, { kind: 'edit', value });
   };
   const onKeyDown = (e: KeyboardEvent) => {
     const target = e.target as HTMLElement;
@@ -384,7 +437,7 @@ export function ResearchDecisions({
                         className="h2-admin__research-edit"
                         onSubmit={(e) => {
                           e.preventDefault();
-                          if (draft.trim()) decide(a.name, { kind: 'edit', value: draft.trim() });
+                          saveEdit(a.name);
                         }}
                       >
                         <label>
@@ -395,24 +448,52 @@ export function ResearchDecisions({
                             <textarea
                               value={draft}
                               maxLength={4000}
-                              onChange={(e) => setDraft(e.target.value)}
+                              aria-invalid={draftInvalid || undefined}
+                              aria-describedby={
+                                draftInvalid ? `research-invalid-${a.name}` : undefined
+                              }
+                              onChange={(e) => {
+                                setDraft(e.target.value);
+                                setDraftInvalid(false);
+                              }}
                             />
                           ) : (
                             <input
                               type="text"
                               value={draft}
-                              maxLength={300}
-                              onChange={(e) => setDraft(e.target.value)}
+                              maxLength={a.name === 'canonicalUrl' ? 2000 : 300}
+                              aria-invalid={draftInvalid || undefined}
+                              aria-describedby={
+                                draftInvalid ? `research-invalid-${a.name}` : undefined
+                              }
+                              onChange={(e) => {
+                                setDraft(e.target.value);
+                                setDraftInvalid(false);
+                              }}
                             />
                           )}
                         </label>
+                        {draftInvalid && (
+                          <p
+                            id={`research-invalid-${a.name}`}
+                            className="h2-admin__research-error"
+                            role="alert"
+                          >
+                            {t(`admin.research.invalid.${a.name}`, {
+                              defaultValue: t('admin.research.invalid.other'),
+                            })}
+                          </p>
+                        )}
                         <button type="submit" className="btn btn-sm btn-primary">
                           {t('admin.research.save')}
                         </button>
                         <button
                           type="button"
                           className="btn btn-sm"
-                          onClick={() => setEditing(null)}
+                          onClick={() => {
+                            setEditing(null);
+                            setDraftInvalid(false);
+                          }}
                         >
                           {t('admin.research.close')}
                         </button>
