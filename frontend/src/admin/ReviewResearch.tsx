@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router';
 import { adminApi } from '@/api/admin';
 import type { ReviewItem, ReviewResearchRun } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
+import { formatCount } from '@/lib/format';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { AdminDialog } from './AdminDialog';
 import { NOTE_MAX } from './limits';
@@ -271,9 +272,9 @@ function StartAllBody({
       {found ? (
         <dl className="h2-admin__estimate">
           <dt>{t('admin.research.allItems')}</dt>
-          <dd>{found.items.toLocaleString('en')}</dd>
+          <dd>{formatCount(found.items, 'en')}</dd>
           <dt>{t('admin.research.allCalls')}</dt>
-          <dd>{found.maxModelCalls.toLocaleString('en')}</dd>
+          <dd>{formatCount(found.maxModelCalls, 'en')}</dd>
         </dl>
       ) : (
         <p role="status">
@@ -292,7 +293,7 @@ function StartAllBody({
         >
           {t('admin.research.allConfirm', {
             count: found?.items ?? 0,
-            items: (found?.items ?? 0).toLocaleString('en'),
+            items: formatCount(found?.items ?? 0, 'en'),
           })}
         </button>
         <button type="button" className="btn" onClick={onClose}>

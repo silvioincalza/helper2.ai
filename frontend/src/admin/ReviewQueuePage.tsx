@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { api, ApiError } from '@/api/client';
+import { api, ApiError, problemDetail } from '@/api/client';
 import type { ReviewItem, ReviewResearchStart } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { Pagination } from '@/admin/Pagination';
@@ -45,11 +45,9 @@ const DETAIL_ID = 'rq-detail';
 type ActionError = { kind: 'failed' | 'alreadyDecided' } | { kind: 'refused'; detail: string };
 
 function actionErrorOf(e: unknown): ActionError {
-  if (!(e instanceof ApiError)) return { kind: 'failed' };
-  const { code, detail } = e.problem ?? {};
-  if ((code === 'duplicate' || code === 'invalid-request') && detail)
-    return { kind: 'refused', detail };
-  if (e.status === 409) return { kind: 'alreadyDecided' };
+  const detail = problemDetail(e, { code: ['duplicate', 'invalid-request'] });
+  if (detail) return { kind: 'refused', detail };
+  if (e instanceof ApiError && e.status === 409) return { kind: 'alreadyDecided' };
   return { kind: 'failed' };
 }
 

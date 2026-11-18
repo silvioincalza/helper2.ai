@@ -9,6 +9,7 @@ import type {
   ReviewResearchRun,
 } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
+import { formatCount } from '@/lib/format';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { tagsOf } from './CandidateEditForm';
 import { useRunDecisions, type Decision } from './researchDecisionsStore';
@@ -337,7 +338,7 @@ export function ResearchDecisions({
         {t('admin.research.meta', {
           model: run.model,
           steps: run.steps,
-          tokens: (run.promptTokens + run.completionTokens).toLocaleString('en'),
+          tokens: formatCount(run.promptTokens + run.completionTokens, 'en'),
         })}{' '}
         <Link
           to={`/admin/review/research/${run.id}`}

@@ -118,6 +118,10 @@ export function formatMonth(month: string): string {
   }).format(d);
 }
 
+export function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(value);
+}
+
 export function relativeTime(style: 'long' | 'short' = 'long'): Intl.RelativeTimeFormat {
   return new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'auto', style });
 }
