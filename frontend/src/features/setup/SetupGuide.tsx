@@ -124,7 +124,6 @@ export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
 }
 
 function ConnectPart({ id, level }: { id: string; level: number }) {
-  const { t } = useTranslation();
   const q = useApi(`setup/${id}`, (signal) => api.getResourceSetup(id, signal));
   if (q.loading) return null;
   if (q.error !== undefined || !q.data || q.data.options.length === 0) return null;
