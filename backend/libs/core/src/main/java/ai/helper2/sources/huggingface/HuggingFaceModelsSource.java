@@ -13,7 +13,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
@@ -42,24 +41,21 @@ public class HuggingFaceModelsSource implements SearchSource {
     this.clock = clock;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
-        new SourceDescriptor(
-            "hf-models",
-            "Hugging Face models",
-            "HF models",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://huggingface.co/models"),
-            URI.create("https://huggingface.co/terms-of-service"),
-            "Model metadata from the Hugging Face Hub API",
-            EnumSet.of(ResourceType.MODEL),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            30,
-            false,
-            true,
-            true,
-            true);
+        SourceDescriptor.external(
+                "hf-models",
+                "Hugging Face models",
+                "HF models",
+                SourceMode.LIVE,
+                URI.create("https://huggingface.co/models"),
+                EnumSet.of(ResourceType.MODEL),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://huggingface.co/terms-of-service"))
+            .withAttribution("Model metadata from the Hugging Face Hub API")
+            .enabledWhen(settings.enabled())
+            .withPriority(30)
+            .filteringByDate()
+            .browsing();
   }
 
   @Override
@@ -204,28 +200,14 @@ public class HuggingFaceModelsSource implements SearchSource {
               PopularityKind.HF_DOWNLOADS, m.path("downloads").asLong(), sourceId, now));
     }
     return new SourceHit(
-            sourceId,
-            id,
-            URI.create(canonical.getValue()),
-            canonical,
-            null,
-            id,
-            null,
-            ValueOrigin.SOURCE_PROVIDED,
-            ResourceType.MODEL,
-            Audience.BUILD_WITH_AI,
-            null,
-            Set.of(),
-            tags,
-            license,
-            null,
-            Set.of(),
-            Classification.openSource(license),
-            DateFact.fromSource(HttpClients.instant(m, "createdAt"), sourceId, now),
-            DateFact.fromSource(HttpClients.instant(m, "lastModified"), sourceId, now),
-            pop,
-            now,
-            position)
+            sourceId, id, URI.create(canonical.getValue()), canonical, id, ResourceType.MODEL, now)
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(tags)
+        .withLicense(license, Classification.openSource(license))
+        .withPublished(DateFact.fromSource(HttpClients.instant(m, "createdAt"), sourceId, now))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(m, "lastModified"), sourceId, now))
+        .withPopularity(pop)
+        .withRank(position)
         .withVitality(vitalityOf(m));
   }
 }

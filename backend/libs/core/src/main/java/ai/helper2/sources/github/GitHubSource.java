@@ -28,30 +28,28 @@ public class GitHubSource implements SearchSource {
     this.clock = clock;
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor =
-        new SourceDescriptor(
-            "github",
-            "GitHub",
-            "GitHub",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://github.com"),
-            URI.create(
-                "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"),
-            "Repository metadata from the GitHub REST API",
-            EnumSet.of(
-                ResourceType.LIBRARY,
-                ResourceType.MCP_SERVER,
-                ResourceType.AGENT,
-                ResourceType.PROMPT,
-                ResourceType.SKILL),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            20,
-            false,
-            true,
-            true,
-            true);
+        SourceDescriptor.external(
+                "github",
+                "GitHub",
+                "GitHub",
+                SourceMode.LIVE,
+                URI.create("https://github.com"),
+                EnumSet.of(
+                    ResourceType.LIBRARY,
+                    ResourceType.MCP_SERVER,
+                    ResourceType.AGENT,
+                    ResourceType.PROMPT,
+                    ResourceType.SKILL),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(
+                URI.create(
+                    "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"))
+            .withAttribution("Repository metadata from the GitHub REST API")
+            .enabledWhen(settings.enabled())
+            .withPriority(20)
+            .filteringByDate()
+            .browsing();
   }
 
   @Override

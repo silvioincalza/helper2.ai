@@ -339,30 +339,32 @@ class ResourceRows {
             rs.getString("external_id"),
             URI.create(rs.getString("source_url")),
             canonical,
-            CanonicalUrl.of(rs.getString("repository_url")),
             WebPageTitle.forSource(sourceId, rs.getString("title"), canonical),
-            originIsKnown(origin) ? rs.getString("description") : null,
-            EnumUtils.getEnum(ValueOrigin.class, origin, ValueOrigin.SOURCE_PROVIDED),
             EnumUtils.getEnum(ResourceType.class, rs.getString("type"), ResourceType.OTHER),
+            retrieved)
+        .withRepository(CanonicalUrl.of(rs.getString("repository_url")))
+        .withDescription(
+            originIsKnown(origin) ? rs.getString("description") : null,
+            EnumUtils.getEnum(ValueOrigin.class, origin, ValueOrigin.SOURCE_PROVIDED))
+        .withAudience(
             EnumUtils.getEnum(
-                Audience.class, x.path("audience").asString("UNKNOWN"), Audience.UNKNOWN),
-            EnumUtils.getEnum(TechLevel.class, x.path("techLevel").asString(null)),
-            strings(x.path("useCases")),
-            strings(x.path("tags")),
-            rs.getString("license"),
-            EnumUtils.getEnum(Pricing.class, x.path("pricing").asString(null)),
-            strings(x.path("platforms")),
-            x.has("openSource") ? x.path("openSource").asBoolean() : null,
-            date(pub, x.path("publishedPrecision").asString("INSTANT"), sourceId),
-            date(upd, x.path("updatedPrecision").asString("INSTANT"), sourceId),
-            popularity,
-            retrieved,
-            0,
+                Audience.class, x.path("audience").asString("UNKNOWN"), Audience.UNKNOWN))
+        .withTechLevel(EnumUtils.getEnum(TechLevel.class, x.path("techLevel").asString(null)))
+        .withUseCases(strings(x.path("useCases")))
+        .withTags(strings(x.path("tags")))
+        .withLicense(
+            rs.getString("license"), x.has("openSource") ? x.path("openSource").asBoolean() : null)
+        .withPricing(EnumUtils.getEnum(Pricing.class, x.path("pricing").asString(null)))
+        .withPlatforms(strings(x.path("platforms")))
+        .withPublished(date(pub, x.path("publishedPrecision").asString("INSTANT"), sourceId))
+        .withUpdated(date(upd, x.path("updatedPrecision").asString("INSTANT"), sourceId))
+        .withPopularity(popularity)
+        .withEventDays(
             eventDay(rs.getTimestamp("source_event_starts_at"), sourceId),
-            eventDay(rs.getTimestamp("source_event_ends_at"), sourceId),
-            x.path("location").asString(null),
-            EnumUtils.getEnum(EventKind.class, x.path("eventKind").asString(null)),
-            EnumUtils.getEnum(EventFormat.class, x.path("eventFormat").asString(null)))
+            eventDay(rs.getTimestamp("source_event_ends_at"), sourceId))
+        .withLocation(x.path("location").asString(null))
+        .withEventKind(EnumUtils.getEnum(EventKind.class, x.path("eventKind").asString(null)))
+        .withEventFormat(EnumUtils.getEnum(EventFormat.class, x.path("eventFormat").asString(null)))
         .withVitality(statedVitality(x.path("vitality")));
   }
 
