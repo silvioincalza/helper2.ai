@@ -5,7 +5,6 @@ import { adminApi } from '@/api/admin';
 import type { AiCheckRow } from '@/api/types';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { resourcePath } from '@/lib/searchState';
-import { AdminDialog } from './AdminDialog';
 
 const PAGE = 500;
 
@@ -18,10 +17,8 @@ export function AiCheckPanel() {
   const [next, setNext] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirm, setConfirm] = useState(false);
   const started = next !== undefined;
   const done = next === null;
-  const waiting = rows.filter((r) => r.waiting && !r.skipped);
 
   const checkMore = async () => {
     if (busy || done) return;
@@ -39,20 +36,19 @@ export function AiCheckPanel() {
     }
   };
 
-  const skip = async (targets: Row[]) => {
+  const skip = async (row: Row) => {
     setBusy(true);
     setError(null);
-    for (const row of targets) {
-      try {
-        await adminApi.skipEnrichment(row.resourceId, t('admin.aiCheck.reason'));
-        setRows((all) =>
-          all.map((r) => (r.resourceId === row.resourceId ? { ...r, skipped: true } : r)),
-        );
-      } catch {
-        setError(t('admin.aiCheck.skipFailed', { title: row.title }));
-      }
+    try {
+      await adminApi.skipEnrichment(row.resourceId, t('admin.aiCheck.reason'));
+      setRows((all) =>
+        all.map((r) => (r.resourceId === row.resourceId ? { ...r, skipped: true } : r)),
+      );
+    } catch {
+      setError(t('admin.aiCheck.skipFailed', { title: row.title }));
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   return (
@@ -72,16 +68,6 @@ export function AiCheckPanel() {
             ? t('admin.aiCheck.checking')
             : t(started ? 'admin.aiCheck.more' : 'admin.aiCheck.start')}
         </button>
-        {waiting.length > 0 && (
-          <button
-            type="button"
-            className="btn"
-            aria-disabled={busy || undefined}
-            onClick={() => setConfirm(true)}
-          >
-            {t('admin.aiCheck.skipAll', { count: waiting.length })}
-          </button>
-        )}
       </div>
       {started && (
         <p role="status" className="h2-admin__count-line">
@@ -128,7 +114,7 @@ export function AiCheckPanel() {
                         className="btn"
                         aria-label={t('admin.aiCheck.skipLabel', { title: r.title })}
                         aria-disabled={busy || undefined}
-                        onClick={() => void skip([r])}
+                        onClick={() => void skip(r)}
                       >
                         {t('admin.aiCheck.skip')}
                       </button>
@@ -140,28 +126,6 @@ export function AiCheckPanel() {
           </table>
         </ScrollBox>
       )}
-      <AdminDialog
-        open={confirm}
-        title={t('admin.aiCheck.confirm', { count: waiting.length })}
-        className="h2-admin__dialog"
-        onClose={() => setConfirm(false)}
-      >
-        <div className="h2-admin__actions">
-          <button type="button" className="btn" onClick={() => setConfirm(false)}>
-            {t('admin.aiCheck.cancel')}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() => {
-              setConfirm(false);
-              void skip(waiting);
-            }}
-          >
-            {t('admin.aiCheck.confirmButton')}
-          </button>
-        </div>
-      </AdminDialog>
     </section>
   );
 }

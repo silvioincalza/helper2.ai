@@ -83,9 +83,13 @@ On a review item, accept and reject were not enough:
    Below the queue, **Not about AI by the word rule** (`GET /api/v1/admin/ai-check`, `CheckAiWords`) reads the
    indexed and observed resources by popularity (then id), 500 a page behind an opaque cursor, and lists the ones
    whose title, description and tags fail `Classification.isAiRelated` (through the `AiTopicCheck` port, since the
-   back office reaches the source connectors only through ports). It changes nothing: the admin skips a waiting one
-   (one click, or all the waiting ones listed after a confirm), with the reason "Not about AI (word rule)", and
-   requeues it from Skipped to undo. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due and not
+   back office reaches the source connectors only through ports). Only resources whose every record comes from a
+   general source (`AiCheckReport.GENERAL_SOURCES`: GitHub, npm, PyPI, Hacker News, live web, confs.tech) are
+   checked: a source that only holds AI (Hugging Face, arXiv, the MCP Registry, the AI news feeds, the discovery and
+   SDK collectors) says a resource is about AI, whatever its words. Without this rule staging listed 5,067 of 65,521,
+   among them 484 models, 178 papers and 484 news items. It changes nothing: the admin skips a waiting one, row by
+   row, with the reason "Not about AI (word rule)", and requeues it from Skipped to undo. There is no bulk skip: a
+   library's catalog text often has no AI word (the official SDK of a vector database), so each row needs a look. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due and not
    skipped, as `SkipEnrichment` checks it), so the panel offers Skip only where Skip succeeds. A resource that is not
    waiting is only listed: no code deletes a catalog row.
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
