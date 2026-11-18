@@ -118,6 +118,7 @@ self_test() {
   trap "rm -rf '$repo'" EXIT
   fails=$(
     set -e
+    unset BASE_REF MAIN_REF
     mkdir "$repo/origin" && cd "$repo/origin"
     f=0
     g() { git -c user.name=t -c user.email=t@example.org -c commit.gpgsign=false -c tag.gpgSign=false "$@" > /dev/null 2>&1; }
