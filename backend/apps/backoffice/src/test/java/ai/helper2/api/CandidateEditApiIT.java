@@ -290,7 +290,11 @@ class CandidateEditApiIT extends ApiTestBase {
                 .with(csrf().asHeader())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACCEPTED\"}"))
-        .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+        .andExpect(
+            problem(
+                ProblemType.INVALID_REQUEST,
+                "The catalog refuses the confirmed pricing. This value is not allowed for pricing."
+                    + " Edit the candidate, then accept again."));
 
     assertThat(
             jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
