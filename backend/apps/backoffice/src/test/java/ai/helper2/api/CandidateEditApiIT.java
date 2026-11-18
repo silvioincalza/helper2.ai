@@ -58,8 +58,12 @@ class CandidateEditApiIT extends ApiTestBase {
     details = queue.find(item).orElseThrow().details();
   }
 
+  final String listedUrl =
+      CanonicalUrl.of("https://candidate-edit-it.example/" + UUID.randomUUID()).getValue();
+
   @AfterEach
   void clean() {
+    jdbc.sql("DELETE FROM resource WHERE canonical_url = :u").param("u", listedUrl).update();
     jdbc.sql("DELETE FROM review_item WHERE candidate_url = :u").param("u", url).update();
     jdbc.sql("DELETE FROM resource WHERE canonical_url = :u").param("u", url).update();
     jdbc.sql("DELETE FROM candidate_decision WHERE candidate_key = :key")
@@ -198,5 +202,123 @@ class CandidateEditApiIT extends ApiTestBase {
         .andExpect(status().isForbidden());
     mvc.perform(put(path).with(admin).contentType(MediaType.APPLICATION_JSON).content(body))
         .andExpect(status().isForbidden());
+  }
+
+  void accept() throws Exception {
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void confirmedValuesReachTheResourceAsTheAdminsOwn() throws Exception {
+    edit(
+            item,
+            "{\"pricing\":\"FREEMIUM\",\"license\":\"MIT\",\"openSource\":true,"
+                + "\"audience\":\"USE_AI\",\"techLevel\":\"BEGINNER\",\"language\":\"en\","
+                + "\"publishedAt\":\"2025-03-02\",\"descriptionWrittenByAi\":true,"
+                + "\"description\":\"Gemini Carbon writes code and answers questions.\"}")
+        .andExpect(status().isOk());
+    accept();
+
+    var row =
+        jdbc.sql(
+                """
+                SELECT pricing, license, open_source, audience, tech_level, language,
+                       to_char(published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS published, published_precision,
+                       description, description_origin, curated_fields
+                FROM resource WHERE canonical_url = :u
+                """)
+            .param("u", url)
+            .query()
+            .singleRow();
+    assertThat(row)
+        .containsEntry("pricing", "FREEMIUM")
+        .containsEntry("license", "MIT")
+        .containsEntry("open_source", true)
+        .containsEntry("audience", "USE_AI")
+        .containsEntry("tech_level", "BEGINNER")
+        .containsEntry("language", "en")
+        .containsEntry("published", "2025-03-02")
+        .containsEntry("published_precision", "DAY")
+        .containsEntry("description", "Gemini Carbon writes code and answers questions.")
+        .containsEntry("description_origin", "AI_SUMMARY");
+    assertThat(
+            jdbc.sql(
+                    "SELECT array_to_string(curated_fields, ',') FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(String.class)
+                .single()
+                .split(","))
+        .containsExactlyInAnyOrder(
+            "pricing",
+            "license",
+            "openSource",
+            "audience",
+            "techLevel",
+            "language",
+            "publishedAt",
+            "description");
+    assertThat(audit())
+        .contains(
+            "EDIT_CANDIDATE EDITED pricing, openSource, license, audience, techLevel, description,"
+                + " language, publishedAt",
+            "SET_FIELD SET description AI_SUMMARY",
+            "SET_FIELD SET publishedAt",
+            "SET_FIELD SET pricing");
+  }
+
+  @Test
+  void aDescriptionTheAdminWroteIsCurated() throws Exception {
+    edit(item, "{\"description\":\"Written by the admin.\",\"descriptionWrittenByAi\":false}")
+        .andExpect(status().isOk());
+    accept();
+    assertThat(
+            jdbc.sql("SELECT description_origin FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(String.class)
+                .single())
+        .isEqualTo("CURATED");
+  }
+
+  @Test
+  void aConfirmedUrlTheCatalogListsClosesTheItemAsListed() throws Exception {
+    jdbc.sql(
+            """
+            INSERT INTO resource (id, canonical_url, url, title, description_origin, type, audience,
+                                  data_origin)
+            VALUES (:id, :u, :u, 'Listed already', 'SOURCE_PROVIDED', 'PRODUCT', 'BOTH', 'INDEXED')
+            """)
+        .param("id", UUID.randomUUID())
+        .param("u", listedUrl)
+        .update();
+    edit(item, "{\"canonicalUrl\":\"" + listedUrl + "\"}").andExpect(status().isOk());
+    accept();
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(
+            jdbc.sql("SELECT resolution_note FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .contains("Already listed as Listed already");
+  }
+
+  @Test
+  void aValueTheCatalogDoesNotTakeIsRefused() throws Exception {
+    edit(item, "{\"pricing\":\"CHEAP\"}").andExpect(status().isBadRequest());
+    edit(item, "{\"license\":\"MIT license\"}").andExpect(status().isBadRequest());
+    edit(item, "{\"canonicalUrl\":\"http://plain.example/\"}").andExpect(status().isBadRequest());
+    edit(item, "{\"language\":\"xx\"}").andExpect(status().isBadRequest());
+    edit(item, "{\"publishedAt\":\"2999-01-01\"}").andExpect(status().isBadRequest());
+    assertThat(audit()).isEmpty();
   }
 }

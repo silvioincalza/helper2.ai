@@ -190,4 +190,59 @@ class ReviewResearchApiIT extends ApiTestBase {
                 .single())
         .isFalse();
   }
+
+  private void run(UUID item, String status, String verdict) {
+    jdbc.sql(
+            """
+            INSERT INTO review_research (id, review_item_id, status, model, requested_by, finished_at, result)
+            VALUES (gen_random_uuid(), :item, :status, 'm', 'test',
+                    CASE WHEN :status = 'DONE' THEN now() END,
+                    CASE WHEN :status = 'DONE'
+                         THEN jsonb_build_object('verdict', CAST(:verdict AS text), 'reason', 'r',
+                                                 'attributes', jsonb_build_array(), 'dropped', jsonb_build_array())
+                    END)
+            """)
+        .param("item", item)
+        .param("status", status)
+        .param("verdict", verdict)
+        .update();
+  }
+
+  private List<String> listed(String research) throws Exception {
+    String body =
+        mvc.perform(
+                get("/api/v1/admin/review-items")
+                    .param("status", "OPEN")
+                    .param("kind", "RESOURCE_CANDIDATE")
+                    .param("research", research)
+                    .param("size", "100")
+                    .with(admin))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    return JsonPath.read(body, "$.items[*].id");
+  }
+
+  @Test
+  void theQueueListsTheItemsOfOneResearchVerdictAcrossPages() throws Exception {
+    UUID kept = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID rejected = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID queued = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID never = item("RESOURCE_CANDIDATE", "OPEN");
+    run(kept, "DONE", "KEEP");
+    run(rejected, "DONE", "REJECT");
+    run(queued, "QUEUED", null);
+
+    assertThat(listed("KEEP"))
+        .contains(kept.toString())
+        .doesNotContain(rejected.toString(), never.toString());
+    assertThat(listed("REJECT")).contains(rejected.toString()).doesNotContain(kept.toString());
+    assertThat(listed("ACTIVE")).contains(queued.toString()).doesNotContain(kept.toString());
+    assertThat(listed("NONE"))
+        .contains(never.toString())
+        .doesNotContain(kept.toString(), rejected.toString(), queued.toString());
+    mvc.perform(get("/api/v1/admin/review-items").param("research", "MAYBE").with(admin))
+        .andExpect(status().isBadRequest());
+  }
 }

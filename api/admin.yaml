@@ -75,6 +75,12 @@ paths:
           description: >-
             Only resource candidates in this discovery category (its id, e.g. `coding`); omit for every item.
           schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+        - name: research
+          in: query
+          description: >-
+            Only items whose newest research run is DONE with this verdict (KEEP, REJECT, DUPLICATE), items with a
+            queued or running run (ACTIVE), or items never researched (NONE). Omit for every item (ADR 0048).
+          schema: { type: string, enum: [KEEP, REJECT, DUPLICATE, ACTIVE, NONE] }
         - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
@@ -208,9 +214,12 @@ paths:
     put:
       tags: [review]
       operationId: editCandidate
-      summary: Fix an open resource candidate's title, type or tags before accepting it (ADR 0038).
+      summary: Fix an open resource candidate's values before accepting it (ADR 0038, 0048).
       description: >-
-        At least one of the three; what is left out stays as the collector wrote it. The type may be any candidate type,
+        At least one value; what is left out stays as the collector wrote it. Title, type and tags replace the
+        candidate's own. The other values are kept as confirmed by the admin: accepting writes them to the resource
+        as the admin's own values, which no source or enrichment run changes (`canonicalUrl` replaces the page the
+        candidate is indexed at, and an already listed URL closes the item as listed). The type may be any candidate type,
         not only the ones its finders declare. A collector that finds the page again keeps what the admin wrote. 409
         `not-applicable` for an item that is not a resource candidate, `already-decided` for one no longer open,
         `version-conflict` when the candidate changed since it was shown (`expectedDetails`; reload, then edit
@@ -1586,7 +1595,7 @@ components:
 
     CandidateEdit:
       type: object
-      description: At least one of title, type and tags; null leaves it as it is.
+      description: At least one value; null leaves it as it is.
       required: [expectedDetails]
       properties:
         expectedDetails:
@@ -1602,6 +1611,20 @@ components:
           type: [array, 'null']
           maxItems: 12
           items: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$', maxLength: 40 }
+        canonicalUrl: { type: [string, 'null'], maxLength: 2000, description: An https URL. }
+        pricing: { type: [string, 'null'], maxLength: 40, description: 'FREE, FREEMIUM, PAID or OPEN_SOURCE_SELF_HOSTED.' }
+        openSource: { type: [boolean, 'null'] }
+        license: { type: [string, 'null'], pattern: '^[A-Za-z0-9.+-]{2,40}$' }
+        audience: { type: [string, 'null'], maxLength: 40, description: 'USE_AI, BUILD_WITH_AI or BOTH.' }
+        techLevel: { type: [string, 'null'], maxLength: 40, description: 'BEGINNER, INTERMEDIATE or ADVANCED.' }
+        description: { type: [string, 'null'], minLength: 1, maxLength: 4000 }
+        descriptionWrittenByAi:
+          type: [boolean, 'null']
+          description: >-
+            True when the description is the research model's text, confirmed as it is: the resource keeps it as
+            AI-written (AI_SUMMARY) and the public site labels it. False or null: the admin wrote it (CURATED).
+        language: { type: [string, 'null'], pattern: '^(simple|[a-z]{2})$' }
+        publishedAt: { type: [string, 'null'], format: date }
 
     ResourceField:
       type: string

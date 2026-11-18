@@ -44,6 +44,17 @@ export interface ResearchOutcome {
   note: string;
 }
 
+type Edit = Omit<CandidateEdit, 'expectedDetails'>;
+
+const TEXT_VALUES = [
+  'canonicalUrl',
+  'pricing',
+  'license',
+  'audience',
+  'techLevel',
+  'language',
+] as const;
+
 function changed(a: ReviewResearchAttribute): boolean {
   if (a.status === 'NOT_FOUND' || a.proposed.length === 0) return false;
   return a.proposed.length > 1 || a.proposed[0] !== (a.current ?? '');
@@ -63,26 +74,14 @@ export function outcomeOf(
 ): ResearchOutcome {
   const pending = attributes.filter(changed);
   const left = pending.filter((a) => !decisions[a.name]).map((a) => a.name);
-  const edit: Omit<CandidateEdit, 'expectedDetails'> = {};
+  const edit: Edit = {};
   const noted: string[] = [];
   for (const a of pending) {
     const d = decisions[a.name];
     if (!d || d.kind === 'keep') continue;
     const value = d.value.trim();
-    if (candidateEditable && a.name === 'title' && value.length > 0 && value.length <= 300) {
-      edit.title = value;
-      continue;
-    }
-    if (candidateEditable && a.name === 'type' && CANDIDATE_TYPES.has(value)) {
-      edit.type = value as CandidateType;
-      continue;
-    }
-    const tags = a.name === 'tags' ? slugTags(value) : null;
-    if (candidateEditable && tags) {
-      edit.tags = tags;
-      continue;
-    }
-    noted.push(`${a.name}=${value}`);
+    if (candidateEditable) put(edit, a, value, d.kind === 'confirm' || a.proposed.includes(value));
+    else noted.push(`${a.name}=${value}`);
   }
   return {
     complete: left.length === 0,
@@ -90,6 +89,24 @@ export function outcomeOf(
     edit: Object.keys(edit).length > 0 ? edit : null,
     note: noted.length > 0 ? `Research confirmed: ${noted.join('; ')}` : '',
   };
+}
+
+function put(edit: Edit, a: ReviewResearchAttribute, value: string, asProposed: boolean): void {
+  if (value.length === 0) return;
+  if (a.name === 'title' && value.length <= 300) edit.title = value;
+  else if (a.name === 'type' && CANDIDATE_TYPES.has(value)) edit.type = value as CandidateType;
+  else if (a.name === 'tags') {
+    const tags = slugTags(value);
+    if (tags) edit.tags = tags;
+  } else if (a.name === 'openSource' && (value === 'true' || value === 'false')) {
+    edit.openSource = value === 'true';
+  } else if (a.name === 'description') {
+    edit.description = value;
+    edit.descriptionWrittenByAi = asProposed;
+  } else if (a.name === 'publishedAt') edit.publishedAt = value;
+  else if ((TEXT_VALUES as readonly string[]).includes(a.name)) {
+    (edit as Record<string, unknown>)[a.name] = value;
+  }
 }
 
 export function ResearchDecisions({

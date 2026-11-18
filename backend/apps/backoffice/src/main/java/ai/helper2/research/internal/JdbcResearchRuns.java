@@ -1,5 +1,6 @@
 package ai.helper2.research.internal;
 
+import ai.helper2.research.ResearchFilter;
 import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
 import ai.helper2.research.ResearchRuns;
@@ -192,6 +193,24 @@ class JdbcResearchRuns implements ResearchRuns {
         .param("ids", List.copyOf(itemIds))
         .query(this::run)
         .list();
+  }
+
+  @Override
+  public Set<UUID> itemsWhere(ResearchFilter filter) {
+    String sql =
+        switch (filter) {
+          case KEEP, REJECT, DUPLICATE ->
+              """
+              SELECT review_item_id FROM (
+                SELECT DISTINCT ON (review_item_id) review_item_id, status, result FROM review_research
+                 ORDER BY review_item_id, requested_at DESC, id DESC) latest
+               WHERE status = 'DONE' AND result ->> 'verdict' = :verdict
+              """;
+          case ACTIVE ->
+              "SELECT review_item_id FROM review_research WHERE status IN ('QUEUED', 'RUNNING')";
+          case NONE -> "SELECT DISTINCT review_item_id FROM review_research";
+        };
+    return Set.copyOf(jdbc.sql(sql).param("verdict", filter.name()).query(UUID.class).list());
   }
 
   @Override

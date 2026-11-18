@@ -200,10 +200,11 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     expect(m.callsTo('PUT', `/admin/review-items/${ACME}/candidate`)[0]?.body).toEqual({
       expectedDetails: acmeDetails,
       title: 'Acme Notes',
+      pricing: 'FREEMIUM',
+      publishedAt: '2025-03-02',
     });
     expect(m.callsTo('PUT', `/admin/review-items/${ACME}/resolution`)[0]?.body).toEqual({
       status: 'ACCEPTED',
-      note: 'Research confirmed: pricing=FREEMIUM; publishedAt=2025-03-02',
     });
     await settle();
   });
@@ -262,10 +263,16 @@ describe('admin: research in the review queue (ADR 0048)', () => {
     await settle();
   });
 
-  it('Scenario: the research filter shows only the items not researched yet', async () => {
-    researchApi();
+  it('Scenario: the research filter asks the server for the items not researched yet', async () => {
+    const m = researchApi({
+      'GET /admin/review-items': ({ url }) =>
+        url.searchParams.get('research') === 'NONE'
+          ? { items: ITEMS.items.filter((i) => i.id === FRESH), total: 1 }
+          : ITEMS,
+    });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE&research=NONE');
     expect(await screen.findByRole('region', { name: /design-agent/ })).toBeInTheDocument();
+    expect(m.callsTo('GET', '/admin/review-items')[0]?.search).toContain('research=NONE');
     await settle();
     expect(screen.queryByRole('checkbox', { name: /AcmeTeam/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: /Free AI Note Taker/ })).not.toBeInTheDocument();
@@ -281,31 +288,60 @@ describe('admin: research outcome (ADR 0048)', () => {
     sources: [],
   });
 
-  it('saves title, type and slug tags through the candidate and notes the rest', () => {
+  it('saves every confirmed value through the candidate, and a kept one not at all', () => {
     const out = outcomeOf(
       [
         attr('title', 'Old', ['New']),
         attr('type', 'PRODUCT', ['LIBRARY']),
         attr('tags', 'x', ['meetings, note taking']),
         attr('license', null, ['MIT']),
+        attr('openSource', null, ['true']),
+        attr('canonicalUrl', 'https://a.example/x', ['https://a.example/']),
+        attr('description', null, ['Writes meeting notes.']),
+        attr('language', null, ['en']),
       ],
       {
         title: { kind: 'confirm', value: 'New' },
         type: { kind: 'confirm', value: 'LIBRARY' },
         tags: { kind: 'confirm', value: 'meetings, note taking' },
         license: { kind: 'keep' },
+        openSource: { kind: 'confirm', value: 'true' },
+        canonicalUrl: { kind: 'confirm', value: 'https://a.example/' },
+        description: { kind: 'confirm', value: 'Writes meeting notes.' },
+        language: { kind: 'confirm', value: 'en' },
       },
       true,
     );
     expect(out).toEqual({
       complete: true,
       left: [],
-      edit: { title: 'New', type: 'LIBRARY', tags: ['meetings', 'note-taking'] },
+      edit: {
+        title: 'New',
+        type: 'LIBRARY',
+        tags: ['meetings', 'note-taking'],
+        openSource: true,
+        canonicalUrl: 'https://a.example/',
+        description: 'Writes meeting notes.',
+        descriptionWrittenByAi: true,
+        language: 'en',
+      },
       note: '',
     });
   });
 
-  it('a course candidate cannot be edited: every confirmed value goes to the note', () => {
+  it('a description the admin rewrote is not marked as written with AI', () => {
+    const out = outcomeOf(
+      [attr('description', null, ['Writes meeting notes.'])],
+      { description: { kind: 'edit', value: 'Takes notes in calls.' } },
+      true,
+    );
+    expect(out.edit).toEqual({
+      description: 'Takes notes in calls.',
+      descriptionWrittenByAi: false,
+    });
+  });
+
+  it('a course candidate holds no values: every confirmed value goes to the decision note', () => {
     const out = outcomeOf(
       [attr('title', 'Old', ['New']), attr('pricing', null, ['FREE'])],
       { title: { kind: 'edit', value: 'Newer' } },

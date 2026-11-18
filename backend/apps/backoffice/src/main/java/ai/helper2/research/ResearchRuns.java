@@ -31,6 +31,8 @@ public interface ResearchRuns {
 
   List<ResearchRun> latest(Collection<UUID> itemIds);
 
+  Set<UUID> itemsWhere(ResearchFilter filter);
+
   List<ResearchStep> steps(UUID runId, int afterSeq);
 
   int purge(Instant before);

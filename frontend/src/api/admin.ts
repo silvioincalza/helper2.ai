@@ -49,6 +49,7 @@ export const adminApi = {
       status?: ReviewStatus | undefined;
       kind?: ReviewKind | undefined;
       category?: string | undefined;
+      research?: string | undefined;
     },
     page: number,
     size: number,
@@ -56,6 +57,7 @@ export const adminApi = {
   ) =>
     request<ReviewItemPage>('GET', '/admin/review-items', {
       query: new URLSearchParams({
+        ...(filter.research ? { research: filter.research } : {}),
         ...(filter.status ? { status: filter.status } : {}),
         ...(filter.kind ? { kind: filter.kind } : {}),
         ...(filter.category ? { category: filter.category } : {}),

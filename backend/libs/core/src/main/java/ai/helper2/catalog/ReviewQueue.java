@@ -77,6 +77,14 @@ public interface ReviewQueue {
 
   Page list(Status status, Kind kind, String category, int page, int size);
 
+  Page list(Status status, Kind kind, String category, Only only, int page, int size);
+
+  record Only(java.util.Set<UUID> ids, boolean except) {
+    public Only {
+      ids = java.util.Set.copyOf(ids);
+    }
+  }
+
   Map<Kind, Long> openCountsByKind();
 
   long openCount();

@@ -10,8 +10,6 @@ import { NOTE_MAX } from './limits';
 
 const POLL_MS = 2000;
 export const RESEARCH_FILTERS = ['KEEP', 'REJECT', 'NONE'] as const;
-export type ResearchFilter = (typeof RESEARCH_FILTERS)[number];
-
 const RESEARCHABLE = new Set<ReviewItem['kind']>(['RESOURCE_CANDIDATE', 'COURSE_CANDIDATE']);
 
 export function researchable(item: ReviewItem): boolean {
@@ -20,15 +18,6 @@ export function researchable(item: ReviewItem): boolean {
 
 export function isActive(run: ReviewResearchRun | undefined): boolean {
   return run?.status === 'QUEUED' || run?.status === 'RUNNING';
-}
-
-export function matchesFilter(
-  filter: ResearchFilter | undefined,
-  run: ReviewResearchRun | undefined,
-): boolean {
-  if (!filter) return true;
-  if (filter === 'NONE') return !run;
-  return run?.status === 'DONE' && run.verdict === filter;
 }
 
 export function useResearchRuns(itemIds: string[]) {
