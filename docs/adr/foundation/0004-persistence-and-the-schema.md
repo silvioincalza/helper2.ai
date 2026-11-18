@@ -254,7 +254,8 @@ The schema is one file, and from the first release tag on that file must never c
 - `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `AppLogins.java`, `MonitorLogin.java`,
   `SchemaCheck.java` — the migrate step, the logins, the exporter's monitor login, the apps' schema check.
 - `.github/scripts/released-migrations.sh` — CI: V1 only before the first release, no released migration changes after.
-- `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
+- `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract;
+  `backend/architecture/src/test/java/ai/helper2/architecture/SchemaUseTest.java` — no unused table or column.
 - `backend/apps/public/src/test/java/ai/helper2/AppRolesGrantsIT.java`, `MigrateStepIT.java` — the grants per table, the
   migrate step.
 - `backend/apps/public/src/test/java/ai/helper2/catalog/internal/IndexHitAndCardParityIT.java`,
@@ -323,8 +324,10 @@ The schema is one file, and from the first release tag on that file must never c
   The test image (Debian, glibc) and the deployed image (Alpine, musl) both name the locale `en_US.utf8`, but musl
   sorts text by code point: the check pins the name, not the C library.
 - `SchemaContractTest` checks the migrated schema with plain JDBC: every foreign key's delete rule, an index on every
-  foreign key a delete follows, every check list equal to the domain vocabulary it stores (the `admin_audit.action`
-  list equal to `AuditTrail.Action`), and no table or column the code does not use.
+  foreign key a delete follows, and every check list equal to the domain vocabulary it stores (the `admin_audit.action`
+  list equal to `AuditTrail.Action`). `SchemaUseTest` checks that there is no table or column the code does not use:
+  it reads the main sources of every project, so it is in `backend/architecture`
+  ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8).
 - A merge of two resources never loses a user report. A resource whose records were split over several resources
   stays, without records, until a reviewer handles its reports. `JdbcCatalogWriterIT` covers both cases.
 - A resource is read in two ways. The index search reads the `resource` row. The resource page merges the records

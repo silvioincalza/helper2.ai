@@ -19,4 +19,6 @@ include(
   ":apps:backoffice",
 )
 
+include(":architecture")
+
 include(":loadtest")

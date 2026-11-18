@@ -25,6 +25,7 @@ import ai.helper2.search.descriptor
 import ai.helper2.search.hit
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
+import ai.helper2.testing.Eventually.eventually
 import ai.helper2.testing.MdcTraceIds
 import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadRegistry
@@ -385,7 +386,7 @@ class GuideLimitsTest {
     assertTrue(shared.tryStart("b", { _ -> }, {}), "another client")
     release.countDown()
 
-    assertTrue(eventually { shared.tryStart("a", { _ -> }, {}) })
+    eventually { assertTrue(shared.tryStart("a", { _ -> }, {})) }
   }
 
   @Test
@@ -413,14 +414,6 @@ class GuideLimitsTest {
 
     assertTrue(third.get(5, TimeUnit.SECONDS), "a waiting question holds no slot")
     hold.countDown()
-  }
-
-  private fun eventually(check: () -> Boolean): Boolean {
-    repeat(50) {
-      if (check()) return true
-      Thread.sleep(20)
-    }
-    return false
   }
 
   @Test

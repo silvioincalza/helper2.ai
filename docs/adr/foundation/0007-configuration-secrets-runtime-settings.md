@@ -63,8 +63,8 @@ are different: they only say how much we spend, and the right number changes wit
    records: one per module, or per clear concern, in that module's `config` package, under
    `helper2.<module>`. The open `platform` module uses concern prefixes such as `helper2.llm`.
    `helper2.retention` is shared, with one record per module for its own periods. No `@Value`, no
-   `Environment.getProperty`: an architecture test in each app (`ConfigurationAccessTest`) fails the build on
-   either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `helper2.categories`
+   `Environment.getProperty`: an architecture test in each app (`ConfigurationAccessTest`, the rule written once in
+   `ConfigurationAccessRules`) fails the build on either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `helper2.categories`
    before any bean exists, so it binds that list through Spring Boot's `Binder` (`CategoriesProperties.bind`, the
    same record the bean binds) and checks it in code (`DiscoveryCategories`)
    ([0013](../scout/0013-discovery.md)).
@@ -168,8 +168,9 @@ Variables, profiles and secrets:
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Secrets.kt` — masks secrets in `toString`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java` — the
   one `Binder` exception.
-- `backend/apps/public/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java`,
-  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the no-`@Value` rule;
+- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ConfigurationAccessRules.java` — the
+  no-`@Value` rule; `backend/apps/public/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java`,
+  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the rule run on each app;
   `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/ConfigBinding.java` — binding tests on the real yaml.
 - `.env.example`, `deploy/k8s/app.env.example` — templates.
 - `deploy/k8s/Makefile` (`credentials`, `backup-credentials`, `env-secret`, `deploy`), `deploy/k8s/check-app-env.sh`,

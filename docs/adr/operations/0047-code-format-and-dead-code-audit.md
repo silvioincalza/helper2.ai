@@ -30,7 +30,8 @@ builds no image, so a new npm package with a known vulnerability would be found 
 3. **Versions** are pinned in the build files: Spotless 8.11.0, google-java-format 2.0.0, ktfmt 0.64. Each is the
    latest release that works with the others, chosen with the owner.
 4. **CI for the backend:** each backend build job in `ci.yml` (`backend-libs-build`, `backend-public-build`,
-   `backend-backoffice-build`) runs `spotlessCheck` for its projects before it compiles them. An unformatted file
+   `backend-backoffice-build`) and `backend-architecture-test` run `spotlessCheck` for their projects before they
+   compile them. An unformatted file
    fails the pull request.
 5. **Frontend: Prettier**, from `frontend/package.json`. Config in `frontend/.prettierrc.json`: 100 columns like the
    backend, single quotes and trailing commas. `npm run format` rewrites the files, `npm run format:check` fails on
@@ -76,7 +77,7 @@ No runtime path: these decisions run in the build and in CI only, so there is no
 - `frontend/package.json` (`format`, `format:check`, `knip`, `preknip`), `frontend/.prettierrc.json`,
   `frontend/.prettierignore`, `frontend/eslint.config.js` — Prettier, its place next to ESLint, and the two knip runs.
 - `frontend/knip.json` — entries, project files, the issue types.
-- `.github/workflows/ci.yml` (the three backend build jobs, `frontend-check`) — the `spotlessCheck`, `format:check` and knip steps and the two
+- `.github/workflows/ci.yml` (the three backend build jobs, `backend-architecture-test`, `frontend-check`) — the `spotlessCheck`, `format:check` and knip steps and the two
   `npm audit` steps.
 - `.editorconfig`, `.idea/codeStyles/Project.xml` — the editor settings.
 
