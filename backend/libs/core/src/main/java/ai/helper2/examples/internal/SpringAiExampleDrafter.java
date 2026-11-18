@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -166,10 +168,6 @@ class SpringAiExampleDrafter implements ExampleDrafter {
   }
 
   private static @Nullable AudiencePath path(@Nullable String path) {
-    try {
-      return path == null ? null : AudiencePath.valueOf(path.strip());
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    return EnumUtils.getEnum(AudiencePath.class, StringUtils.strip(path));
   }
 }

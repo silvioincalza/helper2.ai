@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.EnumUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -352,11 +353,7 @@ class ResourceCandidateJson implements CandidateDetails {
   }
 
   private static @Nullable ResourceType typeOrNull(@Nullable String name) {
-    try {
-      return name == null ? null : ResourceType.valueOf(name);
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    return EnumUtils.getEnum(ResourceType.class, name);
   }
 
   private static Set<String> tags(@Nullable JsonNode tags) {

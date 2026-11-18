@@ -50,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ResponseEntity;
@@ -354,14 +356,7 @@ class SpringAiGuideModel implements GuideModel {
   }
 
   private static <E extends Enum<E>> E enumOf(Class<E> type, String name) {
-    if (name == null || name.isBlank()) {
-      return null;
-    }
-    try {
-      return Enum.valueOf(type, name.strip().toUpperCase(java.util.Locale.ROOT));
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    return EnumUtils.getEnumIgnoreCase(type, StringUtils.strip(name));
   }
 
   @Override

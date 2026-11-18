@@ -1,5 +1,6 @@
 package ai.helper2.sources.support;
 
+import ai.helper2.shared.Secrets;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -25,7 +26,7 @@ public record SourceSettings(
         + ", baseUrl="
         + baseUrl
         + ", token="
-        + (hasToken() ? "***" : "none")
+        + Secrets.mask(token)
         + ", timeout="
         + timeout
         + ", cacheTtl="
