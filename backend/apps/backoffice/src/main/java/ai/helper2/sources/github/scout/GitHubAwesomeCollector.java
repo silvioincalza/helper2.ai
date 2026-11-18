@@ -24,7 +24,6 @@ import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.liveweb.scout.DiscoveryPages;
@@ -494,33 +493,26 @@ public class GitHubAwesomeCollector implements Collector {
           }
         });
     return new SourceHit(
-        ID,
-        list.fullName(),
-        URI.create(canonical.getValue()),
-        canonical,
-        null,
-        list.fullName(),
-        HttpClients.text(repo, "description"),
-        ValueOrigin.SOURCE_PROVIDED,
-        type,
-        Audience.BOTH,
-        null,
-        Set.of(),
-        tags,
-        license,
-        null,
-        Set.of(),
-        Classification.openSource(license),
-        DateFact.fromSource(HttpClients.instant(repo, "created_at"), "github", now),
-        DateFact.fromSource(HttpClients.instant(repo, "pushed_at"), "github", now),
-        List.of(
-            new PopularityMetric(
-                PopularityKind.GITHUB_STARS,
-                repo.path("stargazers_count").asLong(),
-                "github",
-                now)),
-        now,
-        0);
+            ID,
+            list.fullName(),
+            URI.create(canonical.getValue()),
+            canonical,
+            list.fullName(),
+            type,
+            now)
+        .withDescription(HttpClients.text(repo, "description"))
+        .withAudience(Audience.BOTH)
+        .withTags(tags)
+        .withLicense(license, Classification.openSource(license))
+        .withPublished(DateFact.fromSource(HttpClients.instant(repo, "created_at"), "github", now))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(repo, "pushed_at"), "github", now))
+        .withPopularity(
+            List.of(
+                new PopularityMetric(
+                    PopularityKind.GITHUB_STARS,
+                    repo.path("stargazers_count").asLong(),
+                    "github",
+                    now)));
   }
 
   static final int README_MAX_BYTES = 5 * 1024 * 1024;
@@ -776,34 +768,21 @@ public class GitHubAwesomeCollector implements Collector {
     String license = spdx == null ? null : ResultMerger.normalizeLicense(spdx);
     Set<String> tags = new LinkedHashSet<>(topics(repo));
     Audience audience = type == ResourceType.PRODUCT ? Audience.USE_AI : Audience.BUILD_WITH_AI;
-    return new SourceHit(
-            ID,
-            name,
-            URI.create(url),
-            canonical,
-            null,
-            name,
-            HttpClients.text(repo, "description"),
-            ValueOrigin.SOURCE_PROVIDED,
-            type,
-            audience,
-            null,
-            Set.of(),
-            tags,
-            license,
-            null,
-            Set.of(),
-            Classification.openSource(license),
-            DateFact.fromSource(HttpClients.instant(repo, "createdAt"), "github", now),
-            DateFact.fromSource(HttpClients.instant(repo, "pushedAt"), "github", now),
+    return new SourceHit(ID, name, URI.create(url), canonical, name, type, now)
+        .withDescription(HttpClients.text(repo, "description"))
+        .withAudience(audience)
+        .withTags(tags)
+        .withLicense(license, Classification.openSource(license))
+        .withPublished(DateFact.fromSource(HttpClients.instant(repo, "createdAt"), "github", now))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(repo, "pushedAt"), "github", now))
+        .withPopularity(
             List.of(
                 new PopularityMetric(
                     PopularityKind.GITHUB_STARS,
                     repo.path("stargazerCount").asLong(),
                     "github",
-                    now)),
-            now,
-            rank)
+                    now)))
+        .withRank(rank)
         .withVitality(
             new Vitality(
                 repo.path("isArchived").asBoolean(false), repo.path("isFork").asBoolean(false)));

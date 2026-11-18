@@ -10,7 +10,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
@@ -43,23 +42,20 @@ public class HackerNewsSource implements SearchSource {
     this.shadowLibraries = shadowLibraries;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
-        new SourceDescriptor(
-            "hacker-news",
-            "Hacker News",
-            "HN",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://news.ycombinator.com"),
-            URI.create("https://www.ycombinator.com/legal/"),
-            "Story titles and links from the Hacker News search API by Algolia",
-            EnumSet.of(ResourceType.NEWS),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            47,
-            false,
-            true,
-            true);
+        SourceDescriptor.external(
+                "hacker-news",
+                "Hacker News",
+                "HN",
+                SourceMode.LIVE,
+                URI.create("https://news.ycombinator.com"),
+                EnumSet.of(ResourceType.NEWS),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://www.ycombinator.com/legal/"))
+            .withAttribution("Story titles and links from the Hacker News search API by Algolia")
+            .enabledWhen(settings.enabled())
+            .withPriority(47)
+            .filteringByDate();
   }
 
   @Override
@@ -132,27 +128,16 @@ public class HackerNewsSource implements SearchSource {
     }
     String id = HttpClients.text(h, "objectID");
     return new SourceHit(
-        "hacker-news",
-        id == null ? url : id,
-        HttpClients.link(url, canonical),
-        canonical,
-        null,
-        title,
-        null,
-        ValueOrigin.SOURCE_PROVIDED,
-        ResourceType.NEWS,
-        Audience.BOTH,
-        null,
-        Set.of(),
-        Set.of(),
-        null,
-        null,
-        Set.of(),
-        null,
-        DateFact.fromSource(HttpClients.instant(h, "created_at"), "hacker-news", now),
-        DateFact.unknown(),
-        List.of(),
-        now,
-        position);
+            "hacker-news",
+            id == null ? url : id,
+            HttpClients.link(url, canonical),
+            canonical,
+            title,
+            ResourceType.NEWS,
+            now)
+        .withAudience(Audience.BOTH)
+        .withPublished(
+            DateFact.fromSource(HttpClients.instant(h, "created_at"), "hacker-news", now))
+        .withRank(position);
   }
 }

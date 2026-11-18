@@ -91,33 +91,22 @@ class CatalogConfiguration {
   @Bean
   CatalogSearchSource indexSearchSource(
       JdbcCatalogSearch store, Clock clock, CatalogProperties catalog) {
-    Duration timeout = catalog.index().timeout();
-    boolean enabled = true;
-    int priority = 50;
-    boolean usesWebQuery = false;
-    boolean usesTranslation = true;
-    boolean filtersByDate = true;
-    boolean browses = true;
     SourceDescriptor d =
-        new SourceDescriptor(
-            INDEX_SOURCE,
-            "helper2.ai catalog",
-            "Catalog",
-            false,
-            SourceMode.INDEXED,
-            URI.create("https://helper2.ai/sources"),
-            null,
-            "Our own index, built ahead of time from the sources on this page and from earlier"
-                + " searches. It can be behind the original.",
-            EnumSet.allOf(ResourceType.class),
-            timeout,
-            Duration.ZERO,
-            enabled,
-            priority,
-            usesWebQuery,
-            usesTranslation,
-            filtersByDate,
-            browses);
+        SourceDescriptor.inHouse(
+                INDEX_SOURCE,
+                "helper2.ai catalog",
+                "Catalog",
+                SourceMode.INDEXED,
+                URI.create("https://helper2.ai/sources"),
+                EnumSet.allOf(ResourceType.class),
+                catalog.index().timeout(),
+                Duration.ZERO)
+            .withAttribution(
+                "Our own index, built ahead of time from the sources on this page and from earlier"
+                    + " searches. It can be behind the original.")
+            .withPriority(50)
+            .filteringByDate()
+            .browsing();
     return new CatalogSearchSource(
         d, store, Set.of(DataOrigin.INDEXED, DataOrigin.OBSERVED), clock);
   }
@@ -125,33 +114,23 @@ class CatalogConfiguration {
   @Bean
   CatalogSearchSource curatedSearchSource(
       JdbcCatalogSearch store, Clock clock, CatalogProperties catalog) {
-    boolean enabled = catalog.curated().enabled();
-    Duration timeout = catalog.curated().timeout();
-    int priority = 10;
-    boolean usesWebQuery = false;
-    boolean usesTranslation = true;
-    boolean filtersByDate = true;
-    boolean browses = true;
     SourceDescriptor d =
-        new SourceDescriptor(
-            "curated",
-            "Hand-picked list",
-            "Curated",
-            false,
-            SourceMode.CURATED,
-            URI.create("https://helper2.ai/sources"),
-            null,
-            "A starter list written by helper2.ai. Not live. Dates are unknown unless a source states"
-                + " them.",
-            EnumSet.copyOf(CuratedTypes.TYPES),
-            timeout,
-            Duration.ZERO,
-            enabled,
-            priority,
-            usesWebQuery,
-            usesTranslation,
-            filtersByDate,
-            browses);
+        SourceDescriptor.inHouse(
+                "curated",
+                "Hand-picked list",
+                "Curated",
+                SourceMode.CURATED,
+                URI.create("https://helper2.ai/sources"),
+                EnumSet.copyOf(CuratedTypes.TYPES),
+                catalog.curated().timeout(),
+                Duration.ZERO)
+            .withAttribution(
+                "A starter list written by helper2.ai. Not live. Dates are unknown unless a source"
+                    + " states them.")
+            .enabledWhen(catalog.curated().enabled())
+            .withPriority(10)
+            .filteringByDate()
+            .browsing();
     return new CatalogSearchSource(d, store, Set.of(DataOrigin.CURATED), clock);
   }
 
@@ -189,30 +168,22 @@ class CatalogConfiguration {
         SharedCaches caches,
         CatalogProperties catalog) {
       CatalogProperties.Semantic semantic = catalog.semantic();
-      Duration timeout = semantic.timeout();
-      boolean enabled = true;
-      int priority = 55;
-      boolean usesWebQuery = false;
-      boolean usesTranslation = false;
       SourceDescriptor d =
-          new SourceDescriptor(
-              SEMANTIC_SOURCE,
-              "helper2.ai catalog, by meaning",
-              "Meaning",
-              false,
-              SourceMode.INDEXED,
-              URI.create("https://helper2.ai/sources"),
-              null,
-              "Our own index, searched by meaning with the "
-                  + embedder.model()
-                  + " embedding model",
-              EnumSet.allOf(ResourceType.class),
-              timeout,
-              Duration.ZERO,
-              enabled,
-              priority,
-              usesWebQuery,
-              usesTranslation);
+          SourceDescriptor.inHouse(
+                  SEMANTIC_SOURCE,
+                  "helper2.ai catalog, by meaning",
+                  "Meaning",
+                  SourceMode.INDEXED,
+                  URI.create("https://helper2.ai/sources"),
+                  EnumSet.allOf(ResourceType.class),
+                  semantic.timeout(),
+                  Duration.ZERO)
+              .withAttribution(
+                  "Our own index, searched by meaning with the "
+                      + embedder.model()
+                      + " embedding model")
+              .withPriority(55)
+              .askedWithoutTranslation();
       var queryVectors =
           new QueryVectorCache(
               caches.named("query-vector"),

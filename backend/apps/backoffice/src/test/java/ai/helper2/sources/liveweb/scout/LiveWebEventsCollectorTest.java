@@ -7,10 +7,14 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
@@ -20,12 +24,15 @@ import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -152,6 +159,57 @@ class LiveWebEventsCollectorTest {
 
     assertThat(batch.getHits()).hasSize(1);
     SourceHit event = batch.getHits().getFirst();
+    assertThat(event)
+        .isEqualTo(
+            new SourceHit(
+                "live-web-events-scout",
+                "https://hack.example/zurich-2027",
+                URI.create("https://hack.example/zurich-2027"),
+                CanonicalUrl.of("https://hack.example/zurich-2027"),
+                null,
+                "Zurich AI Builders Hackathon 2027",
+                "Build AI agents with open models over one weekend.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2027-03-12T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2027-03-14T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                "ETH Zurich, Switzerland",
+                EventKind.HACKATHON,
+                EventFormat.IN_PERSON,
+                Map.of(
+                    "eventEvidence",
+                    Map.of(
+                        "dateQuote",
+                        "**When:** 12–14 March 2027",
+                        "model",
+                        "nemotron-super",
+                        "promptVersion",
+                        "p1"),
+                    "query",
+                    "AI hackathons")));
     assertThat(event.getSourceId()).isEqualTo(LiveWebEventsCollector.ID);
     assertThat(event.getType()).isEqualTo(ResourceType.EVENT);
     assertThat(event.getTitle()).isEqualTo("Zurich AI Builders Hackathon 2027");
@@ -367,6 +425,57 @@ class LiveWebEventsCollectorTest {
             SourceFixtures.CLOCK.instant().minus(LiveWebEventsCollector.UNDATED_LOOKBACK));
     assertThat(batch.getHits()).hasSize(1);
     SourceHit event = batch.getHits().getFirst();
+    assertThat(event)
+        .isEqualTo(
+            new SourceHit(
+                "live-web-events-scout",
+                "https://agenticdays.com",
+                URI.create("https://www.agenticdays.com/"),
+                CanonicalUrl.of("https://agenticdays.com"),
+                null,
+                "Agentic Engineering Days Zurich 2026",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                null,
+                null,
+                null,
+                Map.of(
+                    "eventEvidence",
+                    Map.of(
+                        "dateQuote",
+                        "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station",
+                        "model",
+                        "nemotron-super",
+                        "promptVersion",
+                        "p1"),
+                    "query",
+                    "catalog:undated-events")));
     assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
     assertThat(event.getType()).isEqualTo(ResourceType.EVENT);
     assertThat(event.getEventStart().getValue()).hasToString("2026-11-20T00:00:00Z");
@@ -585,6 +694,59 @@ class LiveWebEventsCollectorTest {
                 : Optional.empty());
 
     CollectedBatch batch = collector(40, onlyTheSite, undated).collect(null, null, 500);
+    assertThat(batch.getHits().getFirst())
+        .isEqualTo(
+            new SourceHit(
+                "live-web-events-scout",
+                "https://agenticdays.com",
+                URI.create("https://www.agenticdays.com/"),
+                CanonicalUrl.of("https://agenticdays.com"),
+                null,
+                "Agentic Engineering Days Zurich 2026",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                null,
+                null,
+                null,
+                Map.of(
+                    "eventEvidence",
+                    Map.of(
+                        "dateQuote",
+                        "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station",
+                        "model",
+                        "nemotron-super",
+                        "promptVersion",
+                        "p1"),
+                    "linkedFrom",
+                    "https://linkedin.com/posts/aimlevents_agentic-engineering-days-zurich-2026-activity-1",
+                    "query",
+                    "catalog:undated-events")));
 
     assertThat(batch.getHits())
         .singleElement()

@@ -7,7 +7,12 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.config.FeedProperties;
 import ai.helper2.sources.support.RunInterval;
@@ -20,6 +25,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -77,6 +83,35 @@ class NewsFeedCollectorTest {
 
     assertThat(batch.getHits()).hasSize(3);
     SourceHit first = batch.getHits().getFirst();
+    assertThat(first)
+        .isEqualTo(
+            new SourceHit(
+                "feed-vendor",
+                "https://vendor.example/news/reasoning",
+                URI.create("https://vendor.example/news/reasoning"),
+                CanonicalUrl.of("https://vendor.example/news/reasoning"),
+                null,
+                "New reasoning model",
+                "A model for hard problems.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.NEWS,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                new DateFact(
+                    Instant.parse("2026-10-19T17:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "feed-vendor",
+                    List.of(),
+                    false),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant()));
     assertThat(first.getSourceId()).isEqualTo("feed-vendor");
     assertThat(first.getType()).isEqualTo(ResourceType.NEWS);
     assertThat(first.getTitle()).isEqualTo("New reasoning model");

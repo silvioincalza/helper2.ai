@@ -307,11 +307,20 @@ class SpringAiEnrichmentModelTest {
   }
 
   @Test
-  void theWordingOfThePromptIsPinnedToItsLabel() {
-    assertThat(ModelCallMetrics.promptVersion(SpringAiEnrichmentModel.systemPrompt()))
-        .as("a new wording of %s needs a new PROMPT_VERSION", SpringAiEnrichmentModel.PROMPT)
+  void theVersionStoredWithARunIsTheHashOfThePromptTheMetersCarry() {
+    assertThat(model(() -> "{}").getPromptVersion())
+        .isEqualTo(ModelCallMetrics.promptVersion(SpringAiEnrichmentModel.systemPrompt()))
+        .isEqualTo(SpringAiEnrichmentModel.promptVersion());
+  }
+
+  @Test
+  void aNewWordingOfThePromptIsANewVersionAndMakesTheStoredRunsStale() {
+    assertThat(SpringAiEnrichmentModel.promptVersion())
+        .as(
+            "a new wording of %s makes every stored run stale: the next re-check asks for new"
+                + " runs, which cost model calls",
+            SpringAiEnrichmentModel.PROMPT)
         .isEqualTo("128470b5");
-    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v12");
     assertThat(SpringAiEnrichmentModel.systemPrompt()).contains("AWESOME_LIST");
   }
 

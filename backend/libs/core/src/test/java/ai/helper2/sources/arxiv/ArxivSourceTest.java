@@ -8,7 +8,11 @@ import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
@@ -22,6 +26,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -89,6 +94,40 @@ class ArxivSourceTest {
         .extracting(SourceHit::getExternalId)
         .containsExactly("https://arxiv.org/abs/2411.18583", "https://arxiv.org/abs/2502.00306");
     SourceHit first = hits.getFirst();
+    assertThat(first)
+        .isEqualTo(
+            new SourceHit(
+                "arxiv",
+                "https://arxiv.org/abs/2411.18583",
+                URI.create("https://arxiv.org/abs/2411.18583"),
+                CanonicalUrl.of("https://arxiv.org/abs/2411.18583"),
+                null,
+                "Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation",
+                "This research presents and compares multiple approaches to automate the generation of literature reviews using several Natural Language Processing (NLP) techniques and retrieval-augmented generation (RAG) with a Large Language Model (LLM). The ever-increasing number of research articles provides a huge challenge for manual literature review. It has resulted in an increased demand for automation. Developing a system capable of automatically generating the literature reviews from only the PDF files as input is the primary objective of this research work. The effectiveness of several Natural L…",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.PAPER,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of("cs.AI", "cs.CL", "cs.IR", "cs.LG"),
+                null,
+                null,
+                Set.of(),
+                null,
+                new DateFact(
+                    Instant.parse("2024-11-27T18:27:07Z"),
+                    DatePrecision.INSTANT,
+                    "arxiv",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2024-11-27T18:27:07Z"),
+                    DatePrecision.INSTANT,
+                    "arxiv",
+                    List.of(),
+                    false),
+                List.of(),
+                SourceFixtures.CLOCK.instant()));
     assertThat(first.getSourceId()).isEqualTo("arxiv");
     assertThat(first.getUrl())
         .as("version suffix dropped, https")

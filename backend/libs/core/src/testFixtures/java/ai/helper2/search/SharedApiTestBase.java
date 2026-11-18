@@ -6,7 +6,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.testing.SourcesOff;
 import java.net.URI;
 import java.time.Duration;
@@ -69,29 +68,17 @@ public abstract class SharedApiTestBase {
       String updated,
       int rank) {
     Instant now = Instant.now();
-    return new SourceHit(
-        "fake-live",
-        url,
-        URI.create(url),
-        CanonicalUrl.of(url),
-        null,
-        title,
-        description,
-        ValueOrigin.SOURCE_PROVIDED,
-        type,
-        Audience.BUILD_WITH_AI,
-        null,
-        Set.of(),
-        Set.of("ai"),
-        license,
-        null,
-        Set.of(),
-        license == null ? null : Boolean.TRUE,
-        DateFact.fromSource(published == null ? null : Instant.parse(published), "fake-live", now),
-        DateFact.fromSource(updated == null ? null : Instant.parse(updated), "fake-live", now),
-        List.of(),
-        now,
-        rank);
+    return new SourceHit("fake-live", url, URI.create(url), CanonicalUrl.of(url), title, type, now)
+        .withDescription(description)
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(Set.of("ai"))
+        .withLicense(license, license == null ? null : Boolean.TRUE)
+        .withPublished(
+            DateFact.fromSource(
+                published == null ? null : Instant.parse(published), "fake-live", now))
+        .withUpdated(
+            DateFact.fromSource(updated == null ? null : Instant.parse(updated), "fake-live", now))
+        .withRank(rank);
   }
 
   @TestConfiguration(proxyBeanMethods = false)
@@ -99,20 +86,16 @@ public abstract class SharedApiTestBase {
     @Bean
     SearchSource fakeLiveSource() {
       SourceDescriptor d =
-          new SourceDescriptor(
-              "fake-live",
-              "Fake live source",
-              "Fake live",
-              true,
-              SourceMode.LIVE,
-              URI.create("https://fake.example"),
-              null,
-              null,
-              EnumSet.allOf(ResourceType.class),
-              Duration.ofMillis(800),
-              Duration.ofMinutes(10),
-              true,
-              5);
+          SourceDescriptor.external(
+                  "fake-live",
+                  "Fake live source",
+                  "Fake live",
+                  SourceMode.LIVE,
+                  URI.create("https://fake.example"),
+                  EnumSet.allOf(ResourceType.class),
+                  Duration.ofMillis(800),
+                  Duration.ofMinutes(10))
+              .withPriority(5);
       return new SearchSource() {
         @Override
         public SourceDescriptor getDescriptor() {

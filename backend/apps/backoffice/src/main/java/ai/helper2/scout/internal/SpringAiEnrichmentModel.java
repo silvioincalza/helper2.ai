@@ -31,7 +31,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
 
 class SpringAiEnrichmentModel implements EnrichmentModel {
-  static final String PROMPT_VERSION = "enrich-v12";
 
   static final int MAX_MATERIAL_CHARS = UntrustedPageText.MAX_PAGE_CHARS;
 
@@ -57,6 +56,10 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                 EvidenceValidator.MAX_SELF_DECLARED_RELATIONSHIPS,
                 "maxAbout",
                 FieldsByType.MAX_ABOUT));
+  }
+
+  static String promptVersion() {
+    return ModelCallMetrics.promptVersion(systemPrompt());
   }
 
   record Output(List<Field> fields, List<Rel> relationships, List<Claim> summary) {
@@ -104,7 +107,7 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
 
   @Override
   public String getPromptVersion() {
-    return PROMPT_VERSION;
+    return call.promptVersion();
   }
 
   @Override

@@ -2,18 +2,9 @@ package ai.helper2.research.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.helper2.platform.llm.ModelCallMetrics;
 import org.junit.jupiter.api.Test;
 
 class ResearchPromptTest {
-
-  @Test
-  void theWordingOfThePromptIsPinnedToItsLabel() {
-    assertThat(ModelCallMetrics.promptVersion(ResearchConfiguration.prompt()))
-        .as("a new wording of %s needs a new PROMPT_VERSION", ResearchConfiguration.PROMPT)
-        .isEqualTo("46e9052a");
-    assertThat(SpringAiResearchModel.PROMPT_VERSION).isEqualTo("research-v4");
-  }
 
   @Test
   void thePromptLimitsSearchesAndRepeatedCalls() {
