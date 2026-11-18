@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang3.EnumUtils;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,11 +181,7 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
   }
 
   private static ResourceType typeOf(String type) {
-    try {
-      return ResourceType.valueOf(type);
-    } catch (IllegalArgumentException | NullPointerException e) {
-      return ResourceType.OTHER;
-    }
+    return EnumUtils.getEnum(ResourceType.class, type, ResourceType.OTHER);
   }
 
   @Override

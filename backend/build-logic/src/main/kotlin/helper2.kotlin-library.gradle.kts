@@ -28,6 +28,8 @@ extra["springModulithVersion"] = "2.1.2"
 
 extra["httpclient5.version"] = "5.6.5"
 
+extra["commons-lang3.version"] = "3.22.0"
+
 extra["resilience4jVersion"] = "2.4.0"
 
 extra["kotlin.version"] = "2.4.21"

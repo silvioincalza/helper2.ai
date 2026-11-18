@@ -19,6 +19,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import tools.jackson.core.JacksonException;
@@ -150,14 +152,7 @@ public final class SpringAiEventReader implements EventReader {
   }
 
   private static <E extends Enum<E>> E value(Class<E> type, String name) {
-    if (name == null) {
-      return null;
-    }
-    try {
-      return Enum.valueOf(type, name.strip());
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    return EnumUtils.getEnum(type, StringUtils.strip(name));
   }
 
   private static String names(Enum<?>[] values) {
