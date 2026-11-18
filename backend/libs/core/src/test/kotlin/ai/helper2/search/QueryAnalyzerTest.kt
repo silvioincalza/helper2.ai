@@ -33,6 +33,11 @@ class QueryAnalyzerTest {
   }
 
   @Test
+  fun `a licence named MIT stays a search term, though mit is a German word`() {
+    assertTrue("mit" in analyzer.analyze("MIT speech models").contentTerms)
+  }
+
+  @Test
   fun `server without mcp stays a required word`() {
     val q = analyzer.analyze("sql server backup tool")
     assertEquals(emptySet(), q.typeHints)
