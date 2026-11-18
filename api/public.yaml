@@ -69,10 +69,12 @@ paths:
         For the home page "Coming up" list. Only EVENTs whose source states when they take place and
         that have not ended yet; an event without a stated date is never listed. With `days`, only events
         that start before the end of that window (counted from the start of today, UTC); an event already
-        running is listed until it ends. Served from the index.
+        running is listed until it ends. Served from the index. `offset` skips that many events of the same order,
+        so the Events page reads pages of the largest `size` until it holds `total` events.
       parameters:
         - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 366 } }
-        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 60, default: 6 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 6 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
       responses:
         '200':
           description: Upcoming events (possibly empty).
@@ -461,7 +463,7 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0010), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds, pastEventsSeconds]
           properties:
             webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0027)." }
             guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0032)." }
@@ -480,6 +482,7 @@ components:
             handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
             adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0038)." }
             runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0007). Each setting's newest change stays while it applies." }
+            pastEventsSeconds: { type: integer, format: int64, minimum: 0, description: "An event of the catalog, after it ended (`H2_RETENTION_PAST_EVENTS`)." }
         sources:
           type: object
           description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0013).
@@ -578,6 +581,10 @@ components:
         sourceId: { type: string }
         externalId: { type: string }
         url: { type: string, format: uri }
+        repositoryUrl:
+          type: [string, 'null']
+          format: uri
+          description: The repository the record states, when it states one.
         retrievedAt: { type: string, format: date-time }
         fingerprint: { type: string }
 
@@ -829,6 +836,14 @@ components:
         description:
           type: [string, 'null']
           description: The resource's own description, the text the quote was checked against, so a client can show the quote in context.
+        quotedFrom:
+          oneOf:
+            - $ref: '#/components/schemas/QuotedFrom'
+            - type: 'null'
+          description: |
+            The source page whose own title or description holds the quote (ADR 0031). It can differ from `url`: a
+            package's text shown under its repository's link names the package page. null when no stored source text
+            holds it (a curated description); an answer cached before the field existed lacks it.
         sourceIds: { type: array, items: { type: string } }
         compatibleWith:
           type: array
@@ -853,6 +868,13 @@ components:
             and the confirmed checks. SUPPORTED: no claim beyond that evidence was found (a model check, not a
             proof). REMOVED: it found one, so `reason` is empty. NOT_CHECKED: no check ran (no model, budget,
             failure) or this is a fallback result.
+
+    QuotedFrom:
+      type: object
+      required: [sourceId, url]
+      properties:
+        sourceId: { type: string, description: The source that wrote the quoted text. }
+        url: { type: string, format: uri, description: The page where the quote can be read. }
 
     GuideCheck:
       type: object
@@ -994,6 +1016,9 @@ components:
                     subjectKey: { type: string }
                     text: { type: [string, 'null'], description: AI-written; null when the subject's own text does not state it. }
                     quote: { type: [string, 'null'], description: Exact text from that subject's own description. }
+                    quotedFrom:
+                      oneOf: [{ $ref: '#/components/schemas/QuotedFrom' }, { type: 'null' }]
+                      description: The source page whose own text holds the quote (ADR 0031); null when no stored source text holds it or the cell has no quote.
                     reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
 
     GuideExplanation:
@@ -1011,6 +1036,9 @@ components:
               resourceId: { type: string, format: uuid }
               title: { type: string }
               url: { type: string, format: uri }
+              quotedFrom:
+                oneOf: [{ $ref: '#/components/schemas/QuotedFrom' }, { type: 'null' }]
+                description: The source page whose own text holds the quote (ADR 0031); it can differ from `url`. null when no stored source text holds it.
               reasonCheck: { type: string, enum: [SUPPORTED, REMOVED, NOT_CHECKED], default: NOT_CHECKED }
 
     GuideStreamEvent:

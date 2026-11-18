@@ -17,6 +17,8 @@ public interface Resources {
 
   record Indexable(UUID id, String title, Instant lastModified) {}
 
+  record UndatedEvent(UUID id, String url, String title, Instant discoveredAt) {}
+
   Optional<ResourceRow> findResource(UUID id);
 
   List<ResourceRow> findResources(Collection<UUID> ids);
@@ -37,9 +39,12 @@ public interface Resources {
 
   List<Indexable> indexable(Collection<String> types, int promptMin, int limit);
 
-  List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit);
+  List<UUID> upcomingEvents(Instant today, @Nullable Instant until, int limit, int offset);
 
   int countUpcomingEvents(Instant today, @Nullable Instant until);
+
+  List<UndatedEvent> undatedEvents(
+      Instant since, @Nullable Instant afterDiscoveredAt, @Nullable UUID afterId, int limit);
 
   List<UUID> recentlyPublished(
       Instant since, Instant now, Set<String> types, Set<DataOrigin> origins, int limit);

@@ -207,9 +207,10 @@ class QueryTranslationTest {
 
   @Test
   fun `no model or spent budget means untranslated search`() {
-    val (q, _) = run("herramienta para traducir documentos", translator = QueryTranslator.NONE)
+    val (q, _) = run("herramienta para firmar contratos", translator = QueryTranslator.NONE)
     assertEquals("es", q.language)
-    assertTrue(q.expandedTerms.none { "translation" in it })
+    assertEquals(null, q.translation)
+    assertEquals(emptyList(), q.expandedTerms)
   }
 
   @Test

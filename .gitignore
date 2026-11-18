@@ -38,6 +38,7 @@ deploy/k8s/*/app.env
 # these lines catch a copy left in it by mistake.
 *.dump
 *.dump.*
+*.hprof
 *.sql.gz
 deleted.txt
 deploy/k8s/*/digests.env

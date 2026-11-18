@@ -145,9 +145,11 @@ place to say that.
 
    The detail page shows the summary claims of the newest `VALIDATED` or `PARTIAL` run that has claims. A run without
    model output (`LLM_UNAVAILABLE`, `FAILED`) leaves the last output and its review items as they are.
-9. **Review queue** (`ReviewQueue`). A validation error a person can act on, or a `CONFLICTING` field, opens an
-   `ENRICHMENT_VALIDATION` item. A value its quote does not state is not one of them (`ValidationResult.forReview`): the
-   field stays `UNVERIFIED` and shows "Not stated", the line stays in the run's errors, and the run stays `PARTIAL`, but
+9. **Review queue** (`ReviewQueue`). A `REJECTED` run with a validation error a person can act on, or a `CONFLICTING`
+   field, opens an `ENRICHMENT_VALIDATION` item. The errors of a `PARTIAL` run open none: the run keeps what passed and
+   has already dropped what failed, so they leave a person nothing to decide, and they stay on the run. A `CONFLICTING`
+   field of a `PARTIAL` run still opens the item, and its `UNVERIFIED` relationships still open theirs. A value its quote does not state opens no item on any run (`ValidationResult.forReview`):
+   the field stays `UNVERIFIED` and shows "Not stated", the line stays in the run's errors, and the run stays `PARTIAL`, but
    no item opens for it alone. A short source text makes the model guess (a library is "coding", a package is "MIT"), and
    the only decision left to a person would be to reject. When an item opens for another reason, it lists these lines
    too. The re-check (point 23) closes the items an earlier rule opened for such values alone: `SUPERSEDED`, resolved
@@ -307,8 +309,9 @@ place to say that.
       stated");
     - a field writing does not keep (point 20) is rejected, whatever its verification;
     - a summary sentence that fails the claim check is dropped, with the evidence only it used;
-    - an open `ENRICHMENT_VALIDATION` item whose run has no issue but values the quote does not state, and no
-      `CONFLICTING` field, is closed (`closeItemsOfUnstatedValues`; counter result `items_closed`);
+    - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its
+      only issues are values the quote does not state; never when the run has a `CONFLICTING` field
+      (`closeItemsWithNothingToDecide`; counter result `items_closed`);
     - a resource goes back to the model only when it still misses a target fact (`FieldTargets`), has more to read (a
       README or model card, or its own pages) and its last run used an older prompt label. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps. `resource.enrichment_rerun_requested_at`
@@ -436,7 +439,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 ### Known limits
 - Vendors and services as relationship targets ([0019](0019-known-targets-vendors-and-services.md)): the public API does not expose `relationship.target_kind`, so no search filter and no vendor page reads it.
 - Relationship targets by title: the list of types a title may match (tools, models, libraries, MCP servers, agents, skills, datasets) is not checked against the real UNVERIFIED relationship review items.
-- Strict enrichment rules reject some correct values; the review queue grows with every partial run and needs a person ([0038](../backoffice/0038-back-office-and-review.md)).
+- Strict enrichment rules reject some correct values. A value dropped from a `PARTIAL` run is not shown to a person: it waits for the next run of that resource.
 - A relationship target two catalog resources share by title waits for a person, and its review item says only that the target is not a known resource.
 - The oldest-waiting gauge is set when the Scout reads a batch, not at each scrape.
 - The gap round reads a README once per fingerprint: a README that changes while the source records do not is not read again, and one that fails to load (timeout, 5xx) is not tried again until they change. A gap slot is spent when the second model call fails. README text never supports a summary claim.

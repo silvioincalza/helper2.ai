@@ -3,6 +3,7 @@
 # The cost guard in front of it (cache, single-flight, quota) is in flow-0032-guide-cost-guard; the reason check in flow-0031-guide-reason-check.
 # Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.answer), guide/steps/QuestionReader.kt (read),
 #   PickAnswer.kt (picks), guide/Guide.kt (GuideValidator), guide/EvidenceGate.kt (EvidenceGate.claimProblem), backend/libs/kernel/src/main/kotlin/ai/helper2/shared/LinkText.kt,
+#   guide/QuoteOrigins.kt (QuoteOrigins.of), guide/QuoteRecords.kt, AskGuide.withQuoteOrigins,
 #   backend/apps/public/src/main/resources/prompts/guide/choose.txt, security.txt (picks only, the shared SECURITY block),
 #   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (event names).
 # Render: cd docs/diagrams && d2 fmt flow-0031-ai-guide-evidence-gate.d2 && d2 flow-0031-ai-guide-evidence-gate.d2 flow-0031-ai-guide-evidence-gate.svg
@@ -27,11 +28,12 @@ degraded: "LLM_UNAVAILABLE:\ntop 3 search results,\nmarked not AI-reasoned" {cla
 choose: "choose(): reasoning model,\nJSON schema, picks only,\neach with a quote" {class: ai}
 chooseOk: "Choose call ok?" {class: decision}
 chosen: "event: chosen" {class: config}
-validator: "GuideValidator.validate\n(EvidenceGate.claimProblem):\nknown key, quote verbatim on whole words,\n≥ 40 chars and 6 words,\nno link (LinkText), ≤ 3 picks" {class: app}
+validator: "GuideValidator.validate\n(EvidenceGate.claimProblem):\nknown key, quote verbatim on whole words,\n≥ 40 chars and 6 words,\nno link (LinkText),\n≤ 5 proposed picks" {class: app}
 validated: "event: validated" {class: config}
 kept: "Any pick kept?" {class: decision}
 partial: "PARTIAL:\ntop 3 search results" {class: fail}
 check: "Reason check (ADR 0031)\nevent: checked" {class: ai}
+origin: "QuoteOrigins: each pick, cell and\nsentence names the page\nthat holds its quote\n(own address first; catalog rows:\nstored records, one read per answer)" {class: app}
 answer: "OK (none rejected)\nor PARTIAL\nevent: answer" {class: end}
 
 ask -> guard -> hasModel
@@ -54,4 +56,7 @@ chosen -> validator: {class: hot}
 validator -> validated -> kept
 kept -> partial: no
 kept -> check: yes {class: hot}
-check -> answer: {class: hot}
+check -> origin: {class: hot}
+partial -> origin
+degraded -> origin
+origin -> answer: {class: hot}

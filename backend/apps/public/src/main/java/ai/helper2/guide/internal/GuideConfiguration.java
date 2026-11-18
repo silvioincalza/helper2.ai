@@ -1,14 +1,19 @@
 package ai.helper2.guide.internal;
 
 import ai.helper2.catalog.Embedder;
+import ai.helper2.catalog.RecordRow;
+import ai.helper2.catalog.Resources;
 import ai.helper2.guide.AnswerLimits;
 import ai.helper2.guide.CallTimeLimit;
 import ai.helper2.guide.ClientQuota;
+import ai.helper2.guide.EvidenceGate;
 import ai.helper2.guide.GuideAnswerCache;
 import ai.helper2.guide.GuideAnswerStore;
 import ai.helper2.guide.GuideModel;
 import ai.helper2.guide.GuidePolicy;
 import ai.helper2.guide.GuideValidator;
+import ai.helper2.guide.QuoteOrigins;
+import ai.helper2.guide.QuoteRecords;
 import ai.helper2.guide.SimilarQuestionIndex;
 import ai.helper2.guide.SimilarQuestions;
 import ai.helper2.guide.config.GuideProperties;
@@ -26,12 +31,17 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.search.SourceHit;
 import ai.helper2.search.usecase.SearchResources;
+import ai.helper2.shared.ResourceId;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -148,7 +158,8 @@ class GuideConfiguration {
       ClientQuota clientQuota,
       LlmProperties llmProperties,
       BuildInfoProperties build,
-      GuideProperties settings) {
+      GuideProperties settings,
+      Resources resources) {
     boolean nativeSchema = llmProperties.nativeSchema();
     int chooseMaxTokens = settings.chooseMaxTokens();
     int maxCandidates = settings.maxCandidates();
@@ -222,7 +233,26 @@ class GuideConfiguration {
             similarQuestionIndex,
             clock,
             build.version()),
-        settings.stopsAQuestionNobodyWaitsFor());
+        settings.stopsAQuestionNobodyWaitsFor(),
+        quoteRecords(resources),
+        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()));
+  }
+
+  static QuoteRecords quoteRecords(Resources resources) {
+    return ids -> {
+      Map<UUID, ResourceId> byUuid = new HashMap<>();
+      ids.forEach(id -> byUuid.put(id.getValue(), id));
+      Map<ResourceId, List<SourceHit>> records = new HashMap<>();
+      try {
+        resources
+            .recordsOf(byUuid.keySet())
+            .forEach((uuid, rows) ->
+                records.put(byUuid.get(uuid), rows.stream().map(RecordRow::hit).toList()));
+      } catch (org.springframework.dao.DataAccessException e) {
+        log.warn("quote records unavailable: {}", e.getClass().getSimpleName());
+      }
+      return records;
+    };
   }
 
   @Bean

@@ -1,1 +1,198 @@
 source	title	description	labels	ai_related
+npm	ollama	Ollama Javascript library		1
+npm	@langchain/ollama	Ollama integration for LangChain.js		1
+npm	ai-sdk-ollama	Vercel AI SDK Provider for Ollama using official ollama-js library	ai,vercel-ai,ollama,ai-sdk,llm,language-model,embedding,chat,local-ai,provider,typescript,embeddings,tool-calling	1
+npm	ollama-ai-provider-v2	Use Ollama with the Vercel AI SDK, implementing the official Ollama API. This provider has minimal dependencies and is web-compatible out of the box.	ai,vercel,ai-sdk,ai-sdk-v7,ollama,llm,provider,chat,streaming,tool-calling,thinking-mode,completion-models,local-ai,embeddings	1
+github	ollama/ollama	Get up and running with Kimi, GLM, MiniMax, DeepSeek, gpt-oss, Qwen, Gemma and other models.	deepseek,gemma,glm,go,golang,gpt-oss,llama,llm,llms,minimax,mistral,muse,ollama,qwen	1
+github	ollama/ollama-python	Ollama Python library	ollama,python	1
+github	open-webui/open-webui	User-friendly AI Interface (Supports Ollama, OpenAI API, ...)	ai,llm,llm-ui,llm-webui,llms,mcp,ollama,ollama-webui,open-webui,openai,openapi,rag,self-hosted,ui,webui	1
+github	awaescher/OllamaSharp	The easiest way to use Ollama in .NET	ai,gpt,ichatclient,library,llama,llamacpp,llm,localllama,microsoft-extensions-ai,ollama,ollama-api,streaming	1
+hackernews	Ollama is now powered by MLX on Apple Silicon in preview			1
+hackernews	The local LLM ecosystem doesn’t need Ollama			1
+hackernews	Ollama now supports AMD graphics cards			1
+npm	crewai	JavaScript implementation of the Crew AI Framework		1
+npm	@ag-ui/crewai	Implementation of the AG-UI protocol for CrewAI.		1
+npm	@crewai-ts/core	Unofficial TypeScript port of CrewAI (not affiliated with crewAI, Inc.).	crewai,agents,ai,llm,multi-agent,agentic,orchestration,workflow,typescript	1
+npm	@codespar/crewai	CrewAI adapter for CodeSpar — convert session tools to CrewAI tool format	codespar,crewai,tools,adapter,agents	1
+github	crewAIInc/crewAI	Framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.	agents,ai,ai-agents,aiagentframework,llms	1
+github	crewAIInc/crewAI-examples	A collection of examples that show how to use CrewAI framework to automate workflows.	crewai,examples	1
+github	crewAIInc/crewAI-tools	Extend the capabilities of your CrewAI agents with Tools	ai,aiagents,crewai,crewai-tools	1
+github	strnad/CrewAI-Studio	A user-friendly, multi-platform GUI for managing and running CrewAI agents and tasks. Supports Conda and virtual environments, no coding needed.	agents,ai,crewai,crewaigui,crewaiui,gui,no-code,streamlit	1
+hackernews	Show HN: I built AI agents with CrewAI to automate my entire Gmail workflow			1
+hackernews	Show HN: Portia – A stateful Crew AI alternative, with auth and 1000 tools			1
+hackernews	CrewAI vs. AutoGen for runnning LLM-generated code			1
+npm	slack-mcp-server	Model Context Protocol (MCP) server for Slack Workspaces. This integration supports both Stdio and SSE transports, proxy settings and does not require any permissions or bots being created or approved by Workspace admins	mcp,slack,slack-api,model context protocol,model,context,protocol	1
+npm	eve	Filesystem-first framework for durable backend AI agents that run anywhere.	agent-framework,agents,ai-agents,ai-sdk,evals,eve,mcp,model-context-protocol,nextjs,observability,react,serverless,tanstack,tools,vercel,workflow	1
+npm	openclaw	Multi-channel AI gateway with extensible messaging integrations		1
+npm	@copilotkit/channels-core	Platform-agnostic JSX channel engine for CopilotKit (createChannel, Thread, PlatformAdapter, ActionStore).	ai,agent,bot,chatbot,copilotkit,slack,teams,discord,ag-ui	1
+npm	kubernetes-mcp-server	Model Context Protocol (MCP) server for Kubernetes and OpenShift	mcp,kubernetes,openshift,model context protocol,model,context,protocol	1
+npm	kubernetes-mcp-server-linux-amd64	Model Context Protocol (MCP) server for Kubernetes and OpenShift		1
+npm	kubernetes-mcp-server-linux-arm64	Model Context Protocol (MCP) server for Kubernetes and OpenShift		1
+npm	kubernetes-mcp-server-darwin-arm64	Model Context Protocol (MCP) server for Kubernetes and OpenShift		1
+github	containers/kubernetes-mcp-server	Model Context Protocol (MCP) server for Kubernetes and OpenShift	containers,context,kubernetes,kubernetes-mcp,mcp,model,modelcontextprotocol,openshift,protocol	1
+github	Flux159/mcp-server-kubernetes	MCP Server for kubernetes management commands	infrastructure,kubernetes,mcp,server	1
+github	rohitg00/kubectl-mcp-server	Published in CNCF Landscape: A MCP server for Kubernetes.	ai,deployment,devops,genai,kubernetes,kubernetes-cluster,kubernetes-tools,llms,mcp,mcp-server,npm,pypi	1
+github	agentgateway/agentgateway	Next Generation Agentic Proxy for AI Agents and MCP servers	agents,ai,ai-gateway,api-gateway,gateway-api,kubernetes,mcp,mcp-gateway,reverse-proxy,rust,service-mesh	1
+hackernews	Show HN: Ramen – self-hosted multi-zone MCP server for Kubernetes(Rust & Python)			1
+hackernews	Show HN: MCP-Server for Tekton (Kubernetes CI/CD)			1
+hackernews	Show HN: I made an open source Kubernetes MCP Server to talk with K8s in English			1
+npm	@tensorflow-models/body-segmentation	Pretrained body segmentation model		1
+npm	text-segmentation	text-segmentation ==============		0
+npm	open	Open stuff like URLs, files, executables. Cross-platform.	app,open,opener,opens,launch,start,xdg-open,xdg,default,cmd,browser,editor,executable,exe,url,urls,arguments,args,spawn,exec,child,process,website,file	0
+npm	@tensorflow-models/pose-detection	Pretrained pose detection model		1
+github	YichiZhang98/SAM4MIS	Segment Anything Model for Medical Image Segmentation: Open-Source Project Summary		1
+github	ZFTurbo/Keras-Mask-RCNN-for-Open-Images-2019-Instance-Segmentation	Code and pre-trained models for Instance Segmentation track in Open Images Dataset	keras,mask-rcnn,open-images-dataset,pretrained-models	1
+github	MedSegX/MedSegX-code	[nature biomedical engineering 2025] Official code for paper: A generalist foundation model and database for open-world medical image segmentation (MedSegX)	efficient-tuning,foundation-model,medical-segmentation,mixture-of-experts	1
+github	mattaq31/GelGenie	Open-Source package for segmentation and analysis of gel electrophoresis images using machine learning. Both a python framework for training/running models and a QuPath GUI extension are available.	deep-java-library,gel-electrophoresis,gel-segmentation,gui,javafx,machine-learning,opencv,python,pytorch,qupath,unet-image-segmentation	1
+hackernews	Google open-sources AI image segmentation models optimized for Cloud TPUs			1
+hackernews	Show HN: Zeptaframe – Open-source click-and-drag precision for AI video gen			1
+hackernews	Show HN: I built a tool to turn handwriting into a font with PyTorch/OpenCV			1
+npm	gliner	This is a GLiNER inference engine	GLiNER,inference,engine	1
+npm	wink-eng-lite-web-model	Wink's English Language Light Web Model for Web Browsers	NLP,Natural Language Processing,English,Browser,wink,winkjs,winkNLP,wink-nlp	1
+npm	@nodable/entities	Entity parser for XML, HTML, External entites with security and NCR control	fast,xml,html,entity,entities,stringify,encode,decode,ncr,security,safe,performance	0
+npm	expo-speech-recognition	Speech Recognition for React Native Expo projects	react-native,expo,expo-speech-recognition,ExpoSpeechRecognition,webkitSpeechRecognition,SpeechRecognition	1
+github	zjy-ucas/ChineseNER	A neural network model for Chinese named entity recognition		1
+github	urchade/GLiNER	Generalist and Lightweight Model for Named Entity Recognition (Extract any entity types from texts)	information-extraction,large-language-models,named-entity-recognition,natural-language-processing,prompt-tuning	1
+github	Determined22/zh-NER-TF	A very simple BiLSTM-CRF model for Chinese Named Entity Recognition 中文命名实体识别 (TensorFlow)	bilstm-crf-model,named-entity-recognition,tensorflow	1
+github	fangwater/Medical-named-entity-recognition-for-ccks2017	A LSTM+CRF model for the seq2seq task for Medical named entity recognition in ccks2017		1
+hackernews	NLP Cloud now serves transformer-based models			1
+hackernews	Show HN: TensorZero – open-source data and learning flywheel for LLMs			1
+hackernews	Show HN: gline-rs – an inference engine for GLiNER models, in Rust			1
+npm	@valibot/to-json-schema	The official JSON schema converter for Valibot	valibot,schema,converter,json-schema	0
+npm	json-schema-typed	JSON Schema TypeScript definitions with complete inline documentation.	jsonschema,typescript,types,definitions,json,schema	0
+npm	json-schema-traverse	Traverse JSON Schema passing each schema object to callback	JSON-Schema,traverse,iterate	0
+npm	extract-pg-schema	Reads various metadata from your postgres database and return a Javascript object. This package is used by [Kanel](https://github.com/kristiandupont/kanel) to generate Typescript types and [Schemalint](https://github.com/kristiandupont/schemalint) to prov	postgresql,schema	0
+hackernews	Show HN: RΞASON – Open-source TypeScript framework for LLM apps			1
+hackernews	Show HN: Robust LLM extractor for websites in TypeScript			1
+hackernews	Show HN: Structured data extraction using local quantized LLMs			1
+npm	@anthropic-ai/claude-agent-sdk	SDK for building AI agents with Claude Code's capabilities. Programmatically interact with Claude to build autonomous agents that can understand codebases, edit files, and execute workflows.	ai,agent,sdk,claude,anthropic,automation,code-generation	1
+npm	ai	AI SDK by Vercel - build apps like ChatGPT, Claude, Gemini, and more with a single interface for any model using the Vercel AI Gateway or go direct to OpenAI, Anthropic, Google, or any other model provider.	ai,vercel,sdk,llm,mcp,tool-calling,tools,structured-output,agent,agentic,generative,genai,chatbot,prompt,inference,language-model,streaming,openai,anthropic,claude,gemini,xai,grok	1
+npm	@agentclientprotocol/claude-agent-acp	An ACP-compatible coding agent powered by the Claude Agent SDK (TypeScript)	claude,acp,agent,anthropic,typescript,sdk,code	1
+npm	@aws-sdk/client-lambda	AWS SDK for JavaScript Lambda Client for Node.js, Browser and React Native		0
+github	vacuityv/ai-java-sdk	java sdk for ai apis. Support claude ai and google gemini and part of openai (chatgpt). 支持chatgpt/gemini/claude的java sdk。		1
+github	hellomypastor/claude-agent-sdk-java	Java SDK for Claude Code — Build AI agents with Claude. Feature-complete, aligned with the official TypeScript SDK. Java 11+, minimal dependencies.		1
+github	PRABHUSIDDARTH/sidd-ai	A lightweight, framework-agnostic Java SDK for calling any major AI model — OpenAI, Google Gemini, Anthropic Claude, or local Ollama — through one unified API. No Spring context, no dependency injection, no application.yml. Just plain Java, anywhere Java runs.	ai,ai-tools,claude,gemini,gpt,grok,java,nim,open-source,package	1
+github	easy-4-java/claudecode-java-sdk	Claude Code CLI Java SDK — subprocess integration for Anthropic Claude Code agent	ai,claude,cli,easy4j,java,maven	1
+hackernews	Show HN: Context Plugins – API context for AI coding assistants			1
+hackernews	Launch HN: HyperProbe (YC S26) – Agents that do read-only debugging in prod			1
+hackernews	Show HN: Tansive – AI Agents that won't accidentally restart your prod database			1
+npm	@paper-design/shaders	This is the vanilla JS of Paper Shaders. You can also find framework specific wrappers		0
+npm	paper	The Swiss Army Knife of Vector Graphics Scripting	vector,graphic,graphics,2d,geometry,bezier,curve,curves,path,paths,canvas,svg,paper,paper.js,paperjs	0
+npm	@salesforce/mcp-provider-aura-experts	(For Interal Use Only) Provided MCP Tools for code analysis and improvement of Aura components		1
+npm	react-native-ios-utilities	Utilities for react-native + iOS and wrappers for using swift together with fabric/paper + JSI	react-native,ios,utilities,utility,fabric,paper,JSI	0
+github	codecaution/Awesome-Mixture-of-Experts-Papers	A curated reading list of research in Mixture-of-Experts(MoE).		1
+github	withinmiaov/A-Survey-on-Mixture-of-Experts-in-LLMs	[TKDE'25] The official GitHub page for the survey paper "A Survey on Mixture of Experts in Large Language Models".		1
+github	pprp/Awesome-Efficient-MoE	Efficient Mixture of Experts for LLM Paper List		1
+github	arpita8/Awesome-Mixture-of-Experts-Papers	Survey: A collection of AWESOME papers and resources on the latest research in Mixture of Experts.	awesome,computer-vision,deep-learning,large-language-models,llm,machine-learning,mixture-of-experts,rec,recsys	1
+hackernews	Ask HN: Have there been any advances in Mixture of Expert Models?			1
+hackernews	AI Research Papers in Jan 2024: Model Merging, Mixtures of Experts, Smaller LLMs			1
+hackernews	Runtime Dynamic Compression of Mixture of Experts [pdf]			1
+npm	vinax-code	VinaX Code — an agentic coding CLI for Groq, NVIDIA NIM, OpenRouter, Gemini, Anthropic and OpenAI models	cli,ai,agent,coding,groq,nvidia-nim,openrouter,gemini,anthropic,openai	1
+npm	chrome-devtools-frontend	Chrome DevTools UI	devtools,chrome,chromium,blink,debugger	0
+npm	pi-extension-nvidia-nim	Model-aware NVIDIA NIM reasoning compatibility for the pi coding agent	pi-package,pi,nvidia,nim,nvidia-nim,llm,reasoning,thinking,openai-compatible,provider	1
+npm	@qvac/asr-ggml	Multi-engine ASR (Whisper + NVIDIA Parakeet + MOSS-Transcribe-Diarize) inference addon for qvac on the Bare runtime	tether,addon,qvac,asr,speech-to-text,stt,transcription,whisper,parakeet,nvidia,ggml,bare	1
+npm	openai	The official TypeScript library for the OpenAI API		1
+npm	@langchain/openai	OpenAI integrations for LangChain.js	llm,ai,gpt3,chain,prompt,prompt engineering,chatgpt,machine learning,ml,openai,embeddings,vectorstores	1
+npm	@ai-sdk/openai	The **[OpenAI provider](https://ai-sdk.dev/providers/ai-sdk-providers/openai)** for the [AI SDK](https://ai-sdk.dev/docs) contains language model support for the OpenAI chat and completion APIs and embedding model support for the OpenAI embeddings API.	ai	1
+github	AtenovD/PumpGuard-AI	PumpGuard AI: Telegram bot that screens new Robinhood Chain / hood.fun token launches with 4 LLM agents, a risk manager and a creator reputation book. Bring your own model: Grok by default, any OpenAI-compatible API works. Dry-run only.		1
+hackernews	OpenAI launches new AI model and desktop version of ChatGPT			1
+hackernews	OpenAI launches new Astra model amid growing scrutiny over agents' safety			1
+hackernews	OpenAI's o1: advanced AI reasoning beyond GPT			1
+npm	@prisma/dev	A local Prisma Postgres server for development and testing	prisma,postgres,accelerate,local,development,dev,testing	0
+npm	pg-types	Query result type converters for node-postgres	postgres,PostgreSQL,pg	0
+npm	@microsoft/postgres-mcp	PostgreSQL MCP server for AI assistants over the Model Context Protocol.	postgresql,postgres,pgsql,mcp,model-context-protocol,database,ai,copilot	1
+npm	pg-connection-string	Functions for dealing with a PostgreSQL connection string	pg,connection,string,parse	0
+github	arifulislamat/database-mcp	MCP servers for SQL databases. One package per engine (SQLite, libSQL, MySQL, MariaDB, Postgres), two tools, read-only by default, secrets never in logs.	database,libsql,mariadb,mcp,mcp-server,model-context-protocol,mysql,postgres,sql,sqlite,typescript	1
+github	VKirill/multi-postgres-mcp-server	MCP server for multiple PostgreSQL databases. One process, unlimited databases. Hot-reload JSON config, --label per-project isolation. Read-only safe queries. Works with Claude Code, Cursor, Windsurf, Cline, and any MCP-compatible AI client.	ai,ai-tools,anthropic,claude,claude-code,cline,connection-pool,cursor,database,developer-tools,llm-tools,mcp,mcp-server,model-context-protocol,multi-database,postgres,postgresql,sql,typescript,windsurf	1
+github	CreatorGhost/smart-postgres-mcp	Multi-instance PostgreSQL MCP server manager — dynamic server spawning, per-database config, process isolation and a FastAPI lifecycle API.		1
+github	verzth/mcp-postgres	MCP server for PostgreSQL with multi-host, auto-discovery, and per-database/table access control		1
+hackernews	Show HN: Seren Desktop – AI IDE with Publisher Store and X402 Micropayments			1
+hackernews	Show HN: FaultWall – Which tenant is killing your Postgres? Now you can find out			0
+hackernews	Show HN: Self-hosted MCP server for SQL, SSH, and FAISS indexing			1
+github	iMagist486/ElasticSearch-Langchain-Chatglm2	Q&A based on elasticsearch+langchain+chatglm2 ｜ 基于elasticsearch，langchain，chatglm2的自有知识库问答	chatglm2-6b,elasticsearch,internlm-chat-7b,langchian	1
+github	ZhouhaoJiang/PdfReader-LangChian-LLM	ChatPDF Implement PDF parsing based on LangChain and LLM language model(ChatGLM,GPT...) | ChatPDF 基于LangChain和LLM语言模型实现PDF解析阅读		1
+github	hylarucoder/ChatGPT-Nuxt	ChatGPT Web Nuxt 3 Vue 3 Version	chatbot,chatgpt,chatgpt-nuxt,langchian,nuxt,tailwindcss,vue	1
+github	photon-hq/flux	An open-source CLI for deploying LangChain agents to iMessage in seconds.	cli,imessage,langchian,photon	1
+hackernews	Show HN: Apach Beam and Langchian Integration			1
+hackernews	Make LangChian more database oriented			1
+hackernews	Show HN: Langchian-Beam,integrates LLMs into Apache beam pipeline with Langchian			1
+npm	kokoro-js	High-quality text-to-speech for the web	kokoro,tts,text-to-speech	1
+npm	@ckeditor/ckeditor5-engine	The editing engine of CKEditor 5 – the best browser-based rich text editor.	wysiwyg,rich text,editor,html,contentEditable,editing,operational transformation,ot,collaboration,collaborative,real-time,framework,ckeditor,ckeditor5,ckeditor 5,ckeditor5-lib	0
+npm	@deepseek-ai/dsh-persona	Composition-authored deployment persona section for the DeepSeek Harness		1
+github	huggingface/text-embeddings-inference	A blazing fast inference solution for text embeddings models	ai,embeddings,huggingface,llm,ml	1
+github	unslothai/notebooks	250+ Fine-tuning & RL Notebooks for text, vision, audio, embedding, TTS models.	unsloth	1
+github	dselivanov/text2vec	Fast vectorization, topic modeling, distances and GloVe word embeddings in R.	glove,latent-dirichlet-allocation,natural-language-processing,text-mining,topic-modeling,vectorization,word-embeddings,word2vec	1
+github	msgi/nlp-journey	Documents, papers and codes related to Natural Language Processing, including Topic Model, Word Embedding, Named Entity Recognition, Text Classificatin, Text Generation, Text Similarity, Machine Translation)，etc.	deep-learning,paper	1
+hackernews	Show HN: CandleEmbed – A crate for generating text embeddings from HF models			1
+hackernews	Show HN: Visual intuitive explanations of LLM concepts (LLM University)			1
+hackernews	Improving Text Embeddings with Large Language Models			1
+npm	@keystonehq/sdk	Keystone airgaped wallet SDK		0
+npm	d3-delaunay	Compute the Voronoi diagram of a set of two-dimensional points.	voronoi,delaunay,geometry	0
+npm	@futurelab-studio/latest-science-mcp	MCP Server for Scientific Paper Harvesting from arXiv and OpenAlex	mcp,scientific-papers,arxiv,openalex,research	1
+npm	openalex-research-mcp	MCP server for OpenAlex API - enabling literature review and research landscaping	mcp,mcp-server,model-context-protocol,openalex,literature-review,research,citations,academic,scholarly,papers,claude,ai	1
+github	ayushidalmia/awesome-fashion-ai	A repository to curate and summarise research papers related to fashion and e-commerce	awesome-list,awesome-lists,deeplearning,fashion,machine-learning,research-paper	1
+github	RyanOngAI/research_papers	Summarise and implement research papers		1
+github	darrencroton/arxiv-research-assistant	Fetches, ranks, and summarises the top new arXiv papers directly to Obsidian		1
+github	devilunraveled/ResearchSynth	A document summariser specific for Abstract Generation for Scientific Papers.		1
+hackernews	Ask HN: Help finding 1 example of non-trivial task that ChatGPT can do			1
+hackernews	Digests: non-technical summaries of research papers			0
+hackernews	Show HN: A site for sharing short summaries of research papers			0
+npm	@langchain/qdrant	LangChain.js integration for the Qdrant vector database		1
+npm	@lancedb/lancedb	LanceDB: A serverless, low-latency vector database for AI applications	database,lance,lancedb,search,vector,vector database,ann	1
+npm	@langchain/pinecone	LangChain integration for Pinecone's vector database		1
+npm	@memberjunction/ai-vectordb	MemberJunction: AI Vector Database Module		1
+github	zilliztech/VectorDBBench	Benchmark for vector databases.	benchmark,cost-effectiveness,performance,vector-database,vector-search,vectordb	1
+github	milvus-io/milvus	Milvus is a high-performance, cloud-native vector database built for scalable vector ANN search	anns,cloud-native,diskann,distributed,embedding-database,embedding-similarity,embedding-store,faiss,golang,hnsw,image-search,llm,nearest-neighbor-search,rag,vector-database,vector-search,vector-similarity,vector-store	1
+github	alibaba/zvec	A lightweight, lightning-fast, in-process vector database	agent-skills,db,embedded,faiss,fts,fulltext-search,hnsw,llm-memory,local,rag,search-engine,semantic-search,similarity-search,vector-database,vector-db	1
+github	Mintplex-Labs/vector-admin	The universal tool suite for vector database management. Manage Pinecone, Chroma, Qdrant, Weaviate and more vector databases with ease.	ai,ai-agents,aitools,chroma,database-management,document-retrieval,embeddings,flowise,langchain,langchain-js,llms,pinecone,qdrant,vector-data-management,vector-database,vector-database-embedding,vector-search,vectordatabase,vectorspace,weaviate	1
+hackernews	Vector Databases: A Technical Primer [pdf]			1
+hackernews	Vector databases are the wrong abstraction			1
+hackernews	What is a Vector Database? (2021)			1
+npm	music-metadata	Read and write audio metadata in Node.js and browsers. Parse tags from a wide range of audio formats and edit tags and cover art without re-encoding audio.	music,metadata,audio-metadata,music-metadata,metadata-reader,metadata-writer,metadata-editor,tag-reader,tag-writer,tag-editor,audio-tags,id3-parser,id3-writer,id3-editor,cover-art,album-art,artwork,nodejs,browser,meta,audio,tag,tags,duration,MusicBrainz,Discogs,Picard,ID3,ID3v1,ID3v2,m4a,m4b,mp3,mp4,Vorbis,ogg,flac,Matroska,WebM,EBML,asf,wma,wmv,ape,MonkeyAudio,aiff,wav,WavPack,Opus,speex,musepack,mpc,dsd,dsf,dff,dsdiff,aac,adts,length,chapter,info,parse,parser,bwf,slt,lyrics,ID3v2 Chapters	0
+npm	graphemer	A JavaScript library that breaks strings into their individual user-perceived characters (including emojis!)	utf-8,strings,emoji,split	0
+npm	@jimp/plugin-cover	<div align="center"> <img width="200" height="200" src="https://s3.amazonaws.com/pix.iemoji.com/images/emoji/apple/ios-11/256/crayon.png"> <h1>@jimp/plugin-cover</h1> <p>Cover an image within a height and width.</p> </div>		0
+npm	atomically	Read and write files atomically and reliably.	atomic,read,write,file,reliable	0
+github	NikoRaisanen/instant-cover-letter	Instantly generate a cover letter! Copy and paste a job description, write a few sentences about yourself, and experience the beauty of ChatGPT!	chatgpt,chatgpt-api,chatgpt3,cover-letter,coverletter,lambda,nodejs,openai-api,react,typescript	1
+github	comsa33/GPT4-AI-resume	AI end-to-end Service that writes a personalized cover letter using gpt4.	ai,cover-letter,end-to-end-project,gpt-4-api,nlp,project,recruiting	1
+github	touhi99/genai-job-agents	A LLM Agent with Langchain/Langgraph helps to analyze CV, look relevant jobs via API, and write a cover letter according to it	agent,langchain,langgraph,linkedin,llm,openai,python,resume	1
+github	dynamikapps/resume-cover-letter-writer	This is a resume and cover letter writer tool built using CrewAI and Streamlit. It generates personalized resumes and cover letters based on the user's information and a target job description.		1
+hackernews	It's the Job of My Dreams, but I'd Have to Write a Cover Letter, So Nevermind			0
+hackernews	How to Write a Cover Letter for a Job			0
+hackernews	It's the Job of My Dreams, but I'd Have to Write a Cover Letter, So Never Mind			0
+npm	app-builder-bin	app-builder precompiled binaries	snap,appimage,icns	0
+npm	@imgly/background-removal	Background Removal in the Browser	background-removal,client-side,data-privacy,image-segmentation,image-matting,onnx	1
+npm	react-photo-sphere-viewer	A React wrapper for Photo Sphere Viewer, to display 360° panoramas with ease.	react,photosphere,viewer,360,panorama,photo,sphere,photo-sphere-viewer,react-photo-sphere-viewer	0
+npm	react-photo-album	Responsive photo gallery component for React	react,image,photo,album,gallery,masonry,photo album,photo gallery,image gallery,photo layout,image layout,react gallery,react photo album,react photo gallery,react image gallery,react-photo-album,react-photo-gallery	0
+github	nikhilroxtomar/Remove-Photo-Background-using-TensorFlow	In this program, we are using image segmentation to remove the background from photos.	deeplabv3plus,image-segmentation	1
+github	GhayasAhmad/auto-background-remover	Android Background Remover is a blazing-fast, offline AI image background removal library for Android. Perfect for e-commerce, social, and photo editing apps. Remove backgrounds from Bitmaps with high accuracy, real-time speed, and zero server or API dependencies.	andoird-library,android,auto-background-remover,autobackgroundremover,background-extraction,background-removal,backgroundremover,backround-remover,kotlin,kotlin-coroutines,remove-background	1
+github	aminul-palash/Background-Remove-API	background removing from photo, and alignment and create passport format photo automatically using AI		1
+github	paveldat/photo_background_removal	Remove background from a photo	background-removal,image-processing,pillow,python,video	0
+hackernews	How to Remove the Background from Hair in Photoshop			0
+hackernews	How can I remove a background from a transparent object in Photoshop			0
+hackernews	Show HN: Create and Run PC Automations from Plain English with Automate AI Free			1
+npm	@fontsource/song-myung	Self-host the Song Myung font in a neatly bundled NPM package.	fontsource,font,font family,google fonts,song-myung,Song Myung,css,sass,front-end,web,typeface,variable	0
+npm	@google/generative-ai	Google AI JavaScript SDK		1
+npm	@redocly/cli	[@Redocly](https://redocly.com) CLI is your all-in-one API documentation utility. It builds, manages, improves, and quality-checks your API descriptions, all of which comes in handy for various phases of the API Lifecycle. Create your own rulesets to make	linter,OpenAPI,Swagger,OpenAPI linter,Swagger linter,AsyncAPI linter,Arazzo linter,oas	0
+npm	make-error	Make your own error types!	create,custom,derive,error,errors,extend,extending,extension,factory,inherit,make,subclass	0
+github	imyizhang/Suno-API	Unofficial API for Suno AI: make a song with Suno using v3 🥳	suno,suno-ai,suno-ai-api,suno-api	1
+github	holy-templar/drama-song-ad	Make a complete drama song ad: a long-form ad sung as a drama, from script to song to finished video. Originally designed for the MaxFusion AI MCP, tool-agnostic: works with any image, audio and video generation tools, or by hand.		1
+github	ardha27/AICoverGen-Mod	Make AI song covers with any RVC voice model. Modded AICoverGen that runs on Google Colab or a local GPU.		1
+github	Eddycrack864/AI-Cover-Maker	Make AI song covers in one click with a Gradio UI: separate the song with UVR models, convert the vocals with RVC (Applio) and mix them back	ai-cover,applio,audio,gradio-python-app,karaoke,rvc,separation,vocal-remover,voice-conversion	1
+hackernews	How to Make a Song with AI: A Step-by-Step Guide			1
+hackernews	Show HN: Collaborative Music Discovery with AI			1
+hackernews	Launch HN: Martin (YC S23) – Using LLMs to Make a Better Siri			1
+npm	@lernapps/practice	The assistant's side of lernapps practice: the plan template and the skills with which a creator's AI assistant builds an app for an occasion (a class test, a cover lesson), which the creator submits as a ZIP file in an issue; documentation at https://ler		1
+npm	@iconference/cashctrl-mcp	Inoffizieller MCP-Server für CashCtrl: lesen frei, schreiben nur auf gesetzter Stufe und nach Vorschau mit Bestätigung	mcp,model-context-protocol,cashctrl,buchhaltung,accounting,claude,schweiz	1
+npm	cuonztech-agent-harness	Chaos-Proxy für MCP-Server: injiziert F1-F5-Fehlerszenarien (Ghost-Write nach Timeout, 429, defektes JSON, Duplicate Dispatch, 500) vor einem echten Upstream-MCP-Server und prüft, ob ein Agent Schreibvorgänge doppelt ausführt. Mit Resilience Score und Sys	mcp,mcp-server,agent-testing,chaos-engineering,idempotency,llm-agents,ghost-write,resilience,cuonztech	1
+npm	stryker-mcp-reporter	Ein Stryker Reporter Plugin, das Mutation Testing Ergebnisse nativ über das Model Context Protocol (MCP) bereitstellt.	stryker,stryker-plugin,stryker-reporter,mutation-testing,mcp,model-context-protocol	1
+npm	mongodb-connection-string-url	MongoDB connection strings, based on the WhatWG URL API	password,prompt,tty	0
+npm	turbo	Turborepo is the build system for coding agents.		0
+npm	agent-base	Turn a function into an `http.Agent` instance	http,agent,base,barebones,https	0
+npm	global-agent	Global HTTP/HTTPS proxy configurable using environment variables.	http,global,proxy,agent	0
+npm	@expo/vector-icons	Built-in support for popular icon fonts and the tooling to create your own Icon components from your font and glyph map. This is a wrapper around react-native-vector-icons to make it compatible with Expo.	expo	0
+npm	@maplibre/vt-pbf	Serialize mapbox vector tiles to binary protobufs in javascript.		0
+npm	zbsearch	A complete search engine in your browser, server, or edge network with support for full-text, vector, and hybrid search in less than 2kb.	full-text,full-text search,fuzzy search,search,typo-tolerant search,vector database,vector search,vectors	1
+npm	apparatus	various machine learning routines for node	machine,learning,ml,classifier,clustering,bayes,k-means,logistic,regression	1
+npm	agent-install	Install SKILL.md files, MCP servers, and AGENTS.md guidance for any coding agent. Ships both a Node API and a CLI.	agent,agents-md,claude,cli,codex,cursor,install,mcp,model-context-protocol,opencode,skill,skills	1
+# min-precision 0.95
+# min-recall 0.80

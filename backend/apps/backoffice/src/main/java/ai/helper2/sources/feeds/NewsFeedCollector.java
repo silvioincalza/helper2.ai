@@ -18,6 +18,7 @@ import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +84,11 @@ public class NewsFeedCollector implements Collector {
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public Duration runEvery() {
+    return interval.every();
   }
 
   @Override

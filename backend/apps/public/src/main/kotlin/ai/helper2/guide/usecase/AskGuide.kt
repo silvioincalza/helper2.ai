@@ -13,6 +13,8 @@ import ai.helper2.guide.GuideStatus
 import ai.helper2.guide.GuideValidator
 import ai.helper2.guide.LEARN_TYPES
 import ai.helper2.guide.ModelActivity
+import ai.helper2.guide.QuoteOrigins
+import ai.helper2.guide.QuoteRecords
 import ai.helper2.guide.ReadingKey
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
@@ -37,6 +39,7 @@ import ai.helper2.guide.steps.readingFilter
 import ai.helper2.guide.steps.withNotices
 import ai.helper2.search.Asker
 import ai.helper2.search.Feature
+import ai.helper2.search.MergedResult
 import ai.helper2.search.Notice
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.QueryAnalyzer
@@ -71,7 +74,10 @@ class AskGuide(
   private val limits: AnswerLimits = AnswerLimits.DEFAULT,
   private val similar: SimilarQuestions? = null,
   private val stopsWhenNobodyWaits: Boolean = false,
+  private val quoteRecords: QuoteRecords = QuoteRecords.NONE,
+  private val quoteOrigins: QuoteOrigins = QuoteOrigins(),
 ) {
+
   val answersWithModel: Boolean
     get() = model != null
 
@@ -250,8 +256,40 @@ class AskGuide(
     log.info("guide quota reached ({}): answering from search only", notice.code)
     tally.outcome =
       if (notice.code == NoticeCode.GUIDE_NETWORK_QUOTA) "network_quota" else "client_quota"
-    val answer = answer(q, progress, asked, model = null)
+    val answer = answer(q, progress, asked, model = null).withQuoteOrigins()
     return answer.copy(notices = answer.notices + notice)
+  }
+
+  private fun GuideAnswer.withQuoteOrigins(): GuideAnswer {
+    val subjects =
+      comparison?.subjects.orEmpty().mapNotNull { s -> s.result?.let { s.key to it } }.toMap()
+    val quoted =
+      recommendations.map { it.result } +
+        subjects.values +
+        explanation?.sentences.orEmpty().map { it.source }
+    if (quoted.isEmpty()) return this
+    val records = quoteRecords.of(quoted.flatMap(quoteOrigins::storedResourcesOf).distinct())
+    fun from(quote: String?, result: MergedResult?) =
+      if (quote.isNullOrBlank() || result == null) null else quoteOrigins.of(quote, result, records)
+    return copy(
+      recommendations = recommendations.map { it.copy(quotedFrom = from(it.quote, it.result)) },
+      comparison =
+        comparison?.let { c ->
+          c.copy(
+            rows =
+              c.rows.map { row ->
+                row.copy(
+                  cells =
+                    row.cells.map { it.copy(quotedFrom = from(it.quote, subjects[it.subjectKey])) }
+                )
+              }
+          )
+        },
+      explanation =
+        explanation?.let { e ->
+          e.copy(sentences = e.sentences.map { it.copy(quotedFrom = from(it.quote, it.source)) })
+        },
+    )
   }
 
   private fun answerAndStore(
@@ -262,7 +300,10 @@ class AskGuide(
     tally: Tally,
   ): GuideAnswer {
     val answer =
-      answer(q, progress, asked, model).withNotices(budgetSpentNotice(asked)).withoutAsker()
+      answer(q, progress, asked, model)
+        .withNotices(budgetSpentNotice(asked))
+        .withoutAsker()
+        .withQuoteOrigins()
     val complete = !asked.outOfTime && !asked.budgetExhausted
     val expiresAt = if (complete) cache?.put(key, answer.withoutTheQuestion(q)) else null
     if (expiresAt != null && !asked.reused && answer.hasAiAnswer())

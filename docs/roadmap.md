@@ -6,17 +6,7 @@ hand: run the script and open a pull request with its output.
 The open issues with the label story or task, by epic and by priority: Now, Next, Later. A story with the priority
 Replay is built and is closed by its pull request: it is not listed.
 
-## E0 Decisions and docs
-
-### Now
-
-- [S0.6.2 `docs/roadmap.md` in step with the open issues after the S3.11.2 move](https://github.com/silvioincalza/helper2.ai/issues/449)
-
 ## E1 Foundation
-
-### Now
-
-- [S1.8.3 Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys](https://github.com/silvioincalza/helper2.ai/issues/174)
 
 ### Next
 
@@ -35,28 +25,40 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E2 Scout and catalog
 
+### Now
+
+- [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
+
 ### Next
 
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
 - [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
+- [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
 - [S2.11.4 The Scout to visit every record that has a repository link](https://github.com/silvioincalza/helper2.ai/issues/216)
-- [S2.12.1 `Classification.isAiRelated` measured and then applied to `github-topic-leaders`](https://github.com/silvioincalza/helper2.ai/issues/217)
+- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563)
 
 ### Later
 
+- [S2.2.14 A LinkedIn post about an event is NEWS, and its short links are resolved](https://github.com/silvioincalza/helper2.ai/issues/546)
 - [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
 - [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
 - [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
+- [S2.10.7 An official package without a scope to join its repository by its publisher](https://github.com/silvioincalza/helper2.ai/issues/493)
 - [S2.13.1 To ask for a new source from the Sources page](https://github.com/silvioincalza/helper2.ai/issues/218)
 - [S2.14.1 Hackathons, meetups, talks and workshops found automatically](https://github.com/silvioincalza/helper2.ai/issues/219)
 - [S2.15.1 PHP, Swift, C, C++, Elixir and Dart as platforms](https://github.com/silvioincalza/helper2.ai/issues/220)
 
 ## E3 Search
 
+### Now
+
+- [S3.15.4 A past period and a newness question read right in every language](https://github.com/silvioincalza/helper2.ai/issues/567)
+
 ### Next
 
+- [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
 - [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
@@ -69,7 +71,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S3.7.3 The open steps of the home examples done](https://github.com/silvioincalza/helper2.ai/issues/245)
 - [S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin](https://github.com/silvioincalza/helper2.ai/issues/250)
-- [S3.11.2 The time of the results next to the result count](https://github.com/silvioincalza/helper2.ai/issues/448)
 - [S3.13.1 Papers ranked by citations](https://github.com/silvioincalza/helper2.ai/issues/255)
 - [S3.14.1 Search by meaning to match English resources](https://github.com/silvioincalza/helper2.ai/issues/256)
 
@@ -77,6 +78,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
+- [S4.1.9 A quote from an MCP Registry record linked to its Registry entry](https://github.com/silvioincalza/helper2.ai/issues/566)
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
 
 ### Next
@@ -148,15 +150,16 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
 - [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
-- [S9.6.1 Each source's terms read again for commercial use](https://github.com/silvioincalza/helper2.ai/issues/340)
+- [S9.6.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/340)
 - [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
 - [S9.6.3 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/435)
-- [S9.7.1 Nebius to state in writing where `nvidia/Nemotron-3.5-Super-VL` and `nvidia/Nemotron-3_5-Lightning` are served](https://github.com/silvioincalza/helper2.ai/issues/341)
+- [S9.7.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/341)
 
 ## E10 Release and operations
 
 ### Now
 
+- [S10.3.3 v2026.11.5 on prod: main's fixes since v2026.11.4](https://github.com/silvioincalza/helper2.ai/issues/508)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
@@ -166,6 +169,7 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.2.5 The Actions caches of the repository under their limit](https://github.com/silvioincalza/helper2.ai/issues/413)
 - [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/helper2.ai/issues/417)
 - [S10.2.11 The tests that read every backend project in a place of their own](https://github.com/silvioincalza/helper2.ai/issues/419)
+- [S10.2.17 The HTTP deadline test that reads a fast response without a flake](https://github.com/silvioincalza/helper2.ai/issues/501)
 - [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/helper2.ai/issues/348)
 - [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/helper2.ai/issues/352)
 - [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/helper2.ai/issues/427)

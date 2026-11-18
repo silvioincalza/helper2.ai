@@ -95,6 +95,14 @@ function Facts({ facts }: { facts: Assertion[] }) {
   );
 }
 
+function repositoryPath(url: string): string {
+  try {
+    return new URL(url).pathname.replace(/^\/+/, '');
+  } catch {
+    return url;
+  }
+}
+
 function Records({ records }: { records: ResourceDetail['sourceRecords'] }) {
   const { t } = useTranslation();
   return (
@@ -104,6 +112,7 @@ function Records({ records }: { records: ResourceDetail['sourceRecords'] }) {
           <tr>
             <th scope="col">{t('sources.col.source')}</th>
             <th scope="col">{t('detail.col.externalId')}</th>
+            <th scope="col">{t('detail.col.repository')}</th>
             <th scope="col">{t('detail.col.retrieved')}</th>
             <th scope="col">{t('detail.col.fingerprint')}</th>
           </tr>
@@ -116,6 +125,13 @@ function Records({ records }: { records: ResourceDetail['sourceRecords'] }) {
                 <ExternalLink url={r.url} showHost={false}>
                   {r.externalId}
                 </ExternalLink>
+              </td>
+              <td>
+                {r.repositoryUrl && (
+                  <ExternalLink url={r.repositoryUrl}>
+                    {repositoryPath(r.repositoryUrl)}
+                  </ExternalLink>
+                )}
               </td>
               <td>
                 <time dateTime={r.retrievedAt}>{formatDate(r.retrievedAt, 'INSTANT')}</time>

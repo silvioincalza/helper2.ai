@@ -20,8 +20,13 @@ A research pass (9 Nov 2026) compared more sources. Most are later steps or out 
    Type NEWS, published = the story's `created_at`. No key.
 2. **AI filter before ranks.** A story without a link (Ask HN) and a story whose title names no AI subject are left out
    before ranks are given, so ranks stay consecutive. `Classification.isAiRelated` knows AI words and model names
-   (DeepSeek, Qwen, Gemma, Nemotron, Mixtral, NVIDIA among them), with digits right after a name ("Qwen3", "Llama3.3").
-   The word list is shared with GitHub, npm and live web.
+   (DeepSeek, Qwen, Gemma, Nemotron, Mixtral among them), with digits right after a name ("Qwen3", "Llama3.3"), in
+   `i18n/ai-words_<language>.properties`. A strong word is enough (`llm`, `openai`, `pytorch`, "intelligenza
+   artificiale"). A weak word has a common meaning outside AI (`prompt`, `agent`, `vector`, `transformer`,
+   `embedding`, `nvidia`, `copilot`) and counts only next to a second, different AI word. A weak word is one key
+   (`ai.weak.agent`) with its plural and its translations, so "agent agents" or "agente agenti" is one word: `agent-base` (an
+   `http.Agent`) and `paper` (vector graphics) are not about AI. Measured on `docs/eval/classifier-labels.tsv`
+   (`ClassificationLabelsTest`). The word lists are shared with GitHub, npm, live web and the Scout collectors.
 3. **Wiring.** A live source like npm: settings under `helper2.sources.hacker-news` (`H2_SOURCE_HACKER_NEWS_ENABLED`,
    timeout 2.5 s, cache 30 min), the same circuit breaker and bulkhead as the other live sources, both apps. The
    Sources page lists it from its descriptor.
@@ -38,7 +43,8 @@ the package catalog collector (GitHub + deps.dev, [0018](../scout/0018-ai-librar
 
 - `backend/libs/core/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java`
 - `backend/libs/core/src/main/java/ai/helper2/sources/support/HttpClients.java` (`fetchSize`, `firstHits`, `plainWords`)
-- `backend/libs/core/src/main/java/ai/helper2/sources/support/Classification.java` (`AI_TERMS`)
+- `backend/libs/core/src/main/java/ai/helper2/sources/support/Classification.java`,
+  `backend/libs/core/src/main/resources/i18n/ai-words_*.properties`
 - `backend/libs/core/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java`
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml` (settings, resilience instances)
 - Tests: `HackerNewsSourceTest`, `HackerNewsSourceLiveTest`
@@ -107,6 +113,5 @@ Tracked privately (S9.6.3).
 
 - Features: [F3.9](https://github.com/silvioincalza/helper2.ai/issues/55) Hacker News as a live source.
 - Open issues that change this decision:
-  - [#217](https://github.com/silvioincalza/helper2.ai/issues/217) S2.12.1 `Classification.isAiRelated` measured and then applied to `github-topic-leaders`
   - [#255](https://github.com/silvioincalza/helper2.ai/issues/255) S3.13.1 Papers ranked by citations
   - [#348](https://github.com/silvioincalza/helper2.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded

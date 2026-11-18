@@ -45,7 +45,8 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
   something to read (model flag or words such as "papers", "news", "articoli"), only tool types are searched.
 - **Choose** (reasoning model, `prompts/guide/choose.txt`, native JSON schema when `H2_NEBIUS_NATIVE_SCHEMA=true`):
   the candidates go as `<candidate key="c1" …>` … `c24`, their text through `UntrustedText`, 800 characters each. The
-  model returns up to 3 picks, each with key, reason, verbatim quote and optional constraint quotes. It writes picks
+  model returns up to 5 picks, best first (`GuideValidator.MAX_PROPOSED`), each with key, reason, verbatim quote and
+  optional constraint quotes. It writes picks
   only: nothing else it writes reaches the page. Its rules say a candidate must be the kind asked for and its own text
   must show it does the task; a need that asks for a task to do for the user ("write a polite reply to a customer")
   instead of a resource that does it gets no pick.
@@ -62,7 +63,7 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
 - **Prompt labels.** A prompt's label is the first 8 hex digits of the SHA-256 of its rendered text
   (`ModelCallMetrics.promptVersion`). The meters, the answer cache key ([0032](0032-guide-cost-guard-and-answer-cache.md)) and the
   eval runs name it. `SpringAiGuideModelTest.theWordingOfEachPromptIsPinnedToItsLabel` pins each one, so a new wording
-  changes its label in the same change: plan `cbb55ef0`, choose `c4ac02df`, compare `14806e21`, explain `180b36ae`,
+  changes its label in the same change: plan `cbb55ef0`, choose `f9d7a3e2`, compare `14806e21`, explain `180b36ae`,
   verify-reasons `eae9e99b`. The prompts state the limits code enforces through `{{placeholders}}`, and a test checks
   each number.
 
@@ -85,10 +86,34 @@ each with its own maximum text length (400, 200 and 300 characters). A pick is k
   "api_key"; a combining mark belongs to its letter; in a script written without spaces, Chinese, Japanese, Thai and
   the like, any two letters have a boundary), with at least 40 characters and 6 words, or the whole text when the
   text is shorter;
-- at most 3 picks are kept (`OVER_LIMIT` for the rest).
+- only the first 5 proposals are read: every one after them is `OVER_LIMIT`, valid or not, so an early failure
+  gives the model no extra try.
 
 Every kept pick increments `helper2.guide.picks{rank}` with its search rank band (`1-3`, `4-8`, `9+`), and the
 `guide timings` log line lists the ranks (`keptRanks`).
+
+**Where the quote can be read.** A resource shows one link and one text, but the text can come from another record
+than the link: a package's description under its repository's link until the repository's own record arrives
+([0021](../scout/0021-resource-identity-one-resource-per-repository.md)), or the description of the last record that
+wrote one. So every quote of an answer names the page that holds it: a pick (AI pick or fallback result), a
+comparison cell (looked up in its subject) and an explanation sentence (in its source). `QuoteOrigins` looks the
+quote up, with the gate's own whole-word rule, in the title and source-written description of each record of the
+resource, the record at the resource's own address first, then the others in source order. A live hit is its own
+record, and its page is the one that holds its text (a Hacker News hit: the story's page, not the article it links);
+a catalog row (a hit whose external id is the id of its own address, also when the merge puts it under another
+resource) is a resource, not a source, so the stored records of that resource and of the result stand in for it: `QuoteRecords` reads them with `Resources.recordsOf`, one read per answer for all its quotes,
+in `AskGuide.withQuoteOrigins` before the answer is cached. The answer carries `quotedFrom` (`sourceId`, `url`) per
+pick, cell and sentence; the result row, the resource page, the comparison and the explanation link "read it on
+{host}" to that page, and the resource page names that host under the highlighted quote. `quotedFrom` is null when no
+record holds the quote (a curated description, a cell without a quote): the page then names the resource's own host,
+as before. AI-written descriptions are never a record's text here, as in the gate, and a `curated` record (a title or text a
+curator wrote, `AddCuratedResource`) is never a page that holds a quote. The lookup only names a page: it
+never keeps or drops a pick, a cell or a sentence. When the stored records cannot be read (the database is down), the
+answer stands: `GuideConfiguration.quoteRecords` logs the failure and returns no records, so live hits still name
+their page and catalog quotes get null. A fallback result's quote (no AI pick) is the source's text cut
+at 160 characters on a whole word (`wholeWordExcerpt`), so the whole-word lookup still finds it. A pick on a resource
+whose card shows an AI-written description still shows its quote and the link to its page, beside the labelled AI
+text.
 
 **Constraint checks.** Each constraint gets CONFIRMED or NOT_CONFIRMED per pick. Licence constraints are decided by the
 licence the source states: a named licence must match as a whole word ("mit" does not match "Limited"), and a stated
@@ -136,9 +161,18 @@ lose a check, never create one.
      (text-to-speech for a speech-to-text need). The pick is dropped (`OFF_NEED`, trail `OFF_NEED`: "does a different task than the one asked for"), whatever
      its reason. A missing `fitsNeed` counts as true, so only a stated "does not fit" drops a pick. Comparison cells and
      explanation sentences use only `claimsSupported`.
-5. **Event.** `GuideProgress.reasonsChecked` sends `checked` with the counts `supported`, `removed`, `notChecked`.
-6. **Cache rule.** An answer with an AI pick left `NOT_CHECKED` is not cached ([0032](0032-guide-cost-guard-and-answer-cache.md)).
-7. **Budget.** The call takes a unit of the guide budget like plan and choose ([0008](../foundation/0008-llm-integration.md)), so a
+5. **Three shown.** After the reason check the answer keeps the first 3 picks that are still in it
+   (`GuideValidator.MAX_PICKS`), in the order the model gave. A pick dropped as off the need leaves its place to the
+   next one the model proposed. A pick whose reason is `REMOVED` keeps its place, as it did before. The picks proposed
+   after the third one that fits the need are spares, even when they are off the need or fail the evidence gate: they
+   count in no `rejectedBy`, no trail and no `PARTIAL` status (`PickAnswer.upToShownFitting`, by each pick's position
+   in the proposal). A sixth pick still counts as `OVER_LIMIT`: the model broke the rule. So one weak
+   pick no longer leaves the user with two. The cost is tokens, not calls: choose writes up to two more picks and the
+   one reason check reads them.
+6. **Event.** `GuideProgress.reasonsChecked` sends `checked` with the counts `supported`, `removed`, `notChecked`, over
+   every proposed pick the check read.
+7. **Cache rule.** An answer with an AI pick left `NOT_CHECKED` is not cached ([0032](0032-guide-cost-guard-and-answer-cache.md)).
+8. **Budget.** The call takes a unit of the guide budget like plan and choose ([0008](../foundation/0008-llm-integration.md)), so a
    fresh question costs 3 calls, more with retries.
 
 ### Intents and asking back
@@ -205,7 +239,26 @@ The plan call (fast model, `prompts/guide/plan.txt`) returns:
   of a reason, a prompt, instructions, saying, telling, writing, the user or a password is dropped. "No account
   needed", "no API key required" and "works offline" stay.
 
-**Deterministic backup** (`IntentRules`, English and Italian word lists in `i18n/intent-words_*.properties`). When the
+**The word files** (`i18n/intent-words_{en,it,de,fr,es}.properties`, read by `WordLists`). Comma-separated phrases,
+matched case-insensitively as whole words; a space matches any run of whitespace, and a phrase that ends in `*`
+matches any ending of its last word. Every language file is loaded and the languages are joined, except
+`intent.new-skip`, which is read with the `intent.new-word` of its own language: German `mit` and `art` must not stop
+English "new MIT models" or "new art tools". A word that is also a common word of another language is left out
+(German `Tag`: "last tag" asks for a git tag; French `an`, `ans`: "an upcoming release"). The keys: `period.*` and
+`unit.*` (time expressions); `intent.newest`, `intent.new-word`, `intent.new-kind`, `intent.new-skip` ("new" sets
+`NEWEST` only right before a kind of resource, with at most one word between that is not a skip word: "I am new to
+AI" and "a new way to…" do not); `intent.alternatives`, `intent.compare`, `intent.learn` (anywhere) and
+`intent.what-is`, `intent.when`, `intent.how-to` (at the start only; "what is X" only, "what are the new tools" asks
+for a list); `query.generic` (words that name no subject: a query of only these browses by date and type);
+`when.event` (a WHEN question with one asks for an event's dates) and `when.start` (a start names an event only next
+to a course word: "when did Ollama start?" asks for a release date); `subject.kind` (the kind the subject is: "the
+Gemini model" is never asked which Gemini) and `subject.type-suffix` (a trailing type word that still names the
+subject: "Ollama app"); `time.word` and `new.word` (`mentionsTime`, `mentionsNewness`; a year 20xx also names a time);
+`requirement.*` (a planned constraint counts only when the question states it too, `constraintStated`);
+`constraint.stop` (words of a constraint that say nothing alone); `reading` (`wantsReading`); `qualifier`
+(requirements dropped from a planned query before the search, `withoutQualifiers`, where a hyphen is part of a word).
+
+**Deterministic backup** (`IntentRules`, the word files above). When the
 plan has no grounded intent or window, or there is no model, rules on the user's text set them, so the degraded answer
 for "tools from last month" is still the newest tools. Narrow on purpose, because a false hit changes the whole answer:
 - the intent, most specific shape first: comparison words, then alternatives, courses and certifications, "when",
@@ -466,7 +519,9 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
   `askBack`, `namesakes`.
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`,
   `GuideSearchPlan`, `PlannedQueries`, `ReasonClaim`, `ReasonCheck`, `GuideAnswer`; `EvidenceGate.kt` — `EvidenceGate`
-  (`claimProblem`: the text and quote rule of picks, cells and sentences); `Intents.kt` — `GuideIntent`,
+  (`claimProblem`: the text and quote rule of picks, cells and sentences); `QuoteOrigins.kt` — `QuoteOrigins`,
+  `QuotedFrom` (the page that holds a quote), `QuoteRecords.kt` (the stored records it reads; wired in
+  `GuideConfiguration.quoteRecords`); `Intents.kt` — `GuideIntent`,
   `IntentRules`, `Clarification`, `SubjectKind`, `AmbiguousSubject`, `isSubject`; `HostileText.kt` —
   `QuestionDirections`, `SecretWords`; `AnswerLimits.kt`; `GuideCost.kt` —
   `GuideAnswerCache.isCacheable`, `WINDOWED_TTL`.
@@ -575,7 +630,9 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names.
 - The gate proves a quote, not that it is true: a description written to be chosen passes the gate and the reason check. Strict rules reject some good picks. A resource outside the 24 candidates cannot be picked.
+- `quotedFrom` names a page as the source last wrote it: a page changed since the record was read may no longer show the quote.
 - The reason check is a model's judgment and can miss or reject a claim; it costs one more call per question (the 600-call daily cap covers at most 200 fresh questions).
+- The reason check reads up to 5 picks in one prompt, with their third-party texts. A 4th or 5th candidate whose text talks the check into finding the first ones off the need takes their place. The evidence gate and the SECURITY block still apply to it; no eval case plants such a text yet.
 - Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found.
 - `NEWEST` drops undated results silently. Events are found only in a source's own top hits, and the event words are a fixed list. Two more prompts (`compare`, `explain`) to maintain and evaluate. The course list needs editorial review.
 

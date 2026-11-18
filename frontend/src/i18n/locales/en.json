@@ -200,6 +200,7 @@
     "moreTypes": "More",
     "pick": "Guide pick #{{rank}}",
     "checkedQuote": "Checked word for word in the source",
+    "quotedFrom": "read it on {{host}}",
     "sourceLine": {
       "answered": "{{ok}} of {{total}} sources answered",
       "live_one": "{{count}} live, {{ms}} ms",
@@ -494,6 +495,7 @@
       "verification": "Verification",
       "evidence": "Evidence",
       "externalId": "ID at the source",
+      "repository": "Repository",
       "retrieved": "Retrieved",
       "fingerprint": "Content hash"
     },

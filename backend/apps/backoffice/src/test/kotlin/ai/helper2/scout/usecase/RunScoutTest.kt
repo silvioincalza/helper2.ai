@@ -51,6 +51,7 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import java.net.URI
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
@@ -114,8 +115,11 @@ class RunScoutTest {
 
   private class FakeCollector(
     override val descriptor: SourceDescriptor,
+    val every: Duration = Duration.ZERO,
     val behaviour: (String?) -> CollectedBatch,
   ) : Collector {
+    override fun runEvery(): Duration = every
+
     val seenCheckpoints = mutableListOf<String?>()
 
     override fun collect(
@@ -302,7 +306,7 @@ class RunScoutTest {
   }
 
   @Test
-  fun `items counters and last success gauge follow succeeded runs only`() {
+  fun `items counters follow succeeded runs only`() {
     val meters = SimpleMeterRegistry()
     val bad = FakeCollector(descriptor("bad")) { throw IllegalStateException("boom") }
     val hits = (0 until 2).map { hit("good", "https://github.com/a/r$it") }
@@ -313,11 +317,21 @@ class RunScoutTest {
     assertEquals(2.0, items("seen"))
     assertEquals(2.0, items("changed"))
     assertEquals(0.0, items("queued"))
-    assertEquals(
-      NOW.epochSecond.toDouble(),
-      meters.get("helper2.scout.last.success").tag("source", "good").gauge().value(),
-    )
-    assertNull(meters.find("helper2.scout.last.success").tag("source", "bad").gauge())
+    assertNull(meters.find("helper2.scout.items").tag("source", "bad").counter())
+  }
+
+  @Test
+  fun `the run interval of every collector is a gauge from the start, before any run`() {
+    val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+    val weekly = FakeCollector(descriptor("weekly"), Duration.ofDays(7)) { CollectedBatch.notDue() }
+    val hourly =
+      FakeCollector(descriptor("hourly"), Duration.ofHours(1)) { CollectedBatch.notDue() }
+    RunScout(listOf(weekly, hourly), history, catalog, null, clock, NO_LOCK, meters = meters)
+    fun interval(source: String) =
+      meters.get("helper2.scout.interval").tag("source", source).gauge().value()
+    assertEquals(7 * 86400.0, interval("weekly"))
+    assertEquals(3600.0, interval("hourly"))
+    assert(meters.scrape().contains("helper2_scout_interval_seconds{source=\"weekly\"} 604800"))
   }
 
   @Test
@@ -846,6 +860,8 @@ class RunScoutTest {
 
       override fun eligible(resourceIds: List<UUID>) = eligible(resourceIds)
 
+      override fun waiting(resourceIds: List<UUID>) = resourceIds
+
       override fun requestRun(resourceId: UUID) {
         requested += resourceId
       }
@@ -1173,6 +1189,8 @@ class RunScoutTest {
     val seen = mutableListOf<ScoutCursor>()
     val retry =
       object : Collector {
+        override fun runEvery(): Duration = Duration.ZERO
+
         override val descriptor = descriptor("failing")
 
         override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =
@@ -1197,6 +1215,8 @@ class RunScoutTest {
     val seen = mutableListOf<Pair<String?, String?>>()
     val collector =
       object : Collector {
+        override fun runEvery(): Duration = Duration.ZERO
+
         override val descriptor = descriptor("mcp")
 
         override fun collect(
@@ -1541,6 +1561,8 @@ class RunScoutTest {
     val seen = mutableListOf<String?>()
     val c =
       object : Collector {
+        override fun runEvery(): Duration = Duration.ZERO
+
         override val descriptor = descriptor("leaders")
 
         override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =

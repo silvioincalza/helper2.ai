@@ -10,10 +10,11 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 
 ## Decision
 1. **Redis 8.10.2 as a cache with AOF persistence.** Bounded memory (`maxmemory 128mb`, `allkeys-lru` in the
-   Helm chart): entries are evicted under pressure, as in any cache. `maxmemory` bounds the data only: an AOF
-   rewrite forks Redis, and copy-on-write can nearly double it, so the container's memory limit is at least twice
-   `maxmemory` (`redis.resources.limits.memory`, `320Mi`), or the kernel kills Redis before eviction can act;
-   `make chart-check` refuses a smaller one. The append-only file keeps the cache across
+   Helm chart): entries are evicted under pressure, as in any cache. `maxmemory` bounds the data only. Redis'
+   own memory is about 1.3 times `maxmemory` (allocator overhead), an AOF rewrite forks Redis and copy-on-write can
+   copy nearly all of it, and the page cache of the AOF files being written counts against the same limit. So the
+   container's memory limit is at least 3.5 times `maxmemory` (`redis.resources.limits.memory`, `448Mi`), or the
+   kernel kills Redis before eviction can act; `make chart-check` refuses a smaller one. The append-only file keeps the cache across
    restarts: `--appendonly yes`, `--appendfsync everysec`, no RDB snapshots (`--save ""`). In the chart Redis is a
    single-replica StatefulSet with `/data` on a ReadWriteOnce PersistentVolumeClaim (`redis.storage`, 1 Gi;
    `redis.storageClassName`, empty = the cluster default). Redis is never a system of record: losing the volume
@@ -85,6 +86,9 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 ### Known limits
 - During a Redis outage, budgets count in memory per replica (up to three times what was left of the day on prod).
 - Redis is not ready while it loads the append-only file; with `everysec` a crash loses at most the last second.
+- The 3.5 times rule is measured on a burst of about 100,000 writes a second with back-to-back automatic AOF
+  rewrites: at 320Mi Redis was killed in 4 runs of 15, at 448Mi in none of 9. At a normal write rate it peaks
+  below 240Mi. A larger `maxmemory` needs the limit raised with it.
 
 ## Diagrams
 [flow](../../diagrams/flow-0005-redis-disposable-cache.svg) · [sequence](../../diagrams/sequence-0005-redis-disposable-cache.svg)

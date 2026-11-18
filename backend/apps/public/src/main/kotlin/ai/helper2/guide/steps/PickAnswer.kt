@@ -237,7 +237,7 @@ internal class PickAnswer(
       "candidates=${candidates.size} kept=${checked.picks.size} keptRanks=$keptRanks rejected=${checked.rejected} " +
         "rejectedBy=${checked.rejectedBy} reasons=${verdicts.checks.values.groupingBy { it }.eachCount()} " +
         "offNeed=${verdicts.offNeed.size}"
-    val fitting = checked.withoutOffNeed(verdicts)
+    val fitting = checked.upToShownFitting(verdicts).withoutOffNeed(verdicts)
     val trail = ResearchTrail(removed = validator.removedOf(fitting))
     if (fitting.picks.isEmpty()) {
       return topResults(
@@ -385,6 +385,30 @@ internal class PickAnswer(
     )
   }
 
+  private fun GuideValidator.Result.upToShownFitting(
+    verdicts: ReasonVerdicts
+  ): GuideValidator.Result {
+    val fits = picks.runningFold(0) { n, p -> if (verdicts.fitsNeed(p.candidate.key)) n + 1 else n }
+    val end = fits.indexOfFirst { it == GuideValidator.MAX_PICKS }
+    if (end < 0) return this
+    val shown = picks.take(end)
+    val last = shown.last().position
+    fun spare(at: Int, r: GuideValidator.Rejection) =
+      at > last && r != GuideValidator.Rejection.OVER_LIMIT
+    val spares = rejectionsAt.filter { (at, r) -> spare(at, r) }
+    val sparesBy = spares.groupingBy { it.second }.eachCount()
+    val keys = shown.map { it.candidate.key }.toSet()
+    return copy(
+      picks = shown,
+      checks = checks.filterKeys { it in keys },
+      rejected = rejected - spares.size,
+      rejectedBy =
+        rejectedBy.mapValues { (r, n) -> n - (sparesBy[r] ?: 0) }.filterValues { it > 0 },
+      rejectedPicks = rejectedPicks.filterNot { spare(it.position, it.rejection) },
+      rejectionsAt = rejectionsAt.filterNot { (at, r) -> spare(at, r) },
+    )
+  }
+
   private fun GuideValidator.Result.insideWindow(filters: SearchFilters): GuideValidator.Result {
     if (filters.publishedAfter == null && filters.publishedBefore == null) return this
     val inside = picks.filter {
@@ -401,7 +425,11 @@ internal class PickAnswer(
     if (out == 0) return this
     val outside =
       (picks - inside.toSet()).map {
-        GuideValidator.RejectedPick(it.candidate, GuideValidator.Rejection.OUTSIDE_WINDOW)
+        GuideValidator.RejectedPick(
+          it.candidate,
+          GuideValidator.Rejection.OUTSIDE_WINDOW,
+          it.position,
+        )
       }
     return copy(
       picks = inside,
@@ -411,6 +439,7 @@ internal class PickAnswer(
           (GuideValidator.Rejection.OUTSIDE_WINDOW to
             (rejectedBy[GuideValidator.Rejection.OUTSIDE_WINDOW] ?: 0) + out),
       rejectedPicks = rejectedPicks + outside,
+      rejectionsAt = rejectionsAt + outside.map { it.position to it.rejection },
     )
   }
 

@@ -79,6 +79,8 @@ public interface EnrichmentCandidates {
 
   List<UUID> withEnoughText(List<UUID> ids, int minText);
 
+  List<UUID> waiting(List<UUID> ids, int minText, int maxFailed);
+
   @Nullable Candidate candidate(UUID id);
 
   @Nullable String lastJudgedFingerprint(UUID id);

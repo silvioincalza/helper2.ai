@@ -3,8 +3,12 @@ import type {
   ReviewItemPage,
   ReviewBulkResolution,
   ReviewBulkResult,
+  AiCheckPage,
   ReviewEvidence,
   RelationshipTargetChange,
+  RelationshipTargetGroupPage,
+  RelationshipTargetGroupDecision,
+  RelationshipTargetGroupOutcome,
   CandidateEdit,
   ResourceField,
   ResourceFieldValue,
@@ -55,6 +59,15 @@ export const adminApi = {
         size: String(size),
       }),
       signal,
+    }),
+  listRelationshipTargetGroups: (page: number, size: number, signal?: AbortSignal) =>
+    request<RelationshipTargetGroupPage>('GET', '/admin/relationship-targets', {
+      query: new URLSearchParams({ page: String(page), size: String(size) }),
+      signal,
+    }),
+  decideRelationshipTargetGroup: (body: RelationshipTargetGroupDecision) =>
+    request<RelationshipTargetGroupOutcome>('POST', '/admin/relationship-targets/decision', {
+      body,
     }),
   resolveReviewItem: (id: string, body: ReviewResolution) =>
     request<ReviewItem>('PUT', `/admin/review-items/${encodeURIComponent(id)}/resolution`, {
@@ -167,6 +180,10 @@ export const adminApi = {
     request<void>('POST', `/admin/known-targets/${encodeURIComponent(id)}/remove`),
   requeueEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/requeue`),
+  checkAiWords: (after: string | null, size: number) =>
+    request<AiCheckPage>('GET', '/admin/ai-check', {
+      query: new URLSearchParams({ ...(after ? { after } : {}), size: String(size) }),
+    }),
   skipEnrichment: (resourceId: string, reason: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
       body: reason.trim() ? { reason: reason.trim() } : {},

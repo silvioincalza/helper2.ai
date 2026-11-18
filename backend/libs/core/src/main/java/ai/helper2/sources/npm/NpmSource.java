@@ -10,6 +10,7 @@ import ai.helper2.search.SourceQuery;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
+import ai.helper2.shared.PlatformBuild;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
@@ -89,7 +90,7 @@ public class NpmSource implements SearchSource {
   private static SourceHit toHit(JsonNode o, Instant now, int position) {
     JsonNode p = o.path("package");
     String name = HttpClients.text(p, "name");
-    if (name == null) {
+    if (name == null || PlatformBuild.isPlatformBuild(name)) {
       return null;
     }
     String url = HttpClients.text(p.path("links"), "npm");

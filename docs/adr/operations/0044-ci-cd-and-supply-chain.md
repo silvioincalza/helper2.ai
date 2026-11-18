@@ -222,9 +222,10 @@ Harbor could put an image under a tag first.
    job whose part is not selected must be skipped. So a selected job that failed, was cancelled or was skipped fails
    the check, and so does a job the script has no rule for. On a push (`full: true`) every part in the tree is
    selected; `postgres-tag` is selected on pull requests only. A manual run of `ci.yml` selects every part too, and
-   with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check to require on `main` and `release/*`. On `main` it is required
-   by the ruleset "main: pull requests only", and a pull request must be up to date with `main` before it merges:
-   two pull requests that are green alone can break `main` together.
+   with its input `full` it also runs `package`: a change to the packing is tried on a branch this way, before `main`. `ci-ok` is the one check of CI to require on `main` and `release/*`. It is required by
+   the rulesets "main: pull requests only" and "release branches: pull requests only". A pull request need not be up to date with its base before it
+   merges: the owner updates the branch on demand. Two pull requests that are green alone can still break `main` together; CI on the push to
+   `main` catches it.
 10. **CD per component.** The `image` job maps the push against the commit pushed before (`github.event.before`).
     `make ci-images` gives all three images the new commit tag, always, so they keep one tag (the public pod copies
     its shell from the web image of `image.tag`). A changed component is built and pushed. An unchanged one gets the
@@ -321,6 +322,15 @@ Harbor could put an image under a tag first.
     outside collaborator waits for an approval before its workflows run; secret scanning with push protection;
     Dependabot alerts and security-update pull requests beside the weekly version updates and the Grype scan.
 
+### A pull request merges after its review
+22. **Copilot reviews every push to `main`'s pull requests; the owner merges once its threads are resolved.** The
+    ruleset "main: pull requests only" asks Copilot to review every push to a pull request (`copilot_code_review`), and
+    every review thread must be resolved before a merge. The only required check is `ci-ok`. Copilot runs as the
+    GitHub Actions job `copilot-pull-request-reviewer`, but GitHub starts that job from a `dynamic` event and leaves it
+    out of the pull request's checks, so a ruleset that requires it waits for ever. The owner merges after Copilot
+    has posted on the head commit; when Copilot does not review (its quota, an outage), he requests the review again
+    or merges on the other reviews.
+
 ### Code
 
 - `.github/workflows/ci.yml` (`changes`, the `if:` of each job, `monitoring` with `PROMETHEUS_IMAGE`, `ci-ok`),
@@ -358,6 +368,9 @@ Harbor could put an image under a tag first.
 - GitHub Actions secrets for the kubeconfig and app env — long-lived values in GitHub; OIDC avoids them.
 - Argo CD or Flux (GitOps) — a controller in the cluster and a second repository of state for one app.
 - Build on every deploy — prod would run a fresh build, not the image staging tested.
+- A pull request up to date with its base before it merges — every merge sends the other green pull requests back
+  to a rebase and a full CI run. GitHub's merge queue tests them together, but a repository owned by a user account
+  cannot use it.
 - `dorny/paths-filter` or a workflow-level `paths:` — a third-party action in every run, or a skipped workflow that
   leaves a required check waiting forever.
 - Build all three images on every push — simple, but a docs change costs three builds and an admin change rebuilds the
@@ -386,12 +399,25 @@ Harbor could put an image under a tag first.
 - Keyless signing (Fulcio and Rekor, the GitHub OIDC identity) — no key to keep, but every signature and our image
   names go to a public log, and the deploy needs the public Sigstore services to verify.
 - A key file in OpenBao KV — the private key would sit on the runner during the job; Transit never hands it out.
+- One approving review required by the ruleset — Copilot only comments, it never approves, and GitHub does not let
+  the owner approve his own pull request: no pull request could merge.
+- The job `copilot-pull-request-reviewer` as a required check next to `ci-ok` — the job passes, but its result never
+  reaches the pull request's checks: the merge panel shows it as "Expected — Waiting for status to be reported", and
+  no pull request can merge.
+- A workflow of our own that reads the reviews on every push and every review posted — GitHub runs a workflow
+  started by the Copilot review only after an approval, since the repository asks one for every outside contributor:
+  the check would wait for a click on every pull request. A job of `ci.yml` has the same problem, and `ci-ok` ends
+  before Copilot posts.
+- Wait in a job until Copilot posts — a runner held for minutes on each push, and a time-out still has to fail.
 - Verify in the cluster with an admission controller (Kyverno, the Sigstore policy controller) — stronger, but a
   controller to run and a dependency on one cluster; the deploy stays generic (open point, infra side).
 
 ## Consequences
 
 - A green PR has run the same checks that guard `main`; CD repeats every CI job before it builds anything.
+- A pull request merges without being up to date with its base, so no green pull request waits for a rebase. Two
+  of them that are green alone can break `main` together: CI on the push to `main` shows it, and CD builds nothing
+  from a red commit.
 - A pull request that changes one part runs that part's checks; a docs change runs the diagrams only. A path the map
   does not know runs all of CI: slower, never wrong.
 - A change in one app's tests, resources or build file runs that app's chain alone. A change in an app's main
@@ -463,6 +489,10 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 - The frontend chains are selected together: tests outside `src/admin` read the back office code (S10.2.12).
 - Every Gradle job spends 30 to 90 seconds before its first project task (S10.2.8). The `chart` job spends 163 of its 169 seconds in the waits of a self-test (S10.2.4).
 - `package` runs on a push and on a manual full run, not on a pull request.
+- Nothing makes a merge wait for Copilot: a pull request whose threads are resolved can merge before Copilot has
+  posted on its head commit, or while Copilot is rate-limited. The owner checks that the review of the head commit is
+  there before he merges.
+- The Copilot review is not a required check on `release/*`.
 - No browser end-to-end tests: frontend tests run in jsdom only, also in CI.
 - A deploy that is not healthy after the upgrade is rolled back by itself, but the schema is not: the new release's migrations stay. The older code must work on the newer schema, as in every rolling upgrade; no test checks it (the previous release's schema contract against the new migrations). A migration that drops or renames what the older code uses needs two releases (add, then remove), or the rollback ends in `ROLLBACK FAILED` or in an older app with errors. Until the first release tag, a rollback across an edit of `V1__schema.sql` does not pass: the older release holds another V1, and Flyway refuses it. What the new release wrote between the upgrade and the rollback stays. The check sees the public host only, not the admin host.
 - The scanner versions (Syft, Grype in `.github/actions/install-scanners`), cosign and the Prometheus image of the `monitoring` job are pinned by hand: Dependabot does not see them. Grype is built from source in each scan job (about 2 minutes); the weekly scan reads only the latest release, not an older one still on prod after a rollback.
@@ -470,14 +500,14 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 
 ### Open points
 
-- `ci-ok` is not a required status check on `release/*`.
 - Signatures are not verified in the cluster (admission controller, infra side).
 
 ## Diagrams
 
 The pipeline: [flow](../../diagrams/flow-0044-ci-cd.svg) · [sequence](../../diagrams/sequence-0044-ci-cd.svg) ·
 per component and signing: [flow](../../diagrams/flow-0044-ci-cd-per-component-and-image-signing.svg) · [sequence](../../diagrams/sequence-0044-ci-cd-per-component-and-image-signing.svg) ·
-the supply-chain checks: [flow](../../diagrams/flow-0044-supply-chain.svg)
+the supply-chain checks: [flow](../../diagrams/flow-0044-supply-chain.svg) ·
+the review before a merge: [flow](../../diagrams/flow-0044-copilot-review.svg) · [sequence](../../diagrams/sequence-0044-copilot-review.svg)
 
 The supply-chain checks run in CI only, with no runtime path, so they have no sequence diagram.
 

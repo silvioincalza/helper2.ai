@@ -1,12 +1,12 @@
 # Flowchart: how the back office overview is answered (ADR 0038).
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
-#   platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
+#   catalog/internal/JdbcValidationIssues.java (validation issues), platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
 #   backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/admin/AdminOverview.tsx,
 #   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
 #   catalog/internal/BacklogRule.java, scout/EnrichmentQueue.kt (QueuePlace),
 #   scout/usecase/RequeueEnrichment.kt, SkipEnrichment.kt, PrioritiseEnrichment.kt, admin/web/EnrichmentQueueController.java,
-#   admin/usecase/ResolveReviewItems.java, admin/BulkDecisionRule.java, admin/web/ReviewItemMapper.java,
+#   admin/usecase/ResolveReviewItems.java, admin/usecase/CheckAiWords.java, catalog/internal/JdbcAiCheckReport.java, admin/BulkDecisionRule.java, admin/web/ReviewItemMapper.java,
 #   backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java,
 #   admin/web/ReviewController.java (marker).
 # Render: cd docs/diagrams && d2 fmt flow-0038-back-office.d2 && d2 flow-0038-back-office.d2 flow-0038-back-office.svg
@@ -38,6 +38,7 @@ parts: Counts {
   unknown: "unknown" {class: fail}
   credits: "Web credits today\n(null when off or unreadable)" {class: data}
   examples: "Home examples shown per path;\nhidden by check, paused" {class: data}
+  issues: "Validation issues of the runs\nstarted in the last 7 days:\nsubject + rule, runs each, top 10" {class: data}
   budget -> used: yes
   budget -> unknown: "no Redis, or it cannot answer"
 }
@@ -49,6 +50,7 @@ uc.compute -> parts.runs
 uc.compute -> parts.budget
 uc.compute -> parts.credits
 uc.compute -> parts.examples
+uc.compute -> parts.issues
 
 start: "The back office starts" {class: end}
 
@@ -171,3 +173,21 @@ bulk: "ResolveReviewItems, per item" {
 }
 
 bulk_req -> bulk.open
+
+aicheck_req: "GET /api/v1/admin/ai-check\n(after = cursor, size up to 2000)" {class: end}
+
+aicheck: CheckAiWords {
+  class: group
+  direction: down
+  read: "Next indexed or observed resources,\nmost popular first (title,\ndescription, tags)" {class: data}
+  rule: "AiTopicCheck: about AI\nby the word rule?" {class: decision}
+  kept: "Not listed" {class: end}
+  listed: "Listed; nothing changes;\nwaiting = due and not skipped\n(BacklogRule, as Skip checks it)" {class: end}
+  skip: "Admin: Skip (waiting only),\nreason: Not about AI (word rule)" {class: app}
+  read -> rule
+  rule -> kept: yes
+  rule -> listed: no
+  listed -> skip: "admin decides"
+}
+
+aicheck_req -> aicheck.read

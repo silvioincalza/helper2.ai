@@ -84,7 +84,7 @@ web:
 postgres:
   image:
     repository: ""
-    tag: 18.6-pgvector0.8.6-7
+    tag: 18.6-pgvector0.8.6-8
     digest: ""
   storageClassName: ""
   storage: 5Gi
@@ -94,7 +94,7 @@ postgres:
     limits: { memory: 1Gi }
 
 redis:
-  image: docker.io/library/redis:8.10.2-alpine@sha256:9f8d2d789b9a1d1e3f283f979aa9cbf393373806472e1ccd460e2f9c869b833b
+  image: docker.io/library/redis:8.10.3-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
   maxMemory: 128mb
   storageClassName: ""
   storage: 1Gi
@@ -105,7 +105,7 @@ redis:
     revision: 0
   resources:
     requests: { cpu: 20m, memory: 64Mi }
-    limits: { memory: 320Mi }
+    limits: { memory: 448Mi }
 
 networkPolicy:
   ingressController:

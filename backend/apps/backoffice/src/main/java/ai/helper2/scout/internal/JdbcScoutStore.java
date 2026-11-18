@@ -1,6 +1,7 @@
 package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.enrichment.SourceOutcomes;
+import ai.helper2.scout.LastSuccesses;
 import ai.helper2.scout.RunHistoryRetention;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.RunSummary;
@@ -10,8 +11,10 @@ import ai.helper2.scout.ScoutStore;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 @Component
-class JdbcScoutStore implements ScoutStore, ScheduledRunStore, RunHistoryRetention {
+class JdbcScoutStore implements ScoutStore, ScheduledRunStore, RunHistoryRetention, LastSuccesses {
 
   private final JdbcClient jdbc;
   private final ObjectMapper json;
@@ -103,20 +106,33 @@ class JdbcScoutStore implements ScoutStore, ScheduledRunStore, RunHistoryRetenti
   public List<RunSummary> recent(int limit) {
     return jdbc.sql("SELECT * FROM scout_run ORDER BY started_at DESC LIMIT :n")
         .param("n", limit)
-        .query((rs, i) ->
-            new RunSummary(
-                rs.getObject("id", UUID.class),
-                rs.getString("source_id"),
-                RunStatus.valueOf(rs.getString("status")),
-                rs.getTimestamp("started_at").toInstant(),
-                rs.getTimestamp("finished_at") == null
-                    ? null
-                    : rs.getTimestamp("finished_at").toInstant(),
-                rs.getInt("items_seen"),
-                rs.getInt("items_changed"),
-                rs.getInt("enrichments_queued"),
-                rs.getString("message")))
+        .query(JdbcScoutStore::summary)
         .list();
+  }
+
+  @Override
+  public List<RunSummary> latestPerSource() {
+    return jdbc.sql(
+            """
+            SELECT * FROM (SELECT DISTINCT ON (source_id) * FROM scout_run
+                           ORDER BY source_id, started_at DESC) latest
+            ORDER BY started_at DESC, source_id
+            """)
+        .query(JdbcScoutStore::summary)
+        .list();
+  }
+
+  private static RunSummary summary(java.sql.ResultSet rs, int i) throws java.sql.SQLException {
+    return new RunSummary(
+        rs.getObject("id", UUID.class),
+        rs.getString("source_id"),
+        RunStatus.valueOf(rs.getString("status")),
+        rs.getTimestamp("started_at").toInstant(),
+        rs.getTimestamp("finished_at") == null ? null : rs.getTimestamp("finished_at").toInstant(),
+        rs.getInt("items_seen"),
+        rs.getInt("items_changed"),
+        rs.getInt("enrichments_queued"),
+        rs.getString("message"));
   }
 
   @Override
@@ -135,6 +151,21 @@ class JdbcScoutStore implements ScoutStore, ScheduledRunStore, RunHistoryRetenti
             .list();
     sourceOutcomes.markFailed(Set.copyOf(closed));
     return closed.size();
+  }
+
+  @Override
+  public Map<String, Instant> bySource() {
+    return jdbc
+        .sql(
+            """
+            SELECT source_id, max(coalesce(finished_at, started_at)) AS succeeded_at
+            FROM scout_run WHERE status = 'SUCCEEDED' GROUP BY source_id
+            """)
+        .query((rs, i) ->
+            Map.entry(rs.getString("source_id"), rs.getTimestamp("succeeded_at").toInstant()))
+        .list()
+        .stream()
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override

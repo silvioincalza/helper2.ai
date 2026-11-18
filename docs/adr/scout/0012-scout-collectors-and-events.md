@@ -36,7 +36,9 @@ Two kinds of source need more care:
    sub-folder of a repository (`repository.subfolder`) is linked at that folder (`/tree/HEAD/{folder}`), so the
    servers of one monorepo stay one resource each ([0021](0021-resource-identity-one-resource-per-repository.md) §2); the repository stays their repository link. The folder must be a
    plain path inside a GitHub repository (letters, digits, `.`, `_`, `-`, no `.` or `..` segment, at most 300
-   characters); otherwise the server is linked at the repository. Platform `remote` when the server lists
+   characters); otherwise the server is linked at the repository. A server without a valid folder is the resource
+   of its registry name, and joins its repository only when its name holds the repository's name
+   ([0021](0021-resource-identity-one-resource-per-repository.md) §5). Platform `remote` when the server lists
    remotes, else `local`. The data is CC0. Incremental: it resumes with the registry's cursor. A server whose latest
    version has the status `deleted` is withdrawn: its record leaves the catalog on that run.
 3. **Hugging Face trending** (`hf-trending`, 1 day). The top 100 models by `trendingScore`. The collector
@@ -86,11 +88,22 @@ Two kinds of source need more care:
    becomes a `COURSE_CANDIDATE` review item, and nothing reaches the catalog until an admin accepts it. Off without
    `H2_LIVE_WEB_API_KEY`.
 8. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
-   `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token.
+   `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token
+   and without following redirects (`HttpClients.getWithoutRedirect`): a redirect fails the file.
    One EVENT per conference: its next edition (point 22). A file that cannot be read or parsed, or whose download URL
    is on another host, is logged, skipped and counted in `helper2.source.items.dropped{source=ai-deadlines, reason}`
    (the exception type, or `ForeignDownloadUrl`). A conference with no upcoming edition is not counted. When the
    circuit breaker refuses a file, the pass ends there: the run fails and the next run tries again.
+8a. **confs.tech** (`confs-tech`, 1 day). The crowd-sourced conference list of confs.tech,
+   `tech-conferences/conference-data` (MIT). One GitHub contents call per year (this year and the next) lists its
+   topic files; each JSON file is read only from `raw.githubusercontent.com`, by a client that does not follow
+   redirects (`ObservedHttp.restClientBuilderWithoutRedirects`, `HttpClients.getWithoutRedirect`), so a redirect fails
+   the file instead of leading to another host. The pass stops
+   asking for files and years once it holds `maxItems` conferences. A conference is kept when its name passes
+   the AI check (`Classification.isAiRelated`) and it has not ended; a conference listed under several topics is kept
+   once, by canonical URL. Its days, city and country are the file's own (DAY precision); `online` with a city is
+   HYBRID, without one ONLINE. A year with no folder yet gives nothing; an unreadable file is logged, skipped and
+   counted in `helper2.source.items.dropped{source=confs-tech, reason}`.
 9. **Tavily discovery** (`discovery-<category>`): one collector per category of the AI world, 34 categories in 7
    families, list pages indexed, products reviewed ([0013](0013-discovery.md)).
 
@@ -155,8 +168,8 @@ Two kinds of source need more care:
     and the courses (10) both run, discovery has 23 of the 40 left and finishes its categories the day after.
 19. **Retention and titles.** `linkedin-scout` is a web source (`WebSources`, [0013](0013-discovery.md) §12): its titles
     are cleaned as page titles, and its NEWS and ARTICLE records go with the web retention.
-20. **Alert.** `Helper2ScoutCollectorStale` fires when `linkedin-scout` has had no success for more than 8 days (its
-    7-day interval plus a day), as for `course-scout`.
+20. **Alert.** `Helper2ScoutCollectorStale` fires when `linkedin-scout` has had no success for its run interval plus a
+    day (8 days at the default 7), as for every collector ([0009](../foundation/0009-observability.md)).
 
 ### Events
 21. **Stated days only.** An event has a start (and maybe an end) only when a source states it.
@@ -231,6 +244,23 @@ Two kinds of source need more care:
       the Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, [0013](0013-discovery.md) §10). The cap is checked before the
       pass and before each Extract call; past it the pass keeps what it read, and its queries are not marked done:
       the pages left unread are found and read on the next run (their searches are paid again).
+    - **Undated catalog events are read too.** Each pass also reads the page of every catalog EVENT with no start
+      day first discovered since the last pass (the first pass: the last 30 days), oldest first
+      (`Resources.undatedEvents`), with its own budget of `H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES` pages next to the
+      search pages. A full batch keeps the pass open: the cursor holds the last event read
+      (`catalog:undated-events@<discovered at>/<id>`), and the next call reads on from there. The pass is complete
+      only when the searches are done and a batch comes back short. Such a page goes through the same reader and gate;
+      `extra.query` is `catalog:undated-events`.
+    - **A LinkedIn post leads to the event's own site.** When the reader keeps no event from a LinkedIn post
+      (`/posts/`, `/feed/update/`), the post's raw text gives its links (`LinkedInPosts.eventSite`): when exactly one
+      https link is not LinkedIn, `lnkd.in` or a social site, that page is read through the same reader and gate, and
+      the event is kept at that site, titled by the post's title up to its first ` | `, with `extra.linkedFrom` = the
+      post. Short `lnkd.in` links are not followed. The post counts as read only once its site was read, so a call
+      that stops before the second round leaves the post for the next one.
+    - **Progress counts only pages read.** A page found by a search and in the catalog is read once, as a catalog page.
+      A search is done when every chosen page it found was read; the catalog cursor moves only past pages read. A
+      failed Extract call, the credit cap or a missing model ends the call and leaves the rest for the next one. A page
+      that Extract answers as failed is not tried again.
     - **A model reads the page.** The reasoning model, thinking off ([0008](../foundation/0008-llm-integration.md)),
       prompt `prompts/sources/read-event.txt`: how many events the page is about, the first and last day, and the
       words of the page that state them; kind, format and place, each with its own words. The page is untrusted data:
@@ -258,12 +288,15 @@ Two kinds of source need more care:
     `eventOrigin: AI_EXTRACTED` when its start comes from this source, and the UI (Coming up, the Events page, the
     resource page) shows the days, kind and place with the AI label and `data-ai-generated`. Server pages leave days
     and place a model read out: their facts and schema.org data cannot carry the label.
-31. **The API.** `GET /api/v1/events/upcoming?days=&size=` (`size` 1–60, default 6): resources of type EVENT with a
-    start whose end (or start) is on or after today 00:00 UTC, soonest first, then by title. With `days` (1–366), only
+31. **The API.** `GET /api/v1/events/upcoming?days=&size=&offset=` (`size` 1–500, default 6; `offset` 0–100,000,
+    default 0): resources of type EVENT with a start whose end (or start) is on or after today 00:00 UTC, soonest
+    first, then by title and id; `offset` skips that many of them. With `days` (1–366), only
     events that start before today 00:00 UTC plus `days`; the response says that end in `until` (null without
     `days`). An event already running stays listed until it ends. `total` counts every event in the window, so "Show
     all N" is a real number ([0040](../frontend/0040-design-system.md)). `Cache-Control: public, max-age=300`. The home
     page (`useEventsFeed` in `homeFeeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
+    The Events page asks for the next 366 days in pages of 500 (`offset` 0, 500, …) until it holds `total` events, so
+    its list and its kind and format counts cover the whole window.
 
 **An admin's edit wins.** A type an admin sets need not be declared by a finder, and the events seed overwrites only
 the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).

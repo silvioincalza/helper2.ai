@@ -55,7 +55,14 @@ interface ScoutStore {
 
   fun recent(limit: Int): List<RunSummary>
 
+  fun latestPerSource(): List<RunSummary> =
+    recent(Int.MAX_VALUE).distinctBy { it.sourceId }.sortedByDescending { it.startedAt }
+
   fun markInterrupted(at: Instant): Int
+}
+
+fun interface LastSuccesses {
+  fun bySource(): Map<String, Instant>
 }
 
 interface ScheduledRunStore {
@@ -120,6 +127,8 @@ interface EnrichmentBacklog {
   fun prioritisedCount(): Int
 
   fun eligible(resourceIds: List<UUID>): List<UUID>
+
+  fun waiting(resourceIds: List<UUID>): List<UUID>
 
   fun requestRun(resourceId: UUID)
 }

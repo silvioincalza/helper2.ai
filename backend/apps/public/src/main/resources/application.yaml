@@ -58,6 +58,7 @@ helper2:
       network-daily-questions: ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}
       client-concurrent-questions: ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}
       budget-pace-slots: ${H2_GUIDE_BUDGET_PACE_SLOTS:12}
+    mcp-registry-url: ${helper2.sources.mcp-registry.base-url}
   identity:
     frontend-url: ${H2_FRONTEND_URL:/}
     noindex: ${H2_NOINDEX:false}
