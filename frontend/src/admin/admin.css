@@ -281,14 +281,18 @@
 }
 .h2-admin__draft {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: var(--space-1) var(--space-3);
 }
 .h2-admin__draft dt {
   color: var(--muted);
 }
 .h2-admin__draft dd {
+  grid-column: 1 / -1;
   margin: 0;
+}
+.h2-admin__draft dt + dd {
+  grid-column: auto;
 }
 .h2-admin__draft-note {
   grid-column: 1 / -1;

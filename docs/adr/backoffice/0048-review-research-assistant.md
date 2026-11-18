@@ -47,7 +47,10 @@ tool answered, and must confirm every value before it reaches the catalog.
    returns the tool calls and runs none of them. Our code (`RunResearch`) runs each tool, stores the step and sends the
    result back. So every step is stored before the next one, the limits are ours (at most 12 tool calls, 3 minutes,
    the daily cap of model calls, one more call when the final answer is not the JSON asked for), and the loop works
-   with any OpenAI-compatible model. A model that cannot call tools fails the eval and is not used. The prompt is
+   with any OpenAI-compatible model. After the 12th tool call the model gets one more call with no tools and is told
+   to answer with what it has read. The run keeps its evidence instead of failing, and the check still drops every
+   value it cannot cite. A tool call past the 12th is not run: it is stored with the error "not run". A model that
+   still asks for a tool fails the run. A model that cannot call tools fails the eval and is not used. The prompt is
    `prompts/research/research.txt`.
 5. **Every step is stored and shown.** `review_research_step` holds, per step: the sequence, the kind (`MODEL_CALL`,
    `TOOL_CALL`, `CHECK`), the request, the response, the duration, the tokens and the error. A response is cut at

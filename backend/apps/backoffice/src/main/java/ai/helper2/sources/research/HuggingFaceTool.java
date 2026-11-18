@@ -13,7 +13,7 @@ import tools.jackson.databind.JsonNode;
 
 public final class HuggingFaceTool implements ResearchTool {
 
-  static final String POLICY = "source-huggingface";
+  static final String POLICY = "research-huggingface";
   private static final Pattern ID = Pattern.compile("^[A-Za-z0-9._-]{1,96}/[A-Za-z0-9._-]{1,96}$");
 
   private final RestClient http;
@@ -24,6 +24,7 @@ public final class HuggingFaceTool implements ResearchTool {
     this.http = http;
     this.resilience = resilience;
     this.clock = clock;
+    resilience.require(POLICY);
   }
 
   @Override
