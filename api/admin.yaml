@@ -2787,7 +2787,11 @@ components:
         finishedAt: { type: [string, "null"], format: date-time }
         itemsSeen: { type: integer }
         itemsChanged: { type: integer }
-        enrichmentsQueued: { type: integer }
+        enrichmentsQueued:
+          {
+            type: integer,
+            description: "Changed resources this run enriched with an answer of which something was kept. Failed and rejected enrichments are counted in the message.",
+          }
         message: { type: [string, "null"] }
 
     ReviewResearchStart:
