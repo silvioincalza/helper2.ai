@@ -162,7 +162,7 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 - No SQL data migration: a record follows its resource (§6), so the next write of a server or a package moves its
   record to the resource the rule names. A source read with a checkpoint (`updated_since`) writes again only what
   changed upstream, so after a change to the rule its full pass is started again by deleting its row in
-  `source_cursor` (done on prod on 18 Nov 2026 for `mcp-registry` and `pypi`).
+  `source_cursor`.
 - Download counts of several packages are kept per record and one is shown.
 - The id of a repository can be computed from its address alone, in Kotlin and in SQL.
 
