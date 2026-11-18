@@ -11,6 +11,7 @@ import ai.helper2.setup.MaterialKind;
 import ai.helper2.setup.ToolMaterials;
 import ai.helper2.shared.ResourceType;
 import com.jayway.jsonpath.JsonPath;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -42,6 +43,8 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
       "helper2.llm.native-schema=false",
       "helper2.setup.guide.client-daily-guides=2",
       "helper2.setup.guide.step-text=SOURCE_ONLY",
+      "resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold=60s",
+      "resilience4j.bulkhead.instances.db-cache.max-wait-duration=5s",
     })
 @Import({SetupGuidesLeftApiIT.FakeLlm.class, SetupGuidesLeftApiIT.FakeDocs.class})
 class SetupGuidesLeftApiIT extends ApiTestBase {
@@ -90,9 +93,12 @@ class SetupGuidesLeftApiIT extends ApiTestBase {
     }
   }
 
+  @Autowired CircuitBreakerRegistry circuits;
+
   @BeforeEach
-  void noModelCallsYet() {
+  void noModelCallsYetAndTheCacheCircuitIsClosed() {
     MODEL_CALLS.set(0);
+    circuits.circuitBreaker("db-cache").reset();
   }
 
   @Test

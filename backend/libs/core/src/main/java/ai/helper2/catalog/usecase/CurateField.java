@@ -17,8 +17,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 public class CurateField {
+
+  private static final int MAX_AUDIT_VALUE = 100;
 
   private static final Pattern SPDX = Pattern.compile("^[A-Za-z0-9.+-]{2,40}$");
 
@@ -86,11 +89,12 @@ public class CurateField {
     if (!rule.allowed().test(v)) {
       throw new BadRequestException("This value is not allowed for " + field + ".");
     }
+    String before = before(resourceId, field);
     if (!fields.set(resourceId, field, rule.column(), "open_source".equals(rule.column()), v)) {
       throw new NotFoundException("Resource not found.");
     }
     fields.rejectAiValues(resourceId, field);
-    audit.record(by, AuditTrail.Action.SET_FIELD, resourceId.toString(), "SET " + field);
+    record(resourceId, "SET " + field, before, v, by);
   }
 
   public void setDescription(UUID resourceId, String description, boolean writtenByAi, String by) {
@@ -100,18 +104,44 @@ public class CurateField {
           "The description must be 1 to " + MAX_DESCRIPTION + " characters.");
     }
     String origin = writtenByAi ? "AI_SUMMARY" : "CURATED";
+    String before = before(resourceId, "description");
     if (!fields.setDescription(resourceId, d, origin)) {
       throw new NotFoundException("Resource not found.");
     }
-    audit.record(
-        by, AuditTrail.Action.SET_FIELD, resourceId.toString(), "SET description " + origin);
+    record(resourceId, "SET description " + origin, before, d, by);
   }
 
   public void setPublished(UUID resourceId, LocalDate publishedAt, String by) {
+    String before = before(resourceId, "publishedAt");
     if (!fields.setPublished(resourceId, publishedAt)) {
       throw new NotFoundException("Resource not found.");
     }
-    audit.record(by, AuditTrail.Action.SET_FIELD, resourceId.toString(), "SET publishedAt");
+    record(resourceId, "SET publishedAt", before, publishedAt.toString(), by);
+  }
+
+  private @Nullable String before(UUID resourceId, String field) {
+    return fields
+        .current(resourceId, field)
+        .map(c -> auditValue(c.value() == null ? "(none)" : c.value(), c.curated()))
+        .orElse(null);
+  }
+
+  private void record(
+      UUID resourceId, String outcome, @Nullable String before, String after, String by) {
+    audit.record(
+        by,
+        AuditTrail.Action.SET_FIELD,
+        resourceId.toString(),
+        outcome,
+        new AuditTrail.Change(before, auditValue(after, false), null));
+  }
+
+  static String auditValue(String value, boolean curated) {
+    String suffix = curated ? " (curated)" : "";
+    int room = MAX_AUDIT_VALUE - suffix.length();
+    String v = value.replaceAll("\\s+", " ").strip();
+    String cut = v.length() <= room ? v : v.substring(0, room - 1) + "…";
+    return cut + suffix;
   }
 
   public int drop(UUID resourceId, String field, String by) {

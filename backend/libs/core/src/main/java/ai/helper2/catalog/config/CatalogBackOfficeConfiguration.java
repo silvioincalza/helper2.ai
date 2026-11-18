@@ -37,6 +37,7 @@ import ai.helper2.shared.CategoryCatalog;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -248,6 +249,19 @@ public class CatalogBackOfficeConfiguration {
     @Transactional
     public void set(UUID resourceId, String field, String value, String by) {
       super.set(resourceId, field, value, by);
+    }
+
+    @Override
+    @Transactional
+    public void setDescription(
+        UUID resourceId, String description, boolean writtenByAi, String by) {
+      super.setDescription(resourceId, description, writtenByAi, by);
+    }
+
+    @Override
+    @Transactional
+    public void setPublished(UUID resourceId, LocalDate publishedAt, String by) {
+      super.setPublished(resourceId, publishedAt, by);
     }
 
     @Override

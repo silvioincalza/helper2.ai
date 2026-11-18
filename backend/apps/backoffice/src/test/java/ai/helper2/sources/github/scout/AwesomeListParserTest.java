@@ -249,4 +249,94 @@ class AwesomeListParserTest {
     assertThat(parsed.linkedItems()).isEqualTo(3);
     assertThat(parsed.textLines()).isEqualTo(3);
   }
+
+  @Test
+  void aPaperWithItsLinkInDoubleBracketsIsALinkedItem() {
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(
+            "# Awesome speech\n## 2014\n"
+                + "- **Deep Speech**(2014), Awni Hannun et al. [[pdf]](https://arxiv.org/pdf/1412.5567.pdf)\n"
+                + "- **A neural transducer**(2015), N Jaitly et al. [[pdf]](https://arxiv.org/abs/1511.04868)\n",
+            "acme/awesome-speech");
+
+    assertThat(parsed.linkedItems()).isEqualTo(2);
+    assertThat(parsed.textLines()).isEqualTo(2);
+  }
+
+  @Test
+  void theSummaryAndAuthorLinesUnderAnItemBelongToIt() {
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(
+            "# Awesome agents\n## Papers\n"
+                + "- **[Why Do Multi-Agent LLM Systems Fail?](https://arxiv.org/abs/2503.13657)** (*2025*)\n"
+                + "  > Presents a taxonomy for multi-agent failures.\n"
+                + "1. MultiNLI: **\"A Broad-Coverage Corpus\"**. ![](https://img.shields.io/badge/Dataset-blue)\n"
+                + "    *Adina Williams et al.* NAACL-HLT 2018. [[Paper](https://aclanthology.org/N18-1101)]\n"
+                + "- Benchmarking Attacks on Learning with Errors. **[Topic: AEs]**\n"
+                + "  [[pdf]](https://arxiv.org/abs/2408.00882)\n"
+                + "  - Emily Wenger, Eshika Saxena. *IEEE S&P*, 2025.\n",
+            "acme/awesome-agents");
+
+    assertThat(parsed.linkedItems()).isEqualTo(3);
+    assertThat(parsed.textLines()).isEqualTo(3);
+  }
+
+  @Test
+  void anAnchorToASectionAndABadgeAreNoLinks() {
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(
+            "# Awesome tool\n## Contents\n"
+                + "- [Install](#install)\n"
+                + "- [Usage](docs/usage.md)\n"
+                + "- ![build](https://img.shields.io/badge/build-passing-green)\n",
+            "acme/awesome-tool");
+
+    assertThat(parsed.linkedItems()).isZero();
+    assertThat(parsed.textLines()).isEqualTo(3);
+  }
+
+  @Test
+  void anHtmlListItemWithALinkCounts() {
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(
+            "# Awesome context\n<ul>\n"
+                + "<li><i><b>A Survey of Large Language Models</b></i>, Zhao et al.,"
+                + " <a href=\"https://arxiv.org/abs/2303.18223\">paper</a></li>\n"
+                + "</ul>\n",
+            "acme/awesome-context");
+
+    assertThat(parsed.linkedItems()).isEqualTo(1);
+    assertThat(parsed.textLines()).isEqualTo(1);
+  }
+
+  @Test
+  void aNestedItemWithItsOwnLinkIsAnItemOfItsOwn() {
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(
+            "# Awesome llm\n"
+                + "- [Agents](https://github.com/acme/agents) - Agent frameworks.\n"
+                + "  - [Runner](https://github.com/acme/runner) - Runs agents.\n",
+            "acme/awesome-llm");
+
+    assertThat(parsed.linkedItems()).isEqualTo(2);
+  }
+
+  @Test
+  void aBadgeLinkedToAnotherPageIsNoLinkedItem() {
+    StringBuilder readme = new StringBuilder("# Awesome builds\n");
+    for (int i = 0; i < 20; i++) {
+      readme
+          .append("- [![status](https://img.shields.io/badge/build-passing-green)]")
+          .append("(https://ci.example.com/build/")
+          .append(i)
+          .append(")\n");
+    }
+    readme.append(
+        "- [![logo](https://img.shields.io/badge/x-y-z)](https://ci.example.com) [Runner](https://runner.example.com)\n");
+
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(readme.toString(), "acme/awesome-builds");
+
+    assertThat(parsed.linkedItems()).isEqualTo(1);
+  }
 }
