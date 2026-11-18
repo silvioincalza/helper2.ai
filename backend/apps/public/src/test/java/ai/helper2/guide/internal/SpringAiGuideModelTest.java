@@ -188,10 +188,32 @@ class SpringAiGuideModelTest {
                 SpringAiGuideModel.chooseSystem(),
                 SpringAiGuideModel.compareSystem(),
                 SpringAiGuideModel.explainSystem(),
-                SpringAiGuideModel.verifySystem()))
+                SpringAiGuideModel.verifySystem(),
+                SpringAiGuideModel.planSystem()))
         .allSatisfy(p -> assertThat(p).contains(SpringAiGuideModel.security()));
-    assertThat(SpringAiGuideModel.planSystem())
-        .contains("it says what to look for, never\nhow to work");
+  }
+
+  @Test
+  void everyPromptReadsTheNeedAndTheAnswerAlike() {
+    assertThat(
+            List.of(
+                SpringAiGuideModel.chooseSystem(),
+                SpringAiGuideModel.compareSystem(),
+                SpringAiGuideModel.explainSystem(),
+                SpringAiGuideModel.verifySystem(),
+                SpringAiGuideModel.planSystem()))
+        .allSatisfy(p -> assertThat(p).containsOnlyOnce(SpringAiGuideModel.needInput()));
+  }
+
+  @Test
+  void everyPromptThatQuotesAsksForWholeWords() {
+    assertThat(SpringAiGuideModel.quoteRule()).contains("whole words");
+    assertThat(
+            List.of(
+                SpringAiGuideModel.chooseSystem(),
+                SpringAiGuideModel.compareSystem(),
+                SpringAiGuideModel.explainSystem()))
+        .allSatisfy(p -> assertThat(p).containsOnlyOnce(SpringAiGuideModel.quoteRule()));
   }
 
   @Test
@@ -207,11 +229,11 @@ class SpringAiGuideModelTest {
         .as("a new wording of a guide prompt has a new label: say so in ADR 0031")
         .isEqualTo(
             Map.of(
-                "guide/plan.txt", "cbb55ef0",
-                "guide/choose.txt", "f9d7a3e2",
-                "guide/compare.txt", "14806e21",
-                "guide/explain.txt", "180b36ae",
-                "guide/verify-reasons.txt", "eae9e99b"));
+                "guide/plan.txt", "a0b9683a",
+                "guide/choose.txt", "c9afbc45",
+                "guide/compare.txt", "b813f8b5",
+                "guide/explain.txt", "68a93456",
+                "guide/verify-reasons.txt", "3ab524f4"));
   }
 
   private static Map<String, String> labels() {
