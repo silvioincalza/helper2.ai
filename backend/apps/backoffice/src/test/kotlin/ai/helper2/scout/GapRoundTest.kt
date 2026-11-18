@@ -2,12 +2,14 @@ package ai.helper2.scout
 
 import java.lang.management.ManagementFactory
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.math.ln
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Timeout
 
 class GapRoundTest {
 
@@ -15,6 +17,8 @@ class GapRoundTest {
     const val INPUT_GROWTH = 8
     const val MAX_LINEAR_ORDER = 1.5
     const val ROUNDS = 4
+    const val MAX_LARGE_CPU_MILLIS = 4_000L
+    const val MAX_TEST_MINUTES = 5L
     val THREADS = ManagementFactory.getThreadMXBean()
   }
 
@@ -268,6 +272,11 @@ class GapRoundTest {
   }
 
   @Test
+  @Timeout(
+    value = MAX_TEST_MINUTES,
+    unit = TimeUnit.MINUTES,
+    threadMode = Timeout.ThreadMode.SEPARATE_THREAD,
+  )
   fun `hidden elements cost linear time`() {
     for (pattern in
       listOf(
@@ -294,6 +303,12 @@ class GapRoundTest {
       "$step on ${pattern.take(12)}: $INPUT_GROWTH times the input cost " +
         "${largeCost / smallCost} times the CPU ($smallCost ns, then $largeCost ns), " +
         "a growth of order ${"%.2f".format(order)}, over $MAX_LINEAR_ORDER",
+    )
+    val largeMillis = TimeUnit.NANOSECONDS.toMillis(largeCost)
+    assertTrue(
+      largeMillis < MAX_LARGE_CPU_MILLIS,
+      "$step on ${pattern.take(12)}: ${large.length} characters cost $largeMillis ms of CPU, " +
+        "over $MAX_LARGE_CPU_MILLIS ms",
     )
   }
 
