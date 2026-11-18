@@ -60,6 +60,7 @@ class RelationshipTargetsController implements RelationshipTargetsApi {
       case LINK -> new Choice.Link(resource);
       case VENDOR -> new Choice.Known(KnownTarget.Kind.VENDOR);
       case SERVICE -> new Choice.Known(KnownTarget.Kind.SERVICE);
+      case TOOL -> new Choice.Known(KnownTarget.Kind.TOOL);
       case REJECT -> new Choice.Reject();
     };
   }

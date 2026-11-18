@@ -243,14 +243,14 @@ than a hundred), so the question is the same for each of them: what is this name
   group first, with the name most of them write, the count, the relationship kinds and up to three resources that
   name it.
 - **One decision.** `POST /admin/relationship-targets/decision` with the key and LINK (a catalog resource), VENDOR,
-  SERVICE or REJECT. LINK runs §12 on each item and accepts it: the quote already names the target, the admin answers
-  which resource the name is, so the check §12 waits for is the one the admin just made. VENDOR or SERVICE adds the
+  SERVICE, TOOL or REJECT. LINK runs §12 on each item and accepts it: the quote already names the target, the admin answers
+  which resource the name is, so the check §12 waits for is the one the admin just made. VENDOR, SERVICE or TOOL adds the
   name as a known target ([0019](../scout/0019-known-targets-vendors-and-services.md)) and closes the items of this
   batch (SUPERSEDED, relationship `VERIFIED` with the target's kind); other names the list already matches wait for
   their own decision or the Scout's run. REJECT rejects each item and its relationship.
 - **Each item on its own**, as in §9: one transaction per item (`DecideRelationshipItem`) holds the item's lock from the
   target change to the decision, so a LINK changes the target and accepts the item together or not at all. Each item
-  has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR and SERVICE). An item
+  has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR, SERVICE and TOOL). An item
   decided meanwhile, one whose resource already has this target, or the target resource itself, is skipped and stays
   open. At most 1000 items per call, the oldest first; the answer's `left` counts the items of the name still open
   after the call.

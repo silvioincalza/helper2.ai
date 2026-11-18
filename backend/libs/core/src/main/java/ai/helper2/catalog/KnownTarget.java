@@ -6,7 +6,8 @@ public record KnownTarget(String name, Kind kind) {
 
   public enum Kind {
     VENDOR,
-    SERVICE
+    SERVICE,
+    TOOL
   }
 
   public enum Origin {
@@ -18,9 +19,11 @@ public record KnownTarget(String name, Kind kind) {
       "regexp_replace(regexp_replace(lower(btrim(%s)), '\\s+', ' ', 'g'), '[''’]s$', '')";
 
   public static String noLonger(Kind kind) {
-    return kind == Kind.VENDOR
-        ? "Its target is no longer a known vendor"
-        : "Its target is no longer a known service";
+    return switch (kind) {
+      case VENDOR -> "Its target is no longer a known vendor";
+      case SERVICE -> "Its target is no longer a known service";
+      case TOOL -> "Its target is no longer a known tool";
+    };
   }
 
   public static String key(String name) {

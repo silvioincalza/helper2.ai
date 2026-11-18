@@ -221,6 +221,33 @@ class RelationshipTargetGroupsApiIT extends ApiTestBase {
   }
 
   @Test
+  void aToolLikeAnEditorBecomesAKnownToolAndItsRelationshipsSayTool() throws Exception {
+    decide("{\"key\":\"" + key + "\",\"decision\":\"TOOL\"}").andExpect(status().isOk());
+    assertThat(states())
+        .allSatisfy(s ->
+            assertThat(s)
+                .containsEntry("verification", "VERIFIED")
+                .containsEntry("status", "SUPERSEDED"));
+    assertThat(
+            jdbc.sql("SELECT kind FROM known_target WHERE lower(name) = :key")
+                .param("key", key)
+                .query(String.class)
+                .single())
+        .isEqualTo("TOOL");
+    assertThat(
+            jdbc.sql(
+                    """
+                    SELECT DISTINCT r.target_kind FROM relationship r
+                    JOIN review_item i ON i.relationship_id = r.id
+                    WHERE lower(r.to_title) = :key
+                    """)
+                .param("key", key)
+                .query(String.class)
+                .list())
+        .containsExactly("TOOL");
+  }
+
+  @Test
   void aServiceClosesOnlyItsOwnGroupNotTheOtherKnownTargetsWaiting() throws Exception {
     UUID other = candidate(resource("Uses OpenAI"), "OpenAI");
 
