@@ -20,6 +20,8 @@ to reach into the other's code.
    contract and the wiring, and builds the boot jar. There are two apps, `apps/public` and `apps/backoffice`.
 2. **The libraries.**
    - `kernel`: shared value types, package `shared`, no third-party library.
+   - A small rule is taken from the JDK (`String.formatted`) or from Apache Commons Lang 3, which comes through
+     `platform`, before a helper is written by hand.
    - `platform`: LLM client, resilience, cache, settings, quotas.
    - `schema`: the Flyway migrations and the three classes that run and check them (`platform.schema`). It stays a
      project of its own: it depends on no other library, and the platform's test fixtures, the scripts and the
@@ -143,6 +145,8 @@ to reach into the other's code.
    - no class outside `sources` depends on a class of `sources`;
    - `useCasesDoNotSpeakHttp`: no class of a domain package depends on `ApiProblem`, a subtype of it, `ProblemType`
      or `Problems`, with no exception ([0051](0051-use-cases-return-outcomes.md) §7);
+   - `aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork`: a class that declares a `Refused` outcome depends on
+     `UnitOfWork` ([0051](0051-use-cases-return-outcomes.md) §5);
    - `controllersAnswerWithViewsNotPortRecords` (back office): no class of a `web` package uses `ReviewQueue.Status`,
      `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
      `ReviewEvidence.Evidence` ([0038](../backoffice/0038-back-office-and-review.md) §1);
