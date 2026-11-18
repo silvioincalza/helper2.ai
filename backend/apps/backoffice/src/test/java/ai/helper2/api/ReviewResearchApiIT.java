@@ -167,6 +167,20 @@ class ReviewResearchApiIT extends ApiTestBase {
   }
 
   @Test
+  void aRunThatNeverRanIsPurgedTooAndANewOneStays() throws Exception {
+    UUID resource = item("RESOURCE_CANDIDATE", "OPEN");
+    UUID runId =
+        UUID.fromString(
+            JsonPath.read(start("{\"itemIds\":[\"%s\"]}".formatted(resource)), "$.runs[0].id"));
+
+    assertThat(runs.purge(Instant.now().minusSeconds(60))).isZero();
+    assertThat(runs.find(runId)).isPresent();
+
+    assertThat(runs.purge(Instant.now().plusSeconds(60))).isPositive();
+    assertThat(runs.find(runId)).isEmpty();
+  }
+
+  @Test
   void itemIdsAndAllOpenTogetherAreRefusedAndAnUnknownRunIsNotFound() throws Exception {
     mvc.perform(
             post("/api/v1/admin/review-research")
