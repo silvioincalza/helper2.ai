@@ -1,5 +1,6 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
@@ -20,6 +21,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 
@@ -102,22 +108,47 @@ class EnrichmentNativeSchemaLiveTest {
   }
 
   @Test
-  void theNativeSchemaAgainstTheFormatText() {
-    Tally text = run(false);
-    Tally schema = run(true);
+  void theFormatTextAgainstTheNativeSchema() {
+    OpenAiChatModel provider = chatModel();
+    Tally text = run(provider);
+    Tally schema = run(nativeSchema(provider));
     System.out.println("Enrichment, " + model + ", " + ROUNDS + " rounds of " + SAMPLES.size());
     System.out.println(text.line("format text"));
     System.out.println(schema.line("native schema"));
   }
 
-  private Tally run(boolean nativeSchema) {
+  private ChatModel nativeSchema(ChatModel provider) {
+    BeanOutputConverter<SpringAiEnrichmentModel.Output> converter =
+        new BeanOutputConverter<>(SpringAiEnrichmentModel.Output.class);
+    String formatText = "\n\n" + converter.getFormat();
+    return prompt -> {
+      List<Message> messages =
+          prompt.getInstructions().stream().map(m -> withoutFormatText(m, formatText)).toList();
+      OpenAiChatOptions options =
+          CallOptions.of(model, maxTokens).outputSchema(converter.getJsonSchema()).build();
+      return provider.call(new Prompt(messages, options));
+    };
+  }
+
+  private static Message withoutFormatText(Message message, String formatText) {
+    if (!(message instanceof UserMessage user)) {
+      return message;
+    }
+    if (!user.getText().endsWith(formatText)) {
+      throw new IllegalStateException(
+          "the enrichment no longer ends its user text with the format text");
+    }
+    return new UserMessage(
+        user.getText().substring(0, user.getText().length() - formatText.length()));
+  }
+
+  private Tally run(ChatModel provider) {
     SpringAiEnrichmentModel enrichment =
         new SpringAiEnrichmentModel(
-            chatModel(),
+            provider,
             "nebius",
             model,
             maxTokens,
-            nativeSchema,
             new DailyBudget(1000, Clock.systemUTC(), "enrichment-probe"),
             ModelCallMetrics.none(),
             Resilience.NONE);

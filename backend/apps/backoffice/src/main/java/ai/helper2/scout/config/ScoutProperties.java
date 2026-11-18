@@ -22,7 +22,6 @@ public record ScoutProperties(
     @PositiveOrZero int dailyEnrichmentCalls,
     @PositiveOrZero int gapDailyCalls,
     @Positive int enrichMaxTokens,
-    boolean enrichNativeSchema,
     @Valid @NotNull Evidence evidence,
     @Valid @NotNull KnownTargets knownTargets) {
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}

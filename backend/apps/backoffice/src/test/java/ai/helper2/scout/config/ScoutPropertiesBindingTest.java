@@ -37,7 +37,6 @@ class ScoutPropertiesBindingTest {
                   500,
                   400,
                   8192,
-                  false,
                   new ScoutProperties.Evidence(20, Duration.ofDays(30), Duration.ofHours(24)),
                   new ScoutProperties.KnownTargets(5, 25)));
       assertThat(c.getBean(ScoutRetentionProperties.class))

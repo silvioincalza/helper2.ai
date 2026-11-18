@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.openai.OpenAiChatOptions;
 
 class SpringAiEnrichmentModel implements EnrichmentModel {
   static final String PROMPT_VERSION = "enrich-v12";
@@ -77,7 +76,6 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
   private final String provider;
   private final String model;
   private final int maxTokens;
-  private final boolean nativeSchema;
   private final BudgetedChat calls;
 
   SpringAiEnrichmentModel(
@@ -85,7 +83,6 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
       String provider,
       String model,
       int maxTokens,
-      boolean nativeSchema,
       DailyBudget budget,
       ModelCallMetrics metrics,
       Resilience resilience) {
@@ -95,7 +92,6 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
     this.provider = provider;
     this.model = model;
     this.maxTokens = maxTokens;
-    this.nativeSchema = nativeSchema;
     this.calls = new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience);
   }
 
@@ -156,20 +152,20 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
           () -> new LlmUnavailable("daily enrichment budget used up"),
           () ->
               chat.prompt()
-                  .options(options())
+                  .options(CallOptions.of(model, maxTokens))
                   .system(system)
                   .user(u ->
                       u.text(
                               "Resource: {title}\nType: {type}\n"
                                   + "Fields for this type: {fields}\n"
                                   + "Relationship kinds for this type: {kinds}\n\n"
-                                  + "SOURCE MATERIAL:\n{material}{format}")
+                                  + "SOURCE MATERIAL:\n{material}\n\n{format}")
                           .param("title", title)
                           .param("type", type.name())
                           .param("fields", String.join(", ", FieldsByType.fieldsFor(type)))
                           .param("kinds", String.join(", ", FieldsByType.kindsFor(type)))
                           .param("material", material)
-                          .param("format", formatText()))
+                          .param("format", converter.getFormat()))
                   .call()
                   .chatResponse());
     } catch (LlmUnavailable e) {
@@ -183,18 +179,6 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
       }
       throw new ModelAnswerInvalid("provider rejected the call: " + what, e);
     }
-  }
-
-  private OpenAiChatOptions.Builder options() {
-    OpenAiChatOptions.Builder options = CallOptions.of(model, maxTokens);
-    if (nativeSchema) {
-      options.outputSchema(converter.getJsonSchema());
-    }
-    return options;
-  }
-
-  private String formatText() {
-    return nativeSchema ? "" : "\n\n" + converter.getFormat();
   }
 
   Output parse(String answer) {
