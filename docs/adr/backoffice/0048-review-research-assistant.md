@@ -131,6 +131,12 @@ tool answered, and must confirm every value before it reaches the catalog.
 
 ## Backlog
 
-1. ADR, eval harness and the first measurement (this pull request: ADR only).
-2. Backend: tables, workers, tools, check, API, SSE, retention, Privacy page.
-3. Back office UI: research buttons, row status, timeline, attribute table, batch reject.
+- Features: [F6.2](https://github.com/silvioincalza/helper2.ai/issues/82) Review queue and actions (bulk, evidence, fix
+  before accept). Decides [#587](https://github.com/silvioincalza/helper2.ai/issues/587) S6.2.15 (this ADR).
+- Open issues that change this decision:
+  - [#588](https://github.com/silvioincalza/helper2.ai/issues/588) S6.2.16 The research agent measured on 100 decided
+    items, fast and reasoning model
+  - [#589](https://github.com/silvioincalza/helper2.ai/issues/589) S6.2.17 The research assistant runs in the backend,
+    stored and streamed step by step
+  - [#590](https://github.com/silvioincalza/helper2.ai/issues/590) S6.2.18 The back office shows research per candidate
+    and applies it attribute by attribute
