@@ -159,6 +159,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -230,6 +231,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}

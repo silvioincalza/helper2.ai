@@ -37,6 +37,7 @@ import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector;
+import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
 import ai.helper2.sources.github.scout.GitHubTopicLeadersCollector;
 import ai.helper2.sources.github.scout.SdkSearchPlan;
@@ -50,6 +51,7 @@ import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.mcp.McpRegistryCollector;
 import ai.helper2.sources.pypi.PypiCollector;
 import ai.helper2.sources.pypi.PypiCollectors;
+import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import io.micrometer.core.instrument.Gauge;
@@ -60,6 +62,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -323,6 +326,24 @@ class CollectorsConfiguration {
         meters,
         hosts,
         shadowLibraries);
+  }
+
+  @Bean
+  @Nullable GitHubRepositoryStates gitHubRepositoryStates(
+      SourcesProperties p,
+      Resilience resilience,
+      Clock clock,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    SourceSettings s = p.get("github");
+    if (!s.enabled() || !s.hasToken()) {
+      return null;
+    }
+    resilience.require(GitHubRepositoryStates.POLICY);
+    return new GitHubRepositoryStates(
+        HttpClients.gitHubClient(CollectorsConfiguration.collectorClient(s, observations, http), s),
+        resilience,
+        clock);
   }
 
   private static GitHubAwesomeCollector.Deep deep(

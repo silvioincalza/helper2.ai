@@ -937,6 +937,7 @@ resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = col
 resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
 resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
 resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
+resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
 resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
@@ -993,6 +994,7 @@ resilience4j.retry.instances.collector-live-web-scout.base-config = collector
 resilience4j.retry.instances.collector-mcp-registry.base-config = collector
 resilience4j.retry.instances.collector-news-feeds.base-config = collector
 resilience4j.retry.instances.collector-pypi.base-config = collector
+resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${H2_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true

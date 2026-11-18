@@ -60,6 +60,11 @@ helper2:
     known-targets:
       owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
       per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}
+    repository-sweep:
+      enabled: ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}
+      every: ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}
+      initial-delay: PT2M
+      batch: ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}
   research:
     enabled: ${H2_RESEARCH_ENABLED:true}
     model: ${H2_RESEARCH_MODEL:FAST}
