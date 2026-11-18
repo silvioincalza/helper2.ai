@@ -3,12 +3,6 @@ package ai.helper2.sources.support;
 import java.util.Locale;
 import java.util.Set;
 
-/**
- * Sites that share copies of books and papers without the rights holder's permission. A web search
- * can return them for an AI book or paper; helper2.ai never lists or links them. A host matches
- * when one of its labels is a known name, so every mirror and language subdomain matches too
- * (ka.z-lib.fm, libgen.rs, annas-archive.se).
- */
 public final class ShadowLibraries {
 
   private static final Set<String> NAMES =
