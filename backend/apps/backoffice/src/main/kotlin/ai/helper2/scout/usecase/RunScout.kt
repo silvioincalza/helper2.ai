@@ -302,7 +302,10 @@ class RunScout(
         when (it) {
           EnrichmentOutcome.LLM_UNAVAILABLE -> budget.stop()
           EnrichmentOutcome.UNCHANGED -> budget.refund()
-          else -> {}
+          EnrichmentOutcome.VALIDATED,
+          EnrichmentOutcome.PARTIAL,
+          EnrichmentOutcome.REJECTED,
+          EnrichmentOutcome.FAILED -> {}
         }
       }
     } catch (e: RuntimeException) {
@@ -523,7 +526,10 @@ class RunScout(
         }
         EnrichmentOutcome.UNCHANGED,
         EnrichmentOutcome.LLM_UNAVAILABLE -> {}
-        else -> queued++
+        EnrichmentOutcome.VALIDATED,
+        EnrichmentOutcome.PARTIAL,
+        EnrichmentOutcome.REJECTED,
+        EnrichmentOutcome.FAILED -> queued++
       }
     }
     return EnrichmentCounts(queued, failed, deferred)
