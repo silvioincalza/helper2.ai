@@ -624,6 +624,7 @@ helper2.scout.discovery.min-score = 0.4
 helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
 helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
 helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
+helper2.scout.enrich-native-schema = ${H2_NEBIUS_ENRICH_NATIVE_SCHEMA:false}  =>  false
 helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}  =>  20
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H

@@ -41,7 +41,13 @@ place to say that.
 3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
    apart from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192),
-   prompt `prompts/scout/enrich.txt`, label `enrich-v12` (stored with every run). A test pins the rendered prompt to
+   the answer format by `H2_NEBIUS_ENRICH_NATIVE_SCHEMA` (default off): off, the user message ends with Spring AI's
+   format text; on, the call carries the JSON schema as the provider's `response_format` (`outputSchema`) and the
+   user message has no format text. Either way the answer is parsed the same way (`ModelAnswers.jsonObject`, then
+   `BeanOutputConverter`) and checked by the same validator. `EnrichmentNativeSchemaLiveTest` compares the two
+   (invalid answers, accepted items, time) on a fixed set before the setting is turned on. The setting is the
+   Scout's own, apart from the guide's `H2_NEBIUS_NATIVE_SCHEMA`, so the guide's default never changes the Scout's
+   calls. Prompt `prompts/scout/enrich.txt`, label `enrich-v12` (stored with every run). A test pins the rendered prompt to
    its label, so a new wording needs a new label. For a relationship the model also states what its target is
    (`targetKind`, [0019](0019-known-targets-vendors-and-services.md) §6): a judgement that verifies nothing. The user message has the
    resource's type next to its title (`Type: NEWS`); the type comes from the catalog, never from the model. Under it

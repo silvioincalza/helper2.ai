@@ -51,6 +51,7 @@ helper2:
     evidence:
       daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
     enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
+    enrich-native-schema: ${H2_NEBIUS_ENRICH_NATIVE_SCHEMA:false}
     known-targets:
       owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
       per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}

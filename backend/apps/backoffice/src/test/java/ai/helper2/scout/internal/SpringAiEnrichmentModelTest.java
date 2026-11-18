@@ -14,6 +14,7 @@ import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.Material;
 import ai.helper2.scout.ModelAnswerInvalid;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestPolicies;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
@@ -35,7 +36,11 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.web.client.ResourceAccessException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 class SpringAiEnrichmentModelTest {
   static final class RateLimitException extends RuntimeException {
@@ -66,6 +71,10 @@ class SpringAiEnrichmentModelTest {
   final AtomicReference<Prompt> seen = new AtomicReference<>();
 
   SpringAiEnrichmentModel model(Supplier<String> reply) {
+    return model(reply, false);
+  }
+
+  SpringAiEnrichmentModel model(Supplier<String> reply, boolean nativeSchema) {
     ChatModel chat =
         new ChatModel() {
           @Override
@@ -79,6 +88,7 @@ class SpringAiEnrichmentModelTest {
         "fake",
         "m",
         8192,
+        nativeSchema,
         new DailyBudget(100, Clock.systemUTC(), "enrichment"),
         ModelCallMetrics.none(),
         Resilience.NONE);
@@ -96,6 +106,7 @@ class SpringAiEnrichmentModelTest {
             "fake",
             "m",
             8192,
+            false,
             new DailyBudget(0, Clock.systemUTC(), "enrichment"),
             ModelCallMetrics.none(),
             Resilience.NONE);
@@ -114,7 +125,14 @@ class SpringAiEnrichmentModelTest {
     DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "enrichment");
     SpringAiEnrichmentModel open =
         new SpringAiEnrichmentModel(
-            chat, "fake", "m", 8192, budget, ModelCallMetrics.none(), TestPolicies.llmChatOpen());
+            chat,
+            "fake",
+            "m",
+            8192,
+            false,
+            budget,
+            ModelCallMetrics.none(),
+            TestPolicies.llmChatOpen());
 
     assertThatThrownBy(() -> open.propose(INPUT))
         .isInstanceOf(LlmUnavailable.class)
@@ -137,6 +155,7 @@ class SpringAiEnrichmentModelTest {
             "fake",
             "m",
             8192,
+            false,
             new DailyBudget(10, Clock.systemUTC(), "enrichment"),
             new ModelCallMetrics(observations, meters),
             Resilience.NONE)
@@ -447,5 +466,62 @@ class SpringAiEnrichmentModelTest {
         .isEqualTo("readme");
     assertThat(new Material(java.util.UUID.randomUUID(), url, now, "x", id, true, true).getKind())
         .isEqualTo("vendor-page");
+  }
+
+  private static final String COMPLETION =
+      "{\"id\":\"x\",\"object\":\"chat.completion\",\"created\":1,\"model\":\"m\","
+          + "\"choices\":[{\"index\":0,\"finish_reason\":\"stop\","
+          + "\"message\":{\"role\":\"assistant\",\"content\":\"{}\"}}],"
+          + "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}";
+
+  private static JsonNode bodySent(boolean nativeSchema) {
+    try (FixtureServer provider = new FixtureServer()) {
+      provider.route("/v1/chat/completions", FixtureServer.Reply.ok(COMPLETION));
+      OpenAiChatModel chat =
+          OpenAiChatModel.builder()
+              .options(
+                  OpenAiChatOptions.builder()
+                      .baseUrl(provider.baseUrl() + "/v1")
+                      .apiKey("test")
+                      .model("m")
+                      .maxRetries(0)
+                      .build())
+              .build();
+      new SpringAiEnrichmentModel(
+              chat,
+              "fake",
+              "m",
+              8192,
+              nativeSchema,
+              new DailyBudget(10, Clock.systemUTC(), "enrichment"),
+              ModelCallMetrics.none(),
+              Resilience.NONE)
+          .propose(INPUT);
+      return JsonMapper.builder().build().readTree(provider.requestBodies.getLast());
+    }
+  }
+
+  private static String userText(JsonNode body) {
+    for (JsonNode message : body.path("messages")) {
+      if (message.path("role").asText().equals("user")) {
+        return message.path("content").asText();
+      }
+    }
+    throw new AssertionError("no user message");
+  }
+
+  @Test
+  void withTheNativeSchemaTheProviderGetsTheSchemaAndTheUserTextNoFormat() {
+    JsonNode body = bodySent(true);
+    assertThat(body.path("response_format").path("type").asText()).isEqualTo("json_schema");
+    assertThat(body.path("response_format").toString()).contains("relationships");
+    assertThat(userText(body)).contains("SOURCE MATERIAL:").doesNotContain("JSON Schema");
+  }
+
+  @Test
+  void withoutTheNativeSchemaTheUserTextCarriesTheFormatAndTheProviderNoSchema() {
+    JsonNode body = bodySent(false);
+    assertThat(body.has("response_format")).isFalse();
+    assertThat(userText(body)).contains("JSON Schema");
   }
 }
