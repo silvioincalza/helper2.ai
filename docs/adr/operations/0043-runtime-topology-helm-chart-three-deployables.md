@@ -139,14 +139,15 @@ database connections. A change to the web app would rebuild and redeploy the bac
     PersistentVolumeClaim ([0005](../foundation/0005-redis-as-a-disposable-cache.md)): a Redis restart keeps sessions,
     rate-limit windows and cached answers. The volume holds only cache data and is not backed up.
 12. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the volume
-    `pg-backup` (NFS on prod, kept on `helm uninstall`). The newest `backup.retentionDays` (7) dumps are kept,
-    chosen by the date in their name, and none older than 7 days, so dumps of a night that failed do not stretch the
-    period the Privacy page states. A failed `pg_dump` fails the Job (`pipefail`);
+    `pg-backup` (NFS on prod, kept on `helm uninstall`). Each run writes its own dump, named by its UTC date and
+    time (`helper2-2026-11-18T013000Z.sql.gz`), so a run by hand leaves the nightly dump in place. The dumps of the
+    newest `backup.retentionDays` (7) dates in their names are kept, and none older than 7 days, so dumps of a night
+    that failed do not stretch the period the Privacy page states, and a run by hand does not shorten it. A failed `pg_dump` fails the Job (`pipefail`);
     the new dump takes the place of the old one only once `gzip -t` reads it back whole and it is bigger than an empty dump
     (1 KB), and the old dumps are deleted after that, never before. A run that cannot start within an hour is missed
     (`startingDeadlineSeconds`). Two alerts: `Helper2BackupFailed` for a failed Job, `Helper2BackupStale` when no run
     has succeeded for 36 hours (a suspended CronJob, a Pod stuck Pending, a missed start). With
-    `backup.offsite.enabled` (on for prod), rclone then encrypts tonight's dump (`rclone crypt`) and copies it to a
+    `backup.offsite.enabled` (on for prod), rclone then encrypts the new dump (`rclone crypt`) and copies it to a
     Cloudflare R2 bucket in the EU jurisdiction. The access key, the endpoint, the bucket name and the encryption
     password come from the Secret `pg-backup-offsite`, so the public chart names no account and Cloudflare never
     holds the password. rclone never deletes there: the bucket's lifecycle rule deletes after 7 days, the same
@@ -340,6 +341,7 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change with the topology.
 - Each app role has a statement timeout (5 s public, 60 s back office), not a socket timeout: a connection whose network path dies without a reset waits for the operating system. The values are not measured yet: read the staging logs for "canceling statement due to statement timeout" before prod. The pool (16 a replica), the catalog bulkheads (3 a source) and `max_connections` (150) are not measured. They stay as they are until the load test, and the load test runs before the next release: read the pool wait, the calls the catalog bulkheads refuse and the search latency from it, then size the three together. A catalog bulkhead does not wait, so a fourth concurrent search on a replica gets no results from that catalog source.
 - Startup is slower than a native binary: Flyway and the language models load first; the startup probe allows up to 300 s.
 - Bookmarks and reports are user data; the backup is the only copy.
+- A day with runs by hand keeps one dump for each run, so the volume and the bucket can hold more than 7 dumps.
 - Both apps upsert the same `source` rows at startup, from the same settings; an env Secret that differs between the two workloads would make them overwrite each other's `enabled` flag.
 - A guide stream or any request still running 30 s after SIGTERM is cut during a deploy (`app.shutdown.drainSeconds`); the guide's own deadline is 90 s.
 - Staging (1 replica) has no failover; a prod deploy starts pods one after another (up to 300 s each). Plain HTTP inside the cluster; sign-in for everyone changes that. Never run `helm uninstall`: it deletes the Postgres and Redis StatefulSets.
