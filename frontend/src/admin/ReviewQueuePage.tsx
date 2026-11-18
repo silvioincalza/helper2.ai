@@ -407,7 +407,7 @@ export default function ReviewQueuePage() {
                         )}
                       </td>
                       <td className="h2-nowrap">{t(`admin.kind.${it.kind}`)}</td>
-                      <td>
+                      <td className="h2-admin__resource">
                         {it.resourceId ? (
                           <a
                             className="h2-title"

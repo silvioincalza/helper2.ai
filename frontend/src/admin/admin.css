@@ -100,6 +100,12 @@
 .h2-admin__what {
   min-width: 16rem;
 }
+.h2-admin__resource {
+  min-width: 12rem;
+}
+.h2-wrap.h2-admin__wide {
+  max-width: calc(var(--content-admin) + 2 * var(--space-4));
+}
 .h2-admin__reason {
   margin: 0;
   font: 500 1rem/1.4 var(--font-body);
@@ -304,6 +310,15 @@
     max-height: calc(100vh - 2 * var(--space-3));
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+  .h2-admin__detail > .h2-admin__decide {
+    position: sticky;
+    bottom: calc(-1 * var(--space-4));
+    z-index: var(--z-raised);
+    margin: 0 calc(-1 * var(--space-4));
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    border-top: 1px dashed var(--border-strong);
+    background: var(--surface);
   }
 }
 .h2-admin__list {

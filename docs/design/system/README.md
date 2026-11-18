@@ -50,7 +50,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 - **Scrim:** `scrim` dims the page behind a dialog (the filters drawer): ink at 40% on paper, black at 60% on the dark theme. No other colour with an alpha is written outside `tokens.css`; a test fails on `rgba()`.
 - **Weights:** 400, 500, 600, 700. Headings are 600.
 - **Layers:** every `z-index` is a `--z-*` token, named by what it is. See Layers.
-- **Width:** the page column is 1120px wide with its gutters: `content-wide` (1088px) plus 16px on each side, on every page, the header and the footer included. One-column pages stop at `reading-max` (808px).
+- **Width:** the page column is 1120px wide with its gutters: `content-wide` (1088px) plus 16px on each side, on every page, the header and the footer included. One-column pages stop at `reading-max` (808px). The back office is the exception: it stops at `content-admin` (1664px), so a table and the review detail pane fit side by side.
 - **Themes:** light and dark; every token has both values. The footer button switches light ↔ dark; light is the default.
 
 ## Type scale
