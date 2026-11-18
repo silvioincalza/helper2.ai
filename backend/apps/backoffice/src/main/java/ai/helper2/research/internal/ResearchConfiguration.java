@@ -85,6 +85,7 @@ class ResearchConfiguration {
     return new SpringAiResearchModel(
         model,
         name,
+        prompt(),
         p.maxTokens(),
         new DailyBudget(limit, clock, "review-research", counter),
         metrics,
