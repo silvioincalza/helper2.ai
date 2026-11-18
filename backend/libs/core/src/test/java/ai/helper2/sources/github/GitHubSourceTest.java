@@ -6,18 +6,28 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.helper2.search.PopularityKind;
+import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.search.Vitality;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.DateStatus;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
+import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +61,56 @@ class GitHubSourceTest {
     List<SourceHit> hits = source("").search(query("mcp postgres", List.of()));
     assertThat(hits).isNotEmpty();
     SourceHit first = hits.getFirst();
+    assertThat(first)
+        .isEqualTo(
+            new SourceHit(
+                "github",
+                "crystaldba/postgres-mcp",
+                URI.create("https://github.com/crystaldba/postgres-mcp"),
+                CanonicalUrl.of("https://github.com/crystaldba/postgres-mcp"),
+                null,
+                "crystaldba/postgres-mcp",
+                "Postgres MCP Pro provides configurable read/write access and performance analysis for you and your AI agents.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.MCP_SERVER,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of(),
+                "MIT",
+                null,
+                Set.of(),
+                true,
+                new DateFact(
+                    Instant.parse("2025-03-24T18:28:53Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-08-17T05:06:35Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.GITHUB_STARS,
+                        3420L,
+                        "github",
+                        SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                null,
+                null,
+                null,
+                Map.of(),
+                Set.of(),
+                null,
+                Set.of(),
+                new Vitality(false, false, null, null)));
     assertThat(first.getSourceId()).isEqualTo("github");
     assertThat(first.getCanonicalUrl().getValue())
         .isEqualTo("https://github.com/crystaldba/postgres-mcp");
@@ -66,6 +126,76 @@ class GitHubSourceTest {
           assertThat(p.getValue()).isEqualTo(3420);
         });
     assertThat(first.getRank()).isZero();
+  }
+
+  @Test
+  void aRepositoryStatesItsTopicsAsTagsAndItsPositionAsRank() {
+    server.route(
+        "/search/repositories",
+        FixtureServer.Reply.ok(
+            """
+            {"items":[
+              {"full_name":"acme/llm-agent","html_url":"https://github.com/acme/llm-agent",
+               "description":"LLM agent framework"},
+              {"full_name":"acme/rag-kit","html_url":"https://github.com/acme/rag-kit",
+               "description":"RAG toolkit for LLM apps","topics":["rag","llm"],
+               "license":{"spdx_id":"Apache-2.0"},"stargazers_count":77,
+               "created_at":"2025-01-02T03:04:05Z","pushed_at":"2026-02-03T04:05:06Z",
+               "fork":true,"archived":true}]}\
+            """));
+
+    List<SourceHit> hits = source("").search(query("llm", List.of()));
+
+    assertThat(hits.get(1))
+        .isEqualTo(
+            new SourceHit(
+                "github",
+                "acme/rag-kit",
+                URI.create("https://github.com/acme/rag-kit"),
+                CanonicalUrl.of("https://github.com/acme/rag-kit"),
+                null,
+                "acme/rag-kit",
+                "RAG toolkit for LLM apps",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.LIBRARY,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of("llm", "rag"),
+                "Apache-2.0",
+                null,
+                Set.of(),
+                true,
+                new DateFact(
+                    Instant.parse("2025-01-02T03:04:05Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-02-03T04:05:06Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.GITHUB_STARS,
+                        77L,
+                        "github",
+                        SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant(),
+                1,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                null,
+                null,
+                null,
+                Map.of(),
+                Set.of(),
+                null,
+                Set.of(),
+                new Vitality(true, true, null, null)));
   }
 
   @Test

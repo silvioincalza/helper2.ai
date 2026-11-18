@@ -14,7 +14,6 @@ import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebSources;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.events.EventQuoteGate;
@@ -264,34 +263,10 @@ public class LiveWebEventsCollector implements Collector {
       }
       pages.add(
           new SourceHit(
-              ID,
-              canonical.getValue(),
-              url,
-              canonical,
-              null,
-              p.title(),
-              null,
-              ValueOrigin.SOURCE_PROVIDED,
-              ResourceType.EVENT,
-              Audience.BOTH,
-              null,
-              Set.of(),
-              Set.of(),
-              null,
-              null,
-              Set.of(),
-              null,
-              DateFact.unknown(),
-              DateFact.unknown(),
-              List.of(),
-              now,
-              pages.size(),
-              DateFact.unknown(),
-              DateFact.unknown(),
-              null,
-              null,
-              null,
-              Map.of("query", UNDATED)));
+                  ID, canonical.getValue(), url, canonical, p.title(), ResourceType.EVENT, now)
+              .withAudience(Audience.BOTH)
+              .withRank(pages.size())
+              .withFacts(Map.of("query", UNDATED)));
     }
     return pages;
   }
@@ -435,34 +410,15 @@ public class LiveWebEventsCollector implements Collector {
           Map<String, Object> facts = new LinkedHashMap<>(post.getFacts());
           facts.put("linkedFrom", post.getCanonicalUrl().getValue());
           return new SourceHit(
-              ID,
-              CanonicalUrl.of(site.toString()).getValue(),
-              site,
-              CanonicalUrl.of(site.toString()),
-              null,
-              LinkedInPosts.eventTitle(post.getTitle()),
-              null,
-              ValueOrigin.SOURCE_PROVIDED,
-              ResourceType.EVENT,
-              Audience.BOTH,
-              null,
-              Set.of(),
-              Set.of(),
-              null,
-              null,
-              Set.of(),
-              null,
-              DateFact.unknown(),
-              DateFact.unknown(),
-              List.of(),
-              now,
-              0,
-              DateFact.unknown(),
-              DateFact.unknown(),
-              null,
-              null,
-              null,
-              facts);
+                  ID,
+                  CanonicalUrl.of(site.toString()).getValue(),
+                  site,
+                  CanonicalUrl.of(site.toString()),
+                  LinkedInPosts.eventTitle(post.getTitle()),
+                  ResourceType.EVENT,
+                  now)
+              .withAudience(Audience.BOTH)
+              .withFacts(facts);
         });
   }
 
@@ -495,34 +451,23 @@ public class LiveWebEventsCollector implements Collector {
     Map<String, Object> facts = new LinkedHashMap<>(page.getFacts());
     facts.put("eventEvidence", evidence);
     return new SourceHit(
-        ID,
-        page.getExternalId(),
-        page.getUrl(),
-        page.getCanonicalUrl(),
-        null,
-        page.getTitle(),
-        page.getDescription(),
-        page.getDescriptionOrigin(),
-        ResourceType.EVENT,
-        page.getAudience(),
-        null,
-        Set.of(),
-        Set.of(),
-        null,
-        null,
-        Set.of(),
-        null,
-        page.getPublished(),
-        page.getUpdated(),
-        List.of(),
-        page.getRetrievedAt(),
-        page.getRank(),
-        DateFact.scheduledDay(e.start(), ID),
-        DateFact.scheduledDay(e.end(), ID),
-        e.location(),
-        e.kind(),
-        e.format(),
-        facts);
+            ID,
+            page.getExternalId(),
+            page.getUrl(),
+            page.getCanonicalUrl(),
+            page.getTitle(),
+            ResourceType.EVENT,
+            page.getRetrievedAt())
+        .withDescription(page.getDescription(), page.getDescriptionOrigin())
+        .withAudience(page.getAudience())
+        .withPublished(page.getPublished())
+        .withUpdated(page.getUpdated())
+        .withRank(page.getRank())
+        .withEventDays(DateFact.scheduledDay(e.start(), ID), DateFact.scheduledDay(e.end(), ID))
+        .withLocation(e.location())
+        .withEventKind(e.kind())
+        .withEventFormat(e.format())
+        .withFacts(facts);
   }
 
   static Map<String, Object> searchBody(String query) {
