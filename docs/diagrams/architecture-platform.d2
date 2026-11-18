@@ -5,7 +5,8 @@
 #   backend/libs/core/src/main/java/ai/helper2/api/package-info.java (open module api), ContractEnumConverters.java,
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
 #   ClusterLockConfiguration.java, ClusterLockProperties.java (shedlock, public_app_lock), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
-#   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
+#   platform/llm/package-info.java (the named interface llm), platform/llm/* (what the modules use),
+#   platform/llm/internal/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
 #   platform/settings/* (RuntimeSettings, JdbcRuntimeSettingStore: runtime_setting; ADR 0007;
@@ -72,7 +73,12 @@ modules: "search · guide · scout · catalog\nsources · setup · site" {class:
 
 platform: "platform (open module)" {
   class: group
-  llm: "llm: LlmSettings · NvidiaOnly\nDailyBudget · BudgetLedger · RedisCallCounter\nModelCallMetrics · LlmPolicies" {class: app}
+  llm: "llm (closed, named interface llm)" {
+    class: group
+    api: "llm: BudgetedChat · CallOptions\nChatStream · CutAnswerWatch\nModelAnswers · ModelErrors · UntrustedText\nLlmSettings · LlmPolicies · ModelCallMetrics\nDailyBudget · CallCounter · BudgetLedger" {class: port}
+    internal: "llm.internal: LlmConfiguration\nNvidiaOnly · StreamThreads\nRedisCallCounter" {class: app}
+    internal -> api: "wires, implements" {class: config}
+  }
   http: "http: ObservedHttp\n(pooled, observed RestClient;\nUser-Agent with build version)" {class: app}
   resilience: "resilience: Resilience\n(named policies on Resilience4j:\nredis, llm-chat, llm-embed,\nllm-embed-index, guide, …)\nOutboundThrottle" {class: app}
   quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
@@ -100,7 +106,7 @@ identity.sec -> oauth: "sign-in" {class: config}
 identity.sec -> identity.session
 identity.known -> identity.session: "no account row:\ndelete the session" {class: config}
 modules -> edge.errors: "exceptions"
-modules -> platform.llm: "model calls" {class: ai-call}
+modules -> platform.llm.api: "model calls" {class: ai-call}
 modules -> platform.http: "HTTP client" {class: config}
 modules -> platform.quota: "daily web searches"
 modules -> platform.cache: "model answers"
@@ -110,7 +116,7 @@ modules -> api: "controller interfaces, DTOs"
 
 edge.rate -> redis: "h2:v1:rate:*"
 identity.session -> redis: "h2:v1:session:public:* · h2:v1:session:backoffice:*"
-platform.llm -> redis: "h2:v1:budget:*"
+platform.llm.internal -> redis: "h2:v1:budget:*"
 platform.resilience -> redis: "h2:v1:outbound:*"
 platform.quota -> redis: "h2:v1:quota:*"
 identity.store -> pg: "app_user, bookmark,\nadmin_audit"

@@ -182,7 +182,7 @@ the guide work long before that, and what makes the wait feel long is the first 
   trace context on the guide's threads and on a Scout run started from the admin page.
 - `backend/apps/public/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/LlmConfiguration.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/LlmConfiguration.java`,
   `backend/libs/core/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` —
   translation and classifier budget gauges.

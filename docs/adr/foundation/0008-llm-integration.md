@@ -99,9 +99,12 @@ Without a configured model the application must still work.
    README config examples only. An open `llm-chat` circuit gives every feature the same fallback at once.
 
 ### Code
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `NvidiaOnly`, `LlmPolicies`,
-  `CallOptions`, `BudgetedChat`, `ChatStream`, `StreamThreads`, `CutAnswerWatch`, `DailyBudget`, `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`,
-  `UntrustedText`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — what the modules use (the named interface `llm`,
+  [0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §4): `LlmSettings`, `LlmPolicies`,
+  `CallOptions`, `BudgetedChat`, `ChatStream`, `CutAnswerWatch`, `DailyBudget`, `CallCounter`, `BudgetLedger`,
+  `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`, `UntrustedText`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/` — what only the layer uses:
+  `LlmConfiguration`, `NvidiaOnly`, `StreamThreads`, `RedisCallCounter`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
 - `backend/apps/public/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
   `guide/verify-reasons.txt`, `setup/tool-guide.txt`, `setup/verify-steps.txt`; `backend/apps/backoffice/src/main/resources/prompts/` —

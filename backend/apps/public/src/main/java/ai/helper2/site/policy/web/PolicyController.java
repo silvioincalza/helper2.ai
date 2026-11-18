@@ -14,7 +14,7 @@ import ai.helper2.guide.GuidePolicy;
 import ai.helper2.identity.AccountPolicy;
 import ai.helper2.platform.config.CategoriesProperties;
 import ai.helper2.platform.config.PlatformRetentionProperties;
-import ai.helper2.platform.llm.RedisCallCounter;
+import ai.helper2.platform.llm.BudgetLedger;
 import ai.helper2.platform.quota.RedisQuotaCounter;
 import ai.helper2.search.DailyLimits;
 import ai.helper2.search.SearchPolicy;
@@ -69,7 +69,7 @@ class PolicyController implements PolicyApi {
       PlatformRetentionProperties platform) {
     return new PolicyRetentionDto(
         RedisQuotaCounter.KEEP.toSeconds(),
-        RedisCallCounter.KEEP.toSeconds(),
+        BudgetLedger.KEEP.toSeconds(),
         catalog.webNews().toSeconds(),
         catalog.pendingReviewPages().toSeconds(),
         catalog.listIndex().toSeconds(),

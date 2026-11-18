@@ -107,7 +107,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
   thread: text, finish reason, usage, first reasoning and first text, the window and the thinking limit.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetedChat.java` (`streamed`),
   `ModelCallMetrics.java` (`tokens`, `tokens_unknown`, `thinkingFallback`), `CutAnswerWatch.java` (`isCut`),
-  `StreamThreads.java`, `LlmConfiguration.java`.
+  `internal/StreamThreads.java`, `internal/LlmConfiguration.java`.
 - `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` (`call`, `streamWithin`),
   `GuideConfiguration.java`; `guide/config/GuideProperties.java`, `ModelStream.java`; `guide/CallTimeLimit.java`
   (`forThinking`, `forTheCallAfterThinking`); `guide/ModelActivity.java`; `guide/Guide.kt` (`ModelStep`,

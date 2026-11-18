@@ -1,7 +1,10 @@
-package ai.helper2.platform.llm;
+package ai.helper2.platform.llm.internal;
 
 import ai.helper2.platform.config.EmbeddingProperties;
 import ai.helper2.platform.config.LlmProperties;
+import ai.helper2.platform.llm.BudgetLedger;
+import ai.helper2.platform.llm.LlmSettings;
+import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
