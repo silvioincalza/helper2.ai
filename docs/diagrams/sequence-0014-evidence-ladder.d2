@@ -26,7 +26,7 @@ results: "EnrichmentResults\n(catalog)" {class: app}
 svc -> store: "load(resourceId)"
 store -> svc: "records, type PRODUCT,\npage target acme.example (discovery-coding)"
 svc -> model: "propose(records)"
-model -> tf: "enrich.txt (label enrich-v10)" {class: ai-call}
+model -> tf: "enrich.txt (label enrich-v11)" {class: ai-call}
 tf -> model: "useCase writing (quoted)"
 svc -> val: "validate"
 val -> svc: "VALIDATED; pricing, platforms missing"

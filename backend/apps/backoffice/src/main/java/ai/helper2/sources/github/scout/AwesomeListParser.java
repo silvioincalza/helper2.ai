@@ -29,10 +29,19 @@ final class AwesomeListParser {
 
   record Link(String url, String text, String section, String headingPath) {}
 
-  record Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
+  record Parsed(
+      List<Entry> entries,
+      List<String> headings,
+      List<Link> links,
+      int textLines,
+      int linkedItems) {
 
     Parsed(List<Entry> entries, List<String> headings) {
       this(entries, headings, List.of());
+    }
+
+    Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
+      this(entries, headings, links, 0, 0);
     }
 
     List<Entry> searchEntries(int maxEntries, int maxBytes) {
@@ -143,6 +152,8 @@ final class AwesomeListParser {
     Arrays.fill(stack, "");
     String self = listFullName.toLowerCase(Locale.ROOT);
     boolean fenced = false;
+    int textLines = 0;
+    int linkedItems = 0;
     for (String line : markdown.split("\\R")) {
       if (FENCE.matcher(line).find()) {
         fenced = !fenced;
@@ -160,15 +171,30 @@ final class AwesomeListParser {
         }
         continue;
       }
-      if (LIST_ITEM.matcher(line).find()) {
+      boolean item = LIST_ITEM.matcher(line).find();
+      if (item) {
         addEntries(line, stack, self, unique);
         addLink(line, stack, links);
+      }
+      boolean linkedItem = item && linked(line);
+      if (linkedItem) {
+        linkedItems++;
+      }
+      if (linkedItem || !MarkdownText.plain(line).isBlank()) {
+        textLines++;
       }
     }
     return new Parsed(
         new ArrayList<>(unique.values()),
         new ArrayList<>(headings),
-        new ArrayList<>(links.values()));
+        new ArrayList<>(links.values()),
+        textLines,
+        linkedItems);
+  }
+
+  private static boolean linked(String line) {
+    String cut = MarkdownText.cut(line, MarkdownText.MAX_RAW);
+    return MARKDOWN_LINK.matcher(cut).find() || REPO_LINK.matcher(cut).find();
   }
 
   private static void addLink(String line, String[] stack, Map<String, Link> links) {

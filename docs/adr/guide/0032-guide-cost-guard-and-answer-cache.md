@@ -269,8 +269,7 @@ part of it: the request and the checks are the same, so it cannot change an answ
 ([0035](0035-guide-model-stream.md); a test pins it). The back office's Settings page shows it. A new prompt wording
 or limit therefore never serves answers of the old one: it starts a fresh cache by itself. Each prompt's label is the
 first 8 hex characters of the SHA-256 of its rendered text (`ModelCallMetrics.promptVersion`), the label the meters and
-the eval runs name; a test pins each one (`SpringAiGuideModelTest`): `guide/plan.txt` `5684c305`, `guide/choose.txt`
-`2411356c`, `guide/compare.txt` `14806e21`, `guide/explain.txt` `180b36ae`, `guide/verify-reasons.txt` `c457a114`.
+the eval runs name; a test pins each one (`SpringAiGuideModelTest`), and [0031](0031-guide-pipeline.md) lists them.
 
 **Store.** `SharedGuideAnswerStore` keeps each answer in the shared cache `guide-answer` (`SharedCaches`, table
 `ai_cache`, [0005](../foundation/0005-redis-as-a-disposable-cache.md)), like the other model answers: one primary-key lookup,

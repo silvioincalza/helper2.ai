@@ -14,25 +14,27 @@ enum class ResourceType {
   NEWS,
   EVENT,
   COURSE,
+  AWESOME_LIST,
   OTHER;
 
   val specificity: Int
     get() =
       when (this) {
-        MCP_SERVER -> 0
-        SKILL -> 1
-        AGENT -> 2
-        PROMPT -> 3
-        MODEL -> 4
-        DATASET -> 5
-        PRODUCT -> 6
-        LIBRARY -> 7
-        COURSE -> 8
-        EVENT -> 9
-        PAPER -> 10
-        NEWS -> 11
-        ARTICLE -> 12
-        OTHER -> 13
+        AWESOME_LIST -> 0
+        MCP_SERVER -> 1
+        SKILL -> 2
+        AGENT -> 3
+        PROMPT -> 4
+        MODEL -> 5
+        DATASET -> 6
+        PRODUCT -> 7
+        LIBRARY -> 8
+        COURSE -> 9
+        EVENT -> 10
+        PAPER -> 11
+        NEWS -> 12
+        ARTICLE -> 13
+        OTHER -> 14
       }
 }
 

@@ -8,6 +8,7 @@ import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.llm.UntrustedText;
+import ai.helper2.platform.prompt.PromptTemplate;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettings;
@@ -23,19 +24,17 @@ import ai.helper2.research.usecase.FindResearchedItems;
 import ai.helper2.research.usecase.PurgeResearch;
 import ai.helper2.research.usecase.RunResearch;
 import ai.helper2.research.usecase.StartResearch;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
+import ai.helper2.scout.EvidenceValidator;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntSupplier;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -43,7 +42,7 @@ import tools.jackson.databind.json.JsonMapper;
 @EnableConfigurationProperties(ResearchProperties.class)
 class ResearchConfiguration {
 
-  static final String PROMPT = "prompts/research/research.txt";
+  static final String PROMPT = "research/research.txt";
 
   @Bean
   ResearchRuns researchRuns(JdbcClient jdbc) {
@@ -137,11 +136,18 @@ class ResearchConfiguration {
   }
 
   static String prompt() {
-    try {
-      return new ClassPathResource(PROMPT).getContentAsString(StandardCharsets.UTF_8).strip();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    return PromptTemplate.fromClasspath(PROMPT)
+        .render(
+            Map.of(
+                "minExcerptChars",
+                EvidenceValidator.MIN_EXCERPT_CHARS,
+                "maxExcerptChars",
+                EvidenceValidator.MAX_EXCERPT_CHARS,
+                "minTagChars",
+                CheckResearch.MIN_TAG_CHARS,
+                "maxTagChars",
+                CheckResearch.MAX_TAG_CHARS))
+        .strip();
   }
 
   static String subjectText(ResearchSubject s) {

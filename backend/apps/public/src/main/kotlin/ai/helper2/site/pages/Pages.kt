@@ -164,6 +164,7 @@ class Pages(private val base: String) {
         ResourceType.NEWS -> "news"
         ResourceType.EVENT -> "event"
         ResourceType.COURSE -> "course"
+        ResourceType.AWESOME_LIST -> "awesome list"
         ResourceType.OTHER -> "AI resource"
       }
 
