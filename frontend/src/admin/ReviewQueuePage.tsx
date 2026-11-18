@@ -32,6 +32,7 @@ import {
   ResearchCell,
   ResearchRunLine,
   StartAllDialog,
+  hasResearch,
   researchable,
   useResearchRuns,
 } from './ReviewResearch';
@@ -148,7 +149,7 @@ export default function ReviewQueuePage() {
   );
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const loaded = items.data?.items ?? [];
-  const research = useResearchRuns(loaded.filter(researchable).map((i) => i.id));
+  const research = useResearchRuns(loaded.filter(hasResearch).map((i) => i.id));
   const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
     of: undefined,
     reasons: {},
@@ -616,7 +617,9 @@ export default function ReviewQueuePage() {
                 onDone={focusAccept}
               />
             )}
-            {selectedRun && selectedRun.status !== 'DONE' && <ResearchRunLine run={selectedRun} />}
+            {selectedRun && !(selectedRun.status === 'DONE' && researchable(selected)) && (
+              <ResearchRunLine run={selectedRun} />
+            )}
             {selected.status === 'OPEN' ? (
               <div ref={decideBar} className="h2-admin__decide">
                 <label className="h2-admin__note">

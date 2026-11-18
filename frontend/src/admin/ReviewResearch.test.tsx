@@ -428,6 +428,27 @@ describe('admin: research journeys in the review queue (ADR 0048)', () => {
     await settle();
   });
 
+  it('Scenario: an accepted candidate still shows its research, read only', async () => {
+    const m = researchApi({
+      'GET /admin/review-items': () => ({
+        items: ITEMS.items.map((i) => ({ ...i, status: 'ACCEPTED' })),
+        total: ITEMS.total,
+      }),
+    });
+    renderAdmin('/admin/review?status=ACCEPTED&kind=RESOURCE_CANDIDATE');
+    expect(await screen.findAllByRole('link', { name: '10 steps' })).toHaveLength(2);
+    expect(m.callsTo('GET', '/admin/review-research')[0]?.search).toContain(`itemId=${ACME}`);
+    expect(screen.queryByRole('button', { name: /^Research/ })).not.toBeInTheDocument();
+    const detail = screen.getByRole('region', { name: /AI Meeting Notetaker/ });
+    expect(await within(detail).findByText(/Research · AI: Keep ·/)).toBeInTheDocument();
+    expect(within(detail).getByRole('link', { name: 'Show every step' })).toHaveAttribute(
+      'href',
+      `/admin/review/research/${RUN_ACME}`,
+    );
+    expect(within(detail).queryByRole('button', { name: /Confirm/ })).not.toBeInTheDocument();
+    await settle();
+  });
+
   it('Scenario: a research filter that matches nothing can be cleared, and a new filter goes back to the first page', async () => {
     researchApi({
       'GET /admin/review-items': ({ url }) =>
