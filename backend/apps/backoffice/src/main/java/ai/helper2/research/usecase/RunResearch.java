@@ -222,7 +222,7 @@ public final class RunResearch {
           ResearchStep.Kind.TOOL_CALL,
           call.name(),
           call.arguments(),
-          (out.url() == null ? "" : "url: " + out.url() + "\n\n") + out.text(),
+          (out.url() == null ? "" : "url: " + out.url() + "\n\n") + text,
           error,
           at,
           null,

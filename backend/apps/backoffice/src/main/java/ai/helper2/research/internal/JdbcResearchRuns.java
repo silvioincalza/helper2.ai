@@ -225,7 +225,11 @@ class JdbcResearchRuns implements ResearchRuns {
 
   @Override
   public int purge(Instant before) {
-    return jdbc.sql("DELETE FROM review_research WHERE finished_at < :before")
+    return jdbc.sql(
+            """
+            DELETE FROM review_research
+            WHERE finished_at < :before OR (status = 'QUEUED' AND requested_at < :before)
+            """)
         .param("before", Timestamp.from(before))
         .update();
   }
