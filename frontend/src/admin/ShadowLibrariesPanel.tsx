@@ -1,5 +1,5 @@
 import './adminText';
-import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { ApiError } from '@/api/client';
@@ -29,15 +29,21 @@ export function ShadowLibrariesPanel() {
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
   const removeButtons = useRef(new Map<string, HTMLButtonElement>());
   const listHeading = useRef<HTMLHeadingElement>(null);
-  const closeRemove = (name: string, removed: boolean) => {
+  const focusAfter = useRef<string | null>(null);
+  const closeRemove = (name: string) => {
+    focusAfter.current = name;
     setRemoving(null);
-    requestAnimationFrame(() =>
-      (removed ? listHeading.current : removeButtons.current.get(name))?.focus(),
-    );
   };
+  useEffect(() => {
+    const name = focusAfter.current;
+    if (name === null || removing || libraries.loading) return;
+    focusAfter.current = null;
+    (removeButtons.current.get(name) ?? listHeading.current)?.focus();
+  }, [removing, libraries.loading]);
 
-  const all = libraries.data?.libraries ?? [];
-  const max = libraries.data?.max ?? 0;
+  const shown = libraries.data ?? libraries.previous;
+  const all = shown?.libraries ?? [];
+  const max = shown?.max ?? 0;
   const refused = (e: unknown): Notice =>
     e instanceof ApiError && e.problem?.detail
       ? { kind: 'refused', detail: e.problem.detail }
@@ -77,10 +83,10 @@ export function ShadowLibrariesPanel() {
         removeReason.trim() === '' ? null : removeReason.trim(),
       );
       setNotice({ kind: 'removed', name: removing.name });
-      closeRemove(removing.name, true);
+      closeRemove(removing.name);
     } catch (err) {
       setNotice(refused(err));
-      closeRemove(removing.name, false);
+      closeRemove(removing.name);
     } finally {
       setBusy(false);
       libraries.reload();
@@ -172,7 +178,7 @@ export function ShadowLibrariesPanel() {
               type="button"
               className="btn"
               aria-disabled={busy || undefined}
-              onClick={() => !busy && closeRemove(removing.name, false)}
+              onClick={() => !busy && closeRemove(removing.name)}
             >
               {t('admin.settings.shadow.cancel')}
             </button>

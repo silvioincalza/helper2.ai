@@ -142,6 +142,50 @@ describe('Feature: an admin keeps the list of shadow libraries no search shows (
     );
   });
 
+  it('Scenario: after a slow reload, focus goes to the list heading or back to the Remove button', async () => {
+    let libraries = SEED;
+    let refuse = false;
+    open({
+      'GET /admin/shadow-libraries': async () => {
+        await new Promise((r) => setTimeout(r, 120));
+        return libraries;
+      },
+      'POST /admin/shadow-libraries/libgen/remove': () => {
+        if (refuse) return refusal(409, 'conflict', 'libgen changed meanwhile');
+        libraries = {
+          ...libraries,
+          libraries: libraries.libraries.filter((l) => l.name !== 'libgen'),
+        };
+        return undefined;
+      },
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Names (2 of 200)' });
+
+    refuse = true;
+    await user.click(screen.getByRole('button', { name: 'Remove libgen' }));
+    await user.click(screen.getByRole('button', { name: 'Remove name' }));
+    expect(await screen.findByText('Not saved: libgen changed meanwhile')).toBeInTheDocument();
+    await waitFor(
+      () =>
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Remove libgen' })),
+      {
+        timeout: 2000,
+      },
+    );
+
+    refuse = false;
+    await user.click(screen.getByRole('button', { name: 'Remove libgen' }));
+    await user.click(screen.getByRole('button', { name: 'Remove name' }));
+    await waitFor(
+      () =>
+        expect(document.activeElement).toBe(
+          screen.getByRole('heading', { name: 'Names (1 of 200)' }),
+        ),
+      { timeout: 2000 },
+    );
+  });
+
   it('Scenario: Cancel closes the review and gives focus back to the Remove button', async () => {
     open({ 'GET /admin/shadow-libraries': () => SEED });
     const user = userEvent.setup();
