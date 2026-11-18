@@ -171,7 +171,10 @@ to reach into the other's code.
      `@NamedInterface`). The open modules are free;
    - no file outside `sources` names a `sources` package;
    - no file outside a named interface of an open module names a package below it
-     (`platform.llm.internal`).
+     (`platform.llm.internal`);
+   - no main file of an app names an `internal` package of a library (a package of a library's main code with a
+     segment named `internal`), and none is in one. A context keeps its package name in the app, so the rule by
+     module does not see this. The tests of an app are not read: its integration tests wire the adapters.
 
    The modules, the open ones and the named interfaces are read from `package-info.java` and the annotations; the
    directions between the contexts are a table in the test.

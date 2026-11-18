@@ -48,6 +48,12 @@ class SourceBoundariesTest {
 
   private static final Path BASE = Path.of("ai", "helper2");
 
+  private static final Path APPS = Path.of("apps");
+
+  private static final Path LIBS = Path.of("libs");
+
+  private static final String INTERNAL = "internal";
+
   private static final String PACKAGE_INFO = "package-info.java";
 
   private static final Pattern REFERENCE = Pattern.compile("\\bai\\.helper2\\.(\\w+(?:\\.\\w+)*)");
@@ -94,6 +100,13 @@ class SourceBoundariesTest {
           .map(SourceFile::typeName)
           .collect(Collectors.toSet());
 
+  private static final Set<String> LIBRARY_INTERNAL_PACKAGES =
+      MAIN.stream()
+          .filter(SourceFile::isOfALibrary)
+          .map(SourceFile::packageName)
+          .filter(SourceBoundariesTest::isInternal)
+          .collect(Collectors.toSet());
+
   @Test
   void theModulesAreReadFromTheSources() {
     assertThat(MODULES)
@@ -102,6 +115,8 @@ class SourceBoundariesTest {
     assertThat(API_PACKAGES)
         .contains("search.usecase", "catalog.usecase", "catalog.enrichment", "platform.llm");
     assertThat(API_TYPES).contains("search.web.CardMapper");
+    assertThat(LIBRARY_INTERNAL_PACKAGES)
+        .contains("catalog.internal", "examples.internal", "search.internal");
   }
 
   @Test
@@ -153,6 +168,32 @@ class SourceBoundariesTest {
                 .flatMap(file -> file.uses(used -> used.module().equals("sources"))))
         .as("source references to the sources module from outside it")
         .isEmpty();
+  }
+
+  @Test
+  void noAppMainCodeNamesAnInternalPackageOfALibrary() {
+    assertThat(
+            MAIN.stream()
+                .filter(SourceFile::isOfAnApp)
+                .flatMap(file ->
+                    file.uses(used -> LIBRARY_INTERNAL_PACKAGES.contains(used.packageName()))))
+        .as("main source references of an app to an internal package of a library")
+        .isEmpty();
+  }
+
+  @Test
+  void noAppMainCodeIsInAnInternalPackageOfALibrary() {
+    assertThat(
+            MAIN.stream()
+                .filter(SourceFile::isOfAnApp)
+                .filter(file -> LIBRARY_INTERNAL_PACKAGES.contains(file.packageName()))
+                .map(SourceFile::path))
+        .as("main source files of an app in an internal package of a library")
+        .isEmpty();
+  }
+
+  private static boolean isInternal(String packageName) {
+    return List.of(packageName.split("\\.")).contains(INTERNAL);
   }
 
   private static boolean libraryMayUse(SourceFile file, Reference used) {
@@ -271,6 +312,14 @@ class SourceBoundariesTest {
 
     String module() {
       return moduleOf(packageName);
+    }
+
+    boolean isOfAnApp() {
+      return path.startsWith(APPS);
+    }
+
+    boolean isOfALibrary() {
+      return path.startsWith(LIBS);
     }
 
     boolean isPackageInfo() {
