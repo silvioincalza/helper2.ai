@@ -52,7 +52,8 @@ class EditCandidateTest {
     java.time.Clock.fixed(java.time.Instant.parse("2026-11-18T03:00:00Z"), java.time.ZoneOffset.UTC)
 
   private fun edit(items: Items, change: CandidateEdit, seen: String? = items.item?.details) =
-    EditCandidate(items, trail, unitOfWork, clock).edit(id, seen, change, "42")
+    EditCandidate(items, trail, unitOfWork, clock)
+      .edit(id, CandidateRevision.of(seen), change, "42")
 
   @Test
   fun `a new title, type and tags are saved and audited`() {
@@ -184,7 +185,9 @@ class EditCandidateTest {
         override fun edit(details: String?, edit: CandidateEdit): String =
           throw InvalidCandidate("the candidate is not JSON")
       }
-    val r = EditCandidate(items, trail, unitOfWork).edit(id, "d", CandidateEdit(title = "x"), "42")
+    val r =
+      EditCandidate(items, trail, unitOfWork)
+        .edit(id, CandidateRevision.of("d"), CandidateEdit(title = "x"), "42")
     assertIs<EditCandidate.Outcome.Invalid>(r)
     assertNull(audit.firstOrNull())
   }

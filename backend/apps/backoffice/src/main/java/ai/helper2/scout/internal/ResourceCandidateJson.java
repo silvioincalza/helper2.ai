@@ -7,8 +7,11 @@ import ai.helper2.scout.CandidateSignals;
 import ai.helper2.scout.usecase.AcceptedCandidate;
 import ai.helper2.scout.usecase.CandidateDetails;
 import ai.helper2.scout.usecase.CandidateEdit;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.scout.usecase.InvalidCandidate;
 import ai.helper2.scout.usecase.PackageFacts;
+import ai.helper2.scout.usecase.ShownCandidate;
+import ai.helper2.scout.usecase.ShownCandidates;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebSources;
 import java.time.Instant;
@@ -32,7 +35,7 @@ import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
 @Component
-class ResourceCandidateJson implements CandidateDetails {
+class ResourceCandidateJson implements CandidateDetails, ShownCandidates {
   static final String EDITED = "edited";
 
   static final String CONFIRMED = "confirmed";
@@ -227,6 +230,70 @@ class ResourceCandidateJson implements CandidateDetails {
     } catch (JacksonException e) {
       throw new InvalidCandidate("the candidate is not JSON");
     }
+  }
+
+  @Override
+  public @Nullable ShownCandidate shown(@Nullable String details) {
+    JsonNode d = objectOrNull(details);
+    if (d == null) {
+      return null;
+    }
+    JsonNode url = d.path("url");
+    JsonNode title = d.path("title");
+    JsonNode type = d.path("type");
+    if (!url.isString()
+        || !url.asString().startsWith("https://")
+        || !title.isString()
+        || !type.isString()) {
+      return null;
+    }
+    JsonNode snippet = d.path("snippet");
+    return new ShownCandidate(
+        CandidateRevision.of(details),
+        url.asString(),
+        title.asString(),
+        type.asString(),
+        texts(d.path("tags")),
+        snippet.isString() ? snippet.asString() : null,
+        shownFinders(d),
+        texts(d.path(EDITED)));
+  }
+
+  private @Nullable JsonNode objectOrNull(@Nullable String details) {
+    if (details == null || details.isBlank()) {
+      return null;
+    }
+    try {
+      return json.readTree(details) instanceof ObjectNode object ? object : null;
+    } catch (JacksonException e) {
+      return null;
+    }
+  }
+
+  private static List<String> shownFinders(JsonNode d) {
+    List<String> ids = new ArrayList<>();
+    foundByOf(d)
+        .forEach(f -> {
+          if (f.path("sourceId").isString()) {
+            ids.add(f.path("sourceId").asString());
+          }
+        });
+    if (ids.isEmpty() && d.path("sourceId").isString()) {
+      ids.add(d.path("sourceId").asString());
+    }
+    return List.copyOf(ids);
+  }
+
+  private static List<String> texts(JsonNode values) {
+    List<String> texts = new ArrayList<>();
+    if (values.isArray()) {
+      values.forEach(v -> {
+        if (v.isString()) {
+          texts.add(v.asString());
+        }
+      });
+    }
+    return List.copyOf(texts);
   }
 
   private static List<String> finders(JsonNode d) {

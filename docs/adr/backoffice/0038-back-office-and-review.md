@@ -37,7 +37,13 @@ On a review item, accept and reject were not enough:
    checks them with the catalog, examples, identity, search and Scout use cases they call
    ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). It reads no other module's storage format: a
    drafted example is read and accepted through the examples use cases `ReadExampleDraft` and `AcceptExampleDraft`
-   ([0028](../search/0028-home-examples.md) §6). Its own classes live in its own packages, never in a library's: the
+   ([0028](../search/0028-home-examples.md) §6). Its controllers answer with views the use cases own, never with a
+   record of another module's port: `ReviewItemView` (with its own `Status`) and its `ReviewDetails`,
+   `GetReviewEvidence.View`, `ListEnrichmentQueue.Entry` and `ListEnrichmentQueue.Section`. The use case copies the
+   port record into its view (`ReviewItemViews`), and the controller maps the view to the contract. One rule of the
+   back office's `ModularityTest` (`controllersAnswerWithViewsNotPortRecords`) fails when a class of a `web` package
+   uses `ReviewQueue.Status`, `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
+   `ReviewEvidence.Evidence`. Its own classes live in its own packages, never in a library's: the
    place it serves the admin web app from is `admin.config.SpaProperties` (`helper2.spa`).
 2. **One page per part.** `/admin` (overview, the landing page), `/admin/review`, `/admin/runs`, `/admin/audit`, each with
    its state in the address, so a number on the overview links to the view that acts on it
@@ -95,7 +101,7 @@ On a review item, accept and reject were not enough:
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
    (ADMIN, back office) answers what an item is about. A review item already links to its enrichment run and, for a
    relationship candidate, to its relationship (`enrichment_run_id`, `relationship_id`). The view follows that link;
-   it never parses `details`, which stays text. An item from a run: the run (model, prompt version, outcome, when it
+   it never reads the evidence from the item's `details`. An item from a run: the run (model, prompt version, outcome, when it
    finished, the README or model card of its gap round), the run's validation errors, and the fields the run stored,
    CONFLICTING first, then UNVERIFIED, VERIFIED and REJECTED. A relationship candidate: the run and the relationship.
    Any other item (a user report, a course or resource candidate, a drafted example): the item only, a drafted
@@ -195,15 +201,29 @@ On a review item, accept and reject were not enough:
 11. **A drafted example comes typed.** The review item of a drafted example (`EXAMPLE_CANDIDATE`) has `draft`: its
     label, query, path and model, as the examples module reads them from the item (`ReadExampleDraft`, over the
     `DraftQueue` port; [0028](../search/0028-home-examples.md) §6). Every other kind, and an item whose details hold no
-    readable draft, has `draft: null`; its `details` are shown as plain text. One mapping (`ReviewItemMapper`) gives the
+    readable draft, has `draft: null`. One view (`ReviewItemViews`) and one mapping (`ReviewItemMapper`) give the
     item the same way in the list, after a decision or an edit, and in the evidence view, so the browser never parses
     a draft. The label and the query are AI-written (EU AI Act Art. 50,
     [0033](../guide/0033-marking-ai-written-text-research-trail.md)). In the API, an item with a draft has its own
     `aiContent` marker: `fields` names `draft.label` and `draft.query`, `models` the draft's model, `provider` the
     configured model provider; every other item has `aiContent: null`. The evidence view's `aiContent` adds
     `item.draft.label` and `item.draft.query`, also for an item with no run (§7). On the page they are labelled
-    "Drafted with AI (model)" and marked `data-ai-generated` and `data-ai-model`. A resource candidate's
-    details stay JSON for now (open, see Backlog): the edit form sends them back as its version (§21).
+    "Drafted with AI (model)" and marked `data-ai-generated` and `data-ai-model`.
+    - **The details of an item come typed too.** `ReviewItem.details` is a `ReviewDetails` or null: one of three
+      shapes, named by `shape` (a `oneOf` with a discriminator in `api/admin.yaml`). The browser reads the generated
+      type and parses nothing.
+    - `CANDIDATE`: a `RESOURCE_CANDIDATE` or a `COURSE_CANDIDATE` (url, title, type, tags, snippet, `foundBy` as
+      source ids, `edited`, `revision`). Scout reads it (`ShownCandidates`, in `ResourceCandidateJson`), also a
+      candidate written before `foundBy` existed (its one `sourceId`) and one with a type the catalog no longer has.
+    - `KNOWN_TARGET_PROPOSAL`: a `KNOWN_TARGET_CANDIDATE` (name, kind, rule, count, the titles of its examples,
+      other names, `edited`). The catalog reads it (`KnownTargetCandidates.shown`, in `KnownTargetProposalJson`).
+    - `TEXT`: every other kind (validation errors, why a relationship is not verified, the note of a report). A
+      stored value that does not read as its shape is also `TEXT`, as it is stored: a candidate with no https
+      address, a proposal with an unknown kind or rule, a draft with a missing value, a course candidate still held
+      as text. One such row never fails the list.
+    - Null: an item that holds nothing, and a drafted example (its values are in `draft`).
+    - What the database holds does not change: `review_item.details` stays the JSON its module writes, and `note`
+      the text. Only the answer of the API has a type.
 
 ### The target of a relationship candidate: link, add or rename
 12. **One call changes the target** of an open relationship candidate:
@@ -290,9 +310,12 @@ than a hundred), so the question is the same for each of them: what is this name
     - The accepted record keeps the list of edited fields in its extra (never shown). Who edited is in the audit
       trail, not in the catalog.
 21. **No lost update.**
-    - The form sends back the details it showed (`expectedDetails`). The edit applies only to those: when the
-      candidate changed since the form opened (a collector, another admin), it is 409 `version-conflict`: reload,
-      edit again.
+    - The form sends back the revision of the details it showed (`expectedRevision`). The revision is the SHA-256
+      of the stored details (`CandidateRevision`), so it changes with any change to them. The contract takes 64
+      lower-case hex characters and nothing else (400). The page sends no edit for a candidate it has no revision
+      for: it says the candidate cannot be read, and the item stays open. The edit applies only to
+      that revision: when the candidate changed since the form opened (a collector, another admin), it is 409
+      `version-conflict`: reload, edit again.
     - The edit and a collector's merge both save only when the item still holds the details they read
       (`updateCandidate` compares them). A merge that lost the race is skipped and logged; the next run of that
       collector joins it again.
@@ -343,7 +366,16 @@ than a hundred), so the question is the same for each of them: what is this name
   `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `web/AdminWebApp.java`, `usecase/GetOverview.java`, `catalog/internal/JdbcValidationIssues.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java` (its own groups and the public app's),
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),
+  `usecase/ListReviewQueue.java`, `usecase/ShowReviewItem.java`, `usecase/DecideReviewItem.java` (the review
+  actions that answer with a view),
   `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`), `config/SpaProperties.java`.
+- The views and the typed details: `admin/usecase/ReviewItemView.java`, `ReviewDetails.java`, `ReviewItemViews.java`;
+  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ShownCandidate.kt` (`ShownCandidates`,
+  `CandidateRevision`), `scout/internal/ResourceCandidateJson.java` (`shown`);
+  `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java` (`shown`),
+  `catalog/internal/KnownTargetProposalJson.java`; `api/admin.yaml` (`ReviewDetails` and its three shapes);
+  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ModularityTest.java`
+  (`controllersAnswerWithViewsNotPortRecords`), `api/ReviewItemDetailsApiIT.java` (a stored row of each kind).
 - The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java`,
   `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON), `examples/config/ExamplesBackOfficeConfiguration.java`;
   `api/admin.yaml` (`ReviewItem.draft`, `ReviewItem.aiContent`, `DraftedExample`); `admin/web/ReviewController.java` (the
@@ -443,6 +475,13 @@ A curated field:
   admin API would be spread over every module's web adapter.
 - A stored read model for the overview — a table and a job to keep it current, for numbers one person reads a few
   times a day. Not needed until a measurement says so.
+- The review kind as the discriminator of `details` — two kinds share the candidate shape, three kinds are text, and a
+  stored value that does not read must still be shown under any kind. The kind cannot say which shape came; `shape`
+  can, with one value per schema.
+- A typed column in the database for the details — a migration and a new writer for every module that writes them,
+  for a page one person reads. The API types the answer; the stored JSON keeps its one writer per kind.
+- The stored details as the version of an edit — the browser would still carry the JSON it must not read. A hash of
+  them is as exact and says nothing.
 - Per-replica budget gauges on the page — wrong by design: a replica that made no call shows the full budget.
 - Rebuild the Grafana graphs in the back office — two places for the same trend, and more code to keep right.
 - Store the evidence in the item's `details` as JSON — a second copy of what the run tables hold, which goes stale
@@ -526,6 +565,14 @@ A curated field:
   adds it.
 - A drafted example's JSON has one reader, the examples module. A change to its format changes no admin code and no
   page.
+- The details of a candidate and of a proposal have one reader each, in the module that writes them. A new value in
+  the stored JSON reaches the page only when the contract names it; the page cannot guess a field.
+- A port record can change without a change to a controller: the use case's view takes the difference. The cost is
+  one copy of each record. The parts of the evidence (`ReviewEvidence.Run`, `Field`, `Relationship`, `Quote`) and the
+  enums `ReviewQueue.Kind`, `EnrichmentCandidates.State` and `Waiting` are not copied: the views hold them as they
+  are.
+- The API no longer gives the key of a proposal or what each finder said about a candidate (`foundBy` is the source
+  ids): the page showed neither.
 
 ### The review actions
 - An ABOUT link ([0014](../scout/0014-evidence-gated-enrichment.md)) can always end on a real page, even for a model
@@ -627,6 +674,5 @@ the settings of both apps: [flow](../../diagrams/flow-0038-settings-of-both-apps
 
 - Features: [F6.2](https://github.com/silvioincalza/helper2.ai/issues/82) Review queue and actions (bulk, evidence, fix before accept), [F6.3](https://github.com/silvioincalza/helper2.ai/issues/83) Enrichment queue: requeue, skip, move to top.
 - Open issues that change this decision:
-  - [#304](https://github.com/silvioincalza/helper2.ai/issues/304) S6.2.6 The review page to read a typed resource candidate
   - [#308](https://github.com/silvioincalza/helper2.ai/issues/308) S6.5.1 Every setting on `/admin/settings`
   - [#309](https://github.com/silvioincalza/helper2.ai/issues/309) S6.6.1 To edit the curated list in the back office

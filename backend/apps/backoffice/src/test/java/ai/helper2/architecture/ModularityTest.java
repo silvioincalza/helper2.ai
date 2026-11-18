@@ -4,6 +4,9 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.BackOfficeApplication;
+import ai.helper2.catalog.ReviewEvidence;
+import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.enrichment.EnrichmentCandidates;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -103,6 +106,22 @@ class ModularityTest {
                 (JavaMethodCall call) ->
                     call.getTargetOwner().isInterface()
                         && call.getTargetOwner().getPackage().getName().matches(portPackages())))
+        .check(CLASSES);
+  }
+
+  @Test
+  void controllersAnswerWithViewsNotPortRecords() {
+    noClasses()
+        .that()
+        .resideInAPackage("ai.helper2..web..")
+        .should()
+        .dependOnClassesThat()
+        .belongToAnyOf(
+            ReviewQueue.Status.class,
+            ReviewQueue.Item.class,
+            EnrichmentCandidates.View.class,
+            EnrichmentCandidates.BacklogEntry.class,
+            ReviewEvidence.Evidence.class)
         .check(CLASSES);
   }
 

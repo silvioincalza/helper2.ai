@@ -1,8 +1,11 @@
 package ai.helper2.admin.web;
 
+import ai.helper2.admin.usecase.DecideReviewItem;
 import ai.helper2.admin.usecase.GetReviewEvidence;
-import ai.helper2.admin.usecase.ResolveReview;
+import ai.helper2.admin.usecase.ListReviewQueue;
 import ai.helper2.admin.usecase.ResolveReviewItems;
+import ai.helper2.admin.usecase.ReviewItemView;
+import ai.helper2.admin.usecase.ShowReviewItem;
 import ai.helper2.api.AiContentMarking;
 import ai.helper2.api.common.model.AiContentMarkerDto;
 import ai.helper2.api.common.model.ValueOriginDto;
@@ -35,16 +38,12 @@ import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
 import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.catalog.usecase.EditKnownTargetCandidate;
-import ai.helper2.catalog.usecase.GetReviewItem;
-import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
-import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.research.ResearchFilter;
-import ai.helper2.research.usecase.FindResearchedItems;
 import ai.helper2.scout.usecase.CandidateEdit;
 import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.ListedResource;
@@ -68,29 +67,26 @@ class ReviewController implements ReviewApi {
   private final ResolveReviewItems resolveMany;
   private final ChangeRelationshipTarget changeTarget;
   private final EditCandidate editCandidate;
-  private final GetReviewItem item;
+  private final ShowReviewItem item;
   private final CurateField curateField;
   private final ReviewItemMapper reviewItems;
   private final EditKnownTargetCandidate editProposal;
-  private final ListReviewItems items;
-  private final FindResearchedItems researched;
-  private final ResolveReview resolve;
+  private final ListReviewQueue items;
+  private final DecideReviewItem decide;
 
   ReviewController(
       GetReviewEvidence evidence,
       ResolveReviewItems resolveMany,
       ChangeRelationshipTarget changeTarget,
       EditCandidate editCandidate,
-      GetReviewItem item,
+      ShowReviewItem item,
       CurateField curateField,
       ReviewItemMapper reviewItems,
       EditKnownTargetCandidate editProposal,
-      ListReviewItems items,
-      ResolveReview resolve,
-      FindResearchedItems researched) {
+      ListReviewQueue items,
+      DecideReviewItem decide) {
     this.items = items;
-    this.researched = researched;
-    this.resolve = resolve;
+    this.decide = decide;
     this.editProposal = editProposal;
     this.evidence = evidence;
     this.resolveMany = resolveMany;
@@ -109,12 +105,12 @@ class ReviewController implements ReviewApi {
       @Nullable String research,
       Integer page,
       Integer size) {
-    ReviewQueue.Page found =
+    ListReviewQueue.Page found =
         items.list(
-            status == null ? null : ReviewQueue.Status.valueOf(status.getValue()),
+            status == null ? null : ReviewItemView.Status.valueOf(status.getValue()),
             kind == null ? null : ReviewQueue.Kind.valueOf(kind.getValue()),
             category,
-            only(research),
+            filter(research),
             page,
             size);
     return ResponseEntity.ok(
@@ -122,36 +118,33 @@ class ReviewController implements ReviewApi {
             found.items().stream().map(reviewItems::dto).toList(), Math.toIntExact(found.total())));
   }
 
-  private ReviewQueue.@Nullable Only only(@Nullable String research) {
+  private static @Nullable ResearchFilter filter(@Nullable String research) {
     if (research == null) {
       return null;
     }
-    ResearchFilter filter;
     try {
-      filter = ResearchFilter.valueOf(research);
+      return ResearchFilter.valueOf(research);
     } catch (IllegalArgumentException e) {
       throw new BadRequestException("research must be KEEP, REJECT, DUPLICATE, ACTIVE or NONE");
     }
-    return new ReviewQueue.Only(researched.ids(filter), filter.excludes());
   }
 
   @Override
   public ResponseEntity<ReviewItemDto> resolveReviewItem(UUID id, ReviewResolutionDto body) {
-    ResolveReview.Decision decided =
-        resolve.decide(
+    DecideReviewItem.Decided decided =
+        decide.decide(
             id,
-            ReviewQueue.Status.valueOf(body.getStatus().getValue()),
+            ReviewItemView.Status.valueOf(body.getStatus().getValue()),
             Admins.id(),
             body.getNote());
-    return switch (decided.outcome()) {
-      case ResolveReviewItem.Outcome.Resolved r ->
+    return switch (decided) {
+      case DecideReviewItem.Decided.Resolved r ->
           ResponseEntity.ok(
-              reviewItems.dto(r.item()).alreadyListed(alreadyListed(decided.alreadyListed())));
-      case ResolveReviewItem.Outcome.NotOpen n ->
+              reviewItems.dto(r.item()).alreadyListed(alreadyListed(r.alreadyListed())));
+      case DecideReviewItem.Decided.NotOpen n ->
           throw new ApiProblem(
-              ProblemType.ALREADY_DECIDED,
-              "This item was already decided: " + n.item().status() + ".");
-      case ResolveReviewItem.Outcome.NotFound f ->
+              ProblemType.ALREADY_DECIDED, "This item was already decided: " + n.status() + ".");
+      case DecideReviewItem.Decided.NotFound f ->
           throw new NotFoundException("Review item not found.");
     };
   }
@@ -190,7 +183,7 @@ class ReviewController implements ReviewApi {
             body.getDescriptionWrittenByAi(),
             body.getLanguage(),
             body.getPublishedAt());
-    switch (editCandidate.edit(id, body.getExpectedDetails(), change, Admins.id())) {
+    switch (editCandidate.edit(id, body.getExpectedRevision(), change, Admins.id())) {
       case EditCandidate.Outcome.Edited e -> {}
       case EditCandidate.Outcome.NotFound n ->
           throw new NotFoundException("Review item not found.");
@@ -270,7 +263,7 @@ class ReviewController implements ReviewApi {
     ResolveReviewItems.Outcome outcome =
         resolveMany.resolve(
             List.copyOf(body.getIds()),
-            ReviewQueue.Status.valueOf(body.getStatus().getValue()),
+            ReviewItemView.Status.valueOf(body.getStatus().getValue()),
             Admins.id(),
             body.getNote());
     return ResponseEntity.ok(
@@ -287,19 +280,18 @@ class ReviewController implements ReviewApi {
   public ResponseEntity<ReviewEvidenceDto> getReviewEvidence(UUID id) {
     GetReviewEvidence.View view =
         evidence.get(id).orElseThrow(() -> new NotFoundException("Review item not found."));
-    ReviewEvidence.Evidence e = view.evidence();
     ReviewItemDto item = reviewItems.dto(view.item());
     return ResponseEntity.ok(
         new ReviewEvidenceDto(
                 item,
-                e.validationErrors(),
-                e.fields().stream().map(ReviewController::field).toList())
-            .run(e.run() == null ? null : run(e.run()))
-            .relationship(e.relationship() == null ? null : relationship(e.relationship()))
-            .aiContent(marker(e, item)));
+                view.validationErrors(),
+                view.fields().stream().map(ReviewController::field).toList())
+            .run(view.run() == null ? null : run(view.run()))
+            .relationship(view.relationship() == null ? null : relationship(view.relationship()))
+            .aiContent(marker(view, item)));
   }
 
-  private @Nullable AiContentMarkerDto marker(ReviewEvidence.Evidence e, ReviewItemDto item) {
+  private @Nullable AiContentMarkerDto marker(GetReviewEvidence.View e, ReviewItemDto item) {
     ReviewEvidence.Run run = e.aiWritten() ? e.run() : null;
     DraftedExampleDto draft = item.getDraft();
     if (run == null && draft == null) {
@@ -321,7 +313,7 @@ class ReviewController implements ReviewApi {
     return new AiContentMarkerDto(true, provider, models, paths, AI_MARKING_POLICY);
   }
 
-  private static List<String> runPaths(ReviewEvidence.Evidence e) {
+  private static List<String> runPaths(GetReviewEvidence.View e) {
     List<String> paths = new ArrayList<>();
     if (!e.validationErrors().isEmpty()) {
       paths.add("validationErrors[]");
