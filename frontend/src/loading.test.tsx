@@ -209,6 +209,14 @@ function announced(bones: Element, label: string) {
 }
 
 describe('Feature: a skeleton in the shape of the content while a page loads', () => {
+  beforeAll(async () => {
+    await Promise.all([
+      import('@/features/search/Results'),
+      import('@/features/home/HomeRadar'),
+      import('@/features/home/HomeTabs'),
+    ]);
+  });
+
   it.each([
     ...publicPages.map((c) => ({ side: 'public' as const, ...c })),
     ...adminPages.map((c) => ({ side: 'admin' as const, ...c })),
