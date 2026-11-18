@@ -27,6 +27,7 @@ class TableOwnersTest {
           Map.entry("job_marker", "catalog"),
           Map.entry("source_record", "catalog"),
           Map.entry("resource_embedding", "catalog"),
+          Map.entry("resource_embedding_refused", "catalog"),
           Map.entry("awesome_list_entry", "catalog"),
           Map.entry("awesome_list", "catalog"),
           Map.entry("evidence", "catalog"),
