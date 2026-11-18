@@ -8,15 +8,16 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E1 Foundation
 
+### Now
+
+- [S1.11.34 The tests that failed on a busy machine pass on every run](https://github.com/silvioincalza/helper2.ai/issues/782)
+- [S1.11.38 A Scout run counts a failed and a rejected enrichment as what they are](https://github.com/silvioincalza/helper2.ai/issues/795)
+- [T1.11.3 The roadmap page lists the open stories of today](https://github.com/silvioincalza/helper2.ai/issues/786)
+
 ### Next
 
 - [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
 - [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/helper2.ai/issues/179)
-
-### Later
-
-- [S1.11.1 A closed `llm` module with a small public API](https://github.com/silvioincalza/helper2.ai/issues/180)
-- [S1.11.2 Controllers to return views owned by the use cases](https://github.com/silvioincalza/helper2.ai/issues/181)
 
 ### Accepted
 
@@ -55,6 +56,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
+- [S3.3.4 Resources the embedding provider refuses are counted, kept across restarts and understood](https://github.com/silvioincalza/helper2.ai/issues/772)
 - [S3.4.4 "awesome list" in a query hints the type AWESOME_LIST, with a new ranking baseline](https://github.com/silvioincalza/helper2.ai/issues/635)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
 - [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/helper2.ai/issues/574)
@@ -113,7 +115,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Later
 
-- [S6.2.6 The review page to read a typed resource candidate](https://github.com/silvioincalza/helper2.ai/issues/304)
+- [S6.3.2 An admin removes a resource that is not about AI, audited, and the Scout does not add it again](https://github.com/silvioincalza/helper2.ai/issues/773)
 - [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
 
 ## E7 Site and frontend
@@ -121,7 +123,6 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Next
 
 - [S7.2.3 The open points of design system version 1 closed](https://github.com/silvioincalza/helper2.ai/issues/316)
-- [S7.2.5 The skeleton loader test passes on every CI run](https://github.com/silvioincalza/helper2.ai/issues/682)
 - [S7.6.2 One manual accessibility pass on real browsers](https://github.com/silvioincalza/helper2.ai/issues/324)
 - [S7.6.3 The WCAG 2.2.2 risk of the home lists decided in writing](https://github.com/silvioincalza/helper2.ai/issues/325)
 
@@ -154,13 +155,11 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
 - [S9.6.3 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/435)
 - [S9.7.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/341)
-- [S9.7.2 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/679)
 
 ## E10 Release and operations
 
 ### Now
 
-- [S10.3.6 v2026.11.7 on prod: the awesome-list re-check fix and research on prod](https://github.com/silvioincalza/helper2.ai/issues/674)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
@@ -169,10 +168,10 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.2.4 The chart check without the waits of its self-test](https://github.com/silvioincalza/helper2.ai/issues/412)
 - [S10.2.5 The Actions caches of the repository under their limit](https://github.com/silvioincalza/helper2.ai/issues/413)
 - [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/helper2.ai/issues/417)
-- [S10.2.11 The tests that read every backend project in a place of their own](https://github.com/silvioincalza/helper2.ai/issues/419)
 - [S10.2.17 The HTTP deadline test that reads a fast response without a flake](https://github.com/silvioincalza/helper2.ai/issues/501)
 - [S10.2.20 The Spotless formatters come from the CI cache, not from Maven Central on every run](https://github.com/silvioincalza/helper2.ai/issues/681)
 - [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/helper2.ai/issues/348)
+- [S10.4.6 A meter of how often a guide quote gets a page](https://github.com/silvioincalza/helper2.ai/issues/797)
 - [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/helper2.ai/issues/352)
 - [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/helper2.ai/issues/427)
 - [S10.9.1 The new repository with the replayed history and the GitHub Project](https://github.com/silvioincalza/helper2.ai/issues/354)

@@ -46,6 +46,7 @@ the guide work long before that, and what makes the wait feel long is the first 
      `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`;
    - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,
      `helper2.guide.step{step,intent}`, `helper2.guide.first_useful{intent}` (item 8),
+     `helper2.guide.quote_origin{part,found}` (a quote and whether a record holds it, [0031](../guide/0031-guide-pipeline.md)),
      `helper2.llm.call{step,model,prompt,outcome}`, `helper2.llm.tokens{step,prompt,type}`,
      `helper2.llm.tokens_unknown{step,prompt,type}` (calls whose answer reported no such count),
      `helper2.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
