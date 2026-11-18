@@ -54,7 +54,12 @@ public final class CheckAwesomeLists {
     return switch (outcome) {
       case CurateField.Outcome.Curated curated -> true;
       case CurateField.Outcome.NoSuchResource gone -> false;
-      default -> throw new IllegalStateException("the catalog refused the type: " + outcome);
+      case CurateField.Outcome.UnknownField _,
+          CurateField.Outcome.ValueNotAllowed _,
+          CurateField.Outcome.InvalidDescription _,
+          CurateField.Outcome.NotADate _,
+          CurateField.Outcome.DateInTheFuture _ ->
+          throw new IllegalStateException("the catalog refused the type: " + outcome);
     };
   }
 }
