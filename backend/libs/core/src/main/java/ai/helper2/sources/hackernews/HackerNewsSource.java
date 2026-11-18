@@ -77,17 +77,25 @@ public class HackerNewsSource implements SearchSource {
         HttpClients.getJson(
             () -> http.get().uri(u -> storySearch(u, query, text)).retrieve().body(String.class),
             clock);
-    return HttpClients.firstHits(
+    return firstHits(
         HttpClients.hits(
             "hacker-news", aiStories(root.path("hits")), clock.instant(), HackerNewsSource::toHit),
         query);
+  }
+
+  private static List<SourceHit> firstHits(List<SourceHit> hits, SourceQuery query) {
+    return hits.size() <= query.getLimit() ? hits : List.copyOf(hits.subList(0, query.getLimit()));
+  }
+
+  private static int fetchSize(SourceQuery query) {
+    return Math.min(query.getLimit() * 3, 50);
   }
 
   private static URI storySearch(UriBuilder u, SourceQuery query, String text) {
     u.path("/api/v1/search")
         .queryParam("query", text)
         .queryParam("tags", "story")
-        .queryParam("hitsPerPage", HttpClients.fetchSize(query));
+        .queryParam("hitsPerPage", fetchSize(query));
     if (query.getPublishedAfter() != null) {
       u.queryParam("numericFilters", "created_at_i>=" + epochSecond(query.getPublishedAfter()));
     }

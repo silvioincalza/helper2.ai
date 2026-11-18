@@ -128,7 +128,7 @@ public class HuggingFaceModelsSource implements SearchSource {
             () ->
                 http.get()
                     .uri(u -> {
-                      HttpClients.hubListing(u.path("/api/models"), query, text)
+                      HubListing.of(u.path("/api/models"), query, text)
                           .queryParam("limit", Math.min(query.getLimit(), 50));
                       EXPANDED_FIELDS.forEach(f -> u.queryParam("expand[]", f));
                       if (pipelineTag != null) {

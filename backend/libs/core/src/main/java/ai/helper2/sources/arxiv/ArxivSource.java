@@ -99,8 +99,12 @@ public class ArxivSource implements SearchSource {
     return parse(xml, now);
   }
 
+  private static String plainWords(String text) {
+    return text.replaceAll("[^\\p{L}\\p{N} -]", " ").trim().replaceAll("\\s+", " ");
+  }
+
   static String searchQuery(SourceQuery query) {
-    String terms = HttpClients.plainWords(query.getKeywords());
+    String terms = plainWords(query.getKeywords());
     String q =
         query.getBrowse() || terms.isEmpty()
             ? AI_CATEGORIES
