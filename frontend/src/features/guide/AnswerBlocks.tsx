@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { GuideResponse } from '@/api/types';
-import { aiMark, aiSourceWithModels } from '@/lib/aiMark';
+import { aiMark, aiSource } from '@/lib/aiMark';
 import { resourcePath } from '@/lib/searchState';
 import { AiLabel } from '@/ui/AiLabel';
 import { QuotedFromLink } from '@/ui/QuotedFromLink';
@@ -12,7 +12,7 @@ export function AnswerBlocks({ answer }: { answer: GuideResponse }) {
   const comparison = answer.comparison?.rows.length ? answer.comparison : null;
   if (!explanation && !comparison) return null;
   return (
-    <div {...aiSourceWithModels(answer.aiContent)}>
+    <div {...aiSource(answer.aiContent)}>
       {explanation && <ExplanationBlock explanation={explanation} />}
       {comparison && <ComparisonTable comparison={comparison} />}
     </div>

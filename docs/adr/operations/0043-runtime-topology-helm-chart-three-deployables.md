@@ -37,6 +37,8 @@ database connections. A change to the web app would rebuild and redeploy the bac
      The adapters they need stay closed in `libs/core`; the app reaches them through one public entry per context,
      `@EnableCatalogBackOfficeAdapters` and `@EnableExamplesBackOfficeAdapters`
      ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §5).
+     `SourceBoundariesTest` fails when the main code of an app names an `internal` package of a library, or is in
+     one ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8).
    - The `sources` package of `libs/core` holds the live search sources (GitHub, Hugging Face, npm, arXiv, the live web), their HTTP mapping
      and settings, the demo sources, and the descriptors of the Scout's collectors. Both apps search, and both list
      every source on `GET /api/v1/sources`. The collectors themselves stay in the back office.

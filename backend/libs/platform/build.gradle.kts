@@ -43,4 +43,12 @@ tasks.named<Test>("test") {
     .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
     .withPropertyName("redisUsers")
     .withPathSensitivity(PathSensitivity.RELATIVE)
+  inputs
+    .files(rootProject.files("../.env.example", "../deploy/k8s/app.env.example"))
+    .withPropertyName("envGuides")
+    .withPathSensitivity(PathSensitivity.RELATIVE)
+  inputs
+    .dir(rootProject.file("../deploy/helm/helper2/templates"))
+    .withPropertyName("chartTemplates")
+    .withPathSensitivity(PathSensitivity.RELATIVE)
 }

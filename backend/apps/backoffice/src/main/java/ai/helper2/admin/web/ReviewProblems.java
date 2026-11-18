@@ -2,7 +2,6 @@ package ai.helper2.admin.web;
 
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.platform.ApiProblem;
-import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.ProblemType;
 
 final class ReviewProblems {
@@ -14,7 +13,13 @@ final class ReviewProblems {
       case ResolveReview.Outcome.UnreadableCandidate candidate ->
           new ApiProblem(ProblemType.INVALID_REQUEST, "The candidate cannot be read.");
       case ResolveReview.Outcome.ConfirmedValueRefused value ->
-          new BadRequestException("The catalog refuses the confirmed " + value.field() + ".");
+          new ApiProblem(
+              ProblemType.INVALID_REQUEST,
+              "The catalog refuses the confirmed "
+                  + value.field()
+                  + ". "
+                  + CuratedFieldProblems.reason(value.why())
+                  + " Edit the candidate, then accept again.");
       case ResolveReview.Outcome.UnreadableProposal proposal ->
           new ApiProblem(ProblemType.INVALID_REQUEST, "The proposal cannot be read.");
       case ResolveReview.Outcome.InvalidKnownTargetName name ->

@@ -212,7 +212,11 @@ class ReviewBulkResearchedApiIT extends ApiTestBase {
                 .content(
                     "{\"status\":\"ACCEPTED\",\"ids\":[\"%s\",\"%s\",\"%s\"]}"
                         .formatted(good, refused, after)))
-        .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+        .andExpect(
+            problem(
+                ProblemType.INVALID_REQUEST,
+                "The catalog refuses the confirmed pricing. This value is not allowed for pricing."
+                    + " Edit the candidate, then accept again."));
 
     assertThat(itemStatus(good)).isEqualTo("ACCEPTED");
     assertThat(itemStatus(refused)).isEqualTo("OPEN");

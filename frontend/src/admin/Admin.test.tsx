@@ -413,6 +413,22 @@ describe('Feature: deciding review items', () => {
     expect(m.callsTo('GET', '/admin/review-items')).toHaveLength(1);
   });
 
+  it('Scenario: a confirmed value the catalog refuses stays open and says which field and why', async () => {
+    const refusal =
+      'The catalog refuses the confirmed pricing. This value is not allowed for pricing. Edit the candidate, then accept again.';
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([item]),
+      'GET /admin/review-items/*': () => noEvidence(item),
+      'PUT /admin/review-items/*': () =>
+        problem(400, 'Invalid request', refusal, 'invalid-request'),
+    });
+    renderAdmin('/admin/review');
+    await userEvent.click(await screen.findByRole('button', { name: /Accept/ }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(`Not accepted, the item stays open: ${refusal}`);
+  });
+
   it('Scenario: an item someone else decided first says so and shows the list as it is now', async () => {
     let decided = false;
     const m = mockApi({

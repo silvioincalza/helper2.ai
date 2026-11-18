@@ -63,15 +63,17 @@ public class CurateField {
   public sealed interface Outcome {
     record Curated() implements Outcome {}
 
-    record UnknownField(String field) implements Outcome {}
+    sealed interface ValueRefused extends Outcome {}
 
-    record ValueNotAllowed(String field) implements Outcome {}
+    record UnknownField(String field) implements ValueRefused {}
 
-    record InvalidDescription(int maxLength) implements Outcome {}
+    record ValueNotAllowed(String field) implements ValueRefused {}
 
-    record NotADate() implements Outcome {}
+    record InvalidDescription(int maxLength) implements ValueRefused {}
 
-    record DateInTheFuture() implements Outcome {}
+    record NotADate() implements ValueRefused {}
+
+    record DateInTheFuture() implements ValueRefused {}
 
     record NoSuchResource() implements Outcome {}
   }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GuideResponse } from '@/api/types';
-import { aiMark, aiSourceWithModels } from '@/lib/aiMark';
+import { aiMark, aiSource } from '@/lib/aiMark';
 import type { Refine } from './types';
 import { AiLabel } from '@/ui/AiLabel';
 
@@ -21,7 +21,7 @@ export function Clarify({
     <section
       className="guide-answer clarify"
       aria-labelledby="guide-clarify-h"
-      {...aiSourceWithModels(aiContent)}
+      {...aiSource(aiContent)}
     >
       <h3 id="guide-clarify-h">
         <span {...aiMark(model)}>{clarification.question}</span> <AiLabel />
