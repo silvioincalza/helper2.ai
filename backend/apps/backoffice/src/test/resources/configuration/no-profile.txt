@@ -582,6 +582,7 @@ helper2.rate-limit.guide-per-minute = ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}  =>  
 helper2.rate-limit.recent-per-minute = ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}  =>  60
 helper2.rate-limit.report-per-hour = ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}  =>  20
 helper2.rate-limit.search-per-minute = ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}  =>  120
+helper2.research.check-url-deadline = ${H2_RESEARCH_CHECK_URL_DEADLINE:PT20S}  =>  PT20S
 helper2.research.concurrency = ${H2_RESEARCH_CONCURRENCY:4}  =>  4
 helper2.research.daily-model-calls = ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}  =>  3000
 helper2.research.daily-page-reads = ${H2_RESEARCH_DAILY_PAGE_READS:300}  =>  300

@@ -100,6 +100,51 @@ class ReviewResearchEventsControllerTest {
     eventually(() -> assertThat(controller.streamReviewResearch(runId, 0).getBody()).isNotNull());
   }
 
+  static ResearchStep step(UUID runId, int seq) {
+    return new ResearchStep(
+        runId,
+        seq,
+        ResearchStep.Kind.MODEL_CALL,
+        "m",
+        "q",
+        "a",
+        null,
+        1,
+        null,
+        null,
+        Instant.now());
+  }
+
+  @Test
+  void aRunPutBackInTheQueueStreamsItsNewStepsFromTheStart() throws Exception {
+    runs.stepList = List.of(step(runId, 1), step(runId, 2));
+    controller(1).streamReviewResearch(runId, 0);
+    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(3));
+
+    runs.stepList = List.of();
+    runs.startedAt = Instant.parse("2026-11-19T00:00:01Z");
+    runs.status = ResearchRun.Status.QUEUED;
+    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(4));
+    runs.status = ResearchRun.Status.RUNNING;
+    runs.stepList = List.of(step(runId, 1));
+
+    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(6));
+    emitters.getFirst().complete();
+  }
+
+  @Test
+  void aRunClaimedAgainBeforeTheStreamSawItQueuedStreamsItsNewSteps() throws Exception {
+    runs.stepList = List.of(step(runId, 1), step(runId, 2));
+    controller(1).streamReviewResearch(runId, 0);
+    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(3));
+
+    runs.stepList = List.of(step(runId, 1));
+    runs.startedAt = Instant.parse("2026-11-19T00:00:01Z");
+
+    eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(4));
+    emitters.getFirst().complete();
+  }
+
   static final class Recording extends SseEmitter {
     final AtomicInteger events = new AtomicInteger();
     final AtomicInteger comments = new AtomicInteger();
@@ -123,6 +168,8 @@ class ReviewResearchEventsControllerTest {
 
   final class Runs implements ResearchRuns {
     volatile ResearchRun.Status status = ResearchRun.Status.RUNNING;
+    volatile List<ResearchStep> stepList = List.of();
+    volatile Instant startedAt = Instant.parse("2026-11-18T10:00:00Z");
     final AtomicInteger finds = new AtomicInteger();
 
     @Override
@@ -136,7 +183,7 @@ class ReviewResearchEventsControllerTest {
               "m",
               "admin",
               Instant.now(),
-              null,
+              status == ResearchRun.Status.QUEUED ? null : startedAt,
               null,
               0,
               0,
@@ -147,7 +194,7 @@ class ReviewResearchEventsControllerTest {
 
     @Override
     public List<ResearchStep> steps(UUID id, int afterSeq) {
-      return List.of();
+      return stepList.stream().filter(st -> st.seq() > afterSeq).toList();
     }
 
     @Override

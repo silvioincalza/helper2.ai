@@ -12,7 +12,7 @@ start: "Admin: Research\n(one item, a selection, the page,\nor all open resource
 all: "Every open candidate?" {shape: diamond; class: decision}
 estimate: "Show the count and the most model calls\n(14 an item); the admin confirms" {class: app}
 queue: "review_research: one row per item, QUEUED\n(all open skips items whose newest run is DONE;\nResearch again on one item runs it again)" {class: data}
-budget: "Model calls left today?" {shape: diamond; class: decision}
+budget: "Research on, and 14 model calls\n(one run's most) left today?" {shape: diamond; class: decision}
 waiting: "No run is claimed: the rows stay QUEUED\nuntil the budget resets" {class: fail}
 worker: "Worker (virtual thread):\noldest QUEUED row,\nFOR UPDATE SKIP LOCKED → RUNNING" {class: app}
 cancelled: "Cancelled?" {shape: diamond; class: decision}

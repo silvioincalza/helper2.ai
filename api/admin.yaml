@@ -986,7 +986,8 @@ paths:
         Queues a run for each item that is an open RESOURCE_CANDIDATE or COURSE_CANDIDATE and has no queued or
         running run; other ids are skipped. `itemIds` takes at most 500 ids, and an item already researched runs
         again. With `allOpen`, the server queues every such item whose newest run is not DONE, at most 20,000: ask
-        `/admin/review-research/estimate` first. Runs are async: the answer lists the queued runs.
+        `/admin/review-research/estimate` first. Runs are async: the answer lists the queued runs. While research is
+        off on the back office (H2_RESEARCH_ENABLED), the answer is 503 and nothing is queued.
       requestBody:
         required: true
         content:
@@ -1001,6 +1002,7 @@ paths:
         '400': { $ref: './common.yaml#/components/responses/Problem' }
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '503': { $ref: './common.yaml#/components/responses/Problem' }
     get:
       tags: [review-research]
       operationId: listReviewResearch

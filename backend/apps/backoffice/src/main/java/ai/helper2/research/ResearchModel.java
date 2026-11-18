@@ -9,8 +9,8 @@ public interface ResearchModel {
 
   Turn next(List<Message> conversation, List<ResearchTool> tools);
 
-  default boolean callsLeftToday() {
-    return true;
+  default int callsLeftToday() {
+    return Integer.MAX_VALUE;
   }
 
   sealed interface Message {

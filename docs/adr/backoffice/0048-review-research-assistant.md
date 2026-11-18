@@ -31,8 +31,10 @@ tool answered, and must confirm every value before it reaches the catalog.
    `FOR UPDATE SKIP LOCKED`, so two back office pods never run the same item, and a partial unique index allows one
    queued or running run per item. The number of workers per pod is `H2_RESEARCH_CONCURRENCY` (4); the daily cap of
    model calls is the runtime setting `research.dailyModelCalls` (`H2_RESEARCH_DAILY_MODEL_CALLS`, 3,000), and page
-   reads have their own cap (`H2_RESEARCH_DAILY_PAGE_READS`, 300). While the day's model calls are spent, no worker
-   claims a run: the runs stay `QUEUED` and start when the budget resets. A run that the budget stops half way goes
+   reads have their own cap (`H2_RESEARCH_DAILY_PAGE_READS`, 300). A worker claims a run only while 14 model calls,
+   one run's most, are left today; otherwise the runs stay `QUEUED` and start when the budget resets. The back office
+   does not start with a daily cap of 1 to 13. While research is off (`H2_RESEARCH_ENABLED=false`), starting a run
+   answers 503 and queues nothing. A run that the budget stops half way goes
    back to `QUEUED` without its steps. A spent page-read cap does not stop a run: `read_page` answers with an error
    and the model goes on. A running run with no step for 5 minutes lost its worker and fails (`FailStaleResearch`). The admin can cancel a queued or running run and start it again. The tables come with
    `V2026.11.6.3__review_research.sql`, after `V2026.11.6.2__shadow_library.sql`.
@@ -43,8 +45,9 @@ tool answered, and must confirm every value before it reaches the catalog.
    (the Hugging Face client), `catalog_lookup` (a resource listed at the URL or at its site's root, a known target by name) and `check_url` (status and
    final URL after redirects, https only, since the cluster reaches the web on port 443 only). Private, loopback,
    link-local and reserved addresses are refused, also when an IPv6 address carries one (IPv4-compatible, mapped,
-   NAT64, 6to4; Teredo is refused whole). `check_url` looks a host up once per hop and connects to the address it
-   checked. A shadow library is never read
+   NAT64, 6to4; Teredo and 64:ff9b:1::/48 are refused whole), and so are the documentation ranges. `check_url` looks
+   a host up once per hop, tries at most 2 of the addresses it checked, and stops the whole call, redirects included,
+   after `H2_RESEARCH_CHECK_URL_DEADLINE` (20 seconds). A shadow library is never read
    (`ShadowLibraries`). `ResearchTool` is the research module's port: `catalog_lookup` lives in the module, the other
    six in the sources module (`ai.helper2.sources.research`), which implements the port, as for the AI check. The
    module runs SQL only on its own two tables; it reads the review queue and the catalog through the catalog's ports
@@ -75,8 +78,8 @@ tool answered, and must confirm every value before it reaches the catalog.
      For a licence or open source, the GitHub or Hugging Face record of the item itself is authoritative: its URL is
      the item's URL. A package record is not, nor a repository whose homepage names the item: their owner sets those
      links. For the URL, name, type, price, description, language and date, the item's own site read with `read_page`
-     is authoritative. On a shared host (GitHub, GitLab, Hugging Face, Medium) a page is the item's own only under the
-     same owner: the first path segments match. A path with dot segments or an encoded slash never matches;
+     is authoritative. On a shared host (code forges, package registries, Hugging Face, blogs and social sites, listed
+     in `CheckResearch`) a page is the item's own only under the same owner: the first path segments match. A path with dot segments or an encoded slash never matches;
    - `SINGLE_SOURCE`: one non-authoritative source; `CONFLICT`: supported values disagree, all are shown;
      `NOT_FOUND`: no supported value. A citation that fails the rules is dropped, and the step says why.
    The attributes are the resource's catalog fields: verdict, canonical URL, title, type, audience, tech level, pricing,

@@ -80,22 +80,21 @@ class JdbcResearchRuns implements ResearchRuns {
 
   @Override
   public boolean requeue(UUID runId) {
-    boolean requeued =
-        jdbc.sql(
-                    """
-                    UPDATE review_research SET status = 'QUEUED', started_at = NULL, heartbeat_at = NULL,
-                           steps = 0, prompt_tokens = 0, completion_tokens = 0
-                     WHERE id = :id AND status = 'RUNNING'
-                    """)
-                .param("id", runId)
-                .update()
-            == 1;
-    if (requeued) {
-      jdbc.sql("DELETE FROM review_research_step WHERE research_id = :id")
-          .param("id", runId)
-          .update();
-    }
-    return requeued;
+    return jdbc.sql(
+                """
+                WITH requeued AS (
+                  UPDATE review_research SET status = 'QUEUED', started_at = NULL, heartbeat_at = NULL,
+                         steps = 0, prompt_tokens = 0, completion_tokens = 0
+                   WHERE id = :id AND status = 'RUNNING'
+                  RETURNING id),
+                removed AS (
+                  DELETE FROM review_research_step WHERE research_id IN (SELECT id FROM requeued))
+                SELECT count(*) FROM requeued
+                """)
+            .param("id", runId)
+            .query(Integer.class)
+            .single()
+        == 1;
   }
 
   @Override

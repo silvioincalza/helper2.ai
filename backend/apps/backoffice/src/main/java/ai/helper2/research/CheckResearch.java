@@ -49,7 +49,24 @@ public final class CheckResearch {
       Set.of("canonicalUrl", "title", "pricing", "description", "type", "language", "publishedAt");
 
   private static final Map<String, Integer> SHARED_HOSTS =
-      Map.of("github.com", 2, "gitlab.com", 2, "huggingface.co", 2, "medium.com", 1);
+      Map.ofEntries(
+          Map.entry("github.com", 2),
+          Map.entry("gitlab.com", 2),
+          Map.entry("codeberg.org", 2),
+          Map.entry("bitbucket.org", 2),
+          Map.entry("sourceforge.net", 2),
+          Map.entry("huggingface.co", 2),
+          Map.entry("pypi.org", 2),
+          Map.entry("npmjs.com", 2),
+          Map.entry("crates.io", 2),
+          Map.entry("pkg.go.dev", 3),
+          Map.entry("medium.com", 1),
+          Map.entry("dev.to", 1),
+          Map.entry("x.com", 1),
+          Map.entry("twitter.com", 1),
+          Map.entry("youtube.com", 1),
+          Map.entry("linkedin.com", 2),
+          Map.entry("reddit.com", 2));
 
   private static final Set<String> HUGGING_FACE_KINDS = Set.of("datasets", "spaces");
 
@@ -155,14 +172,21 @@ public final class CheckResearch {
     if (first == null || second == null) {
       return false;
     }
-    int n = segments + (host.equals("huggingface.co") && kindPrefixed(first) ? 1 : 0);
+    int n = segments + (longerOwner(host, first) ? 1 : 0);
     return first.size() >= n
         && second.size() >= n
         && first.subList(0, n).equals(second.subList(0, n));
   }
 
-  private static boolean kindPrefixed(List<String> segments) {
-    return !segments.isEmpty() && HUGGING_FACE_KINDS.contains(segments.getFirst());
+  private static boolean longerOwner(String host, List<String> segments) {
+    return switch (host) {
+      case "huggingface.co" ->
+          !segments.isEmpty() && HUGGING_FACE_KINDS.contains(segments.getFirst());
+      case "npmjs.com" ->
+          segments.size() > 1
+              && (segments.get(1).startsWith("@") || segments.get(1).startsWith("%40"));
+      default -> false;
+    };
   }
 
   private static @Nullable List<String> segments(@Nullable String url) {

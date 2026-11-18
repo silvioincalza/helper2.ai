@@ -53,7 +53,8 @@ public enum RuntimeSetting {
       "calls a day",
       20_000,
       "H2_RESEARCH_DAILY_MODEL_CALLS",
-      "Model calls of the review research agent a UTC day. A run takes up to 14. 0: research waits.");
+      "Model calls of the review research agent a UTC day. A run takes up to 14; with fewer left,"
+          + " 0 included, research waits.");
 
   public static final long MIN = 0;
 

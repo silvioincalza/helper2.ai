@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public final class RunResearch {
 
   public static final int MAX_TOOL_CALLS = 12;
+  public static final int MAX_MODEL_CALLS = MAX_TOOL_CALLS + 2;
   public static final Duration MAX_DURATION = Duration.ofMinutes(3);
 
   public static final int MAX_TEXT_TO_MODEL = 6_000;
@@ -73,7 +74,7 @@ public final class RunResearch {
   }
 
   public boolean runNext() {
-    if (!model.callsLeftToday()) {
+    if (model.callsLeftToday() < MAX_MODEL_CALLS) {
       return false;
     }
     Optional<ResearchRun> claimed = runs.claimNext(clock.instant());

@@ -6,9 +6,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.classic.methods.HttpHead;
 import org.apache.hc.client5.http.config.ConnectionConfig;
@@ -23,25 +28,36 @@ public final class CheckUrlTool implements ResearchTool {
 
   static final String HTTPS_ONLY = "only https: the cluster reaches the web on port 443 only";
 
+  static final int MAX_ADDRESSES_PER_HOP = 2;
+
   private static final int MAX_HOPS = 5;
   private static final long TIMEOUT_SECONDS = 8;
+  private static final ScheduledExecutorService DEADLINES =
+      Executors.newSingleThreadScheduledExecutor(
+          Thread.ofPlatform().daemon().name("check-url-deadline").factory());
 
   interface Transport {
-    Hop head(URI url, List<InetAddress> addresses) throws IOException;
+    Hop head(URI url, List<InetAddress> addresses, Duration timeLeft) throws IOException;
   }
 
   record Hop(int status, @Nullable String location) {}
 
   private final PublicAddresses addresses;
   private final Transport transport;
+  private final Duration deadline;
+  private final LongSupplier nanos;
 
-  public CheckUrlTool(ShadowLibraries shadowLibraries) {
-    this(new PublicAddresses(shadowLibraries), CheckUrlTool::pinnedHead);
+  public CheckUrlTool(ShadowLibraries shadowLibraries, Duration deadline) {
+    this(
+        new PublicAddresses(shadowLibraries), CheckUrlTool::pinnedHead, deadline, System::nanoTime);
   }
 
-  CheckUrlTool(PublicAddresses addresses, Transport transport) {
+  CheckUrlTool(
+      PublicAddresses addresses, Transport transport, Duration deadline, LongSupplier nanos) {
     this.addresses = addresses;
     this.transport = transport;
+    this.deadline = deadline;
+    this.nanos = nanos;
   }
 
   @Override
@@ -70,7 +86,12 @@ public final class CheckUrlTool implements ResearchTool {
     }
     StringBuilder out = new StringBuilder();
     String current = url.strip();
+    long endsAt = nanos.getAsLong() + deadline.toNanos();
     for (int hop = 0; hop <= MAX_HOPS; hop++) {
+      Duration timeLeft = Duration.ofNanos(endsAt - nanos.getAsLong());
+      if (timeLeft.isNegative() || timeLeft.isZero()) {
+        return Output.error(out + "stopped after " + deadline.toSeconds() + " seconds");
+      }
       URI uri;
       try {
         uri = URI.create(current);
@@ -89,7 +110,9 @@ public final class CheckUrlTool implements ResearchTool {
       }
       Hop response;
       try {
-        response = transport.head(uri, checked);
+        response =
+            transport.head(
+                uri, checked.subList(0, Math.min(MAX_ADDRESSES_PER_HOP, checked.size())), timeLeft);
       } catch (IOException e) {
         return Output.error(out + current + ": " + e.getClass().getSimpleName());
       }
@@ -114,7 +137,7 @@ public final class CheckUrlTool implements ResearchTool {
     return null;
   }
 
-  static Hop pinnedHead(URI url, List<InetAddress> checked) throws IOException {
+  static Hop pinnedHead(URI url, List<InetAddress> checked, Duration timeLeft) throws IOException {
     String host = url.getHost();
     DnsResolver pinned =
         new DnsResolver() {
@@ -152,12 +175,18 @@ public final class CheckUrlTool implements ResearchTool {
             .build()) {
       HttpHead head = new HttpHead(url);
       head.setHeader("User-Agent", "helper2.ai research");
-      return http.execute(
-          head,
-          response -> {
-            Header location = response.getFirstHeader("Location");
-            return new Hop(response.getCode(), location == null ? null : location.getValue());
-          });
+      ScheduledFuture<?> cancel =
+          DEADLINES.schedule(head::cancel, timeLeft.toNanos(), TimeUnit.NANOSECONDS);
+      try {
+        return http.execute(
+            head,
+            response -> {
+              Header location = response.getFirstHeader("Location");
+              return new Hop(response.getCode(), location == null ? null : location.getValue());
+            });
+      } finally {
+        cancel.cancel(false);
+      }
     }
   }
 }

@@ -24,7 +24,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = "helper2.research.enabled=false")
+@TestPropertySource(
+    properties = {"helper2.research.enabled=true", "helper2.research.concurrency=0"})
 class ReviewResearchApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;

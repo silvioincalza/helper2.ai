@@ -107,8 +107,9 @@ class ResearchConfiguration {
   }
 
   @Bean
-  StartResearch startResearch(ResearchRuns runs, ResearchItems items, ResearchModel model) {
-    return new StartResearch(runs, items, model.model());
+  StartResearch startResearch(
+      ResearchRuns runs, ResearchItems items, ResearchModel model, ResearchProperties p) {
+    return new StartResearch(runs, items, model.model(), p.enabled());
   }
 
   @Bean

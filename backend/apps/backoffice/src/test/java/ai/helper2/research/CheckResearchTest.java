@@ -206,6 +206,62 @@ class CheckResearchTest {
                 "https://huggingface.co/acme/model", "https://huggingface.co/acme/model/tree/main"))
         .isTrue();
     assertThat(CheckResearch.sameSite("https://docs.acme.dev/", "https://acme.dev/")).isFalse();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://pypi.org/project/other-notetaker/", "https://pypi.org/project/notetaker/"))
+        .isFalse();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://pypi.org/project/notetaker/1.2.0/", "https://pypi.org/project/notetaker/"))
+        .isTrue();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://www.npmjs.com/package/@acme/other",
+                "https://www.npmjs.com/package/@acme/notetaker"))
+        .isFalse();
+    assertThat(CheckResearch.sameSite("https://x.com/someone/status/1", "https://x.com/acme"))
+        .isFalse();
+    assertThat(
+            CheckResearch.sameSite(
+                "https://codeberg.org/acme/other", "https://codeberg.org/acme/notetaker"))
+        .isFalse();
+  }
+
+  @Test
+  void anotherPackagesPypiPageDoesNotConfirmAValueOfTheSubjectsPackage() {
+    ResearchSubject pkg =
+        new ResearchSubject(
+            UUID.randomUUID(),
+            "RESOURCE_CANDIDATE",
+            "https://pypi.org/project/notetaker/",
+            "notetaker",
+            "LIBRARY",
+            List.of(),
+            null);
+    evidence.put(
+        "e6",
+        new Evidence(
+            "e6",
+            "read_page",
+            "https://pypi.org/project/notetaker-pro/",
+            "Acme Notetaker records your meetings, as a paid fork."));
+
+    ResearchResult r =
+        new CheckResearch()
+            .check(
+                pkg,
+                new ResearchAnswer(
+                    Verdict.KEEP,
+                    "a library",
+                    null,
+                    List.of(
+                        new Claim(
+                            "title",
+                            "Acme Notetaker",
+                            List.of(new Cite("e6", "Acme Notetaker records your meetings"))))),
+                evidence);
+
+    assertThat(attribute(r, "title").status()).isEqualTo(Status.SINGLE_SOURCE);
   }
 
   @Test

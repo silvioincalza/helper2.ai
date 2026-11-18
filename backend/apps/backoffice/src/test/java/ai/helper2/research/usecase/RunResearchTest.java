@@ -373,8 +373,8 @@ class RunResearchTest {
   }
 
   @Test
-  void aSpentBudgetClaimsNoRunAndTheQueuedRunWaits() {
-    model.callsLeft = false;
+  void fewerCallsLeftThanOneRunTakesClaimsNoRunAndTheQueuedRunWaits() {
+    model.callsLeft = RunResearch.MAX_MODEL_CALLS - 1;
     runs.queue();
 
     assertThat(research().runNext()).isFalse();
@@ -382,6 +382,16 @@ class RunResearchTest {
     assertThat(runs.claimed).isFalse();
     assertThat(runs.queued).isNotNull();
     assertThat(runs.error).isNull();
+  }
+
+  @Test
+  void enoughCallsLeftForOneRunClaimsIt() {
+    model.callsLeft = RunResearch.MAX_MODEL_CALLS;
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    assertThat(research().runNext()).isTrue();
+    assertThat(runs.claimed).isTrue();
   }
 
   @Test
@@ -408,11 +418,11 @@ class RunResearchTest {
     final List<List<Message>> seen = new ArrayList<>();
     final List<List<ResearchTool>> toolsOffered = new ArrayList<>();
     boolean unavailable;
-    boolean callsLeft = true;
+    int callsLeft = Integer.MAX_VALUE;
     int spentAfter = Integer.MAX_VALUE;
 
     @Override
-    public boolean callsLeftToday() {
+    public int callsLeftToday() {
       return callsLeft;
     }
 

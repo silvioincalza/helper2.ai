@@ -174,9 +174,12 @@ final class PublicAddresses {
     if (first == 169 && second == 254 || first == 172 && second >= 16 && second <= 31) {
       return false;
     }
-    if (first == 192 && (second == 168 || second == 0 && third == 0)) {
+    if (first == 192 && (second == 168 || second == 0 && (third == 0 || third == 2))) {
       return false;
     }
-    return !(first == 198 && (second == 18 || second == 19));
+    if (first == 198 && (second == 18 || second == 19 || second == 51 && third == 100)) {
+      return false;
+    }
+    return !(first == 203 && second == 0 && third == 113);
   }
 }

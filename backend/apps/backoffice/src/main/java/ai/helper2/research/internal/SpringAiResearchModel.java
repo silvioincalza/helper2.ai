@@ -56,8 +56,8 @@ class SpringAiResearchModel implements ResearchModel {
   }
 
   @Override
-  public boolean callsLeftToday() {
-    return budget.opensMoreToday();
+  public int callsLeftToday() {
+    return budget.remaining();
   }
 
   @Override

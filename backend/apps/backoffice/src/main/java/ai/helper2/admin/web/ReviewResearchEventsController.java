@@ -9,6 +9,7 @@ import ai.helper2.research.ResearchStep;
 import ai.helper2.research.config.ResearchProperties;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -86,9 +87,9 @@ class ReviewResearchEventsController {
     private final SseEmitter emitter = emitters.get();
     private final AtomicBoolean released = new AtomicBoolean();
     private volatile boolean stopped;
-    private volatile Thread thread;
     private int seq;
     private ResearchRun.Status sent;
+    private Instant started;
     private long lastSend = System.nanoTime();
 
     Stream(UUID runId, int afterSeq) {
@@ -100,15 +101,11 @@ class ReviewResearchEventsController {
       emitter.onCompletion(this::stop);
       emitter.onTimeout(this::stop);
       emitter.onError(e -> stop());
-      thread = Thread.ofVirtual().name("research-events").start(this::run);
+      Thread.ofVirtual().name("research-events").start(this::run);
     }
 
     void stop() {
       stopped = true;
-      Thread t = thread;
-      if (t != null) {
-        t.interrupt();
-      }
     }
 
     void release() {
@@ -121,7 +118,7 @@ class ReviewResearchEventsController {
       try {
         follow();
         emitter.complete();
-      } catch (IOException | IllegalStateException e) {
+      } catch (IOException | RuntimeException e) {
         emitter.completeWithError(e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -160,6 +157,10 @@ class ReviewResearchEventsController {
     }
 
     private void sendStatus(ResearchRun run) throws IOException {
+      if (run.status() == ResearchRun.Status.QUEUED || startedAgain(run)) {
+        seq = 0;
+      }
+      started = run.startedAt();
       if (run.status() != sent) {
         send(
             SseEmitter.event()
@@ -167,6 +168,10 @@ class ReviewResearchEventsController {
                 .data(ReviewResearchController.runDto(run), MediaType.APPLICATION_JSON));
         sent = run.status();
       }
+    }
+
+    private boolean startedAgain(ResearchRun run) {
+      return started != null && run.startedAt() != null && !started.equals(run.startedAt());
     }
 
     private void sendHeartbeatWhenQuiet() throws IOException {
