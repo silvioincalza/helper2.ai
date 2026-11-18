@@ -84,7 +84,8 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 7. **The rule is a test, and it has no exception.** `ModularityRules.useCasesDoNotSpeakHttp` runs in the
    `ModularityTest` of each app ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8) on every
    class of a `usecase` package and of a domain package. There is no list of classes it skips, so no class can start
-   to throw.
+   to throw. `ModularityRules.aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork` runs next to it: a class that
+   declares a `Refused` outcome depends on `UnitOfWork` (§5).
 8. **The response does not depend on where the rule lives.** Status, problem `type`, `code`, `title` and `detail` of
    every identity, catalog and admin endpoint are what the contract states, whatever the use case returns; the API
    tests of the account, the bookmarks, the preferences, the audit trail, the review queue, the review decisions, the
