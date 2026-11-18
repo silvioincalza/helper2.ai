@@ -181,10 +181,12 @@ Harbor could put an image under a tag first.
 
 ### Per component: a change runs its own checks and builds its own images
 8. **One map of paths to components.** `.github/scripts/changes.sh` maps the changed paths, first match wins:
-   - a version bump alone → nothing. `bump-version.sh version-only` checks that only the version files changed,
-     and in them only the version lines, from one version to another, exactly as `bump-version.sh bump` writes
-     them. The version pull request of a release is such a change; the push to the release branch after its merge
-     runs all of CI (`full: true`) before staging and prod. A bump with any other change is mapped path by path;
+   - on a pull request only (`changes.sh --pull-request`, from `ci.yml`), a version bump alone → nothing.
+     `bump-version.sh version-only` checks that only the version files changed, and in them only the version
+     lines, from one version to another, exactly as `bump-version.sh bump` writes them. The version pull request
+     of a release is such a change; the push to the release branch after its merge runs all of CI (`full: true`)
+     before staging and prod. The image map of `cd.yml` (§10) never takes this rule: a new version always builds
+     the images it shows, the web image's footer included. A bump with any other change is mapped path by path;
    - `docs/eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
    - `frontend/index.html`, `frontend/src/routes.tsx`, `frontend/src/i18n/locales/en.json` → frontend jobs, the
      public chain of the backend (its page tests read these three files), web image and back office image;

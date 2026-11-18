@@ -81,7 +81,7 @@ jobs:
           if [[ $FULL == true ]]; then
             .github/scripts/changes.sh --all | tee -a "$GITHUB_OUTPUT"
           else
-            .github/scripts/changes.sh "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
+            .github/scripts/changes.sh --pull-request "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
           fi
 
   frontend-check:
