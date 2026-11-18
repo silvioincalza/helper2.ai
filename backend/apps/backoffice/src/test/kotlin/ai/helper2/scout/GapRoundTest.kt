@@ -18,6 +18,7 @@ class GapRoundTest {
     const val MAX_LINEAR_ORDER = 1.5
     const val ROUNDS = 4
     const val MAX_LARGE_CPU_MILLIS = 4_000L
+    const val MAX_LONG_RUN_CPU_MILLIS = 500L
     const val MAX_TEST_MINUTES = 5L
     val THREADS = ManagementFactory.getThreadMXBean()
   }
@@ -175,10 +176,20 @@ class GapRoundTest {
   }
 
   @Test
+  @Timeout(
+    value = MAX_TEST_MINUTES,
+    unit = TimeUnit.MINUTES,
+    threadMode = Timeout.ThreadMode.SEPARATE_THREAD,
+  )
   fun `cleaning stays fast on a long run without separators`() {
-    val started = System.nanoTime()
-    UntrustedPageText.clean("a".repeat(600_000) + "<a " + "b".repeat(5_000))
-    assertTrue(System.nanoTime() - started < 2_000_000_000L, "clean took too long")
+    val run = "a".repeat(600_000) + "<a " + "b".repeat(5_000)
+    val cost = (1..ROUNDS).minOf { cpuNanos(run) { UntrustedPageText.clean(it) } }
+    val millis = TimeUnit.NANOSECONDS.toMillis(cost)
+    assertTrue(
+      millis < MAX_LONG_RUN_CPU_MILLIS,
+      "clean on a run of ${run.length} characters cost $millis ms of CPU, " +
+        "over $MAX_LONG_RUN_CPU_MILLIS ms",
+    )
   }
 
   @Test
