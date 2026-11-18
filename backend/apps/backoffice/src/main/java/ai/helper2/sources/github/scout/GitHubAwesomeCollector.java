@@ -172,7 +172,8 @@ public class GitHubAwesomeCollector implements Collector {
     List<AwesomeListParser.Entry> slice = all.subList(offset, end);
     Set<String> notFound = new HashSet<>();
     Map<String, JsonNode> facts = repoFacts(slice, notFound);
-    List<SourceHit> hits = new ArrayList<>(toHits(slice, facts, offset, startedAt));
+    List<SourceHit> hits =
+        new ArrayList<>(toHits(slice, facts, offset, startedAt, pass.readmeBudget()));
     log.info(
         "awesome lists: entries {}-{} of {}, {} kept as AI resources (classifier {})",
         offset,
@@ -310,7 +311,8 @@ public class GitHubAwesomeCollector implements Collector {
       List<AwesomeListParser.Entry> entries,
       List<ListRepo> read,
       List<ListText> texts,
-      List<AwesomeCrawl.Read> crawl) {}
+      List<AwesomeCrawl.Read> crawl,
+      ReadmeBudget readmeBudget) {}
 
   static final int MAX_LIST_TEXT_BYTES = 256 * 1024;
 
@@ -319,8 +321,10 @@ public class GitHubAwesomeCollector implements Collector {
   private static final String GITHUB = "https://github.com/";
 
   private Pass read(List<ListRepo> seeds) {
+    AwesomeCrawl.Limits crawlLimits = crawlLimits();
+    ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
-        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits(), clock, metrics);
+        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits, budget, metrics);
     Set<String> lists = new HashSet<>();
     crawl.forEach(r -> lists.add(r.list().fullName().toLowerCase(Locale.ROOT)));
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();
@@ -338,7 +342,7 @@ public class GitHubAwesomeCollector implements Collector {
       }
     }
     List<ListRepo> read = crawl.stream().map(AwesomeCrawl.Read::list).toList();
-    return new Pass(List.copyOf(unique.values()), read, texts, crawl);
+    return new Pass(List.copyOf(unique.values()), read, texts, crawl, budget);
   }
 
   private AwesomeCrawl.Limits crawlLimits() {
@@ -613,7 +617,11 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private List<SourceHit> toHits(
-      List<AwesomeListParser.Entry> slice, Map<String, JsonNode> facts, int offset, Instant now) {
+      List<AwesomeListParser.Entry> slice,
+      Map<String, JsonNode> facts,
+      int offset,
+      Instant now,
+      ReadmeBudget budget) {
     List<RepoClassifier.Facts> candidates = new ArrayList<>();
     Map<String, JsonNode> byId = new HashMap<>();
     Map<String, Integer> rankById = new HashMap<>();
@@ -639,7 +647,7 @@ public class GitHubAwesomeCollector implements Collector {
     for (RepoClassifier.Facts f : candidates) {
       RepoClassifier.Verdict v = verdicts.get(f.id());
       if (v != null && v.ai()) {
-        ResourceType type = typeOf(f, v);
+        ResourceType type = typeOf(f, v, budget);
         SourceHit hit =
             type == null ? null : toHit(byId.get(f.id()), type, rankById.get(f.id()), now);
         if (hit != null) {
@@ -651,11 +659,12 @@ public class GitHubAwesomeCollector implements Collector {
     return hits;
   }
 
-  private @Nullable ResourceType typeOf(RepoClassifier.Facts repo, RepoClassifier.Verdict verdict) {
+  private @Nullable ResourceType typeOf(
+      RepoClassifier.Facts repo, RepoClassifier.Verdict verdict, ReadmeBudget budget) {
     if (verdict.type() != ResourceType.AWESOME_LIST) {
       return verdict.type();
     }
-    Optional<Boolean> list = readsAsAwesomeList(repo);
+    Optional<Boolean> list = readsAsAwesomeList(repo, budget);
     if (list.isEmpty()) {
       return null;
     }
@@ -666,15 +675,24 @@ public class GitHubAwesomeCollector implements Collector {
     return fallback.classify(List.of(repo)).get(repo.id()).type();
   }
 
-  private Optional<Boolean> readsAsAwesomeList(RepoClassifier.Facts repo) {
+  private Optional<Boolean> readsAsAwesomeList(RepoClassifier.Facts repo, ReadmeBudget budget) {
     String fullName = repo.fullName();
     if (fullName == null || !AwesomeLists.named(fullName, repo.topics())) {
       return Optional.of(false);
     }
+    String spent = budget.spent();
+    if (spent != null) {
+      log.info("awesome lists: README of {} left for the next run ({})", fullName, spent);
+      metrics.skipped(spent);
+      return Optional.empty();
+    }
     try {
       String readme = readme(fullName);
-      return Optional.of(
-          readme != null && AwesomeLists.isAwesomeList(fullName, repo.topics(), readme));
+      budget.read(readme);
+      return Optional.of(AwesomeLists.isAwesomeList(fullName, repo.topics(), readme));
+    } catch (SourceFailure.RateLimited e) {
+      log.warn("awesome lists: rate limited while reading the README of {}", fullName);
+      throw e;
     } catch (SourceFailure.Unavailable e) {
       if (noReadme(e)) {
         return Optional.of(false);

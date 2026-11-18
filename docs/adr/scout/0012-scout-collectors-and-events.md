@@ -80,8 +80,9 @@ Two kinds of source need more care:
      The answer counts only when the README rule below passes too: the collector reads that repository's README.
      When the rule fails (not named like a list, no README, a README that is not a list), the keyword rules give the
      type instead, so a collection of MCP servers in one repository stays `MCP_SERVER` though its description calls it
-     a curated list. When the README cannot be read now (timeout, 5xx), the repository is left out of this run and read
-     again at the next one; it is not withdrawn.
+     a curated list. When the README cannot be read now (timeout, 5xx), or the pass has spent the README time or size
+     budget the crawl of lists draws on too, the repository is left out of this run and read again at the next one; it
+     is not withdrawn. A rate limit on that README stops the pass, like a GraphQL rate limit (cursor kept).
      A repository whose facts say nothing gets `ai` false, type OTHER, and is not indexed.
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
    - Each list read is a resource too (tag `awesome-list`), and its entry lines and headings become a search

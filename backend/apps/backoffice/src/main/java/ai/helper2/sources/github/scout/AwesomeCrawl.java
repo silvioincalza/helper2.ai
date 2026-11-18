@@ -4,10 +4,8 @@ import ai.helper2.search.SourceFailure;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector.ListRepo;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -39,27 +37,39 @@ final class AwesomeCrawl {
 
   private final Lists lists;
   private final Limits limits;
-  private final Clock clock;
   private final AwesomeMetrics metrics;
 
   private final Deque<Pending> queue = new ArrayDeque<>();
   private final Set<String> known = new HashSet<>();
   private final List<Read> read = new ArrayList<>();
+  private final ReadmeBudget budget;
   private int nestedTried;
-  private long bytes;
 
-  private AwesomeCrawl(Lists lists, Limits limits, Clock clock, AwesomeMetrics metrics) {
+  private AwesomeCrawl(Lists lists, Limits limits, ReadmeBudget budget, AwesomeMetrics metrics) {
     this.lists = lists;
     this.limits = limits;
-    this.clock = clock;
+    this.budget = budget;
     this.metrics = metrics;
   }
 
   static List<Read> crawl(
       List<ListRepo> seeds, Lists lists, Limits limits, Clock clock, AwesomeMetrics metrics) {
-    AwesomeCrawl crawl = new AwesomeCrawl(lists, limits, clock, metrics);
+    return crawl(seeds, lists, limits, budget(limits, clock), metrics);
+  }
+
+  static List<Read> crawl(
+      List<ListRepo> seeds,
+      Lists lists,
+      Limits limits,
+      ReadmeBudget budget,
+      AwesomeMetrics metrics) {
+    AwesomeCrawl crawl = new AwesomeCrawl(lists, limits, budget, metrics);
     crawl.run(seeds);
     return List.copyOf(crawl.read);
+  }
+
+  static ReadmeBudget budget(Limits limits, Clock clock) {
+    return ReadmeBudget.startingNow(clock, limits.maxRunTime(), limits.maxReadmeBytes());
   }
 
   private void run(List<ListRepo> seeds) {
@@ -68,9 +78,8 @@ final class AwesomeCrawl {
         queue.add(new Pending(seed.fullName(), seed.facts(), 0));
       }
     }
-    Instant deadline = clock.instant().plus(limits.maxRunTime());
     while (!queue.isEmpty()) {
-      String over = overBudget(deadline);
+      String over = budget.spent();
       if (over != null) {
         log.info("awesome lists: {} lists left unread ({})", queue.size(), over);
         metrics.skipped(over, queue.size());
@@ -96,13 +105,6 @@ final class AwesomeCrawl {
     }
   }
 
-  private @Nullable String overBudget(Instant deadline) {
-    if (bytes >= limits.maxReadmeBytes()) {
-      return "size-budget";
-    }
-    return clock.instant().isBefore(deadline) ? null : "time-budget";
-  }
-
   private @Nullable Read read(Pending next) {
     ListRepo list = next.depth() == 0 ? new ListRepo(next.fullName(), next.facts()) : nested(next);
     if (list == null) {
@@ -116,7 +118,7 @@ final class AwesomeCrawl {
       metrics.skipped("readme-unavailable");
       return null;
     }
-    bytes += readme.getBytes(StandardCharsets.UTF_8).length;
+    budget.read(readme);
     return new Read(list, AwesomeListParser.parse(readme, list.fullName()), next.depth());
   }
 

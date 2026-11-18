@@ -44,6 +44,7 @@ awesome: GitHub awesome lists (1 d) {
   list: "Type AWESOME_LIST?" {class: decision}
   rule: "README passes AwesomeLists?\n(name awesome… or best-of-,\nor topic awesome-list)" {class: decision}
   later: "Left out of this run,\nread at the next one" {class: app}
+  limited: "Pass stops (rate limited,\ncursor kept)" {class: end}
   article: "Type from the\nkeyword rules" {class: app}
   keep: "Keep ai=true, with the given type\nand its vitality (RunScout refuses\nan archived one, ADR 0020)" {class: app}
 
@@ -58,7 +59,8 @@ awesome: GitHub awesome lists (1 d) {
   list -> rule: yes
   rule -> keep: yes
   rule -> article: "no"
-  rule -> later: "README unavailable now"
+  rule -> later: "README unavailable now\nor budget spent"
+  rule -> limited: "rate limited"
   article -> keep
 }
 

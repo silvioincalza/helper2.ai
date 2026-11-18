@@ -311,6 +311,41 @@ class GitHubAwesomeCollectorTest {
         .isEqualTo(ResourceType.MCP_SERVER);
   }
 
+  @Test
+  void aListTheModelNamesWaitsForTheNextRunOnceTheReadmeBudgetIsSpent() {
+    server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
+    server.route("/repos/acme/awesome-mcp/readme", FixtureServer.Reply.ok(listOfServers()));
+    server.route("/graphql", FixtureServer.Reply.ok(COLLECTIONS));
+    FakeModel model = new FakeModel();
+    model.answers.put(
+        "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
+    GitHubAwesomeCollector.Deep oneSmallReadme =
+        new GitHubAwesomeCollector.Deep(
+            0, 30, Duration.ofMinutes(15), 10L, 500, 50, List.of("youtube.com"));
+
+    CollectedBatch batch = collector(model, 200, "t", oneSmallReadme).collect(null, null, 500);
+
+    assertThat(entryHits(batch))
+        .extracting(SourceHit::getExternalId)
+        .containsExactly("modelcontextprotocol/servers");
+    assertThat(server.requests).noneMatch(r -> r.contains("/repos/acme/awesome-mcp/readme"));
+  }
+
+  @Test
+  void aRateLimitWhileReadingTheReadmeOfAListStopsThePass() {
+    server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
+    server.route("/repos/acme/awesome-mcp/readme", new FixtureServer.Reply(429, "{}", Map.of(), 0));
+    server.route("/graphql", FixtureServer.Reply.ok(COLLECTIONS));
+    FakeModel model = new FakeModel();
+    model.answers.put(
+        "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
+
+    assertThatThrownBy(() -> collector(model, 200, "t", NO_NESTED_LISTS).collect(null, null, 500))
+        .isInstanceOf(SourceFailure.RateLimited.class);
+  }
+
   static final String README_WITH_A_FORK =
       """
       # Awesome LLM
