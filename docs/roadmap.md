@@ -37,7 +37,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
 - [S2.11.4 The Scout to visit every record that has a repository link](https://github.com/silvioincalza/helper2.ai/issues/216)
-- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563)
 
 ### Later
 
@@ -52,15 +51,12 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E3 Search
 
-### Now
-
-- [S3.15.4 A past period and a newness question read right in every language](https://github.com/silvioincalza/helper2.ai/issues/567)
-
 ### Next
 
 - [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
+- [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/helper2.ai/issues/574)
 - [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
 - [S3.12.1 Ranking weights chosen by the kind of query](https://github.com/silvioincalza/helper2.ai/issues/251)
 - [S3.12.2 A recency term for time-bound searches](https://github.com/silvioincalza/helper2.ai/issues/252)
@@ -78,7 +74,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S4.1.9 A quote from an MCP Registry record linked to its Registry entry](https://github.com/silvioincalza/helper2.ai/issues/566)
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
 
 ### Next
@@ -108,13 +103,20 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E6 Back office
 
+### Now
+
+- [S6.2.15 The review research assistant decided in an ADR](https://github.com/silvioincalza/helper2.ai/issues/587)
+
 ### Next
 
+- [S6.2.16 The research agent measured on 100 decided items, fast and reasoning model](https://github.com/silvioincalza/helper2.ai/issues/588)
+- [S6.2.17 The research assistant runs in the backend, stored and streamed step by step](https://github.com/silvioincalza/helper2.ai/issues/589)
 - [S6.5.1 Every setting on `/admin/settings`](https://github.com/silvioincalza/helper2.ai/issues/308)
 
 ### Later
 
 - [S6.2.6 The review page to read a typed resource candidate](https://github.com/silvioincalza/helper2.ai/issues/304)
+- [S6.2.18 The back office shows research per candidate and applies it attribute by attribute](https://github.com/silvioincalza/helper2.ai/issues/590)
 - [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
 
 ## E7 Site and frontend
@@ -159,7 +161,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.3.3 v2026.11.5 on prod: main's fixes since v2026.11.4](https://github.com/silvioincalza/helper2.ai/issues/508)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 

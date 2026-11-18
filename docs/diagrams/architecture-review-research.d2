@@ -1,0 +1,41 @@
+# Software architecture: the review research assistant in the back office app (ADR 0048).
+# The research module owns its ports; the source connectors and the catalog implement them, as for the AI check.
+# Source of truth: docs/adr/backoffice/0048-review-research-assistant.md (the code follows in the backend pull request).
+# Render: cd docs/diagrams && d2 fmt architecture-review-research.d2 && d2 architecture-review-research.d2 architecture-review-research.svg
+
+...@style
+
+direction: right
+
+admin: "Admin\n(VPN, GitHub sign-in)" {class: person}
+
+backoffice: "Back office app" {
+  web: "ReviewResearchController\nPOST runs · cancel\nSSE: runs, steps" {class: app}
+  research: "research module" {
+    usecase: "StartResearch · CancelResearch\nRunResearch (the loop)\nPurgeOldResearch" {class: app}
+    ports: "Ports: ResearchModel · ResearchTools\nResearchRuns · ResearchBudget" {class: app}
+    usecase -> ports
+  }
+  workers: "ResearchWorkers\n(virtual threads,\nreview-research.concurrency)" {class: app}
+  adapters: "Adapters\nSpring AI (tool calls, no internal execution)\nLiveWebPageReader · TavilySource · deps.dev\nGitHub · Hugging Face · catalog lookup\ncheck_url (no private addresses)" {class: app}
+  validator: "EvidenceValidator\n(shared with enrichment, 0014)" {class: app}
+  review: "Review queue and accept path\n(0038)" {class: app}
+
+  web -> research.usecase
+  workers -> research.usecase
+  research.ports -> adapters: "implemented by"
+  research.usecase -> validator
+  web -> review: "Accept with confirmed values"
+}
+
+postgres: "PostgreSQL\nreview_research · review_research_step\nreview_item" {shape: cylinder; class: data}
+redis: "Redis\npage text cache · budgets" {shape: cylinder; class: data}
+nebius: "Nebius\nfast and reasoning model" {class: ai}
+web: "Public web, Tavily, deps.dev,\nGitHub, Hugging Face" {class: ext}
+
+admin -> backoffice.web: "HTTPS"
+backoffice.research.usecase -> postgres: "runs, steps,\nSKIP LOCKED"
+backoffice.adapters -> redis
+backoffice.adapters -> nebius: "chat with tools"
+backoffice.adapters -> web: "read only"
+backoffice.review -> postgres

@@ -13,6 +13,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included, and the public app's site with pages, policy, monetisation and the CSP), who calls helper2 and what it calls. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
+| [architecture-review-research](architecture-review-research.svg) | Review research: the back office starts a run, workers take it from the Postgres queue, the agent calls seven read-only tools through the module's ports, `EvidenceValidator` checks each value, and the steps stream to the admin over SSE. |
 | [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment and its gap round, catalog storage and embeddings. |
 | [architecture-setup](architecture-setup.svg) | "Set it up" on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
 | [architecture-platform](architecture-platform.svg) | The edge and the shared services: identity, the CSP of each app (the public one from the site), rate limits, errors, the SPA, and platform llm, http, resilience, quota, shared cache and locks, with their Redis keys and tables. |
@@ -104,6 +105,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0046](../adr/operations/0046-evaluation-guide-and-search.md) | [flow](flow-0046-search-evaluation-harness.svg) | [sequence](sequence-0046-search-evaluation-harness.svg) | the search evaluation harness: snapshots recorded once, offline replay, report and the nDCG@10 gate. |
 | [0047](../adr/operations/0047-code-format-and-dead-code-audit.md) | [flow](flow-0047-code-format.svg) | — (build and CI only, no runtime path) | which files Spotless and Prettier format with which formatter, and the spotlessCheck and format:check gates in CI. |
 | [0047](../adr/operations/0047-code-format-and-dead-code-audit.md) | [flow](flow-0047-dead-code-and-dependency-audit.svg) | — (build and CI only, no runtime path) | the two knip runs (whole project, then production code and its dependencies) and the npm audit gate in the frontend CI job. |
+| [0048](../adr/backoffice/0048-review-research-assistant.md) | [flow](flow-0048-review-research.svg) | [sequence](sequence-0048-review-research.svg) | how the admin starts research on review items, how a worker runs the agent and stores each step, and how the admin confirms each attribute and accepts. |
 
 ## Colors
 
