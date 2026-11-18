@@ -50,13 +50,37 @@ class AiCheckApiIT extends ApiTestBase {
     return id;
   }
 
+  private void record(UUID resource, String sourceId) {
+    jdbc.sql(
+            """
+            INSERT INTO source (id, mode) VALUES (:source, 'INDEXED') ON CONFLICT (id) DO NOTHING
+            """)
+        .param("source", sourceId)
+        .update();
+    UUID id = UUID.randomUUID();
+    jdbc.sql(
+            """
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       type, retrieved_at, fingerprint)
+            VALUES (:id, :source, :ext, :rid, :url, :url, 'record', 'LIBRARY', now(), 'fp')
+            """)
+        .param("id", id)
+        .param("source", sourceId)
+        .param("ext", id.toString())
+        .param("rid", resource)
+        .param("url", "https://ai-check.example/record/" + id)
+        .update();
+  }
+
   private void sourceText(UUID resource, String text) {
+    jdbc.sql("INSERT INTO source (id, mode) VALUES ('npm', 'INDEXED') ON CONFLICT (id) DO NOTHING")
+        .update();
     UUID record = UUID.randomUUID();
     jdbc.sql(
             """
             INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
                                        description, type, retrieved_at, fingerprint)
-            VALUES (:rec, 'curated', :rec::text, :id, :url, :url, 'AI check', :text, 'LIBRARY', now(), 'fp')
+            VALUES (:rec, 'npm', :rec::text, :id, :url, :url, 'AI check', :text, 'LIBRARY', now(), 'fp')
             """)
         .param("rec", record)
         .param("id", resource)
@@ -104,6 +128,30 @@ class AiCheckApiIT extends ApiTestBase {
 
     mvc.perform(get("/api/v1/admin/ai-check").param("after", "not-a-cursor").with(admin))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void aResourceFromASourceThatOnlyHoldsAiIsNeverListed() throws Exception {
+    UUID fromNpm = resource("html-to-image", "Generates an image from a DOM node", "dom", 0.8);
+    record(fromNpm, "npm");
+    UUID fromHuggingFace = resource("acme/Model-H3", "A 30B model", "text-generation", 0.8);
+    record(fromHuggingFace, "hf-models");
+    UUID fromBoth = resource("acme/sdk", "The official SDK", "sdk", 0.8);
+    record(fromBoth, "npm");
+    record(fromBoth, "github-sdks");
+    var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+    String body =
+        mvc.perform(get("/api/v1/admin/ai-check").param("size", "2000").with(admin))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    List<String> listed = JsonPath.read(body, "$.notAboutAi[*].resourceId");
+    assertThat(listed)
+        .contains(fromNpm.toString())
+        .doesNotContain(fromHuggingFace.toString(), fromBoth.toString());
   }
 
   @Test
