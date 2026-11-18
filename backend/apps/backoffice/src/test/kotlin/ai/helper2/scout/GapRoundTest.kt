@@ -405,4 +405,15 @@ class GapRoundTest {
     assertTrue("ray.run" in parts.rest)
     assertTrue("Just getting started?" in parts.rest)
   }
+
+  @Test
+  fun `a heading inside a code block neither splits the README nor makes the example its opening`() {
+    val readme =
+      "# Docs Tool\n\n```markdown\n# About Example\nThis example agent books flights and hotels for its users.\n```\n\n" +
+        opening +
+        "\n"
+    val parts = UntrustedPageText.split(readme)
+    assertEquals(opening, parts.opening)
+    assertTrue("This example agent books flights" in parts.rest)
+  }
 }

@@ -436,7 +436,7 @@ object UntrustedPageText {
     var inCode = false
     return section.lines().filter { line ->
       val trimmed = line.trim()
-      if (trimmed.startsWith("```") || trimmed.startsWith("~~~")) {
+      if (isFence(line)) {
         inCode = !inCode
         return@filter false
       }
@@ -446,6 +446,11 @@ object UntrustedPageText {
         !trimmed.startsWith(">") &&
         WORD.findAll(trimmed).count() >= MIN_PROSE_WORDS
     }
+  }
+
+  private fun isFence(line: String): Boolean {
+    val trimmed = line.trim()
+    return trimmed.startsWith("```") || trimmed.startsWith("~~~")
   }
 
   private fun upTo(lines: List<String>, maxChars: Int): List<String> {
@@ -465,8 +470,10 @@ object UntrustedPageText {
 
   private fun sections(text: String): List<String> {
     val out = mutableListOf<StringBuilder>(StringBuilder())
+    var inCode = false
     for (line in text.lines()) {
-      if (line.startsWith("#") && out.last().isNotBlank()) out += StringBuilder()
+      if (isFence(line)) inCode = !inCode
+      if (!inCode && line.startsWith("#") && out.last().isNotBlank()) out += StringBuilder()
       out.last().append(line).append('\n')
     }
     return out.map { it.toString().trim() }.filter { it.isNotEmpty() }
