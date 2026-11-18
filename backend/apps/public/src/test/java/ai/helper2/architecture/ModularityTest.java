@@ -154,6 +154,7 @@ class ModularityTest {
           Map.entry("live_web_query_result", "search"),
           Map.entry("ai_cache", "platform"),
           Map.entry("shedlock", "platform"),
+          Map.entry("public_app_lock", "platform"),
           Map.entry("runtime_setting", "platform"),
           Map.entry("public_app_setting", "platform"),
           Map.entry("guide_similar_question", "guide"),
