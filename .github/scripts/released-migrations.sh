@@ -65,12 +65,24 @@ new_migrations_named_after_their_release() {
   echo "the new migrations carry a version above $latest"
 }
 
+carried_release() {
+  local head=$1 version
+  version=$(git show "$head:backend/build.gradle.kts" 2> /dev/null | sed -n 's/^version = "\(.*\)"$/\1/p' || true)
+  if [[ v$version =~ $CALVER ]] && git rev-parse --verify --quiet "refs/tags/v$version^{commit}" > /dev/null; then
+    echo "v$version"
+  fi
+}
+
 check() {
-  local head=${1:-HEAD} releases release bad=0
+  local head=${1:-HEAD} releases release carried bad=0
   git rev-parse --verify --quiet "$head^{commit}" > /dev/null || { echo "no commit $head" >&2; return 2; }
   [[ $(git rev-parse --is-shallow-repository) == false ]] \
     || { echo "a shallow clone hides the release tags: fetch the full history (fetch-depth: 0)" >&2; return 2; }
   releases=$(releases_in "$head")
+  carried=$(carried_release "$head")
+  if [[ -n $carried ]] && ! grep -qFx "$carried" <<< "$releases"; then
+    releases=$(printf '%s\n%s\n' "$releases" "$carried" | sed '/^$/d')
+  fi
   if [[ -z $releases ]]; then
     only_the_first_migration "$head"
     return
@@ -98,6 +110,11 @@ self_test() {
       g add -A && g commit -qm "$1 is $2"
     }
     remove() { g rm -q "$MIGRATIONS/$1" && g commit -qm "$1 is removed"; }
+    carry() {
+      mkdir -p backend
+      echo "version = \"$1\"" > backend/build.gradle.kts
+      g add -A && g commit -qm "carries $1"
+    }
     expect() {
       local want=$1 what=$2 got=ok
       "$SELF" check > /dev/null 2>&1 || got=fail
@@ -162,6 +179,26 @@ self_test() {
     g switch -qc fix-of-an-old-release v2026.11.1
     write V2026.11.2.2__fix.sql one
     expect ok "a fix branch from an older release: the migrations of later releases are not in it"
+    g switch -q main
+    g switch -qc side-release
+    write V2026.12.1.1__side.sql one
+    carry 2026.12.1
+    g tag v2026.12.1
+    g switch -q main && g switch -qc squashed-into-main
+    carry 2026.12.1
+    write V2026.12.1.1__side.sql one
+    expect ok "a release merged into main by squash"
+    write V2026.12.1.2__late.sql one
+    expect fail "squashed release: a new migration named for its version"
+    remove V2026.12.1.2__late.sql
+    write V2026.12.2.1__next.sql one
+    expect ok "squashed release: a new migration of the next patch"
+    write V2026.12.1.1__side.sql two
+    expect fail "squashed release: a migration it holds changes"
+    write V2026.12.1.1__side.sql one
+    carry 2026.12.3
+    write V2026.12.1.3__z.sql one
+    expect ok "a carried version with no tag does not count"
     g switch -q main
     g switch -qc before-the-reset v2.0.0
     write "$FIRST" five

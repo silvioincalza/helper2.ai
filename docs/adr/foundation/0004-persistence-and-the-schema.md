@@ -110,8 +110,10 @@ The schema is one file, and from the first release tag on that file must never c
    - **CI holds both halves of the rule** (`.github/scripts/released-migrations.sh`, job `changes`, every pull
      request and every push to `main`). While the history has no release tag `vYYYY.N.P`, a versioned migration other
      than `V1__schema.sql` fails. Once it has one, every versioned migration the latest release holds must be the same
-     file, byte for byte: an edit or a removal fails. Every versioned migration that release does not hold must be
-     named `V<YYYY>.<N>.<P>.<n>__…` with a version above it; any other name fails. The seeds (`R__…`) may change. The check
+     file, byte for byte: an edit or a removal fails. The latest release is the highest of the release tags in the
+     history and the version `backend/build.gradle.kts` carries, when that version is tagged: a release merged into
+     `main` by squash is not in its history. Every versioned migration the latest release does not hold must be named
+     `V<YYYY>.<N>.<P>.<n>__…` with a version above it; any other name fails. The seeds (`R__…`) may change. The check
      compares with the tag, not with the base of the pull request.
    - **Until the tag, every schema change edits V1. There is no V2.** Prod gets V1 on an empty database at the tag.
      A database that already ran an older V1 is refused by Flyway when V1 changes (checksum mismatch): no step
