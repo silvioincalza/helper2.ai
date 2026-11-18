@@ -1,6 +1,7 @@
 package ai.helper2.sources.tavily;
 
 import ai.helper2.search.SearchSource;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
@@ -13,7 +14,6 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
-import ai.helper2.sources.support.ShadowLibraries;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
 import java.time.Clock;
@@ -40,10 +40,16 @@ public class TavilySource implements SearchSource {
 
   private final RestClient http;
   private final Clock clock;
+  private final ShadowLibraries shadowLibraries;
   private final SourceDescriptor descriptor;
 
-  public TavilySource(SourceSettings settings, RestClient.Builder builder, Clock clock) {
+  public TavilySource(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
+    this.shadowLibraries = shadowLibraries;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
         new SourceDescriptor(
@@ -91,7 +97,7 @@ public class TavilySource implements SearchSource {
         "live-web",
         root.path("results"),
         clock.instant(),
-        (item, now, rank) -> toHit(item, "live-web", now, rank));
+        (item, now, rank) -> toHit(item, "live-web", now, rank, shadowLibraries));
   }
 
   static String topic(SourceQuery query) {
@@ -106,15 +112,22 @@ public class TavilySource implements SearchSource {
     return text + " artificial intelligence";
   }
 
-  public static SourceHit toHit(JsonNode r, String sourceId, Instant now, int position) {
+  public static SourceHit toHit(
+      JsonNode r, String sourceId, Instant now, int position, ShadowLibraries shadowLibraries) {
     String title = HttpClients.text(r, "title");
     ResourceType type =
         title != null && EVENT.matcher(title).find() ? ResourceType.EVENT : ResourceType.NEWS;
-    return toHit(r, sourceId, now, position, type, Set.of());
+    return toHit(r, sourceId, now, position, type, Set.of(), shadowLibraries);
   }
 
   public static SourceHit toHit(
-      JsonNode r, String sourceId, Instant now, int position, ResourceType type, Set<String> tags) {
+      JsonNode r,
+      String sourceId,
+      Instant now,
+      int position,
+      ResourceType type,
+      Set<String> tags,
+      ShadowLibraries shadowLibraries) {
     String url = HttpClients.text(r, "url");
     String title = HttpClients.text(r, "title");
     CanonicalUrl canonical = CanonicalUrl.of(url);
@@ -122,7 +135,7 @@ public class TavilySource implements SearchSource {
         || title == null
         || canonical == null
         || isTavilysOwnPage(canonical)
-        || ShadowLibraries.isShadowLibrary(canonical.getHost())) {
+        || shadowLibraries.isShadowLibrary(canonical.getHost())) {
       return null;
     }
     String content = HttpClients.text(r, "content");

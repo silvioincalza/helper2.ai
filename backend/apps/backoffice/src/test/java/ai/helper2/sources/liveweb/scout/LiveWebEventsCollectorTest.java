@@ -138,7 +138,8 @@ class LiveWebEventsCollectorTest {
         20,
         new ScoutLiveWebCredits(counter, keys, creditCap, new SimpleMeterRegistry()),
         reader,
-        undated);
+        undated,
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   @Test

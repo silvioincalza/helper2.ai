@@ -1,6 +1,6 @@
 package ai.helper2.sources.research;
 
-import ai.helper2.sources.support.ShadowLibraries;
+import ai.helper2.search.ShadowLibraries;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
@@ -10,9 +10,13 @@ import org.jspecify.annotations.Nullable;
 
 final class PublicAddresses {
 
-  private PublicAddresses() {}
+  private final ShadowLibraries shadowLibraries;
 
-  static @Nullable String problem(String url) {
+  PublicAddresses(ShadowLibraries shadowLibraries) {
+    this.shadowLibraries = shadowLibraries;
+  }
+
+  @Nullable String problem(String url) {
     URI uri;
     try {
       uri = URI.create(url.strip());
@@ -30,7 +34,7 @@ final class PublicAddresses {
     if (uri.getPort() != -1 && uri.getPort() != 80 && uri.getPort() != 443) {
       return "only ports 80 and 443";
     }
-    if (ShadowLibraries.isShadowLibrary(host)) {
+    if (shadowLibraries.isShadowLibrary(host)) {
       return "a shadow library is never read";
     }
     try {

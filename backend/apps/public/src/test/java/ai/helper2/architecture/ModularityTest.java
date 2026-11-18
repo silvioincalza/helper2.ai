@@ -163,7 +163,8 @@ class ModularityTest {
           Map.entry("review_research_step", "research"),
           Map.entry("scout_schedule", "scout"),
           Map.entry("enrichment_queue_control", "scout"),
-          Map.entry("discovery_host", "scout"));
+          Map.entry("discovery_host", "scout"),
+          Map.entry("shadow_library", "search"));
 
   private static final Set<String> SHARED_TABLES = Set.of("enrichment_queue_control catalog");
 

@@ -6,6 +6,7 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.ScoutCursor;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.CanonicalUrl;
@@ -68,6 +69,7 @@ public class DiscoveryCollector implements Collector {
   private final List<DiscoveryCategory> all;
   private final ScoutLiveWebCredits credits;
   private final DiscoveryHostStore hosts;
+  private final ShadowLibraries shadowLibraries;
   private final SourceDescriptor descriptor;
 
   public DiscoveryCollector(
@@ -79,7 +81,8 @@ public class DiscoveryCollector implements Collector {
       DiscoveryCategory category,
       List<DiscoveryCategory> all,
       ScoutLiveWebCredits credits,
-      DiscoveryHostStore hosts) {
+      DiscoveryHostStore hosts,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
     this.resilience = resilience;
     boolean enabled = settings.enabled() && category.enabled();
@@ -92,6 +95,7 @@ public class DiscoveryCollector implements Collector {
     this.all = List.copyOf(all);
     this.credits = credits;
     this.hosts = hosts;
+    this.shadowLibraries = shadowLibraries;
     this.http = HttpClients.client(builder, settings);
     this.descriptor = CollectorDescriptors.discovery(settings, category);
   }
@@ -248,6 +252,7 @@ public class DiscoveryCollector implements Collector {
         || title == null
         || url == null
         || TavilySource.isTavilysOwnPage(url)
+        || shadowLibraries.isShadowLibrary(url.getHost())
         || !Classification.isAiRelated(title, content, Set.of())) {
       return null;
     }
@@ -300,7 +305,13 @@ public class DiscoveryCollector implements Collector {
   private @Nullable SourceHit listHit(Found f, Instant now) {
     SourceHit hit =
         TavilySource.toHit(
-            f.result(), category.sourceId(), now, f.rank(), ResourceType.ARTICLE, f.tags());
+            f.result(),
+            category.sourceId(),
+            now,
+            f.rank(),
+            ResourceType.ARTICLE,
+            f.tags(),
+            shadowLibraries);
     return hit == null ? null : hit.withFacts(f.facts());
   }
 

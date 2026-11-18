@@ -36,6 +36,7 @@ tags:
   - name: settings
   - name: runtime-settings
   - name: discovery-hosts
+  - name: shadow-libraries
   - name: known-targets
   - name: relationship-targets
   - name: examples-admin
@@ -739,6 +740,67 @@ paths:
         '403': { $ref: './common.yaml#/components/responses/Problem' }
         '404': { $ref: './common.yaml#/components/responses/Problem' }
 
+  /admin/shadow-libraries:
+    get:
+      tags: [shadow-libraries]
+      operationId: listShadowLibraries
+      summary: The names of the shadow libraries no search shows, with who added each and why.
+      description: >-
+        A web result is never shown when one label of its host, before the last, is one of these names: "libgen"
+        drops libgen.rs, libgen.is and every subdomain. The live web search and the Scout's web collectors read the
+        list (ADR 0049).
+      responses:
+        '200':
+          description: Every name, in order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShadowLibraries' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+    post:
+      tags: [shadow-libraries]
+      operationId: addShadowLibrary
+      summary: Add a name to the list.
+      description: >-
+        The name is kept in lower case. 400 when it is not one host label (a dot, a space, a scheme), when it is
+        shorter than 3 characters or a label many sites use ("www", "com", "blog"), for a reason that is not one
+        plain line, and when the list is full (200 names). 409 when the name is listed already. Recorded in the audit
+        trail. The search on this host uses it at once, the public app within 30 seconds.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShadowLibraryAdd' }
+      responses:
+        '201':
+          description: Added.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShadowLibraryEntry' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '409': { $ref: './common.yaml#/components/responses/Problem' }
+
+  /admin/shadow-libraries/{name}/remove:
+    parameters:
+      - { name: name, in: path, required: true, schema: { type: string, maxLength: 70 } }
+    post:
+      tags: [shadow-libraries]
+      operationId: removeShadowLibrary
+      summary: Remove a name from the list.
+      description: 404 when the name is not listed. Recorded in the audit trail.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShadowLibraryRemove' }
+      responses:
+        '204': { description: Removed; results on its sites are shown again. }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+
   /admin/known-targets:
     get:
       tags: [known-targets]
@@ -1351,6 +1413,36 @@ components:
       properties:
         reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
 
+    ShadowLibraryEntry:
+      type: object
+      required: [name, addedBy, addedAt]
+      properties:
+        name: { type: string, maxLength: 63 }
+        addedBy: { type: string, description: 'The administrator (provider subject), or "migration" for the first list.' }
+        addedAt: { type: string, format: date-time }
+        reason: { type: [string, 'null'], maxLength: 500 }
+
+    ShadowLibraries:
+      type: object
+      required: [libraries, max]
+      properties:
+        libraries:
+          type: array
+          items: { $ref: '#/components/schemas/ShadowLibraryEntry' }
+        max: { type: integer, description: The most names the list holds. }
+
+    ShadowLibraryAdd:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 70, description: 'One host label, such as "libgen"; no dot.' }
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
+    ShadowLibraryRemove:
+      type: object
+      properties:
+        reason: { type: [string, 'null'], maxLength: 500, description: "One plain line; a control or format character is a 400." }
+
     KnownTargets:
       type: object
       required: [targets, max]
@@ -1788,7 +1880,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         adminId: { type: string, description: "The administrator's provider subject (GitHub: the numeric user id)." }
-        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE, SET_FIELD, DROP_FIELD, ADD_KNOWN_TARGET, EDIT_KNOWN_TARGET, REMOVE_KNOWN_TARGET] }
+        action: { type: string, enum: [RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, BACKFILL_CATEGORIES, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE, SET_FIELD, DROP_FIELD, ADD_KNOWN_TARGET, EDIT_KNOWN_TARGET, REMOVE_KNOWN_TARGET, ADD_SHADOW_LIBRARY, REMOVE_SHADOW_LIBRARY] }
         targetId: { type: [string, 'null'], description: "The review item id, the source id, the home example id, the resource id or the setting's key; null when a run covered every source." }
         at: { type: string, format: date-time }
         outcome: { type: string, description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate. SET <field> or DROPPED <field> <count> for a resource field." }

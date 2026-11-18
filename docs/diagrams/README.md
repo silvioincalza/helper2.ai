@@ -10,6 +10,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 |---|---|
 | [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin domain) inside, ports on its edge, adapters around it, driving side left and driven side right. Hand-drawn SVG: edit the file itself. |
 | [context-map](context-map.svg) | Context map: the 10 bounded contexts of the backlog (Foundation, Scout and catalog, Search, AI guide, Identity and the signed-in user, Back office, Site and frontend, Money and consent, Legal and compliance, Release and operations), the modules that hold each one, and the direction of each dependency, as `ApplicationModules.verify()` lets them pass. |
+| [event-storming](event-storming.svg) | Big picture event storming of the seven contexts the apps run, one lane each: actors, commands, external systems, aggregates, domain events, policies, read models and the open stories (hotspots), with the arrows of what triggers what. Hand-drawn SVG: edit the file itself. |
 | [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included, and the public app's site with pages, policy, monetisation and the CSP), who calls helper2 and what it calls. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
@@ -106,6 +107,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0047](../adr/operations/0047-code-format-and-dead-code-audit.md) | [flow](flow-0047-code-format.svg) | — (build and CI only, no runtime path) | which files Spotless and Prettier format with which formatter, and the spotlessCheck and format:check gates in CI. |
 | [0047](../adr/operations/0047-code-format-and-dead-code-audit.md) | [flow](flow-0047-dead-code-and-dependency-audit.svg) | — (build and CI only, no runtime path) | the two knip runs (whole project, then production code and its dependencies) and the npm audit gate in the frontend CI job. |
 | [0048](../adr/backoffice/0048-review-research-assistant.md) | [flow](flow-0048-review-research.svg) | [sequence](sequence-0048-review-research.svg) | how the admin starts research on review items, how a worker runs the agent and stores each step, and how the admin confirms each attribute and accepts. |
+| [0049](../adr/search/0049-shadow-libraries.md) | [flow](flow-0049-shadow-libraries.svg) | [sequence](sequence-0049-shadow-libraries.svg) | an admin adds a shadow library's name: the name checks, the row and its audit; how each app reads the list and drops a web result on one of its hosts. |
 
 ## Colors
 
