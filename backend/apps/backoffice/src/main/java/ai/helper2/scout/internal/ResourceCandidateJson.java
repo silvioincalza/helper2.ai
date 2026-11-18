@@ -64,6 +64,9 @@ class ResourceCandidateJson implements CandidateDetails {
     if (snippet != null && !snippet.isEmpty()) {
       d.put("snippet", cut(snippet, MAX_SNIPPET));
     }
+    if (c.getPlatform() != null && !c.getPlatform().isBlank()) {
+      d.put("platform", c.getPlatform().strip());
+    }
     d.put("foundBy", List.of(finder(sourceId, c)));
     return json.writeValueAsString(d);
   }
@@ -164,6 +167,10 @@ class ResourceCandidateJson implements CandidateDetails {
 
   String reason(String details) {
     AcceptedCandidate c = read(details);
+    if (c.getType() == ResourceType.COURSE) {
+      return ReviewQueueCandidateReview.courseReason(
+          String.join(", ", finders(details)), c.getTitle());
+    }
     String tags = c.getTags().isEmpty() ? "" : " (" + String.join(", ", c.getTags()) + ")";
     return "New "
         + c.getType().name()

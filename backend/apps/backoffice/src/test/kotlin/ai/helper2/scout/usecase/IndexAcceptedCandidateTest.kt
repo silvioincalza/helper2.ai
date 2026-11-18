@@ -231,7 +231,7 @@ class IndexAcceptedCandidateTest {
     accept.index(candidate(type = ResourceType.EVENT).copy(typeChosenByAdmin = true))
     assertEquals(ResourceType.EVENT, catalog.indexed.single().first.single().hits.single().type)
     assertThrows<InvalidCandidate> {
-      accept.index(candidate(type = ResourceType.COURSE).copy(typeChosenByAdmin = true))
+      accept.index(candidate(type = ResourceType.PAPER).copy(typeChosenByAdmin = true))
     }
   }
 

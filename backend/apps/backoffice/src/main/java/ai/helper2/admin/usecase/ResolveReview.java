@@ -80,7 +80,7 @@ public class ResolveReview {
             .find(id)
             .filter(i -> i.status() == ReviewQueue.Status.OPEN)
             .filter(i -> decision == ReviewQueue.Status.ACCEPTED);
-    Optional<ReviewQueue.Item> addition = accepted.filter(i -> addsOnAccept(i.kind()));
+    Optional<ReviewQueue.Item> addition = accepted.filter(ResolveReview::addsOnAccept);
     ListedResource listed = addition.map(item -> addAccepted(item, adminId)).orElse(null);
     ResolveReviewItem.Outcome outcome =
         resolve.resolve(id, decision, adminId, noteWith(note, listed), batch);
@@ -98,14 +98,21 @@ public class ResolveReview {
     return note == null || note.isBlank() ? already : note + " " + already;
   }
 
-  private static boolean addsOnAccept(ReviewQueue.Kind kind) {
-    return kind == ReviewQueue.Kind.EXAMPLE_CANDIDATE
-        || kind == ReviewQueue.Kind.RESOURCE_CANDIDATE
-        || kind == ReviewQueue.Kind.KNOWN_TARGET_CANDIDATE;
+  private static boolean addsOnAccept(ReviewQueue.Item item) {
+    return switch (item.kind()) {
+      case EXAMPLE_CANDIDATE, RESOURCE_CANDIDATE, KNOWN_TARGET_CANDIDATE -> true;
+      case COURSE_CANDIDATE -> structuredCourse(item);
+      default -> false;
+    };
+  }
+
+  private static boolean structuredCourse(ReviewQueue.Item item) {
+    return item.details() != null && item.details().strip().startsWith("{");
   }
 
   private @Nullable ListedResource addAccepted(ReviewQueue.Item item, String adminId) {
-    if (item.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE) {
+    if (item.kind() == ReviewQueue.Kind.RESOURCE_CANDIDATE
+        || item.kind() == ReviewQueue.Kind.COURSE_CANDIDATE) {
       return indexCandidate(item, adminId);
     }
     if (item.kind() == ReviewQueue.Kind.KNOWN_TARGET_CANDIDATE) {

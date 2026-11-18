@@ -176,8 +176,9 @@ paths:
       summary: Set a resource's own value of a field (ADR 0038).
       description: >-
         The value is written to the resource and wins over every source and every enrichment run: no record changes
-        it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel and
-        audience (400 for the others). The value must be one the field takes.
+        it, and the model's values of the field are dropped. Only type, pricing, license, openSource, techLevel,
+        audience, language, publishedAt (YYYY-MM-DD, not in the future) and description (1 to 4000 characters,
+        stored as written by the admin) (400 for the others). The value must be one the field takes.
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: field, in: path, required: true, schema: { $ref: '#/components/schemas/ResourceField' } }
@@ -1628,19 +1629,22 @@ components:
 
     ResourceField:
       type: string
-      description: A field the enrichment fills (ADR 0014); an admin sets the first six (ADR 0038).
-      enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms]
+      description: >-
+        A field of a resource. The enrichment fills type to platforms (ADR 0014), and only those can be dropped. An
+        admin sets every field but useCase and platforms (ADR 0038).
+      enum: [type, pricing, license, openSource, techLevel, audience, useCase, platforms, language, publishedAt,
+        description]
 
     ResourceFieldValue:
       type: object
       required: [value]
       properties:
-        value: { type: string, minLength: 1, maxLength: 40 }
+        value: { type: string, minLength: 1, maxLength: 4000 }
 
     CandidateType:
       type: string
-      description: The types a resource candidate may have (ADR 0013, 0012, 0038).
-      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT]
+      description: The types a resource or course candidate may have (ADR 0013, 0012, 0031, 0038).
+      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE]
 
     RelationshipTargetChange:
       type: object

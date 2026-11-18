@@ -76,8 +76,8 @@ class ReviewQueueCandidateReview implements CandidateReview {
       return queue.proposeCandidate(
           ReviewQueue.Kind.COURSE_CANDIDATE,
           url,
-          capped("New course or certification page found by " + sourceId + ": " + c.getTitle()),
-          details(c));
+          capped(courseReason(sourceId, c.getTitle())),
+          json.write(sourceId, c));
     }
     boolean opened =
         queue.proposeCandidate(
@@ -115,24 +115,8 @@ class ReviewQueueCandidateReview implements CandidateReview {
     return "New " + c.getType().name() + category + " found by " + sourceId + ": " + c.getTitle();
   }
 
-  static String details(Candidate c) {
-    StringBuilder b = new StringBuilder("URL: ").append(c.getUrl().getValue());
-    if (c.getPlatform() != null) {
-      b.append("\nPlatform: ").append(c.getPlatform());
-    }
-    String snippet = snippet(c);
-    if (snippet != null) {
-      b.append("\nSnippet: ").append(snippet);
-    }
-    return b.toString();
-  }
-
-  private static String snippet(Candidate c) {
-    if (c.getSnippet() == null || c.getSnippet().isBlank()) {
-      return null;
-    }
-    String s = c.getSnippet().strip();
-    return s.length() > MAX_SNIPPET ? s.substring(0, MAX_SNIPPET - 1) + "…" : s;
+  static String courseReason(String sourceId, String title) {
+    return "New course or certification page found by " + sourceId + ": " + title;
   }
 
   private static String capped(String reason) {

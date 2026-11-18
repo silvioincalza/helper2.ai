@@ -84,7 +84,7 @@ class EditCandidateTest {
         CandidateEdit(title = " "),
         CandidateEdit(title = "x".repeat(301)),
         CandidateEdit(title = "line\nbreak"),
-        CandidateEdit(type = ResourceType.COURSE),
+        CandidateEdit(type = ResourceType.PAPER),
         CandidateEdit(type = ResourceType.OTHER),
         CandidateEdit(tags = setOf("Not A Tag")),
         CandidateEdit(tags = (1..21).map { "t$it" }.toSet()),

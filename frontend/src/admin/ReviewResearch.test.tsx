@@ -310,7 +310,6 @@ describe('admin: research outcome (ADR 0048)', () => {
         description: { kind: 'confirm', value: 'Writes meeting notes.' },
         language: { kind: 'confirm', value: 'en' },
       },
-      true,
     );
     expect(out).toEqual({
       complete: true,
@@ -325,31 +324,29 @@ describe('admin: research outcome (ADR 0048)', () => {
         descriptionWrittenByAi: true,
         language: 'en',
       },
-      note: '',
     });
   });
 
   it('a description the admin rewrote is not marked as written with AI', () => {
-    const out = outcomeOf(
-      [attr('description', null, ['Writes meeting notes.'])],
-      { description: { kind: 'edit', value: 'Takes notes in calls.' } },
-      true,
-    );
+    const out = outcomeOf([attr('description', null, ['Writes meeting notes.'])], {
+      description: { kind: 'edit', value: 'Takes notes in calls.' },
+    });
     expect(out.edit).toEqual({
       description: 'Takes notes in calls.',
       descriptionWrittenByAi: false,
     });
   });
 
-  it('a course candidate holds no values: every confirmed value goes to the decision note', () => {
+  it('a course candidate saves its confirmed values like a resource candidate', () => {
     const out = outcomeOf(
-      [attr('title', 'Old', ['New']), attr('pricing', null, ['FREE'])],
-      { title: { kind: 'edit', value: 'Newer' } },
-      false,
+      [
+        attr('title', 'Old', ['New']),
+        attr('pricing', null, ['FREE']),
+        attr('type', 'COURSE', ['COURSE']),
+      ],
+      { title: { kind: 'edit', value: 'Newer' }, pricing: { kind: 'confirm', value: 'FREE' } },
     );
-    expect(out.complete).toBe(false);
-    expect(out.left).toEqual(['pricing']);
-    expect(out.edit).toBeNull();
-    expect(out.note).toBe('Research confirmed: title=Newer');
+    expect(out.complete).toBe(true);
+    expect(out.edit).toEqual({ title: 'Newer', pricing: 'FREE' });
   });
 });

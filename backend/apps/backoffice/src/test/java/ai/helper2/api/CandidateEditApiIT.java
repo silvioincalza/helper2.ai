@@ -147,7 +147,7 @@ class CandidateEditApiIT extends ApiTestBase {
             .single();
     edit(item, "{}").andExpect(status().isBadRequest());
     edit(item, "{\"title\":\"  \"}").andExpect(status().isBadRequest());
-    edit(item, "{\"type\":\"COURSE\"}").andExpect(status().isBadRequest());
+    edit(item, "{\"type\":\"PAPER\"}").andExpect(status().isBadRequest());
     edit(item, "{\"tags\":[\"Not A Tag\"]}").andExpect(status().isBadRequest());
     edit(UUID.randomUUID(), "{\"title\":\"x\"}").andExpect(status().isNotFound());
 

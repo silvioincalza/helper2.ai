@@ -20,6 +20,7 @@ public interface ReviewQueue {
 
     public boolean detailsAreJson() {
       return this == RESOURCE_CANDIDATE
+          || this == COURSE_CANDIDATE
           || this == EXAMPLE_CANDIDATE
           || this == KNOWN_TARGET_CANDIDATE;
     }
