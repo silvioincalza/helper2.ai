@@ -7,7 +7,7 @@
 #   backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java, PreferencesController.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java,
 #   backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java
-#   (useCasesDoNotSpeakHttp, everyClassInStillThrowingStillSpeaksHttp, STILL_THROWING).
+#   (useCasesDoNotSpeakHttp).
 # Render: cd docs/diagrams && d2 fmt flow-0051-use-cases-return-outcomes.d2 && d2 flow-0051-use-cases-return-outcomes.d2 flow-0051-use-cases-return-outcomes.svg
 
 ...@style
@@ -52,18 +52,11 @@ build: "At build time: ModularityTest of each app" {
   class: group
 
   type: "A class of a usecase package\nor of a domain package" {class: app}
-  listed: "Named in STILL_THROWING?" {class: decision}
   speaks: "Depends on ApiProblem, a subtype,\nProblemType or Problems?" {class: decision}
-  still: "Still depends on one of them?\n(a class this app does not have\nis not checked)" {class: decision}
   pass: "The build goes on" {class: end}
   fails: "useCasesDoNotSpeakHttp fails:\nreturn an outcome instead" {class: fail}
-  shorter: "everyClassInStillThrowingStillSpeaksHttp\nfails: take the name out of the list" {class: fail}
 
-  type -> listed: {class: hot}
-  listed -> speaks: no {class: hot}
-  listed -> still: yes
+  type -> speaks: {class: hot}
   speaks -> pass: no {class: hot}
   speaks -> fails: yes
-  still -> pass: yes
-  still -> shorter: no
 }

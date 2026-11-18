@@ -10,6 +10,7 @@ import ai.helper2.api.generated.model.RuntimeSettingResetDto;
 import ai.helper2.api.generated.model.RuntimeSettingStateDto;
 import ai.helper2.api.generated.model.RuntimeSettingsDto;
 import ai.helper2.platform.ApiProblem;
+import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.settings.RuntimeSetting;
@@ -56,6 +57,7 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
               ProblemType.INVALID_REQUEST,
               "value: must be from 0 to " + setting.max() + " " + setting.unit() + ".");
       case ChangeRuntimeSetting.Outcome.Conflict c -> throw conflict();
+      case ChangeRuntimeSetting.Outcome.InvalidReason i -> throw invalidReason();
     };
   }
 
@@ -65,12 +67,17 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
     return switch (reset.reset(Admins.id(), known(key), body.getVersion(), body.getReason())) {
       case ResetRuntimeSetting.Outcome.Reset r -> ResponseEntity.ok(dto(r.state()));
       case ResetRuntimeSetting.Outcome.Conflict c -> throw conflict();
+      case ResetRuntimeSetting.Outcome.InvalidReason i -> throw invalidReason();
     };
   }
 
   private static RuntimeSetting known(String key) {
     return RuntimeSetting.byKey(key)
         .orElseThrow(() -> new NotFoundException("No runtime setting " + key + "."));
+  }
+
+  private static BadRequestException invalidReason() {
+    return new BadRequestException("reason: no control or format characters");
   }
 
   private static ApiProblem conflict() {

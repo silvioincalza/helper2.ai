@@ -157,8 +157,11 @@ On a review item, accept and reject were not enough:
      place 0.1 ms.
 9. **Bulk decisions: each item on its own, accept only where it is safe.** `POST /api/v1/admin/review-items/resolutions`
    takes up to 100 ids, a decision and an optional note (CSRF applies). `ResolveReviewItems` sends each item through the
-   one-item decision (`ResolveReview`) in its own transaction, so each item writes its own audit entry, the same as a
-   single decision, with the batch at the end: `ACCEPTED bulk:<batch>`. One item that fails does not undo the others.
+   one-item decision (`ResolveReview`) in its own unit of work ([0051](../foundation/0051-use-cases-return-outcomes.md)
+   §5), so each item writes its own audit entry, the same as a single decision, with the batch at the end:
+   `ACCEPTED bulk:<batch>`. One item that fails does not undo the others. An accept that cannot add its candidate (it
+   cannot be read, or the catalog refuses a confirmed value) stops the batch with that problem, a 400: the items
+   before it stay decided, the ones after it are not tried.
    The answer gives one outcome per item, in the order sent: RESOLVED, NOT_OPEN, NOT_FOUND or NOT_ALLOWED. Rejecting is
    allowed for every kind: nothing is added or shown. Accepting is allowed for an enrichment check whose run has no
    CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class; the conflicts come from their own
@@ -273,8 +276,11 @@ than a hundred), so the question is the same for each of them: what is this name
   name as a known target ([0019](../scout/0019-known-targets-vendors-and-services.md)) and closes the items of this
   batch (SUPERSEDED, relationship `VERIFIED` with the target's kind); other names the list already matches wait for
   their own decision or the Scout's run. REJECT rejects each item and its relationship.
-- **Each item on its own**, as in §9: one transaction per item (`DecideRelationshipItem`) holds the item's lock from the
-  target change to the decision, so a LINK changes the target and accepts the item together or not at all. Each item
+- **Each item on its own**, as in §9: one unit of work per item (`DecideRelationshipItem`,
+  [0051](../foundation/0051-use-cases-return-outcomes.md) §5) holds the item's lock from the
+  target change to the decision, so a LINK changes the target and accepts the item together or not at all: an item
+  decided between the two is the outcome `LinkUndone`, and its target change is rolled back. The group has no
+  transaction of its own. Each item
   has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR, SERVICE and TOOL). An item
   decided meanwhile, one whose resource already has this target, or the target resource itself, is skipped and stays
   open. At most 1000 items per call, the oldest first; the answer's `left` counts the items of the name still open
@@ -302,7 +308,8 @@ than a hundred), so the question is the same for each of them: what is this name
     - Accepting indexes what the admin wrote. A type the admin set need not be one a finder declares; it must still be
       a candidate type. A confirmed canonical URL is the page it is indexed at, and the listed check uses it. Every
       other confirmed value becomes a curated value of the new resource (§25), with its own `SET_FIELD` entry: a
-      description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the page was listed meanwhile (as a resource or as a source record of one), accepting
+      description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the
+      catalog refuses a confirmed value, the answer is a 400, nothing is added and the item stays open. When the page was listed meanwhile (as a resource or as a source record of one), accepting
       adds nothing: the item is closed as ACCEPTED with the note "Already listed as <title>.", and the review page says
       so and links to the listed resource. The edits are not applied; the admin makes them on the listed page.
     - The accepted record keeps the signals its collector stated (stars, last push, archived, fork:
@@ -368,7 +375,8 @@ than a hundred), so the question is the same for each of them: what is this name
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),
   `usecase/ListReviewQueue.java`, `usecase/ShowReviewItem.java`, `usecase/DecideReviewItem.java` (the review
   actions that answer with a view),
-  `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`), `config/SpaProperties.java`.
+  `web/ReviewProblems.java` (the problem of an accept that adds nothing),
+  `config/AdminUseCaseConfiguration.java` (wiring), `config/SpaProperties.java`.
 - The views and the typed details: `admin/usecase/ReviewItemView.java`, `ReviewDetails.java`, `ReviewItemViews.java`;
   `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ShownCandidate.kt` (`ShownCandidates`,
   `CandidateRevision`), `scout/internal/ResourceCandidateJson.java` (`shown`);

@@ -3,7 +3,6 @@ package ai.helper2.admin.usecase;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogEntry;
-import ai.helper2.platform.BadRequestException;
 import ai.helper2.scout.EnrichmentBacklog;
 import java.time.Instant;
 import java.util.List;
@@ -11,8 +10,6 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 public class ListEnrichmentQueue {
-
-  public static final int MAX_PAGE_SIZE = 100;
 
   public enum Section {
     WAITING,
@@ -60,9 +57,6 @@ public class ListEnrichmentQueue {
   }
 
   public Page list(Section section, @Nullable BacklogCursor after, int size) {
-    if (size < 1 || size > MAX_PAGE_SIZE) {
-      throw new BadRequestException("size must be between 1 and " + MAX_PAGE_SIZE);
-    }
     List<BacklogEntry> read = backlog.queue(section.inBacklog(), after, size + 1);
     if (read.size() <= size) {
       return new Page(entries(read), null);

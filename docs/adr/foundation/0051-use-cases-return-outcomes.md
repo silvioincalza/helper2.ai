@@ -32,7 +32,9 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    `InvalidDescription`, `NotADate`, `DateInTheFuture` or `NoSuchResource`. A use case with two actions that end in
    different ways has one type per action: `CurateField.set` answers `Outcome`, `CurateField.drop` answers
    `DropOutcome`. A use case with one result returns it plainly (`ListBookmarks`, `ListAuditEntries`,
-   `ListReviewItems`).
+   `ListReviewItems`, `ListEnrichmentQueue`). An outcome that a caller passes on as it is has a sealed part for it:
+   `ResolveReview.Outcome` is `Resolved`, `NotOpen`, `NotFound` or a `NotAdded` (the candidate, the proposal or the
+   draft that an accept could not add), and `DecideReviewItem` and `ResolveReviewItems` hand the `NotAdded` on.
 2. **A record carries data, never a sentence and never a status.** `OverLimit(limit)` holds the cap, `Added(bookmark)`
    the saved row. The words for the user and the HTTP status are the web layer's.
 3. **No use case and no domain class speaks HTTP.** A class of a `usecase` package or of a domain package does not
@@ -48,7 +50,9 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    `ApiProblem(SIGN_IN_REQUIRED)` for `NoSuchUser`, `ReviewController` maps `CurateField.Outcome`,
    `CurateField.DropOutcome` and `ChangeRelationshipTarget.Outcome`. A use case that calls another use case maps its
    outcome the same way, into its own: `ChangeRelationshipTarget` turns `AddCuratedResource.Outcome.InvalidUrl` into
-   its `InvalidResourceUrl`.
+   its `InvalidResourceUrl`. The sentences of an outcome that two endpoints answer are written once, in the `web`
+   package: `ReviewProblems.notAdded` for the single and the bulk decision, `KnownTargetProblems.listIsFull` for the
+   known targets, the review decision and the group decision.
 5. **A refusal after a write is a `Refused` record, and it runs in a unit of work.** `Refused` is a marker interface
    of the kernel (`ai.helper2.shared`). `TransactionalUnitOfWork.run` looks at the result of the work: when it is
    `Refused` and this unit opened the transaction, the transaction is rolled back and the result is returned. A unit
@@ -57,7 +61,14 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    and count inside `UnitOfWork.run`; `OverLimit` is `Refused`, so nothing of a refused addition or merge is kept.
    `ChangeRelationshipTarget` runs in `UnitOfWork.run` too: it can add a resource (`AddCuratedResource`) and then find
    that the item cannot take the link, so `NotFound`, `NotOpen`, `NotARelationship`, `TitleTaken`, `UnknownTarget`
-   and `SelfLink` are `Refused` and the added resource is undone. A use case with no write to undo needs
+   and `SelfLink` are `Refused` and the added resource is undone. `ResolveReview` runs in `UnitOfWork.run`:
+   `ConfirmedValueRefused` is `Refused`, so a candidate whose confirmed value the catalog refuses leaves no resource
+   and stays open. Its other `NotAdded` cases are not `Refused`: nothing was written but the audit entry of the
+   refused known target or example, and that entry stays. `DecideRelationshipItem` runs each item of a group in its
+   own `UnitOfWork.run`, and `DecideRelationshipTargetGroup` is a loop over their outcomes with no transaction of its
+   own: `Decided`, `Skipped` (nothing written, or only the `NOT_OPEN` entry of a rejection) or `LinkUndone`, which is
+   `Refused`: the item was decided between the target change and the decision, so the target change is rolled back.
+   No transaction names an exception it does not roll back for. A use case with no write to undo needs
    neither, and keeps the `@Transactional` subclass of its wiring: `CurateField` refuses before any write, and
    `ResolveReviewItem` keeps what it wrote (the audit line of a decision on an item that is no longer open).
    `UnitOfWorkConfiguration` makes the one `UnitOfWork` bean in both apps: the bookmarks are a use case of the public
@@ -66,18 +77,21 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    on `GET /api/v1/admin/audit`, the generated interface carries them as constraints, and Spring answers 400 before
    the controller runs. `ListAuditEntries` reads the page it is asked for. `GET /api/v1/admin/review-items` states
    `page`, `size` and the pattern and length of `category` the same way, so `ListReviewItems` checks none of them.
-7. **The rule is a test, and its list only gets shorter.** `ModularityRules.useCasesDoNotSpeakHttp` runs in the
-   `ModularityTest` of each app ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8). It
-   skips the classes named in `STILL_THROWING`, with their nested classes: seven of `admin.usecase`
-   (`ChangeRuntimeSetting`, `DecideRelationshipItem`, `DecideRelationshipTargetGroup`,
-   `KnownTargetAnswer`, `ListEnrichmentQueue`, `ResolveReview`, `ResolveReviewItems`). A second test,
-   `everyClassInStillThrowingStillSpeaksHttp`, fails when a named class no longer depends on one of the HTTP types:
-   the name must then leave the list. A named class that an app does not have (the public app has no `admin`) is not
-   checked there. No class outside the list can start to throw.
+   The same holds for `size` on `GET /api/v1/admin/enrichment-queue` (`ListEnrichmentQueue`), for the 1 to 100 ids and
+   the decision of a bulk decision (`ResolveReviewItems`) and for the 500 characters of a runtime setting's reason
+   (`ChangeRuntimeSetting`). A rule the contract cannot state stays an outcome: a repeated id is `RepeatedId`, a
+   reason with a control or format character is `InvalidReason`.
+7. **The rule is a test, and it has no exception.** `ModularityRules.useCasesDoNotSpeakHttp` runs in the
+   `ModularityTest` of each app ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8) on every
+   class of a `usecase` package and of a domain package. There is no list of classes it skips, so no class can start
+   to throw.
 8. **The response does not depend on where the rule lives.** Status, problem `type`, `code`, `title` and `detail` of
-   every identity and catalog endpoint are the same with an outcome as with a throw; the API tests of the account,
-   the bookmarks, the preferences, the audit trail, the review queue, the curated fields and the relationship targets
-   pin them.
+   every identity, catalog and admin endpoint are what the contract states, whatever the use case returns; the API
+   tests of the account, the bookmarks, the preferences, the audit trail, the review queue, the review decisions, the
+   curated fields, the relationship targets and their groups, the known targets, the runtime settings and the
+   enrichment queue pin them, with the rows and the audit entries a refusal leaves. Accepting a candidate whose
+   confirmed value the catalog refuses is a 400 `invalid-request`, the problem `CurateField` gives for that value on
+   its own endpoint.
 
 ### Code
 
@@ -93,16 +107,24 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 - `backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java`, `PreferencesController.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/identity/web/AuditController.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java` — the mapping.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (`requireCurated`),
-  `CheckAwesomeLists.java` (`setAsAwesomeList`) — the use cases that read the outcome of `CurateField`.
-- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the rule and
-  `STILL_THROWING`.
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/` (`ResolveReview`, `DecideReviewItem`,
+  `ResolveReviewItems`, `DecideRelationshipItem`, `DecideRelationshipTargetGroup`, `ChangeRuntimeSetting`,
+  `ResetRuntimeSetting`, `ListEnrichmentQueue`) — the outcomes; `CheckAwesomeLists.java` (`setAsAwesomeList`) reads
+  the outcome of `CurateField`; `.../admin/config/AdminUseCaseConfiguration.java` — the wiring.
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewProblems.java`, `KnownTargetProblems.java`,
+  `RelationshipTargetsController.java`, `KnownTargetsController.java`, `RuntimeSettingsController.java` — the mapping.
+- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the rule.
 - Tests: `TransactionalUnitOfWorkTest` (rollback for a `Refused` result, a joined transaction is not marked),
   `BookmarkOutcomesTest`, `ChangePreferencesTest`, `PreferencesControllerTest`, `BookmarkCapIT` (the outcome and the
   rows after a refusal, two additions at once), `AccountApiIT`, `AdminAuditApiIT` (a page outside the bounds is a
   400), `CurateFieldTest`, `ChangeRelationshipTargetIT` (the outcome and the rows after a refused link),
   `CheckAwesomeListsTest`, `CuratedFieldApiIT`, `RelationshipTargetApiIT` and `ReviewItemsApiIT` (the problem of
-  every refusal), `CandidateEditApiIT` (a confirmed value the catalog refuses).
+  every refusal), `CandidateEditApiIT` (a confirmed value the catalog refuses, a candidate that cannot be read),
+  `ReviewBulkApiIT` and `ReviewBulkResearchedApiIT` (the bounds, a repeated id, a batch that stops),
+  `KnownTargetProposalApiIT`, `KnownTargetsApiIT`, `HomeExamplesApiIT` (the refusal and its audit entry),
+  `RelationshipTargetGroupsApiIT` (the rows and the audit entries of a partly refused group),
+  `RelationshipTargetGroupUndoApiIT` (a link undone, a rejection skipped), `AdminRuntimeSettingsApiIT`,
+  `EnrichmentQueueApiIT`, `RuntimeSettingReasonTest`.
 
 ## Alternatives considered
 
@@ -115,8 +137,12 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 - **`@Transactional` subclasses in `config` that look at the outcome.** No new marker in the kernel. The rule "this
   refusal undoes the write" would live in the wiring, far from the record that means it. Rejected.
 - **ArchUnit's `FreezingArchRule`.** It stores the known violations and fails on a new one with no code of ours. The
-  store is a generated file nobody reads; the named list shows the work that is left, and its second test asks for
-  each removal. Rejected.
+  store is a generated file nobody reads, and the rule has no violation to store. Rejected.
+- **A list of classes the rule skips, kept empty, with a test that it stays empty.** It would guard against a new
+  exception. A list nobody may add to is dead code, and adding a name to it is as visible in a review as writing the
+  list again. Rejected.
+- **One transaction for a whole group or batch.** One commit, fewer round trips. One item that fails would undo the
+  others, and a refused item could not keep its audit entry. Rejected.
 - **Keep the exceptions where the response is the same.** No change for a `BadRequestException` whose text is never
   shown. The rule would then have exceptions that last, and the next use case would copy them. Rejected.
 
@@ -130,22 +156,20 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 
 ### Known limits
 
-- Seven classes are in `STILL_THROWING`. Until they are converted, two wirings of the back office keep
-  `@Transactional(noRollbackFor = ApiProblem.class)` (`AdminUseCaseConfiguration`).
 - A `Refused` result inside a transaction this unit joined does not roll back: the caller that opened the
   transaction must look at the outcome. `TransactionalUnitOfWorkTest` holds both halves of the rule.
 - A refusal must be the top-level result of the unit. A `Refused` value wrapped in another result (an `Optional`, a
   record) is committed: `TransactionalUnitOfWorkTest` pins it. `ModularityRules` holds the pairing: a class that
   declares a `Refused` outcome depends on `UnitOfWork`.
-- `ResolveReview` opens the transaction in which `CurateField` writes the values an admin confirmed on a candidate.
-  Its transaction does not roll back for an `ApiProblem`, so it throws `IllegalStateException` when `CurateField`
-  refuses one: the answer is a 500, the indexed resource is undone and the item stays open. Such a value is in a
-  candidate only when the rules of `EditCandidate` and of `CurateField` differ
-  ([#742](https://github.com/silvioincalza/helper2.ai/issues/742)).
+- The 400 for a confirmed value the catalog refuses has the detail of every `BadRequestException`, "Invalid request
+  parameters.": it does not name the field. Such a value is in a candidate only when the rules of `EditCandidate`
+  and of `CurateField` differ.
+- A bulk decision stops at the first item an accept cannot add and answers its problem. The items before it stay
+  decided, each in its own unit of work; the ones after it are not tried.
+- `ResolveReview` joined to another unit does not undo a refused confirmed value: only `DecideRelationshipItem`
+  joins it, with relationship candidates, and they add nothing.
 - `CheckAwesomeLists` does not set a resource that is gone when its turn comes, and goes on with the next one.
 - `Refused` undoes the whole unit. A use case that must keep one write and undo another needs two units.
-- The second test does not see a name of a class no app has: a renamed class leaves a dead name in the list. The
-  back office has every class of the list, so the name fails there only when the class exists and is clean.
 - The rule reads classes. A constant of an HTTP type is copied by the compiler and leaves no dependency; `ProblemType`
   is an enum, so its values are not copied.
 - `CurrentUser.id()` still throws `SignInAgain`, from the adapter: `KnownAccountOnly` answers it before any controller
@@ -159,5 +183,6 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 
 - Features: [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (use cases return an outcome, and the web
   layer maps it to a problem, [S1.11.22](https://github.com/silvioincalza/helper2.ai/issues/726)).
-- Open issues that change this decision:
-  - [#742](https://github.com/silvioincalza/helper2.ai/issues/742) T1.11.2 The `admin` use cases return outcomes, and no transaction needs `noRollbackFor`
+  The `admin` use cases and the transactions without `noRollbackFor`:
+  [T1.11.2](https://github.com/silvioincalza/helper2.ai/issues/742).
+- Open issues that change this decision: none.

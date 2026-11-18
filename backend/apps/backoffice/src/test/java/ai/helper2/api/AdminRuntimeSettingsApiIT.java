@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettings;
 import com.jayway.jsonpath.JsonPath;
@@ -270,5 +271,35 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
           return row;
         })
         .list();
+  }
+
+  @Test
+  void aReasonTheContractOrTheRuleRefusesIsTheInvalidRequestProblemAndNothingIsStored()
+      throws Exception {
+    int before = version();
+    for (String reason : List.of("two\\nlines", "zero\\u200bwidth", "x".repeat(501))) {
+      mvc.perform(
+              put("/api/v1/admin/runtime-settings/" + GAP)
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(change(10, before, reason)))
+          .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+      mvc.perform(
+              post("/api/v1/admin/runtime-settings/" + GAP + "/reset")
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"version\":%d,\"reason\":\"%s\"}".formatted(before, reason)))
+          .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+    }
+    assertThat(audit()).isEmpty();
+    assertThat(version()).isEqualTo(before);
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM runtime_setting WHERE changed_by = :a")
+                .param("a", adminId)
+                .query(Long.class)
+                .single())
+        .isZero();
   }
 }

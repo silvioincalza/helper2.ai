@@ -3,7 +3,8 @@
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ShownCandidate.kt (CandidateRevision),
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java (edit, merge, read),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java (updateCandidate, lock),
-#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java (resolve),
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java (resolve, applyConfirmed),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/CurateField.java (the confirmed values),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt (hitOf).
 # Render: cd docs/diagrams && d2 fmt flow-0038-candidate-edit-in-review.d2 && d2 flow-0038-candidate-edit-in-review.d2 flow-0038-candidate-edit-in-review.svg
 
@@ -28,6 +29,8 @@ type: "Type chosen by the admin,\nor declared by a finder?" {class: decision}
 refused: "400: item stays open" {class: fail}
 listed: "Listed meanwhile\n(resource or record URL)?" {class: decision}
 duplicate: "ACCEPTED, nothing added:\n\"Already listed as <title>\",\nlink to the listed page;\nedits not applied" {class: end}
+confirmed: "Catalog takes every\nconfirmed value?" {class: decision}
+undone: "400: outcome ConfirmedValueRefused,\na Refused record: the unit of work\nrolls back, nothing added,\nitem stays open" {class: fail}
 indexed: "Indexed as the admin wrote it;\nextra lists the edited fields" {class: end}
 
 admin -> item
@@ -48,4 +51,6 @@ accept -> type: {class: hot}
 type -> refused: neither
 type -> listed: yes {class: hot}
 listed -> duplicate: yes
-listed -> indexed: no {class: hot}
+listed -> confirmed: no {class: hot}
+confirmed -> undone: no
+confirmed -> indexed: yes {class: hot}

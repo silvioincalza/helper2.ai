@@ -59,7 +59,6 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
                   + ManageDiscoveryHosts.MAX_HOSTS
                   + " hosts. Remove one first.");
       case ManageDiscoveryHosts.Added.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 
@@ -72,7 +71,6 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
       case ManageDiscoveryHosts.Removed.NotFound n ->
           throw new NotFoundException(host + " is in no list.");
       case ManageDiscoveryHosts.Removed.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 

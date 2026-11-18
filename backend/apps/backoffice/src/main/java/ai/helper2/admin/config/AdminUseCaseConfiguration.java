@@ -33,7 +33,6 @@ import ai.helper2.catalog.usecase.ResolveReviewItem;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
 import ai.helper2.examples.usecase.CountHomeExamples;
 import ai.helper2.examples.usecase.ReadExampleDraft;
-import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.llm.BudgetLedger;
 import ai.helper2.platform.settings.PublicAppSettings;
@@ -53,6 +52,7 @@ import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ShownCandidates;
 import ai.helper2.search.AiTopicCheck;
 import ai.helper2.search.WebSearchQuota;
+import ai.helper2.shared.UnitOfWork;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -155,9 +155,17 @@ class AdminUseCaseConfiguration {
       IndexAcceptedCandidate indexCandidate,
       KnownTargetCandidates targetCandidates,
       ManageKnownTargets knownTargets,
-      CurateField curateField) {
-    return new TransactionalResolveReview(
-        queue, resolve, acceptDraft, indexCandidate, targetCandidates, knownTargets, curateField);
+      CurateField curateField,
+      UnitOfWork unitOfWork) {
+    return new ResolveReview(
+        queue,
+        resolve,
+        acceptDraft,
+        indexCandidate,
+        targetCandidates,
+        knownTargets,
+        curateField,
+        unitOfWork);
   }
 
   @Bean
@@ -182,8 +190,8 @@ class AdminUseCaseConfiguration {
 
   @Bean
   DecideRelationshipItem decideRelationshipItem(
-      RelationshipTargets targets, ResolveReview resolve, AuditTrail audit) {
-    return new TransactionalDecideRelationshipItem(targets, resolve, audit);
+      RelationshipTargets targets, ResolveReview resolve, AuditTrail audit, UnitOfWork unitOfWork) {
+    return new DecideRelationshipItem(targets, resolve, audit, unitOfWork);
   }
 
   @Bean
@@ -227,65 +235,6 @@ class AdminUseCaseConfiguration {
       AuditTrail audit,
       Clock clock) {
     return new TransactionalResetRuntimeSetting(store, settings, runtime, audit, clock);
-  }
-
-  static class TransactionalDecideRelationshipItem extends DecideRelationshipItem {
-
-    TransactionalDecideRelationshipItem(
-        RelationshipTargets targets, ResolveReview resolve, AuditTrail audit) {
-      super(targets, resolve, audit);
-    }
-
-    @Override
-    @Transactional
-    public boolean link(UUID id, UUID resourceId, String by, @Nullable String note, UUID batch) {
-      return super.link(id, resourceId, by, note, batch);
-    }
-
-    @Override
-    @Transactional
-    public boolean reject(UUID id, String by, @Nullable String note, UUID batch) {
-      return super.reject(id, by, note, batch);
-    }
-
-    @Override
-    @Transactional
-    public boolean confirmKnown(UUID id, String by, UUID batch) {
-      return super.confirmKnown(id, by, batch);
-    }
-  }
-
-  static class TransactionalResolveReview extends ResolveReview {
-
-    TransactionalResolveReview(
-        ReviewQueue queue,
-        ResolveReviewItem resolve,
-        AcceptExampleDraft acceptDraft,
-        IndexAcceptedCandidate indexCandidate,
-        KnownTargetCandidates targetCandidates,
-        ManageKnownTargets knownTargets,
-        CurateField curateField) {
-      super(
-          queue, resolve, acceptDraft, indexCandidate, targetCandidates, knownTargets, curateField);
-    }
-
-    @Override
-    @Transactional(noRollbackFor = ApiProblem.class)
-    public ResolveReviewItem.Outcome resolve(
-        UUID id,
-        ReviewQueue.Status decision,
-        String adminId,
-        @Nullable String note,
-        @Nullable UUID batch) {
-      return super.resolve(id, decision, adminId, note, batch);
-    }
-
-    @Override
-    @Transactional(noRollbackFor = ApiProblem.class)
-    public Decision decide(
-        UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note) {
-      return super.decide(id, decision, adminId, note);
-    }
   }
 
   static class TransactionalChangeRuntimeSetting extends ChangeRuntimeSetting {

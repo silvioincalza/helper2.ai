@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.research.ResearchAnswer;
 import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
@@ -184,5 +185,54 @@ class ReviewBulkResearchedApiIT extends ApiTestBase {
             .singleRow();
     assertThat(resource).containsEntry("title", "Acme Notes").containsEntry("license", "MIT");
     assertThat(resource.get("pricing")).isNull();
+  }
+
+  @Test
+  void aBulkAcceptStopsAtACandidateWhoseConfirmedValueTheCatalogRefusesAndKeepsTheOnesBeforeIt()
+      throws Exception {
+    UUID good = candidate("good");
+    researched(good, ResearchAnswer.Verdict.KEEP);
+    UUID refused = candidate("refused");
+    researched(refused, ResearchAnswer.Verdict.KEEP);
+    UUID after = candidate("after");
+    researched(after, ResearchAnswer.Verdict.KEEP);
+    jdbc.sql(
+            """
+            UPDATE review_item SET details = jsonb_set(details, '{confirmed}', '{"pricing":"CHEAP"}')
+            WHERE id = :id
+            """)
+        .param("id", refused)
+        .update();
+
+    mvc.perform(
+            post("/api/v1/admin/review-items/resolutions")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"status\":\"ACCEPTED\",\"ids\":[\"%s\",\"%s\",\"%s\"]}"
+                        .formatted(good, refused, after)))
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+
+    assertThat(itemStatus(good)).isEqualTo("ACCEPTED");
+    assertThat(itemStatus(refused)).isEqualTo("OPEN");
+    assertThat(itemStatus(after)).isEqualTo("OPEN");
+    assertThat(resources(urls.get(0))).isOne();
+    assertThat(resources(urls.get(1))).isZero();
+    assertThat(resources(urls.get(2))).isZero();
+    assertThat(
+            jdbc.sql(
+                    "SELECT target_id FROM admin_audit WHERE admin_id = :a AND action = 'RESOLVE_REVIEW_ITEM'")
+                .param("a", adminId)
+                .query(String.class)
+                .list())
+        .containsExactly(good.toString());
+  }
+
+  private long resources(String url) {
+    return jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
+        .param("u", url)
+        .query(Long.class)
+        .single();
   }
 }

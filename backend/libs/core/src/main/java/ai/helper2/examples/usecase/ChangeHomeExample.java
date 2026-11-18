@@ -68,7 +68,6 @@ public class ChangeHomeExample {
       case ExampleInput.Checked.Invalid invalid -> new Outcome.Invalid(invalid.getProblems());
       case ExampleInput.Checked.Valid valid ->
           store(id, valid.getInput(), status, version, kept(current));
-      default -> throw new IllegalStateException();
     };
   }
 
@@ -92,7 +91,6 @@ public class ChangeHomeExample {
           new Outcome.Conflict(ListAdminHomeExamples.view(conflict.getCurrent(), titles));
       case HomeExamples.Changed.NotFound n -> new Outcome.NotFound();
       case HomeExamples.Changed.Duplicate d -> new Outcome.Duplicate();
-      default -> throw new IllegalStateException();
     };
   }
 

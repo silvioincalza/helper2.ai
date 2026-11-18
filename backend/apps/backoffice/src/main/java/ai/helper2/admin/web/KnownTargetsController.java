@@ -1,6 +1,5 @@
 package ai.helper2.admin.web;
 
-import ai.helper2.admin.usecase.KnownTargetAnswer;
 import ai.helper2.api.generated.KnownTargetsApi;
 import ai.helper2.api.generated.model.KnownTargetEntryDto;
 import ai.helper2.api.generated.model.KnownTargetKindDto;
@@ -77,7 +76,8 @@ class KnownTargetsController implements KnownTargetsApi {
       case ManageKnownTargets.Saved.Taken t ->
           throw new ApiProblem(
               ProblemType.DUPLICATE, t.name() + " already means " + t.holder() + ".");
-      case ManageKnownTargets.Saved.Full f -> throw KnownTargetAnswer.listIsFull();
+      case ManageKnownTargets.Saved.Full f ->
+          throw KnownTargetProblems.listIsFull(ManageKnownTargets.MAX_TARGETS);
       case ManageKnownTargets.Saved.NotFound n ->
           throw new NotFoundException("Known target not found.");
     };
