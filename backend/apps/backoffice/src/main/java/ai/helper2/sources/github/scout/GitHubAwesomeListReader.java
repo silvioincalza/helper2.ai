@@ -6,6 +6,7 @@ import ai.helper2.scout.AwesomeListReader;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.sources.support.HttpClients;
 import java.time.Clock;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.springframework.web.client.HttpClientErrorException;
@@ -26,15 +27,15 @@ public final class GitHubAwesomeListReader implements AwesomeListReader {
   }
 
   @Override
-  public Optional<Boolean> isAwesomeList(String repoFullName) {
+  public Optional<Boolean> isAwesomeList(String repoFullName, Collection<String> topics) {
     if (repoFullName == null || !REPO.matcher(repoFullName).matches()) {
       return Optional.of(false);
     }
-    if (!AwesomeLists.named(repoFullName)) {
+    if (!AwesomeLists.named(repoFullName, topics)) {
       return Optional.of(false);
     }
     try {
-      return Optional.of(AwesomeLists.isAwesomeList(repoFullName, readme(repoFullName)));
+      return Optional.of(AwesomeLists.isAwesomeList(repoFullName, topics, readme(repoFullName)));
     } catch (HttpClientErrorException.NotFound e) {
       return Optional.of(false);
     } catch (SourceFailure.Unavailable e) {

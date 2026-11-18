@@ -104,10 +104,15 @@ Two kinds of source need more care:
      resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
      §3). That is why every path to it passes the README rule. Other sources that see a GitHub repository have no
      README at hand and keep their own type, so a repository a record wrongly calls ARTICLE still takes their type.
-   - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` reads the README of every catalog resource at
-     `github.com/<owner>/awesome…` that is not `AWESOME_LIST` yet (at most 2000, most popular first), applies the rule,
-     and sets the curated type `AWESOME_LIST` with a `SET_FIELD` audit entry that holds the type before and after. A type
-     an admin curated is never changed.
+   - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` (`CheckAwesomeLists`) reads the README of every
+     catalog resource at `github.com/<owner>/<repo>` that is not `AWESOME_LIST` yet and that the rule names: the
+     repository name starts with "awesome" or "best-of-", or a record of the resource carries the tag `awesome-list`
+     (at most 2000, most popular first). The SQL (`JdbcAwesomeListSuspects`) reads the tags from `source_record.extra`,
+     where the GitHub collectors put the repository's topics, all of them and in any case. The tags go with each
+     suspect to the reader, which applies the same rule. A list that passes gets the curated type `AWESOME_LIST` with a
+     `SET_FIELD` audit entry that holds the type before and after. A type an admin curated is never changed. A list
+     known only by its topic is found only when a record of it carries its topics: a source that saw the repository
+     without them gives the backfill nothing to go on until such a record comes in.
      Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
      is counted and read at the next run.
    - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its

@@ -8,5 +8,10 @@ public interface AwesomeListSuspects {
 
   List<Suspect> suspects(int limit);
 
-  record Suspect(UUID resourceId, String repoFullName, ResourceType type, boolean typeCurated) {}
+  record Suspect(
+      UUID resourceId,
+      String repoFullName,
+      List<String> topics,
+      ResourceType type,
+      boolean typeCurated) {}
 }
