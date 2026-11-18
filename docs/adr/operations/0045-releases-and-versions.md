@@ -246,8 +246,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 - A release needs no choice of number: `release-prepare` picks it. The first release takes the number the files
   carry, so a new repository goes on from the version the repository before it reached.
 - A release is two manual runs and two merges: `release-prepare`, its version pull request, `release`, and the pull
-  request back into `main`. The version pull request is opened with the workflow token, so no CI runs on it; the push
-  after the merge runs all of CI.
+  request back into `main`. CI on the version pull request runs only `changes` and `ci-ok`: it changes the version
+  lines alone ([0044](0044-ci-cd-and-supply-chain.md) §8). The push after the merge runs all of CI.
 - The canary shares prod's Postgres and Redis. Its migrate Job changes prod's schema before the rollout, so a
   migration must keep the release before working (§11); the smoke test without the header checks that it does.
 - The canary pod runs the public app's start-up work against prod: it publishes its build to the settings the back

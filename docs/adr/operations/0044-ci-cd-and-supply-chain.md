@@ -22,7 +22,8 @@ Harbor could put an image under a tag first.
 
 ### The pipeline: CI on pull requests, staging on main, prod on a release
 1. **Continuous integration (CI) on every pull request (PR)** — `ci.yml`, GitHub-hosted runners:
-   - `changes`: the self-tests of `.github/scripts/changes.sh` and `.github/scripts/ci-ok.sh`, the branch name of
+   - `changes`: the self-tests of `.github/scripts/changes.sh`, `.github/scripts/bump-version.sh` and
+     `.github/scripts/ci-ok.sh`, the branch name of
      the pull request (`.github/scripts/branch-name.sh`, its self-test first: `<prefix>/<name>` with a prefix of its
      list, which also holds the prefixes Dependabot and the release workflows use), the ADR check
      (`scripts/adr-check.py`, its self-test first: every ADR reference in the repository names a record or a diagram
@@ -180,6 +181,10 @@ Harbor could put an image under a tag first.
 
 ### Per component: a change runs its own checks and builds its own images
 8. **One map of paths to components.** `.github/scripts/changes.sh` maps the changed paths, first match wins:
+   - a version bump alone → nothing. `bump-version.sh version-only` checks that only the version files changed,
+     and in them only the version lines, from one version to another, exactly as `bump-version.sh bump` writes
+     them. The version pull request of a release is such a change; the push to the release branch after its merge
+     runs all of CI (`full: true`) before staging and prod. A bump with any other change is mapped path by path;
    - `docs/eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
    - `frontend/index.html`, `frontend/src/routes.tsx`, `frontend/src/i18n/locales/en.json` → frontend jobs, the
      public chain of the backend (its page tests read these three files), web image and back office image;
