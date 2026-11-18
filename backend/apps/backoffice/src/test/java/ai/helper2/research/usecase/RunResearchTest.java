@@ -69,7 +69,16 @@ class RunResearchTest {
   }
 
   static ResearchTool tool(String name, Supplier<ResearchTool.Output> out) {
+    return tool(name, Integer.MAX_VALUE, out);
+  }
+
+  static ResearchTool tool(String name, int maxCallsPerRun, Supplier<ResearchTool.Output> out) {
     return new ResearchTool() {
+      @Override
+      public int maxCallsPerRun() {
+        return maxCallsPerRun;
+      }
+
       @Override
       public String name() {
         return name;
@@ -97,7 +106,9 @@ class RunResearchTest {
         "",
         List.of(
             new ResearchModel.ToolCall(
-                "c" + UUID.randomUUID(), name, "{\"url\":\"https://acme.dev\"}")),
+                "c" + UUID.randomUUID(),
+                name,
+                "{\"url\":\"https://acme.dev/" + UUID.randomUUID() + "\"}")),
         null,
         null,
         10,
@@ -249,7 +260,7 @@ class RunResearchTest {
     AtomicInteger ran = new AtomicInteger();
     List<ResearchModel.ToolCall> calls = new ArrayList<>();
     for (int i = 0; i <= RunResearch.MAX_TOOL_CALLS; i++) {
-      calls.add(new ResearchModel.ToolCall("c" + i, "check_url", "{}"));
+      calls.add(new ResearchModel.ToolCall("c" + i, "check_url", "{\"n\":" + i + "}"));
     }
     model.turns.add(new ResearchModel.Turn("", calls, null, null, 1, 1));
     model.turns.add(answer("Acme Notetaker records your meetings"));
@@ -275,6 +286,79 @@ class RunResearchTest {
         .filteredOn(s -> s.kind() == ResearchStep.Kind.TOOL_CALL && s.error() != null)
         .singleElement()
         .matches(s -> s.error().equals(RunResearch.NOT_RUN));
+    assertThat(runs.error).isNull();
+  }
+
+  @Test
+  void theSameCallTwiceIsNotRunAgainAndUsesOneOfTheToolCalls() {
+    AtomicInteger ran = new AtomicInteger();
+    String same = "{\"query\":\"acme licence\"}";
+    model.turns.add(
+        new ResearchModel.Turn(
+            "", List.of(new ResearchModel.ToolCall("a", "web_search", same)), null, null, 1, 1));
+    model.turns.add(
+        new ResearchModel.Turn(
+            "", List.of(new ResearchModel.ToolCall("b", "web_search", same)), null, null, 1, 1));
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    research(
+            tool(
+                "web_search",
+                () -> {
+                  ran.incrementAndGet();
+                  return new ResearchTool.Output("1. Acme", null);
+                }))
+        .runNext();
+
+    assertThat(ran).hasValue(1);
+    assertThat(model.seen.getLast())
+        .anyMatch(m ->
+            m instanceof ResearchModel.Message.ToolResult r
+                && r.callId().equals("b")
+                && r.text().equals(RunResearch.REPEATED));
+    assertThat(runs.steps)
+        .filteredOn(s -> s.kind() == ResearchStep.Kind.TOOL_CALL)
+        .extracting(ResearchStep::error)
+        .containsExactly(null, RunResearch.REPEATED);
+  }
+
+  @Test
+  void aToolPastItsOwnLimitForTheRunIsNotRun() {
+    AtomicInteger ran = new AtomicInteger();
+    ResearchTool search =
+        tool(
+            "web_search",
+            2,
+            () -> {
+              ran.incrementAndGet();
+              return new ResearchTool.Output("1. Acme", null);
+            });
+    for (int i = 0; i < 3; i++) {
+      model.turns.add(
+          new ResearchModel.Turn(
+              "",
+              List.of(
+                  new ResearchModel.ToolCall("s" + i, "web_search", "{\"query\":\"q" + i + "\"}")),
+              null,
+              null,
+              1,
+              1));
+    }
+    model.turns.add(answer("Acme Notetaker records your meetings"));
+    runs.queue();
+
+    research(search).runNext();
+
+    assertThat(ran).hasValue(2);
+    assertThat(model.seen.getLast())
+        .anyMatch(m ->
+            m instanceof ResearchModel.Message.ToolResult r
+                && r.callId().equals("s2")
+                && r.text().equals(RunResearch.limitReached(search)));
+    assertThat(RunResearch.limitReached(search))
+        .isEqualTo(
+            "not run: web_search is limited to 2 calls a run; use what you have read, or answer");
     assertThat(runs.error).isNull();
   }
 
