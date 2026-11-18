@@ -51,6 +51,18 @@ export function isSignInAgain(e: unknown): boolean {
   return e instanceof ApiError && e.problem?.code === SIGN_IN_AGAIN_CODE;
 }
 
+interface ProblemFilter {
+  status?: readonly number[];
+  code?: readonly string[];
+}
+
+export function problemDetail(e: unknown, only: ProblemFilter = {}): string | undefined {
+  if (!(e instanceof ApiError)) return undefined;
+  if (only.status && !only.status.includes(e.status)) return undefined;
+  if (only.code && !only.code.includes(e.problem?.code ?? '')) return undefined;
+  return e.problem?.detail || undefined;
+}
+
 export function csrfTokenFrom(cookies: string): string | undefined {
   for (const name of ['__Host-XSRF-TOKEN', 'XSRF-TOKEN']) {
     const m = new RegExp(`(?:^|;\\s*)${name}=([^;]*)`).exec(cookies);

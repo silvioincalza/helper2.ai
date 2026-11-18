@@ -6,7 +6,6 @@ import ai.helper2.catalog.usecase.ManageKnownTargets;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
-import ai.helper2.platform.ProblemType;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -66,18 +65,10 @@ public class DecideRelationshipTargetGroup {
             .openGroupName(key)
             .orElseThrow(
                 () -> new NotFoundException("No open relationship candidate has this target."));
-    switch (knownTargets.add(by, kind, name, null)) {
-      case ManageKnownTargets.Saved.Done d -> {}
-      case ManageKnownTargets.Saved.Taken t -> {}
-      case ManageKnownTargets.Saved.Full f ->
-          throw new ApiProblem(
-              ProblemType.DUPLICATE,
-              "The list holds at most " + ManageKnownTargets.MAX_TARGETS + " known targets.");
-      case ManageKnownTargets.Saved.Invalid i ->
-          throw new ApiProblem(ProblemType.INVALID_REQUEST, "This name cannot be a known target.");
-      case ManageKnownTargets.Saved.NotFound n ->
-          throw new IllegalStateException("adding a known target cannot miss one");
-    }
+    KnownTargetAnswer.requireAdded(
+        knownTargets.add(by, kind, name, null),
+        alreadyKnown -> {},
+        "This name cannot be a known target.");
   }
 
   private static int each(List<UUID> ids, Predicate<UUID> decide) {

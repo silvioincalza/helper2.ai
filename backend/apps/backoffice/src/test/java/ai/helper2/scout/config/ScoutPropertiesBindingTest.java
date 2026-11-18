@@ -37,7 +37,7 @@ class ScoutPropertiesBindingTest {
                   500,
                   400,
                   8192,
-                  new ScoutProperties.Evidence(20, Duration.ofDays(30), Duration.ofHours(24)),
+                  new ScoutProperties.Evidence(20),
                   new ScoutProperties.KnownTargets(5, 25)));
       assertThat(c.getBean(ScoutRetentionProperties.class))
           .isEqualTo(new ScoutRetentionProperties(Duration.ofDays(90)));
@@ -106,28 +106,6 @@ class ScoutPropertiesBindingTest {
           assertThat(c).hasFailed();
           assertThat(c.getStartupFailure()).rootCause().hasMessageContaining("cron");
         });
-  }
-
-  @Test
-  void aPageTextTtlOverADayStopsStartup() {
-    context
-        .withSystemProperties("H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL=P2D")
-        .run(c -> {
-          assertThat(c).hasFailed();
-          assertThat(c.getStartupFailure())
-              .rootCause()
-              .isInstanceOf(BindValidationException.class)
-              .hasMessageContaining("pageTextTtl");
-        });
-  }
-
-  @Test
-  void aPageTextTtlOfADayStarts() {
-    context
-        .withSystemProperties("H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL=P1D")
-        .run(c ->
-            assertThat(c.getBean(ScoutProperties.class).evidence().pageTextTtl())
-                .isEqualTo(Duration.ofDays(1)));
   }
 
   @Test

@@ -9,6 +9,7 @@ import { BackLink } from '@/ui/BackLink';
 import { RetryButton } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
+import { formatCount } from '@/lib/format';
 import { isActive } from './ReviewResearch';
 import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
@@ -175,7 +176,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
           {t('admin.research.trace.meta', {
             model: run.model,
             steps: steps.length,
-            tokens: tokens.toLocaleString('en'),
+            tokens: formatCount(tokens, 'en'),
           })}
         </span>
       </p>
