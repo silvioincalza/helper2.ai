@@ -320,4 +320,23 @@ class AwesomeListParserTest {
 
     assertThat(parsed.linkedItems()).isEqualTo(2);
   }
+
+  @Test
+  void aBadgeLinkedToAnotherPageIsNoLinkedItem() {
+    StringBuilder readme = new StringBuilder("# Awesome builds\n");
+    for (int i = 0; i < 20; i++) {
+      readme
+          .append("- [![status](https://img.shields.io/badge/build-passing-green)]")
+          .append("(https://ci.example.com/build/")
+          .append(i)
+          .append(")\n");
+    }
+    readme.append(
+        "- [![logo](https://img.shields.io/badge/x-y-z)](https://ci.example.com) [Runner](https://runner.example.com)\n");
+
+    AwesomeListParser.Parsed parsed =
+        AwesomeListParser.parse(readme.toString(), "acme/awesome-builds");
+
+    assertThat(parsed.linkedItems()).isEqualTo(1);
+  }
 }

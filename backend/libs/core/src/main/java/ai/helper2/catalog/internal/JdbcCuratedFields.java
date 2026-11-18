@@ -36,7 +36,7 @@ class JdbcCuratedFields implements CuratedFields {
       return Optional.empty();
     }
     return jdbc.sql(
-            "SELECT %s AS value, :field = ANY(curated_fields) AS curated FROM resource WHERE id = :id"
+            "SELECT %s AS value, :field = ANY(curated_fields) AS curated FROM resource WHERE id = :id FOR UPDATE"
                 .formatted(value))
         .param("field", field)
         .param("id", resourceId)

@@ -11,6 +11,7 @@ import ai.helper2.catalog.CatalogWriter;
 import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.internal.ReviewEvidenceFixture;
+import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceContext;
@@ -28,6 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,12 +43,16 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.OAuth2LoginRequestPostProcessor;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 class CuratedFieldApiIT extends ApiTestBase {
 
   @Autowired JdbcClient jdbc;
   @Autowired CatalogWriter writer;
   @Autowired ResourceCards cards;
+  @Autowired CurateField curate;
+  @Autowired PlatformTransactionManager transactions;
 
   ReviewEvidenceFixture fixture;
   final String adminId = "fields-" + UUID.randomUUID();
@@ -193,6 +203,41 @@ class CuratedFieldApiIT extends ApiTestBase {
             "SET pricing: " + before + " -> PAID",
             "SET pricing: PAID (curated) -> FREEMIUM",
             "SET language: en -> de");
+  }
+
+  @Test
+  void anEditWaitsForAnotherOnTheSameResourceAndRecordsTheValueItOverwrote() throws Exception {
+    TransactionTemplate tx = new TransactionTemplate(transactions);
+    CountDownLatch held = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    ExecutorService first = Executors.newSingleThreadExecutor();
+    Future<?> firstEdit =
+        first.submit(() ->
+            tx.executeWithoutResult(s -> {
+              curate.set(fixture.resource, "pricing", "PAID", adminId);
+              held.countDown();
+              awaitQuietly(release);
+            }));
+    assertThat(held.await(10, TimeUnit.SECONDS)).isTrue();
+    Thread second = new Thread(() -> curate.set(fixture.resource, "pricing", "FREEMIUM", adminId));
+    second.start();
+    second.join(500);
+
+    assertThat(second.isAlive()).isTrue();
+
+    release.countDown();
+    firstEdit.get(10, TimeUnit.SECONDS);
+    second.join(10_000);
+    first.shutdown();
+    assertThat(changes()).contains("SET pricing: PAID (curated) -> FREEMIUM");
+  }
+
+  private static void awaitQuietly(CountDownLatch latch) {
+    try {
+      latch.await(10, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Test

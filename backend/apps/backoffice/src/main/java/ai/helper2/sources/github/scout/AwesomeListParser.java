@@ -192,6 +192,9 @@ final class AwesomeListParser {
     private static final Pattern HTML_ITEM = Pattern.compile("(?i)^\\s*<li\\b");
     private static final Pattern IMAGE =
         Pattern.compile("!\\[[^\\]]{0,300}\\]\\([^)]{0,2000}\\)|(?i)<img\\b[^>]{0,2000}>");
+    private static final Pattern LINKED_IMAGE =
+        Pattern.compile(
+            "\\[\\s*(?:!\\[[^\\]]{0,300}\\]\\([^)]{0,2000}\\)|(?i)<img\\b[^>]{0,2000}>)\\s*\\]\\([^)]{0,2000}\\)");
     private static final Pattern WEB = Pattern.compile("(?i)https?://");
 
     private int textLines;
@@ -244,7 +247,8 @@ final class AwesomeListParser {
 
     private static boolean web(String line) {
       String cut = MarkdownText.cut(line, MarkdownText.MAX_RAW);
-      return WEB.matcher(IMAGE.matcher(cut).replaceAll(" ")).find();
+      String noBadges = LINKED_IMAGE.matcher(cut).replaceAll(" ");
+      return WEB.matcher(IMAGE.matcher(noBadges).replaceAll(" ")).find();
     }
 
     private static int indent(String line) {
