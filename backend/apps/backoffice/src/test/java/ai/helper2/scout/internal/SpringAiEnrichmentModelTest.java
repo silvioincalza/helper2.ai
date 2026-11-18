@@ -310,8 +310,8 @@ class SpringAiEnrichmentModelTest {
   void theWordingOfThePromptIsPinnedToItsLabel() {
     assertThat(ModelCallMetrics.promptVersion(SpringAiEnrichmentModel.systemPrompt()))
         .as("a new wording of %s needs a new PROMPT_VERSION", SpringAiEnrichmentModel.PROMPT)
-        .isEqualTo("9bb395ef");
-    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v11");
+        .isEqualTo("128470b5");
+    assertThat(SpringAiEnrichmentModel.PROMPT_VERSION).isEqualTo("enrich-v12");
     assertThat(SpringAiEnrichmentModel.systemPrompt()).contains("AWESOME_LIST");
   }
 
