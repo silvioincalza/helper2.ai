@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.ProblemType;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -136,5 +137,21 @@ class ReviewItemsApiIT extends ApiTestBase {
   void refusesPagesLargerThanOneHundred() throws Exception {
     mvc.perform(get("/api/v1/admin/review-items").param("size", "101").with(ADMIN))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void aPageOrACategoryOutsideTheBoundsOfTheContractIsABadRequest() throws Exception {
+    for (String[] outside :
+        new String[][] {
+          {"size", "101"},
+          {"size", "0"},
+          {"size", "-1"},
+          {"page", "-1"},
+          {"category", "Not a tag"},
+          {"category", "a".repeat(41)}
+        }) {
+      mvc.perform(get("/api/v1/admin/review-items").param(outside[0], outside[1]).with(ADMIN))
+          .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+    }
   }
 }

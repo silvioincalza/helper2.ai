@@ -2,8 +2,6 @@ package ai.helper2.catalog.usecase;
 
 import ai.helper2.catalog.CuratedFields;
 import ai.helper2.platform.AuditTrail;
-import ai.helper2.platform.BadRequestException;
-import ai.helper2.platform.NotFoundException;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.Pricing;
 import ai.helper2.shared.ResourceType;
@@ -62,6 +60,30 @@ public class CurateField {
           "useCase",
           "platforms");
 
+  public sealed interface Outcome {
+    record Curated() implements Outcome {}
+
+    record UnknownField(String field) implements Outcome {}
+
+    record ValueNotAllowed(String field) implements Outcome {}
+
+    record InvalidDescription(int maxLength) implements Outcome {}
+
+    record NotADate() implements Outcome {}
+
+    record DateInTheFuture() implements Outcome {}
+
+    record NoSuchResource() implements Outcome {}
+  }
+
+  public sealed interface DropOutcome {
+    record Dropped(int values) implements DropOutcome {}
+
+    record NotWrittenByAi(String field) implements DropOutcome {}
+
+    record NoSuchResource() implements DropOutcome {}
+  }
+
   private final CuratedFields fields;
   private final AuditTrail audit;
   private final Clock clock;
@@ -72,51 +94,65 @@ public class CurateField {
     this.clock = clock;
   }
 
-  public void set(UUID resourceId, String field, String value, String by) {
+  public Outcome set(UUID resourceId, String field, String value, String by) {
     if ("description".equals(field)) {
-      setDescription(resourceId, value, false, by);
-      return;
+      return setDescription(resourceId, value, false, by);
     }
     if ("publishedAt".equals(field)) {
-      setPublished(resourceId, publishedDate(value), by);
-      return;
+      return setPublishedOn(resourceId, value, by);
     }
     Rule rule = FIELDS.get(field);
     if (rule == null) {
-      throw new BadRequestException("This field cannot be set: " + field + ".");
+      return new Outcome.UnknownField(field);
     }
     String v = value == null ? "" : value.strip();
     if (!rule.allowed().test(v)) {
-      throw new BadRequestException("This value is not allowed for " + field + ".");
+      return new Outcome.ValueNotAllowed(field);
     }
     String before = before(resourceId, field);
     if (!fields.set(resourceId, field, rule.column(), "open_source".equals(rule.column()), v)) {
-      throw new NotFoundException("Resource not found.");
+      return new Outcome.NoSuchResource();
     }
     fields.rejectAiValues(resourceId, field);
     record(resourceId, "SET " + field, before, v, by);
+    return new Outcome.Curated();
   }
 
-  public void setDescription(UUID resourceId, String description, boolean writtenByAi, String by) {
+  public Outcome setDescription(
+      UUID resourceId, String description, boolean writtenByAi, String by) {
     String d = description == null ? "" : description.strip();
     if (d.isEmpty() || d.length() > MAX_DESCRIPTION) {
-      throw new BadRequestException(
-          "The description must be 1 to " + MAX_DESCRIPTION + " characters.");
+      return new Outcome.InvalidDescription(MAX_DESCRIPTION);
     }
     String origin = writtenByAi ? "AI_SUMMARY" : "CURATED";
     String before = before(resourceId, "description");
     if (!fields.setDescription(resourceId, d, origin)) {
-      throw new NotFoundException("Resource not found.");
+      return new Outcome.NoSuchResource();
     }
     record(resourceId, "SET description " + origin, before, d, by);
+    return new Outcome.Curated();
   }
 
-  public void setPublished(UUID resourceId, LocalDate publishedAt, String by) {
+  public Outcome setPublished(UUID resourceId, LocalDate publishedAt, String by) {
     String before = before(resourceId, "publishedAt");
     if (!fields.setPublished(resourceId, publishedAt)) {
-      throw new NotFoundException("Resource not found.");
+      return new Outcome.NoSuchResource();
     }
     record(resourceId, "SET publishedAt", before, publishedAt.toString(), by);
+    return new Outcome.Curated();
+  }
+
+  private Outcome setPublishedOn(UUID resourceId, String value, String by) {
+    LocalDate date;
+    try {
+      date = LocalDate.parse(value == null ? "" : value.strip());
+    } catch (DateTimeParseException e) {
+      return new Outcome.NotADate();
+    }
+    if (date.isAfter(LocalDate.now(clock.withZone(ZoneOffset.UTC)).plusDays(1))) {
+      return new Outcome.DateInTheFuture();
+    }
+    return setPublished(resourceId, date, by);
   }
 
   private @Nullable String before(UUID resourceId, String field) {
@@ -144,12 +180,12 @@ public class CurateField {
     return cut + suffix;
   }
 
-  public int drop(UUID resourceId, String field, String by) {
+  public DropOutcome drop(UUID resourceId, String field, String by) {
     if (!AI_FIELDS.contains(field)) {
-      throw new BadRequestException("The AI writes no such field.");
+      return new DropOutcome.NotWrittenByAi(field);
     }
     if (!fields.exists(resourceId)) {
-      throw new NotFoundException("Resource not found.");
+      return new DropOutcome.NoSuchResource();
     }
     int dropped = fields.rejectAiValues(resourceId, field);
     audit.record(
@@ -157,20 +193,7 @@ public class CurateField {
         AuditTrail.Action.DROP_FIELD,
         resourceId.toString(),
         "DROPPED " + field + " " + dropped);
-    return dropped;
-  }
-
-  private LocalDate publishedDate(String value) {
-    LocalDate date;
-    try {
-      date = LocalDate.parse(value == null ? "" : value.strip());
-    } catch (DateTimeParseException e) {
-      throw new BadRequestException("The published date must be YYYY-MM-DD.");
-    }
-    if (date.isAfter(LocalDate.now(clock.withZone(ZoneOffset.UTC)).plusDays(1))) {
-      throw new BadRequestException("The published date is in the future.");
-    }
-    return date;
+    return new DropOutcome.Dropped(dropped);
   }
 
   private static <E extends Enum<E>> boolean isOneOf(Class<E> type, String v) {

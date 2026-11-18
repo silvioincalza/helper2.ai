@@ -156,14 +156,35 @@ class ReviewController implements ReviewApi {
   @Override
   public ResponseEntity<Void> setResourceField(
       UUID id, ResourceFieldDto field, ResourceFieldValueDto body) {
-    curateField.set(id, field.getValue(), body.getValue(), Admins.id());
-    return ResponseEntity.noContent().build();
+    return switch (curateField.set(id, field.getValue(), body.getValue(), Admins.id())) {
+      case CurateField.Outcome.Curated curated -> ResponseEntity.noContent().build();
+      case CurateField.Outcome.UnknownField unknown ->
+          throw new BadRequestException("This field cannot be set: " + unknown.field() + ".");
+      case CurateField.Outcome.ValueNotAllowed value ->
+          throw new BadRequestException("This value is not allowed for " + value.field() + ".");
+      case CurateField.Outcome.InvalidDescription description ->
+          throw new BadRequestException(
+              "The description must be 1 to " + description.maxLength() + " characters.");
+      case CurateField.Outcome.NotADate notADate ->
+          throw new BadRequestException("The published date must be YYYY-MM-DD.");
+      case CurateField.Outcome.DateInTheFuture future ->
+          throw new BadRequestException("The published date is in the future.");
+      case CurateField.Outcome.NoSuchResource missing -> throw resourceNotFound();
+    };
   }
 
   @Override
   public ResponseEntity<Void> dropResourceField(UUID id, ResourceFieldDto field) {
-    curateField.drop(id, field.getValue(), Admins.id());
-    return ResponseEntity.noContent().build();
+    return switch (curateField.drop(id, field.getValue(), Admins.id())) {
+      case CurateField.DropOutcome.Dropped dropped -> ResponseEntity.noContent().build();
+      case CurateField.DropOutcome.NotWrittenByAi notByAi ->
+          throw new BadRequestException("The AI writes no such field.");
+      case CurateField.DropOutcome.NoSuchResource missing -> throw resourceNotFound();
+    };
+  }
+
+  private static NotFoundException resourceNotFound() {
+    return new NotFoundException("Resource not found.");
   }
 
   @Override
@@ -235,8 +256,33 @@ class ReviewController implements ReviewApi {
   @Override
   public ResponseEntity<ReviewEvidenceDto> changeRelationshipTarget(
       UUID id, RelationshipTargetChangeDto body) {
-    changeTarget.change(id, target(body), Admins.id());
-    return getReviewEvidence(id);
+    return switch (changeTarget.change(id, target(body), Admins.id())) {
+      case ChangeRelationshipTarget.Outcome.Changed changed -> getReviewEvidence(id);
+      case ChangeRelationshipTarget.Outcome.InvalidName name ->
+          throw new BadRequestException(
+              "The name must be 1 to " + name.maxLength() + " characters.");
+      case ChangeRelationshipTarget.Outcome.InvalidResourceTitle title ->
+          throw new BadRequestException(
+              "The name must be 1 to " + title.maxLength() + " characters.");
+      case ChangeRelationshipTarget.Outcome.InvalidResourceUrl url ->
+          throw new BadRequestException("The address must be the resource's own https address.");
+      case ChangeRelationshipTarget.Outcome.InvalidResourceType type ->
+          throw new BadRequestException("A relationship can point only at a tool or a model.");
+      case ChangeRelationshipTarget.Outcome.NotFound notFound ->
+          throw new NotFoundException("Review item not found.");
+      case ChangeRelationshipTarget.Outcome.NotOpen notOpen ->
+          throw new ApiProblem(ProblemType.ALREADY_DECIDED, "The item is no longer open.");
+      case ChangeRelationshipTarget.Outcome.NotARelationship other ->
+          throw new ApiProblem(
+              ProblemType.NOT_APPLICABLE, "The item is not a relationship candidate.");
+      case ChangeRelationshipTarget.Outcome.TitleTaken taken ->
+          throw new ApiProblem(
+              ProblemType.DUPLICATE, "The resource already has a relationship with this target.");
+      case ChangeRelationshipTarget.Outcome.UnknownTarget unknown ->
+          throw new BadRequestException("No resource has this id.");
+      case ChangeRelationshipTarget.Outcome.SelfLink self ->
+          throw new BadRequestException("A resource cannot point at itself.");
+    };
   }
 
   private static ChangeRelationshipTarget.Target target(RelationshipTargetChangeDto body) {

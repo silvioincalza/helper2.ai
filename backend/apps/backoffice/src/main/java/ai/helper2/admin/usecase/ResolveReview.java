@@ -135,16 +135,24 @@ public class ResolveReview {
   private void applyConfirmed(AcceptOutcome.Indexed indexed, String adminId) {
     indexed
         .getConfirmed()
-        .forEach((field, value) -> {
-          switch (field) {
-            case "description" ->
-                curate.setDescription(
-                    indexed.getId(), value, indexed.getDescriptionByAi(), adminId);
-            case "publishedAt" ->
-                curate.setPublished(indexed.getId(), LocalDate.parse(value), adminId);
-            default -> curate.set(indexed.getId(), field, value, adminId);
-          }
-        });
+        .forEach((field, value) -> requireCurated(field, confirm(indexed, field, value, adminId)));
+  }
+
+  private CurateField.Outcome confirm(
+      AcceptOutcome.Indexed indexed, String field, String value, String adminId) {
+    return switch (field) {
+      case "description" ->
+          curate.setDescription(indexed.getId(), value, indexed.getDescriptionByAi(), adminId);
+      case "publishedAt" -> curate.setPublished(indexed.getId(), LocalDate.parse(value), adminId);
+      default -> curate.set(indexed.getId(), field, value, adminId);
+    };
+  }
+
+  private static void requireCurated(String field, CurateField.Outcome outcome) {
+    if (!(outcome instanceof CurateField.Outcome.Curated)) {
+      throw new IllegalStateException(
+          "the catalog refused the confirmed " + field + ": " + outcome);
+    }
   }
 
   private void addKnownTarget(ReviewQueue.Item item, String adminId) {

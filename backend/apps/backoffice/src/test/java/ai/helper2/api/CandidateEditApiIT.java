@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
@@ -270,6 +271,40 @@ class CandidateEditApiIT extends ApiTestBase {
             "SET_FIELD SET description AI_SUMMARY",
             "SET_FIELD SET publishedAt",
             "SET_FIELD SET pricing");
+  }
+
+  @Test
+  void anAcceptWhoseConfirmedValueTheCatalogRefusesAddsNothingAndLeavesTheItemOpen()
+      throws Exception {
+    jdbc.sql(
+            """
+            UPDATE review_item SET details = jsonb_set(details, '{confirmed}', '{"pricing":"CHEAP"}')
+            WHERE id = :id
+            """)
+        .param("id", item)
+        .update();
+
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(problem(ProblemType.INTERNAL, "Something went wrong on our side."));
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(
+            jdbc.sql("SELECT status FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo("OPEN");
+    assertThat(audit()).isEmpty();
   }
 
   @Test

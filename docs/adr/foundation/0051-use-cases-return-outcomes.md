@@ -28,42 +28,56 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 1. **A use case returns an outcome for every result its caller must tell apart.** The outcome is a sealed interface
    named `Outcome`, nested in the use case, with one record per case: `AddBookmark.Outcome` is `Added`, `InvalidUrl`
    or `OverLimit`; `MergeLocalBookmarks.Outcome` is `Merged`, `InvalidUrl` or `OverLimit`; `ChangePreferences.Outcome`
-   is `Changed` or `NoSuchUser`. A use case with one result returns it plainly (`ListBookmarks`, `ListAuditEntries`).
+   is `Changed` or `NoSuchUser`; `CurateField.Outcome` is `Curated`, `UnknownField`, `ValueNotAllowed`,
+   `InvalidDescription`, `NotADate`, `DateInTheFuture` or `NoSuchResource`. A use case with two actions that end in
+   different ways has one type per action: `CurateField.set` answers `Outcome`, `CurateField.drop` answers
+   `DropOutcome`. A use case with one result returns it plainly (`ListBookmarks`, `ListAuditEntries`,
+   `ListReviewItems`).
 2. **A record carries data, never a sentence and never a status.** `OverLimit(limit)` holds the cap, `Added(bookmark)`
    the saved row. The words for the user and the HTTP status are the web layer's.
 3. **No use case and no domain class speaks HTTP.** A class of a `usecase` package or of a domain package does not
    depend on `ApiProblem`, on a subtype of it (`NotFoundException`, `BadRequestException`), on `ProblemType` or on
-   `Problems`. A bug still throws, and is a 500. `SignInAgain`, the problem of a session without an account
+   `Problems`. A bug still throws, and is a 500: `ResolveReviewItem` throws `IllegalArgumentException` for a decision
+   that is not ACCEPTED or REJECTED, which the contract lets no request send. `SignInAgain`, the problem of a session without an account
    ([0036](../identity/0036-identity-and-the-admin-host.md) §6), is in `identity.internal`, next to the adapter that
    throws it (`SignedInUser`).
 4. **The controller maps the outcome with one exhaustive `switch`.** Every case is named, with no `default`, so a new
    case does not compile until the controller answers it. A refusal is thrown there as the `ApiProblem` it is, and
    `ApiExceptionHandler` stays the one writer of the problem response: `BookmarksController` throws
    `BadRequestException` for `InvalidUrl` and `OverLimit`, `PreferencesController` throws
-   `ApiProblem(SIGN_IN_REQUIRED)` for `NoSuchUser`.
+   `ApiProblem(SIGN_IN_REQUIRED)` for `NoSuchUser`, `ReviewController` maps `CurateField.Outcome`,
+   `CurateField.DropOutcome` and `ChangeRelationshipTarget.Outcome`. A use case that calls another use case maps its
+   outcome the same way, into its own: `ChangeRelationshipTarget` turns `AddCuratedResource.Outcome.InvalidUrl` into
+   its `InvalidResourceUrl`.
 5. **A refusal after a write is a `Refused` record, and it runs in a unit of work.** `Refused` is a marker interface
    of the kernel (`ai.helper2.shared`). `TransactionalUnitOfWork.run` looks at the result of the work: when it is
    `Refused` and this unit opened the transaction, the transaction is rolled back and the result is returned. A unit
    that joined a transaction never marks it: the unit that opened it decides. An exception rolls the transaction back and is thrown again.
    `AddBookmark` and `MergeLocalBookmarks` check the address first, with no transaction, then lock the account, insert
    and count inside `UnitOfWork.run`; `OverLimit` is `Refused`, so nothing of a refused addition or merge is kept.
+   `ChangeRelationshipTarget` runs in `UnitOfWork.run` too: it can add a resource (`AddCuratedResource`) and then find
+   that the item cannot take the link, so `NotFound`, `NotOpen`, `NotARelationship`, `TitleTaken`, `UnknownTarget`
+   and `SelfLink` are `Refused` and the added resource is undone. A use case with no write to undo needs
+   neither, and keeps the `@Transactional` subclass of its wiring: `CurateField` refuses before any write, and
+   `ResolveReviewItem` keeps what it wrote (the audit line of a decision on an item that is no longer open).
    `UnitOfWorkConfiguration` makes the one `UnitOfWork` bean in both apps: the bookmarks are a use case of the public
    app.
 6. **A bound the contract states is not checked again.** The contract gives `page` a minimum of 0 and `size` 1 to 100
    on `GET /api/v1/admin/audit`, the generated interface carries them as constraints, and Spring answers 400 before
-   the controller runs. `ListAuditEntries` reads the page it is asked for.
+   the controller runs. `ListAuditEntries` reads the page it is asked for. `GET /api/v1/admin/review-items` states
+   `page`, `size` and the pattern and length of `category` the same way, so `ListReviewItems` checks none of them.
 7. **The rule is a test, and its list only gets shorter.** `ModularityRules.useCasesDoNotSpeakHttp` runs in the
    `ModularityTest` of each app ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8). It
-   skips the classes named in `STILL_THROWING`, with their nested classes: five of `catalog.usecase`
-   (`AddCuratedResource`, `ChangeRelationshipTarget`, `CurateField`, `ListReviewItems`, `ResolveReviewItem`) and seven
-   of `admin.usecase` (`ChangeRuntimeSetting`, `DecideRelationshipItem`, `DecideRelationshipTargetGroup`,
+   skips the classes named in `STILL_THROWING`, with their nested classes: seven of `admin.usecase`
+   (`ChangeRuntimeSetting`, `DecideRelationshipItem`, `DecideRelationshipTargetGroup`,
    `KnownTargetAnswer`, `ListEnrichmentQueue`, `ResolveReview`, `ResolveReviewItems`). A second test,
    `everyClassInStillThrowingStillSpeaksHttp`, fails when a named class no longer depends on one of the HTTP types:
    the name must then leave the list. A named class that an app does not have (the public app has no `admin`) is not
    checked there. No class outside the list can start to throw.
 8. **The response does not depend on where the rule lives.** Status, problem `type`, `code`, `title` and `detail` of
-   every identity endpoint are the same with an outcome as with a throw; the API tests of the account, the bookmarks,
-   the preferences and the audit trail pin them.
+   every identity and catalog endpoint are the same with an outcome as with a throw; the API tests of the account,
+   the bookmarks, the preferences, the audit trail, the review queue, the curated fields and the relationship targets
+   pin them.
 
 ### Code
 
@@ -73,14 +87,22 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 - `backend/libs/core/src/main/java/ai/helper2/identity/usecase/` (`AddBookmark`, `MergeLocalBookmarks`,
   `BookmarkRules`, `ChangePreferences`, `ListAuditEntries`) — the outcomes;
   `.../identity/config/IdentityUseCaseConfiguration.java` — the wiring; `.../identity/internal/SignInAgain.java`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/` (`AddCuratedResource`, `ChangeRelationshipTarget`,
+  `CurateField`, `ListReviewItems`, `ResolveReviewItem`) — the outcomes;
+  `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java` — the wiring.
 - `backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java`, `PreferencesController.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/identity/web/AuditController.java` — the mapping.
+  `backend/apps/backoffice/src/main/java/ai/helper2/identity/web/AuditController.java`,
+  `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java` — the mapping.
+- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (`requireCurated`),
+  `CheckAwesomeLists.java` (`setAsAwesomeList`) — the use cases that read the outcome of `CurateField`.
 - `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the rule and
   `STILL_THROWING`.
 - Tests: `TransactionalUnitOfWorkTest` (rollback for a `Refused` result, a joined transaction is not marked),
   `BookmarkOutcomesTest`, `ChangePreferencesTest`, `PreferencesControllerTest`, `BookmarkCapIT` (the outcome and the
   rows after a refusal, two additions at once), `AccountApiIT`, `AdminAuditApiIT` (a page outside the bounds is a
-  400).
+  400), `CurateFieldTest`, `ChangeRelationshipTargetIT` (the outcome and the rows after a refused link),
+  `CheckAwesomeListsTest`, `CuratedFieldApiIT`, `RelationshipTargetApiIT` and `ReviewItemsApiIT` (the problem of
+  every refusal), `CandidateEditApiIT` (a confirmed value the catalog refuses).
 
 ## Alternatives considered
 
@@ -108,13 +130,19 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 
 ### Known limits
 
-- Twelve classes are in `STILL_THROWING`. Until they are converted, two wirings of the back office keep
+- Seven classes are in `STILL_THROWING`. Until they are converted, two wirings of the back office keep
   `@Transactional(noRollbackFor = ApiProblem.class)` (`AdminUseCaseConfiguration`).
 - A `Refused` result inside a transaction this unit joined does not roll back: the caller that opened the
   transaction must look at the outcome. `TransactionalUnitOfWorkTest` holds both halves of the rule.
 - A refusal must be the top-level result of the unit. A `Refused` value wrapped in another result (an `Optional`, a
   record) is committed: `TransactionalUnitOfWorkTest` pins it. `ModularityRules` holds the pairing: a class that
   declares a `Refused` outcome depends on `UnitOfWork`.
+- `ResolveReview` opens the transaction in which `CurateField` writes the values an admin confirmed on a candidate.
+  Its transaction does not roll back for an `ApiProblem`, so it throws `IllegalStateException` when `CurateField`
+  refuses one: the answer is a 500, the indexed resource is undone and the item stays open. Such a value is in a
+  candidate only when the rules of `EditCandidate` and of `CurateField` differ
+  ([#742](https://github.com/silvioincalza/helper2.ai/issues/742)).
+- `CheckAwesomeLists` does not set a resource that is gone when its turn comes, and goes on with the next one.
 - `Refused` undoes the whole unit. A use case that must keep one write and undo another needs two units.
 - The second test does not see a name of a class no app has: a renamed class leaves a dead name in the list. The
   back office has every class of the list, so the name fails there only when the class exists and is clean.
@@ -132,5 +160,4 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 - Features: [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (use cases return an outcome, and the web
   layer maps it to a problem, [S1.11.22](https://github.com/silvioincalza/helper2.ai/issues/726)).
 - Open issues that change this decision:
-  - [#740](https://github.com/silvioincalza/helper2.ai/issues/740) T1.11.1 The `catalog` use cases return outcomes
   - [#742](https://github.com/silvioincalza/helper2.ai/issues/742) T1.11.2 The `admin` use cases return outcomes, and no transaction needs `noRollbackFor`

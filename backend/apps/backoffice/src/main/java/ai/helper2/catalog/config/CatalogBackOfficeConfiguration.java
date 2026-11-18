@@ -34,6 +34,7 @@ import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.shared.CategoryCatalog;
+import ai.helper2.shared.UnitOfWork;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Clock;
 import java.time.Duration;
@@ -86,8 +87,11 @@ public class CatalogBackOfficeConfiguration {
 
   @Bean
   ChangeRelationshipTarget changeRelationshipTarget(
-      RelationshipTargets targets, AddCuratedResource add, AuditTrail audit) {
-    return new TransactionalChangeRelationshipTarget(targets, add, audit);
+      RelationshipTargets targets,
+      AddCuratedResource add,
+      AuditTrail audit,
+      UnitOfWork unitOfWork) {
+    return new ChangeRelationshipTarget(targets, add, audit, unitOfWork);
   }
 
   @Bean
@@ -226,20 +230,6 @@ public class CatalogBackOfficeConfiguration {
     }
   }
 
-  static class TransactionalChangeRelationshipTarget extends ChangeRelationshipTarget {
-
-    TransactionalChangeRelationshipTarget(
-        RelationshipTargets targets, AddCuratedResource add, AuditTrail audit) {
-      super(targets, add, audit);
-    }
-
-    @Override
-    @Transactional
-    public void change(UUID itemId, Target target, String by) {
-      super.change(itemId, target, by);
-    }
-  }
-
   static class TransactionalCurateField extends CurateField {
 
     TransactionalCurateField(CuratedFields fields, AuditTrail audit, Clock clock) {
@@ -248,26 +238,26 @@ public class CatalogBackOfficeConfiguration {
 
     @Override
     @Transactional
-    public void set(UUID resourceId, String field, String value, String by) {
-      super.set(resourceId, field, value, by);
+    public Outcome set(UUID resourceId, String field, String value, String by) {
+      return super.set(resourceId, field, value, by);
     }
 
     @Override
     @Transactional
-    public void setDescription(
+    public Outcome setDescription(
         UUID resourceId, String description, boolean writtenByAi, String by) {
-      super.setDescription(resourceId, description, writtenByAi, by);
+      return super.setDescription(resourceId, description, writtenByAi, by);
     }
 
     @Override
     @Transactional
-    public void setPublished(UUID resourceId, LocalDate publishedAt, String by) {
-      super.setPublished(resourceId, publishedAt, by);
+    public Outcome setPublished(UUID resourceId, LocalDate publishedAt, String by) {
+      return super.setPublished(resourceId, publishedAt, by);
     }
 
     @Override
     @Transactional
-    public int drop(UUID resourceId, String field, String by) {
+    public DropOutcome drop(UUID resourceId, String field, String by) {
       return super.drop(resourceId, field, by);
     }
   }
