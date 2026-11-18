@@ -239,7 +239,8 @@ another person's words.
   run's model of an assertion and a relationship.
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt`: `ValueOrigin.isAiWritten`, `isFromAModel`.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
-- `frontend/src/lib/aiMark.ts`: the page attributes (`aiMark`, `aiSource`); used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
+- `frontend/src/lib/aiMark.ts`: the AI origins (`AI_ORIGIN`, `isAiOrigin`) and the page attributes (`aiMark`, `aiMarkWhen`, `aiModel`,
+  `aiProvider`, `aiSource`, `aiSourceWithModels`): no other file writes a `data-ai-*` attribute. Used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
   `GuidePicks.tsx`, `Understood.tsx`, `Results.tsx`, `ResultRow.tsx`, `Resource.tsx`, `ResultsTimeline.tsx`,
   `FieldStates.tsx`, `ResourcePage.tsx`, `SetupGuide.tsx`. `GuideAnswer.tsx` also has `PlannedQueries` and
   `RemovedList`.

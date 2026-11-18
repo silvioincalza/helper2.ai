@@ -71,7 +71,7 @@ class TokenRedirectTest {
     return t.create()
         .apply(
             new SourceSettings(
-                true, configured.baseUrl(), TOKEN, Duration.ofSeconds(2), Duration.ZERO),
+                true, configured.baseUrl(), TOKEN, Duration.ofSeconds(2), Duration.ZERO, null),
             TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP));
   }
 

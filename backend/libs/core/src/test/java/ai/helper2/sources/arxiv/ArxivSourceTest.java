@@ -46,7 +46,8 @@ class ArxivSourceTest {
 
   ArxivSource source() {
     return new ArxivSource(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofHours(6)),
+        new SourceSettings(
+            true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofHours(6), null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         throttle);

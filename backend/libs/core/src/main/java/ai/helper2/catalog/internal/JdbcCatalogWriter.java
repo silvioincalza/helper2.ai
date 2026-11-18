@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.apache.commons.lang3.EnumUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -572,7 +573,7 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
                       rs.getString("title"),
                       rs.getString("description"),
                       textArray(rs, "tags"),
-                      ResourceRows.enumOrNull(ResourceType.class, rs.getString("type")),
+                      EnumUtils.getEnum(ResourceType.class, rs.getString("type")),
                       textArray(rs, "finders"),
                       textArray(rs, "headings")));
           found.forEach(c -> labels.add(new Object[] {id, c}));

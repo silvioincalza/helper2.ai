@@ -48,11 +48,6 @@ public class ResolveReview {
       ResolveReviewItem.Outcome outcome, @Nullable ListedResource alreadyListed) {}
 
   public ResolveReviewItem.Outcome resolve(
-      UUID id, ReviewQueue.Status decision, String adminId, @Nullable String note) {
-    return resolve(id, decision, adminId, note, null);
-  }
-
-  public ResolveReviewItem.Outcome resolve(
       UUID id,
       ReviewQueue.Status decision,
       String adminId,

@@ -20,10 +20,6 @@ public interface EmbeddingStore {
     }
   }
 
-  default PendingEmbeddings pendingEmbeddings(String model, int limit) {
-    return pendingEmbeddings(model, limit, List.of());
-  }
-
   PendingEmbeddings pendingEmbeddings(String model, int limit, Collection<RefusedText> skipped);
 
   Set<UUID> stillRefused(String model, Collection<RefusedText> refused);

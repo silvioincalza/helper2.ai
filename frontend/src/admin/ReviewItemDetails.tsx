@@ -2,6 +2,7 @@ import './adminText';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DraftedExample as Draft, ReviewItem } from '@/api/types';
+import { aiMark } from '@/lib/aiMark';
 import { safeHref } from '@/lib/format';
 import { CATEGORY_NOTICES, CategoryNotice } from '@/features/sources/DiscoveryCategories';
 import { CandidateEditForm } from './CandidateEditForm';
@@ -131,11 +132,7 @@ function DraftedExample({
   const { t } = useTranslation();
   if (!draft) return details ? <p className="h2-admin__details">{details}</p> : null;
   return (
-    <dl
-      className="h2-admin__details h2-admin__draft"
-      data-ai-generated="true"
-      data-ai-model={draft.model}
-    >
+    <dl className="h2-admin__details h2-admin__draft" {...aiMark(draft.model)}>
       <dt>{t('admin.review.drafted.label')}</dt>
       <dd>{draft.label}</dd>
       <dt>{t('admin.review.drafted.query')}</dt>

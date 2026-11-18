@@ -18,20 +18,6 @@ public class ListReviewItems {
   private static final Pattern CATEGORY = Pattern.compile("[a-z0-9]+(-[a-z0-9]+)*");
 
   public ReviewQueue.Page list(
-      ReviewQueue.Status status, ReviewQueue.Kind kind, int page, int size) {
-    return list(status, kind, null, page, size);
-  }
-
-  public ReviewQueue.Page list(
-      ReviewQueue.Status status,
-      ReviewQueue.Kind kind,
-      @Nullable String category,
-      int page,
-      int size) {
-    return list(status, kind, category, null, page, size);
-  }
-
-  public ReviewQueue.Page list(
       ReviewQueue.Status status,
       ReviewQueue.Kind kind,
       @Nullable String category,

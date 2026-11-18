@@ -1,5 +1,7 @@
 package ai.helper2.admin;
 
+import static ai.helper2.admin.BulkDecisionRule.Research.KEEP_WITHOUT_CONFLICT;
+import static ai.helper2.admin.BulkDecisionRule.Research.NOT_KEEP;
 import static ai.helper2.catalog.ReviewQueue.Status.ACCEPTED;
 import static ai.helper2.catalog.ReviewQueue.Status.OPEN;
 import static ai.helper2.catalog.ReviewQueue.Status.REJECTED;
@@ -17,18 +19,40 @@ class BulkDecisionRuleTest {
   @ParameterizedTest
   @EnumSource(Kind.class)
   void rejectingIsAllowedForEveryKind(Kind kind) {
-    assertThat(BulkDecisionRule.allows(REJECTED, kind, List.of("pricing"))).isTrue();
+    assertThat(BulkDecisionRule.allows(REJECTED, kind, List.of("pricing"), NOT_KEEP)).isTrue();
   }
 
   @ParameterizedTest
   @EnumSource(value = Kind.class, names = "ENRICHMENT_VALIDATION", mode = EnumSource.Mode.EXCLUDE)
-  void acceptingIsRefusedForEveryKindThatAddsPublishesOrClosesAReport(Kind kind) {
-    assertThat(BulkDecisionRule.allows(ACCEPTED, kind, List.of())).isFalse();
+  void acceptingIsRefusedForEveryKindWithoutAResearchedKeep(Kind kind) {
+    assertThat(BulkDecisionRule.allows(ACCEPTED, kind, List.of(), NOT_KEEP)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Kind.class,
+      names = {"RESOURCE_CANDIDATE", "COURSE_CANDIDATE"})
+  void aCandidateResearchedAsKeepWithoutConflictIsAccepted(Kind kind) {
+    assertThat(BulkDecisionRule.allows(ACCEPTED, kind, List.of(), KEEP_WITHOUT_CONFLICT)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Kind.class,
+      names = {
+        "RELATIONSHIP_CANDIDATE",
+        "USER_REPORT",
+        "EXAMPLE_CANDIDATE",
+        "KNOWN_TARGET_CANDIDATE"
+      })
+  void aResearchedKeepAcceptsNoOtherKind(Kind kind) {
+    assertThat(BulkDecisionRule.allows(ACCEPTED, kind, List.of(), KEEP_WITHOUT_CONFLICT)).isFalse();
   }
 
   @Test
   void acceptingAnEnrichmentCheckWithoutConflictIsAllowed() {
-    assertThat(BulkDecisionRule.allows(ACCEPTED, Kind.ENRICHMENT_VALIDATION, List.of())).isTrue();
+    assertThat(BulkDecisionRule.allows(ACCEPTED, Kind.ENRICHMENT_VALIDATION, List.of(), NOT_KEEP))
+        .isTrue();
   }
 
   @ParameterizedTest
@@ -36,7 +60,7 @@ class BulkDecisionRuleTest {
   void acceptingIsRefusedWhenTheRunConflictsOnADecisiveField(String field) {
     assertThat(
             BulkDecisionRule.allows(
-                ACCEPTED, Kind.ENRICHMENT_VALIDATION, List.of("platforms", field)))
+                ACCEPTED, Kind.ENRICHMENT_VALIDATION, List.of("platforms", field), NOT_KEEP))
         .isFalse();
   }
 
@@ -44,12 +68,15 @@ class BulkDecisionRuleTest {
   void aConflictOnAnotherFieldDoesNotBlockAccepting() {
     assertThat(
             BulkDecisionRule.allows(
-                ACCEPTED, Kind.ENRICHMENT_VALIDATION, List.of("platforms", "useCase")))
+                ACCEPTED, Kind.ENRICHMENT_VALIDATION, List.of("platforms", "useCase"), NOT_KEEP))
         .isTrue();
   }
 
   @Test
   void openIsNoDecision() {
-    assertThat(BulkDecisionRule.allows(OPEN, Kind.ENRICHMENT_VALIDATION, List.of())).isFalse();
+    assertThat(
+            BulkDecisionRule.allows(
+                OPEN, Kind.ENRICHMENT_VALIDATION, List.of(), KEEP_WITHOUT_CONFLICT))
+        .isFalse();
   }
 }

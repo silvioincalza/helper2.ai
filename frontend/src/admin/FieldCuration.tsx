@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
 import { problemDetail } from '@/api/client';
-import type { ResourceField } from '@/api/types';
+import type { ResourceField, ValueOrigin } from '@/api/types';
 import { isAiOrigin } from '@/lib/aiMark';
 
 const CHOICES: Partial<Record<ResourceField, readonly string[]>> = {
@@ -114,7 +114,7 @@ export function FieldCuration({
   resourceId: string;
   field: string;
   value: string;
-  origin: string;
+  origin: ValueOrigin;
   onChanged: () => void;
 }) {
   const { t } = useTranslation();

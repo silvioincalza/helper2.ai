@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import tools.jackson.core.JacksonException;
@@ -141,12 +143,8 @@ public final class SpringAiRepoClassifier implements RepoClassifier {
   }
 
   private static ResourceType typeOf(String value) {
-    try {
-      ResourceType t = ResourceType.valueOf(value.strip());
-      return ALLOWED.contains(t) ? t : null;
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    ResourceType type = EnumUtils.getEnum(ResourceType.class, StringUtils.strip(value));
+    return type != null && ALLOWED.contains(type) ? type : null;
   }
 
   private static String untrusted(String text) {

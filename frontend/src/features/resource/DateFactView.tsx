@@ -1,5 +1,5 @@
 import { OriginLabel } from '../../ui/Badges';
-import { aiMark } from '@/lib/aiMark';
+import { AI_ORIGIN, aiMark } from '@/lib/aiMark';
 import { useTranslation } from 'react-i18next';
 import type { DateFact } from '@/api/types';
 import { formatDate } from '@/lib/format';
@@ -62,7 +62,7 @@ export function DateFactRow({
             <span {...aiMark()}>
               <DateFactValue fact={fact} />
             </span>{' '}
-            <OriginLabel origin="AI_EXTRACTED" />
+            <OriginLabel origin={AI_ORIGIN.read} />
           </>
         ) : (
           <DateFactValue fact={fact} />

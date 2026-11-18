@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { Assertion, ResourceDetail, ValueOrigin } from '@/api/types';
-import { isAiOrigin } from '@/lib/aiMark';
+import { AI_ORIGIN, isAiOrigin } from '@/lib/aiMark';
 
 export const FIELDS = [
   'pricing',
@@ -54,15 +54,15 @@ function fromEnrichment(field: Field, assertions: Assertion[]): FieldState {
       kind: 'conflict',
       values: conflict.map((a) => ({ value: a.value, aiOrigin: a.origin })),
     };
-  for (const origin of ['AI_EXTRACTED', 'SELF_DECLARED'] as const) {
+  for (const origin of [AI_ORIGIN.read, AI_ORIGIN.declared]) {
     const verified = mine.filter((a) => a.origin === origin && a.verification === 'VERIFIED');
     if (verified.length) return { kind: 'values', values: verified.map((a) => a.value), origin };
   }
   const estimated = mine.filter(
-    (a) => a.origin === 'AI_ESTIMATED' && a.verification !== 'REJECTED',
+    (a) => a.origin === AI_ORIGIN.estimated && a.verification !== 'REJECTED',
   );
   if (estimated.length)
-    return { kind: 'values', values: estimated.map((a) => a.value), origin: 'AI_ESTIMATED' };
+    return { kind: 'values', values: estimated.map((a) => a.value), origin: AI_ORIGIN.estimated };
   return { kind: 'notStated' };
 }
 

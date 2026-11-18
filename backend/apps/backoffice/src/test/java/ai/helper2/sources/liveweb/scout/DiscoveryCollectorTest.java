@@ -118,7 +118,8 @@ class DiscoveryCollectorTest {
   DiscoveryCollector collector(
       Resilience resilience, String token, long cap, DiscoveryCategory... all) {
     return new DiscoveryCollector(
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         resilience,
@@ -429,7 +430,7 @@ class DiscoveryCollectorTest {
 
   private DiscoveryCollector secondOfTheList() {
     return new DiscoveryCollector(
-        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         Resilience.NONE,

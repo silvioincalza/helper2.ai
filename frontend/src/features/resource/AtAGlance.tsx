@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ResourceDetail } from '@/api/types';
 import { OriginLabel } from '@/ui/Badges';
 import { Icon } from '@/ui/Icon';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { DisputedValues } from './DisputedValues';
 import { fieldWord, stateOf, type Field, type FieldState } from './fieldState';
 
@@ -47,7 +47,7 @@ export function AtAGlance({
     const ai = isAiOrigin(state.origin);
     return (
       <dd>
-        <span {...(ai ? aiMark() : {})}>{words}</span> <OriginLabel origin={state.origin} />
+        <span {...aiMarkWhen(ai)}>{words}</span> <OriginLabel origin={state.origin} />
       </dd>
     );
   };

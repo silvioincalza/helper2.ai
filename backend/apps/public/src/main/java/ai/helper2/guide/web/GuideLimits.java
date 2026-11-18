@@ -72,14 +72,6 @@ class GuideLimits implements DisposableBean {
         settings.fairness().clientConcurrentQuestions());
   }
 
-  GuideLimits(Resilience resilience, Duration deadline) {
-    this(resilience, deadline, ANSWER_GRACE, Clock.systemUTC(), DEFAULT_QUESTIONS_PER_CLIENT);
-  }
-
-  GuideLimits(Resilience resilience, Duration deadline, Clock clock, int questionsPerClient) {
-    this(resilience, deadline, ANSWER_GRACE, clock, questionsPerClient);
-  }
-
   GuideLimits(
       Resilience resilience,
       Duration deadline,

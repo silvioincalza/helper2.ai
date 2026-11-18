@@ -17,7 +17,8 @@ class SourcesPropertiesTest {
         new SourcesProperties(
             Map.of(
                 "plain",
-                    new SourceSettings(true, "https://x.example", "", Duration.ofSeconds(10), ttl),
+                    new SourceSettings(
+                        true, "https://x.example", "", Duration.ofSeconds(10), ttl, null),
                 "set",
                     new SourceSettings(
                         true,
@@ -37,7 +38,8 @@ class SourcesPropertiesTest {
         new SourcesProperties(
             Map.of(
                 "no-ttl",
-                new SourceSettings(true, "https://x.example", "", Duration.ofSeconds(1), null)));
+                new SourceSettings(
+                    true, "https://x.example", "", Duration.ofSeconds(1), null, null)));
 
     assertThatThrownBy(() -> properties.get("missing"))
         .hasMessage("missing helper2.sources.missing");

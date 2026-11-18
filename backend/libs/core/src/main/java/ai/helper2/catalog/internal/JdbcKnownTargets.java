@@ -5,6 +5,7 @@ import ai.helper2.catalog.KnownTargets;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class JdbcKnownTargets implements KnownTargets {
@@ -39,7 +40,7 @@ class JdbcKnownTargets implements KnownTargets {
                 rs.getString("name_key"),
                 new KnownTarget(
                     rs.getString("name"),
-                    ResourceRows.known(
+                    EnumUtils.getEnum(
                         KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL))))
         .list();
     return named;

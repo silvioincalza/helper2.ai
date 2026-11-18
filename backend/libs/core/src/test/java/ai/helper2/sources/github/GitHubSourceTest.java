@@ -33,7 +33,7 @@ class GitHubSourceTest {
   GitHubSource source(String token) {
     return new GitHubSource(
         new SourceSettings(
-            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ofMinutes(30)),
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ofMinutes(30), null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         CLOCK);
@@ -220,7 +220,7 @@ class GitHubSourceTest {
     GitHubSource fast =
         new GitHubSource(
             new SourceSettings(
-                true, server.baseUrl(), "", Duration.ofMillis(200), Duration.ofMinutes(1)),
+                true, server.baseUrl(), "", Duration.ofMillis(200), Duration.ofMinutes(1), null),
             TestHttp.restClientBuilder(
                 Duration.ofMillis(200), io.micrometer.observation.ObservationRegistry.NOOP),
             CLOCK);

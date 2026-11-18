@@ -9,6 +9,7 @@ import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
 import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchStep;
+import ai.helper2.research.usecase.FollowResearchRun;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +31,7 @@ class ReviewResearchEventsControllerTest {
 
   ReviewResearchEventsController controller(int maxStreams) {
     return new ReviewResearchEventsController(
-        runs,
+        new FollowResearchRun(runs),
         maxStreams,
         Duration.ofMillis(5),
         Duration.ofMillis(20),

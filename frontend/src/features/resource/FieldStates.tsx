@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { ResourceDetail } from '@/api/types';
 import { OriginLabel } from '@/ui/Badges';
 import { Icon } from '@/ui/Icon';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { DisputedValues } from './DisputedValues';
 import { FIELDS, fieldWord, stateOf } from './fieldState';
 
@@ -29,7 +29,7 @@ export function FieldStates({ detail }: { detail: ResourceDetail }) {
                   </dd>
                 ) : (
                   <dd>
-                    <span {...(isAiOrigin(state.origin) ? aiMark() : {})}>
+                    <span {...aiMarkWhen(isAiOrigin(state.origin))}>
                       {state.values.map((v) => fieldWord(t, field, v)).join(', ')}
                     </span>{' '}
                     <OriginLabel origin={state.origin} />

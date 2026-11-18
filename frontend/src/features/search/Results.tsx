@@ -1,5 +1,5 @@
 import { upTo } from '@/lib/breakpoints';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -17,7 +17,7 @@ import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
 import { useGuideStream } from '@/hooks/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
+import { aiMark, aiProvider, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
 import {
   activeFilterCount,
@@ -200,7 +200,6 @@ function ResultsBody({
   const useCaseHints = res.interpretation.detectedUseCases.filter(
     (u) => !isSelected(state.filters.useCase, u),
   );
-  const heading = useRef<HTMLHeadingElement>(null);
   const more = useMorePages(res, toApiParams({ ...state, page: 0 }), state.page);
   const listRef = useRef<HTMLDivElement>(null);
   const [focusPage, setFocusPage] = useState<number | null>(null);
@@ -230,7 +229,6 @@ function ResultsBody({
         state={state}
         update={update}
         retry={retry}
-        heading={heading}
         coverage={!nothingSearched}
         categories={categories}
       />
@@ -311,9 +309,7 @@ function ResultsBody({
       ) : (
         <div
           ref={listRef}
-          {...(marksFieldsOf(res.aiContent, 'results[')
-            ? { 'data-ai-provider': res.aiContent?.provider }
-            : {})}
+          {...aiProvider(marksFieldsOf(res.aiContent, 'results[') ? res.aiContent : null)}
         >
           {state.view === 'timeline' ? (
             <ResultsTimeline cards={more.cards} />
@@ -369,7 +365,6 @@ function ListHead({
   state,
   update,
   retry,
-  heading,
   coverage,
   categories,
 }: {
@@ -378,7 +373,6 @@ function ListHead({
   state: SearchState;
   update: (s: SearchState) => void;
   retry: () => void;
-  heading: RefObject<HTMLHeadingElement | null>;
   coverage: boolean;
   categories: Categories;
 }) {
@@ -393,7 +387,7 @@ function ListHead({
   return (
     <>
       <div className="h2-all">
-        <h2 ref={heading} tabIndex={-1} id="all-h" className="h2-all__title">
+        <h2 tabIndex={-1} id="all-h" className="h2-all__title">
           {t('results.all')}{' '}
           <span className="h2-all__cmd">
             <span aria-hidden="true">

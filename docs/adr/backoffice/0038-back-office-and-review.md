@@ -154,11 +154,16 @@ On a review item, accept and reject were not enough:
    one-item decision (`ResolveReview`) in its own transaction, so each item writes its own audit entry, the same as a
    single decision, with the batch at the end: `ACCEPTED bulk:<batch>`. One item that fails does not undo the others.
    The answer gives one outcome per item, in the order sent: RESOLVED, NOT_OPEN, NOT_FOUND or NOT_ALLOWED. Rejecting is
-   allowed for every kind: nothing is added or shown. Accepting is allowed only for an enrichment check whose run has no
+   allowed for every kind: nothing is added or shown. Accepting is allowed for an enrichment check whose run has no
    CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class; the conflicts come from their own
-   query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows): every other kind adds a resource,
-   verifies a relationship, publishes an example or closes a user's report, and a new kind is refused until the rule
-   names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
+   query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows), and for a resource or course
+   candidate whose newest research ([0048](0048-review-research-assistant.md)) is DONE with verdict KEEP and no CONFLICT
+   value, and that research still describes it: the URL, title, type and tags it saw are the candidate's now (an admin
+   edit since then refuses the item). The research read the item, so the admin is not adding something nobody read. Its CONFIRMED changed values go
+   into the candidate through `EditCandidate` first, as one Accept with them confirmed would; values only one source or
+   no source states stay as they were (`ResearchedAcceptance`). When the candidate edit refuses a value, the item is not
+   accepted. Every other kind verifies a relationship, publishes an example or closes a user's report, and a new kind is
+   refused until the rule names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
    box (x picks the selected item); a bar under the list says "4 selected · Accept · Reject · Clear"; Accept and Reject
    ask first in a dialog that repeats the count by kind, with focus on Cancel. The line after says "11 done, 1 failed
    (already decided)", and the items that failed stay picked.
@@ -453,6 +458,9 @@ A curated field:
 - One transaction for a whole batch — one bad item would undo the others, and a long transaction holds locks on up to
   100 rows. Each item on its own matches what one decision does.
 - Bulk accept for every kind — one click could add 100 resources to the catalog or verify 100 relationships nobody read.
+  Candidates are accepted in bulk only when the research read them and kept them.
+- Bulk accept of researched candidates as the Scout found them — fast, but it drops the values the research confirmed
+  and the admin would confirm one by one anyway.
 - An undo for bulk decisions — a decision can publish or verify at once; an undo would have to reverse that. Decisions
   stay final, and the confirm dialog says so.
 - Settings from Spring's `Environment` or `/actuator/env` — every key with no work, but a deny-list: a new secret
