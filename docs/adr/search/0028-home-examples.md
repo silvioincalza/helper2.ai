@@ -83,9 +83,10 @@ same for every visitor.
 8. **Where the code lives.** The library `libs/examples` holds the domain (Kotlin), the use cases as plain classes
    wired in `examples.config` (add, change and remove get their transaction on a subclass there), and the adapters in
    `internal`. The public app builds only the read: `ListHomeExamples` over the port `ServedExamples`
-   (`JdbcServedExamples`, scanned by both apps). Everything an administrator or the check uses is in
-   `ExamplesBackOfficeConfiguration` and `ExamplesBackOfficeAdapters` (the pool's store `HomeExamples`, the
-   example's search, the titles, the drafts, the drafter with its budget, gauge and settings group). They carry no
+   (`JdbcServedExamples`, scanned by both apps). Everything an administrator or the check uses is wired in
+   `ExamplesBackOfficeConfiguration`, in the back office app, over the library's `ExamplesBackOfficeAdapters` (the
+   pool's store `HomeExamples`, the example's search, the titles, the drafts, the drafter with its budget, gauge and
+   settings group), which the app reaches through `@EnableExamplesBackOfficeAdapters`. They carry no
    stereotype and only `BackOfficeApplication` imports them
    ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §5), so the public context has no write to the
    pool, no draft model call and no review queue adapter of the examples (`NoBackOfficeExamplesIT`). The use cases are in the `DOMAIN` of both apps' `ModularityTest`, and the library checks its own rules
@@ -100,8 +101,8 @@ same for every visitor.
 - `backend/libs/core/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
   `CountHomeExamples`, `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`,
   `DraftHomeExamples`, `AcceptExampleDraft`, `ReadExampleDraft`), `config/` (`ExamplesProperties`,
-  `ExamplesUseCaseConfiguration`: the read, both apps; `ExamplesBackOfficeConfiguration`: the back office use cases
-  and their transactions), `internal/` (`JdbcServedExamples`, both apps; `ExamplesBackOfficeAdapters`, the back
+  `ExamplesUseCaseConfiguration`: the read, both apps; `EnableExamplesBackOfficeAdapters`: the entry to the back
+  office adapters), `internal/` (`JdbcServedExamples`, both apps; `ExamplesBackOfficeAdapters`, the back
   office only: `JdbcHomeExamples`, `SearchExampleSearch`, `CatalogResourceTitles`, `SpringAiExampleDrafter`,
   `CatalogDraftSources`, `ReviewQueueDrafts`); the prompt
   `backend/libs/core/src/main/resources/prompts/examples/draft.txt`.
