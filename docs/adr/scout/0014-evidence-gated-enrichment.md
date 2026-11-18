@@ -417,6 +417,12 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - **A `subject_id` column or a mention table for writing** — one subject only, or the same data as a relationship with
   its own retention, API and review flow.
 - **Create a resource for an unknown ABOUT target** — a resource needs its own URL, and the article gives only a name.
+- **Ask for the JSON through the provider's native schema** (`response_format` json_schema, Spring AI `outputSchema`,
+  as the guide's choose step does) instead of the format text in the user message — measured by
+  `EnrichmentNativeSchemaLiveTest` on `nvidia/Nemotron-3.5-Super-VL`, 10 resources of 10 types, 3 rounds: both modes
+  gave 0 invalid answers in 30 calls; the schema gave 96 accepted items against 126 with the format text (−24%), in
+  2.8 s against 3.3 s a call. The format text never fails on this model, so the schema only costs facts. The test
+  stays: it is run again before a change of model or prompt.
 
 ## Consequences
 - Nothing the model says is shown as verified without a quoted excerpt from retrieved text. A page never mixes AI
