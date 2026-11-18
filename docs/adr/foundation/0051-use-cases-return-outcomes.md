@@ -112,6 +112,9 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
   `@Transactional(noRollbackFor = ApiProblem.class)` (`AdminUseCaseConfiguration`).
 - A `Refused` result inside a transaction this unit joined does not roll back: the caller that opened the
   transaction must look at the outcome. `TransactionalUnitOfWorkTest` holds both halves of the rule.
+- A refusal must be the top-level result of the unit. A `Refused` value wrapped in another result (an `Optional`, a
+  record) is committed: `TransactionalUnitOfWorkTest` pins it. `ModularityRules` holds the pairing: a class that
+  declares a `Refused` outcome depends on `UnitOfWork`.
 - `Refused` undoes the whole unit. A use case that must keep one write and undo another needs two units.
 - The second test does not see a name of a class no app has: a renamed class leaves a dead name in the list. The
   back office has every class of the list, so the name fails there only when the class exists and is clean.

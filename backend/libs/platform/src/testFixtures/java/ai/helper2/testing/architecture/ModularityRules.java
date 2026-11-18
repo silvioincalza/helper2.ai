@@ -9,9 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.Problems;
+import ai.helper2.shared.Refused;
+import ai.helper2.shared.UnitOfWork;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -134,6 +137,23 @@ public abstract class ModularityRules {
         .filteredOn(here::contains)
         .as("classes that no longer speak HTTP: take each one out of STILL_THROWING")
         .allMatch(speaking::contains);
+  }
+
+  @Test
+  public void aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork() {
+    Set<String> refusing = outermostNames(classes().stream().filter(ModularityRules::isARefusal));
+    ArchRuleDefinition.classes()
+        .that(
+            DescribedPredicate.describe(
+                "declare a Refused outcome", (JavaClass type) -> refusing.contains(type.getName())))
+        .should()
+        .dependOnClassesThat()
+        .belongToAnyOf(UnitOfWork.class)
+        .check(classes());
+  }
+
+  private static boolean isARefusal(JavaClass type) {
+    return type.getEnclosingClass().isPresent() && type.isAssignableTo(Refused.class);
   }
 
   private static boolean speaksHttp(JavaClass type) {
