@@ -10,8 +10,8 @@ import ai.helper2.examples.ExampleDrafter;
 import ai.helper2.examples.HomeExample;
 import ai.helper2.examples.HomeExamples;
 import ai.helper2.examples.TakenText;
-import ai.helper2.examples.UnitOfWork;
 import ai.helper2.platform.AuditTrail;
+import ai.helper2.shared.UnitOfWork;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -58,7 +58,7 @@ public class DraftHomeExamples {
       audit.record(adminId, AuditTrail.Action.DRAFT_HOME_EXAMPLES, null, e.getReason().name());
       throw e;
     }
-    transaction.run(() -> {
+    transaction.runWithoutResult(() -> {
       drafts.forEach(queue::open);
       audit.record(
           adminId, AuditTrail.Action.DRAFT_HOME_EXAMPLES, null, "DRAFTED " + drafts.size());
