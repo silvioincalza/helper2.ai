@@ -30,7 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SpringAiResearchModel implements ResearchModel {
 
-  static final String PROMPT_VERSION = "research-v1";
+  static final String PROMPT_VERSION = "research-v2";
 
   private final ChatModel chat;
   private final String model;

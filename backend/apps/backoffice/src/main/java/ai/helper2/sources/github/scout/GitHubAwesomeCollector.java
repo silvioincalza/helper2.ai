@@ -159,7 +159,7 @@ public class GitHubAwesomeCollector implements Collector {
     List<AwesomeListParser.Entry> all =
         pass.entries().stream().sorted(Comparator.comparing(GitHubAwesomeCollector::key)).toList();
     int offset = firstAfter(all, resumeKey(cursor.getOwnResume()));
-    List<SourceHit> listHits = listHits(pass.read(), startedAt);
+    List<SourceHit> listHits = listHits(pass.crawl(), startedAt);
     boolean reviewHeldLinksBack = cursor.getCandidatesHeldBack();
     List<Candidate> candidates =
         cursor.getOwnResume() == null ? candidates(pass.crawl(), pages) : List.of();
@@ -440,10 +440,14 @@ public class GitHubAwesomeCollector implements Collector {
     return new ListText(url, parsed.headingsText(), entries);
   }
 
-  private static List<SourceHit> listHits(List<ListRepo> lists, Instant now) {
+  private static List<SourceHit> listHits(List<AwesomeCrawl.Read> lists, Instant now) {
     List<SourceHit> hits = new ArrayList<>();
-    for (ListRepo list : lists) {
-      SourceHit hit = listHit(list, now);
+    for (AwesomeCrawl.Read read : lists) {
+      ResourceType type =
+          AwesomeLists.isAwesomeList(read.list().fullName(), read.parsed())
+              ? ResourceType.AWESOME_LIST
+              : ResourceType.ARTICLE;
+      SourceHit hit = listHit(read.list(), type, now);
       if (hit != null) {
         hits.add(hit);
       }
@@ -451,7 +455,7 @@ public class GitHubAwesomeCollector implements Collector {
     return hits;
   }
 
-  private static SourceHit listHit(ListRepo list, Instant now) {
+  private static SourceHit listHit(ListRepo list, ResourceType type, Instant now) {
     JsonNode repo = list.facts();
     String url = HttpClients.text(repo, "html_url");
     CanonicalUrl canonical = CanonicalUrl.of(url == null ? GITHUB + list.fullName() : url);
@@ -477,7 +481,7 @@ public class GitHubAwesomeCollector implements Collector {
         list.fullName(),
         HttpClients.text(repo, "description"),
         ValueOrigin.SOURCE_PROVIDED,
-        ResourceType.ARTICLE,
+        type,
         Audience.BOTH,
         null,
         Set.of(),

@@ -77,8 +77,27 @@ Two kinds of source need more care:
      the model did not answer (error, spent budget, missing id), and every id in a run without a model, goes to
      keyword rules (`RepoClassifier.Heuristic`).
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
-   - Each list read is a resource too (ARTICLE, tag `awesome-list`), and its entry lines and headings become a search
+   - Each list read is a resource too (tag `awesome-list`), and its entry lines and headings become a search
      index ([0023](../search/0023-catalog-full-text-index.md)).
+   - **An awesome list is its own type, `AWESOME_LIST`** ("Awesome list" on the site): a curated list of links to other
+     resources, not a library, a tool or an MCP server. The rule is in one place, `AwesomeLists`, and reads the README:
+     the repository name starts with "awesome", at least 20 list items carry a link, and these items are at least half
+     of the README's text lines (headings, code blocks and lines with only images or badges are not counted). The name
+     alone never decides: a product called "Awesome Notes" has a normal README and stays what it is. 20 items is about
+     the smallest awesome list worth listing; a product README has a few links, mostly in prose and badges, so half
+     of the lines being linked list items separates the two. A list the collector reads and that fails the rule stays
+     ARTICLE.
+   - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
+     resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
+     §3). Other sources that see a GitHub repository have no README at hand and keep their own type.
+   - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` reads the README of every catalog resource at
+     `github.com/<owner>/awesome…` that is not `AWESOME_LIST` yet (at most 2000, most popular first), applies the rule,
+     and sets the curated type `AWESOME_LIST` with a `SET_FIELD` audit entry. A type an admin curated is never changed.
+     Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
+     is counted and read at the next run.
+   - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its
+     excerpt states `AWESOME_LIST` with "awesome list", "curated list of" or "a list of awesome". A mis-typed list
+     (LIBRARY, MCP_SERVER…) is fixed by the rule and the backfill, a new one by the collector.
 7. **Courses** (`course-scout`, every `H2_SCOUT_COURSES_INTERVAL`, 7 days; [0031](../guide/0031-guide-pipeline.md)).
    One Tavily search per learning platform (`helper2.scout.courses.platforms`, 10 platforms), restricted to its domain
    with `include_domains`, `search_depth basic`, published since the last complete pass (the last month on the first).

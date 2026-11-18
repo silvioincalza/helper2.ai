@@ -41,7 +41,7 @@ place to say that.
 3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
    apart from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192),
-   prompt `prompts/scout/enrich.txt`, label `enrich-v10` (stored with every run). A test pins the rendered prompt to
+   prompt `prompts/scout/enrich.txt`, label `enrich-v11` (stored with every run). A test pins the rendered prompt to
    its label, so a new wording needs a new label. For a relationship the model also states what its target is
    (`targetKind`, [0019](0019-known-targets-vendors-and-services.md) §6): a judgement that verifies nothing. The user message has the
    resource's type next to its title (`Type: NEWS`); the type comes from the catalog, never from the model. Under it

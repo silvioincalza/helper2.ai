@@ -35,6 +35,8 @@ Rules:
   about, at most {{maxAbout}}; the target is its name as the material writes it ("Gemini 4 Carbon").
   A COURSE or an EVENT keeps every field, and also gives one ABOUT for each model, product or tool it
   teaches or presents, at most {{maxAbout}}. For every other type, never use ABOUT.
+- AWESOME_LIST is a curated list of links to other resources, often a GitHub repository named
+  awesome-…: a list, not a library, a tool or an MCP server.
 - Relationship target = the other product's name. Name only what the material says the resource works with,
   at most {{maxSelfDeclaredRelationships}} from a vendor page.
 - For every relationship also give targetKind. Decide it from the target's name alone, in this order:

@@ -491,6 +491,25 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
 
+  /admin/ai-check/awesome-lists:
+    post:
+      tags: [enrichment-queue]
+      operationId: checkAwesomeLists
+      summary: Re-check the catalog's GitHub repositories named awesome-* and type the real awesome lists.
+      description: >-
+        Reads each repository's README and applies the awesome-list rule (ADR 0012 §6): the name starts with "awesome",
+        at least 20 list items carry a link, and they are at least half of the README's text lines. A repository that
+        passes gets the curated type AWESOME_LIST, with a SET_FIELD audit entry. A type an admin curated is never
+        changed. Safe to run again: a resource already AWESOME_LIST is not read.
+      responses:
+        '200':
+          description: What the check did.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AwesomeListCheck' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
   /admin/enrichment-queue/{resourceId}/requeue:
     post:
       tags: [enrichment-queue]
@@ -1378,6 +1397,16 @@ components:
           maxItems: 20
           items: { type: string, maxLength: 60 }
 
+    AwesomeListCheck:
+      type: object
+      required: [checked, set, notAList, keptCurated, unavailable]
+      properties:
+        checked: { type: integer }
+        set: { type: integer, description: Typed AWESOME_LIST now. }
+        notAList: { type: integer, description: The README is not a link list. }
+        keptCurated: { type: integer, description: An admin curated the type; left alone. }
+        unavailable: { type: integer, description: The README could not be read now; run again later. }
+
     AiCheckPage:
       type: object
       required: [notAboutAi, checked]
@@ -1644,7 +1673,7 @@ components:
     CandidateType:
       type: string
       description: The types a resource or course candidate may have (ADR 0013, 0012, 0031, 0038).
-      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE]
+      enum: [PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE, AWESOME_LIST]
 
     RelationshipTargetChange:
       type: object

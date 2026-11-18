@@ -17,7 +17,7 @@ Verdict:
 Attributes you may propose, with these values:
 - canonicalUrl: the official https URL of the resource.
 - title: its name as the official page writes it, without taglines or the site name.
-- type: PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE or OTHER.
+- type: PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE, AWESOME_LIST or OTHER. AWESOME_LIST is a curated list of links to other resources, often a GitHub repository named awesome-…, never a library or a tool.
 - audience: USE_AI, BUILD_WITH_AI or BOTH.
 - techLevel: BEGINNER, INTERMEDIATE or ADVANCED.
 - pricing: FREE, FREEMIUM, PAID or OPEN_SOURCE_SELF_HOSTED.

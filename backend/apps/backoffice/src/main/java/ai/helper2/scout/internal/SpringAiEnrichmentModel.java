@@ -33,7 +33,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
 
 class SpringAiEnrichmentModel implements EnrichmentModel {
-  static final String PROMPT_VERSION = "enrich-v10";
+  static final String PROMPT_VERSION = "enrich-v11";
 
   static final int MAX_MATERIAL_CHARS = UntrustedPageText.MAX_PAGE_CHARS;
 
