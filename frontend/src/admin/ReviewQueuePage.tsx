@@ -1,11 +1,10 @@
 import './adminText';
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { useSearchParams } from 'react-router';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { api, ApiError, problemDetail } from '@/api/client';
-import type { ReviewItem, ReviewResearchStart } from '@/api/types';
+import { api } from '@/api/client';
+import type { ReviewItem } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { Pagination } from '@/admin/Pagination';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
@@ -18,8 +17,8 @@ import { resourcePath } from '@/lib/searchState';
 import { categoryOf } from '@/features/sources/DiscoveryCategories';
 import { AdminEmpty, AdminHead } from './AdminHead';
 import { TableSkeleton } from '@/ui/Skeleton';
-import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE, oneOf } from './adminModel';
-import { BulkBar, bulkSummary, type Decision } from './ReviewBulk';
+import { REVIEW_KINDS, REVIEW_STATUSES, REVIEW_TONE } from './adminModel';
+import { BulkBar } from './ReviewBulk';
 import { ReviewEvidencePanel } from './ReviewEvidence';
 import { ItemDetails, parseCandidate, type Candidate } from './ReviewItemDetails';
 import { ReviewKeysHelp } from './ReviewKeysHelp';
@@ -38,19 +37,12 @@ import {
 } from './ReviewResearch';
 import { ResearchDecisions, type ResearchOutcome } from './ResearchDecisions';
 import { useBarHeight } from './useBarHeight';
+import { useReviewActions } from './useReviewActions';
+import { useReviewFilters } from './useReviewFilters';
+import { useReviewSelection } from './useReviewSelection';
 
 const PAGE_SIZE = 50;
-const CATEGORY = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const DETAIL_ID = 'rq-detail';
-
-type ActionError = { kind: 'failed' | 'alreadyDecided' } | { kind: 'refused'; detail: string };
-
-function actionErrorOf(e: unknown): ActionError {
-  const detail = problemDetail(e, { code: ['duplicate', 'invalid-request'] });
-  if (detail) return { kind: 'refused', detail };
-  if (e instanceof ApiError && e.status === 409) return { kind: 'alreadyDecided' };
-  return { kind: 'failed' };
-}
 
 function isCommandKey(e: KeyboardEvent): boolean {
   const target = e.target as HTMLElement;
@@ -59,15 +51,6 @@ function isCommandKey(e: KeyboardEvent): boolean {
   const typing =
     target.isContentEditable || (!box && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
   return !typing && !e.ctrlKey && !e.metaKey && !e.altKey;
-}
-
-function openPicks(
-  picked: ReadonlyMap<string, ReviewItem>,
-  list: ReviewItem[],
-): ReadonlyMap<string, ReviewItem> {
-  const open = new Set(list.filter((i) => i.status === 'OPEN').map((i) => i.id));
-  const kept = [...picked].filter(([id]) => open.has(id));
-  return kept.length === picked.size ? picked : new Map(kept);
 }
 
 const RELATIONSHIP = /^Unverified relationship: ([A-Z_]+) (.+)$/;
@@ -95,28 +78,31 @@ function nextAfter(list: ReviewItem[], id: string): string | undefined {
   return (list[at + 1] ?? list[at - 1])?.id;
 }
 
+function useRetoldReasons(page: unknown) {
+  const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
+    of: undefined,
+    reasons: {},
+  });
+  const reasons = retold.of === page ? retold.reasons : {};
+  const retell = useCallback(
+    (id: string, reason: string) =>
+      setRetold((r) => {
+        const base = r.of === page ? r.reasons : {};
+        return r.of === page && base[id] === reason
+          ? r
+          : { of: page, reasons: { ...base, [id]: reason } };
+      }),
+    [page],
+  );
+  return { reasons, retell };
+}
+
 export default function ReviewQueuePage() {
   const { t } = useTranslation();
-  const [params, setParams] = useSearchParams();
-  const status = oneOf(params.get('status'), REVIEW_STATUSES) ?? 'OPEN';
-  const kind = oneOf(params.get('kind'), REVIEW_KINDS);
-  const wanted = params.get('category');
-  const category = wanted && CATEGORY.test(wanted) ? wanted : undefined;
-  const page = Math.max(0, Number.parseInt(params.get('page') ?? '0', 10) || 0);
-  const researchFilter = oneOf(params.get('research'), RESEARCH_FILTERS);
-  const byTarget =
-    status === 'OPEN' && kind === 'RELATIONSHIP_CANDIDATE' && params.get('view') !== 'items';
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [actionError, setActionError] = useState<ActionError | null>(null);
-  const [listed, setListed] = useState<ReviewItem['alreadyListed'] | null>(null);
-  const [busy, setBusy] = useState(false);
+  const filters = useReviewFilters();
+  const { status, kind, category, page, research: researchFilter, byTarget } = filters;
   const [selectedId, setSelectedId] = useState<string | undefined>();
-  const [announcement, setAnnouncement] = useState('');
   const [help, setHelp] = useState(false);
-  const [pickedIds, setPicked] = useState<ReadonlyMap<string, ReviewItem>>(new Map());
-  const [bulkResult, setBulkResult] = useState('');
-  const [startAll, setStartAll] = useState(false);
-  const [rejecting, setRejecting] = useState<ReviewItem[]>([]);
   const [outcome, setOutcome] = useState<ResearchOutcome | null>(null);
   const focusAfterLoad = useRef(false);
   const rows = useRef(new Map<string, HTMLButtonElement>());
@@ -150,24 +136,30 @@ export default function ReviewQueuePage() {
   const categories = (sources.data ?? sources.previous ?? []).filter((s) => s.family);
   const loaded = items.data?.items ?? [];
   const research = useResearchRuns(loaded.filter(hasResearch).map((i) => i.id));
-  const [retold, setRetold] = useState<{ of: unknown; reasons: Record<string, string> }>({
-    of: undefined,
-    reasons: {},
-  });
-  const reasons = retold.of === items.data ? retold.reasons : {};
-  const retell = useCallback(
-    (id: string, reason: string) =>
-      setRetold((r) => {
-        const base = r.of === items.data ? r.reasons : {};
-        return r.of === items.data && base[id] === reason
-          ? r
-          : { of: items.data, reasons: { ...base, [id]: reason } };
-      }),
-    [items.data],
-  );
+  const { reasons, retell } = useRetoldReasons(items.data);
   const selected = loaded.find((i) => i.id === selectedId) ?? loaded[0];
   const reason = selected ? (reasons[selected.id] ?? selected.reason) : '';
-  const picked = items.data ? openPicks(pickedIds, loaded) : pickedIds;
+  const selection = useReviewSelection(items.data ? loaded : undefined);
+  const { picked, toggle } = selection;
+  const researched = selected ? outcome : null;
+  const selectedRun = selected ? research.runs.get(selected.id) : undefined;
+  const actions = useReviewActions({
+    total: items.data?.total,
+    reloadQueue,
+    reloadResearch: research.reload,
+    researched,
+    pickedIds: () => [...picked.keys()],
+    keepFailedPicks: selection.keepFailed,
+    onResolved: (item) => {
+      setSelectedId(nextAfter(loaded, item.id));
+      focusAfterLoad.current = true;
+    },
+    onResolvedMany: () => {
+      focusAfterLoad.current = true;
+    },
+  });
+  const { busy, resolve, resolveMany, startResearch, cancelResearch } = actions;
+  const blocked = actions.acceptBlocked;
 
   useEffect(() => {
     if (items.loading || !focusAfterLoad.current) return;
@@ -177,134 +169,22 @@ export default function ReviewQueuePage() {
     else heading.current?.focus();
   }, [items.loading, selected, heading]);
 
-  const setFilter = (
-    name: 'status' | 'kind' | 'category' | 'page' | 'view' | 'research',
-    value: string | undefined,
-  ) => {
-    const next = new URLSearchParams(params);
-    if (value === undefined) next.delete(name);
-    else next.set(name, value);
-    if (name !== 'page') next.delete('page');
-    setParams(next);
-    setPicked(new Map());
-  };
-
-  const toggle = (item: ReviewItem) => {
-    if (item.status !== 'OPEN') return;
-    setPicked((p) => {
-      const next = new Map(p);
-      if (!next.delete(item.id)) next.set(item.id, item);
-      return next;
-    });
-  };
-
-  const select = (id: string | undefined, focus: boolean) => {
-    if (!id) return;
-    setSelectedId(id);
-    if (focus) rows.current.get(id)?.focus();
-  };
-
-  const researched = selected ? outcome : null;
-  const selectedRun = selected ? research.runs.get(selected.id) : undefined;
   useBarHeight(
     decideBar,
     detailBox,
     '--decide-h',
     `${selected?.id}/${selected?.status}/${items.loading}`,
   );
-  const blocked = !!researched && !researched.complete;
 
-  const resolve = async (item: ReviewItem, decision: Decision) => {
-    if (busy || item.status !== 'OPEN') return;
-    if (decision === 'ACCEPTED' && blocked) {
-      setAnnouncement(t('admin.research.acceptWhy', { count: researched?.left.length ?? 0 }));
-      return;
-    }
-    setBusy(true);
-    setActionError(null);
-    setListed(null);
-    try {
-      const accepted = decision === 'ACCEPTED' ? researched : null;
-      if (accepted?.edit) {
-        await adminApi.editCandidate(item.id, {
-          expectedDetails: item.details ?? null,
-          ...accepted.edit,
-        });
-      }
-      const text = (notes[item.id]?.trim() ?? '').slice(0, NOTE_MAX);
-      const decided = await adminApi.resolveReviewItem(item.id, {
-        status: decision,
-        ...(text ? { note: text } : {}),
-      });
-      setListed(decided.alreadyListed ?? null);
-      setNotes(({ [item.id]: _, ...rest }) => rest);
-      const left = Math.max(0, (items.data?.total ?? 1) - 1);
-      setAnnouncement(t(`admin.review.decided.${decision}`, { count: left }));
-      setSelectedId(nextAfter(loaded, item.id));
-      focusAfterLoad.current = true;
-      reloadQueue();
-    } catch (e) {
-      const error = actionErrorOf(e);
-      setActionError(error);
-      if (error.kind === 'alreadyDecided') reloadQueue();
-    } finally {
-      setBusy(false);
-    }
+  const setFilter: typeof filters.setFilter = (name, value) => {
+    filters.setFilter(name, value);
+    selection.clear();
   };
 
-  const startResearch = async (body: ReviewResearchStart) => {
-    if (busy) return;
-    setBusy(true);
-    setActionError(null);
-    try {
-      const started = await adminApi.startReviewResearch(body);
-      setAnnouncement(t('admin.research.queued', { count: started.runs.length }));
-      setStartAll(false);
-      research.reload();
-    } catch (e) {
-      setActionError(actionErrorOf(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const cancelResearch = async (runId: string) => {
-    try {
-      await adminApi.cancelReviewResearch(runId);
-      setAnnouncement(t('admin.research.cancelled'));
-    } catch (e) {
-      setActionError(actionErrorOf(e));
-    } finally {
-      research.reload();
-    }
-  };
-
-  const resolveMany = async (
-    decision: Decision,
-    text: string | undefined,
-    ids: string[] = [...picked.keys()],
-  ) => {
-    if (busy || ids.length === 0) return;
-    setBusy(true);
-    setActionError(null);
-    try {
-      const result = await adminApi.resolveReviewItems({
-        ids,
-        status: decision,
-        ...(text ? { note: text } : {}),
-      });
-      const failed = new Set(result.items.filter((i) => i.outcome !== 'RESOLVED').map((i) => i.id));
-      setPicked((p) => new Map([...p].filter(([id]) => failed.has(id) || !ids.includes(id))));
-      setRejecting([]);
-      setBulkResult(bulkSummary(t, result));
-      focusAfterLoad.current = true;
-      reloadQueue();
-    } catch {
-      setActionError({ kind: 'failed' });
-      reloadQueue();
-    } finally {
-      setBusy(false);
-    }
+  const select = (id: string | undefined, focus: boolean) => {
+    if (!id) return;
+    setSelectedId(id);
+    if (focus) rows.current.get(id)?.focus();
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -337,26 +217,28 @@ export default function ReviewQueuePage() {
         total={items.loading ? null : (items.data?.total ?? null)}
         headingRef={heading}
       />
-      {actionError && (
+      {actions.error && (
         <p role="alert" className="banner banner-warn">
           <Icon name="warn" />{' '}
-          {actionError.kind === 'refused'
-            ? t('admin.refused', { detail: actionError.detail })
+          {actions.error.kind === 'refused'
+            ? t('admin.refused', { detail: actions.error.detail })
             : t(
-                actionError.kind === 'alreadyDecided'
+                actions.error.kind === 'alreadyDecided'
                   ? 'admin.alreadyDecided'
                   : 'admin.actionFailed',
               )}
         </p>
       )}
-      {listed && (
+      {actions.listed && (
         <p role="status" className="banner">
-          <Icon name="info" /> {t('admin.review.alreadyListed', { title: listed.title })}{' '}
-          <a href={resourcePath(listed.resourceId, listed.title)}>{t('admin.review.openListed')}</a>
+          <Icon name="info" /> {t('admin.review.alreadyListed', { title: actions.listed.title })}{' '}
+          <a href={resourcePath(actions.listed.resourceId, actions.listed.title)}>
+            {t('admin.review.openListed')}
+          </a>
         </p>
       )}
       <p role="status" className="sr-only">
-        {announcement}
+        {actions.announcement}
       </p>
       <div className="h2-admin__tools">
         <label>
@@ -452,8 +334,8 @@ export default function ReviewQueuePage() {
           runs={research.runs}
           busy={busy}
           onStart={(itemIds) => void startResearch({ itemIds, allOpen: false })}
-          onStartAll={() => setStartAll(true)}
-          onRejectResearched={setRejecting}
+          onStartAll={() => actions.setStartingAll(true)}
+          onRejectResearched={actions.setRejecting}
         />
       )}
       {byTarget ? (
@@ -629,8 +511,8 @@ export default function ReviewQueuePage() {
                     type="text"
                     maxLength={NOTE_MAX}
                     aria-keyshortcuts="n"
-                    value={notes[selected.id] ?? ''}
-                    onChange={(e) => setNotes((n) => ({ ...n, [selected.id]: e.target.value }))}
+                    value={actions.noteOf(selected.id)}
+                    onChange={(e) => actions.setNote(selected.id, e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key !== 'Escape') return;
                       e.preventDefault();
@@ -680,14 +562,14 @@ export default function ReviewQueuePage() {
         </div>
       )}
       <p role="status" className="h2-admin__bulk-result">
-        {bulkResult}
+        {actions.bulkResult}
       </p>
       {picked.size > 0 && (
         <BulkBar
           picked={[...picked.values()]}
           busy={busy}
           onDecide={(decision, text) => void resolveMany(decision, text)}
-          onClear={() => setPicked(new Map())}
+          onClear={selection.clear}
         />
       )}
       {items.data && !byTarget && (
@@ -700,16 +582,16 @@ export default function ReviewQueuePage() {
       )}
       <ReviewKeysHelp open={help} onClose={() => setHelp(false)} />
       <StartAllDialog
-        open={startAll}
+        open={actions.startingAll}
         busy={busy}
-        onClose={() => setStartAll(false)}
+        onClose={() => actions.setStartingAll(false)}
         onConfirm={() => void startResearch({ allOpen: true })}
       />
       <BatchRejectDialog
-        items={rejecting}
+        items={actions.rejecting}
         runs={research.runs}
         busy={busy}
-        onClose={() => setRejecting([])}
+        onClose={() => actions.setRejecting([])}
         onConfirm={(ids, text) => void resolveMany('REJECTED', text, ids)}
       />
     </section>
