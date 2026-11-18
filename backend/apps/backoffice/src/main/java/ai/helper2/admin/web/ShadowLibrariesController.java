@@ -82,6 +82,8 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
                   + ShadowLibraryNames.MIN_LENGTH
                   + " characters; a shorter one matches too many sites.";
           case TOO_COMMON -> "name: many sites use this part of a host name, such as www or blog.";
+          case A_SOURCE ->
+              "name: a source of helper2.ai uses this part of a host name, such as github.";
         });
   }
 

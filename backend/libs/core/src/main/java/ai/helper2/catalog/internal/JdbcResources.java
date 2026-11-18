@@ -4,6 +4,7 @@ import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.RecordRow;
 import ai.helper2.catalog.ResourceRow;
 import ai.helper2.catalog.Resources;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.WebSources;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -25,12 +26,30 @@ class JdbcResources implements Resources {
 
   private static final UUID NO_ID = new UUID(0L, 0L);
 
+  private static final String HOST = "^[a-z][a-z0-9+.-]*://(?:[^/?#@]*@)?([^/:?#]+)";
+
+  private static final String SHOWN = shown("url") + " AND " + shown("canonical_url");
+
   private final JdbcClient jdbc;
   private final ResourceRows rows;
+  private final ShadowLibraries shadowLibraries;
 
-  JdbcResources(JdbcClient jdbc, ResourceRows rows) {
+  JdbcResources(JdbcClient jdbc, ResourceRows rows, ShadowLibraries shadowLibraries) {
     this.jdbc = jdbc;
     this.rows = rows;
+    this.shadowLibraries = shadowLibraries;
+  }
+
+  private static String shown(String column) {
+    return "NOT coalesce(trim_array(string_to_array(substring(lower("
+        + column
+        + ") from '"
+        + HOST
+        + "'), '.'), 1) && cast(:hidden AS text[]), false)";
+  }
+
+  private String[] hidden() {
+    return shadowLibraries.names().toArray(String[]::new);
   }
 
   @Override
@@ -150,9 +169,12 @@ class JdbcResources implements Resources {
             WHERE type = 'EVENT' AND event_starts_at IS NOT NULL
               AND coalesce(event_ends_at, event_starts_at) >= :today
               AND event_starts_at < :until
+              AND %s
             ORDER BY event_starts_at, title, id
             LIMIT :limit OFFSET :offset
-            """)
+            """
+                .formatted(SHOWN))
+        .param("hidden", hidden())
         .param("today", Timestamp.from(today))
         .param("until", Timestamp.from(until == null ? NO_END : until))
         .param("limit", limit)
@@ -194,7 +216,10 @@ class JdbcResources implements Resources {
             WHERE type = 'EVENT' AND event_starts_at IS NOT NULL
               AND coalesce(event_ends_at, event_starts_at) >= :today
               AND event_starts_at < :until
-            """)
+              AND %s
+            """
+                .formatted(SHOWN))
+        .param("hidden", hidden())
         .param("today", Timestamp.from(today))
         .param("until", Timestamp.from(until == null ? NO_END : until))
         .query(Integer.class)
@@ -252,7 +277,10 @@ class JdbcResources implements Resources {
             WHERE published_at IS NOT NULL AND published_at >= :since AND published_at <= :now
               AND data_origin = ANY(:origins)
               AND (cardinality(:types) = 0 OR type = ANY(:types))
-            """)
+              AND %s
+            """
+                .formatted(SHOWN))
+        .param("hidden", hidden())
         .param("since", Timestamp.from(since))
         .param("now", Timestamp.from(now))
         .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))
@@ -270,9 +298,12 @@ class JdbcResources implements Resources {
             WHERE published_at IS NOT NULL AND published_at >= :since AND published_at <= :now
               AND data_origin = ANY(:origins)
               AND (cardinality(:types) = 0 OR type = ANY(:types))
+              AND %s
             ORDER BY published_at DESC, title
             LIMIT :limit
-            """)
+            """
+                .formatted(SHOWN))
+        .param("hidden", hidden())
         .param("since", Timestamp.from(since))
         .param("now", Timestamp.from(now))
         .param("origins", origins.stream().map(Enum::name).toArray(String[]::new))

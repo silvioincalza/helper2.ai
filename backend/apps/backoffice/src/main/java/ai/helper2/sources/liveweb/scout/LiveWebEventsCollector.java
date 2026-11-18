@@ -247,7 +247,7 @@ public class LiveWebEventsCollector implements Collector {
         .orElse(null);
   }
 
-  private static List<SourceHit> asPages(List<UndatedEvents.Page> batch, Instant now) {
+  private List<SourceHit> asPages(List<UndatedEvents.Page> batch, Instant now) {
     List<SourceHit> pages = new ArrayList<>();
     for (UndatedEvents.Page p : batch) {
       CanonicalUrl canonical = CanonicalUrl.of(p.url());
@@ -257,7 +257,9 @@ public class LiveWebEventsCollector implements Collector {
       } catch (IllegalArgumentException e) {
         continue;
       }
-      if (canonical == null || PageScope.plainUrlProblem(url) != null) {
+      if (canonical == null
+          || PageScope.plainUrlProblem(url) != null
+          || shadowLibraries.isShadowLibrary(canonical.getHost())) {
         continue;
       }
       pages.add(
@@ -419,7 +421,7 @@ public class LiveWebEventsCollector implements Collector {
     return new Reading(events, processed);
   }
 
-  private static Optional<SourceHit> eventSiteOfPost(
+  private Optional<SourceHit> eventSiteOfPost(
       JsonNode r, Map<String, SourceHit> byUrl, Instant now) {
     CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
     SourceHit post = url == null ? null : byUrl.get(url.getValue());
@@ -428,6 +430,7 @@ public class LiveWebEventsCollector implements Collector {
       return Optional.empty();
     }
     return LinkedInPosts.eventSite(raw)
+        .filter(site -> !shadowLibraries.isShadowLibrary(site.getHost()))
         .map(site -> {
           Map<String, Object> facts = new LinkedHashMap<>(post.getFacts());
           facts.put("linkedFrom", post.getCanonicalUrl().getValue());
