@@ -244,8 +244,9 @@ The schema is one file, and from the first release tag on that file must never c
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/Reconciliation.java`, `ProjectedReconciliation.java`,
   `SqlReconciliation.java`, `CatalogConfiguration.java` (`reconciliation`) — the reconciled facts of the row, and the
   temporary switch between the two paths (`CatalogProperties.reconcileByProjection`).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcIssueReports.java` (`report`),
-  `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment results, user reports, the review
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcResourceDetailReads.java`,
+  `JdbcIssueReports.java` (`report`), `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment
+  results, their reads for the detail page, user reports, the review
   queue and its decisions, job markers.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema, app roles and seeds.
