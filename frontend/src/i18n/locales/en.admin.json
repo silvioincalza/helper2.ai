@@ -179,7 +179,6 @@
         "BUILD_WITH_AI": "Builders"
       },
       "status": {
-        "ACTIVE": "Active",
         "PAUSED": "Paused"
       },
       "origin": {

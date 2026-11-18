@@ -845,9 +845,6 @@ tbody th {
 .host {
   color: var(--muted);
 }
-.timeline-compact {
-  grid-template-columns: 1fr;
-}
 .timeline dt {
   color: var(--muted);
   font-size: var(--text-13);
