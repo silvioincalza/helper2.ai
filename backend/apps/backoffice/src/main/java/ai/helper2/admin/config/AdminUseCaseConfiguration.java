@@ -143,8 +143,8 @@ class AdminUseCaseConfiguration {
   }
 
   @Bean
-  CheckAiWords checkAiWords(AiCheckReport report, AiTopicCheck aboutAi) {
-    return new CheckAiWords(report, aboutAi);
+  CheckAiWords checkAiWords(AiCheckReport report, AiTopicCheck aboutAi, EnrichmentBacklog backlog) {
+    return new CheckAiWords(report, aboutAi, backlog);
   }
 
   @Bean

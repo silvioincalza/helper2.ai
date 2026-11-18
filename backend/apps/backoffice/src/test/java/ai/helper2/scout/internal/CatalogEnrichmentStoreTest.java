@@ -82,6 +82,12 @@ class CatalogEnrichmentStoreTest {
     }
 
     @Override
+    public List<UUID> waiting(List<UUID> ids, int minText, int maxFailed) {
+      calls.add("waiting " + minText + " " + maxFailed);
+      return ids;
+    }
+
+    @Override
     public @Nullable Candidate candidate(UUID id) {
       return candidate;
     }
@@ -243,6 +249,7 @@ class CatalogEnrichmentStoreTest {
     store.pending(5);
     long count = store.pendingCount();
     store.eligible(List.of(ID));
+    store.waiting(List.of(ID));
     store.queue(EnrichmentCandidates.View.SKIPPED, null, 20);
     store.place(ID);
     store.prioritisedCount();
@@ -253,6 +260,7 @@ class CatalogEnrichmentStoreTest {
             "pending 5 40 3",
             "pendingCount 40 3",
             "withEnoughText 40",
+            "waiting 40 3",
             "backlog SKIPPED 20 40 3",
             "standing 40 3",
             "prioritisedCount 40 3");

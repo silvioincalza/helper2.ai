@@ -78,9 +78,13 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
     return ResponseEntity.ok(
         new AiCheckPageDto(
                 page.notAboutAi().stream()
-                    .map(r ->
+                    .map(f ->
                         new AiCheckRowDto(
-                            r.resourceId(), r.title(), r.type(), r.popularity(), r.waiting()))
+                            f.row().resourceId(),
+                            f.row().title(),
+                            f.row().type(),
+                            f.row().popularity(),
+                            f.waiting()))
                     .toList(),
                 page.checked())
             .next(page.next() == null ? null : aiCursor(page.next())));

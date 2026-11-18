@@ -50,11 +50,28 @@ class AiCheckApiIT extends ApiTestBase {
     return id;
   }
 
+  private void sourceText(UUID resource, String text) {
+    UUID record = UUID.randomUUID();
+    jdbc.sql(
+            """
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       description, type, retrieved_at, fingerprint)
+            VALUES (:rec, 'curated', :rec::text, :id, :url, :url, 'AI check', :text, 'LIBRARY', now(), 'fp')
+            """)
+        .param("rec", record)
+        .param("id", resource)
+        .param("url", "https://ai-check.example/record/" + record)
+        .param("text", text)
+        .update();
+  }
+
   @Test
   void theResourcesThatFailTheWordRuleAreListedAndNothingChanges() throws Exception {
     UUID notAi =
         resource("mongodb-connection-string-url", "MongoDB connection strings", "prompt", 0.9);
     UUID ai = resource("ollama-js", "Ollama Javascript library", "llm", 0.9);
+    UUID queued = resource("agent-base", "HTTP agent base class", "agent", 0.9);
+    sourceText(queued, "Turn a function into an http.Agent instance for Node.js requests");
     var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
     mvc.perform(get("/api/v1/admin/ai-check")).andExpect(status().isUnauthorized());
@@ -71,6 +88,11 @@ class AiCheckApiIT extends ApiTestBase {
     assertThat(rows).extracting(r -> r.get("resourceId")).doesNotContain(ai.toString());
     assertThat(rows)
         .filteredOn(r -> r.get("resourceId").equals(notAi.toString()))
+        .singleElement()
+        .as("without source text it is not in the enrichment queue, so it cannot be skipped")
+        .satisfies(r -> assertThat(r).containsEntry("waiting", false));
+    assertThat(rows)
+        .filteredOn(r -> r.get("resourceId").equals(queued.toString()))
         .singleElement()
         .satisfies(r -> assertThat(r).containsEntry("waiting", true));
     assertThat(

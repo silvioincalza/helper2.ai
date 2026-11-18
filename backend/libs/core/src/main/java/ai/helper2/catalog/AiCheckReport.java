@@ -15,8 +15,7 @@ public interface AiCheckReport {
       @Nullable String description,
       List<String> tags,
       String type,
-      BigDecimal popularity,
-      boolean waiting) {}
+      BigDecimal popularity) {}
 
   List<Row> mostPopular(@Nullable Cursor after, int size);
 }

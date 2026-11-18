@@ -83,6 +83,11 @@ class CatalogEnrichmentStore implements EnrichmentStore, EnrichmentBacklog {
   }
 
   @Override
+  public List<UUID> waiting(List<UUID> resourceIds) {
+    return candidates.waiting(resourceIds, MIN_DESCRIPTION, MAX_FAILED_ATTEMPTS);
+  }
+
+  @Override
   public void requestRun(UUID resourceId) {
     stored.requestRun(resourceId);
   }

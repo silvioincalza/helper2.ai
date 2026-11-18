@@ -1271,7 +1271,7 @@ components:
         title: { type: string }
         type: { type: string }
         popularity: { type: number, minimum: 0, maximum: 1 }
-        waiting: { type: boolean, description: Never enriched and not skipped. }
+        waiting: { type: boolean, description: "In the enrichment queue and not skipped: the one an admin can skip." }
 
     EnrichmentQueuePage:
       type: object

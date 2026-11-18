@@ -346,6 +346,26 @@ class JdbcEnrichmentCandidates implements EnrichmentCandidates {
   }
 
   @Override
+  public List<UUID> waiting(List<UUID> ids, int minText, int maxFailed) {
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+    Set<UUID> due =
+        new HashSet<>(
+            jdbc.sql(
+                    "SELECT r.id FROM resource r WHERE r.id = ANY(:ids) AND "
+                        + DUE
+                        + " AND NOT "
+                        + SKIPPED)
+                .param("ids", ids.toArray(UUID[]::new))
+                .param("minText", minText)
+                .param("maxFailed", maxFailed)
+                .query(UUID.class)
+                .list());
+    return ids.stream().filter(due::contains).toList();
+  }
+
+  @Override
   public @Nullable Candidate candidate(UUID id) {
     List<SourceText> sources =
         jdbc.sql(

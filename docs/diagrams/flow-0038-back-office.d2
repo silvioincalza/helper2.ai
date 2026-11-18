@@ -179,10 +179,10 @@ aicheck_req: "GET /api/v1/admin/ai-check\n(after = cursor, size up to 2000)" {cl
 aicheck: CheckAiWords {
   class: group
   direction: down
-  read: "Next indexed or observed resources,\nmost popular first (title,\ndescription, tags, waiting?)" {class: data}
+  read: "Next indexed or observed resources,\nmost popular first (title,\ndescription, tags)" {class: data}
   rule: "AiTopicCheck: about AI\nby the word rule?" {class: decision}
   kept: "Not listed" {class: end}
-  listed: "Listed; nothing changes" {class: end}
+  listed: "Listed; nothing changes;\nwaiting = due and not skipped\n(BacklogRule, as Skip checks it)" {class: end}
   skip: "Admin: Skip (waiting only),\nreason: Not about AI (word rule)" {class: app}
   read -> rule
   rule -> kept: yes

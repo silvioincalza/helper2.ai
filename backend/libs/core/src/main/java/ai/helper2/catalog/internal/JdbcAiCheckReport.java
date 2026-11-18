@@ -21,16 +21,14 @@ class JdbcAiCheckReport implements AiCheckReport {
             """
             SELECT r.id, r.title, r.description, r.type, r.popularity,
                    coalesce((SELECT array_agg(l.value ORDER BY l.value) FROM resource_label l
-                             WHERE l.resource_id = r.id AND l.kind = 'TAG'), '{}') AS tags,
-                   r.enrichment_status = 'NOT_RUN' AND NOT %s AS waiting
+                             WHERE l.resource_id = r.id AND l.kind = 'TAG'), '{}') AS tags
             FROM resource r
             WHERE r.data_origin IN ('INDEXED', 'OBSERVED')
               AND (CAST(:afterValue AS numeric) IS NULL
                    OR (r.popularity, r.id) < (CAST(:afterValue AS numeric), CAST(:afterId AS uuid)))
             ORDER BY r.popularity DESC, r.id DESC
             LIMIT :size
-            """
-                .formatted(BacklogRule.SKIPPED))
+            """)
         .param("afterValue", after == null ? null : after.popularity())
         .param("afterId", after == null ? null : after.id())
         .param("size", size)
@@ -41,8 +39,7 @@ class JdbcAiCheckReport implements AiCheckReport {
                 rs.getString("description"),
                 Arrays.asList((String[]) rs.getArray("tags").getArray()),
                 rs.getString("type"),
-                rs.getBigDecimal("popularity"),
-                rs.getBoolean("waiting")))
+                rs.getBigDecimal("popularity")))
         .list();
   }
 }
