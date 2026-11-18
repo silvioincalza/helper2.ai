@@ -431,6 +431,7 @@ helper2:
       max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
       reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
       read-max-tokens: 800
+      read-model: ${H2_SCOUT_EVENT_READER_MODEL:FAST}
       queries: >-
         upcoming AI hackathons,
         upcoming AI meetups and talks,

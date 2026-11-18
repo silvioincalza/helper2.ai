@@ -1,5 +1,6 @@
 package ai.helper2.research.config;
 
+import ai.helper2.platform.llm.ModelTier;
 import ai.helper2.research.usecase.RunResearch;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("helper2.research")
 public record ResearchProperties(
     boolean enabled,
-    @NotNull Model model,
+    @NotNull ModelTier model,
     @Positive int maxTokens,
     @PositiveOrZero int dailyModelCalls,
     @PositiveOrZero int dailyPageReads,
@@ -29,10 +30,5 @@ public record ResearchProperties(
               + ", the model calls one run can take")
   public boolean isDailyModelCallsEnoughForOneRun() {
     return dailyModelCalls == 0 || dailyModelCalls >= RunResearch.MAX_MODEL_CALLS;
-  }
-
-  public enum Model {
-    FAST,
-    REASONING
   }
 }
