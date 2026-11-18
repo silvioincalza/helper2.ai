@@ -4,6 +4,7 @@ set -euo pipefail
 BACKEND="backend-libs backend-public backend-backoffice"
 KEYS="frontend $BACKEND chart monitoring postgres diagrams web public backoffice"
 ROOT=${CHANGES_ROOT:-.}
+SCRIPTS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 needs() {
   case $1 in
@@ -73,10 +74,16 @@ from_paths_z() {
 from_paths() { tr '\n' '\0' | from_paths_z; }
 
 from_git() {
-  local base=$1 head=$2 paths
+  local base=$1 head=$2 skip_bump=${3:-false} paths
   if [[ -z $base || $base =~ ^0+$ ]] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
     echo "changes: no usable base '$base', so everything" >&2
     print "$KEYS"
+    return
+  fi
+  local bump
+  if [[ $skip_bump == true ]] && bump=$("$SCRIPTS/bump-version.sh" version-only "$base" "$head" 2> /dev/null); then
+    echo "changes: a pull request with only the version bump $bump, so nothing; the push to the release branch runs all of CI and builds every image" >&2
+    print ""
     return
   fi
   local list
@@ -279,6 +286,38 @@ EOF
     }
     g init -q . && echo r > README.md && g add -A && g commit -qm init
     f=0
+    mkdir -p backend frontend deploy/helm/helper2 api
+    printf 'version = "2026.1.0"\n' > backend/build.gradle.kts
+    printf '{\n  "name": "f",\n  "private": true,\n  "version": "2026.1.0",\n  "type": "module"\n}\n' > frontend/package.json
+    printf '{\n  "name": "f",\n  "version": "2026.1.0",\n  "lockfileVersion": 3,\n  "requires": true,\n  "packages": {\n    "": {\n      "name": "f",\n      "version": "2026.1.0",\n      "dependencies": {}\n    }\n  }\n}\n' > frontend/package-lock.json
+    printf 'name: h\nversion: 2026.1.0\n' > deploy/helm/helper2/Chart.yaml
+    for a in public admin common; do printf 'info:\n  version: 2026.1.0\n' > "api/$a.yaml"; done
+    g add -A && g commit -qm versions
+    "$SCRIPTS/bump-version.sh" bump 2026.1.1 > /dev/null && g commit -qam bump
+    got=$(from_git HEAD~1 HEAD true 2> /dev/null | trues)
+    if [[ -n $got ]]; then
+      echo "FAIL [a pull request with the version bump alone]: got '$got', want nothing" >&2
+      f=$((f + 1))
+    else
+      echo "ok   [a pull request with the version bump alone] -> nothing"
+    fi
+    got=$(from_git HEAD~1 HEAD 2> /dev/null | trues)
+    want=$(print "frontend $BACKEND web public backoffice chart" | trues)
+    if [[ $got != "$want" ]]; then
+      echo "FAIL [a push with the version bump alone]: got '$got', want '$want'" >&2
+      f=$((f + 1))
+    else
+      echo "ok   [a push with the version bump alone] -> $got"
+    fi
+    echo x >> README.md && "$SCRIPTS/bump-version.sh" bump 2026.1.2 > /dev/null && g commit -qam bump-and-docs
+    got=$(from_git HEAD~1 HEAD true 2> /dev/null | trues)
+    want=$(print "frontend $BACKEND web public backoffice chart diagrams" | trues)
+    if [[ $got != "$want" ]]; then
+      echo "FAIL [the version bump and a doc]: got '$got', want '$want'" >&2
+      f=$((f + 1))
+    else
+      echo "ok   [the version bump and a doc] -> $got"
+    fi
     move backend/apps/public/src/Gone.java docs/Gone.java "backend-public public diagrams" || f=$((f + 1))
     move docs/notes/Page.tsx frontend/src/Page.tsx "frontend web backoffice diagrams" || f=$((f + 1))
     move backend/apps/public/src/notes.md docs/notes.md "backend-public public diagrams" || f=$((f + 1))
@@ -299,8 +338,9 @@ case ${1:-} in
   --all) print "$KEYS" ;;
   --paths) from_paths ;;
   --self-test) self_test ;;
+  --pull-request) from_git "${2:?usage: changes.sh --pull-request <base> <head>}" "${3:?usage: changes.sh --pull-request <base> <head>}" true ;;
   -* | "")
-    echo "usage: changes.sh <base> <head> | --all | --paths | --self-test" >&2
+    echo "usage: changes.sh <base> <head> | --pull-request <base> <head> | --all | --paths | --self-test" >&2
     exit 2
     ;;
   *) from_git "$1" "${2:?usage: changes.sh <base> <head>}" ;;
