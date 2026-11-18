@@ -75,7 +75,7 @@ platform: "platform (open module)" {
   class: group
   llm: "llm (closed, named interface llm)" {
     class: group
-    api: "llm: BudgetedChat · CallOptions\nChatStream · CutAnswerWatch\nModelAnswers · ModelErrors · UntrustedText\nLlmSettings · LlmPolicies · ModelCallMetrics\nDailyBudget · CallCounter · BudgetLedger" {class: port}
+    api: "llm: BudgetedChat · TextCall · CallOptions\nChatStream · CutAnswerWatch\nModelAnswers · ModelErrors · UntrustedText\nLlmSettings · LlmPolicies · ModelCallMetrics\nDailyBudget · CallCounter · BudgetLedger" {class: port}
     internal: "llm.internal: LlmConfiguration\nNvidiaOnly · StreamThreads\nRedisCallCounter" {class: app}
     internal -> api: "wires, implements" {class: config}
   }

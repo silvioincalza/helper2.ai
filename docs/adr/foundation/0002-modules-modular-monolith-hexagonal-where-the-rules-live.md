@@ -54,7 +54,7 @@ to reach into the other's code.
    `search.internal`).
    Inside open `platform` the LLM layer is closed. Its package `platform.llm` is the named interface `llm`
    (`@NamedInterface` in its `package-info.java`), and it holds only what the modules use:
-   - the call: `BudgetedChat`, `CallOptions`, `ChatStream`, `CutAnswerWatch`, `LlmPolicies`;
+   - the call: `BudgetedChat`, `TextCall`, `CallOptions`, `ChatStream`, `CutAnswerWatch`, `LlmPolicies`;
    - the answer and the errors: `ModelAnswers`, `ModelErrors`, `UntrustedText`;
    - the models and the metrics: `LlmSettings`, `ModelCallMetrics`;
    - the budgets: `DailyBudget`, `CallCounter`, `BudgetLedger`.
