@@ -70,7 +70,7 @@ export function ListState({
       {feed.loading && (
         <>
           <span className="sr-only">{t('common.loading')}</span>
-          {skeleton ?? <TermListSkeleton />}
+          <div aria-busy="true">{skeleton ?? <TermListSkeleton />}</div>
         </>
       )}
       {!feed.loading && feed.error && (
