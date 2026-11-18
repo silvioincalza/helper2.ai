@@ -7,6 +7,9 @@ import org.jspecify.annotations.Nullable;
 
 public interface AiCheckReport {
 
+  List<String> GENERAL_SOURCES =
+      List.of("github", "npm", "pypi", "hacker-news", "live-web", "confs-tech");
+
   record Cursor(BigDecimal popularity, UUID id) {}
 
   record Row(

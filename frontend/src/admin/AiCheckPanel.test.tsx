@@ -45,6 +45,7 @@ describe('Feature: the catalog checked against the AI word rule (S2.12.2)', () =
     const table = screen.getByRole('table', { name: 'Not about AI by the word rule' });
     expect(within(table).getAllByRole('row')).toHaveLength(3);
     expect(within(table).queryByRole('button', { name: 'Skip paper' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Skip the \d+ waiting/ })).not.toBeInTheDocument();
 
     await userEvent.click(
       within(table).getByRole('button', { name: 'Skip mongodb-connection-string-url' }),

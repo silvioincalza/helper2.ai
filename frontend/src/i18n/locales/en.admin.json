@@ -680,7 +680,7 @@
     "showSkipped_other": "Show the {{count}} skipped sources",
     "aiCheck": {
       "title": "Not about AI by the word rule",
-      "lede": "Reads the catalog from the most popular resource down and lists the ones whose title, description and tags do not say they are about AI. Nothing changes until you act: skip a waiting one to keep it out of the enrichment queue.",
+      "lede": "Reads the catalog from the most popular resource down and lists the ones whose title, description and tags do not say they are about AI. A resource found by a source that only holds AI (Hugging Face, arXiv, the MCP Registry, the AI news feeds, the discovery collectors) is never listed. Nothing changes until you act: look at each one, and skip a waiting one to keep it out of the enrichment queue.",
       "start": "Check the 500 most popular",
       "more": "Check the next 500",
       "checking": "Checking…",
@@ -700,12 +700,6 @@
       "skipped": "Skipped",
       "skip": "Skip",
       "skipLabel": "Skip {{title}}",
-      "skipAll_one": "Skip the {{count}} waiting one",
-      "skipAll_other": "Skip the {{count}} waiting ones",
-      "confirm_one": "Skip {{count}} resource? It stays in the catalog; requeue it from Skipped to undo.",
-      "confirm_other": "Skip {{count}} resources? They stay in the catalog; requeue them from Skipped to undo.",
-      "confirmButton": "Skip them",
-      "cancel": "Cancel",
       "reason": "Not about AI (word rule)",
       "skipFailed": "Could not skip {{title}}."
     }

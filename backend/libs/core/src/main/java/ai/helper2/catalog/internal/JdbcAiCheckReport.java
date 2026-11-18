@@ -24,6 +24,8 @@ class JdbcAiCheckReport implements AiCheckReport {
                              WHERE l.resource_id = r.id AND l.kind = 'TAG'), '{}') AS tags
             FROM resource r
             WHERE r.data_origin IN ('INDEXED', 'OBSERVED')
+              AND NOT EXISTS (SELECT 1 FROM source_record s
+                              WHERE s.resource_id = r.id AND s.source_id NOT IN (:general))
               AND (CAST(:afterValue AS numeric) IS NULL
                    OR (r.popularity, r.id) < (CAST(:afterValue AS numeric), CAST(:afterId AS uuid)))
             ORDER BY r.popularity DESC, r.id DESC
@@ -32,6 +34,7 @@ class JdbcAiCheckReport implements AiCheckReport {
         .param("afterValue", after == null ? null : after.popularity())
         .param("afterId", after == null ? null : after.id())
         .param("size", size)
+        .param("general", GENERAL_SOURCES)
         .query((rs, n) ->
             new Row(
                 rs.getObject("id", UUID.class),
