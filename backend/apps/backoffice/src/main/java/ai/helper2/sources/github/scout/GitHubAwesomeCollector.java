@@ -45,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -171,7 +172,8 @@ public class GitHubAwesomeCollector implements Collector {
     List<AwesomeListParser.Entry> slice = all.subList(offset, end);
     Set<String> notFound = new HashSet<>();
     Map<String, JsonNode> facts = repoFacts(slice, notFound);
-    List<SourceHit> hits = new ArrayList<>(toHits(slice, facts, offset, startedAt));
+    List<SourceHit> hits =
+        new ArrayList<>(toHits(slice, facts, offset, startedAt, pass.readmeBudget()));
     log.info(
         "awesome lists: entries {}-{} of {}, {} kept as AI resources (classifier {})",
         offset,
@@ -309,7 +311,8 @@ public class GitHubAwesomeCollector implements Collector {
       List<AwesomeListParser.Entry> entries,
       List<ListRepo> read,
       List<ListText> texts,
-      List<AwesomeCrawl.Read> crawl) {}
+      List<AwesomeCrawl.Read> crawl,
+      ReadmeBudget readmeBudget) {}
 
   static final int MAX_LIST_TEXT_BYTES = 256 * 1024;
 
@@ -318,8 +321,10 @@ public class GitHubAwesomeCollector implements Collector {
   private static final String GITHUB = "https://github.com/";
 
   private Pass read(List<ListRepo> seeds) {
+    AwesomeCrawl.Limits crawlLimits = crawlLimits();
+    ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
-        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits(), clock, metrics);
+        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits, budget, metrics);
     Set<String> lists = new HashSet<>();
     crawl.forEach(r -> lists.add(r.list().fullName().toLowerCase(Locale.ROOT)));
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();
@@ -337,7 +342,7 @@ public class GitHubAwesomeCollector implements Collector {
       }
     }
     List<ListRepo> read = crawl.stream().map(AwesomeCrawl.Read::list).toList();
-    return new Pass(List.copyOf(unique.values()), read, texts, crawl);
+    return new Pass(List.copyOf(unique.values()), read, texts, crawl, budget);
   }
 
   private AwesomeCrawl.Limits crawlLimits() {
@@ -444,7 +449,8 @@ public class GitHubAwesomeCollector implements Collector {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
       ResourceType type =
-          AwesomeLists.isAwesomeList(read.list().fullName(), read.parsed())
+          AwesomeLists.isAwesomeList(
+                  read.list().fullName(), restTopics(read.list().facts()), read.parsed())
               ? ResourceType.AWESOME_LIST
               : ResourceType.ARTICLE;
       SourceHit hit = listHit(read.list(), type, now);
@@ -453,6 +459,19 @@ public class GitHubAwesomeCollector implements Collector {
       }
     }
     return hits;
+  }
+
+  private static List<String> restTopics(@Nullable JsonNode repo) {
+    List<String> topics = new ArrayList<>();
+    if (repo != null) {
+      repo.path("topics")
+          .forEach(t -> {
+            if (t.isString()) {
+              topics.add(t.asString());
+            }
+          });
+    }
+    return topics;
   }
 
   private static SourceHit listHit(ListRepo list, ResourceType type, Instant now) {
@@ -598,7 +617,11 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private List<SourceHit> toHits(
-      List<AwesomeListParser.Entry> slice, Map<String, JsonNode> facts, int offset, Instant now) {
+      List<AwesomeListParser.Entry> slice,
+      Map<String, JsonNode> facts,
+      int offset,
+      Instant now,
+      ReadmeBudget budget) {
     List<RepoClassifier.Facts> candidates = new ArrayList<>();
     Map<String, JsonNode> byId = new HashMap<>();
     Map<String, Integer> rankById = new HashMap<>();
@@ -624,7 +647,9 @@ public class GitHubAwesomeCollector implements Collector {
     for (RepoClassifier.Facts f : candidates) {
       RepoClassifier.Verdict v = verdicts.get(f.id());
       if (v != null && v.ai()) {
-        SourceHit hit = toHit(byId.get(f.id()), v.type(), rankById.get(f.id()), now);
+        ResourceType type = typeOf(f, v, budget);
+        SourceHit hit =
+            type == null ? null : toHit(byId.get(f.id()), type, rankById.get(f.id()), now);
         if (hit != null) {
           hits.add(hit);
         }
@@ -632,6 +657,62 @@ public class GitHubAwesomeCollector implements Collector {
     }
     hits.sort(Comparator.comparingInt(SourceHit::getRank));
     return hits;
+  }
+
+  private @Nullable ResourceType typeOf(
+      RepoClassifier.Facts repo, RepoClassifier.Verdict verdict, ReadmeBudget budget) {
+    if (verdict.type() != ResourceType.AWESOME_LIST) {
+      return verdict.type();
+    }
+    Optional<Boolean> list = readsAsAwesomeList(repo, budget);
+    if (list.isEmpty()) {
+      return null;
+    }
+    return list.get() ? ResourceType.AWESOME_LIST : typeWithoutTheList(repo);
+  }
+
+  private ResourceType typeWithoutTheList(RepoClassifier.Facts repo) {
+    return fallback.classify(List.of(repo)).get(repo.id()).type();
+  }
+
+  private Optional<Boolean> readsAsAwesomeList(RepoClassifier.Facts repo, ReadmeBudget budget) {
+    String fullName = repo.fullName();
+    if (fullName == null || !AwesomeLists.named(fullName, repo.topics())) {
+      return Optional.of(false);
+    }
+    String spent = budget.spent();
+    if (spent != null) {
+      log.info("awesome lists: README of {} left for the next run ({})", fullName, spent);
+      metrics.skipped(spent);
+      return Optional.empty();
+    }
+    try {
+      String readme = readme(fullName);
+      budget.read(readme);
+      return Optional.of(AwesomeLists.isAwesomeList(fullName, repo.topics(), readme));
+    } catch (SourceFailure.RateLimited e) {
+      log.warn("awesome lists: rate limited while reading the README of {}", fullName);
+      throw e;
+    } catch (SourceFailure.Unavailable e) {
+      if (noReadme(e)) {
+        return Optional.of(false);
+      }
+      log.info(
+          "awesome lists: README of {} unavailable ({}), left for the next run",
+          fullName,
+          e.getMessage());
+      return Optional.empty();
+    } catch (RuntimeException e) {
+      log.info(
+          "awesome lists: README of {} unavailable ({}), left for the next run",
+          fullName,
+          e.getClass().getSimpleName());
+      return Optional.empty();
+    }
+  }
+
+  private static boolean noReadme(SourceFailure.Unavailable e) {
+    return !e.getTransient() && e.getMessage() != null && e.getMessage().startsWith("HTTP 4");
   }
 
   private Map<String, RepoClassifier.Verdict> classify(List<RepoClassifier.Facts> candidates) {

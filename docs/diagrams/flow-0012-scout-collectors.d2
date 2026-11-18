@@ -4,7 +4,7 @@
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/ (mcp/McpRegistryCollector,
 #   huggingface/scout/HuggingFaceTrendingCollector, huggingface/scout/HuggingFaceProviderOrgsCollector,
 #   tavily/scout/LiveWebNewsCollector, tavily/scout/CourseCollector, tavily/scout/DiscoveryCollector,
-#   github/scout/GitHubAwesomeCollector, classifier/SpringAiRepoClassifier, classifier/RepoClassifier,
+#   github/scout/GitHubAwesomeCollector, github/scout/AwesomeLists, classifier/SpringAiRepoClassifier, classifier/RepoClassifier,
 #   aideadlines/AiDeadlinesCollector, confstech/ConfsTechCollector, config/scout/CollectorsConfiguration),
 #   backend/libs/core/src/main/java/ai/helper2/sources/support/RunInterval.java,
 #   backend/libs/platform/src/main/resources/helper2-shared.yaml, backend/apps/backoffice/src/main/resources/application.yaml (helper2.scout.*, helper2.sources.*).
@@ -41,15 +41,27 @@ awesome: GitHub awesome lists (1 d) {
   classify: "SpringAiRepoClassifier:\nbatches of 25, own budget\n(300 calls per UTC day)" {class: ai}
   answered: "Model answered\nthis id?" {class: decision}
   heuristic: "RepoClassifier.Heuristic\n(keyword rules)" {class: app}
+  list: "Type AWESOME_LIST?" {class: decision}
+  rule: "README passes AwesomeLists?\n(name awesome… or best-of-,\nor topic awesome-list)" {class: decision}
+  later: "Left out of this run,\nread at the next one" {class: app}
+  limited: "Pass stops (rate limited,\ncursor kept)" {class: end}
+  article: "Type from the\nkeyword rules" {class: app}
   keep: "Keep ai=true, with the given type\nand its vitality (RunScout refuses\nan archived one, ADR 0020)" {class: app}
 
   lists -> slice -> facts -> model
   model -> classify: yes
   model -> heuristic: no
   classify -> answered
-  answered -> keep: yes
+  answered -> list: yes
   answered -> heuristic: "no (error, budget,\nmissing id)"
   heuristic -> keep
+  list -> keep: no
+  list -> rule: yes
+  rule -> keep: yes
+  rule -> article: "no"
+  rule -> later: "README unavailable now\nor budget spent"
+  rule -> limited: "rate limited"
+  article -> keep
 }
 
 batch: "CollectedBatch(hits,\nnextCursor, checkpoint)" {class: end}

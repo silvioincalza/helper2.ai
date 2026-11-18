@@ -44,7 +44,13 @@ constructor(
 }
 
 val READING_TYPES =
-  setOf(ResourceType.ARTICLE, ResourceType.PAPER, ResourceType.NEWS, ResourceType.EVENT)
+  setOf(
+    ResourceType.ARTICLE,
+    ResourceType.PAPER,
+    ResourceType.NEWS,
+    ResourceType.EVENT,
+    ResourceType.AWESOME_LIST,
+  )
 
 val LEARN_TYPES: Set<ResourceType> = setOf(ResourceType.COURSE)
 
