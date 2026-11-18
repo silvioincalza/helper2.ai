@@ -152,6 +152,8 @@
         "ADD_KNOWN_TARGET": "Known target added",
         "EDIT_KNOWN_TARGET": "Known target changed",
         "REMOVE_KNOWN_TARGET": "Known target removed",
+        "ADD_SHADOW_LIBRARY": "Shadow library added",
+        "REMOVE_SHADOW_LIBRARY": "Shadow library removed",
         "SET_FIELD": "Field set by an admin",
         "DROP_FIELD": "AI value of a field dropped"
       }
@@ -393,6 +395,35 @@
           "DIRECTORY": "Its pages can then be proposed as products."
         },
         "confirmRemove": "Remove host",
+        "cancel": "Cancel"
+      },
+      "shadow": {
+        "title": "Shadow libraries",
+        "lede": "Sites that copy books and papers without the rights holder's permission. A web result on one of them is never shown, and the Scout never proposes it. A name blocks every site whose host has it as one part before the last: libgen blocks libgen.rs, libgen.is and all their subdomains. The search on this host follows your change at once, the public site within 30 seconds.",
+        "addTitle": "Add a shadow library",
+        "name": "Name",
+        "reason": "Reason (optional)",
+        "add": "Add shadow library",
+        "empty": "Enter a name, such as libgen.",
+        "added": "Added: results on {{name}} sites are no longer shown.",
+        "removed": "Removed: results on {{name}} sites can be shown again.",
+        "refused": "Not saved: {{detail}}",
+        "failed": "The action failed. Please try again.",
+        "loadError": "Could not load the shadow libraries.",
+        "listTitle_one": "Names ({{count}} of {{max}})",
+        "listTitle_other": "Names ({{count}} of {{max}})",
+        "none": "No names. Every web result can be shown.",
+        "col": {
+          "name": "Name",
+          "added": "Added",
+          "actions": "Actions"
+        },
+        "addedBy": "by {{who}} · {{at}}",
+        "remove": "Remove",
+        "removeLabel": "Remove {{name}}",
+        "removeTitle": "Remove {{name}}?",
+        "removeEffect": "Web results on its sites can then be shown and proposed again.",
+        "confirmRemove": "Remove name",
         "cancel": "Cancel"
       },
       "targets": {

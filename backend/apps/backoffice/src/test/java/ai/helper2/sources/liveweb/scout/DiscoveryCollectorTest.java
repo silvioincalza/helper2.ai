@@ -126,7 +126,8 @@ class DiscoveryCollectorTest {
         all[0],
         List.of(all),
         new ScoutLiveWebCredits(counter, keys, cap, meters),
-        hosts);
+        hosts,
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   DiscoveryCollector collector(DiscoveryCategory... all) {
@@ -233,6 +234,27 @@ class DiscoveryCollectorTest {
               {"url":"https://tavily.com/pricing","title":"Pricing | Tavily","content":"Plans for the AI search API.","score":0.9},
               {"url":"https://blog.tavily.com/how-we-built-a-search-api-for-agents","title":"How we built a search API for AI agents","content":"Our LLM search.","score":0.9},
               {"url":"https://tavily.com/knowledge/best-self-hosted-llm-apps","title":"12 Best Self-Hosted LLM Apps","content":"Open WebUI and more for AI.","score":0.9},
+              {"url":"https://openwebui.com/","title":"Open WebUI","content":"Self-hosted AI platform for LLMs that runs offline.","score":0.88}
+            ]}\
+            """));
+
+    CollectedBatch batch = collector(SELF_HOSTED).collect(null, null, 1000);
+
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue())
+        .containsExactly("https://openwebui.com");
+    assertThat(batch.getHits()).isEmpty();
+  }
+
+  @Test
+  void aPageOnAShadowLibraryIsNeitherACandidateNorAListPage() {
+    server.route(
+        "/search",
+        FixtureServer.Reply.ok(
+            """
+            {"results":[
+              {"url":"https://ka.z-lib.fm/book/123/self-hosted-llm-apps","title":"Self-Hosted LLM Apps | download on Z-Library","content":"A book on self-hosted AI apps for LLMs.","score":0.9},
+              {"url":"https://libgen.is/book/best-self-hosted-llm-apps","title":"12 Best Self-Hosted LLM Apps","content":"Open WebUI and more for AI.","score":0.9},
               {"url":"https://openwebui.com/","title":"Open WebUI","content":"Self-hosted AI platform for LLMs that runs offline.","score":0.88}
             ]}\
             """));
@@ -415,7 +437,8 @@ class DiscoveryCollectorTest {
         SELF_HOSTED,
         List.of(LOCAL_AI, SELF_HOSTED),
         new ScoutLiveWebCredits(counter, keys, 40, meters),
-        SeedDiscoveryHosts.store());
+        SeedDiscoveryHosts.store(),
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   @Test

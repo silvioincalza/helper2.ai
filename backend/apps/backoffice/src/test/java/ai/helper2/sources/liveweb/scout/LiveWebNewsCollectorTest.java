@@ -82,7 +82,8 @@ class LiveWebNewsCollectorTest {
         resilience,
         new RunInterval(Duration.ofDays(5)),
         queries,
-        new ScoutLiveWebCredits(counter, keys, 40, meters));
+        new ScoutLiveWebCredits(counter, keys, 40, meters),
+        SourceFixtures.SHADOW_LIBRARIES);
   }
 
   @Test
@@ -219,7 +220,8 @@ class LiveWebNewsCollectorTest {
             new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-            SourceFixtures.CLOCK);
+            SourceFixtures.CLOCK,
+            SourceFixtures.SHADOW_LIBRARIES);
     assertThat(WebSources.FIXED)
         .containsExactlyInAnyOrder(
             live.getDescriptor().getId(),
