@@ -61,9 +61,7 @@ public final class ObservedHttp {
       Duration deadline,
       ObservationRegistry registry,
       HttpClientProperties http) {
-    return observed(requestFactory(timeout, http.poolWait(), true, http), registry)
-        .requestInterceptor(
-            new BoundedResponse(http.maxResponseSize().toBytes(), deadline, System::nanoTime));
+    return bounded(requestFactory(timeout, http.poolWait(), true, http), deadline, registry, http);
   }
 
   public static RestClient.Builder restClientBuilderWithoutRedirects(
@@ -71,7 +69,15 @@ public final class ObservedHttp {
       Duration deadline,
       ObservationRegistry registry,
       HttpClientProperties http) {
-    return observed(requestFactory(timeout, http.poolWait(), false, http), registry)
+    return bounded(requestFactory(timeout, http.poolWait(), false, http), deadline, registry, http);
+  }
+
+  private static RestClient.Builder bounded(
+      HttpComponentsClientHttpRequestFactory factory,
+      Duration deadline,
+      ObservationRegistry registry,
+      HttpClientProperties http) {
+    return observed(factory, registry)
         .requestInterceptor(
             new BoundedResponse(http.maxResponseSize().toBytes(), deadline, System::nanoTime));
   }
@@ -91,12 +97,7 @@ public final class ObservedHttp {
   }
 
   public static boolean isDeadlineExceeded(Throwable failure) {
-    for (Throwable t = failure; t != null; t = t.getCause()) {
-      if (t instanceof DeadlineExceeded) {
-        return true;
-      }
-    }
-    return false;
+    return isCausedBy(failure, DeadlineExceeded.class);
   }
 
   public static Consumer<Map<String, Object>> maxResponseBytes(int bytes) {
@@ -110,8 +111,12 @@ public final class ObservedHttp {
   }
 
   public static boolean isTooLarge(Throwable failure) {
+    return isCausedBy(failure, ResponseTooLarge.class);
+  }
+
+  private static boolean isCausedBy(Throwable failure, Class<? extends Throwable> cause) {
     for (Throwable t = failure; t != null; t = t.getCause()) {
-      if (t instanceof ResponseTooLarge) {
+      if (cause.isInstance(t)) {
         return true;
       }
     }

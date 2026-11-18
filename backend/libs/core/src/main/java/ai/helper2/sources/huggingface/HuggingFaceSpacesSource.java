@@ -123,7 +123,7 @@ public class HuggingFaceSpacesSource implements SearchSource {
             () ->
                 http.get()
                     .uri(u -> {
-                      HttpClients.hubListing(u.path("/api/spaces"), query, text)
+                      HubListing.of(u.path("/api/spaces"), query, text)
                           .queryParamIfPresent("sort", mostLikedFirst(query))
                           .queryParam("direction", -1)
                           .queryParam(
