@@ -24,7 +24,6 @@ public record LlmSettings(
     return fastModel.isEmpty() ? reasoningModel : fastModel;
   }
 
-  /** The model id of a tier; empty when that tier has no model. FAST falls back to REASONING. */
   public String model(ModelTier tier) {
     return tier == ModelTier.FAST ? fast() : reasoningModel;
   }
