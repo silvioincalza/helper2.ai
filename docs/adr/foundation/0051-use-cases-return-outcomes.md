@@ -158,6 +158,9 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 
 - A `Refused` result inside a transaction this unit joined does not roll back: the caller that opened the
   transaction must look at the outcome. `TransactionalUnitOfWorkTest` holds both halves of the rule.
+- A refusal must be the top-level result of the unit. A `Refused` value wrapped in another result (an `Optional`, a
+  record) is committed: `TransactionalUnitOfWorkTest` pins it. `ModularityRules` holds the pairing: a class that
+  declares a `Refused` outcome depends on `UnitOfWork`.
 - The 400 for a confirmed value the catalog refuses has the detail of every `BadRequestException`, "Invalid request
   parameters.": it does not name the field. Such a value is in a candidate only when the rules of `EditCandidate`
   and of `CurateField` differ.

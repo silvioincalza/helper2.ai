@@ -8,9 +8,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.Problems;
+import ai.helper2.shared.Refused;
+import ai.helper2.shared.UnitOfWork;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -101,6 +104,27 @@ public abstract class ModularityRules {
         .should()
         .dependOnClassesThat(SPEAK_HTTP)
         .check(classes());
+  }
+
+  @Test
+  public void aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork() {
+    Set<String> refusing = outermostNames(classes().stream().filter(ModularityRules::isARefusal));
+    ArchRuleDefinition.classes()
+        .that(
+            DescribedPredicate.describe(
+                "declare a Refused outcome", (JavaClass type) -> refusing.contains(type.getName())))
+        .should()
+        .dependOnClassesThat()
+        .belongToAnyOf(UnitOfWork.class)
+        .check(classes());
+  }
+
+  private static boolean isARefusal(JavaClass type) {
+    return type.getEnclosingClass().isPresent() && type.isAssignableTo(Refused.class);
+  }
+
+  private static Set<String> outermostNames(Stream<JavaClass> types) {
+    return types.map(type -> outermost(type).getName()).collect(Collectors.toSet());
   }
 
   @Test
