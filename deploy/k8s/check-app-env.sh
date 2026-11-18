@@ -5,7 +5,8 @@ file=${1:?usage: check-app-env.sh <app.env> [--no-redis-password]}
 redis=${2:-}
 fail() { echo "$file: $*" >&2; exit 1; }
 
-declare -A seen
+value() { local name="v_$1"; printf '%s' "${!name:-}"; }
+
 n=0
 while IFS= read -r line || [ -n "$line" ]; do
   n=$((n + 1))
@@ -17,26 +18,26 @@ while IFS= read -r line || [ -n "$line" ]; do
   [[ $l == *=* ]] || fail "line $n is not KEY=value"
   key=${l%%=*}
   [[ $key =~ ^H2_[A-Z0-9_]+$ ]] || fail "line $n: key \"$key\" must match ^H2_[A-Z0-9_]+\$"
-  [ -z "${seen[$key]:-}" ] || fail "line $n: $key is set twice"
-  seen[$key]=${l#*=}
+  [ -z "$(value "$key")" ] || fail "line $n: $key is set twice"
+  printf -v "v_$key" '%s' "${l#*=}"
 done < "$file"
 
 distinct() {
   local key other
   for key in "$@"; do
     for other in "$@"; do
-      [ "$key" = "$other" ] || [ "${seen[$key]}" != "${seen[$other]}" ] || fail "$key and $other must differ"
+      [ "$key" = "$other" ] || [ "$(value "$key")" != "$(value "$other")" ] || fail "$key and $other must differ"
     done
   done
 }
 
 for key in H2_DATABASE_PASSWORD H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_BACKOFFICE_PASSWORD H2_DATABASE_MONITOR_PASSWORD; do
-  [[ ${seen[$key]:-} =~ ^[A-Za-z0-9+/=_-]{32,}$ ]] || fail "$key needs 32+ characters of base64 (openssl rand -hex 32)"
+  [[ $(value "$key") =~ ^[A-Za-z0-9+/=_-]{32,}$ ]] || fail "$key needs 32+ characters of base64 (openssl rand -hex 32)"
 done
 distinct H2_DATABASE_PASSWORD H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_BACKOFFICE_PASSWORD H2_DATABASE_MONITOR_PASSWORD
 if [ "$redis" != "--no-redis-password" ]; then
   for key in H2_REDIS_PASSWORD H2_REDIS_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD H2_REDIS_MONITOR_PASSWORD; do
-    [[ ${seen[$key]:-} =~ ^[A-Za-z0-9]{32,}$ ]] || fail "$key needs 32+ letters and digits (openssl rand -hex 32)"
+    [[ $(value "$key") =~ ^[A-Za-z0-9]{32,}$ ]] || fail "$key needs 32+ letters and digits (openssl rand -hex 32)"
   done
   distinct H2_REDIS_PASSWORD H2_REDIS_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD H2_REDIS_MONITOR_PASSWORD
 fi
