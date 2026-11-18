@@ -26,18 +26,7 @@ public record ScoutProperties(
     @Valid @NotNull KnownTargets knownTargets) {
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}
 
-  public record Evidence(
-      @PositiveOrZero int dailyPageReadCredits,
-      @NotNull Duration pageReadTtl,
-      @NotNull Duration pageTextTtl) {
-    @AssertTrue(message = "must be more than 0 and at most P1D")
-    public boolean isPageTextTtlAtMostADay() {
-      return pageTextTtl == null
-          || (!pageTextTtl.isNegative()
-              && !pageTextTtl.isZero()
-              && pageTextTtl.compareTo(Duration.ofDays(1)) <= 0);
-    }
-  }
+  public record Evidence(@PositiveOrZero int dailyPageReadCredits) {}
 
   @AssertTrue(message = "must be a Spring cron expression")
   public boolean isCronReadable() {

@@ -1,8 +1,8 @@
 package ai.helper2.scout.usecase
 
 import ai.helper2.platform.AuditTrail
-import ai.helper2.scout.UnitOfWork
 import ai.helper2.shared.ResourceType
+import ai.helper2.shared.UnitOfWork
 import java.util.UUID
 import java.util.function.Supplier
 import kotlin.test.Test

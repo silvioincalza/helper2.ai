@@ -56,7 +56,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -140,7 +139,10 @@ class ReviewController implements ReviewApi {
   public ResponseEntity<ReviewItemDto> resolveReviewItem(UUID id, ReviewResolutionDto body) {
     ResolveReview.Decision decided =
         resolve.decide(
-            id, ReviewQueue.Status.valueOf(body.getStatus().getValue()), adminId(), body.getNote());
+            id,
+            ReviewQueue.Status.valueOf(body.getStatus().getValue()),
+            Admins.id(),
+            body.getNote());
     return switch (decided.outcome()) {
       case ResolveReviewItem.Outcome.Resolved r ->
           ResponseEntity.ok(
@@ -161,13 +163,13 @@ class ReviewController implements ReviewApi {
   @Override
   public ResponseEntity<Void> setResourceField(
       UUID id, ResourceFieldDto field, ResourceFieldValueDto body) {
-    curateField.set(id, field.getValue(), body.getValue(), adminId());
+    curateField.set(id, field.getValue(), body.getValue(), Admins.id());
     return ResponseEntity.noContent().build();
   }
 
   @Override
   public ResponseEntity<Void> dropResourceField(UUID id, ResourceFieldDto field) {
-    curateField.drop(id, field.getValue(), adminId());
+    curateField.drop(id, field.getValue(), Admins.id());
     return ResponseEntity.noContent().build();
   }
 
@@ -188,7 +190,7 @@ class ReviewController implements ReviewApi {
             body.getDescriptionWrittenByAi(),
             body.getLanguage(),
             body.getPublishedAt());
-    switch (editCandidate.edit(id, body.getExpectedDetails(), change, adminId())) {
+    switch (editCandidate.edit(id, body.getExpectedDetails(), change, Admins.id())) {
       case EditCandidate.Outcome.Edited e -> {}
       case EditCandidate.Outcome.NotFound n ->
           throw new NotFoundException("Review item not found.");
@@ -214,7 +216,7 @@ class ReviewController implements ReviewApi {
         KnownTarget.Kind.valueOf(body.getKind().getValue()),
         body.getName(),
         body.getOtherNames(),
-        adminId())) {
+        Admins.id())) {
       case EDITED -> {}
       case NOT_FOUND -> throw new NotFoundException("Review item not found.");
       case NOT_OPEN ->
@@ -240,7 +242,7 @@ class ReviewController implements ReviewApi {
   @Override
   public ResponseEntity<ReviewEvidenceDto> changeRelationshipTarget(
       UUID id, RelationshipTargetChangeDto body) {
-    changeTarget.change(id, target(body), adminId());
+    changeTarget.change(id, target(body), Admins.id());
     return getReviewEvidence(id);
   }
 
@@ -269,7 +271,7 @@ class ReviewController implements ReviewApi {
         resolveMany.resolve(
             List.copyOf(body.getIds()),
             ReviewQueue.Status.valueOf(body.getStatus().getValue()),
-            adminId(),
+            Admins.id(),
             body.getNote());
     return ResponseEntity.ok(
         new ReviewBulkResultDto(
@@ -279,10 +281,6 @@ class ReviewController implements ReviewApi {
                     new ReviewBulkItemDto(
                         i.id(), ReviewBulkItemDto.OutcomeEnum.fromValue(i.result().name())))
                 .toList()));
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   @Override

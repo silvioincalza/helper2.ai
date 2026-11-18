@@ -2,12 +2,13 @@ import './adminText';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
+import { ApiError, problemDetail } from '@/api/client';
 import type { RuntimeSettingState } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { formatDate } from '@/lib/format';
 import { TableSkeleton } from '@/ui/Skeleton';
+import { trimOrNull } from './adminModel';
 
 interface Pending {
   setting: RuntimeSettingState;
@@ -80,7 +81,7 @@ export function RuntimeSettingsPanel({
     if (!pending || busy) return;
     setBusy(true);
     const { setting, value } = pending;
-    const why = reason.trim() === '' ? null : reason.trim();
+    const why = trimOrNull(reason);
     try {
       const saved =
         value === null
@@ -98,9 +99,9 @@ export function RuntimeSettingsPanel({
       setEditing(null);
     } catch (e) {
       const code = e instanceof ApiError ? e.problem?.code : undefined;
+      const detail = problemDetail(e, { code: ['invalid-request'] });
       if (code === 'version-conflict') setNotice({ kind: 'conflict' });
-      else if (code === 'invalid-request' && e instanceof ApiError && e.problem?.detail)
-        setNotice({ kind: 'refused', detail: e.problem.detail });
+      else if (detail) setNotice({ kind: 'refused', detail });
       else setNotice({ kind: 'failed' });
       setPending(null);
     } finally {
