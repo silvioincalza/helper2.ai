@@ -8,6 +8,7 @@ import ai.helper2.scout.usecase.StoredFieldAnswer;
 import ai.helper2.shared.ResourceType;
 import java.util.List;
 import java.util.UUID;
+import org.apache.commons.lang3.EnumUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -50,11 +51,7 @@ class CatalogStoredAnswers implements StoredAnswers {
   }
 
   private static ResourceType typeOf(String type) {
-    try {
-      return ResourceType.valueOf(type);
-    } catch (IllegalArgumentException e) {
-      return ResourceType.OTHER;
-    }
+    return EnumUtils.getEnum(ResourceType.class, type, ResourceType.OTHER);
   }
 
   @Override

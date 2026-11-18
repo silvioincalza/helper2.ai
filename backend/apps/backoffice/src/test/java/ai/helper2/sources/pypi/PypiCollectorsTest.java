@@ -21,7 +21,7 @@ class PypiCollectorsTest {
 
   private static PypiCollector create(boolean enabled, String key, String project) {
     return PypiCollectors.create(
-        new SourceSettings(enabled, null, key, Duration.ofSeconds(60), Duration.ZERO),
+        new SourceSettings(enabled, null, key, Duration.ofSeconds(60), Duration.ZERO, null),
         new CollectorProperties.Pypi(Duration.ofDays(1), project, 20, 20_000_000_000L),
         HTTP,
         SourceFixtures.CLOCK,

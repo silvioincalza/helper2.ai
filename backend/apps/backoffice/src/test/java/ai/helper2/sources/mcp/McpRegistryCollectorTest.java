@@ -30,12 +30,18 @@ class McpRegistryCollectorTest {
   }
 
   McpRegistryCollector collector() {
+    return collector(new RunInterval(Duration.ZERO), 0);
+  }
+
+  McpRegistryCollector collector(RunInterval interval, int itemsPerRun) {
     return new McpRegistryCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
-        Resilience.NONE);
+        Resilience.NONE,
+        interval,
+        itemsPerRun);
   }
 
   @Test
@@ -221,13 +227,7 @@ class McpRegistryCollectorTest {
   }
 
   McpRegistryCollector hourly() {
-    return new McpRegistryCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
-        TestHttp.restClientBuilder(
-            Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-        SourceFixtures.CLOCK,
-        Resilience.NONE,
-        new RunInterval(Duration.ofHours(1)));
+    return collector(new RunInterval(Duration.ofHours(1)), 0);
   }
 
   @Test
@@ -265,15 +265,7 @@ class McpRegistryCollectorTest {
     server.route(
         "/v0.1/servers",
         FixtureServer.Reply.ok(FixtureServer.fixture("mcp-servers-postgres.json")));
-    McpRegistryCollector wide =
-        new McpRegistryCollector(
-            new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
-            TestHttp.restClientBuilder(
-                Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-            SourceFixtures.CLOCK,
-            Resilience.NONE,
-            new RunInterval(Duration.ZERO),
-            5000);
+    McpRegistryCollector wide = collector(new RunInterval(Duration.ZERO), 5000);
 
     collector().collect(null, null, 1);
     int narrowCalls = server.requests.size();

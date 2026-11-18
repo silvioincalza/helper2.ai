@@ -4,7 +4,7 @@ import type { Assertion, ResourceDetail } from '@/api/types';
 import { ModeBadge, OriginLabel, VerificationBadge } from '@/ui/Badges';
 import { ExternalLink } from '@/ui/ExternalLink';
 import { Icon } from '@/ui/Icon';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { formatDate } from '@/lib/format';
 import { EvidenceList } from './EvidenceList';
 import { FieldStates } from './FieldStates';
@@ -73,7 +73,7 @@ function Facts({ facts }: { facts: Assertion[] }) {
                 {t(`detail.field.${a.field}`, { defaultValue: plainName(a.field) })}
               </th>
               <td>
-                <span {...(isAiOrigin(a.origin) ? aiMark() : {})}>
+                <span {...aiMarkWhen(isAiOrigin(a.origin))}>
                   <FactValue fact={a} />
                 </span>
               </td>

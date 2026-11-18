@@ -9,6 +9,8 @@ import type {
   ReviewResearchRun,
 } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
+import { aiMark } from '@/lib/aiMark';
+import { formatCount } from '@/lib/format';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { tagsOf } from './CandidateEditForm';
 import { useRunDecisions, type Decision } from './researchDecisionsStore';
@@ -314,13 +316,7 @@ export function ResearchDecisions({
 
   return (
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
-      ref={box}
-      className="h2-admin__research"
-      data-ai-generated="true"
-      data-ai-model={run.model}
-      onKeyDown={onKeyDown}
-    >
+    <div ref={box} className="h2-admin__research" {...aiMark(run.model)} onKeyDown={onKeyDown}>
       <p className="h2-admin__research-ai">
         <strong>{t('admin.research.aiLabel')}</strong> {t('admin.research.aiHint')}
       </p>
@@ -337,7 +333,7 @@ export function ResearchDecisions({
         {t('admin.research.meta', {
           model: run.model,
           steps: run.steps,
-          tokens: (run.promptTokens + run.completionTokens).toLocaleString('en'),
+          tokens: formatCount(run.promptTokens + run.completionTokens, 'en'),
         })}{' '}
         <Link
           to={`/admin/review/research/${run.id}`}

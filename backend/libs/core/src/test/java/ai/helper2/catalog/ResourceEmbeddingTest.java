@@ -112,7 +112,7 @@ class ResourceEmbeddingTest {
   }
 
   private List<EmbeddingTask> pendingOfThisRun() {
-    return embeddings.pendingEmbeddings(model, 100_000).tasks().stream()
+    return embeddings.pendingEmbeddings(model, 100_000, List.of()).tasks().stream()
         .filter(t -> created.contains(t.resourceId()))
         .toList();
   }
@@ -168,13 +168,13 @@ class ResourceEmbeddingTest {
             registry)
         .tick();
     assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
-    assertThat(embeddings.pendingEmbeddings(model, 1).backlog()).isZero();
+    assertThat(embeddings.pendingEmbeddings(model, 1, List.of()).backlog()).isZero();
 
     jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id")
         .param("id", beta)
         .update();
 
-    assertThat(embeddings.pendingEmbeddings(model, 1).backlog()).isEqualTo(1);
+    assertThat(embeddings.pendingEmbeddings(model, 1, List.of()).backlog()).isEqualTo(1);
 
     jdbc.sql("UPDATE resource SET description = 'changed too' WHERE id = :id")
         .param("id", alpha)
@@ -287,7 +287,7 @@ class ResourceEmbeddingTest {
     assertThat(failures(registry, "embedding")).isEqualTo(1);
     assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
     assertThat(registry.get("helper2.embedding.last.success").gauge().value()).isPositive();
-    assertThat(embeddings.pendingEmbeddings(model, 10).backlog()).isZero();
+    assertThat(embeddings.pendingEmbeddings(model, 10, List.of()).backlog()).isZero();
     assertThat(List.of(alpha, beta, other)).hasSize(3);
   }
 

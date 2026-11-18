@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
+import { problemDetail } from '@/api/client';
 import type { EnrichmentQueueEntry as Entry, EnrichmentQueueView } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
@@ -78,7 +78,7 @@ export default function EnrichmentQueuePage() {
     } catch (err) {
       setResult({
         ok: false,
-        detail: err instanceof ApiError ? err.problem?.detail : undefined,
+        detail: problemDetail(err),
       });
     } finally {
       setBusy(false);

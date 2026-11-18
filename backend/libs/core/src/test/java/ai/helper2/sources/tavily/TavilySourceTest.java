@@ -37,7 +37,7 @@ class TavilySourceTest {
   TavilySource source() {
     return new TavilySource(
         new SourceSettings(
-            true, server.baseUrl(), "test-token", Duration.ofSeconds(2), Duration.ZERO),
+            true, server.baseUrl(), "test-token", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -236,7 +236,8 @@ class TavilySourceTest {
                     server.baseUrl(),
                     "test-token",
                     Duration.ofSeconds(2),
-                    Duration.ofMinutes(30)),
+                    Duration.ofMinutes(30),
+                    null),
                 TestHttp.restClientBuilder(
                     Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
                 SourceFixtures.CLOCK,

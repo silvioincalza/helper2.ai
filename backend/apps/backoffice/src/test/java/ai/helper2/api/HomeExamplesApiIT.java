@@ -17,13 +17,13 @@ import ai.helper2.examples.DraftSources;
 import ai.helper2.examples.ExampleDrafter;
 import ai.helper2.examples.HomeExamples;
 import ai.helper2.examples.ProposedDraft;
-import ai.helper2.examples.UnitOfWork;
 import ai.helper2.examples.WaitingDraft;
 import ai.helper2.examples.config.ExamplesProperties;
 import ai.helper2.examples.usecase.DraftHomeExamples;
 import ai.helper2.examples.usecase.ListHomeExamples;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.shared.AudiencePath;
+import ai.helper2.shared.UnitOfWork;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -404,7 +404,7 @@ class HomeExamplesApiIT extends ApiTestBase {
   @Autowired HomeExamples examples;
   @Autowired AuditTrail auditTrail;
   @Autowired DraftQueue draftQueue;
-  @Autowired UnitOfWork examplesUnitOfWork;
+  @Autowired UnitOfWork unitOfWork;
   @Autowired ExamplesProperties examplesProperties;
 
   @Test
@@ -450,7 +450,7 @@ class HomeExamplesApiIT extends ApiTestBase {
             drafter,
             draftQueue,
             auditTrail,
-            examplesUnitOfWork,
+            unitOfWork,
             examplesProperties.draftSources());
 
     assertThat(run.draft(adminId).count()).as("the label is a waiting draft's").isZero();
@@ -481,8 +481,7 @@ class HomeExamplesApiIT extends ApiTestBase {
           }
         };
     var run =
-        new DraftHomeExamples(
-            examples, sources, drafter, draftQueue, auditTrail, examplesUnitOfWork, 5);
+        new DraftHomeExamples(examples, sources, drafter, draftQueue, auditTrail, unitOfWork, 5);
 
     assertThat(run.draft(adminId).count()).isOne();
     ReviewQueue.Item item =

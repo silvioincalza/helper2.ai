@@ -1,30 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import type { ResultCard } from '@/api/types';
+import { AI_ORIGIN } from '@/lib/aiMark';
 import { DateFactRow } from './DateFactView';
 
 export function DateTimeline({
   timeline,
-  compact = false,
   eventOrigin = null,
 }: {
   timeline: ResultCard['timeline'];
-  compact?: boolean;
   eventOrigin?: ResultCard['eventOrigin'];
 }) {
   const { t } = useTranslation();
-  const aiRead = eventOrigin === 'AI_EXTRACTED';
-  if (compact) {
-    return (
-      <div role="group" aria-label={t('card.timeline')}>
-        <dl className="timeline timeline-compact">
-          <DateFactRow label={t('date.updated')} fact={timeline.updated} />
-          {timeline.eventStart && (
-            <DateFactRow label={t('date.eventStart')} fact={timeline.eventStart} aiRead={aiRead} />
-          )}
-        </dl>
-      </div>
-    );
-  }
+  const aiRead = eventOrigin === AI_ORIGIN.read;
   return (
     <div role="group" aria-label={t('card.timeline')}>
       <dl className="timeline">

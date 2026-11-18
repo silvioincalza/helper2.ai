@@ -32,7 +32,7 @@ class HackerNewsSourceTest {
   HackerNewsSource source() {
     return new HackerNewsSource(
         new SourceSettings(
-            true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30)),
+            true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30), null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         SourceFixtures.SHADOW_LIBRARIES);

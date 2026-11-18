@@ -223,7 +223,8 @@ class RelationshipTargetApiIT extends ApiTestBase {
             Instant.now(),
             "VALIDATED",
             List.of(),
-            null),
+            null,
+            false),
         new EnrichmentResults.Checked(List.of(), List.of(), List.of()));
   }
 

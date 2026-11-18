@@ -59,7 +59,7 @@ class NewsFeedCollectorTest {
 
   private NewsFeedCollector collector(FeedProperties.Feed feed, RunInterval interval) {
     return new NewsFeedCollector(
-        new SourceSettings(true, null, null, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, null, null, Duration.ofSeconds(2), Duration.ZERO, null),
         feed,
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,

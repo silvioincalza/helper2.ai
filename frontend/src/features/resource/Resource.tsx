@@ -12,6 +12,7 @@ import { ProofQuote } from '@/ui/ProofQuote';
 import { QuotedFromLink } from '@/ui/QuotedFromLink';
 import { aiMark, aiSource, isAiOrigin } from '@/lib/aiMark';
 import { displayHost } from '@/lib/format';
+import { pickReasonState } from '@/lib/selection';
 import { CategoryLinks } from './CategoryLinks';
 import { fromResults, type CardHead, type PickForPage } from '../search/fromResults';
 import { ResultDate } from '../search/ResultDate';
@@ -209,16 +210,16 @@ function BackLink({ from }: { from: string | undefined }) {
 
 function WhyPicked({ pick }: { pick: PickForPage }) {
   const { t } = useTranslation();
-  const removed = pick.reasonCheck === 'REMOVED' || !pick.reason;
+  const reason = pickReasonState(pick);
   return (
     <section className="h2-res__sec h2-res__pick" aria-labelledby="h2-res-why">
       <h2 id="h2-res-why" className="h2-res__h">
         {t('results.whyPicked')}{' '}
         <span className="h2-res__rank">{t('results.pick', { rank: pick.rank })}</span>
       </h2>
-      {removed ? (
+      {reason !== 'shown' ? (
         <p className="h2-res__note">
-          {t(pick.reasonCheck === 'REMOVED' ? 'guide.reasonRemoved' : 'results.noReason')}
+          {t(reason === 'removed' ? 'guide.reasonRemoved' : 'results.noReason')}
         </p>
       ) : (
         <>

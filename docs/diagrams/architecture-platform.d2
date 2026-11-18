@@ -4,7 +4,9 @@
 # Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/package-info.java (open module),
 #   backend/libs/core/src/main/java/ai/helper2/api/package-info.java (open module api), ContractEnumConverters.java,
 #   platform/RateLimitInterceptor.java, RedisRateLimiter.java (h2:v1:rate:*), ApiExceptionHandler.java,
-#   ClusterLockConfiguration.java, ClusterLockProperties.java (shedlock, public_app_lock), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
+#   ClusterLockConfiguration.java, ClusterLockProperties.java (shedlock, public_app_lock),
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt (port), platform/TransactionalUnitOfWork.java,
+#   UnitOfWorkConfiguration.java (imported by BackOfficeApplication only), backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
 #   platform/llm/* (RedisCallCounter: h2:v1:budget:*), platform/http/ObservedHttp.java,
 #   platform/resilience/* (RedisOutboundThrottle: h2:v1:outbound:*), platform/quota/* (QuotaKeys: h2:v1:quota:*),
 #   platform/cache/* (JdbcSharedCache, SharedCacheRetention: ai_cache),
@@ -78,10 +80,11 @@ platform: "platform (open module)" {
   quota: "quota: QuotaCounter (Redis Lua)\nQuotaKeys (HMAC)" {class: app}
   cache: "cache: SharedCaches\nJdbcSharedCache\nSharedCacheRetention (daily purge)" {class: app}
   locks: "ClusterLock · ClusterLocks\n(ShedLock, database time)" {class: app}
+  work: "TransactionalUnitOfWork\n(one transaction per use case step;\nbean in the back office only)" {class: app}
   settings: "settings: SettingsGroup · Setting\nRuntimeSetting (allow-list)\nRuntimeSettings (snapshot, 20 s refresh)" {class: app}
 }
 
-shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nVocabulary" {class: app}
+shared: "shared (open, Kotlin)\nCanonicalUrl · ResourceId · DateFact\nVocabulary · UnitOfWork (port)" {class: app}
 api: "api (open)\napi.common: common.yaml, generated once\n(libs/core; ContractEnumConverters)\napi.generated: per app, public.yaml\nor admin.yaml" {class: app}
 
 redis: "Redis 8 (disposable)\nh2:v1:rate:* · h2:v1:budget:*\nh2:v1:outbound:* · h2:v1:quota:*\nh2:v1:session:public:* · h2:v1:session:backoffice:*" {shape: cylinder; class: data}
@@ -105,6 +108,8 @@ modules -> platform.http: "HTTP client" {class: config}
 modules -> platform.quota: "daily web searches"
 modules -> platform.cache: "model answers"
 modules -> platform.locks: "Scout, embedding indexer"
+platform.work -> shared: "implements UnitOfWork" {class: config}
+platform.work -> pg: "commit or roll back"
 modules -> shared
 modules -> api: "controller interfaces, DTOs"
 

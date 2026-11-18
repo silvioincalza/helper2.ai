@@ -1,4 +1,4 @@
-import { api, ApiError, csrfTokenFrom, deleteMyAccount, signOut } from './client';
+import { api, ApiError, csrfTokenFrom, deleteMyAccount, problemDetail, signOut } from './client';
 import { json, mockApi, problem } from '@/test/mockApi';
 import type { GuideStep } from './types';
 
@@ -13,6 +13,41 @@ describe('csrfTokenFrom', () => {
   it('is undefined without either cookie', () => {
     expect(csrfTokenFrom('SESSION=x; XSRF-TOKEN=')).toBeUndefined();
     expect(csrfTokenFrom('')).toBeUndefined();
+  });
+});
+
+describe('problemDetail: the reason the server gave for a refusal', () => {
+  const refused = (status: number, code: string, detail?: string) =>
+    new ApiError(status, 'Refused', {
+      type: 'about:blank',
+      title: 'Refused',
+      status,
+      code,
+      ...(detail === undefined ? {} : { detail }),
+    });
+
+  it('is the detail of the problem', () => {
+    expect(problemDetail(refused(409, 'duplicate', 'libgen is listed already'))).toBe(
+      'libgen is listed already',
+    );
+  });
+  it('is undefined without a detail, with an empty one, and for another error', () => {
+    expect(problemDetail(refused(409, 'duplicate'))).toBeUndefined();
+    expect(problemDetail(refused(409, 'duplicate', ''))).toBeUndefined();
+    expect(problemDetail(new ApiError(0, 'Network error'))).toBeUndefined();
+    expect(problemDetail(new Error('boom'))).toBeUndefined();
+    expect(problemDetail(undefined)).toBeUndefined();
+  });
+  it('reads only the listed statuses', () => {
+    const e = refused(404, 'not-found', 'gone');
+    expect(problemDetail(e, { status: [400, 404] })).toBe('gone');
+    expect(problemDetail(e, { status: [400] })).toBeUndefined();
+  });
+  it('reads only the listed codes', () => {
+    const e = refused(400, 'invalid-request', 'too long');
+    expect(problemDetail(e, { code: ['duplicate', 'invalid-request'] })).toBe('too long');
+    expect(problemDetail(e, { code: ['duplicate'] })).toBeUndefined();
+    expect(problemDetail(new ApiError(400, 'Bad'), { code: ['duplicate'] })).toBeUndefined();
   });
 });
 

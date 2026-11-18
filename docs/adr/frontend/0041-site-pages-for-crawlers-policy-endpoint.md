@@ -168,7 +168,8 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
   (`Slug`, `resourcePath`).
 - `backend/apps/public/src/main/java/ai/helper2/site/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`,
   `internal/PageTemplate`, `internal/PageHtml` (the escaping), `web/PageRoutes`, `web/CrawlerFiles`,
-  `config/PagesProperties`.
+  `config/PagesProperties`, `config/PagesUseCaseConfiguration` (the beans of the two use cases, which carry no Spring
+  type).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
   `catalog/internal/JdbcResources.indexable`.
 - `backend/apps/public/src/main/java/ai/helper2/site/policy/web/PolicyController.java`; `api/public.yaml` — `GET /policy`,

@@ -7,6 +7,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.resilience.Resilience4jPolicies;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.sources.SourceFixtures;
+import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.sources.support.TransientSourceFailure;
 import ai.helper2.testing.FixtureServer;
@@ -49,10 +50,12 @@ class CollectorRetryIT {
         new Resilience4jPolicies(
             CircuitBreakerRegistry.ofDefaults(), BulkheadRegistry.ofDefaults(), retries);
     return new McpRegistryCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), deadline, ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
-        policies);
+        policies,
+        new RunInterval(Duration.ZERO),
+        0);
   }
 
   @Test

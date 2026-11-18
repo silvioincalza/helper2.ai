@@ -61,8 +61,11 @@ to reach into the other's code.
    `CatalogIndex` (scout), `GuideModel`, `GuideAnswerStore`, `SimilarQuestionIndex`, `SimilarQuestionRetention`,
    `QuestionEmbedder` (guide).
    The Java use cases of `identity`, `catalog`, `examples` and `admin` have the same shape: plain classes over ports
-   in the base package (`Users`, `Bookmarks`, `AuditLog` in identity, `DraftQueue`, `UnitOfWork` in examples), and
+   in the base package (`Users`, `Bookmarks`, `AuditLog` in identity, `DraftQueue` in examples), and
    the adapters implement them in `internal` (the JDBC stores, the drafts in the review queue).
+   A use case that opens its own transaction takes the port `UnitOfWork` of the kernel (`ai.helper2.shared`).
+   The platform has its one adapter, `TransactionalUnitOfWork`, and `UnitOfWorkConfiguration` makes its one bean in
+   the back office.
    A `@Bean` method in `config` wires each use case; a use case only one app runs (a scheduled purge) is wired next
    to its schedule, in that app. The catalog's back office part is not scanned: `CatalogBackOfficeConfiguration`
    (the curation, review, indexing and purge use cases) and `CatalogBackOfficeAdapters` (their JDBC stores, with no
@@ -97,7 +100,7 @@ to reach into the other's code.
    dispatch by intent, and `QuestionReader`, `PickAnswer`, `CompareAnswer`, `ExplainAnswer`, `DateAnswer` and
    `ReasonCheckStep` do the work; no other module sees them. Controllers and schedulers call use cases for what a
    module does, a read-only lookup too (`GetReviewItem`, `ListScoutRuns`); the back office's `ModularityTest`
-   fails when a controller calls a port of catalog, scout or examples. Models, ports
+   fails when a controller calls a port of catalog, scout, examples or research. Models, ports
    and rules (for example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so
    adapters never depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
    (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). The Scout reads and
@@ -112,9 +115,9 @@ to reach into the other's code.
    - `ApplicationModules.verify()`: no cycles, only public types of other modules are used;
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
-   - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`), and
-     for `identity`, `identity.usecase`, `catalog`, `catalog.usecase`, `catalog.enrichment`, `admin` and
-     `admin.usecase`;
+   - both rules find the use cases by the pattern `ai.helper2..usecase..`, so a new `usecase` package is checked with
+     no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
+     `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
    - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
      module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
@@ -190,8 +193,10 @@ to reach into the other's code.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.
 - `backend/libs/core/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog}.java`,
-  `backend/libs/core/src/main/kotlin/ai/helper2/examples/ExampleDrafts.kt` (`DraftQueue`, `UnitOfWork`) — ports
-  of the Java use cases; `.../identity/config/IdentityUseCaseConfiguration.java`,
+  `backend/libs/core/src/main/kotlin/ai/helper2/examples/ExampleDrafts.kt` (`DraftQueue`),
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt` — ports
+  of the Java use cases; `backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java`,
+  `UnitOfWorkConfiguration.java` (the back office only) — the transaction adapter; `.../identity/config/IdentityUseCaseConfiguration.java`,
   `.../examples/config/ExamplesUseCaseConfiguration.java` (both apps),
   `.../examples/config/ExamplesBackOfficeConfiguration.java` (the back office only),
   `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.

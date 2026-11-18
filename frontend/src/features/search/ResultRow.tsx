@@ -9,7 +9,7 @@ import { plainText } from '@/lib/plainText';
 import { rowSourceNames } from '@/lib/rowSources';
 import { resourcePath } from '@/lib/searchState';
 import { withSearchTerms } from '@/lib/searchTerms';
-import type { GuidePick } from '@/lib/selection';
+import { pickReasonState, type GuidePick } from '@/lib/selection';
 import { BookmarkButton } from '../saved/BookmarkButton';
 import { toFromResults } from './fromResults';
 import { ResultDate } from './ResultDate';
@@ -57,7 +57,7 @@ export function ResultRow({
           <BookmarkButton card={card} />
         </span>
       </div>
-      {pick?.reason && pick.reasonCheck !== 'REMOVED' && (
+      {pick && pickReasonState(pick) === 'shown' && (
         <p className="h2-row__reason">
           <AiLabel /> <span {...aiMark()}>{pick.reason}</span>
         </p>

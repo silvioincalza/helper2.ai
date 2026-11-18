@@ -7,6 +7,7 @@ import type {
   UpcomingEventsResponse,
 } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
+import { AI_ORIGIN } from '@/lib/aiMark';
 import { countdown, daysUntil, type Countdown } from '@/lib/countdown';
 import { displayHost } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
@@ -102,7 +103,7 @@ function toEventRow(card: ResultCard, now: number): EventRow {
     kind: card.eventKind ?? null,
     format: card.eventFormat ?? null,
     location: card.location ?? null,
-    aiRead: card.eventOrigin === 'AI_EXTRACTED',
+    aiRead: card.eventOrigin === AI_ORIGIN.read,
     title: card.title,
     href: resourcePath(card.id, card.title),
   };

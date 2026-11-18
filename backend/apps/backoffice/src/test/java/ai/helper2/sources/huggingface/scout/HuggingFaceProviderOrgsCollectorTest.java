@@ -34,7 +34,7 @@ class HuggingFaceProviderOrgsCollectorTest {
 
   HuggingFaceProviderOrgsCollector collector() {
     return new HuggingFaceProviderOrgsCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,

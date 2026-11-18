@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class JdbcKnownTargetCandidates implements KnownTargetCandidates {
@@ -97,7 +98,7 @@ class JdbcKnownTargetCandidates implements KnownTargetCandidates {
         .query((rs, i) ->
             new Candidate(
                 rs.getString("name"),
-                ResourceRows.known(
+                EnumUtils.getEnum(
                     KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL),
                 Arrays.asList((String[]) rs.getArray("other_names").getArray())))
         .optional();

@@ -50,7 +50,7 @@ class PypiCollectorTest {
 
   private PypiCollector collector() {
     return new PypiCollector(
-        new SourceSettings(true, null, null, Duration.ofSeconds(30), Duration.ZERO),
+        new SourceSettings(true, null, null, Duration.ofSeconds(30), Duration.ZERO, null),
         queries,
         SourceFixtures.CLOCK,
         Resilience.NONE,

@@ -116,7 +116,12 @@ class ObservedHttpDeadlineTest {
     long deadline = Duration.ofSeconds(2).toNanos();
     InputStream in =
         new ObservedHttp.CappedStream(
-            new ByteArrayInputStream("abcdef".getBytes()), 100, nanos.get(), deadline, nanos::get);
+            new ByteArrayInputStream("abcdef".getBytes()),
+            100,
+            nanos.get(),
+            deadline,
+            nanos::get,
+            () -> {});
 
     assertThat(in.read()).isEqualTo('a');
     nanos.addAndGet(deadline);
@@ -134,7 +139,7 @@ class ObservedHttpDeadlineTest {
   void theCappedStreamStillCapsTheSize() {
     InputStream in =
         new ObservedHttp.CappedStream(
-            new ByteArrayInputStream(new byte[10]), 4, 0, Long.MAX_VALUE, () -> 0);
+            new ByteArrayInputStream(new byte[10]), 4, 0, Long.MAX_VALUE, () -> 0, () -> {});
 
     assertThatThrownBy(() -> in.readAllBytes()).isInstanceOf(ObservedHttp.ResponseTooLarge.class);
   }

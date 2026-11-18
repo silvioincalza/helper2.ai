@@ -47,20 +47,6 @@ public class McpRegistryCollector implements Collector {
   private final int itemsPerRun;
 
   public McpRegistryCollector(
-      SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience) {
-    this(settings, builder, clock, resilience, new RunInterval(Duration.ZERO));
-  }
-
-  public McpRegistryCollector(
-      SourceSettings settings,
-      RestClient.Builder builder,
-      Clock clock,
-      Resilience resilience,
-      RunInterval interval) {
-    this(settings, builder, clock, resilience, interval, 0);
-  }
-
-  public McpRegistryCollector(
       SourceSettings settings,
       RestClient.Builder builder,
       Clock clock,

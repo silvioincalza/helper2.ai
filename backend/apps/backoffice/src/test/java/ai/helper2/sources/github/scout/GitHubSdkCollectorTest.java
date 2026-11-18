@@ -98,7 +98,8 @@ class GitHubSdkCollectorTest {
 
   GitHubSdkCollector collector(Duration interval, SdkSearchPlan plan, int queriesPerRun) {
     SourceSettings settings =
-        new SourceSettings(true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO);
+        new SourceSettings(
+            true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO, null);
     GitHubSdkCollector.ReviewRoom review =
         new GitHubSdkCollector.ReviewRoom() {
           @Override
