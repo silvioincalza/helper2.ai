@@ -159,17 +159,7 @@ class ReviewController implements ReviewApi {
       UUID id, ResourceFieldDto field, ResourceFieldValueDto body) {
     return switch (curateField.set(id, field.getValue(), body.getValue(), Admins.id())) {
       case CurateField.Outcome.Curated curated -> ResponseEntity.noContent().build();
-      case CurateField.Outcome.UnknownField unknown ->
-          throw new BadRequestException("This field cannot be set: " + unknown.field() + ".");
-      case CurateField.Outcome.ValueNotAllowed value ->
-          throw new BadRequestException("This value is not allowed for " + value.field() + ".");
-      case CurateField.Outcome.InvalidDescription description ->
-          throw new BadRequestException(
-              "The description must be 1 to " + description.maxLength() + " characters.");
-      case CurateField.Outcome.NotADate notADate ->
-          throw new BadRequestException("The published date must be YYYY-MM-DD.");
-      case CurateField.Outcome.DateInTheFuture future ->
-          throw new BadRequestException("The published date is in the future.");
+      case CurateField.Outcome.ValueRefused refused -> throw CuratedFieldProblems.refused(refused);
       case CurateField.Outcome.NoSuchResource missing -> throw resourceNotFound();
     };
   }
@@ -179,7 +169,8 @@ class ReviewController implements ReviewApi {
     return switch (curateField.drop(id, field.getValue(), Admins.id())) {
       case CurateField.DropOutcome.Dropped dropped -> ResponseEntity.noContent().build();
       case CurateField.DropOutcome.NotWrittenByAi notByAi ->
-          throw new BadRequestException("The AI writes no such field.");
+          throw new ApiProblem(
+              ProblemType.INVALID_REQUEST, "The AI writes no such field: " + notByAi.field() + ".");
       case CurateField.DropOutcome.NoSuchResource missing -> throw resourceNotFound();
     };
   }

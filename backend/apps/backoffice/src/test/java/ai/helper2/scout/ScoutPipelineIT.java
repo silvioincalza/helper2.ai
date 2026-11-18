@@ -392,7 +392,9 @@ class ScoutPipelineIT {
 
     String first = runMcpRegistry();
     assertThat(JsonPath.<Integer>read(first, "$.itemsChanged")).isEqualTo(3);
-    assertThat(JsonPath.<Integer>read(first, "$.enrichmentsQueued")).isEqualTo(1);
+    assertThat(JsonPath.<Integer>read(first, "$.enrichmentsQueued")).isZero();
+    assertThat(JsonPath.<String>read(first, "$.message"))
+        .startsWith("1 enrichment rejected; nothing was kept. ");
     List<UUID> stranded = backlog.pending(100).stream().filter(ids::contains).toList();
     assertThat(stranded).hasSize(2);
     makeOldestPending(stranded);

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { GuideResponse, Notice, TrailRemoved } from '@/api/types';
 import { Icon } from '@/ui/Icon';
 import { NoticeList } from '@/ui/NoticeList';
-import { aiMark, aiMarkWhen, aiSourceWithModels } from '@/lib/aiMark';
+import { aiMark, aiMarkWhen, aiSource } from '@/lib/aiMark';
 import { backAgain, type BackAgainKeys, type VisitorClock } from '@/lib/format';
 import { Clarify } from './Clarify';
 import type { Refine } from './types';
@@ -202,7 +202,7 @@ export function GuideAnswer({
     <NoticeList notices={answer.notices} exclude={foldNoticeExclusions(answer, kept)} />
   );
   return (
-    <div className="guide-answer" {...aiSourceWithModels(answer.aiContent)}>
+    <div className="guide-answer" {...aiSource(answer.aiContent)}>
       {answer.model ? (
         <ol className="plain-list proof-strip" aria-label={t('guide.howMade')}>
           <li>

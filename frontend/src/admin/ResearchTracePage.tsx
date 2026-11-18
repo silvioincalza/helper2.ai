@@ -10,6 +10,7 @@ import { RetryButton } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
 import { formatCount } from '@/lib/format';
+import { isSameSitePath } from '@/lib/sameSitePath';
 import { isActive } from './ReviewResearch';
 import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
@@ -41,7 +42,7 @@ export default function ResearchTracePage() {
 
 function queueOf(state: unknown): string | undefined {
   const from = (state as { from?: unknown } | null)?.from;
-  return typeof from === 'string' && from.startsWith(QUEUE) && !from.startsWith('//')
+  return typeof from === 'string' && from.startsWith(QUEUE) && isSameSitePath(from)
     ? from
     : undefined;
 }

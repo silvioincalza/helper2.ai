@@ -222,7 +222,7 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
    ```
 6. Nothing to delete in Git or Harbor: a release branch, a release tag and an image tag stay for good.
 7. From the first tag `vYYYY.N.P` on, CI refuses an edit of a released migration
-   (`.github/scripts/released-migrations.sh`): a schema change is a new `V2__…`.
+   (`.github/scripts/released-migrations.sh`): a schema change is a new `V<version>.<n>__…` (ADR 0004 §5).
 
 ## The first use: v2026.11.3
 

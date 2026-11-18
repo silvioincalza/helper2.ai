@@ -33,7 +33,8 @@ public class ResolveReview {
 
     record UnreadableCandidate() implements NotAdded {}
 
-    record ConfirmedValueRefused(String field) implements NotAdded, Refused {}
+    record ConfirmedValueRefused(String field, CurateField.Outcome.ValueRefused why)
+        implements NotAdded, Refused {}
 
     record UnreadableProposal() implements NotAdded {}
 
@@ -160,7 +161,7 @@ public class ResolveReview {
     return switch (item.kind()) {
       case EXAMPLE_CANDIDATE, RESOURCE_CANDIDATE, KNOWN_TARGET_CANDIDATE -> true;
       case COURSE_CANDIDATE -> structuredCourse(item);
-      default -> false;
+      case ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT -> false;
     };
   }
 
@@ -172,7 +173,9 @@ public class ResolveReview {
     return switch (item.kind()) {
       case RESOURCE_CANDIDATE, COURSE_CANDIDATE -> indexCandidate(item, adminId);
       case KNOWN_TARGET_CANDIDATE -> addKnownTarget(item, adminId);
-      default -> addDrafted(item, adminId);
+      case EXAMPLE_CANDIDATE -> addDrafted(item, adminId);
+      case ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT ->
+          throw new IllegalStateException("accepting a " + item.kind() + " adds nothing");
     };
   }
 
@@ -193,9 +196,13 @@ public class ResolveReview {
   private Addition applyConfirmed(AcceptOutcome.Indexed indexed, String adminId) {
     for (Map.Entry<String, String> confirmed : indexed.getConfirmed().entrySet()) {
       String field = confirmed.getKey();
-      if (!(confirm(indexed, field, confirmed.getValue(), adminId)
-          instanceof CurateField.Outcome.Curated)) {
-        return new Addition.Stopped(new Outcome.ConfirmedValueRefused(field));
+      switch (confirm(indexed, field, confirmed.getValue(), adminId)) {
+        case CurateField.Outcome.Curated curated -> {}
+        case CurateField.Outcome.ValueRefused why -> {
+          return new Addition.Stopped(new Outcome.ConfirmedValueRefused(field, why));
+        }
+        case CurateField.Outcome.NoSuchResource gone ->
+            throw new IllegalStateException("the added resource is gone: " + indexed.getId());
       }
     }
     return ADDED;

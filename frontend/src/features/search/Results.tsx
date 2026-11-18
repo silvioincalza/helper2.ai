@@ -17,7 +17,7 @@ import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
 import { useGuideStream } from '@/features/guide/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { aiMark, aiProvider, aiSource, marksFieldsOf } from '@/lib/aiMark';
+import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
 import {
   activeFilterCount,
@@ -307,10 +307,7 @@ function ResultsBody({
           <p>{t('results.emptyTryOther')}</p>
         </StatePanel>
       ) : (
-        <div
-          ref={listRef}
-          {...aiProvider(marksFieldsOf(res.aiContent, 'results[') ? res.aiContent : null)}
-        >
+        <div ref={listRef} {...aiSource(listedDescriptionsSource(res.aiContent))}>
           {state.view === 'timeline' ? (
             <ResultsTimeline cards={more.cards} />
           ) : (
@@ -504,6 +501,14 @@ function AlsoSearched({
       )}
     </p>
   );
+}
+
+function listedDescriptionsSource(
+  marker: SearchResponse['aiContent'],
+): SearchResponse['aiContent'] {
+  if (!marker || !marksFieldsOf(marker, 'results[')) return null;
+  const modelsOfTheStoredDescriptionsAreNotKept: string[] = [];
+  return { ...marker, models: modelsOfTheStoredDescriptionsAreNotKept };
 }
 
 function searchedNothing(res: SearchResponse): boolean {

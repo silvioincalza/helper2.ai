@@ -64,7 +64,7 @@ enrich -> runner: "EnrichmentOutcome"
 runner -> enrich: "unchanged(id): a changed id\nthe budget has no slot for\n(stored fingerprint only, no model call)"
 enrich -> runner: "false: the text is new\n(true: not requested, the model\nwould see the same text again)"
 runner -> backlog: "requestRun(id): NOT_RUN with the\nrequest time; a later run takes it"
-runner -> store: "save(SUCCEEDED, seen,\nchanged, queued)"
+runner -> store: "save(SUCCEEDED, seen, changed,\nqueued: VALIDATED or PARTIAL;\nmessage: failed, rejected, waiting)"
 runner -> backlog: "pending(budget left + attempted)"
 backlog -> runner: "resources still to enrich"
 runner -> enrich: "enrich(id) one at a time, budget allowing;\nUNCHANGED gives its slot back" {class: ai-call}

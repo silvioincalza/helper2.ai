@@ -48,7 +48,8 @@ public class ReviewItemViews {
       case RESOURCE_CANDIDATE, COURSE_CANDIDATE ->
           Optional.ofNullable(candidates.shown(item.details())).map(ReviewItemViews::candidate);
       case KNOWN_TARGET_CANDIDATE -> proposals.shown(item.details()).map(ReviewItemViews::proposal);
-      default -> Optional.empty();
+      case ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE, USER_REPORT, EXAMPLE_CANDIDATE ->
+          Optional.empty();
     };
   }
 

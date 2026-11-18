@@ -20,6 +20,8 @@ to reach into the other's code.
    contract and the wiring, and builds the boot jar. There are two apps, `apps/public` and `apps/backoffice`.
 2. **The libraries.**
    - `kernel`: shared value types, package `shared`, no third-party library.
+   - A small rule is taken from the JDK (`String.formatted`) or from Apache Commons Lang 3, which comes through
+     `platform`, before a helper is written by hand.
    - `platform`: LLM client, resilience, cache, settings, quotas.
    - `schema`: the Flyway migrations and the three classes that run and check them (`platform.schema`). It stays a
      project of its own: it depends on no other library, and the platform's test fixtures, the scripts and the
@@ -143,6 +145,8 @@ to reach into the other's code.
    - no class outside `sources` depends on a class of `sources`;
    - `useCasesDoNotSpeakHttp`: no class of a domain package depends on `ApiProblem`, a subtype of it, `ProblemType`
      or `Problems`, with no exception ([0051](0051-use-cases-return-outcomes.md) §7);
+   - `aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork`: a class that declares a `Refused` outcome depends on
+     `UnitOfWork` ([0051](0051-use-cases-return-outcomes.md) §5);
    - `controllersAnswerWithViewsNotPortRecords` (back office): no class of a `web` package uses `ReviewQueue.Status`,
      `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
      `ReviewEvidence.Evidence` ([0038](../backoffice/0038-back-office-and-review.md) §1);
@@ -171,7 +175,10 @@ to reach into the other's code.
      `@NamedInterface`). The open modules are free;
    - no file outside `sources` names a `sources` package;
    - no file outside a named interface of an open module names a package below it
-     (`platform.llm.internal`).
+     (`platform.llm.internal`);
+   - no main file of an app names an `internal` package of a library (a package of a library's main code with a
+     segment named `internal`), and none is in one. A context keeps its package name in the app, so the rule by
+     module does not see this. The tests of an app are not read: its integration tests wire the adapters.
 
    The modules, the open ones and the named interfaces are read from `package-info.java` and the annotations; the
    directions between the contexts are a table in the test.

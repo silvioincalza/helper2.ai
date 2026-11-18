@@ -121,7 +121,8 @@ constructor(
           d.left?.let {
             return it
           }
-        else -> {}
+        QuotaDecision.Unavailable,
+        null -> {}
       }
     }
     val limit = limits.of(asker.feature)
