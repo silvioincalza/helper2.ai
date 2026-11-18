@@ -12,7 +12,7 @@ import { Robots } from '@/shell/Robots';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { WhereFrom } from '@/features/resource/WhereFrom';
 import { cardHeadFor, Resource, ResourceSkeleton } from '@/features/resource/Resource';
 import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
@@ -26,7 +26,7 @@ function RelList({ items }: { items: Relationship[] }) {
         const ai = r.origin !== undefined && isAiOrigin(r.origin);
         return (
           <li key={`${r.kind}-${r.targetTitle}-${i}`}>
-            <span {...(ai ? aiMark() : {})}>
+            <span {...aiMarkWhen(ai)}>
               <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
               {r.targetId ? (
                 <Link to={resourcePath(r.targetId, r.targetTitle)}>{r.targetTitle}</Link>

@@ -4,7 +4,7 @@ import type { Feed } from './homeFeeds';
 import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
 import { tickerWindow, useTicker } from './ticker';
 import { OriginLabel } from '@/ui/Badges';
-import { aiMark } from '@/lib/aiMark';
+import { AI_ORIGIN, aiMark } from '@/lib/aiMark';
 import { useFromHere } from '@/features/search/fromResults';
 
 export interface TermCells {
@@ -22,7 +22,7 @@ function Ai({ ai, children }: { ai?: boolean | undefined; children: ReactNode })
 }
 
 function AiExtracted({ ai }: { ai?: boolean | undefined }) {
-  return ai ? <OriginLabel origin="AI_EXTRACTED" /> : null;
+  return ai ? <OriginLabel origin={AI_ORIGIN.read} /> : null;
 }
 
 export function TermList<Row extends { id: string }>({
