@@ -13,6 +13,10 @@ public interface ResearchTool {
 
   Output call(String arguments);
 
+  default int maxCallsPerRun() {
+    return Integer.MAX_VALUE;
+  }
+
   record Output(String text, @Nullable String url, List<String> recordOf) {
 
     public Output {
