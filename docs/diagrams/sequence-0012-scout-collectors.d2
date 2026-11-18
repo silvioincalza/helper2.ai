@@ -1,6 +1,6 @@
 # Sequence: one pass of GitHubAwesomeCollector, the collector with the most steps and the only one that calls a model.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeListParser.java,
-#   classifier/SpringAiRepoClassifier.java, classifier/RepoClassifier.java,
+#   AwesomeLists.java, classifier/SpringAiRepoClassifier.java, classifier/RepoClassifier.java,
 #   backend/apps/backoffice/src/main/resources/prompts/sources/classify-repos.txt.
 # Render: cd docs/diagrams && d2 fmt sequence-0012-scout-collectors.d2 && d2 sequence-0012-scout-collectors.d2 sequence-0012-scout-collectors.svg
 
@@ -34,4 +34,7 @@ tf -> cls: "{items: [{id, ai, type}]}"
 cls -> col: "verdicts (unknown ids and\ntypes dropped)"
 col -> heur: "classify(ids the model\ndid not answer)"
 heur -> col: "keyword verdicts"
+col -> gh: "GET /repos/{repo}/readme\n(each AWESOME_LIST verdict\nnamed \"awesome…\")"
+gh -> col: "README markdown"
+col -> col: "AwesomeLists rule: AWESOME_LIST,\nor ARTICLE when it fails\nor the README is unavailable"
 col -> runner: "CollectedBatch(AI repos, each stating\narchived and fork,\nnextCursor \"400\" or null, checkpoint)"

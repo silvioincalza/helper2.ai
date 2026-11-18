@@ -1,6 +1,7 @@
 package ai.helper2.shared
 
 import ai.helper2.guide.READING_TYPES
+import ai.helper2.guide.TOOL_TYPES
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -35,5 +36,11 @@ class VocabularyTest {
   @Test
   fun `a course is not a reading type`() {
     assertFalse(ResourceType.COURSE in READING_TYPES)
+  }
+
+  @Test
+  fun `an awesome list is something to read, never the tool a guide picks`() {
+    assertTrue(ResourceType.AWESOME_LIST in READING_TYPES)
+    assertFalse(ResourceType.AWESOME_LIST in TOOL_TYPES)
   }
 }

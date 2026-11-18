@@ -77,6 +77,9 @@ Two kinds of source need more care:
      the model did not answer (error, spent budget, missing id), and every id in a run without a model, goes to
      keyword rules (`RepoClassifier.Heuristic`). The allowed types include `AWESOME_LIST`: a linked repository whose
      description calls it a curated list of AI links is `ai` true, type `AWESOME_LIST`; the name alone is not enough.
+     The answer counts only when the README rule below passes too: the collector reads that repository's README, and
+     a repository not named "awesome…", a README that fails the rule or one that cannot be read gives ARTICLE. A
+     description is the owner's words: a collection of MCP servers in one repository can call itself a curated list.
      A repository whose facts say nothing gets `ai` false, type OTHER, and is not indexed.
    - A failing list search or README is skipped; a GraphQL rate limit stops the pass (run `FAILED`, cursor kept).
    - Each list read is a resource too (tag `awesome-list`), and its entry lines and headings become a search
@@ -88,15 +91,16 @@ Two kinds of source need more care:
      it that are indented more (a summary, the authors, a `[[pdf]](…)` link, a sub-item without its own link) belong to
      it and are not counted on their own. A web link is an `http` or `https` link: an anchor to a section, a link to a
      file of the repository, an image and a badge are not. Headings and code blocks are not counted. The name alone
-     never decides: a product called "Awesome Notes" has a normal README and stays what it is. 20 items is about the
-     smallest awesome list worth listing; a product README has a few links, mostly in prose and badges, so half of the
-     lines being linked items separates the two. A list written as paragraphs, bold lines or tables under one heading
-     per entry has no list items and fails the rule. The classifier of linked repositories (above) is the one other
-     path to `AWESOME_LIST`, and it reads the description, not the README. A list the collector reads and that fails
-     the rule stays ARTICLE.
+     never decides: a product called "Awesome Notes" has a normal README and stays what it is. A list with fewer than
+     20 items is too small to be worth listing. A product README has a few links, mostly in prose and badges, so half
+     of the lines being linked items separates the two. A list written as paragraphs, bold lines or tables under one
+     heading per entry has no list items and fails the rule. The classifier of linked repositories (above) is the one
+     other path to `AWESOME_LIST`, and it passes the same rule. A list the collector reads and that fails the rule
+     stays ARTICLE.
    - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
      resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
-     §3). Other sources that see a GitHub repository have no README at hand and keep their own type.
+     §3). That is why every path to it passes the README rule. Other sources that see a GitHub repository have no
+     README at hand and keep their own type, so a repository a record wrongly calls ARTICLE still takes their type.
    - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` reads the README of every catalog resource at
      `github.com/<owner>/awesome…` that is not `AWESOME_LIST` yet (at most 2000, most popular first), applies the rule,
      and sets the curated type `AWESOME_LIST` with a `SET_FIELD` audit entry that holds the type before and after. A type

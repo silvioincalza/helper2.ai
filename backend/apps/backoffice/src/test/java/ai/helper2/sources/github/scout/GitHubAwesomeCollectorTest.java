@@ -76,6 +76,7 @@ class GitHubAwesomeCollectorTest {
 
   static final class FakeModel implements RepoClassifier {
     final List<List<Facts>> calls = new java.util.ArrayList<>();
+    final Map<String, Verdict> answers = new HashMap<>();
     RuntimeException failure;
 
     @Override
@@ -88,9 +89,11 @@ class GitHubAwesomeCollectorTest {
       for (Facts f : repos) {
         out.put(
             f.id(),
-            f.fullName().startsWith("nodejs/")
-                ? new Verdict(false, ResourceType.OTHER)
-                : new Verdict(true, ResourceType.AGENT));
+            answers.getOrDefault(
+                f.fullName(),
+                f.fullName().startsWith("nodejs/")
+                    ? new Verdict(false, ResourceType.OTHER)
+                    : new Verdict(true, ResourceType.AGENT)));
       }
       return out;
     }
@@ -102,6 +105,11 @@ class GitHubAwesomeCollectorTest {
   }
 
   GitHubAwesomeCollector collector(RepoClassifier classifier, int perRun, String token) {
+    return collector(classifier, perRun, token, DEEP);
+  }
+
+  GitHubAwesomeCollector collector(
+      RepoClassifier classifier, int perRun, String token, GitHubAwesomeCollector.Deep deep) {
     return new GitHubAwesomeCollector(
         new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
         TestHttp.restClientBuilder(
@@ -111,7 +119,7 @@ class GitHubAwesomeCollectorTest {
         new RunInterval(Duration.ofDays(1)),
         List.of("topic:awesome-list topic:llm"),
         new GitHubAwesomeCollector.Limits(10, 1000, 1000, perRun, 50, 25),
-        DEEP,
+        deep,
         classifier,
         ai.helper2.shared.CategoryMatcher.NONE,
         new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
@@ -206,6 +214,83 @@ class GitHubAwesomeCollectorTest {
     assertThat(model.calls.getFirst().getFirst().listSection()).isEqualTo("Agents");
     assertThat(batch.getNextCursor()).isNull();
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
+  }
+
+  static final String README_OF_COLLECTIONS =
+      """
+      # Awesome LLM
+      ## MCP
+      - [Awesome MCP](https://github.com/acme/awesome-mcp) - More MCP servers.
+      - [Servers](https://github.com/modelcontextprotocol/servers) - A curated list of MCP servers.
+      """;
+
+  static final String COLLECTIONS =
+      """
+      {"data":{
+        "r0":{"nameWithOwner":"acme/awesome-mcp","url":"https://github.com/acme/awesome-mcp",
+              "description":"A curated list of awesome MCP servers","stargazerCount":900,"isArchived":false,
+              "isFork":false,"repositoryTopics":{"nodes":[{"topic":{"name":"mcp"}}]}},
+        "r1":{"nameWithOwner":"modelcontextprotocol/servers","url":"https://github.com/modelcontextprotocol/servers",
+              "description":"A curated list of Model Context Protocol servers","stargazerCount":70000,
+              "isArchived":false,"isFork":false,"repositoryTopics":{"nodes":[{"topic":{"name":"mcp"}}]}}}}\
+      """;
+
+  static String listOfServers() {
+    StringBuilder readme = new StringBuilder("# Awesome MCP\n");
+    for (int i = 1; i <= AwesomeLists.MIN_LINKED_ITEMS; i++) {
+      readme
+          .append("- [Server ")
+          .append(i)
+          .append("](https://example.com/s")
+          .append(i)
+          .append(")\n");
+    }
+    return readme.toString();
+  }
+
+  static final GitHubAwesomeCollector.Deep NO_NESTED_LISTS =
+      new GitHubAwesomeCollector.Deep(
+          0, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
+
+  @Test
+  void aRepositoryTheModelCallsAListIsOneOnlyWhenItsReadmeReadsAsOne() {
+    server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
+    server.route("/repos/acme/awesome-mcp/readme", FixtureServer.Reply.ok(listOfServers()));
+    server.route("/graphql", FixtureServer.Reply.ok(COLLECTIONS));
+    FakeModel model = new FakeModel();
+    model.answers.put(
+        "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
+    model.answers.put(
+        "modelcontextprotocol/servers",
+        new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
+
+    CollectedBatch batch = collector(model, 200, "t", NO_NESTED_LISTS).collect(null, null, 500);
+
+    assertThat(entryHits(batch))
+        .extracting(SourceHit::getExternalId, SourceHit::getType)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("acme/awesome-mcp", ResourceType.AWESOME_LIST),
+            org.assertj.core.groups.Tuple.tuple(
+                "modelcontextprotocol/servers", ResourceType.ARTICLE));
+  }
+
+  @Test
+  void aListTheModelNamesWhoseReadmeCannotBeReadIsAnArticle() {
+    server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(README_OF_COLLECTIONS));
+    server.route("/graphql", FixtureServer.Reply.ok(COLLECTIONS));
+    FakeModel model = new FakeModel();
+    model.answers.put(
+        "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
+
+    CollectedBatch batch = collector(model, 200, "t", NO_NESTED_LISTS).collect(null, null, 500);
+
+    assertThat(entryHits(batch))
+        .filteredOn(h -> h.getExternalId().equals("acme/awesome-mcp"))
+        .singleElement()
+        .extracting(SourceHit::getType)
+        .isEqualTo(ResourceType.ARTICLE);
   }
 
   static final String README_WITH_A_FORK =

@@ -68,7 +68,7 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
 - **Prompt labels.** A prompt's label is the first 8 hex digits of the SHA-256 of its rendered text
   (`ModelCallMetrics.promptVersion`). The meters, the answer cache key ([0032](0032-guide-cost-guard-and-answer-cache.md)) and the
   eval runs name it. `SpringAiGuideModelTest.theWordingOfEachPromptIsPinnedToItsLabel` pins each one, so a new wording
-  changes its label in the same change: plan `a0b9683a`, choose `c9afbc45`, compare `b813f8b5`, explain `68a93456`,
+  changes its label in the same change: plan `a0b9683a`, choose `07b0c3cd`, compare `b813f8b5`, explain `68a93456`,
   verify-reasons `3ab524f4`. The prompts state the limits code enforces through `{{placeholders}}`, and a test checks
   each number.
 
@@ -370,8 +370,10 @@ next to a course word ("when does the fast.ai course start?"): "when did Ollama 
 for "when is NeurIPS?" ("NeurIPS conference") and never for a release ("Llama 4 release"). Its search keeps only
 `EVENT` results, so a repository named like the event never takes an event's place in the result list.
 
-**Tool types** are every type but the reading types (`ARTICLE`, `PAPER`, `NEWS`, `EVENT`) and `COURSE`, so courses
-never fill the candidates of a tool question.
+**Tool types** are every type but the reading types (`ARTICLE`, `PAPER`, `NEWS`, `EVENT`, `AWESOME_LIST`) and `COURSE`,
+so courses never fill the candidates of a tool question. An awesome list is a list of links to read, not the tool: it is
+retrieved and kept only when the user asks for something to read, and the words "awesome list" and "curated list" ask
+for it (`reading` in the intent words). A chooser pick of one for a tool question is rejected (`READING_TYPE`).
 
 **Window pushed to the sources.** `SourceQuery.publishedAfter` carries the window's start to sources that can filter
 by date (`SourceDescriptor.filtersByDate`): the catalog (`published_at >=`), GitHub (`created:>=`, sorted by stars

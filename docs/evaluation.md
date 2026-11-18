@@ -14,7 +14,7 @@ Every set is fixed before its first run and never tuned on results.
 |---|---|---|
 | Search | `docs/eval/search-queries.json` | 115 queries in 11 groups: navigational, MCP server for a task, model for a task, library for a language, paper, news and events, Italian and other languages, typos and synonyms, nonsense control, the 11 home examples and 20 everyday tasks in plain words (the last two sent with their audience `path`) |
 | Search by meaning | `docs/eval/semantic-gold.json` | 20 paraphrase queries with few words in common with their answers, for vector search and its cutoff |
-| Guide | `docs/eval/guide-queries.json` | 51 questions: 21 core ones (the nightly run) and 30 marked `extended`; 6 must stay empty |
+| Guide | `docs/eval/guide-queries.json` | 57 questions: 21 core ones (the nightly run) and 36 marked `extended`; 6 must stay empty |
 | Guide intents | `docs/eval/guide-intents.json` | 19 intent cases and 7 ask-back cases, each with its pass rule |
 | Guide, hostile questions | `docs/eval/guide-adversarial.json` | 13 hostile questions |
 | Similar questions | `docs/eval/guide-similar.json` | 55 question pairs: 25 that should share an answer, 30 near misses that must not |
@@ -88,7 +88,7 @@ The latest run of the core questions is in [eval/guide-run.md](eval/guide-run.md
 questions in [evaluation-adversarial.md](evaluation-adversarial.md). Each header states the date, the address and the
 models; the commit and what a number does not show are in the notes of `guide-run.md`. A run reports the figures of
 "Metrics" above, per question and in total. The picks are not graded yet, so P@3 and nDCG@3 are empty
-([S10.4.3](https://github.com/silvioincalza/helper2.ai/issues/349)). The clean baseline below (51 questions, three
+([S10.4.3](https://github.com/silvioincalza/helper2.ai/issues/349)). The clean baseline below (57 questions, three
 runs) and the intent cases are not run yet.
 
 ### How to run
