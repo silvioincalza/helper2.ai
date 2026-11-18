@@ -4,15 +4,27 @@ import ai.helper2.shared.Category;
 import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.CategoryWords;
 import ai.helper2.shared.ResourceType;
+import java.time.Duration;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.Environment;
 
-@ConfigurationProperties("helper2")
+@ConfigurationProperties(CategoriesProperties.PREFIX)
 public record CategoriesProperties(@Nullable List<Entry> categories) {
+
+  static final String PREFIX = "helper2";
 
   public CategoriesProperties {
     categories = categories == null ? List.of() : List.copyOf(categories);
+  }
+
+  public static CategoriesProperties bind(Environment env) {
+    return Binder.get(env)
+        .bind(PREFIX, Bindable.of(CategoriesProperties.class))
+        .orElseGet(() -> new CategoriesProperties(List.of()));
   }
 
   public CategoryCatalog catalog() {
@@ -49,6 +61,11 @@ public record CategoriesProperties(@Nullable List<Entry> categories) {
 
   public record Discovery(
       @Nullable ResourceType type,
+      @Nullable List<String> queries,
+      @Nullable Duration interval,
+      @Nullable Boolean enabled,
+      @Nullable Double minScore,
       @Nullable Boolean requireKeyword,
-      @Nullable List<String> queries) {}
+      @Nullable Boolean indexLists,
+      @Nullable List<String> excludeDomains) {}
 }

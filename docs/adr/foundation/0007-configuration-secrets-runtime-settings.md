@@ -65,7 +65,8 @@ are different: they only say how much we spend, and the right number changes wit
    `helper2.retention` is shared, with one record per module for its own periods. No `@Value`, no
    `Environment.getProperty`: an architecture test in each app (`ConfigurationAccessTest`) fails the build on
    either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `helper2.categories`
-   before any bean exists, so it binds that list through Spring Boot's `Binder` and checks it in code
+   before any bean exists, so it binds that list through Spring Boot's `Binder` (`CategoriesProperties.bind`, the
+   same record the bean binds) and checks it in code (`DiscoveryCategories`)
    ([0013](../scout/0013-discovery.md)).
    Records are `@Validated`, use `Duration`, `DataSize`, `URI` and lists, and mask secrets in `toString`
    (`Secrets.mask`). Spring binds and validates them before the context is ready, so a bad value stops

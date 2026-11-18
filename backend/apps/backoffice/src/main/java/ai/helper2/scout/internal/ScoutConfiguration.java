@@ -4,6 +4,7 @@ import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.CatalogWriter.Forgotten;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.ScoutPolicy;
 import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
@@ -340,7 +341,8 @@ class ScoutConfiguration {
       Resilience resilience,
       CallCounter budgetCounter,
       RuntimeSettings runtime,
-      ScoutProperties scout) {
+      ScoutProperties scout,
+      ScoutPolicy scoutPolicy) {
     int maxItemsPerRun = scout.maxItemsPerRun();
     IntSupplier maxEnrichmentsPerRun =
         runtime.declare(RuntimeSetting.SCOUT_MAX_ENRICHMENTS_PER_RUN, scout.maxEnrichmentsPerRun());
@@ -352,8 +354,9 @@ class ScoutConfiguration {
             domainRoots.getIfAvailable(),
             webSearchQuota.getIfAvailable(),
             sharedCaches.getIfAvailable(),
-            pageTextCache(redis.getIfAvailable(), json, resilience, scout.evidence()),
+            pageTextCache(redis.getIfAvailable(), json, resilience, scoutPolicy.pageText()),
             scout.evidence(),
+            scoutPolicy.pageRead(),
             clock,
             budgetCounter,
             meters);
@@ -393,6 +396,7 @@ class ScoutConfiguration {
       @Nullable SharedCaches caches,
       PageTextCache textCache,
       ScoutProperties.Evidence evidence,
+      Duration pageReadTtl,
       Clock clock,
       CallCounter counter,
       MeterRegistry meters) {
@@ -411,8 +415,7 @@ class ScoutConfiguration {
     PageLedger ledger =
         caches == null
             ? PageLedger.NONE
-            : new SharedCachePageLedger(
-                caches.named(SharedCachePageLedger.CACHE), evidence.pageReadTtl());
+            : new SharedCachePageLedger(caches.named(SharedCachePageLedger.CACHE), pageReadTtl);
     log.info(
         "Evidence ladder: product pages on, {} Extract credits a day",
         evidence.dailyPageReadCredits());
@@ -429,10 +432,10 @@ class ScoutConfiguration {
       @Nullable StringRedisTemplate redis,
       ObjectMapper json,
       Resilience resilience,
-      ScoutProperties.Evidence evidence) {
+      Duration pageTextTtl) {
     return redis == null
         ? PageTextCache.NONE
-        : new RedisPageTextCache(redis, json, resilience, evidence.pageTextTtl());
+        : new RedisPageTextCache(redis, json, resilience, pageTextTtl);
   }
 
   static GapBudget gapBudget(
