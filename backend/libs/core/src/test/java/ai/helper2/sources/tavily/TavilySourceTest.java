@@ -117,6 +117,21 @@ class TavilySourceTest {
   }
 
   @Test
+  void aCopyOfABookOnAShadowLibraryIsNeverAResult() {
+    JsonNode result =
+        JsonMapper.builder()
+            .build()
+            .readTree(
+                """
+                {"url":"https://ka.z-lib.fm/book/123/a-simple-guide-to-rag",
+                 "title":"A Simple Guide to Retrieval Augmented Generation | download on Z-Library",
+                 "content":"A guide to retrieval augmented generation and large language models."}\
+                """);
+
+    assertThat(TavilySource.toHit(result, "live-web", SourceFixtures.CLOCK.instant(), 0)).isNull();
+  }
+
+  @Test
   void aPageOnTavilysOwnSiteIsNotAResultItIsNoPublishersArticle() {
     JsonNode result =
         JsonMapper.builder()

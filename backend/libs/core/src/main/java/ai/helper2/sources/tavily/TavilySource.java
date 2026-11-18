@@ -13,6 +13,7 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
+import ai.helper2.sources.support.ShadowLibraries;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
 import java.time.Clock;
@@ -117,7 +118,11 @@ public class TavilySource implements SearchSource {
     String url = HttpClients.text(r, "url");
     String title = HttpClients.text(r, "title");
     CanonicalUrl canonical = CanonicalUrl.of(url);
-    if (url == null || title == null || canonical == null || isTavilysOwnPage(canonical)) {
+    if (url == null
+        || title == null
+        || canonical == null
+        || isTavilysOwnPage(canonical)
+        || ShadowLibraries.isShadowLibrary(canonical.getHost())) {
       return null;
     }
     String content = HttpClients.text(r, "content");
