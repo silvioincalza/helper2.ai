@@ -16,7 +16,7 @@ waiting: "Stays QUEUED until the budget\nresets; the row says why" {class: fail}
 model: "MODEL_CALL: the item and the evidence so far\n(page text inside UntrustedText)" {class: app}
 next: "Tool call or final answer?" {shape: diamond; class: decision}
 limits: "3 minutes reached, or a tool call\nafter the answer-now call?" {shape: diamond; class: decision}
-calls_left: "Tool calls left (12 per run)?" {shape: diamond; class: decision}
+calls_left: "Tool calls left (12 per run),\nnot the same call again,\nand the tool's own limit not reached\n(web_search: 4 per run)?" {shape: diamond; class: decision}
 notrun: "Not run: stored with the error \"not run\";\nthe model is told so" {class: fail}
 answernow: "MODEL_CALL with no tools:\n\"answer now with what you have read\"" {class: app}
 tool: "TOOL_CALL: read_page · web_search · find_package\ngithub_repo · huggingface · catalog_lookup · check_url\n(read only; shadow libraries and private addresses refused)" {class: app}
