@@ -47,6 +47,7 @@ classify() {
     backend/*) echo "$BACKEND backend-architecture web public backoffice" ;;
     api/*) echo "frontend $BACKEND web public backoffice" ;;
     deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND backend-architecture chart" ;;
+    deploy/k8s/app.env.example) echo "backend-libs chart" ;;
     docs/design/system/tokens.json) echo "frontend diagrams" ;;
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
@@ -185,6 +186,7 @@ deploy/helm/helper2/values.yaml|chart
 deploy/helm/helper2/templates/app.yaml|chart
 deploy/helm/helper2/files/redis-users.acl|BACKEND backend-architecture chart
 deploy/k8s/Makefile|chart
+deploy/k8s/app.env.example|backend-libs chart
 deploy/k8s/cosign.pub|chart
 deploy/grafana/helper2.json|chart
 deploy/grafana/helper2-backoffice.json|chart
