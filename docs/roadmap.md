@@ -37,7 +37,7 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
 - [S2.11.4 The Scout to visit every record that has a repository link](https://github.com/silvioincalza/helper2.ai/issues/216)
-- [S2.12.1 `Classification.isAiRelated` measured and then applied to `github-topic-leaders`](https://github.com/silvioincalza/helper2.ai/issues/217)
+- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563)
 
 ### Later
 
@@ -49,10 +49,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.13.1 To ask for a new source from the Sources page](https://github.com/silvioincalza/helper2.ai/issues/218)
 - [S2.14.1 Hackathons, meetups, talks and workshops found automatically](https://github.com/silvioincalza/helper2.ai/issues/219)
 - [S2.15.1 PHP, Swift, C, C++, Elixir and Dart as platforms](https://github.com/silvioincalza/helper2.ai/issues/220)
-
-### No priority
-
-- [S2.12.2 One weak word like prompt or agent does not make a resource about AI](https://github.com/silvioincalza/helper2.ai/issues/563)
 
 ## E3 Search
 
