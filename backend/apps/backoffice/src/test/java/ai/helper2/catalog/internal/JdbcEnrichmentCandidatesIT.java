@@ -504,6 +504,22 @@ class JdbcEnrichmentCandidatesIT {
   }
 
   @Test
+  void waitingKeepsTheDueResourcesThatAreNotSkippedInTheInputOrder() {
+    UUID a = withText("A", "INDEXED", "NOT_RUN", T0);
+    UUID b = withText("B", "INDEXED", "LLM_UNAVAILABLE", T0);
+    UUID bare = resource("Bare", "INDEXED", "NOT_RUN", T0);
+    UUID done = withText("Done", "INDEXED", "VALIDATED", T0);
+    UUID skipped = withText("Skipped", "INDEXED", "NOT_RUN", T0);
+    control("skipped_at = :at", skipped, T0);
+
+    assertThat(
+            candidates.waiting(
+                List.of(b, bare, done, skipped, UUID.randomUUID(), a), MIN_TEXT, MAX_FAILED))
+        .containsExactly(b, a);
+    assertThat(candidates.waiting(List.of(), MIN_TEXT, MAX_FAILED)).isEmpty();
+  }
+
+  @Test
   void aSkippedResourceIsNotEnrichedWhenItsTextChanges() {
     UUID kept = withText("Kept", "INDEXED", "NOT_RUN", T0);
     UUID skipped = withText("Skipped", "INDEXED", "NOT_RUN", T0);

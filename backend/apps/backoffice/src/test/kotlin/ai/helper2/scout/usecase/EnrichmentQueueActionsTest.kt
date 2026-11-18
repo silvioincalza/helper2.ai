@@ -53,6 +53,8 @@ class EnrichmentQueueActionsTest {
 
       override fun eligible(resourceIds: List<UUID>) = resourceIds
 
+      override fun waiting(resourceIds: List<UUID>) = resourceIds
+
       override fun requestRun(resourceId: UUID) = Unit
     }
 

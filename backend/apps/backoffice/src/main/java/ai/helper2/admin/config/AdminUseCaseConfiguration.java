@@ -1,6 +1,7 @@
 package ai.helper2.admin.config;
 
 import ai.helper2.admin.usecase.ChangeRuntimeSetting;
+import ai.helper2.admin.usecase.CheckAiWords;
 import ai.helper2.admin.usecase.DecideRelationshipItem;
 import ai.helper2.admin.usecase.DecideRelationshipTargetGroup;
 import ai.helper2.admin.usecase.GetEffectiveSettings;
@@ -12,6 +13,7 @@ import ai.helper2.admin.usecase.ListRelationshipTargetGroups;
 import ai.helper2.admin.usecase.ResetRuntimeSetting;
 import ai.helper2.admin.usecase.ResolveReview;
 import ai.helper2.admin.usecase.ResolveReviewItems;
+import ai.helper2.catalog.AiCheckReport;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ReviewEvidence;
@@ -32,6 +34,7 @@ import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
+import ai.helper2.search.AiTopicCheck;
 import ai.helper2.search.WebSearchQuota;
 import java.time.Clock;
 import java.util.List;
@@ -137,6 +140,11 @@ class AdminUseCaseConfiguration {
   @Bean
   ListRelationshipTargetGroups listRelationshipTargetGroups(RelationshipTargets targets) {
     return new ListRelationshipTargetGroups(targets);
+  }
+
+  @Bean
+  CheckAiWords checkAiWords(AiCheckReport report, AiTopicCheck aboutAi, EnrichmentBacklog backlog) {
+    return new CheckAiWords(report, aboutAi, backlog);
   }
 
   @Bean

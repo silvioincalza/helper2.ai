@@ -79,6 +79,15 @@ On a review item, accept and reject were not enough:
    data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s. Every backlog read
    gives up after 5 seconds. The queue is admin-only and shows catalog data, no personal data; a cursor
    that is not one of ours (wrong shape, a time outside what the database holds) is a 400.
+
+   Below the queue, **Not about AI by the word rule** (`GET /api/v1/admin/ai-check`, `CheckAiWords`) reads the
+   indexed and observed resources by popularity (then id), 500 a page behind an opaque cursor, and lists the ones
+   whose title, description and tags fail `Classification.isAiRelated` (through the `AiTopicCheck` port, since the
+   back office reaches the source connectors only through ports). It changes nothing: the admin skips a waiting one
+   (one click, or all the waiting ones listed after a confirm), with the reason "Not about AI (word rule)", and
+   requeues it from Skipped to undo. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due and not
+   skipped, as `SkipEnrichment` checks it), so the panel offers Skip only where Skip succeeds. A resource that is not
+   waiting is only listed: no code deletes a catalog row.
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
    (ADMIN, back office) answers what an item is about. A review item already links to its enrichment run and, for a
    relationship candidate, to its relationship (`enrichment_run_id`, `relationship_id`). The view follows that link;

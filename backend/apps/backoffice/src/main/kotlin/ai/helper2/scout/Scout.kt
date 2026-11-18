@@ -128,6 +128,8 @@ interface EnrichmentBacklog {
 
   fun eligible(resourceIds: List<UUID>): List<UUID>
 
+  fun waiting(resourceIds: List<UUID>): List<UUID>
+
   fun requestRun(resourceId: UUID)
 }
 

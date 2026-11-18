@@ -456,6 +456,29 @@ paths:
         '401': { $ref: './common.yaml#/components/responses/Problem' }
         '403': { $ref: './common.yaml#/components/responses/Problem' }
 
+  /admin/ai-check:
+    get:
+      tags: [enrichment-queue]
+      operationId: checkAiWords
+      summary: The catalog's resources checked against today's "is it about AI" word rule, the most popular first.
+      description: >-
+        Reads the next `size` indexed or observed resources by popularity (then id), checks each with
+        `Classification.isAiRelated` on its title, description and tags, and answers the ones that fail. Nothing is
+        changed or deleted: an admin decides, for example by skipping a waiting one. Paged by cursor: pass `next` as
+        `after`; null when the catalog is read to the end.
+      parameters:
+        - { name: after, in: query, description: The previous page's next cursor; omit to start at the most popular., schema: { type: string, maxLength: 200 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 2000, default: 500 } }
+      responses:
+        '200':
+          description: The resources of this page that fail the rule.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiCheckPage' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '401': { $ref: './common.yaml#/components/responses/Problem' }
+        '403': { $ref: './common.yaml#/components/responses/Problem' }
+
   /admin/enrichment-queue/{resourceId}/requeue:
     post:
       tags: [enrichment-queue]
@@ -1229,6 +1252,26 @@ components:
           type: array
           maxItems: 20
           items: { type: string, maxLength: 60 }
+
+    AiCheckPage:
+      type: object
+      required: [notAboutAi, checked]
+      properties:
+        notAboutAi:
+          type: array
+          items: { $ref: '#/components/schemas/AiCheckRow' }
+        checked: { type: integer, minimum: 0, description: Resources read on this page. }
+        next: { type: [string, 'null'], description: The cursor of the next page; null at the end of the catalog. }
+
+    AiCheckRow:
+      type: object
+      required: [resourceId, title, type, popularity, waiting]
+      properties:
+        resourceId: { type: string, format: uuid }
+        title: { type: string }
+        type: { type: string }
+        popularity: { type: number, minimum: 0, maximum: 1 }
+        waiting: { type: boolean, description: "In the enrichment queue and not skipped: the one an admin can skip." }
 
     EnrichmentQueuePage:
       type: object
