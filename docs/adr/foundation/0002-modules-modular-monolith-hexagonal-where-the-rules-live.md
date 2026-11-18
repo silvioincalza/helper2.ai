@@ -52,6 +52,16 @@ to reach into the other's code.
    `api.generated`, and `ContractEnumConverters`). The open modules depend on no feature module: an adapter of a
    feature's port lives in that feature (the query translator, an LLM adapter of `search.QueryTranslator`, is in
    `search.internal`).
+   Inside open `platform` the LLM layer is closed. Its package `platform.llm` is the named interface `llm`
+   (`@NamedInterface` in its `package-info.java`), and it holds only what the modules use:
+   - the call: `BudgetedChat`, `TextCall`, `CallOptions`, `ChatStream`, `CutAnswerWatch`, `LlmPolicies`;
+   - the answer and the errors: `ModelAnswers`, `ModelErrors`, `UntrustedText`;
+   - the models and the metrics: `LlmSettings`, `ModelCallMetrics`;
+   - the budgets: `DailyBudget`, `CallCounter`, `BudgetLedger`.
+
+   What only the layer uses is in `platform.llm.internal`: `LlmConfiguration` (the beans), `NvidiaOnly`,
+   `StreamThreads` and `RedisCallCounter`. No class outside `platform.llm` names a class below it, the rest of
+   `platform` included (§8).
    A class has the same package in a library as in an app, so component scanning, the modules and the ArchUnit
    rules see the same code. A context puts no class into another one's package: `ContractEnumConverters` lives
    in `api`, not in `platform`, which is the platform library's package.
@@ -83,7 +93,7 @@ to reach into the other's code.
    application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and
    two `SearchSource`s over PostgreSQL.
    The base package of a Java module holds its ports and what other modules use. `catalog` keeps its ports there
-   (`CatalogWriter`, the public app's one write path; `Resources`, `ReviewQueue`, `JobMarkers`, `EmbeddingStore` and
+   (`CatalogWriter`, `IssueReports` and the category ports, the public app's write path; `Resources`, `ReviewQueue`, `JobMarkers`, `EmbeddingStore` and
    the others), its records (`ResourceRow`, `ResourceDetail`) and `ResourceCards`, and its use cases in
    `catalog.usecase`; its JDBC adapters (`Jdbc*`), `CatalogConfiguration`, `CatalogResultObserver`,
    `CatalogSearchSource` and `SemanticSearchSource` are in `catalog.internal`.
@@ -119,6 +129,9 @@ to reach into the other's code.
      no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
      `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
+   - `theLlmLayerIsUsedOnlyThroughItsNamedInterface`: no class outside `platform.llm` depends on a class of
+     `platform.llm` or below it that is not in the named interface `llm`. The test reads the interface from the
+     modules, so a new sub-package of `platform.llm` is closed with no change to the test;
    - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
      module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
 
@@ -132,7 +145,9 @@ to reach into the other's code.
      file in a package that is not in this list fails too;
    - a module names another module only by its base package or a named interface (a package or a type with
      `@NamedInterface`). The open modules are free;
-   - no file outside `sources` names a `sources` package.
+   - no file outside `sources` names a `sources` package;
+   - no file outside a named interface of an open module names a package below it
+     (`platform.llm.internal`).
 
    The modules, the open ones and the named interfaces are read from `package-info.java` and the annotations; the
    directions between the contexts are a table in the test.
@@ -175,6 +190,8 @@ to reach into the other's code.
 - `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts`
   — each project's dependencies.
 - `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/package-info.java` — the named interface `llm`;
+  `.../platform/llm/internal/` — what only the LLM layer uses.
 - `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon
   rules; `backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
   boundaries read from the source, over the roots `BackendSources`
@@ -218,8 +235,14 @@ to reach into the other's code.
   feature from using another's repository.
 - Hexagonal everywhere — `sources` is mostly mapping; ports there would only add indirection. `identity` and
   `catalog` have ports since their use cases are checked like the Kotlin ones.
-- A closed `llm` module with a named interface — the LLM layer stays in open `platform` (owner
-  decision): every feature module calls it, so a closed module would only add a named interface for all of it.
+- `platform.llm` as a nested Modulith module (`@ApplicationModule` on the package) — Modulith lets only the
+  parent module and its other nested modules use a nested module, so every feature module that calls the LLM
+  layer fails `verify()`.
+- `llm` as a top-level module of its own — it uses `platform` (resilience, settings, configuration) and
+  `platform.quota` uses it, so the two would name each other; every import and every path in the docs would move.
+- All of `platform` closed, with a named interface per sub-package — `verify()` would then hold the LLM boundary
+  with no rule of its own, but every platform package would need a declaration for a boundary only one of them
+  has.
 - Published libraries (a Maven registry) — versions to keep in step for code that changes in the same pull request,
   and a registry to run.
 - One project per Modulith module (13 projects) — more build files for modules that only one app uses.
@@ -248,6 +271,8 @@ to reach into the other's code.
   and one set of test fixtures.
 
 ### Known limits
+- `platform` is open, so `verify()` does not hold the boundary of its LLM layer: the two rules of §8 do. They read
+  the main code. A test may still name a class of `platform.llm.internal` (`StreamThreadsTest`, `ClientDayQuotaIT`).
 - Inside `core` the compiler does not stop one context from using another: only the tests of §8 do, and they run
   after the compile. Identity's security starters are on the compile path of every context of `core`;
   `CatalogArchitectureTest` fails when the catalog names a security class.
@@ -260,7 +285,8 @@ to reach into the other's code.
 Modules, ports and adapters: one view per module group, [context](../../diagrams/architecture-context.svg) · [search](../../diagrams/architecture-search.svg) · [guide](../../diagrams/architecture-guide.svg) · [index](../../diagrams/architecture-index.svg) · [setup](../../diagrams/architecture-setup.svg) · [review research](../../diagrams/architecture-review-research.svg) · [platform](../../diagrams/architecture-platform.svg).
 
 ## Backlog
-- Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20).
+- Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20),
+  [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (the closed LLM layer,
+  [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180)).
 - Open issues that change it:
-  - [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180): a closed `llm` module with a small public API.
   - [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181): controllers return views owned by the use cases.

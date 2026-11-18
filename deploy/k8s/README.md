@@ -299,10 +299,15 @@ The hosted images are signed with a key in OpenBao Transit, and a deploy runs th
 signature, pinned by digest (`image.digest`, `web.image.digest`, `backoffice.image.digest`, `postgres.image.digest`;
 [ADR 0044](../../docs/adr/operations/0044-ci-cd-and-supply-chain.md)). `make diff`, `env-secret` and
 `deploy` check the signatures themselves first (`make verified`, into `<env>/digests.env`) and take the digests only
-from that check. By hand, from the workstation (cosign installed, a token that reads `ci/harbor`):
+from that check. By hand, from the workstation (cosign installed, `BAO_ADDR` set to your OpenBao, a token that reads
+`ci/harbor`):
 
 ```bash
+export BAO_ADDR=https://<your OpenBao>
 make ENV=staging TAG=<tag> deploy
 ```
+
+Every target that reads OpenBao (`credentials`, `backup-credentials`, the signature check) stops with a message when
+`BAO_ADDR` is not set; without it `bao` would try `127.0.0.1:8200`. The scripts run with the bash of macOS (3.2) too.
 
 Without a digest the chart names each image by tag, so another cluster needs no signature.

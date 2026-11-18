@@ -199,7 +199,7 @@ The resilience policies:
   `backend/libs/core/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java` — `collector-<id>` and
   what it retries.
 - `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
-  `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`,
+  `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/RedisCallCounter.java`,
   `platform/quota/RedisQuotaCounter.java`, `platform/RedisRateLimiter.java`,
   `backend/libs/core/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — `redis`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.

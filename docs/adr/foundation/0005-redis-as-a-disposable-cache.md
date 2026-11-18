@@ -57,7 +57,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
   fail-fast guard ([0006](0006-outbound-calls-and-resilience.md)).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/RedisCallCounter.java`, `DailyBudget.java` — counters.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/RedisCallCounter.java`, `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java` — counters.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
 - `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;

@@ -8,7 +8,7 @@
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/NewsFeedCollector.java, FeedReader.java (news feeds, ADR 0016),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollector.java, BigQueryClient.java (PyPI, ADR 0017),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (index, embedder),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/{CatalogWriter,Resources,CategoryLabels,JobMarkers,EmbeddingStore,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/{CatalogWriter,Resources,CategoryLabels,CategoryInputs,CategoryAssignments,JobMarkers,EmbeddingStore,
 #   AwesomeListIndex,ReviewQueue}.java (the catalog's ports), catalog/internal/Jdbc*.java (their adapters),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults, SourceOutcomes: the Scout's way in),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/internal/JdbcResourceDetailReads.java,
@@ -83,14 +83,14 @@ sources: "sources (collectors, gap evidence)" {
 
 catalog: "catalog (Java)" {
   class: group
-  catalog: "IndexResources · IndexAwesomeLists\nReviewQueue · BackfillCategories" {class: app}
+  catalog: "IndexResources · IndexAwesomeLists\nReviewQueue · BackfillCategories\nRefreshCategories" {class: app}
   p_evidence: "ReviewEvidence\n(evidence view, query port)" {class: port}
   review_evidence: JdbcReviewEvidence {class: app}
   review_evidence -> p_evidence: implements {class: config}
   p_enrichment: "catalog::enrichment\nEnrichmentCandidates\nEnrichmentResults\nSourceOutcomes" {class: port}
   enrichment: "JdbcEnrichmentCandidates\nJdbcEnrichmentResults\nJdbcSourceOutcomes" {class: app}
-  p_store: "catalog ports\nCatalogWriter · Resources\nCategoryLabels · JobMarkers\nAwesomeListIndex · EmbeddingStore\nReviewQueue" {class: port}
-  store: "JdbcCatalogWriter · JdbcResources\nJdbcAwesomeListIndex · JdbcJobMarkers\nJdbcEmbeddingStore · JdbcReviewQueue" {class: app}
+  p_store: "catalog ports\nCatalogWriter · Resources\nCategoryInputs · CategoryAssignments\nJobMarkers\nAwesomeListIndex · EmbeddingStore\nReviewQueue" {class: port}
+  store: "JdbcCatalogWriter · JdbcResources\nJdbcCategoryLabels\nJdbcAwesomeListIndex · JdbcJobMarkers\nJdbcEmbeddingStore · JdbcReviewQueue" {class: app}
   store -> p_store: implements {class: config}
   enrichment -> p_enrichment: implements {class: config}
   detail: GetResourceDetail {class: app}

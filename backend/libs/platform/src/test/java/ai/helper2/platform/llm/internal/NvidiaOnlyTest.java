@@ -1,4 +1,4 @@
-package ai.helper2.platform.llm;
+package ai.helper2.platform.llm.internal;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

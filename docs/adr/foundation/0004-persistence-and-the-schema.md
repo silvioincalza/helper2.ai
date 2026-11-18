@@ -135,10 +135,13 @@ The schema is one file, and from the first release tag on that file must never c
    the Scout through `IndexResources.index`, `ReviewQueue` and `EnrichmentResults` ([0014](../scout/0014-evidence-gated-enrichment.md)).
    The catalog's use cases reach the database through ports in `ai.helper2.catalog` ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)),
    each with one JDBC adapter in `catalog/internal`:
-   - `CatalogWriter` (`JdbcCatalogWriter`): the sources, the upsert of resources, labels, categories, event dates and
-     records, and a user's report with its review item. It is the public app's whole write path, so its grants stay
-     small (point 9).
-   - `Resources` (`JdbcResources`), `CategoryLabels`, `JobMarkers`, `EmbeddingStore`, `AwesomeListIndex`,
+   - `CatalogWriter` (`JdbcCatalogWriter`): the sources, the upsert of resources, labels, event dates and records.
+   - `IssueReports` (`JdbcIssueReports`): a user's report with its review item, in one transaction.
+   - `CategoryInputs` and `CategoryAssignments` (`JdbcCategoryLabels`): what the category rules read of a resource,
+     and the `CATEGORY` labels they give it. The rules run in the `RefreshCategories` use case (`CategoryLabels`),
+     which the upsert calls inside its transaction.
+   - These are the public app's whole write path, so its grants stay small (point 9).
+   - `Resources` (`JdbcResources`), `JobMarkers`, `EmbeddingStore`, `AwesomeListIndex`,
      `CuratedFields`, `RelationshipTargets`, `ReviewQueue`, `ReviewDecisions` and `CatalogRetention`: the reads and
      the back office's writes. The search sources read the index through `JdbcCatalogSearch`.
    - `source` keeps only what the code does not hold: its id, its mode and its last outcome. A source's name, homepage,
@@ -230,7 +233,7 @@ The schema is one file, and from the first release tag on that file must never c
 
 ### Code
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `Resources.java`, `ReviewQueue.java`,
+- `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `IssueReports.java`, `Resources.java`, `ReviewQueue.java`,
   `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps), `CatalogBackOfficeConfiguration.java` and
   `catalog/internal/CatalogBackOfficeAdapters.java` (the back office only).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
@@ -242,7 +245,7 @@ The schema is one file, and from the first release tag on that file must never c
   `SqlReconciliation.java`, `CatalogConfiguration.java` (`reconciliation`) — the reconciled facts of the row, and the
   temporary switch between the two paths (`CatalogProperties.reconcileByProjection`).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcResourceDetailReads.java`,
-  `JdbcCatalogWriter.java` (`report`), `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment
+  `JdbcIssueReports.java` (`report`), `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment
   results, their reads for the detail page, user reports, the review
   queue and its decisions, job markers.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.

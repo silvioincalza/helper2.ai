@@ -408,7 +408,7 @@ shared cache purge.
   `backend/apps/public/src/main/java/ai/helper2/guide/schedule/GuideRetentionSchedule.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` (`of`, `network`), `quota/ClientBudgets.java`,
   `RateLimitInterceptor.java`,
-  `RateLimiter.java`, `PgVectors.java`; `platform/llm/DailyBudget.java`, `RedisCallCounter.java` (the count and its
+  `RateLimiter.java`, `PgVectors.java`; `platform/llm/DailyBudget.java`, `internal/RedisCallCounter.java` (the count and its
   give-back); `platform/llm/ModelCallMetrics.java` (`promptVersion`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
 - `docs/eval/guide-similar.json`, `guide-similar-vectors.json`;

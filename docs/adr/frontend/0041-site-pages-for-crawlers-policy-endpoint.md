@@ -106,7 +106,7 @@ Both are about the public site itself, and only the public app serves them.
      failed questions that spend no question, `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, [0032](../guide/0032-guide-cost-guard-and-answer-cache.md))
      and `webSearches` per feature (`search`, `guide`), the same for every visitor, signed in or not.
    - `retention`, in seconds: the web search counters (`RedisQuotaCounter.KEEP`, fixed in code) and the guide question
-     counters (`RedisCallCounter.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
+     counters (`BudgetLedger.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
      pages waiting for review after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`), the index of awesome lists
      (`H2_RETENTION_LIST_INDEX`), a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
      with a fingerprint (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0014](../scout/0014-evidence-gated-enrichment.md)); database backups
@@ -182,7 +182,7 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
   `H2_RETENTION_BACKUPS`, set by `deploy/helm/helper2/templates/app.yaml` from `backup.retentionDays`),
   `platform/config/CategoriesProperties.java` (`discoverySearches`), `platform/quota/RedisQuotaCounter.java` and
-  `platform/llm/RedisCallCounter.java` (`KEEP`) — the platform's numbers.
+  `platform/llm/BudgetLedger.java` (`KEEP`) — the platform's numbers.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
 - `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` — the public paths,
   and the two header writers it takes from the site.

@@ -1,8 +1,11 @@
-package ai.helper2.platform.llm;
+package ai.helper2.platform.llm.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.platform.llm.BudgetLedger;
+import ai.helper2.platform.llm.CallCounter;
+import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.resilience.Resilience;
 import java.time.Duration;
 import java.time.LocalDate;

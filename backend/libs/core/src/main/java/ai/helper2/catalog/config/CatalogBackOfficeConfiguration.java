@@ -3,6 +3,7 @@ package ai.helper2.catalog.config;
 import ai.helper2.catalog.AwesomeListIndex;
 import ai.helper2.catalog.CatalogRetention;
 import ai.helper2.catalog.CatalogWriter;
+import ai.helper2.catalog.CategoryInputs;
 import ai.helper2.catalog.CategoryLabels;
 import ai.helper2.catalog.CuratedFields;
 import ai.helper2.catalog.JobMarkers;
@@ -62,6 +63,7 @@ public class CatalogBackOfficeConfiguration {
 
   @Bean
   BackfillCategories backfillCategories(
+      CategoryInputs inputs,
       CategoryLabels labels,
       JobMarkers markers,
       CategoryCatalog catalog,
@@ -69,6 +71,7 @@ public class CatalogBackOfficeConfiguration {
       AuditTrail audit,
       MeterRegistry meters) {
     return new BackfillCategories(
+        inputs,
         labels,
         markers,
         catalog,
