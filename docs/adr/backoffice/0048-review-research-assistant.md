@@ -116,9 +116,11 @@ tool answered, and must confirm every value before it reaches the catalog.
    as plain text, filtered by kind or errors, and follows a running run on this stream. The queue rows read their
    status from `GET /admin/review-research?itemId=…`. A
    result carries `aiWritten: true`, the machine-readable AI marking.
-10. **Measured before it is used.** Research runs on staging and locally (`H2_RESEARCH_ENABLED`, default true). Prod
-    runs it once the #588 eval passes: until then the Helm chart sets `backoffice.researchEnabled: false` for prod. The
-    eval runs the agent on 100 items the admin has already decided, once with `H2_NEBIUS_FAST_MODEL` and once with
+10. **Used and measured at the same time.** Research runs on prod, staging and locally (`H2_RESEARCH_ENABLED`,
+    default true; `backoffice.researchEnabled` in the chart). The owner uses it on prod before the #588 eval has its
+    100 items: the admin confirms every value before it reaches the catalog, and the daily caps
+    (`H2_RESEARCH_DAILY_MODEL_CALLS`, `H2_RESEARCH_DAILY_PAGE_READS`) bound the cost. The eval runs the agent on 100
+    items the admin has already decided, once with `H2_NEBIUS_FAST_MODEL` and once with
     `H2_NEBIUS_REASONING_MODEL`. It reports verdict
     agreement, accuracy per attribute, the share of `CONFIRMED` values that are right, time per item and tokens per
     item. The admin chooses the model and the bar from these numbers. In production every research result is kept next
