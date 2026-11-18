@@ -38,12 +38,16 @@ internal class QueryTranslation(
         log.info("Query translation failed: {}", e.javaClass.simpleName)
         null
       } ?: return null
-    if (URL_LIKE.containsMatchIn(raw) || ABOUT_THE_QUERY.containsMatchIn(raw)) return null
+    if (URL_LIKE.containsMatchIn(raw)) return null
     val words = plainWords(raw)
+    if (isAboutTheQuery(words)) return null
     return words.takeIf {
       it.isNotBlank() && it != plainWords(analyzer.analyze(text).normalized)
     }
   }
+
+  private fun isAboutTheQuery(words: String) =
+    ABOUT_THE_QUERY.containsMatchIn(words) || OPENS_ABOUT_THE_QUERY.containsMatchIn(words)
 
   private fun plainWords(s: String) = QueryTranslator.bounded(s.lowercase().replace(NON_WORD, " "))
 
@@ -58,8 +62,9 @@ internal class QueryTranslation(
 
   private companion object {
     val URL_LIKE = Regex("(?i)https?:|www\\.|://")
-    val ABOUT_THE_QUERY =
-      WordLists.anywhere(WordLists.load("translation-words").phrasesIn("en", "about-query"))
+    val WORDS = WordLists.load("translation-words")
+    val ABOUT_THE_QUERY = WordLists.anywhere(WORDS.phrasesIn("en", "about-query"))
+    val OPENS_ABOUT_THE_QUERY = WORDS.atStart("about-query.start")
     val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
   }
 }

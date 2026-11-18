@@ -86,9 +86,11 @@ whether a query finds a resource there:
    a call the open circuit refuses costs no translation.
 7. **Untrusted answer.** The prompt asks the model to give back a query that is already English, or has nothing to
    translate, unchanged. The answer is dropped if it looks like a link, or if it talks about the query instead of being
-   one ("already in English", "nothing to translate", "cannot be translated"; the phrases are in
-   `i18n/translation-words_en.properties`). Only letters, digits, spaces and hyphens
-   stay; at most 12 words and 120 characters again. It is dropped if it equals the query reduced the same way, so an
+   one. Some phrases count anywhere in the answer ("already in English", "nothing to translate", "no translation
+   required"); others only when the answer opens with them ("The query is", "This cannot be translated", "No
+   translation", "Sorry", "I cannot", "Unable to"), because "words that cannot be translated" is a real translation. Both lists are in
+   `i18n/translation-words_en.properties` and are matched on the answer reduced to plain words. Only letters, digits,
+   spaces and hyphens stay; at most 12 words and 120 characters again. It is dropped if it equals the query reduced the same way, so an
    echo that differs only in case or punctuation adds no variant. Any failure, timeout or open circuit means the search
    runs untranslated.
 8. **Disclosed.** The English words go first into the expansions and the required-word variants, so live sources

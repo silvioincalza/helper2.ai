@@ -62,7 +62,8 @@ calls_left -> notrun: "no"
 tool -> step
 tool -> cancelled: "the response, as evidence"
 tool -> answernow: "after the 12th"
-notrun -> answernow
+notrun -> model: "the \"not run\" result"
+notrun -> answernow: "12 used, or two turns\nwith no call run"
 answernow -> step
 answernow -> next
 next -> json: "final answer"

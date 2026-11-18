@@ -250,6 +250,34 @@ class QueryTranslationTest {
   }
 
   @Test
+  fun `a translation about words that cannot be translated is kept`() {
+    val (q, out) =
+      run("parole che non possono essere tradotte") { _, _ -> "Words that cannot be translated" }
+    assertEquals("words that cannot be translated", out.interpretation.translation)
+    assertEquals("words that cannot be translated", q.requiredVariants.first())
+  }
+
+  @Test
+  fun `answers that say no translation is needed are refused`() {
+    for (answer in
+      listOf(
+        "No translation required.",
+        "\"The query is in English.\"",
+        "This cannot be translated.",
+        "It is already in English",
+        "The query cannot be translated.",
+        "Sorry, this cannot be translated.",
+        "I cannot translate this.",
+        "I'm unable to translate this query",
+        "Unable to translate.",
+      )) {
+      val (q, out) = run("herramienta para traducir documentos") { _, _ -> answer }
+      assertNull(out.interpretation.translation, answer)
+      assertNull(q.translation, answer)
+    }
+  }
+
+  @Test
   fun `a translation that asks to translate is kept`() {
     val (q, _) =
       run("herramienta para traducir documentos") { _, _ -> "Translate documents to English" }

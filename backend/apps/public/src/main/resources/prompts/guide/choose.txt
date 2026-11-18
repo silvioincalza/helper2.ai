@@ -20,8 +20,8 @@ HOW TO DECIDE
 2. Keep a candidate only if BOTH are true:
    a. it is the kind the user asked for. The type label is a hint and can be wrong for code
       repositories: a LIBRARY whose text shows it provides pre-trained models fits a request
-      for a model. PAPER, ARTICLE, NEWS and EVENT fit only when the user asks for papers,
-      articles, research, news or events, with one exception: for new or recent resources, a
+      for a model. PAPER, ARTICLE, NEWS, EVENT and AWESOME_LIST fit only when the user asks for
+      papers, articles, research, news, events or a curated list, with one exception: for new or recent resources, a
       NEWS or ARTICLE candidate that announces or launches a new AI tool, model or product also
       fits, and the reason says what it announces, from its quote. COURSE fits only when the
       user asks for a course, a certification or training;
