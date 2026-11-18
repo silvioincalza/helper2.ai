@@ -68,7 +68,10 @@ Harbor could put an image under a tag first.
      and the build cache: the libraries' test tasks run side by side, and a project whose inputs did not change takes
      its results from the cache that pushes to `main` fill. Only the three test jobs save the Gradle home to the
      Actions cache, and only on a push: their home holds the dependencies, the compiled classes and the test results
-     of the chain, and one dependency bundle is about 460 MiB. The build jobs, `package`, pull requests and manual
+     of the chain, and one dependency bundle is about 460 MiB. Each test job also runs `spotlessCheck` (the libs job
+     `:spotlessCheck` too), so the formatter jars Spotless resolves (google-java-format, ktfmt) are in the home it
+     saves, and the build jobs read them from that cache instead of Maven Central, whose 429 failed two runs of `main`
+     on 18 Nov 2026. The build jobs, `package`, pull requests and manual
      runs restore it and save nothing. The one job is `backend-architecture-test`: `spotlessCheck` and `test` of
      `backend/architecture` (`-p architecture`), the tests that read the sources of every backend project
      ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8). Like an app build, it
