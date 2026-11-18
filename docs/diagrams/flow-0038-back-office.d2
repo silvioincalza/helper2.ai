@@ -6,7 +6,7 @@
 #   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
 #   catalog/internal/BacklogRule.java, scout/EnrichmentQueue.kt (QueuePlace),
 #   scout/usecase/RequeueEnrichment.kt, SkipEnrichment.kt, PrioritiseEnrichment.kt, admin/web/EnrichmentQueueController.java,
-#   admin/usecase/ResolveReviewItems.java, admin/usecase/CheckAiWords.java, catalog/internal/JdbcAiCheckReport.java, admin/BulkDecisionRule.java, admin/web/ReviewItemMapper.java,
+#   admin/usecase/ResolveReviewItems.java, admin/usecase/CheckAiWords.java, catalog/internal/JdbcAiCheckReport.java, admin/BulkDecisionRule.java, admin/usecase/ResearchedAcceptance.java, admin/web/ReviewItemMapper.java,
 #   backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java,
 #   admin/web/ReviewController.java (marker).
 # Render: cd docs/diagrams && d2 fmt flow-0038-back-office.d2 && d2 flow-0038-back-office.d2 flow-0038-back-office.svg
@@ -161,6 +161,10 @@ bulk: "ResolveReviewItems, per item" {
   open: "Item open?" {class: decision}
   reject: "Reject?" {class: decision}
   kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?\n(ReviewEvidence.conflictingFields)" {class: decision}
+  researched: "Resource or course candidate whose\nnewest research is DONE, KEEP,\nno CONFLICT value? (ResearchedAcceptance)" {class: decision}
+  describes: "Research still describes it?\n(the URL, title, type and tags it saw\nare the candidate's now)" {class: decision}
+  apply: "CONFIRMED changed values\ninto the candidate (EditCandidate)" {class: app}
+  applied: "Edit taken, or nothing to change?" {class: decision}
   refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
   one: "ResolveReview, its own transaction\n(audit: ACCEPTED bulk:<batch>)" {class: app}
   other: "ResolveReview: NOT_OPEN or NOT_FOUND" {class: end}
@@ -169,7 +173,14 @@ bulk: "ResolveReviewItems, per item" {
   reject -> one: yes
   reject -> kind: "no (accept)"
   kind -> one: yes
-  kind -> refused: no
+  kind -> researched: no
+  researched -> describes: yes
+  describes -> apply: yes
+  describes -> refused: "no (edited since)"
+  researched -> refused: no
+  apply -> applied
+  applied -> one: yes
+  applied -> refused: "no (a value refused)"
 }
 
 bulk_req -> bulk.open

@@ -125,7 +125,7 @@ public final class CheckResearch {
     for (String name : ATTRIBUTES) {
       List<Source> sources = kept.getOrDefault(name, List.of());
       List<String> values = List.copyOf(proposed.getOrDefault(name, Set.of()));
-      String current = current(subject, name);
+      String current = currentValue(subject, name);
       if (sources.isEmpty() && current == null) {
         continue;
       }
@@ -264,7 +264,7 @@ public final class CheckResearch {
     return tag.length() >= MIN_TAG_CHARS && tag.length() <= MAX_TAG_CHARS;
   }
 
-  private static @Nullable String current(ResearchSubject s, String name) {
+  public static @Nullable String currentValue(ResearchSubject s, String name) {
     return switch (name) {
       case "canonicalUrl" -> s.url();
       case "title" -> s.title();

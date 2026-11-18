@@ -34,9 +34,13 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.research.ResearchItems;
+import ai.helper2.research.ResearchRuns;
 import ai.helper2.scout.AwesomeListReader;
 import ai.helper2.scout.EnrichmentBacklog;
 import ai.helper2.scout.ScoutStore;
+import ai.helper2.scout.usecase.CandidateItems;
+import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.search.AiTopicCheck;
 import ai.helper2.search.WebSearchQuota;
@@ -126,8 +130,16 @@ class AdminUseCaseConfiguration {
 
   @Bean
   ResolveReviewItems resolveReviewItems(
-      ReviewQueue queue, ReviewEvidence evidence, ResolveReview resolve, AuditTrail audit) {
-    return new ResolveReviewItems(queue, evidence, resolve, audit);
+      ReviewQueue queue,
+      ReviewEvidence evidence,
+      ResolveReview resolve,
+      AuditTrail audit,
+      ResearchRuns research,
+      ResearchItems researchItems,
+      CandidateItems candidates,
+      EditCandidate editCandidate) {
+    return new ResolveReviewItems(
+        queue, evidence, resolve, audit, research, researchItems, candidates, editCandidate);
   }
 
   @Bean
