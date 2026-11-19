@@ -1,5 +1,7 @@
 import type {
   UpcomingEventsResponse,
+  HubResponse,
+  ResourceType,
   Bookmark,
   BookmarkRequest,
   GuideRequest,
@@ -199,6 +201,8 @@ export const api = {
     request<SearchResponse>('GET', '/search', { query, signal }),
   listRecent: (query: URLSearchParams, signal?: AbortSignal) =>
     request<RecentResponse>('GET', '/recent', { query, signal }),
+  listHub: (type: ResourceType, signal?: AbortSignal) =>
+    request<HubResponse>('GET', `/hubs/${encodeURIComponent(type)}`, { signal }),
   listUpcomingEvents: (query: URLSearchParams, signal?: AbortSignal) =>
     request<UpcomingEventsResponse>('GET', '/events/upcoming', { query, signal }),
   listHomeExamples: (lang: string, signal?: AbortSignal) =>

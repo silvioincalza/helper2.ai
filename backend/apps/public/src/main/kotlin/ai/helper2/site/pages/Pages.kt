@@ -73,6 +73,16 @@ class Pages(private val base: String) {
       PageKind.SAVED -> unlisted("Saved")
       PageKind.ACCOUNT -> unlisted("Account")
       PageKind.SIGNIN -> unlisted("Sign in")
+      PageKind.HUB_AI_APPS,
+      PageKind.HUB_AI_MODELS,
+      PageKind.HUB_AI_AGENTS,
+      PageKind.HUB_MCP_SERVERS,
+      PageKind.HUB_LIBRARIES,
+      PageKind.HUB_AGENT_SKILLS,
+      PageKind.HUB_DATASETS,
+      PageKind.HUB_PAPERS,
+      PageKind.HUB_PROMPTS,
+      PageKind.HUB_COURSES -> hub(Hub.of(kind)!!, lists.hub(Hub.of(kind)!!.type))
       PageKind.ADMIN,
       PageKind.ADMIN_PAGE -> PageHead(brand("Back office"), null, null, Robots.NOINDEX)
       PageKind.RESOURCE -> error("a resource page needs its resource")
@@ -103,24 +113,45 @@ class Pages(private val base: String) {
     )
   }
 
-  private fun listed(name: String, description: String, path: String, listing: Listing? = null) =
+  fun hub(hub: Hub, items: List<Related>): PageHead =
+    listed(
+      "${hub.label}: newest in the catalog",
+      hub.description,
+      hub.path,
+      items.takeIf { it.isNotEmpty() }?.let { Listing("Newest change first", it) },
+      Hub.SIZE,
+    )
+
+  private fun listed(
+    name: String,
+    description: String,
+    path: String,
+    listing: Listing? = null,
+    max: Int = MAX_LISTED,
+  ) =
     PageHead(
       brand(name),
       description,
       path,
       Robots.INDEX,
-      body = siteBody(name, description, path, listing),
+      body = siteBody(name, description, path, listing, max),
     )
 
-  private fun siteBody(heading: String, description: String, path: String, listing: Listing?) =
+  private fun siteBody(
+    heading: String,
+    description: String,
+    path: String,
+    listing: Listing?,
+    max: Int = MAX_LISTED,
+  ) =
     PageBody(
       heading = heading,
       description = description,
       facts = emptyList(),
       sources = emptyList(),
       related = emptyList(),
-      listing = listing?.let { it.copy(items = it.items.take(MAX_LISTED)) },
-      pages = SITE_PAGES.filter { it.path != path },
+      listing = listing?.let { it.copy(items = it.items.take(max)) },
+      pages = NAV.filter { it.path != path },
     )
 
   private fun unlisted(name: String) = PageHead(brand(name), null, null, Robots.NOINDEX_FOLLOW)
@@ -173,6 +204,7 @@ class Pages(private val base: String) {
         PageLink("/terms", "Terms"),
         PageLink("/support", "Support $BRAND"),
       )
+    val NAV = SITE_PAGES + Hub.entries.map { PageLink(it.path, it.label) }
     private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy").withZone(ZoneOffset.UTC)
 
     fun brand(name: String) = "$name · $BRAND"

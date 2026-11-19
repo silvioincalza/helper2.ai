@@ -27,8 +27,8 @@ class LlmsTxtTest {
   }
 
   @Test
-  fun `it links every indexed site page but support`() {
-    Pages.SITE_PAGES.filter { it.path != "/support" }
+  fun `it links every indexed site page but support, and every hub`() {
+    Pages.NAV.filter { it.path != "/support" }
       .forEach { assertTrue(text.contains("](https://helper2.ai${it.path})"), it.path) }
   }
 

@@ -35,6 +35,7 @@ tags:
   - name: examples
   - name: policy
   - name: site
+  - name: hubs
 
 paths:
   /search:
@@ -82,6 +83,26 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/UpcomingEventsResponse' }
         '400': { $ref: './common.yaml#/components/responses/Problem' }
+  /hubs/{type}:
+    get:
+      tags: [hubs]
+      operationId: listHub
+      summary: The resources of one type that a search engine may index, newest change first, for its hub page.
+      description: |
+        For the hub pages (`/mcp-servers`, `/ai-models`, ...). Only resources the site pages mark `index`
+        (ADR 0041, `IndexPolicy`), newest change first, at most 50. Served from memory, read again at most every
+        10 minutes. A type without a hub page (EVENT, NEWS, ARTICLE, AWESOME_LIST, OTHER) is a 404.
+      parameters:
+        - { name: type, in: path, required: true, schema: { $ref: './common.yaml#/components/schemas/ResourceType' } }
+      responses:
+        '200':
+          description: The hub's resources (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HubResponse' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
   /resources/{id}:
     get:
       tags: [resource-detail]
@@ -601,6 +622,14 @@ components:
             A resource whose records no longer merge is counted but not shown, so `items` can be shorter.
         since: { type: string, format: date-time, description: Oldest publication date included. }
         generatedAt: { type: string, format: date-time }
+
+    HubResponse:
+      type: object
+      required: [type, items, generatedAt]
+      properties:
+        type: { $ref: './common.yaml#/components/schemas/ResourceType' }
+        items: { type: array, maxItems: 50, items: { $ref: './common.yaml#/components/schemas/ResultCard' } }
+        generatedAt: { type: string, format: date-time, description: When the list was read from the catalog. }
 
     UpcomingEventsResponse:
       type: object

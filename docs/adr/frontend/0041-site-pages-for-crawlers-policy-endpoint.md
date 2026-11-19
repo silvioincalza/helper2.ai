@@ -41,7 +41,7 @@ Both are about the public site itself, and only the public app serves them.
    | `/resource/{id}/{slug}`, found, slug right | 200 | index, or noindex when not index-worthy (5) | from the resource (3) |
    | `/resource/{id}` without a slug, a wrong or old slug, or an id merged into another resource | 301 to `/resource/{owner}/{slug}` | — | — |
    | `/resource/{id}`, unknown or not a UUID | 404 | noindex | "Resource not found" |
-   | `/`, `/sources`, `/events`, `/mission`, `/privacy`, `/terms`, `/support` | 200 | index | fixed title and description per page, and a short body (3) |
+   | `/`, `/sources`, `/events`, `/mission`, `/privacy`, `/terms`, `/support`, the hubs ([0052](0052-hub-pages-per-resource-type.md)) | 200 | index | fixed title and description per page, and a short body (3) |
    | `/search`, `/?q=…`, `/saved`, `/account` | 200 | noindex, follow | fixed title |
    | `/admin/**` | 404 here: the back office app serves it on the admin host ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)), always `noindex` | — | — |
    | any other address without a file extension | 404 | noindex | "Page not found" |
@@ -281,7 +281,7 @@ and `H2_NOINDEX`. The other layers are not touched.
 
 - No 410 for resources removed on purpose: the catalog has no removed state.
 - No Open Graph image (brand first, then per resource): S7.3.8.
-- No hub pages per type or use case (`/mcp-servers`): S7.3.6. No IndexNow pings: S7.3.7.
+- No hub pages per use case: the hubs are one per type ([0052](0052-hub-pages-per-resource-type.md)). No IndexNow pings: S7.3.7.
 
 ## Diagrams
 
@@ -292,6 +292,5 @@ the policy endpoint: [flow](../../diagrams/flow-0041-policy-endpoint.svg) · [se
 ## Backlog
 
 - Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint.
-- Open issues that change this decision: [S7.3.6](https://github.com/silvioincalza/helper2.ai/issues/816) hub pages per
-  type, [S7.3.7](https://github.com/silvioincalza/helper2.ai/issues/817) IndexNow pings,
+- Open issues that change this decision: [S7.3.7](https://github.com/silvioincalza/helper2.ai/issues/817) IndexNow pings,
   [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) an Open Graph image.

@@ -8,6 +8,7 @@ import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.catalog.usecase.ListIndexableResources;
+import ai.helper2.catalog.usecase.ListNewestIndexable;
 import ai.helper2.catalog.usecase.ListRecentResources;
 import ai.helper2.catalog.usecase.ListUpcomingEvents;
 import ai.helper2.catalog.usecase.RefreshCategories;
@@ -40,6 +41,11 @@ class CatalogUseCaseConfiguration {
   @Bean
   ListIndexableResources listIndexableResources(Resources resources) {
     return new ListIndexableResources(resources);
+  }
+
+  @Bean
+  ListNewestIndexable listNewestIndexable(Resources resources, ResourceCards cards) {
+    return new ListNewestIndexable(resources, cards);
   }
 
   @Bean

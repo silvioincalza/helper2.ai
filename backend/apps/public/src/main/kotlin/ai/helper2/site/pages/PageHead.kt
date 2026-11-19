@@ -94,6 +94,8 @@ object IndexPolicy {
       ResourceType.COURSE,
     )
 
+  val LISTED_TYPES = INDEXED_TYPES + ResourceType.PROMPT
+
   const val PROMPT_MIN_LENGTH = 200
 
   fun indexWorthy(r: ResourceView): Boolean {

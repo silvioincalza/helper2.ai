@@ -25,6 +25,10 @@ object LlmsTxt {
     |- [Privacy]($base/privacy): what helper2.ai collects, why, for how long, and who receives it
     |- [Terms of use]($base/terms): the terms that apply when you use helper2.ai
     |
+    |## Browse by type
+    |
+    |${hubs(base)}
+    |
     |## Resource pages
     |
     |- Every resource has its own page at $base/resource/{id}/{slug}: its type, license, pricing, dates and sources, as the sources state them.
@@ -36,4 +40,9 @@ object LlmsTxt {
     |- The terms of use do not allow scraping or copying the service in bulk with automated tools.
     |"""
       .trimMargin()
+
+  private fun hubs(base: String): String =
+    Hub.entries.joinToString("\n") {
+      "- [${it.label}]($base${it.path}): the newest changes in the catalog"
+    }
 }
