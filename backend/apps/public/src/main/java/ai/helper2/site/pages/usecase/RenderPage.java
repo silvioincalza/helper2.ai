@@ -13,6 +13,7 @@ import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
 import ai.helper2.site.pages.ResourcePathsKt;
 import ai.helper2.site.pages.ResourceView;
+import ai.helper2.site.pages.SiteLists;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +37,14 @@ public class RenderPage {
   }
 
   private final GetResourceDetail details;
+  private final SiteLists lists;
   private final Pages pages;
   private final boolean noindex;
 
-  public RenderPage(GetResourceDetail details, String publicBaseUrl, boolean noindex) {
+  public RenderPage(
+      GetResourceDetail details, SiteLists lists, String publicBaseUrl, boolean noindex) {
     this.details = details;
+    this.lists = lists;
     this.pages = new Pages(publicBaseUrl);
     this.noindex = noindex;
   }
@@ -57,7 +61,7 @@ public class RenderPage {
       case PageAddress.Resource r -> resource(r.getId(), r.getSlug());
       case PageAddress.Page p when p.getKind() == PageKind.HOME && hasQuery ->
           Page.ok(pages.of(PageKind.SEARCH));
-      case PageAddress.Page p -> Page.ok(pages.of(p.getKind()));
+      case PageAddress.Page p -> Page.ok(pages.of(p.getKind(), lists));
       case PageAddress.Unknown unknown -> Page.notFound(pages.pageNotFound());
     };
   }

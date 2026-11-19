@@ -2,6 +2,7 @@ package ai.helper2.site.pages.config;
 
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.catalog.usecase.ListIndexableResources;
+import ai.helper2.site.pages.SiteLists;
 import ai.helper2.site.pages.usecase.ListSitemap;
 import ai.helper2.site.pages.usecase.RenderPage;
 import java.time.Clock;
@@ -12,8 +13,8 @@ import org.springframework.context.annotation.Configuration;
 class PagesUseCaseConfiguration {
 
   @Bean
-  RenderPage renderPage(GetResourceDetail details, PagesProperties p) {
-    return new RenderPage(details, p.publicBaseUrl(), p.noindex());
+  RenderPage renderPage(GetResourceDetail details, SiteLists lists, PagesProperties p) {
+    return new RenderPage(details, lists, p.publicBaseUrl(), p.noindex());
   }
 
   @Bean

@@ -30,7 +30,13 @@ data class PageBody(
   val facts: List<Fact>,
   val sources: List<Link>,
   val related: List<Related>,
+  val listing: Listing? = null,
+  val pages: List<PageLink> = emptyList(),
 )
+
+data class Listing(val heading: String, val items: List<Related>)
+
+data class PageLink(val path: String, val name: String)
 
 data class Fact(val name: String, val value: String)
 

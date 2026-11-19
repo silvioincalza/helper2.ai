@@ -80,8 +80,33 @@ class PageHtmlTest {
         .contains("<meta data-h2-head name=\"robots\" content=\"index, follow\">")
         .contains("<link data-h2-head rel=\"canonical\" href=\"https://helper2.ai/sources\">")
         .contains("<script nonce=\"n0nce\" type=\"module\" src=\"/assets/index.js\"></script>")
-        .contains("<div id=\"root\"></div>")
+        .contains(
+            "<div id=\"root\"><main class=\"h2-prerender\"><h1>Sources: where helper2.ai searches</h1>")
+        .contains("<nav><h2>More on helper2.ai</h2><ul><li><a href=\"/\">Search</a></li>")
+        .doesNotContain("<a href=\"/sources\">")
         .doesNotContain("<title>Helper2.ai</title>");
+  }
+
+  @Test
+  void aSiteListEscapesTheTitlesOfThirdParties() throws IOException {
+    SiteLists lists =
+        new SiteLists() {
+          @Override
+          public List<Related> newInCatalog() {
+            return List.of(new Related(ID, HOSTILE));
+          }
+
+          @Override
+          public List<Related> upcomingEvents() {
+            return List.of();
+          }
+        };
+    String page =
+        html(SHELL).render(new Pages("https://helper2.ai").of(PageKind.HOME, lists), "n0nce");
+    assertThat(page)
+        .contains("<h2>New in the catalog</h2><ul><li><a href=\"/resource/" + ID)
+        .doesNotContain("<script>alert(1)")
+        .doesNotContain("onload=\"x\"");
   }
 
   @Test
