@@ -673,6 +673,8 @@ helper2.scout.github-awesome.min-repo-stars = 50
 helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
+helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
 helper2.scout.github-sdks.deps-dev-url = ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
 helper2.scout.github-sdks.interval = ${H2_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
 helper2.scout.github-sdks.languages = ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000

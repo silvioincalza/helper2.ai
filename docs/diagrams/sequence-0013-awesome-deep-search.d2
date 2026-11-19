@@ -1,11 +1,13 @@
-# Sequence: a Scout pass that follows a nested awesome list and sends each link of an entry to the rule of its kind.
+# Sequence: a Scout pass that reads an added web page, follows a nested awesome list and sends each link of an entry to the rule of its kind.
 # Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeCrawl.java, ListEntryLinks.java, ProductLinks.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/huggingface/scout/HuggingFaceModelReader.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/arxiv/scout/ArxivPaperReader.java, sources/npm/scout/NpmPackageReader.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/RedisOutboundThrottle.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/CoursePages.java,
-#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore), scout/internal/JdbcListSeedStore.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore, HostsNeverRead), scout/internal/JdbcListSeedStore.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java, WebPageReader.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/LiveWebPageReader.java, sources/liveweb/scout/ScoutLiveWebCredits.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java, ResourceCandidateJson.java,
 #   backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java (candidatesOpenedToday),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexAwesomeLists.java, RefreshCategories.java, catalog/internal/JdbcCategoryLabels.java.
@@ -17,6 +19,8 @@ shape: sequence_diagram
 
 scout: RunScout {class: app}
 collector: "GitHubAwesomeCollector\n+ AwesomeCrawl" {class: app}
+pages: "WebPageLists" {class: app}
+reader: "Live web page reader" {class: ext}
 github: "api.github.com" {class: ext}
 hub: "huggingface.co" {class: ext}
 arxiv: "export.arxiv.org" {class: ext}
@@ -28,7 +32,13 @@ pg: PostgreSQL {class: data}
 
 scout -> collector: "collect(cursor, 500)"
 collector -> pg: "list_seed: the lists an administrator added"
-pg -> collector: "small/llm-links (read first)"
+pg -> collector: "small/llm-links (read first),\na web page with its last try"
+collector -> pages: "read(budget)"
+pages -> pages: "host not in the never-read setting;\nlast try 7 days ago or never;\nthe Scout's daily credits not spent"
+pages -> pg: "list_seed.read_tried_at = now"
+pages -> reader: "the page address (1 credit,\nscout-list-pages)"
+reader -> pages: "the page as Markdown"
+pages -> collector: "the page as a seed: entries,\nheadings, links (kept in memory\nuntil the next read, never the text)"
 collector -> github: "GET /search/repositories (topic pairs)"
 github -> collector: "seed lists with their facts"
 collector -> github: "GET /repos/small/llm-links (an added list\nthe search did not find)"
@@ -48,7 +58,7 @@ collector -> arxiv: "GET /api/query?id_list=… (50 ids a call,\nat most 200 pap
 arxiv -> collector: "Atom: title, summary, categories, dates"
 collector -> npm: "GET /{name}/latest\n(at most 100 a pass)"
 npm -> collector: "name, description, keywords,\nlicence, repository, deprecated"
-collector -> scout: "CollectedBatch: hits + 2 list ARTICLEs + MODEL, PAPER\nand package hits,\nlist texts, candidates (COURSE, PRODUCT,\nMODEL under 10 likes), newCandidatesPerDay = 50"
+collector -> scout: "CollectedBatch: hits + the lists read\n(2 GitHub lists, the web page) + MODEL, PAPER\nand package hits,\nlist texts, candidates (COURSE, PRODUCT,\nMODEL under 10 likes), newCandidatesPerDay = 50"
 scout -> catalog: "index(merged hits)"
 catalog -> pg: "upsert resources; categories\nfrom title, records, headings"
 scout -> catalog: "replace(list texts)"

@@ -78,7 +78,11 @@ class InMemoryListSeedStore : ListSeedStore {
 
   override fun all(): List<ListSeed> = seeds.values.toList()
 
-  override fun add(seed: ListSeed): Boolean = seeds.putIfAbsent(seed.repository, seed) == null
+  override fun add(seed: ListSeed): Boolean = seeds.putIfAbsent(seed.address, seed) == null
 
-  override fun remove(repository: String): ListSeed? = seeds.remove(repository)
+  override fun remove(address: String): ListSeed? = seeds.remove(address)
+
+  override fun readTried(address: String, at: Instant) {
+    seeds.computeIfPresent(address) { _, seed -> seed.copy(readTriedAt = at) }
+  }
 }

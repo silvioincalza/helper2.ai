@@ -1,10 +1,12 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.scout.ListKind;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListSeedStore;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 class JdbcListSeedStore implements ListSeedStore {
+
+  private static final String COLUMNS = "kind, address, added_by, added_at, reason, read_tried_at";
 
   private final JdbcClient jdbc;
 
@@ -21,9 +25,7 @@ class JdbcListSeedStore implements ListSeedStore {
 
   @Override
   public List<ListSeed> all() {
-    return jdbc.sql(
-            "SELECT repository, added_by, added_at, reason FROM list_seed"
-                + " ORDER BY added_at, repository")
+    return jdbc.sql("SELECT " + COLUMNS + " FROM list_seed ORDER BY added_at, address")
         .query((rs, i) -> seed(rs))
         .list();
   }
@@ -32,11 +34,12 @@ class JdbcListSeedStore implements ListSeedStore {
   public boolean add(ListSeed seed) {
     return jdbc.sql(
                 """
-                INSERT INTO list_seed (repository, added_by, added_at, reason)
-                VALUES (:repository, :by, :at, :reason)
-                ON CONFLICT (repository) DO NOTHING
+                INSERT INTO list_seed (kind, address, added_by, added_at, reason)
+                VALUES (:kind, :address, :by, :at, :reason)
+                ON CONFLICT (address) DO NOTHING
                 """)
-            .param("repository", seed.getRepository())
+            .param("kind", seed.getKind().name())
+            .param("address", seed.getAddress())
             .param("by", seed.getAddedBy())
             .param("at", Timestamp.from(seed.getAddedAt()))
             .param("reason", seed.getReason())
@@ -45,23 +48,31 @@ class JdbcListSeedStore implements ListSeedStore {
   }
 
   @Override
-  public @Nullable ListSeed remove(String repository) {
-    return jdbc.sql(
-            """
-            DELETE FROM list_seed WHERE repository = :repository
-            RETURNING repository, added_by, added_at, reason
-            """)
-        .param("repository", repository)
+  public @Nullable ListSeed remove(String address) {
+    return jdbc.sql("DELETE FROM list_seed WHERE address = :address RETURNING " + COLUMNS)
+        .param("address", address)
         .query((rs, i) -> seed(rs))
         .optional()
         .orElse(null);
   }
 
+  @Override
+  public void readTried(String address, Instant at) {
+    jdbc.sql(
+            "UPDATE list_seed SET read_tried_at = :at WHERE address = :address AND kind = 'WEB_PAGE'")
+        .param("at", Timestamp.from(at))
+        .param("address", address)
+        .update();
+  }
+
   private static ListSeed seed(ResultSet rs) throws SQLException {
+    Timestamp tried = rs.getTimestamp("read_tried_at");
     return new ListSeed(
-        rs.getString("repository"),
+        ListKind.valueOf(rs.getString("kind")),
+        rs.getString("address"),
         rs.getString("added_by"),
         rs.getTimestamp("added_at").toInstant(),
-        rs.getString("reason"));
+        rs.getString("reason"),
+        tried == null ? null : tried.toInstant());
   }
 }

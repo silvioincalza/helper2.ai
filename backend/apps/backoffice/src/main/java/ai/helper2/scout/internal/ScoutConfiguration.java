@@ -38,6 +38,7 @@ import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
+import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.KnownTargetProposals;
 import ai.helper2.scout.KnownTargets;
 import ai.helper2.scout.LastSuccesses;
@@ -525,8 +526,12 @@ class ScoutConfiguration {
 
   @Bean
   ManageListSeeds manageListSeeds(
-      ListSeedStore seeds, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
-    return new ManageListSeeds(seeds, audit, unitOfWork, clock);
+      ListSeedStore seeds,
+      HostsNeverRead neverRead,
+      AuditTrail audit,
+      UnitOfWork unitOfWork,
+      Clock clock) {
+    return new ManageListSeeds(seeds, neverRead, audit, unitOfWork, clock);
   }
 
   @Bean

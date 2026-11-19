@@ -12,6 +12,7 @@ import ai.helper2.scout.ListAddresses;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.usecase.ManageListSeeds;
 import ai.helper2.shared.UtcTimes;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,25 +45,26 @@ class ListSeedsController implements ListSeedsApi {
       case ManageListSeeds.Added.Invalid i -> throw invalid(i.getProblem());
       case ManageListSeeds.Added.AlreadyListed a ->
           throw new ApiProblem(
-              ProblemType.DUPLICATE,
-              a.getCurrent().getRepository() + " is a list to read already.");
+              ProblemType.DUPLICATE, a.getCurrent().getAddress() + " is a list to read already.");
       case ManageListSeeds.Added.Full f ->
           throw new ApiProblem(
               ProblemType.INVALID_REQUEST,
               "At most " + ManageListSeeds.MAX_SEEDS + " lists are read. Remove one first.");
+      case ManageListSeeds.Added.NeverRead n ->
+          throw new ApiProblem(
+              ProblemType.INVALID_REQUEST,
+              "address: pages on " + n.getHost() + " are never read: " + n.getReason() + ".");
       case ManageListSeeds.Added.BadReason r -> throw badReason();
     };
   }
 
   @Override
-  public ResponseEntity<Void> removeListSeed(
-      String owner, String repository, @Nullable ListSeedRemoveDto body) {
+  public ResponseEntity<Void> removeListSeed(UUID id, @Nullable ListSeedRemoveDto body) {
     String reason = body == null ? null : body.getReason();
-    String name = owner + "/" + repository;
-    return switch (seeds.remove(Admins.id(), name, reason)) {
+    return switch (seeds.remove(Admins.id(), id, reason)) {
       case ManageListSeeds.Removed.Done d -> ResponseEntity.noContent().build();
       case ManageListSeeds.Removed.NotFound n ->
-          throw new NotFoundException(name + " is not a list to read.");
+          throw new NotFoundException("No list to read has the id " + id + ".");
       case ManageListSeeds.Removed.BadReason r -> throw badReason();
     };
   }
@@ -71,10 +73,20 @@ class ListSeedsController implements ListSeedsApi {
     return new ApiProblem(
         ProblemType.INVALID_REQUEST,
         switch (problem) {
-          case EMPTY -> "address: enter a GitHub repository, such as owner/awesome-llm.";
+          case EMPTY ->
+              "address: enter a GitHub repository, such as owner/awesome-llm, or the https address"
+                  + " of a web page.";
           case NOT_A_GITHUB_REPOSITORY ->
               "address: a GitHub repository, as owner/name or https://github.com/owner/name; no"
                   + " file path, branch or query.";
+          case NOT_HTTPS -> "address: a web page is read over https only.";
+          case NOT_A_PUBLIC_HOST ->
+              "address: a web page needs a public host name; no IP address, private name or"
+                  + " punycode.";
+          case NOT_A_PLAIN_PAGE ->
+              "address: a web page address of at most "
+                  + ListAddresses.MAX_LENGTH
+                  + " characters, with no user info, port or fragment.";
         });
   }
 
@@ -85,7 +97,12 @@ class ListSeedsController implements ListSeedsApi {
   }
 
   private static ListSeedEntryDto dto(ListSeed s) {
-    return new ListSeedEntryDto(s.getRepository(), s.getAddedBy(), UtcTimes.odt(s.getAddedAt()))
+    return new ListSeedEntryDto(
+            s.getId(),
+            ListSeedEntryDto.KindEnum.fromValue(s.getKind().name()),
+            s.getAddress(),
+            s.getAddedBy(),
+            UtcTimes.odt(s.getAddedAt()))
         .reason(s.getReason());
   }
 }

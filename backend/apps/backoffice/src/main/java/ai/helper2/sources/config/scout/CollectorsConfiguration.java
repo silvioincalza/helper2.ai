@@ -15,6 +15,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
@@ -45,6 +46,7 @@ import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
 import ai.helper2.sources.github.scout.GitHubTopicLeadersCollector;
 import ai.helper2.sources.github.scout.SdkSearchPlan;
+import ai.helper2.sources.github.scout.WebPageLists;
 import ai.helper2.sources.huggingface.scout.HuggingFaceModelReader;
 import ai.helper2.sources.huggingface.scout.HuggingFaceProviderOrgsCollector;
 import ai.helper2.sources.huggingface.scout.HuggingFaceTrendingCollector;
@@ -298,7 +300,8 @@ class CollectorsConfiguration {
       ListSeedStore addedLists,
       ShadowLibraries shadowLibraries,
       VitalityPolicy vitality,
-      OutboundThrottle throttle) {
+      OutboundThrottle throttle,
+      WebPageLists webPageLists) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -344,7 +347,25 @@ class CollectorsConfiguration {
             modelReader(p.get("hf-trending"), clock, resilience, observations, http),
             listedModelAdmission(vitality, c.links().modelIndexMinLikes()),
             paperReader(p.get("arxiv"), s, clock, resilience, observations, http, throttle),
-            packageReader(p.get("npm"), s, clock, resilience, observations, http)));
+            packageReader(p.get("npm"), s, clock, resilience, observations, http)),
+        webPageLists);
+  }
+
+  @Bean
+  HostsNeverRead listPageHostsNeverRead(CollectorProperties.GitHubAwesome c) {
+    return new HostsNeverRead(c.webPages().neverReadReasons());
+  }
+
+  @Bean
+  WebPageLists webPageLists(
+      CollectorProperties.GitHubAwesome c,
+      ListSeedStore addedLists,
+      LiveWebPageReader reader,
+      ScoutLiveWebCredits credits,
+      HostsNeverRead neverRead,
+      Clock clock) {
+    return new WebPageLists(
+        addedLists, reader, credits, neverRead, c.webPages().readEvery(), clock);
   }
 
   private static final String AWESOME_POLICY = "collector-" + CollectorIds.GITHUB_AWESOME;

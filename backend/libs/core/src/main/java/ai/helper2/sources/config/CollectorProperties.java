@@ -11,7 +11,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.unit.DataSize;
@@ -116,7 +120,8 @@ public final class CollectorProperties {
       @NotNull Duration maxRunTime,
       @NotNull DataSize maxReadmeBytesPerRun,
       @NotNull @Valid Nested nested,
-      @NotNull @Valid Links links)
+      @NotNull @Valid Links links,
+      @NotNull @Valid WebPages webPages)
       implements Scheduled {
 
     public GitHubAwesome {
@@ -142,6 +147,39 @@ public final class CollectorProperties {
 
       public Links {
         excludeDomains = clean(excludeDomains);
+      }
+    }
+
+    public record WebPages(@NotNull Duration readEvery, @NotNull List<String> neverRead) {
+
+      static final Duration LONGEST_READ_EVERY = Duration.ofDays(21);
+
+      public WebPages {
+        neverRead = clean(neverRead);
+      }
+
+      public Map<String, String> neverReadReasons() {
+        Map<String, String> reasons = new LinkedHashMap<>();
+        for (String entry : neverRead) {
+          reasons.put(
+              StringUtils.substringBefore(entry, "=").strip().toLowerCase(Locale.ROOT),
+              StringUtils.substringAfter(entry, "=").strip());
+        }
+        return reasons;
+      }
+
+      @AssertTrue(message = "must be between one day and 21 days")
+      boolean isReadEveryWithinTheListIndexRetention() {
+        return readEvery == null
+            || (readEvery.compareTo(Duration.ofDays(1)) >= 0
+                && readEvery.compareTo(LONGEST_READ_EVERY) <= 0);
+      }
+
+      @AssertTrue(message = "each entry is host=reason")
+      boolean isNeverReadHostsWithReasons() {
+        return neverRead == null
+            || neverReadReasons().entrySet().stream()
+                .allMatch(e -> e.getKey().contains(".") && !e.getValue().isEmpty());
       }
     }
   }
