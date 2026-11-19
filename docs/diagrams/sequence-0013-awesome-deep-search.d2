@@ -1,6 +1,7 @@
 # Sequence: a Scout pass that follows a nested awesome list and proposes a product site linked from a list.
 # Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeCrawl.java, ProductLinks.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore), scout/internal/JdbcListSeedStore.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java, ResourceCandidateJson.java,
 #   backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java (candidatesOpenedToday),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexAwesomeLists.java, RefreshCategories.java, catalog/internal/JdbcCategoryLabels.java.
@@ -18,8 +19,12 @@ review: "ReviewQueueCandidateReview" {class: app}
 pg: PostgreSQL {class: data}
 
 scout -> collector: "collect(cursor, 500)"
+collector -> pg: "list_seed: the lists an administrator added"
+pg -> collector: "small/llm-links (read first)"
 collector -> github: "GET /search/repositories (topic pairs)"
 github -> collector: "seed lists with their facts"
+collector -> github: "GET /repos/small/llm-links (an added list\nthe search did not find)"
+github -> collector: "found, not archived"
 collector -> github: "GET /repos/{seed}/readme"
 github -> collector: "Markdown: entries, a section\n\"Related lists\", links to product sites"
 collector -> github: "GET /repos/{nested} (facts)"

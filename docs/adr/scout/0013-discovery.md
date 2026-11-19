@@ -217,6 +217,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
 ### Deep search in awesome lists
 15. **Follow nested lists.** A run reads the seed lists, then the lists they link to, then the lists those link to: at
     most `nested.max-depth` (2) steps from a seed, breadth first (`AwesomeCrawl`).
+    - The seeds are the lists an administrator added, then the top lists of the topic search
+      ([0012](0012-scout-collectors-and-events.md) point 6). An added list is read whatever its stars and words.
     - A link is a nested list when the repository's name says "awesome", or when it sits under a heading below the
       title that names a section of lists ("Other awesome lists", "Related lists", "Lists of lists").
     - It is followed only when its GitHub facts (`GET /repos/{owner}/{repo}`) say it is alive and about AI: not
@@ -320,6 +322,9 @@ No new table for deep search, no new dependency.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java` (nested lists, budgets),
   `ProductLinks.java` (link checks), `AwesomeMetrics.java`, `AwesomeListParser.java` (`Link`, `Entry.pointsAtList`),
   `GitHubAwesomeCollector.java` (`Deep`, `candidates`, `candidate`, `repoFacts`).
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt` — `ListSeed`, `ListSeedStore`,
+  `ListAddresses`; `scout/usecase/ManageListSeeds.kt`; `scout/internal/JdbcListSeedStore.java`;
+  `admin/web/ListSeedsController.java`; `V2026.11.8.4__list_seed.sql`; `frontend/src/admin/ListSeedsPanel.tsx`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`,
   `HostLists`, `DiscoveryHostStore`, `HostNames`; `scout/usecase/ManageDiscoveryHosts.kt`;
   `scout/internal/JdbcDiscoveryHostStore.java`; `admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
@@ -410,8 +415,9 @@ No new table for deep search, no new dependency.
 - Retention ([0010](../foundation/0010-data-retention.md)): list pages (ARTICLE) are deleted 180 days after
   `retrieved_at` (`H2_RETENTION_WEB_NEWS`); an accepted product stays as long as it is listed; a review item stays
   until it is decided, then 180 days. The search facts go with their record or item.
-- Privacy: no user data in the searches. `discovery_host` holds the GitHub user ID of the administrator who added a
-  host and the reason they wrote. The Privacy page lists both, with their retention. This change adds no data flow.
+- Privacy: no user data in the searches. `discovery_host` and `list_seed` hold the GitHub user ID of the
+  administrator who added a host or a list and the reason they wrote. The Privacy page lists both, with their
+  retention.
 - List pages are indexed without review. Their claims are not facts in the catalog: they are `ARTICLE`s, and
   enrichment cites only what they say about themselves.
 - An accepted candidate is in search at once, without a type check by a model; its description is the search excerpt
@@ -484,3 +490,5 @@ discovery hosts: [flow](../../diagrams/flow-0013-discovery-hosts.svg) · [sequen
 - Decides: [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
 - Open issues that change it:
   - [S2.3.5](https://github.com/silvioincalza/helper2.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
+  - [S2.3.8](https://github.com/silvioincalza/helper2.ai/issues/842): every link of a list entry goes to the rule of its kind.
+  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a web page that lists AI resources is split into its items.

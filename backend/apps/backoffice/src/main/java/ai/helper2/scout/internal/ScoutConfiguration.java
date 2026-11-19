@@ -42,6 +42,7 @@ import ai.helper2.scout.KnownTargetProposals;
 import ai.helper2.scout.KnownTargets;
 import ai.helper2.scout.LastSuccesses;
 import ai.helper2.scout.ListIndex;
+import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.OfficialPages;
@@ -68,6 +69,7 @@ import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.scout.usecase.ManageDiscoveryHosts;
+import ai.helper2.scout.usecase.ManageListSeeds;
 import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RequeueEnrichment;
@@ -519,6 +521,12 @@ class ScoutConfiguration {
   ManageDiscoveryHosts manageDiscoveryHosts(
       DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
     return new ManageDiscoveryHosts(hosts, audit, unitOfWork, clock);
+  }
+
+  @Bean
+  ManageListSeeds manageListSeeds(
+      ListSeedStore seeds, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
+    return new ManageListSeeds(seeds, audit, unitOfWork, clock);
   }
 
   @Bean

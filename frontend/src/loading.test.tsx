@@ -178,6 +178,7 @@ const adminPages: Case[] = [
       'GET /admin/config': never,
       'GET /admin/runtime-settings': never,
       'GET /admin/discovery-hosts': never,
+      'GET /admin/list-seeds': never,
       'GET /admin/shadow-libraries': never,
       'GET /admin/known-targets': never,
     },

@@ -60,6 +60,18 @@ Two kinds of source need more care:
 6. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `H2_GITHUB_TOKEN` (GraphQL refuses anonymous calls).
    - A topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
      The lists they link to are read too ([0013](0013-discovery.md), deep search).
+   - **Lists an administrator adds.** On `/admin/settings`, "Lists to read": a GitHub repository, as `owner/name` or
+     `https://github.com/owner/name`, with an optional reason (`ManageListSeeds`, table `list_seed`, at most 50). Any
+     other address is refused: a file path, a branch, another site. Each pass reads the added lists first, oldest
+     first, then the lists the search finds, so the README time and size budget goes to them first. The star floor,
+     the name rule and the AI words do not apply to an added list: a person chose it. Its facts come from
+     `GET /repos/{owner}/{repo}`; a list the search also found costs no extra call. An archived list and one GitHub
+     does not find are skipped (`helper2.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay
+     added; a renamed one is read under its new name. From there an added list is a seed like the others: its nested
+     lists, its entries, its product links and its type follow the same rules. Removing it stops the reading; the
+     list and what was found in it stay in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`,
+     `POST /api/v1/admin/list-seeds/{owner}/{repository}/remove`, both changes in the audit trail (`ADD_LIST_SEED`,
+     `REMOVE_LIST_SEED`).
    - Each README (up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
      `H2_SCOUT_AWESOME_PER_RUN` (1000) per run, so a pass ends in one daily run; a pass cut short by
      `max-items-per-run` resumes after the last repository name it handled (entries sorted by name), so a list that

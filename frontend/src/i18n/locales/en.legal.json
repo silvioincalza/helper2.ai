@@ -157,6 +157,7 @@
             "withoutNumbers": "Runtime spending-limit changes in the back office, with their GitHub user ID and the reason they wrote: for a set time. The latest change of each limit stays until a newer change replaces it."
           },
           "The sites our search for new AI resources knows by name (writing sites and directories), with the GitHub user ID of the administrator who added each and the reason they wrote: until an administrator removes the site. The record of the change stays with the other administrator records.",
+          "The GitHub lists of AI resources an administrator added for our search to read, with the GitHub user ID of the administrator who added each and the reason they wrote: until an administrator removes the list. The record of the change stays with the other administrator records.",
           "The vendors and services our descriptions of AI resources know by name (such as OpenAI or Slack), with the GitHub user ID of the administrator who added each: until an administrator removes it. Changing its names or kind keeps the ID of the person who added it. The record of each change stays with the other administrator records.",
           "The names of shadow libraries our search never shows (sites that share copyrighted books and papers), with the GitHub user ID of the administrator who added each and the reason they wrote: until an administrator removes the name. The record of the change stays with the other administrator records.",
           {

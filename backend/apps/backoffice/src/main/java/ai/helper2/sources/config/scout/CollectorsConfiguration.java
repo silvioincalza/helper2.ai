@@ -14,6 +14,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
@@ -286,6 +287,7 @@ class CollectorsConfiguration {
       ModelCallMetrics metrics,
       MeterRegistry meters,
       DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
       ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
@@ -325,6 +327,7 @@ class CollectorsConfiguration {
         categories,
         meters,
         hosts,
+        addedLists,
         shadowLibraries);
   }
 

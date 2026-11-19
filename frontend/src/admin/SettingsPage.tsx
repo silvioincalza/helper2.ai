@@ -10,6 +10,7 @@ import { useRetry } from '@/hooks/useRetry';
 import { formatDuration } from '@/lib/duration';
 import { formatDate } from '@/lib/format';
 import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
+import { ListSeedsPanel } from './ListSeedsPanel';
 import { KnownTargetsPanel } from './KnownTargetsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
 import { ShadowLibrariesPanel } from './ShadowLibrariesPanel';
@@ -102,6 +103,9 @@ export default function SettingsPage() {
             <a href="#dh-h">{t('admin.settings.hosts.title')}</a>
           </li>
           <li>
+            <a href="#ls-h">{t('admin.settings.lists.title')}</a>
+          </li>
+          <li>
             <a href="#sl-h">{t('admin.settings.shadow.title')}</a>
           </li>
           <li>
@@ -121,6 +125,7 @@ export default function SettingsPage() {
         reload={runtime.reload}
       />
       <DiscoveryHostsPanel />
+      <ListSeedsPanel />
       <ShadowLibrariesPanel />
       <KnownTargetsPanel />
       {config.loading ? (

@@ -127,6 +127,7 @@ class AwesomeDeepSearchIT {
       categories,
       SimpleMeterRegistry(),
       SeedDiscoveryHosts.store(),
+      InMemoryListSeedStore(),
       SourceFixtures.SHADOW_LIBRARIES,
     )
 
