@@ -92,6 +92,31 @@ describe('searchState', () => {
     expect(patchState(fromExample, { q: 'vector database' }).path).toBe('BUILD_WITH_AI');
     expect(patchState(fromExample, { q: 'graph database' }).path).toBe('');
   });
+  it('new words drop every filter and keep the view and the sort: the filters belonged to the words before', () => {
+    const filtered = parseSearchParams(
+      new URLSearchParams(
+        'q=postgres mcp&view=timeline&sort=NEWEST&type=MCP_SERVER&category=databases&license=MIT&openSource=true&updatedAfter=2026-01-01',
+      ),
+    );
+
+    const next = patchState(filtered, { q: 'run llms locally' });
+
+    expect(toSearchParams(next).toString()).toBe('q=run+llms+locally&view=timeline&sort=NEWEST');
+  });
+  it('the same words keep the filters, and filters sent with the words stay', () => {
+    const filtered = parseSearchParams(new URLSearchParams('q=postgres mcp&type=MCP_SERVER'));
+    const empty = parseSearchParams(new URLSearchParams());
+
+    expect(patchState(filtered, { q: 'postgres mcp' }).filters.type).toEqual(['MCP_SERVER']);
+    expect(patchState(filtered, { page: 2 }).filters.type).toEqual(['MCP_SERVER']);
+    const question = `which mcp server reads postgres ${'safely '.repeat(40)}`.trim();
+    const asked = parseSearchParams(new URLSearchParams({ q: question, type: 'MCP_SERVER' }));
+    expect(patchState(asked, { q: question }).filters.type).toEqual(['MCP_SERVER']);
+    expect(
+      patchState(empty, { q: 'vector', filters: { ...empty.filters, category: ['databases'] } })
+        .filters.category,
+    ).toEqual(['databases']);
+  });
   it('toggles filters case-insensitively and clears them', () => {
     const s = toggleFilter(
       parseSearchParams(new URLSearchParams('q=a&pricing=UNKNOWN')),

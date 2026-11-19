@@ -68,6 +68,7 @@ class AppRolesGrantsIT {
               Map.entry("enrichment_queue_control", NONE),
               Map.entry("review_research", NONE),
               Map.entry("review_research_step", NONE),
+              Map.entry("resource_embedding_refused", NONE),
               Map.entry("scout_run", NONE),
               Map.entry("shedlock", NONE),
               Map.entry("scout_schedule", NONE),
