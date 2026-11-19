@@ -30,14 +30,13 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S2.3.7 The awesome lists an administrator adds are read at every pass](https://github.com/silvioincalza/helper2.ai/issues/841)
 - [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
+- [T2.3.1 One host check for every address the Scout reads or proposes](https://github.com/silvioincalza/helper2.ai/issues/856)
 
 ### Next
 
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
 - [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
-- [S2.3.8 Every link of a list entry goes to the rule of its kind](https://github.com/silvioincalza/helper2.ai/issues/842)
 - [S2.3.9 A web page that lists AI resources is split into its items, and each item is checked](https://github.com/silvioincalza/helper2.ai/issues/843)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
@@ -47,6 +46,8 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S2.2.14 A LinkedIn post about an event is NEWS, and its short links are resolved](https://github.com/silvioincalza/helper2.ai/issues/546)
 - [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
+- [S2.3.12 A PyPI package a list links to is read by its name](https://github.com/silvioincalza/helper2.ai/issues/850)
+- [S2.3.13 A Hugging Face dataset or Space a list links to is read by its id](https://github.com/silvioincalza/helper2.ai/issues/851)
 - [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
 - [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
 - [S2.10.7 An official package without a scope to join the repository its provenance names](https://github.com/silvioincalza/helper2.ai/issues/493)
@@ -86,6 +87,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Next
 
+- [S4.1.12 AI picks when only the plan call fails](https://github.com/silvioincalza/helper2.ai/issues/854)
 - [S4.5.2 `H2_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging](https://github.com/silvioincalza/helper2.ai/issues/279)
 - [S4.7.2 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/283)
 - [S4.9.1 The guide latency targets confirmed](https://github.com/silvioincalza/helper2.ai/issues/285)
@@ -127,7 +129,6 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Next
 
 - [S7.2.3 The open points of design system version 1 closed](https://github.com/silvioincalza/helper2.ai/issues/316)
-- [S7.4.3 The resource page shows every list a resource was found in](https://github.com/silvioincalza/helper2.ai/issues/844)
 - [S7.6.2 One manual accessibility pass on real browsers](https://github.com/silvioincalza/helper2.ai/issues/324)
 - [S7.6.3 The WCAG 2.2.2 risk of the home lists decided in writing](https://github.com/silvioincalza/helper2.ai/issues/325)
 
@@ -167,7 +168,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S10.3.7 v2026.11.8 on prod: main's work since v2026.11.7](https://github.com/silvioincalza/helper2.ai/issues/828)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
-- [S10.9.5 The issue fields and the milestone of an issue set by the backlog import](https://github.com/silvioincalza/helper2.ai/issues/839)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
 ### Next

@@ -66,6 +66,8 @@ class SpringAiGuideModelTest {
 
   static final class RateLimitException extends OpenAIException {}
 
+  static final class InternalServerException extends OpenAIException {}
+
   static final String PLAN =
       "{\"searchQuery\":\"MCP server postgres\",\"constraints\":[],\"wantsReading\":false,\"webQuery\":\"\"}";
 
@@ -305,6 +307,107 @@ class SpringAiGuideModelTest {
 
     assertThatThrownBy(() -> model.plan("anything", null)).isInstanceOf(GuideUnavailable.class);
     assertThat(calls).hasValue(1);
+  }
+
+  @Test
+  void aPlanCallHitByAProviderOutageIsAskedOnceMore() {
+    MeterRegistry meters = new SimpleMeterRegistry();
+    List<Supplier<String>> replies =
+        new ArrayList<>(
+            List.of(
+                () -> {
+                  throw new InternalServerException();
+                },
+                () -> PLAN));
+
+    GuideSearchPlan plan =
+        observed(
+                meters,
+                () -> {
+                  calls.incrementAndGet();
+                  return replies.removeFirst().get();
+                })
+            .plan("postgres MCP", null);
+
+    assertThat(plan.getSearchQuery()).isEqualTo("MCP server postgres");
+    assertThat(calls).hasValue(2);
+    assertThat(meters.get(ModelCallMetrics.OUTAGE_RETRY).tags("step", "plan").counter().count())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void aPlanCallIsAskedOnlyOnceMoreWhenTheOutageLasts() {
+    SpringAiGuideModel model =
+        model(() -> {
+          throw new InternalServerException();
+        });
+
+    assertThatThrownBy(() -> model.plan("postgres MCP", null))
+        .isInstanceOfSatisfying(
+            GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("unavailable"));
+    assertThat(calls).hasValue(2);
+  }
+
+  @Test
+  void aReasoningCallHitByAProviderOutageIsNotAskedAgain() {
+    SpringAiGuideModel model =
+        model(() -> {
+          throw new InternalServerException();
+        });
+
+    assertThatThrownBy(() -> model.choose(new Need("need"), List.of(), List.of()))
+        .isInstanceOf(GuideUnavailable.class);
+    assertThat(calls).hasValue(1);
+  }
+
+  @Test
+  void anOpenFastModelCircuitDoesNotRefuseTheReasoningModel() {
+    ChatModel chat =
+        prompt -> {
+          calls.incrementAndGet();
+          return new ChatResponse(List.of(new Generation(new AssistantMessage("{\"picks\":[]}"))));
+        };
+    SpringAiGuideModel model =
+        GuideModelBuilder.over(chat)
+            .resilience(
+                TestPolicies.circuitOpen(LlmPolicies.GUIDE_FAST, LlmPolicies.GUIDE_REASONING))
+            .build();
+
+    assertThatThrownBy(() -> model.plan("postgres MCP", null))
+        .isInstanceOfSatisfying(
+            GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("circuit_open"));
+    model.choose(new Need("need"), List.of(), List.of());
+
+    assertThat(calls).as("only the reasoning call reached the provider").hasValue(1);
+  }
+
+  @Test
+  void anOpenReasoningModelCircuitDoesNotRefuseThePlan() {
+    SpringAiGuideModel model =
+        GuideModelBuilder.over(
+                prompt -> {
+                  calls.incrementAndGet();
+                  return new ChatResponse(List.of(new Generation(new AssistantMessage(PLAN))));
+                })
+            .resilience(
+                TestPolicies.circuitOpen(LlmPolicies.GUIDE_REASONING, LlmPolicies.GUIDE_FAST))
+            .build();
+
+    assertThat(model.plan("postgres MCP", null).getSearchQuery()).isEqualTo("MCP server postgres");
+    assertThatThrownBy(() -> model.choose(new Need("need"), List.of(), List.of()))
+        .isInstanceOfSatisfying(
+            GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("circuit_open"));
+    assertThat(calls).hasValue(1);
+  }
+
+  @Test
+  void onlyAShortOutageCountsAsOne() {
+    assertThat(ModelErrors.isOutage(new InternalServerException())).isTrue();
+    assertThat(ModelErrors.isOutage(new RuntimeException(new java.io.IOException("reset"))))
+        .isTrue();
+    assertThat(ModelErrors.isOutage(new RateLimitException())).as("rate limit").isFalse();
+    assertThat(ModelErrors.isOutage(new BadRequestException())).as("rejected").isFalse();
+    assertThat(ModelErrors.isOutage(new ReadTimeoutException())).as("timeout").isFalse();
   }
 
   private SpringAiGuideModel observed(MeterRegistry meters, Supplier<String> reply) {
@@ -603,12 +706,13 @@ class SpringAiGuideModelTest {
 
   private static Resilience openingOnFirstProviderFailure(CircuitBreakerRegistry circuits) {
     circuits.circuitBreaker(
-        LlmPolicies.GUIDE,
+        LlmPolicies.GUIDE_FAST,
         CircuitBreakerConfig.custom()
             .slidingWindowSize(1)
             .minimumNumberOfCalls(1)
             .ignoreException(new ModelErrors.NotFromProvider())
             .build());
+    circuits.circuitBreaker(LlmPolicies.GUIDE_REASONING);
     return new Resilience4jPolicies(
         circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
   }
@@ -636,7 +740,7 @@ class SpringAiGuideModelTest {
         .isInstanceOfSatisfying(
             GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("deadline"));
     assertThat(calls).as("not asked again").hasValue(1);
-    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE).getState())
+    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE_FAST).getState())
         .isEqualTo(CircuitBreaker.State.CLOSED);
   }
 
@@ -651,7 +755,7 @@ class SpringAiGuideModelTest {
     assertThat(failure)
         .isInstanceOfSatisfying(
             GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("timeout"));
-    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE).getState())
+    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE_FAST).getState())
         .isEqualTo(CircuitBreaker.State.OPEN);
   }
 
@@ -677,7 +781,7 @@ class SpringAiGuideModelTest {
         .isInstanceOfSatisfying(
             GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("cancelled"));
     assertThat(calls).hasValue(1);
-    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE).getState())
+    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE_FAST).getState())
         .isEqualTo(CircuitBreaker.State.CLOSED);
   }
 
@@ -731,7 +835,8 @@ class SpringAiGuideModelTest {
 
   @Test
   void anOpenCircuitFailsTheCallAtOnceWithoutTheProviderOrTheBudget() {
-    Resilience resilience = TestPolicies.circuitOpen(LlmPolicies.GUIDE);
+    Resilience resilience =
+        TestPolicies.circuitOpen(LlmPolicies.GUIDE_FAST, LlmPolicies.GUIDE_REASONING);
     DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "guide");
     ChatModel chat =
         prompt -> {
