@@ -74,7 +74,12 @@ public class PageHtml {
       if (description != null) {
         meta(h, "property", "og:description", description);
       }
-      meta(h, "name", "twitter:card", "summary");
+      meta(h, "property", "og:image", base + Pages.SOCIAL_IMAGE);
+      meta(h, "property", "og:image:type", "image/png");
+      meta(h, "property", "og:image:width", String.valueOf(Pages.SOCIAL_IMAGE_WIDTH));
+      meta(h, "property", "og:image:height", String.valueOf(Pages.SOCIAL_IMAGE_HEIGHT));
+      meta(h, "property", "og:image:alt", Pages.SOCIAL_IMAGE_ALT);
+      meta(h, "name", "twitter:card", "summary_large_image");
     }
     monetisation
         .adsenseClient()

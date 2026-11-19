@@ -175,7 +175,9 @@ database connections. A change to the web app would rebuild and redeploy the bac
 ### The web image and the public app's shell
 13. **The `web` image serves the public web app's files; the public app writes the pages.** nginx
     (`nginx-unprivileged`, alpine-slim, user 101, read-only root) serves GET and HEAD only:
-    - `/assets/<file>`: Vite's content-hashed files (scripts, styles, fonts), `public, max-age=31536000, immutable`;
+    - `/assets/<file>`: Vite's content-hashed files (scripts, styles, fonts) and the link preview image
+      (`frontend/public/assets/og-1.png`, whose name changes with its content,
+      [0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §3), `public, max-age=31536000, immutable`;
     - `/theme.js` and `/favicon.svg`, the root files of `frontend/public`: `public, max-age=300, must-revalidate`;
     - anything else: a plain 404 with `no-store`, never `index.html` and never a directory listing; another method:
       405.

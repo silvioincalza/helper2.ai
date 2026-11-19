@@ -122,6 +122,16 @@ Type is a word, not a coloured badge. In lists and on resource pages it is the f
 
 The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "helper2.ai" in Geist Mono 20px, weight 600. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 12px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 18px. Never recolor the radar, add effects, or drop the wordmark in the header.
 
+### Link preview image
+
+The image a shared link shows (`og:image`, 1200×630) is the mark and the wordmark, the home title in Geist, one line on what the search covers, and the search box with its **Search** button, on `bg`. Its source is `assets/social/og-1.html`; the file the site serves is `frontend/public/assets/og-1.png`. To render it, from the repository root after `npm ci` in `frontend`:
+
+```
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --allow-file-access-from-files --screenshot="$PWD/frontend/public/assets/og-1.png" "file://$PWD/docs/design/system/assets/social/og-1.html"
+```
+
+A changed image gets a new file name (`og-2.png`), because the site caches the file for a year (ADR 0041 §3).
+
 ## Iconography
 
 Apart from the radar mark, icons are small stroke glyphs beside words, never alone (the spark on Ask the guide sits beside its words on every width): check, cross, warn, clock, external link, menu, close. Use `→` for "go further" and `↗` for an external source. Never emoji. An icon-only button (menu, close) carries an `aria-label`.

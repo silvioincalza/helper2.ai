@@ -65,8 +65,12 @@ Both are about the public site itself, and only the public app serves them.
      a source description the text is built from facts: type, source, licence, pricing.
    - Canonical: always absolute and always the public host (`H2_PUBLIC_BASE_URL`, `https://helper2.ai` in prod),
      also when served from staging.
-   - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`, `twitter:card=summary`. No
-     image yet (open point).
+   - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`,
+     `twitter:card=summary_large_image`, and one brand image for every page: `og:image` with its type, width, height
+     and alt text. The image is `frontend/public/assets/og-1.png` (1200×630), served as `/assets/og-1.png` by the web
+     pods like the app's other files, so it needs no route of its own and is cached for a year. A new image is a new
+     file name (`og-2.png`), set in `Pages.SOCIAL_IMAGE`; a test fails when the file is missing or its size is not
+     the one the page states. Its source is `docs/design/system/assets/social/og-1.html`.
    - JSON-LD (schema.org) by type: `SoftwareApplication` for PRODUCT, AGENT and MODEL; `SoftwareSourceCode` with
      `codeRepository` and `license` for LIBRARY, MCP_SERVER and SKILL; `ScholarlyArticle` for PAPER; `Event` for EVENT;
      `Course` for COURSE; `Dataset` for DATASET; nothing for the rest. Every resource page also gets a
@@ -281,7 +285,7 @@ and `H2_NOINDEX`. The other layers are not touched.
 ### Open points
 
 - No 410 for resources removed on purpose: the catalog has no removed state.
-- No Open Graph image (brand first, then per resource): S7.3.8.
+- The link preview image is the same on every page: a resource page has no image of its own.
 - No hub pages per use case: the hubs are one per type ([0052](0052-hub-pages-per-resource-type.md)). IndexNow: [0053](0053-indexnow-daily-batch.md).
 
 ## Diagrams
@@ -292,5 +296,6 @@ the policy endpoint: [flow](../../diagrams/flow-0041-policy-endpoint.svg) · [se
 
 ## Backlog
 
-- Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint.
-- Open issues that change this decision: [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) an Open Graph image.
+- Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint;
+  story [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) the link preview image.
+- Open issues that change this decision: none.
