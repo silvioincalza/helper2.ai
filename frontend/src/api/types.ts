@@ -22,6 +22,7 @@ export type SearchResponse = S['SearchResponse'];
 export type AiContentMarker = S['AiContentMarker'];
 export type RecentResponse = S['RecentResponse'];
 export type UpcomingEventsResponse = S['UpcomingEventsResponse'];
+export type HubResponse = S['HubResponse'];
 export type Facets = S['Facets'];
 export type FacetValue = S['FacetValue'];
 export type Evidence = S['Evidence'];

@@ -226,6 +226,11 @@ class PagesTest {
         (1..25).map { Related(UUID.nameUUIDFromBytes("n$it".toByteArray()), "New tool $it") }
 
       override fun upcomingEvents() = listOf(Related(id, "AI Summit"))
+
+      override fun hub(type: ResourceType) =
+        (1..60).map {
+          Related(UUID.nameUUIDFromBytes("$type$it".toByteArray()), "${type.name} $it")
+        }
     }
 
   @Test
@@ -235,13 +240,13 @@ class PagesTest {
         .filter { it != PageKind.RESOURCE }
         .map { pages.of(it, lists) }
         .filter { it.robots == Robots.INDEX }
-    assertEquals(7, listed.size)
+    assertEquals(7 + Hub.entries.size, listed.size)
     listed.forEach { head ->
       val body = head.body!!
       assertTrue(body.heading.isNotBlank(), head.title)
       assertEquals(head.description, body.description)
       assertFalse(body.pages.any { it.path == head.canonicalPath }, head.title)
-      assertEquals(Pages.SITE_PAGES.size - 1, body.pages.size, head.title)
+      assertEquals(Pages.NAV.size - 1, body.pages.size, head.title)
     }
   }
 
@@ -266,5 +271,37 @@ class PagesTest {
     assertNull(pages.of(PageKind.EVENTS).body!!.listing)
     assertNull(pages.of(PageKind.SEARCH, lists).body)
     assertNull(pages.of(PageKind.SAVED, lists).body)
+  }
+
+  @Test
+  fun `every hub page is indexed, names its type and lists its newest 50`() {
+    Hub.entries.forEach { hub ->
+      val head = pages.of(hub.kind, lists)
+      assertEquals(Robots.INDEX, head.robots)
+      assertEquals(hub.path, head.canonicalPath)
+      assertEquals("${hub.label}: newest in the catalog · helper2.ai", head.title)
+      assertTrue(head.title.length <= Pages.TITLE_MAX, head.title)
+      val listing = head.body!!.listing!!
+      assertEquals("Newest change first", listing.heading)
+      assertEquals(Hub.SIZE, listing.items.size)
+      assertEquals("${hub.type.name} 1", listing.items.first().title)
+    }
+  }
+
+  @Test
+  fun `every hub has its own type, and the types without a hub are the ones that are not indexed`() {
+    assertEquals(Hub.entries.size, Hub.entries.map { it.type }.toSet().size)
+    val withoutHub = ResourceType.entries.filter { Hub.of(it) == null }.toSet()
+    assertEquals(
+      setOf(
+        ResourceType.EVENT,
+        ResourceType.NEWS,
+        ResourceType.ARTICLE,
+        ResourceType.AWESOME_LIST,
+        ResourceType.OTHER,
+      ),
+      withoutHub,
+    )
+    assertTrue(Hub.entries.all { it.type in IndexPolicy.LISTED_TYPES })
   }
 }

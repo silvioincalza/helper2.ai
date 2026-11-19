@@ -412,6 +412,27 @@ shared link with its filters (`/news?site=…`, `/events?kind=HACKATHON&format=O
 
 **Built by:** features [F7.5](https://github.com/silvioincalza/helper2.ai/issues/91), [F2.2](https://github.com/silvioincalza/helper2.ai/issues/32); stories [S7.5.2](https://github.com/silvioincalza/helper2.ai/issues/322), [S2.2.3](https://github.com/silvioincalza/helper2.ai/issues/188), [S2.2.5](https://github.com/silvioincalza/helper2.ai/issues/190).
 
+## UJ-14 Browse one type of resource (hub pages)
+
+Entry: a search engine result for a kind of thing ("MCP servers"), or **Browse by type** in the footer of every page
+(`/ai-apps`, `/ai-models`, `/ai-agents`, `/mcp-servers`, `/libraries`, `/agent-skills`, `/datasets`, `/papers`,
+`/prompts`, `/courses`).
+
+1. The page names the type and says in one line what the list is: the resources of that type in the catalog, newest
+   change first.
+2. Up to 50 rows: the title, linked to the resource page, and the host and license as their sources state them.
+3. Exit: a row opens its resource page; the box in the header searches; the footer goes to another type.
+
+| State | Behavior |
+|---|---|
+| Loading | The shared list skeleton under the heading. Announced once. |
+| Success | Up to 50 rows, newest change first. |
+| Partial | Not specified. |
+| Empty | "Nothing here yet." |
+| Error | "Could not load this list.", with **Try again**. |
+
+**Built by:** feature [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89); story [S7.3.6](https://github.com/silvioincalza/helper2.ai/issues/816).
+
 ## Success criteria (product level)
 
 | ID | Criterion | Verified by |

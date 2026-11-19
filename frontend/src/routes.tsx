@@ -22,6 +22,8 @@ const textPage = (load: () => Promise<{ default: ComponentType }>) =>
     return mod;
   });
 
+const hubPage = page(() => import('@/features/hubs/HubPage'));
+
 export const routes: RouteObject[] = [
   {
     element: (
@@ -51,6 +53,16 @@ export const routes: RouteObject[] = [
             path: 'support/thanks',
             lazy: page(() => import('@/features/monetisation/SupportThanksPage')),
           },
+          { path: 'ai-apps', lazy: hubPage },
+          { path: 'ai-models', lazy: hubPage },
+          { path: 'ai-agents', lazy: hubPage },
+          { path: 'mcp-servers', lazy: hubPage },
+          { path: 'libraries', lazy: hubPage },
+          { path: 'agent-skills', lazy: hubPage },
+          { path: 'datasets', lazy: hubPage },
+          { path: 'papers', lazy: hubPage },
+          { path: 'prompts', lazy: hubPage },
+          { path: 'courses', lazy: hubPage },
           { path: '*', lazy: page(() => import('@/shell/NotFoundPage')) },
         ],
       },

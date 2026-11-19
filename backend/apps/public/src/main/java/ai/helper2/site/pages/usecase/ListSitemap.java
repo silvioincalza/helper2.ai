@@ -1,6 +1,7 @@
 package ai.helper2.site.pages.usecase;
 
 import ai.helper2.catalog.usecase.ListIndexableResources;
+import ai.helper2.site.pages.Hub;
 import ai.helper2.site.pages.IndexPolicy;
 import ai.helper2.site.pages.ResourcePathsKt;
 import java.time.Clock;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 
 public class ListSitemap {
@@ -17,7 +19,10 @@ public class ListSitemap {
   static final Duration KEEP = Duration.ofHours(1);
   public static final int PART_SIZE = 10_000;
   static final List<String> STATIC_PAGES =
-      List.of("/", "/sources", "/events", "/mission", "/privacy", "/terms", "/support");
+      Stream.concat(
+              Stream.of("/", "/sources", "/events", "/mission", "/privacy", "/terms", "/support"),
+              Hub.getEntries().stream().map(Hub::getPath))
+          .toList();
 
   private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
   private static final String NS = "http://www.sitemaps.org/schemas/sitemap/0.9";
@@ -81,7 +86,7 @@ public class ListSitemap {
   }
 
   private List<ListIndexableResources.Page> indexable() {
-    List<String> types = IndexPolicy.INSTANCE.getINDEXED_TYPES().stream().map(Enum::name).toList();
+    List<String> types = IndexPolicy.INSTANCE.getLISTED_TYPES().stream().map(Enum::name).toList();
     return resources.list(types, IndexPolicy.PROMPT_MIN_LENGTH, limit);
   }
 

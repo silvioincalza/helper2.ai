@@ -180,6 +180,36 @@ class PagesIT extends ApiTestBase {
   }
 
   @Test
+  void everyHubPageIsIndexedAndListsOnlyItsType() throws Exception {
+    for (ai.helper2.site.pages.Hub hub : ai.helper2.site.pages.Hub.getEntries()) {
+      assertThat(page(hub.getPath(), 200))
+          .as(hub.getPath())
+          .contains("content=\"index, follow\"")
+          .contains("<h1>" + hub.getLabel() + ": newest in the catalog</h1>");
+    }
+    var json = tools.jackson.databind.json.JsonMapper.builder().build();
+    int listed = 0;
+    for (ai.helper2.site.pages.Hub hub : ai.helper2.site.pages.Hub.getEntries()) {
+      String type = hub.getType().name();
+      String body =
+          mvc.perform(get("/api/v1/hubs/" + type))
+              .andExpect(status().isOk())
+              .andExpect(header().string("Cache-Control", "max-age=300, public"))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      var read = json.readTree(body);
+      assertThat(read.path("type").asString()).isEqualTo(type);
+      assertThat(read.path("items").size()).isLessThanOrEqualTo(50);
+      read.path("items").forEach(card -> assertThat(card.path("type").asString()).isEqualTo(type));
+      listed += read.path("items").size();
+    }
+    assertThat(listed).as("the seeded catalog fills at least one hub").isPositive();
+    mvc.perform(get("/api/v1/hubs/EVENT")).andExpect(status().isNotFound());
+    mvc.perform(get("/api/v1/hubs/NOPE")).andExpect(status().isBadRequest());
+  }
+
+  @Test
   void theHomeBodyListsWhatTheHomePageListsAsNew() throws Exception {
     String recent = xml("/api/v1/recent?size=20");
     String home = page("/", 200);

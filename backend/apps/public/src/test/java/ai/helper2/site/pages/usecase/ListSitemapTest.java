@@ -61,7 +61,9 @@ class ListSitemapTest {
   void thePagesPartListsTheSitePages() {
     assertThat(sitemap(0).part("pages").orElseThrow())
         .contains("<loc>https://helper2.ai/</loc>")
-        .contains("<loc>https://helper2.ai/support</loc>");
+        .contains("<loc>https://helper2.ai/support</loc>")
+        .contains("<loc>https://helper2.ai/mcp-servers</loc>")
+        .contains("<loc>https://helper2.ai/courses</loc>");
     assertThat(sitemap(0).index()).doesNotContain("resources-1");
   }
 

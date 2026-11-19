@@ -100,6 +100,11 @@ class PageHtmlTest {
           public List<Related> upcomingEvents() {
             return List.of();
           }
+
+          @Override
+          public List<Related> hub(ResourceType type) {
+            return List.of();
+          }
         };
     String page =
         html(SHELL).render(new Pages("https://helper2.ai").of(PageKind.HOME, lists), "n0nce");

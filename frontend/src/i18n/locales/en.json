@@ -61,7 +61,8 @@
     "place": "Switzerland · EU servers",
     "support": "Support helper2.ai",
     "cookieSettings": "Cookie settings",
-    "privacyChoices": "Privacy choices"
+    "privacyChoices": "Privacy choices",
+    "browse": "Browse by type"
   },
   "home": {
     "name": "helper2.ai",
@@ -213,14 +214,26 @@
     },
     "keys": {
       "title": "Keyboard keys",
-      "move": { "key": "j k", "does": "next or previous result" },
-      "open": { "key": "Enter", "does": "open the result" },
-      "box": { "key": "/", "does": "go to the search box" },
+      "move": {
+        "key": "j k",
+        "does": "next or previous result"
+      },
+      "open": {
+        "key": "Enter",
+        "does": "open the result"
+      },
+      "box": {
+        "key": "/",
+        "does": "go to the search box"
+      },
       "ask": {
         "key": "g",
         "does": "go to the Ask the guide button (Enter then asks)"
       },
-      "help": { "key": "?", "does": "show or hide this list" },
+      "help": {
+        "key": "?",
+        "does": "show or hide this list"
+      },
       "note": "The keys work while the focus is in the results, for example after Tab or a click on a result's line."
     },
     "from": "From {{sources}}",
@@ -1167,5 +1180,22 @@
     "thanksTitle": "Thank you",
     "thanksBody": "Your support helps keep helper2.ai free and fast for everyone.",
     "backHome": "Back to search"
+  },
+  "hubs": {
+    "name": {
+      "PRODUCT": "AI apps",
+      "MODEL": "AI models",
+      "AGENT": "AI agents",
+      "MCP_SERVER": "MCP servers",
+      "LIBRARY": "AI libraries",
+      "SKILL": "Agent skills",
+      "DATASET": "AI datasets",
+      "PAPER": "AI papers",
+      "PROMPT": "AI prompts",
+      "COURSE": "AI courses"
+    },
+    "lede": "{{name}} in the helper2.ai catalog, newest change first. Open one to see its license, pricing and sources, as its sources state them.",
+    "error": "Could not load this list.",
+    "empty": "Nothing here yet."
   }
 }

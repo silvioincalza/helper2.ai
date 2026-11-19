@@ -46,7 +46,8 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    Up to 720 px: the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources, Mission, Sign
    in and the theme; Escape or a new page closes it. On the pages without their own box, the box sits in the header.
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,
-   the theme switch), then one line: what is searched, who and where. It makes no claim about ads ([0042](../money/0042-monetisation.md)).
+   the theme switch), a second row "Browse by type" with the ten hub pages ([0052](0052-hub-pages-per-resource-type.md)),
+   then one line: what is searched, who and where. It makes no claim about ads ([0042](../money/0042-monetisation.md)).
 6. **Home: the title, the radar, a pinned search box, two lists.** The title is one `h1` on two lines: "helper2.ai",
    then "The metasearch for the AI ecosystem.", with one line under it. Behind it rises a radar that works like a
    navigation radar: a half dome from the bottom middle of the title block, range rings, dotted bearing lines every

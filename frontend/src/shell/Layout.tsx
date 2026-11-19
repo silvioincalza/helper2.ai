@@ -12,6 +12,7 @@ import {
 } from 'react-router';
 import { useDropServerHead } from '@/lib/head';
 import { REPO_URL } from '@/lib/repoUrl';
+import { HUBS } from '@/lib/hubs';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
@@ -278,6 +279,15 @@ function Footer() {
           </li>
         </ul>
       </div>
+      <nav className="h2-wrap h2-footer__browse" aria-label={t('footer.browse')}>
+        <ul className="plain-list h2-footer__links">
+          {HUBS.map((hub) => (
+            <li key={hub.path}>
+              <Link to={`/${hub.path}`}>{t(`hubs.name.${hub.type}`)}</Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <p className="h2-wrap h2-footer__line">
         {t('footer.coverage')} {t('footer.copyright', { year: new Date().getFullYear() })}
         <span className="footer-place"> · {t('footer.place')}</span>
