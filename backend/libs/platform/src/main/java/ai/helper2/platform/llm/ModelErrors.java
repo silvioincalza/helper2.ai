@@ -40,6 +40,10 @@ public final class ModelErrors {
     return false;
   }
 
+  public static boolean isOutage(Throwable e) {
+    return isTransient(e) && "unavailable".equals(category(e));
+  }
+
   public static boolean isProviderError(Throwable e) {
     if (isTransient(e)) {
       return true;

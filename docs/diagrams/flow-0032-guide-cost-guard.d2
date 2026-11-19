@@ -37,7 +37,7 @@ quota: "ClientQuota.reserve: fresh question\nleft today for this ClientKey (30)\
 searchOnly: "Search-only answer + notice\nGUIDE_NETWORK_QUOTA (network full)\nor GUIDE_DAILY_QUOTA (own count full),\nretryAt = next 00:00 UTC" {class: end}
 run: "Plan; a similar question's\ncached answer (ADR 0032), or\nsearch → choose → validate →\nreason check" {class: ai}
 time: "Time for this model attempt?\n(left − margin 2 s ≥ 10 s; its timeout =\nmin(H2_LLM_TIMEOUT 40 s, left − margin))" {class: decision}
-circuit: "llm-chat-guide circuit closed?\n(each model attempt; opens at 50%\nfailed or slower than 35 s)" {class: decision}
+circuit: "The model's circuit closed?\n(llm-chat-guide-fast or -reasoning;\neach model attempt; opens at 50%\nfailed or slower than 35 s)" {class: decision}
 budget: "Global budget unit before each\nmodel attempt? (600 a day, opening\nin 12 two-hour parts, spill-over)" {class: decision}
 degraded: "Degraded answer\n(top search results; out of time:\nnotice GUIDE_OUT_OF_TIME)" {class: fail}
 spent: "Degraded answer + notice\nGUIDE_BUDGET_SPENT with retryAt (next part\nof the day when the cap has room,\nelse next 00:00 UTC);\nnot cached, free; a late reason\ncheck leaves NOT_CHECKED, no notice" {class: fail}
