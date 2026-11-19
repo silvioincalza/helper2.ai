@@ -101,13 +101,17 @@ On a review item, accept and reject were not enough:
 
    Remove (`POST /api/v1/admin/ai-check/{id}/remove`, `RemoveResource`), on any listed row, after a dialog that asks
    for a reason of 1 to 500 characters: in one transaction the audit keeps `REMOVE_RESOURCE` with the address
-   (cut to 100 characters) and the reason, `candidate_decision` keeps a `REJECTED` decision for the address's key,
+   (cut to 100 characters) and the reason, `candidate_decision` keeps a `REJECTED` decision for the address's key, as a resource candidate and as a course
+   candidate,
    `removed_resource` keeps the key (the same UUID a resource id is made from its address, never the address), and
    the resource goes with what cascades from it: source records, labels, embedding, enrichment runs, review items,
    links from it; a link to it loses its target. Saved items keep their own title and address. From then on the
    catalog writer drops a result whose key is in `removed_resource`, whatever the source and in both apps (the
    public app's role reads the table, never `candidate_decision`), and the review queue proposes no candidate for
-   the address. An admin who adds the address by hand (`CURATED`) clears the key and the resource comes back.
+   the address. A removal and a catalog write never
+   overlap: the removal takes the transaction lock `removed_resource` alone, every write takes it shared
+   (`ResourceRemovalLock`), so a write that began first ends before the removal reads the resource, and a write that
+   begins later reads the key. An admin who adds the address by hand (`CURATED`) clears the key and the resource comes back.
    Flow and sequence: [flow](../../diagrams/flow-0038-remove-resource.svg) ·
    [sequence](../../diagrams/sequence-0038-remove-resource.svg).
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`

@@ -3,7 +3,7 @@
 #   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/EnrichmentQueueController.java (removeResourceNotAboutAi),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/RemoveResource.java,
 #   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcResourceRemoval.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert).
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert), ResourceRemovalLock.java.
 # Render: cd docs/diagrams && d2 fmt sequence-0038-remove-resource.d2 && d2 sequence-0038-remove-resource.d2 sequence-0038-remove-resource.svg
 
 ...@style
@@ -22,9 +22,9 @@ person -> ui: "Remove, reason: A crypto list"
 ui -> api: "POST /admin/ai-check/{id}/remove\n{reason}"
 api -> remove: "remove(id, reason, admin)"
 remove -> db: "SELECT canonical_url ... FOR UPDATE"
-remove -> db: "candidate_decision REJECTED;\nremoved_resource key"
+remove -> db: "lock removed_resource (alone);\ncandidate_decision REJECTED as a resource\nand as a course candidate;\nremoved_resource key"
 remove -> db: "DELETE resource (cascades)"
 remove -> db: "admin_audit REMOVE_RESOURCE\n(address, reason)"
 api -> ui: "204; the row says Removed"
 scout -> store: "upsert(result with the same address)"
-store -> db: "key in removed_resource: dropped"
+store -> db: "lock removed_resource (shared);\nkey in removed_resource: dropped"

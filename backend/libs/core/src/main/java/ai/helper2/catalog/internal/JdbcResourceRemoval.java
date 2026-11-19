@@ -15,6 +15,7 @@ class JdbcResourceRemoval implements ResourceRemoval {
 
   @Override
   public Optional<Removed> remove(UUID resourceId) {
+    ResourceRemovalLock.forRemoval(jdbc);
     Optional<String> url =
         jdbc.sql("SELECT canonical_url FROM resource WHERE id = :id FOR UPDATE")
             .param("id", resourceId)
@@ -26,7 +27,8 @@ class JdbcResourceRemoval implements ResourceRemoval {
     jdbc.sql(
             """
             INSERT INTO candidate_decision (kind, candidate_key, status, decided_at)
-            VALUES ('RESOURCE_CANDIDATE', %s, 'REJECTED', now())
+            SELECT kind, %s, 'REJECTED', now()
+            FROM unnest(ARRAY['RESOURCE_CANDIDATE', 'COURSE_CANDIDATE']) AS kind
             ON CONFLICT (kind, candidate_key) DO UPDATE
               SET status = EXCLUDED.status, decided_at = EXCLUDED.decided_at
             """

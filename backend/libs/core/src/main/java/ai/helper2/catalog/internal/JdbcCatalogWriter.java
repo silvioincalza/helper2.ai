@@ -108,6 +108,7 @@ class JdbcCatalogWriter implements CatalogWriter {
             new RecordInput(recordId, h, externalId, r.getId().getValue()));
       }
     }
+    ResourceRemovalLock.forWrite(jdbc);
     Set<UUID> removed =
         origin == DataOrigin.CURATED
             ? addedBackByAnAdmin(resources.values())

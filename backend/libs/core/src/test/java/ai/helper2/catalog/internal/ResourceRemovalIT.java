@@ -24,8 +24,14 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -43,6 +50,7 @@ class ResourceRemovalIT {
   @Autowired ResourceRemoval removal;
   @Autowired ReviewQueue queue;
   @Autowired JdbcClient jdbc;
+  @Autowired TransactionTemplate tx;
 
   private final String run = UUID.randomUUID().toString().substring(0, 8);
   private final String source = "awesome-" + run;
@@ -89,6 +97,82 @@ class ResourceRemovalIT {
             queue.proposeCandidate(ReviewQueue.Kind.RESOURCE_CANDIDATE, url, "New LIBRARY", "{}"))
         .as("the review queue skips it too")
         .isFalse();
+    assertThat(queue.proposeCandidate(ReviewQueue.Kind.COURSE_CANDIDATE, url, "New course", "{}"))
+        .as("and it does not come back as a course")
+        .isFalse();
+  }
+
+  @Test
+  void aRemovalWaitsForAWriteOfTheSameAddressThatHasNotEndedAndThenRemovesIt() throws Exception {
+    CountDownLatch written = new CountDownLatch(1);
+    CountDownLatch removalStarted = new CountDownLatch(1);
+    try (ExecutorService threads = Executors.newFixedThreadPool(2)) {
+      Future<?> write =
+          threads.submit(() ->
+              tx.executeWithoutResult(status -> {
+                write(DataOrigin.INDEXED);
+                written.countDown();
+                awaitBriefly(removalStarted);
+                sleepBriefly();
+              }));
+      assertThat(written.await(10, TimeUnit.SECONDS)).isTrue();
+      Future<Optional<ResourceRemoval.Removed>> removed =
+          threads.submit(() -> {
+            removalStarted.countDown();
+            return tx.execute(status -> removal.remove(id));
+          });
+
+      write.get(20, TimeUnit.SECONDS);
+
+      assertThat(removed.get(20, TimeUnit.SECONDS)).contains(new ResourceRemoval.Removed(url));
+    }
+    assertThat(exists())
+        .as("the write that overlapped the removal leaves nothing listed")
+        .isFalse();
+  }
+
+  @Test
+  void aWriteThatStartsWhileARemovalHasNotEndedDoesNotListTheAddressAgain() throws Exception {
+    write(DataOrigin.INDEXED);
+    CountDownLatch removed = new CountDownLatch(1);
+    CountDownLatch writeStarted = new CountDownLatch(1);
+    try (ExecutorService threads = Executors.newFixedThreadPool(2)) {
+      Future<?> removal =
+          threads.submit(() ->
+              tx.executeWithoutResult(status -> {
+                this.removal.remove(id);
+                removed.countDown();
+                awaitBriefly(writeStarted);
+                sleepBriefly();
+              }));
+      assertThat(removed.await(10, TimeUnit.SECONDS)).isTrue();
+      Future<?> write =
+          threads.submit(() -> {
+            writeStarted.countDown();
+            write(DataOrigin.INDEXED);
+          });
+
+      removal.get(20, TimeUnit.SECONDS);
+      write.get(20, TimeUnit.SECONDS);
+    }
+    assertThat(exists()).isFalse();
+    assertThat(records()).isZero();
+  }
+
+  private static void awaitBriefly(CountDownLatch latch) {
+    try {
+      latch.await(10, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  private static void sleepBriefly() {
+    try {
+      Thread.sleep(300);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Test
