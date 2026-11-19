@@ -1,5 +1,5 @@
 id	item_url	kind	title_found	type_found	decision	expected_type	expected_canonical_url	expected_title	expected_license	expected_pricing	expected_open_source
-p001	https://blog.coursera.org/articles	COURSE_CANDIDATE	Articles - Coursera Blog	COURSE	REJECT						
+p001	https://blog.coursera.org/articles	COURSE_CANDIDATE	Articles - Coursera Blog	COURSE	KEEP						
 p002	https://github.com/activeloopai/deeplake	RESOURCE_CANDIDATE	activeloopai/deeplake	AGENT	KEEP	LIBRARY	https://github.com/activeloopai/deeplake	activeloopai/deeplake	Apache-2.0		true
 p003	https://windowscentral.com/artificial-intelligence/local-ai-windows-laptop-3-easy-steps-how-to	RESOURCE_CANDIDATE	I tried running AI locally on my laptop, and it was shockingly easy — 3 easy steps to free, private AI anywhere you go | Windows Central	ARTICLE	KEEP	NEWS	https://windowscentral.com/artificial-intelligence/local-ai-windows-laptop-3-easy-steps-how-to	I tried running AI locally on my laptop, and it was shockingly easy — 3 easy steps to free, private AI anywhere you go			
 p004	https://github.com/huggingface/finetrainers	RESOURCE_CANDIDATE	huggingface/finetrainers	LIBRARY	KEEP	LIBRARY	https://github.com/huggingface/finetrainers	huggingface/finetrainers	Apache-2.0		true
