@@ -14,9 +14,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +31,7 @@ public class IndexEmbeddings {
   private final Clock clock;
   private final AtomicLong backlog = new AtomicLong(NOT_COUNTED_YET);
   private final AtomicLong lastSuccessEpochSeconds = new AtomicLong();
-  private final Map<UUID, RefusedText> rejected = new ConcurrentHashMap<>();
+  private final AtomicLong rejected = new AtomicLong();
   private final Counter rateLimited;
   private final Counter embeddingFailed;
   private final Counter databaseFailed;
@@ -63,7 +60,7 @@ public class IndexEmbeddings {
         .description("Epoch seconds of the last successful indexer batch")
         .baseUnit("seconds")
         .register(registry);
-    Gauge.builder("helper2.embedding.rejected", rejected, Map::size)
+    Gauge.builder("helper2.embedding.rejected", rejected, AtomicLong::get)
         .description(
             "Resources whose current text the embedding API refused, left out until the text changes")
         .register(registry);
@@ -89,9 +86,8 @@ public class IndexEmbeddings {
       return 0;
     }
     try {
-      forgetWhatIsNoLongerRefused();
-      PendingEmbeddings pending =
-          store.pendingEmbeddings(embedder.model(), batch, rejected.values());
+      rejected.set(store.forgetRefusalsThatNoLongerApply(embedder.model()));
+      PendingEmbeddings pending = store.pendingEmbeddings(embedder.model(), batch);
       backlog.set(pending.backlog());
       if (pending.tasks().isEmpty()) {
         upToDate();
@@ -106,13 +102,6 @@ public class IndexEmbeddings {
       log.warn("Embedding batch failed: {}", e.getMessage());
       return 0;
     }
-  }
-
-  private void forgetWhatIsNoLongerRefused() {
-    if (rejected.isEmpty()) {
-      return;
-    }
-    rejected.keySet().retainAll(store.stillRefused(embedder.model(), rejected.values()));
   }
 
   private void upToDate() {
@@ -159,7 +148,6 @@ public class IndexEmbeddings {
     List<float[]> vectors =
         embedder.embed(tasks.stream().map(EmbeddingTask::text).toList(), Embedder.Kind.PASSAGE);
     store.saveEmbeddings(embedder.model(), tasks, vectors);
-    tasks.forEach(task -> rejected.remove(task.resourceId()));
     succeeded();
     return tasks.size();
   }
@@ -172,8 +160,8 @@ public class IndexEmbeddings {
     if (e.reason() != FailureReason.TEXT_REJECTED) {
       return;
     }
-    RefusedText refused = new RefusedText(task.resourceId(), task.textHash());
-    if (!refused.equals(rejected.put(task.resourceId(), refused))) {
+    if (store.refuse(embedder.model(), new RefusedText(task.resourceId(), task.textHash()))) {
+      rejected.incrementAndGet();
       log.info(
           "Embedding left out for resource {} until its text changes: {}",
           task.resourceId(),

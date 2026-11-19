@@ -5,7 +5,12 @@ import { mockApi } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { THEME_KEY } from '@/lib/theme';
 import { mockViewport } from '@/test/viewport';
-import pkg from '../../package.json';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')) as {
+  version: string;
+};
 
 describe('layout', () => {
   it('offers sign-in to anonymous users and hides the Admin nav item', async () => {

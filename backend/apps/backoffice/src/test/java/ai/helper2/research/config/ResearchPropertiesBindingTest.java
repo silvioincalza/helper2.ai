@@ -2,6 +2,7 @@ package ai.helper2.research.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.platform.llm.ModelTier;
 import ai.helper2.testing.ConfigBinding;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -23,10 +24,19 @@ class ResearchPropertiesBindingTest {
   void theYamlDefaultsBind() {
     context.run(c -> {
       ResearchProperties p = c.getBean(ResearchProperties.class);
+      assertThat(p.model()).as("bulk work runs on the fast model").isEqualTo(ModelTier.FAST);
       assertThat(p.dailyModelCalls()).isEqualTo(3000);
       assertThat(p.maxStreams()).isEqualTo(8);
       assertThat(p.checkUrlDeadline()).isEqualTo(Duration.ofSeconds(20));
     });
+  }
+
+  @Test
+  void theReasoningModelCanStillBeChosen() {
+    context
+        .withSystemProperties("H2_RESEARCH_MODEL=REASONING")
+        .run(c ->
+            assertThat(c.getBean(ResearchProperties.class).model()).isEqualTo(ModelTier.REASONING));
   }
 
   @ParameterizedTest

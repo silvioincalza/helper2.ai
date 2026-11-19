@@ -47,8 +47,8 @@ Values are defaults; each has an `H2_` variable.
    entered gives its slot back while it waits. With no slot left, the question gets 503 "Guide busy" (`GuideBusy`, an
    `error` event on the stream, outcome `busy`). A question that got a slot receives a `:keep-alive` comment every
    `H2_GUIDE_HEARTBEAT` (15 s) until its last event ([0031](0031-guide-pipeline.md)).
-   **A model call never runs past the deadline.** Each model attempt (the first, the retry of a malformed answer, the
-   repeat without thinking of a cut answer) gets its own time: the smaller of the model timeout (`H2_LLM_TIMEOUT`,
+   **A model call never runs past the deadline.** Each model attempt (the first, the retry of a malformed answer or of a
+   plan call hit by a provider outage, the repeat without thinking of a cut answer) gets its own time: the smaller of the model timeout (`H2_LLM_TIMEOUT`,
    40 s) and the time the question has left minus a margin (`helper2.guide.deadline-margin`, 2 s). `CallTimeLimit`
    computes it from `QuestionDeadline`, a scoped value `GuideLimits` sets for the question's worker, and
    `SpringAiGuideModel` sends it as the timeout of that one request (`OpenAiChatOptions.timeout`), so the bound does
@@ -60,7 +60,7 @@ Values are defaults; each has an `H2_` variable.
    before the margin the call does not start: it fails at once with `GuideUnavailable` category `deadline`, before
    the budget (a repeat without thinking that cannot start fails with `cut`,
    [0031](0031-guide-pipeline.md)). A call that its shortened time stops fails with the same category, is not asked again and is not
-   counted against the provider in the `llm-chat-guide` circuit (`DeadlineTimeout`); a call that used its whole model
+   counted against the provider in the guide model's circuit (`DeadlineTimeout`); a call that used its whole model
    timeout is a provider failure as before. The step degrades as when the model is down: no plan means the question's
    words, no choice means the top results with the notice `GUIDE_OUT_OF_TIME`, no reason check means `NOT_CHECKED`
    (not cached). So a slow provider gives a degraded answer at least the margin before the deadline. The app does not
@@ -184,7 +184,7 @@ Redis count, else this replica's count in memory), so a give-back on any replica
 
 ### The global daily cap
 `H2_GUIDE_DAILY_MODEL_CALLS` (600): one unit before each model attempt ([0008](../foundation/0008-llm-integration.md)),
-taken inside the `llm-chat-guide` circuit, so a call the open circuit refuses costs no unit. The cap opens through the
+taken inside the guide model's circuit (`llm-chat-guide-fast` or `llm-chat-guide-reasoning`), so a call the open circuit refuses costs no unit. The cap opens through the
 day (`DailyBudget.paced`, `H2_GUIDE_BUDGET_PACE_SLOTS`, 12): by the end of each 2-hour part of the UTC day, at most
 that share of the cap is used (50, 100, … 600), and what an earlier part left unused carries over. So an early burst,
 or many rotating addresses, cannot take the whole day; 1 turns pacing off. Gauge
@@ -408,7 +408,7 @@ shared cache purge.
   `backend/apps/public/src/main/java/ai/helper2/guide/schedule/GuideRetentionSchedule.java`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` (`of`, `network`), `quota/ClientBudgets.java`,
   `RateLimitInterceptor.java`,
-  `RateLimiter.java`, `PgVectors.java`; `platform/llm/DailyBudget.java`, `RedisCallCounter.java` (the count and its
+  `RateLimiter.java`, `PgVectors.java`; `platform/llm/DailyBudget.java`, `internal/RedisCallCounter.java` (the count and its
   give-back); `platform/llm/ModelCallMetrics.java` (`promptVersion`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
 - `docs/eval/guide-similar.json`, `guide-similar-vectors.json`;

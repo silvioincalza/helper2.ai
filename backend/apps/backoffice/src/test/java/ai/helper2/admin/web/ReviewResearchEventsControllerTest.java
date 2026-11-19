@@ -1,5 +1,6 @@
 package ai.helper2.admin.web;
 
+import static ai.helper2.testing.Eventually.eventually;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -9,6 +10,7 @@ import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
 import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchStep;
+import ai.helper2.research.usecase.FollowResearchRun;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +32,7 @@ class ReviewResearchEventsControllerTest {
 
   ReviewResearchEventsController controller(int maxStreams) {
     return new ReviewResearchEventsController(
-        runs,
+        new FollowResearchRun(runs),
         maxStreams,
         Duration.ofMillis(5),
         Duration.ofMillis(20),
@@ -41,18 +43,11 @@ class ReviewResearchEventsControllerTest {
         });
   }
 
-  static void eventually(Runnable check) throws InterruptedException {
-    long until = System.nanoTime() + Duration.ofSeconds(5).toNanos();
-    while (true) {
-      try {
-        check.run();
-        return;
-      } catch (AssertionError | ApiProblem e) {
-        if (System.nanoTime() > until) {
-          throw e;
-        }
-        Thread.sleep(10);
-      }
+  Optional<SseEmitter> aNewStream(ReviewResearchEventsController controller) {
+    try {
+      return Optional.ofNullable(controller.streamReviewResearch(runId, 0).getBody());
+    } catch (ApiProblem refused) {
+      return Optional.empty();
     }
   }
 
@@ -73,7 +68,7 @@ class ReviewResearchEventsControllerTest {
         .isInstanceOf(ApiProblem.class);
 
     emitters.getFirst().complete();
-    eventually(() -> assertThat(controller.streamReviewResearch(runId, 0).getBody()).isNotNull());
+    eventually(() -> assertThat(aNewStream(controller)).isPresent());
     emitters.getLast().complete();
   }
 
@@ -97,7 +92,7 @@ class ReviewResearchEventsControllerTest {
     controller.streamReviewResearch(runId, 0);
 
     eventually(() -> assertThat(emitters.getFirst().events.get()).isEqualTo(1));
-    eventually(() -> assertThat(controller.streamReviewResearch(runId, 0).getBody()).isNotNull());
+    eventually(() -> assertThat(aNewStream(controller)).isPresent());
   }
 
   static ResearchStep step(UUID runId, int seq) {

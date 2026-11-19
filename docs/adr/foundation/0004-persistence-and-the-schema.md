@@ -135,10 +135,13 @@ The schema is one file, and from the first release tag on that file must never c
    the Scout through `IndexResources.index`, `ReviewQueue` and `EnrichmentResults` ([0014](../scout/0014-evidence-gated-enrichment.md)).
    The catalog's use cases reach the database through ports in `ai.helper2.catalog` ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)),
    each with one JDBC adapter in `catalog/internal`:
-   - `CatalogWriter` (`JdbcCatalogWriter`): the sources, the upsert of resources, labels, categories, event dates and
-     records, and a user's report with its review item. It is the public app's whole write path, so its grants stay
-     small (point 9).
-   - `Resources` (`JdbcResources`), `CategoryLabels`, `JobMarkers`, `EmbeddingStore`, `AwesomeListIndex`,
+   - `CatalogWriter` (`JdbcCatalogWriter`): the sources, the upsert of resources, labels, event dates and records.
+   - `IssueReports` (`JdbcIssueReports`): a user's report with its review item, in one transaction.
+   - `CategoryInputs` and `CategoryAssignments` (`JdbcCategoryLabels`): what the category rules read of a resource,
+     and the `CATEGORY` labels they give it. The rules run in the `RefreshCategories` use case (`CategoryLabels`),
+     which the upsert calls inside its transaction.
+   - These are the public app's whole write path, so its grants stay small (point 9).
+   - `Resources` (`JdbcResources`), `JobMarkers`, `EmbeddingStore`, `AwesomeListIndex`,
      `CuratedFields`, `RelationshipTargets`, `ReviewQueue`, `ReviewDecisions` and `CatalogRetention`: the reads and
      the back office's writes. The search sources read the index through `JdbcCatalogSearch`.
    - `source` keeps only what the code does not hold: its id, its mode and its last outcome. A source's name, homepage,
@@ -169,7 +172,7 @@ The schema is one file, and from the first release tag on that file must never c
    `flyway_schema_history` (`${flyway:table}` in the migration). The owner stays the user Flyway runs as (`helper2`
    in the chart).
    - `h2_public` reads every table but the Scout's and the enrichment's bookkeeping (`scout_run`, `scout_schedule`,
-     `source_cursor`, `discovery_host`, `enrichment_queue_control`, `candidate_decision`) and the admin audit trail
+     `source_cursor`, `discovery_host`, `list_seed`, `list_seed_last_read`, `enrichment_queue_control`, `candidate_decision`) and the admin audit trail
      (`admin_audit`: no right at all, [0036](../identity/0036-identity-and-the-admin-host.md) §9). It writes only what a visit, a
      sign-in, a report or its own jobs write: `resource`, `resource_label`, `source_record` (the live results it
      observes), `source` (its sources at startup and their outcome), `issue_report` and `review_item` (a user's report),
@@ -230,9 +233,10 @@ The schema is one file, and from the first release tag on that file must never c
 
 ### Code
 - `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `Resources.java`, `ReviewQueue.java`,
-  `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps), `CatalogBackOfficeConfiguration.java` and
-  `catalog/internal/CatalogBackOfficeAdapters.java` (the back office only).
+- `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `IssueReports.java`, `Resources.java`, `ReviewQueue.java`,
+  `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps),
+  `catalog/config/EnableCatalogBackOfficeAdapters.java` and `catalog/internal/CatalogBackOfficeAdapters.java` (the
+  back office only); `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
@@ -241,15 +245,17 @@ The schema is one file, and from the first release tag on that file must never c
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/Reconciliation.java`, `ProjectedReconciliation.java`,
   `SqlReconciliation.java`, `CatalogConfiguration.java` (`reconciliation`) — the reconciled facts of the row, and the
   temporary switch between the two paths (`CatalogProperties.reconcileByProjection`).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcCatalogWriter.java` (`report`),
-  `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment results, user reports, the review
+- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcResourceDetailReads.java`,
+  `JdbcIssueReports.java` (`report`), `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment
+  results, their reads for the detail page, user reports, the review
   queue and its decisions, job markers.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema, app roles and seeds.
 - `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `AppLogins.java`, `MonitorLogin.java`,
   `SchemaCheck.java` — the migrate step, the logins, the exporter's monitor login, the apps' schema check.
 - `.github/scripts/released-migrations.sh` — CI: V1 only before the first release, no released migration changes after.
-- `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract.
+- `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract;
+  `backend/architecture/src/test/java/ai/helper2/architecture/SchemaUseTest.java` — no unused table or column.
 - `backend/apps/public/src/test/java/ai/helper2/AppRolesGrantsIT.java`, `MigrateStepIT.java` — the grants per table, the
   migrate step.
 - `backend/apps/public/src/test/java/ai/helper2/catalog/internal/IndexHitAndCardParityIT.java`,
@@ -318,8 +324,10 @@ The schema is one file, and from the first release tag on that file must never c
   The test image (Debian, glibc) and the deployed image (Alpine, musl) both name the locale `en_US.utf8`, but musl
   sorts text by code point: the check pins the name, not the C library.
 - `SchemaContractTest` checks the migrated schema with plain JDBC: every foreign key's delete rule, an index on every
-  foreign key a delete follows, every check list equal to the domain vocabulary it stores (the `admin_audit.action`
-  list equal to `AuditTrail.Action`), and no table or column the code does not use.
+  foreign key a delete follows, and every check list equal to the domain vocabulary it stores (the `admin_audit.action`
+  list equal to `AuditTrail.Action`). `SchemaUseTest` checks that there is no table or column the code does not use:
+  it reads the main sources of every project, so it is in `backend/architecture`
+  ([0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8).
 - A merge of two resources never loses a user report. A resource whose records were split over several resources
   stays, without records, until a reviewer handles its reports. `JdbcCatalogWriterIT` covers both cases.
 - A resource is read in two ways. The index search reads the `resource` row. The resource page merges the records

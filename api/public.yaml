@@ -35,6 +35,7 @@ tags:
   - name: examples
   - name: policy
   - name: site
+  - name: hubs
 
 paths:
   /search:
@@ -82,6 +83,26 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/UpcomingEventsResponse' }
         '400': { $ref: './common.yaml#/components/responses/Problem' }
+  /hubs/{type}:
+    get:
+      tags: [hubs]
+      operationId: listHub
+      summary: The resources of one type that a search engine may index, newest change first, for its hub page.
+      description: |
+        For the hub pages (`/mcp-servers`, `/ai-models`, ...). Only resources the site pages mark `index`
+        (ADR 0041, `IndexPolicy`), newest change first, at most 50. Served from memory, read again at most every
+        10 minutes. A type without a hub page (EVENT, NEWS, ARTICLE, AWESOME_LIST, OTHER) is a 404.
+      parameters:
+        - { name: type, in: path, required: true, schema: { $ref: './common.yaml#/components/schemas/ResourceType' } }
+      responses:
+        '200':
+          description: The hub's resources (possibly empty).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HubResponse' }
+        '400': { $ref: './common.yaml#/components/responses/Problem' }
+        '404': { $ref: './common.yaml#/components/responses/Problem' }
+        '429': { $ref: './common.yaml#/components/responses/Problem' }
   /resources/{id}:
     get:
       tags: [resource-detail]
@@ -602,6 +623,14 @@ components:
         since: { type: string, format: date-time, description: Oldest publication date included. }
         generatedAt: { type: string, format: date-time }
 
+    HubResponse:
+      type: object
+      required: [type, items, generatedAt]
+      properties:
+        type: { $ref: './common.yaml#/components/schemas/ResourceType' }
+        items: { type: array, maxItems: 50, items: { $ref: './common.yaml#/components/schemas/ResultCard' } }
+        generatedAt: { type: string, format: date-time, description: When the list was read from the catalog. }
+
     UpcomingEventsResponse:
       type: object
       required: [items, total, generatedAt]
@@ -621,7 +650,7 @@ components:
 
     ResourceDetail:
       type: object
-      required: [card, assertions, relationships, sourceRecords, enrichmentStatus]
+      required: [card, assertions, relationships, sourceRecords, enrichmentStatus, foundIn]
       properties:
         card: { $ref: './common.yaml#/components/schemas/ResultCard' }
         assertions: { type: array, items: { $ref: '#/components/schemas/Assertion' } }
@@ -629,6 +658,7 @@ components:
         summary: { oneOf: [{ $ref: '#/components/schemas/AiSummary' }, { type: 'null' }] }
         sourceRecords: { type: array, items: { $ref: '#/components/schemas/SourceRecordInfo' } }
         enrichmentStatus: { type: string, enum: [NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE] }
+        foundIn: { $ref: '#/components/schemas/FoundIn' }
         aiContent:
           oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
           description: |
@@ -645,6 +675,28 @@ components:
             `fields` lists only the values present, with an index when not every item of an array holds one.
             `models` names the models of the enrichment runs that wrote the listed assertions, relationships and
             summary; the card does not keep the model of its stored values, so they add none.
+
+    FoundIn:
+      type: object
+      description: |
+        The curated lists that name this resource (ADR 0023): the most popular list first, then by title. The lists'
+        own words, not AI-written.
+      required: [lists, more]
+      properties:
+        lists:
+          type: array
+          maxItems: 10
+          description: At most 10 lists; empty when no list names the resource.
+          items: { $ref: '#/components/schemas/FoundInList' }
+        more: { type: integer, minimum: 0, description: The lists that name the resource and are not in `lists`. }
+
+    FoundInList:
+      type: object
+      required: [listId, listTitle, headingPath]
+      properties:
+        listId: { type: string, format: uuid, description: "The list's own resource in the catalog, for the link to its page." }
+        listTitle: { type: string, description: "The list's title in the catalog, e.g. owner/awesome-llm." }
+        headingPath: { type: string, maxLength: 200, description: "The headings above the entry, e.g. \"Tools > Vector databases\"; empty when the entry has none." }
 
     SetupGuide:
       type: object

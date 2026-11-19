@@ -12,4 +12,4 @@ public record PagesProperties(
     @NotBlank @Pattern(regexp = "https?://[^/]+") String publicBaseUrl,
     boolean noindex,
     @NotBlank String template,
-    @Min(1) @jakarta.validation.constraints.Max(50_000) int sitemapLimit) {}
+    @Min(1) @jakarta.validation.constraints.Max(1_000_000) int sitemapLimit) {}

@@ -37,14 +37,14 @@ function errorOf(e: unknown, t: (k: string) => string): string {
 
 export function CandidateEditForm({
   itemId,
-  details,
+  revision,
   title,
   type,
   tags,
   onSaved,
 }: {
   itemId: string;
-  details: string | null;
+  revision: string;
   title: string;
   type: string;
   tags: string[];
@@ -58,8 +58,8 @@ export function CandidateEditForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const change = (): Omit<CandidateEdit, 'expectedDetails'> => {
-    const out: Omit<CandidateEdit, 'expectedDetails'> = {};
+  const change = (): Omit<CandidateEdit, 'expectedRevision'> => {
+    const out: Omit<CandidateEdit, 'expectedRevision'> = {};
     if (newTitle.trim() !== title) out.title = newTitle.trim();
     if (newType !== type) out.type = newType as CandidateType;
     const wanted = tagsOf(newTags);
@@ -77,7 +77,7 @@ export function CandidateEditForm({
     setSaving(true);
     setError(null);
     try {
-      await adminApi.editCandidate(itemId, { expectedDetails: details, ...body });
+      await adminApi.editCandidate(itemId, { expectedRevision: revision, ...body });
       setOpen(false);
       onSaved();
     } catch (err) {

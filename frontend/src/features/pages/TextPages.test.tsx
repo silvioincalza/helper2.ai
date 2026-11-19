@@ -76,6 +76,9 @@ describe('mission, privacy and terms pages', () => {
     const recipients = screen.getByRole('region', { name: 'Who receives data' });
     expect(recipients).toHaveTextContent('Nebius Token Factory');
     expect(recipients).toHaveTextContent('Nebius chooses where each request runs');
+    expect(recipients).toHaveTextContent(
+      'Today the models we use run in Finland (European Union) and in the United States.',
+    );
     expect(recipients).not.toHaveTextContent('runs in the European Union (Finland)');
     expect(recipients).toHaveTextContent('Germany');
     expect(screen.getByRole('region', { name: 'Your rights' })).toHaveTextContent('FADP');
@@ -97,7 +100,7 @@ describe('mission, privacy and terms pages', () => {
       'Technical logs and request traces: up to 3 months.',
     );
     expect(screen.getByRole('region', { name: 'How long we keep data' })).toHaveTextContent(
-      'Text sent to the AI models on Nebius Token Factory, and their answers: up to one year at Nebius, in Finland.',
+      'Text sent to the AI models on Nebius Token Factory, and their answers: not kept at Nebius once it has answered.',
     );
   });
 

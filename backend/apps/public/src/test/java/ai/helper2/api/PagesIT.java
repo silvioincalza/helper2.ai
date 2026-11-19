@@ -118,15 +118,39 @@ class PagesIT extends ApiTestBase {
                 .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("/api"))));
   }
 
+  private String xml(String path) throws Exception {
+    return mvc.perform(get(path))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+  }
+
+  @Test
+  void llmsTxtIsPlainTextOnThePublicHost() throws Exception {
+    mvc.perform(get("/llms.txt"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", "text/plain;charset=UTF-8"))
+        .andExpect(content().string(org.hamcrest.Matchers.startsWith("# helper2.ai\n")))
+        .andExpect(
+            content().string(org.hamcrest.Matchers.containsString("(https://helper2.ai/sources)")));
+  }
+
+  @Test
+  void theSitemapIsAnIndexOfItsParts() throws Exception {
+    String index = xml("/sitemap.xml");
+    assertThat(index)
+        .contains("<sitemapindex")
+        .contains("<loc>https://helper2.ai/sitemaps/pages.xml</loc>")
+        .contains("<loc>https://helper2.ai/sitemaps/resources-1.xml</loc>");
+    assertThat(xml("/sitemaps/pages.xml")).contains("<loc>https://helper2.ai/sources</loc>");
+    mvc.perform(get("/sitemaps/resources-999.xml")).andExpect(status().isNotFound());
+    mvc.perform(get("/sitemaps/other.xml")).andExpect(status().isNotFound());
+  }
+
   @Test
   void theSitemapListsOnlyPagesThePageItselfMarksIndexed() throws Exception {
-    String xml =
-        mvc.perform(get("/sitemap.xml"))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    assertThat(xml).contains("<loc>https://helper2.ai/sources</loc>");
+    String xml = xml("/sitemaps/resources-1.xml");
     List<String> paths =
         SITEMAP_RESOURCE.matcher(xml).results().map(m -> m.group(1)).limit(25).toList();
     assertThat(paths).isNotEmpty();
@@ -140,5 +164,62 @@ class PagesIT extends ApiTestBase {
             .query(UUID.class)
             .list();
     news.forEach(n -> assertThat(xml).doesNotContain(n.toString()));
+  }
+
+  @Test
+  void everySitePageHasABodyWithItsHeadingAndLinksToTheOthers() throws Exception {
+    for (String path :
+        List.of("/", "/sources", "/events", "/mission", "/privacy", "/terms", "/support")) {
+      assertThat(page(path, 200))
+          .as(path)
+          .contains("<div id=\"root\"><main class=\"h2-prerender\"><h1>")
+          .contains("<nav><h2>More on helper2.ai</h2>")
+          .doesNotContain("<a href=\"" + path + "\">");
+    }
+    assertThat(page("/search?q=ollama", 200)).contains("<div id=\"root\"></div>");
+  }
+
+  @Test
+  void aHubPageListsOnlyItsTypeAndIsIndexedWhenItListsAResource() throws Exception {
+    var json = tools.jackson.databind.json.JsonMapper.builder().build();
+    String sitePages = xml("/sitemaps/pages.xml");
+    int listed = 0;
+    for (ai.helper2.site.pages.Hub hub : ai.helper2.site.pages.Hub.getEntries()) {
+      String type = hub.getType().name();
+      String body =
+          mvc.perform(get("/api/v1/hubs/" + type))
+              .andExpect(status().isOk())
+              .andExpect(header().string("Cache-Control", "max-age=300, public"))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      var read = json.readTree(body);
+      assertThat(read.path("type").asString()).isEqualTo(type);
+      assertThat(read.path("items").size()).isLessThanOrEqualTo(50);
+      read.path("items").forEach(card -> assertThat(card.path("type").asString()).isEqualTo(type));
+      listed += read.path("items").size();
+      boolean filled = !read.path("items").isEmpty();
+      assertThat(page(hub.getPath(), 200))
+          .as(hub.getPath())
+          .contains("content=\"" + (filled ? "index, follow" : "noindex, follow") + "\"")
+          .contains("<h1>" + hub.getLabel() + ": newest in the catalog</h1>");
+      assertThat(sitePages.contains("<loc>https://helper2.ai" + hub.getPath() + "</loc>"))
+          .as("%s is in the sitemap only when it lists a resource", hub.getPath())
+          .isEqualTo(filled);
+    }
+    assertThat(listed).as("the seeded catalog fills at least one hub").isPositive();
+    mvc.perform(get("/api/v1/hubs/EVENT")).andExpect(status().isNotFound());
+    mvc.perform(get("/api/v1/hubs/NOPE")).andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void theHomeBodyListsWhatTheHomePageListsAsNew() throws Exception {
+    String recent = xml("/api/v1/recent?size=20");
+    String home = page("/", 200);
+    if (recent.contains("\"id\"")) {
+      assertThat(home).contains("<h2>New in the catalog</h2>").contains("<a href=\"/resource/");
+    } else {
+      assertThat(home).doesNotContain("New in the catalog");
+    }
   }
 }

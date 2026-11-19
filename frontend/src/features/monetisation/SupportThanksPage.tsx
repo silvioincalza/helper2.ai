@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useTitle } from '@/hooks/useTitle';
-import '@/features/pages/text.css';
+import '@/ui/text.css';
 
 export default function SupportThanksPage() {
   const { t } = useTranslation();

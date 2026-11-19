@@ -6,7 +6,7 @@ import type { ReviewEvidence, ReviewQuote, Verification } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { formatDate, localDay, safeHref } from '@/lib/format';
 import { FieldCuration } from './FieldCuration';
 import { RelationshipTarget } from './RelationshipTarget';
@@ -122,7 +122,7 @@ function EvidenceBody({
         <div className="h2-admin__field">
           <p className="h2-admin__field-head">
             <span {...aiMark(run?.model)}>{t(`relationship.${relationship.kind}`)}</span>{' '}
-            <span {...(targetCurated ? {} : aiMark(run?.model))}>{relationship.target}</span>{' '}
+            <span {...aiMarkWhen(!targetCurated, run?.model)}>{relationship.target}</span>{' '}
             <StatusPill tone={VERIFICATION_TONE[relationship.verification]}>
               {t(`verification.${relationship.verification}`)}
             </StatusPill>
@@ -149,7 +149,7 @@ function EvidenceBody({
                 <span className="h2-admin__field-name">
                   {t(`detail.field.${f.field}`, { defaultValue: f.field })}
                 </span>{' '}
-                <span {...(isAiOrigin(f.origin) ? aiMark(run?.model) : {})}>{f.value}</span>{' '}
+                <span {...aiMarkWhen(isAiOrigin(f.origin), run?.model)}>{f.value}</span>{' '}
                 <StatusPill tone={VERIFICATION_TONE[f.verification]}>
                   {t(`verification.${f.verification}`)}
                 </StatusPill>

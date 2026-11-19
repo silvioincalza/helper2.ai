@@ -180,7 +180,7 @@ class AwesomeListParserTest {
       """;
 
   @Test
-  void theFirstLinkOfAnEntryOutsideGitHubIsKeptWithItsHeading() {
+  void everyLinkOfAnEntryOutsideGitHubIsKeptWithItsHeading() {
     List<AwesomeListParser.Link> links =
         AwesomeListParser.parse(WITH_LINKS, "acme/awesome-voice").links();
 
@@ -193,7 +193,62 @@ class AwesomeListParserTest {
             org.assertj.core.groups.Tuple.tuple(
                 "https://acme.ai/?utm_source=list", "Acme Voice", "Tools > Text-to-speech"),
             org.assertj.core.groups.Tuple.tuple(
+                "https://docs.acme.ai", "Docs", "Tools > Text-to-speech"),
+            org.assertj.core.groups.Tuple.tuple(
+                "https://repo-site.ai", "Site", "Tools > Text-to-speech"),
+            org.assertj.core.groups.Tuple.tuple(
                 "https://tabled.ai", "Tabled", "Tools > Text-to-speech"));
+  }
+
+  @Test
+  void aLinkIsKeptOnceWithTheTextOfItsEntryAndOfTheLinesUnderIt() {
+    String readme =
+        """
+        ## Models
+        - [Repo](https://github.com/acme/voice) - Speaks. [Site](https://voice.ai) and [weights](https://huggingface.co/acme/voice)
+          Trained on [a corpus](https://corpus.example.org/voice).
+        - [Site again](https://voice.ai)
+        """;
+
+    List<AwesomeListParser.Link> links = AwesomeListParser.parse(readme, "acme/list").links();
+
+    assertThat(links)
+        .extracting(AwesomeListParser.Link::url, AwesomeListParser.Link::text)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("https://voice.ai", "Site"),
+            org.assertj.core.groups.Tuple.tuple("https://huggingface.co/acme/voice", "weights"),
+            org.assertj.core.groups.Tuple.tuple("https://corpus.example.org/voice", "a corpus"));
+    assertThat(links)
+        .extracting(AwesomeListParser.Link::entryText)
+        .containsOnly("Repo - Speaks. Site and weights Trained on a corpus.");
+  }
+
+  @Test
+  void anIndentedItemWithItsOwnLinkIsItsOwnEntryAndTheLinesWithoutOneBelongToTheirItem() {
+    String readme =
+        """
+        ## Agents
+        - [Agents](https://github.com/acme/agents) - Agent frameworks.
+          - Works with any model.
+          - [Runner](https://github.com/acme/runner) - Runs agents.
+            Needs a GPU.
+        - Plain group
+          - [Planner](https://planner.ai) - Plans.
+        """;
+
+    AwesomeListParser.Parsed parsed = AwesomeListParser.parse(readme, "acme/list");
+
+    assertThat(parsed.entries())
+        .extracting(AwesomeListParser.Entry::fullName, AwesomeListParser.Entry::text)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(
+                "acme/agents", "Agents - Agent frameworks. Works with any model."),
+            org.assertj.core.groups.Tuple.tuple(
+                "acme/runner", "Runner - Runs agents. Needs a GPU."));
+    assertThat(parsed.links())
+        .extracting(AwesomeListParser.Link::url, AwesomeListParser.Link::entryText)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("https://planner.ai", "Planner - Plans."));
   }
 
   @Test

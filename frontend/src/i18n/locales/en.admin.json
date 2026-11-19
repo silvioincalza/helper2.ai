@@ -155,7 +155,8 @@
         "ADD_SHADOW_LIBRARY": "Shadow library added",
         "REMOVE_SHADOW_LIBRARY": "Shadow library removed",
         "SET_FIELD": "Field set by an admin",
-        "DROP_FIELD": "AI value of a field dropped"
+        "DROP_FIELD": "AI value of a field dropped",
+        "REMOVE_RESOURCE": "Resource removed"
       }
     },
     "budget": {
@@ -179,7 +180,6 @@
         "BUILD_WITH_AI": "Builders"
       },
       "status": {
-        "ACTIVE": "Active",
         "PAUSED": "Paused"
       },
       "origin": {
@@ -395,6 +395,39 @@
           "DIRECTORY": "Its pages can then be proposed as products."
         },
         "confirmRemove": "Remove host",
+        "cancel": "Cancel"
+      },
+      "lists": {
+        "title": "Lists to read",
+        "lede": "GitHub lists and web pages you want the Scout to read. The awesome-list collector reads the GitHub lists first at every pass, whatever their stars and name. It reads a web page through the live web page reader, at most once in the days the configuration sets (7 unless changed), for one live web credit of the Scout's daily cap. Repositories in a list are checked like any other; links to other sites go to the review list. A page on a host whose terms forbid automated reading is refused.",
+        "addTitle": "Add a list",
+        "address": "GitHub repository or web page",
+        "reason": "Reason (optional)",
+        "add": "Add list",
+        "empty": "Enter a GitHub repository, such as owner/awesome-llm, or the https address of a web page.",
+        "added": "Added: {{address}} is read at the next pass.",
+        "removed": "Removed: {{address}}.",
+        "refused": "Not saved: {{detail}}",
+        "failed": "The action failed. Please try again.",
+        "loadError": "Could not load the lists to read.",
+        "listTitle_one": "Added lists ({{count}} of {{max}})",
+        "listTitle_other": "Added lists ({{count}} of {{max}})",
+        "none": "No list added. The collector reads the lists its own search finds.",
+        "col": {
+          "list": "List",
+          "added": "Added",
+          "actions": "Actions"
+        },
+        "kind": {
+          "GITHUB_REPOSITORY": "GitHub",
+          "WEB_PAGE": "Web page"
+        },
+        "addedBy": "by {{who}} · {{at}}",
+        "remove": "Remove",
+        "removeLabel": "Remove {{address}}",
+        "removeTitle": "Stop reading {{address}}?",
+        "removeEffect": "The list and the resources found in it stay in the catalog. Its entries leave the list index 30 days after the last pass that read it.",
+        "confirmRemove": "Remove list",
         "cancel": "Cancel"
       },
       "shadow": {
@@ -663,7 +696,7 @@
         "REJECTED_one": "Reject {{count}}",
         "REJECTED_other": "Reject {{count}}"
       },
-      "acceptRule": "Only enrichment checks with no conflict on license, open source or pricing are accepted together. The others stay open: accept them one by one.",
+      "acceptRule": "Accepted together: enrichment checks with no conflict on license, open source or pricing, and candidates the AI research kept with no conflict, with the values it confirmed. The others stay open: accept them one by one.",
       "final": "A decision is final.",
       "allDone_one": "{{count}} done.",
       "allDone_other": "{{count}} done.",
@@ -740,7 +773,18 @@
       "skip": "Skip",
       "skipLabel": "Skip {{title}}",
       "reason": "Not about AI (word rule)",
-      "skipFailed": "Could not skip {{title}}."
+      "skipFailed": "Could not skip {{title}}.",
+      "removed": "Removed",
+      "remove": "Remove",
+      "removeLabel": "Remove {{title}} from the catalog",
+      "removeTitle": "Remove {{title}}?",
+      "removeWhat": "It leaves the catalog with its source records, labels and embedding. The Scout and the review queue skip its address from now on.",
+      "removeFinal": "This cannot be undone here. Adding the address by hand brings it back.",
+      "removeReasonLabel": "Reason (kept in the audit trail)",
+      "removeReason": "Not about AI",
+      "removeCancel": "Cancel",
+      "removeConfirm": "Remove",
+      "removeFailed": "Could not remove {{title}}."
     },
     "research": {
       "bar": "Research with AI",
@@ -865,6 +909,7 @@
       "progress": "{{done}} of {{count}} changes decided",
       "progressLabel": "Changes decided",
       "accept": "Accept with the confirmed values",
+      "unreadable": "The candidate cannot be read, so the confirmed values cannot be saved.",
       "acceptWhy_one": "Decide {{count}} more change to accept.",
       "acceptWhy_other": "Decide {{count}} more changes to accept.",
       "trace": {

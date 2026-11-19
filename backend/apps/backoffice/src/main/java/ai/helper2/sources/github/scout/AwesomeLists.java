@@ -26,9 +26,12 @@ public final class AwesomeLists {
 
   static boolean isAwesomeList(
       String fullName, Collection<String> topics, AwesomeListParser.Parsed readme) {
-    return named(fullName, topics)
-        && readme.linkedItems() >= MIN_LINKED_ITEMS
-        && readme.linkedItems() >= MIN_LIST_SHARE * readme.textLines();
+    return named(fullName, topics) && readsAsList(readme);
+  }
+
+  static boolean readsAsList(AwesomeListParser.Parsed text) {
+    return text.linkedItems() >= MIN_LINKED_ITEMS
+        && text.linkedItems() >= MIN_LIST_SHARE * text.textLines();
   }
 
   static boolean named(String fullName, Collection<String> topics) {

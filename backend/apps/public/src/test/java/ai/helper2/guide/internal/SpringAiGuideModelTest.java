@@ -66,6 +66,8 @@ class SpringAiGuideModelTest {
 
   static final class RateLimitException extends OpenAIException {}
 
+  static final class InternalServerException extends OpenAIException {}
+
   static final String PLAN =
       "{\"searchQuery\":\"MCP server postgres\",\"constraints\":[],\"wantsReading\":false,\"webQuery\":\"\"}";
 
@@ -82,7 +84,7 @@ class SpringAiGuideModelTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(reply.get()))));
           }
         };
-    return new SpringAiGuideModel(chat, "fake", "fast", "reasoning");
+    return GuideModelBuilder.over(chat).build();
   }
 
   @Test
@@ -275,7 +277,7 @@ class SpringAiGuideModelTest {
                           "{\"picks\":[{\"candidateKey\":\"c1\",\"reason\":\"Fits"),
                       ChatGenerationMetadata.builder().finishReason("length").build())));
         };
-    SpringAiGuideModel model = new SpringAiGuideModel(chat, "fake", "fast", "reasoning");
+    SpringAiGuideModel model = GuideModelBuilder.over(chat).build();
 
     Throwable failure = catchThrowable(() -> model.choose(new Need("need"), List.of(), List.of()));
 
@@ -307,6 +309,107 @@ class SpringAiGuideModelTest {
     assertThat(calls).hasValue(1);
   }
 
+  @Test
+  void aPlanCallHitByAProviderOutageIsAskedOnceMore() {
+    MeterRegistry meters = new SimpleMeterRegistry();
+    List<Supplier<String>> replies =
+        new ArrayList<>(
+            List.of(
+                () -> {
+                  throw new InternalServerException();
+                },
+                () -> PLAN));
+
+    GuideSearchPlan plan =
+        observed(
+                meters,
+                () -> {
+                  calls.incrementAndGet();
+                  return replies.removeFirst().get();
+                })
+            .plan("postgres MCP", null);
+
+    assertThat(plan.getSearchQuery()).isEqualTo("MCP server postgres");
+    assertThat(calls).hasValue(2);
+    assertThat(meters.get(ModelCallMetrics.OUTAGE_RETRY).tags("step", "plan").counter().count())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void aPlanCallIsAskedOnlyOnceMoreWhenTheOutageLasts() {
+    SpringAiGuideModel model =
+        model(() -> {
+          throw new InternalServerException();
+        });
+
+    assertThatThrownBy(() -> model.plan("postgres MCP", null))
+        .isInstanceOfSatisfying(
+            GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("unavailable"));
+    assertThat(calls).hasValue(2);
+  }
+
+  @Test
+  void aReasoningCallHitByAProviderOutageIsNotAskedAgain() {
+    SpringAiGuideModel model =
+        model(() -> {
+          throw new InternalServerException();
+        });
+
+    assertThatThrownBy(() -> model.choose(new Need("need"), List.of(), List.of()))
+        .isInstanceOf(GuideUnavailable.class);
+    assertThat(calls).hasValue(1);
+  }
+
+  @Test
+  void anOpenFastModelCircuitDoesNotRefuseTheReasoningModel() {
+    ChatModel chat =
+        prompt -> {
+          calls.incrementAndGet();
+          return new ChatResponse(List.of(new Generation(new AssistantMessage("{\"picks\":[]}"))));
+        };
+    SpringAiGuideModel model =
+        GuideModelBuilder.over(chat)
+            .resilience(
+                TestPolicies.circuitOpen(LlmPolicies.GUIDE_FAST, LlmPolicies.GUIDE_REASONING))
+            .build();
+
+    assertThatThrownBy(() -> model.plan("postgres MCP", null))
+        .isInstanceOfSatisfying(
+            GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("circuit_open"));
+    model.choose(new Need("need"), List.of(), List.of());
+
+    assertThat(calls).as("only the reasoning call reached the provider").hasValue(1);
+  }
+
+  @Test
+  void anOpenReasoningModelCircuitDoesNotRefuseThePlan() {
+    SpringAiGuideModel model =
+        GuideModelBuilder.over(
+                prompt -> {
+                  calls.incrementAndGet();
+                  return new ChatResponse(List.of(new Generation(new AssistantMessage(PLAN))));
+                })
+            .resilience(
+                TestPolicies.circuitOpen(LlmPolicies.GUIDE_REASONING, LlmPolicies.GUIDE_FAST))
+            .build();
+
+    assertThat(model.plan("postgres MCP", null).getSearchQuery()).isEqualTo("MCP server postgres");
+    assertThatThrownBy(() -> model.choose(new Need("need"), List.of(), List.of()))
+        .isInstanceOfSatisfying(
+            GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("circuit_open"));
+    assertThat(calls).hasValue(1);
+  }
+
+  @Test
+  void onlyAShortOutageCountsAsOne() {
+    assertThat(ModelErrors.isOutage(new InternalServerException())).isTrue();
+    assertThat(ModelErrors.isOutage(new RuntimeException(new java.io.IOException("reset"))))
+        .isTrue();
+    assertThat(ModelErrors.isOutage(new RateLimitException())).as("rate limit").isFalse();
+    assertThat(ModelErrors.isOutage(new BadRequestException())).as("rejected").isFalse();
+    assertThat(ModelErrors.isOutage(new ReadTimeoutException())).as("timeout").isFalse();
+  }
+
   private SpringAiGuideModel observed(MeterRegistry meters, Supplier<String> reply) {
     ObservationRegistry observations = ObservationRegistry.create();
     observations.observationConfig().observationHandler(new DefaultMeterObservationHandler(meters));
@@ -317,17 +420,11 @@ class SpringAiGuideModelTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(reply.get()))));
           }
         };
-    return new SpringAiGuideModel(
-        chat,
-        "fake",
-        "fast",
-        "reasoning",
-        true,
-        100,
-        SpringAiGuideModel.Thinking.DEFAULT,
-        new DailyBudget(100, Clock.systemUTC(), "guide"),
-        new ModelCallMetrics(observations, meters),
-        Resilience.NONE);
+    return GuideModelBuilder.over(chat)
+        .chooseMaxTokens(100)
+        .budget(new DailyBudget(100, Clock.systemUTC(), "guide"))
+        .metrics(new ModelCallMetrics(observations, meters))
+        .build();
   }
 
   private SpringAiGuideModel budgeted(DailyBudget budget, Supplier<String> reply) {
@@ -339,17 +436,7 @@ class SpringAiGuideModelTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(reply.get()))));
           }
         };
-    return new SpringAiGuideModel(
-        chat,
-        "fake",
-        "fast",
-        "reasoning",
-        true,
-        100,
-        SpringAiGuideModel.Thinking.DEFAULT,
-        budget,
-        ModelCallMetrics.none(),
-        Resilience.NONE);
+    return GuideModelBuilder.over(chat).chooseMaxTokens(100).budget(budget).build();
   }
 
   static final class MovableClock extends Clock {
@@ -414,19 +501,14 @@ class SpringAiGuideModelTest {
             return OpenAiChatOptions.builder().build();
           }
         };
-    return new SpringAiGuideModel(
-        chat,
-        "fake",
-        "fast",
-        "reasoning",
-        true,
-        100,
-        thinking,
-        budget,
-        ModelCallMetrics.none(),
-        resilience,
-        FORTY_SECONDS,
-        clock);
+    return GuideModelBuilder.over(chat)
+        .chooseMaxTokens(100)
+        .thinking(thinking)
+        .budget(budget)
+        .resilience(resilience)
+        .timeLimit(FORTY_SECONDS)
+        .clock(clock)
+        .build();
   }
 
   private static Throwable failureWithin(Duration left, MovableClock clock, Runnable ask) {
@@ -624,12 +706,13 @@ class SpringAiGuideModelTest {
 
   private static Resilience openingOnFirstProviderFailure(CircuitBreakerRegistry circuits) {
     circuits.circuitBreaker(
-        LlmPolicies.GUIDE,
+        LlmPolicies.GUIDE_FAST,
         CircuitBreakerConfig.custom()
             .slidingWindowSize(1)
             .minimumNumberOfCalls(1)
             .ignoreException(new ModelErrors.NotFromProvider())
             .build());
+    circuits.circuitBreaker(LlmPolicies.GUIDE_REASONING);
     return new Resilience4jPolicies(
         circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());
   }
@@ -657,7 +740,7 @@ class SpringAiGuideModelTest {
         .isInstanceOfSatisfying(
             GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("deadline"));
     assertThat(calls).as("not asked again").hasValue(1);
-    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE).getState())
+    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE_FAST).getState())
         .isEqualTo(CircuitBreaker.State.CLOSED);
   }
 
@@ -672,7 +755,7 @@ class SpringAiGuideModelTest {
     assertThat(failure)
         .isInstanceOfSatisfying(
             GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("timeout"));
-    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE).getState())
+    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE_FAST).getState())
         .isEqualTo(CircuitBreaker.State.OPEN);
   }
 
@@ -698,7 +781,7 @@ class SpringAiGuideModelTest {
         .isInstanceOfSatisfying(
             GuideUnavailable.class, e -> assertThat(e.getCategory()).isEqualTo("cancelled"));
     assertThat(calls).hasValue(1);
-    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE).getState())
+    assertThat(circuits.circuitBreaker(LlmPolicies.GUIDE_FAST).getState())
         .isEqualTo(CircuitBreaker.State.CLOSED);
   }
 
@@ -752,7 +835,8 @@ class SpringAiGuideModelTest {
 
   @Test
   void anOpenCircuitFailsTheCallAtOnceWithoutTheProviderOrTheBudget() {
-    Resilience resilience = TestPolicies.circuitOpen(LlmPolicies.GUIDE);
+    Resilience resilience =
+        TestPolicies.circuitOpen(LlmPolicies.GUIDE_FAST, LlmPolicies.GUIDE_REASONING);
     DailyBudget budget = new DailyBudget(10, Clock.systemUTC(), "guide");
     ChatModel chat =
         prompt -> {
@@ -760,17 +844,11 @@ class SpringAiGuideModelTest {
           return new ChatResponse(List.of(new Generation(new AssistantMessage(PLAN))));
         };
     SpringAiGuideModel model =
-        new SpringAiGuideModel(
-            chat,
-            "fake",
-            "fast",
-            "reasoning",
-            true,
-            100,
-            SpringAiGuideModel.Thinking.DEFAULT,
-            budget,
-            ModelCallMetrics.none(),
-            resilience);
+        GuideModelBuilder.over(chat)
+            .chooseMaxTokens(100)
+            .budget(budget)
+            .resilience(resilience)
+            .build();
 
     assertThatThrownBy(() -> model.plan("q", null))
         .isInstanceOfSatisfying(
@@ -808,30 +886,19 @@ class SpringAiGuideModelTest {
     ChatModel chat = prompt -> null;
     DailyBudget budget = new DailyBudget(1, Clock.systemUTC(), "guide");
     String off =
-        new SpringAiGuideModel(
-                chat,
-                "p",
-                "f",
-                "r",
-                true,
-                100,
-                SpringAiGuideModel.Thinking.DEFAULT,
-                budget,
-                ModelCallMetrics.none(),
-                Resilience.NONE)
+        GuideModelBuilder.over(chat)
+            .named("p", "f", "r")
+            .chooseMaxTokens(100)
+            .budget(budget)
+            .build()
             .getConfigFingerprint();
     String thinking =
-        new SpringAiGuideModel(
-                chat,
-                "p",
-                "f",
-                "r",
-                true,
-                100,
-                new SpringAiGuideModel.Thinking(0, 512, 0, 0),
-                budget,
-                ModelCallMetrics.none(),
-                Resilience.NONE)
+        GuideModelBuilder.over(chat)
+            .named("p", "f", "r")
+            .chooseMaxTokens(100)
+            .thinking(new SpringAiGuideModel.Thinking(0, 512, 0, 0))
+            .budget(budget)
+            .build()
             .getConfigFingerprint();
 
     assertThat(off)
@@ -869,17 +936,11 @@ class SpringAiGuideModelTest {
             new ChatResponse(
                 List.of(new Generation(new AssistantMessage(PLAN))),
                 ChatResponseMetadata.builder().usage(new DefaultUsage(120, 30)).build());
-    new SpringAiGuideModel(
-            chat,
-            "fake",
-            "fast",
-            "reasoning",
-            true,
-            100,
-            SpringAiGuideModel.Thinking.DEFAULT,
-            new DailyBudget(10, Clock.systemUTC(), "guide"),
-            new ModelCallMetrics(observations, meters),
-            Resilience.NONE)
+    GuideModelBuilder.over(chat)
+        .chooseMaxTokens(100)
+        .budget(new DailyBudget(10, Clock.systemUTC(), "guide"))
+        .metrics(new ModelCallMetrics(observations, meters))
+        .build()
         .plan("q", null);
 
     String version = ModelCallMetrics.promptVersion(SpringAiGuideModel.planSystem());

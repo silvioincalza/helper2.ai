@@ -51,8 +51,69 @@ constructor(
   fun withMode(mode: SourceMode): SourceDescriptor =
     if (this.mode == mode) this else copy(mode = mode)
 
+  fun withTerms(termsUrl: URI): SourceDescriptor = copy(termsUrl = termsUrl)
+
+  fun withAttribution(attribution: String): SourceDescriptor = copy(attribution = attribution)
+
+  fun enabledWhen(condition: Boolean): SourceDescriptor = copy(enabled = condition)
+
+  fun withPriority(priority: Int): SourceDescriptor = copy(priority = priority)
+
+  fun askedWithTheWebQuery(): SourceDescriptor = copy(usesWebQuery = true)
+
+  fun askedWithoutTranslation(): SourceDescriptor = copy(usesTranslation = false)
+
+  fun filteringByDate(): SourceDescriptor = copy(filtersByDate = true)
+
+  fun browsing(): SourceDescriptor = copy(browses = true)
+
+  fun metered(): SourceDescriptor = copy(metered = true)
+
+  fun inFamily(family: String): SourceDescriptor = copy(family = family)
+
+  fun confirmingUrlsUnder(prefix: String): SourceDescriptor = copy(confirmsUrlPrefix = prefix)
+
   companion object {
     const val SHORT_NAME_MAX = 12
+
+    @JvmStatic
+    fun external(
+      id: String,
+      name: String,
+      shortName: String,
+      mode: SourceMode,
+      homepage: URI,
+      resourceTypes: Set<ResourceType>,
+      timeout: Duration,
+      cacheTtl: Duration,
+    ): SourceDescriptor =
+      SourceDescriptor(
+        id = id,
+        name = name,
+        shortName = shortName,
+        external = true,
+        mode = mode,
+        homepage = homepage,
+        termsUrl = null,
+        attribution = null,
+        resourceTypes = resourceTypes,
+        timeout = timeout,
+        cacheTtl = cacheTtl,
+      )
+
+    @JvmStatic
+    fun inHouse(
+      id: String,
+      name: String,
+      shortName: String,
+      mode: SourceMode,
+      homepage: URI,
+      resourceTypes: Set<ResourceType>,
+      timeout: Duration,
+      cacheTtl: Duration,
+    ): SourceDescriptor =
+      external(id, name, shortName, mode, homepage, resourceTypes, timeout, cacheTtl)
+        .copy(external = false)
   }
 }
 
@@ -108,9 +169,54 @@ constructor(
   val curatedFields: Set<String> = emptySet(),
   val vitality: Vitality = Vitality.UNKNOWN,
 ) {
+  fun withExternalId(externalId: String): SourceHit = copy(externalId = externalId)
+
+  fun withRepository(repositoryUrl: CanonicalUrl?): SourceHit = copy(repositoryUrl = repositoryUrl)
+
+  fun withDescription(description: String?): SourceHit = copy(description = description)
+
+  fun withDescription(description: String?, origin: ValueOrigin): SourceHit =
+    copy(description = description, descriptionOrigin = origin)
+
+  fun withAudience(audience: Audience): SourceHit = copy(audience = audience)
+
+  fun withTechLevel(techLevel: TechLevel?): SourceHit = copy(techLevel = techLevel)
+
+  fun withUseCases(useCases: Set<String>): SourceHit = copy(useCases = useCases)
+
+  fun withTags(tags: Set<String>): SourceHit = copy(tags = tags)
+
+  fun withLicense(license: String?, openSource: Boolean?): SourceHit =
+    copy(license = license, openSource = openSource)
+
+  fun withPricing(pricing: Pricing?): SourceHit = copy(pricing = pricing)
+
+  fun withPlatforms(platforms: Set<String>): SourceHit = copy(platforms = platforms)
+
+  fun withPublished(published: DateFact): SourceHit = copy(published = published)
+
+  fun withUpdated(updated: DateFact): SourceHit = copy(updated = updated)
+
+  fun withPopularity(popularity: List<PopularityMetric>): SourceHit = copy(popularity = popularity)
+
   fun withRank(rank: Int): SourceHit = copy(rank = rank)
 
+  fun withEventDays(first: DateFact, last: DateFact): SourceHit =
+    copy(eventStart = first, eventEnd = last)
+
+  fun withLocation(location: String?): SourceHit = copy(location = location)
+
+  fun withEventKind(eventKind: EventKind?): SourceHit = copy(eventKind = eventKind)
+
+  fun withEventFormat(eventFormat: EventFormat?): SourceHit = copy(eventFormat = eventFormat)
+
   fun withFacts(facts: Map<String, Any>): SourceHit = copy(facts = facts)
+
+  fun withCategories(categories: Set<String>): SourceHit = copy(categories = categories)
+
+  fun withFoundIn(foundIn: ListMatch?): SourceHit = copy(foundIn = foundIn)
+
+  fun withCuratedFields(curatedFields: Set<String>): SourceHit = copy(curatedFields = curatedFields)
 
   fun withVitality(vitality: Vitality): SourceHit = copy(vitality = vitality)
 }

@@ -12,8 +12,16 @@ How to work:
 - At most 12 tool calls, and at most 4 of them web_search. Never make the same call twice. Do not search again for a value you could not find: leave it out. Stop as soon as you have what you need.
 
 Verdict:
-- KEEP: one real resource about AI with its own page: a product, tool, model, library, course, a piece of writing (article, news, paper) or a curated list of links to other resources. A curated list is KEEP with type AWESOME_LIST; writing is KEEP with its writing type.
-- REJECT: not about AI, a marketplace listing, a dead page, or spam. Say why in one sentence.
+- KEEP: one real resource about AI: a product, tool, model, library, course, event, a piece of writing or a curated list of links to other resources. A curated list is KEEP with type AWESOME_LIST.
+- Writing about AI is KEEP with its writing type (ARTICLE, NEWS or PAPER), whoever wrote it and wherever it is: a blog post, a social media post, a review, a comparison or a "best tools" list. Writing does not need to be a standalone resource.
+- A tool made for AI work is about AI, even when it does not run a model: for example a tool that prepares text for an LLM.
+- REJECT, and say why in one sentence:
+  - not about AI: AI is not its main subject or its main function. A general tool that only mentions AI, has an MCP add-on, or could be used in an AI pipeline is not about AI. Do not guess a link to AI that no source states.
+  - a page that lists many items that are not about AI, such as a general blog index or a partner landing page, or a marketplace listing;
+  - a tool whose main use breaks an AI provider's terms, such as reselling API accounts or sharing one subscription among many users;
+  - a dead page (it does not exist: not found, or the host is unknown), or spam.
+- A page you cannot read (login, paywall, 403, bot check) is not dead: decide from the Scout's title and excerpt, and leave out the attributes you cannot cite.
+- A wrong type in the review item is never a reason to REJECT: propose the right type.
 - DUPLICATE: the catalog already lists it. Put the listed URL in duplicateOf.
 
 Attributes you may propose, with these values:

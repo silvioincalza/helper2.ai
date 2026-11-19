@@ -61,11 +61,12 @@
     "place": "Switzerland · EU servers",
     "support": "Support helper2.ai",
     "cookieSettings": "Cookie settings",
-    "privacyChoices": "Privacy choices"
+    "privacyChoices": "Privacy choices",
+    "browse": "Browse by type"
   },
   "home": {
     "name": "helper2.ai",
-    "title": "The metasearch for the AI universe.",
+    "title": "The metasearch for the AI ecosystem.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. Ask the guide for a pick with proof.",
     "hint": "Enter searches. Shift+Enter asks the guide for picks with proof.",
     "hintTouch": "Tap the star for picks with proof.",
@@ -213,14 +214,26 @@
     },
     "keys": {
       "title": "Keyboard keys",
-      "move": { "key": "j k", "does": "next or previous result" },
-      "open": { "key": "Enter", "does": "open the result" },
-      "box": { "key": "/", "does": "go to the search box" },
+      "move": {
+        "key": "j k",
+        "does": "next or previous result"
+      },
+      "open": {
+        "key": "Enter",
+        "does": "open the result"
+      },
+      "box": {
+        "key": "/",
+        "does": "go to the search box"
+      },
       "ask": {
         "key": "g",
         "does": "go to the Ask the guide button (Enter then asks)"
       },
-      "help": { "key": "?", "does": "show or hide this list" },
+      "help": {
+        "key": "?",
+        "does": "show or hide this list"
+      },
       "note": "The keys work while the focus is in the results, for example after Tab or a click on a result's line."
     },
     "from": "From {{sources}}",
@@ -646,86 +659,17 @@
   },
   "glossary": {
     "whatIs": "What does this mean?",
-    "mcp_server": {
-      "term": "MCP server",
-      "def": "A small program that lets an AI assistant use an outside tool or data source through the Model Context Protocol, an open standard."
-    },
-    "model": {
-      "term": "Model",
-      "def": "The trained AI system that produces text, images or other output. Products and agents are built on top of models."
-    },
-    "agent": {
-      "term": "Agent",
-      "def": "Software that uses a model to carry out multi-step tasks on its own, often by calling tools."
-    },
-    "prompt": {
-      "term": "Prompt",
-      "def": "The instructions or text you give an AI model. A prompt template is a reusable one."
-    },
-    "skill": {
-      "term": "Skill",
-      "def": "A packaged set of instructions and files that teaches an AI assistant to do a specific task."
-    },
-    "library": {
-      "term": "Library",
-      "def": "Reusable code that developers add to their own software."
-    },
-    "dataset": {
-      "term": "Dataset",
-      "def": "A collection of data used to train or test AI models."
-    },
-    "product": {
-      "term": "Product",
-      "def": "A finished AI app or service that you use directly, without writing code."
-    },
-    "article": {
-      "term": "Article",
-      "def": "Writing about AI: a guide, tutorial or blog post."
-    },
-    "paper": {
-      "term": "Paper",
-      "def": "A research paper, usually from arXiv."
-    },
-    "news": {
-      "term": "News",
-      "def": "A news story about AI."
-    },
-    "event": {
-      "term": "Event",
-      "def": "A conference, meetup, webinar or hackathon."
-    },
-    "course": {
-      "term": "Course",
-      "def": "A course or a certification about AI. Its platform is listed under Platforms; tags say whether it gives a certification (a proctored exam) or a certificate of completion, and whether it is self-paced, instructor-led, a live event or an exam only."
-    },
-    "other": {
-      "term": "Other",
-      "def": "An AI resource that fits none of the other types."
-    },
-    "typeAssigned": "The type comes from the source's data, keyword rules or an AI model, so it can be wrong.",
     "license": {
-      "term": "License",
       "def": "The rules for using, changing and sharing the resource. Always read the license itself before relying on it."
     },
     "open_source": {
-      "term": "Open source",
       "def": "The source code is public under a license that lets others use and modify it. It does not always mean free of charge."
     },
     "tech_level": {
-      "term": "Technical level",
       "def": "How much technical skill is needed to get started."
     },
     "platform": {
-      "term": "Platform",
       "def": "Where it runs, for example web, desktop, mobile, command line, or a language runtime such as Python or Java."
-    },
-    "popularity": {
-      "term": "Popularity",
-      "def": "Counts such as stars or downloads reported by one source. They are never combined into a single score."
-    },
-    "provenance": {
-      "term": "Provenance",
-      "def": "Where a piece of information came from and when it was retrieved."
     }
   },
   "guide": {
@@ -811,7 +755,6 @@
     "requirementsAi": "Read by AI",
     "remove": "Remove “{{part}}” and ask again",
     "intent": {
-      "SUGGEST": "Suggestions",
       "NEWEST": "New resources",
       "ALTERNATIVES": "Alternatives",
       "COMPARE": "Comparison",
@@ -1137,7 +1080,6 @@
       "title": "Coming up"
     },
     "countdown": {
-      "onNow": "On now",
       "today": "Today",
       "tomorrow": "Tomorrow",
       "days_one": "In {{count}} day",
@@ -1195,6 +1137,10 @@
       "openSource": "open source",
       "techLevel": "technical level"
     },
+    "foundIn": "Found in these lists",
+    "foundInUnder": "under {{heading}}",
+    "foundInMore_one": "and {{count}} more list",
+    "foundInMore_other": "and {{count}} more lists",
     "whereFrom": "Where this information comes from",
     "readAt": "read {{date}}",
     "allSources": "All sources and their last check"
@@ -1238,5 +1184,22 @@
     "thanksTitle": "Thank you",
     "thanksBody": "Your support helps keep helper2.ai free and fast for everyone.",
     "backHome": "Back to search"
+  },
+  "hubs": {
+    "name": {
+      "PRODUCT": "AI apps",
+      "MODEL": "AI models",
+      "AGENT": "AI agents",
+      "MCP_SERVER": "MCP servers",
+      "LIBRARY": "AI libraries",
+      "SKILL": "Agent skills",
+      "DATASET": "AI datasets",
+      "PAPER": "AI papers",
+      "PROMPT": "AI prompts",
+      "COURSE": "AI courses"
+    },
+    "lede": "{{name}} in the helper2.ai catalog, newest change first. Open one to see its license, pricing and sources, as its sources state them.",
+    "error": "Could not load this list.",
+    "empty": "Nothing here yet."
   }
 }

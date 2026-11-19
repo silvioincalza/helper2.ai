@@ -63,9 +63,10 @@ are different: they only say how much we spend, and the right number changes wit
    records: one per module, or per clear concern, in that module's `config` package, under
    `helper2.<module>`. The open `platform` module uses concern prefixes such as `helper2.llm`.
    `helper2.retention` is shared, with one record per module for its own periods. No `@Value`, no
-   `Environment.getProperty`: an architecture test in each app (`ConfigurationAccessTest`) fails the build on
-   either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `helper2.categories`
-   before any bean exists, so it binds that list through Spring Boot's `Binder` and checks it in code
+   `Environment.getProperty`: an architecture test in each app (`ConfigurationAccessTest`, the rule written once in
+   `ConfigurationAccessRules`) fails the build on either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `helper2.categories`
+   before any bean exists, so it binds that list through Spring Boot's `Binder` (`CategoriesProperties.bind`, the
+   same record the bean binds) and checks it in code (`DiscoveryCategories`)
    ([0013](../scout/0013-discovery.md)).
    Records are `@Validated`, use `Duration`, `DataSize`, `URI` and lists, and mask secrets in `toString`
    (`Secrets.mask`). Spring binds and validates them before the context is ready, so a bad value stops
@@ -151,6 +152,9 @@ are different: they only say how much we spend, and the right number changes wit
     running configuration with it, so a change of a setting shows in the pull request as the line it changes in each
     app. The test loads the files without the machine's environment, so no secret can reach a recorded file. To
     record again: delete the file and run the test once; it writes the file and fails, the second run passes.
+    `EnvGuidesTest` fails when an `H2_` variable the yaml files read is not a key of `.env.example`, when it is
+    neither a key of `deploy/k8s/app.env.example` nor set by the chart's templates, and when a guide has a key no
+    app reads. The few names that are meant to differ are a list in the test, each with its reason.
 
 ### Code
 Variables, profiles and secrets:
@@ -167,10 +171,12 @@ Variables, profiles and secrets:
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Secrets.kt` — masks secrets in `toString`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java` — the
   one `Binder` exception.
-- `backend/apps/public/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java`,
-  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the no-`@Value` rule;
+- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ConfigurationAccessRules.java` — the
+  no-`@Value` rule; `backend/apps/public/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java`,
+  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the rule run on each app;
   `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/ConfigBinding.java` — binding tests on the real yaml.
-- `.env.example`, `deploy/k8s/app.env.example` — templates.
+- `.env.example`, `deploy/k8s/app.env.example` — templates;
+  `backend/libs/platform/src/test/java/ai/helper2/platform/config/EnvGuidesTest.java` — they name every variable.
 - `deploy/k8s/Makefile` (`credentials`, `backup-credentials`, `env-secret`, `deploy`), `deploy/k8s/check-app-env.sh`,
   `deploy/k8s/check-env-overrides.sh` — write, check and use the secrets.
 - `.github/actions/bao-login/action.yml`, `.github/workflows/deploy.yml` — OIDC login, `app_env` to file.

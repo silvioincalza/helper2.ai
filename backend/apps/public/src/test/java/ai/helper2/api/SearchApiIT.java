@@ -1,5 +1,6 @@
 package ai.helper2.api;
 
+import static ai.helper2.testing.Eventually.eventually;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;

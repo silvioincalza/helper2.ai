@@ -4,20 +4,17 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.shared.CollectorIds;
-import ai.helper2.sources.config.CategoryProperties;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.config.CollectorProperties;
+import ai.helper2.sources.config.DiscoveryCategories;
 import ai.helper2.sources.config.FeedProperties;
 import ai.helper2.sources.config.SourcesProperties;
 import ai.helper2.sources.support.SourceSettings;
-import java.util.List;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.BeanRegistrar;
 import org.springframework.beans.factory.BeanRegistry;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -58,6 +55,11 @@ class ScoutSourceDescriptors {
   @Bean
   DescribedSource gitHubAwesomeSource(SourcesProperties p) {
     return new Described(CollectorDescriptors.gitHubAwesome(p.get(CollectorIds.GITHUB_AWESOME)));
+  }
+
+  @Bean
+  DescribedSource curatedWebListsSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.curatedWebLists(p.get(CollectorIds.GITHUB_AWESOME)));
   }
 
   @Bean
@@ -128,10 +130,7 @@ class ScoutSourceDescriptors {
   static class Discovery implements BeanRegistrar {
     @Override
     public void register(BeanRegistry registry, Environment env) {
-      CategoryProperties categories =
-          Binder.get(env)
-              .bind("helper2", Bindable.of(CategoryProperties.class))
-              .orElseGet(() -> new CategoryProperties(List.of()));
+      DiscoveryCategories categories = DiscoveryCategories.bind(env);
       for (String id : categories.ids()) {
         registry.registerBean(
             "discovery-" + id,
@@ -153,10 +152,7 @@ class ScoutSourceDescriptors {
   static class NewsFeeds implements BeanRegistrar {
     @Override
     public void register(BeanRegistry registry, Environment env) {
-      FeedProperties feeds =
-          Binder.get(env)
-              .bind("helper2", Bindable.of(FeedProperties.class))
-              .orElseGet(() -> new FeedProperties(List.of()));
+      FeedProperties feeds = FeedProperties.bind(env);
       for (String id : feeds.ids()) {
         FeedProperties.Feed feed = feeds.get(id);
         registry.registerBean(

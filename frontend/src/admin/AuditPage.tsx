@@ -2,7 +2,7 @@ import './adminText';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { Pagination } from '@/admin/Pagination';
+import { Pagination } from './Pagination';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';

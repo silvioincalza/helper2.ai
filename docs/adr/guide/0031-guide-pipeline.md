@@ -40,7 +40,11 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
   `wantsReading`, a `webQuery`, a `window` and maybe a question back (below). Generic qualifiers ("open-source",
   "free", "MIT"…) are removed from the search query, which is cut to 6 words and 200 characters; the web query to 12
   words (`PlannedQueries`). A search query that holds a link (`LinkText.containsLink`) is no query. If the plan call
-  fails, or leaves no query, the user's own text is the query.
+  fails, or leaves no query, the user's own text is the query. A plan call hit by a short provider outage (a 5xx such
+  as 529 "System is overloaded", or a broken connection: `ModelErrors.isOutage`) is asked once more after 300 ms,
+  inside the question's time, and counted in `helper2.llm.outage_retry`: without a plan the whole answer loses its AI
+  part. A timeout, a rate limit or a rejected call is not asked again, and the reasoning model's calls are never
+  repeated after an outage.
 - **Retrieve**: `SearchResources.search` with `size` = `H2_GUIDE_MAX_CANDIDATES` (24). Unless the user asks for
   something to read (model flag or words such as "papers", "news", "articoli"), only tool types are searched.
 - **Choose** (reasoning model, `prompts/guide/choose.txt`, native JSON schema when `H2_NEBIUS_NATIVE_SCHEMA=true`):
@@ -113,9 +117,13 @@ pick, cell and sentence; the result row, the resource page, the comparison and t
 record holds the quote (a curated description, a cell without a quote): the page then names the resource's own host,
 as before. AI-written descriptions are never a record's text here, as in the gate, and a `curated` record (a title or text a
 curator wrote, `AddCuratedResource`) is never a page that holds a quote. The lookup only names a page: it
-never keeps or drops a pick, a cell or a sentence. When the stored records cannot be read (the database is down), the
+never keeps or drops a pick, a cell or a sentence. Every quote looked up increments
+`helper2.guide.quote_origin{part,found}` (`part`: `pick`, `cell` or `sentence`; `found`: `true` when a record holds the
+quote), each time the lookup runs: an exact cache hit is not looked up, so it is not counted again; an answer reused
+for a similar question is looked up, and counted, again. A part without a quote, and a quoted cell whose subject has
+no result, are not counted. When the stored records cannot be read (the database is down), the
 answer stands: `GuideConfiguration.quoteRecords` logs the failure and returns no records, so live hits still name
-their page and catalog quotes get null. A fallback result's quote (no AI pick) is the source's text cut
+their page and catalog quotes get null and count as `found="false"`. A fallback result's quote (no AI pick) is the source's text cut
 at 160 characters on a whole word (`wholeWordExcerpt`), so the whole-word lookup still finds it. A pick on a resource
 whose card shows an AI-written description still shows its quote and the link to its page, beside the labelled AI
 text.
@@ -624,14 +632,14 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 |---|---|---|
 | 1 | Model | Covered: fast model plans, reasoning model chooses, compares, explains and checks; NVIDIA only ([0008](../foundation/0008-llm-integration.md)); a provider outage is `LLM_UNAVAILABLE` with plain search results. |
 | 2 | Agent Framework | Deferred: no agent loop on purpose; a fixed pipeline per intent, driven by code. |
-| 3 | Orchestration | Covered: one request, steps in order, deadlines and the `llm-chat-guide` circuit; one retry only for an unusable answer, and one call with thinking off for a step cut while thinking. |
+| 3 | Orchestration | Covered: one request, steps in order, deadlines and one circuit per guide model (`llm-chat-guide-fast`, `llm-chat-guide-reasoning`); one retry for an unusable answer, one for a plan call hit by a short provider outage, and one call with thinking off for a step cut while thinking. |
 | 4 | Tool & API | Covered: no model tool calling; search is called by code with the planned query. |
 | 5 | Memory | Covered: no conversation state; one ask-back round trip carried by the request; answers cached per [0032](0032-guide-cost-guard-and-answer-cache.md). |
 | 6 | Knowledge & RAG | Covered: candidates from federated search; every pick, cell and sentence grounded by a verbatim quote. |
 | 7 | Data | Covered: nothing new stored by this pipeline; courses in V1 and `R__courses.sql`. |
 | 8 | Browser & Computer Use | Covered: none. |
 | 9 | Guardrails | Covered: the evidence gate, constraint checks from source metadata, link filter, the reason check, grounding of the planner's values, one SECURITY block. |
-| 10 | Observability | Covered: `helper2.guide.step`, `helper2.guide.picks`, `helper2.llm.call` with prompt label, `helper2.llm.thinking_fallback{step,reason}`, the `guide timings` line without user text. |
+| 10 | Observability | Covered: `helper2.guide.step`, `helper2.guide.picks`, `helper2.guide.quote_origin`, `helper2.llm.call` with prompt label, `helper2.llm.thinking_fallback{step,reason}`, `helper2.llm.outage_retry{step}`, the `guide timings` line without user text. |
 | 11 | Evaluation | Covered: guide question set, intents set and adversarial set ([0046](../operations/0046-evaluation-guide-and-search.md)); the labels are pinned by a test. The staging run with the prompts of this record is still to do (open point). |
 | 12 | Deployment | Covered: config only; the guide is off without a model key. |
 | 13 | Security & Identity | Covered: the model key from OpenBao; no new secret. |
@@ -643,6 +651,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names.
 - The gate proves a quote, not that it is true: a description written to be chosen passes the gate and the reason check. Strict rules reject some good picks. A resource outside the 24 candidates cannot be picked.
 - `quotedFrom` names a page as the source last wrote it: a page changed since the record was read may no longer show the quote.
+- `helper2.guide.quote_origin` counts quotes, not questions, and fallback results as well as AI picks. An answer given from search only after a quota is reached is never cached, so its quotes count on every request. A database outage raises `found="false"` without any change in the answers. No alert reads it yet.
 - The reason check is a model's judgment and can miss or reject a claim; it costs one more call per question (the 600-call daily cap covers at most 200 fresh questions).
 - The reason check reads up to 5 picks in one prompt, with their third-party texts. A 4th or 5th candidate whose text talks the check into finding the first ones off the need takes their place. The evidence gate and the SECURITY block still apply to it; no eval case plants such a text yet.
 - Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found.
@@ -661,8 +670,10 @@ intents: [flow](../../diagrams/flow-0031-guide-intents.svg) · [sequence](../../
 
 ## Backlog
 
-- Features: [F4.1](https://github.com/silvioincalza/helper2.ai/issues/64) Guide pipeline: intents, plan, retrieve, choose, evidence gate, reason check.
+- Features: [F4.1](https://github.com/silvioincalza/helper2.ai/issues/64) Guide pipeline: intents, plan, retrieve, choose, evidence gate, reason check;
+  [F10.4](https://github.com/silvioincalza/helper2.ai/issues/110) Evaluation of guide and search: the `helper2.guide.quote_origin` meter (S10.4.6).
 - Open issues that change this decision:
   - [#283](https://github.com/silvioincalza/helper2.ai/issues/283) S4.7.2 Tracked privately (security)
   - [#285](https://github.com/silvioincalza/helper2.ai/issues/285) S4.9.1 The guide latency targets confirmed
+  - [#854](https://github.com/silvioincalza/helper2.ai/issues/854) S4.1.12 AI picks when only the plan call fails
   - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser

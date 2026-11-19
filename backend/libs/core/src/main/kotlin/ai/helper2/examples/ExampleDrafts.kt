@@ -45,10 +45,6 @@ interface DraftQueue {
   fun read(details: String?): WaitingDraft?
 }
 
-fun interface UnitOfWork {
-  fun run(work: Runnable)
-}
-
 fun interface DraftSources {
   fun wellKnown(limit: Int, excluding: Set<UUID>): List<DraftSource>
 }

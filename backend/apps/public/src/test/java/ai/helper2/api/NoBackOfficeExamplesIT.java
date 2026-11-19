@@ -9,7 +9,6 @@ import ai.helper2.examples.ExampleSearch;
 import ai.helper2.examples.HomeExamples;
 import ai.helper2.examples.ResourceTitles;
 import ai.helper2.examples.ServedExamples;
-import ai.helper2.examples.UnitOfWork;
 import ai.helper2.examples.usecase.AcceptExampleDraft;
 import ai.helper2.examples.usecase.AddHomeExample;
 import ai.helper2.examples.usecase.ChangeHomeExample;
@@ -52,8 +51,7 @@ class NoBackOfficeExamplesIT extends ApiTestBase {
             DraftSources.class,
             ExampleDrafter.class,
             ExampleSearch.class,
-            ResourceTitles.class,
-            UnitOfWork.class);
+            ResourceTitles.class);
 
     assertThat(backOffice)
         .allSatisfy(

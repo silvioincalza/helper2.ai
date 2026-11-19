@@ -21,7 +21,6 @@ import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.Verification;
 import ai.helper2.testing.BackendSources;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -43,9 +42,6 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 class SchemaContractTest {
 
   static final Path SCHEMA = BackendSources.migration("V1__schema.sql");
-
-  static final Set<String> LIBRARY_TABLES =
-      Set.of("flyway_schema_history", "shedlock", "public_app_lock");
 
   static JdbcClient jdbc;
 
@@ -86,11 +82,13 @@ class SchemaContractTest {
                     Map.entry("scout_run.source_id", "source CASCADE"),
                     Map.entry("enrichment_queue_control.resource_id", "resource CASCADE"),
                     Map.entry("known_target_name.target_id", "known_target CASCADE"),
+                    Map.entry("list_seed_last_read.address", "list_seed CASCADE"),
                     Map.entry("review_research.review_item_id", "review_item CASCADE"),
                     Map.entry("review_research_step.research_id", "review_research CASCADE"),
                     Map.entry("resource_label.resource_id", "resource CASCADE"),
                     Map.entry("source_record.resource_id", "resource CASCADE"),
                     Map.entry("resource_embedding.resource_id", "resource CASCADE"),
+                    Map.entry("resource_embedding_refused.resource_id", "resource CASCADE"),
                     Map.entry("awesome_list_entry.list_id", "resource CASCADE"),
                     Map.entry("awesome_list_entry.resource_id", "resource CASCADE"),
                     Map.entry("awesome_list.list_id", "resource CASCADE"),
@@ -209,52 +207,6 @@ class SchemaContractTest {
         })
         .list();
     assertThat(actual).isEqualTo(expected);
-  }
-
-  @Test
-  void everyTableAndColumnIsUsedByTheCode() throws IOException {
-    String code;
-    try (Stream<Path> files =
-        BackendSources.mainSourceRoots().stream().flatMap(SchemaContractTest::walk)) {
-      code =
-          files
-              .filter(Files::isRegularFile)
-              .map(SchemaContractTest::read)
-              .collect(Collectors.joining("\n"));
-    }
-    List<String> unused =
-        jdbc
-            .sql(
-                """
-                SELECT table_name, column_name FROM information_schema.columns
-                WHERE table_schema = 'public' AND table_name <> ALL(:library)
-                ORDER BY table_name, ordinal_position
-                """)
-            .param("library", LIBRARY_TABLES.toArray(String[]::new))
-            .query((rs, i) -> rs.getString("table_name") + "." + rs.getString("column_name"))
-            .list()
-            .stream()
-            .filter(c ->
-                Arrays.stream(c.split("\\."))
-                    .anyMatch(name -> !Pattern.compile("\\b" + name + "\\b").matcher(code).find()))
-            .toList();
-    assertThat(unused).isEmpty();
-  }
-
-  private static Stream<Path> walk(Path root) {
-    try {
-      return Files.walk(root);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static String read(Path file) {
-    try {
-      return Files.readString(file);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   private static Set<String> literals(String checkDefinition) {

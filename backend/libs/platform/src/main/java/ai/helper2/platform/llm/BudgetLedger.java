@@ -1,6 +1,7 @@
 package ai.helper2.platform.llm;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -12,11 +13,13 @@ import org.jspecify.annotations.Nullable;
 public final class BudgetLedger implements CallCounter {
   public record Reading(String name, int dailyLimit, @Nullable Long usedToday) {}
 
-  private final @Nullable RedisCallCounter store;
+  public static final Duration KEEP = Duration.ofDays(2);
+
+  private final @Nullable CallCounter store;
   private final Clock clock;
   private final Map<String, IntSupplier> limits = new ConcurrentSkipListMap<>();
 
-  BudgetLedger(@Nullable RedisCallCounter store, Clock clock) {
+  public BudgetLedger(@Nullable CallCounter store, Clock clock) {
     this.store = store;
     this.clock = clock;
   }

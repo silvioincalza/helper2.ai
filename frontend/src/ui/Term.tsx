@@ -2,37 +2,9 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from './Icon';
 
-export type GlossaryKey =
-  | 'mcp_server'
-  | 'model'
-  | 'agent'
-  | 'prompt'
-  | 'skill'
-  | 'library'
-  | 'dataset'
-  | 'product'
-  | 'article'
-  | 'paper'
-  | 'news'
-  | 'event'
-  | 'course'
-  | 'other'
-  | 'license'
-  | 'open_source'
-  | 'tech_level'
-  | 'platform'
-  | 'popularity'
-  | 'provenance';
+export type GlossaryKey = 'license' | 'open_source' | 'tech_level' | 'platform';
 
-export function Term({
-  term,
-  children,
-  note,
-}: {
-  term: GlossaryKey;
-  children?: React.ReactNode;
-  note?: string;
-}) {
+export function Term({ term, children }: { term: GlossaryKey; children: React.ReactNode }) {
   const { t } = useTranslation();
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -45,7 +17,7 @@ export function Term({
         aria-controls={id}
         onClick={() => setOpen(!open)}
       >
-        <span>{children ?? t(`glossary.${term}.term`)}</span>
+        <span>{children}</span>
         <span className="term-hint">
           <Icon name="question" />
           <span className="sr-only">{t('glossary.whatIs')}</span>
@@ -54,7 +26,6 @@ export function Term({
       {open && (
         <span id={id} className="term-def" role="note">
           {t(`glossary.${term}.def`)}
-          {note ? ` ${note}` : ''}
         </span>
       )}
     </span>

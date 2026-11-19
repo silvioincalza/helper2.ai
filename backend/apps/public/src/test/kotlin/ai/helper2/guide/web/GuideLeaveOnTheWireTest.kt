@@ -30,6 +30,7 @@ import ai.helper2.search.hit
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.ResourceType
+import ai.helper2.testing.Eventually.eventually
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry
 import io.github.resilience4j.retry.RetryRegistry
@@ -278,12 +279,6 @@ class GuideLeaveOnTheWireTest {
       .counter("helper2.guide.quota.give_back", "reason", "abandoned", "outcome", "given_back")
       .count()
 
-  private fun eventually(check: () -> Boolean): Boolean {
-    val giveUp = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
-    while (!check() && System.nanoTime() < giveUp) Thread.sleep(20)
-    return check()
-  }
-
   private fun theQuestionGoesOn() =
     !model.stopped.await(longerThanALeave.toMillis(), TimeUnit.MILLISECONDS)
 
@@ -296,7 +291,7 @@ class GuideLeaveOnTheWireTest {
     asker.close()
 
     assertTrue(model.stopped.await(20, TimeUnit.SECONDS), "the worker is interrupted")
-    assertTrue(eventually { questions("abandoned") == 1.0 })
+    eventually { assertTrue(questions("abandoned") == 1.0) }
     assertEquals(1.0, givenBackAsAbandoned())
     assertEquals(3, quota.left(localhost))
     assertEquals(0, store.puts)
@@ -352,9 +347,9 @@ class GuideLeaveOnTheWireTest {
 
     assertTrue(theQuestionGoesOn())
     model.release.countDown()
-    assertTrue(eventually { store.puts == 1 })
+    eventually { assertTrue(store.puts == 1) }
     assertTrue(model.checked.get(), "the reason check ran")
-    assertTrue(eventually { questions("answered") == 1.0 })
+    eventually { assertTrue(questions("answered") == 1.0) }
     assertEquals(0.0, questions("abandoned"))
     assertEquals(0.0, givenBackAsAbandoned())
     assertEquals(

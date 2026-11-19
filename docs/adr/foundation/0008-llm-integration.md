@@ -20,9 +20,15 @@ Without a configured model the application must still work.
    `nvidia/Nemotron-3.5-Super-VL`), `H2_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; it
    plans the guide's search, translates queries and classifies awesome lists). Both give JSON schema output, with thinking
    off through `chat_template_kwargs`. Both are public endpoints: Nebius shows their region as global and
-   can move them at any time (Legal quick guide, read 2026-11-18). Zero Data Retention is off, so Nebius keeps
-   inputs and outputs in Finland for up to one year. `LlmSettings` holds the fallbacks:
-   an empty fast model means the reasoning model does these calls too. NVIDIA-only is checked at startup
+   can move them at any time (Legal quick guide, read 2026-11-18). Zero Data Retention is on for the
+   organisation: Nebius keeps no input or output once it has answered. `LlmSettings` holds the fallbacks:
+   an empty fast model means the reasoning model does these calls too. Each feature names a tier, not a model id
+   (`ModelTier`: FAST or REASONING; `LlmSettings.model(tier)`). Bulk and back-office work runs on FAST by default:
+   Scout enrichment and its gap rounds (`H2_SCOUT_ENRICHMENT_MODEL`), the event page reader
+   (`H2_SCOUT_EVENT_READER_MODEL`) and review research (`H2_RESEARCH_MODEL`). Lightning costs about a fifth of
+   Super VL per token ($0.06 / $0.24 against $0.30 / $0.90 per MTok), and these features make most of the calls. Each
+   variable moves one feature back to REASONING. REASONING stays on the steps that decide an answer: the guide's
+   choose and verify steps. NVIDIA-only is checked at startup
    (`NvidiaOnly`): the application does not start when a chat model id sent through the OpenAI-compatible client
    (`spring.ai.openai.chat.model`, `helper2.llm.fast-model`, `helper2.llm.reasoning-model`) or the embedding model id
    ([0024](../search/0024-vector-search.md)) does not start with `nvidia/`; the error names the property.
@@ -49,8 +55,13 @@ Without a configured model the application must still work.
    budget. Token Factory ignores `reasoning_budget`, `thinking_budget` and `reasoning_effort` for Lightning.
 6. **Daily budget per use, per attempt.** `DailyBudget.tryAcquire()` runs before each provider attempt, retries
    included. Every model adapter makes its call through one `BudgetedChat` (circuit, then budget, then the
-   observed call and its token counts); the adapter keeps only the mapping of errors to its own port's failures. The only retry is ours: the guide tries once more when it cannot use an answer, for example malformed
-   JavaScript Object Notation (JSON) (`SpringAiGuideModel`). An answer the provider cut at the output limit (finish
+   observed call and its token counts); the adapter keeps only the mapping of errors to its own port's failures.
+   An adapter that sends one system prompt and one user text and reads the answer as text uses `TextCall` over
+   its `BudgetedChat`: the repository classifier, the event reader and the Scout's enrichment. `TextCall` builds
+   the request and names the adapter's own error for a spent budget and for a refused call. The only retry is
+   ours: the guide tries once more when it cannot use an answer, for example malformed
+   JavaScript Object Notation (JSON) (`SpringAiGuideModel`), and its plan call tries once more after a short provider
+   outage (a 5xx or a broken connection, `ModelErrors.isOutage`, [0031](../guide/0031-guide-pipeline.md)). An answer the provider cut at the output limit (finish
    reason `length`, seen by `CutAnswerWatch`, an advisor on each call; a guide call read as a stream gives it the
    finish reason of its chunks) is not tried again: the same prompt with the
    same token limit would be cut again. The one exception is a guide call with a thinking budget: it is tried once
@@ -68,7 +79,9 @@ Without a configured model the application must still work.
    connection, timeout, 429, 5xx, a rejected call); a malformed answer, a spent budget or a call cut short because its
    question was cancelled (the thread interrupted at the question's deadline, `ModelErrors.isInterrupt`) counts as
    neither success nor failure (`ModelErrors.NotFromProvider`). A cancelled guide question stops: the interrupt is
-   kept, and the next step (`GuideSteps.step`) ends the question instead of running more searches. The AI guide's calls run under their own circuit, `llm-chat-guide`, where a
+   kept, and the next step (`GuideSteps.step`) ends the question instead of running more searches. The AI guide's calls run under their own circuits, one per model (`llm-chat-guide-fast` for the plan,
+   `llm-chat-guide-reasoning` for the other steps), so an outage of the fast model never refuses the reasoning model's
+   calls and the other way round. On both a
    call slower than `H2_RESILIENCE_LLM_SLOW_CALL` (35 s, just under the 40 s timeout; for a streamed call the time of the whole stream) also counts, so a provider that answers but too late opens it,
    and only the guide degrades. When at least half of the last 10 counted calls failed (or, for the guide, were slow;
    5 calls at least), the circuit opens for 30 s
@@ -87,7 +100,10 @@ Without a configured model the application must still work.
    the classifier step `classify`).
    The prompt tag is the prompt's version: the first 8 hex characters of the SHA-256 of the rendered system prompt
    (`ModelCallMetrics.promptVersion`), so an edited prompt or limit shows as a new series with no number to keep by
-   hand. Gauges show the calls left under each daily cap ([0009](0009-observability.md)).
+   hand. Every adapter takes its version from this one function, and no adapter names a version by hand. A version
+   stored with data is the same value as the tag: the enrichment run (`enrichment_run.prompt_version`,
+   [0014](../scout/0014-evidence-gated-enrichment.md) §4) and the evidence of an event's days
+   ([0012](../scout/0012-scout-collectors-and-events.md)). Gauges show the calls left under each daily cap ([0009](0009-observability.md)).
 10. **Blocking by default, a stream for the guide.** Every adapter waits for the whole answer
    (`BudgetedChat.text`, `.entity`). The guide can read its calls as a stream instead (`H2_GUIDE_MODEL_STREAM=ON`,
    `BudgetedChat.streamed` and `ChatStream`, [0035](../guide/0035-guide-model-stream.md)): same request, same
@@ -99,9 +115,12 @@ Without a configured model the application must still work.
    README config examples only. An open `llm-chat` circuit gives every feature the same fallback at once.
 
 ### Code
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — `LlmSettings`, `LlmConfiguration`, `NvidiaOnly`, `LlmPolicies`,
-  `CallOptions`, `BudgetedChat`, `ChatStream`, `StreamThreads`, `CutAnswerWatch`, `DailyBudget`, `CallCounter`, `RedisCallCounter`, `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`,
-  `UntrustedText`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/` — what the modules use (the named interface `llm`,
+  [0002](0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §4): `LlmSettings`, `LlmPolicies`,
+  `CallOptions`, `BudgetedChat`, `TextCall`, `ChatStream`, `CutAnswerWatch`, `DailyBudget`, `CallCounter`, `BudgetLedger`,
+  `ModelCallMetrics`, `ModelErrors`, `ModelAnswers`, `UntrustedText`.
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/` — what only the layer uses:
+  `LlmConfiguration`, `NvidiaOnly`, `StreamThreads`, `RedisCallCounter`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/prompt/PromptTemplate.java` — strict prompt rendering.
 - `backend/apps/public/src/main/resources/prompts/` — `guide/plan.txt`, `guide/choose.txt`, `guide/compare.txt`, `guide/explain.txt`,
   `guide/verify-reasons.txt`, `setup/tool-guide.txt`, `setup/verify-steps.txt`; `backend/apps/backoffice/src/main/resources/prompts/` —
@@ -117,6 +136,8 @@ Without a configured model the application must still work.
 - Several providers at once with failover — more setup and secrets for a demo; the degraded mode already covers an outage.
 - Prompts in Java strings — wording changes would need code review of escaped text; a strict template catches drift.
 - One global budget for all features — a busy Scout or a flood of foreign-language searches could spend the guide's calls.
+- One model for everything — simple, but bulk work (enrichment, research, event pages) pays the reasoning model's
+  price for extraction that a small model can do. A tier per feature keeps one switch per feature.
 - Spring AI's `PromptTemplate` — its `{name}` syntax collides with the JSON examples in the prompts.
 
 ## Consequences
@@ -129,10 +150,14 @@ Without a configured model the application must still work.
   trial call succeeds.
 - A model id of another vendor stops the deploy at startup instead of reaching that vendor.
 - Thinking off makes calls faster and repeatable.
+- Bulk work on the fast model can be less accurate. The research eval (`docs/eval/README.md`, FAST against REASONING)
+  and the enrichment checks decide if a feature moves back; moving back is one variable, no code change.
 - One provider keeps setup and image small. A second provider needs only a dependency and a profile; the ports stay the same.
 
 ## Diagrams
 [flow](../../diagrams/flow-0008-llm-integration.svg) · [sequence](../../diagrams/sequence-0008-llm-integration.svg)
+
+Model tiers change no flow: a call goes the same way, only the model id differs. The diagrams stay as they are.
 
 ## Backlog
 - Decides: [F1.7](https://github.com/silvioincalza/helper2.ai/issues/26).

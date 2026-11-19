@@ -1,14 +1,13 @@
 package ai.helper2.sources.events;
 
 import ai.helper2.platform.llm.BudgetedChat;
-import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
+import ai.helper2.platform.llm.TextCall;
 import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.platform.prompt.PromptTemplate;
-import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.shared.EventFormat;
@@ -19,7 +18,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.springframework.ai.chat.client.ChatClient;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -38,12 +38,7 @@ public final class SpringAiEventReader implements EventReader {
         .render(Map.of("kinds", names(EventKind.values()), "formats", names(EventFormat.values())));
   }
 
-  private final ChatClient chat;
-  private final String system;
-  private final String version;
-  private final String model;
-  private final int maxTokens;
-  private final BudgetedChat calls;
+  private final TextCall call;
 
   public SpringAiEventReader(
       ChatModel chatModel,
@@ -52,44 +47,31 @@ public final class SpringAiEventReader implements EventReader {
       DailyBudget budget,
       ModelCallMetrics metrics,
       Resilience resilience) {
-    this.chat = ChatClient.builder(chatModel).build();
-    this.system = systemPrompt();
-    this.version = ModelCallMetrics.promptVersion(system);
-    this.model = model;
-    this.maxTokens = maxTokens;
-    this.calls = new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience);
+    this.call =
+        new TextCall(
+            chatModel,
+            new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience),
+            STEP,
+            model,
+            maxTokens,
+            systemPrompt());
   }
 
   @Override
   public String model() {
-    return model;
+    return call.model();
   }
 
   @Override
   public String promptVersion() {
-    return version;
+    return call.promptVersion();
   }
 
   @Override
   public Optional<EventReading> read(String title, String pageText) {
-    String user = userText(title, pageText);
-    String answer;
-    try {
-      answer =
-          calls.text(
-              new BudgetedChat.Call(STEP, model, version),
-              () -> new LlmUnavailable("daily event reader budget used up"),
-              () ->
-                  chat.prompt()
-                      .options(CallOptions.of(model, maxTokens))
-                      .system(system)
-                      .user(user)
-                      .call()
-                      .chatResponse());
-    } catch (CallRefused e) {
-      throw new LlmUnavailable("model call refused: " + e.policy() + " circuit is " + e.reason());
-    }
-    return parse(answer);
+    return parse(
+        call.answer(
+            userText(title, pageText), "daily event reader budget used up", LlmUnavailable::new));
   }
 
   static String userText(String title, String pageText) {
@@ -150,14 +132,7 @@ public final class SpringAiEventReader implements EventReader {
   }
 
   private static <E extends Enum<E>> E value(Class<E> type, String name) {
-    if (name == null) {
-      return null;
-    }
-    try {
-      return Enum.valueOf(type, name.strip());
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    return EnumUtils.getEnum(type, StringUtils.strip(name));
   }
 
   private static String names(Enum<?>[] values) {

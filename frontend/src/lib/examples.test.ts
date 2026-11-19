@@ -1,13 +1,8 @@
+import type { AudiencePath } from '@/api/types';
 import en from '@/i18n/locales/en.json';
-import {
-  draftingModel,
-  EXAMPLE_POOL,
-  fillsBothBuckets,
-  pickExamples,
-  type Example,
-} from './examples';
+import { draftingModel, EXAMPLE_POOL, fillsBothBuckets, pickExamples } from './examples';
 
-const pool: Example[] = [
+const pool: { id: string; path: AudiencePath }[] = [
   { id: 'a', path: 'USE_AI' },
   { id: 'b', path: 'USE_AI' },
   { id: 'c', path: 'USE_AI' },

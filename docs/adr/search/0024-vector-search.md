@@ -35,9 +35,10 @@ never break keyword search.
    When the API rejects a batch (an error answer: 5xx or another status that is not 429), the tick sends up to 5 of
    its texts one per call (`helper2.catalog.indexer.singles-after-failure`); a text that fails on its own waits for
    a later tick, and a rate limit, a refused call or a timeout ends the round. A text the API refuses on its own
-   (HTTP 400, 413 or 422, such as 422 "input rejected by content safety screening") is remembered in memory by
-   resource id and text md5 and left out of later batches until its text changes or the process restarts (each tick first drops the
-   remembered texts that were deleted, changed or embedded by another replica); the
+   (HTTP 400, 413 or 422, such as 422 "input rejected by content safety screening") is stored in
+   `resource_embedding_refused` (resource id, model, text md5, time) and left out of later batches until its text
+   changes, across restarts and replicas. Each tick first deletes the rows whose text changed or that another replica
+   has embedded since; a row goes with its resource. The log names a refused text once, when its row is new; the
    circuit `llm-embed-index` does not count such a refusal (`ModelErrors.RejectedInput`), while 429, 5xx, a refused
    key (401, 403) and a timeout still count. Otherwise the refused text would head every batch at its popularity rank
    and no row behind it would be embedded. NVIDIA failed most calls of two or
@@ -55,7 +56,8 @@ never break keyword search.
    30 s and 5 singles; the lock is not renewed). So the cluster embeds one batch per
    period, as with one replica; a replica whose tick finds the lock taken skips that period.
    Meters: `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`,
-   `helper2.embedding.rejected` (texts left out after a refusal; the backlog does not count them).
+   `helper2.embedding.rejected` (the rows of `resource_embedding_refused` for the model: texts left out after a
+   refusal; the backlog does not count them).
    The backlog counts what the indexer still has to do: rows with no vector for the model and rows whose text changed
    since their vector was made. The query that picks the batch counts it too (`count(*) OVER ()` before the limit),
    so the two always agree and there is no second scan; after a stored batch the gauge drops by the batch size.
@@ -86,6 +88,7 @@ never break keyword search.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java` — lock shared by every replica.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEmbeddingStore.java` — `pendingEmbeddings` (batch and backlog), `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `resource_embedding`, HNSW index.
+- `backend/libs/schema/src/main/resources/db/migration/V2026.11.8.2__resource_embedding_refused.sql` — refused texts.
 
 ## Alternatives considered
 

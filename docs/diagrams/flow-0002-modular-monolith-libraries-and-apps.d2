@@ -6,7 +6,8 @@
 #   backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts, helper2.spring-app.gradle.kts,
 #   backend/libs/*/build.gradle.kts (kernel, platform, schema, core), backend/apps/{public,backoffice}/build.gradle.kts,
 #   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java,
-#   backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java,
+#   backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java,
+#   backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java,
 #   backend/libs/core/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java,
 #   backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java,
 #   backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
@@ -58,9 +59,10 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   class: group
   direction: down
   dep: "A → B" {class: end}
-  domain: "A in a domain package?\n(shared, search, scout, guide,\nsetup, examples, site,\nsite.pages, site.monetisation,\nthe Kotlin search/scout/guide\n.usecase, identity, admin\nand their .usecase)" {class: decision}
+  domain: "A in a domain package?\n(every ..usecase.. package,\nand shared, search, scout, guide,\nsetup, examples, site,\nsite.pages, site.monetisation,\nidentity, catalog, admin,\nresearch)" {class: decision}
   fw: "B in org.springframework..,\ntools.jackson.. or java.sql..?" {class: decision}
   adapter: "B in a web, cache,\nconfig or internal package?" {class: decision}
+  http: "B is ApiProblem, a subtype,\nProblemType or Problems?" {class: decision}
   same: "B in A's own module?" {class: decision}
   src: "B in sources?\n(no API: its base\npackage is empty)" {class: decision}
   gen: "A in the shared web part (api, search.web)\nand B an app's generated type (api.generated)?" {class: decision}
@@ -70,6 +72,7 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   ok: "Allowed" {class: end}
   e_fw: "Build fails:\ndomainIsFrameworkFree" {class: fail}
   e_ad: "Build fails:\ndomainDoesNotDependOnItsAdapters" {class: fail}
+  e_http: "Build fails:\nuseCasesDoNotSpeakHttp\n(ADR 0051)" {class: fail}
   e_mod: "Build fails:\nApplicationModules.verify()" {class: fail}
   e_src: "Build fails:\nsourcesIsReachedOnlyThroughPorts" {class: fail}
   e_gen: "Build fails:\nWebContractArchitectureTest" {class: fail}
@@ -80,7 +83,9 @@ rules: "Class A depends on class B: ModularityTest (each app),\na context's own 
   fw -> e_fw: yes
   fw -> adapter: no
   adapter -> e_ad: yes
-  adapter -> same: no
+  adapter -> http: no
+  http -> e_http: yes
+  http -> same: no
   same -> ok: yes {class: hot}
   same -> src: no
   src -> e_src: yes
@@ -130,10 +135,12 @@ source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so 
   lib: "A in a library and B in a context\nnot below A's? (kernel ← platform ←\nidentity, search ← catalog ← examples,\nsearch ← sources, the shared web part;\ninside libs/core only this test holds it)" {class: decision}
   src: "B in sources\nand A outside it?" {class: decision}
   api: "B in another closed module, outside\nits base package and its\nnamed interfaces?" {class: decision}
+  app: "A in the main code of an app and B\nin an internal package of a library,\nor A in that package itself?" {class: decision}
   ok: "Allowed" {class: end}
   e_lib: "Build fails:\naLibraryContextUsesOnly\nTheContextsBelowIt" {class: fail}
   e_src: "Build fails:\nnothingOutsideSourcesNamesIt" {class: fail}
   e_api: "Build fails:\naModuleUsesOnlyTheApi\nOfAnotherModule" {class: fail}
+  e_app: "Build fails:\nnoAppMainCodeNamesAnInternal\nPackageOfALibrary,\nnoAppMainCodeIsInAnInternal\nPackageOfALibrary" {class: fail}
 
   name -> lib
   lib -> e_lib: yes
@@ -141,7 +148,9 @@ source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so 
   src -> e_src: yes
   src -> api: no
   api -> e_api: yes
-  api -> ok: no {class: hot}
+  api -> app: no
+  app -> e_app: yes
+  app -> ok: no {class: hot}
 }
 
 rules.ok -> source.name: "the same dependency,\nread from the source" {class: config}

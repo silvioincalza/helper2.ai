@@ -1,5 +1,6 @@
 package ai.helper2.sources.config;
 
+import ai.helper2.platform.llm.ModelTier;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
@@ -10,7 +11,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.unit.DataSize;
@@ -71,7 +76,8 @@ public final class CollectorProperties {
       @NotNull List<String> queries,
       @Positive int maxPages,
       @PositiveOrZero int readerDailyCalls,
-      @Positive int readMaxTokens)
+      @Positive int readMaxTokens,
+      @NotNull ModelTier readModel)
       implements Scheduled {
 
     public LiveWebEvents {
@@ -114,7 +120,8 @@ public final class CollectorProperties {
       @NotNull Duration maxRunTime,
       @NotNull DataSize maxReadmeBytesPerRun,
       @NotNull @Valid Nested nested,
-      @NotNull @Valid Links links)
+      @NotNull @Valid Links links,
+      @NotNull @Valid WebPages webPages)
       implements Scheduled {
 
     public GitHubAwesome {
@@ -132,10 +139,59 @@ public final class CollectorProperties {
     public record Links(
         @PositiveOrZero int perDay,
         @PositiveOrZero int maxPerPass,
+        @PositiveOrZero int maxModelsPerPass,
+        @PositiveOrZero int modelIndexMinLikes,
+        @PositiveOrZero int maxPapersPerPass,
+        @PositiveOrZero int maxPackagesPerPass,
         @NotNull List<String> excludeDomains) {
 
       public Links {
         excludeDomains = clean(excludeDomains);
+      }
+    }
+
+    public record WebPages(
+        @NotNull Duration readEvery,
+        @NotNull Duration retryAfter,
+        @NotNull List<String> neverRead) {
+
+      static final Duration LONGEST_READ_EVERY = Duration.ofDays(21);
+
+      public WebPages {
+        neverRead = clean(neverRead);
+      }
+
+      public Map<String, String> neverReadReasons() {
+        Map<String, String> reasons = new LinkedHashMap<>();
+        for (String entry : neverRead) {
+          reasons.put(
+              StringUtils.substringBefore(entry, "=").strip().toLowerCase(Locale.ROOT),
+              StringUtils.substringAfter(entry, "=").strip());
+        }
+        return reasons;
+      }
+
+      @AssertTrue(message = "must be between one day and 21 days")
+      boolean isReadEveryWithinTheListIndexRetention() {
+        return readEvery == null
+            || (readEvery.compareTo(Duration.ofDays(1)) >= 0
+                && readEvery.compareTo(LONGEST_READ_EVERY) <= 0);
+      }
+
+      @AssertTrue(message = "must be positive and not longer than read-every")
+      boolean isRetryAfterWithinReadEvery() {
+        return retryAfter == null
+            || readEvery == null
+            || (!retryAfter.isNegative()
+                && !retryAfter.isZero()
+                && retryAfter.compareTo(readEvery) <= 0);
+      }
+
+      @AssertTrue(message = "each entry is host=reason")
+      boolean isNeverReadHostsWithReasons() {
+        return neverRead == null
+            || neverReadReasons().entrySet().stream()
+                .allMatch(e -> e.getKey().contains(".") && !e.getValue().isEmpty());
       }
     }
   }

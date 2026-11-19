@@ -4,8 +4,8 @@ import ai.helper2.platform.config.HttpClientProperties;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.search.ShadowLibraries;
-import ai.helper2.sources.config.CategoryProperties;
 import ai.helper2.sources.config.CollectorProperties;
+import ai.helper2.sources.config.DiscoveryCategories;
 import ai.helper2.sources.config.SourcesProperties;
 import ai.helper2.sources.liveweb.scout.DiscoveryCollector;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
@@ -16,8 +16,6 @@ import java.time.Clock;
 import java.util.List;
 import org.springframework.beans.factory.BeanRegistrar;
 import org.springframework.beans.factory.BeanRegistry;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 
 class DiscoveryCollectorRegistrar implements BeanRegistrar {
@@ -31,10 +29,7 @@ class DiscoveryCollectorRegistrar implements BeanRegistrar {
 
   @Override
   public void register(BeanRegistry registry, Environment env) {
-    CategoryProperties categories =
-        Binder.get(env)
-            .bind("helper2", Bindable.of(CategoryProperties.class))
-            .orElseGet(() -> new CategoryProperties(List.of()));
+    DiscoveryCategories categories = DiscoveryCategories.bind(env);
     registry.registerBean(
         "discoveryCategories",
         Categories.class,

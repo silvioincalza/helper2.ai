@@ -22,7 +22,9 @@ import ai.helper2.research.ResearchTool;
 import ai.helper2.research.config.ResearchProperties;
 import ai.helper2.research.usecase.CancelResearch;
 import ai.helper2.research.usecase.FailStaleResearch;
+import ai.helper2.research.usecase.FindLatestResearch;
 import ai.helper2.research.usecase.FindResearchedItems;
+import ai.helper2.research.usecase.FollowResearchRun;
 import ai.helper2.research.usecase.PurgeResearch;
 import ai.helper2.research.usecase.RunResearch;
 import ai.helper2.research.usecase.StartResearch;
@@ -75,14 +77,13 @@ class ResearchConfiguration {
     IntSupplier limit =
         runtime.declare(RuntimeSetting.REVIEW_RESEARCH_DAILY_MODEL_CALLS, p.dailyModelCalls());
     ChatModel model = chatModel.getIfAvailable();
-    String name =
-        p.model() == ResearchProperties.Model.FAST ? llm.fastModel() : llm.reasoningModel();
-    if (!p.enabled() || model == null || !llm.usable(model) || name == null || name.isBlank()) {
+    if (!p.enabled() || !llm.usable(model) || !llm.has(p.model())) {
       return new UnavailableResearchModel();
     }
     return new SpringAiResearchModel(
         model,
-        name,
+        llm.model(p.model()),
+        prompt(),
         p.maxTokens(),
         new DailyBudget(limit, clock, "review-research", counter),
         metrics,
@@ -118,6 +119,16 @@ class ResearchConfiguration {
   @Bean
   FindResearchedItems findResearchedItems(ResearchRuns runs) {
     return new FindResearchedItems(runs);
+  }
+
+  @Bean
+  FindLatestResearch findLatestResearch(ResearchRuns runs) {
+    return new FindLatestResearch(runs);
+  }
+
+  @Bean
+  FollowResearchRun followResearchRun(ResearchRuns runs) {
+    return new FollowResearchRun(runs);
   }
 
   @Bean

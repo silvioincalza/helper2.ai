@@ -15,7 +15,6 @@ import ai.helper2.shared.UtcTimes;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,7 +38,7 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
 
   @Override
   public ResponseEntity<ShadowLibraryEntryDto> addShadowLibrary(ShadowLibraryAddDto body) {
-    return switch (libraries.add(adminId(), body.getName(), body.getReason())) {
+    return switch (libraries.add(Admins.id(), body.getName(), body.getReason())) {
       case ManageShadowLibraries.Added.Done d ->
           ResponseEntity.status(HttpStatus.CREATED).body(dto(d.getLibrary()));
       case ManageShadowLibraries.Added.Invalid i -> throw invalid(i.getProblem());
@@ -53,7 +52,6 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
                   + ManageShadowLibraries.MAX_NAMES
                   + " names. Remove one first.");
       case ManageShadowLibraries.Added.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 
@@ -61,12 +59,11 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
   public ResponseEntity<Void> removeShadowLibrary(
       String name, @Nullable ShadowLibraryRemoveDto body) {
     String reason = body == null ? null : body.getReason();
-    return switch (libraries.remove(adminId(), name, reason)) {
+    return switch (libraries.remove(Admins.id(), name, reason)) {
       case ManageShadowLibraries.Removed.Done d -> ResponseEntity.noContent().build();
       case ManageShadowLibraries.Removed.NotFound n ->
           throw new NotFoundException(name + " is not in the list.");
       case ManageShadowLibraries.Removed.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 
@@ -91,10 +88,6 @@ class ShadowLibrariesController implements ShadowLibrariesApi {
     return new ApiProblem(
         ProblemType.INVALID_REQUEST,
         "reason: one plain line of at most " + ManageShadowLibraries.MAX_REASON + " characters.");
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   private static ShadowLibraryEntryDto dto(ShadowLibrary l) {

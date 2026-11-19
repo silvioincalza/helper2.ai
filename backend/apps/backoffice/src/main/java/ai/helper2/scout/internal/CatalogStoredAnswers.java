@@ -1,5 +1,6 @@
 package ai.helper2.scout.internal;
 
+import ai.helper2.catalog.JobMarkers;
 import ai.helper2.catalog.enrichment.StoredEnrichments;
 import ai.helper2.scout.usecase.StoredAnswer;
 import ai.helper2.scout.usecase.StoredAnswers;
@@ -8,6 +9,7 @@ import ai.helper2.scout.usecase.StoredFieldAnswer;
 import ai.helper2.shared.ResourceType;
 import java.util.List;
 import java.util.UUID;
+import org.apache.commons.lang3.EnumUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +23,11 @@ class CatalogStoredAnswers implements StoredAnswers {
           + " values the quote does not state";
 
   private final StoredEnrichments stored;
+  private final JobMarkers markers;
 
-  CatalogStoredAnswers(StoredEnrichments stored) {
+  CatalogStoredAnswers(StoredEnrichments stored, JobMarkers markers) {
     this.stored = stored;
+    this.markers = markers;
   }
 
   @Override
@@ -50,11 +54,7 @@ class CatalogStoredAnswers implements StoredAnswers {
   }
 
   private static ResourceType typeOf(String type) {
-    try {
-      return ResourceType.valueOf(type);
-    } catch (IllegalArgumentException e) {
-      return ResourceType.OTHER;
-    }
+    return EnumUtils.getEnum(ResourceType.class, type, ResourceType.OTHER);
   }
 
   @Override
@@ -79,11 +79,11 @@ class CatalogStoredAnswers implements StoredAnswers {
 
   @Override
   public boolean done(String name) {
-    return stored.done(name);
+    return markers.marker(name).isPresent();
   }
 
   @Override
   public void markDone(String name) {
-    stored.markDone(name);
+    markers.mark(name, "done");
   }
 }

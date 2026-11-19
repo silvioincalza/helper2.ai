@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.ProblemType;
 import com.jayway.jsonpath.JsonPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -314,5 +315,118 @@ class RelationshipTargetGroupsApiIT extends ApiTestBase {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"key\":\"" + key + "\",\"decision\":\"REJECT\"}"))
         .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void aRefusedGroupDecisionIsAProblemAndDecidesNothing() throws Exception {
+    decide("{\"key\":\"no-such-target-" + UUID.randomUUID() + "\",\"decision\":\"REJECT\"}")
+        .andExpect(
+            problem(ProblemType.NOT_FOUND, "No open relationship candidate has this target."));
+    decide(
+            "{\"key\":\""
+                + key
+                + "\",\"decision\":\"LINK\",\"resourceId\":\""
+                + UUID.randomUUID()
+                + "\"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+    decide("{\"key\":\"" + key + "\",\"decision\":\"LINK\"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+
+    assertThat(states())
+        .allSatisfy(
+            s -> assertThat(s).containsEntry("status", "OPEN").containsEntry("target", null));
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
+  void aPartlyRefusedLinkKeepsTheLinkedItemsAndWritesNothingForTheSkippedOne() throws Exception {
+    UUID itself = resources.getFirst();
+    String body =
+        decide("{\"key\":\"" + key + "\",\"decision\":\"LINK\",\"resourceId\":\"" + itself + "\"}")
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    String batch = JsonPath.read(body, "$.batch");
+
+    assertThat(JsonPath.<Integer>read(body, "$.decided")).isEqualTo(2);
+    assertThat(JsonPath.<Integer>read(body, "$.skipped")).isEqualTo(1);
+    assertThat(JsonPath.<Integer>read(body, "$.left")).isEqualTo(1);
+    assertThat(states().getFirst())
+        .containsEntry("status", "OPEN")
+        .containsEntry("target", null)
+        .containsEntry("verification", "UNVERIFIED")
+        .containsEntry("resolved_by", null);
+    assertThat(states().subList(1, 3))
+        .allSatisfy(s ->
+            assertThat(s)
+                .containsEntry("status", "ACCEPTED")
+                .containsEntry("target", itself)
+                .containsEntry("verification", "VERIFIED")
+                .containsEntry("resolved_by", adminId));
+    assertThat(audit())
+        .containsExactlyInAnyOrder(
+            "CHANGE_RELATIONSHIP_TARGET LINKED " + itself,
+            "RESOLVE_REVIEW_ITEM ACCEPTED bulk:" + batch,
+            "CHANGE_RELATIONSHIP_TARGET LINKED " + itself,
+            "RESOLVE_REVIEW_ITEM ACCEPTED bulk:" + batch);
+  }
+
+  @Test
+  void aNameThatCannotBeAKnownTargetIsTheInvalidRequestProblemAndItsRefusalIsAudited()
+      throws Exception {
+    String longName = "Zq" + "x".repeat(70) + UUID.randomUUID().toString().substring(0, 8);
+    UUID relationship = candidate(resource("Uses a long name"), longName);
+
+    decide("{\"key\":\"" + longName.toLowerCase() + "\",\"decision\":\"SERVICE\"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This name cannot be a known target."));
+
+    assertThat(
+            jdbc.sql("SELECT i.status FROM review_item i WHERE i.relationship_id = :rel")
+                .param("rel", relationship)
+                .query(String.class)
+                .single())
+        .isEqualTo("OPEN");
+    assertThat(audit()).containsExactly("ADD_KNOWN_TARGET INVALID");
+  }
+
+  @Test
+  void aKnownTargetForAFullListIsTheDuplicateProblemAndTheGroupStaysOpen() throws Exception {
+    String tag = UUID.randomUUID().toString().substring(0, 8);
+    jdbc.sql(
+            """
+            INSERT INTO known_target (id, kind, name, added_by)
+            SELECT gen_random_uuid(), 'VENDOR', 'f' || g || ' ' || :tag, 'filler'
+            FROM generate_series(1, 1000) g
+            """)
+        .param("tag", tag)
+        .update();
+    try {
+      decide("{\"key\":\"" + key + "\",\"decision\":\"SERVICE\"}")
+          .andExpect(problem(ProblemType.DUPLICATE, "The list holds at most 1000 known targets."));
+    } finally {
+      jdbc.sql("DELETE FROM known_target WHERE name LIKE :name").param("name", "% " + tag).update();
+    }
+
+    assertThat(states()).allSatisfy(s -> assertThat(s).containsEntry("status", "OPEN"));
+    assertThat(audit()).containsExactly("ADD_KNOWN_TARGET FULL");
+  }
+
+  @Test
+  void aNameThatIsAlreadyAKnownTargetStillClosesTheGroup() throws Exception {
+    decide("{\"key\":\"" + key + "\",\"decision\":\"SERVICE\"}").andExpect(status().isOk());
+    candidate(resource("Uses " + name + " later"), name);
+
+    String body =
+        decide("{\"key\":\"" + key + "\",\"decision\":\"SERVICE\"}")
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertThat(JsonPath.<Integer>read(body, "$.decided")).isEqualTo(1);
+    assertThat(JsonPath.<Integer>read(body, "$.left")).isZero();
+    assertThat(audit()).filteredOn(a -> a.startsWith("ADD_KNOWN_TARGET")).hasSize(2);
+    assertThat(audit()).contains("ADD_KNOWN_TARGET TAKEN");
   }
 }

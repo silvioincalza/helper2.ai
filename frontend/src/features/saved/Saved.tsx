@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { useFromHere } from '@/features/search/fromResults';
+import { useFromHere } from '@/lib/fromResults';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResourceType } from '@/api/types';
 import { ExternalLink } from '@/ui/ExternalLink';
-import { ListState } from '@/features/home/listParts';
-import { TermCommand } from '@/features/home/TermList';
+import { ListState } from '@/ui/ListState';
+import { TermCommand } from '@/ui/TermCommand';
 import { useBookmarks } from '@/context/BookmarksContext';
 import { useMe } from '@/context/MeContext';
-import { SignIn } from '@/features/account/SignIn';
+import { SignIn } from '@/ui/SignIn';
 import { displayHost, localDay } from '@/lib/format';
 import { resourcePath } from '@/lib/searchState';
 import '@/ui/term.css';

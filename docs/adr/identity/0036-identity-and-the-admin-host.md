@@ -78,7 +78,8 @@ reaches the cluster with an address from the platform's private ranges.
    `MergeLocalBookmarks` (`POST /api/v1/me/bookmarks`), which joins the browser list to the account once, right after
    sign-in; the browser list is then cleared. Rules (`BookmarkRules`): a bookmark links to an http or https page of at
    most 2000 characters, and an account holds at most 500; adding or merging is idempotent (the first `savedAt`
-   stays), and a merge is all or nothing (400). A bookmark keeps the resource id, title, link, type and `savedAt`, so
+   stays), and a merge is all or nothing (400). The use cases answer a refusal as an outcome (`InvalidUrl`,
+   `OverLimit`), and `BookmarksController` maps it to the problem ([0051](../foundation/0051-use-cases-return-outcomes.md)). A bookmark keeps the resource id, title, link, type and `savedAt`, so
    it renders even when the resource left the catalog. `bookmark.resource_id` has no foreign key to `resource`, on
    purpose: a saved item must always render. A live result can be saved before its observed row is written, or when
    that write was dropped (the queue of [0004](../foundation/0004-persistence-and-the-schema.md) §6); a merge brings
@@ -175,7 +176,7 @@ reaches the cluster with an address from the platform's private ranges.
   `PurgeExpiredAuditEntries`). Adapters: `identity/internal/JdbcUsers.java`, `JdbcBookmarks.java`, `JdbcAuditLog.java` (implements
   `platform/AuditTrail.java`, the port every admin use case writes),
   `SignedInUser.java` (the `CurrentUser` port that controllers take: the signed-in user's id and display name, read
-  only), `identity/SignInAgain.java` (the problem of a session without an account).
+  only), `identity/internal/SignInAgain.java` (the problem of a session without an account).
   Shared setup: `identity/config/WebSecurity.java`, `SameOriginWrites.java`, `KnownAccountOnly.java`, `SignInPages.java`,
   `SessionConfiguration.java`, `NoProviderTokens.java`, `SignInConfiguration.java`, `IdentityUseCaseConfiguration.java`,
   `IdentityRetentionProperties.java` (the 730-day floor).
@@ -202,7 +203,7 @@ reaches the cluster with an address from the platform's private ranges.
   `api/HttpEdgeIT.java`, `api/RedisDownIT.java`, `identity/security/SignInEventIT.java`;
   `backend/apps/backoffice/src/test/java/ai/helper2/identity/schedule/AuditRetentionIT.java`, `api/AdminAuditApiIT.java`,
   `api/BackOfficeEdgeIT.java`.
-- `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/features/account/SignIn.tsx`,
+- `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/ui/SignIn.tsx`,
   `frontend/src/features/account/AccountPage.tsx`, `frontend/src/admin/`.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/*/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`,
   `helper2.retention.admin-audit`; `deploy/helm/helper2/templates/backoffice.yaml` (Deployment `helper2-backoffice`,

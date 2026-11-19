@@ -46,9 +46,10 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    Up to 720 px: the logo and a menu button; the menu holds New this week, Coming up, Saved, Sources, Mission, Sign
    in and the theme; Escape or a new page closes it. On the pages without their own box, the box sits in the header.
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,
-   the theme switch), then one line: what is searched, who and where. It makes no claim about ads ([0042](../money/0042-monetisation.md)).
+   the theme switch), a second row "Browse by type" with the ten hub pages ([0052](0052-hub-pages-per-resource-type.md)),
+   then one line: what is searched, who and where. It makes no claim about ads ([0042](../money/0042-monetisation.md)).
 6. **Home: the title, the radar, a pinned search box, two lists.** The title is one `h1` on two lines: "helper2.ai",
-   then "The metasearch for the AI universe.", with one line under it. Behind it rises a radar that works like a
+   then "The metasearch for the AI ecosystem.", with one line under it. Behind it rises a radar that works like a
    navigation radar: a half dome from the bottom middle of the title block, range rings, dotted bearing lines every
    30°, ticks every 5° on the outer ring of the arc it shows, a glowing origin, and a sweep that turns once every 5 s: a bright leading
    line with a soft halo and a trail that fades over 56°.
@@ -134,8 +135,9 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
       end ("Date unknown · N · Show them").
 11. **The resource page: one column.** The title, under it type · host · the same date as the row (`ResultDate`), one
     primary button (Open on host ↗), Save, and Set it up only for what a user installs or runs. Then the pick, From
-    the source, At a glance, the dates, "Where this information comes from" (folded) and the detail sections, its
-    tables in Geist Mono with capital headers and dashed rules. A result row passes its title, type and link in the
+    the source, At a glance, the dates, the detail sections, "Found in these lists" (each list a link to its own page, with the heading it sits
+    under; not shown for a resource no list names, [0023](../search/0023-catalog-full-text-index.md)) and "Where this
+    information comes from" (folded), its tables in Geist Mono with capital headers and dashed rules. A result row passes its title, type and link in the
     history state, so a resource opened from the results shows the title, Open and Save at once while its details load.
     A pick chip does the same when its result is among the results the page holds (on the timeline); a pick that is
     not among them shows the loading line until the details arrive.
@@ -154,7 +156,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
     either page opens the resource page.
 14. **Text pages stay prose.** Mission, Privacy, Terms, Not found, Account and the sign-in page have no terminal look:
     Geist for headings and text, Geist Mono only for small labels, a column of about 68 characters, line height 1.65
-    (`features/pages/text.css`). Not found keeps the real 404 (the server answers 404): a `404` label, the title, one
+    (`ui/text.css`). Not found keeps the real 404 (the server answers 404): a `404` label, the title, one
     line that points to the box in the header, and a link home. Account shows who is signed in, the AI answers and
     web searches left today, "Home page motion: radar and lists", and Delete my account with its confirmation (focus on Cancel).
     The sign-in page (`/signin`) says why to sign in and has one button per provider in `loginProviders` on GET /me;
@@ -198,15 +200,15 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
 - `frontend/src/main.tsx` — the fonts. `frontend/vite.config.ts` — the two Latin files preloaded.
 - `frontend/src/shell/` — `Layout` (header, footer, the menu), `RouteError`, `NotFoundPage`, `Robots`.
 - `frontend/src/ui/` — `StatePanel`, `StatusPill`, `ProofQuote`, `SourceTiles`, `PicksBar`, `ScrollBox`, `Badges`,
-  `Logo`, `term.css`, `ui.css`, `listing.css`.
-- `frontend/src/features/home/` — `Home`, `HomeRadar`, `radarLayout.ts`, `radarRotation.ts`, `radarClock.ts`,
-  `useRadarMotion.ts`, `RadarLegend`, `TermList`, `ticker.ts`, `HomeLists`, `HomeTabs`, `homeFeeds.ts`, `home.css`.
-- `frontend/src/features/search/` — `HomeOrResultsPage`, `Results`, `ResultRow`, `ResultsSkeleton`, `TypeTabs`,
+  `Logo`, `TermCommand`, `ListState`, `ResultDate`, `term.css`, `text.css`, `ui.css`, `listing.css`.
+- `frontend/src/features/home/` — `Home`, `HomeRadar`, `radarLayout.ts`, `radarClock.ts`,
+  `useRadarMotion.ts`, `RadarLegend`, `TermList`, `ticker.ts`, `HomeLists`, `HomeTabs`, `home.css`; `frontend/src/lib/radarRotation.ts`.
+- `frontend/src/shell/HomeOrResultsPage.tsx`; `frontend/src/features/search/` — `Results`, `ResultRow`, `ResultsSkeleton`, `TypeTabs`,
   `FiltersPanel`, `FilterFacets`, `CoverageLine`, `AudienceChoice`, `ResultsTimeline`, `morePages.tsx`,
   `results.css`.
 - `frontend/src/features/guide/` — `GuidePicks`, `GuideAnswer`, `GuideAnswersLeft`.
-- `frontend/src/features/resource/` — `ResourcePage`, `Resource`, `ResultFacts`, `DateTimeline`, `resource.css`.
-- `frontend/src/features/news/NewsPage.tsx`, `frontend/src/features/events/EventsPage.tsx`.
+- `frontend/src/features/resource/` — `ResourcePage`, `Resource`, `FoundInLists`, `ResultFacts`, `DateTimeline`, `resource.css`.
+- `frontend/src/features/feeds/` — `feeds.ts`, `feedCells.tsx`, `NewsPage`, `EventsPage`.
 - `frontend/src/features/sources/`, `features/saved/`, `features/account/`, `features/pages/`, `frontend/src/admin/`.
 - `frontend/src/hooks/useRetry.ts`, `usePolicy.ts`, `frontend/src/lib/sourceCounts.ts`, `duration.ts`.
 

@@ -36,8 +36,4 @@ public interface StoredEnrichments {
   void requestRun(UUID resourceId);
 
   int closeItemsWithNothingToDecide(String by, String note);
-
-  boolean done(String name);
-
-  void markDone(String name);
 }

@@ -9,14 +9,24 @@ import ai.helper2.search.FixturesKt;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceHit;
+import ai.helper2.search.Vitality;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,12 +40,18 @@ class McpRegistryCollectorTest {
   }
 
   McpRegistryCollector collector() {
+    return collector(new RunInterval(Duration.ZERO), 0);
+  }
+
+  McpRegistryCollector collector(RunInterval interval, int itemsPerRun) {
     return new McpRegistryCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
-        Resilience.NONE);
+        Resilience.NONE,
+        interval,
+        itemsPerRun);
   }
 
   @Test
@@ -44,6 +60,52 @@ class McpRegistryCollectorTest {
         "/v0.1/servers",
         FixtureServer.Reply.ok(FixtureServer.fixture("mcp-servers-postgres.json")));
     CollectedBatch c = collector().collect(null, null, 20);
+    assertThat(c.getHits().getFirst())
+        .isEqualTo(
+            new SourceHit(
+                "mcp-registry",
+                "ai.getvda/kafka-and-postgres-monitoring-stack",
+                URI.create("https://postgres-prometheus-kafka-stack-generator.getvda.ai"),
+                CanonicalUrl.of(
+                    "https://registry.modelcontextprotocol.io/v0.1/servers/ai.getvda%2Fkafka-and-postgres-monitoring-stack"),
+                null,
+                "ai.getvda/kafka-and-postgres-monitoring-stack",
+                "Kafka and Postgres Monitoring Stack",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.MCP_SERVER,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of("mcp"),
+                null,
+                null,
+                Set.of("remote"),
+                null,
+                new DateFact(
+                    Instant.parse("2026-09-03T11:40:41.510625Z"),
+                    DatePrecision.INSTANT,
+                    "mcp-registry",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-09-03T11:40:41.510625Z"),
+                    DatePrecision.INSTANT,
+                    "mcp-registry",
+                    List.of(),
+                    false),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                18,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                null,
+                null,
+                null,
+                Map.of(),
+                Set.of(),
+                null,
+                Set.of(),
+                new Vitality(null, null, false, null)));
     assertThat(c.getHits())
         .allSatisfy(h -> {
           assertThat(h.getType()).isEqualTo(ResourceType.MCP_SERVER);
@@ -221,13 +283,7 @@ class McpRegistryCollectorTest {
   }
 
   McpRegistryCollector hourly() {
-    return new McpRegistryCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
-        TestHttp.restClientBuilder(
-            Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-        SourceFixtures.CLOCK,
-        Resilience.NONE,
-        new RunInterval(Duration.ofHours(1)));
+    return collector(new RunInterval(Duration.ofHours(1)), 0);
   }
 
   @Test
@@ -265,15 +321,7 @@ class McpRegistryCollectorTest {
     server.route(
         "/v0.1/servers",
         FixtureServer.Reply.ok(FixtureServer.fixture("mcp-servers-postgres.json")));
-    McpRegistryCollector wide =
-        new McpRegistryCollector(
-            new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
-            TestHttp.restClientBuilder(
-                Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
-            SourceFixtures.CLOCK,
-            Resilience.NONE,
-            new RunInterval(Duration.ZERO),
-            5000);
+    McpRegistryCollector wide = collector(new RunInterval(Duration.ZERO), 5000);
 
     collector().collect(null, null, 1);
     int narrowCalls = server.requests.size();

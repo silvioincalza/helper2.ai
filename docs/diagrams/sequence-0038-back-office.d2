@@ -6,8 +6,10 @@
 #   admin/usecase/GetReviewEvidence.java, catalog/internal/JdbcReviewEvidence.java, frontend/src/admin/ReviewEvidence.tsx,
 #   frontend/src/admin/EnrichmentQueuePage.tsx, admin/web/EnrichmentQueueController.java,
 #   scout/usecase/PrioritiseEnrichment.kt, scout/internal/JdbcEnrichmentQueueControl.java,
-#   admin/usecase/ResolveReviewItems.java, frontend/src/admin/ReviewBulk.tsx,
-#   admin/web/ReviewItemMapper.java, examples/usecase/ReadExampleDraft.java, frontend/src/admin/ReviewItemDetails.tsx.
+#   admin/usecase/ResolveReviewItems.java, admin/usecase/ResearchedAcceptance.java, frontend/src/admin/ReviewBulk.tsx,
+#   admin/usecase/ListReviewQueue.java, admin/usecase/ReviewItemViews.java, admin/web/ReviewItemMapper.java,
+#   examples/usecase/ReadExampleDraft.java, scout/internal/ResourceCandidateJson.java (shown),
+#   catalog/internal/KnownTargetProposalJson.java, frontend/src/admin/ReviewItemDetails.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0038-back-office.d2 && d2 sequence-0038-back-office.d2 sequence-0038-back-office.svg
 
 ...@style
@@ -33,7 +35,7 @@ follow: Follow a count {
   owner -> spa: "12 User report"
   spa -> api: "GET /api/v1/admin/review-items?status=OPEN&kind=USER_REPORT"
   api -> db: "page of open user reports"
-  api -> spa: "items (a drafted example with its draft,\nread by the examples module, and its aiContent)"
+  api -> spa: "items, each a view of ListReviewQueue:\nits details typed by shape (TEXT, CANDIDATE,\nKNOWN_TARGET_PROPOSAL), a drafted example\nwith its draft and its aiContent"
   spa -> owner: "/admin/review?kind=USER_REPORT"
 }
 
@@ -62,7 +64,9 @@ act: Act on the enrichment queue {
 bulk: Decide several at once {
   owner -> spa: "x on 12 rows, Accept,\nconfirm (focus on Cancel)" {class: hot}
   spa -> api: "POST /api/v1/admin/review-items/resolutions\n12 ids, ACCEPTED"
-  api -> db: "per item: rule check (its run's conflicting fields),\nthen its own transaction: decision, audit bulk:<batch>"
+  api -> db: "per item: rule check (its run's conflicting fields,\nor a candidate's newest research: DONE, KEEP, no CONFLICT)"
+  api -> db: "a researched candidate: its CONFIRMED changed values\ninto the candidate (EditCandidate, audit EDITED)"
+  api -> db: "then its own transaction: decision, audit bulk:<batch>"
   api -> spa: "one outcome per item"
   spa -> owner: "\"11 done, 1 failed (already decided)\",\nthe failed item stays picked"
 }

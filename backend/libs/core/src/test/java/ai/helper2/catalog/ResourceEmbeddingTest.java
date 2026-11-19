@@ -387,7 +387,8 @@ class ResourceEmbeddingTest {
     int callsSoFar = embedder.batches.size();
     indexer.tick();
 
-    assertThat(pendingIds()).containsExactly(alpha).doesNotContain(beta);
+    assertThat(embeddedIds()).contains(beta).doesNotContain(alpha);
+    assertThat(pendingIds()).as("a refused text is not pending").isEmpty();
     assertThat(embedder.batches).as("the refused text is not sent again").hasSize(callsSoFar);
     assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isEqualTo(1);
     assertThat(registry.get("helper2.embedding.backlog").gauge().value()).isZero();
@@ -398,6 +399,42 @@ class ResourceEmbeddingTest {
     indexer.tick();
 
     assertThat(pendingIds()).isEmpty();
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+  }
+
+  @Test
+  void aRefusedTextIsNotSentAgainAfterARestart() {
+    embedEverythingSoFar();
+    UUID alpha = insert("alpha", "x");
+    FailsOnBatches embedder =
+        new FailsOnBatches(
+            FailureReason.TEXT_REJECTED, Set.of("alpha\nx"), FailureReason.TEXT_REJECTED);
+    new IndexEmbeddings(
+            embeddings,
+            embedder,
+            10,
+            5,
+            Duration.ofMinutes(1),
+            Clock.systemUTC(),
+            new SimpleMeterRegistry())
+        .tick();
+    int callsBeforeTheRestart = embedder.batches.size();
+
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    IndexEmbeddings restarted =
+        new IndexEmbeddings(
+            embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry);
+    restarted.tick();
+
+    assertThat(embedder.batches).as("nothing is sent again").hasSize(callsBeforeTheRestart);
+    assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isEqualTo(1);
+
+    jdbc.sql("UPDATE resource SET description = 'changed' WHERE id = :id")
+        .param("id", alpha)
+        .update();
+    restarted.tick();
+
+    assertThat(embeddedIds()).contains(alpha);
     assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
   }
 
@@ -463,6 +500,13 @@ class ResourceEmbeddingTest {
     assertThat(embedder.batches).hasSize(2);
     assertThat(pendingIds()).containsExactly(alpha);
     assertThat(registry.get("helper2.embedding.rejected").gauge().value()).isZero();
+  }
+
+  private List<UUID> embeddedIds() {
+    return jdbc.sql("SELECT resource_id FROM resource_embedding WHERE model = :model")
+        .param("model", model)
+        .query(UUID.class)
+        .list();
   }
 
   private List<UUID> pendingIds() {

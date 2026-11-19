@@ -30,7 +30,8 @@ builds no image, so a new npm package with a known vulnerability would be found 
 3. **Versions** are pinned in the build files: Spotless 8.11.0, google-java-format 2.0.0, ktfmt 0.64. Each is the
    latest release that works with the others, chosen with the owner.
 4. **CI for the backend:** each backend build job in `ci.yml` (`backend-libs-build`, `backend-public-build`,
-   `backend-backoffice-build`) runs `spotlessCheck` for its projects before it compiles them. An unformatted file
+   `backend-backoffice-build`) and `backend-architecture-test` run `spotlessCheck` for their projects before they
+   compile them. An unformatted file
    fails the pull request.
 5. **Frontend: Prettier**, from `frontend/package.json`. Config in `frontend/.prettierrc.json`: 100 columns like the
    backend, single quotes and trailing commas. `npm run format` rewrites the files, `npm run format:check` fails on
@@ -76,7 +77,7 @@ No runtime path: these decisions run in the build and in CI only, so there is no
 - `frontend/package.json` (`format`, `format:check`, `knip`, `preknip`), `frontend/.prettierrc.json`,
   `frontend/.prettierignore`, `frontend/eslint.config.js` — Prettier, its place next to ESLint, and the two knip runs.
 - `frontend/knip.json` — entries, project files, the issue types.
-- `.github/workflows/ci.yml` (the three backend build jobs, `frontend-check`) — the `spotlessCheck`, `format:check` and knip steps and the two
+- `.github/workflows/ci.yml` (the three backend build jobs, `backend-architecture-test`, `frontend-check`) — the `spotlessCheck`, `format:check` and knip steps and the two
   `npm audit` steps.
 - `.editorconfig`, `.idea/codeStyles/Project.xml` — the editor settings.
 
@@ -118,7 +119,7 @@ No runtime path: these decisions run in the build and in CI only, so there is no
 
 ### Known limits
 
-- knip does not read locale files or CSS; two tests do (`styles/classesUsed.test.ts`, `i18n/keysUsed.test.ts`). They see a class or a key the code writes whole or under a template prefix (`` `h2-dot--${tone}` ``); one built another way (strings joined with `+`) counts as unused, and a key or class that only dead code uses still counts as used. Moderate `npm audit` advisories in build and test tools are only reported.
+- knip does not read locale files or CSS; two tests do (`styles/classesUsed.test.ts`, `i18n/keysUsed.test.ts`). They see a class or a key the code writes whole, or through a template (`` `h2-dot--${tone}` ``): the TypeScript checker gives the values the template can take, and each key or class is checked against them one by one. Where the code holds a value as a string, the key test takes the values from the generated API enums, or accepts the prefix whole from a short named list that gives the reason (values only the backend knows). One built another way (strings joined with `+`) counts as unused, and a key or class that only dead code uses still counts as used. Moderate `npm audit` advisories in build and test tools are only reported.
 
 ## Diagrams
 

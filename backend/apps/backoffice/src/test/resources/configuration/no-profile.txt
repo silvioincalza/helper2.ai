@@ -571,6 +571,14 @@ helper2.http.pool-wait = 250ms
 helper2.identity.admins = ${H2_ADMINS:}  =>  <empty>
 helper2.identity.frontend-url = /admin
 helper2.identity.metrics-public = ${H2_METRICS_PUBLIC:false}  =>  false
+helper2.indexnow.batch = 10000
+helper2.indexnow.cron = ${H2_INDEXNOW_CRON:0 47 5 * * *}  =>  0 47 5 * * *
+helper2.indexnow.endpoint = https://api.indexnow.org/indexnow
+helper2.indexnow.key = ${H2_INDEXNOW_KEY:}  =>  <empty>
+helper2.indexnow.noindex = ${H2_NOINDEX:false}  =>  false
+helper2.indexnow.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
+helper2.indexnow.timeout = PT20S
+helper2.indexnow.window = PT25H
 helper2.llm.chat-model = ${spring.ai.openai.chat.model:}  =>  <empty>
 helper2.llm.chat-provider = ${spring.ai.model.chat}  =>  none
 helper2.llm.fast-model = <empty>
@@ -590,7 +598,7 @@ helper2.research.daily-page-reads = ${H2_RESEARCH_DAILY_PAGE_READS:300}  =>  300
 helper2.research.enabled = ${H2_RESEARCH_ENABLED:true}  =>  true
 helper2.research.max-streams = ${H2_RESEARCH_MAX_STREAMS:8}  =>  8
 helper2.research.max-tokens = ${H2_RESEARCH_MAX_TOKENS:4096}  =>  4096
-helper2.research.model = ${H2_RESEARCH_MODEL:REASONING}  =>  REASONING
+helper2.research.model = ${H2_RESEARCH_MODEL:FAST}  =>  FAST
 helper2.research.tick = ${H2_RESEARCH_TICK:PT2S}  =>  PT2S
 helper2.retention.admin-audit = ${H2_RETENTION_ADMIN_AUDIT:P730D}  =>  P730D
 helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
@@ -627,6 +635,7 @@ helper2.scout.discovery.min-score = 0.4
 helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
 helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
 helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
+helper2.scout.enrichment-model = ${H2_SCOUT_ENRICHMENT_MODEL:FAST}  =>  FAST
 helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}  =>  20
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
@@ -636,7 +645,11 @@ helper2.scout.github-awesome.classify-batch = 25
 helper2.scout.github-awesome.classify-max-tokens = 8192
 helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
 helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+helper2.scout.github-awesome.links.max-models-per-pass = 100
+helper2.scout.github-awesome.links.max-packages-per-pass = 100
+helper2.scout.github-awesome.links.max-papers-per-pass = 200
 helper2.scout.github-awesome.links.max-per-pass = 500
+helper2.scout.github-awesome.links.model-index-min-likes = 10
 helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
 helper2.scout.github-awesome.max-entries-per-pass = 1000
 helper2.scout.github-awesome.max-entries-per-run = ${H2_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
@@ -648,6 +661,9 @@ helper2.scout.github-awesome.min-repo-stars = 50
 helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
+helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
+helper2.scout.github-awesome.web-pages.retry-after = ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}  =>  PT1H
 helper2.scout.github-sdks.deps-dev-url = ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
 helper2.scout.github-sdks.interval = ${H2_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
 helper2.scout.github-sdks.languages = ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000
@@ -681,6 +697,7 @@ helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D
 helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
 helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
 helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
@@ -693,6 +710,10 @@ helper2.scout.pypi.candidates-per-day = ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  
 helper2.scout.pypi.interval = ${H2_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
 helper2.scout.pypi.max-bytes-billed = ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
 helper2.scout.pypi.project = ${H2_PYPI_BIGQUERY_PROJECT:}  =>  <empty>
+helper2.scout.repository-sweep.batch = ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}  =>  50
+helper2.scout.repository-sweep.enabled = ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}  =>  true
+helper2.scout.repository-sweep.every = ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}  =>  PT10M
+helper2.scout.repository-sweep.initial-delay = PT2M
 helper2.scout.tick = ${H2_SCOUT_TICK:PT10M}  =>  PT10M
 helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
 helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
@@ -913,6 +934,7 @@ resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = col
 resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
 resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
 resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
+resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
 resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
@@ -965,6 +987,7 @@ resilience4j.retry.instances.collector-live-web-scout.base-config = collector
 resilience4j.retry.instances.collector-mcp-registry.base-config = collector
 resilience4j.retry.instances.collector-news-feeds.base-config = collector
 resilience4j.retry.instances.collector-pypi.base-config = collector
+resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${H2_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true

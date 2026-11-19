@@ -2,10 +2,12 @@ package ai.helper2.sources.config.scout;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.platform.llm.ModelTier;
 import ai.helper2.sources.config.CollectorProperties;
 import ai.helper2.testing.ConfigBinding;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
@@ -19,6 +21,7 @@ class CollectorPropertiesTest {
   @EnableConfigurationProperties({
     CollectorProperties.HfTrending.class,
     CollectorProperties.LiveWebScout.class,
+    CollectorProperties.LiveWebEvents.class,
     CollectorProperties.Courses.class,
     CollectorProperties.ScoutCredits.class,
     CollectorProperties.Discovery.class,
@@ -31,6 +34,18 @@ class CollectorPropertiesTest {
   static class Binding {}
 
   final ApplicationContextRunner context = ConfigBinding.of(Binding.class);
+
+  @Test
+  void theEventReaderRunsOnTheFastModelUnlessTold() {
+    context.run(c ->
+        assertThat(c.getBean(CollectorProperties.LiveWebEvents.class).readModel())
+            .isEqualTo(ModelTier.FAST));
+    context
+        .withSystemProperties("H2_SCOUT_EVENT_READER_MODEL=REASONING")
+        .run(c ->
+            assertThat(c.getBean(CollectorProperties.LiveWebEvents.class).readModel())
+                .isEqualTo(ModelTier.REASONING));
+  }
 
   @Test
   void theYamlDefaultsBind() {
@@ -67,7 +82,7 @@ class CollectorPropertiesTest {
           c.getBean(CollectorProperties.GitHubAwesome.class);
       assertThat(awesome)
           .usingRecursiveComparison()
-          .ignoringFields("maxRunTime", "maxReadmeBytesPerRun", "nested", "links")
+          .ignoringFields("maxRunTime", "maxReadmeBytesPerRun", "nested", "links", "webPages")
           .isEqualTo(
               new CollectorProperties.GitHubAwesome(
                   Duration.ofDays(1),
@@ -89,12 +104,22 @@ class CollectorPropertiesTest {
                   null,
                   null,
                   null,
+                  null,
                   null));
+      assertThat(awesome.webPages().readEvery()).isEqualTo(Duration.ofDays(7));
+      assertThat(awesome.webPages().neverReadReasons())
+          .containsExactly(
+              Map.entry(
+                  "coursera.org", "its terms forbid automated reading without written consent"));
       assertThat(awesome.maxRunTime()).isEqualTo(Duration.ofMinutes(15));
       assertThat(awesome.maxReadmeBytesPerRun()).isEqualTo(DataSize.ofMegabytes(50));
       assertThat(awesome.nested()).isEqualTo(new CollectorProperties.GitHubAwesome.Nested(2, 30));
       assertThat(awesome.links().perDay()).isEqualTo(50);
       assertThat(awesome.links().maxPerPass()).isEqualTo(500);
+      assertThat(awesome.links().maxModelsPerPass()).isEqualTo(100);
+      assertThat(awesome.links().modelIndexMinLikes()).isEqualTo(10);
+      assertThat(awesome.links().maxPapersPerPass()).isEqualTo(200);
+      assertThat(awesome.links().maxPackagesPerPass()).isEqualTo(100);
       assertThat(awesome.links().excludeDomains()).contains("arxiv.org", "discord.gg");
       assertThat(c.getBean(CollectorProperties.HfProviderOrgs.class))
           .isEqualTo(
@@ -164,6 +189,42 @@ class CollectorPropertiesTest {
           assertThat(c.getBean(CollectorProperties.McpRegistry.class).interval())
               .isEqualTo(Duration.ofHours(2));
         });
+  }
+
+  @Test
+  void theHostsNeverReadAndTheDaysBetweenReadsOfAWebPageAreSetWithoutARelease() {
+    context
+        .withPropertyValues(
+            "H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ=", "H2_SCOUT_AWESOME_WEB_PAGES_EVERY=P14D")
+        .run(c -> {
+          CollectorProperties.GitHubAwesome.WebPages pages =
+              c.getBean(CollectorProperties.GitHubAwesome.class).webPages();
+          assertThat(pages.neverReadReasons()).isEmpty();
+          assertThat(pages.readEvery()).isEqualTo(Duration.ofDays(14));
+        });
+    context
+        .withPropertyValues(
+            "H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ=Coursera.org=no consent, acme.dev = asked")
+        .run(c ->
+            assertThat(
+                    c.getBean(CollectorProperties.GitHubAwesome.class)
+                        .webPages()
+                        .neverReadReasons())
+                .containsExactly(
+                    Map.entry("coursera.org", "no consent"), Map.entry("acme.dev", "asked")));
+  }
+
+  @Test
+  void aWebPageIsReadAtLeastEveryThreeWeeksAndAHostNeverReadHasAReason() {
+    context
+        .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=P30D")
+        .run(c -> assertThat(c).hasFailed());
+    context
+        .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=PT1H")
+        .run(c -> assertThat(c).hasFailed());
+    context
+        .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ=coursera.org")
+        .run(c -> assertThat(c).hasFailed());
   }
 
   @Test

@@ -416,4 +416,22 @@ class CheckResearchTest {
     assertThat(r.dropped()).hasSize(2);
     assertThat(attribute(r, "title").status()).isEqualTo(Status.NOT_FOUND);
   }
+
+  @Test
+  void theCurrentValueOfAConfirmedFieldIsTheCandidatesOwn() {
+    ResearchSubject withValues =
+        new ResearchSubject(
+            UUID.randomUUID(),
+            "RESOURCE_CANDIDATE",
+            "https://acme.example/",
+            "Acme",
+            "PRODUCT",
+            List.of(),
+            null,
+            Map.of("license", "MIT", "pricing", " "));
+
+    assertThat(CheckResearch.currentValue(withValues, "license")).isEqualTo("MIT");
+    assertThat(CheckResearch.currentValue(withValues, "pricing")).isNull();
+    assertThat(CheckResearch.currentValue(withValues, "description")).isNull();
+  }
 }

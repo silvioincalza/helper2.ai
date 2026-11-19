@@ -892,6 +892,69 @@ describe('resource detail', () => {
     expect(within(glance).queryByText('Not stated')).not.toBeInTheDocument();
   });
 
+  const LIST_A = '22222222-2222-5222-8222-222222222222';
+  const LIST_B = '33333333-3333-5333-8333-333333333333';
+
+  it('Scenario: a resource two lists name shows both as links to their pages, each with its heading path', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          foundIn: {
+            lists: [
+              {
+                listId: LIST_A,
+                listTitle: 'acme/awesome-llm',
+                headingPath: 'Tools > Vector databases',
+              },
+              { listId: LIST_B, listTitle: 'acme/awesome-rag', headingPath: '' },
+            ],
+            more: 0,
+          },
+        }),
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    const lists = (await screen.findByRole('heading', { name: 'Found in these lists' })).closest(
+      'section',
+    ) as HTMLElement;
+    const [first, second] = within(lists).getAllByRole('listitem');
+    expect(within(lists).getByRole('link', { name: 'acme/awesome-llm' })).toHaveAttribute(
+      'href',
+      `/resource/${LIST_A}/acme-awesome-llm`,
+    );
+    expect(within(lists).getByRole('link', { name: 'acme/awesome-rag' })).toHaveAttribute(
+      'href',
+      `/resource/${LIST_B}/acme-awesome-rag`,
+    );
+    expect(first).toHaveTextContent('acme/awesome-llm under Tools > Vector databases');
+    expect(second).toHaveTextContent(/^acme\/awesome-rag$/);
+    expect(within(lists).queryByText(/more list/)).not.toBeInTheDocument();
+    expect(lists.querySelector('[data-ai-generated]')).toBeNull();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('Scenario: a resource more than ten lists name says how many are not shown', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          foundIn: {
+            lists: [{ listId: LIST_A, listTitle: 'acme/awesome-llm', headingPath: 'Tools' }],
+            more: 2,
+          },
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    expect(await screen.findByText('and 2 more lists')).toBeInTheDocument();
+  });
+
+  it('Scenario: a resource no list names has no lists section at all', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail() });
+    const { container } = renderApp(`/resource/${ID}`);
+    await screen.findByRole('heading', { name: 'Report wrong or outdated info' });
+    expect(screen.queryByRole('heading', { name: 'Found in these lists' })).not.toBeInTheDocument();
+    expect(container.querySelector('#lists-h')).toBeNull();
+  });
+
   it('shows not found for 404', async () => {
     mockApi({ [`GET /resources/${ID}`]: () => problem(404, 'Not found') });
     renderApp(`/resource/${ID}`);

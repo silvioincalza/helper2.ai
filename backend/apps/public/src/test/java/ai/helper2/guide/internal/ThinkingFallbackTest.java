@@ -285,13 +285,14 @@ class ThinkingFallbackTest {
     CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
     CircuitBreaker circuit =
         circuits.circuitBreaker(
-            LlmPolicies.GUIDE,
+            LlmPolicies.GUIDE_FAST,
             CircuitBreakerConfig.custom()
                 .slidingWindowSize(1)
                 .minimumNumberOfCalls(1)
                 .failureRateThreshold(50)
                 .ignoreException(new ModelErrors.NotFromProvider())
                 .build());
+    circuits.circuitBreaker(LlmPolicies.GUIDE_REASONING);
     Resilience resilience =
         new Resilience4jPolicies(
             circuits, BulkheadRegistry.ofDefaults(), RetryRegistry.ofDefaults());

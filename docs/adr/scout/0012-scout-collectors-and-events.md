@@ -60,6 +60,71 @@ Two kinds of source need more care:
 6. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `H2_GITHUB_TOKEN` (GraphQL refuses anonymous calls).
    - A topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
      The lists they link to are read too ([0013](0013-discovery.md), deep search).
+   - **Lists an administrator adds.** On `/admin/settings`, "Lists to read": a GitHub repository, as `owner/name` or
+     `https://github.com/owner/name`, or a web page, with an optional reason (`ManageListSeeds`, table `list_seed`,
+     at most 50 together). A GitHub address that is not one repository (a file path, a branch) is refused. Each pass
+     reads the added GitHub lists first, oldest first, then the lists the search finds, so the README time and size
+     budget goes to them first. The star floor, the name rule and the AI words do not apply to an added list: a
+     person chose it. Its facts come from `GET /repos/{owner}/{repo}`; a list the search also found costs no extra
+     call. An archived list and one GitHub does not find are skipped
+     (`helper2.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay added; a renamed one is
+     read under its new name. From there an added list is a seed like the others: its nested lists, its entries, its
+     links and its type follow the same rules. Removing it stops the reading; the list and what was found in it stay
+     in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`, `POST /api/v1/admin/list-seeds/{id}/remove`,
+     both changes in the audit trail (`ADD_LIST_SEED`, `REMOVE_LIST_SEED`). The id of an added list is made from its
+     address (`ListAddresses.idOf`), so it is the same at every read.
+   - **A web page as a list.** The address is https, with a public host name: no user info, no port but 443 (dropped from the kept
+     address), no fragment,
+     no IP address in any notation, no private or reserved name, no punycode label: the Scout's one host check
+     (`WebAddresses`, [0013](0013-discovery.md) §17), with the plain-page rule of `ListAddresses` on top (no
+     fragment, at most 300 characters; 400 otherwise, with the rule that failed). Two addresses of one
+     page (with and without "www.", with and without a trailing slash) are one list: the key is the canonical URL.
+     - **Read through the live web page reader**, not by our own servers ([0014](0014-evidence-gated-enrichment.md),
+       `PageReader`): `WebPageReader` asks for the page as Markdown, and `AwesomeListParser` reads that Markdown like
+       a README. So the entries, the heading paths, the nested GitHub lists, every link of an entry and its rule, and
+       the list index work as they do for a README. A page that answers with no text or from another host is not a
+       list.
+     - **The page is a list resource too**: its canonical URL is its identity, its title is the page's first
+       heading (the host and path when it has none), its tag is `awesome-list`. It has no stars, licence or dates.
+     - **Its own source, `curated-web-lists`** ("Curated web lists", `CollectorDescriptors.curatedWebLists`): the
+       record of the page and its list resource carry it, so the Sources page shows the web lists apart from the
+       GitHub lists and names the live web page reader in its terms line. The same collector and the same crawl
+       write it: the collector names it in `Collector.alsoWrites`, and `RunScout` merges and indexes the hits of
+       each source it writes under that source. The entries a page links to keep `github-awesome`: their facts
+       come from GitHub, and one pass reads each entry once, whatever list it is in. Both apps register its
+       descriptor (`CollectorsConfiguration`, `ScoutSourceDescriptors`), so its `source` row exists before a
+       record. It has no switch of its own: it is on when `github-awesome` is on. Its type is `AWESOME_LIST` when it passes the counts of the README rule
+       below (`AwesomeLists.readsAsList`: at least 20 linked items that are at least half of the text lines), and
+       ARTICLE otherwise. The name part of the rule does not apply: a person added the page.
+     - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; from 1 to 21, so the list index, kept 30 days
+       after its last refresh, never expires between two reads). `list_seed.read_tried_at` holds the last try,
+       whatever its result, and `list_seed.read_failures` the tries in a row that gave no list. A try that gives
+       no list (no text, another host, the reader down, a stop in the middle) is tried again after
+       `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries
+       in a row the page waits the full `every`. A read that gives a list sets the count back to 0. Between two
+       reads each pass uses what the last read gave, kept in `list_seed_last_read` (one row per added web page,
+       replaced at each read that gives a list, deleted with its list): the headings, the entries, the links and
+       the two counts of the list rule, never the page text. A restart changes nothing; nothing of a page is
+       withdrawn.
+     - **Each read is one live web credit** on the Scout's daily cap (`ScoutLiveWebCredits`,
+       `helper2.live-web.credits{feature="scout-list-pages"}`), a failed read too. Past the cap, without a page
+       reader, or when the pass has spent its time or size budget, the page waits for the next pass
+       (`helper2.scout.awesome.skips{reason="page-credit-cap"|"page-reader-off"|"time-budget"|"size-budget"}`);
+       its `read_tried_at` does not change and nothing is withdrawn. The pages tried longest ago are read first.
+     - **Hosts never read.** `helper2.scout.github-awesome.web-pages.never-read`
+       (`H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`): entries `host=reason`, default `coursera.org` (its terms forbid
+       automated reading without written consent). A subdomain matches. A page on such a host is refused when it is
+       added (400 with the host and the reason, nothing written) and again before every read
+       (`skips{reason="page-never-read"}`), so a host added to the setting later stops the pages already added.
+       Removing a host is a change of the setting, not a release.
+   - **An entry is a list item with a web link.** An indented item with its own link is its own entry. The lines
+     under an item that have no link of their own (a summary, the authors, a sub-item without a link) belong to it:
+     their words are part of its text, at most 20 lines and 500 characters.
+   - **Every link of an entry goes to the rule of its kind**, sorted by its host ([0013](0013-discovery.md) §17):
+     a GitHub repository by the rules below; a Hugging Face model, an arXiv paper and an npm package by their
+     source's own record, read by id; a page on a course
+     platform (point 7) to review as a `COURSE_CANDIDATE`; any other link to review as a `RESOURCE_CANDIDATE`.
+     Nothing a source cannot confirm is indexed without a person.
    - Each README (up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
      `H2_SCOUT_AWESOME_PER_RUN` (1000) per run, so a pass ends in one daily run; a pass cut short by
      `max-items-per-run` resumes after the last repository name it handled (entries sorted by name), so a list that
@@ -102,7 +167,7 @@ Two kinds of source need more care:
      stays ARTICLE.
    - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
      resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
-     §3). That is why every path to it passes the README rule. Other sources that see a GitHub repository have no
+     §3). That is why every path to it passes the README rule, and an added web page its counts. Other sources that see a GitHub repository have no
      README at hand and keep their own type, so a repository a record wrongly calls ARTICLE still takes their type.
    - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` (`CheckAwesomeLists`) reads the README of every
      catalog resource at `github.com/<owner>/<repo>` that is not `AWESOME_LIST` yet and that the rule names: the
@@ -114,7 +179,7 @@ Two kinds of source need more care:
      known only by its topic is found only when a record of it carries its topics: a source that saw the repository
      without them gives the backfill nothing to go on until such a record comes in.
      Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
-     is counted and read at the next run.
+     is counted and read at the next run. A resource that is gone when its turn comes is not set, and the run goes on.
    - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its
      excerpt states `AWESOME_LIST` with "awesome list", "curated list of" or "a list of awesome". A mis-typed list
      (LIBRARY, MCP_SERVER…) is fixed by the rule and the backfill, a new one by the collector.
@@ -125,7 +190,8 @@ Two kinds of source need more care:
    `scout-courses`). A result is kept only when it is on the platform's host
    and path, about AI, and reads like a course or certification page. Kept pages are **candidates**, not hits: each
    becomes a `COURSE_CANDIDATE` review item, and nothing reaches the catalog until an admin accepts it. Off without
-   `H2_LIVE_WEB_API_KEY`.
+   `H2_LIVE_WEB_API_KEY`. The rule that says a page is a course is in one place, `CoursePages`: the awesome-list
+   collector asks it for the links of its lists (point 6).
 8. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
    `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token
    and without following redirects (`HttpClients.getWithoutRedirect`): a redirect fails the file.
@@ -274,7 +340,7 @@ Two kinds of source need more care:
     and code checks them against the page.
     - Weekly (`H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL`, P7D). One Tavily search per query (`general`, `basic`, 10 results):
       upcoming AI hackathons, meetups and talks, conferences and summits, workshops. A result is kept when it is about
-      AI and its link is plain https (`PageScope.plainUrlProblem`). At most 20 pages a pass
+      AI and its link passes the Scout's host check (`PageScope.plainUrlProblem`, which is `WebAddresses`). At most 20 pages a pass
       (`H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES`).
     - **On by default, one switch.** `H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED` is true; `false` switches it off.
       It runs only with `H2_LIVE_WEB_API_KEY` and an AI model. Tavily's written OK for scheduled searches whose
@@ -335,7 +401,7 @@ Two kinds of source need more care:
     events that start before today 00:00 UTC plus `days`; the response says that end in `until` (null without
     `days`). An event already running stays listed until it ends. `total` counts every event in the window, so "Show
     all N" is a real number ([0040](../frontend/0040-design-system.md)). `Cache-Control: public, max-age=300`. The home
-    page (`useEventsFeed` in `homeFeeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
+    page (`useEventsFeed` in `features/feeds/feeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
     The Events page asks for the next 366 days in pages of 500 (`offset` 0, 500, …) until it holds `total` events, so
     its list and its kind and format counts cover the whole window.
 
@@ -346,7 +412,9 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/` — the collectors: `mcp/McpRegistryCollector.java`,
   `huggingface/scout/HuggingFaceTrendingCollector.java`, `HuggingFaceProviderOrgsCollector.java`,
   `tavily/scout/LiveWebNewsCollector.java`, `CourseCollector.java`, `LinkedInCollector.java`, `LiveWebEventsCollector.java`,
-  `ScoutLiveWebCredits.java`, `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`,
+  `ScoutLiveWebCredits.java`, `ScoutLiveWebSearch.java`, `QueryProgress.java`,
+  `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`, `AwesomeLists.java`, `ListReader.java`,
+  `GitHubReadmeReader.java`, `WebPageReader.java`, `WebPageLists.java`,
   `aideadlines/AiDeadlinesCollector.java` (`nextEdition`, `toHit`); `classifier/RepoClassifier.java`,
   `SpringAiRepoClassifier.java`; `config/scout/CollectorsConfiguration.java` (beans).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`,
@@ -367,7 +435,7 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `scripts/industry-events-seed.mjs`, `scripts/industry-events-seed.test.mjs`,
   `docs/research/industry-events-2026-11-12.json`,
   `backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql`.
-- `frontend/src/features/home/HomeLists.tsx`, `homeFeeds.ts`, `TermList.tsx`, `listParts.tsx`, `frontend/src/features/events/EventsPage.tsx`,
+- `frontend/src/features/home/HomeLists.tsx`, `TermList.tsx`, `frontend/src/features/feeds/feeds.ts`, `feedCells.tsx`, `EventsPage.tsx`,
   `frontend/src/features/resource/DateTimeline.tsx`, `DateFactView.tsx` — the AI label.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`;
   `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2LiveWebCreditsHigh`.
@@ -478,4 +546,5 @@ live web events: [flow](../../diagrams/flow-0012-live-web-events-scout.svg) · [
   - [S2.2.6](https://github.com/silvioincalza/helper2.ai/issues/191): the `linkedin-scout`, `course-scout` and live web events collectors fixed.
   - [S2.13.1](https://github.com/silvioincalza/helper2.ai/issues/218): source requests and more registries.
   - [S2.14.1](https://github.com/silvioincalza/helper2.ai/issues/219): live collectors for hackathons, meetups, talks and workshops.
+  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a list page that discovery finds is split into its items; an added web page is read (point 6).
   - [S9.6.1](https://github.com/silvioincalza/helper2.ai/issues/340): each source's terms read again for commercial use.

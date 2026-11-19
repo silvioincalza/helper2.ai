@@ -17,8 +17,12 @@ run returned them: LangGraph, CrewAI, Instructor, Outlines, Spring AI, Whisper, 
 ## Decision
 
 1. **Content terms.** `QueryAnalyzer` gives `contentTerms`: the query's words without function words (English,
-   Italian, Spanish, French, German), request words ("build", "create", "best", "open", "tool", "files"…) and type
-   words ("library", "model", "paper"…). A type word stays when a content word follows it, as in
+   Italian, Spanish, French, German), request words ("build", "create", "best", "open", "tool", "files"…), device
+   words and type words ("library", "model", "paper"…). A device word names the user's own machine ("laptop", "pc",
+   "portatile", "Rechner", "ordinateur", "portátil"): it says where a tool will run, not what it is, and a keyword
+   engine that needs every word loses the good matches for it ("run llms locally laptop" on npm gives llms.txt
+   plugins; "run llms locally" gives local runners). A platform name ("macbook", "windows", "iphone") stays: a resource
+   states its platform. The required words of the index keep device words. A type word stays when a content word follows it, as in
    "model context protocol". "server" next to "mcp" goes, as for the index. A query made only of such words keeps its
    words. A word keeps the punctuation of a name ("sentence-transformers/all-minilm-l6-v2", "3.1"): the Hub matches
    part of a model id. The lists are short, fixed and visible: the same query always gives the same terms.
@@ -95,6 +99,19 @@ both arms. Merge and ranking are the production ones, replayed by the checked re
 - **Recall@20 is lower because the new results are not graded yet**: 16 % of the new top 10 has no grade, and an
   ungraded result counts as not relevant. 86 new results in the top 20 (17 queries) wait in the judging pool. The
   interval contains 0, so the decision is accepted only after they are graded and the gate is run again.
+
+Device words, live calls on 19 Nov 2026 for "Run LLMs locally on my laptop", which helper2.ai ranked with
+llms.txt plugins on top (`starlight-llms-txt`, `vitepress-plugin-llms`), `nomic-ai/gpt4all` at 25 and Ollama outside
+the first 40:
+
+| Terms | npm, first results | GitHub, first results |
+|---|---|---|
+| `run llms locally laptop` | `npm-run-path`, `node-llama-cpp`, `vitepress-plugin-llms`, `docusaurus-plugin-llms`, `nuxt-llms` | `tiny-llm-agent` (22 stars), `chatbot` (9), `ollama-run-locally` (1) |
+| `run llms locally` | `react-native-nobodywho`, `local-llm`, `react-native-quaynor`, `offline-intelligence` | `LLMs-local` (1,206), `torchchat` (3,609), `awesome-local-llm` (3,079) |
+
+The replay of [0046](../operations/0046-evaluation-guide-and-search.md) keeps the recorded source answers, so it
+cannot measure a change of the terms a live source gets: nDCG@10 stays 0.378. The query is `ev21` in the fixed set,
+measured at the next recording.
 
 ### STRIDE
 

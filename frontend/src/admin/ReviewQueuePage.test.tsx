@@ -1,10 +1,13 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReviewItem } from '@/api/types';
+
+type ReviewDetails = NonNullable<ReviewItem['details']>;
 import { ADMIN } from '@/test/fixtures';
 import { mockApi } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 
-function candidateItem(details: string) {
+function candidateItem(details: ReviewDetails) {
   return {
     items: [
       {
@@ -27,16 +30,17 @@ describe('admin: resource candidates in the review queue', () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () =>
-        candidateItem(
-          JSON.stringify({
-            sourceId: 'discovery-self-hosted',
-            url: 'https://openwebui.com/',
-            title: 'Open WebUI',
-            type: 'PRODUCT',
-            tags: ['local-ai', 'self-hosted'],
-            snippet: 'Self-hosted AI platform that runs offline.',
-          }),
-        ),
+        candidateItem({
+          shape: 'CANDIDATE',
+          revision: 'r1',
+          url: 'https://openwebui.com/',
+          title: 'Open WebUI',
+          type: 'PRODUCT',
+          tags: ['local-ai', 'self-hosted'],
+          snippet: 'Self-hosted AI platform that runs offline.',
+          foundBy: ['discovery-self-hosted'],
+          edited: [],
+        }),
     });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
     const detail = await screen.findByRole('region', { name: /Open WebUI/ });
@@ -50,24 +54,40 @@ describe('admin: resource candidates in the review queue', () => {
     expect(candidate).toHaveTextContent('Accept adds it to the catalog');
   });
 
-  it('never links a page that is not https, and shows the raw details instead', async () => {
-    const details = JSON.stringify({
-      url: 'javascript:alert(1)',
-      title: 'Bad',
-      type: 'PRODUCT',
-    });
+  it('shows a candidate the server could not read as the text it is stored as', async () => {
+    const stored = '{"url": "javascript:alert(1)", "title": "Bad", "type": "PRODUCT"}';
     mockApi({
       'GET /me': () => ADMIN,
-      'GET /admin/review-items': () => candidateItem(details),
+      'GET /admin/review-items': () => candidateItem({ shape: 'TEXT', text: stored }),
     });
     renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
-    expect(await screen.findByText(details)).toBeInTheDocument();
+    expect(await screen.findByText(stored)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Bad' })).not.toBeInTheDocument();
+  });
+
+  it('never links a page whose address is not http or https', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () =>
+        candidateItem({
+          shape: 'CANDIDATE',
+          revision: 'r1',
+          url: 'javascript:alert(1)',
+          title: 'Bad',
+          type: 'PRODUCT',
+          tags: [],
+          foundBy: [],
+          edited: [],
+        }),
+    });
+    renderAdmin('/admin/review?kind=RESOURCE_CANDIDATE');
+    await screen.findByRole('region', { name: /Open WebUI/ });
     expect(screen.queryByRole('link', { name: 'Bad' })).not.toBeInTheDocument();
   });
 });
 
 describe('admin: known target proposals in the review queue', () => {
-  const proposal = (details: string) => ({
+  const proposal = (details: ReviewDetails) => ({
     items: [
       {
         id: '66666666-6666-4666-8666-666666666666',
@@ -87,20 +107,16 @@ describe('admin: known target proposals in the review queue', () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () =>
-        proposal(
-          JSON.stringify({
-            key: 'deepseek-ai',
-            name: 'deepseek-ai',
-            kind: 'VENDOR',
-            rule: 'OWNER',
-            count: 22,
-            otherNames: [],
-            examples: [
-              { id: '77777777-7777-4777-8777-777777777777', title: 'deepseek-ai/DeepSeek-V3' },
-              { id: '88888888-8888-4888-8888-888888888888', title: 'deepseek-ai/Janus' },
-            ],
-          }),
-        ),
+        proposal({
+          shape: 'KNOWN_TARGET_PROPOSAL',
+          name: 'deepseek-ai',
+          kind: 'VENDOR',
+          rule: 'OWNER',
+          count: 22,
+          otherNames: [],
+          examples: ['deepseek-ai/DeepSeek-V3', 'deepseek-ai/Janus'],
+          edited: false,
+        }),
     });
     renderAdmin('/admin/review?kind=KNOWN_TARGET_CANDIDATE');
     const name = await screen.findByText('deepseek-ai', { selector: 'dd' });
@@ -113,23 +129,24 @@ describe('admin: known target proposals in the review queue', () => {
 
   it('saves a changed name, kind and other names, and reloads the list', async () => {
     const sent: unknown[] = [];
-    let details = JSON.stringify({
-      key: 'meta-llama',
+    let details: ReviewDetails = {
+      shape: 'KNOWN_TARGET_PROPOSAL',
       name: 'meta-llama',
       kind: 'VENDOR',
       rule: 'OWNER',
       count: 22,
       otherNames: [],
       examples: [],
-    });
+      edited: false,
+    };
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => proposal(details),
       'PUT /admin/review-items/66666666-6666-4666-8666-666666666666/known-target': (req) => {
         const body = req.body as { name: string; otherNames: string[] };
         sent.push(body);
-        details = JSON.stringify({
-          key: 'meta-llama',
+        details = {
+          shape: 'KNOWN_TARGET_PROPOSAL',
           name: body.name,
           kind: 'VENDOR',
           rule: 'OWNER',
@@ -137,7 +154,7 @@ describe('admin: known target proposals in the review queue', () => {
           otherNames: body.otherNames,
           examples: [],
           edited: true,
-        });
+        };
         return proposal(details).items[0];
       },
     });
@@ -157,14 +174,14 @@ describe('admin: known target proposals in the review queue', () => {
     expect(card).toHaveTextContent('Changed by an admin.');
   });
 
-  it('shows the raw details of a proposal it cannot read', async () => {
-    const details = JSON.stringify({ name: 'x', kind: 'PRODUCT' });
+  it('shows a proposal the server could not read as the text it is stored as', async () => {
+    const stored = '{"name": "x", "kind": "PRODUCT"}';
     mockApi({
       'GET /me': () => ADMIN,
-      'GET /admin/review-items': () => proposal(details),
+      'GET /admin/review-items': () => proposal({ shape: 'TEXT', text: stored }),
     });
     renderAdmin('/admin/review?kind=KNOWN_TARGET_CANDIDATE');
-    expect(await screen.findByText(details)).toBeInTheDocument();
+    expect(await screen.findByText(stored)).toBeInTheDocument();
   });
 });
 
@@ -174,7 +191,10 @@ describe('admin: a review row reads as a title (S6.2.9)', () => {
     kind: 'RELATIONSHIP_CANDIDATE',
     status: 'OPEN',
     reason: 'Unverified relationship: INTEGRATES_WITH Cursor',
-    details: 'Evidence supports the text, but the target is not a known resource.',
+    details: {
+      shape: 'TEXT',
+      text: 'Evidence supports the text, but the target is not a known resource.',
+    },
     resourceId: '88888888-8888-4888-8888-888888888888',
     resourceTitle: 'Figma MCP',
     createdAt: '2026-11-17T08:02:00Z',
@@ -184,16 +204,17 @@ describe('admin: a review row reads as a title (S6.2.9)', () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () =>
-        candidateItem(
-          JSON.stringify({
-            sourceId: 'discovery-self-hosted',
-            url: 'https://openwebui.com/',
-            title: 'Open WebUI',
-            type: 'PRODUCT',
-            tags: ['self-hosted'],
-            snippet: '### 1. Install it **now** with [the guide](https://openwebui.com/docs).',
-          }),
-        ),
+        candidateItem({
+          shape: 'CANDIDATE',
+          revision: 'r1',
+          url: 'https://openwebui.com/',
+          title: 'Open WebUI',
+          type: 'PRODUCT',
+          tags: ['self-hosted'],
+          snippet: '### 1. Install it **now** with [the guide](https://openwebui.com/docs).',
+          foundBy: ['discovery-self-hosted'],
+          edited: [],
+        }),
     });
     renderAdmin('/admin/review');
     const row = (
@@ -248,7 +269,7 @@ describe('admin: the review detail', () => {
       kind: 'RESOURCE_CANDIDATE',
       status: 'OPEN',
       reason,
-      details: '{}',
+      details: null,
       resourceId: null,
       resourceTitle: null,
       createdAt: '2026-11-05T03:20:00Z',

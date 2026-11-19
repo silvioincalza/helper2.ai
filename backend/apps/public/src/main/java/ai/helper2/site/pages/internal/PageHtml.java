@@ -1,13 +1,15 @@
 package ai.helper2.site.pages.internal;
 
+import ai.helper2.catalog.ResourcePathsKt;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.Fact;
 import ai.helper2.site.pages.Link;
+import ai.helper2.site.pages.Listing;
 import ai.helper2.site.pages.PageBody;
 import ai.helper2.site.pages.PageHead;
+import ai.helper2.site.pages.PageLink;
 import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
-import ai.helper2.site.pages.ResourcePathsKt;
 import ai.helper2.site.pages.config.PagesProperties;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +74,12 @@ public class PageHtml {
       if (description != null) {
         meta(h, "property", "og:description", description);
       }
-      meta(h, "name", "twitter:card", "summary");
+      meta(h, "property", "og:image", base + Pages.SOCIAL_IMAGE);
+      meta(h, "property", "og:image:type", "image/png");
+      meta(h, "property", "og:image:width", String.valueOf(Pages.SOCIAL_IMAGE_WIDTH));
+      meta(h, "property", "og:image:height", String.valueOf(Pages.SOCIAL_IMAGE_HEIGHT));
+      meta(h, "property", "og:image:alt", Pages.SOCIAL_IMAGE_ALT);
+      meta(h, "name", "twitter:card", "summary_large_image");
     }
     monetisation
         .adsenseClient()
@@ -116,6 +123,11 @@ public class PageHtml {
     if (description != null) {
       b.append("<p>").append(esc(description)).append("</p>");
     }
+    Listing listing = body.getListing();
+    if (listing != null && !listing.getItems().isEmpty()) {
+      b.append("<h2>").append(esc(listing.getHeading())).append("</h2>");
+      list(b, listing.getItems(), (Related r) -> resourceLink(r));
+    }
     list(b, body.getFacts(), (Fact f) -> "<b>" + esc(f.getName()) + ":</b> " + esc(f.getValue()));
     if (!body.getSources().isEmpty()) {
       b.append("<h2>Sources</h2>");
@@ -123,10 +135,16 @@ public class PageHtml {
     }
     if (!body.getRelated().isEmpty()) {
       b.append("<h2>Related</h2>");
-      list(
-          b,
-          body.getRelated(),
-          (Related r) -> link(ResourcePathsKt.resourcePath(r.getId(), r.getTitle()), r.getTitle()));
+      list(b, body.getRelated(), (Related r) -> resourceLink(r));
+    }
+    if (!body.getFoundIn().isEmpty()) {
+      b.append("<h2>Found in these lists</h2>");
+      list(b, body.getFoundIn(), (Related r) -> resourceLink(r));
+    }
+    if (!body.getPages().isEmpty()) {
+      b.append("<nav><h2>More on ").append(esc(Pages.BRAND)).append("</h2>");
+      list(b, body.getPages(), (PageLink p) -> link(p.getPath(), p.getName()));
+      b.append("</nav>");
     }
     return b.append("</main>").toString();
   }
@@ -139,6 +157,10 @@ public class PageHtml {
     b.append("<ul>");
     items.forEach(i -> b.append("<li>").append(item.apply(i)).append("</li>"));
     b.append("</ul>");
+  }
+
+  private static String resourceLink(Related r) {
+    return link(ResourcePathsKt.resourcePath(r.getId(), r.getTitle()), r.getTitle());
   }
 
   private static String sourceLink(Link l) {

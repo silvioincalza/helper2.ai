@@ -12,6 +12,7 @@ import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.internal.ReviewEvidenceFixture;
 import ai.helper2.catalog.usecase.CurateField;
+import ai.helper2.platform.ProblemType;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
 import ai.helper2.search.SourceContext;
@@ -261,6 +262,83 @@ class CuratedFieldApiIT extends ApiTestBase {
     set(UUID.randomUUID(), "pricing", "PAID").andExpect(status().isNotFound());
     set(fixture.resource, "nonsense", "x").andExpect(status().isBadRequest());
 
+    assertThat(column("curated_fields")).isEqualTo("{}");
+    assertThat(audit()).isEmpty();
+  }
+
+  ResultActions drop(UUID resource, String field) throws Exception {
+    return mvc.perform(
+        post("/api/v1/admin/resources/" + resource + "/fields/" + field + "/drop")
+            .with(admin)
+            .with(csrf().asHeader()));
+  }
+
+  @Test
+  void aFieldThatCannotBeSetIsRefusedWithItsName() throws Exception {
+    set(fixture.resource, "useCase", "coding")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This field cannot be set: useCase."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aValueTheFieldCannotTakeIsRefusedWithTheFieldsName() throws Exception {
+    set(fixture.resource, "pricing", "CHEAP")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This value is not allowed for pricing."));
+    set(fixture.resource, "language", "xx")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "This value is not allowed for language."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void anEmptyDescriptionIsRefusedWithTheLengthItMustHave() throws Exception {
+    set(fixture.resource, "description", " ")
+        .andExpect(
+            problem(ProblemType.INVALID_REQUEST, "The description must be 1 to 4000 characters."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aPublishedDateThatIsNoDateIsRefusedWithTheFormatItMustHave() throws Exception {
+    set(fixture.resource, "publishedAt", "2 March")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "The published date must be YYYY-MM-DD."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aPublishedDateInTheFutureIsRefusedAsSuch() throws Exception {
+    set(fixture.resource, "publishedAt", "2999-01-01")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "The published date is in the future."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aDropOfAFieldTheAiDoesNotWriteIsRefusedWithItsName() throws Exception {
+    drop(fixture.resource, "description")
+        .andExpect(
+            problem(ProblemType.INVALID_REQUEST, "The AI writes no such field: description."));
+
+    assertNothingChanged();
+  }
+
+  @Test
+  void aSetOrDropOnAResourceThatIsGoneIsNotFound() throws Exception {
+    String missing = "Resource not found.";
+    UUID unknown = UUID.randomUUID();
+
+    set(unknown, "pricing", "PAID").andExpect(problem(ProblemType.NOT_FOUND, missing));
+    set(unknown, "description", "Writes notes.").andExpect(problem(ProblemType.NOT_FOUND, missing));
+    set(unknown, "publishedAt", "2025-03-02").andExpect(problem(ProblemType.NOT_FOUND, missing));
+    drop(unknown, "license").andExpect(problem(ProblemType.NOT_FOUND, missing));
+
+    assertNothingChanged();
+  }
+
+  private void assertNothingChanged() {
     assertThat(column("curated_fields")).isEqualTo("{}");
     assertThat(audit()).isEmpty();
   }

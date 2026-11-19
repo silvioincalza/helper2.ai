@@ -5,26 +5,35 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.scout.usecase.OneScoutRun;
 import ai.helper2.search.PopularityKind;
+import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.Vitality;
+import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
+import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -111,7 +120,8 @@ class GitHubAwesomeCollectorTest {
   GitHubAwesomeCollector collector(
       RepoClassifier classifier, int perRun, String token, GitHubAwesomeCollector.Deep deep) {
     return new GitHubAwesomeCollector(
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -124,12 +134,31 @@ class GitHubAwesomeCollectorTest {
         ai.helper2.shared.CategoryMatcher.NONE,
         new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
         SeedDiscoveryHosts.store(),
-        SourceFixtures.SHADOW_LIBRARIES);
+        new InMemoryListSeedStore(),
+        SourceFixtures.SHADOW_LIBRARIES,
+        NO_LINK_RULES);
   }
+
+  static final GitHubAwesomeCollector.LinkRules NO_LINK_RULES =
+      new GitHubAwesomeCollector.LinkRules(
+          new ai.helper2.sources.liveweb.scout.CoursePages(List.of()),
+          null,
+          new ai.helper2.scout.admission.AdmissionPolicy(),
+          null,
+          null);
 
   static final GitHubAwesomeCollector.Deep DEEP =
       new GitHubAwesomeCollector.Deep(
-          2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
+          2,
+          30,
+          Duration.ofMinutes(15),
+          50_000_000L,
+          500,
+          100,
+          200,
+          100,
+          50,
+          List.of("youtube.com"));
 
   void routes() {
     server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
@@ -148,6 +177,49 @@ class GitHubAwesomeCollectorTest {
     routes();
 
     CollectedBatch batch = collector(new FakeModel(), 200, "t").collect(null, null, 500);
+    assertThat(
+            batch.getHits().stream()
+                .filter(h -> h.getTags().contains(GitHubAwesomeCollector.LIST_TAG))
+                .findFirst()
+                .orElseThrow())
+        .isEqualTo(
+            new SourceHit(
+                "github-awesome",
+                "acme/awesome-llm",
+                URI.create("https://github.com/acme/awesome-llm"),
+                CanonicalUrl.of("https://github.com/acme/awesome-llm"),
+                null,
+                "acme/awesome-llm",
+                "A curated list of LLM tools",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.ARTICLE,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of("awesome-list", "llm"),
+                "CC0-1.0",
+                null,
+                Set.of(),
+                null,
+                new DateFact(
+                    Instant.parse("2023-01-01T00:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-10-01T00:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.GITHUB_STARS,
+                        5000L,
+                        "github",
+                        SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant()));
 
     assertThat(batch.getHits())
         .filteredOn(h -> h.getTags().contains(GitHubAwesomeCollector.LIST_TAG))
@@ -194,6 +266,56 @@ class GitHubAwesomeCollectorTest {
         .extracting(SourceHit::getExternalId)
         .containsExactly("openinterpreter/openinterpreter", "someone/archived");
     SourceHit hit = entryHits(batch).getFirst();
+    assertThat(hit)
+        .isEqualTo(
+            new SourceHit(
+                "github-awesome",
+                "openinterpreter/openinterpreter",
+                URI.create("https://github.com/openinterpreter/openinterpreter"),
+                CanonicalUrl.of("https://github.com/openinterpreter/openinterpreter"),
+                null,
+                "openinterpreter/openinterpreter",
+                "A natural language interface for computers",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.AGENT,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of("llm"),
+                "AGPL-3.0",
+                null,
+                Set.of(),
+                true,
+                new DateFact(
+                    Instant.parse("2023-07-14T00:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-10-20T00:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "github",
+                    List.of(),
+                    false),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.GITHUB_STARS,
+                        68671L,
+                        "github",
+                        SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant(),
+                1,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                null,
+                null,
+                null,
+                Map.of(),
+                Set.of(),
+                null,
+                Set.of(),
+                new Vitality(false, false, null, null)));
     assertThat(hit.getSourceId()).isEqualTo("github-awesome");
     assertThat(hit.getType()).isEqualTo(ResourceType.AGENT);
     assertThat(hit.getDescription()).isEqualTo("A natural language interface for computers");
@@ -251,7 +373,16 @@ class GitHubAwesomeCollectorTest {
 
   static final GitHubAwesomeCollector.Deep NO_NESTED_LISTS =
       new GitHubAwesomeCollector.Deep(
-          0, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
+          0,
+          30,
+          Duration.ofMinutes(15),
+          50_000_000L,
+          500,
+          100,
+          200,
+          100,
+          50,
+          List.of("youtube.com"));
 
   @Test
   void aRepositoryTheModelCallsAListIsOneOnlyWhenItsReadmeReadsAsOneAndKeepsItsKindOtherwise() {
@@ -323,7 +454,7 @@ class GitHubAwesomeCollectorTest {
         "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
     GitHubAwesomeCollector.Deep oneSmallReadme =
         new GitHubAwesomeCollector.Deep(
-            0, 30, Duration.ofMinutes(15), 10L, 500, 50, List.of("youtube.com"));
+            0, 30, Duration.ofMinutes(15), 10L, 500, 100, 200, 100, 50, List.of("youtube.com"));
 
     CollectedBatch batch = collector(model, 200, "t", oneSmallReadme).collect(null, null, 500);
 
@@ -467,10 +598,10 @@ class GitHubAwesomeCollectorTest {
     var json = tools.jackson.databind.json.JsonMapper.builder().build();
     List<AwesomeListParser.Entry> slice =
         List.of(
-            new AwesomeListParser.Entry("someone/deleted", "s", "h", "t"),
-            new AwesomeListParser.Entry("Acme/Old-Tool", "s", "h", "t"),
-            new AwesomeListParser.Entry("KillianLucas/open-interpreter", "s", "h", "t"),
-            new AwesomeListParser.Entry("acme/live", "s", "h", "t"));
+            new AwesomeListParser.Entry("someone/deleted", "s", "h", "t", false),
+            new AwesomeListParser.Entry("Acme/Old-Tool", "s", "h", "t", false),
+            new AwesomeListParser.Entry("KillianLucas/open-interpreter", "s", "h", "t", false),
+            new AwesomeListParser.Entry("acme/live", "s", "h", "t", false));
     Map<String, tools.jackson.databind.JsonNode> facts =
         Map.of(
             "acme/old-tool",
@@ -514,8 +645,8 @@ class GitHubAwesomeCollectorTest {
     var json = tools.jackson.databind.json.JsonMapper.builder().build();
     List<AwesomeListParser.Entry> batch =
         List.of(
-            new AwesomeListParser.Entry("a/live", "s", "h", "t"),
-            new AwesomeListParser.Entry("b/gone", "s", "h", "t"));
+            new AwesomeListParser.Entry("a/live", "s", "h", "t", false),
+            new AwesomeListParser.Entry("b/gone", "s", "h", "t", false));
     var data = json.readTree("{\"r0\":{\"nameWithOwner\":\"a/live\"},\"r1\":null}");
 
     assertThat(

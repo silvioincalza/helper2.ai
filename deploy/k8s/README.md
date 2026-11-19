@@ -207,16 +207,16 @@ stays as the new release migrated it.
 ## Backups
 
 With `backup.enabled: true`, the CronJob `pg-backup` (02:30 in `backup.timeZone`) writes
-`pg_dump --no-owner | gzip` to `/backup/helper2-<date>.sql.gz` on the PVC `pg-backup` (the newest
-`backup.retentionDays` dumps, 7, chosen by the date in their name, and none older than 7 days; kept on
-`helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
-fails the Job; the dump replaces the old one only after `gzip -t` and a size check, and old dumps are deleted
-after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
+`pg_dump --no-owner | gzip` to `/backup/helper2-<UTC date>T<UTC time>Z.sql.gz` on the PVC `pg-backup`. Each run
+has its own file, so a run by hand (`kubectl create job --from=cronjob/pg-backup`) never replaces the nightly dump.
+It keeps the dumps of the newest `backup.retentionDays` dates in their names, 7, and none older than 7 days; the PVC
+is kept on `helm uninstall`. Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
+fails the Job; a dump takes its name only after `gzip -t` and a size check, and old dumps are deleted after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
 36 hours (the stale alert needs one successful run first: check the first night by hand).
 
-**Off-site copy** (`backup.offsite`, off by default): after the dump, rclone encrypts tonight's dump
+**Off-site copy** (`backup.offsite`, off by default): after the dump, rclone encrypts the new dump
 (`rclone crypt`, with the password in the Secret) and copies it to S3-compatible storage (for example
-Cloudflare R2) as `<prefix>/helper2-<date>.sql.gz.bin`. The storage provider never gets the password. rclone never
+Cloudflare R2) as `<prefix>/helper2-<UTC date>T<UTC time>Z.sql.gz.bin`. The storage provider never gets the password. rclone never
 deletes there; retention is the bucket's lifecycle rule. It copies only a dump younger than `backup.offsite.maxAge`
 (24 hours), so a dump the lifecycle rule deleted is not uploaded again: rerun a failed upload the same day. To turn
 it on:
@@ -247,7 +247,7 @@ has succeeded for 8 days (it too needs one successful run first: run the first o
 `CREATE EXTENSION vector` and Flyway's history, so the app starts on it as usual:
 
 ```bash
-NS=helper2; F=helper2-2026-10-27.sql.gz
+NS=helper2; F=helper2-2026-10-27T013000Z.sql.gz
 kubectl -n $NS scale deployment/helper2 --replicas=0
 kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 \
   -c 'DROP SCHEMA public CASCADE' -c 'CREATE SCHEMA public'
@@ -299,10 +299,15 @@ The hosted images are signed with a key in OpenBao Transit, and a deploy runs th
 signature, pinned by digest (`image.digest`, `web.image.digest`, `backoffice.image.digest`, `postgres.image.digest`;
 [ADR 0044](../../docs/adr/operations/0044-ci-cd-and-supply-chain.md)). `make diff`, `env-secret` and
 `deploy` check the signatures themselves first (`make verified`, into `<env>/digests.env`) and take the digests only
-from that check. By hand, from the workstation (cosign installed, a token that reads `ci/harbor`):
+from that check. By hand, from the workstation (cosign installed, `BAO_ADDR` set to your OpenBao, a token that reads
+`ci/harbor`):
 
 ```bash
+export BAO_ADDR=https://<your OpenBao>
 make ENV=staging TAG=<tag> deploy
 ```
+
+Every target that reads OpenBao (`credentials`, `backup-credentials`, the signature check) stops with a message when
+`BAO_ADDR` is not set; without it `bao` would try `127.0.0.1:8200`. The scripts run with the bash of macOS (3.2) too.
 
 Without a digest the chart names each image by tag, so another cluster needs no signature.

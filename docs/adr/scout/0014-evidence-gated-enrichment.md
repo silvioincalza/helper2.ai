@@ -33,7 +33,7 @@ place to say that.
    `sourceStated`. The first 16 bytes of a SHA-256 of the material text are its text hash.
 2. **The fingerprint and the UNCHANGED skip.** The input fingerprint (`EnrichmentMaterial.fingerprintFor`) is the same
    kind of hash over the text hash, a fixed epoch (`FINGERPRINT_EPOCH`, `enrich-v3`) and the model id. The prompt's
-   label is not in it: a new prompt alone sends nothing to the model; a new model or new source text does. To enrich
+   version is not in it: a new prompt alone sends nothing to the model; a new model or new source text does. To enrich
    every resource again on purpose, change the epoch. If the resource's last run that judged an answer (any outcome but
    `LLM_UNAVAILABLE` and `FAILED`) has the same fingerprint, there is no model call and nothing is recorded: a new star
    count or version costs no call, and a `REJECTED` answer is not asked for again on the same text. `RunScout` gives the
@@ -41,8 +41,11 @@ place to say that.
 3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
    apart from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
 4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192),
-   prompt `prompts/scout/enrich.txt`, label `enrich-v12` (stored with every run). A test pins the rendered prompt to
-   its label, so a new wording needs a new label. For a relationship the model also states what its target is
+   prompt `prompts/scout/enrich.txt`. The prompt's version is the hash of the rendered system prompt
+   (`ModelCallMetrics.promptVersion`, [0008](../foundation/0008-llm-integration.md) §9): the same value is stored with
+   every run (`enrichment_run.prompt_version`), tags the meters and shows in the settings. A test pins the version
+   (`128470b5`), so a new wording is seen before it ships: it makes the stored runs older (point 23). For a
+   relationship the model also states what its target is
    (`targetKind`, [0019](0019-known-targets-vendors-and-services.md) §6): a judgement that verifies nothing. The user message has the
    resource's type next to its title (`Type: NEWS`); the type comes from the catalog, never from the model. Under it
    are the fields and the relationship kinds that type keeps (`FieldsByType.fieldsFor`, `kindsFor`): writing gets
@@ -58,7 +61,8 @@ place to say that.
    the validator's own sets. The output schema has no estimate field: an estimate is a field with no citation.
 5. **Outcomes of the call.** A spent budget or a transient provider error (timeout, 429, 5xx) → `LLM_UNAVAILABLE`, kept
    in the backlog. Any other provider error, an empty answer or JSON that does not parse → `FAILED` (resource status
-   `REJECTED`), retried by the backlog until 3 failures.
+   `REJECTED`), retried by the backlog until 3 failures. A Scout run counts it as failed, and an answer of which nothing
+   was kept as rejected ([0011](0011-scout-runner.md) §6).
 6. **`EvidenceValidator`** (code, no model). For each proposed field, relationship and summary claim:
    - field and value must be in the allowed lists (type, audience, techLevel, pricing, openSource, a licence id in the
      style of SPDX, useCase, platforms; relationship kinds `INTEGRATES_WITH`, `USES`, `SUPPORTS`, `COMPATIBLE_WITH`,
@@ -132,9 +136,10 @@ place to say that.
    `AI_ESTIMATED`. As in [0033](../guide/0033-marking-ai-written-text-research-trail.md): the page labels them
    "AI-estimated" and marks them `data-ai-generated`; the API says `origin: AI_ESTIMATED` (OpenAPI enum `ValueOrigin`).
 8. **Storage, owned by the catalog.** The Scout hands each run to the catalog's port `EnrichmentResults`
-   (`record(run, checked items)`); the SQL is in `catalog/internal/JdbcEnrichmentResults`, which also reads the results
-   back for the detail page. Every run is an `enrichment_run` row: provider, model, prompt label, fingerprint, outcome,
-   errors, and the extra text it used (`extra_evidence`). In the same transaction, a run with model output:
+   (`record(run, checked items)`); the SQL is in `catalog/internal/JdbcEnrichmentResults`. `JdbcResourceDetailReads`
+   reads the results back for the detail page (port `EnrichmentFacts`). Every run is an `enrichment_run` row:
+   provider, model, prompt label, fingerprint, outcome, errors, and the extra text it used (`extra_evidence`). In the
+   same transaction, a run with model output:
    - closes the resource's `OPEN` review items of earlier runs as `SUPERSEDED` (resolved by the system, with a note
      naming the new run);
    - deletes the resource's older AI field assertions, and its AI relationships that no reviewer decided (no `ACCEPTED`
@@ -201,7 +206,8 @@ place to say that.
     - a `github` or `github-awesome` record: that repository's README;
     - a discovery record (`discovery-<category>`, `WebSources.isDiscovery`) whose URL is `github.com/<owner>/<repo>`: a
       person accepted it;
-    - an `hf-models`, `hf-trending` or `hf-provider-orgs` record: that model's card;
+    - an `hf-models`, `hf-trending` or `hf-provider-orgs` record, or a `github-awesome` record of a model a list
+      links to (`huggingface.co/{owner}/{name}`): that model's card;
     - an `mcp-registry` record: its repository's README, only when the entry's namespace is `io.github.<owner>` and
       `<owner>` owns the repository. Anyone can publish an entry that links any repository; without this check a famous
       README would prove facts about someone else's server.
@@ -237,7 +243,8 @@ place to say that.
     - The accepted page first, then up to 3 pages its links lead to whose last path segment is `pricing`, `plans`,
       `download(s)`, `features`, `docs`, `documentation`, `integrations` or `about`, best first. At most 5 URLs a
       product.
-    - Allowed: `https` only; a host name, not an IP address; no user info; no port but 443.
+    - Allowed: what the Scout's host check allows (`WebAddresses`, [0013](0013-discovery.md) §17): `https` only; a
+      public host name, not an IP address or a private or reserved name; no user info; no port but https's own 443.
     - Scope: the same registrable domain (Public Suffix List, the copy that ships with Apache HttpClient 5, already a
       dependency); on a shared host (`github.io`, `vercel.app`, `netlify.app`, `pages.dev`, `hf.space`, `notion.site`,
       `webflow.io`) the exact subdomain; for a page under a path (`aws.amazon.com/bedrock`) that host and path prefix.
@@ -282,7 +289,8 @@ place to say that.
       `helper2.scout.evidence.credits.remaining`.
     - **The one exception to "no page text stored".** The cleaned text of a product's pages (what `UntrustedPageText`
       left) is kept in Redis only, under a SHA-256 of the accepted page's URL, for `page-text-ttl`
-      (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`, PT24H; more than P1D stops startup). Only to retry: when the model is down or
+      (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`, PT24H; more than P1D stops startup of both apps). One record binds the two
+      periods, `ScoutEvidenceProperties` (catalog); the back office reads them from `ScoutPolicy`. Only to retry: when the model is down or
       the gap cap is spent, the next attempt within the day reads the cache and pays no credit. The raw page is never
       kept, and the text never goes to Postgres, logs or metrics. A cache that cannot be read or written does not stop
       the run: the read is a miss, and a warning names the class of the failure, never the URL or the text.
@@ -320,7 +328,7 @@ place to say that.
     - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its
       only issues are values the quote does not state; never when the run has a `CONFLICTING` field
       (`closeItemsWithNothingToDecide`; counter result `items_closed`);
-    - a resource goes back to the model only when its last run used an older prompt label and it still misses a
+    - a resource goes back to the model only when its last run used another prompt version and it still misses a
       target fact (`FieldTargets`) with more to read (a README or model card, or its own pages), or it has no summary
       sentence and a README or model card to read. It is set back to `NOT_RUN`:
       the backlog takes it, accepted products first, inside the daily caps. `resource.enrichment_rerun_requested_at`
@@ -334,7 +342,10 @@ place to say that.
     run holds it, the call answers 409 `run-in-progress` ("A Scout run is in progress. Try again later."), changes
     nothing and writes no audit entry. Idempotent: a second run changes
     nothing. Log line and counter `helper2.scout.recheck{result=checked|fields_rejected|claims_dropped|runs_requested}`.
-    A prompt with new rules gets a new label and a new marker, so the re-check runs once for it.
+    A prompt with new rules gets a new marker (`RecheckEnrichments.TASK`), so the re-check runs once for it.
+    The runs stored under the label `enrich-v12` carry the version of the prompt that label named:
+    `V2026.11.8.1__prompt_version_is_the_prompt_hash.sql` writes `128470b5` on them, so they are not older than
+    the prompt. Runs under any other label stay older.
 
 ### What people see
 24. **Observability.** Counter `helper2.scout.fields{type,field,state,step}` per target and judgement field of the kept
@@ -360,12 +371,13 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   ABOUT cap; `FieldsByType.kt`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `GapTargets`, `GapKind`,
   `UntrustedPageText`, ports `ExtraEvidence`, `GapBudget`; `OfficialPages.kt` — `FieldTargets`, `PageTargets`,
-  `PageScope`, `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`,
+  `PageScope` (its address rule is `shared/WebAddresses.kt`), `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`,
   `DomainRoots`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt` — the re-check, port
-  `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java`.
+  `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java` (the stored answers through `StoredEnrichments`, the
+  done mark of the task through the catalog's `JobMarkers`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java` (`PROMPT`,
-  `PROMPT_VERSION`, material kind), `CatalogEnrichmentStore.java`, `ScoutConfiguration.java` (budgets,
+  `promptVersion`, material kind), `CatalogEnrichmentStore.java`, `ScoutConfiguration.java` (budgets,
   `officialPages`), `RedisPageTextCache.java`, `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`.
 - `backend/apps/backoffice/src/main/resources/prompts/scout/enrich.txt`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`, `LiveWebPageReader.java`,
@@ -373,7 +385,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - `backend/libs/core/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java`,
   `StoredEnrichments.java` (named interface `enrichment`); `catalog/internal/JdbcEnrichmentCandidates.java` (each source
   text with its source id, external id and repository link; accepted products first), `JdbcEnrichmentResults.java`
-  (origins, evidence with its own URL, the stored type).
+  (origins, evidence with its own URL, the stored type), `JdbcResourceDetailReads.java` (the detail page's reads).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `GetReviewItem.java`, `ResolveReviewItem.java`;
   `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`.
@@ -384,11 +396,11 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
 - `frontend/src/features/resource/FieldStates.tsx`, `frontend/src/features/resource/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`,
   `evidenceSource.ts`, `frontend/src/features/resource/EvidenceList.tsx`, `frontend/src/admin/ScoutRunsPage.tsx`.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
-- Tests: `SpringAiEnrichmentModelTest` (`theWordingOfThePromptIsPinnedToItsLabel`), `EnrichResourceTest`,
+- Tests: `SpringAiEnrichmentModelTest` (`aNewWordingOfThePromptIsANewVersionAndMakesTheStoredRunsStale`), `EnrichResourceTest`,
   `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `FieldTargetsTest`, `EvidenceValidatorLadderTest`,
   `EvidenceValidatorWritingTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
-  `LiveWebPageReaderTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`,
-  `RedisPageTextCacheIT`, `RedisPageTextCacheTest`, `ScoutPropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
+  `LiveWebPageReaderTest`, `PublicSuffixDomainsTest`, `PageReaderCreditBudgetTest`, `RecheckEnrichmentsTest`, `PromptVersionOfStoredRunsIT`,
+  `RedisPageTextCacheIT`, `RedisPageTextCacheTest`, `ScoutPropertiesBindingTest`, `ScoutEvidencePropertiesBindingTest`, `CatalogEnrichmentStoreIT`, `CatalogEnrichmentStoreTest`,
   `JdbcEnrichmentCandidatesIT`, `SecurityIT`, `ResourcePage.test.tsx`, `Admin.test.tsx`, `evidenceSource.test.ts`.
 
 ## Alternatives considered
@@ -434,6 +446,12 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   products), inside the global cap. See [cost-analysis](../../cost-analysis.md).
 - A new prompt does not re-enrich the catalog: the code re-check cleans the stored answers once; only resources that
   still miss facts and have something new to read go to the model again, accepted products first.
+- Any new wording of the enrichment prompt is a new version, a typo fix too. From then on a re-check sends every
+  resource that still misses facts and has more to read back to the model, inside the daily caps. The pinned version
+  in `SpringAiEnrichmentModelTest` fails first, so the change is a choice.
+- A back office older than `V2026.11.8.1` still writes and expects the label `enrich-v12`. A run it stores after the
+  migration counts as older, and after a rollback to it a re-check sends the resources that miss facts to the model
+  again, inside the daily caps.
 - A resource is read again only when its source records change, or the model changes. A page is read once in 30 days:
   a price that changes later is not seen until then. A retry after the 24-hour text expired pays Tavily
   again (one or two credits).

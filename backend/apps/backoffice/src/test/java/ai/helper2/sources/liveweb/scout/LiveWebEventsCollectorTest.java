@@ -7,10 +7,14 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.events.EventReader;
 import ai.helper2.sources.events.EventReading;
@@ -20,12 +24,15 @@ import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -35,12 +42,12 @@ class LiveWebEventsCollectorTest {
   static final String SEARCH =
       """
       {"results":[
-        {"url":"https://hack.example/zurich-2027","title":"Zurich AI Builders Hackathon 2027",
+        {"url":"https://hack.dev/zurich-2027","title":"Zurich AI Builders Hackathon 2027",
          "content":"Build AI agents with open models over one weekend."},
-        {"url":"https://summit.example/ai","title":"AI Summit Europe",
+        {"url":"https://summit.dev/ai","title":"AI Summit Europe",
          "content":"The AI summit for builders."},
-        {"url":"http://plain.example/ai-meetup","title":"AI meetup","content":"An AI meetup, no https."},
-        {"url":"https://garden.example/roses","title":"Rose show","content":"Roses and tulips."}
+        {"url":"http://plain.dev/ai-meetup","title":"AI meetup","content":"An AI meetup, no https."},
+        {"url":"https://garden.dev/roses","title":"Rose show","content":"Roses and tulips."}
       ],"usage":{"credits":1}}\
       """;
 
@@ -49,13 +56,13 @@ class LiveWebEventsCollectorTest {
           + "This is an in-person hackathon at ETH Zurich, Switzerland.";
   static final String SUMMIT_PAGE =
       "AI Summit Europe takes place on 20–21 January 2027 in Amsterdam."
-          + " Questions: anna@summit.example or +41 44 123 45 67.";
+          + " Questions: anna@summit.dev or +41 44 123 45 67.";
 
   static final String EXTRACT =
       """
       {"results":[
-        {"url":"https://hack.example/zurich-2027","raw_content":"%s"},
-        {"url":"https://summit.example/ai","raw_content":"%s"}
+        {"url":"https://hack.dev/zurich-2027","raw_content":"%s"},
+        {"url":"https://summit.dev/ai","raw_content":"%s"}
       ],"failed_results":[],"usage":{"credits":1}}\
       """
           .formatted(HACK_PAGE, SUMMIT_PAGE);
@@ -128,7 +135,7 @@ class LiveWebEventsCollectorTest {
   LiveWebEventsCollector collector(long creditCap, EventReader reader, UndatedEvents undated) {
     return new LiveWebEventsCollector(
         new SourceSettings(
-            true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO),
+            true, server.baseUrl(), "tvly-test", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -152,6 +159,57 @@ class LiveWebEventsCollectorTest {
 
     assertThat(batch.getHits()).hasSize(1);
     SourceHit event = batch.getHits().getFirst();
+    assertThat(event)
+        .isEqualTo(
+            new SourceHit(
+                "live-web-events-scout",
+                "https://hack.dev/zurich-2027",
+                URI.create("https://hack.dev/zurich-2027"),
+                CanonicalUrl.of("https://hack.dev/zurich-2027"),
+                null,
+                "Zurich AI Builders Hackathon 2027",
+                "Build AI agents with open models over one weekend.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2027-03-12T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2027-03-14T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                "ETH Zurich, Switzerland",
+                EventKind.HACKATHON,
+                EventFormat.IN_PERSON,
+                Map.of(
+                    "eventEvidence",
+                    Map.of(
+                        "dateQuote",
+                        "**When:** 12–14 March 2027",
+                        "model",
+                        "nemotron-super",
+                        "promptVersion",
+                        "p1"),
+                    "query",
+                    "AI hackathons")));
     assertThat(event.getSourceId()).isEqualTo(LiveWebEventsCollector.ID);
     assertThat(event.getType()).isEqualTo(ResourceType.EVENT);
     assertThat(event.getTitle()).isEqualTo("Zurich AI Builders Hackathon 2027");
@@ -186,7 +244,7 @@ class LiveWebEventsCollectorTest {
         .contains("\"search_depth\":\"basic\"")
         .contains("\"include_usage\":true");
     assertThat(server.requestBodies.getLast())
-        .contains("\"urls\":[\"https://hack.example/zurich-2027\",\"https://summit.example/ai\"]")
+        .contains("\"urls\":[\"https://hack.dev/zurich-2027\",\"https://summit.dev/ai\"]")
         .contains("\"extract_depth\":\"basic\"");
     assertThat(pagesRead).containsExactly("Zurich AI Builders Hackathon 2027", "AI Summit Europe");
     assertThat(counter.counts.values()).contains(3L);
@@ -268,7 +326,7 @@ class LiveWebEventsCollectorTest {
 
     assertThat(textsRead.getLast())
         .contains("[email]", "[phone]")
-        .doesNotContain("anna@summit.example", "123 45 67");
+        .doesNotContain("anna@summit.dev", "123 45 67");
   }
 
   static SourceHit page(String url) {
@@ -300,19 +358,14 @@ class LiveWebEventsCollectorTest {
   @Test
   void every_query_gets_its_share_of_the_pages_read() {
     List<SourceHit> hackathons =
-        List.of(
-            page("https://h.example/1"), page("https://h.example/2"), page("https://h.example/3"));
+        List.of(page("https://h.dev/1"), page("https://h.dev/2"), page("https://h.dev/3"));
     List<SourceHit> workshops =
-        List.of(
-            page("https://w.example/1"), page("https://h.example/2"), page("https://w.example/3"));
+        List.of(page("https://w.dev/1"), page("https://h.dev/2"), page("https://w.dev/3"));
 
     assertThat(LiveWebEventsCollector.interleaved(List.of(hackathons, workshops), 4))
         .extracting(h -> h.getCanonicalUrl().getValue())
         .containsExactly(
-            "https://h.example/1",
-            "https://w.example/1",
-            "https://h.example/2",
-            "https://h.example/3");
+            "https://h.dev/1", "https://w.dev/1", "https://h.dev/2", "https://h.dev/3");
   }
 
   static final String NO_RESULTS = "{\"results\":[],\"usage\":{\"credits\":1}}";
@@ -367,6 +420,57 @@ class LiveWebEventsCollectorTest {
             SourceFixtures.CLOCK.instant().minus(LiveWebEventsCollector.UNDATED_LOOKBACK));
     assertThat(batch.getHits()).hasSize(1);
     SourceHit event = batch.getHits().getFirst();
+    assertThat(event)
+        .isEqualTo(
+            new SourceHit(
+                "live-web-events-scout",
+                "https://agenticdays.com",
+                URI.create("https://www.agenticdays.com/"),
+                CanonicalUrl.of("https://agenticdays.com"),
+                null,
+                "Agentic Engineering Days Zurich 2026",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                null,
+                null,
+                null,
+                Map.of(
+                    "eventEvidence",
+                    Map.of(
+                        "dateQuote",
+                        "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station",
+                        "model",
+                        "nemotron-super",
+                        "promptVersion",
+                        "p1"),
+                    "query",
+                    "catalog:undated-events")));
     assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
     assertThat(event.getType()).isEqualTo(ResourceType.EVENT);
     assertThat(event.getEventStart().getValue()).hasToString("2026-11-20T00:00:00Z");
@@ -481,8 +585,8 @@ class LiveWebEventsCollectorTest {
     collector(40, reader(LiveWebEventsCollectorTest::readsBoth), undated).collect(null, null, 500);
 
     assertThat(server.requestBodies.getLast())
-        .contains("\"https://hack.example/zurich-2027\"")
-        .contains("\"https://summit.example/ai\"")
+        .contains("\"https://hack.dev/zurich-2027\"")
+        .contains("\"https://summit.dev/ai\"")
         .contains("agenticdays.com");
   }
 
@@ -516,7 +620,7 @@ class LiveWebEventsCollectorTest {
         (since, after, limit) ->
             List.of(
                 new UndatedEvents.Page(
-                    "https://hack.example/zurich-2027",
+                    "https://hack.dev/zurich-2027",
                     "Zurich AI Builders Hackathon 2027",
                     position(1)));
 
@@ -585,6 +689,59 @@ class LiveWebEventsCollectorTest {
                 : Optional.empty());
 
     CollectedBatch batch = collector(40, onlyTheSite, undated).collect(null, null, 500);
+    assertThat(batch.getHits().getFirst())
+        .isEqualTo(
+            new SourceHit(
+                "live-web-events-scout",
+                "https://agenticdays.com",
+                URI.create("https://www.agenticdays.com/"),
+                CanonicalUrl.of("https://agenticdays.com"),
+                null,
+                "Agentic Engineering Days Zurich 2026",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "live-web-events-scout",
+                    List.of(),
+                    false),
+                null,
+                null,
+                null,
+                Map.of(
+                    "eventEvidence",
+                    Map.of(
+                        "dateQuote",
+                        "Agentic Engineering Days Zurich 2026 November 20, 2026 · Marriott Hotel, Zurich Main Station",
+                        "model",
+                        "nemotron-super",
+                        "promptVersion",
+                        "p1"),
+                    "linkedFrom",
+                    "https://linkedin.com/posts/aimlevents_agentic-engineering-days-zurich-2026-activity-1",
+                    "query",
+                    "catalog:undated-events")));
 
     assertThat(batch.getHits())
         .singleElement()

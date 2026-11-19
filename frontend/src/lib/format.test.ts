@@ -4,6 +4,7 @@ import {
   clockTimeOnDay,
   dateLocale,
   displayHost,
+  formatCount,
   formatDate,
   formatMonth,
   localDay,
@@ -18,6 +19,19 @@ const browser = (language: string) =>
   vi.spyOn(window.navigator, 'language', 'get').mockReturnValue(language);
 
 const zone = (timeZone: string) => vi.stubEnv('TZ', timeZone);
+
+describe('formatCount: a whole number, grouped as the given language groups it', () => {
+  it('groups thousands in English', () => {
+    expect(formatCount(1234567, 'en')).toBe('1,234,567');
+    expect(formatCount(0, 'en')).toBe('0');
+  });
+  it('gives what the platform gives for that language', () => {
+    for (const lang of ['en', 'de', 'fr', 'it']) {
+      expect(formatCount(1234567, lang)).toBe((1234567).toLocaleString(lang));
+      expect(formatCount(1234567, lang)).toBe(new Intl.NumberFormat(lang).format(1234567));
+    }
+  });
+});
 
 describe('displayHost', () => {
   it('drops www.', () => expect(displayHost('https://www.acme.example/x')).toBe('acme.example'));
@@ -208,19 +222,20 @@ describe('shortDay', () => {
 
 describe('backAgain', () => {
   const now = Date.parse('2026-11-09T12:30:00Z');
+  const keys = { today: 'x.today', tomorrow: 'x.tomorrow' };
 
   it('reads the time zone of the browser when none is given', () => {
     browser('it-CH');
     zone('Europe/Zurich');
-    expect(backAgain('x', '2026-11-10T00:00:00Z', { now })).toEqual({
-      key: 'xBackTomorrowAt',
+    expect(backAgain(keys, '2026-11-10T00:00:00Z', { now })).toEqual({
+      key: 'x.tomorrow',
       time: '01:00',
     });
 
     browser('en-US');
     zone('America/Los_Angeles');
-    expect(backAgain('x', '2026-11-10T00:00:00Z', { now })).toEqual({
-      key: 'xBackAt',
+    expect(backAgain(keys, '2026-11-10T00:00:00Z', { now })).toEqual({
+      key: 'x.today',
       time: expect.stringMatching(/^4:00\sPM$/),
     });
   });

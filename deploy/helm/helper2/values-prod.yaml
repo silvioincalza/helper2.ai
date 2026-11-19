@@ -21,6 +21,7 @@ app:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
   environment: prod
+  indexNowKey: 81482628ff74f5de09b306b150596813
   monetisation:
     adsenseClient: ca-pub-4688630163076563
   replicas: 3

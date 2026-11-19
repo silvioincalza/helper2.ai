@@ -33,7 +33,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
    check decide what is shown, as in [0031](0031-guide-pipeline.md). `AskGuide` stays blocking, top-down code. The
    controllers stay Spring MVC ([0031](0031-guide-pipeline.md), Streaming).
 4. **One call is still one unit.** `BudgetedChat.streamed` runs the same order as a blocking call: circuit
-   (`llm-chat-guide`), then one budget unit, then one observation (`helper2.llm.call`). They wrap the **whole
+   (`llm-chat-guide-fast` or `llm-chat-guide-reasoning`), then one budget unit, then one observation (`helper2.llm.call`). They wrap the **whole
    subscription**, from subscribe to the last chunk or to the dispose. So the slow-call rule of the circuit
    measures the whole stream, not the 0.3 s to the response headers. The daily budget counts calls, not tokens: it
    is the same in both modes.
@@ -107,7 +107,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
   thread: text, finish reason, usage, first reasoning and first text, the window and the thinking limit.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetedChat.java` (`streamed`),
   `ModelCallMetrics.java` (`tokens`, `tokens_unknown`, `thinkingFallback`), `CutAnswerWatch.java` (`isCut`),
-  `StreamThreads.java`, `LlmConfiguration.java`.
+  `internal/StreamThreads.java`, `internal/LlmConfiguration.java`.
 - `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` (`call`, `streamWithin`),
   `GuideConfiguration.java`; `guide/config/GuideProperties.java`, `ModelStream.java`; `guide/CallTimeLimit.java`
   (`forThinking`, `forTheCallAfterThinking`); `guide/ModelActivity.java`; `guide/Guide.kt` (`ModelStep`,

@@ -1,6 +1,7 @@
 package ai.helper2.site.pages.usecase;
 
 import ai.helper2.catalog.ResourceDetail;
+import ai.helper2.catalog.ResourcePathsKt;
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.search.MergedResult;
 import ai.helper2.shared.Verification;
@@ -11,18 +12,15 @@ import ai.helper2.site.pages.PageHead;
 import ai.helper2.site.pages.PageKind;
 import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
-import ai.helper2.site.pages.ResourcePathsKt;
 import ai.helper2.site.pages.ResourceView;
-import ai.helper2.site.pages.config.PagesProperties;
+import ai.helper2.site.pages.SiteLists;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
 
-@Service
 public class RenderPage {
   public record Page(int status, @Nullable PageHead head, @Nullable String location) {
     static Page ok(PageHead head) {
@@ -39,13 +37,16 @@ public class RenderPage {
   }
 
   private final GetResourceDetail details;
+  private final SiteLists lists;
   private final Pages pages;
   private final boolean noindex;
 
-  public RenderPage(GetResourceDetail details, PagesProperties properties) {
+  public RenderPage(
+      GetResourceDetail details, SiteLists lists, String publicBaseUrl, boolean noindex) {
     this.details = details;
-    this.pages = new Pages(properties.publicBaseUrl());
-    this.noindex = properties.noindex();
+    this.lists = lists;
+    this.pages = new Pages(publicBaseUrl);
+    this.noindex = noindex;
   }
 
   public Page render(String path, boolean hasQuery) {
@@ -60,8 +61,8 @@ public class RenderPage {
       case PageAddress.Resource r -> resource(r.getId(), r.getSlug());
       case PageAddress.Page p when p.getKind() == PageKind.HOME && hasQuery ->
           Page.ok(pages.of(PageKind.SEARCH));
-      case PageAddress.Page p -> Page.ok(pages.of(p.getKind()));
-      default -> Page.notFound(pages.pageNotFound());
+      case PageAddress.Page p -> Page.ok(pages.of(p.getKind(), lists));
+      case PageAddress.Unknown unknown -> Page.notFound(pages.pageNotFound());
     };
   }
 
@@ -101,7 +102,12 @@ public class RenderPage {
         aiRead ? null : card.getEventEnd().getValue(),
         aiRead ? null : card.getLocation(),
         card.getSources().stream().map(s -> new Link(s.getSourceName(), s.getUrl())).toList(),
-        related(detail.relationships()));
+        related(detail.relationships()),
+        lists(detail.foundIn()));
+  }
+
+  private static List<Related> lists(ResourceDetail.FoundIn foundIn) {
+    return foundIn.lists().stream().map(l -> new Related(l.listId(), l.listTitle())).toList();
   }
 
   private static List<Related> related(List<ResourceDetail.Relationship> relationships) {

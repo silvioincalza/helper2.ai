@@ -46,13 +46,16 @@ the guide work long before that, and what makes the wait feel long is the first 
      `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`;
    - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,
      `helper2.guide.step{step,intent}`, `helper2.guide.first_useful{intent}` (item 8),
+     `helper2.guide.quote_origin{part,found}` (a quote and whether a record holds it, [0031](../guide/0031-guide-pipeline.md)),
      `helper2.llm.call{step,model,prompt,outcome}`, `helper2.llm.tokens{step,prompt,type}`,
      `helper2.llm.tokens_unknown{step,prompt,type}` (calls whose answer reported no such count),
      `helper2.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
-     [0008](0008-llm-integration.md), or `time`, [0035](../guide/0035-guide-model-stream.md)), `helper2.guide.budget.remaining`,
+     [0008](0008-llm-integration.md), or `time`, [0035](../guide/0035-guide-model-stream.md)),
+     `helper2.llm.outage_retry{step}` (a guide plan call asked once more after a short provider outage,
+     [0031](../guide/0031-guide-pipeline.md)), `helper2.guide.budget.remaining`,
      `helper2.guide.judge{kind,evaluator,verdict,verify,prompt}` (the staging judge, [0046](../operations/0046-evaluation-guide-and-search.md)),
      `helper2.search.translation.budget.remaining`;
-   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
+   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](../scout/0020-resource-vitality.md)), `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
      each collector, read from Postgres at most every 30 s, so every replica reports it from start-up),
      `helper2.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
      `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
@@ -182,7 +185,7 @@ the guide work long before that, and what makes the wait feel long is the first 
   trace context on the guide's threads and on a Scout run started from the admin page.
 - `backend/apps/public/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/LlmConfiguration.java`,
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/LlmConfiguration.java`,
   `backend/libs/core/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
   `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` —
   translation and classifier budget gauges.

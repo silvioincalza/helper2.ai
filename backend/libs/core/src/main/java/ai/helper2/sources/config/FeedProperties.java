@@ -9,6 +9,9 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.Environment;
 
 public record FeedProperties(@Nullable List<Feed> feeds) {
 
@@ -24,6 +27,12 @@ public record FeedProperties(@Nullable List<Feed> feeds) {
         throw new IllegalArgumentException("helper2.feeds: duplicate id " + f.id());
       }
     }
+  }
+
+  public static FeedProperties bind(Environment env) {
+    return Binder.get(env)
+        .bind("helper2", Bindable.of(FeedProperties.class))
+        .orElseGet(() -> new FeedProperties(List.of()));
   }
 
   public List<String> ids() {

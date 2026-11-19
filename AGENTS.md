@@ -9,7 +9,8 @@ as scope creep.
 
 - `backend/` — Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin, Gradle multi-project:
   shared code in `libs/` (`kernel`, `platform`, `schema`, and `core`, where each shared context is a package:
-  ADR 0002), two apps in `apps/public` and `apps/backoffice` (ADR 0043), plugins and versions in `build-logic/`
+  ADR 0002), two apps in `apps/public` and `apps/backoffice` (ADR 0043), the tests that read every project in
+  `architecture/`, the Gatling load tests in `loadtest/`, plugins and versions in `build-logic/`
 - `frontend/` — React 19, Vite, TypeScript, Vitest
 - `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — contract first (OpenAPI 3.1); backend and frontend generate from them
 - PostgreSQL 18 (full-text + pgvector), Redis 8 (disposable cache)
@@ -39,6 +40,16 @@ Run the relevant tests before calling a change done.
 - Modular monolith (single repo; the style is used when the user asks or the project is one repo),
   hexagonal: domain and use cases in the core, adapters for DB, LLM, HTTP, queue.
   One explicit use case per business action. Lightweight DDD: ubiquitous language, clear modules.
+- A use case whose caller must tell results apart returns a sealed `Outcome` nested in it, one record per case, data
+  only (ADR 0051). No use case or domain class names `ApiProblem`: the controller maps the outcome with one `switch`
+  that names every case, no `default`, and writes the sentence and the status. A refusal after a write is a `Refused`
+  record, and its use case runs in `UnitOfWork.run`. `ModularityRules` checks both (`useCasesDoNotSpeakHttp`,
+  `aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork`).
+- Frontend (ADR 0050): a feature imports no file of another feature. A piece two features need goes to `ui/`, `lib/`
+  or `hooks/`; a composition is named in `COMPOSES` in `frontend/eslint.config.js`. An import is `@/` for a file of
+  another folder and `./name` for a file of the same folder, never `../`. `npm run lint` checks it.
+- Prefer the JDK (`String.formatted`) and Apache Commons Lang 3 to a hand-written helper. Commons Lang comes through
+  `platform`; the kernel has no third-party library (ADR 0002).
 - TDD for domain logic, BDD for user-visible behaviour, integration tests for adapters.
 - Configuration only through `@ConfigurationProperties` records (one per module or concern); no `@Value`, no
   `Environment.getProperty` (ADR 0007).
@@ -88,8 +99,11 @@ Run the relevant tests before calling a change done.
   SSE for server streaming; WebSocket only for real two-way interaction.
 - Adopt new storage, queues or streaming only for a concrete, named need.
 - Every data flow: decide storage (relational, vector, graph), caching and retention period.
-- Schema, until the first release tag (v2026.11.3): every change edits `V1__schema.sql`. Never add a `V2__` migration
-  (ADR 0004 §5).
+- Schema (ADR 0004 §5): a released migration never changes, `V1__schema.sql` included. A schema change is a new
+  migration `V<version>.<n>__<what>.sql`: the version of the release that ships it, above the latest release tag, and
+  `n` from 1 within it (`V2026.11.6.1__known_target_tool.sql`). A migration that did not ship in a release is renamed
+  to the version after it. The seeds (`R__…`) may change. CI fails an edited or removed released migration and a new
+  one with any other name (`.github/scripts/released-migrations.sh`).
 
 ### Performance
 

@@ -74,7 +74,12 @@ private class EnrichmentBudget(private var remaining: Int) {
 
 private class Planned(val collector: Collector, val summary: RunSummary)
 
-private class EnrichmentCounts(val queued: Int, val failed: Int, val deferred: Int)
+private class EnrichmentCounts(
+  val queued: Int = 0,
+  val failed: Int = 0,
+  val rejected: Int = 0,
+  val deferred: Int = 0,
+)
 
 private const val ITEMS_DROPPED = "helper2.source.items.dropped"
 
@@ -302,7 +307,10 @@ class RunScout(
         when (it) {
           EnrichmentOutcome.LLM_UNAVAILABLE -> budget.stop()
           EnrichmentOutcome.UNCHANGED -> budget.refund()
-          else -> {}
+          EnrichmentOutcome.VALIDATED,
+          EnrichmentOutcome.PARTIAL,
+          EnrichmentOutcome.REJECTED,
+          EnrichmentOutcome.FAILED -> {}
         }
       }
     } catch (e: RuntimeException) {
@@ -415,7 +423,7 @@ class RunScout(
       }
     if (batch.deferred) keepPassOpen(d.id, cursor, running.startedAt)
     if (batch.notDue) return notDueRun(running, batch.skipReason)
-    val changed = index(d, indexable(d, batch.hits))
+    val changed = index(collector, indexable(d, batch.hits))
     indexListsQuietly(d.id, batch.lists)
     val proposal =
       proposeCandidates(d.id, proposable(d.id, batch.candidates), batch.newCandidatesPerDay)
@@ -447,9 +455,11 @@ class RunScout(
     }
   }
 
-  private fun index(d: SourceDescriptor, hits: List<SourceHit>): List<UUID> {
-    val merged = merger.merge(hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
-    return catalog.index(merged, d.id).distinct()
+  private fun index(collector: Collector, hits: List<SourceHit>): List<UUID> {
+    val written = listOf(collector.descriptor) + collector.alsoWrites()
+    val merged =
+      merger.merge(hits, written.associate { it.id to SourceContext(it, ServedFrom.LIVE) })
+    return written.flatMap { catalog.index(merged, it.id) }.distinct()
   }
 
   private fun indexListsQuietly(sourceId: String, texts: List<ListText>) {
@@ -506,9 +516,10 @@ class RunScout(
     changed: List<UUID>,
     budget: EnrichmentBudget,
   ): EnrichmentCounts {
-    if (enrichment == null) return EnrichmentCounts(0, 0, 0)
+    if (enrichment == null) return EnrichmentCounts()
     var queued = 0
     var failed = 0
+    var rejected = 0
     var deferred = 0
     for (resourceId in eligibleForEnrichment(sourceId, changed)) {
       if (resourceId in budget.attempted) continue
@@ -521,12 +532,17 @@ class RunScout(
           failed++
           requestLaterRun(resourceId)
         }
+        EnrichmentOutcome.FAILED -> failed++
+        EnrichmentOutcome.REJECTED -> rejected++
+        EnrichmentOutcome.VALIDATED,
+        EnrichmentOutcome.PARTIAL -> queued++
         EnrichmentOutcome.UNCHANGED,
         EnrichmentOutcome.LLM_UNAVAILABLE -> {}
-        else -> queued++
       }
     }
-    return EnrichmentCounts(queued, failed, deferred)
+    countItems(sourceId, "failed", failed)
+    countItems(sourceId, "rejected", rejected)
+    return EnrichmentCounts(queued, failed, rejected, deferred)
   }
 
   private fun stillToJudge(enrichment: EnrichResource, resourceId: UUID): Boolean =
@@ -598,6 +614,8 @@ class RunScout(
           .takeIf { batch.nextCursor != null },
         "${enriched.failed} enrichment${if (enriched.failed == 1) "" else "s"} failed; the backlog retries ${if (enriched.failed == 1) "it" else "them"}"
           .takeIf { enriched.failed > 0 },
+        "${enriched.rejected} enrichment${if (enriched.rejected == 1) "" else "s"} rejected; nothing was kept"
+          .takeIf { enriched.rejected > 0 },
         "${enriched.deferred} changed resource${if (enriched.deferred == 1) " waits" else "s wait"} for the backlog (enrichment budget spent)"
           .takeIf { enriched.deferred > 0 },
         "Removed ${cleaned.records} record${if (cleaned.records == 1) "" else "s"} the source withdrew"

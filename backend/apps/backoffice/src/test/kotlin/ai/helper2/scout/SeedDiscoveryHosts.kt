@@ -72,3 +72,28 @@ class InMemoryDiscoveryHostStore : DiscoveryHostStore {
 
   override fun remove(host: String): DiscoveryHost? = hosts.remove(host)
 }
+
+class InMemoryListSeedStore : ListSeedStore {
+  private val seeds = LinkedHashMap<String, ListSeed>()
+  private val readings = LinkedHashMap<String, ListReading>()
+
+  override fun all(): List<ListSeed> = seeds.values.toList()
+
+  override fun add(seed: ListSeed): Boolean = seeds.putIfAbsent(seed.address, seed) == null
+
+  override fun remove(address: String): ListSeed? =
+    seeds.remove(address).also { readings.remove(address) }
+
+  override fun readStarted(address: String, at: Instant) {
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readTriedAt = at, readFailures = seed.readFailures + 1)
+    }
+  }
+
+  override fun readSucceeded(address: String, reading: ListReading) {
+    seeds.computeIfPresent(address) { _, seed -> seed.copy(readFailures = 0) }
+    if (address in seeds) readings[address] = reading
+  }
+
+  override fun lastReads(): Map<String, ListReading> = readings.toMap()
+}

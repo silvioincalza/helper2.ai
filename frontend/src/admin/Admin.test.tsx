@@ -1,10 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
-import { RUN_POLL_MS } from '@/admin/ScoutRunsPage';
+import { RUN_POLL_MS } from './ScoutRunsPage';
 import { SIGN_IN_RETURN_KEY } from '@/lib/signInReturn';
 import { getCommandLine } from '@/test/queries';
 
@@ -413,6 +413,22 @@ describe('Feature: deciding review items', () => {
     expect(m.callsTo('GET', '/admin/review-items')).toHaveLength(1);
   });
 
+  it('Scenario: a confirmed value the catalog refuses stays open and says which field and why', async () => {
+    const refusal =
+      'The catalog refuses the confirmed pricing. This value is not allowed for pricing. Edit the candidate, then accept again.';
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([item]),
+      'GET /admin/review-items/*': () => noEvidence(item),
+      'PUT /admin/review-items/*': () =>
+        problem(400, 'Invalid request', refusal, 'invalid-request'),
+    });
+    renderAdmin('/admin/review');
+    await userEvent.click(await screen.findByRole('button', { name: /Accept/ }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(`Not accepted, the item stays open: ${refusal}`);
+  });
+
   it('Scenario: an item someone else decided first says so and shows the list as it is now', async () => {
     let decided = false;
     const m = mockApi({
@@ -455,6 +471,28 @@ describe('Feature: deciding review items', () => {
     );
   });
 
+  it('Scenario: a second decision sent before the page redraws sends nothing', async () => {
+    let status: ReviewItem['status'] = 'OPEN';
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page(status === 'OPEN' ? [item] : []),
+      'PUT /admin/review-items/*': ({ body }) => {
+        status = (body as { status: ReviewItem['status'] }).status;
+        return { ...item, status };
+      },
+    });
+    renderAdmin('/admin/review');
+    const accept = await screen.findByRole('button', { name: /Accept/ });
+
+    act(() => {
+      fireEvent.click(accept);
+      fireEvent.click(accept);
+    });
+
+    expect(await screen.findByText('Nothing in this queue.')).toBeInTheDocument();
+    expect(m.calls.filter((c) => c.method === 'PUT')).toHaveLength(1);
+  });
+
   it('Scenario: filters and the page live in the address; a new filter starts on the first page', async () => {
     const m = mockApi({
       'GET /me': () => ADMIN,
@@ -493,7 +531,14 @@ describe('Feature: deciding review items', () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () =>
-        page([{ ...item, status: 'ACCEPTED', resourceId: 'a/b c', details: 'It is free' }]),
+        page([
+          {
+            ...item,
+            status: 'ACCEPTED',
+            resourceId: 'a/b c',
+            details: { shape: 'TEXT', text: 'It is free' },
+          },
+        ]),
     });
     renderAdmin('/admin/review?status=ACCEPTED');
     const queue = await screen.findByRole('table', { name: 'Review queue' });

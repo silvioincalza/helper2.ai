@@ -73,7 +73,8 @@ class GitHubTopicLeadersCollectorTest {
 
   GitHubTopicLeadersCollector collector(Duration interval, List<String> topics, Indexing indexing) {
     return new GitHubTopicLeadersCollector(
-        new SourceSettings(true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), "token", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,

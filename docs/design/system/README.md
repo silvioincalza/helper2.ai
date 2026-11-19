@@ -2,7 +2,7 @@
 
 The design system for every part of Helper2.ai: the search box, results, the AI guide, New in the catalog and Coming up, resource pages, saved resources, sign-in, the sources page and admin. From the November 2026 redesign ([ADR 0040](../../adr/frontend/0040-design-system.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
 
-[`tokens.json`](tokens.json) is the one source of the tokens. `frontend/src/styles/tokens.css` writes them as CSS variables under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`), and `frontend/src/lib/breakpoints.ts` the breakpoints. A test (`frontend/src/styles/tokens.test.ts`) fails when they differ, when a colour is written by its hex value anywhere else, or when a media query uses a width that is not a breakpoint. In the public CSS it also fails on a font size, a `z-index` or a corner radius written as a number, and on `rgba()`. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`features/pages/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
+[`tokens.json`](tokens.json) is the one source of the tokens. `frontend/src/styles/tokens.css` writes them as CSS variables under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`), and `frontend/src/lib/breakpoints.ts` the breakpoints. A test (`frontend/src/styles/tokens.test.ts`) fails when they differ, when a colour is written by its hex value anywhere else, or when a media query uses a width that is not a breakpoint. In the public CSS it also fails on a font size, a `z-index` or a corner radius written as a number, and on `rgba()`. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`ui/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
 
 ## Principles
 
@@ -122,13 +122,23 @@ Type is a word, not a coloured badge. In lists and on resource pages it is the f
 
 The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "helper2.ai" in Geist Mono 20px, weight 600. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 12px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 18px. Never recolor the radar, add effects, or drop the wordmark in the header.
 
+### Link preview image
+
+The image a shared link shows (`og:image`, 1200×630) is the mark and the wordmark, the home title in Geist, one line on what the search covers, and the search box with its **Search** button, on `bg`. Its source is `assets/social/og-1.html`; the file the site serves is `frontend/public/assets/og-1.png`. To render it, from the repository root after `npm ci` in `frontend`:
+
+```
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --allow-file-access-from-files --screenshot="$PWD/frontend/public/assets/og-1.png" "file://$PWD/docs/design/system/assets/social/og-1.html"
+```
+
+A changed image gets a new file name (`og-2.png`), because the site caches the file for a year (ADR 0041 §3).
+
 ## Iconography
 
 Apart from the radar mark, icons are small stroke glyphs beside words, never alone (the spark on Ask the guide sits beside its words on every width): check, cross, warn, clock, external link, menu, close. Use `→` for "go further" and `↗` for an external source. Never emoji. An icon-only button (menu, close) carries an `aria-label`.
 
 ## Home page
 
-1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI universe."; one line on what it does. Around it the radar (see Radar).
+1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
 2. **Pinned search box**, full width up to 820px: box, Search, Ask the guide, one hint line (the keys with a mouse; "Search, or tap Ask for picks with proof." on a touch screen), the "Try:" chips, the radar legend ("5-10 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
 3. **New in the catalog** and **Coming up**: two tables side by side, like `ls -l`, stacked below 920px; tabs below 768px. See HomeLists.
 4. **What helper2 does for you**: a quiet strip of three steps.
@@ -244,9 +254,9 @@ The shared parts are React components in `frontend/src/ui/` (ADR 0040). Where th
 
 | Design system | Code today |
 |---|---|
-| HomeLists (New in the catalog, Coming up) | `TermList`, used by `HomeLists` (tables) and `HomeTabs` (phone), fed by `homeFeeds.ts` (`features/home/`) |
+| HomeLists (New in the catalog, Coming up) | `TermList`, used by `HomeLists` (tables) and `HomeTabs` (phone), fed by `feeds.ts` and `feedCells.tsx` (`features/feeds/`) |
 | Radar | `HomeRadar` (`features/home/`) |
-| ListPages | `TermCommand` (from `TermList`), the `h2-table`, `ScrollBox` and `ui/term.css`; `AdminHead` in the back office |
+| ListPages | `TermCommand` and `ListState` (`ui/`), the `h2-table`, `ScrollBox` and `ui/term.css`; `AdminHead` in the back office |
 | PickCard | `PicksBar` (the list of picks, each with its reason) and the picked rows: the reason and the quote are in the row, in search order |
 | ResultRow | `ResultRow` (`features/search/`): the title's link covers the row |
 | FiltersPanel | `FiltersPanel` (in place, or a drawer up to 720px) around `FilterFacets` |
@@ -256,7 +266,7 @@ The shared parts are React components in `frontend/src/ui/` (ADR 0040). Where th
 | Button, Chip, Field | `.btn` with `.btn-primary`, `.btn-ink`, `.btn-ghost`, `.btn-on-term`, `.btn-danger`, `.btn-danger-fill`, `.btn-icon`; `.btn-text`; `.chip` in `.chips`; the plain form elements. One definition each, in `styles/app.css`, on every page |
 | AiLabel | `AiLabel` (`ui/`), styled once by `.ai-label` (`styles/app.css`) |
 | Badges | `.badge` (`styles/app.css`), `StatusPill` (`ui/`) |
-| Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `features/pages/text.css` |
+| Text pages (Mission, Privacy, Terms, Not found, Sign in, Account) | `TextPage`, `SignInPage`, `AccountPage`, `NotFoundPage`, styled by `.h2-prose` in `ui/text.css` |
 
 New components are added with the page that first needs them.
 

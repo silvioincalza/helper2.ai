@@ -1,0 +1,62 @@
+# Flowchart: what a use case answers when it refuses, what its transaction does, and how the build keeps HTTP out of
+#   the use cases (ADR 0051).
+# Source of truth: backend/libs/core/src/main/java/ai/helper2/identity/usecase/AddBookmark.java (Outcome),
+#   MergeLocalBookmarks.java, ChangePreferences.java, BookmarkRules.java,
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Refused.kt, UnitOfWork.kt,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java (undoWhenRefused),
+#   backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java, PreferencesController.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java,
+#   backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java
+#   (useCasesDoNotSpeakHttp).
+# Render: cd docs/diagrams && d2 fmt flow-0051-use-cases-return-outcomes.d2 && d2 flow-0051-use-cases-return-outcomes.d2 flow-0051-use-cases-return-outcomes.svg
+
+...@style
+
+direction: down
+
+run: "At run time: AddBookmark" {
+  class: group
+
+  call: "Controller calls the use case\n(PUT /api/v1/me/bookmarks/{id})" {class: app}
+  web: "An http or https address,\nat most 2000 characters?" {class: decision}
+  invalid: "Outcome InvalidUrl\n(no transaction opened)" {class: fail}
+  unit: "UnitOfWork.run:\nlock the account, insert the row,\ncount the rows" {class: data}
+  cap: "More than 500 rows?" {class: decision}
+  over: "Outcome OverLimit(500),\na Refused record" {class: fail}
+  opened: "Did this unit open\nthe transaction?" {class: decision}
+  rollback: "Roll back: the row is not kept.\nThe outcome is returned" {class: data}
+  joined: "Not marked: the unit that opened\nthe transaction decides" {class: end}
+  added: "Outcome Added(bookmark),\ncommit" {class: data}
+  switch: "Controller: one switch\nover every case of the outcome" {class: app}
+  ok: "200 with the bookmark" {class: end}
+  problem: "throw BadRequestException;\nApiExceptionHandler writes\n400 invalid-request" {class: fail}
+
+  call -> web: {class: hot}
+  web -> invalid: no
+  web -> unit: yes {class: hot}
+  unit -> cap: {class: hot}
+  cap -> over: yes
+  cap -> added: no {class: hot}
+  over -> opened
+  opened -> rollback: yes
+  opened -> joined: no
+  rollback -> switch
+  joined -> switch
+  invalid -> switch
+  added -> switch: {class: hot}
+  switch -> ok: Added {class: hot}
+  switch -> problem: "InvalidUrl,\nOverLimit"
+}
+
+build: "At build time: ModularityTest of each app" {
+  class: group
+
+  type: "A class of a usecase package\nor of a domain package" {class: app}
+  speaks: "Depends on ApiProblem, a subtype,\nProblemType or Problems?" {class: decision}
+  pass: "The build goes on" {class: end}
+  fails: "useCasesDoNotSpeakHttp fails:\nreturn an outcome instead" {class: fail}
+
+  type -> speaks: {class: hot}
+  speaks -> pass: no {class: hot}
+  speaks -> fails: yes
+}

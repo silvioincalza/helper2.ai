@@ -1,6 +1,7 @@
 package ai.helper2.site.pages.web;
 
 import ai.helper2.site.monetisation.Monetisation;
+import ai.helper2.site.pages.LlmsTxt;
 import ai.helper2.site.pages.config.PagesProperties;
 import ai.helper2.site.pages.usecase.ListSitemap;
 import java.time.Duration;
@@ -8,6 +9,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -57,11 +59,32 @@ class CrawlerFiles {
     return ResponseEntity.ok().cacheControl(CACHE).body(body);
   }
 
+  @GetMapping(value = "/llms.txt", produces = "text/plain;charset=UTF-8")
+  ResponseEntity<String> llmsTxt() {
+    if (properties.noindex()) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.ok()
+        .cacheControl(CACHE)
+        .body(LlmsTxt.INSTANCE.of(properties.publicBaseUrl()));
+  }
+
   @GetMapping(value = "/sitemap.xml", produces = MediaType.APPLICATION_XML_VALUE)
   ResponseEntity<String> sitemap() {
     if (properties.noindex()) {
       return ResponseEntity.notFound().build();
     }
-    return ResponseEntity.ok().cacheControl(CACHE).body(sitemap.xml());
+    return ResponseEntity.ok().cacheControl(CACHE).body(sitemap.index());
+  }
+
+  @GetMapping(value = "/sitemaps/{part}.xml", produces = MediaType.APPLICATION_XML_VALUE)
+  ResponseEntity<String> sitemap(@PathVariable String part) {
+    if (properties.noindex()) {
+      return ResponseEntity.notFound().build();
+    }
+    return sitemap
+        .part(part)
+        .map(xml -> ResponseEntity.ok().cacheControl(CACHE).body(xml))
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 }

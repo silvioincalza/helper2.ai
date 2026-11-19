@@ -7,7 +7,7 @@ import { axeViolations } from '@/test/a11y';
 import { ANON, STAGING_SOURCES, USER } from '@/test/fixtures';
 import { HomeRadar } from './HomeRadar';
 import { TURN_MS } from './radarClock';
-import { INTRO_MS, STEP_MS } from './radarRotation';
+import { INTRO_MS, STEP_MS } from '@/lib/radarRotation';
 
 const session: { me: Session } = { me: ANON };
 vi.mock('@/context/MeContext', () => ({

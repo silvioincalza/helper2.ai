@@ -26,12 +26,12 @@ results: "EnrichmentResults\n(catalog)" {class: app}
 svc -> store: "load(resourceId)"
 store -> svc: "records, type PRODUCT,\npage target acme.example (discovery-coding)"
 svc -> model: "propose(records)"
-model -> tf: "enrich.txt (label enrich-v12)" {class: ai-call}
+model -> tf: "enrich.txt" {class: ai-call}
 tf -> model: "useCase writing (quoted)"
 svc -> val: "validate"
 val -> svc: "VALIDATED; pricing, platforms missing"
 svc -> pages: "read(acme.example)"
-pages -> pages: "PageScope.of: https, domain acme.example (PSL)"
+pages -> pages: "PageScope.of: WebAddresses host check,\ndomain acme.dev (PSL)"
 pages -> ledger: "seen(https://acme.example/)?"
 ledger -> pages: "no"
 pages -> textcache: "get(acme.example)"

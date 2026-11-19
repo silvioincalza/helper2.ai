@@ -39,7 +39,11 @@ guide may call the model again. Both cost time and quota for nothing.
 2. **All state is in the page address (URL).** `q` (at most 200 characters), `ask` (at most 500), the refinement of
    the question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the
    user removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts
-   without one. The list pages keep their filters there too: `?site=` on News, `?kind=` and `?format=` on Events. A
+   without one. New words start without filters (`patchState`): Enter, Search, Ask the guide and a live search drop
+   the type, category and facet filters, open source, the date and the audience path, because they belonged to the
+   words before. The view and the sort stay: they are how the user reads results, not what the words ask for. The
+   same words keep everything, and a link that sets filters with its words (a category link, a home example) keeps
+   them. The list pages keep their filters there too: `?site=` on News, `?kind=` and `?format=` on Events. A
    link, a bookmark or Back shows the same page.
 3. **Search results** (`Results`, `useApi`). A new query aborts the old request. While it loads, the previous results
    stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per enabled
@@ -55,7 +59,7 @@ guide may call the model again. Both cost time and quota for nothing.
    picks dimmed and `aria-busy` instead of the reading line. The step events are the contract's
    `GuideStreamEvent` values other than `answer` and `error`.
    Server-Sent Events (SSE) are read with `fetch` and `SseParser`, not `EventSource`, so there is no automatic
-   reconnect (each question costs model calls). An idle timer of 45 s (`GUIDE_IDLE_TIMEOUT_MS`) is re-armed on every
+   reconnect (each question costs model calls). An idle timer of 45 s (`SSE_IDLE_TIMEOUT_MS`) is re-armed on every
    chunk. The server sends a `:keep-alive` comment every 15 s while a question runs ([0031](../guide/0031-guide-pipeline.md)),
    so any bytes, a comment included, keep the stream alive. `SseParser` ignores comments.
    Failures: `IDLE_TIMEOUT`, `MALFORMED`, `ENDED_EARLY`, `DROPPED` (the connection broke while reading), or the
@@ -111,9 +115,9 @@ guide may call the model again. Both cost time and quota for nothing.
    and the modules it preloads) passes 250 KiB gzipped, or any other chunk passes 30 KiB. It runs in CI only, so a few
    bytes never block an image build or a deploy. The back office is its own entry and bundle
    ([0038](../backoffice/0038-back-office-and-review.md), [0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)); a test keeps its
-   calls and its copy out of the public bundle (`api/adminBundle.test.ts`).
+   calls and its copy out of the public bundle (`adminBundle.test.ts`).
 9. **One folder per feature.** `src/features/<feature>` holds a feature's pages, parts, styles and tests, named in the
-   words of the backend's contexts (search, guide, home, resource, saved, sources, news, events, setup, account,
+   words of the backend's contexts (search, guide, home, feeds, resource, saved, sources, setup, account,
    pages, monetisation); `src/shell` the frame of every page, `src/ui` the shared kit, `src/admin` the back office;
    `api`, `i18n`, `hooks`, `lib`, `context`, `styles` and `test` stay shared.
 10. **Dates and times as the visitor's browser shows them.** Every date and time on the public pages and in the back
@@ -138,7 +142,7 @@ guide may call the model again. Both cost time and quota for nothing.
 
 - `frontend/src/features/search/OneBox.tsx`, `HomeOrResultsPage.tsx`, `Results.tsx` — the box, live search, the
   results view on demand, previous results while loading.
-- `frontend/src/hooks/useGuideStream.ts`, `frontend/src/lib/searchState.ts` — the guide stream for the URL's question
+- `frontend/src/features/guide/useGuideStream.ts`, `frontend/src/lib/searchState.ts` — the guide stream for the URL's question
   and refinement.
 - `frontend/src/features/guide/model/guideRun.ts` — the state of one guide run as a pure reducer: its steps, answer,
   error, retries and the answer kept on screen while the question is asked again.
@@ -148,10 +152,10 @@ guide may call the model again. Both cost time and quota for nothing.
 - `frontend/src/api/client.ts`, `frontend/src/lib/sse.ts` — the guide stream, the idle timeout, the error codes.
 - `frontend/src/shell/Layout.tsx`, `frontend/src/lib/theme.ts`, `frontend/public/theme.js` — `RouteFocus`,
   `ScrollRestoration`, the theme.
-- `frontend/src/features/news/NewsPage.tsx`, `frontend/src/features/events/EventsPage.tsx` — filters in the URL.
+- `frontend/src/features/feeds/NewsPage.tsx`, `EventsPage.tsx` — filters in the URL.
 - `frontend/src/admin/` — the cache opt-out (every back office page).
 - `frontend/src/routes.tsx`, `frontend/src/lib/staleChunk.ts`, `frontend/scripts/check-bundle.mjs`,
-  `frontend/src/api/adminBundle.test.ts` — the pages on demand, the bundle budget, the admin code out of the public
+  `frontend/src/adminBundle.test.ts` — the pages on demand, the bundle budget, the admin code out of the public
   bundle.
 - `frontend/src/a11y.test.tsx` — axe-core smoke tests.
 - `frontend/src/lib/format.ts`, `format.test.ts` — `dateLocale` and every date and time formatter; the tests fix the

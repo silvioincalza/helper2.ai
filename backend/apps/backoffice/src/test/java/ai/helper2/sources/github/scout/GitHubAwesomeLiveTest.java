@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.classifier.RepoClassifier;
@@ -55,7 +56,8 @@ class GitHubAwesomeLiveTest {
                 "https://api.github.com",
                 System.getenv("H2_GITHUB_TOKEN"),
                 Duration.ofSeconds(30),
-                Duration.ZERO),
+                Duration.ZERO,
+                null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(30), io.micrometer.observation.ObservationRegistry.NOOP),
             Clock.systemUTC(),
@@ -64,12 +66,14 @@ class GitHubAwesomeLiveTest {
             List.of("topic:awesome-list topic:llm"),
             new GitHubAwesomeCollector.Limits(1, 1000, 80, 50, 50, 25),
             new GitHubAwesomeCollector.Deep(
-                1, 3, Duration.ofMinutes(5), 20_000_000L, 50, 0, List.of("youtube.com")),
+                1, 3, Duration.ofMinutes(5), 20_000_000L, 50, 0, 0, 0, 0, List.of("youtube.com")),
             nano,
             ai.helper2.shared.CategoryMatcher.NONE,
             new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
             SeedDiscoveryHosts.store(),
-            SourceFixtures.SHADOW_LIBRARIES);
+            new InMemoryListSeedStore(),
+            SourceFixtures.SHADOW_LIBRARIES,
+            GitHubAwesomeCollectorTest.NO_LINK_RULES);
 
     List<String> lists = collector.discoverLists();
     long started = System.nanoTime();

@@ -4,7 +4,6 @@ import ai.helper2.catalog.CatalogLimits;
 import ai.helper2.catalog.CatalogWriter;
 import ai.helper2.catalog.CategoryLabels;
 import ai.helper2.catalog.DataOrigin;
-import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.search.LanguageDetector;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.PopularityMetric;
@@ -12,16 +11,10 @@ import ai.helper2.search.ResultMerger;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.Vitality;
-import ai.helper2.shared.CategoryInput;
-import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.DateFact;
-import ai.helper2.shared.ResourceType;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -30,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -44,7 +36,7 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 @Repository
-class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
+class JdbcCatalogWriter implements CatalogWriter {
 
   static final String ORIGIN_RANK =
       "(CASE %s WHEN 'DEMO' THEN 3 WHEN 'CURATED' THEN 2 WHEN 'INDEXED' THEN 1 ELSE 0 END)";
@@ -55,8 +47,7 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
   private final JdbcTemplate template;
   private final ObjectMapper json;
   private final LanguageDetector languages;
-  private final CategoryMatcher categories;
-  private final ReviewQueue reviewQueue;
+  private final CategoryLabels categories;
   private final Reconciliation reconciliation;
 
   JdbcCatalogWriter(
@@ -64,15 +55,13 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
       JdbcTemplate template,
       ObjectMapper json,
       LanguageDetector languages,
-      CategoryMatcher categories,
-      ReviewQueue reviewQueue,
+      CategoryLabels categories,
       Reconciliation reconciliation) {
     this.jdbc = jdbc;
     this.template = template;
     this.json = json;
     this.languages = languages;
     this.categories = categories;
-    this.reviewQueue = reviewQueue;
     this.reconciliation = reconciliation;
   }
 
@@ -119,6 +108,15 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
             new RecordInput(recordId, h, externalId, r.getId().getValue()));
       }
     }
+    ResourceRemovalLock.forWrite(jdbc);
+    Set<UUID> removed =
+        origin == DataOrigin.CURATED
+            ? addedBackByAnAdmin(resources.values())
+            : removedByAnAdmin(resources.values());
+    if (!removed.isEmpty()) {
+      resources.values().removeIf(in -> removed.contains(in.id()));
+      records.values().removeIf(in -> removed.contains(in.owner()));
+    }
     if (resources.isEmpty()) {
       return List.of();
     }
@@ -152,8 +150,31 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
     replaceLabels(touched);
     reconciliation.reconcile(touched, origin);
     refreshPackageTerms(touched);
-    assignCategories(touched);
+    categories.refreshCategories(touched);
     return changed;
+  }
+
+  private Set<UUID> addedBackByAnAdmin(Collection<ResourceInput> resources) {
+    if (!resources.isEmpty()) {
+      jdbc.sql("DELETE FROM removed_resource WHERE resource_key = ANY(:ids)")
+          .param("ids", resources.stream().map(ResourceInput::id).toArray(UUID[]::new))
+          .update();
+    }
+    return Set.of();
+  }
+
+  private Set<UUID> removedByAnAdmin(Collection<ResourceInput> resources) {
+    if (resources.isEmpty()) {
+      return Set.of();
+    }
+    return new HashSet<>(
+        jdbc.sql(
+                """
+                SELECT resource_key FROM removed_resource WHERE resource_key = ANY(:ids)
+                """)
+            .param("ids", resources.stream().map(ResourceInput::id).toArray(UUID[]::new))
+            .query(UUID.class)
+            .list());
   }
 
   private static boolean isSeenAtItsOwnAddress(MergedResult r) {
@@ -301,7 +322,8 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
                                               > CAST(stated.vitality ->> 'statedAt' AS timestamptz)
                                            THEN kept.vitality || stated.vitality
                                                 || jsonb_build_object('archived', kept.vitality -> 'archived')
-                                         ELSE (kept.vitality - 'checkedAt') || stated.vitality
+                                         ELSE (kept.vitality - 'checkedAt' - 'gone' - 'notFoundAt')
+                                              || stated.vitality
                                        END AS vitality
                                 FROM (SELECT CASE WHEN source_record.repository_url
                                                        IS NOT DISTINCT FROM EXCLUDED.repository_url
@@ -421,7 +443,7 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
     replaceLabels(touched);
     reconciliation.reconcile(touched, DataOrigin.INDEXED);
     refreshPackageTerms(touched);
-    assignCategories(touched);
+    categories.refreshCategories(touched);
     return new Forgotten(owners.size(), removed.size(), List.copyOf(touched));
   }
 
@@ -528,90 +550,6 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
         .update();
   }
 
-  @Transactional
-  @Override
-  public int refreshCategories(Collection<UUID> resourceIds) {
-    return assignCategories(resourceIds);
-  }
-
-  private int assignCategories(Collection<UUID> resourceIds) {
-    if (resourceIds.isEmpty()) {
-      return 0;
-    }
-    UUID[] ids = resourceIds.toArray(UUID[]::new);
-    List<Object[]> labels = new ArrayList<>();
-    Set<UUID> categorized = new HashSet<>();
-    jdbc.sql(
-            """
-            SELECT r.id, r.title, r.type,
-                   (SELECT string_agg(DISTINCT sr.description, E'\\n') FROM source_record sr
-                    WHERE sr.resource_id = r.id AND sr.description IS NOT NULL
-                      AND coalesce(sr.extra ->> 'descriptionOrigin', 'SOURCE_PROVIDED') NOT LIKE 'AI\\_%') AS description,
-                   ARRAY(SELECT DISTINCT t.value FROM source_record sr
-                         CROSS JOIN LATERAL jsonb_array_elements_text(
-                             CASE WHEN jsonb_typeof(sr.extra -> 'tags') = 'array' THEN sr.extra -> 'tags'
-                                  ELSE '[]'::jsonb END) AS t(value)
-                         WHERE sr.resource_id = r.id) AS tags,
-                   ARRAY(SELECT sr.source_id FROM source_record sr WHERE sr.resource_id = r.id
-                         UNION
-                         SELECT f ->> 'sourceId' FROM source_record sr
-                         CROSS JOIN LATERAL jsonb_array_elements(
-                             CASE WHEN jsonb_typeof(sr.extra -> 'foundBy') = 'array' THEN sr.extra -> 'foundBy'
-                                  ELSE '[]'::jsonb END) AS f
-                         WHERE sr.resource_id = r.id AND f ->> 'sourceId' IS NOT NULL) AS finders,
-                   ARRAY(SELECT DISTINCT e.heading_path FROM awesome_list_entry e
-                         WHERE e.resource_id = r.id AND e.heading_path <> '') AS headings
-            FROM resource r WHERE r.id = ANY(:ids)
-            """)
-        .param("ids", ids)
-        .query((rs, i) -> {
-          UUID id = rs.getObject("id", UUID.class);
-          List<String> found =
-              categories.match(
-                  new CategoryInput(
-                      rs.getString("title"),
-                      rs.getString("description"),
-                      textArray(rs, "tags"),
-                      ResourceRows.enumOrNull(ResourceType.class, rs.getString("type")),
-                      textArray(rs, "finders"),
-                      textArray(rs, "headings")));
-          found.forEach(c -> labels.add(new Object[] {id, c}));
-          if (!found.isEmpty()) {
-            categorized.add(id);
-          }
-          return id;
-        })
-        .list();
-    jdbc.sql("DELETE FROM resource_label WHERE resource_id = ANY(:ids) AND kind = 'CATEGORY'")
-        .param("ids", ids)
-        .update();
-    template.batchUpdate(
-        "INSERT INTO resource_label (resource_id, kind, value) VALUES (?, 'CATEGORY', ?)"
-            + " ON CONFLICT DO NOTHING",
-        labels);
-    return categorized.size();
-  }
-
-  private static List<String> textArray(ResultSet rs, String column) throws SQLException {
-    java.sql.Array array = rs.getArray(column);
-    if (array == null) {
-      return List.of();
-    }
-    return Arrays.stream((Object[]) array.getArray())
-        .filter(Objects::nonNull)
-        .map(Object::toString)
-        .toList();
-  }
-
-  @Override
-  public List<UUID> resourceIdsAfter(@Nullable UUID after, int limit) {
-    return jdbc.sql("SELECT id FROM resource WHERE id > :after ORDER BY id LIMIT :limit")
-        .param("after", after == null ? new UUID(0, 0) : after)
-        .param("limit", limit)
-        .query(UUID.class)
-        .list();
-  }
-
   private Object[] resourceArgs(MergedResult r, DataOrigin origin) {
     DateFact pub = r.getPublished();
     DateFact upd = r.getUpdated();
@@ -705,43 +643,5 @@ class JdbcCatalogWriter implements CatalogWriter, CategoryLabels {
 
   private static Timestamp ts(Instant i) {
     return i == null ? null : Timestamp.from(i);
-  }
-
-  @Override
-  @Transactional
-  public Optional<UUID> report(
-      UUID resourceId,
-      String kind,
-      @Nullable String field,
-      String message,
-      String reason,
-      String note) {
-    boolean exists =
-        jdbc.sql("SELECT EXISTS (SELECT 1 FROM resource WHERE id = :id)")
-            .param("id", resourceId)
-            .query(Boolean.class)
-            .single();
-    if (!exists) {
-      return Optional.empty();
-    }
-    UUID id = UUID.randomUUID();
-    jdbc.sql(
-            """
-            INSERT INTO issue_report (id, resource_id, kind, field, message)
-            VALUES (:id, :rid, :kind, :field, :message)
-            """)
-        .param("id", id)
-        .param("rid", resourceId)
-        .param("kind", kind)
-        .param("field", field)
-        .param("message", message)
-        .update();
-    reviewQueue.open(
-        ReviewQueue.Kind.USER_REPORT,
-        resourceId,
-        reason,
-        note,
-        new ReviewQueue.Links(null, null, id));
-    return Optional.of(id);
   }
 }

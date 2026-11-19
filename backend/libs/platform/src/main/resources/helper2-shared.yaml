@@ -159,6 +159,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -230,6 +231,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -362,11 +364,21 @@ helper2:
       links:
         per-day: ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}
         max-per-pass: 500
+        max-models-per-pass: 100
+        model-index-min-likes: 10
+        max-papers-per-pass: 200
+        max-packages-per-pass: 100
         exclude-domains: >-
           arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
           discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,
           kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com,
           chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+      web-pages:
+        read-every: ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}
+        retry-after: ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}
+        never-read: >-
+          ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written
+          consent}
     ai-deadlines:
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
     confs-tech:
@@ -431,6 +443,7 @@ helper2:
       max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
       reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
       read-max-tokens: 800
+      read-model: ${H2_SCOUT_EVENT_READER_MODEL:FAST}
       queries: >-
         upcoming AI hackathons,
         upcoming AI meetups and talks,

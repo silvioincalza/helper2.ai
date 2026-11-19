@@ -3,7 +3,6 @@ package ai.helper2.catalog.usecase;
 import ai.helper2.catalog.ReviewDecisions;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.AuditTrail;
-import ai.helper2.platform.BadRequestException;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -35,7 +34,7 @@ public class ResolveReviewItem {
   public Outcome resolve(
       UUID id, ReviewQueue.Status decision, String by, String note, @Nullable UUID batch) {
     if (decision != ReviewQueue.Status.ACCEPTED && decision != ReviewQueue.Status.REJECTED) {
-      throw new BadRequestException("decision must be ACCEPTED or REJECTED");
+      throw new IllegalArgumentException("decision must be ACCEPTED or REJECTED");
     }
     boolean decided = decisions.decide(id, decision, by, note);
     Outcome outcome = outcomeOf(queue.find(id), decided);

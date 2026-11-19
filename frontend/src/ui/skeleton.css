@@ -62,9 +62,6 @@
 .h2-skel__bar.is-short {
   width: 30%;
 }
-.h2-skel__bar.is-tiny {
-  width: 15%;
-}
 .h2-skel__row {
   display: flex;
   flex-direction: column;
@@ -83,9 +80,6 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-.h2-skel__chips .h2-skel__bar.is-full {
-  width: 10rem;
-}
 .h2-skel__chips .h2-skel__bar.is-wide {
   width: 8rem;
 }
@@ -94,9 +88,6 @@
 }
 .h2-skel__chips .h2-skel__bar.is-short {
   width: 4.5rem;
-}
-.h2-skel__chips .h2-skel__bar.is-tiny {
-  width: 3rem;
 }
 @keyframes h2-skel-show {
   to {

@@ -117,7 +117,7 @@ public class DepsDevClient implements PackageFinder.Registry {
         policy,
         () -> {
           ResponseEntity<String> response =
-              HttpClients.fetch(
+              HttpClients.get(
                   () ->
                       http.get()
                           .uri(uri)

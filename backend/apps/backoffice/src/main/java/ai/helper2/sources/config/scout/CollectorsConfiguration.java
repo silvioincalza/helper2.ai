@@ -10,18 +10,25 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.HostsNeverRead;
+import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
+import ai.helper2.search.DescribedSource;
 import ai.helper2.search.ShadowLibraries;
+import ai.helper2.search.SourceDescriptor;
+import ai.helper2.search.VitalityPolicy;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
+import ai.helper2.sources.arxiv.scout.ArxivPaperReader;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
 import ai.helper2.sources.config.CollectorDescriptors;
@@ -37,19 +44,25 @@ import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector;
+import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
 import ai.helper2.sources.github.scout.GitHubTopicLeadersCollector;
 import ai.helper2.sources.github.scout.SdkSearchPlan;
+import ai.helper2.sources.github.scout.WebPageLists;
+import ai.helper2.sources.huggingface.scout.HuggingFaceModelReader;
 import ai.helper2.sources.huggingface.scout.HuggingFaceProviderOrgsCollector;
 import ai.helper2.sources.huggingface.scout.HuggingFaceTrendingCollector;
 import ai.helper2.sources.liveweb.scout.CourseCollector;
+import ai.helper2.sources.liveweb.scout.CoursePages;
 import ai.helper2.sources.liveweb.scout.LinkedInCollector;
 import ai.helper2.sources.liveweb.scout.LiveWebEventsCollector;
 import ai.helper2.sources.liveweb.scout.LiveWebNewsCollector;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.mcp.McpRegistryCollector;
+import ai.helper2.sources.npm.scout.NpmPackageReader;
 import ai.helper2.sources.pypi.PypiCollector;
 import ai.helper2.sources.pypi.PypiCollectors;
+import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import io.micrometer.core.instrument.Gauge;
@@ -58,8 +71,10 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -210,7 +225,7 @@ class CollectorsConfiguration {
     SourceSettings s = p.get(LiveWebEventsCollector.ID);
     ChatModel model = chatModel.getIfAvailable();
     EventReader reader = null;
-    if (llm.usable(model)) {
+    if (llm.usable(model) && llm.has(c.readModel())) {
       DailyBudget budget =
           new DailyBudget(c.readerDailyCalls(), clock, "event-reader", budgetCounter);
       Gauge.builder("helper2.scout.event-reader.budget.remaining", budget, DailyBudget::remaining)
@@ -218,7 +233,7 @@ class CollectorsConfiguration {
           .register(meters);
       reader =
           new SpringAiEventReader(
-              model, llm.reasoningModel(), c.readMaxTokens(), budget, metrics, resilience);
+              model, llm.model(c.readModel()), c.readMaxTokens(), budget, metrics, resilience);
     }
     return new LiveWebEventsCollector(
         s,
@@ -272,6 +287,7 @@ class CollectorsConfiguration {
       SourcesProperties p,
       CollectorProperties.GitHubAwesome c,
       CollectorProperties.Discovery discovery,
+      CollectorProperties.Courses courses,
       CategoryMatcher categories,
       Clock clock,
       Resilience resilience,
@@ -283,7 +299,11 @@ class CollectorsConfiguration {
       ModelCallMetrics metrics,
       MeterRegistry meters,
       DiscoveryHostStore hosts,
-      ShadowLibraries shadowLibraries) {
+      ListSeedStore addedLists,
+      ShadowLibraries shadowLibraries,
+      VitalityPolicy vitality,
+      OutboundThrottle throttle,
+      WebPageLists webPageLists) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -322,7 +342,129 @@ class CollectorsConfiguration {
         categories,
         meters,
         hosts,
-        shadowLibraries);
+        addedLists,
+        shadowLibraries,
+        new GitHubAwesomeCollector.LinkRules(
+            new CoursePages(courses.platforms()),
+            modelReader(p.get("hf-trending"), clock, resilience, observations, http),
+            listedModelAdmission(vitality, c.links().modelIndexMinLikes()),
+            paperReader(p.get("arxiv"), s, clock, resilience, observations, http, throttle),
+            packageReader(p.get("npm"), s, clock, resilience, observations, http)),
+        webPageLists);
+  }
+
+  @Bean
+  DescribedSource curatedWebListsSource(SourcesProperties p) {
+    SourceDescriptor descriptor =
+        CollectorDescriptors.curatedWebLists(p.get(CollectorIds.GITHUB_AWESOME));
+    return new DescribedSource() {
+      @Override
+      public SourceDescriptor getDescriptor() {
+        return descriptor;
+      }
+    };
+  }
+
+  @Bean
+  HostsNeverRead listPageHostsNeverRead(CollectorProperties.GitHubAwesome c) {
+    return new HostsNeverRead(c.webPages().neverReadReasons());
+  }
+
+  @Bean
+  WebPageLists webPageLists(
+      CollectorProperties.GitHubAwesome c,
+      ListSeedStore addedLists,
+      LiveWebPageReader reader,
+      ScoutLiveWebCredits credits,
+      HostsNeverRead neverRead,
+      Clock clock) {
+    return new WebPageLists(
+        addedLists,
+        reader,
+        credits,
+        neverRead,
+        c.webPages().readEvery(),
+        c.webPages().retryAfter(),
+        clock);
+  }
+
+  private static final String AWESOME_POLICY = "collector-" + CollectorIds.GITHUB_AWESOME;
+
+  private static @Nullable ArxivPaperReader paperReader(
+      SourceSettings arxiv,
+      SourceSettings collector,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http,
+      OutboundThrottle throttle) {
+    if (!arxiv.enabled()) {
+      return null;
+    }
+    return new ArxivPaperReader(
+        collectorClient(collector, observations, http).baseUrl(arxiv.baseUrl()).build(),
+        resilience,
+        AWESOME_POLICY,
+        clock,
+        throttle,
+        ArxivPaperReader.sleeping());
+  }
+
+  private static @Nullable NpmPackageReader packageReader(
+      SourceSettings npm,
+      SourceSettings collector,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    if (!npm.enabled()) {
+      return null;
+    }
+    return new NpmPackageReader(
+        collectorClient(collector, observations, http).baseUrl(npm.baseUrl()).build(),
+        resilience,
+        AWESOME_POLICY,
+        clock);
+  }
+
+  static AdmissionPolicy listedModelAdmission(VitalityPolicy vitality, int minLikes) {
+    return new AdmissionPolicy(
+        vitality,
+        new AdmissionRules(Map.of(CollectorIds.GITHUB_AWESOME, new IndexFloor(0, null, minLikes))));
+  }
+
+  private static @Nullable HuggingFaceModelReader modelReader(
+      SourceSettings hub,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    if (!hub.enabled()) {
+      return null;
+    }
+    return new HuggingFaceModelReader(
+        HttpClients.client(collectorClient(hub, observations, http), hub),
+        resilience,
+        "collector-" + CollectorIds.GITHUB_AWESOME,
+        clock);
+  }
+
+  @Bean
+  @Nullable GitHubRepositoryStates gitHubRepositoryStates(
+      SourcesProperties p,
+      Resilience resilience,
+      Clock clock,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    SourceSettings s = p.get("github");
+    if (!s.enabled() || !s.hasToken()) {
+      return null;
+    }
+    resilience.require(GitHubRepositoryStates.POLICY);
+    return new GitHubRepositoryStates(
+        HttpClients.gitHubClient(CollectorsConfiguration.collectorClient(s, observations, http), s),
+        resilience,
+        clock);
   }
 
   private static GitHubAwesomeCollector.Deep deep(
@@ -335,6 +477,9 @@ class CollectorsConfiguration {
         c.maxRunTime(),
         c.maxReadmeBytesPerRun().toBytes(),
         c.links().maxPerPass(),
+        c.links().maxModelsPerPass(),
+        c.links().maxPapersPerPass(),
+        c.links().maxPackagesPerPass(),
         c.links().perDay(),
         excluded);
   }

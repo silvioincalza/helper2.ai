@@ -5,7 +5,7 @@ import ai.helper2.scout.HostKind
 import ai.helper2.scout.HostNames
 import ai.helper2.scout.InMemoryDiscoveryHostStore
 import ai.helper2.scout.SeedDiscoveryHosts
-import ai.helper2.scout.UnitOfWork
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -90,6 +90,7 @@ class ManageDiscoveryHostsTest {
     "'', EMPTY",
     "com, TOO_BROAD",
     "co.uk, TOO_BROAD",
+    "com.au, TOO_BROAD",
     "10.0.0.1, TOO_BROAD",
     "https://acme.ai/, NOT_A_HOST",
     "acme.ai/blog, NOT_A_HOST",

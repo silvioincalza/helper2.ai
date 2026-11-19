@@ -5,17 +5,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ai.helper2.search.PopularityKind;
+import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.search.Vitality;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.DateStatus;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -23,6 +30,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +45,7 @@ class HuggingFaceSourcesTest {
 
   SourceSettings settings() {
     return new SourceSettings(
-        true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30));
+        true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30), null);
   }
 
   SourceQuery q(String text) {
@@ -58,6 +66,57 @@ class HuggingFaceSourcesTest {
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             SourceFixtures.CLOCK);
     SourceHit h = src.search(q("qwen3")).getFirst();
+    assertThat(h)
+        .isEqualTo(
+            new SourceHit(
+                "hf-models",
+                "Qwen/Qwen3-0.6B",
+                URI.create("https://huggingface.co/Qwen/Qwen3-0.6B"),
+                CanonicalUrl.of("https://huggingface.co/Qwen/Qwen3-0.6B"),
+                null,
+                "Qwen/Qwen3-0.6B",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.MODEL,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of(
+                    "conversational",
+                    "endpoints_compatible",
+                    "qwen3",
+                    "safetensors",
+                    "text-generation",
+                    "text-generation-inference",
+                    "transformers"),
+                "Apache-2.0",
+                null,
+                Set.of(),
+                true,
+                new DateFact(
+                    Instant.parse("2025-04-27T03:40:08Z"),
+                    DatePrecision.INSTANT,
+                    "hf-models",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2025-07-26T03:46:27Z"),
+                    DatePrecision.INSTANT,
+                    "hf-models",
+                    List.of(),
+                    false),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.HF_LIKES,
+                        1845L,
+                        "hf-models",
+                        SourceFixtures.CLOCK.instant()),
+                    new PopularityMetric(
+                        PopularityKind.HF_DOWNLOADS,
+                        26678187L,
+                        "hf-models",
+                        SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant()));
     assertThat(h.getTitle()).isEqualTo("Qwen/Qwen3-0.6B");
     assertThat(h.getUrl().toString()).isEqualTo("https://huggingface.co/Qwen/Qwen3-0.6B");
     assertThat(h.getType()).isEqualTo(ResourceType.MODEL);
@@ -105,6 +164,49 @@ class HuggingFaceSourcesTest {
   void huggingFaceSpacesAreAppsForBothAudiences() {
     server.route("/api/spaces", FixtureServer.Reply.ok(FixtureServer.fixture("hf-spaces.json")));
     SourceHit h = spaces().search(q("translate")).getFirst();
+    assertThat(h)
+        .isEqualTo(
+            new SourceHit(
+                "hf-spaces",
+                "CohereLabs/North-Small-Translate-1.0",
+                URI.create("https://huggingface.co/spaces/CohereLabs/North-Small-Translate-1.0"),
+                CanonicalUrl.of(
+                    "https://huggingface.co/spaces/CohereLabs/North-Small-Translate-1.0"),
+                null,
+                "CohereLabs/North-Small-Translate-1.0",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.PRODUCT,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of("gradio"),
+                null,
+                null,
+                Set.of("web"),
+                null,
+                new DateFact(
+                    Instant.parse("2026-08-14T18:35:45Z"),
+                    DatePrecision.INSTANT,
+                    "hf-spaces",
+                    List.of(),
+                    false),
+                DateFact.unknown(),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.HF_LIKES, 20L, "hf-spaces", SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                null,
+                null,
+                null,
+                Map.of(),
+                Set.of(),
+                null,
+                Set.of(),
+                new Vitality(null, null, null, true)));
     assertThat(h.getUrl().toString()).startsWith("https://huggingface.co/spaces/");
     assertThat(h.getType()).isEqualTo(ResourceType.PRODUCT);
     assertThat(h.getAudience()).isEqualTo(Audience.BOTH);

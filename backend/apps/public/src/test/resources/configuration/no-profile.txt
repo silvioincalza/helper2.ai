@@ -603,9 +603,10 @@ helper2.monetisation.adsense-slot = ${H2_ADS_ADSENSE_SLOT:}  =>  <empty>
 helper2.monetisation.ga4-measurement-id = ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}  =>  <empty>
 helper2.monetisation.github-sponsors-url = ${H2_SUPPORT_GITHUB_SPONSORS_URL:}  =>  <empty>
 helper2.monetisation.stripe-payment-url = ${H2_SUPPORT_STRIPE_PAYMENT_URL:}  =>  <empty>
+helper2.pages.indexnow.key = ${H2_INDEXNOW_KEY:}  =>  <empty>
 helper2.pages.noindex = ${H2_NOINDEX:false}  =>  false
 helper2.pages.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
-helper2.pages.sitemap-limit = 50000
+helper2.pages.sitemap-limit = 200000
 helper2.pages.template = ${H2_PAGES_TEMPLATE:file:/shell/index.html}  =>  file:/shell/index.html
 helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
 helper2.rate-limit.default-per-minute = ${H2_RATE_LIMIT_DEFAULT_PER_MINUTE:120}  =>  120
@@ -656,7 +657,11 @@ helper2.scout.github-awesome.classify-batch = 25
 helper2.scout.github-awesome.classify-max-tokens = 8192
 helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
 helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+helper2.scout.github-awesome.links.max-models-per-pass = 100
+helper2.scout.github-awesome.links.max-packages-per-pass = 100
+helper2.scout.github-awesome.links.max-papers-per-pass = 200
 helper2.scout.github-awesome.links.max-per-pass = 500
+helper2.scout.github-awesome.links.model-index-min-likes = 10
 helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
 helper2.scout.github-awesome.max-entries-per-pass = 1000
 helper2.scout.github-awesome.max-entries-per-run = ${H2_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
@@ -668,6 +673,9 @@ helper2.scout.github-awesome.min-repo-stars = 50
 helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
+helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
+helper2.scout.github-awesome.web-pages.retry-after = ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}  =>  PT1H
 helper2.scout.github-sdks.deps-dev-url = ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
 helper2.scout.github-sdks.interval = ${H2_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
 helper2.scout.github-sdks.languages = ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000
@@ -698,6 +706,7 @@ helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D
 helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
 helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
 helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
@@ -936,6 +945,7 @@ resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = col
 resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
 resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
 resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
+resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
 resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
@@ -944,12 +954,16 @@ resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
 resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat-guide-judge.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat-guide-judge.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-chat-guide.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat-guide.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
-resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-rate-threshold = 50
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
@@ -992,6 +1006,7 @@ resilience4j.retry.instances.collector-live-web-scout.base-config = collector
 resilience4j.retry.instances.collector-mcp-registry.base-config = collector
 resilience4j.retry.instances.collector-news-feeds.base-config = collector
 resilience4j.retry.instances.collector-pypi.base-config = collector
+resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${H2_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true

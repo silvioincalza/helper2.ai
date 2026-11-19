@@ -12,14 +12,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 final class AwesomeListParser {
   record Entry(
       String fullName, String section, String headingPath, String text, boolean inListOfLists) {
-
-    Entry(String fullName, String section, String headingPath, String text) {
-      this(fullName, section, headingPath, text, false);
-    }
 
     boolean pointsAtList() {
       String name = fullName.substring(fullName.indexOf('/') + 1).toLowerCase(Locale.ROOT);
@@ -27,7 +24,7 @@ final class AwesomeListParser {
     }
   }
 
-  record Link(String url, String text, String section, String headingPath) {}
+  record Link(String url, String text, String section, String headingPath, String entryText) {}
 
   record Parsed(
       List<Entry> entries,
@@ -36,28 +33,18 @@ final class AwesomeListParser {
       int textLines,
       int linkedItems) {
 
-    Parsed(List<Entry> entries, List<String> headings) {
-      this(entries, headings, List.of());
-    }
-
-    Parsed(List<Entry> entries, List<String> headings, List<Link> links) {
-      this(entries, headings, links, 0, 0);
-    }
-
     List<Entry> searchEntries(int maxEntries, int maxBytes) {
+      return searchEntries(new SearchBudget(maxEntries, maxBytes));
+    }
+
+    List<Entry> searchEntries(SearchBudget budget) {
       List<Entry> kept = new ArrayList<>();
-      int bytes = 0;
       for (Entry e : entries) {
-        if (kept.size() >= maxEntries) {
+        if (budget.spent(e.text(), e.headingPath())) {
           break;
         }
-        int size = utf8(e.text()) + utf8(e.headingPath());
-        if (bytes + size > maxBytes) {
-          break;
-        }
-        if (!e.text().isEmpty() || !e.headingPath().isEmpty()) {
+        if (budget.keeps(e.text(), e.headingPath())) {
           kept.add(e);
-          bytes += size;
         }
       }
       return kept;
@@ -75,6 +62,36 @@ final class AwesomeListParser {
         bytes += size;
       }
       return out.toString();
+    }
+  }
+
+  static final class SearchBudget {
+
+    private final int maxEntries;
+    private final int maxBytes;
+    private int entries;
+    private int bytes;
+
+    SearchBudget(int maxEntries, int maxBytes) {
+      this.maxEntries = maxEntries;
+      this.maxBytes = maxBytes;
+    }
+
+    boolean spent(String text, String headingPath) {
+      return entries >= maxEntries || bytes + size(text, headingPath) > maxBytes;
+    }
+
+    boolean keeps(String text, String headingPath) {
+      if (spent(text, headingPath) || (text.isEmpty() && headingPath.isEmpty())) {
+        return false;
+      }
+      entries++;
+      bytes += size(text, headingPath);
+      return true;
+    }
+
+    private static int size(String text, String headingPath) {
+      return utf8(text) + utf8(headingPath);
     }
   }
 
@@ -138,6 +155,8 @@ final class AwesomeListParser {
 
   static final int MAX_LINKS = 2_000;
 
+  static final int MAX_ITEM_LINES = 20;
+
   private AwesomeListParser() {}
 
   static List<Entry> entries(String markdown, String listFullName) {
@@ -145,18 +164,18 @@ final class AwesomeListParser {
   }
 
   static Parsed parse(String markdown, String listFullName) {
-    Map<String, Entry> unique = new LinkedHashMap<>();
-    Map<String, Link> links = new LinkedHashMap<>();
+    Found found = new Found(listFullName.toLowerCase(Locale.ROOT));
     Set<String> headings = new LinkedHashSet<>();
     String[] stack = new String[7];
     Arrays.fill(stack, "");
-    String self = listFullName.toLowerCase(Locale.ROOT);
     boolean fenced = false;
     ListLines lines = new ListLines();
+    Item open = null;
     for (String line : markdown.split("\\R")) {
       if (FENCE.matcher(line).find()) {
         fenced = !fenced;
         lines.end();
+        open = found.close(open);
         continue;
       }
       if (fenced) {
@@ -164,6 +183,7 @@ final class AwesomeListParser {
       }
       Matcher heading = HEADING.matcher(line.strip());
       if (heading.matches()) {
+        open = found.close(open);
         String text = MarkdownText.cut(MarkdownText.plain(heading.group(2)), MAX_HEADING_PATH);
         enter(stack, heading.group(1).length(), text);
         if (!text.isEmpty()) {
@@ -173,18 +193,116 @@ final class AwesomeListParser {
         continue;
       }
       boolean item = LIST_ITEM.matcher(line).find();
-      if (item) {
-        addEntries(line, stack, self, unique);
-        addLink(line, stack, links);
+      if (!line.isBlank()) {
+        if (open != null && open.owns(line, item)) {
+          open.add(line);
+        } else {
+          found.close(open);
+          open = item ? new Item(line, stack) : null;
+        }
       }
       lines.add(line, item);
     }
+    found.close(open);
     return new Parsed(
-        new ArrayList<>(unique.values()),
+        new ArrayList<>(found.entries.values()),
         new ArrayList<>(headings),
-        new ArrayList<>(links.values()),
+        new ArrayList<>(found.links.values()),
         lines.textLines,
         lines.linkedItems);
+  }
+
+  private static final class Item {
+
+    private final int indent;
+    private final String section;
+    private final String headingPath;
+    private final boolean inListOfLists;
+    private final List<String> lines = new ArrayList<>();
+
+    Item(String line, String[] stack) {
+      this.indent = ListLines.indent(line);
+      this.section = section(stack);
+      this.headingPath = AwesomeListParser.headingPath(stack);
+      this.inListOfLists = AwesomeListParser.inListOfLists(stack);
+      lines.add(line);
+    }
+
+    boolean owns(String line, boolean listItem) {
+      return ListLines.indent(line) > indent && !(listItem && ListLines.web(line));
+    }
+
+    void add(String line) {
+      if (lines.size() < MAX_ITEM_LINES) {
+        lines.add(line);
+      }
+    }
+
+    String text() {
+      StringBuilder text = new StringBuilder();
+      for (String line : lines) {
+        if (text.length() >= MAX_ENTRY_TEXT) {
+          break;
+        }
+        String plain = MarkdownText.plain(line);
+        if (!plain.isEmpty()) {
+          text.append(text.isEmpty() ? "" : " ").append(plain);
+        }
+      }
+      return MarkdownText.cut(text.toString(), MAX_ENTRY_TEXT);
+    }
+  }
+
+  private static final class Found {
+
+    private final String self;
+    private final Map<String, Entry> entries = new LinkedHashMap<>();
+    private final Map<String, Link> links = new LinkedHashMap<>();
+
+    Found(String self) {
+      this.self = self;
+    }
+
+    @Nullable Item close(@Nullable Item item) {
+      if (item == null) {
+        return null;
+      }
+      String text = item.text();
+      for (String line : item.lines) {
+        addEntries(line, item, text);
+        addLinks(line, item, text);
+      }
+      return null;
+    }
+
+    private void addEntries(String line, Item item, String text) {
+      Matcher m = REPO_LINK.matcher(line);
+      while (m.find()) {
+        String owner = m.group(1);
+        String name = cleanName(m.group(2));
+        if (name.isEmpty() || NOT_OWNERS.contains(owner.toLowerCase(Locale.ROOT))) {
+          continue;
+        }
+        String fullName = owner + "/" + name;
+        String key = fullName.toLowerCase(Locale.ROOT);
+        if (!key.equals(self)) {
+          entries.putIfAbsent(
+              key, new Entry(fullName, item.section, item.headingPath, text, item.inListOfLists));
+        }
+      }
+    }
+
+    private void addLinks(String line, Item item, String text) {
+      Matcher m = MARKDOWN_LINK.matcher(MarkdownText.cut(line, MarkdownText.MAX_RAW));
+      while (m.find() && links.size() < MAX_LINKS) {
+        String url = m.group(2);
+        if (url.indexOf(':') < 0 || GITHUB_HOST.matcher(url).find()) {
+          continue;
+        }
+        String words = MarkdownText.cut(MarkdownText.plain(m.group(1)), MAX_LINK_TEXT);
+        links.putIfAbsent(url, new Link(url, words, item.section, item.headingPath, text));
+      }
+    }
   }
 
   static final class ListLines {
@@ -267,49 +385,10 @@ final class AwesomeListParser {
     }
   }
 
-  private static void addLink(String line, String[] stack, Map<String, Link> links) {
-    if (links.size() >= MAX_LINKS) {
-      return;
-    }
-    Matcher m = MARKDOWN_LINK.matcher(MarkdownText.cut(line, MarkdownText.MAX_RAW));
-    if (!m.find()) {
-      return;
-    }
-    String url = m.group(2);
-    if (url.indexOf(':') < 0 || GITHUB_HOST.matcher(url).find() || links.containsKey(url)) {
-      return;
-    }
-    String text = MarkdownText.cut(MarkdownText.plain(m.group(1)), MAX_LINK_TEXT);
-    links.put(url, new Link(url, text, section(stack), headingPath(stack)));
-  }
-
   private static void enter(String[] stack, int level, String text) {
     stack[level] = text;
     for (int deeper = level + 1; deeper < stack.length; deeper++) {
       stack[deeper] = "";
-    }
-  }
-
-  private static void addEntries(
-      String line, String[] stack, String self, Map<String, Entry> unique) {
-    Matcher m = REPO_LINK.matcher(line);
-    String text = null;
-    while (m.find()) {
-      String owner = m.group(1);
-      String name = cleanName(m.group(2));
-      if (name.isEmpty() || NOT_OWNERS.contains(owner.toLowerCase(Locale.ROOT))) {
-        continue;
-      }
-      String fullName = owner + "/" + name;
-      String key = fullName.toLowerCase(Locale.ROOT);
-      if (key.equals(self) || unique.containsKey(key)) {
-        continue;
-      }
-      if (text == null) {
-        text = MarkdownText.cut(MarkdownText.plain(line), MAX_ENTRY_TEXT);
-      }
-      unique.put(
-          key, new Entry(fullName, section(stack), headingPath(stack), text, inListOfLists(stack)));
     }
   }
 

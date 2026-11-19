@@ -4,6 +4,8 @@ import { Link, useLocation } from 'react-router';
 import { adminApi } from '@/api/admin';
 import type { ReviewItem, ReviewResearchRun } from '@/api/types';
 import { useApi } from '@/hooks/useApi';
+import { aiMark, aiModel } from '@/lib/aiMark';
+import { formatCount } from '@/lib/format';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { AdminDialog } from './AdminDialog';
 import { NOTE_MAX } from './limits';
@@ -12,8 +14,12 @@ const POLL_MS = 2000;
 export const RESEARCH_FILTERS = ['KEEP', 'REJECT', 'DUPLICATE', 'ACTIVE', 'NONE'] as const;
 const RESEARCHABLE = new Set<ReviewItem['kind']>(['RESOURCE_CANDIDATE', 'COURSE_CANDIDATE']);
 
+export function hasResearch(item: ReviewItem): boolean {
+  return RESEARCHABLE.has(item.kind);
+}
+
 export function researchable(item: ReviewItem): boolean {
-  return item.status === 'OPEN' && RESEARCHABLE.has(item.kind);
+  return item.status === 'OPEN' && hasResearch(item);
 }
 
 function startable(item: ReviewItem, run: ReviewResearchRun | undefined): boolean {
@@ -145,7 +151,12 @@ export function ResearchRunLine({ run }: { run: ReviewResearchRun }) {
   const from = useTraceState();
   return (
     <p className="h2-admin__research-meta">
-      {t('admin.research.runLine', { status: t(`admin.research.status.${run.status}`) })}{' '}
+      {t('admin.research.runLine', {
+        status:
+          run.status === 'DONE' && run.verdict
+            ? t(`admin.research.verdict.${run.verdict}`)
+            : t(`admin.research.status.${run.status}`),
+      })}{' '}
       <Link to={`/admin/review/research/${run.id}`} state={from}>
         {isActive(run) ? t('admin.research.watch') : t('admin.research.everyStep')}
       </Link>
@@ -271,9 +282,9 @@ function StartAllBody({
       {found ? (
         <dl className="h2-admin__estimate">
           <dt>{t('admin.research.allItems')}</dt>
-          <dd>{found.items.toLocaleString('en')}</dd>
+          <dd>{formatCount(found.items, 'en')}</dd>
           <dt>{t('admin.research.allCalls')}</dt>
-          <dd>{found.maxModelCalls.toLocaleString('en')}</dd>
+          <dd>{formatCount(found.maxModelCalls, 'en')}</dd>
         </dl>
       ) : (
         <p role="status">
@@ -292,7 +303,7 @@ function StartAllBody({
         >
           {t('admin.research.allConfirm', {
             count: found?.items ?? 0,
-            items: (found?.items ?? 0).toLocaleString('en'),
+            items: formatCount(found?.items ?? 0, 'en'),
           })}
         </button>
         <button type="button" className="btn" onClick={onClose}>
@@ -385,9 +396,9 @@ function BatchRejectBody({
       <p className="h2-admin__research-ai">
         <strong>{t('admin.research.rejectAi')}</strong>
       </p>
-      <ul className="h2-admin__reject-list" data-ai-generated="true">
+      <ul className="h2-admin__reject-list" {...aiMark()}>
         {items.map((i) => (
-          <li key={i.id} data-ai-model={runs.get(i.id)?.model}>
+          <li key={i.id} {...aiModel(runs.get(i.id)?.model)}>
             <input
               id={`${prefix}-${i.id}`}
               type="checkbox"

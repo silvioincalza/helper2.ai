@@ -71,10 +71,11 @@ tasks.named<Test>("test") {
   inputs
     .files(
       rootProject.fileTree(".") {
-        include("libs/*/src/*/java/**", "libs/*/src/*/kotlin/**")
-        include("apps/*/src/main/java/**", "apps/*/src/main/kotlin/**")
+        include("apps/public/src/main/kotlin/ai/helper2/guide/**")
+        include("libs/core/src/main/kotlin/ai/helper2/search/**")
+        include("libs/kernel/src/main/kotlin/ai/helper2/shared/**")
       }
     )
-    .withPropertyName("backendSources")
+    .withPropertyName("sourcesTheTestsRead")
     .withPathSensitivity(PathSensitivity.RELATIVE)
 }
