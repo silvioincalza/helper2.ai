@@ -28,7 +28,8 @@ public interface AuditTrail {
     EDIT_KNOWN_TARGET,
     REMOVE_KNOWN_TARGET,
     ADD_SHADOW_LIBRARY,
-    REMOVE_SHADOW_LIBRARY
+    REMOVE_SHADOW_LIBRARY,
+    REMOVE_RESOURCE
   }
 
   record Change(@Nullable String before, @Nullable String after, @Nullable String reason) {}

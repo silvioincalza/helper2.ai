@@ -11,9 +11,11 @@ import ai.helper2.api.generated.model.EnrichmentQueueEntryDto;
 import ai.helper2.api.generated.model.EnrichmentQueuePageDto;
 import ai.helper2.api.generated.model.EnrichmentQueueViewDto;
 import ai.helper2.api.generated.model.EnrichmentSkipDto;
+import ai.helper2.api.generated.model.ResourceRemovalDto;
 import ai.helper2.catalog.AiCheckReport;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Part;
+import ai.helper2.catalog.usecase.RemoveResource;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
@@ -44,6 +46,7 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
   private final PrioritiseEnrichment prioritise;
   private final CheckAiWords aiCheck;
   private final CheckAwesomeLists awesomeLists;
+  private final RemoveResource remove;
 
   EnrichmentQueueController(
       ListEnrichmentQueue queue,
@@ -51,7 +54,9 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
       SkipEnrichment skip,
       PrioritiseEnrichment prioritise,
       CheckAiWords aiCheck,
-      CheckAwesomeLists awesomeLists) {
+      CheckAwesomeLists awesomeLists,
+      RemoveResource remove) {
+    this.remove = remove;
     this.aiCheck = aiCheck;
     this.awesomeLists = awesomeLists;
     this.queue = queue;
@@ -135,6 +140,18 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
   @Override
   public ResponseEntity<Void> skipEnrichment(UUID resourceId, @Nullable EnrichmentSkipDto body) {
     return answer(skip.skip(Admins.id(), resourceId, body == null ? null : body.getReason()));
+  }
+
+  @Override
+  public ResponseEntity<Void> removeResourceNotAboutAi(UUID resourceId, ResourceRemovalDto body) {
+    return switch (remove.remove(resourceId, body.getReason(), Admins.id())) {
+      case RemoveResource.Outcome.Removed removed -> ResponseEntity.noContent().build();
+      case RemoveResource.Outcome.NoReason noReason ->
+          throw new BadRequestException(
+              "A reason of 1 to " + noReason.maxLength() + " characters is required.");
+      case RemoveResource.Outcome.NoSuchResource missing ->
+          throw new NotFoundException("Resource not found.");
+    };
   }
 
   @Override
