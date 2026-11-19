@@ -32,6 +32,7 @@ class PageHtmlTest {
   private static final String HOSTILE =
       "</script><script>alert(1)</script>\" onload=\"x\" <b>&amp; \u2028";
   private static final UUID ID = UUID.fromString("8a0e6c1e-2f43-5b6e-9d0a-1f1e2d3c4b5a");
+  private static final UUID LIST_ID = UUID.fromString("5d2c9b7a-41f0-5c3e-8a6b-0e9d8c7b6a59");
 
   @TempDir Path dist;
 
@@ -68,7 +69,8 @@ class PageHtmlTest {
         List.of(
             new Link(HOSTILE, URI.create("https://github.com/acme/x")),
             new Link("bad", URI.create("javascript:alert(1)"))),
-        List.of(new Related(UUID.randomUUID(), HOSTILE)));
+        List.of(new Related(UUID.randomUUID(), HOSTILE)),
+        List.of(new Related(LIST_ID, HOSTILE)));
   }
 
   @Test
@@ -169,6 +171,8 @@ class PageHtmlTest {
     assertThat(page).doesNotContain("\" onload=\"x\"");
     assertThat(page).doesNotContain("javascript:");
     assertThat(page).contains("<a href=\"https://github.com/acme/x\" rel=\"nofollow ugc\">");
+    assertThat(page)
+        .contains("<h2>Found in these lists</h2><ul><li><a href=\"/resource/" + LIST_ID);
     String jsonLd =
         page.substring(
             page.indexOf("application/ld+json\">"),

@@ -34,7 +34,7 @@ res: "/resource/{id}/{slug}" {
   worthy: "IndexPolicy: index-worthy?\n(type, source description,\na fact or relationship)" {class: decision}
   index: "robots: index" {class: hot}
   noindex: "robots: noindex, follow" {class: data}
-  head: "Head: title, source description\n(never AI-written), absolute canonical,\nOpen Graph, JSON-LD by type\nBody: h1, facts, source and related links" {class: app}
+  head: "Head: title, source description\n(never AI-written), absolute canonical,\nOpen Graph, JSON-LD by type\nBody: h1, facts, source, related\nand list links" {class: app}
   uuid -> find: yes
   uuid -> gone: no
   find -> found

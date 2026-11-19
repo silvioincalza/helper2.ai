@@ -11,7 +11,8 @@
 #   backend/libs/core/src/main/java/ai/helper2/catalog/{CatalogWriter,Resources,CategoryLabels,CategoryInputs,CategoryAssignments,JobMarkers,EmbeddingStore,
 #   AwesomeListIndex,ReviewQueue}.java (the catalog's ports), catalog/internal/Jdbc*.java (their adapters),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/enrichment/ (EnrichmentCandidates, EnrichmentResults, SourceOutcomes: the Scout's way in),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/internal/JdbcResourceDetailReads.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/EnrichmentFacts.java, catalog/AwesomeListEntries.java,
+#   catalog/internal/JdbcResourceDetailReads.java,
 #   catalog/usecase/GetResourceDetail.java (the detail page's way out),
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java,
 #   catalog/usecase/IndexAwesomeLists.java, catalog/internal/JdbcAwesomeListIndex.java (ADR 0023),
@@ -94,7 +95,7 @@ catalog: "catalog (Java)" {
   store -> p_store: implements {class: config}
   enrichment -> p_enrichment: implements {class: config}
   detail: GetResourceDetail {class: app}
-  p_facts: "EnrichmentFacts\n(detail page)" {class: port}
+  p_facts: "EnrichmentFacts\nAwesomeListEntries\n(detail page)" {class: port}
   detail -> p_facts
   detail -> p_store
   facts: JdbcResourceDetailReads {class: app}

@@ -3,7 +3,8 @@
 #   GitHubAwesomeCollector.java (read, searchText, listHits), backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt
 #   (indexListsQuietly), backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcAwesomeListIndex.java,
 #   JdbcCatalogSearch.java (searchSql, searchFound), CatalogSearchSource.java, search/web/CardMapper.java,
-#   frontend/src/features/search/ResultRow.tsx, backend/libs/schema/src/main/resources/db/migration/V1__schema.sql
+#   frontend/src/features/search/ResultRow.tsx, catalog/internal/JdbcResourceDetailReads.java (naming),
+#   frontend/src/features/resource/FoundInLists.tsx, backend/libs/schema/src/main/resources/db/migration/V1__schema.sql
 #   (h2_name_words, search_vector).
 # Render: cd docs/diagrams && d2 fmt flow-0023-search-inside-awesome-lists.d2 && d2 flow-0023-search-inside-awesome-lists.d2 flow-0023-search-inside-awesome-lists.svg
 
@@ -76,3 +77,19 @@ index -> replace.listed
 index -> fail: "throws"
 replace.topics -> search.own: "later, a search"
 search.half -> card
+
+page: "Resource page (GET /api/v1/resources/{id})" {
+  class: group
+  direction: down
+  named: "A list names the resource?" {class: decision}
+  hidden: "No section" {class: end}
+  shown: "\"Found in these lists\": at most 10,\nmost popular list first, then title;\neach a link to the list's page,\nwith its heading path" {class: app}
+  rest: "More than 10?" {class: decision}
+  more: "\"and N more lists\"" {class: end}
+  named -> hidden: no
+  named -> shown: yes
+  shown -> rest
+  rest -> more: yes
+}
+
+replace.rows -> page.named: "later, a resource page"

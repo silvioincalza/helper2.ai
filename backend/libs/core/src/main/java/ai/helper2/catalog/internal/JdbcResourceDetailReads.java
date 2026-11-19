@@ -1,5 +1,6 @@
 package ai.helper2.catalog.internal;
 
+import ai.helper2.catalog.AwesomeListEntries;
 import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.shared.ValueOrigin;
@@ -17,7 +18,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 @Component
-class JdbcResourceDetailReads implements EnrichmentFacts {
+class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
 
   private final JdbcClient jdbc;
 
@@ -117,6 +118,36 @@ class JdbcResourceDetailReads implements EnrichmentFacts {
         })
         .orElse(null);
   }
+
+  @Override
+  public ResourceDetail.FoundIn naming(UUID resourceId, int limit) {
+    List<ListRow> rows =
+        jdbc.sql(
+                """
+                SELECT e.list_id, l.title, e.heading_path, count(*) OVER () AS total
+                FROM awesome_list_entry e JOIN resource l ON l.id = e.list_id
+                WHERE e.resource_id = :id
+                ORDER BY l.popularity DESC, l.title, e.list_id
+                LIMIT :limit
+                """)
+            .param("id", resourceId)
+            .param("limit", limit)
+            .query((rs, n) ->
+                new ListRow(
+                    new ResourceDetail.ListEntry(
+                        rs.getObject("list_id", UUID.class),
+                        rs.getString("title"),
+                        rs.getString("heading_path")),
+                    rs.getInt("total")))
+            .list();
+    if (rows.isEmpty()) {
+      return ResourceDetail.FoundIn.NO_LIST;
+    }
+    return new ResourceDetail.FoundIn(
+        rows.stream().map(ListRow::entry).toList(), rows.getFirst().total() - rows.size());
+  }
+
+  private record ListRow(ResourceDetail.ListEntry entry, int total) {}
 
   private record RunRow(UUID id, String model, String promptVersion, Instant finishedAt) {}
 

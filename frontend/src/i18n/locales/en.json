@@ -1137,6 +1137,10 @@
       "openSource": "open source",
       "techLevel": "technical level"
     },
+    "foundIn": "Found in these lists",
+    "foundInUnder": "under {{heading}}",
+    "foundInMore_one": "and {{count}} more list",
+    "foundInMore_other": "and {{count}} more lists",
     "whereFrom": "Where this information comes from",
     "readAt": "read {{date}}",
     "allSources": "All sources and their last check"

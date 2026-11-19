@@ -142,7 +142,17 @@ whether a query finds a resource there:
    only in a list; one direct match from any source hides it. The results row shows it as a small muted line, "Found in
    owner/awesome-llm under Tools > Vector databases" (or "Found in owner/awesome-llm" when there is no heading). It is
    the list's own words, not AI-written, so no AI label and no `data-ai-*` mark.
-15. **Retention.** Rows go with the list or the resource (`ON DELETE CASCADE`, [0010](../foundation/0010-data-retention.md)).
+15. **On the resource page.** The resource detail of the public API has `foundIn {lists, more}`: every list that names
+   the resource, as `{listId, listTitle, headingPath}`, the most popular list first (`resource.popularity` of the
+   list's own row), then by title; at most 10 (`ResourceDetail.FoundIn.MAX_LISTS`), and `more` counts the rest. One
+   indexed read on `awesome_list_entry_resource_idx` (`JdbcResourceDetailReads.naming`, the port `AwesomeListEntries`),
+   as the public app's role, which may only read the table. The page shows them in "Found in these lists", just above
+   "Where this information comes from": each list is a link to the list's own page in the catalog, never straight to
+   GitHub, followed by "under <heading path>" when the entry has one, and "and N more lists" when there are more than
+   10. A resource no list names has no section. The server's page for crawlers lists the same links
+   ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)). The list's own words again: no AI label and no
+   `data-ai-*` mark.
+16. **Retention.** Rows go with the list or the resource (`ON DELETE CASCADE`, [0010](../foundation/0010-data-retention.md)).
    A list that leaves the top lists is no longer read, so its rows are not refreshed: the catalog purge deletes rows not
    refreshed for `H2_RETENTION_LIST_INDEX` (30 days).
 
@@ -166,11 +176,17 @@ whether a query finds a resource there:
   `Scout.kt` (`ListIndex`), `usecase/RunScout.kt` (`indexListsQuietly`).
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `foundIn`),
   `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java`; `api/common.yaml` (`ResultCard.foundIn`).
-- `frontend/src/features/search/ResultRow.tsx`; `frontend/src/i18n/locales/en.json` (`results.foundIn`), `en.legal.json` (the Privacy page).
+- `backend/libs/core/src/main/java/ai/helper2/catalog/ResourceDetail.java` (`FoundIn`, `ListEntry`), `AwesomeListEntries.java`,
+  `usecase/GetResourceDetail.java`, `internal/JdbcResourceDetailReads.java` (`naming`),
+  `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`; `api/public.yaml`
+  (`ResourceDetail.foundIn`, `FoundIn`, `FoundInList`).
+- `frontend/src/features/search/ResultRow.tsx`, `frontend/src/features/resource/FoundInLists.tsx`;
+  `frontend/src/i18n/locales/en.json` (`results.foundIn`, `resource.foundIn`), `en.legal.json` (the Privacy page).
 - Tests: `catalog/CatalogSearchRankingIT.kt` (owner/name cases), `catalog/SchemaMigrationTest.java` (the words of a
   title), `catalog/AwesomeListSearchIT.kt`, `catalog/internal/PlainWordsTest.java`,
   `catalog/internal/AwesomeListSearchPerfTest.java` (perfTest only), `sources/github/scout/AwesomeListParserTest.java`,
-  `scout/usecase/RunScoutTest.kt`, `search/web/CardMapperTest.kt`.
+  `scout/usecase/RunScoutTest.kt`, `search/web/CardMapperTest.kt`, `api/ResourceFoundInApiIT.java` (the lists of a
+  resource, their order and the cap), `ResourcePage.test.tsx`.
 
 ## Alternatives considered
 
@@ -202,6 +218,8 @@ whether a query finds a resource there:
   ([0010](../foundation/0010-data-retention.md)).
 - A tool is found by how the lists describe it, and a list is a result of its own, found by its title, description and
   headings. A list-only result says where it was found, in the list's words.
+- A resource page names every list the resource is in and links to each list's page. One more indexed read per
+  resource detail. No new personal data: the titles and heading paths of public lists, which search already shows.
 - About 10 more resources (the lists) and about 10,000 rows of tsvectors with short heading paths. No new service, no
   new dependency.
 - The list index is English-stemmed: a list in another language matches only its exact word forms. A repository
@@ -243,12 +261,12 @@ hash join over the whole table (p95 105–117 ms); carrying popularity from the 
 
 | Threat | Risk | Control |
 |---|---|---|
-| Spoofing | A list pretends to describe a tool it does not | Only the top 10 lists by stars (≥ 1000) are read; list words count half and never outrank a direct match; the card names the list. |
+| Spoofing | A list pretends to describe a tool it does not | Only the top 10 lists by stars (≥ 1000) are read; list words count half and never outrank a direct match; the card names the list. The resource page links a list's page in the catalog by its id, never an address read from a README. |
 | Tampering | Markdown or SQL injection through README text or a query | README text is cleaned and goes in as a bind parameter; query text is only ever a parameter, its search syntax removed (`plainWords`); React escapes the heading path. |
-| Repudiation | Not knowing why a result showed | `foundIn` names the list and heading; the list is a resource with its source record. |
+| Repudiation | Not knowing why a result showed | `foundIn` names the list and heading; the list is a resource with its source record. The resource page names every list. |
 | Information disclosure | README text or personal data kept | Only tsvectors and heading paths (≤ 200 characters) are stored; a test checks the columns and that an entry line is in no text column. A translated query is kept under a hash only. |
-| Denial of service | A huge README, a query with many words, a translation flood | README read up to 5 MB within 60 s ([0006](../foundation/0006-outbound-calls-and-resilience.md)); per-list caps; GIN indexes; at most 4 required variants; the translator has its own daily cap and the `llm-chat` circuit. |
-| Elevation of privilege | — | No new endpoint, no new role; the list index is written by the Scout in the back office. |
+| Denial of service | A huge README, a query with many words, a translation flood | README read up to 5 MB within 60 s ([0006](../foundation/0006-outbound-calls-and-resilience.md)); per-list caps; GIN indexes; at most 4 required variants; at most 10 lists on a resource detail; the translator has its own daily cap and the `llm-chat` circuit. |
+| Elevation of privilege | — | No new endpoint, no new role; the list index is written by the Scout in the back office, and the public app only reads it. |
 
 OWASP LLM Top 10: the translator's answer is untrusted (point 7); no model reads or writes the list text or the names.
 

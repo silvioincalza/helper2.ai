@@ -110,6 +110,7 @@ class Pages(private val base: String) {
           facts = facts(r),
           sources = r.sources.take(MAX_SOURCES),
           related = r.related.take(MAX_RELATED),
+          foundIn = r.foundIn,
         ),
     )
   }

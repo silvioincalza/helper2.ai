@@ -29,6 +29,7 @@ class PagesTest {
     origin: ValueOrigin = ValueOrigin.SOURCE_PROVIDED,
     license: String? = "MIT",
     related: List<Related> = emptyList(),
+    foundIn: List<Related> = emptyList(),
   ) =
     ResourceView(
       id = id,
@@ -46,6 +47,7 @@ class PagesTest {
       location = null,
       sources = listOf(Link("GitHub", URI.create("https://github.com/acme/postgres-mcp"))),
       related = related,
+      foundIn = foundIn,
     )
 
   @Test
@@ -137,6 +139,13 @@ class PagesTest {
     assertEquals("postgres-mcp", body.heading)
     assertEquals(listOf(Fact("Type", "MCP server"), Fact("License", "MIT")), body.facts)
     assertEquals(related, body.related)
+    assertEquals(emptyList(), body.foundIn)
+  }
+
+  @Test
+  fun `the body lists the lists a resource was found in`() {
+    val lists = listOf(Related(UUID.randomUUID(), "acme/awesome-mcp"))
+    assertEquals(lists, pages.resource(resource(foundIn = lists)).body!!.foundIn)
   }
 
   @Test

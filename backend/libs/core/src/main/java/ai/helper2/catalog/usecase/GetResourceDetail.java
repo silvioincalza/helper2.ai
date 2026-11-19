@@ -1,5 +1,6 @@
 package ai.helper2.catalog.usecase;
 
+import ai.helper2.catalog.AwesomeListEntries;
 import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.RecordRow;
 import ai.helper2.catalog.ResourceCards;
@@ -27,11 +28,17 @@ public class GetResourceDetail {
   private final Resources store;
   private final EnrichmentFacts enrichment;
   private final ResourceCards cards;
+  private final AwesomeListEntries listEntries;
 
-  public GetResourceDetail(Resources store, EnrichmentFacts enrichment, ResourceCards cards) {
+  public GetResourceDetail(
+      Resources store,
+      EnrichmentFacts enrichment,
+      ResourceCards cards,
+      AwesomeListEntries listEntries) {
     this.store = store;
     this.enrichment = enrichment;
     this.cards = cards;
+    this.listEntries = listEntries;
   }
 
   public Optional<ResourceDetail> find(UUID id) {
@@ -61,7 +68,8 @@ public class GetResourceDetail {
         enrichment.relationships(id),
         enrichment.summary(id),
         records.stream().map(ResourceDetail.SourceRecordInfo::of).toList(),
-        row.enrichmentStatus());
+        row.enrichmentStatus(),
+        listEntries.naming(id, ResourceDetail.FoundIn.MAX_LISTS));
   }
 
   private List<ResourceDetail.Assertion> assertions(

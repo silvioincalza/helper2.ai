@@ -14,6 +14,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
 import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { WhereFrom } from './WhereFrom';
+import { FoundInLists } from './FoundInLists';
 import { cardHeadFor, Resource, ResourceSkeleton } from './Resource';
 import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { resourcePath } from '@/lib/searchState';
@@ -162,6 +163,8 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
       )}
 
       <AdSenseSlot />
+
+      <FoundInLists foundIn={d.foundIn} />
 
       <WhereFrom detail={d} />
 

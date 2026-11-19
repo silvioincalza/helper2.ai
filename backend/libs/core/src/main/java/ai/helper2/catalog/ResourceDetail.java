@@ -16,7 +16,15 @@ public record ResourceDetail(
     List<Relationship> relationships,
     Summary summary,
     List<SourceRecordInfo> sourceRecords,
-    String enrichmentStatus) {
+    String enrichmentStatus,
+    FoundIn foundIn) {
+
+  public record ListEntry(UUID listId, String listTitle, String headingPath) {}
+
+  public record FoundIn(List<ListEntry> lists, int more) {
+    public static final int MAX_LISTS = 10;
+    public static final FoundIn NO_LIST = new FoundIn(List.of(), 0);
+  }
 
   public record Evidence(UUID id, URI sourceUrl, Instant retrievedAt, String excerpt) {}
 

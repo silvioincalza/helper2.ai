@@ -31,6 +31,7 @@ data class PageBody(
   val facts: List<Fact>,
   val sources: List<Link>,
   val related: List<Related>,
+  val foundIn: List<Related> = emptyList(),
   val listing: Listing? = null,
   val pages: List<PageLink> = emptyList(),
 )
@@ -61,6 +62,7 @@ data class ResourceView(
   val location: String?,
   val sources: List<Link>,
   val related: List<Related>,
+  val foundIn: List<Related> = emptyList(),
 ) {
   val sourceDescription: String?
     get() =
