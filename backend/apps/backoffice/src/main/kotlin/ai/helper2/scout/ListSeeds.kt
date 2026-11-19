@@ -1,6 +1,7 @@
 package ai.helper2.scout
 
 import ai.helper2.shared.CanonicalUrl
+import ai.helper2.shared.WebAddresses
 import java.net.URI
 import java.net.URISyntaxException
 import java.nio.charset.StandardCharsets
@@ -108,26 +109,6 @@ object ListAddresses {
 
   private val HIDDEN = Regex("[\\p{Cc}\\p{Cf}\\s]")
 
-  private val TOP_LEVEL = Regex("[a-z]{2,63}")
-
-  private val PRIVATE_SUFFIXES =
-    setOf(
-      "localhost",
-      "localdomain",
-      "local",
-      "internal",
-      "intranet",
-      "private",
-      "lan",
-      "home",
-      "corp",
-      "test",
-      "example",
-      "invalid",
-      "onion",
-      "arpa",
-    )
-
   enum class Problem {
     EMPTY,
     NOT_A_GITHUB_REPOSITORY,
@@ -182,30 +163,35 @@ object ListAddresses {
   }
 
   private fun webPage(url: URI): Checked {
-    if (!"https".equals(url.scheme, ignoreCase = true)) {
-      return Checked.Invalid(Problem.NOT_HTTPS)
+    if (url.rawFragment != null) {
+      return Checked.Invalid(
+        if ("https".equals(url.scheme, ignoreCase = true)) Problem.NOT_A_PLAIN_PAGE
+        else Problem.NOT_HTTPS
+      )
     }
-    if (url.rawUserInfo != null || url.port != -1 || url.rawFragment != null) {
+    val host =
+      when (val address = WebAddresses.check(url)) {
+        is WebAddresses.Checked.Refused -> return Checked.Invalid(problemOf(address.refusal))
+        is WebAddresses.Checked.Public -> address.host
+      }
+    val page = "https://$host${url.rawPath.orEmpty()}${url.rawQuery?.let { "?$it" }.orEmpty()}"
+    if (page.length > MAX_LENGTH || CanonicalUrl.of(page) == null) {
       return Checked.Invalid(Problem.NOT_A_PLAIN_PAGE)
     }
-    val host = url.host?.lowercase(Locale.ROOT)
-    if (host == null || PageScope.plainUrlProblem(url) != null || !publicName(host)) {
-      return Checked.Invalid(Problem.NOT_A_PUBLIC_HOST)
-    }
-    val address = "https://$host${url.rawPath.orEmpty()}${url.rawQuery?.let { "?$it" }.orEmpty()}"
-    if (address.length > MAX_LENGTH || CanonicalUrl.of(address) == null) {
-      return Checked.Invalid(Problem.NOT_A_PLAIN_PAGE)
-    }
-    return Checked.Valid(ListKind.WEB_PAGE, address)
+    return Checked.Valid(ListKind.WEB_PAGE, page)
   }
 
-  private fun publicName(host: String): Boolean {
-    val labels = host.split(".")
-    return HostNames.check(host) is HostNames.Checked.Valid &&
-      TOP_LEVEL.matches(labels.last()) &&
-      labels.last() !in PRIVATE_SUFFIXES &&
-      labels.none { it.startsWith("xn--") }
-  }
+  private fun problemOf(refusal: WebAddresses.Refusal): Problem =
+    when (refusal) {
+      WebAddresses.Refusal.NOT_HTTPS -> Problem.NOT_HTTPS
+      WebAddresses.Refusal.MALFORMED,
+      WebAddresses.Refusal.USER_INFO,
+      WebAddresses.Refusal.PORT -> Problem.NOT_A_PLAIN_PAGE
+      WebAddresses.Refusal.IP_ADDRESS,
+      WebAddresses.Refusal.PRIVATE_HOST,
+      WebAddresses.Refusal.PUNYCODE,
+      WebAddresses.Refusal.NOT_A_HOST_NAME -> Problem.NOT_A_PUBLIC_HOST
+    }
 
   private fun parse(address: String): URI? {
     if (HIDDEN.containsMatchIn(address)) {

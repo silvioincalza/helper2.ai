@@ -74,8 +74,9 @@ Two kinds of source need more care:
      both changes in the audit trail (`ADD_LIST_SEED`, `REMOVE_LIST_SEED`). The id of an added list is made from its
      address (`ListAddresses.idOf`), so it is the same at every read.
    - **A web page as a list.** The address is https, with a public host name: no user info, no port, no fragment,
-     no IP address in any notation, no private or reserved name, no punycode label (`ListAddresses`, which uses
-     `PageScope.plainUrlProblem` and `HostNames`; 400 otherwise, with the rule that failed). Two addresses of one
+     no IP address in any notation, no private or reserved name, no punycode label: the Scout's one host check
+     (`WebAddresses`, [0013](0013-discovery.md) §17), with the plain-page rule of `ListAddresses` on top (no
+     fragment, at most 300 characters; 400 otherwise, with the rule that failed). Two addresses of one
      page (with and without "www.", with and without a trailing slash) are one list: the key is the canonical URL.
      - **Read through the live web page reader**, not by our own servers ([0014](0014-evidence-gated-enrichment.md),
        `PageReader`): `WebPageReader` asks for the page as Markdown, and `AwesomeListParser` reads that Markdown like
@@ -338,7 +339,7 @@ Two kinds of source need more care:
     and code checks them against the page.
     - Weekly (`H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL`, P7D). One Tavily search per query (`general`, `basic`, 10 results):
       upcoming AI hackathons, meetups and talks, conferences and summits, workshops. A result is kept when it is about
-      AI and its link is plain https (`PageScope.plainUrlProblem`). At most 20 pages a pass
+      AI and its link passes the Scout's host check (`PageScope.plainUrlProblem`, which is `WebAddresses`). At most 20 pages a pass
       (`H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES`).
     - **On by default, one switch.** `H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED` is true; `false` switches it off.
       It runs only with `H2_LIVE_WEB_API_KEY` and an AI model. Tavily's written OK for scheduled searches whose

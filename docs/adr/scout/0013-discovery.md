@@ -249,9 +249,12 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
 17. **Every link of an entry goes to the rule of its kind.** `AwesomeListParser` keeps every Markdown link of an entry
     that points outside GitHub: the links of the item's line and of the lines under it, each address once per list, at
     most 2,000 a list. `ListEntryLinks` sorts each link by its host, by code only, in this order:
-    - **The safety checks come first, for every kind** (`ProductLinks.page`): https only; a name, not an IP address in
-      any notation; no user info; no port; no private or reserved name (`localhost`, `.local`, `.internal`, `.corp`,
-      `.home.arpa` and others); no punycode label (a look-alike name can hide in it); no link that redirects (a URL
+    - **The safety checks come first, for every kind** (`ProductLinks.page`). The address rules are the Scout's one
+      host check (`WebAddresses`, in the kernel, which the scout and the sources both use): https only; a name, not an
+      IP address in any notation; no user info; no port, 443 included; no private or reserved name (`localhost`,
+      `.local`, `.internal`, `.corp`, `.example`, `.home.arpa` and others); no punycode label (a look-alike name can
+      hide in it); labels of letters, digits and hyphens, a top-level domain of letters, no trailing dot, not a
+      registry's second level alone (`co.uk`). `ProductLinks` adds its own rules: no link that redirects (a URL
       inside the path or the query, a redirect path such as `/out` or `/go`, a link shortener); not GitHub's own pages;
       not a shadow library. The query and the fragment are dropped.
     - **A Hugging Face model** (`huggingface.co/{owner}/{name}`, also written `hf.co`, with or without a file path;
@@ -395,6 +398,7 @@ No new table for deep search, no new dependency.
   `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java` (nested lists, budgets),
   `ListEntryLinks.java` (a link's kind), `ProductLinks.java` (link checks), `AwesomeMetrics.java`,
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebAddresses.kt` (the host check of every address),
   `AwesomeListParser.java` (`Item`, `Link`, `Entry.pointsAtList`, `SearchBudget`), `GitHubAwesomeCollector.java`
   (`Deep`, `LinkRules`, `links`, `readModels`, `candidate`, `searchEntries`, `repoFacts`);
   `sources/huggingface/scout/HuggingFaceModelReader.java` (a model by its id);
@@ -439,7 +443,7 @@ No new table for deep search, no new dependency.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2DiscoveryStale`.
 - Tests: `DiscoveryCollectorTest` (`tavilysOwnPagesAreNeitherCandidatesNorListPages`), `TavilySourceTest`,
   `DiscoveryPagesTest`, `DiscoveryCollectorRegistrarTest`, `CollectorsParityIT`, `ScoutSourceDescriptorsParityTest`, `RunIntervalTest`, `IndexAcceptedCandidateTest`,
-  `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `ListEntryLinksTest`,
+  `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `WebAddressesTest`, `ListEntryLinksTest`,
   `HuggingFaceModelReaderTest`, `ArxivPaperReaderTest`, `NpmPackageReaderTest`, `CoursePagesTest`, `GitHubAwesomeDeepSearchTest`, `WebPageListsTest`, `ManageListSeedsTest`,
   `JdbcListSeedStoreIT`, `ListSeedsApiIT`, `ListSeedsPanel.test.tsx`,
   `AwesomeListParserTest`, `CategoryMatcherTest`, `CollectorPropertiesTest`, `AwesomeListSearchIT`,
