@@ -291,6 +291,43 @@ class PagesTest {
   }
 
   @Test
+  fun `a hub page says what it lists in JSON-LD, one item per link`() {
+    val head = pages.of(PageKind.HUB_MCP_SERVERS, lists)
+    val collection = head.jsonLd.single()
+    assertEquals("CollectionPage", collection["@type"])
+    assertEquals("https://helper2.ai/mcp-servers", collection["url"])
+    val list = collection["mainEntity"] as Map<*, *>
+    assertEquals("ItemList", list["@type"])
+    assertEquals(Hub.SIZE, list["numberOfItems"])
+    val items = list["itemListElement"] as List<*>
+    assertEquals(head.body!!.listing!!.items.size, items.size)
+    val first = items.first() as Map<*, *>
+    assertEquals(1, first["position"])
+    assertEquals("MCP_SERVER 1", first["name"])
+    assertTrue((first["item"] as String).startsWith("https://helper2.ai/resource/"))
+  }
+
+  @Test
+  fun `a hub with no resource is not indexed, and its links are still followed`() {
+    Hub.entries.forEach { hub ->
+      val head = pages.of(hub.kind)
+      assertEquals(Robots.NOINDEX_FOLLOW, head.robots, hub.path)
+      assertTrue(head.jsonLd.isEmpty(), hub.path)
+      assertNull(head.body!!.listing, hub.path)
+      assertEquals(Pages.NAV.size - 1, head.body!!.pages.size, hub.path)
+    }
+  }
+
+  @Test
+  fun `the hub description names only what the list states`() {
+    assertEquals(
+      "MCP servers in the helper2.ai catalog, newest change first, with the license and pricing " +
+        "their sources state.",
+      Hub.MCP_SERVERS.description,
+    )
+  }
+
+  @Test
   fun `every hub has its own type, and the types without a hub are the ones that are not indexed`() {
     assertEquals(Hub.entries.size, Hub.entries.map { it.type }.toSet().size)
     val withoutHub = ResourceType.entries.filter { Hub.of(it) == null }.toSet()

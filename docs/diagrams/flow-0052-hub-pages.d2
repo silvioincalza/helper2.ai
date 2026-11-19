@@ -1,6 +1,7 @@
 # Flowchart: what a hub address answers (ADR 0052).
 # Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/site/pages/Hub.kt, Pages.kt (hub),
 #   site/pages/internal/CatalogSiteLists.java, site/pages/web/HubController.java,
+#   site/pages/usecase/ListSitemap.java,
 #   catalog/usecase/ListNewestIndexable.java, catalog/internal/JdbcResources.indexable,
 #   frontend/src/lib/hubs.ts, features/hubs/HubPage.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0052-hub-pages.d2 && d2 flow-0052-hub-pages.d2 flow-0052-hub-pages.svg
@@ -17,7 +18,9 @@ mem: "The kept list" {class: data}
 read: "ListNewestIndexable:\nindex-worthy of the type,\nnewest change first, at most 50" {class: app}
 ok: "Read worked?" {class: decision}
 last: "The last list, or empty" {class: data}
-page: "Server page: index, title, description,\ncanonical, body with the list and\nthe links to the site pages and hubs" {class: hot}
+any: "The list has a resource?" {class: decision}
+page: "Server page: index, title, description,\ncanonical, CollectionPage JSON-LD,\nbody with the list and the links\nto the site pages and hubs;\nlisted in /sitemaps/pages.xml" {class: hot}
+thin: "Server page: noindex, follow,\nbody with the links only;\nnot in /sitemaps/pages.xml" {class: fail}
 api: "HubResponse, public max-age=300" {class: hot}
 
 req -> hub
@@ -28,7 +31,9 @@ kept -> read: no
 read -> ok
 ok -> mem: "yes, kept"
 ok -> last: no
-mem -> page: "a hub address"
+mem -> any: "a hub address"
 mem -> api: "the API"
-last -> page
+last -> any
 last -> api
+any -> page: yes
+any -> thin: no

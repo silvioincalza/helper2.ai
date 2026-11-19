@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.usecase.ListIndexableResources;
+import ai.helper2.shared.ResourceType;
+import ai.helper2.site.pages.Related;
+import ai.helper2.site.pages.SiteLists;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -32,8 +35,33 @@ class ListSitemapTest {
             return pages.subList(0, Math.min(limit, pages.size()));
           }
         };
-    return new ListSitemap(list, Clock.fixed(NOW, ZoneOffset.UTC), "https://helper2.ai", 200_000);
+    return new ListSitemap(
+        list,
+        FILLED_EXCEPT_COURSES,
+        Clock.fixed(NOW, ZoneOffset.UTC),
+        "https://helper2.ai",
+        200_000);
   }
+
+  private static final SiteLists FILLED_EXCEPT_COURSES =
+      new SiteLists() {
+        @Override
+        public List<Related> newInCatalog() {
+          return List.of();
+        }
+
+        @Override
+        public List<Related> upcomingEvents() {
+          return List.of();
+        }
+
+        @Override
+        public List<Related> hub(ResourceType type) {
+          return type == ResourceType.COURSE
+              ? List.of()
+              : List.of(new Related(UUID.nameUUIDFromBytes(type.name().getBytes()), "One"));
+        }
+      };
 
   @Test
   void theSitemapIsAnIndexOfParts() {
@@ -63,8 +91,13 @@ class ListSitemapTest {
         .contains("<loc>https://helper2.ai/</loc>")
         .contains("<loc>https://helper2.ai/support</loc>")
         .contains("<loc>https://helper2.ai/mcp-servers</loc>")
-        .contains("<loc>https://helper2.ai/courses</loc>");
+        .contains("<loc>https://helper2.ai/prompts</loc>");
     assertThat(sitemap(0).index()).doesNotContain("resources-1");
+  }
+
+  @Test
+  void aHubWithNoResourceIsNotListed() {
+    assertThat(sitemap(0).part("pages").orElseThrow()).doesNotContain("/courses");
   }
 
   @Test

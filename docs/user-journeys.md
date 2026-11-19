@@ -428,7 +428,7 @@ Entry: a search engine result for a kind of thing ("MCP servers"), or **Browse b
 | Loading | The shared list skeleton under the heading. Announced once. |
 | Success | Up to 50 rows, newest change first. |
 | Partial | Not specified. |
-| Empty | "Nothing here yet." |
+| Empty | "Nothing here yet." The page says `noindex, follow` and is not in the sitemap, so no search engine result leads here. |
 | Error | "Could not load this list.", with **Try again**. |
 
 **Built by:** feature [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89); story [S7.3.6](https://github.com/silvioincalza/helper2.ai/issues/816).

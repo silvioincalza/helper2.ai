@@ -19,8 +19,8 @@ enum class Hub(val kind: PageKind, val type: ResourceType, val label: String) {
 
   val description: String
     get() =
-      "$label in the ${Pages.BRAND} catalog, newest change first, with the license, pricing and " +
-        "sources their sources state."
+      "$label in the ${Pages.BRAND} catalog, newest change first, with the license and pricing " +
+        "their sources state."
 
   companion object {
     const val SIZE = 50

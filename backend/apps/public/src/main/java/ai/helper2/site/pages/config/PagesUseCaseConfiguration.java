@@ -18,7 +18,8 @@ class PagesUseCaseConfiguration {
   }
 
   @Bean
-  ListSitemap listSitemap(ListIndexableResources resources, Clock clock, PagesProperties p) {
-    return new ListSitemap(resources, clock, p.publicBaseUrl(), p.sitemapLimit());
+  ListSitemap listSitemap(
+      ListIndexableResources resources, SiteLists lists, Clock clock, PagesProperties p) {
+    return new ListSitemap(resources, lists, clock, p.publicBaseUrl(), p.sitemapLimit());
   }
 }

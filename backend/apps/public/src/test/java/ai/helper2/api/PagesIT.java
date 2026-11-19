@@ -180,14 +180,9 @@ class PagesIT extends ApiTestBase {
   }
 
   @Test
-  void everyHubPageIsIndexedAndListsOnlyItsType() throws Exception {
-    for (ai.helper2.site.pages.Hub hub : ai.helper2.site.pages.Hub.getEntries()) {
-      assertThat(page(hub.getPath(), 200))
-          .as(hub.getPath())
-          .contains("content=\"index, follow\"")
-          .contains("<h1>" + hub.getLabel() + ": newest in the catalog</h1>");
-    }
+  void aHubPageListsOnlyItsTypeAndIsIndexedWhenItListsAResource() throws Exception {
     var json = tools.jackson.databind.json.JsonMapper.builder().build();
+    String sitePages = xml("/sitemaps/pages.xml");
     int listed = 0;
     for (ai.helper2.site.pages.Hub hub : ai.helper2.site.pages.Hub.getEntries()) {
       String type = hub.getType().name();
@@ -203,6 +198,14 @@ class PagesIT extends ApiTestBase {
       assertThat(read.path("items").size()).isLessThanOrEqualTo(50);
       read.path("items").forEach(card -> assertThat(card.path("type").asString()).isEqualTo(type));
       listed += read.path("items").size();
+      boolean filled = !read.path("items").isEmpty();
+      assertThat(page(hub.getPath(), 200))
+          .as(hub.getPath())
+          .contains("content=\"" + (filled ? "index, follow" : "noindex, follow") + "\"")
+          .contains("<h1>" + hub.getLabel() + ": newest in the catalog</h1>");
+      assertThat(sitePages.contains("<loc>https://helper2.ai" + hub.getPath() + "</loc>"))
+          .as("%s is in the sitemap only when it lists a resource", hub.getPath())
+          .isEqualTo(filled);
     }
     assertThat(listed).as("the seeded catalog fills at least one hub").isPositive();
     mvc.perform(get("/api/v1/hubs/EVENT")).andExpect(status().isNotFound());

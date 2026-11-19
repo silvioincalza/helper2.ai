@@ -70,7 +70,8 @@ Both are about the public site itself, and only the public app serves them.
    - JSON-LD (schema.org) by type: `SoftwareApplication` for PRODUCT, AGENT and MODEL; `SoftwareSourceCode` with
      `codeRepository` and `license` for LIBRARY, MCP_SERVER and SKILL; `ScholarlyArticle` for PAPER; `Event` for EVENT;
      `Course` for COURSE; `Dataset` for DATASET; nothing for the rest. Every resource page also gets a
-     `BreadcrumbList`; the home page gets `WebSite` and `Organization`. Only facts the page itself shows go in.
+     `BreadcrumbList`; the home page gets `WebSite` and `Organization`; a hub page gets a `CollectionPage`
+     ([0052](0052-hub-pages-per-resource-type.md)). Only facts the page itself shows go in.
    - Body (`main.h2-prerender`): an `<h1>`, the source's description, up to 6 facts, up to 5 source links (web
      addresses only), and up to 8 links to related resources (relationships a person did not reject).
    - The indexed site pages have a body too, so a crawler that runs no JavaScript reads more than the head: an `<h1>`,
