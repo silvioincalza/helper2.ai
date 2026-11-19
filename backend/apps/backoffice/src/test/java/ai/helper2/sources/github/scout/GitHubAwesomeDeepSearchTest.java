@@ -6,6 +6,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.InMemoryListSeedStore;
+import ai.helper2.scout.ListKind;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.RunStatus;
@@ -141,7 +142,13 @@ class GitHubAwesomeDeepSearchTest {
 
   @Test
   void aListAnAdministratorAddedIsReadFirstWhateverItsStarsAndName() {
-    addedLists.add(new ListSeed("small/llm-links", "42", SourceFixtures.CLOCK.instant(), null));
+    addedLists.add(
+        new ListSeed(
+            ListKind.GITHUB_REPOSITORY,
+            "small/llm-links",
+            "42",
+            SourceFixtures.CLOCK.instant(),
+            null));
     server.route(
         "/repos/small/llm-links",
         FixtureServer.Reply.ok(

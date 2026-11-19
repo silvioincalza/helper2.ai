@@ -47,7 +47,9 @@ tool answered, and must confirm every value before it reaches the catalog.
    link-local and reserved addresses are refused, also when an IPv6 address carries one (IPv4-compatible, mapped,
    NAT64, 6to4; Teredo and 64:ff9b:1::/48 are refused whole), and so are the documentation ranges. `check_url` looks
    a host up once per hop, tries at most 2 of the addresses it checked, and stops the whole call, redirects included,
-   after `H2_RESEARCH_CHECK_URL_DEADLINE` (20 seconds). A shadow library is never read
+   after `H2_RESEARCH_CHECK_URL_DEADLINE` (20 seconds). These tools check the addresses a name resolves to
+   (`PublicAddresses`); the name rules of the Scout's host check (`WebAddresses`, [0013](../scout/0013-discovery.md)
+   §17) are not applied to them. A shadow library is never read
    (`ShadowLibraries`). `ResearchTool` is the research module's port: `catalog_lookup` lives in the module, the other
    six in the sources module (`ai.helper2.sources.research`), which implements the port, as for the AI check. The
    module runs SQL only on its own two tables; it reads the review queue and the catalog through the catalog's ports

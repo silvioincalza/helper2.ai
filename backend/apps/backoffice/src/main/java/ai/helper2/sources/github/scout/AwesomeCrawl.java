@@ -66,16 +66,37 @@ final class AwesomeCrawl {
       Limits limits,
       ReadmeBudget budget,
       AwesomeMetrics metrics) {
+    return crawl(added, List.of(), seeds, lists, limits, budget, metrics);
+  }
+
+  static List<Read> crawl(
+      List<String> added,
+      List<Read> webPages,
+      List<ListRepo> seeds,
+      Lists lists,
+      Limits limits,
+      ReadmeBudget budget,
+      AwesomeMetrics metrics) {
     AwesomeCrawl crawl = new AwesomeCrawl(lists, limits, budget, metrics);
-    crawl.run(added, seeds);
-    return List.copyOf(crawl.read);
+    crawl.run(added, webPages, seeds);
+    return List.copyOf(crawl.withAfterTheSeeds(webPages));
   }
 
   static ReadmeBudget budget(Limits limits, Clock clock) {
     return ReadmeBudget.startingNow(clock, limits.maxRunTime(), limits.maxReadmeBytes());
   }
 
-  private void run(List<String> added, List<ListRepo> seeds) {
+  private List<Read> withAfterTheSeeds(List<Read> webPages) {
+    int firstNested = 0;
+    while (firstNested < read.size() && read.get(firstNested).depth() == 0) {
+      firstNested++;
+    }
+    List<Read> all = new ArrayList<>(read);
+    all.addAll(firstNested, webPages);
+    return all;
+  }
+
+  private void run(List<String> added, List<Read> webPages, List<ListRepo> seeds) {
     Map<String, ListRepo> found = new HashMap<>();
     seeds.forEach(seed -> found.putIfAbsent(key(seed.fullName()), seed));
     for (String fullName : added) {
@@ -92,6 +113,7 @@ final class AwesomeCrawl {
         queue.add(new Pending(seed.fullName(), seed.facts(), 0, false));
       }
     }
+    webPages.forEach(this::queueNested);
     while (!queue.isEmpty()) {
       String over = budget.spent();
       if (over != null) {

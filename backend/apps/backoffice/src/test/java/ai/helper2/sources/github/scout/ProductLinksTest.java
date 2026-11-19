@@ -22,9 +22,9 @@ class ProductLinksTest {
   @CsvSource({
     "https://www.Acme.ai/?utm_source=list#top, https://acme.ai",
     "https://acme.ai/pricing, https://acme.ai",
+    "https://acme.ai:443/pricing, https://acme.ai",
     "https://aws.amazon.com/bedrock/, https://aws.amazon.com/bedrock",
     "https://acme.ai/studio?plan=pro, https://acme.ai/studio",
-    "https://acme.ai., https://acme.ai",
   })
   void aProductLinkBecomesItsHomePageOrItsOneLevelPage(String raw, String site) {
     ProductLinks.Checked checked = links.check(raw, PAGES);
@@ -48,6 +48,8 @@ class ProductLinksTest {
     "https://user:secret@acme.ai/, USER_INFO",
     "https://acme.ai@evil.ai/, USER_INFO",
     "https://acme.ai:8443/, PORT",
+    "https://acme.ai./, MALFORMED",
+    "https://co.uk/, MALFORMED",
     "https://localhost/, PRIVATE_HOST",
     "https://printer.local/, PRIVATE_HOST",
     "https://metadata.google.internal/, PRIVATE_HOST",

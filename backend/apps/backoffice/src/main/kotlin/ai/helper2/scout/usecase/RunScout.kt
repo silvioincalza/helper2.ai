@@ -423,7 +423,7 @@ class RunScout(
       }
     if (batch.deferred) keepPassOpen(d.id, cursor, running.startedAt)
     if (batch.notDue) return notDueRun(running, batch.skipReason)
-    val changed = index(d, indexable(d, batch.hits))
+    val changed = index(collector, indexable(d, batch.hits))
     indexListsQuietly(d.id, batch.lists)
     val proposal =
       proposeCandidates(d.id, proposable(d.id, batch.candidates), batch.newCandidatesPerDay)
@@ -455,9 +455,11 @@ class RunScout(
     }
   }
 
-  private fun index(d: SourceDescriptor, hits: List<SourceHit>): List<UUID> {
-    val merged = merger.merge(hits, mapOf(d.id to SourceContext(d, ServedFrom.LIVE)))
-    return catalog.index(merged, d.id).distinct()
+  private fun index(collector: Collector, hits: List<SourceHit>): List<UUID> {
+    val written = listOf(collector.descriptor) + collector.alsoWrites()
+    val merged =
+      merger.merge(hits, written.associate { it.id to SourceContext(it, ServedFrom.LIVE) })
+    return written.flatMap { catalog.index(merged, it.id) }.distinct()
   }
 
   private fun indexListsQuietly(sourceId: String, texts: List<ListText>) {

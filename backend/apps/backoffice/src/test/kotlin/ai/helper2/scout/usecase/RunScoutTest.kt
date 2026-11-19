@@ -481,6 +481,39 @@ class RunScoutTest {
   }
 
   @Test
+  fun `the hits a collector writes for another of its sources are indexed under that source too`() {
+    val calls = mutableListOf<Pair<String, List<String>>>()
+    val index = CatalogIndex { results, sourceId ->
+      calls += sourceId to results.flatMap { r -> r.hits.map { it.sourceId } }
+      results.map { it.id.value }
+    }
+    val lists = descriptor("lists")
+    val c =
+      object : Collector {
+        override val descriptor = descriptor("awesome")
+
+        override fun runEvery(): Duration = Duration.ZERO
+
+        override fun alsoWrites() = listOf(lists)
+
+        override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =
+          CollectedBatch(
+            listOf(
+              hit("awesome", "https://github.com/a/x", type = ResourceType.MCP_SERVER),
+              hit("lists", "https://acme.dev/best-ai-tools", type = ResourceType.AWESOME_LIST),
+            ),
+            null,
+            "cp",
+          )
+      }
+
+    RunScout(listOf(c), history, index, null, clock, NO_LOCK).runNow()
+
+    assertEquals(listOf("awesome", "lists"), calls.map { it.first })
+    assertEquals(listOf("awesome", "lists"), calls.first().second)
+  }
+
+  @Test
   fun `records the source withdrew are forgotten and the run says so`() {
     val c =
       FakeCollector(descriptor("mcp")) {

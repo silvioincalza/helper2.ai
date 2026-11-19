@@ -65,6 +65,7 @@ class AppRolesGrantsIT {
               Map.entry("discovery_host", NONE),
               Map.entry("known_target", NONE),
               Map.entry("list_seed", NONE),
+              Map.entry("list_seed_last_read", NONE),
               Map.entry("known_target_name", NONE),
               Map.entry("enrichment_queue_control", NONE),
               Map.entry("review_research", NONE),

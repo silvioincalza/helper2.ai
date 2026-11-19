@@ -1,6 +1,8 @@
 # Flowchart: how a pass reads nested awesome lists, where each link of an entry goes by its kind, and where categories come from (ADR 0013).
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java, ListEntryLinks.java, ProductLinks.java,
-#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore),
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebAddresses.kt (the host check),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore, HostsNeverRead),
+#   WebPageLists.java, WebPageReader.java, libs/core sources/config/CollectorDescriptors.java (curatedWebLists) (an added web page), AwesomeLists.java (readsAsList),
 #   AwesomeListParser.java (Item, Link, Entry.pointsAtList), GitHubAwesomeCollector.java (read, links, readModels, candidate, searchEntries),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/huggingface/scout/HuggingFaceModelReader.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/arxiv/scout/ArxivPaperReader.java, sources/npm/scout/NpmPackageReader.java,
@@ -15,7 +17,34 @@
 
 direction: down
 
-seeds: "Seed lists (depth 0, queued first):\nthe lists an administrator added (list_seed),\nthen the top 10 of the search by stars" {class: end}
+seeds: "Seed lists (depth 0, queued first):\nthe GitHub lists an administrator added (list_seed),\nthen the top 10 of the search by stars" {class: end}
+
+pages: "WebPageLists: each web page an administrator added,\nthe one tried longest ago first" {
+  class: group
+  direction: down
+  never: "Host in the never-read setting\n(a subdomain matches)?" {class: decision}
+  refused: "Not read\n(skip: page-never-read)" {class: end}
+  due: "Never tried, or the last try\n7 days ago, or 1 hour ago after\n1 or 2 failed tries in a row?" {class: decision}
+  can: "Time and size budget left, a page\nreader, and the Scout's daily\nlive web credits not spent?" {class: decision}
+  waits: "Waits for the next pass (skip: time-budget,\nsize-budget, page-reader-off, page-credit-cap);\nnothing is withdrawn" {class: end}
+  read: "Store the try (failed tries + 1), count 1 credit (scout-list-pages),\nread the page as Markdown through the\nlive web page reader (collector-gap-web)" {class: ext}
+  ok: "Text, from the host asked?" {class: decision}
+  failed: "Skip: page-unavailable; tried again at the\nnext pass (1 hour), after 3 in a row in 7 days" {class: end}
+  parse: "AwesomeListParser reads the Markdown like a README;\nfailed tries back to 0; list_seed_last_read replaced:\nheadings, entries, links, the two counts, never the text" {class: app}
+  last: "What the last read gave\n(list_seed_last_read), if any" {class: data}
+  never -> refused: "yes"
+  never -> due: "no"
+  due -> last: "no"
+  due -> can: "yes"
+  can -> waits: "no"
+  waits -> last
+  can -> read: "yes"
+  read -> ok
+  ok -> failed: "no"
+  failed -> last
+  ok -> parse: "yes"
+  parse -> last
+}
 
 crawl: "AwesomeCrawl (breadth first)" {
   class: group
@@ -52,7 +81,7 @@ crawl: "AwesomeCrawl (breadth first)" {
   queue -> budget: "next in queue"
 }
 
-lists: "Every list read: a list resource (ARTICLE,\nawesome-list) and its text for the list index;\nits entries join the pass (lists read left out)" {class: app}
+lists: "Every list read: a list resource (awesome-list)\nand its text for the list index; its entries join\nthe pass (lists read left out). A web page:\nsource curated-web-lists, its address, its first heading\nas title, AWESOME_LIST with 20 linked items that are\nhalf its lines, else ARTICLE" {class: app}
 
 links: "ListEntryLinks: every link of an entry, outside GitHub" {
   class: group
@@ -118,6 +147,9 @@ review: "ReviewQueueCandidateReview" {
 assign: "IndexAwesomeLists: after a list's entries are written,\nassign their categories again; JdbcCategoryLabels reads\nthe heading paths of awesome_list_entry" {class: data}
 
 seeds -> crawl.budget
+pages.last -> crawl.listlinks: "a seed: its links to lists are followed"
+pages.last -> lists
+pages.last -> links.safe: "first run of a pass"
 crawl.readme -> lists
 crawl.readme -> links.safe: "first run of a pass,\nafter the entries"
 links.keep -> tags

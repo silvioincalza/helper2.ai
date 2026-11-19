@@ -243,7 +243,8 @@ place to say that.
     - The accepted page first, then up to 3 pages its links lead to whose last path segment is `pricing`, `plans`,
       `download(s)`, `features`, `docs`, `documentation`, `integrations` or `about`, best first. At most 5 URLs a
       product.
-    - Allowed: `https` only; a host name, not an IP address; no user info; no port but 443.
+    - Allowed: what the Scout's host check allows (`WebAddresses`, [0013](0013-discovery.md) §17): `https` only; a
+      public host name, not an IP address or a private or reserved name; no user info; no port but https's own 443.
     - Scope: the same registrable domain (Public Suffix List, the copy that ships with Apache HttpClient 5, already a
       dependency); on a shared host (`github.io`, `vercel.app`, `netlify.app`, `pages.dev`, `hf.space`, `notion.site`,
       `webflow.io`) the exact subdomain; for a page under a path (`aws.amazon.com/bedrock`) that host and path prefix.
@@ -370,7 +371,7 @@ links, adds or renames an ABOUT target in the review list ([0038](../backoffice/
   ABOUT cap; `FieldsByType.kt`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `GapTargets`, `GapKind`,
   `UntrustedPageText`, ports `ExtraEvidence`, `GapBudget`; `OfficialPages.kt` — `FieldTargets`, `PageTargets`,
-  `PageScope`, `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`,
+  `PageScope` (its address rule is `shared/WebAddresses.kt`), `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`,
   `DomainRoots`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt` — the re-check, port
   `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java` (the stored answers through `StoredEnrichments`, the
