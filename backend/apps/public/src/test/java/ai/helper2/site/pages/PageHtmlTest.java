@@ -188,6 +188,33 @@ class PageHtmlTest {
   }
 
   @Test
+  void everyPageWithACanonicalNamesTheLinkPreviewImageAndItsSize() throws IOException {
+    Pages pages = new Pages("https://helper2.ai");
+    for (PageHead head : List.of(pages.home(), pages.of(PageKind.SOURCES))) {
+      assertThat(html(SHELL).render(head, "n0nce"))
+          .contains(
+              "<meta data-h2-head property=\"og:image\""
+                  + " content=\"https://helper2.ai/assets/og-1.png\">")
+          .contains("<meta data-h2-head property=\"og:image:type\" content=\"image/png\">")
+          .contains("<meta data-h2-head property=\"og:image:width\" content=\"1200\">")
+          .contains("<meta data-h2-head property=\"og:image:height\" content=\"630\">")
+          .contains("<meta data-h2-head property=\"og:image:alt\" content=\"helper2.ai: ")
+          .contains("<meta data-h2-head name=\"twitter:card\" content=\"summary_large_image\">");
+    }
+    assertThat(html(SHELL).render(pages.of(PageKind.SEARCH), "n0nce")).doesNotContain("og:image");
+  }
+
+  @Test
+  void theLinkPreviewImageIsAFileOfTheAppWithTheSizeThePageStates() throws IOException {
+    Path image = Path.of("../frontend/public" + Pages.SOCIAL_IMAGE);
+    assertThat(image).exists();
+    java.awt.image.BufferedImage read = javax.imageio.ImageIO.read(image.toFile());
+    assertThat(read.getWidth()).isEqualTo(Pages.SOCIAL_IMAGE_WIDTH);
+    assertThat(read.getHeight()).isEqualTo(Pages.SOCIAL_IMAGE_HEIGHT);
+    assertThat(Pages.SOCIAL_IMAGE).matches("/assets/[A-Za-z0-9_.-]+");
+  }
+
+  @Test
   void aShellWithoutTheMarkersStopsTheStart() {
     assertThatThrownBy(() -> html("<html><head></head><body><div id=\"app\"></div></body></html>"))
         .isInstanceOf(IllegalStateException.class)

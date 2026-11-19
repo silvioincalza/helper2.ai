@@ -195,6 +195,12 @@ class Pages(private val base: String) {
     const val MAX_SOURCES = 5
     const val MAX_RELATED = 8
     const val MAX_LISTED = 20
+    const val SOCIAL_IMAGE = "/assets/og-1.png"
+    const val SOCIAL_IMAGE_WIDTH = 1200
+    const val SOCIAL_IMAGE_HEIGHT = 630
+    const val SOCIAL_IMAGE_ALT =
+      "$BRAND: the metasearch for the AI ecosystem. One search across models, apps, MCP servers, " +
+        "agents and papers."
     val SITE_PAGES =
       listOf(
         PageLink("/", "Search"),
