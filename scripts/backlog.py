@@ -136,7 +136,7 @@ class GhCli:
             self.wait(float(answer.headers.get("retry-after", self.backoff * attempt)))
             return
         if answer.unavailable:
-            self.wait(SERVER_ERROR_WAIT * attempt)
+            self.wait(SERVER_ERROR_WAIT * attempt, "GitHub failed to serve the command")
             return
         reset = answer.headers.get("x-ratelimit-reset")
         if not reset:
@@ -154,8 +154,8 @@ class GhCli:
     def throttled(error: str) -> bool:
         return any(sign in error.lower() for sign in THROTTLED)
 
-    def wait(self, seconds: float) -> None:
-        print(f"  GitHub throttled the command, waiting {seconds:.0f}s")
+    def wait(self, seconds: float, why: str = "GitHub throttled the command") -> None:
+        print(f"  {why}, waiting {seconds:.0f}s")
         self.sleep(seconds)
 
     @staticmethod
