@@ -26,6 +26,34 @@ describe('Feature: the box and an asked question', () => {
     expect(params().has('ask')).toBe(false);
   });
 
+  it('Scenario: a new question to the guide starts without the type filter of the search before', async () => {
+    mockApi({ 'POST /guide/stream': pendingGuide });
+    const { params } = renderApp('/search?q=postgres+mcp&type=MCP_SERVER&view=timeline');
+    await screen.findByRole('textbox', { name: 'Search AI resources' });
+
+    await userEvent.clear(box());
+    await userEvent.type(box(), 'run llms locally');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask the guide' }));
+
+    expect(params().get('ask')).toBe('run llms locally');
+    expect(params().getAll('type')).toEqual([]);
+    expect(params().get('view')).toBe('timeline');
+  });
+
+  it('Scenario: Enter with new words drops the filters, and Enter with the same words keeps them', async () => {
+    mockApi({});
+    const { params } = renderApp('/search?q=postgres+mcp&type=MCP_SERVER');
+    await screen.findByRole('textbox', { name: 'Search AI resources' });
+
+    await userEvent.type(box(), '{Enter}');
+    expect(params().getAll('type')).toEqual(['MCP_SERVER']);
+
+    await userEvent.clear(box());
+    await userEvent.type(box(), 'vector database{Enter}');
+    expect(params().get('q')).toBe('vector database');
+    expect(params().getAll('type')).toEqual([]);
+  });
+
   it('Scenario: Enter with the asked words keeps the question', async () => {
     mockApi({ 'POST /guide/stream': pendingGuide });
     const { params } = renderApp('/search?q=new+tools&ask=new+tools&page=1');

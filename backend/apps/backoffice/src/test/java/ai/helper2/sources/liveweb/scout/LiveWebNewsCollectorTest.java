@@ -75,7 +75,8 @@ class LiveWebNewsCollectorTest {
 
   LiveWebNewsCollector collector(String token, List<String> queries, Resilience resilience) {
     return new LiveWebNewsCollector(
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -217,7 +218,8 @@ class LiveWebNewsCollectorTest {
   void theTavilySourcesAreTheOnesWhoseTitlesAreCleanedOnRead() {
     TavilySource live =
         new TavilySource(
-            new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+            new SourceSettings(
+                true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
             TestHttp.restClientBuilder(
                 Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
             SourceFixtures.CLOCK,

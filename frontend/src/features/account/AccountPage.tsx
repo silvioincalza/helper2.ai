@@ -3,10 +3,10 @@ import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, deleteMyAccount } from '@/api/client';
 import { useMe, type Session } from '@/context/MeContext';
-import { Robots } from '@/shell/Robots';
+import { Robots } from '@/ui/Robots';
 import { useTitle } from '@/hooks/useTitle';
 import { clockTime } from '@/lib/format';
-import '../pages/text.css';
+import '@/ui/text.css';
 import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 function RadarMotionSetting({ on, onSaved }: { on: boolean; onSaved: () => void }) {

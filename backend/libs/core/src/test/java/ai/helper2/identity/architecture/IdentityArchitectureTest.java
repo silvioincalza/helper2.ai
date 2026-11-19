@@ -26,7 +26,7 @@ class IdentityArchitectureTest {
             resideInAPackage("ai.helper2..")
                 .and(
                     resideOutsideOfPackages(
-                        "ai.helper2.identity..", "ai.helper2.platform..", "ai.helper2.kernel..")))
+                        "ai.helper2.identity..", "ai.helper2.platform..", "ai.helper2.shared..")))
         .check(IDENTITY);
   }
 

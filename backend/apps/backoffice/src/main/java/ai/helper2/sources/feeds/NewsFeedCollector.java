@@ -9,7 +9,6 @@ import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.config.FeedProperties;
 import ai.helper2.sources.support.HttpClients;
@@ -23,7 +22,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
@@ -157,28 +155,17 @@ public class NewsFeedCollector implements Collector {
       return null;
     }
     return new SourceHit(
-        feed.sourceId(),
-        canonical.getValue(),
-        HttpClients.link(post.link().toString(), canonical),
-        canonical,
-        null,
-        post.title(),
-        post.summary(),
-        ValueOrigin.SOURCE_PROVIDED,
-        ResourceType.NEWS,
-        Audience.BOTH,
-        null,
-        Set.of(),
-        Set.of(),
-        null,
-        null,
-        Set.of(),
-        null,
-        DateFact.fromSource(post.published(), feed.sourceId(), now),
-        DateFact.unknown(),
-        List.of(),
-        now,
-        rank);
+            feed.sourceId(),
+            canonical.getValue(),
+            HttpClients.link(post.link().toString(), canonical),
+            canonical,
+            post.title(),
+            ResourceType.NEWS,
+            now)
+        .withDescription(post.summary())
+        .withAudience(Audience.BOTH)
+        .withPublished(DateFact.fromSource(post.published(), feed.sourceId(), now))
+        .withRank(rank);
   }
 
   private static Pattern word(String word) {

@@ -4,17 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { Relationship, ResourceDetail } from '@/api/types';
 import { OriginLabel, VerificationBadge } from '@/ui/Badges';
-import { EvidenceList } from '@/features/resource/EvidenceList';
+import { EvidenceList } from './EvidenceList';
 import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
-import { ReportForm } from '@/features/resource/ReportForm';
-import { Robots } from '@/shell/Robots';
+import { ReportForm } from './ReportForm';
+import { Robots } from '@/ui/Robots';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { WhereFrom } from '@/features/resource/WhereFrom';
-import { cardHeadFor, Resource, ResourceSkeleton } from '@/features/resource/Resource';
+import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
+import { WhereFrom } from './WhereFrom';
+import { FoundInLists } from './FoundInLists';
+import { cardHeadFor, Resource, ResourceSkeleton } from './Resource';
 import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { resourcePath } from '@/lib/searchState';
 
@@ -26,7 +27,7 @@ function RelList({ items }: { items: Relationship[] }) {
         const ai = r.origin !== undefined && isAiOrigin(r.origin);
         return (
           <li key={`${r.kind}-${r.targetTitle}-${i}`}>
-            <span {...(ai ? aiMark() : {})}>
+            <span {...aiMarkWhen(ai)}>
               <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
               {r.targetId ? (
                 <Link to={resourcePath(r.targetId, r.targetTitle)}>{r.targetTitle}</Link>
@@ -162,6 +163,8 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
       )}
 
       <AdSenseSlot />
+
+      <FoundInLists foundIn={d.foundIn} />
 
       <WhereFrom detail={d} />
 

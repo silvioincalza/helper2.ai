@@ -118,6 +118,10 @@ export function formatMonth(month: string): string {
   }).format(d);
 }
 
+export function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(value);
+}
+
 export function relativeTime(style: 'long' | 'short' = 'long'): Intl.RelativeTimeFormat {
   return new Intl.RelativeTimeFormat(dateLocale(), { numeric: 'auto', style });
 }
@@ -146,14 +150,19 @@ function comingTime(
   };
 }
 
+export interface BackAgainKeys {
+  today: string;
+  tomorrow: string;
+}
+
 export function backAgain(
-  keyPrefix: string,
+  keys: BackAgainKeys,
   iso: string | null | undefined,
   clock: VisitorClock,
 ): { key: string; time: string } | undefined {
   const back = comingTime(iso, clock);
   if (!back) return undefined;
-  return { key: `${keyPrefix}${back.tomorrow ? 'BackTomorrowAt' : 'BackAt'}`, time: back.time };
+  return { key: back.tomorrow ? keys.tomorrow : keys.today, time: back.time };
 }
 
 export function displayHost(url: string): string {

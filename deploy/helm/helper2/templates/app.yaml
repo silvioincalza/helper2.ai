@@ -84,6 +84,9 @@ spec:
             {{- with .Values.app.publicBaseUrl }}
             - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }
             {{- end }}
+            {{- with .Values.app.indexNowKey }}
+            - { name: H2_INDEXNOW_KEY, value: {{ . | quote }} }
+            {{- end }}
             {{- $limits := .Values.app.dailyLimits }}
             {{- range $name, $value := dict "H2_LIVE_WEB_GUEST_SEARCH" $limits.webSearches.search "H2_LIVE_WEB_GUEST_GUIDE" $limits.webSearches.guide "H2_GUIDE_CLIENT_DAILY_QUESTIONS" $limits.guideQuestions "H2_LIVE_WEB_DAILY_CREDITS" $limits.webSearchCredits "H2_GUIDE_DAILY_MODEL_CALLS" $limits.guideModelCalls "H2_GUIDE_BUDGET_PACE_SLOTS" $limits.guideBudgetPaceSlots "H2_GUIDE_NETWORK_DAILY_QUESTIONS" $limits.guideNetworkQuestions "H2_SETUP_GUIDE_STEP_TEXT" .Values.app.setupGuideStepText "H2_GUIDE_MODEL_STREAM" .Values.app.guideModelStream }}
             {{- if not (kindIs "invalid" $value) }}

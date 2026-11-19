@@ -153,6 +153,7 @@ export function makeDetail(over: Partial<ResourceDetail> = {}): ResourceDetail {
       },
     ],
     enrichmentStatus: 'NOT_RUN',
+    foundIn: { lists: [], more: 0 },
     ...over,
   };
 }

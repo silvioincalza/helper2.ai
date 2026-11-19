@@ -2,6 +2,8 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.EmbeddingStore;
+import ai.helper2.catalog.KnownTargets;
+import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.config.CatalogProperties;
 import ai.helper2.catalog.usecase.IndexEmbeddings;
 import ai.helper2.platform.config.EmbeddingProperties;
@@ -51,8 +53,8 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
-  JdbcKnownTargetCandidates jdbcKnownTargetCandidates(JdbcClient jdbc) {
-    return new JdbcKnownTargetCandidates(jdbc);
+  JdbcKnownTargetCandidates jdbcKnownTargetCandidates(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcKnownTargetCandidates(jdbc, new KnownTargetProposalJson(json));
   }
 
   @Bean
@@ -63,6 +65,11 @@ public class CatalogBackOfficeAdapters {
   @Bean
   JdbcReviewDecisions jdbcReviewDecisions(JdbcClient jdbc) {
     return new JdbcReviewDecisions(jdbc);
+  }
+
+  @Bean
+  JdbcResourceRemoval jdbcResourceRemoval(JdbcClient jdbc) {
+    return new JdbcResourceRemoval(jdbc);
   }
 
   @Bean
@@ -81,8 +88,23 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcRepositoryVisits jdbcRepositoryVisits(JdbcClient jdbc) {
+    return new JdbcRepositoryVisits(jdbc);
+  }
+
+  @Bean
   JdbcEnrichmentCandidates jdbcEnrichmentCandidates(JdbcClient jdbc) {
     return new JdbcEnrichmentCandidates(jdbc);
+  }
+
+  @Bean
+  JdbcEnrichmentResults jdbcEnrichmentResults(
+      JdbcClient jdbc,
+      ReviewQueue reviewQueue,
+      ObjectMapper json,
+      Clock clock,
+      KnownTargets knownTargets) {
+    return new JdbcEnrichmentResults(jdbc, reviewQueue, json, clock, knownTargets);
   }
 
   @Bean

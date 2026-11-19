@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Robots } from '@/shell/Robots';
+import { Robots } from '@/ui/Robots';
 import './route-error.css';
 
 export function RouteError() {

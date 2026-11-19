@@ -1,7 +1,6 @@
 package ai.helper2.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.identity.Bookmarks.Bookmark;
@@ -14,7 +13,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,7 +90,8 @@ class BookmarkCapIT {
     CompletableFuture<Void> first =
         CompletableFuture.runAsync(() ->
             tx.executeWithoutResult(status -> {
-              addBookmark.add(user, another());
+              assertThat(addBookmark.add(user, another()))
+                  .isInstanceOf(AddBookmark.Outcome.Added.class);
               added.countDown();
               try {
                 assertThat(release.await(PATIENCE.toSeconds(), TimeUnit.SECONDS)).isTrue();
@@ -102,23 +101,42 @@ class BookmarkCapIT {
               }
             }));
     assertThat(added.await(PATIENCE.toSeconds(), TimeUnit.SECONDS)).isTrue();
-    CompletableFuture<Bookmark> second =
-        CompletableFuture.supplyAsync(() -> addBookmark.add(user, another()));
+    Bookmark late = another();
+    CompletableFuture<AddBookmark.Outcome> second =
+        CompletableFuture.supplyAsync(() -> addBookmark.add(user, late));
     untilWaitingForALock(second);
     release.countDown();
     first.get(PATIENCE.toSeconds(), TimeUnit.SECONDS);
 
-    assertThatThrownBy(() -> second.get(PATIENCE.toSeconds(), TimeUnit.SECONDS))
-        .isInstanceOf(ExecutionException.class)
-        .hasMessageContaining("At most " + CAP + " bookmarks");
+    assertThat(second.get(PATIENCE.toSeconds(), TimeUnit.SECONDS))
+        .isEqualTo(new AddBookmark.Outcome.OverLimit(CAP));
     assertThat(bookmarks.count(user)).isEqualTo(CAP);
+    assertThat(savedIds()).doesNotContain(late.resourceId());
   }
 
   @Test
   void aMergeThatWouldPassTheCapKeepsNothingOfItself() {
-    assertThatThrownBy(() -> mergeLocalBookmarks.merge(user, List.of(another(), another())))
-        .hasMessageContaining("At most " + CAP + " bookmarks");
+    Bookmark one = another();
+    Bookmark two = another();
+
+    assertThat(mergeLocalBookmarks.merge(user, List.of(one, two)))
+        .isEqualTo(new MergeLocalBookmarks.Outcome.OverLimit(CAP));
 
     assertThat(bookmarks.count(user)).isEqualTo(CAP - 1);
+    assertThat(savedIds()).doesNotContain(one.resourceId(), two.resourceId());
+  }
+
+  @Test
+  void anAdditionWithinTheCapIsSaved() {
+    Bookmark last = another();
+
+    assertThat(addBookmark.add(user, last)).isInstanceOf(AddBookmark.Outcome.Added.class);
+
+    assertThat(bookmarks.count(user)).isEqualTo(CAP);
+    assertThat(savedIds()).contains(last.resourceId());
+  }
+
+  private List<UUID> savedIds() {
+    return bookmarks.list(user).stream().map(Bookmark::resourceId).toList();
   }
 }

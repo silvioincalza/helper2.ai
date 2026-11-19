@@ -50,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ResponseEntity;
@@ -226,77 +228,7 @@ class SpringAiGuideModel implements GuideModel {
     }
   }
 
-  SpringAiGuideModel(
-      ChatModel chatModel, String provider, String fastModel, String reasoningModel) {
-    this(
-        chatModel,
-        provider,
-        fastModel,
-        reasoningModel,
-        true,
-        DEFAULT_CHOOSE_MAX_TOKENS,
-        Thinking.DEFAULT,
-        new DailyBudget(Integer.MAX_VALUE, Clock.systemUTC(), "guide"),
-        ModelCallMetrics.none(),
-        Resilience.NONE);
-  }
-
   static final int DEFAULT_CHOOSE_MAX_TOKENS = 8192;
-
-  SpringAiGuideModel(
-      ChatModel chatModel,
-      String provider,
-      String fastModel,
-      String reasoningModel,
-      boolean nativeSchemaForChoose,
-      int chooseMaxTokens,
-      Thinking thinking,
-      DailyBudget budget,
-      ModelCallMetrics metrics,
-      Resilience resilience) {
-    this(
-        chatModel,
-        provider,
-        fastModel,
-        reasoningModel,
-        nativeSchemaForChoose,
-        chooseMaxTokens,
-        thinking,
-        budget,
-        metrics,
-        resilience,
-        CallTimeLimit.NONE,
-        Clock.systemUTC());
-  }
-
-  SpringAiGuideModel(
-      ChatModel chatModel,
-      String provider,
-      String fastModel,
-      String reasoningModel,
-      boolean nativeSchemaForChoose,
-      int chooseMaxTokens,
-      Thinking thinking,
-      DailyBudget budget,
-      ModelCallMetrics metrics,
-      Resilience resilience,
-      CallTimeLimit timeLimit,
-      Clock clock) {
-    this(
-        chatModel,
-        provider,
-        fastModel,
-        reasoningModel,
-        nativeSchemaForChoose,
-        chooseMaxTokens,
-        thinking,
-        budget,
-        metrics,
-        resilience,
-        timeLimit,
-        clock,
-        ModelStream.OFF);
-  }
 
   SpringAiGuideModel(
       ChatModel chatModel,
@@ -424,14 +356,7 @@ class SpringAiGuideModel implements GuideModel {
   }
 
   private static <E extends Enum<E>> E enumOf(Class<E> type, String name) {
-    if (name == null || name.isBlank()) {
-      return null;
-    }
-    try {
-      return Enum.valueOf(type, name.strip().toUpperCase(java.util.Locale.ROOT));
-    } catch (IllegalArgumentException e) {
-      return null;
-    }
+    return EnumUtils.getEnumIgnoreCase(type, StringUtils.strip(name));
   }
 
   @Override

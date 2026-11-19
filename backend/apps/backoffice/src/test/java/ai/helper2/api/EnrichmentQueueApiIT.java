@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.ProblemType;
 import com.jayway.jsonpath.JsonPath;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,5 +59,13 @@ class EnrichmentQueueApiIT extends ApiTestBase {
         .andExpect(status().isBadRequest());
     mvc.perform(get("/api/v1/admin/enrichment-queue").param("size", "101").with(ADMIN))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void aSizeOutsideTheBoundsOfTheContractIsTheInvalidRequestProblem() throws Exception {
+    for (String size : List.of("0", "101", "-1")) {
+      mvc.perform(get("/api/v1/admin/enrichment-queue").param("size", size).with(ADMIN))
+          .andExpect(problem(ProblemType.INVALID_REQUEST, "Invalid request parameters."));
+    }
   }
 }

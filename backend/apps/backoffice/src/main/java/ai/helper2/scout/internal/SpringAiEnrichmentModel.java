@@ -1,15 +1,14 @@
 package ai.helper2.scout.internal;
 
 import ai.helper2.platform.llm.BudgetedChat;
-import ai.helper2.platform.llm.CallOptions;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmPolicies;
 import ai.helper2.platform.llm.ModelAnswers;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.llm.ModelErrors;
+import ai.helper2.platform.llm.TextCall;
 import ai.helper2.platform.llm.UntrustedText;
 import ai.helper2.platform.prompt.PromptTemplate;
-import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Citation;
 import ai.helper2.scout.EnrichmentInput;
@@ -28,16 +27,16 @@ import ai.helper2.shared.ResourceType;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
 
 class SpringAiEnrichmentModel implements EnrichmentModel {
-  static final String PROMPT_VERSION = "enrich-v12";
 
   static final int MAX_MATERIAL_CHARS = UntrustedPageText.MAX_PAGE_CHARS;
 
   static final String PROMPT = "scout/enrich.txt";
+
+  private static final String STEP = "enrich";
 
   static String systemPrompt() {
     return PromptTemplate.fromClasspath(PROMPT)
@@ -59,6 +58,10 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                 FieldsByType.MAX_ABOUT));
   }
 
+  static String promptVersion() {
+    return ModelCallMetrics.promptVersion(systemPrompt());
+  }
+
   record Output(List<Field> fields, List<Rel> relationships, List<Claim> summary) {
     record Cite(String evidenceId, String excerpt) {}
 
@@ -70,13 +73,8 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
   }
 
   private final BeanOutputConverter<Output> converter = new BeanOutputConverter<>(Output.class);
-  private final ChatClient chat;
-  private final String system;
-  private final String version;
   private final String provider;
-  private final String model;
-  private final int maxTokens;
-  private final BudgetedChat calls;
+  private final TextCall call;
 
   SpringAiEnrichmentModel(
       ChatModel chatModel,
@@ -86,13 +84,15 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
       DailyBudget budget,
       ModelCallMetrics metrics,
       Resilience resilience) {
-    this.chat = ChatClient.builder(chatModel).build();
-    this.system = systemPrompt();
-    this.version = ModelCallMetrics.promptVersion(system);
     this.provider = provider;
-    this.model = model;
-    this.maxTokens = maxTokens;
-    this.calls = new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience);
+    this.call =
+        new TextCall(
+            chatModel,
+            new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience),
+            STEP,
+            model,
+            maxTokens,
+            systemPrompt());
   }
 
   @Override
@@ -102,12 +102,12 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
 
   @Override
   public String getModel() {
-    return model;
+    return call.model();
   }
 
   @Override
   public String getPromptVersion() {
-    return PROMPT_VERSION;
+    return call.promptVersion();
   }
 
   @Override
@@ -126,7 +126,7 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
                     + "\n</material>")
             .collect(Collectors.joining("\n"));
     String answer =
-        call(UntrustedText.untrusted(input.getResourceTitle(), 300), input.getType(), material);
+        ask(UntrustedText.untrusted(input.getResourceTitle(), 300), input.getType(), material);
     Output out = parse(answer);
     if (out == null) {
       return new EnrichmentProposal(List.of(), List.of(), List.of());
@@ -145,33 +145,25 @@ class SpringAiEnrichmentModel implements EnrichmentModel {
             .toList());
   }
 
-  private String call(String title, ResourceType type, String material) {
+  private String ask(String title, ResourceType type, String material) {
     try {
-      return calls.text(
-          new BudgetedChat.Call("enrich", model, version),
-          () -> new LlmUnavailable("daily enrichment budget used up"),
-          () ->
-              chat.prompt()
-                  .options(CallOptions.of(model, maxTokens))
-                  .system(system)
-                  .user(u ->
-                      u.text(
-                              "Resource: {title}\nType: {type}\n"
-                                  + "Fields for this type: {fields}\n"
-                                  + "Relationship kinds for this type: {kinds}\n\n"
-                                  + "SOURCE MATERIAL:\n{material}\n\n{format}")
-                          .param("title", title)
-                          .param("type", type.name())
-                          .param("fields", String.join(", ", FieldsByType.fieldsFor(type)))
-                          .param("kinds", String.join(", ", FieldsByType.kindsFor(type)))
-                          .param("material", material)
-                          .param("format", converter.getFormat()))
-                  .call()
-                  .chatResponse());
+      return call.answer(
+          u ->
+              u.text(
+                      "Resource: {title}\nType: {type}\n"
+                          + "Fields for this type: {fields}\n"
+                          + "Relationship kinds for this type: {kinds}\n\n"
+                          + "SOURCE MATERIAL:\n{material}\n\n{format}")
+                  .param("title", title)
+                  .param("type", type.name())
+                  .param("fields", String.join(", ", FieldsByType.fieldsFor(type)))
+                  .param("kinds", String.join(", ", FieldsByType.kindsFor(type)))
+                  .param("material", material)
+                  .param("format", converter.getFormat()),
+          "daily enrichment budget used up",
+          LlmUnavailable::new);
     } catch (LlmUnavailable e) {
       throw e;
-    } catch (CallRefused e) {
-      throw new LlmUnavailable("model call refused: " + e.policy() + " circuit is " + e.reason());
     } catch (RuntimeException e) {
       String what = e.getClass().getSimpleName() + ": " + abbreviate(e.getMessage());
       if (ModelErrors.isTransient(e)) {

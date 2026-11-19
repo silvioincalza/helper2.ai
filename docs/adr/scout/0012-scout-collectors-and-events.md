@@ -114,7 +114,7 @@ Two kinds of source need more care:
      known only by its topic is found only when a record of it carries its topics: a source that saw the repository
      without them gives the backfill nothing to go on until such a record comes in.
      Running it again reads only the ones still not typed, so it is safe to repeat; a README that cannot be read now
-     is counted and read at the next run.
+     is counted and read at the next run. A resource that is gone when its turn comes is not set, and the run goes on.
    - Enrichment proposes a type only for a resource typed OTHER ([0014](0014-evidence-gated-enrichment.md) §4); its
      excerpt states `AWESOME_LIST` with "awesome list", "curated list of" or "a list of awesome". A mis-typed list
      (LIBRARY, MCP_SERVER…) is fixed by the rule and the backfill, a new one by the collector.
@@ -335,7 +335,7 @@ Two kinds of source need more care:
     events that start before today 00:00 UTC plus `days`; the response says that end in `until` (null without
     `days`). An event already running stays listed until it ends. `total` counts every event in the window, so "Show
     all N" is a real number ([0040](../frontend/0040-design-system.md)). `Cache-Control: public, max-age=300`. The home
-    page (`useEventsFeed` in `homeFeeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
+    page (`useEventsFeed` in `features/feeds/feeds.ts`, shown by `HomeLists`) asks for 60 events of the next 90 days (`days=90&size=60`).
     The Events page asks for the next 366 days in pages of 500 (`offset` 0, 500, …) until it holds `total` events, so
     its list and its kind and format counts cover the whole window.
 
@@ -346,7 +346,8 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/` — the collectors: `mcp/McpRegistryCollector.java`,
   `huggingface/scout/HuggingFaceTrendingCollector.java`, `HuggingFaceProviderOrgsCollector.java`,
   `tavily/scout/LiveWebNewsCollector.java`, `CourseCollector.java`, `LinkedInCollector.java`, `LiveWebEventsCollector.java`,
-  `ScoutLiveWebCredits.java`, `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`,
+  `ScoutLiveWebCredits.java`, `ScoutLiveWebSearch.java`, `QueryProgress.java`,
+  `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`,
   `aideadlines/AiDeadlinesCollector.java` (`nextEdition`, `toHit`); `classifier/RepoClassifier.java`,
   `SpringAiRepoClassifier.java`; `config/scout/CollectorsConfiguration.java` (beans).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`,
@@ -367,7 +368,7 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
 - `scripts/industry-events-seed.mjs`, `scripts/industry-events-seed.test.mjs`,
   `docs/research/industry-events-2026-11-12.json`,
   `backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql`.
-- `frontend/src/features/home/HomeLists.tsx`, `homeFeeds.ts`, `TermList.tsx`, `listParts.tsx`, `frontend/src/features/events/EventsPage.tsx`,
+- `frontend/src/features/home/HomeLists.tsx`, `TermList.tsx`, `frontend/src/features/feeds/feeds.ts`, `feedCells.tsx`, `EventsPage.tsx`,
   `frontend/src/features/resource/DateTimeline.tsx`, `DateFactView.tsx` — the AI label.
 - `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`;
   `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2LiveWebCreditsHigh`.

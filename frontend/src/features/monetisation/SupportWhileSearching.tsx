@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { useMonetisation } from '@/context/MonetisationContext';
-import '@/features/monetisation/sponsor.css';
+import './sponsor.css';
 
 export const SUPPORT_WAIT_DELAY_MS = 700;
 

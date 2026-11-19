@@ -159,6 +159,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -230,6 +231,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -431,6 +433,7 @@ helper2:
       max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
       reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
       read-max-tokens: 800
+      read-model: ${H2_SCOUT_EVENT_READER_MODEL:FAST}
       queries: >-
         upcoming AI hackathons,
         upcoming AI meetups and talks,

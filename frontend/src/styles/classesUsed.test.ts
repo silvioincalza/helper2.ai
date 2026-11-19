@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ANY_TEXT, templatesIn } from '@/test/templates';
 
 const WRITTEN_BY_THE_BACKEND = ['h2-prerender'];
 
@@ -13,10 +14,12 @@ function files(dir: string, ext: RegExp): string[] {
     .map((e) => join(e.parentPath, e.name));
 }
 
+const scripts = files(src, /\.tsx?$/).filter(
+  (f) => !f.startsWith(join(src, 'api')) && !f.startsWith(join(src, 'test')),
+);
+
 const code = [
-  ...files(src, /\.tsx?$/).filter(
-    (f) => !f.startsWith(join(src, 'api')) && !f.startsWith(join(src, 'test')),
-  ),
+  ...scripts,
   ...files(join(root, 'public'), /\.(js|html)$/),
   join(root, 'index.html'),
   join(root, 'admin.html'),
@@ -24,7 +27,12 @@ const code = [
   .map((f) => readFileSync(f, 'utf8'))
   .join('\n');
 
-const dynamic = [...code.matchAll(/[\s`'"]([a-z][\w-]*[-_])\$\{/g)].map((m) => m[1]!);
+const fromTemplates = new Set(
+  templatesIn(root, scripts)
+    .flatMap((t) => t.texts)
+    .flatMap((text) => text.split(/\s+/))
+    .filter((word) => !word.includes(ANY_TEXT)),
+);
 
 function classes(css: string): string[] {
   const selectors = [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)]
@@ -35,7 +43,7 @@ function classes(css: string): string[] {
 }
 
 const written = (name: string) =>
-  new RegExp(`(?<![\\w-])${name}(?![\\w-])`).test(code) || dynamic.some((p) => name.startsWith(p));
+  new RegExp(`(?<![\\w-])${name}(?![\\w-])`).test(code) || fromTemplates.has(name);
 
 describe('the style sheets', () => {
   it.each(files(src, /\.css$/).map((f) => [f.slice(src.length + 1), f] as const))(

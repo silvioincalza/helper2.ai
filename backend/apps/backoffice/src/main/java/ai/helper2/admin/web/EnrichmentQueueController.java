@@ -11,11 +11,11 @@ import ai.helper2.api.generated.model.EnrichmentQueueEntryDto;
 import ai.helper2.api.generated.model.EnrichmentQueuePageDto;
 import ai.helper2.api.generated.model.EnrichmentQueueViewDto;
 import ai.helper2.api.generated.model.EnrichmentSkipDto;
+import ai.helper2.api.generated.model.ResourceRemovalDto;
 import ai.helper2.catalog.AiCheckReport;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogCursor;
-import ai.helper2.catalog.enrichment.EnrichmentCandidates.BacklogEntry;
 import ai.helper2.catalog.enrichment.EnrichmentCandidates.Part;
-import ai.helper2.catalog.enrichment.EnrichmentCandidates.View;
+import ai.helper2.catalog.usecase.RemoveResource;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
@@ -33,7 +33,6 @@ import java.util.Base64;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,6 +46,7 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
   private final PrioritiseEnrichment prioritise;
   private final CheckAiWords aiCheck;
   private final CheckAwesomeLists awesomeLists;
+  private final RemoveResource remove;
 
   EnrichmentQueueController(
       ListEnrichmentQueue queue,
@@ -54,7 +54,9 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
       SkipEnrichment skip,
       PrioritiseEnrichment prioritise,
       CheckAiWords aiCheck,
-      CheckAwesomeLists awesomeLists) {
+      CheckAwesomeLists awesomeLists,
+      RemoveResource remove) {
+    this.remove = remove;
     this.aiCheck = aiCheck;
     this.awesomeLists = awesomeLists;
     this.queue = queue;
@@ -68,7 +70,9 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
       @Nullable EnrichmentQueueViewDto view, @Nullable String after, Integer size) {
     ListEnrichmentQueue.Page page =
         queue.list(
-            view == null ? View.WAITING : View.valueOf(view.getValue()),
+            view == null
+                ? ListEnrichmentQueue.Section.WAITING
+                : ListEnrichmentQueue.Section.valueOf(view.getValue()),
             after == null ? null : decode(after),
             size);
     return ResponseEntity.ok(
@@ -79,7 +83,7 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
 
   @Override
   public ResponseEntity<AwesomeListCheckDto> checkAwesomeLists() {
-    CheckAwesomeLists.Result r = awesomeLists.run(adminId());
+    CheckAwesomeLists.Result r = awesomeLists.run(Admins.id());
     return ResponseEntity.ok(
         new AwesomeListCheckDto(
             r.checked(), r.set(), r.notAList(), r.keptCurated(), r.unavailable()));
@@ -130,17 +134,29 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
 
   @Override
   public ResponseEntity<Void> requeueEnrichment(UUID resourceId) {
-    return answer(requeue.requeue(adminId(), resourceId));
+    return answer(requeue.requeue(Admins.id(), resourceId));
   }
 
   @Override
   public ResponseEntity<Void> skipEnrichment(UUID resourceId, @Nullable EnrichmentSkipDto body) {
-    return answer(skip.skip(adminId(), resourceId, body == null ? null : body.getReason()));
+    return answer(skip.skip(Admins.id(), resourceId, body == null ? null : body.getReason()));
+  }
+
+  @Override
+  public ResponseEntity<Void> removeResourceNotAboutAi(UUID resourceId, ResourceRemovalDto body) {
+    return switch (remove.remove(resourceId, body.getReason(), Admins.id())) {
+      case RemoveResource.Outcome.Removed removed -> ResponseEntity.noContent().build();
+      case RemoveResource.Outcome.NoReason noReason ->
+          throw new BadRequestException(
+              "A reason of 1 to " + noReason.maxLength() + " characters is required.");
+      case RemoveResource.Outcome.NoSuchResource missing ->
+          throw new NotFoundException("Resource not found.");
+    };
   }
 
   @Override
   public ResponseEntity<Void> prioritiseEnrichment(UUID resourceId) {
-    return answer(prioritise.prioritise(adminId(), resourceId));
+    return answer(prioritise.prioritise(Admins.id(), resourceId));
   }
 
   private static ResponseEntity<Void> answer(QueueOutcome outcome) {
@@ -162,11 +178,7 @@ class EnrichmentQueueController implements EnrichmentQueueApi {
     throw new ApiProblem(ProblemType.NOT_APPLICABLE, detail);
   }
 
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
-  }
-
-  private static EnrichmentQueueEntryDto entry(BacklogEntry e) {
+  private static EnrichmentQueueEntryDto entry(ListEnrichmentQueue.Entry e) {
     return new EnrichmentQueueEntryDto(
             e.id(),
             e.title(),

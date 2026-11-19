@@ -115,7 +115,7 @@ class AwesomeDeepSearchIT {
 
   private fun collector() =
     GitHubAwesomeCollector(
-      SourceSettings(true, github.baseUrl(), "t", Duration.ofSeconds(5), Duration.ZERO),
+      SourceSettings(true, github.baseUrl(), "t", Duration.ofSeconds(5), Duration.ZERO, null),
       TestHttp.restClientBuilder(Duration.ofSeconds(5), ObservationRegistry.NOOP),
       Clock.systemUTC(),
       Resilience.NONE,

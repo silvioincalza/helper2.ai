@@ -1,6 +1,6 @@
-export const SIGN_IN_RETURN_KEY = 'h2.signInReturn';
+import { isSameSitePath } from './sameSitePath';
 
-const isLocalPath = (p: string) => p.startsWith('/') && !p.startsWith('//') && !p.startsWith('/\\');
+export const SIGN_IN_RETURN_KEY = 'h2.signInReturn';
 
 function withoutSignInMarker(path: string): string {
   const url = new URL(path, 'https://local.invalid');
@@ -10,7 +10,7 @@ function withoutSignInMarker(path: string): string {
 
 export function rememberSignInReturn(path: string): void {
   try {
-    if (isLocalPath(path))
+    if (isSameSitePath(path))
       window.sessionStorage.setItem(SIGN_IN_RETURN_KEY, withoutSignInMarker(path));
   } catch {}
 }
@@ -19,7 +19,7 @@ export function takeSignInReturn(): string | null {
   try {
     const path = window.sessionStorage.getItem(SIGN_IN_RETURN_KEY);
     window.sessionStorage.removeItem(SIGN_IN_RETURN_KEY);
-    return path !== null && isLocalPath(path) ? path : null;
+    return path !== null && isSameSitePath(path) ? path : null;
   } catch {
     return null;
   }

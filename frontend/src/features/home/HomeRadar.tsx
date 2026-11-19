@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import type { DotTone } from '@/lib/sourceHealth';
 import type { SourceInfo } from '@/api/types';
 import { checkedSecondsAgo } from '@/lib/sourceAge';
 import { relativeTime } from '@/lib/format';
@@ -15,12 +16,11 @@ import {
   radarGroup,
   radarFrame,
   PHONE_MAX,
-  type DotTone,
   type RadarDot,
   type RadarFrame,
   type Rect,
 } from './radarLayout';
-import { delayAfter, EMPTY, mostFor, step, stillSet } from './radarRotation';
+import { delayAfter, EMPTY, mostFor, step, stillSet } from '@/lib/radarRotation';
 import { useMouseOver, useRadarStill } from './useRadarMotion';
 
 const FALLBACK = { width: 1280, height: 400 };

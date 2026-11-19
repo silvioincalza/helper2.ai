@@ -3,19 +3,27 @@ package ai.helper2.sources.npm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.search.PopularityKind;
+import ai.helper2.search.PopularityMetric;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.DateStatus;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -31,7 +39,7 @@ class NpmSourceTest {
 
   SourceSettings settings() {
     return new SourceSettings(
-        true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30));
+        true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30), null);
   }
 
   SourceQuery q(String text) {
@@ -49,6 +57,48 @@ class NpmSourceTest {
             SourceFixtures.CLOCK);
     List<SourceHit> hits = src.search(q("mcp postgres"));
     SourceHit h = hits.getFirst();
+    assertThat(h)
+        .isEqualTo(
+            new SourceHit(
+                "npm",
+                "dsh-mcp-postgres",
+                URI.create("https://www.npmjs.com/package/dsh-mcp-postgres"),
+                CanonicalUrl.of("https://npmjs.com/package/dsh-mcp-postgres"),
+                null,
+                "dsh-mcp-postgres",
+                "MCP Postgres server toolkit for dsh - SQL queries via Model Context Protocol. Name reserved; first release in development.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.MCP_SERVER,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of(
+                    "agent",
+                    "cordis",
+                    "deepseek",
+                    "deepseek-harness",
+                    "dsh",
+                    "mcp",
+                    "plugin",
+                    "postgres"),
+                "MIT",
+                null,
+                Set.of("node"),
+                true,
+                DateFact.unknown(),
+                new DateFact(
+                    Instant.parse("2026-10-07T13:19:44.227Z"),
+                    DatePrecision.INSTANT,
+                    "npm",
+                    List.of(),
+                    false),
+                List.of(
+                    new PopularityMetric(
+                        PopularityKind.NPM_DOWNLOADS_WEEKLY,
+                        13L,
+                        "npm",
+                        SourceFixtures.CLOCK.instant())),
+                SourceFixtures.CLOCK.instant()));
     assertThat(h.getUrl().toString()).isEqualTo("https://www.npmjs.com/package/dsh-mcp-postgres");
     assertThat(h.getType()).isEqualTo(ResourceType.MCP_SERVER);
     assertThat(h.getUpdated().getValue())

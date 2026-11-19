@@ -1,15 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export function CopyButton({
-  text,
-  label,
-  primary = false,
-}: {
-  text: string;
-  label?: string;
-  primary?: boolean;
-}) {
+export function CopyButton({ text, primary = false }: { text: string; primary?: boolean }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   async function copy() {
@@ -25,7 +17,7 @@ export function CopyButton({
       className={primary ? 'btn btn-primary' : 'btn btn-ghost'}
       onClick={() => void copy()}
     >
-      {copied ? t('common.copied') : (label ?? t('common.copy'))}
+      {copied ? t('common.copied') : t('common.copy')}
     </button>
   );
 }

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import '@/i18n/legal';
 import { useTitle } from '@/hooks/useTitle';
-import { TextPage } from '@/features/pages/TextPage';
+import { TextPage } from './TextPage';
 import { usePolicyText } from '@/hooks/usePolicy';
 
 export const PRIVACY_CONTACT = 'helper2ai@incalza.me';

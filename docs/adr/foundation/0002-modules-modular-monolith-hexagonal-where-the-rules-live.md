@@ -20,6 +20,8 @@ to reach into the other's code.
    contract and the wiring, and builds the boot jar. There are two apps, `apps/public` and `apps/backoffice`.
 2. **The libraries.**
    - `kernel`: shared value types, package `shared`, no third-party library.
+   - A small rule is taken from the JDK (`String.formatted`) or from Apache Commons Lang 3, which comes through
+     `platform`, before a helper is written by hand.
    - `platform`: LLM client, resilience, cache, settings, quotas.
    - `schema`: the Flyway migrations and the three classes that run and check them (`platform.schema`). It stays a
      project of its own: it depends on no other library, and the platform's test fixtures, the scripts and the
@@ -52,6 +54,16 @@ to reach into the other's code.
    `api.generated`, and `ContractEnumConverters`). The open modules depend on no feature module: an adapter of a
    feature's port lives in that feature (the query translator, an LLM adapter of `search.QueryTranslator`, is in
    `search.internal`).
+   Inside open `platform` the LLM layer is closed. Its package `platform.llm` is the named interface `llm`
+   (`@NamedInterface` in its `package-info.java`), and it holds only what the modules use:
+   - the call: `BudgetedChat`, `TextCall`, `CallOptions`, `ChatStream`, `CutAnswerWatch`, `LlmPolicies`;
+   - the answer and the errors: `ModelAnswers`, `ModelErrors`, `UntrustedText`;
+   - the models and the metrics: `LlmSettings`, `ModelCallMetrics`;
+   - the budgets: `DailyBudget`, `CallCounter`, `BudgetLedger`.
+
+   What only the layer uses is in `platform.llm.internal`: `LlmConfiguration` (the beans), `NvidiaOnly`,
+   `StreamThreads` and `RedisCallCounter`. No class outside `platform.llm` names a class below it, the rest of
+   `platform` included (§8).
    A class has the same package in a library as in an app, so component scanning, the modules and the ArchUnit
    rules see the same code. A context puts no class into another one's package: `ContractEnumConverters` lives
    in `api`, not in `platform`, which is the platform library's package.
@@ -61,26 +73,37 @@ to reach into the other's code.
    `CatalogIndex` (scout), `GuideModel`, `GuideAnswerStore`, `SimilarQuestionIndex`, `SimilarQuestionRetention`,
    `QuestionEmbedder` (guide).
    The Java use cases of `identity`, `catalog`, `examples` and `admin` have the same shape: plain classes over ports
-   in the base package (`Users`, `Bookmarks`, `AuditLog` in identity, `DraftQueue`, `UnitOfWork` in examples), and
+   in the base package (`Users`, `Bookmarks`, `AuditLog` in identity, `DraftQueue` in examples), and
    the adapters implement them in `internal` (the JDBC stores, the drafts in the review queue).
+   A use case that opens its own transaction takes the port `UnitOfWork` of the kernel (`ai.helper2.shared`).
+   The platform has its one adapter, `TransactionalUnitOfWork`, and `UnitOfWorkConfiguration` makes its one bean in
+   both apps. A use case answers a refusal as an outcome, never as an HTTP problem
+   ([0051](0051-use-cases-return-outcomes.md)).
    A `@Bean` method in `config` wires each use case; a use case only one app runs (a scheduled purge) is wired next
-   to its schedule, in that app. The catalog's back office part is not scanned: `CatalogBackOfficeConfiguration`
-   (the curation, review, indexing and purge use cases) and `CatalogBackOfficeAdapters` (their JDBC stores, with no
-   stereotype) carry no `@Configuration`, and only `BackOfficeApplication` imports them (the named interface
-   `backoffice`). The public app's context
-   has none of them (`NoBackOfficeCatalogIT`). The examples context is split the same way: the public app builds
-   `ListHomeExamples` over the read port `ServedExamples` (`JdbcServedExamples`) and nothing else;
+   to its schedule, in that app. The wiring only the back office loads is in the back office app, in the context's
+   own `config` package ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md) §3):
+   `CatalogBackOfficeConfiguration` (the curation, review, indexing and purge use cases),
    `ExamplesBackOfficeConfiguration` (the admin list and counts, add, change, remove, the check, the drafts) and
-   `ExamplesBackOfficeAdapters` (the pool's store `JdbcHomeExamples`, the search, the titles, the draft sources, the
-   draft queue, the drafter with its budget and settings) are imported only by `BackOfficeApplication`
-   (`NoBackOfficeExamplesIT`, `BackOfficeExamplesIT`). A use case that must be all or nothing gets its transaction there, on a subclass
+   `SearchBackOfficeConfiguration` (`ManageShadowLibraries`). They carry no `@Configuration`, and only
+   `BackOfficeApplication` imports them (the named interface `backoffice`). The public app's jar has none of the
+   three classes.
+   The adapters these use cases need stay in the library, closed: `CatalogBackOfficeAdapters` (the JDBC stores, with
+   no stereotype) and `ExamplesBackOfficeAdapters` (the pool's store `JdbcHomeExamples`, the search, the titles, the
+   draft sources, the draft queue, the drafter with its budget and settings) are in `internal` and build
+   package-private classes. The app does not name them. Each context has one public entry in its `config` package,
+   an annotation of the named interface `backoffice` that imports the adapters: `@EnableCatalogBackOfficeAdapters`
+   and `@EnableExamplesBackOfficeAdapters`. The app's configuration class carries it. No entry is scanned, so the
+   public app's context has none of these beans (`NoBackOfficeCatalogIT`, `NoBackOfficeExamplesIT`); the back office
+   has them all (`BackOfficeExamplesIT`). The public app builds `ListHomeExamples` over the read port
+   `ServedExamples` (`JdbcServedExamples`) and nothing else of the examples.
+   A use case that must be all or nothing gets its transaction in its configuration class, on a subclass
    with `@Transactional`, so the use case itself has no Spring type.
 6. **Adapters in Java, in sub-packages.** `web` (controllers), `cache`, `config` and `internal` (Spring AI, Redis,
    Java Database Connectivity (JDBC)). The `sources` module implements `SearchSource` and `Collector` for each public
    application programming interface (API). The `catalog` module implements `ResultObserver`, `RecordedOutcomes` and
    two `SearchSource`s over PostgreSQL.
    The base package of a Java module holds its ports and what other modules use. `catalog` keeps its ports there
-   (`CatalogWriter`, the public app's one write path; `Resources`, `ReviewQueue`, `JobMarkers`, `EmbeddingStore` and
+   (`CatalogWriter`, `IssueReports` and the category ports, the public app's write path; `Resources`, `ReviewQueue`, `JobMarkers`, `EmbeddingStore` and
    the others), its records (`ResourceRow`, `ResourceDetail`) and `ResourceCards`, and its use cases in
    `catalog.usecase`; its JDBC adapters (`Jdbc*`), `CatalogConfiguration`, `CatalogResultObserver`,
    `CatalogSearchSource` and `SemanticSearchSource` are in `catalog.internal`.
@@ -97,7 +120,9 @@ to reach into the other's code.
    dispatch by intent, and `QuestionReader`, `PickAnswer`, `CompareAnswer`, `ExplainAnswer`, `DateAnswer` and
    `ReasonCheckStep` do the work; no other module sees them. Controllers and schedulers call use cases for what a
    module does, a read-only lookup too (`GetReviewItem`, `ListScoutRuns`); the back office's `ModularityTest`
-   fails when a controller calls a port of catalog, scout or examples. Models, ports
+   fails when a controller calls a port of catalog, scout, examples or research, and when a controller uses one
+   of the port records the review and enrichment queues are made of: those use cases answer with views they own
+   ([0038](../backoffice/0038-back-office-and-review.md) §1). Models, ports
    and rules (for example `GuideValidator`, `PlannedQueries`, `EvidenceValidator`) stay at the module root, so
    adapters never depend on a use case. A use case another module calls is exposed with `@NamedInterface("usecase")`
    (`search.usecase` for the guide, `catalog.usecase` for the setup guide and the admin page). The Scout reads and
@@ -108,20 +133,39 @@ to reach into the other's code.
    `@Bean` methods in `config`/`internal`; so are the Java use cases of identity and catalog (catalog's in
    `catalog.config`, with the transactions on subclasses there).
 8. **Rules as tests.** `ModularityTest` runs in each app on every build, over the app's code and the libraries it
-   takes:
+   takes. The rules both apps share are written once, in `ModularityRules`, a test fixture of `platform`. The
+   `ModularityTest` of an app extends it, gives its application class and its domain packages, and adds the rules
+   only that app has. The shared rules:
    - `ApplicationModules.verify()`: no cycles, only public types of other modules are used;
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
-   - both rules also hold for the Kotlin `usecase` packages (`search.usecase`, `guide.usecase`, `scout.usecase`), and
-     for `identity`, `identity.usecase`, `catalog`, `catalog.usecase`, `catalog.enrichment`, `admin` and
-     `admin.usecase`;
+   - both rules find the use cases by the pattern `ai.helper2..usecase..`, so a new `usecase` package is checked with
+     no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
+     `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
-   - `tablesHaveOneOwner`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
-     module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`). There are no exceptions.
+   - `useCasesDoNotSpeakHttp`: no class of a domain package depends on `ApiProblem`, a subtype of it, `ProblemType`
+     or `Problems`, with no exception ([0051](0051-use-cases-return-outcomes.md) §7);
+   - `aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork`: a class that declares a `Refused` outcome depends on
+     `UnitOfWork` ([0051](0051-use-cases-return-outcomes.md) §5);
+   - `controllersAnswerWithViewsNotPortRecords` (back office): no class of a `web` package uses `ReviewQueue.Status`,
+     `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
+     `ReviewEvidence.Evidence` ([0038](../backoffice/0038-back-office-and-review.md) §1);
+   - `theLlmLayerIsUsedOnlyThroughItsNamedInterface`: no class outside `platform.llm` depends on a class of
+     `platform.llm` or below it that is not in the named interface `llm`. The test reads the interface from the
+     modules, so a new sub-package of `platform.llm` is closed with no change to the test.
+
+   The tests that read the sources of every backend project are in a project of their own, `backend/architecture`.
+   It has no main code and its own CI job ([0044](../operations/0044-ci-cd-and-supply-chain.md)), so a change in one
+   app runs these tests and that app's tests, not the other app's:
+   - `TableOwnersTest`: every table the migrations (`V*__*.sql`) create has one owning module, and only that
+     module's code names it in SQL (`FROM`, `JOIN`, `INTO`, `UPDATE`);
+   - `SchemaUseTest`: the code names every table and column of the schema
+     ([0004](0004-persistence-and-the-schema.md));
+   - `SourceBoundariesTest`, below.
 
    `SourceBoundariesTest` checks the same boundaries on the source files. The compiler copies a constant into the
    class that uses it and leaves no reference in the bytecode, so a rule on classes cannot see an import of a
-   constant; a rule on the text of the file does. It runs in the public app and reads every `ai.helper2` name in
+   constant; a rule on the text of the file does. It reads every `ai.helper2` name in
    the main sources of every project, and in the test and fixture sources of the libraries:
    - a context uses only itself and the contexts below it (§3), by package: `shared` (kernel), `platform`,
      `identity`, `search`, `search.web` and `api` (the shared web part, `web-contract` in the test), `catalog`,
@@ -129,7 +173,12 @@ to reach into the other's code.
      file in a package that is not in this list fails too;
    - a module names another module only by its base package or a named interface (a package or a type with
      `@NamedInterface`). The open modules are free;
-   - no file outside `sources` names a `sources` package.
+   - no file outside `sources` names a `sources` package;
+   - no file outside a named interface of an open module names a package below it
+     (`platform.llm.internal`);
+   - no main file of an app names an `internal` package of a library (a package of a library's main code with a
+     segment named `internal`), and none is in one. A context keeps its package name in the app, so the rule by
+     module does not see this. The tests of an app are not read: its integration tests wire the adapters.
 
    The modules, the open ones and the named interfaces are read from `package-info.java` and the annotations; the
    directions between the contexts are a table in the test.
@@ -159,8 +208,11 @@ to reach into the other's code.
     own: `helper2-shared.yaml` names classes of `search` and `sources` in the resilience rules, so the platform's
     integration tests run in an app.
     Helpers several projects need are test fixtures of the lowest library that owns them: the Testcontainers
-    setup and the recorded responses in `platform`, the search and source fakes and `ReviewEvidenceFixture` in
-    `core`.
+    setup, the recorded responses, `Eventually` (a check tried again until a time limit) and the shared
+    architecture rules (§8) in `platform`; the search and source fakes, `ReviewEvidenceFixture` and
+    `SharedApiTestBase` in `core`. `SharedApiTestBase` holds what the API tests of both apps share: the Spring
+    context, the fake live source and the reset of the rate limits. The `ApiTestBase` of an app extends it with what
+    only that app needs.
 11. **No code outside a project.** A file in `backend/src/` stops the build (`checkNoRootSources`): it
     would compile nowhere.
 
@@ -169,13 +221,21 @@ to reach into the other's code.
 - `backend/build-logic/build.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.*.gradle.kts`,
   `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/SpringContract.kt` — the conventions.
 - `backend/build.gradle.kts` — the version ([0045](../operations/0045-releases-and-versions.md)) and `checkNoRootSources`.
-- `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts`
-  — each project's dependencies.
+- `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts`,
+  `backend/architecture/build.gradle.kts` — each project's dependencies.
 - `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
-- `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — module and hexagon
-  rules; `backend/apps/public/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
+- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/package-info.java` — the named interface `llm`;
+  `.../platform/llm/internal/` — what only the LLM layer uses.
+- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the module
+  and hexagon rules both apps share;
+  `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — each app's packages
+  and its own rules;
+  `backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
   boundaries read from the source, over the roots `BackendSources`
-  (`backend/libs/platform/src/testFixtures/java/ai/helper2/testing/BackendSources.java`) lists;
+  (`backend/libs/platform/src/testFixtures/java/ai/helper2/testing/BackendSources.java`) lists; `TableOwnersTest.java`
+  and `SchemaUseTest.java` next to it — the table owners and the schema the code uses;
+  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/Eventually.java`,
+  `backend/libs/core/src/testFixtures/java/ai/helper2/search/SharedApiTestBase.java` — the shared test helpers;
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CollectorIds.kt` — the collectors' ids;
   `backend/libs/core/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java`,
   `backend/libs/core/src/test/java/ai/helper2/catalog/architecture/CatalogArchitectureTest.java`,
@@ -183,18 +243,27 @@ to reach into the other's code.
   `backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
   context's own rules.
 - `backend/libs/core/src/test/java/ai/helper2/CoreTestApplication.java`, `PublicParts.java`, `BackOfficeParts.java`,
-  `backend/libs/core/src/test/resources/application.yaml` — the test-only application of `core`.
+  `backend/libs/core/src/test/resources/application.yaml` — the test-only application of `core`. As the back office
+  it has the catalog's back office adapters (`@EnableCatalogBackOfficeAdapters`) and no back office use case: a test
+  that needs one is in `backend/apps/backoffice/src/test`, in the context's package.
 - `backend/libs/core/src/main/java/ai/helper2/search/web/` (`SearchController`, `SourcesController`, `CategoriesController`,
   `CardMapper`), `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
   web adapters.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.
 - `backend/libs/core/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog}.java`,
-  `backend/libs/core/src/main/kotlin/ai/helper2/examples/ExampleDrafts.kt` (`DraftQueue`, `UnitOfWork`) — ports
-  of the Java use cases; `.../identity/config/IdentityUseCaseConfiguration.java`,
+  `backend/libs/core/src/main/kotlin/ai/helper2/examples/ExampleDrafts.kt` (`DraftQueue`),
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt` — ports
+  of the Java use cases; `backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java`,
+  `UnitOfWorkConfiguration.java` (both apps) — the transaction adapter; `.../identity/config/IdentityUseCaseConfiguration.java`,
   `.../examples/config/ExamplesUseCaseConfiguration.java` (both apps),
-  `.../examples/config/ExamplesBackOfficeConfiguration.java` (the back office only),
   `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.
+- `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`,
+  `.../examples/config/ExamplesBackOfficeConfiguration.java`, `.../search/config/SearchBackOfficeConfiguration.java`,
+  `backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java` — the wiring only the back office
+  loads; `backend/libs/core/src/main/java/ai/helper2/catalog/config/EnableCatalogBackOfficeAdapters.java`,
+  `.../examples/config/EnableExamplesBackOfficeAdapters.java` — the library's entries to
+  `.../catalog/internal/CatalogBackOfficeAdapters.java` and `.../examples/internal/ExamplesBackOfficeAdapters.java`.
 - `backend/{libs,apps}/*/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`,
   `backend/{libs,apps}/*/src/main/java/ai/helper2/{catalog,identity,examples,admin}/usecase/` — use cases;
   `.../{search,catalog}/usecase/package-info.java` — named interfaces.
@@ -213,8 +282,14 @@ to reach into the other's code.
   feature from using another's repository.
 - Hexagonal everywhere — `sources` is mostly mapping; ports there would only add indirection. `identity` and
   `catalog` have ports since their use cases are checked like the Kotlin ones.
-- A closed `llm` module with a named interface — the LLM layer stays in open `platform` (owner
-  decision): every feature module calls it, so a closed module would only add a named interface for all of it.
+- `platform.llm` as a nested Modulith module (`@ApplicationModule` on the package) — Modulith lets only the
+  parent module and its other nested modules use a nested module, so every feature module that calls the LLM
+  layer fails `verify()`.
+- `llm` as a top-level module of its own — it uses `platform` (resilience, settings, configuration) and
+  `platform.quota` uses it, so the two would name each other; every import and every path in the docs would move.
+- All of `platform` closed, with a named interface per sub-package — `verify()` would then hold the LLM boundary
+  with no rule of its own, but every platform package would need a declaration for a boundary only one of them
+  has.
 - Published libraries (a Maven registry) — versions to keep in step for code that changes in the same pull request,
   and a registry to run.
 - One project per Modulith module (13 projects) — more build files for modules that only one app uses.
@@ -229,6 +304,7 @@ to reach into the other's code.
   (`search/usecase/SearchResourcesTest`, `guide/usecase/AskGuideTest`, `scout/usecase/RunScoutTest`).
 - A boundary break fails the build, not a review: a wrong Gradle dependency at configuration time, a wrong class
   dependency in `ModularityTest` or in a context's own architecture test, a wrong import in `SourceBoundariesTest`.
+- A shared rule or a shared test helper is written once, so a fix to it reaches both apps.
 - Kotlin stays in the rule packages, so most framework code is Java.
 - Each app takes only the libraries it needs, and neither can import the other's code. The shared web adapters are
   compiled once; both apps run the same classes.
@@ -239,10 +315,12 @@ to reach into the other's code.
   every job runs in one app
   ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)). Only the per-replica runtime-settings refresh stays in the
   platform library.
-- Six build files to read, one per project, and three convention plugins. The shared contexts have one test setup
+- Seven build files to read, one per project, and three convention plugins. The shared contexts have one test setup
   and one set of test fixtures.
 
 ### Known limits
+- `platform` is open, so `verify()` does not hold the boundary of its LLM layer: the two rules of §8 do. They read
+  the main code. A test may still name a class of `platform.llm.internal` (`StreamThreadsTest`, `ClientDayQuotaIT`).
 - Inside `core` the compiler does not stop one context from using another: only the tests of §8 do, and they run
   after the compile. Identity's security starters are on the compile path of every context of `core`;
   `CatalogArchitectureTest` fails when the catalog names a security class.
@@ -255,7 +333,8 @@ to reach into the other's code.
 Modules, ports and adapters: one view per module group, [context](../../diagrams/architecture-context.svg) · [search](../../diagrams/architecture-search.svg) · [guide](../../diagrams/architecture-guide.svg) · [index](../../diagrams/architecture-index.svg) · [setup](../../diagrams/architecture-setup.svg) · [review research](../../diagrams/architecture-review-research.svg) · [platform](../../diagrams/architecture-platform.svg).
 
 ## Backlog
-- Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20).
-- Open issues that change it:
-  - [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180): a closed `llm` module with a small public API.
-  - [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181): controllers return views owned by the use cases.
+- Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20),
+  [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (the closed LLM layer,
+  [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180); controllers that answer with views owned by
+  the use cases, [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181)).
+- Open issues that change it: none.

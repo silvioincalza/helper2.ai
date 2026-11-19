@@ -3,6 +3,7 @@ package ai.helper2.scout.internal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
+import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.KnownTargetList;
 import ai.helper2.catalog.ResourceDetail;
@@ -74,6 +75,10 @@ class CatalogEnrichmentStoreIT {
   @Autowired JdbcClient jdbc;
 
   @Autowired JdbcEnrichmentResults results;
+
+  @Autowired EnrichmentFacts detail;
+
+  @Autowired CatalogStoredAnswers answers;
 
   @Autowired ManageKnownTargets knownTargets;
 
@@ -350,12 +355,12 @@ class CatalogEnrichmentStoreIT {
 
     save("fp-gone", EnrichmentOutcome.PARTIAL, result);
 
-    assertThat(results.assertions(resource))
+    assertThat(detail.assertions(resource))
         .extracting(a -> a.field() + ":" + a.evidence().size())
         .containsExactly("openSource:1");
-    assertThat(results.relationships(resource)).isEmpty();
+    assertThat(detail.relationships(resource)).isEmpty();
     assertThat(reviewStatuses(ReviewQueue.Kind.RELATIONSHIP_CANDIDATE)).isEmpty();
-    assertThat(results.summary(resource).claims())
+    assertThat(detail.summary(resource).claims())
         .extracting(c -> c.text())
         .containsExactly("It works with Cursor.");
   }
@@ -397,28 +402,28 @@ class CatalogEnrichmentStoreIT {
 
     save("fp-ladder", EnrichmentOutcome.PARTIAL, result);
 
-    assertThat(results.assertions(resource))
+    assertThat(detail.assertions(resource))
         .extracting(a -> a.field() + ":" + a.origin() + ":" + a.verification())
         .containsExactly("audience:AI_ESTIMATED:UNVERIFIED", "pricing:SELF_DECLARED:VERIFIED");
-    assertThat(results.relationships(resource))
+    assertThat(detail.relationships(resource))
         .extracting(r -> r.targetTitle() + ":" + r.origin())
         .containsExactly("Slack:SELF_DECLARED");
-    assertThat(results.assertions(resource))
+    assertThat(detail.assertions(resource))
         .extracting(ResourceDetail.Assertion::model)
         .containsOnly(MODEL.getModel());
-    assertThat(results.relationships(resource))
+    assertThat(detail.relationships(resource))
         .extracting(ResourceDetail.Relationship::model)
         .containsOnly(MODEL.getModel());
     assertThat(reviewStatuses(ReviewQueue.Kind.RELATIONSHIP_CANDIDATE)).containsExactly("OPEN");
-    assertThat(results.summary(resource).claims().getFirst().selfDeclared()).isTrue();
+    assertThat(detail.summary(resource).claims().getFirst().selfDeclared()).isTrue();
 
     save(
         "fp-next",
         EnrichmentOutcome.VALIDATED,
         new ValidationResult(
             EnrichmentOutcome.VALIDATED, List.of(), List.of(), List.of(), List.of()));
-    assertThat(results.assertions(resource)).isEmpty();
-    assertThat(results.relationships(resource)).isEmpty();
+    assertThat(detail.assertions(resource)).isEmpty();
+    assertThat(detail.relationships(resource)).isEmpty();
   }
 
   @Test
@@ -448,8 +453,8 @@ class CatalogEnrichmentStoreIT {
     assertThat(results.rejectFields(List.of(stored.fields().getFirst().id()))).isEqualTo(1);
     assertThat(results.rejectFields(List.of(stored.fields().getFirst().id()))).isZero();
     assertThat(results.dropClaims(List.of(stored.claims().getFirst().id()))).isEqualTo(1);
-    assertThat(results.summary(resource)).isNull();
-    assertThat(results.assertions(resource))
+    assertThat(detail.summary(resource)).isNull();
+    assertThat(detail.assertions(resource))
         .singleElement()
         .extracting(ResourceDetail.Assertion::verification)
         .isEqualTo(Verification.REJECTED);
@@ -473,9 +478,9 @@ class CatalogEnrichmentStoreIT {
   void aMaintenanceTaskIsDoneOnlyOnceItIsMarked() {
     String name = "test-" + UUID.randomUUID();
     try {
-      assertThat(results.done(name)).isFalse();
-      results.markDone(name);
-      assertThat(results.done(name)).isTrue();
+      assertThat(answers.done(name)).isFalse();
+      answers.markDone(name);
+      assertThat(answers.done(name)).isTrue();
     } finally {
       jdbc.sql("DELETE FROM job_marker WHERE name = :n").param("n", name).update();
     }
@@ -878,7 +883,7 @@ class CatalogEnrichmentStoreIT {
 
   private Counted<Detail> readDetail(UUID id) {
     return StatementCounting.count(
-        () -> new Detail(results.assertions(id), results.relationships(id), results.summary(id)));
+        () -> new Detail(detail.assertions(id), detail.relationships(id), detail.summary(id)));
   }
 
   private static List<String> excerpts(List<ResourceDetail.Evidence> evidence) {

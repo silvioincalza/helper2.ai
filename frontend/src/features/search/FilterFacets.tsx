@@ -11,7 +11,7 @@ import {
 } from '@/lib/searchState';
 import type { Categories } from '@/hooks/useCategories';
 import { CategoryFacet } from './CategoryFacet';
-import { Term, type GlossaryKey } from '../../ui/Term';
+import { Term, type GlossaryKey } from '@/ui/Term';
 
 type FacetKey = Exclude<MultiKey, 'category'> | 'openSource';
 
@@ -28,7 +28,6 @@ const ORDER: FacetKey[] = [
 const TERMS: Partial<Record<FacetKey, GlossaryKey>> = {
   license: 'license',
   openSource: 'open_source',
-  type: 'model',
   techLevel: 'tech_level',
   platform: 'platform',
 };
@@ -123,11 +122,7 @@ export function FilterFacets({ facets, state, sources, categories, onChange }: P
           return (
             <fieldset key={key} className="filter-group">
               <legend className="filter-legend">
-                {term && key !== 'type' ? (
-                  <Term term={term}>{t(`facet.${key}`)}</Term>
-                ) : (
-                  t(`facet.${key}`)
-                )}
+                {term ? <Term term={term}>{t(`facet.${key}`)}</Term> : t(`facet.${key}`)}
               </legend>
               <ul className="plain-list">
                 {list.map((f, i) => {

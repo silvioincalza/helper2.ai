@@ -1,28 +1,21 @@
 import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router';
-import type { Feed } from './homeFeeds';
-import { FIRST_ROWS, ListState, ShowAll, useFirstRows, type ListId } from './listParts';
+import type { Feed } from '@/features/feeds/feeds';
+import type { TermCells } from '@/features/feeds/feedCells';
+import { ShowAll, useFirstRows, type ListId } from './listParts';
+import { FIRST_ROWS, ListState } from '@/ui/ListState';
+import { TermCommand } from '@/ui/TermCommand';
 import { tickerWindow, useTicker } from './ticker';
 import { OriginLabel } from '@/ui/Badges';
-import { aiMark } from '@/lib/aiMark';
-import { useFromHere } from '@/features/search/fromResults';
-
-export interface TermCells {
-  when: ReactNode;
-  type: string;
-  title: string;
-  href: string;
-  where: string;
-  note?: string;
-  ai?: boolean;
-}
+import { AI_ORIGIN, aiMark } from '@/lib/aiMark';
+import { useFromHere } from '@/lib/fromResults';
 
 function Ai({ ai, children }: { ai?: boolean | undefined; children: ReactNode }) {
   return ai ? <span {...aiMark()}>{children}</span> : <>{children}</>;
 }
 
 function AiExtracted({ ai }: { ai?: boolean | undefined }) {
-  return ai ? <OriginLabel origin="AI_EXTRACTED" /> : null;
+  return ai ? <OriginLabel origin={AI_ORIGIN.read} /> : null;
 }
 
 export function TermList<Row extends { id: string }>({
@@ -154,18 +147,6 @@ function TermHead({
   );
 }
 
-export function TermCommand({ command, total }: { command: string; total: number | null }) {
-  return (
-    <p className="h2-termlist__cmd">
-      <span aria-hidden="true">
-        <span className="h2-prompt">$</span> {command}
-        {total !== null && ' · '}
-      </span>
-      {total !== null && <span className="h2-termlist__total">{total}</span>}
-    </p>
-  );
-}
-
 function TableRow({ cells }: { cells: TermCells }) {
   const from = useFromHere();
   return (
@@ -184,7 +165,11 @@ function TableRow({ cells }: { cells: TermCells }) {
         </Link>
       </td>
       <td className="h2-cell-meta">
-        <Ai ai={cells.ai}>{cells.where}</Ai>
+        <Ai ai={cells.ai}>
+          <span className="h2-cell-meta__text" title={cells.where}>
+            {cells.where}
+          </span>
+        </Ai>
       </td>
     </tr>
   );

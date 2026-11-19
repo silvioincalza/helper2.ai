@@ -16,6 +16,7 @@ import ai.helper2.guide.LEARN_TYPES
 import ai.helper2.guide.ModelActivity
 import ai.helper2.guide.QuoteOrigins
 import ai.helper2.guide.QuoteRecords
+import ai.helper2.guide.QuotedFrom
 import ai.helper2.guide.ReadingKey
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
@@ -276,10 +277,13 @@ class AskGuide(
         explanation?.sentences.orEmpty().map { it.source }
     if (quoted.isEmpty()) return this
     val records = quoteRecords.of(quoted.flatMap(quoteOrigins::storedResourcesOf).distinct())
-    fun from(quote: String?, result: MergedResult?) =
-      if (quote.isNullOrBlank() || result == null) null else quoteOrigins.of(quote, result, records)
+    fun from(part: String, quote: String?, result: MergedResult?): QuotedFrom? {
+      if (quote.isNullOrBlank() || result == null) return null
+      return quoteOrigins.of(quote, result, records).also { countQuoteOrigin(part, it) }
+    }
     return copy(
-      recommendations = recommendations.map { it.copy(quotedFrom = from(it.quote, it.result)) },
+      recommendations =
+        recommendations.map { it.copy(quotedFrom = from("pick", it.quote, it.result)) },
       comparison =
         comparison?.let { c ->
           c.copy(
@@ -287,17 +291,27 @@ class AskGuide(
               c.rows.map { row ->
                 row.copy(
                   cells =
-                    row.cells.map { it.copy(quotedFrom = from(it.quote, subjects[it.subjectKey])) }
+                    row.cells.map {
+                      it.copy(quotedFrom = from("cell", it.quote, subjects[it.subjectKey]))
+                    }
                 )
               }
           )
         },
       explanation =
         explanation?.let { e ->
-          e.copy(sentences = e.sentences.map { it.copy(quotedFrom = from(it.quote, it.source)) })
+          e.copy(
+            sentences =
+              e.sentences.map { it.copy(quotedFrom = from("sentence", it.quote, it.source)) }
+          )
         },
     )
   }
+
+  private fun countQuoteOrigin(part: String, origin: QuotedFrom?) =
+    meters
+      .counter("helper2.guide.quote_origin", "part", part, "found", (origin != null).toString())
+      .increment()
 
   private fun answerAndStore(
     q: Question,

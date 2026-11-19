@@ -92,7 +92,10 @@ tool answered, and must confirm every value before it reaches the catalog.
    and `u`; the queue keys do nothing inside the proposal); a conflict needs a pick first. Accept is enabled when every changed attribute
    has a decision the candidate can take, and says how many are left. A value is checked against the candidate edit's
    rules (`api/admin.yaml`) before it is saved or confirmed: one it cannot take is refused next to its field, and a
-   decision with such a value still counts as left. On Accept, every confirmed value goes into the candidate through
+   decision with such a value still counts as left. Bulk Accept takes a candidate whose newest research is DONE with
+   verdict KEEP and no CONFLICT value, and that still describes the candidate (the URL, title, type and tags it saw are
+   unchanged), with its CONFIRMED changed values applied on the server
+   ([0038](0038-back-office-and-review.md) §9). On Accept, every confirmed value goes into the candidate through
    `PUT /admin/review-items/{id}/candidate`, then the item is accepted through the existing accept path
    ([0038](0038-back-office-and-review.md) §19 to §20): the candidate takes the confirmed title, type and tags, it is
    indexed at the confirmed canonical URL, and the other values become the resource's curated values. A description
@@ -107,12 +110,17 @@ tool answered, and must confirm every value before it reaches the catalog.
    picked items, the page, or every open candidate after the count and the most model calls are shown. The picked
    items and the page leave out the items already researched or running; a row keeps its own research again. Each
    row shows its research (queued, running with its step, the verdict, failed with the reason, cancel, watch live,
-   research again), read every 2 seconds while a run is active. The Research filter (keep, reject,
+   research again), read every 2 seconds while a run is active. A candidate that is no longer open keeps
+   its newest research, read only: the row shows the verdict and its steps, the pane the verdict and a link to every
+   step, with no research again and no decisions. The Research filter (keep, reject,
    duplicate, queued or running, not researched) is the server's filter of §7.
 9. **Live view over SSE.** `GET /admin/review-research/{runId}/events` streams the steps of one run and its status
    changes, and ends with the run or when the browser leaves. It reads new rows from Postgres once a second, so it
    works with any number of back office pods and needs no broker. A comment line every 15 seconds keeps a quiet
-   stream open. A pod serves `H2_RESEARCH_MAX_STREAMS` (8) streams at a time and answers 429 beyond them. The page `/admin/review/research/{runId}` shows every step, request and response
+   stream open. The use case `FollowResearchRun` reads the run and its steps after a sequence number and holds the
+   rules: a run put back in the queue or started again is read from its first step, and the stream ends when the run
+   has ended and every step is read. The two controllers call the research use cases, never the port `ResearchRuns`
+   (`ModularityTest`). A pod serves `H2_RESEARCH_MAX_STREAMS` (8) streams at a time and answers 429 beyond them. The page `/admin/review/research/{runId}` shows every step, request and response
    as plain text, filtered by kind or errors, and follows a running run on this stream. The queue rows read their
    status from `GET /admin/review-research?itemId=…`. A
    result carries `aiWritten: true`, the machine-readable AI marking.
@@ -127,7 +135,8 @@ tool answered, and must confirm every value before it reaches the catalog.
     to the admin's final decision, so the same numbers are measured on live use. The labels are the admin's decisions
     (`docs/eval/research-labels.tsv`, exported by `scripts/research-eval-labels.sql`) and items a person labels by
     hand (`research-labels-manual.tsv`). `ResearchEvalRecorder` (`evalRecord`) runs the real tools and model on them;
-    the eval's catalog is empty, so a duplicate verdict is not measured. The report says when the set is under 100
+    the eval's catalog is empty, so a duplicate verdict is not measured: an item labelled `DUPLICATE` is run and
+    listed, and left out of the verdict agreement. The report says when the set is under 100
     items or 20 rejects; then it decides nothing. How to run it: `docs/eval/README.md`.
 11. **Retention.** Runs and their steps are deleted 90 days after the run ends (the daily job `review-research`), and
     with their review item. The steps hold public web pages and catalog data; no user data is sent to the model. The

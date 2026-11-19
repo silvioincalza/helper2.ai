@@ -28,8 +28,8 @@ tick: Indexer tick {
   lock -> pg: "take row in shedlock\nwhere lock_until <= db now"
   pg -> lock: "taken (if not: skip\nthis period)"
   lock -> idxr: "tick()"
-  idxr -> store: "pendingEmbeddings(model, 1, refused)"
-  store -> pg: "resources without a current vector,\nnot a refused (id, md5),\nORDER BY popularity DESC"
+  idxr -> store: "forgetRefusalsThatNoLongerApply(model);\npendingEmbeddings(model, 1)"
+  store -> pg: "resources without a current vector,\nno row in resource_embedding_refused\nwith the same md5,\nORDER BY popularity DESC"
   pg -> store: "rows"
   store -> idxr: "1 task (text, md5)"
   idxr -> emb: "embed(texts, PASSAGE)" {class: ai-call}

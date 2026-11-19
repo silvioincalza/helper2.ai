@@ -4,13 +4,14 @@ import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.research.ResearchRun;
-import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchStep;
 import ai.helper2.research.config.ResearchProperties;
+import ai.helper2.research.usecase.FollowResearchRun;
+import ai.helper2.research.usecase.FollowResearchRun.Progress;
+import ai.helper2.research.usecase.FollowResearchRun.Seen;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,24 +34,24 @@ class ReviewResearchEventsController {
   static final Duration HEARTBEAT = Duration.ofSeconds(15);
   static final Duration TIMEOUT = Duration.ofMinutes(10);
 
-  private final ResearchRuns runs;
+  private final FollowResearchRun follow;
   private final Semaphore streams;
   private final Duration poll;
   private final Duration heartbeat;
   private final Supplier<SseEmitter> emitters;
 
   @Autowired
-  ReviewResearchEventsController(ResearchRuns runs, ResearchProperties research) {
-    this(runs, research.maxStreams(), POLL, HEARTBEAT, () -> new SseEmitter(TIMEOUT.toMillis()));
+  ReviewResearchEventsController(FollowResearchRun follow, ResearchProperties research) {
+    this(follow, research.maxStreams(), POLL, HEARTBEAT, () -> new SseEmitter(TIMEOUT.toMillis()));
   }
 
   ReviewResearchEventsController(
-      ResearchRuns runs,
+      FollowResearchRun follow,
       int maxStreams,
       Duration poll,
       Duration heartbeat,
       Supplier<SseEmitter> emitters) {
-    this.runs = runs;
+    this.follow = follow;
     this.streams = new Semaphore(maxStreams);
     this.poll = poll;
     this.heartbeat = heartbeat;
@@ -63,7 +64,7 @@ class ReviewResearchEventsController {
   ResponseEntity<SseEmitter> streamReviewResearch(
       @PathVariable UUID runId, @RequestParam(defaultValue = "0") int afterSeq) {
     ResearchRun first =
-        runs.find(runId).orElseThrow(() -> new NotFoundException("Research run not found."));
+        follow.run(runId).orElseThrow(() -> new NotFoundException("Research run not found."));
     if (!streams.tryAcquire()) {
       throw new ApiProblem(
           ProblemType.RATE_LIMITED, "Too many research streams are open. Close one and try again.");
@@ -87,14 +88,12 @@ class ReviewResearchEventsController {
     private final SseEmitter emitter = emitters.get();
     private final AtomicBoolean released = new AtomicBoolean();
     private volatile boolean stopped;
-    private int seq;
-    private ResearchRun.Status sent;
-    private Instant started;
+    private Seen seen;
     private long lastSend = System.nanoTime();
 
     Stream(UUID runId, int afterSeq) {
       this.runId = runId;
-      this.seq = afterSeq;
+      this.seen = Seen.after(afterSeq);
     }
 
     void open() {
@@ -116,7 +115,7 @@ class ReviewResearchEventsController {
 
     private void run() {
       try {
-        follow();
+        stream();
         emitter.complete();
       } catch (IOException | RuntimeException e) {
         emitter.completeWithError(e);
@@ -128,16 +127,18 @@ class ReviewResearchEventsController {
       }
     }
 
-    private void follow() throws IOException, InterruptedException {
+    private void stream() throws IOException, InterruptedException {
       long deadline = System.nanoTime() + TIMEOUT.toNanos();
       while (!stopped && System.nanoTime() < deadline) {
-        ResearchRun run = runs.find(runId).orElse(null);
-        if (run == null) {
+        Optional<Progress> next = follow.next(runId, seen);
+        if (next.isEmpty()) {
           return;
         }
-        sendStatus(run);
-        sendSteps();
-        if (!run.status().active() && runs.steps(runId, seq).isEmpty()) {
+        Progress progress = next.get();
+        sendStatus(progress);
+        sendSteps(progress);
+        seen = progress.seen();
+        if (progress.ended()) {
           return;
         }
         sendHeartbeatWhenQuiet();
@@ -145,34 +146,22 @@ class ReviewResearchEventsController {
       }
     }
 
-    private void sendSteps() throws IOException {
-      List<ResearchStep> steps = runs.steps(runId, seq);
-      for (ResearchStep s : steps) {
+    private void sendStatus(Progress progress) throws IOException {
+      if (progress.statusChanged()) {
+        send(
+            SseEmitter.event()
+                .name("status")
+                .data(ReviewResearchController.runDto(progress.run()), MediaType.APPLICATION_JSON));
+      }
+    }
+
+    private void sendSteps(Progress progress) throws IOException {
+      for (ResearchStep s : progress.steps()) {
         send(
             SseEmitter.event()
                 .name("step")
                 .data(ReviewResearchController.stepDto(s), MediaType.APPLICATION_JSON));
-        seq = s.seq();
       }
-    }
-
-    private void sendStatus(ResearchRun run) throws IOException {
-      boolean again = startedAgain(run);
-      if (run.status() == ResearchRun.Status.QUEUED || again) {
-        seq = 0;
-      }
-      started = run.startedAt();
-      if (run.status() != sent || again) {
-        send(
-            SseEmitter.event()
-                .name("status")
-                .data(ReviewResearchController.runDto(run), MediaType.APPLICATION_JSON));
-        sent = run.status();
-      }
-    }
-
-    private boolean startedAgain(ResearchRun run) {
-      return started != null && run.startedAt() != null && !started.equals(run.startedAt());
     }
 
     private void sendHeartbeatWhenQuiet() throws IOException {

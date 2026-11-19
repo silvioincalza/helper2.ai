@@ -11,21 +11,23 @@ import {
   useSearchParams,
 } from 'react-router';
 import { useDropServerHead } from '@/lib/head';
+import { REPO_URL } from '@/lib/repoUrl';
+import { HUBS } from '@/lib/hubs';
 import { useTranslation } from 'react-i18next';
 import { signOut } from '@/api/client';
 import { useMe } from '@/context/MeContext';
 import { useMonetisation } from '@/context/MonetisationContext';
-import { AnalyticsConsent, openConsentSettings } from '../features/monetisation/AnalyticsConsent';
+import { AnalyticsConsent, openConsentSettings } from '@/features/monetisation/AnalyticsConsent';
 import { showPrivacyChoices } from '@/lib/googleConsent';
 import { chooseTheme, currentTheme, otherTheme, subscribeTheme } from '@/lib/theme';
 import { hasOwnSearchBox, showsHome } from '@/lib/searchState';
 import { takeSignInReturn } from '@/lib/signInReturn';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useStickyEdge } from '@/hooks/useStickyEdge';
-import { Logo } from '../ui/Logo';
-import { OneBox } from '../features/search/OneBox';
+import { Logo } from '@/ui/Logo';
+import { OneBox } from '@/features/search/OneBox';
 import '@/styles/shell.css';
-import { SignInLink } from '../features/account/SignIn';
+import { SignInLink } from '@/ui/SignIn';
 
 function ThemeToggle() {
   const { t } = useTranslation();
@@ -178,8 +180,6 @@ function Header() {
   );
 }
 
-export const REPO_URL = 'https://github.com/silvioincalza/helper2.ai';
-
 function GitHubMark() {
   return (
     <svg
@@ -279,6 +279,15 @@ function Footer() {
           </li>
         </ul>
       </div>
+      <nav className="h2-wrap h2-footer__browse" aria-label={t('footer.browse')}>
+        <ul className="plain-list h2-footer__links">
+          {HUBS.map((hub) => (
+            <li key={hub.path}>
+              <Link to={`/${hub.path}`}>{t(`hubs.name.${hub.type}`)}</Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <p className="h2-wrap h2-footer__line">
         {t('footer.coverage')} {t('footer.copyright', { year: new Date().getFullYear() })}
         <span className="footer-place"> · {t('footer.place')}</span>

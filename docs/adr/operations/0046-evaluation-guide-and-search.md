@@ -151,10 +151,10 @@ repository. Relevance needs a human judgement per result, and judging every resu
     [docs/evaluation.md](../../evaluation.md), which no script writes.
 
 ### Search
-12. **Fixed query set.** `docs/eval/search-queries.json`: 115 fixed queries, never tuned on results. Groups:
+12. **Fixed query set.** `docs/eval/search-queries.json`: 116 fixed queries, never tuned on results. Groups:
     navigational (10), MCP server for a task (12), model for a task (10), library for a language (14), paper (8),
     news and events (8), Italian and other languages (10), typos and synonyms (8), nonsense control (4), the home
-    examples (11, `home-example`) and everyday tasks in plain words (20, `everyday`); the last two are sent with their
+    examples (11, `home-example`) and everyday tasks in plain words (21, `everyday`); the last two are sent with their
     audience `path`. The guide questions of §1 that fit are reused (`from` names the guide id).
     `docs/eval/semantic-gold.json` adds 20 paraphrase queries with few words in common with their answers, for vector
     search and its cutoff. A home example has a higher bar than nDCG: a result graded 3 or 2 in its top 3; the report

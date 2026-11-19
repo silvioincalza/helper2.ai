@@ -10,9 +10,9 @@ import {
 } from 'react';
 import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { HomeExamples } from '@/features/home/HomeExamples';
-import { HomeLists } from '@/features/home/HomeLists';
-import { RadarLegend } from '@/features/home/RadarLegend';
+import { HomeExamples } from './HomeExamples';
+import { HomeLists } from './HomeLists';
+import { RadarLegend } from './RadarLegend';
 import { OneBox } from '@/features/search/OneBox';
 import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
@@ -20,11 +20,9 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useStickyEdge } from '@/hooks/useStickyEdge';
 import { useTitle } from '@/hooks/useTitle';
 import { radarSources } from '@/lib/sourceCounts';
-import '@/features/home/home.css';
+import './home.css';
 
-const HomeRadar = lazy(() =>
-  import('@/features/home/HomeRadar').then((m) => ({ default: m.HomeRadar })),
-);
+const HomeRadar = lazy(() => import('./HomeRadar').then((m) => ({ default: m.HomeRadar })));
 
 const DOES = ['search', 'recommend', 'proof'] as const;
 const FOLD_AFTER_PX = 24;

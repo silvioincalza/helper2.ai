@@ -63,7 +63,7 @@ each: For each collector (isolated) {
   judged: "No slot left: last run already\njudged this text with this model?\n(EnrichResource.unchanged:\nfingerprint only, no model call)" {class: decision}
   request: "EnrichmentBacklog.requestRun:\nNOT_RUN with the request time;\na later run takes it" {class: data}
   skip: "Not requested: a request would\nsend the same text to the model\n(metadata alone changed)" {class: end}
-  ok: "SUCCEEDED\n(seen, changed, queued)" {class: end}
+  ok: "SUCCEEDED\n(seen, changed, queued: answers\nwith something kept; the message\ncounts failed, rejected, waiting)" {class: end}
   failed: "FAILED\n\"Collection failed: <class>\"\ncursor not moved" {class: fail}
   stop: "LLM_UNAVAILABLE\n(provider down or daily\nbudget spent)?" {class: decision}
   stopped: "Budget set to 0:\nno more model calls this run" {class: app}
@@ -94,7 +94,7 @@ each: For each collector (isolated) {
   stop -> stopped: yes
   stopped -> ok
   enrich -> ok: "no id or\nbudget left"
-  enrich -> request: "enrichment threw\nbefore the answer"
+  enrich -> request: "enrichment threw and\nsaved nothing (a saved FAILED\nis retried by the backlog rule)"
   enrich -> judged: "changed id,\nno slot left"
   judged -> request: "no, or the\ncheck failed"
   judged -> skip: yes

@@ -89,7 +89,9 @@ helper2:
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
     noindex: ${H2_NOINDEX:false}
     template: ${H2_PAGES_TEMPLATE:file:/shell/index.html}
-    sitemap-limit: 50000
+    sitemap-limit: 200000
+    indexnow:
+      key: ${H2_INDEXNOW_KEY:}
   setup:
     document-timeout: ${H2_SETUP_DOCUMENT_TIMEOUT:10s}
     npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}

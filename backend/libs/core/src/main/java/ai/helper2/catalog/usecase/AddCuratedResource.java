@@ -5,7 +5,6 @@ import ai.helper2.catalog.CatalogWriter;
 import ai.helper2.catalog.CuratedTypes;
 import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.Resources;
-import ai.helper2.platform.BadRequestException;
 import ai.helper2.search.MergedResult;
 import ai.helper2.search.ResultMerger;
 import ai.helper2.search.ServedFrom;
@@ -19,16 +18,26 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 public class AddCuratedResource {
 
   static final int MAX_TITLE = CatalogLimits.TITLE_CHARS;
   static final int MAX_URL = CanonicalUrl.MAX_LENGTH;
 
-  public record Outcome(UUID id, String title, boolean added) {}
+  public sealed interface Outcome {
+    record Added(UUID id, String title) implements Outcome {}
+
+    record AlreadyListed(UUID id, String title) implements Outcome {}
+
+    record InvalidTitle(int maxLength) implements Outcome {}
+
+    record InvalidUrl() implements Outcome {}
+
+    record NotACuratedType(ResourceType type) implements Outcome {}
+  }
 
   private final CatalogWriter writer;
   private final Resources resources;
@@ -44,17 +53,22 @@ public class AddCuratedResource {
     this.clock = clock;
   }
 
-  public Outcome add(String title, String url, ResourceType type) {
-    String name = checkedTitle(title);
-    CanonicalUrl address = checkedUrl(url);
+  public Outcome add(@Nullable String title, @Nullable String url, ResourceType type) {
+    String name = title == null ? "" : title.strip();
+    if (!isATitle(name)) {
+      return new Outcome.InvalidTitle(MAX_TITLE);
+    }
+    CanonicalUrl address = httpsAddress(url);
+    if (address == null) {
+      return new Outcome.InvalidUrl();
+    }
     if (!CuratedTypes.TYPES.contains(type)) {
-      throw new BadRequestException("A relationship can point only at a tool or a model.");
+      return new Outcome.NotACuratedType(type);
     }
-    Optional<Resources.Titled> known = resources.atUrl(address.getValue());
-    if (known.isPresent()) {
-      return new Outcome(known.get().id(), known.get().title(), false);
-    }
-    return new Outcome(index(name, address, type), name, true);
+    return resources
+        .atUrl(address.getValue())
+        .<Outcome>map(known -> new Outcome.AlreadyListed(known.id(), known.title()))
+        .orElseGet(() -> new Outcome.Added(index(name, address, type), name));
   }
 
   private UUID index(String title, CanonicalUrl url, ResourceType type) {
@@ -70,25 +84,16 @@ public class AddCuratedResource {
         .orElseThrow(() -> new IllegalStateException("the resource was not stored"));
   }
 
-  private static String checkedTitle(String title) {
-    String name = title == null ? "" : title.strip();
-    if (name.isEmpty()
-        || name.length() > MAX_TITLE
-        || name.chars().anyMatch(Character::isISOControl)) {
-      throw new BadRequestException("The name must be 1 to " + MAX_TITLE + " characters.");
-    }
-    return name;
+  private static boolean isATitle(String name) {
+    return !name.isEmpty()
+        && name.length() <= MAX_TITLE
+        && name.chars().noneMatch(Character::isISOControl);
   }
 
-  private static CanonicalUrl checkedUrl(String url) {
+  private static @Nullable CanonicalUrl httpsAddress(@Nullable String url) {
     String value = url == null ? "" : url.strip();
-    CanonicalUrl address =
-        value.length() > MAX_URL || !value.toLowerCase(Locale.ROOT).startsWith("https://")
-            ? null
-            : CanonicalUrl.of(value);
-    if (address == null) {
-      throw new BadRequestException("The address must be the resource's own https address.");
-    }
-    return address;
+    return value.length() > MAX_URL || !value.toLowerCase(Locale.ROOT).startsWith("https://")
+        ? null
+        : CanonicalUrl.of(value);
   }
 }

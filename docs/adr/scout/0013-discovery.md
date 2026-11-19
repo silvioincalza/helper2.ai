@@ -52,17 +52,21 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
    Startup fails on an unknown family or type, an id that is not lower-case words with hyphens or is longer than 30
    characters (`discovery-` plus the id fits the source id's 40), a short name over 12 characters, a type a product page
    cannot have (a reading or course type), a category without a query, or two categories with one id
-   (`CategoryProperties`, `DiscoveryCategory`).
+   (`DiscoveryCategories`, `DiscoveryCategory`). The message names the category, the value and the families.
 2. **Registered by a `BeanRegistrar`.** How many collectors there are depends on the configuration, so
    `DiscoveryCollectorRegistrar` (Spring Framework 7 `BeanRegistrar`, imported by `CollectorsConfiguration`) registers
    one bean per category. **This is the one exception to [0007](../foundation/0007-configuration-secrets-runtime-settings.md):**
    the registrar runs before any bean exists, so it reads `helper2.categories` from the `Environment` through Spring
-   Boot's `Binder`, not as a `@ConfigurationProperties` bean. The entries are checked while they bind, in code. The
+   Boot's `Binder`, not as a `@ConfigurationProperties` bean. One record binds the list: `CategoriesProperties`
+   (platform), as a bean and through its `bind(env)`. `DiscoveryCategories` (sources) checks the entries in code and
+   turns them into `DiscoveryCategory`. The
    collectors themselves are built from the usual `@ConfigurationProperties` beans: the shared settings
    `helper2.sources.discovery` (base URL, token, timeouts; `H2_SOURCE_DISCOVERY_ENABLED`,
    `H2_SOURCE_DISCOVERY_DEADLINE`) and `helper2.scout.discovery` (interval, depth, results, score floor, excluded
    domains). All of them share one resilience policy, `collector-discovery`: a Tavily outage opens one circuit, not 34.
    The public app describes the same sources from the same settings (`ScoutSourceDescriptors`), so both apps list them.
+   Each app checks its list against `CollectorIds`, the categories and the feeds (`CollectorsParityIT`,
+   `ScoutSourceDescriptorsParityTest`): a collector without a descriptor, or the reverse, fails the build.
 3. **Staggered over the week.** A category that never ran is first due on day `(its place in the list) mod 7` (days
    since 1970, UTC; `RunInterval.staggered`), then every interval after its last complete pass. So 4 or 5 categories
    search a day, not 34 on the first. The place in the list spreads them evenly; a hash of the id spread them 2 to 9 a
@@ -256,7 +260,7 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     when it is the category's id ("Voice and audio") or has one of its words ("Vector databases"). A category that
     needs a word (health, legal) never comes from a heading alone. No new matcher, no model.
     - On a candidate, the matched categories are its tags, at most `Candidate.MAX_TAGS` (12), in the configured order.
-    - On an indexed resource, `JdbcCatalogWriter` reads the heading paths the list index already keeps
+    - On an indexed resource, `JdbcCategoryLabels` reads the heading paths the list index already keeps
       (`awesome_list_entry.heading_path`). `IndexAwesomeLists` assigns the categories of a list's entries again after
       it writes them, so a new heading counts in the same run.
 19. **Metrics.** `helper2.scout.awesome.lists{depth=seed|nested}` counts lists read, `helper2.scout.awesome.candidates`
@@ -303,9 +307,12 @@ No new table for deep search, no new dependency.
 ### Code
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java` — one category's
   searches, `keep` (Tavily's own pages, score, AI, shape), what is kept; `DiscoveryPages.java` — list, product or post,
-  by URL and title, built from `HostLists`; `ScoutLiveWebCredits.java` — credits and the daily cap.
+  by URL and title, built from `HostLists`; `ScoutLiveWebCredits.java` — credits and the daily cap;
+  `ScoutLiveWebSearch.java` — the search call, through the policy and the credit counter, and the deferred batch;
+  `QueryProgress.java` — the searches done and the start date of the window.
 - `backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — `isTavilysOwnPage`, `toHit`;
-  `DiscoveryCategory.java`, `DiscoveryFamily.java`; `sources/config/CategoryProperties.java` — the checked entries;
+  `DiscoveryCategory.java`, `DiscoveryFamily.java`; `sources/config/DiscoveryCategories.java` — the checked entries, bound by
+  `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`;
   `CollectorProperties.java` (`Discovery`, `GitHubAwesome`); `support/RunInterval.java` — `staggered`, `nextDueDay`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java` — one bean per
   category; `CollectorsConfiguration.java`; the categories in `application.yaml` (`helper2.categories`);
@@ -327,18 +334,18 @@ No new table for deep search, no new dependency.
   `backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (open candidate, category filter,
   `candidatesOpenedToday`), `catalog/usecase/IndexAwesomeLists.java`, `catalog/internal/JdbcCatalogWriter.java`
-  (`extra`, `assignCategories`), `JdbcAwesomeListIndex.java`, `JdbcCatalogRetention.java`.
+  (`extra`), `JdbcCategoryLabels.java` (`of`), `catalog/usecase/RefreshCategories.java`, `JdbcAwesomeListIndex.java`, `JdbcCatalogRetention.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `RESOURCE_CANDIDATE` review kind,
   `discovery_host` and its seed rows, `candidate_decision`); `catalog/internal/JdbcReviewQueue.java`
   (`proposeCandidate`, `candidateKnown`, `listedAs`), `JdbcReviewDecisions.java`; `R__curated_seed.sql` — the directories, linked, not copied;
   `platform/AuditTrail.java` (the two host actions).
-- `frontend/src/features/sources/Sources.tsx` (family row groups), `DiscoveryCategories.tsx` (the notices),
-  `frontend/src/features/home/radarLayout.ts` (`placeDot`), `radarRotation.ts` (groups), `HomeRadar.tsx`,
+- `frontend/src/features/sources/Sources.tsx` (family row groups), `frontend/src/ui/DiscoveryCategories.tsx` (the notices),
+  `frontend/src/features/home/radarLayout.ts` (`placeDot`), `frontend/src/lib/radarRotation.ts` (groups), `HomeRadar.tsx`,
   `frontend/src/admin/ReviewQueuePage.tsx`, `ScoutRunsPage.tsx`, `DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`;
   `frontend/src/i18n/locales/en.legal.json` (the Privacy and Terms pages).
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2DiscoveryStale`.
 - Tests: `DiscoveryCollectorTest` (`tavilysOwnPagesAreNeitherCandidatesNorListPages`), `TavilySourceTest`,
-  `DiscoveryPagesTest`, `DiscoveryCollectorRegistrarTest`, `RunIntervalTest`, `IndexAcceptedCandidateTest`,
+  `DiscoveryPagesTest`, `DiscoveryCollectorRegistrarTest`, `CollectorsParityIT`, `ScoutSourceDescriptorsParityTest`, `RunIntervalTest`, `IndexAcceptedCandidateTest`,
   `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `GitHubAwesomeDeepSearchTest`,
   `AwesomeListParserTest`, `CategoryMatcherTest`, `CollectorPropertiesTest`, `AwesomeListSearchIT`,
   `AwesomeDeepSearchIT`, `ManageDiscoveryHostsTest`, `JdbcDiscoveryHostStoreIT` (the seed), `DiscoveryHostsApiIT`,

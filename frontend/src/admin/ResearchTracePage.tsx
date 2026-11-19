@@ -1,41 +1,24 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import { useLocation, useParams } from 'react-router';
 import { adminApi } from '@/api/admin';
-import { ApiError, GUIDE_IDLE_TIMEOUT_MS } from '@/api/client';
+import { ApiError } from '@/api/client';
 import type { ReviewResearchDetail, ReviewResearchRun, ReviewResearchStep } from '@/api/types';
+import { aiMarkWhen } from '@/lib/aiMark';
+import { BackLink } from '@/ui/BackLink';
 import { RetryButton } from '@/ui/StatePanel';
 import { StatusPill } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
+import { formatCount } from '@/lib/format';
+import { isSameSitePath } from '@/lib/sameSitePath';
 import { isActive } from './ReviewResearch';
 import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 type Kind = ReviewResearchStep['kind'];
 type Translate = ReturnType<typeof useTranslation>['t'];
-type Followed = 'ended' | 'stalled';
 const KINDS: Kind[] = ['MODEL_CALL', 'TOOL_CALL', 'CHECK'];
 const UUID = /^[0-9a-f-]{36}$/i;
 const QUEUE = '/admin/review';
-
-export function parseEvents(text: string): {
-  events: { event: string; data: string }[];
-  rest: string;
-} {
-  const blocks = text.split(/\r?\n\r?\n/);
-  const rest = blocks.pop() ?? '';
-  const events = blocks
-    .map((block) => {
-      let event = 'message';
-      const data: string[] = [];
-      for (const line of block.split(/\r?\n/)) {
-        if (line.startsWith('event:')) event = line.slice(6).trim();
-        else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''));
-      }
-      return { event, data: data.join('\n') };
-    })
-    .filter((e) => e.data.length > 0);
-  return { events, rest };
-}
 
 function merged(steps: ReviewResearchStep[], step: ReviewResearchStep): ReviewResearchStep[] {
   return steps.some((s) => s.seq === step.seq)
@@ -50,55 +33,6 @@ export function restarted(before: ReviewResearchRun, now: ReviewResearchRun): bo
 
 type Streamed = { attempt: string | null; steps: ReviewResearchStep[] };
 
-async function follow(
-  runId: string,
-  afterSeq: number,
-  signal: AbortSignal,
-  onStep: (s: ReviewResearchStep) => void,
-  onRun: (r: ReviewResearchRun) => void,
-): Promise<Followed> {
-  const ctrl = new AbortController();
-  const stop = () => ctrl.abort();
-  signal.addEventListener('abort', stop, { once: true });
-  let stalled = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
-  const arm = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      stalled = true;
-      stop();
-      void reader?.cancel().catch(() => undefined);
-    }, GUIDE_IDLE_TIMEOUT_MS);
-  };
-  arm();
-  try {
-    const res = await adminApi.reviewResearchEvents(runId, afterSeq, ctrl.signal);
-    reader = res.body?.getReader();
-    if (!reader) return 'ended';
-    const decoder = new TextDecoder();
-    let buffer = '';
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      arm();
-      const parsed = parseEvents(buffer + decoder.decode(value, { stream: true }));
-      buffer = parsed.rest;
-      for (const e of parsed.events) {
-        if (e.event === 'step') onStep(JSON.parse(e.data) as ReviewResearchStep);
-        if (e.event === 'status') onRun(JSON.parse(e.data) as ReviewResearchRun);
-      }
-    }
-    return stalled ? 'stalled' : 'ended';
-  } catch (e) {
-    if (stalled) return 'stalled';
-    throw e;
-  } finally {
-    clearTimeout(timer);
-    signal.removeEventListener('abort', stop);
-  }
-}
-
 export default function ResearchTracePage() {
   const { runId = '' } = useParams();
   const { t } = useTranslation();
@@ -106,26 +40,20 @@ export default function ResearchTracePage() {
   return <Trace key={runId} runId={runId} t={t} />;
 }
 
-function queueOf(state: unknown): string | null {
+function queueOf(state: unknown): string | undefined {
   const from = (state as { from?: unknown } | null)?.from;
-  return typeof from === 'string' && from.startsWith(QUEUE) && !from.startsWith('//') ? from : null;
+  return typeof from === 'string' && from.startsWith(QUEUE) && isSameSitePath(from)
+    ? from
+    : undefined;
 }
 
-function BackLink() {
+function QueueLink() {
   const { t } = useTranslation();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const from = queueOf(location.state);
-  const back = (e: MouseEvent) => {
-    if (!from || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    e.preventDefault();
-    void navigate(-1);
-  };
+  const from = queueOf(useLocation().state);
   return (
-    <Link to={from ?? QUEUE} onClick={back}>
-      <span aria-hidden="true">← </span>
+    <BackLink from={from} fallback={QUEUE}>
       {t('admin.research.trace.back')}
-    </Link>
+    </BackLink>
   );
 }
 
@@ -133,7 +61,7 @@ function TraceFailed({ gone, onRetry }: { gone: boolean; onRetry?: () => void })
   const { t } = useTranslation();
   return (
     <section className="h2-admin__part" aria-labelledby="rt-h">
-      <BackLink />
+      <QueueLink />
       <h2 id="rt-h">{t('admin.research.trace.title')}</h2>
       <p role="alert">{t(gone ? 'admin.research.trace.gone' : 'admin.research.loadFailed')}</p>
       {!gone && onRetry && <RetryButton onClick={onRetry} />}
@@ -162,27 +90,30 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
     const ctrl = new AbortController();
     const attempt = detail.run.startedAt ?? null;
     let finished = false;
-    follow(
-      runId,
-      Math.max(lastSeq.current, detail.steps.at(-1)?.seq ?? 0),
-      ctrl.signal,
-      (s) => {
-        lastSeq.current = Math.max(lastSeq.current, s.seq);
-        setStreamed((all) => ({
-          attempt,
-          steps: all.attempt === attempt ? merged(all.steps, s) : [s],
-        }));
-      },
-      (r) => {
-        setLive(r);
-        if (restarted(detail.run, r)) lastSeq.current = 0;
-        else if (isActive(r)) return;
-        finished = true;
-        reload();
-      },
-    )
-      .then((how) => {
-        if (how === 'stalled' || !finished) setStopped(true);
+    adminApi
+      .reviewResearchEvents(
+        runId,
+        Math.max(lastSeq.current, detail.steps.at(-1)?.seq ?? 0),
+        {
+          step: (s) => {
+            lastSeq.current = Math.max(lastSeq.current, s.seq);
+            setStreamed((all) => ({
+              attempt,
+              steps: all.attempt === attempt ? merged(all.steps, s) : [s],
+            }));
+          },
+          run: (r) => {
+            setLive(r);
+            if (restarted(detail.run, r)) lastSeq.current = 0;
+            else if (isActive(r)) return;
+            finished = true;
+            reload();
+          },
+        },
+        ctrl.signal,
+      )
+      .then((end) => {
+        if (end === 'idle' || !finished) setStopped(true);
       })
       .catch(() => {
         if (!ctrl.signal.aborted) setStopped(true);
@@ -197,7 +128,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
   if (!detail)
     return (
       <section className="h2-admin__part h2-admin__trace">
-        <BackLink />
+        <QueueLink />
         <Loading label={t('admin.research.loading')}>
           <Skeleton>
             <SkeletonBar size="heading" width="half" />
@@ -232,7 +163,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
 
   return (
     <section className="h2-admin__part h2-admin__trace" aria-labelledby="rt-h">
-      <BackLink />
+      <QueueLink />
       <h2 id="rt-h" ref={heading} tabIndex={-1}>
         {t('admin.research.trace.title')}
       </h2>
@@ -246,7 +177,7 @@ function Trace({ runId, t }: { runId: string; t: Translate }) {
           {t('admin.research.trace.meta', {
             model: run.model,
             steps: steps.length,
-            tokens: tokens.toLocaleString('en'),
+            tokens: formatCount(tokens, 'en'),
           })}
         </span>
       </p>
@@ -359,7 +290,7 @@ function TraceStep({
               {s.request}
             </pre>
           </div>
-          <div {...(byModel ? { 'data-ai-generated': 'true', 'data-ai-model': s.name } : {})}>
+          <div {...aiMarkWhen(byModel, s.name)}>
             <p id={`rt-${s.seq}-response`} className="h2-admin__trace-label">
               {t('admin.research.trace.response')}
               <span className="sr-only">{t('admin.research.trace.stepOf', { seq: s.seq })}</span>

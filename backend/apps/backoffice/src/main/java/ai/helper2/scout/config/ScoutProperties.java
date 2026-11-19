@@ -1,7 +1,10 @@
 package ai.helper2.scout.config;
 
+import ai.helper2.platform.llm.ModelTier;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -22,22 +25,19 @@ public record ScoutProperties(
     @PositiveOrZero int dailyEnrichmentCalls,
     @PositiveOrZero int gapDailyCalls,
     @Positive int enrichMaxTokens,
+    @NotNull ModelTier enrichmentModel,
     @Valid @NotNull Evidence evidence,
-    @Valid @NotNull KnownTargets knownTargets) {
+    @Valid @NotNull KnownTargets knownTargets,
+    @Valid @NotNull RepositorySweep repositorySweep) {
+  public record RepositorySweep(
+      boolean enabled,
+      @NotNull Duration every,
+      @NotNull Duration initialDelay,
+      @Min(1) @Max(100) int batch) {}
+
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}
 
-  public record Evidence(
-      @PositiveOrZero int dailyPageReadCredits,
-      @NotNull Duration pageReadTtl,
-      @NotNull Duration pageTextTtl) {
-    @AssertTrue(message = "must be more than 0 and at most P1D")
-    public boolean isPageTextTtlAtMostADay() {
-      return pageTextTtl == null
-          || (!pageTextTtl.isNegative()
-              && !pageTextTtl.isZero()
-              && pageTextTtl.compareTo(Duration.ofDays(1)) <= 0);
-    }
-  }
+  public record Evidence(@PositiveOrZero int dailyPageReadCredits) {}
 
   @AssertTrue(message = "must be a Spring cron expression")
   public boolean isCronReadable() {

@@ -1,9 +1,13 @@
-# Sequence: a Scout pass that indexes an awesome list, then a search that finds a tool only by the list's words.
+# Sequence: a Scout pass that indexes an awesome list, a search that finds a tool only by the list's words,
+#   then the resource page that names every list the tool is in.
 # Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeListParser.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (listIndex),
 #   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexAwesomeLists.java, catalog/internal/JdbcAwesomeListIndex.java,
-#   catalog/internal/CatalogSearchSource.java, JdbcCatalogSearch.java (searchFound), search/web/CardMapper.java.
+#   catalog/internal/CatalogSearchSource.java, JdbcCatalogSearch.java (searchFound), search/web/CardMapper.java,
+#   catalog/usecase/GetResourceDetail.java, catalog/internal/JdbcResourceDetailReads.java (naming),
+#   backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java,
+#   frontend/src/features/resource/FoundInLists.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0023-search-inside-awesome-lists.d2 && d2 sequence-0023-search-inside-awesome-lists.d2 sequence-0023-search-inside-awesome-lists.svg
 
 ...@style
@@ -17,6 +21,7 @@ catalog: "IndexResources /\nIndexAwesomeLists" {class: app}
 pg: PostgreSQL {class: data}
 browser: Browser {class: person}
 source: "CatalogSearchSource\n(helper2-index)" {class: app}
+detail: "ResourceDetailController\n+ GetResourceDetail" {class: app}
 
 scout -> collector: "collect(checkpoint, cursor, 500)"
 collector -> github: "GET /search/repositories (topic pairs)"
@@ -37,3 +42,8 @@ source -> source: "plainWords: / as a space,\nsearch syntax removed"
 source -> pg: "searchFound: direct rows, then rows matched\nonly in awesome_list_entry / awesome_list (GIN),\nhalf weight; best entry's list and heading"
 pg -> source: "rows + found_list, found_heading"
 source -> browser: "card.foundIn {listTitle, headingPath}\n(\"Found in … under …\")"
+
+browser -> detail: "GET /api/v1/resources/{id}"
+detail -> pg: "naming(id, 10): the lists that name it\n(awesome_list_entry_resource_idx),\nmost popular first, then title;\ncount of all"
+pg -> detail: "at most 10 rows + total"
+detail -> browser: "foundIn {lists[{listId, listTitle,\nheadingPath}], more}\n(\"Found in these lists\": links\nto each list's page)"

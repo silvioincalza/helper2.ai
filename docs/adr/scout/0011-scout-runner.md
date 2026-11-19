@@ -113,8 +113,20 @@ at the same time. Prod runs 3 replicas ([0043](../operations/0043-runtime-topolo
    judgement, so a resource whose source text the last run already judged with this model is not requested
    (`EnrichResource.unchanged`: the stored fingerprint against the material, no model call): a change in
    metadata alone (stars, a date) would otherwise send the same text to the model again. When that check fails,
-   the run is requested rather than losing the update. The run message counts the errors and the resources
-   that wait; an enrichment error never turns a collected run into `FAILED`.
+   the run is requested rather than losing the update. A run counts each enrichment of its changed resources once, as
+   what became of it:
+   - `VALIDATED` or `PARTIAL`: something of the answer was kept. This is `enrichmentsQueued`.
+   - `FAILED`, or an error that left `enrich`: failed. The run message says "N enrichments failed; the backlog retries
+     them". A `FAILED` run is already saved, so the backlog rule retries it until 3 failures, with no request
+     ([0014](0014-evidence-gated-enrichment.md) §5); only an error that left `enrich`, which saved nothing, is requested.
+   - `REJECTED`: nothing was kept, because the validator accepted nothing or the resource has no material left. The run
+     message says "N enrichments rejected; nothing was kept". The same text is not sent again
+     ([0014](0014-evidence-gated-enrichment.md) §2), and an answer a person can act on is in the review queue.
+   - no slot left: the message counts the resources that wait.
+   - `UNCHANGED` and `LLM_UNAVAILABLE` are not counted: no answer was judged.
+
+   An enrichment error never turns a collected run into `FAILED`. The backlog's own enrichments (§7) belong to no
+   collector, so no run counts them; `helper2.scout.enrichment` counts every attempt by outcome.
 7. **Backlog.** After the collectors, the rest of the budget goes to `EnrichmentBacklog.pending`: resources never
    enriched, enriched while no model was available, or whose last attempt failed (fewer than 3 failures). The most
    popular first (`resource.popularity`, [0025](../search/0025-ranking.md) §3), and among equally popular ones the
@@ -126,7 +138,8 @@ at the same time. Prod runs 3 replicas ([0043](../operations/0043-runtime-topolo
    fails the run.
 8. **Records and metrics.** Each run is a `scout_run` row (`GET /api/v1/admin/scout-runs` lists the last 50); a store
    failure is logged and does not stop collection. Meters: `helper2.scout.cycle`, `helper2.scout.run` (source, status),
-   `helper2.scout.items` (seen, changed, queued), gauges `helper2.scout.last.success` (the newest
+   `helper2.scout.items` by `kind` (seen, changed, queued, failed, rejected, withdrawn: the numbers of the run
+   summary), gauges `helper2.scout.last.success` (the newest
    SUCCEEDED run in `scout_run`, cached 30 s, `LastSuccessGauges`) and `helper2.scout.interval` (every collector's run
    interval), both registered at start-up, counter `helper2.scout.enrichment`.
 
@@ -205,6 +218,12 @@ the daily gap cap counts gap calls ([0014](0014-evidence-gated-enrichment.md)).
 - A scheduled run can start up to one `H2_SCOUT_TICK` (10 min) after its cron time.
 - A renewal-thread pause longer than one lease lets another replica start a second run.
 - A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later.
+- A run does not tell a rejected answer from a resource with no material left: both count as rejected, and the second
+  keeps its slot of the budget though no model was called.
+- "The backlog retries them" is also said of a third failure, which the backlog does not retry: it shows under "out of
+  retries" in the enrichment queue ([0038](../backoffice/0038-back-office-and-review.md)).
+- `scout_run` and the API hold `enrichmentsQueued` only; the failed, rejected and waiting counts are in the message
+  and, but for the waiting ones, in `helper2.scout.items`.
 
 ## Diagrams
 [flow](../../diagrams/flow-0011-scout-runner.svg) · [sequence](../../diagrams/sequence-0011-scout-runner.svg)

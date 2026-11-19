@@ -5,10 +5,12 @@ import { adminApi } from '@/api/admin';
 import type { AiCheckRow } from '@/api/types';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { resourcePath } from '@/lib/searchState';
+import { AdminDialog } from './AdminDialog';
+import { REMOVE_REASON_MAX } from './limits';
 
 const PAGE = 500;
 
-type Row = AiCheckRow & { skipped?: boolean };
+type Row = AiCheckRow & { skipped?: boolean; removed?: boolean };
 
 export function AiCheckPanel() {
   const { t } = useTranslation();
@@ -17,6 +19,8 @@ export function AiCheckPanel() {
   const [next, setNext] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<Row | null>(null);
+  const [reason, setReason] = useState('');
   const started = next !== undefined;
   const done = next === null;
 
@@ -46,6 +50,30 @@ export function AiCheckPanel() {
       );
     } catch {
       setError(t('admin.aiCheck.skipFailed', { title: row.title }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const askRemove = (row: Row) => {
+    setReason(t('admin.aiCheck.removeReason'));
+    setRemoving(row);
+  };
+
+  const remove = async () => {
+    const row = removing;
+    if (!row || busy || !reason.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.removeResourceNotAboutAi(row.resourceId, reason);
+      setRows((all) =>
+        all.map((r) => (r.resourceId === row.resourceId ? { ...r, removed: true } : r)),
+      );
+      setRemoving(null);
+    } catch {
+      setError(t('admin.aiCheck.removeFailed', { title: row.title }));
+      setRemoving(null);
     } finally {
       setBusy(false);
     }
@@ -98,27 +126,46 @@ export function AiCheckPanel() {
               {rows.map((r) => (
                 <tr key={r.resourceId} className="h2-term-row">
                   <th scope="row">
-                    <a href={resourcePath(r.resourceId, r.title)}>{r.title}</a>
+                    {r.removed ? (
+                      r.title
+                    ) : (
+                      <a href={resourcePath(r.resourceId, r.title)}>{r.title}</a>
+                    )}
                   </th>
                   <td>{t(`type.${r.type}`, { defaultValue: r.type })}</td>
                   <td className="is-num">{r.popularity.toFixed(3)}</td>
                   <td>
-                    {r.skipped
-                      ? t('admin.aiCheck.skipped')
-                      : t(r.waiting ? 'admin.aiCheck.waiting' : 'admin.aiCheck.notWaiting')}
+                    {r.removed
+                      ? t('admin.aiCheck.removed')
+                      : r.skipped
+                        ? t('admin.aiCheck.skipped')
+                        : t(r.waiting ? 'admin.aiCheck.waiting' : 'admin.aiCheck.notWaiting')}
                   </td>
                   <td>
-                    {r.waiting && !r.skipped && (
-                      <button
-                        type="button"
-                        className="btn"
-                        aria-label={t('admin.aiCheck.skipLabel', { title: r.title })}
-                        aria-disabled={busy || undefined}
-                        onClick={() => void skip(r)}
-                      >
-                        {t('admin.aiCheck.skip')}
-                      </button>
-                    )}
+                    <div className="h2-admin__actions">
+                      {r.waiting && !r.skipped && !r.removed && (
+                        <button
+                          type="button"
+                          className="btn"
+                          aria-label={t('admin.aiCheck.skipLabel', { title: r.title })}
+                          aria-disabled={busy || undefined}
+                          onClick={() => void skip(r)}
+                        >
+                          {t('admin.aiCheck.skip')}
+                        </button>
+                      )}
+                      {!r.removed && (
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          aria-label={t('admin.aiCheck.removeLabel', { title: r.title })}
+                          aria-disabled={busy || undefined}
+                          onClick={() => askRemove(r)}
+                        >
+                          {t('admin.aiCheck.remove')}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -126,6 +173,37 @@ export function AiCheckPanel() {
           </table>
         </ScrollBox>
       )}
+      <AdminDialog
+        open={removing !== null}
+        title={t('admin.aiCheck.removeTitle', { title: removing?.title ?? '' })}
+        onClose={() => setRemoving(null)}
+      >
+        <p>{t('admin.aiCheck.removeWhat')}</p>
+        <p className="muted">{t('admin.aiCheck.removeFinal')}</p>
+        <label className="h2-admin__note">
+          {t('admin.aiCheck.removeReasonLabel')}
+          <input
+            type="text"
+            required
+            maxLength={REMOVE_REASON_MAX}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </label>
+        <div className="h2-admin__actions">
+          <button type="button" className="btn" onClick={() => setRemoving(null)}>
+            {t('admin.aiCheck.removeCancel')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            aria-disabled={busy || !reason.trim() || undefined}
+            onClick={() => void remove()}
+          >
+            {t('admin.aiCheck.removeConfirm')}
+          </button>
+        </div>
+      </AdminDialog>
     </section>
   );
 }

@@ -5,7 +5,7 @@ import ai.helper2.scout.HostKind
 import ai.helper2.scout.HostNames
 import ai.helper2.scout.InMemoryDiscoveryHostStore
 import ai.helper2.scout.SeedDiscoveryHosts
-import ai.helper2.scout.UnitOfWork
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset

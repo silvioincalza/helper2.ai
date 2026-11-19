@@ -41,7 +41,7 @@ Both are about the public site itself, and only the public app serves them.
    | `/resource/{id}/{slug}`, found, slug right | 200 | index, or noindex when not index-worthy (5) | from the resource (3) |
    | `/resource/{id}` without a slug, a wrong or old slug, or an id merged into another resource | 301 to `/resource/{owner}/{slug}` | — | — |
    | `/resource/{id}`, unknown or not a UUID | 404 | noindex | "Resource not found" |
-   | `/`, `/sources`, `/mission`, `/privacy`, `/terms` | 200 | index | fixed title and description per page |
+   | `/`, `/sources`, `/events`, `/mission`, `/privacy`, `/terms`, `/support`, the hubs ([0052](0052-hub-pages-per-resource-type.md)) | 200 | index | fixed title and description per page, and a short body (3) |
    | `/search`, `/?q=…`, `/saved`, `/account` | 200 | noindex, follow | fixed title |
    | `/admin/**` | 404 here: the back office app serves it on the admin host ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)), always `noindex` | — | — |
    | any other address without a file extension | 404 | noindex | "Page not found" |
@@ -52,7 +52,7 @@ Both are about the public site itself, and only the public app serves them.
 
    **Readable addresses.** The id is the key; the slug only helps people and search engines read the link. The slug
    is the title in plain lowercase words: accents dropped, every run of other characters one hyphen, at most 60
-   characters cut at a hyphen (`Slug`, `ResourcePaths.kt`). It is computed from the title on each request, not
+   characters cut at a hyphen (`Slug`, `catalog/ResourcePaths.kt` in `libs/core`, shared with the back office, [0053](0053-indexnow-daily-batch.md)). It is computed from the title on each request, not
    stored, so a new title gives a new slug and the old one moves with a 301. A title with no Latin letter or digit has
    no slug, and its address is `/resource/{id}`. The frontend computes the same slug (`frontend/src/lib/slug.ts`);
    both sides test the same list of titles. Every link the app writes, the canonical, the JSON-LD, the related links
@@ -65,14 +65,26 @@ Both are about the public site itself, and only the public app serves them.
      a source description the text is built from facts: type, source, licence, pricing.
    - Canonical: always absolute and always the public host (`H2_PUBLIC_BASE_URL`, `https://helper2.ai` in prod),
      also when served from staging.
-   - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`, `twitter:card=summary`. No
-     image yet (open point).
+   - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`,
+     `twitter:card=summary_large_image`, and one brand image for every page: `og:image` with its type, width, height
+     and alt text. The image is `frontend/public/assets/og-1.png` (1200×630), served as `/assets/og-1.png` by the web
+     pods like the app's other files, so it needs no route of its own and is cached for a year. A new image is a new
+     file name (`og-2.png`), set in `Pages.SOCIAL_IMAGE`; a test fails when the file is missing or its size is not
+     the one the page states. Its source is `docs/design/system/assets/social/og-1.html`.
    - JSON-LD (schema.org) by type: `SoftwareApplication` for PRODUCT, AGENT and MODEL; `SoftwareSourceCode` with
      `codeRepository` and `license` for LIBRARY, MCP_SERVER and SKILL; `ScholarlyArticle` for PAPER; `Event` for EVENT;
      `Course` for COURSE; `Dataset` for DATASET; nothing for the rest. Every resource page also gets a
-     `BreadcrumbList`; the home page gets `WebSite` and `Organization`. Only facts the page itself shows go in.
+     `BreadcrumbList`; the home page gets `WebSite` and `Organization`; a hub page gets a `CollectionPage`
+     ([0052](0052-hub-pages-per-resource-type.md)). Only facts the page itself shows go in.
    - Body (`main.h2-prerender`): an `<h1>`, the source's description, up to 6 facts, up to 5 source links (web
-     addresses only), and up to 8 links to related resources (relationships a person did not reject).
+     addresses only), up to 8 links to related resources (relationships a person did not reject), and up to 10 links to the pages
+     of the lists that name the resource ("Found in these lists", [0023](../search/0023-catalog-full-text-index.md)).
+   - The indexed site pages have a body too, so a crawler that runs no JavaScript reads more than the head: an `<h1>`,
+     the page's description and a "More on helper2.ai" list of links to the other site pages. The home page adds
+     "New in the catalog" and the Events page "Coming up": up to 20 links each, from the same use cases as the app's
+     lists (`ListRecentResources`, 14 days; `ListUpcomingEvents`). `CatalogSiteLists` keeps each list 5 minutes in
+     memory; when a read fails the page goes out with the last list it had, or without one. The text pages state no
+     number and no legal text in the body: the app writes those from `GET /api/v1/policy` (9).
 4. **Escaping is the security rule.** Every title and description comes from a third party. Text goes through one
    HTML escaper; JSON-LD goes through Jackson with `<`, `>`, `&` and U+2028/U+2029 written as `\uXXXX`, so
    `</script>` in a description cannot close the tag. The id in the address is parsed as a UUID before any lookup. A
@@ -83,10 +95,18 @@ Both are about the public site itself, and only the public app serves them.
    description, the prompt text, has at least 200 characters. NEWS and ARTICLE are copies of someone else's text: the original ranks, not
    us. They, OTHER and thin pages get `noindex, follow`, so crawlers still follow their links. I tune the rule from
    Search Console numbers, not by adding cases elsewhere.
-6. **`/sitemap.xml` and `/robots.txt` come from Spring.** The sitemap lists the indexed static pages and every
-   index-worthy resource with `<lastmod>` from its last update, newest change first, at most 50,000 (one file, Google's
-   limit). The catalog query applies the same rule as `IndexPolicy`; an integration test opens every listed page and
-   checks it says `index`. It is built at most once an hour and kept in memory. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
+6. **`/sitemap.xml` and `/robots.txt` come from Spring.** `/sitemap.xml` is a sitemap index. It names
+   `/sitemaps/pages.xml`, the indexed site pages, and `/sitemaps/resources-{n}.xml`, every index-worthy resource with
+   `<lastmod>` from its last update, newest change first, 10,000 to a part (Google takes 50,000 or 50 MB per file).
+   Each part in the index carries the newest `<lastmod>` it holds. A part that does not exist is a 404. The catalog
+   query applies the same rule as `IndexPolicy` and reads at most `helper2.pages.sitemap-limit` resources (200,000).
+   An integration test opens the listed pages of the first part and checks they say `index`. The index and its parts
+   are built together at most once an hour and kept in memory; both answers share the `sitemap` rate limit.
+   `/llms.txt` (the [llms.txt](https://llmstxt.org/) format, served as `text/plain`) says in a few lines what
+   helper2.ai is, how search and the guide work, and links the main pages, the sitemap and the source code. It
+   states no number the code reads from configuration, so it cannot drift from the running server, and it holds no
+   line written to steer an assistant: only facts the site pages also state. It names the rule of the Terms page on
+   automated bulk copying. It is built from `H2_PUBLIC_BASE_URL`; with `H2_NOINDEX` on it is a 404, like the sitemap. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
    `/admin`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
    `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header stays ([0037](../identity/0037-http-edge.md)), every robots meta says
    `noindex` too, `robots.txt` allows all (a blocked page never shows its noindex) and there is no sitemap.
@@ -106,7 +126,7 @@ Both are about the public site itself, and only the public app serves them.
      failed questions that spend no question, `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, [0032](../guide/0032-guide-cost-guard-and-answer-cache.md))
      and `webSearches` per feature (`search`, `guide`), the same for every visitor, signed in or not.
    - `retention`, in seconds: the web search counters (`RedisQuotaCounter.KEEP`, fixed in code) and the guide question
-     counters (`RedisCallCounter.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
+     counters (`BudgetLedger.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
      pages waiting for review after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`), the index of awesome lists
      (`H2_RETENTION_LIST_INDEX`), a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
      with a fingerprint (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0014](../scout/0014-evidence-gated-enrichment.md)); database backups
@@ -164,11 +184,12 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 
 - `backend/apps/public/src/main/java/ai/helper2/site/package-info.java` — the module and its four parts.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt`
-  (`PageHead`, `ResourceView`, `IndexPolicy`), `Pages.kt` (the head of each page, `JsonLd`), `ResourcePaths.kt`
-  (`Slug`, `resourcePath`).
+  (`PageHead`, `ResourceView`, `IndexPolicy`), `SiteLists.kt`, `LlmsTxt.kt`, `Pages.kt` (the head of each page, `JsonLd`);
+  `backend/libs/core/src/main/kotlin/ai/helper2/catalog/ResourcePaths.kt` (`Slug`, `resourcePath`) and `IndexRule.kt`.
 - `backend/apps/public/src/main/java/ai/helper2/site/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`,
-  `internal/PageTemplate`, `internal/PageHtml` (the escaping), `web/PageRoutes`, `web/CrawlerFiles`,
-  `config/PagesProperties`.
+  `internal/PageTemplate`, `internal/PageHtml` (the escaping), `internal/CatalogSiteLists` (the lists of the site pages), `web/PageRoutes`, `web/CrawlerFiles`,
+  `config/PagesProperties`, `config/PagesUseCaseConfiguration` (the beans of the two use cases, which carry no Spring
+  type).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
   `catalog/internal/JdbcResources.indexable`.
 - `backend/apps/public/src/main/java/ai/helper2/site/policy/web/PolicyController.java`; `api/public.yaml` — `GET /policy`,
@@ -181,7 +202,7 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 - `backend/libs/platform/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
   `H2_RETENTION_BACKUPS`, set by `deploy/helm/helper2/templates/app.yaml` from `backup.retentionDays`),
   `platform/config/CategoriesProperties.java` (`discoverySearches`), `platform/quota/RedisQuotaCounter.java` and
-  `platform/llm/RedisCallCounter.java` (`KEEP`) — the platform's numbers.
+  `platform/llm/BudgetLedger.java` (`KEEP`) — the platform's numbers.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
 - `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` — the public paths,
   and the two header writers it takes from the site.
@@ -189,7 +210,9 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
   domain packages.
 - `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`), `frontend/src/lib/slug.ts`,
   `frontend/src/lib/searchState.ts` (`resourcePath`), `frontend/src/features/resource/ResourcePage.tsx` (the address replaced).
-- Tests: `site/pages/PagesTest.kt` (slug list), `site/pages/PageHtmlTest.java`, `api/PagesIT.java`,
+- Tests: `site/pages/PagesTest.kt` (slug list, site page bodies), `site/pages/PageHtmlTest.java`,
+  `site/pages/usecase/ListSitemapTest.java` (the index and its parts), `site/pages/LlmsTxtTest.kt`,
+  `site/pages/web/LlmsTxtRouteTest.java`, `api/PagesIT.java`,
   `site/policy/web/PolicyControllerTest.java` (every number comes from its module), `api/PolicyApiIT.java` (contract,
   cache header, values from configuration, rate limit), `frontend/src/lib/head.test.tsx`, `frontend/src/lib/slug.test.ts`
   (same slug list).
@@ -218,7 +241,9 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 
 ## Consequences
 
-- Every resource page is readable without JavaScript: by Google at once, by AI crawlers, and in link previews.
+- Every resource page and every indexed site page is readable without JavaScript: by Google at once, by AI
+  crawlers, and in link previews.
+- A full load of the home or the Events page reads its list at most once every 5 minutes, not once per load.
 - Unknown addresses are real 404s; merged resources move with a 301, so old links keep working.
 - Staging stays out of the index; prod has a sitemap to submit to Google Search Console and Bing Webmaster Tools.
 - "What a page says" lives twice: in React and in `site.pages`. The server body stays short (title,
@@ -261,8 +286,8 @@ and `H2_NOINDEX`. The other layers are not touched.
 ### Open points
 
 - No 410 for resources removed on purpose: the catalog has no removed state.
-- No sitemap index (needed when index-worthy pages pass 50,000) and no Open Graph image (brand first, then per resource).
-- No hub pages per type or use case (`/mcp-servers`), no `llms.txt`, no IndexNow pings.
+- The link preview image is the same on every page: a resource page has no image of its own.
+- No hub pages per use case: the hubs are one per type ([0052](0052-hub-pages-per-resource-type.md)). IndexNow: [0053](0053-indexnow-daily-batch.md).
 
 ## Diagrams
 
@@ -272,5 +297,6 @@ the policy endpoint: [flow](../../diagrams/flow-0041-policy-endpoint.svg) · [se
 
 ## Backlog
 
-- Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint.
+- Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint;
+  story [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) the link preview image.
 - Open issues that change this decision: none.

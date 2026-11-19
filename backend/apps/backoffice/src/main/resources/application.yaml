@@ -40,6 +40,15 @@ helper2:
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
     guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
+  indexnow:
+    key: ${H2_INDEXNOW_KEY:}
+    noindex: ${H2_NOINDEX:false}
+    cron: ${H2_INDEXNOW_CRON:0 47 5 * * *}
+    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
+    endpoint: https://api.indexnow.org/indexnow
+    window: PT25H
+    timeout: PT20S
+    batch: 10000
   scout:
     enabled: ${H2_SCOUT_ENABLED:false}
     initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
@@ -56,12 +65,18 @@ helper2:
     evidence:
       daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
     enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
+    enrichment-model: ${H2_SCOUT_ENRICHMENT_MODEL:FAST}
     known-targets:
       owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
       per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}
+    repository-sweep:
+      enabled: ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}
+      every: ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}
+      initial-delay: PT2M
+      batch: ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}
   research:
     enabled: ${H2_RESEARCH_ENABLED:true}
-    model: ${H2_RESEARCH_MODEL:REASONING}
+    model: ${H2_RESEARCH_MODEL:FAST}
     max-tokens: ${H2_RESEARCH_MAX_TOKENS:4096}
     daily-model-calls: ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}
     daily-page-reads: ${H2_RESEARCH_DAILY_PAGE_READS:300}

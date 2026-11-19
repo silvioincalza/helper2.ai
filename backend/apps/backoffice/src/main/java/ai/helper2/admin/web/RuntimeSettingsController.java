@@ -10,6 +10,7 @@ import ai.helper2.api.generated.model.RuntimeSettingResetDto;
 import ai.helper2.api.generated.model.RuntimeSettingStateDto;
 import ai.helper2.api.generated.model.RuntimeSettingsDto;
 import ai.helper2.platform.ApiProblem;
+import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.platform.settings.RuntimeSetting;
@@ -17,7 +18,6 @@ import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,22 +50,24 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
       String key, RuntimeSettingChangeDto body) {
     RuntimeSetting setting = known(key);
     return switch (change.change(
-        adminId(), setting, body.getValue(), body.getVersion(), body.getReason())) {
+        Admins.id(), setting, body.getValue(), body.getVersion(), body.getReason())) {
       case ChangeRuntimeSetting.Outcome.Changed c -> ResponseEntity.ok(dto(c.state()));
       case ChangeRuntimeSetting.Outcome.OutOfRange r ->
           throw new ApiProblem(
               ProblemType.INVALID_REQUEST,
               "value: must be from 0 to " + setting.max() + " " + setting.unit() + ".");
       case ChangeRuntimeSetting.Outcome.Conflict c -> throw conflict();
+      case ChangeRuntimeSetting.Outcome.InvalidReason i -> throw invalidReason();
     };
   }
 
   @Override
   public ResponseEntity<RuntimeSettingStateDto> resetRuntimeSetting(
       String key, RuntimeSettingResetDto body) {
-    return switch (reset.reset(adminId(), known(key), body.getVersion(), body.getReason())) {
+    return switch (reset.reset(Admins.id(), known(key), body.getVersion(), body.getReason())) {
       case ResetRuntimeSetting.Outcome.Reset r -> ResponseEntity.ok(dto(r.state()));
       case ResetRuntimeSetting.Outcome.Conflict c -> throw conflict();
+      case ResetRuntimeSetting.Outcome.InvalidReason i -> throw invalidReason();
     };
   }
 
@@ -74,14 +76,14 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
         .orElseThrow(() -> new NotFoundException("No runtime setting " + key + "."));
   }
 
+  private static BadRequestException invalidReason() {
+    return new BadRequestException("reason: no control or format characters");
+  }
+
   private static ApiProblem conflict() {
     return new ApiProblem(
         ProblemType.VERSION_CONFLICT,
         "Someone changed this setting first. Load it again and repeat the change.");
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 
   private static RuntimeSettingStateDto dto(GetRuntimeSettings.State s) {

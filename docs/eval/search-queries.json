@@ -113,5 +113,6 @@
   {"id": "ev17", "group": "everyday", "text": "txt to speech free", "lang": "en", "path": "USE_AI"},
   {"id": "ev18", "group": "everyday", "text": "app per riassumere pdf gratis", "lang": "it", "path": "USE_AI"},
   {"id": "ev19", "group": "everyday", "text": "tradurre email in tedesco con AI", "lang": "it", "path": "USE_AI"},
-  {"id": "ev20", "group": "everyday", "text": "KI Tool für Bewerbung schreiben", "lang": "de", "path": "USE_AI"}
+  {"id": "ev20", "group": "everyday", "text": "KI Tool für Bewerbung schreiben", "lang": "de", "path": "USE_AI"},
+  {"id": "ev21", "group": "everyday", "text": "run LLMs locally on my laptop", "lang": "en", "path": "USE_AI"}
 ]

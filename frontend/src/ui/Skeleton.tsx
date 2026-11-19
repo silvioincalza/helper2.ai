@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import './skeleton.css';
 
 type BarSize = 'meta' | 'small' | 'body' | 'title' | 'heading' | 'chip' | 'control';
-export type BarWidth = 'full' | 'wide' | 'half' | 'short' | 'tiny';
+export type BarWidth = 'full' | 'wide' | 'half' | 'short';
 
 export interface Bar {
   size?: BarSize;

@@ -1,5 +1,6 @@
 import type { SourceInfo } from '@/api/types';
 import { radarSources } from '@/lib/sourceCounts';
+import { toneOf } from '@/lib/sourceHealth';
 import { STAGING_SOURCES } from '@/test/fixtures';
 import {
   angleOf,
@@ -9,7 +10,6 @@ import {
   radarFrame,
   radarGroup,
   radiusOf,
-  toneOf,
   touching,
   type RadarDot,
 } from './radarLayout';

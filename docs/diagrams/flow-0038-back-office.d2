@@ -1,12 +1,12 @@
 # Flowchart: how the back office overview is answered (ADR 0038).
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
-#   catalog/internal/JdbcValidationIssues.java (validation issues), platform/llm/BudgetLedger.java, RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
+#   catalog/internal/JdbcValidationIssues.java (validation issues), platform/llm/BudgetLedger.java, internal/RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
 #   backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/admin/AdminOverview.tsx,
 #   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
 #   catalog/internal/BacklogRule.java, scout/EnrichmentQueue.kt (QueuePlace),
 #   scout/usecase/RequeueEnrichment.kt, SkipEnrichment.kt, PrioritiseEnrichment.kt, admin/web/EnrichmentQueueController.java,
-#   admin/usecase/ResolveReviewItems.java, admin/usecase/CheckAiWords.java, catalog/internal/JdbcAiCheckReport.java, admin/BulkDecisionRule.java, admin/web/ReviewItemMapper.java,
+#   admin/usecase/ResolveReviewItems.java, admin/usecase/CheckAiWords.java, catalog/internal/JdbcAiCheckReport.java, admin/BulkDecisionRule.java, admin/usecase/ResearchedAcceptance.java, admin/web/ReviewItemMapper.java,
 #   backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java,
 #   admin/web/ReviewController.java (marker).
 # Render: cd docs/diagrams && d2 fmt flow-0038-back-office.d2 && d2 flow-0038-back-office.d2 flow-0038-back-office.svg
@@ -136,7 +136,7 @@ evidence: GetReviewEvidence {
   drafted: "A drafted example the\nexamples module can read?\n(ReadExampleDraft)" {class: decision}
   typed: "The item with its draft:\nlabel, query, path, model" {class: end}
   draftmark: "aiContent: item.draft.label,\nitem.draft.query, the draft's model" {class: ai}
-  none: "The item only\n(details as text)" {class: end}
+  none: "The item only\n(its details by shape,\nReviewItemViews)" {class: end}
   marker: "aiContent: provider, model,\nAI-written paths" {class: ai}
   item -> missing: no
   item -> rel: yes
@@ -161,15 +161,28 @@ bulk: "ResolveReviewItems, per item" {
   open: "Item open?" {class: decision}
   reject: "Reject?" {class: decision}
   kind: "Enrichment check with no CONFLICTING\nlicence, open source or pricing?\n(ReviewEvidence.conflictingFields)" {class: decision}
+  researched: "Resource or course candidate whose\nnewest research is DONE, KEEP,\nno CONFLICT value? (ResearchedAcceptance)" {class: decision}
+  describes: "Research still describes it?\n(the URL, title, type and tags it saw\nare the candidate's now)" {class: decision}
+  apply: "CONFIRMED changed values\ninto the candidate (EditCandidate)" {class: app}
+  applied: "Edit taken, or nothing to change?" {class: decision}
   refused: "NOT_ALLOWED, stays open\n(audit: NOT_ALLOWED bulk:<batch>)" {class: fail}
-  one: "ResolveReview, its own transaction\n(audit: ACCEPTED bulk:<batch>)" {class: app}
+  one: "ResolveReview, its own unit of work\n(audit: ACCEPTED bulk:<batch>)" {class: app}
+  stopped: "The candidate cannot be read, or the\ncatalog refuses a confirmed value:\n400, the batch stops; the items\nbefore it stay decided" {class: fail}
   other: "ResolveReview: NOT_OPEN or NOT_FOUND" {class: end}
   open -> reject: yes
   open -> other: "no, or no item"
   reject -> one: yes
   reject -> kind: "no (accept)"
   kind -> one: yes
-  kind -> refused: no
+  kind -> researched: no
+  researched -> describes: yes
+  describes -> apply: yes
+  describes -> refused: "no (edited since)"
+  researched -> refused: no
+  apply -> applied
+  applied -> one: yes
+  applied -> refused: "no (a value refused)"
+  one -> stopped: "outcome NotAdded"
 }
 
 bulk_req -> bulk.open

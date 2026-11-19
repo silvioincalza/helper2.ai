@@ -603,9 +603,10 @@ helper2.monetisation.adsense-slot = ${H2_ADS_ADSENSE_SLOT:}  =>  <empty>
 helper2.monetisation.ga4-measurement-id = ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}  =>  <empty>
 helper2.monetisation.github-sponsors-url = ${H2_SUPPORT_GITHUB_SPONSORS_URL:}  =>  <empty>
 helper2.monetisation.stripe-payment-url = ${H2_SUPPORT_STRIPE_PAYMENT_URL:}  =>  <empty>
+helper2.pages.indexnow.key = ${H2_INDEXNOW_KEY:}  =>  <empty>
 helper2.pages.noindex = ${H2_NOINDEX:false}  =>  false
 helper2.pages.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
-helper2.pages.sitemap-limit = 50000
+helper2.pages.sitemap-limit = 200000
 helper2.pages.template = ${H2_PAGES_TEMPLATE:file:/shell/index.html}  =>  file:/shell/index.html
 helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
 helper2.rate-limit.default-per-minute = ${H2_RATE_LIMIT_DEFAULT_PER_MINUTE:120}  =>  120
@@ -698,6 +699,7 @@ helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D
 helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
 helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
 helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
@@ -936,6 +938,7 @@ resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = col
 resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
 resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
 resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
+resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
 resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
@@ -992,6 +995,7 @@ resilience4j.retry.instances.collector-live-web-scout.base-config = collector
 resilience4j.retry.instances.collector-mcp-registry.base-config = collector
 resilience4j.retry.instances.collector-news-feeds.base-config = collector
 resilience4j.retry.instances.collector-pypi.base-config = collector
+resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${H2_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true

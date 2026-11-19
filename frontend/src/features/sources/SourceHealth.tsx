@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { SourceInfo } from '@/api/types';
-import { clockTime } from '@/lib/format';
+import { clockTime, formatCount } from '@/lib/format';
 import { creditsOf, pauseOf, responseTimeLabel } from '@/lib/sourceHealth';
 
 function ResponseTime({ ms }: { ms: number }) {
@@ -27,7 +27,7 @@ export function WebCreditsValue({ source }: { source: SourceInfo }) {
   const { t, i18n } = useTranslation();
   const credits = creditsOf(source);
   if (!credits) return null;
-  const n = (v: number) => new Intl.NumberFormat(i18n.language).format(v);
+  const n = (v: number) => formatCount(v, i18n.language);
   if (credits.kind === 'unavailable') return <>{t('sourcesPage.credits.unavailable')}</>;
   if (credits.kind === 'uncapped')
     return <>{t('sourcesPage.credits.uncapped', { used: n(credits.used) })}</>;

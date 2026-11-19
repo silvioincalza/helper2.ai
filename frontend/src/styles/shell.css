@@ -245,6 +245,9 @@ body {
   width: 14px;
   height: 14px;
 }
+.h2-footer__browse {
+  margin-top: var(--space-3);
+}
 .h2-app .h2-footer__line {
   margin: var(--space-4) auto 0;
   font-size: var(--text-15);

@@ -38,12 +38,15 @@ import type {
   HomeExampleChange,
   HomeExampleInput,
   ReviewResearchDetail,
+  ReviewResearchRun,
+  ReviewResearchStep,
   ReviewResearchEstimate,
   ReviewResearchRuns,
   ReviewResearchStart,
 } from './types';
 
 import { absolute, API_BASE, request, send } from './client';
+import { readSse, type SseEnd } from '@/lib/sse';
 
 export const adminApi = {
   listReviewItems: (
@@ -128,14 +131,27 @@ export const adminApi = {
     }),
   cancelReviewResearch: (runId: string) =>
     request<void>('POST', `/admin/review-research/${encodeURIComponent(runId)}/cancel`),
-  reviewResearchEvents: (runId: string, afterSeq: number, signal?: AbortSignal) =>
-    send(
-      'GET',
-      absolute(
-        `${API_BASE}/admin/review-research/${encodeURIComponent(runId)}/events`,
-        new URLSearchParams({ afterSeq: String(afterSeq) }),
-      ),
-      { accept: 'text/event-stream', signal },
+  reviewResearchEvents: (
+    runId: string,
+    afterSeq: number,
+    on: { step: (step: ReviewResearchStep) => void; run: (run: ReviewResearchRun) => void },
+    signal?: AbortSignal,
+  ): Promise<SseEnd> =>
+    readSse(
+      (streamSignal) =>
+        send(
+          'GET',
+          absolute(
+            `${API_BASE}/admin/review-research/${encodeURIComponent(runId)}/events`,
+            new URLSearchParams({ afterSeq: String(afterSeq) }),
+          ),
+          { accept: 'text/event-stream', signal: streamSignal },
+        ),
+      (e) => {
+        if (e.event === 'step') on.step(JSON.parse(e.data) as ReviewResearchStep);
+        if (e.event === 'status') on.run(JSON.parse(e.data) as ReviewResearchRun);
+      },
+      { signal },
     ),
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
@@ -227,6 +243,10 @@ export const adminApi = {
   skipEnrichment: (resourceId: string, reason: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
       body: reason.trim() ? { reason: reason.trim() } : {},
+    }),
+  removeResourceNotAboutAi: (resourceId: string, reason: string) =>
+    request<void>('POST', `/admin/ai-check/${encodeURIComponent(resourceId)}/remove`, {
+      body: { reason: reason.trim() },
     }),
   prioritiseEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/prioritise`),

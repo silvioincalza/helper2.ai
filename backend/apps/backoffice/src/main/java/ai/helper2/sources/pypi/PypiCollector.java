@@ -13,7 +13,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
@@ -204,28 +203,21 @@ public class PypiCollector implements Collector {
     Set<String> keywords = keywords(row);
     String license = text(row, "license_expression");
     return new SourceHit(
-        ID,
-        name,
-        URI.create(projectPage(name)),
-        page,
-        repo,
-        name,
-        summary,
-        ValueOrigin.SOURCE_PROVIDED,
-        Classification.typeOf(name, summary, keywords, ResourceType.LIBRARY),
-        Audience.BUILD_WITH_AI,
-        null,
-        Set.of(),
-        keywords,
-        license,
-        null,
-        Set.of("python"),
-        Classification.openSource(license),
-        DateFact.unknown(),
-        DateFact.fromSource(uploadTime(row), ID, now),
-        List.of(),
-        now,
-        rank);
+            ID,
+            name,
+            URI.create(projectPage(name)),
+            page,
+            name,
+            Classification.typeOf(name, summary, keywords, ResourceType.LIBRARY),
+            now)
+        .withRepository(repo)
+        .withDescription(summary)
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(keywords)
+        .withLicense(license, Classification.openSource(license))
+        .withPlatforms(Set.of("python"))
+        .withUpdated(DateFact.fromSource(uploadTime(row), ID, now))
+        .withRank(rank);
   }
 
   private static Candidate candidate(

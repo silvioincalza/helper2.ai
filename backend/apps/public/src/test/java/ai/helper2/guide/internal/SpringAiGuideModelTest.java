@@ -82,7 +82,7 @@ class SpringAiGuideModelTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(reply.get()))));
           }
         };
-    return new SpringAiGuideModel(chat, "fake", "fast", "reasoning");
+    return GuideModelBuilder.over(chat).build();
   }
 
   @Test
@@ -275,7 +275,7 @@ class SpringAiGuideModelTest {
                           "{\"picks\":[{\"candidateKey\":\"c1\",\"reason\":\"Fits"),
                       ChatGenerationMetadata.builder().finishReason("length").build())));
         };
-    SpringAiGuideModel model = new SpringAiGuideModel(chat, "fake", "fast", "reasoning");
+    SpringAiGuideModel model = GuideModelBuilder.over(chat).build();
 
     Throwable failure = catchThrowable(() -> model.choose(new Need("need"), List.of(), List.of()));
 
@@ -317,17 +317,11 @@ class SpringAiGuideModelTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(reply.get()))));
           }
         };
-    return new SpringAiGuideModel(
-        chat,
-        "fake",
-        "fast",
-        "reasoning",
-        true,
-        100,
-        SpringAiGuideModel.Thinking.DEFAULT,
-        new DailyBudget(100, Clock.systemUTC(), "guide"),
-        new ModelCallMetrics(observations, meters),
-        Resilience.NONE);
+    return GuideModelBuilder.over(chat)
+        .chooseMaxTokens(100)
+        .budget(new DailyBudget(100, Clock.systemUTC(), "guide"))
+        .metrics(new ModelCallMetrics(observations, meters))
+        .build();
   }
 
   private SpringAiGuideModel budgeted(DailyBudget budget, Supplier<String> reply) {
@@ -339,17 +333,7 @@ class SpringAiGuideModelTest {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(reply.get()))));
           }
         };
-    return new SpringAiGuideModel(
-        chat,
-        "fake",
-        "fast",
-        "reasoning",
-        true,
-        100,
-        SpringAiGuideModel.Thinking.DEFAULT,
-        budget,
-        ModelCallMetrics.none(),
-        Resilience.NONE);
+    return GuideModelBuilder.over(chat).chooseMaxTokens(100).budget(budget).build();
   }
 
   static final class MovableClock extends Clock {
@@ -414,19 +398,14 @@ class SpringAiGuideModelTest {
             return OpenAiChatOptions.builder().build();
           }
         };
-    return new SpringAiGuideModel(
-        chat,
-        "fake",
-        "fast",
-        "reasoning",
-        true,
-        100,
-        thinking,
-        budget,
-        ModelCallMetrics.none(),
-        resilience,
-        FORTY_SECONDS,
-        clock);
+    return GuideModelBuilder.over(chat)
+        .chooseMaxTokens(100)
+        .thinking(thinking)
+        .budget(budget)
+        .resilience(resilience)
+        .timeLimit(FORTY_SECONDS)
+        .clock(clock)
+        .build();
   }
 
   private static Throwable failureWithin(Duration left, MovableClock clock, Runnable ask) {
@@ -760,17 +739,11 @@ class SpringAiGuideModelTest {
           return new ChatResponse(List.of(new Generation(new AssistantMessage(PLAN))));
         };
     SpringAiGuideModel model =
-        new SpringAiGuideModel(
-            chat,
-            "fake",
-            "fast",
-            "reasoning",
-            true,
-            100,
-            SpringAiGuideModel.Thinking.DEFAULT,
-            budget,
-            ModelCallMetrics.none(),
-            resilience);
+        GuideModelBuilder.over(chat)
+            .chooseMaxTokens(100)
+            .budget(budget)
+            .resilience(resilience)
+            .build();
 
     assertThatThrownBy(() -> model.plan("q", null))
         .isInstanceOfSatisfying(
@@ -808,30 +781,19 @@ class SpringAiGuideModelTest {
     ChatModel chat = prompt -> null;
     DailyBudget budget = new DailyBudget(1, Clock.systemUTC(), "guide");
     String off =
-        new SpringAiGuideModel(
-                chat,
-                "p",
-                "f",
-                "r",
-                true,
-                100,
-                SpringAiGuideModel.Thinking.DEFAULT,
-                budget,
-                ModelCallMetrics.none(),
-                Resilience.NONE)
+        GuideModelBuilder.over(chat)
+            .named("p", "f", "r")
+            .chooseMaxTokens(100)
+            .budget(budget)
+            .build()
             .getConfigFingerprint();
     String thinking =
-        new SpringAiGuideModel(
-                chat,
-                "p",
-                "f",
-                "r",
-                true,
-                100,
-                new SpringAiGuideModel.Thinking(0, 512, 0, 0),
-                budget,
-                ModelCallMetrics.none(),
-                Resilience.NONE)
+        GuideModelBuilder.over(chat)
+            .named("p", "f", "r")
+            .chooseMaxTokens(100)
+            .thinking(new SpringAiGuideModel.Thinking(0, 512, 0, 0))
+            .budget(budget)
+            .build()
             .getConfigFingerprint();
 
     assertThat(off)
@@ -869,17 +831,11 @@ class SpringAiGuideModelTest {
             new ChatResponse(
                 List.of(new Generation(new AssistantMessage(PLAN))),
                 ChatResponseMetadata.builder().usage(new DefaultUsage(120, 30)).build());
-    new SpringAiGuideModel(
-            chat,
-            "fake",
-            "fast",
-            "reasoning",
-            true,
-            100,
-            SpringAiGuideModel.Thinking.DEFAULT,
-            new DailyBudget(10, Clock.systemUTC(), "guide"),
-            new ModelCallMetrics(observations, meters),
-            Resilience.NONE)
+    GuideModelBuilder.over(chat)
+        .chooseMaxTokens(100)
+        .budget(new DailyBudget(10, Clock.systemUTC(), "guide"))
+        .metrics(new ModelCallMetrics(observations, meters))
+        .build()
         .plan("q", null);
 
     String version = ModelCallMetrics.promptVersion(SpringAiGuideModel.planSystem());

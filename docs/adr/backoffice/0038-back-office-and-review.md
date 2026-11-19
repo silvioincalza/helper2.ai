@@ -37,7 +37,13 @@ On a review item, accept and reject were not enough:
    checks them with the catalog, examples, identity, search and Scout use cases they call
    ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). It reads no other module's storage format: a
    drafted example is read and accepted through the examples use cases `ReadExampleDraft` and `AcceptExampleDraft`
-   ([0028](../search/0028-home-examples.md) §6). Its own classes live in its own packages, never in a library's: the
+   ([0028](../search/0028-home-examples.md) §6). Its controllers answer with views the use cases own, never with a
+   record of another module's port: `ReviewItemView` (with its own `Status`) and its `ReviewDetails`,
+   `GetReviewEvidence.View`, `ListEnrichmentQueue.Entry` and `ListEnrichmentQueue.Section`. The use case copies the
+   port record into its view (`ReviewItemViews`), and the controller maps the view to the contract. One rule of the
+   back office's `ModularityTest` (`controllersAnswerWithViewsNotPortRecords`) fails when a class of a `web` package
+   uses `ReviewQueue.Status`, `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
+   `ReviewEvidence.Evidence`. Its own classes live in its own packages, never in a library's: the
    place it serves the admin web app from is `admin.config.SpaProperties` (`helper2.spa`).
 2. **One page per part.** `/admin` (overview, the landing page), `/admin/review`, `/admin/runs`, `/admin/audit`, each with
    its state in the address, so a number on the overview links to the view that acts on it
@@ -87,15 +93,31 @@ On a review item, accept and reject were not enough:
    general source (`AiCheckReport.GENERAL_SOURCES`: GitHub, npm, PyPI, Hacker News, live web, confs.tech) are
    checked: a source that only holds AI (Hugging Face, arXiv, the MCP Registry, the AI news feeds, the discovery and
    SDK collectors) says a resource is about AI, whatever its words. Without this rule staging listed 5,067 of 65,521,
-   among them 484 models, 178 papers and 484 news items. It changes nothing: the admin skips a waiting one, row by
-   row, with the reason "Not about AI (word rule)", and requeues it from Skipped to undo. There is no bulk skip: a
-   library's catalog text often has no AI word (the official SDK of a vector database), so each row needs a look. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due and not
-   skipped, as `SkipEnrichment` checks it), so the panel offers Skip only where Skip succeeds. A resource that is not
-   waiting is only listed: no code deletes a catalog row.
+   among them 484 models, 178 papers and 484 news items. The check itself changes nothing; the admin acts row by
+   row. Skip: a waiting one leaves the enrichment queue with the reason "Not about AI (word rule)", and a requeue
+   from Skipped undoes it. There is no bulk skip: a library's catalog text often has no AI word (the official SDK of
+   a vector database), so each row needs a look. Waiting is the backlog's own rule (`EnrichmentBacklog.waiting`: due
+   and not skipped, as `SkipEnrichment` checks it), so the panel offers Skip only where Skip succeeds.
+
+   Remove (`POST /api/v1/admin/ai-check/{id}/remove`, `RemoveResource`), on any listed row, after a dialog that asks
+   for a reason of 1 to 500 characters: in one transaction the audit keeps `REMOVE_RESOURCE` with the address
+   (cut to 100 characters) and the reason, `candidate_decision` keeps a `REJECTED` decision for the address's key, as a resource candidate and as a course
+   candidate,
+   `removed_resource` keeps the key (the same UUID a resource id is made from its address, never the address), and
+   the resource goes with what cascades from it: source records, labels, embedding, enrichment runs, review items,
+   links from it; a link to it loses its target. Saved items keep their own title and address. From then on the
+   catalog writer drops a result whose key is in `removed_resource`, whatever the source and in both apps (the
+   public app's role reads the table, never `candidate_decision`), and the review queue proposes no candidate for
+   the address. A removal and a catalog write never
+   overlap: the removal takes the transaction lock `removed_resource` alone, every write takes it shared
+   (`ResourceRemovalLock`), so a write that began first ends before the removal reads the resource, and a write that
+   begins later reads the key. An admin who adds the address by hand (`CURATED`) clears the key and the resource comes back.
+   Flow and sequence: [flow](../../diagrams/flow-0038-remove-resource.svg) ·
+   [sequence](../../diagrams/sequence-0038-remove-resource.svg).
 7. **The evidence view reads the run through the item's link.** `GET /api/v1/admin/review-items/{id}/evidence`
    (ADMIN, back office) answers what an item is about. A review item already links to its enrichment run and, for a
    relationship candidate, to its relationship (`enrichment_run_id`, `relationship_id`). The view follows that link;
-   it never parses `details`, which stays text. An item from a run: the run (model, prompt version, outcome, when it
+   it never reads the evidence from the item's `details`. An item from a run: the run (model, prompt version, outcome, when it
    finished, the README or model card of its gap round), the run's validation errors, and the fields the run stored,
    CONFLICTING first, then UNVERIFIED, VERIFIED and REJECTED. A relationship candidate: the run and the relationship.
    Any other item (a user report, a course or resource candidate, a drafted example): the item only, a drafted
@@ -142,7 +164,7 @@ On a review item, accept and reject were not enough:
      case per action. They are stored in a Scout table, `enrichment_queue_control`, one row per resource I touched,
      gone with the resource. The Scout is its only writer. The backlog SQL stays in the catalog (`BacklogRule`), and
      it reads the control rows through a join. This is a known exception in the table-owner test
-     (`ModularityTest`): the catalog reads a Scout table, read only. I chose it because the order must stay one rule
+     (`TableOwnersTest`): the catalog reads a Scout table, read only. I chose it because the order must stay one rule
      for the Scout's next batch, the page and the count. Two copies of the rule would drift apart.
    - Measured on synthetic data (250 000 resources, 37 500 REJECTED, 50 at the top), with `EXPLAIN ANALYZE`: the next 20
      in 2 ms (0.9 ms before; 5 ms in the worst case, 500 skips at the head of the never-run part), the count 1.7 to
@@ -151,14 +173,22 @@ On a review item, accept and reject were not enough:
      place 0.1 ms.
 9. **Bulk decisions: each item on its own, accept only where it is safe.** `POST /api/v1/admin/review-items/resolutions`
    takes up to 100 ids, a decision and an optional note (CSRF applies). `ResolveReviewItems` sends each item through the
-   one-item decision (`ResolveReview`) in its own transaction, so each item writes its own audit entry, the same as a
-   single decision, with the batch at the end: `ACCEPTED bulk:<batch>`. One item that fails does not undo the others.
+   one-item decision (`ResolveReview`) in its own unit of work ([0051](../foundation/0051-use-cases-return-outcomes.md)
+   §5), so each item writes its own audit entry, the same as a single decision, with the batch at the end:
+   `ACCEPTED bulk:<batch>`. One item that fails does not undo the others. An accept that cannot add its candidate (it
+   cannot be read, or the catalog refuses a confirmed value) stops the batch with that problem, a 400: the items
+   before it stay decided, the ones after it are not tried.
    The answer gives one outcome per item, in the order sent: RESOLVED, NOT_OPEN, NOT_FOUND or NOT_ALLOWED. Rejecting is
-   allowed for every kind: nothing is added or shown. Accepting is allowed only for an enrichment check whose run has no
+   allowed for every kind: nothing is added or shown. Accepting is allowed for an enrichment check whose run has no
    CONFLICTING licence, open source or pricing (`BulkDecisionRule`, a pure class; the conflicts come from their own
-   query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows): every other kind adds a resource,
-   verifies a relationship, publishes an example or closes a user's report, and a new kind is refused until the rule
-   names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
+   query, `ReviewEvidence.conflictingFields`, not from what the evidence view shows), and for a resource or course
+   candidate whose newest research ([0048](0048-review-research-assistant.md)) is DONE with verdict KEEP and no CONFLICT
+   value, and that research still describes it: the URL, title, type and tags it saw are the candidate's now (an admin
+   edit since then refuses the item). The research read the item, so the admin is not adding something nobody read. Its CONFIRMED changed values go
+   into the candidate through `EditCandidate` first, as one Accept with them confirmed would; values only one source or
+   no source states stay as they were (`ResearchedAcceptance`). When the candidate edit refuses a value, the item is not
+   accepted. Every other kind verifies a relationship, publishes an example or closes a user's report, and a new kind is
+   refused until the rule names it. A refused item stays open and is recorded as `NOT_ALLOWED bulk:<batch>`. On the page each open row has a
    box (x picks the selected item); a bar under the list says "4 selected · Accept · Reject · Clear"; Accept and Reject
    ask first in a dialog that repeats the count by kind, with focus on Cancel. The line after says "11 done, 1 failed
    (already decided)", and the items that failed stay picked.
@@ -190,15 +220,29 @@ On a review item, accept and reject were not enough:
 11. **A drafted example comes typed.** The review item of a drafted example (`EXAMPLE_CANDIDATE`) has `draft`: its
     label, query, path and model, as the examples module reads them from the item (`ReadExampleDraft`, over the
     `DraftQueue` port; [0028](../search/0028-home-examples.md) §6). Every other kind, and an item whose details hold no
-    readable draft, has `draft: null`; its `details` are shown as plain text. One mapping (`ReviewItemMapper`) gives the
+    readable draft, has `draft: null`. One view (`ReviewItemViews`) and one mapping (`ReviewItemMapper`) give the
     item the same way in the list, after a decision or an edit, and in the evidence view, so the browser never parses
     a draft. The label and the query are AI-written (EU AI Act Art. 50,
     [0033](../guide/0033-marking-ai-written-text-research-trail.md)). In the API, an item with a draft has its own
     `aiContent` marker: `fields` names `draft.label` and `draft.query`, `models` the draft's model, `provider` the
     configured model provider; every other item has `aiContent: null`. The evidence view's `aiContent` adds
     `item.draft.label` and `item.draft.query`, also for an item with no run (§7). On the page they are labelled
-    "Drafted with AI (model)" and marked `data-ai-generated` and `data-ai-model`. A resource candidate's
-    details stay JSON for now (open, see Backlog): the edit form sends them back as its version (§21).
+    "Drafted with AI (model)" and marked `data-ai-generated` and `data-ai-model`.
+    - **The details of an item come typed too.** `ReviewItem.details` is a `ReviewDetails` or null: one of three
+      shapes, named by `shape` (a `oneOf` with a discriminator in `api/admin.yaml`). The browser reads the generated
+      type and parses nothing.
+    - `CANDIDATE`: a `RESOURCE_CANDIDATE` or a `COURSE_CANDIDATE` (url, title, type, tags, snippet, `foundBy` as
+      source ids, `edited`, `revision`). Scout reads it (`ShownCandidates`, in `ResourceCandidateJson`), also a
+      candidate written before `foundBy` existed (its one `sourceId`) and one with a type the catalog no longer has.
+    - `KNOWN_TARGET_PROPOSAL`: a `KNOWN_TARGET_CANDIDATE` (name, kind, rule, count, the titles of its examples,
+      other names, `edited`). The catalog reads it (`KnownTargetCandidates.shown`, in `KnownTargetProposalJson`).
+    - `TEXT`: every other kind (validation errors, why a relationship is not verified, the note of a report). A
+      stored value that does not read as its shape is also `TEXT`, as it is stored: a candidate with no https
+      address, a proposal with an unknown kind or rule, a draft with a missing value, a course candidate still held
+      as text. One such row never fails the list.
+    - Null: an item that holds nothing, and a drafted example (its values are in `draft`).
+    - What the database holds does not change: `review_item.details` stays the JSON its module writes, and `note`
+      the text. Only the answer of the API has a type.
 
 ### The target of a relationship candidate: link, add or rename
 12. **One call changes the target** of an open relationship candidate:
@@ -248,8 +292,11 @@ than a hundred), so the question is the same for each of them: what is this name
   name as a known target ([0019](../scout/0019-known-targets-vendors-and-services.md)) and closes the items of this
   batch (SUPERSEDED, relationship `VERIFIED` with the target's kind); other names the list already matches wait for
   their own decision or the Scout's run. REJECT rejects each item and its relationship.
-- **Each item on its own**, as in §9: one transaction per item (`DecideRelationshipItem`) holds the item's lock from the
-  target change to the decision, so a LINK changes the target and accepts the item together or not at all. Each item
+- **Each item on its own**, as in §9: one unit of work per item (`DecideRelationshipItem`,
+  [0051](../foundation/0051-use-cases-return-outcomes.md) §5) holds the item's lock from the
+  target change to the decision, so a LINK changes the target and accepts the item together or not at all: an item
+  decided between the two is the outcome `LinkUndone`, and its target change is rolled back. The group has no
+  transaction of its own. Each item
   has its own audit entry, `<decision> bulk:<batch>` (`SUPERSEDED bulk:<batch>` for VENDOR, SERVICE and TOOL). An item
   decided meanwhile, one whose resource already has this target, or the target resource itself, is skipped and stays
   open. At most 1000 items per call, the oldest first; the answer's `left` counts the items of the name still open
@@ -277,7 +324,9 @@ than a hundred), so the question is the same for each of them: what is this name
     - Accepting indexes what the admin wrote. A type the admin set need not be one a finder declares; it must still be
       a candidate type. A confirmed canonical URL is the page it is indexed at, and the listed check uses it. Every
       other confirmed value becomes a curated value of the new resource (§25), with its own `SET_FIELD` entry: a
-      description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the page was listed meanwhile (as a resource or as a source record of one), accepting
+      description keeps `AI_SUMMARY` when the model wrote it, else `CURATED`; a published date is a day. When the
+      catalog refuses a confirmed value, the answer is a 400 that names the field and the reason, nothing is added and
+      the item stays open; the page shows the sentence. When the page was listed meanwhile (as a resource or as a source record of one), accepting
       adds nothing: the item is closed as ACCEPTED with the note "Already listed as <title>.", and the review page says
       so and links to the listed resource. The edits are not applied; the admin makes them on the listed page.
     - The accepted record keeps the signals its collector stated (stars, last push, archived, fork:
@@ -285,9 +334,12 @@ than a hundred), so the question is the same for each of them: what is this name
     - The accepted record keeps the list of edited fields in its extra (never shown). Who edited is in the audit
       trail, not in the catalog.
 21. **No lost update.**
-    - The form sends back the details it showed (`expectedDetails`). The edit applies only to those: when the
-      candidate changed since the form opened (a collector, another admin), it is 409 `version-conflict`: reload,
-      edit again.
+    - The form sends back the revision of the details it showed (`expectedRevision`). The revision is the SHA-256
+      of the stored details (`CandidateRevision`), so it changes with any change to them. The contract takes 64
+      lower-case hex characters and nothing else (400). The page sends no edit for a candidate it has no revision
+      for: it says the candidate cannot be read, and the item stays open. The edit applies only to
+      that revision: when the candidate changed since the form opened (a collector, another admin), it is 409
+      `version-conflict`: reload, edit again.
     - The edit and a collector's merge both save only when the item still holds the details they read
       (`updateCandidate` compares them). A merge that lost the race is skipped and logged; the next run of that
       collector joins it again.
@@ -305,6 +357,8 @@ than a hundred), so the question is the same for each of them: what is this name
     their own: type, pricing, license, openSource, techLevel, audience, language, publishedAt and description. The
     value must be one the field takes (an SPDX id for a licence; no OTHER type, no UNKNOWN audience; a catalog
     language; a date `YYYY-MM-DD`, not in the future; a description of 1 to 4000 characters, stored as `CURATED`).
+    A value the field cannot take is a 400 whose `detail` names the field and the reason ("This value is not allowed
+    for pricing.", "The published date must be YYYY-MM-DD."), never the value; the page shows it under the field.
     - The value is written to the resource's column, and the field is listed in `resource.curated_fields`.
     - Accepting a candidate also curates its description, language and published date
       (`V2026.11.6.4__curated_description_language_published.sql`); no source or run changes them after.
@@ -323,7 +377,7 @@ than a hundred), so the question is the same for each of them: what is this name
     - The events seed overwrites only the fields it asserts (eventDates, eventFormat), so it leaves an admin's value
       on the same event alone (`scripts/industry-events-seed.mjs`).
 27. **Drop the AI's value:** `POST /admin/resources/{id}/fields/{field}/drop`, for any field the AI writes, use case
-    and platforms too. Language, published date and description are no field the AI writes: 400. It rejects the AI's values, as the code re-check does
+    and platforms too. Language, published date and description are no field the AI writes: a 400 that names the field. It rejects the AI's values, as the code re-check does
     ([0014](../scout/0014-evidence-gated-enrichment.md)). A value a source states or an admin set stays. The page then shows the
     source's value, or "Not stated": a rejected estimate is not shown (`FieldStates`).
 28. **Audit:** `SET_FIELD` (`SET <field>`) and `DROP_FIELD` (`DROPPED <field> <count>`), with the resource id.
@@ -338,13 +392,24 @@ than a hundred), so the question is the same for each of them: what is this name
   `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `web/AdminWebApp.java`, `usecase/GetOverview.java`, `catalog/internal/JdbcValidationIssues.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java` (its own groups and the public app's),
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),
-  `config/AdminUseCaseConfiguration.java` (wiring, the transaction of `ResolveReview`), `config/SpaProperties.java`.
+  `usecase/ListReviewQueue.java`, `usecase/ShowReviewItem.java`, `usecase/DecideReviewItem.java` (the review
+  actions that answer with a view),
+  `web/ReviewProblems.java` (the problem of an accept that adds nothing),
+  `config/AdminUseCaseConfiguration.java` (wiring), `config/SpaProperties.java`.
+- The views and the typed details: `admin/usecase/ReviewItemView.java`, `ReviewDetails.java`, `ReviewItemViews.java`;
+  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ShownCandidate.kt` (`ShownCandidates`,
+  `CandidateRevision`), `scout/internal/ResourceCandidateJson.java` (`shown`);
+  `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java` (`shown`),
+  `catalog/internal/KnownTargetProposalJson.java`; `api/admin.yaml` (`ReviewDetails` and its three shapes);
+  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ModularityTest.java`
+  (`controllersAnswerWithViewsNotPortRecords`), `api/ReviewItemDetailsApiIT.java` (a stored row of each kind).
 - The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java`,
-  `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON), `examples/config/ExamplesBackOfficeConfiguration.java`;
+  `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON),
+  `backend/apps/backoffice/src/main/java/ai/helper2/examples/config/ExamplesBackOfficeConfiguration.java`;
   `api/admin.yaml` (`ReviewItem.draft`, `ReviewItem.aiContent`, `DraftedExample`); `admin/web/ReviewController.java` (the
   evidence view's marker); `frontend/src/admin/ReviewItemDetails.tsx`.
 - `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in
-  `platform/llm/LlmConfiguration.java`, `guide/internal/GuideConfiguration.java`,
+  `platform/llm/internal/LlmConfiguration.java`, `guide/internal/GuideConfiguration.java`,
   `search/internal/SearchSettingsConfiguration.java`, `scout/internal/ScoutConfiguration.java`,
   `sources/config/scout/CollectorsConfiguration.java` (back office), `setup/internal/SetupConfiguration.java`,
   `examples/internal/ExamplesBackOfficeAdapters.java` (back office). The public app's groups in the database:
@@ -355,11 +420,12 @@ than a hundred), so the question is the same for each of them: what is this name
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
 - Queue actions: `enrichment_queue_control` in `V1__schema.sql`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
-  (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`, `UnitOfWork`), `scout/usecase/RequeueEnrichment.kt`,
+  (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`),
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt`, `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
 - `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
-  `RedisCallCounter.java` (`current`), `LlmConfiguration.java`.
+  `internal/RedisCallCounter.java` (`current`), `internal/LlmConfiguration.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
 - `backend/libs/core/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
@@ -380,7 +446,8 @@ than a hundred), so the question is the same for each of them: what is this name
   `api/AdminConfigApiIT.java` (fake secrets bound, none in the answer), `platform/settings/SettingTest.java`,
   `admin/usecase/GetEffectiveSettingsTest.java`, `platform/settings/JdbcPublicAppSettingsIT.java`,
   `site/settings/PublishSettingsAtStartupTest.java`,
-  `architecture/ModularityTest.java` (the table-owner exception; in the back office, admin names no internal class),
+  `architecture/ModularityTest.java` (in the back office, admin names no internal class),
+  `backend/architecture/src/test/java/ai/helper2/architecture/TableOwnersTest.java` (the table-owner exception),
   `examples/usecase/ReadExampleDraftTest.java`, `api/HomeExamplesApiIT.java` (the typed draft and its markers, checked against the contract),
   `frontend/src/admin/ExamplesPage.test.tsx`, `admin/config/SpaPropertiesBindingTest.java`,
   `frontend/src/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `ReviewBulk.test.tsx`,
@@ -437,6 +504,13 @@ A curated field:
   admin API would be spread over every module's web adapter.
 - A stored read model for the overview — a table and a job to keep it current, for numbers one person reads a few
   times a day. Not needed until a measurement says so.
+- The review kind as the discriminator of `details` — two kinds share the candidate shape, three kinds are text, and a
+  stored value that does not read must still be shown under any kind. The kind cannot say which shape came; `shape`
+  can, with one value per schema.
+- A typed column in the database for the details — a migration and a new writer for every module that writes them,
+  for a page one person reads. The API types the answer; the stored JSON keeps its one writer per kind.
+- The stored details as the version of an edit — the browser would still carry the JSON it must not read. A hash of
+  them is as exact and says nothing.
 - Per-replica budget gauges on the page — wrong by design: a replica that made no call shows the full budget.
 - Rebuild the Grafana graphs in the back office — two places for the same trend, and more code to keep right.
 - Store the evidence in the item's `details` as JSON — a second copy of what the run tables hold, which goes stale
@@ -453,6 +527,9 @@ A curated field:
 - One transaction for a whole batch — one bad item would undo the others, and a long transaction holds locks on up to
   100 rows. Each item on its own matches what one decision does.
 - Bulk accept for every kind — one click could add 100 resources to the catalog or verify 100 relationships nobody read.
+  Candidates are accepted in bulk only when the research read them and kept them.
+- Bulk accept of researched candidates as the Scout found them — fast, but it drops the values the research confirmed
+  and the admin would confirm one by one anyway.
 - An undo for bulk decisions — a decision can publish or verify at once; an undo would have to reverse that. Decisions
   stay final, and the confirm dialog says so.
 - Settings from Spring's `Environment` or `/actuator/env` — every key with no work, but a deny-list: a new secret
@@ -485,7 +562,7 @@ A curated field:
 - One place for every admin endpoint; a new part is a route, a controller method and a use case here.
 - The public JavaScript does not carry the back office: its pages, its API calls (`api/admin.ts`) and its copy
   (`en.admin.json`) are only in the admin web app, and the public app has no admin route at all.
-  `api/adminBundle.test.ts` keeps the shared client and the public translations free of them. The back office refuses
+  `adminBundle.test.ts` keeps the shared client and the public translations free of them. The back office refuses
   every admin call without ADMIN anyway.
 - The overview shows only what to act on now. Trends stay in Grafana; the overview does not rebuild them.
 - The numbers can be up to a minute old; the page says when they were counted.
@@ -517,6 +594,14 @@ A curated field:
   adds it.
 - A drafted example's JSON has one reader, the examples module. A change to its format changes no admin code and no
   page.
+- The details of a candidate and of a proposal have one reader each, in the module that writes them. A new value in
+  the stored JSON reaches the page only when the contract names it; the page cannot guess a field.
+- A port record can change without a change to a controller: the use case's view takes the difference. The cost is
+  one copy of each record. The parts of the evidence (`ReviewEvidence.Run`, `Field`, `Relationship`, `Quote`) and the
+  enums `ReviewQueue.Kind`, `EnrichmentCandidates.State` and `Waiting` are not copied: the views hold them as they
+  are.
+- The API no longer gives the key of a proposal or what each finder said about a candidate (`foundBy` is the source
+  ids): the page showed neither.
 
 ### The review actions
 - An ABOUT link ([0014](../scout/0014-evidence-gated-enrichment.md)) can always end on a real page, even for a model
@@ -612,12 +697,12 @@ the target of a relationship candidate: [flow](../../diagrams/flow-0038-relation
 one decision per target name: [flow](../../diagrams/flow-0038-relationship-groups.svg) · [sequence](../../diagrams/sequence-0038-relationship-groups.svg) ·
 a candidate edit: [flow](../../diagrams/flow-0038-candidate-edit-in-review.svg) · [sequence](../../diagrams/sequence-0038-candidate-edit-in-review.svg) ·
 a curated field: [flow](../../diagrams/flow-0038-curated-field.svg) · [sequence](../../diagrams/sequence-0038-curated-field.svg) ·
+a removed resource: [flow](../../diagrams/flow-0038-remove-resource.svg) · [sequence](../../diagrams/sequence-0038-remove-resource.svg) ·
 the settings of both apps: [flow](../../diagrams/flow-0038-settings-of-both-apps.svg) · [sequence](../../diagrams/sequence-0038-settings-of-both-apps.svg)
 
 ## Backlog
 
 - Features: [F6.2](https://github.com/silvioincalza/helper2.ai/issues/82) Review queue and actions (bulk, evidence, fix before accept), [F6.3](https://github.com/silvioincalza/helper2.ai/issues/83) Enrichment queue: requeue, skip, move to top.
 - Open issues that change this decision:
-  - [#304](https://github.com/silvioincalza/helper2.ai/issues/304) S6.2.6 The review page to read a typed resource candidate
   - [#308](https://github.com/silvioincalza/helper2.ai/issues/308) S6.5.1 Every setting on `/admin/settings`
   - [#309](https://github.com/silvioincalza/helper2.ai/issues/309) S6.6.1 To edit the curated list in the back office

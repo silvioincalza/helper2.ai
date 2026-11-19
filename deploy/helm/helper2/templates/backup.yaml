@@ -58,13 +58,13 @@ spec:
               args:
                 - |
                   set -o pipefail
-                  f=/backup/helper2-$(date +%Y-%m-%d).sql.gz
+                  f=/backup/helper2-$(date -u +%Y-%m-%dT%H%M%SZ).sql.gz
                   trap 'rm -f "$f.tmp"' EXIT
                   pg_dump --no-owner | gzip > "$f.tmp"
                   gzip -t "$f.tmp"
                   [ "$(wc -c < "$f.tmp")" -gt 1024 ]
                   mv "$f.tmp" "$f"
-                  ls -1 /backup/helper2-*.sql.gz | sort -r | tail -n +{{ add1 .Values.backup.retentionDays }} | xargs -r rm -f
+                  ls -1 /backup/helper2-*.sql.gz | cut -c17-26 | sort -ru | tail -n +{{ add1 .Values.backup.retentionDays }} | while read -r d; do rm -f /backup/helper2-"$d"*.sql.gz; done
                   find /backup -name 'helper2-*.sql.gz' -mtime +{{ sub .Values.backup.retentionDays 1 }} -delete
                   ls -l /backup
               resources:

@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.commons.lang3.EnumUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class JdbcKnownTargetCandidates implements KnownTargetCandidates {
@@ -67,9 +69,16 @@ class JdbcKnownTargetCandidates implements KnownTargetCandidates {
           .formatted(OWNER_KEY, OWNER, OWNED, UrlKeys.keyOf("o.key"), OPENED_TODAY);
 
   private final JdbcClient jdbc;
+  private final KnownTargetProposalJson proposals;
 
-  JdbcKnownTargetCandidates(JdbcClient jdbc) {
+  JdbcKnownTargetCandidates(JdbcClient jdbc, KnownTargetProposalJson proposals) {
     this.jdbc = jdbc;
+    this.proposals = proposals;
+  }
+
+  @Override
+  public Optional<Proposal> shown(@Nullable String details) {
+    return proposals.read(details);
   }
 
   @Override
@@ -97,7 +106,7 @@ class JdbcKnownTargetCandidates implements KnownTargetCandidates {
         .query((rs, i) ->
             new Candidate(
                 rs.getString("name"),
-                ResourceRows.known(
+                EnumUtils.getEnum(
                     KnownTarget.Kind.class, rs.getString("kind"), KnownTarget.Kind.TOOL),
                 Arrays.asList((String[]) rs.getArray("other_names").getArray())))
         .optional();

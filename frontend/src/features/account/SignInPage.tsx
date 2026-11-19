@@ -1,12 +1,12 @@
 import { Link, useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { loginUrl } from '@/api/client';
-import { Robots } from '@/shell/Robots';
-import type { SignInFrom } from '@/features/account/SignIn';
+import { Robots } from '@/ui/Robots';
+import type { SignInFrom } from '@/ui/SignIn';
 import { useMe } from '@/context/MeContext';
 import { useTitle } from '@/hooks/useTitle';
 import { rememberSignInReturn } from '@/lib/signInReturn';
-import '../pages/text.css';
+import '@/ui/text.css';
 import { Loading, Skeleton, SkeletonBar } from '@/ui/Skeleton';
 
 function useReturnPath(): string {

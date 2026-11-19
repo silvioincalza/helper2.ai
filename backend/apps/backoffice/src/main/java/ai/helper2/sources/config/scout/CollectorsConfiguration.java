@@ -37,6 +37,7 @@ import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector;
+import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
 import ai.helper2.sources.github.scout.GitHubTopicLeadersCollector;
 import ai.helper2.sources.github.scout.SdkSearchPlan;
@@ -50,6 +51,7 @@ import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.mcp.McpRegistryCollector;
 import ai.helper2.sources.pypi.PypiCollector;
 import ai.helper2.sources.pypi.PypiCollectors;
+import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import io.micrometer.core.instrument.Gauge;
@@ -60,6 +62,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
@@ -210,7 +213,7 @@ class CollectorsConfiguration {
     SourceSettings s = p.get(LiveWebEventsCollector.ID);
     ChatModel model = chatModel.getIfAvailable();
     EventReader reader = null;
-    if (llm.usable(model)) {
+    if (llm.usable(model) && llm.has(c.readModel())) {
       DailyBudget budget =
           new DailyBudget(c.readerDailyCalls(), clock, "event-reader", budgetCounter);
       Gauge.builder("helper2.scout.event-reader.budget.remaining", budget, DailyBudget::remaining)
@@ -218,7 +221,7 @@ class CollectorsConfiguration {
           .register(meters);
       reader =
           new SpringAiEventReader(
-              model, llm.reasoningModel(), c.readMaxTokens(), budget, metrics, resilience);
+              model, llm.model(c.readModel()), c.readMaxTokens(), budget, metrics, resilience);
     }
     return new LiveWebEventsCollector(
         s,
@@ -323,6 +326,24 @@ class CollectorsConfiguration {
         meters,
         hosts,
         shadowLibraries);
+  }
+
+  @Bean
+  @Nullable GitHubRepositoryStates gitHubRepositoryStates(
+      SourcesProperties p,
+      Resilience resilience,
+      Clock clock,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    SourceSettings s = p.get("github");
+    if (!s.enabled() || !s.hasToken()) {
+      return null;
+    }
+    resilience.require(GitHubRepositoryStates.POLICY);
+    return new GitHubRepositoryStates(
+        HttpClients.gitHubClient(CollectorsConfiguration.collectorClient(s, observations, http), s),
+        resilience,
+        clock);
   }
 
   private static GitHubAwesomeCollector.Deep deep(

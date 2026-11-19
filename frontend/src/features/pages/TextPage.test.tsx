@@ -3,8 +3,8 @@ import enMain from '@/i18n/locales/en.json';
 import enLegal from '@/i18n/locales/en.legal.json';
 
 const en = { ...enMain, ...enLegal };
-import type { TextEntry, TextSection } from '@/features/pages/TextSections';
-import { sectionAnchor } from '@/features/pages/TextSections';
+import type { TextEntry, TextSection } from './TextSections';
+import { sectionAnchor } from './TextSections';
 import { policyValues } from '@/hooks/usePolicy';
 import i18n from '@/i18n';
 import { POLICY } from '@/test/fixtures';

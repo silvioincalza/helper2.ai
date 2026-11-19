@@ -22,7 +22,8 @@ Harbor could put an image under a tag first.
 
 ### The pipeline: CI on pull requests, staging on main, prod on a release
 1. **Continuous integration (CI) on every pull request (PR)** — `ci.yml`, GitHub-hosted runners:
-   - `changes`: the self-tests of `.github/scripts/changes.sh` and `.github/scripts/ci-ok.sh`, the branch name of
+   - `changes`: the self-tests of `.github/scripts/changes.sh`, `.github/scripts/bump-version.sh` and
+     `.github/scripts/ci-ok.sh`, the branch name of
      the pull request (`.github/scripts/branch-name.sh`, its self-test first: `<prefix>/<name>` with a prefix of its
      list, which also holds the prefixes Dependabot and the release workflows use), the ADR check
      (`scripts/adr-check.py`, its self-test first: every ADR reference in the repository names a record or a diagram
@@ -49,7 +50,7 @@ Harbor could put an image under a tag first.
      `limits.contract.test.ts` imports its limits), so a change in `src/admin` runs both chains.
      What the images pack waits only for the two builds; the image still waits for every check, because CD runs the
      image after the whole of CI;
-   - backend, three chains, each a build then a test, each selected alone (§8): `backend-libs` (the projects under
+   - backend, three chains, each a build then a test, and one job, each selected alone (§8): `backend-libs` (the projects under
      `backend/libs`, the build logic, the root build files and the load test), `backend-public`
      (`backend/apps/public`) and `backend-backoffice` (`backend/apps/backoffice`). Gradle takes the projects by
      folder (`./gradlew -p libs`, `-p apps/public`, `-p apps/backoffice`), so a new library is in the libs chain
@@ -65,10 +66,18 @@ Harbor could put an image under a tag first.
      at once and takes the library classes from the cache that pushes to `main` fill, or compiles them. What the
      images pack waits only for the two app builds. `backend/gradle.properties` turns on parallel project execution
      and the build cache: the libraries' test tasks run side by side, and a project whose inputs did not change takes
-     its results from the cache that pushes to `main` fill. Only the three test jobs save the Gradle home to the
+     its results from the cache that pushes to `main` fill. Only the three test jobs and `backend-architecture-test` save the Gradle home to the
      Actions cache, and only on a push: their home holds the dependencies, the compiled classes and the test results
-     of the chain, and one dependency bundle is about 460 MiB. The build jobs, `package`, pull requests and manual
-     runs restore it and save nothing;
+     of the chain, and one dependency bundle is about 460 MiB. Each test job also runs `spotlessCheck` (the libs job
+     `:spotlessCheck` too), so the formatter jars Spotless resolves (google-java-format, ktfmt) are in the home it
+     saves, and the build jobs read them from that cache instead of Maven Central, which can answer 429. For the same
+     reason the libs test job compiles the Gatling simulations of `backend/loadtest` again: every dependency a backend
+     job resolves is in a home that some job saves. The build jobs, `package`, pull requests and manual
+     runs restore it and save nothing. The one job is `backend-architecture-test`: `spotlessCheck` and `test` of
+     `backend/architecture` (`-p architecture`), the tests that read the sources of every backend project
+     ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8). Like an app build, it
+     waits for `backend-libs-build` and unpacks its cache when the libs chain is selected. It uploads no build cache;
+     on a push it saves its Gradle home, which holds the dependencies of its own tests;
    - chart: `make -C deploy/k8s chart-check` (`helm lint --strict`, `helm template | kubeconform -strict` for
      staging, prod, and prod with the off-site backup on; the self-test of `check-release.sh`, the check after a
      deploy, §3);
@@ -180,26 +189,35 @@ Harbor could put an image under a tag first.
 
 ### Per component: a change runs its own checks and builds its own images
 8. **One map of paths to components.** `.github/scripts/changes.sh` maps the changed paths, first match wins:
+   - on a pull request only (`changes.sh --pull-request`, from `ci.yml`), a version bump alone → nothing.
+     `bump-version.sh version-only` checks that only the version files changed, and in them only the version
+     lines, from one version to another, exactly as `bump-version.sh bump` writes them. The version pull request
+     of a release is such a change; the push to the release branch after its merge runs all of CI (`full: true`)
+     before staging and prod. The image map of `cd.yml` (§10) never takes this rule: a new version always builds
+     the images it shows, the web image's footer included. A bump with any other change is mapped path by path;
    - `docs/eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
    - `frontend/index.html`, `frontend/src/routes.tsx`, `frontend/src/i18n/locales/en.json` → frontend jobs, the
      public chain of the backend (its page tests read these three files), web image and back office image;
    - `frontend/` → frontend jobs, web image and back office image (the back office image builds the admin web app from
      the same package, lock file and tsconfig, so the folder is not split);
    - `deploy/web.Dockerfile`, `deploy/web/` → web image;
-   - `backend/apps/public/src/main/java/`, `.../kotlin/` → both app chains, public image; the same folders of
-     `backend/apps/backoffice/` → both app chains, back office image. Tests in each app read the main sources of
-     every project (`SchemaContractTest` in the back office, `ModularityTest` and `SourceBoundariesTest` in the
-     public app), and Gradle counts those sources as inputs of both test tasks;
+   - `backend/apps/public/src/main/java/`, `.../kotlin/` → public chain, the architecture job, public image; the
+     same folders of `backend/apps/backoffice/` → back office chain, the architecture job, back office image. The
+     tests that read the main sources of every project (`SourceBoundariesTest`, `TableOwnersTest`, `SchemaUseTest`)
+     are in `backend/architecture`, and only its test task counts those sources as inputs: the test task of an app
+     declares only what its own tests read;
    - `src/main/resources/application.yaml` of an app → the chain of that app and the libs chain (`SharedSettingsTest`
      in `libs/platform` reads both files), the image of that app;
    - the rest of `backend/apps/public/`, `deploy/Dockerfile` → public chain, public image;
    - the rest of `backend/apps/backoffice/`, `deploy/backoffice.Dockerfile` → back office chain, back office image;
    - `backend/loadtest/` → the libs chain (`backend-libs-build` compiles the Gatling simulations), no image;
+   - `backend/architecture/` → the architecture job, no image;
    - the rest of `backend/` (`libs/`, `build-logic/`, the Gradle files, settings, version catalog and wrapper) → the
-     three backend chains and all three images: both apps take every library;
+     three backend chains, the architecture job and all three images: both apps take every library;
    - `api/` → frontend jobs, the three backend chains and all three images;
-   - `deploy/helm/helper2/files/redis-users.acl` → the three backend chains (the Redis test container mounts it) and
-     chart;
+   - `deploy/helm/helper2/files/redis-users.acl` → the three backend chains and the architecture job (the Redis
+     test container mounts it) and chart;
+   - `deploy/k8s/app.env.example` → the libs chain (`EnvGuidesTest` reads it) and chart;
    - `docs/design/system/tokens.json` → frontend jobs (the token test reads it) and diagrams;
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
    - `deploy/postgres/` → the Postgres tag check and chart; `deploy/monitoring/` → monitoring and chart;
@@ -208,7 +226,8 @@ Harbor could put an image under a tag first.
 
    A part is selected only when it is in the tree. Each part names the files it needs (`needs` in `changes.sh`):
    `frontend/package.json`, `backend/gradlew` for the libs chain, `backend/gradlew` with the `build.gradle.kts` of
-   the app for each app chain, `deploy/k8s/Makefile` for the chart,
+   the app for each app chain, `backend/gradlew` with `backend/architecture/build.gradle.kts` for the architecture
+   job, `deploy/k8s/Makefile` for the chart,
    `deploy/monitoring/helper2-rules.yaml`, `deploy/postgres/Dockerfile` with `deploy/helm/helper2/values.yaml` for
    the Postgres tag check, `docs/diagrams/render.sh`, and the Dockerfile of each image. A change to `.github/` in a
    tree with no `frontend/` runs no frontend job, and the pull request that adds `frontend/package.json` runs them,
@@ -421,7 +440,8 @@ Harbor could put an image under a tag first.
 - A pull request that changes one part runs that part's checks; a docs change runs the diagrams only. A path the map
   does not know runs all of CI: slower, never wrong.
 - A change in one app's tests, resources or build file runs that app's chain alone. A change in an app's main
-  sources runs both app chains. A change in a library, the build logic or the contract runs all three.
+  sources runs that app's chain and the architecture job, not the other app's chain. A change in a library or the
+  build logic runs all three chains and the architecture job; a change in the contract runs all three chains.
 - A run of all three backend chains is three Gradle jobs deep (libs build, app build, app test), and every Gradle
   job spends about a minute to start before its first task. The libraries compile once.
 - A web change builds the web image and the back office image; the public image is tagged, not rebuilt.
@@ -485,7 +505,6 @@ Layers 1 to 11 and 14 do not change: no model, prompt, data or user-facing path.
 
 ### Known limits
 
-- Three tests that read every project's main sources live in the apps, so a change in one app's main sources runs the other app's chain too (S10.2.11).
 - The frontend chains are selected together: tests outside `src/admin` read the back office code (S10.2.12).
 - Every Gradle job spends 30 to 90 seconds before its first project task (S10.2.8). The `chart` job spends 163 of its 169 seconds in the waits of a self-test (S10.2.4).
 - `package` runs on a push and on a manual full run, not on a pull request.
@@ -524,5 +543,4 @@ The supply-chain checks run in CI only, with no runtime path, so they have no se
   - [#416](https://github.com/silvioincalza/helper2.ai/issues/416) S10.2.8 A Gradle job reaches its first task in seconds
   - [#417](https://github.com/silvioincalza/helper2.ai/issues/417) S10.2.9 The library tests declare the evaluation sets they read
   - [#418](https://github.com/silvioincalza/helper2.ai/issues/418) S10.2.10 A backend change does not rebuild the web image
-  - [#419](https://github.com/silvioincalza/helper2.ai/issues/419) S10.2.11 The tests that read every backend project in a place of their own
   - [#420](https://github.com/silvioincalza/helper2.ai/issues/420) S10.2.12 The frontend tests of the whole package apart from the bundle tests

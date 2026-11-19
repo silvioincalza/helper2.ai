@@ -194,16 +194,6 @@ class JdbcReviewQueue implements ReviewQueue {
   }
 
   @Override
-  public Page list(Status status, Kind kind, int page, int size) {
-    return list(status, kind, null, page, size);
-  }
-
-  @Override
-  public Page list(Status status, Kind kind, String category, int page, int size) {
-    return list(status, kind, category, null, page, size);
-  }
-
-  @Override
   public Page list(Status status, Kind kind, String category, Only only, int page, int size) {
     String[] ids =
         only == null

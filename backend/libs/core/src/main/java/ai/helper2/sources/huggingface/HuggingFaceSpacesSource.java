@@ -14,7 +14,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
 import java.net.URI;
@@ -41,27 +40,22 @@ public class HuggingFaceSpacesSource implements SearchSource {
     this.vitality = vitality;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
-        new SourceDescriptor(
-            "hf-spaces",
-            "Hugging Face Spaces",
-            "Spaces",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://huggingface.co/spaces"),
-            URI.create("https://huggingface.co/terms-of-service"),
-            "AI app and demo metadata from the Hugging Face Hub API",
-            EnumSet.of(ResourceType.PRODUCT),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            35,
-            false,
-            true,
-            true,
-            true,
-            false,
-            null,
-            SPACE_URL_PREFIX);
+        SourceDescriptor.external(
+                "hf-spaces",
+                "Hugging Face Spaces",
+                "Spaces",
+                SourceMode.LIVE,
+                URI.create("https://huggingface.co/spaces"),
+                EnumSet.of(ResourceType.PRODUCT),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://huggingface.co/terms-of-service"))
+            .withAttribution("AI app and demo metadata from the Hugging Face Hub API")
+            .enabledWhen(settings.enabled())
+            .withPriority(35)
+            .filteringByDate()
+            .browsing()
+            .confirmingUrlsUnder(SPACE_URL_PREFIX);
   }
 
   @Override
@@ -123,7 +117,7 @@ public class HuggingFaceSpacesSource implements SearchSource {
             () ->
                 http.get()
                     .uri(u -> {
-                      HttpClients.hubListing(u.path("/api/spaces"), query, text)
+                      HubListing.of(u.path("/api/spaces"), query, text)
                           .queryParamIfPresent("sort", mostLikedFirst(query))
                           .queryParam("direction", -1)
                           .queryParam(
@@ -179,28 +173,14 @@ public class HuggingFaceSpacesSource implements SearchSource {
                     PopularityKind.HF_LIKES, s.path("likes").asLong(), "hf-spaces", now))
             : List.of();
     return new SourceHit(
-            "hf-spaces",
-            id,
-            URI.create(url),
-            CanonicalUrl.of(url),
-            null,
-            id,
-            null,
-            ValueOrigin.SOURCE_PROVIDED,
-            ResourceType.PRODUCT,
-            Audience.BOTH,
-            null,
-            Set.of(),
-            tags,
-            null,
-            null,
-            Set.of("web"),
-            null,
-            DateFact.fromSource(HttpClients.instant(s, "createdAt"), "hf-spaces", now),
-            DateFact.fromSource(HttpClients.instant(s, "lastModified"), "hf-spaces", now),
-            pop,
-            now,
-            position)
+            "hf-spaces", id, URI.create(url), CanonicalUrl.of(url), id, ResourceType.PRODUCT, now)
+        .withAudience(Audience.BOTH)
+        .withTags(tags)
+        .withPlatforms(Set.of("web"))
+        .withPublished(DateFact.fromSource(HttpClients.instant(s, "createdAt"), "hf-spaces", now))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(s, "lastModified"), "hf-spaces", now))
+        .withPopularity(pop)
+        .withRank(position)
         .withVitality(vitalityOf(s));
   }
 }

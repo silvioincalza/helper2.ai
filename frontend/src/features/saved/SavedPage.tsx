@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useTitle } from '@/hooks/useTitle';
-import { Robots } from '@/shell/Robots';
-import { Saved } from '@/features/saved/Saved';
+import { Robots } from '@/ui/Robots';
+import { Saved } from './Saved';
 
 export default function SavedPage() {
   const { t } = useTranslation();

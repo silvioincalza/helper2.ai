@@ -103,8 +103,9 @@ class JdbcResources implements Resources {
                 WHERE r.description_origin IN ('SOURCE_PROVIDED', 'CURATED', 'COMMUNITY')
                   AND length(btrim(coalesce(r.description, ''))) > 0
                   AND (
-                    (r.type = 'PROMPT' AND length(btrim(r.description)) >= :promptMin)
-                    OR (r.type = ANY(:types)
+                    (r.type = 'PROMPT' AND 'PROMPT' = ANY(:types)
+                     AND length(btrim(r.description)) >= :promptMin)
+                    OR (r.type <> 'PROMPT' AND r.type = ANY(:types)
                         AND (r.license IS NOT NULL OR r.pricing IS NOT NULL OR r.published_at IS NOT NULL
                              OR (r.event_starts_at IS NOT NULL
                                  AND (EXISTS (SELECT 1 FROM source_record stated

@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import en from './locales/en.json';
-import enLegal from './locales/en.legal.json';
+import en from '@/i18n/locales/en.json';
+import enLegal from '@/i18n/locales/en.legal.json';
 
 type Text = { key: string; text: string };
 

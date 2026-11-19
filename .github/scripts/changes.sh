@@ -2,8 +2,9 @@
 set -euo pipefail
 
 BACKEND="backend-libs backend-public backend-backoffice"
-KEYS="frontend $BACKEND chart monitoring postgres diagrams web public backoffice"
+KEYS="frontend $BACKEND backend-architecture chart monitoring postgres diagrams web public backoffice"
 ROOT=${CHANGES_ROOT:-.}
+SCRIPTS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 needs() {
   case $1 in
@@ -11,6 +12,7 @@ needs() {
     backend-libs) echo "backend/gradlew" ;;
     backend-public) echo "backend/gradlew backend/apps/public/build.gradle.kts" ;;
     backend-backoffice) echo "backend/gradlew backend/apps/backoffice/build.gradle.kts" ;;
+    backend-architecture) echo "backend/gradlew backend/architecture/build.gradle.kts" ;;
     chart) echo "deploy/k8s/Makefile" ;;
     monitoring) echo "deploy/monitoring/helper2-rules.yaml" ;;
     postgres) echo "deploy/postgres/Dockerfile deploy/helm/helper2/values.yaml" ;;
@@ -34,16 +36,18 @@ classify() {
     frontend/index.html | frontend/src/routes.tsx | frontend/src/i18n/locales/en.json) echo "frontend backend-public web backoffice" ;;
     frontend/*) echo "frontend web backoffice" ;;
     deploy/web.Dockerfile | deploy/web/*) echo "web" ;;
-    backend/apps/public/src/main/java/* | backend/apps/public/src/main/kotlin/*) echo "backend-public backend-backoffice public" ;;
-    backend/apps/backoffice/src/main/java/* | backend/apps/backoffice/src/main/kotlin/*) echo "backend-public backend-backoffice backoffice" ;;
+    backend/apps/public/src/main/java/* | backend/apps/public/src/main/kotlin/*) echo "backend-public backend-architecture public" ;;
+    backend/apps/backoffice/src/main/java/* | backend/apps/backoffice/src/main/kotlin/*) echo "backend-backoffice backend-architecture backoffice" ;;
     backend/apps/public/src/main/resources/application.yaml) echo "backend-libs backend-public public" ;;
     backend/apps/backoffice/src/main/resources/application.yaml) echo "backend-libs backend-backoffice backoffice" ;;
     backend/apps/public/* | deploy/Dockerfile) echo "backend-public public" ;;
     backend/apps/backoffice/* | deploy/backoffice.Dockerfile) echo "backend-backoffice backoffice" ;;
     backend/loadtest/*) echo "backend-libs" ;;
-    backend/*) echo "$BACKEND web public backoffice" ;;
+    backend/architecture/*) echo "backend-architecture" ;;
+    backend/*) echo "$BACKEND backend-architecture web public backoffice" ;;
     api/*) echo "frontend $BACKEND web public backoffice" ;;
-    deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND chart" ;;
+    deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND backend-architecture chart" ;;
+    deploy/k8s/app.env.example) echo "backend-libs chart" ;;
     docs/design/system/tokens.json) echo "frontend diagrams" ;;
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
@@ -73,10 +77,16 @@ from_paths_z() {
 from_paths() { tr '\n' '\0' | from_paths_z; }
 
 from_git() {
-  local base=$1 head=$2 paths
+  local base=$1 head=$2 skip_bump=${3:-false} paths
   if [[ -z $base || $base =~ ^0+$ ]] || ! git cat-file -e "$base^{commit}" 2> /dev/null; then
     echo "changes: no usable base '$base', so everything" >&2
     print "$KEYS"
+    return
+  fi
+  local bump
+  if [[ $skip_bump == true ]] && bump=$("$SCRIPTS/bump-version.sh" version-only "$base" "$head" 2> /dev/null); then
+    echo "changes: a pull request with only the version bump $bump, so nothing; the push to the release branch runs all of CI and builds every image" >&2
+    print ""
     return
   fi
   local list
@@ -133,33 +143,35 @@ frontend/src/i18n/locales/en.json|frontend backend-public web backoffice
 frontend/src/i18n/locales/en.admin.json|frontend web backoffice
 deploy/web/nginx.conf|web
 deploy/web.Dockerfile|web
-backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public backend-backoffice public
-backend/apps/public/src/main/kotlin/ai/helper2/search/Ranking.kt|backend-public backend-backoffice public
+backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public backend-architecture public
+backend/apps/public/src/main/kotlin/ai/helper2/search/Ranking.kt|backend-public backend-architecture public
 backend/apps/public/src/test/java/ai/helper2/PublicApplicationTest.java|backend-public public
 backend/apps/public/src/main/resources/application.yaml|backend-libs backend-public public
 backend/apps/public/src/main/resources/prompts/guide.st|backend-public public
 backend/apps/public/build.gradle.kts|backend-public public
 deploy/Dockerfile|backend-public public
-backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java|backend-public backend-backoffice backoffice
-backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Scout.kt|backend-public backend-backoffice backoffice
+backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java|backend-backoffice backend-architecture backoffice
+backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Scout.kt|backend-backoffice backend-architecture backoffice
 backend/apps/backoffice/src/test/kotlin/ai/helper2/scout/ScoutTest.kt|backend-backoffice backoffice
 backend/apps/backoffice/src/main/resources/application.yaml|backend-libs backend-backoffice backoffice
 backend/apps/backoffice/build.gradle.kts|backend-backoffice backoffice
 deploy/backoffice.Dockerfile|backend-backoffice backoffice
 backend/loadtest/src/gatling/java/ai/helper2/load/SearchSimulation.java|backend-libs
 backend/loadtest/build.gradle.kts|backend-libs
-backend/libs/core/src/main/kotlin/X.kt|BACKEND web public backoffice
-backend/libs/core/src/test/kotlin/XTest.kt|BACKEND web public backoffice
-backend/libs/core/build.gradle.kts|BACKEND web public backoffice
-backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|BACKEND web public backoffice
-backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|BACKEND web public backoffice
-backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|BACKEND web public backoffice
-backend/gradle/libs.versions.toml|BACKEND web public backoffice
-backend/gradle/wrapper/gradle-wrapper.properties|BACKEND web public backoffice
-backend/settings.gradle.kts|BACKEND web public backoffice
-backend/build.gradle.kts|BACKEND web public backoffice
-backend/gradlew|BACKEND web public backoffice
-backend/README.md|BACKEND web public backoffice
+backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java|backend-architecture
+backend/architecture/build.gradle.kts|backend-architecture
+backend/libs/core/src/main/kotlin/X.kt|BACKEND backend-architecture web public backoffice
+backend/libs/core/src/test/kotlin/XTest.kt|BACKEND backend-architecture web public backoffice
+backend/libs/core/build.gradle.kts|BACKEND backend-architecture web public backoffice
+backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|BACKEND backend-architecture web public backoffice
+backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|BACKEND backend-architecture web public backoffice
+backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|BACKEND backend-architecture web public backoffice
+backend/gradle/libs.versions.toml|BACKEND backend-architecture web public backoffice
+backend/gradle/wrapper/gradle-wrapper.properties|BACKEND backend-architecture web public backoffice
+backend/settings.gradle.kts|BACKEND backend-architecture web public backoffice
+backend/build.gradle.kts|BACKEND backend-architecture web public backoffice
+backend/gradlew|BACKEND backend-architecture web public backoffice
+backend/README.md|BACKEND backend-architecture web public backoffice
 api/public.yaml|frontend BACKEND web public backoffice
 api/admin.yaml|frontend BACKEND web public backoffice
 api/common.yaml|frontend BACKEND web public backoffice
@@ -172,8 +184,9 @@ compose.yaml|ALL
 .grype.yaml|ALL
 deploy/helm/helper2/values.yaml|chart
 deploy/helm/helper2/templates/app.yaml|chart
-deploy/helm/helper2/files/redis-users.acl|BACKEND chart
+deploy/helm/helper2/files/redis-users.acl|BACKEND backend-architecture chart
 deploy/k8s/Makefile|chart
+deploy/k8s/app.env.example|backend-libs chart
 deploy/k8s/cosign.pub|chart
 deploy/grafana/helper2.json|chart
 deploy/grafana/helper2-backoffice.json|chart
@@ -245,6 +258,8 @@ diagrams backend-libs frontend|frontend/src/main.tsx|frontend
 diagrams backend-libs frontend|api/public.yaml|frontend backend-libs
 diagrams backend-libs monitoring|deploy/monitoring/helper2-rules.yaml|monitoring
 diagrams backend-libs backend-public public|deploy/Dockerfile|backend-public public
+diagrams backend-libs backend-public backend-architecture|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public backend-architecture
+diagrams backend-libs backend-public backend-backoffice|backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java|backend-backoffice
 EOF
   rm -rf "$tree"
   local repo got
@@ -279,6 +294,38 @@ EOF
     }
     g init -q . && echo r > README.md && g add -A && g commit -qm init
     f=0
+    mkdir -p backend frontend deploy/helm/helper2 api
+    printf 'version = "2026.1.0"\n' > backend/build.gradle.kts
+    printf '{\n  "name": "f",\n  "private": true,\n  "version": "2026.1.0",\n  "type": "module"\n}\n' > frontend/package.json
+    printf '{\n  "name": "f",\n  "version": "2026.1.0",\n  "lockfileVersion": 3,\n  "requires": true,\n  "packages": {\n    "": {\n      "name": "f",\n      "version": "2026.1.0",\n      "dependencies": {}\n    }\n  }\n}\n' > frontend/package-lock.json
+    printf 'name: h\nversion: 2026.1.0\n' > deploy/helm/helper2/Chart.yaml
+    for a in public admin common; do printf 'info:\n  version: 2026.1.0\n' > "api/$a.yaml"; done
+    g add -A && g commit -qm versions
+    "$SCRIPTS/bump-version.sh" bump 2026.1.1 > /dev/null && g commit -qam bump
+    got=$(from_git HEAD~1 HEAD true 2> /dev/null | trues)
+    if [[ -n $got ]]; then
+      echo "FAIL [a pull request with the version bump alone]: got '$got', want nothing" >&2
+      f=$((f + 1))
+    else
+      echo "ok   [a pull request with the version bump alone] -> nothing"
+    fi
+    got=$(from_git HEAD~1 HEAD 2> /dev/null | trues)
+    want=$(print "frontend $BACKEND backend-architecture web public backoffice chart" | trues)
+    if [[ $got != "$want" ]]; then
+      echo "FAIL [a push with the version bump alone]: got '$got', want '$want'" >&2
+      f=$((f + 1))
+    else
+      echo "ok   [a push with the version bump alone] -> $got"
+    fi
+    echo x >> README.md && "$SCRIPTS/bump-version.sh" bump 2026.1.2 > /dev/null && g commit -qam bump-and-docs
+    got=$(from_git HEAD~1 HEAD true 2> /dev/null | trues)
+    want=$(print "frontend $BACKEND backend-architecture web public backoffice chart diagrams" | trues)
+    if [[ $got != "$want" ]]; then
+      echo "FAIL [the version bump and a doc]: got '$got', want '$want'" >&2
+      f=$((f + 1))
+    else
+      echo "ok   [the version bump and a doc] -> $got"
+    fi
     move backend/apps/public/src/Gone.java docs/Gone.java "backend-public public diagrams" || f=$((f + 1))
     move docs/notes/Page.tsx frontend/src/Page.tsx "frontend web backoffice diagrams" || f=$((f + 1))
     move backend/apps/public/src/notes.md docs/notes.md "backend-public public diagrams" || f=$((f + 1))
@@ -299,8 +346,9 @@ case ${1:-} in
   --all) print "$KEYS" ;;
   --paths) from_paths ;;
   --self-test) self_test ;;
+  --pull-request) from_git "${2:?usage: changes.sh --pull-request <base> <head>}" "${3:?usage: changes.sh --pull-request <base> <head>}" true ;;
   -* | "")
-    echo "usage: changes.sh <base> <head> | --all | --paths | --self-test" >&2
+    echo "usage: changes.sh <base> <head> | --pull-request <base> <head> | --all | --paths | --self-test" >&2
     exit 2
     ;;
   *) from_git "$1" "${2:?usage: changes.sh <base> <head>}" ;;

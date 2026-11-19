@@ -8,15 +8,16 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E1 Foundation
 
+### Now
+
+- [S1.11.34 The tests that failed on a busy machine pass on every run](https://github.com/silvioincalza/helper2.ai/issues/782)
+- [S1.11.38 A Scout run counts a failed and a rejected enrichment as what they are](https://github.com/silvioincalza/helper2.ai/issues/795)
+- [T1.11.3 The roadmap page lists the open stories of today](https://github.com/silvioincalza/helper2.ai/issues/786)
+
 ### Next
 
 - [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
 - [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/helper2.ai/issues/179)
-
-### Later
-
-- [S1.11.1 A closed `llm` module with a small public API](https://github.com/silvioincalza/helper2.ai/issues/180)
-- [S1.11.2 Controllers to return views owned by the use cases](https://github.com/silvioincalza/helper2.ai/issues/181)
 
 ### Accepted
 
@@ -44,7 +45,7 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
 - [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
 - [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
-- [S2.10.7 An official package without a scope to join its repository by its publisher](https://github.com/silvioincalza/helper2.ai/issues/493)
+- [S2.10.7 An official package without a scope to join the repository its provenance names](https://github.com/silvioincalza/helper2.ai/issues/493)
 - [S2.13.1 To ask for a new source from the Sources page](https://github.com/silvioincalza/helper2.ai/issues/218)
 - [S2.14.1 Hackathons, meetups, talks and workshops found automatically](https://github.com/silvioincalza/helper2.ai/issues/219)
 - [S2.15.1 PHP, Swift, C, C++, Elixir and Dart as platforms](https://github.com/silvioincalza/helper2.ai/issues/220)
@@ -55,6 +56,8 @@ Replay is built and is closed by its pull request: it is not listed.
 
 - [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
+- [S3.3.4 Resources the embedding provider refuses are counted, kept across restarts and understood](https://github.com/silvioincalza/helper2.ai/issues/772)
+- [S3.4.4 "awesome list" in a query hints the type AWESOME_LIST, with a new ranking baseline](https://github.com/silvioincalza/helper2.ai/issues/635)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
 - [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/helper2.ai/issues/574)
 - [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
@@ -65,6 +68,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Later
 
+- [S3.6.7 A shadow library behind a redirect, a shortener or a bare IP address is left out too](https://github.com/silvioincalza/helper2.ai/issues/637)
 - [S3.7.3 The open steps of the home examples done](https://github.com/silvioincalza/helper2.ai/issues/245)
 - [S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin](https://github.com/silvioincalza/helper2.ai/issues/250)
 - [S3.13.1 Papers ranked by citations](https://github.com/silvioincalza/helper2.ai/issues/255)
@@ -103,20 +107,15 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E6 Back office
 
-### Now
-
-- [S6.2.15 The review research assistant decided in an ADR](https://github.com/silvioincalza/helper2.ai/issues/587)
-
 ### Next
 
 - [S6.2.16 The research agent measured on 100 decided items, fast and reasoning model](https://github.com/silvioincalza/helper2.ai/issues/588)
-- [S6.2.17 The research assistant runs in the backend, stored and streamed step by step](https://github.com/silvioincalza/helper2.ai/issues/589)
+- [S6.2.26 The start-all dialog says how many items are new and how many are already researched](https://github.com/silvioincalza/helper2.ai/issues/644)
 - [S6.5.1 Every setting on `/admin/settings`](https://github.com/silvioincalza/helper2.ai/issues/308)
 
 ### Later
 
-- [S6.2.6 The review page to read a typed resource candidate](https://github.com/silvioincalza/helper2.ai/issues/304)
-- [S6.2.18 The back office shows research per candidate and applies it attribute by attribute](https://github.com/silvioincalza/helper2.ai/issues/590)
+- [S6.3.2 An admin removes a resource that is not about AI, audited, and the Scout does not add it again](https://github.com/silvioincalza/helper2.ai/issues/773)
 - [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
 
 ## E7 Site and frontend
@@ -169,9 +168,10 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.2.4 The chart check without the waits of its self-test](https://github.com/silvioincalza/helper2.ai/issues/412)
 - [S10.2.5 The Actions caches of the repository under their limit](https://github.com/silvioincalza/helper2.ai/issues/413)
 - [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/helper2.ai/issues/417)
-- [S10.2.11 The tests that read every backend project in a place of their own](https://github.com/silvioincalza/helper2.ai/issues/419)
 - [S10.2.17 The HTTP deadline test that reads a fast response without a flake](https://github.com/silvioincalza/helper2.ai/issues/501)
+- [S10.2.20 The Spotless formatters come from the CI cache, not from Maven Central on every run](https://github.com/silvioincalza/helper2.ai/issues/681)
 - [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/helper2.ai/issues/348)
+- [S10.4.6 A meter of how often a guide quote gets a page](https://github.com/silvioincalza/helper2.ai/issues/797)
 - [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/helper2.ai/issues/352)
 - [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/helper2.ai/issues/427)
 - [S10.9.1 The new repository with the replayed history and the GitHub Project](https://github.com/silvioincalza/helper2.ai/issues/354)
