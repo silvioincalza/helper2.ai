@@ -290,7 +290,7 @@ class WebPageListsTest {
             .filter(h -> h.getExternalId().equals(PAGE_ID))
             .findFirst()
             .orElseThrow();
-    assertThat(list.getSourceId()).isEqualTo(GitHubAwesomeCollector.ID);
+    assertThat(list.getSourceId()).isEqualTo(GitHubAwesomeCollector.WEB_LISTS_ID);
     assertThat(list.getCanonicalUrl().getValue()).isEqualTo(PAGE_ID);
     assertThat(list.getUrl()).isEqualTo(URI.create(PAGE));
     assertThat(list.getTitle()).isEqualTo("Awesome LLM");

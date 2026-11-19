@@ -3,6 +3,7 @@ package ai.helper2.scout
 import ai.helper2.search.DescribedSource
 import ai.helper2.search.PopularityKind
 import ai.helper2.search.PopularityMetric
+import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceHit
 import ai.helper2.search.Vitality
 import ai.helper2.shared.CanonicalUrl
@@ -45,6 +46,8 @@ interface Collector : DescribedSource {
 
   fun collect(cursor: ScoutCursor, maxItems: Int): CollectedBatch =
     collect(cursor.checkpoint, cursor.resumeCursor, maxItems)
+
+  fun alsoWrites(): List<SourceDescriptor> = emptyList()
 }
 
 data class Candidate

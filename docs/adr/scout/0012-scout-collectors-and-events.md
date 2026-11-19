@@ -83,8 +83,15 @@ Two kinds of source need more care:
        the list index work as they do for a README. A page that answers with no text or from another host is not a
        list.
      - **The page is a list resource too**: its canonical URL is its identity, its title is the page's first
-       heading (the host and path when it has none), its tag is `awesome-list`, its source is `github-awesome`. It
-       has no stars, licence or dates. Its type is `AWESOME_LIST` when it passes the counts of the README rule
+       heading (the host and path when it has none), its tag is `awesome-list`. It has no stars, licence or dates.
+     - **Its own source, `curated-web-lists`** ("Curated web lists", `CollectorDescriptors.curatedWebLists`): the
+       record of the page and its list resource carry it, so the Sources page shows the web lists apart from the
+       GitHub lists and names the live web page reader in its terms line. The same collector and the same crawl
+       write it: the collector names it in `Collector.alsoWrites`, and `RunScout` merges and indexes the hits of
+       each source it writes under that source. The entries a page links to keep `github-awesome`: their facts
+       come from GitHub, and one pass reads each entry once, whatever list it is in. Both apps register its
+       descriptor (`CollectorsConfiguration`, `ScoutSourceDescriptors`), so its `source` row exists before a
+       record. It has no switch of its own: it is on when `github-awesome` is on. Its type is `AWESOME_LIST` when it passes the counts of the README rule
        below (`AwesomeLists.readsAsList`: at least 20 linked items that are at least half of the text lines), and
        ARTICLE otherwise. The name part of the rule does not apply: a person added the page.
      - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; from 1 to 21, so the list index, kept 30 days

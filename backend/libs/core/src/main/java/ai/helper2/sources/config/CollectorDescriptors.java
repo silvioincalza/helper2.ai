@@ -87,6 +87,27 @@ public final class CollectorDescriptors {
         .withPriority(25);
   }
 
+  public static SourceDescriptor curatedWebLists(SourceSettings settings) {
+    return SourceDescriptor.external(
+            CollectorIds.CURATED_WEB_LISTS,
+            "Curated web lists",
+            "Web lists",
+            SourceMode.INDEXED,
+            SOURCES_PAGE,
+            EnumSet.of(ResourceType.AWESOME_LIST, ResourceType.ARTICLE),
+            settings.timeout(),
+            settings.cacheTtl())
+        .withTerms(TERMS_PAGE)
+        .withAttribution(
+            "Web pages that list AI tools, chosen by a person and read through the live web page"
+                + " reader at most once a week; each list links back to its page. Its headings and"
+                + " entry lines are indexed for search; the page text is not kept. The links in a"
+                + " list follow the rules of the GitHub Awesome lists, and a site whose terms forbid"
+                + " automated reading is never read.")
+        .enabledWhen(settings.enabled() && settings.hasToken())
+        .withPriority(25);
+  }
+
   public static SourceDescriptor gitHubTopicLeaders(SourceSettings settings, List<String> topics) {
     return SourceDescriptor.external(
             CollectorIds.GITHUB_TOPIC_LEADERS,

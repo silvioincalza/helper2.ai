@@ -406,7 +406,9 @@ No new table for deep search, no new dependency.
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt` (`huggingFaceModel`, `arxivPaper`).
 - `sources/github/scout/ListReader.java`, `GitHubReadmeReader.java`, `WebPageReader.java`, `WebPageLists.java` (an
   added web page: when it is read, its credit, the hosts never read), `AwesomeLists.java` (`readsAsList`),
-  `GitHubAwesomeCollector.java` (`ListRepo`, `pageHit`).
+  `GitHubAwesomeCollector.java` (`ListRepo`, `pageHit`, `alsoWrites`);
+  `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java` (`curatedWebLists`);
+  `scout/usecase/RunScout.kt` (`index`: every source a collector writes).
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt` — `ListKind`, `ListSeed`, `ListSeedStore`,
   `ListAddresses`, `HostsNeverRead`; `scout/usecase/ManageListSeeds.kt`; `scout/internal/JdbcListSeedStore.java`;
   `admin/web/ListSeedsController.java`; `V2026.11.8.4__list_seed.sql`, `V2026.11.8.5__list_seed_web_page.sql`;
@@ -514,9 +516,9 @@ No new table for deep search, no new dependency.
   The live web processor's written agreement names the reading of product pages; whether it also covers the
   reading of a third party's list page is a point for the lawyer, not settled here.
 - An added web page is not deleted between two reads: it is read at least every 21 days and the list index is kept
-  30 days after its last refresh (`H2_RETENTION_LIST_INDEX`). Its resource is indexed by the Scout like a GitHub
-  list, so no retention period deletes it: `H2_RETENTION_WEB_NEWS` covers the records of the web search sources, not
-  those of `github-awesome`, and `H2_RETENTION_OBSERVED_UNSEEN` covers observed resources only. After its list is
+  30 days after its last refresh (`H2_RETENTION_LIST_INDEX`). Its resource (source `curated-web-lists`) is indexed by
+  the Scout like a GitHub list, so no retention period deletes it: `H2_RETENTION_WEB_NEWS` covers the records of the web search sources, not
+  those of `curated-web-lists`, and `H2_RETENTION_OBSERVED_UNSEEN` covers observed resources only. After its list is
   removed from "Lists to read" the resource stays, and its list index goes 30 days after the last read.
 - List pages are indexed without review. Their claims are not facts in the catalog: they are `ARTICLE`s, and
   enrichment cites only what they say about themselves.
@@ -531,7 +533,7 @@ No new table for deep search, no new dependency.
 - A link of a list entry to a PyPI package ([S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851)) gives nothing: no reader confirms these by id. A paper outside the AI categories of the arXiv source is not kept. A package read from a list has no downloads and no date of its last release: the latest-version document states neither. A package that joins its repository is linked to its list on the run that read it; a later run of the same pass links it only when the repository is an entry too. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
 - Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap.
 - No weekly alert watches the Scout's credits (`helper2_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
-- An added web page: the type rule counts every linked line of the Markdown the page reader gives, navigation and footer links too, so a page with a long menu can pass it; its entries and links follow the rules of a README; a page that keeps failing costs up to 3 credits in a row before it waits `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`; `robots.txt` is not read by us: the page reader's operator fetches the page; the Sources page shows the page under "GitHub Awesome lists".
+- An added web page: the type rule counts every linked line of the Markdown the page reader gives, navigation and footer links too, so a page with a long menu can pass it; its entries and links follow the rules of a README; a page that keeps failing costs up to 3 credits in a row before it waits `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`; `robots.txt` is not read by us: the page reader's operator fetches the page.
 - There is no host deny list for discovery and no cap on list pages per host per pass; vendor compare and alternatives pages are not dropped; Chrome Web Store, Firefox add-on and GPT links are not recognised; press pages keep long excerpts, and an excerpt can hold an email address; open candidates do not expire; any collector can be the source of a candidate.
 - No replay evaluation on a recorded snapshot tunes each category's `min-score`, the list-title rule and the words, although the search facts are kept per record and candidate.
 - A query that keeps failing keeps its category's pass open: only that query is searched again at each run, until it answers. A pass left open with candidates held back over the daily cap loses those of the searches already done (the resume cursor skips them). A failed attempt counts what its depth costs, so a 429 is counted too.

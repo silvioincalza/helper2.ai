@@ -58,6 +58,11 @@ class ScoutSourceDescriptors {
   }
 
   @Bean
+  DescribedSource curatedWebListsSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.curatedWebLists(p.get(CollectorIds.GITHUB_AWESOME)));
+  }
+
+  @Bean
   DescribedSource gitHubTopicLeadersSource(
       SourcesProperties p, CollectorProperties.GitHubTopicLeaders c) {
     return new Described(

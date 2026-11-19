@@ -70,6 +70,8 @@ public class GitHubAwesomeCollector implements Collector {
 
   static final String ID = CollectorIds.GITHUB_AWESOME;
 
+  static final String WEB_LISTS_ID = CollectorIds.CURATED_WEB_LISTS;
+
   static final String POLICY = "collector-" + ID;
 
   private static final Logger log = LoggerFactory.getLogger(GitHubAwesomeCollector.class);
@@ -117,6 +119,7 @@ public class GitHubAwesomeCollector implements Collector {
   private final RepoClassifier classifier;
   private final RepoClassifier fallback = new RepoClassifier.Heuristic();
   private final SourceDescriptor descriptor;
+  private final SourceDescriptor webLists;
   private final Deep deep;
   private final ListEntryLinks entryLinks;
   private final LinkRules linkRules;
@@ -206,11 +209,17 @@ public class GitHubAwesomeCollector implements Collector {
     this.readmes = new GitHubReadmeReader(http, resilience, clock);
     this.webPages = webPages;
     this.descriptor = CollectorDescriptors.gitHubAwesome(settings);
+    this.webLists = CollectorDescriptors.curatedWebLists(settings);
   }
 
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public List<SourceDescriptor> alsoWrites() {
+    return List.of(webLists);
   }
 
   @Override
@@ -791,7 +800,7 @@ public class GitHubAwesomeCollector implements Collector {
       return null;
     }
     return new SourceHit(
-            ID,
+            WEB_LISTS_ID,
             canonical.getValue(),
             URI.create(page.address()),
             canonical,

@@ -20,7 +20,9 @@ import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
+import ai.helper2.search.DescribedSource;
 import ai.helper2.search.ShadowLibraries;
+import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
@@ -349,6 +351,18 @@ class CollectorsConfiguration {
             paperReader(p.get("arxiv"), s, clock, resilience, observations, http, throttle),
             packageReader(p.get("npm"), s, clock, resilience, observations, http)),
         webPageLists);
+  }
+
+  @Bean
+  DescribedSource curatedWebListsSource(SourcesProperties p) {
+    SourceDescriptor descriptor =
+        CollectorDescriptors.curatedWebLists(p.get(CollectorIds.GITHUB_AWESOME));
+    return new DescribedSource() {
+      @Override
+      public SourceDescriptor getDescriptor() {
+        return descriptor;
+      }
+    };
   }
 
   @Bean
