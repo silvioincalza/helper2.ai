@@ -30,10 +30,15 @@ class OfficialPagesTest {
         "https://[::1]/",
         "https://localhost/",
         "https://acme.example/",
-        "https://acme.dev:443/",
       )) {
       assertNull(PageScope.of(URI(url), roots), url)
     }
+  }
+
+  @Test
+  fun `a home page that writes the https port is the same page`() {
+    val s = scope("https://acme.dev:443/")
+    assertTrue(s.allows(URI("https://acme.dev/pricing")))
   }
 
   @Test

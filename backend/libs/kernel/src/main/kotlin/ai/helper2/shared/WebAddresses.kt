@@ -7,6 +7,8 @@ import java.util.Locale
 object WebAddresses {
   const val MAX_LENGTH = CanonicalUrl.MAX_LENGTH
 
+  private const val HTTPS_PORT = 443
+
   @JvmField
   val SECOND_LEVEL: Set<String> =
     setOf("co", "com", "net", "org", "gov", "edu", "ac", "or", "ne", "go")
@@ -84,7 +86,7 @@ object WebAddresses {
     val refusal =
       when {
         uri.rawUserInfo != null -> Refusal.USER_INFO
-        uri.port != -1 -> Refusal.PORT
+        uri.port != -1 && uri.port != HTTPS_PORT -> Refusal.PORT
         else -> hostRefusal(host)
       }
     return if (refusal == null) Checked.Public(uri, host) else Checked.Refused(refusal)

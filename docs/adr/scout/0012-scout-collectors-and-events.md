@@ -73,7 +73,8 @@ Two kinds of source need more care:
      in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`, `POST /api/v1/admin/list-seeds/{id}/remove`,
      both changes in the audit trail (`ADD_LIST_SEED`, `REMOVE_LIST_SEED`). The id of an added list is made from its
      address (`ListAddresses.idOf`), so it is the same at every read.
-   - **A web page as a list.** The address is https, with a public host name: no user info, no port, no fragment,
+   - **A web page as a list.** The address is https, with a public host name: no user info, no port but 443 (dropped from the kept
+     address), no fragment,
      no IP address in any notation, no private or reserved name, no punycode label: the Scout's one host check
      (`WebAddresses`, [0013](0013-discovery.md) §17), with the plain-page rule of `ListAddresses` on top (no
      fragment, at most 300 characters; 400 otherwise, with the rule that failed). Two addresses of one

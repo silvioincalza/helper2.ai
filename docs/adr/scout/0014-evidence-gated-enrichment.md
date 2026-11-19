@@ -244,7 +244,7 @@ place to say that.
       `download(s)`, `features`, `docs`, `documentation`, `integrations` or `about`, best first. At most 5 URLs a
       product.
     - Allowed: what the Scout's host check allows (`WebAddresses`, [0013](0013-discovery.md) §17): `https` only; a
-      public host name, not an IP address or a private or reserved name; no user info; no port.
+      public host name, not an IP address or a private or reserved name; no user info; no port but https's own 443.
     - Scope: the same registrable domain (Public Suffix List, the copy that ships with Apache HttpClient 5, already a
       dependency); on a shared host (`github.io`, `vercel.app`, `netlify.app`, `pages.dev`, `hf.space`, `notion.site`,
       `webflow.io`) the exact subdomain; for a page under a path (`aws.amazon.com/bedrock`) that host and path prefix.

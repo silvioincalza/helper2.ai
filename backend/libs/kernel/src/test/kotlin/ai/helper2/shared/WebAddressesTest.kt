@@ -47,7 +47,7 @@ class WebAddressesTest {
     "https://acme.ai@evil.ai/, USER_INFO",
     "https://user@acme.dev/list, USER_INFO",
     "https://acme.ai:8443/, PORT",
-    "https://acme.dev:443/list, PORT",
+    "https://acme.dev:443/list, PUBLIC",
     "https://localhost/, PRIVATE_HOST",
     "https://printer.local/, PRIVATE_HOST",
     "https://metadata.google.internal/, PRIVATE_HOST",
