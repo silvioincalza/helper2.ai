@@ -33,7 +33,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
    check decide what is shown, as in [0031](0031-guide-pipeline.md). `AskGuide` stays blocking, top-down code. The
    controllers stay Spring MVC ([0031](0031-guide-pipeline.md), Streaming).
 4. **One call is still one unit.** `BudgetedChat.streamed` runs the same order as a blocking call: circuit
-   (`llm-chat-guide`), then one budget unit, then one observation (`helper2.llm.call`). They wrap the **whole
+   (`llm-chat-guide-fast` or `llm-chat-guide-reasoning`), then one budget unit, then one observation (`helper2.llm.call`). They wrap the **whole
    subscription**, from subscribe to the last chunk or to the dispose. So the slow-call rule of the circuit
    measures the whole stream, not the 0.3 s to the response headers. The daily budget counts calls, not tokens: it
    is the same in both modes.
