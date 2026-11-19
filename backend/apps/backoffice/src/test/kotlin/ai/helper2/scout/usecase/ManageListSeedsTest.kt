@@ -99,6 +99,7 @@ class ManageListSeedsTest {
     "https://Blog.Acme.dev/Best-AI-Tools, https://blog.acme.dev/Best-AI-Tools",
     "' https://www.acme.dev/lists/rag/ ', https://www.acme.dev/lists/rag/",
     "https://acme.dev/lists?page=2, https://acme.dev/lists?page=2",
+    "https://acme.dev:443/list, https://acme.dev/list",
     "https://gitlab.com/acme/awesome-rag, https://gitlab.com/acme/awesome-rag",
   )
   fun `a web page is kept as its https address, host in lower case`(raw: String, kept: String) {
@@ -179,7 +180,6 @@ class ManageListSeedsTest {
     "https://acme.dev./list, NOT_A_PUBLIC_HOST",
     "https://user@acme.dev/list, NOT_A_PLAIN_PAGE",
     "https://acme.dev:8443/list, NOT_A_PLAIN_PAGE",
-    "https://acme.dev:443/list, NOT_A_PLAIN_PAGE",
     "https://acme.dev/list#tools, NOT_A_PLAIN_PAGE",
     "https://acme.dev/a list, NOT_A_PLAIN_PAGE",
     "https://acme.dev/../list, NOT_A_PLAIN_PAGE",

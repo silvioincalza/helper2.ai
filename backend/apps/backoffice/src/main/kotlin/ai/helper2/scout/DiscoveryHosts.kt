@@ -1,5 +1,6 @@
 package ai.helper2.scout
 
+import ai.helper2.shared.WebAddresses
 import java.time.Instant
 import java.util.Locale
 
@@ -40,8 +41,6 @@ object HostNames {
   const val MAX_LENGTH = 253
   private val LABEL = Regex("[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?")
 
-  private val SECOND_LEVEL = setOf("co", "com", "net", "org", "gov", "edu", "ac", "or", "ne", "go")
-
   enum class Problem {
     EMPTY,
     NOT_A_HOST,
@@ -67,9 +66,7 @@ object HostNames {
       return Checked.Invalid(Problem.NOT_A_HOST)
     }
     if (
-      labels.size < 2 ||
-        labels.last().all { it.isDigit() } ||
-        (labels.size == 2 && labels.first() in SECOND_LEVEL)
+      labels.size < 2 || labels.last().all { it.isDigit() } || WebAddresses.isRegistrySuffix(labels)
     ) {
       return Checked.Invalid(Problem.TOO_BROAD)
     }

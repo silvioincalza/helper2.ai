@@ -3,6 +3,7 @@ package ai.helper2.scout
 import ai.helper2.catalog.ScoutPolicy
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.Verification
+import ai.helper2.shared.WebAddresses
 import ai.helper2.shared.WebSources
 import java.net.URI
 import java.time.Clock
@@ -99,8 +100,6 @@ private constructor(
         "webflow.io",
       )
 
-    private val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
-
     @JvmStatic
     fun of(start: URI, roots: DomainRoots): PageScope? {
       if (plainUrlProblem(start) != null) return null
@@ -115,19 +114,7 @@ private constructor(
       }
     }
 
-    @JvmStatic
-    fun plainUrlProblem(url: URI): String? {
-      val host = url.host?.lowercase(Locale.ROOT)
-      return when {
-        !"https".equals(url.scheme, ignoreCase = true) -> "not https"
-        host.isNullOrBlank() -> "no host"
-        url.rawUserInfo != null -> "user info"
-        url.port != -1 && url.port != 443 -> "port"
-        host.startsWith("[") || ':' in host || IPV4.matches(host) -> "ip address"
-        '.' !in host -> "no domain"
-        else -> null
-      }
-    }
+    @JvmStatic fun plainUrlProblem(url: URI): String? = WebAddresses.refusal(url)?.tag
   }
 
   fun allows(url: URI): Boolean {

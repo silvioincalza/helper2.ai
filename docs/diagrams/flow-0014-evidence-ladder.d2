@@ -1,6 +1,7 @@
 # Flowchart: the evidence ladder inside EnrichResource.attempt, after the first run is validated.
 # Shows when it climbs, the README step, the page step with its URL checks and budgets, and which run is saved.
 # Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt (climb, readme, pageMaterials),
+#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebAddresses.kt (the host check),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/OfficialPages.kt (FieldTargets, PageTargets, PageScope, OfficialLinks, OfficialPages),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt, backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt (UntrustedPageText),
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/PageReaderCreditBudget.java, SharedCachePageLedger.java, RedisPageTextCache.java,
@@ -17,7 +18,7 @@ repo: "A record names its own repository\nor model (GapTargets)?" {class: decisi
 readme: "Read README or model card\n(ADR 0014), clean, window 4000" {class: app}
 run2: "Run 2: records + README\n(model call 2, gap budget)" {class: ai}
 still: "Still a target fact missing,\nand a product page record\n(PageTargets: discovery-<category>, curated,\ngithub-awesome off github.com)?" {class: decision}
-scope: "Page allowed? https, a name not an IP,\nno user info, port 443;\nscope = registrable domain (PSL),\nexact host on shared hosts,\npath prefix on a vendor's page" {class: decision}
+scope: "Page allowed? WebAddresses: https,\na public name, no user info, no port;\nscope = registrable domain (PSL),\nexact host on shared hosts,\npath prefix on a vendor's page" {class: decision}
 seen: "Read by a saved run\nin the last 30 days?\n(URL + text hash, no text)" {class: decision}
 cached: "Cleaned text in Redis?\n(at most 24 h, retry only)" {class: decision}
 credit: "Extract credit left?\n(own cap 20 a day,\nthen global Tavily cap)" {class: decision}
