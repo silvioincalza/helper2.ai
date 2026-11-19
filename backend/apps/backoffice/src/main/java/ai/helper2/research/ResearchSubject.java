@@ -5,11 +5,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/**
- * What the research reads about a review item. {@code confirmed} holds the candidate's own
- * confirmed values (license, pricing, description and the others under {@code confirmed} in its
- * details), so a research result records what it saw and a later edit makes it stale.
- */
 public record ResearchSubject(
     UUID itemId,
     String kind,
