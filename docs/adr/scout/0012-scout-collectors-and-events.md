@@ -92,9 +92,11 @@ Two kinds of source need more care:
        whatever its result, and `list_seed.read_failures` the tries in a row that gave no list. A try that gives
        no list (no text, another host, the reader down, a stop in the middle) is tried again after
        `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries
-       in a row the page waits the full `every`. A read that gives a list sets the count back to 0. Between two reads each pass uses what the last read gave, kept in memory
-       (`WebPageLists`): the entries, headings and links, never the page text. After a restart a page that is not
-       due yet is left out of the passes until it is; nothing of it is withdrawn.
+       in a row the page waits the full `every`. A read that gives a list sets the count back to 0. Between two
+       reads each pass uses what the last read gave, kept in `list_seed_last_read` (one row per added web page,
+       replaced at each read that gives a list, deleted with its list): the headings, the entries, the links and
+       the two counts of the list rule, never the page text. A restart changes nothing; nothing of a page is
+       withdrawn.
      - **Each read is one live web credit** on the Scout's daily cap (`ScoutLiveWebCredits`,
        `helper2.live-web.credits{feature="scout-list-pages"}`), a failed read too. Past the cap, without a page
        reader, or when the pass has spent its time or size budget, the page waits for the next pass

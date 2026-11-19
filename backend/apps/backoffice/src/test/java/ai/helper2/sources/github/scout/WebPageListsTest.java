@@ -12,6 +12,7 @@ import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.PageReader;
@@ -366,16 +367,39 @@ class WebPageListsTest {
   }
 
   @Test
-  void afterARestartAPageReadLessThanSevenDaysAgoWaitsAndNothingIsWithdrawn() {
+  void afterARestartAPageReadLessThanSevenDaysAgoIsStillAListFromItsStoredRead() {
     addPage(PAGE);
-    collector().collect(null, null, 500);
+    pages.markdown.put(PAGE, GitHubAwesomeDeepSearchTest.SEED_README);
+    CollectedBatch before = collector().collect(null, null, 500);
     clock.pass(1);
 
     CollectedBatch afterRestart = collector().collect(null, null, 500);
 
     assertThat(pages.asked).containsExactly(PAGE);
-    assertThat(listHits(afterRestart)).isEmpty();
-    assertThat(afterRestart.getWithdrawn()).isEmpty();
+    assertThat(listHits(afterRestart)).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+    assertThat(afterRestart.getLists())
+        .usingRecursiveFieldByFieldElementComparator()
+        .containsExactlyElementsOf(before.getLists());
+    assertThat(afterRestart.getWithdrawn()).isEqualTo(before.getWithdrawn());
+  }
+
+  @Test
+  void theStoredReadKeepsTheListButNeverThePageText() {
+    addPage(PAGE);
+    pages.markdown.put(
+        PAGE,
+        "# Best AI tools\nA long paragraph of prose the page writes about itself.\n## Engines\n"
+            + "- [Ragflow](https://github.com/infiniflow/ragflow) - RAG engine.\n");
+
+    collector().collect(null, null, 500);
+
+    ListReading stored = added.lastReads().get(PAGE);
+    assertThat(stored.getHeadings()).containsExactly("Best AI tools", "Engines");
+    assertThat(stored.getEntries())
+        .extracting(ListReading.Entry::getRepository, ListReading.Entry::getText)
+        .containsExactly(tuple("infiniflow/ragflow", "Ragflow - RAG engine."));
+    assertThat(stored.toString()).doesNotContain("long paragraph");
+    assertThat(stored.getReadAt()).isEqualTo(DAY_0);
   }
 
   @Test
@@ -543,7 +567,7 @@ class WebPageListsTest {
     addPage("https://lists.acme.dev/agents");
     pages.markdown.put("https://lists.acme.dev/agents", "# Agents\n");
     added.readStarted(PAGE, DAY_0.minus(Duration.ofDays(8)));
-    added.readSucceeded(PAGE);
+    added.readSucceeded(PAGE, new ListReading(DAY_0, List.of(), List.of(), List.of(), 0, 0));
     credits.counts.put(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 39L);
 
     collector().collect(null, null, 500);

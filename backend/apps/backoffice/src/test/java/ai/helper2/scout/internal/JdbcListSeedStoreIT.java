@@ -5,15 +5,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -23,6 +27,8 @@ class JdbcListSeedStoreIT {
   static final String PAGE = "https://it-blog.acme.dev/Best-AI-Tools?page=2";
 
   @Autowired JdbcListSeedStore store;
+  @Autowired JdbcClient jdbcClient;
+  @Autowired ObjectMapper json;
 
   @AfterEach
   void clean() {
@@ -69,7 +75,7 @@ class JdbcListSeedStoreIT {
     store.readStarted(PAGE, T0);
     store.readStarted(PAGE, T0.plusSeconds(3600));
     assertThat(page().getReadFailures()).isEqualTo(2);
-    store.readSucceeded(PAGE);
+    store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
 
     ListSeed read = page();
     assertThat(read.getReadFailures()).isZero();
@@ -78,6 +84,47 @@ class JdbcListSeedStoreIT {
         .isEqualTo(new ListSeed(ListKind.WEB_PAGE, PAGE, "1", T0, null).getId());
     assertThat(read.getReadTriedAt().truncatedTo(ChronoUnit.MILLIS))
         .isEqualTo(T0.plusSeconds(3600));
+  }
+
+  @Test
+  void theLastReadOfAWebPageIsKeptAcrossARestartReplacedOnTheNextReadAndGoesWithTheSeed() {
+    store.add(new ListSeed(ListKind.WEB_PAGE, PAGE, "42", T0, null));
+    ListReading first =
+        new ListReading(
+            T0,
+            List.of("Best AI tools", "Engines"),
+            List.of(
+                new ListReading.Entry(
+                    "infiniflow/ragflow", "Engines", "Engines", "Ragflow - RAG engine.", false)),
+            List.of(
+                new ListReading.Link(
+                    "https://vectorly.io", "Vectorly", "Engines", "Engines", "Vectorly - search.")),
+            12,
+            7);
+    store.readStarted(PAGE, T0);
+    store.readSucceeded(PAGE, first);
+
+    ListReading afterRestart = new JdbcListSeedStore(jdbcClient, json).lastReads().get(PAGE);
+    assertThat(afterRestart).usingRecursiveComparison().ignoringFields("readAt").isEqualTo(first);
+    assertThat(afterRestart.getReadAt().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(T0);
+
+    ListReading second =
+        new ListReading(T0.plusSeconds(60), List.of("Tools"), List.of(), List.of(), 3, 0);
+    store.readSucceeded(PAGE, second);
+    assertThat(store.lastReads().get(PAGE).getHeadings()).containsExactly("Tools");
+
+    store.remove(PAGE);
+    assertThat(store.lastReads()).doesNotContainKey(PAGE);
+  }
+
+  @Test
+  void aGitHubListHasNoStoredRead() {
+    store.add(repository("it-acme/awesome-rag", "42", T0, null));
+
+    store.readSucceeded(
+        "it-acme/awesome-rag", new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
+
+    assertThat(store.lastReads()).doesNotContainKey("it-acme/awesome-rag");
   }
 
   @Test

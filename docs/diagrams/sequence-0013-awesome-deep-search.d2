@@ -5,7 +5,7 @@
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/arxiv/scout/ArxivPaperReader.java, sources/npm/scout/NpmPackageReader.java,
 #   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/RedisOutboundThrottle.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/CoursePages.java,
-#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore, HostsNeverRead), scout/internal/JdbcListSeedStore.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore, ListReading, HostsNeverRead), scout/internal/JdbcListSeedStore.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java, WebPageReader.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/LiveWebPageReader.java, sources/liveweb/scout/ScoutLiveWebCredits.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java, ResourceCandidateJson.java,
@@ -35,10 +35,11 @@ collector -> pg: "list_seed: the lists an administrator added"
 pg -> collector: "small/llm-links (read first),\na web page with its last try"
 collector -> pages: "read(budget)"
 pages -> pages: "host not in the never-read setting;\nlast try 7 days ago or never;\nthe Scout's daily credits not spent"
-pages -> pg: "list_seed.read_tried_at = now"
+pages -> pg: "list_seed: read_tried_at = now,\nread_failures + 1"
 pages -> reader: "the page address (1 credit,\nscout-list-pages)"
 reader -> pages: "the page as Markdown"
-pages -> collector: "the page as a seed: entries,\nheadings, links (kept in memory\nuntil the next read, never the text)"
+pages -> pg: "read_failures = 0; replace list_seed_last_read:\nheadings, entries, links, counts (never the text)"
+pages -> collector: "the page as a seed: entries,\nheadings, links"
 collector -> github: "GET /search/repositories (topic pairs)"
 github -> collector: "seed lists with their facts"
 collector -> github: "GET /repos/small/llm-links (an added list\nthe search did not find)"

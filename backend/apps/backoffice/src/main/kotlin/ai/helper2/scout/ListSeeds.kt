@@ -31,6 +31,31 @@ constructor(
     get() = ListAddresses.identityOf(kind, address)
 }
 
+data class ListReading(
+  val readAt: Instant,
+  val headings: List<String>,
+  val entries: List<Entry>,
+  val links: List<Link>,
+  val textLines: Int,
+  val linkedItems: Int,
+) {
+  data class Entry(
+    val repository: String,
+    val section: String,
+    val headingPath: String,
+    val text: String,
+    val inListOfLists: Boolean,
+  )
+
+  data class Link(
+    val url: String,
+    val words: String,
+    val section: String,
+    val headingPath: String,
+    val entryText: String,
+  )
+}
+
 interface ListSeedStore {
   fun all(): List<ListSeed>
 
@@ -40,7 +65,9 @@ interface ListSeedStore {
 
   fun readStarted(address: String, at: Instant)
 
-  fun readSucceeded(address: String)
+  fun readSucceeded(address: String, reading: ListReading)
+
+  fun lastReads(): Map<String, ListReading>
 }
 
 class HostsNeverRead(reasons: Map<String, String>) {

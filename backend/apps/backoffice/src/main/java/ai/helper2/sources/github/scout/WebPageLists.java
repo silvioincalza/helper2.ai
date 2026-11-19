@@ -3,6 +3,7 @@ package ai.helper2.sources.github.scout;
 import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.PageReader;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,6 @@ public final class WebPageLists {
   private final Duration readEvery;
   private final Duration retryAfter;
   private final Clock clock;
-  private final Map<String, AwesomeCrawl.Read> lastRead = new ConcurrentHashMap<>();
 
   public WebPageLists(
       ListSeedStore seeds,
@@ -114,35 +113,45 @@ public final class WebPageLists {
                 Comparator.comparing(
                     ListSeed::getReadTriedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
             .toList();
-    lastRead.keySet().retainAll(added.stream().map(ListSeed::getAddress).toList());
+    Map<String, ListReading> stored = seeds.lastReads();
     List<AwesomeCrawl.Read> lists = new ArrayList<>();
     for (ListSeed page : added) {
-      AwesomeCrawl.Read list = listOf(page, now, budget, metrics);
-      if (list != null) {
-        lists.add(list);
+      AwesomeListParser.Parsed parsed =
+          listOf(page, stored.get(page.getAddress()), now, budget, metrics);
+      CanonicalUrl url = CanonicalUrl.of(page.getAddress());
+      if (parsed != null && url != null) {
+        lists.add(
+            new AwesomeCrawl.Read(
+                ListRepo.webPage(url, page.getAddress(), title(parsed, url)), parsed, 0));
       }
     }
     return lists;
   }
 
-  private AwesomeCrawl.@Nullable Read listOf(
-      ListSeed page, Instant now, ReadmeBudget budget, AwesomeMetrics metrics) {
+  private AwesomeListParser.@Nullable Parsed listOf(
+      ListSeed page,
+      @Nullable ListReading stored,
+      Instant now,
+      ReadmeBudget budget,
+      AwesomeMetrics metrics) {
     String address = page.getAddress();
     HostsNeverRead.Refusal refusal = neverRead.refusalOf(address);
     if (refusal != null) {
       log.info("a list page on {} is not read: {}", refusal.getHost(), refusal.getReason());
       metrics.skipped("page-never-read");
-      lastRead.remove(address);
       return null;
     }
     String waits = waitsBecause(page, now, budget);
     if (waits == null) {
-      readNow(address, now, budget, metrics);
+      AwesomeListParser.Parsed read = readNow(address, now, budget, metrics);
+      if (read != null) {
+        return read;
+      }
     } else if (!waits.equals(NOT_DUE)) {
       log.info("a list page waits for the next pass ({})", waits);
       metrics.skipped(waits);
     }
-    return lastRead.get(address);
+    return stored == null ? null : parsed(stored);
   }
 
   private @Nullable String waitsBecause(ListSeed page, Instant now, ReadmeBudget budget) {
@@ -169,10 +178,11 @@ public final class WebPageLists {
     return !now.isBefore(tried.plus(wait));
   }
 
-  private void readNow(String address, Instant now, ReadmeBudget budget, AwesomeMetrics metrics) {
+  private AwesomeListParser.@Nullable Parsed readNow(
+      String address, Instant now, ReadmeBudget budget, AwesomeMetrics metrics) {
     CanonicalUrl url = CanonicalUrl.of(address);
     if (url == null || credits == null) {
-      return;
+      return null;
     }
     seeds.readStarted(address, now);
     credits.spent(MissingNode.getInstance(), READ_DEPTH);
@@ -180,15 +190,53 @@ public final class WebPageLists {
       String markdown = pages.markdown(address);
       budget.read(markdown);
       AwesomeListParser.Parsed parsed = AwesomeListParser.parse(markdown, "");
-      lastRead.put(
-          address,
-          new AwesomeCrawl.Read(ListRepo.webPage(url, address, title(parsed, url)), parsed, 0));
-      seeds.readSucceeded(address);
+      seeds.readSucceeded(address, reading(parsed, now));
       metrics.listRead(0);
+      return parsed;
     } catch (SourceFailure | CallRefused e) {
       log.warn("a list page on {} is unavailable: {}", url.getHost(), e.getMessage());
       metrics.skipped("page-unavailable");
+      return null;
     }
+  }
+
+  static ListReading reading(AwesomeListParser.Parsed parsed, Instant readAt) {
+    return new ListReading(
+        readAt,
+        parsed.headings(),
+        parsed.entries().stream()
+            .map(e ->
+                new ListReading.Entry(
+                    e.fullName(), e.section(), e.headingPath(), e.text(), e.inListOfLists()))
+            .toList(),
+        parsed.links().stream()
+            .map(l ->
+                new ListReading.Link(
+                    l.url(), l.text(), l.section(), l.headingPath(), l.entryText()))
+            .toList(),
+        parsed.textLines(),
+        parsed.linkedItems());
+  }
+
+  static AwesomeListParser.Parsed parsed(ListReading reading) {
+    return new AwesomeListParser.Parsed(
+        reading.getEntries().stream()
+            .map(e ->
+                new AwesomeListParser.Entry(
+                    e.getRepository(),
+                    e.getSection(),
+                    e.getHeadingPath(),
+                    e.getText(),
+                    e.getInListOfLists()))
+            .toList(),
+        reading.getHeadings(),
+        reading.getLinks().stream()
+            .map(l ->
+                new AwesomeListParser.Link(
+                    l.getUrl(), l.getWords(), l.getSection(), l.getHeadingPath(), l.getEntryText()))
+            .toList(),
+        reading.getTextLines(),
+        reading.getLinkedItems());
   }
 
   private static String title(AwesomeListParser.Parsed parsed, CanonicalUrl url) {

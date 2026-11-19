@@ -29,8 +29,8 @@ pages: "WebPageLists: each web page an administrator added,\nthe one tried longe
   read: "Store the try (failed tries + 1), count 1 credit (scout-list-pages),\nread the page as Markdown through the\nlive web page reader (collector-gap-web)" {class: ext}
   ok: "Text, from the host asked?" {class: decision}
   failed: "Skip: page-unavailable; tried again at the\nnext pass (1 hour), after 3 in a row in 7 days" {class: end}
-  parse: "AwesomeListParser reads the Markdown like a README;\nfailed tries back to 0; kept in memory until\nthe next read: entries, headings, links, never the text" {class: app}
-  last: "What the last read gave,\nif this instance has it" {class: app}
+  parse: "AwesomeListParser reads the Markdown like a README;\nfailed tries back to 0; list_seed_last_read replaced:\nheadings, entries, links, the two counts, never the text" {class: app}
+  last: "What the last read gave\n(list_seed_last_read), if any" {class: data}
   never -> refused: "yes"
   never -> due: "no"
   due -> last: "no"
