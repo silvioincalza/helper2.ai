@@ -134,6 +134,8 @@ public final class CollectorProperties {
     public record Links(
         @PositiveOrZero int perDay,
         @PositiveOrZero int maxPerPass,
+        @PositiveOrZero int maxModelsPerPass,
+        @PositiveOrZero int modelIndexMinLikes,
         @NotNull List<String> excludeDomains) {
 
       public Links {

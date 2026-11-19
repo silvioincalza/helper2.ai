@@ -15,7 +15,9 @@ candidates in the admin review list.
 
 The awesome-list collector ([0012](0012-scout-collectors-and-events.md)) read the top 10 lists and kept only their GitHub
 links. Three things were thrown away: the smaller lists a big list links to ("Awesome RAG"), the links to a product's
-own site, and the section headings ("Vector databases"), a person's own classification.
+own site, and the section headings ("Vector databases"), a person's own classification. An entry of a list often has
+more than one link, and not every link is a product: a list of models links the Hugging Face Hub, a list of courses
+links a learning platform. A source that knows the item by its id can confirm it; nothing else can.
 
 Sorting a web page needs to know some sites by name. A writing site (Medium, TechCrunch …) publishes articles about
 many products. A directory (Product Hunt, G2 …) lists products: a page there is never a product's own site. These
@@ -237,26 +239,61 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     one README at most 5 MB in 60 s. A rate limit on a seed stops the pass. A rate limit on a nested list stops the
     following and keeps what was read. A full run makes at most about 70 GitHub calls for lists (6 searches, 40
     READMEs, 30 facts) plus the GraphQL calls for entries: far below GitHub's 5,000 calls an hour.
-17. **Links to product sites go to review.** The first link of an entry line names the entry. When it points outside
-    GitHub, `ProductLinks` checks it, by code only:
-    - https only; a name, not an IP address in any notation; no user info; no port; no private or reserved name
-      (`localhost`, `.local`, `.internal`, `.corp`, `.home.arpa` and others); no punycode label (a look-alike name can
-      hide in it); no link that redirects (a URL inside the path or the query, a redirect path such as `/out` or
-      `/go`, a link shortener); not GitHub's own pages; not an excluded domain. The excluded domains are discovery's
-      (directories, review, social and video sites) plus papers, chats, notebooks, package registries and app stores
-      (`links.exclude-domains`).
-    - The link becomes the product's home page or its one-level page, with no query and no fragment, by the rules of
-      point 5 (`DiscoveryPages.productSite`): docs, blogs, articles, publisher hosts and deeper pages are skipped.
-    - Each site is kept once per pass, at most `links.max-per-pass` (500), and only on the first run of a pass.
-    - Each becomes a `RESOURCE_CANDIDATE` review item of type PRODUCT, never indexed straight away. Its title is the
-      link's words (the product's name). It has no excerpt: the list's text is not kept. Its `foundBy` entry records
-      `github-awesome`, the list's URL and the section's heading path.
+17. **Every link of an entry goes to the rule of its kind.** `AwesomeListParser` keeps every Markdown link of an entry
+    that points outside GitHub: the links of the item's line and of the lines under it, each address once per list, at
+    most 2,000 a list. `ListEntryLinks` sorts each link by its host, by code only, in this order:
+    - **The safety checks come first, for every kind** (`ProductLinks.page`): https only; a name, not an IP address in
+      any notation; no user info; no port; no private or reserved name (`localhost`, `.local`, `.internal`, `.corp`,
+      `.home.arpa` and others); no punycode label (a look-alike name can hide in it); no link that redirects (a URL
+      inside the path or the query, a redirect path such as `/out` or `/go`, a link shortener); not GitHub's own pages;
+      not a shadow library. The query and the fragment are dropped.
+    - **A Hugging Face model** (`huggingface.co/{owner}/{name}`, also written `hf.co`, with or without a file path;
+      not a dataset, a Space or a page of the site: `CanonicalUrl.huggingFaceModel`). `HuggingFaceModelReader` asks
+      the Hub for the model by its id (`GET /api/models/{owner}/{name}`, the fields the Hugging Face sources read).
+      The facts are the Hub's: likes, downloads, tags, licence, dates, and `disabled`, which the vitality rule
+      refuses ([0020](0020-resource-vitality.md) §9). The admission rule ([0020](0020-resource-vitality.md) §11) decides with the lists' own
+      floor, `links.model-index-min-likes` (10 likes; a person chose the model for a list, so it needs fewer than
+      the 20 of `hf-trending`): a model at or above it is a `MODEL` hit, indexed without a
+      person; a model under it is a `RESOURCE_CANDIDATE` of type `MODEL`. The record is named by the model's address,
+      so a model never takes the record of a repository with the same `owner/name`. A model the Hub does not show
+      (401 or 404) gives nothing. The list index gets an entry row for every model link of a list, read or not
+      ([0023](../search/0023-catalog-full-text-index.md)): the row exists once the model is in the catalog, whatever
+      source put it there, so the list → resource link and the heading's categories follow (point 18).
+    - **A course page**: a link on the host and path of a platform of `helper2.scout.courses.platforms` that is about
+      AI and reads like a course, by the rule of the course scout (`CoursePages`,
+      [0012](0012-scout-collectors-and-events.md) point 7). The words read are the link's words, the heading path
+      and the address. It becomes a `COURSE_CANDIDATE`, with the platform's name.
+    - **Any other link**: not an excluded domain, and the product's home page or its one-level page by the rules of
+      point 5 (`DiscoveryPages.productSite`): docs, blogs, articles, publisher hosts and deeper pages are skipped. It
+      becomes a `RESOURCE_CANDIDATE` of type PRODUCT. The excluded domains are discovery's (directories, review,
+      social and video sites) plus papers, chats, notebooks, package registries and app stores
+      (`links.exclude-domains`). They apply to this kind only: they never drop a model or a course.
+    - **Kinds no reader confirms follow the rule of other links.** An arXiv paper, a PyPI or npm package, a Hugging
+      Face dataset and a Space have no reader by id: the arXiv, npm and Spaces sources only search, PyPI is read from
+      BigQuery, and deps.dev states a package's version, licence and repository but no description, so the checks of
+      their sources cannot run. Their hosts are excluded domains or their pages are not product pages, so they give
+      nothing.
+    - **Limits.** Each address is kept once per pass, at most `links.max-per-pass` (500) candidates, and only on the
+      first run of a pass. At most `links.max-models-per-pass` (100) models are read per pass, one call each, after
+      the entries: 100 is the size of one `hf-trending` page, so a pass asks the Hub for no more models than that
+      collector does. When the lists link more models, they are sorted by address and each UTC day reads the next
+      100 of them, wrapping at the end (`DailyWindow`): every model is read within a few passes, with no cursor to
+      keep. The calls go through the collector's policy (`collector-github-awesome`) and stop when
+      the run's time or README budget (point 16) is spent. A model the Hub does not show is no failure of the policy. A rate limit or any other
+      failure ends the reading of models for this pass, so one failed call is the most the circuit sees; the models
+      left are read at the next pass. `H2_SOURCE_HF_TRENDING_ENABLED=false` or 0 models a pass turns the reading
+      off: a model link then follows the rule of other links.
+    - A candidate is never indexed straight away. Its title is the link's words (the name of the product or the
+      course), or the host when the words name only a place ("website", "demo"); a model's title is its id. It has
+      no excerpt: the list's text is not kept. Its `foundBy` entry records `github-awesome`, the list's URL and the
+      section's heading path.
     - At most `links.per-day` (50) new items a UTC day. `ReviewQueueCandidateReview` counts the items this collector
-      opened since midnight UTC in the database. Past the cap, a link opens nothing new but still joins the OPEN item
-      of the same site, so a product that discovery and a list both found is one item with both finders.
+      opened since midnight UTC in the database, courses included. Past the cap, a link opens nothing new but still
+      joins the OPEN item of the same site, so a product that discovery and a list both found is one item with both
+      finders. A course past the cap waits for the next pass.
       When the cap held links back at the end of a pass, the runner gives the cursor `held-back` and the next run
       proposes the links again: the ones already open join their item, the next 50 are opened. That run reads the
-      lists but classifies no entry again: the entries were done on the run before.
+      lists and the models but classifies no entry again: the entries were done on the run before.
 18. **Section headings become categories.** The category matcher ([0026](../search/0026-filters-facets-categories.md))
     gets the heading paths as one more input. Each heading of a path is read alone, like a tag: it gives a category
     when it is the category's id ("Voice and audio") or has one of its words ("Vector databases"). A category that
@@ -266,15 +303,18 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       (`awesome_list_entry.heading_path`). `IndexAwesomeLists` assigns the categories of a list's entries again after
       it writes them, so a new heading counts in the same run.
 19. **Metrics.** `helper2.scout.awesome.lists{depth=seed|nested}` counts lists read, `helper2.scout.awesome.candidates`
-    links proposed, `helper2.scout.awesome.skips{reason}` every skip: a nested list (`nested-seen`, `nested-depth`,
+    links proposed, `helper2.scout.awesome.models` models read and indexed, `helper2.scout.awesome.skips{reason}` every skip: a nested list (`nested-seen`, `nested-depth`,
     `nested-cap`, `nested-archived`, `nested-fork`, `nested-few-stars`, `nested-not-ai`, `nested-unavailable`), a budget
-    (`time-budget`, `size-budget`, `rate-limited`, `readme-unavailable`) or a link (`link-seen`, `link-cap`, and `link-`
-    plus the reason of `ProductLinks`). The reasons are a fixed set ([0009](../foundation/0009-observability.md)). No
+    (`time-budget`, `size-budget`, `rate-limited`, `readme-unavailable`), a link (`link-seen`, `link-cap`, and `link-`
+    plus the reason of `ProductLinks`) or a model (`model-cap`, `model-not-found`, `model-rate-limited`,
+    `model-unavailable`). The reasons are a fixed set ([0009](../foundation/0009-observability.md)). No
     URL or list text is logged.
 20. **Configuration.** Under `helper2.scout.github-awesome` (`CollectorProperties.GitHubAwesome`):
     `H2_SCOUT_AWESOME_MAX_RUN_TIME`, `H2_SCOUT_AWESOME_MAX_README_BYTES`, `H2_SCOUT_AWESOME_NESTED_DEPTH`,
-    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`. Defaults in `application.yaml`. Depth 0 turns
-    nested lists off; 0 links a day turns product links off.
+    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`; `links.max-per-pass`,
+    `links.max-models-per-pass` and `links.model-index-min-likes` are fixed in the YAML. Defaults in `helper2-shared.yaml`. Depth 0 turns nested lists
+    off; 0 links a day turns the review items off; 0 models a pass turns the reading of models off. The Hub client
+    is the one of `helper2.sources.hf-trending` (base URL, `H2_HF_TOKEN`, timeout).
 
 ### Discovery hosts
 21. **A table of hosts.** `discovery_host` (`V1__schema.sql`): one row per host, its kind (WRITING or DIRECTORY), who
@@ -320,8 +360,13 @@ No new table for deep search, no new dependency.
   category; `CollectorsConfiguration.java`; the categories in `application.yaml` (`helper2.categories`);
   `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java` (nested lists, budgets),
-  `ProductLinks.java` (link checks), `AwesomeMetrics.java`, `AwesomeListParser.java` (`Link`, `Entry.pointsAtList`),
-  `GitHubAwesomeCollector.java` (`Deep`, `candidates`, `candidate`, `repoFacts`).
+  `ListEntryLinks.java` (a link's kind), `DailyWindow.java` (the day's share of capped reads),
+  `ProductLinks.java` (link checks), `AwesomeMetrics.java`,
+  `AwesomeListParser.java` (`Item`, `Link`, `Entry.pointsAtList`, `SearchBudget`), `GitHubAwesomeCollector.java`
+  (`Deep`, `LinkRules`, `links`, `readModels`, `candidate`, `searchEntries`, `repoFacts`);
+  `sources/huggingface/scout/HuggingFaceModelReader.java` (a model by its id);
+  `sources/liveweb/scout/CoursePages.java` (the course rule);
+  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt` (`huggingFaceModel`).
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt` — `ListSeed`, `ListSeedStore`,
   `ListAddresses`; `scout/usecase/ManageListSeeds.kt`; `scout/internal/JdbcListSeedStore.java`;
   `admin/web/ListSeedsController.java`; `V2026.11.8.4__list_seed.sql`; `frontend/src/admin/ListSeedsPanel.tsx`.
@@ -351,7 +396,8 @@ No new table for deep search, no new dependency.
 - `deploy/monitoring/helper2-rules.yaml` — `Helper2DiscoveryStale`.
 - Tests: `DiscoveryCollectorTest` (`tavilysOwnPagesAreNeitherCandidatesNorListPages`), `TavilySourceTest`,
   `DiscoveryPagesTest`, `DiscoveryCollectorRegistrarTest`, `CollectorsParityIT`, `ScoutSourceDescriptorsParityTest`, `RunIntervalTest`, `IndexAcceptedCandidateTest`,
-  `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `GitHubAwesomeDeepSearchTest`,
+  `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `ListEntryLinksTest`,
+  `HuggingFaceModelReaderTest`, `CoursePagesTest`, `GitHubAwesomeDeepSearchTest`,
   `AwesomeListParserTest`, `CategoryMatcherTest`, `CollectorPropertiesTest`, `AwesomeListSearchIT`,
   `AwesomeDeepSearchIT`, `ManageDiscoveryHostsTest`, `JdbcDiscoveryHostStoreIT` (the seed), `DiscoveryHostsApiIT`,
   `CatalogPurgeExpiredDataIT`, `JdbcCatalogWriterIT`, `ResiliencePoliciesConfigIT`, `ReportAndReviewIT`
@@ -388,13 +434,15 @@ No new table for deep search, no new dependency.
   batch runs read the lists.
 
 ## Consequences
-- The catalog grows in the areas no registry covers. No product enters it from the open web or from a list's link
-  without a person; list pages are indexed as ARTICLE without review.
+- The catalog grows in the areas no registry covers. No product and no course enters it from the open web or from a
+  list's link without a person; list pages are indexed as ARTICLE without review. A Hugging Face model a list links
+  is indexed without a person only when the Hub confirms it and it has 10 likes or more.
 - Search can filter by the categories: every result carries their tags, and a resource also gets the categories of
   the sections it is listed under.
 - A person reviews the candidates of 4 or 5 categories a day instead of 34 at once. The total is a guess (50-200 a
   week), to measure in the first weeks. If it is too many, raise a category's `min-score`, turn on its
-  `require-keyword`, or turn it off (`enabled: false`). Lists add at most 50 product links a day.
+  `require-keyword`, or turn it off (`enabled: false`). Lists add at most 50 review items a day: product links,
+  course pages and models under the like floor together.
 - Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). The daily cap (40) is
   about four times a normal day (5 categories × ~1.2 searches × 2 credits); on LinkedIn's day its 20 basic searches
   bring the day to about 32. Deep search spends no credits.
@@ -415,7 +463,8 @@ No new table for deep search, no new dependency.
 - Retention ([0010](../foundation/0010-data-retention.md)): list pages (ARTICLE) are deleted 180 days after
   `retrieved_at` (`H2_RETENTION_WEB_NEWS`); an accepted product stays as long as it is listed; a review item stays
   until it is decided, then 180 days. The search facts go with their record or item.
-- Privacy: no user data in the searches. `discovery_host` and `list_seed` hold the GitHub user ID of the
+- Privacy: no user data in the searches. The Hugging Face Hub is asked only for the id of a model a public list
+  links. `discovery_host` and `list_seed` hold the GitHub user ID of the
   administrator who added a host or a list and the reason they wrote. The Privacy page lists both, with their
   retention.
 - List pages are indexed without review. Their claims are not facts in the catalog: they are `ARTICLE`s, and
@@ -428,6 +477,7 @@ No new table for deep search, no new dependency.
 
 ### Known limits
 - Each product that discovery finds (consumer tools, hosting, prompt libraries) waits for an admin: the weekly review load and the share accepted decide each category's `min-score` and the categories.
+- A link of a list entry to an arXiv paper ([S2.3.10](https://github.com/silvioincalza/helper2.ai/issues/848)), an npm package ([S2.3.11](https://github.com/silvioincalza/helper2.ai/issues/849)), a PyPI package ([S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851)) gives nothing: no reader confirms these by id. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
 - Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap.
 - No weekly alert watches the Scout's credits (`helper2_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
 - There is no host deny list and no cap on list pages per host per pass; vendor compare and alternatives pages are not dropped; Chrome Web Store, Firefox add-on and GPT links are not recognised; press pages keep long excerpts, and an excerpt can hold an email address; open candidates do not expire; any collector can be the source of a candidate.
@@ -443,15 +493,16 @@ No new table for deep search, no new dependency.
 | Threat | Risk | Control |
 |---|---|---|
 | Spoofing | A page pretends to be a product; a look-alike site or a list that pretends to be about AI; Tavily's own profile pages | Every product waits for a person; the URL is checked again on accept (`CanonicalUrl`), the type must be one a finder declares, tags must be tag-shaped, the source a known collector. Punycode, IP, user info and private names skipped; a nested list needs AI words, 50 stars, not archived or forked. Tavily's own pages are dropped. |
-| Tampering | A hostile link (`javascript:`, `data:`, an open redirect, a shortener, an internal host); an admin adds a host that matches too much | https only, redirect patterns and shorteners skipped, private names and IPs skipped; we never fetch a candidate URL here, the evidence ladder checks it again before reading ([0014](0014-evidence-gated-enrichment.md)). Host checks, the 500 cap, one list per host, an audit row per change. A merge only joins tags and finders, never the URL or the title. |
+| Tampering | A hostile link (`javascript:`, `data:`, an open redirect, a shortener, an internal host); a link written to make the server call another host (SSRF); an admin adds a host that matches too much | https only, redirect patterns and shorteners skipped, private names and IPs skipped; we never fetch a candidate URL here, the evidence ladder checks it again before reading ([0014](0014-evidence-gated-enrichment.md)). The one call a link causes goes to the configured Hub address, never to the link: only `owner/name` is taken from it, each part letters, digits, `.`, `_` and `-` starting with a letter or a digit, sent as two path parts. Host checks, the 500 cap, one list per host, an audit row per change. A merge only joins tags and finders, never the URL or the title. |
 | Repudiation | Not knowing why an item is in review, or who changed a host list | `foundBy` records each collector, the search or the list URL and section; every host change has an audit row with the admin, the time, the list and the reason. |
 | Information disclosure | List text or personal data kept | Fixed queries with no user data; the favicon URL is text and never loaded; only the link, its words (≤ 100 characters) and the heading path (≤ 200) of a list entry; no README text. The admin ID is shown on the admin page only. |
-| Denial of service / cost | Credits; a list graph that never ends, a huge README, a flood of links | One or two calls per category a week, a shared circuit breaker (`collector-discovery`), `max_results` 10, a daily credit cap; depth 2, 30 nested lists, a set against cycles, 15 min and 50 MB a run, 5 MB a README, 500 links a pass, 50 new items a day; 500 hosts, read with one query. |
+| Denial of service / cost | Credits; a list graph that never ends, a huge README, a flood of links, a list of thousands of model links | One or two calls per category a week, a shared circuit breaker (`collector-discovery`), `max_results` 10, a daily credit cap; depth 2, 30 nested lists, a set against cycles, 15 min and 50 MB a run, 5 MB a README, 2,000 links a list, 500 candidates a pass, 50 new items a day (products, courses and models together); 100 Hub calls a pass, 1 MB an answer, inside the run's time budget, stopped at the first failure; 500 hosts, read with one query. The Hub calls are free. |
 | Elevation of privilege | — | Only an admin can accept or change a host list (back office, VPN, [0036](../identity/0036-identity-and-the-admin-host.md)). The admin page renders a candidate as text and links only `https://` URLs. The category filter is checked as a tag and is a bound parameter. |
 
 - **SEO spam**: list pages are indexed without review. Links to other sites carry `rel="nofollow ugc"` on our pages, so
   a page that gets in gains no ranking from us. Control characters are removed from every web text.
-- **Prompt injection** (OWASP LLM Top 10): no model reads a search result or a list here. Web text reaches a model in
+- **Prompt injection** (OWASP LLM Top 10): no model reads a search result, a list or a link's words here: the kind of
+  a link is decided by its address, a course by fixed words. Web text reaches a model in
   enrichment ([0014](0014-evidence-gated-enrichment.md)) and, as a search result, in the guide's choice step
   ([0031](../guide/0031-guide-pipeline.md)). Both treat it as untrusted text and check every quote. The classifier gets
   a section name, cleaned as in [0023](../search/0023-catalog-full-text-index.md). Categories from headings are made
@@ -465,17 +516,17 @@ No new table for deep search, no new dependency.
 | 1 | Model | Covered: no model sorts results, picks categories or follows lists. The awesome-list classifier sees more entries (the nested lists'); its daily cap is unchanged. |
 | 2 | Agent Framework | Deferred, safe: no agent. |
 | 3 | Orchestration | Covered: one Scout step per category, staggered; a failed or capped pass stays open; deep search stops on its budgets and the next pass goes on. |
-| 4 | Tool & API | Covered: Tavily search and the GitHub REST and GraphQL APIs, each under its collector's policy. |
+| 4 | Tool & API | Covered: Tavily search, the GitHub REST and GraphQL APIs and the Hugging Face Hub's model record, each under its collector's policy. |
 | 5 | Memory | Deferred, safe: nothing about users. |
 | 6 | Knowledge & RAG | Covered: more lists in the list index; more categories for retrieval filters. |
 | 7 | Data | Covered: `discovery_host` in V1; review items and heading paths; provenance in `foundBy` and `source_record.extra`. |
-| 8 | Browser & Computer Use | Deferred, safe: no page is fetched; product links are only stored for review. |
+| 8 | Browser & Computer Use | Deferred, safe: no page is fetched; product and course links are only stored for review, a model is read from the Hub's API. |
 | 9 | Guardrails | Covered: URL rules and the shapes, Tavily's own pages dropped, `ProductLinks`, host checks, the tag cap, `require-keyword`. |
 | 10 | Observability | Covered: run records, credit metrics, the deep-search metrics, `Helper2DiscoveryStale`. |
 | 11 | Evaluation | Gap, deferred: the share of good candidates and category precision from headings are measured once the review has run some weeks and the category eval has labels ([0026](../search/0026-filters-facets-categories.md)). |
 | 12 | Deployment | Covered: settings with safe defaults, no chart change. Rollback: `enabled: false` per category, depth 0 and 0 links a day. |
 | 13 | Security & Identity | Covered: the host endpoints are ADMIN only on the back office, CSRF on writes; no new secret. |
-| 14 | Human-in-the-Loop | Covered: every product and post waits for a person; a host list changes only by an admin, audited. |
+| 14 | Human-in-the-Loop | Covered: every product, course and post waits for a person, and so does a model under the like floor; a host list changes only by an admin, audited. |
 | 15 | Cost & Reliability | Covered: the Scout's daily credit cap on the global counter, a shared circuit, deep search's time and size budgets. |
 
 ### Legal points
@@ -490,5 +541,8 @@ discovery hosts: [flow](../../diagrams/flow-0013-discovery-hosts.svg) · [sequen
 - Decides: [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
 - Open issues that change it:
   - [S2.3.5](https://github.com/silvioincalza/helper2.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
-  - [S2.3.8](https://github.com/silvioincalza/helper2.ai/issues/842): every link of a list entry goes to the rule of its kind.
   - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a web page that lists AI resources is split into its items.
+  - [S2.3.10](https://github.com/silvioincalza/helper2.ai/issues/848): an arXiv paper a list links to is read by its id.
+  - [S2.3.11](https://github.com/silvioincalza/helper2.ai/issues/849): an npm package a list links to is read by its name.
+  - [S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850): a PyPI package a list links to is read by its name.
+  - [S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851): a Hugging Face dataset or Space a list links to is read by its id.

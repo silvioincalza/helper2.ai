@@ -68,10 +68,17 @@ Two kinds of source need more care:
      `GET /repos/{owner}/{repo}`; a list the search also found costs no extra call. An archived list and one GitHub
      does not find are skipped (`helper2.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay
      added; a renamed one is read under its new name. From there an added list is a seed like the others: its nested
-     lists, its entries, its product links and its type follow the same rules. Removing it stops the reading; the
+     lists, its entries, its links and its type follow the same rules. Removing it stops the reading; the
      list and what was found in it stay in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`,
      `POST /api/v1/admin/list-seeds/{owner}/{repository}/remove`, both changes in the audit trail (`ADD_LIST_SEED`,
      `REMOVE_LIST_SEED`).
+   - **An entry is a list item with a web link.** An indented item with its own link is its own entry. The lines
+     under an item that have no link of their own (a summary, the authors, a sub-item without a link) belong to it:
+     their words are part of its text, at most 20 lines and 500 characters.
+   - **Every link of an entry goes to the rule of its kind**, sorted by its host ([0013](0013-discovery.md) §17):
+     a GitHub repository by the rules below; a Hugging Face model by the Hub's own record; a page on a course
+     platform (point 7) to review as a `COURSE_CANDIDATE`; any other link to review as a `RESOURCE_CANDIDATE`.
+     Nothing a source cannot confirm is indexed without a person.
    - Each README (up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
      `H2_SCOUT_AWESOME_PER_RUN` (1000) per run, so a pass ends in one daily run; a pass cut short by
      `max-items-per-run` resumes after the last repository name it handled (entries sorted by name), so a list that
@@ -137,7 +144,8 @@ Two kinds of source need more care:
    `scout-courses`). A result is kept only when it is on the platform's host
    and path, about AI, and reads like a course or certification page. Kept pages are **candidates**, not hits: each
    becomes a `COURSE_CANDIDATE` review item, and nothing reaches the catalog until an admin accepts it. Off without
-   `H2_LIVE_WEB_API_KEY`.
+   `H2_LIVE_WEB_API_KEY`. The rule that says a page is a course is in one place, `CoursePages`: the awesome-list
+   collector asks it for the links of its lists (point 6).
 8. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
    `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token
    and without following redirects (`HttpClients.getWithoutRedirect`): a redirect fails the file.

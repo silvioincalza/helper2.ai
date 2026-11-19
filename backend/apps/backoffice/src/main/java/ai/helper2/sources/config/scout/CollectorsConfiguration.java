@@ -19,6 +19,7 @@ import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
 import ai.helper2.search.ShadowLibraries;
+import ai.helper2.search.VitalityPolicy;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
@@ -42,9 +43,11 @@ import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
 import ai.helper2.sources.github.scout.GitHubTopicLeadersCollector;
 import ai.helper2.sources.github.scout.SdkSearchPlan;
+import ai.helper2.sources.huggingface.scout.HuggingFaceModelReader;
 import ai.helper2.sources.huggingface.scout.HuggingFaceProviderOrgsCollector;
 import ai.helper2.sources.huggingface.scout.HuggingFaceTrendingCollector;
 import ai.helper2.sources.liveweb.scout.CourseCollector;
+import ai.helper2.sources.liveweb.scout.CoursePages;
 import ai.helper2.sources.liveweb.scout.LinkedInCollector;
 import ai.helper2.sources.liveweb.scout.LiveWebEventsCollector;
 import ai.helper2.sources.liveweb.scout.LiveWebNewsCollector;
@@ -61,6 +64,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -276,6 +280,7 @@ class CollectorsConfiguration {
       SourcesProperties p,
       CollectorProperties.GitHubAwesome c,
       CollectorProperties.Discovery discovery,
+      CollectorProperties.Courses courses,
       CategoryMatcher categories,
       Clock clock,
       Resilience resilience,
@@ -288,7 +293,8 @@ class CollectorsConfiguration {
       MeterRegistry meters,
       DiscoveryHostStore hosts,
       ListSeedStore addedLists,
-      ShadowLibraries shadowLibraries) {
+      ShadowLibraries shadowLibraries,
+      VitalityPolicy vitality) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -328,7 +334,33 @@ class CollectorsConfiguration {
         meters,
         hosts,
         addedLists,
-        shadowLibraries);
+        shadowLibraries,
+        new GitHubAwesomeCollector.LinkRules(
+            new CoursePages(courses.platforms()),
+            modelReader(p.get("hf-trending"), clock, resilience, observations, http),
+            listedModelAdmission(vitality, c.links().modelIndexMinLikes())));
+  }
+
+  static AdmissionPolicy listedModelAdmission(VitalityPolicy vitality, int minLikes) {
+    return new AdmissionPolicy(
+        vitality,
+        new AdmissionRules(Map.of(CollectorIds.GITHUB_AWESOME, new IndexFloor(0, null, minLikes))));
+  }
+
+  private static @Nullable HuggingFaceModelReader modelReader(
+      SourceSettings hub,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    if (!hub.enabled()) {
+      return null;
+    }
+    return new HuggingFaceModelReader(
+        HttpClients.client(collectorClient(hub, observations, http), hub),
+        resilience,
+        "collector-" + CollectorIds.GITHUB_AWESOME,
+        clock);
   }
 
   @Bean
@@ -359,6 +391,7 @@ class CollectorsConfiguration {
         c.maxRunTime(),
         c.maxReadmeBytesPerRun().toBytes(),
         c.links().maxPerPass(),
+        c.links().maxModelsPerPass(),
         c.links().perDay(),
         excluded);
   }
