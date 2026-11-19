@@ -10,7 +10,6 @@ import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.config.CollectorDescriptors;
-import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
@@ -24,7 +23,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -37,11 +35,6 @@ public class CourseCollector implements Collector {
   static final String FEATURE = "scout-courses";
   private static final String SEARCH_DEPTH = "basic";
   private static final int MAX_RESULTS_PER_PLATFORM = 10;
-  private static final Pattern COURSE_WORDS =
-      Pattern.compile(
-          "\\b(courses?|certifications?|certificates?|certified|specializations?|training|bootcamp|exam|class|learning path|"
-              + "nanodegree|workshop|live event|tutorials?|lessons?)\\b",
-          Pattern.CASE_INSENSITIVE);
 
   record Platform(String host, String pathPrefix, String name) {
     static Platform parse(String spec) {
@@ -96,8 +89,7 @@ public class CourseCollector implements Collector {
     }
     this.interval = interval;
     this.query = query == null ? "" : query.strip();
-    this.platforms =
-        platformSpecs.stream().map(Platform::parse).filter(java.util.Objects::nonNull).toList();
+    this.platforms = new CoursePages(platformSpecs).platforms();
     this.liveWeb =
         new ScoutLiveWebSearch(
             HttpClients.client(builder, settings),
@@ -180,16 +172,7 @@ public class CourseCollector implements Collector {
       return null;
     }
     String content = HttpClients.text(r, "content");
-    if (!Classification.isAiRelated(title, content, Set.of())) {
-      return null;
-    }
-    String text =
-        title
-            + " "
-            + (content == null ? "" : content)
-            + " "
-            + url.getValue().replace('-', ' ').replace('/', ' ');
-    if (!COURSE_WORDS.matcher(text).find()) {
+    if (!CoursePages.isAiCourse(title, content, url)) {
       return null;
     }
     return new Candidate(

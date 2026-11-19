@@ -109,6 +109,7 @@ class CollectorPropertiesTest {
       assertThat(awesome.nested()).isEqualTo(new CollectorProperties.GitHubAwesome.Nested(2, 30));
       assertThat(awesome.links().perDay()).isEqualTo(50);
       assertThat(awesome.links().maxPerPass()).isEqualTo(500);
+      assertThat(awesome.links().maxModelsPerPass()).isEqualTo(100);
       assertThat(awesome.links().excludeDomains()).contains("arxiv.org", "discord.gg");
       assertThat(c.getBean(CollectorProperties.HfProviderOrgs.class))
           .isEqualTo(

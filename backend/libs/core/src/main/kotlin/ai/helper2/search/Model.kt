@@ -169,6 +169,8 @@ constructor(
   val curatedFields: Set<String> = emptySet(),
   val vitality: Vitality = Vitality.UNKNOWN,
 ) {
+  fun withExternalId(externalId: String): SourceHit = copy(externalId = externalId)
+
   fun withRepository(repositoryUrl: CanonicalUrl?): SourceHit = copy(repositoryUrl = repositoryUrl)
 
   fun withDescription(description: String?): SourceHit = copy(description = description)
