@@ -128,7 +128,7 @@ Apart from the radar mark, icons are small stroke glyphs beside words, never alo
 
 ## Home page
 
-1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI universe."; one line on what it does. Around it the radar (see Radar).
+1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
 2. **Pinned search box**, full width up to 820px: box, Search, Ask the guide, one hint line (the keys with a mouse; "Search, or tap Ask for picks with proof." on a touch screen), the "Try:" chips, the radar legend ("5-10 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
 3. **New in the catalog** and **Coming up**: two tables side by side, like `ls -l`, stacked below 920px; tabs below 768px. See HomeLists.
 4. **What helper2 does for you**: a quiet strip of three steps.

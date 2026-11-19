@@ -48,7 +48,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,
    the theme switch), then one line: what is searched, who and where. It makes no claim about ads ([0042](../money/0042-monetisation.md)).
 6. **Home: the title, the radar, a pinned search box, two lists.** The title is one `h1` on two lines: "helper2.ai",
-   then "The metasearch for the AI universe.", with one line under it. Behind it rises a radar that works like a
+   then "The metasearch for the AI ecosystem.", with one line under it. Behind it rises a radar that works like a
    navigation radar: a half dome from the bottom middle of the title block, range rings, dotted bearing lines every
    30°, ticks every 5° on the outer ring of the arc it shows, a glowing origin, and a sweep that turns once every 5 s: a bright leading
    line with a soft halo and a trail that fades over 56°.

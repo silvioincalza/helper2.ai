@@ -9,7 +9,7 @@ class Pages(private val base: String) {
 
   fun home(): PageHead =
     PageHead(
-      title = "$BRAND: the metasearch for the AI universe",
+      title = "$BRAND: the metasearch for the AI ecosystem",
       description =
         "One search across the world of AI for models, apps, MCP servers and papers. " +
           "Ask the guide for a pick with proof.",
