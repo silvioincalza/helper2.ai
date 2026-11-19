@@ -276,7 +276,9 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     - **Limits.** Each address is kept once per pass, at most `links.max-per-pass` (500) candidates, and only on the
       first run of a pass. At most `links.max-models-per-pass` (100) models are read per pass, one call each, after
       the entries: 100 is the size of one `hf-trending` page, so a pass asks the Hub for no more models than that
-      collector does. The calls go through the collector's policy (`collector-github-awesome`) and stop when
+      collector does. When the lists link more models, they are sorted by address and each UTC day reads the next
+      100 of them, wrapping at the end (`DailyWindow`): every model is read within a few passes, with no cursor to
+      keep. The calls go through the collector's policy (`collector-github-awesome`) and stop when
       the run's time or README budget (point 16) is spent. A model the Hub does not show is no failure of the policy. A rate limit or any other
       failure ends the reading of models for this pass, so one failed call is the most the circuit sees; the models
       left are read at the next pass. `H2_SOURCE_HF_TRENDING_ENABLED=false` or 0 models a pass turns the reading
@@ -358,7 +360,8 @@ No new table for deep search, no new dependency.
   category; `CollectorsConfiguration.java`; the categories in `application.yaml` (`helper2.categories`);
   `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java` (nested lists, budgets),
-  `ListEntryLinks.java` (a link's kind), `ProductLinks.java` (link checks), `AwesomeMetrics.java`,
+  `ListEntryLinks.java` (a link's kind), `DailyWindow.java` (the day's share of capped reads),
+  `ProductLinks.java` (link checks), `AwesomeMetrics.java`,
   `AwesomeListParser.java` (`Item`, `Link`, `Entry.pointsAtList`, `SearchBudget`), `GitHubAwesomeCollector.java`
   (`Deep`, `LinkRules`, `links`, `readModels`, `candidate`, `searchEntries`, `repoFacts`);
   `sources/huggingface/scout/HuggingFaceModelReader.java` (a model by its id);
