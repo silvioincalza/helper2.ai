@@ -37,6 +37,7 @@ MUTATIONS_PER_REQUEST = 20
 POINTS_PER_REQUEST = 1
 SHORT_WAIT = 300.0
 RESET_MARGIN = 5.0
+SERVER_ERROR_WAIT = 10.0
 VALUE_KEYS = ("name", "text", "number")
 NOON = 1_800_000_000.0
 ROADMAP_HEADER = """# Roadmap
@@ -74,6 +75,7 @@ class Answer:
         head, _, body = done.stdout.replace("\r\n", "\n").partition("\n\n")
         pairs = (line.partition(":") for line in head.split("\n")[1:])
         self.passed = done.returncode == 0
+        self.unavailable = bool(re.match(r"HTTP/\S+ 5\d\d", head))
         self.headers = {name.strip().lower(): value.strip() for name, _, value in pairs}
         self.body = GhCli.parsed(body)
         self.error = f"{done.stderr.strip()}\n{body.strip()}".strip()
@@ -115,7 +117,7 @@ class GhCli:
             self.note_budget(answer.headers)
             if answer.passed:
                 return answer.body
-            if not (answer.paused or answer.out_of_budget):
+            if not (answer.paused or answer.out_of_budget or answer.unavailable):
                 sys.exit(f"gh api {' '.join(args[:3])} failed:\n{answer.error}")
             if attempt < GH_ATTEMPTS:
                 self.hold(answer, attempt)
@@ -132,6 +134,9 @@ class GhCli:
     def hold(self, answer: Answer, attempt: int) -> None:
         if answer.paused:
             self.wait(float(answer.headers.get("retry-after", self.backoff * attempt)))
+            return
+        if answer.unavailable:
+            self.wait(SERVER_ERROR_WAIT * attempt)
             return
         reset = answer.headers.get("x-ratelimit-reset")
         if not reset:
@@ -962,6 +967,7 @@ def self_test() -> None:
     cases["a limit that resets soon is waited for, until the time GitHub gives"] = waits_until_the_reset()
     cases["a limit that resets later stops the run and says when to run again"] = stops_until_the_reset()
     cases["a pause GitHub asks for is kept, for the seconds it gives"] = keeps_the_pause_github_asks()
+    cases["a request GitHub fails to serve is sent again after a short wait"] = server_error_is_tried_again()
     cases["a write that needs more points than are left sends nothing"] = budget_is_checked_before_a_write()
     cases["a run that stopped half way is finished by the next run, nothing is written twice"] = partial_run_is_finished()
 
@@ -1196,6 +1202,13 @@ def keeps_the_pause_github_asks() -> bool:
     asked = replied({"message": "You have exceeded a secondary rate limit"}, code=1, err="gh: HTTP 403", retry_after=7)
     github = Scripted([asked, replied({"data": {"viewer": "x"}})])
     return quiet(lambda: github.graphql("query{viewer}")) == {"viewer": "x"} and github.slept == [7.0]
+
+
+def server_error_is_tried_again() -> bool:
+    down = subprocess.CompletedProcess([], 1, "HTTP/2.0 502 Bad Gateway\r\nServer: github.com\r\n\r\n<html>", "gh: HTTP 502")
+    github = Scripted([down, down, replied({"data": {"viewer": "x"}})])
+    read = quiet(lambda: github.graphql("query{viewer}"))
+    return read == {"viewer": "x"} and github.slept == [SERVER_ERROR_WAIT, SERVER_ERROR_WAIT * 2]
 
 
 def budget_is_checked_before_a_write() -> bool:
