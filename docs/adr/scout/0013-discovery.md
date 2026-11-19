@@ -303,7 +303,9 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       left are read at the next pass. Papers and packages follow the same rules, after the models: at most
       `links.max-papers-per-pass` (200) papers, 4 calls at 50 ids each, at least 3 s apart, so a pass holds
       arXiv's shared slot for about 12 s a day; at most `links.max-packages-per-pass` (100) packages, one call
-      each, the number of the models. A rate limit or a failure ends the reading of that kind only.
+      each, the number of the models. Past a cap, each kind moves through its links day by day like the models
+      (`DailyWindow`). A rate limit or a failure ends the reading of that kind only. Each call to arXiv, retries of
+      the policy included, first takes arXiv's shared slot.
       `H2_SOURCE_ARXIV_ENABLED=false`, `H2_SOURCE_NPM_ENABLED=false` or a cap of 0 turns a kind off. `H2_SOURCE_HF_TRENDING_ENABLED=false` or 0 models a pass turns the reading
       off: a model link then follows the rule of other links.
     - A candidate is never indexed straight away. Its title is the link's words (the name of the product or the

@@ -145,6 +145,55 @@ public class ArxivPaperReaderTest {
   }
 
   @Test
+  void aRetryOfThePolicyTakesTheSharedSlotAgainBeforeItsCall() {
+    server.route("/api/query", new FixtureServer.Reply(503, "", java.util.Map.of(), 0));
+    Resilience retriesOnce =
+        new Resilience() {
+          @Override
+          public <T> T call(String policy, java.util.function.Supplier<T> work) {
+            try {
+              return work.get();
+            } catch (RuntimeException e) {
+              return work.get();
+            }
+          }
+
+          @Override
+          public void require(String policy) {}
+        };
+    ArxivPaperReader reader =
+        new ArxivPaperReader(
+            TestHttp.restClientBuilder(
+                    Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP)
+                .baseUrl(server.baseUrl())
+                .build(),
+            retriesOnce,
+            "collector-github-awesome",
+            SourceFixtures.CLOCK,
+            throttle,
+            pauses::add);
+
+    assertThatThrownBy(() ->
+            reader.read(List.of("1706.03762"), "github-awesome", SourceFixtures.CLOCK.instant()))
+        .isInstanceOf(SourceFailure.class);
+
+    assertThat(server.requests).hasSize(2);
+    assertThat(slots).hasSize(2);
+  }
+
+  @Test
+  void aSlotThatStaysTakenIsNotRetriedByThePolicy() {
+    slotFreeAfter = Integer.MAX_VALUE;
+
+    assertThatThrownBy(() -> read("1706.03762"))
+        .isInstanceOfSatisfying(
+            SourceFailure.RateLimited.class,
+            e ->
+                assertThat(new ai.helper2.sources.support.TransientSourceFailure().test(e))
+                    .isFalse());
+  }
+
+  @Test
   void anIdThatIsNotAnArxivIdIsNeverSentAndTakesNoSlot() {
     assertThat(read("1706.03762&search_query=all", "../x", "")).isEmpty();
     assertThat(server.requests).isEmpty();
