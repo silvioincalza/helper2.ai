@@ -81,7 +81,11 @@ dependency without a release, measured (state, refused calls), and testable with
    `ArxivSource` takes the shared slot of `platform.resilience.OutboundThrottle`: `SET h2:v1:outbound:arxiv 1 NX PX 3000`
    in Redis (`RedisOutboundThrottle`, on the `redis` policy), so the key's expiry frees the slot on Redis' clock.
    Another replica holding the slot, or Redis down, means `RATE_LIMITED` (pause 3 s) without a call: the pace fails
-   closed, because breaking arXiv's terms costs more than a search without papers.
+   closed, because breaking arXiv's terms costs more than a search without papers. The Scout's reader of papers
+   by id takes the same slot inside the call it hands to its policy, so a retry of the policy takes it again too
+   (`ArxivSource.takesSlot`, `ArxivPaperReader`, [0013](../scout/0013-discovery.md) §17). It is a batch job, so it
+   waits 3 s and tries again, at most 5 times, then leaves the papers for the next pass: the pause it states
+   (1 minute) is longer than any the policy retries.
 10. **Metrics and traces without user text.** Calls are observed (`http.client.requests`, one client span,
     trace context sent on). `BoundedUriConvention` tags the path with numeric and id-like segments replaced
     by `{id}`, and drops the query string from the tag and from the span's `http.url`.
@@ -123,7 +127,7 @@ dependency without a release, measured (state, refused calls), and testable with
     | `redis` (search cache, budget counters, web-search quotas, rate limits, outbound throttle, session reads, the setup guide's fetch budget, the Scout's page text cache) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
     | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, guide answers, [0004](0004-persistence-and-the-schema.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the three catalog sources of 3, below the database pool of 16 | none: a miss costs one model call |
     | `llm-chat` (the other chat-model calls: query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0008](0008-llm-integration.md)) |
-    | `llm-chat-guide` (the AI guide's plan, choose, verify, compare and explain calls, public app) | as `llm-chat`, and a call over `H2_RESILIENCE_LLM_SLOW_CALL` (35 s, just under the 40 s model timeout, so only a call that nearly timed out counts) counts as slow: half the window failed or slow opens it. A call cancelled at its question's deadline, or stopped by the shorter timeout a question near its deadline gives it, is not the provider's failure and is not counted ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)). Its own circuit, so slow guide calls never refuse a translation or a setup guide | none | none |
+    | `llm-chat-guide-fast` (the AI guide's plan call, on the fast model) and `llm-chat-guide-reasoning` (its choose, verify, compare and explain calls, on the reasoning model), public app | as `llm-chat`, and a call over `H2_RESILIENCE_LLM_SLOW_CALL` (35 s, just under the 40 s model timeout, so only a call that nearly timed out counts) counts as slow: half the window failed or slow opens it. A call cancelled at its question's deadline, or stopped by the shorter timeout a question near its deadline gives it, is not the provider's failure and is not counted ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)). One circuit per guide model, so slow guide calls never refuse a translation or a setup guide, and an outage of one model never refuses the other's calls | none | none in resilience4j: the plan call itself is asked once more after a short provider outage ([0031](../guide/0031-guide-pipeline.md)) |
     | `llm-embed` (embedding calls of search queries and guide questions) | as `llm-chat`, every failure counts | none | none |
     | `llm-embed-index` (the embedding indexer's calls) | as `llm-embed`; its own circuit, so the indexer's failed batches never refuse a visitor's query ([0024](../search/0024-vector-search.md)); a text the provider refuses (400, 413, 422: `ModelErrors.RejectedInput`) does not count | none | none: the indexer sends a rejected batch one text at a time instead |
     | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0032](../guide/0032-guide-cost-guard-and-answer-cache.md)) | none |
@@ -140,7 +144,7 @@ dependency without a release, measured (state, refused calls), and testable with
     `H2_RESILIENCE_CATALOG_MAX_CONCURRENT` (3), `H2_RESILIENCE_COLLECTOR_OPEN_FOR` (1m),
     `H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `H2_RESILIENCE_REDIS_OPEN_FOR` (30s),
     `H2_RESILIENCE_DB_CACHE_OPEN_FOR` (30s), `H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT` (2),
-    `H2_RESILIENCE_LLM_OPEN_FOR` (30s), `H2_RESILIENCE_LLM_SLOW_CALL` (35s, `llm-chat-guide`), `H2_GUIDE_MAX_CONCURRENT` (8).
+    `H2_RESILIENCE_LLM_OPEN_FOR` (30s), `H2_RESILIENCE_LLM_SLOW_CALL` (35s, both guide circuits), `H2_GUIDE_MAX_CONCURRENT` (8).
 18. **No policy, no start.** `SearchResources` requires `source-<id>` for every enabled source and each collector
     requires `collector-<id>` when it is enabled, the model adapters require `llm-chat`, `llm-embed` or
     `llm-embed-index` (`LlmPolicies`), `GuideLimits` requires `guide` and `SharedCaches` requires `db-cache`, so a

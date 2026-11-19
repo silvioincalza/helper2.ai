@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.springframework.web.client.RestClient;
@@ -33,9 +34,21 @@ import org.w3c.dom.NodeList;
 
 public class ArxivSource implements SearchSource {
 
+  private static final List<String> AI_CATEGORY_IDS =
+      List.of("cs.AI", "cs.CL", "cs.LG", "cs.CV", "cs.MA", "cs.IR", "stat.ML");
   static final String AI_CATEGORIES =
-      "(cat:cs.AI OR cat:cs.CL OR cat:cs.LG OR cat:cs.CV OR cat:cs.MA OR cat:cs.IR OR cat:stat.ML)";
-  private static final Duration MIN_INTERVAL = Duration.ofSeconds(3);
+      AI_CATEGORY_IDS.stream().map(c -> "cat:" + c).collect(Collectors.joining(" OR ", "(", ")"));
+  public static final Duration MIN_INTERVAL = Duration.ofSeconds(3);
+  private static final String SHARED_SLOT = "arxiv";
+
+  public static boolean takesSlot(OutboundThrottle throttle) {
+    return throttle.tryAcquire(SHARED_SLOT, MIN_INTERVAL);
+  }
+
+  public static boolean isAboutAi(SourceHit paper) {
+    return AI_CATEGORY_IDS.stream().anyMatch(paper.getTags()::contains);
+  }
+
   private static final String ATOM = "http://www.w3.org/2005/Atom";
 
   private final RestClient http;
@@ -73,7 +86,7 @@ public class ArxivSource implements SearchSource {
 
   @Override
   public List<SourceHit> search(SourceQuery query) {
-    if (!throttle.tryAcquire("arxiv", MIN_INTERVAL)) {
+    if (!takesSlot(throttle)) {
       throw new SourceFailure.RateLimited(MIN_INTERVAL);
     }
     Instant now = clock.instant();
@@ -115,6 +128,10 @@ public class ArxivSource implements SearchSource {
   }
 
   List<SourceHit> parse(String xml, Instant now) {
+    return papers(xml, "arxiv", now);
+  }
+
+  public static List<SourceHit> papers(String xml, String sourceId, Instant now) {
     Document doc;
     try {
       DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
@@ -150,7 +167,7 @@ public class ArxivSource implements SearchSource {
       String summary = clean(text(e, "summary"));
       hits.add(
           new SourceHit(
-                  "arxiv",
+                  sourceId,
                   canonical.getValue(),
                   URI.create(canonical.getValue()),
                   canonical,

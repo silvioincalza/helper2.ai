@@ -16,7 +16,7 @@
 
 direction: down
 
-call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\ndb-cache, llm-chat, llm-chat-guide,\nllm-embed or llm-embed-index" {class: end}
+call: "Resilience.call(policy, work)\nsource-<id>, collector-<id>, redis,\ndb-cache, llm-chat, llm-chat-guide-fast,\nllm-chat-guide-reasoning, llm-embed\nor llm-embed-index" {class: end}
 named: "An instance with\nthis name exists?" {class: decision}
 unknown: "IllegalStateException\n(require at startup: no start)" {class: fail}
 

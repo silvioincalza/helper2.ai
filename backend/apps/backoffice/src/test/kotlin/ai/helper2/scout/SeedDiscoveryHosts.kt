@@ -72,3 +72,13 @@ class InMemoryDiscoveryHostStore : DiscoveryHostStore {
 
   override fun remove(host: String): DiscoveryHost? = hosts.remove(host)
 }
+
+class InMemoryListSeedStore : ListSeedStore {
+  private val seeds = LinkedHashMap<String, ListSeed>()
+
+  override fun all(): List<ListSeed> = seeds.values.toList()
+
+  override fun add(seed: ListSeed): Boolean = seeds.putIfAbsent(seed.repository, seed) == null
+
+  override fun remove(repository: String): ListSeed? = seeds.remove(repository)
+}

@@ -657,7 +657,11 @@ helper2.scout.github-awesome.classify-batch = 25
 helper2.scout.github-awesome.classify-max-tokens = 8192
 helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
 helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+helper2.scout.github-awesome.links.max-models-per-pass = 100
+helper2.scout.github-awesome.links.max-packages-per-pass = 100
+helper2.scout.github-awesome.links.max-papers-per-pass = 200
 helper2.scout.github-awesome.links.max-per-pass = 500
+helper2.scout.github-awesome.links.model-index-min-likes = 10
 helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
 helper2.scout.github-awesome.max-entries-per-pass = 1000
 helper2.scout.github-awesome.max-entries-per-run = ${H2_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
@@ -947,12 +951,16 @@ resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
 resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat-guide-judge.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat-guide-judge.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-chat-guide.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat-guide.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
-resilience4j.circuitbreaker.instances.llm-chat-guide.slow-call-rate-threshold = 50
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat.base-config = model
 resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model

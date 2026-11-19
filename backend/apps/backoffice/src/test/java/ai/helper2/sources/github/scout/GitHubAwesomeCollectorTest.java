@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.SeedDiscoveryHosts;
@@ -133,12 +134,31 @@ class GitHubAwesomeCollectorTest {
         ai.helper2.shared.CategoryMatcher.NONE,
         new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
         SeedDiscoveryHosts.store(),
-        SourceFixtures.SHADOW_LIBRARIES);
+        new InMemoryListSeedStore(),
+        SourceFixtures.SHADOW_LIBRARIES,
+        NO_LINK_RULES);
   }
+
+  static final GitHubAwesomeCollector.LinkRules NO_LINK_RULES =
+      new GitHubAwesomeCollector.LinkRules(
+          new ai.helper2.sources.liveweb.scout.CoursePages(List.of()),
+          null,
+          new ai.helper2.scout.admission.AdmissionPolicy(),
+          null,
+          null);
 
   static final GitHubAwesomeCollector.Deep DEEP =
       new GitHubAwesomeCollector.Deep(
-          2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
+          2,
+          30,
+          Duration.ofMinutes(15),
+          50_000_000L,
+          500,
+          100,
+          200,
+          100,
+          50,
+          List.of("youtube.com"));
 
   void routes() {
     server.route("/search/repositories", FixtureServer.Reply.ok(SEARCH));
@@ -353,7 +373,16 @@ class GitHubAwesomeCollectorTest {
 
   static final GitHubAwesomeCollector.Deep NO_NESTED_LISTS =
       new GitHubAwesomeCollector.Deep(
-          0, 30, Duration.ofMinutes(15), 50_000_000L, 500, 50, List.of("youtube.com"));
+          0,
+          30,
+          Duration.ofMinutes(15),
+          50_000_000L,
+          500,
+          100,
+          200,
+          100,
+          50,
+          List.of("youtube.com"));
 
   @Test
   void aRepositoryTheModelCallsAListIsOneOnlyWhenItsReadmeReadsAsOneAndKeepsItsKindOtherwise() {
@@ -425,7 +454,7 @@ class GitHubAwesomeCollectorTest {
         "acme/awesome-mcp", new RepoClassifier.Verdict(true, ResourceType.AWESOME_LIST));
     GitHubAwesomeCollector.Deep oneSmallReadme =
         new GitHubAwesomeCollector.Deep(
-            0, 30, Duration.ofMinutes(15), 10L, 500, 50, List.of("youtube.com"));
+            0, 30, Duration.ofMinutes(15), 10L, 500, 100, 200, 100, 50, List.of("youtube.com"));
 
     CollectedBatch batch = collector(model, 200, "t", oneSmallReadme).collect(null, null, 500);
 

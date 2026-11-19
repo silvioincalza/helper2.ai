@@ -36,6 +36,7 @@ tags:
   - name: settings
   - name: runtime-settings
   - name: discovery-hosts
+  - name: list-seeds
   - name: shadow-libraries
   - name: known-targets
   - name: relationship-targets
@@ -915,6 +916,78 @@ paths:
       responses:
         "204":
           { description: Removed; the next discovery run no longer uses it. }
+        "400": { $ref: "./common.yaml#/components/responses/Problem" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+        "404": { $ref: "./common.yaml#/components/responses/Problem" }
+
+  /admin/list-seeds:
+    get:
+      tags: [list-seeds]
+      operationId: listListSeeds
+      summary: The awesome lists an administrator added for the Scout to read, with who added each and why.
+      description: >-
+        The awesome-list collector reads these GitHub repositories at the start of every pass, before the lists its
+        own search finds, whatever their stars and name (ADR 0012).
+      responses:
+        "200":
+          description: Every list, oldest first.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListSeeds" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+    post:
+      tags: [list-seeds]
+      operationId: addListSeed
+      summary: Add a GitHub repository as a list to read.
+      description: >-
+        The address is "owner/name" or "https://github.com/owner/name", kept in lower case as "owner/name". 400 when it
+        is anything else (a file path, a branch, another site), for a reason that is not one plain line, and when
+        50 lists are added already. 409 when the repository is added already. Recorded in the audit trail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListSeedAdd" }
+      responses:
+        "201":
+          description: Added; the next pass of the awesome-list collector reads it.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListSeedEntry" }
+        "400": { $ref: "./common.yaml#/components/responses/Problem" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+        "409": { $ref: "./common.yaml#/components/responses/Problem" }
+
+  /admin/list-seeds/{owner}/{repository}/remove:
+    parameters:
+      - {
+          name: owner,
+          in: path,
+          required: true,
+          schema: { type: string, maxLength: 39 },
+        }
+      - {
+          name: repository,
+          in: path,
+          required: true,
+          schema: { type: string, maxLength: 100 },
+        }
+    post:
+      tags: [list-seeds]
+      operationId: removeListSeed
+      summary: Stop reading an added list.
+      description: >-
+        404 when the repository is not an added list. The list and the resources found in it stay in the catalog.
+        Recorded in the audit trail.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListSeedRemove" }
+      responses:
+        "204": { description: Removed; the next pass no longer reads it. }
         "400": { $ref: "./common.yaml#/components/responses/Problem" }
         "401": { $ref: "./common.yaml#/components/responses/Problem" }
         "403": { $ref: "./common.yaml#/components/responses/Problem" }
@@ -1894,6 +1967,51 @@ components:
             description: "One plain line; a control or format character is a 400.",
           }
 
+    ListSeedEntry:
+      type: object
+      required: [repository, addedBy, addedAt]
+      properties:
+        repository: { type: string, description: 'The GitHub repository, as "owner/name" in lower case.' }
+        addedBy: { type: string, description: The administrator who added it. }
+        addedAt: { type: string, format: date-time }
+        reason: { type: [string, "null"] }
+
+    ListSeeds:
+      type: object
+      required: [lists, max]
+      properties:
+        lists:
+          type: array
+          items: { $ref: "#/components/schemas/ListSeedEntry" }
+        max: { type: integer, description: The most lists an administrator can add. }
+
+    ListSeedAdd:
+      type: object
+      required: [address]
+      properties:
+        address:
+          {
+            type: string,
+            maxLength: 300,
+            description: '"owner/name" or "https://github.com/owner/name".',
+          }
+        reason:
+          {
+            type: [string, "null"],
+            maxLength: 500,
+            description: "One plain line; a control or format character is a 400.",
+          }
+
+    ListSeedRemove:
+      type: object
+      properties:
+        reason:
+          {
+            type: [string, "null"],
+            maxLength: 500,
+            description: "One plain line; a control or format character is a 400.",
+          }
+
     ShadowLibraryEntry:
       type: object
       required: [name, addedBy, addedAt]
@@ -2750,6 +2868,8 @@ components:
                 ADD_SHADOW_LIBRARY,
                 REMOVE_SHADOW_LIBRARY,
                 REMOVE_RESOURCE,
+                ADD_LIST_SEED,
+                REMOVE_LIST_SEED,
               ],
           }
         targetId:

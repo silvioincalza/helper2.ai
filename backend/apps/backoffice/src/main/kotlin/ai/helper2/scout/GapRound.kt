@@ -57,7 +57,7 @@ object GapTargets {
   private fun namesRepository(sourceId: String): Boolean =
     sourceId in GITHUB_SOURCES || WebSources.isDiscovery(sourceId)
 
-  private val HF_SOURCES = setOf("hf-models", "hf-trending", "hf-provider-orgs")
+  private val HF_SOURCES = setOf("hf-models", "hf-trending", "hf-provider-orgs", "github-awesome")
 
   private const val MCP = "mcp-registry"
 

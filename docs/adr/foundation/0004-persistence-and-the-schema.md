@@ -172,7 +172,7 @@ The schema is one file, and from the first release tag on that file must never c
    `flyway_schema_history` (`${flyway:table}` in the migration). The owner stays the user Flyway runs as (`helper2`
    in the chart).
    - `h2_public` reads every table but the Scout's and the enrichment's bookkeeping (`scout_run`, `scout_schedule`,
-     `source_cursor`, `discovery_host`, `enrichment_queue_control`, `candidate_decision`) and the admin audit trail
+     `source_cursor`, `discovery_host`, `list_seed`, `enrichment_queue_control`, `candidate_decision`) and the admin audit trail
      (`admin_audit`: no right at all, [0036](../identity/0036-identity-and-the-admin-host.md) §9). It writes only what a visit, a
      sign-in, a report or its own jobs write: `resource`, `resource_label`, `source_record` (the live results it
      observes), `source` (its sources at startup and their outcome), `issue_report` and `review_item` (a user's report),

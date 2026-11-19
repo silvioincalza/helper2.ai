@@ -60,7 +60,8 @@ Without a configured model the application must still work.
    its `BudgetedChat`: the repository classifier, the event reader and the Scout's enrichment. `TextCall` builds
    the request and names the adapter's own error for a spent budget and for a refused call. The only retry is
    ours: the guide tries once more when it cannot use an answer, for example malformed
-   JavaScript Object Notation (JSON) (`SpringAiGuideModel`). An answer the provider cut at the output limit (finish
+   JavaScript Object Notation (JSON) (`SpringAiGuideModel`), and its plan call tries once more after a short provider
+   outage (a 5xx or a broken connection, `ModelErrors.isOutage`, [0031](../guide/0031-guide-pipeline.md)). An answer the provider cut at the output limit (finish
    reason `length`, seen by `CutAnswerWatch`, an advisor on each call; a guide call read as a stream gives it the
    finish reason of its chunks) is not tried again: the same prompt with the
    same token limit would be cut again. The one exception is a guide call with a thinking budget: it is tried once
@@ -78,7 +79,9 @@ Without a configured model the application must still work.
    connection, timeout, 429, 5xx, a rejected call); a malformed answer, a spent budget or a call cut short because its
    question was cancelled (the thread interrupted at the question's deadline, `ModelErrors.isInterrupt`) counts as
    neither success nor failure (`ModelErrors.NotFromProvider`). A cancelled guide question stops: the interrupt is
-   kept, and the next step (`GuideSteps.step`) ends the question instead of running more searches. The AI guide's calls run under their own circuit, `llm-chat-guide`, where a
+   kept, and the next step (`GuideSteps.step`) ends the question instead of running more searches. The AI guide's calls run under their own circuits, one per model (`llm-chat-guide-fast` for the plan,
+   `llm-chat-guide-reasoning` for the other steps), so an outage of the fast model never refuses the reasoning model's
+   calls and the other way round. On both a
    call slower than `H2_RESILIENCE_LLM_SLOW_CALL` (35 s, just under the 40 s timeout; for a streamed call the time of the whole stream) also counts, so a provider that answers but too late opens it,
    and only the guide degrades. When at least half of the last 10 counted calls failed (or, for the guide, were slow;
    5 calls at least), the circuit opens for 30 s

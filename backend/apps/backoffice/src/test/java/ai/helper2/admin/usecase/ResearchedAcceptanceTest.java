@@ -12,6 +12,7 @@ import ai.helper2.shared.ResourceType;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -140,6 +141,39 @@ class ResearchedAcceptanceTest {
     assertThat(ResearchedAcceptance.describes(result, same)).isTrue();
     assertThat(ResearchedAcceptance.describes(result, editedUrl)).isFalse();
     assertThat(ResearchedAcceptance.describes(result, editedTitle)).isFalse();
+  }
+
+  @Test
+  void anEditToAConfirmedValueAfterTheResearchMakesItStale() {
+    ResearchResult result =
+        result(
+            ResearchAnswer.Verdict.KEEP,
+            confirmed("title", "Acme", "Acme"),
+            confirmed("license", null, "MIT"),
+            confirmed("pricing", "free", "freemium"));
+    UUID id = UUID.randomUUID();
+
+    assertThat(ResearchedAcceptance.describes(result, subject(id, Map.of("pricing", "free"))))
+        .isTrue();
+    assertThat(
+            ResearchedAcceptance.describes(
+                result, subject(id, Map.of("pricing", "free", "license", "Apache-2.0"))))
+        .isFalse();
+    assertThat(ResearchedAcceptance.describes(result, subject(id, Map.of("pricing", "paid"))))
+        .isFalse();
+    assertThat(ResearchedAcceptance.describes(result, subject(id, Map.of()))).isFalse();
+  }
+
+  private static ResearchSubject subject(UUID id, Map<String, String> confirmed) {
+    return new ResearchSubject(
+        id,
+        "RESOURCE_CANDIDATE",
+        "https://acme.example/",
+        "Acme",
+        "PRODUCT",
+        List.of(),
+        null,
+        confirmed);
   }
 
   @Test

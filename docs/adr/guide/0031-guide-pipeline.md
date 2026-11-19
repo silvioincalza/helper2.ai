@@ -40,7 +40,11 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
   `wantsReading`, a `webQuery`, a `window` and maybe a question back (below). Generic qualifiers ("open-source",
   "free", "MIT"…) are removed from the search query, which is cut to 6 words and 200 characters; the web query to 12
   words (`PlannedQueries`). A search query that holds a link (`LinkText.containsLink`) is no query. If the plan call
-  fails, or leaves no query, the user's own text is the query.
+  fails, or leaves no query, the user's own text is the query. A plan call hit by a short provider outage (a 5xx such
+  as 529 "System is overloaded", or a broken connection: `ModelErrors.isOutage`) is asked once more after 300 ms,
+  inside the question's time, and counted in `helper2.llm.outage_retry`: without a plan the whole answer loses its AI
+  part. A timeout, a rate limit or a rejected call is not asked again, and the reasoning model's calls are never
+  repeated after an outage.
 - **Retrieve**: `SearchResources.search` with `size` = `H2_GUIDE_MAX_CANDIDATES` (24). Unless the user asks for
   something to read (model flag or words such as "papers", "news", "articoli"), only tool types are searched.
 - **Choose** (reasoning model, `prompts/guide/choose.txt`, native JSON schema when `H2_NEBIUS_NATIVE_SCHEMA=true`):
@@ -628,14 +632,14 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 |---|---|---|
 | 1 | Model | Covered: fast model plans, reasoning model chooses, compares, explains and checks; NVIDIA only ([0008](../foundation/0008-llm-integration.md)); a provider outage is `LLM_UNAVAILABLE` with plain search results. |
 | 2 | Agent Framework | Deferred: no agent loop on purpose; a fixed pipeline per intent, driven by code. |
-| 3 | Orchestration | Covered: one request, steps in order, deadlines and the `llm-chat-guide` circuit; one retry only for an unusable answer, and one call with thinking off for a step cut while thinking. |
+| 3 | Orchestration | Covered: one request, steps in order, deadlines and one circuit per guide model (`llm-chat-guide-fast`, `llm-chat-guide-reasoning`); one retry for an unusable answer, one for a plan call hit by a short provider outage, and one call with thinking off for a step cut while thinking. |
 | 4 | Tool & API | Covered: no model tool calling; search is called by code with the planned query. |
 | 5 | Memory | Covered: no conversation state; one ask-back round trip carried by the request; answers cached per [0032](0032-guide-cost-guard-and-answer-cache.md). |
 | 6 | Knowledge & RAG | Covered: candidates from federated search; every pick, cell and sentence grounded by a verbatim quote. |
 | 7 | Data | Covered: nothing new stored by this pipeline; courses in V1 and `R__courses.sql`. |
 | 8 | Browser & Computer Use | Covered: none. |
 | 9 | Guardrails | Covered: the evidence gate, constraint checks from source metadata, link filter, the reason check, grounding of the planner's values, one SECURITY block. |
-| 10 | Observability | Covered: `helper2.guide.step`, `helper2.guide.picks`, `helper2.guide.quote_origin`, `helper2.llm.call` with prompt label, `helper2.llm.thinking_fallback{step,reason}`, the `guide timings` line without user text. |
+| 10 | Observability | Covered: `helper2.guide.step`, `helper2.guide.picks`, `helper2.guide.quote_origin`, `helper2.llm.call` with prompt label, `helper2.llm.thinking_fallback{step,reason}`, `helper2.llm.outage_retry{step}`, the `guide timings` line without user text. |
 | 11 | Evaluation | Covered: guide question set, intents set and adversarial set ([0046](../operations/0046-evaluation-guide-and-search.md)); the labels are pinned by a test. The staging run with the prompts of this record is still to do (open point). |
 | 12 | Deployment | Covered: config only; the guide is off without a model key. |
 | 13 | Security & Identity | Covered: the model key from OpenBao; no new secret. |
@@ -671,4 +675,5 @@ intents: [flow](../../diagrams/flow-0031-guide-intents.svg) · [sequence](../../
 - Open issues that change this decision:
   - [#283](https://github.com/silvioincalza/helper2.ai/issues/283) S4.7.2 Tracked privately (security)
   - [#285](https://github.com/silvioincalza/helper2.ai/issues/285) S4.9.1 The guide latency targets confirmed
+  - [#854](https://github.com/silvioincalza/helper2.ai/issues/854) S4.1.12 AI picks when only the plan call fails
   - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser

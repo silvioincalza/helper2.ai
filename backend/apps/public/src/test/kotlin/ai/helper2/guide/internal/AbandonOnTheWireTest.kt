@@ -47,9 +47,13 @@ class AbandonOnTheWireTest {
   private val circuits = CircuitBreakerRegistry.ofDefaults()
   private val circuit: CircuitBreaker =
     circuits.circuitBreaker(
-      LlmPolicies.GUIDE,
+      LlmPolicies.GUIDE_FAST,
       CircuitBreakerConfig.custom().ignoreException(ModelErrors.NotFromProvider()).build(),
     )
+
+  init {
+    circuits.circuitBreaker(LlmPolicies.GUIDE_REASONING)
+  }
 
   @AfterTest
   fun stop() {
