@@ -3,8 +3,10 @@ package ai.helper2.site.pages.internal;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.Fact;
 import ai.helper2.site.pages.Link;
+import ai.helper2.site.pages.Listing;
 import ai.helper2.site.pages.PageBody;
 import ai.helper2.site.pages.PageHead;
+import ai.helper2.site.pages.PageLink;
 import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
 import ai.helper2.site.pages.ResourcePathsKt;
@@ -116,6 +118,11 @@ public class PageHtml {
     if (description != null) {
       b.append("<p>").append(esc(description)).append("</p>");
     }
+    Listing listing = body.getListing();
+    if (listing != null && !listing.getItems().isEmpty()) {
+      b.append("<h2>").append(esc(listing.getHeading())).append("</h2>");
+      list(b, listing.getItems(), (Related r) -> resourceLink(r));
+    }
     list(b, body.getFacts(), (Fact f) -> "<b>" + esc(f.getName()) + ":</b> " + esc(f.getValue()));
     if (!body.getSources().isEmpty()) {
       b.append("<h2>Sources</h2>");
@@ -123,10 +130,12 @@ public class PageHtml {
     }
     if (!body.getRelated().isEmpty()) {
       b.append("<h2>Related</h2>");
-      list(
-          b,
-          body.getRelated(),
-          (Related r) -> link(ResourcePathsKt.resourcePath(r.getId(), r.getTitle()), r.getTitle()));
+      list(b, body.getRelated(), (Related r) -> resourceLink(r));
+    }
+    if (!body.getPages().isEmpty()) {
+      b.append("<nav><h2>More on ").append(esc(Pages.BRAND)).append("</h2>");
+      list(b, body.getPages(), (PageLink p) -> link(p.getPath(), p.getName()));
+      b.append("</nav>");
     }
     return b.append("</main>").toString();
   }
@@ -139,6 +148,10 @@ public class PageHtml {
     b.append("<ul>");
     items.forEach(i -> b.append("<li>").append(item.apply(i)).append("</li>"));
     b.append("</ul>");
+  }
+
+  private static String resourceLink(Related r) {
+    return link(ResourcePathsKt.resourcePath(r.getId(), r.getTitle()), r.getTitle());
   }
 
   private static String sourceLink(Link l) {

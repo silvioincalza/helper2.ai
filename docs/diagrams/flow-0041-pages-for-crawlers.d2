@@ -1,6 +1,7 @@
 # Flowchart: what Spring answers for an address the client router owns (ADR 0041).
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
-#   site/pages/usecase/RenderPage.java, site/pages/internal/PageTemplate.java, PageHtml.java, platform/ClientRoutes.java,
+#   site/pages/usecase/RenderPage.java, site/pages/internal/PageTemplate.java, PageHtml.java, CatalogSiteLists.java,
+#   platform/ClientRoutes.java,
 #   deploy/helm/helper2/templates/app.yaml (the shell's init container),
 #   backend/apps/public/src/main/kotlin/ai/helper2/site/pages/Routes.kt, ResourcePaths.kt (Slug), PageHead.kt (IndexPolicy), Pages.kt (JsonLd).
 # Render: cd docs/diagrams && d2 fmt flow-0041-pages-for-crawlers.d2 && d2 flow-0041-pages-for-crawlers.d2 flow-0041-pages-for-crawlers.svg
@@ -16,7 +17,7 @@ notfound: "404 + app shell\nnoindex, \"Page not found\"" {class: fail}
 
 kind: "Which page?" {class: decision}
 
-static: "/, /sources, /mission,\n/privacy, /terms" {class: app}
+static: "/, /sources, /events, /mission,\n/privacy, /terms, /support" {class: app}
 personal: "/search, /?q=, /saved,\n/account, /admin/**" {class: app}
 
 res: "/resource/{id}/{slug}" {
@@ -48,7 +49,7 @@ res: "/resource/{id}/{slug}" {
   noindex -> head
 }
 
-fixed: "Fixed title and description\nrobots: index" {class: hot}
+fixed: "Fixed title and description\nrobots: index\nBody: h1, description, links to the\nother site pages; home: new in the\ncatalog, events: coming up (kept 5 min)" {class: hot}
 quiet: "Fixed title\nrobots: noindex, follow" {class: data}
 
 escape: "Every text HTML-escaped,\nJSON-LD with \\u003c \\u003e \\u0026" {class: app}

@@ -219,4 +219,52 @@ class PagesTest {
         .readTree(Files.readString(Path.of("../frontend/src/i18n/locales/en.json")))
     assertEquals(en.path("home").path("lede").asString(), pages.home().description)
   }
+
+  private val lists =
+    object : SiteLists {
+      override fun newInCatalog() =
+        (1..25).map { Related(UUID.nameUUIDFromBytes("n$it".toByteArray()), "New tool $it") }
+
+      override fun upcomingEvents() = listOf(Related(id, "AI Summit"))
+    }
+
+  @Test
+  fun `every listed site page has a body a crawler can read, with links to the other site pages`() {
+    val listed =
+      PageKind.entries
+        .filter { it != PageKind.RESOURCE }
+        .map { pages.of(it, lists) }
+        .filter { it.robots == Robots.INDEX }
+    assertEquals(7, listed.size)
+    listed.forEach { head ->
+      val body = head.body!!
+      assertTrue(body.heading.isNotBlank(), head.title)
+      assertEquals(head.description, body.description)
+      assertFalse(body.pages.any { it.path == head.canonicalPath }, head.title)
+      assertEquals(Pages.SITE_PAGES.size - 1, body.pages.size, head.title)
+    }
+  }
+
+  @Test
+  fun `the home body lists what is new in the catalog, at most 20`() {
+    val listing = pages.of(PageKind.HOME, lists).body!!.listing!!
+    assertEquals("New in the catalog", listing.heading)
+    assertEquals(Pages.MAX_LISTED, listing.items.size)
+    assertEquals("New tool 1", listing.items.first().title)
+  }
+
+  @Test
+  fun `the events body lists the coming events`() {
+    val listing = pages.of(PageKind.EVENTS, lists).body!!.listing!!
+    assertEquals("Coming up", listing.heading)
+    assertEquals(listOf("AI Summit"), listing.items.map { it.title })
+  }
+
+  @Test
+  fun `an empty list leaves no heading, and a page that is not listed has no body`() {
+    assertNull(pages.of(PageKind.HOME).body!!.listing)
+    assertNull(pages.of(PageKind.EVENTS).body!!.listing)
+    assertNull(pages.of(PageKind.SEARCH, lists).body)
+    assertNull(pages.of(PageKind.SAVED, lists).body)
+  }
 }

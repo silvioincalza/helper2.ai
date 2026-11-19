@@ -8,6 +8,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -62,6 +63,17 @@ class CrawlerFiles {
     if (properties.noindex()) {
       return ResponseEntity.notFound().build();
     }
-    return ResponseEntity.ok().cacheControl(CACHE).body(sitemap.xml());
+    return ResponseEntity.ok().cacheControl(CACHE).body(sitemap.index());
+  }
+
+  @GetMapping(value = "/sitemaps/{part}.xml", produces = MediaType.APPLICATION_XML_VALUE)
+  ResponseEntity<String> sitemap(@PathVariable String part) {
+    if (properties.noindex()) {
+      return ResponseEntity.notFound().build();
+    }
+    return sitemap
+        .part(part)
+        .map(xml -> ResponseEntity.ok().cacheControl(CACHE).body(xml))
+        .orElseGet(() -> ResponseEntity.notFound().build());
   }
 }

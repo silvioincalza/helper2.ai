@@ -18,9 +18,16 @@ class Pages(private val base: String) {
       jsonLd = listOf(website(), organization()),
     )
 
-  fun of(kind: PageKind): PageHead =
+  fun home(newInCatalog: List<Related>): PageHead {
+    val head = home()
+    val listing = newInCatalog.takeIf { it.isNotEmpty() }?.let { Listing("New in the catalog", it) }
+    return head.copy(body = siteBody(BRAND, head.description.orEmpty(), "/", listing))
+  }
+
+  @JvmOverloads
+  fun of(kind: PageKind, lists: SiteLists = SiteLists.NONE): PageHead =
     when (kind) {
-      PageKind.HOME -> home()
+      PageKind.HOME -> home(lists.newInCatalog())
       PageKind.SOURCES ->
         listed(
           "Sources: where $BRAND searches",
@@ -33,6 +40,7 @@ class Pages(private val base: String) {
           "Conferences, hackathons, meetups, talks and workshops on AI in the next year, with the " +
             "dates their sources state.",
           "/events",
+          lists.upcomingEvents().takeIf { it.isNotEmpty() }?.let { Listing("Coming up", it) },
         )
       PageKind.NEWS -> unlisted("AI news")
       PageKind.MISSION ->
@@ -95,8 +103,25 @@ class Pages(private val base: String) {
     )
   }
 
-  private fun listed(name: String, description: String, path: String) =
-    PageHead(brand(name), description, path, Robots.INDEX)
+  private fun listed(name: String, description: String, path: String, listing: Listing? = null) =
+    PageHead(
+      brand(name),
+      description,
+      path,
+      Robots.INDEX,
+      body = siteBody(name, description, path, listing),
+    )
+
+  private fun siteBody(heading: String, description: String, path: String, listing: Listing?) =
+    PageBody(
+      heading = heading,
+      description = description,
+      facts = emptyList(),
+      sources = emptyList(),
+      related = emptyList(),
+      listing = listing?.let { it.copy(items = it.items.take(MAX_LISTED)) },
+      pages = SITE_PAGES.filter { it.path != path },
+    )
 
   private fun unlisted(name: String) = PageHead(brand(name), null, null, Robots.NOINDEX_FOLLOW)
 
@@ -137,6 +162,17 @@ class Pages(private val base: String) {
     const val MAX_FACTS = 6
     const val MAX_SOURCES = 5
     const val MAX_RELATED = 8
+    const val MAX_LISTED = 20
+    val SITE_PAGES =
+      listOf(
+        PageLink("/", "Search"),
+        PageLink("/sources", "Sources"),
+        PageLink("/events", "AI events"),
+        PageLink("/mission", "Mission"),
+        PageLink("/privacy", "Privacy"),
+        PageLink("/terms", "Terms"),
+        PageLink("/support", "Support $BRAND"),
+      )
     private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy").withZone(ZoneOffset.UTC)
 
     fun brand(name: String) = "$name · $BRAND"
