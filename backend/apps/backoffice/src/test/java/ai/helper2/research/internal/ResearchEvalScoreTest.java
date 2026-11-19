@@ -35,6 +35,36 @@ class ResearchEvalScoreTest {
   }
 
   @Test
+  void anItemLabelledDuplicateIsLeftOutOfTheVerdictAgreement() {
+    ResearchLabels withADuplicate =
+        ResearchLabels.parse(
+            List.of(
+                HEADER,
+                "p001\thttps://dup.example\tRESOURCE_CANDIDATE\tdup\tARTICLE\tDUPLICATE\t\t\t\t\t\t",
+                "p002\thttps://list.example/best\tRESOURCE_CANDIDATE\tBest\tARTICLE\tREJECT\t\t\t\t\t\t"));
+
+    ResearchEvalScore.Report r =
+        ResearchEvalScore.score(
+            "fast",
+            List.of(
+                done(
+                    withADuplicate.labels().get(0),
+                    ResearchAnswer.Verdict.REJECT,
+                    List.of(),
+                    10_000,
+                    3),
+                done(
+                    withADuplicate.labels().get(1),
+                    ResearchAnswer.Verdict.REJECT,
+                    List.of(),
+                    10_000,
+                    3)));
+
+    assertThat(r.items()).isEqualTo(2);
+    assertThat(r.verdict()).isEqualTo(new ResearchEvalScore.Agreement(1, 1));
+  }
+
+  @Test
   void aFileWithAnotherHeaderIsRefused() {
     assertThatThrownBy(() -> ResearchLabels.parse(List.of("id\turl")))
         .isInstanceOf(IllegalArgumentException.class);
