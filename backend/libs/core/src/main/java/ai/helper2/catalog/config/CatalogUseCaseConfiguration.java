@@ -1,5 +1,6 @@
 package ai.helper2.catalog.config;
 
+import ai.helper2.catalog.AwesomeListEntries;
 import ai.helper2.catalog.CategoryAssignments;
 import ai.helper2.catalog.CategoryInputs;
 import ai.helper2.catalog.EnrichmentFacts;
@@ -34,8 +35,11 @@ class CatalogUseCaseConfiguration {
 
   @Bean
   GetResourceDetail getResourceDetail(
-      Resources resources, EnrichmentFacts enrichment, ResourceCards cards) {
-    return new GetResourceDetail(resources, enrichment, cards);
+      Resources resources,
+      EnrichmentFacts enrichment,
+      ResourceCards cards,
+      AwesomeListEntries listEntries) {
+    return new GetResourceDetail(resources, enrichment, cards, listEntries);
   }
 
   @Bean

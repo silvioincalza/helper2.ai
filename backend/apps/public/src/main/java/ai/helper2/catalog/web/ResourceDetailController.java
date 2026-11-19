@@ -8,6 +8,8 @@ import ai.helper2.api.generated.ResourceDetailApi;
 import ai.helper2.api.generated.model.AiSummaryDto;
 import ai.helper2.api.generated.model.AssertionDto;
 import ai.helper2.api.generated.model.EvidenceDto;
+import ai.helper2.api.generated.model.FoundInDto;
+import ai.helper2.api.generated.model.FoundInListDto;
 import ai.helper2.api.generated.model.RelationshipDto;
 import ai.helper2.api.generated.model.ResourceDetailDto;
 import ai.helper2.api.generated.model.SourceRecordInfoDto;
@@ -110,6 +112,7 @@ class ResourceDetailController implements ResourceDetailApi {
                     .toList())
             .enrichmentStatus(
                 ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()))
+            .foundIn(foundIn(d.foundIn()))
             .aiContent(aiContent(d, provider));
     return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(dto);
   }
@@ -141,6 +144,14 @@ class ResourceDetailController implements ResourceDetailApi {
       models.add(d.summary().model());
     }
     return AiContentMarking.marker(provider, models, fields);
+  }
+
+  private static FoundInDto foundIn(ResourceDetail.FoundIn found) {
+    return new FoundInDto(
+        found.lists().stream()
+            .map(l -> new FoundInListDto(l.listId(), l.listTitle(), l.headingPath()))
+            .toList(),
+        found.more());
   }
 
   private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {

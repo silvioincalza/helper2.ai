@@ -77,7 +77,8 @@ Both are about the public site itself, and only the public app serves them.
      `BreadcrumbList`; the home page gets `WebSite` and `Organization`; a hub page gets a `CollectionPage`
      ([0052](0052-hub-pages-per-resource-type.md)). Only facts the page itself shows go in.
    - Body (`main.h2-prerender`): an `<h1>`, the source's description, up to 6 facts, up to 5 source links (web
-     addresses only), and up to 8 links to related resources (relationships a person did not reject).
+     addresses only), up to 8 links to related resources (relationships a person did not reject), and up to 10 links to the pages
+     of the lists that name the resource ("Found in these lists", [0023](../search/0023-catalog-full-text-index.md)).
    - The indexed site pages have a body too, so a crawler that runs no JavaScript reads more than the head: an `<h1>`,
      the page's description and a "More on helper2.ai" list of links to the other site pages. The home page adds
      "New in the catalog" and the Events page "Coming up": up to 20 links each, from the same use cases as the app's

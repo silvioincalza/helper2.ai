@@ -135,8 +135,9 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
       end ("Date unknown · N · Show them").
 11. **The resource page: one column.** The title, under it type · host · the same date as the row (`ResultDate`), one
     primary button (Open on host ↗), Save, and Set it up only for what a user installs or runs. Then the pick, From
-    the source, At a glance, the dates, "Where this information comes from" (folded) and the detail sections, its
-    tables in Geist Mono with capital headers and dashed rules. A result row passes its title, type and link in the
+    the source, At a glance, the dates, the detail sections, "Found in these lists" (each list a link to its own page, with the heading it sits
+    under; not shown for a resource no list names, [0023](../search/0023-catalog-full-text-index.md)) and "Where this
+    information comes from" (folded), its tables in Geist Mono with capital headers and dashed rules. A result row passes its title, type and link in the
     history state, so a resource opened from the results shows the title, Open and Save at once while its details load.
     A pick chip does the same when its result is among the results the page holds (on the timeline); a pick that is
     not among them shows the loading line until the details arrive.
@@ -206,7 +207,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
   `FiltersPanel`, `FilterFacets`, `CoverageLine`, `AudienceChoice`, `ResultsTimeline`, `morePages.tsx`,
   `results.css`.
 - `frontend/src/features/guide/` — `GuidePicks`, `GuideAnswer`, `GuideAnswersLeft`.
-- `frontend/src/features/resource/` — `ResourcePage`, `Resource`, `ResultFacts`, `DateTimeline`, `resource.css`.
+- `frontend/src/features/resource/` — `ResourcePage`, `Resource`, `FoundInLists`, `ResultFacts`, `DateTimeline`, `resource.css`.
 - `frontend/src/features/feeds/` — `feeds.ts`, `feedCells.tsx`, `NewsPage`, `EventsPage`.
 - `frontend/src/features/sources/`, `features/saved/`, `features/account/`, `features/pages/`, `frontend/src/admin/`.
 - `frontend/src/hooks/useRetry.ts`, `usePolicy.ts`, `frontend/src/lib/sourceCounts.ts`, `duration.ts`.

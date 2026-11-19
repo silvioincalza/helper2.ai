@@ -46,6 +46,8 @@ class ResourceAiFieldsTest {
           "sourceRecords[].url",
           "sourceRecords[].externalId",
           "sourceRecords[].repositoryUrl",
+          "foundIn.lists[].listTitle",
+          "foundIn.lists[].headingPath",
         ),
       QUOTE_OF_THE_SOURCE to
         listOf(
@@ -124,6 +126,8 @@ class ResourceAiFieldsTest {
           "sourceRecords[].retrievedAt",
           "sourceRecords[].fingerprint",
           "enrichmentStatus",
+          "foundIn.lists[].listId",
+          "foundIn.more",
           "aiContent.aiGenerated",
           "aiContent.provider",
           "aiContent.models[]",
@@ -276,7 +280,16 @@ class ResourceAiFieldsTest {
     assertions: List<ResourceDetail.Assertion> = emptyList(),
     relationships: List<ResourceDetail.Relationship> = emptyList(),
     summary: ResourceDetail.Summary? = null,
-  ) = ResourceDetail(card, assertions, relationships, summary, emptyList(), "NOT_RUN")
+  ) =
+    ResourceDetail(
+      card,
+      assertions,
+      relationships,
+      summary,
+      emptyList(),
+      "NOT_RUN",
+      ResourceDetail.FoundIn.NO_LIST,
+    )
 
   private fun card(
     description: String?,

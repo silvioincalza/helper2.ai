@@ -137,6 +137,10 @@ public class PageHtml {
       b.append("<h2>Related</h2>");
       list(b, body.getRelated(), (Related r) -> resourceLink(r));
     }
+    if (!body.getFoundIn().isEmpty()) {
+      b.append("<h2>Found in these lists</h2>");
+      list(b, body.getFoundIn(), (Related r) -> resourceLink(r));
+    }
     if (!body.getPages().isEmpty()) {
       b.append("<nav><h2>More on ").append(esc(Pages.BRAND)).append("</h2>");
       list(b, body.getPages(), (PageLink p) -> link(p.getPath(), p.getName()));
