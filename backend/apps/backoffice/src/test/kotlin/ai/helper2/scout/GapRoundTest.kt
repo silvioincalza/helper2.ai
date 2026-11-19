@@ -61,6 +61,33 @@ class GapRoundTest {
   }
 
   @Test
+  fun `a model a list links to gives its model card, and a repository a list links to its README`() {
+    val model =
+      record(
+        "github-awesome",
+        "https://huggingface.co/acme/tiny-llm",
+        "https://huggingface.co/acme/tiny-llm",
+      )
+    assertEquals(
+      GapTarget(GapKind.HF_MODEL_CARD, "acme", "tiny-llm", model.id),
+      GapTargets.select(listOf(model)),
+    )
+    val repository = record("github-awesome", "acme/tool", "https://github.com/acme/tool")
+    assertEquals(GapKind.GITHUB_README, GapTargets.select(listOf(repository))?.kind)
+    assertNull(
+      GapTargets.select(
+        listOf(
+          record(
+            "github-awesome",
+            "https://huggingface.co/datasets/acme/set",
+            "https://huggingface.co/datasets/acme/set",
+          )
+        )
+      )
+    )
+  }
+
+  @Test
   fun `an MCP Registry entry gets the README only when its namespace is the repository owner`() {
     val own =
       record(
