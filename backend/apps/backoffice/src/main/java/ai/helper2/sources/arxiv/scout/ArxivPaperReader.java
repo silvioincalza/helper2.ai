@@ -23,6 +23,8 @@ public final class ArxivPaperReader {
 
   static final int SLOT_TRIES = 5;
 
+  static final Duration SLOT_WAIT = Duration.ofMinutes(1);
+
   private static final Pattern ID =
       Pattern.compile("\\d{4}\\.\\d{4,5}|[a-z][a-z-]{1,20}(\\.[A-Z]{2})?/\\d{7}");
 
@@ -64,23 +66,24 @@ public final class ArxivPaperReader {
     if (asked.isEmpty()) {
       return List.of();
     }
-    waitForTheSharedSlot();
     String feed =
         resilience.call(
             policy,
-            () ->
-                HttpClients.getText(
-                    () ->
-                        http.get()
-                            .uri(u ->
-                                u.path("/api/query")
-                                    .queryParam("id_list", String.join(",", asked))
-                                    .queryParam("max_results", asked.size())
-                                    .build())
-                            .attributes(ObservedHttp.maxResponseBytes(MAX_BYTES))
-                            .retrieve()
-                            .body(String.class),
-                    clock));
+            () -> {
+              waitForTheSharedSlot();
+              return HttpClients.getText(
+                  () ->
+                      http.get()
+                          .uri(u ->
+                              u.path("/api/query")
+                                  .queryParam("id_list", String.join(",", asked))
+                                  .queryParam("max_results", asked.size())
+                                  .build())
+                          .attributes(ObservedHttp.maxResponseBytes(MAX_BYTES))
+                          .retrieve()
+                          .body(String.class),
+                  clock);
+            });
     return ArxivSource.papers(feed, sourceId, now).stream().filter(ArxivSource::isAboutAi).toList();
   }
 
@@ -91,6 +94,6 @@ public final class ArxivPaperReader {
       }
       pause.accept(ArxivSource.MIN_INTERVAL);
     }
-    throw new SourceFailure.RateLimited(ArxivSource.MIN_INTERVAL);
+    throw new SourceFailure.RateLimited(SLOT_WAIT);
   }
 }
