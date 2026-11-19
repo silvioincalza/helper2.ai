@@ -17,7 +17,7 @@ Verdict:
 - A tool made for AI work is about AI, even when it does not run a model: for example a tool that prepares text for an LLM.
 - REJECT, and say why in one sentence:
   - not about AI: AI is not its main subject or its main function. A general tool that only mentions AI, has an MCP add-on, or could be used in an AI pipeline is not about AI. Do not guess a link to AI that no source states.
-  - a page that lists many unrelated items, such as a blog index or a partner landing page, or a marketplace listing;
+  - a page that lists many items that are not about AI, such as a general blog index or a partner landing page, or a marketplace listing;
   - a tool whose main use breaks an AI provider's terms, such as reselling API accounts or sharing one subscription among many users;
   - a dead page (it does not exist: not found, or the host is unknown), or spam.
 - A page you cannot read (login, paywall, 403, bot check) is not dead: decide from the Scout's title and excerpt, and leave out the attributes you cannot cite.
