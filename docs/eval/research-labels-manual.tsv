@@ -4,7 +4,7 @@ p002	https://github.com/activeloopai/deeplake	RESOURCE_CANDIDATE	activeloopai/de
 p003	https://windowscentral.com/artificial-intelligence/local-ai-windows-laptop-3-easy-steps-how-to	RESOURCE_CANDIDATE	I tried running AI locally on my laptop, and it was shockingly easy — 3 easy steps to free, private AI anywhere you go | Windows Central	ARTICLE	KEEP	NEWS	https://windowscentral.com/artificial-intelligence/local-ai-windows-laptop-3-easy-steps-how-to	I tried running AI locally on my laptop, and it was shockingly easy — 3 easy steps to free, private AI anywhere you go			
 p004	https://github.com/huggingface/finetrainers	RESOURCE_CANDIDATE	huggingface/finetrainers	LIBRARY	KEEP	LIBRARY	https://github.com/huggingface/finetrainers	huggingface/finetrainers	Apache-2.0		true
 p005	https://github.com/idosal/git-mcp	RESOURCE_CANDIDATE	idosal/git-mcp	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/idosal/git-mcp	idosal/git-mcp	Apache-2.0		true
-p006	https://linkedin.com/posts/prakhar-bafna_50-new-ai-tools-launched-in-may-2026-alone-activity-7521081149503422464-HNok	RESOURCE_CANDIDATE	50 new AI tools launched in May 2026 alone. Most people heard of zero. The AI tool landscape is moving so fast that by…	NEWS	REJECT						
+p006	https://linkedin.com/posts/prakhar-bafna_50-new-ai-tools-launched-in-may-2026-alone-activity-7521081149503422464-HNok	RESOURCE_CANDIDATE	50 new AI tools launched in May 2026 alone. Most people heard of zero. The AI tool landscape is moving so fast that by…	NEWS	KEEP	NEWS					
 p007	https://clickable.so	RESOURCE_CANDIDATE	Clickable	PRODUCT	KEEP	PRODUCT	https://clickable.so	Clickable			
 p008	https://github.com/promptslab/awesome-prompt-engineering	RESOURCE_CANDIDATE	promptslab/Awesome-Prompt-Engineering	PROMPT	KEEP	AWESOME_LIST	https://github.com/promptslab/awesome-prompt-engineering	promptslab/Awesome-Prompt-Engineering	Apache-2.0		true
 p009	https://github.com/langchain-ai/langchain-skills	RESOURCE_CANDIDATE	langchain-ai/langchain-skills	SKILL	KEEP	SKILL	https://github.com/langchain-ai/langchain-skills	langchain-ai/langchain-skills	MIT		true
@@ -13,21 +13,21 @@ p011	https://github.com/volcengine/minecontext	RESOURCE_CANDIDATE	volcengine/Min
 p012	https://learnpresslms.com/blog/best-ai-for-homework-tools	RESOURCE_CANDIDATE	6+ Best AI for Homework Tools for Students & Teachers (2026)	ARTICLE	KEEP	ARTICLE	https://learnpresslms.com/blog/best-ai-for-homework-tools	6+ Best AI for Homework Tools for Students & Teachers (2026)			
 p013	https://github.com/prooflinedev/yek	RESOURCE_CANDIDATE	prooflinedev/yek	LIBRARY	KEEP	LIBRARY	https://github.com/prooflinedev/yek	prooflinedev/yek	MIT		true
 p014	https://github.com/coding-solo/godot-mcp	RESOURCE_CANDIDATE	Coding-Solo/godot-mcp	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/coding-solo/godot-mcp	Coding-Solo/godot-mcp	MIT		true
-p015	https://linkedin.com/posts/chexton_93-of-our-customers-with-access-to-our-mcp-activity-7517994315806257152-bb0p	RESOURCE_CANDIDATE	MCP Server Uptake Exceeds Expectations with 93% Adoption Rate	NEWS	KEEP	NEWS	https://linkedin.com/posts/chexton_93-of-our-customers-with-access-to-our-mcp-activity-7517994315806257152-bb0p	MCP Server Uptake Exceeds Expectations with 93% Adoption Rate			
+p015	https://linkedin.com/posts/chexton_93-of-our-customers-with-access-to-our-mcp-activity-7517994315806257152-bb0p	RESOURCE_CANDIDATE	MCP Server Uptake Exceeds Expectations with 93% Adoption Rate	NEWS	REJECT						
 p016	https://pygpt.net	RESOURCE_CANDIDATE	PyGPT	PRODUCT	KEEP	PRODUCT	https://pygpt.net	PyGPT			
 p017	https://founderz.com/ai-prompt-library	RESOURCE_CANDIDATE	AI Prompt Library | Free ChatGPT, Claude and Copilot prompts	PROMPT	KEEP	PROMPT	https://founderz.com/ai-prompt-library	AI Prompt Library | Free ChatGPT, Claude and Copilot prompts			
 p018	https://github.com/google-gemini/gemini-skills	RESOURCE_CANDIDATE	google-gemini/gemini-skills	SKILL	KEEP	SKILL	https://github.com/google-gemini/gemini-skills	google-gemini/gemini-skills	Apache-2.0		true
-p019	https://edx.org/learn/computer-science/pragmatic-ai-labs-desktop-data-apps-in-rust-five-gui-frameworks-from-window-to-release	COURSE_CANDIDATE	AI: Desktop Data Apps in Rust: Five GUI Frameworks from Window to Release	COURSE	REJECT						
+p019	https://edx.org/learn/computer-science/pragmatic-ai-labs-desktop-data-apps-in-rust-five-gui-frameworks-from-window-to-release	COURSE_CANDIDATE	AI: Desktop Data Apps in Rust: Five GUI Frameworks from Window to Release	COURSE	KEEP	COURSE					
 p020	https://github.com/coze-dev/coze-studio	RESOURCE_CANDIDATE	coze-dev/coze-studio	AGENT	KEEP	AGENT	https://github.com/coze-dev/coze-studio	coze-dev/coze-studio	Apache-2.0		true
 p021	https://coworkosapp.com/guides/best-open-source-ai-agents	RESOURCE_CANDIDATE	Best Open-Source AI Agents (2026): 13 Picks by Category	ARTICLE	KEEP	ARTICLE	https://coworkosapp.com/guides/best-open-source-ai-agents	Best Open-Source AI Agents (2026): 13 Picks by Category			
 p022	https://github.com/wzpan/wukong-robot	RESOURCE_CANDIDATE	wzpan/wukong-robot	LIBRARY	KEEP	PRODUCT	https://github.com/wzpan/wukong-robot	wzpan/wukong-robot	MIT		true
 p023	https://github.com/glidea/zenfeed	RESOURCE_CANDIDATE	glidea/zenfeed	MCP_SERVER	KEEP	PRODUCT	https://github.com/glidea/zenfeed	glidea/zenfeed	AGPL-3.0		true
-p024	https://linkedin.com/posts/delibero_youll-hear-we-have-an-mcp-server-in-a-activity-7516121833591603200-7qMp	RESOURCE_CANDIDATE	MCP Server: Ask What It Can Write and If It's Live	NEWS	KEEP	ARTICLE	https://linkedin.com/posts/delibero_youll-hear-we-have-an-mcp-server-in-a-activity-7516121833591603200-7qMp	MCP Server: Ask What It Can Write and If It's Live			
+p024	https://linkedin.com/posts/delibero_youll-hear-we-have-an-mcp-server-in-a-activity-7516121833591603200-7qMp	RESOURCE_CANDIDATE	MCP Server: Ask What It Can Write and If It's Live	NEWS	REJECT						
 p025	https://runthisllm.com	RESOURCE_CANDIDATE	RunThisLLM	PRODUCT	KEEP	PRODUCT	https://runthisllm.com	RunThisLLM			
 p026	https://github.com/princeton-nlp/tree-of-thought-llm	RESOURCE_CANDIDATE	princeton-nlp/tree-of-thought-llm	PROMPT	KEEP	PROMPT	https://github.com/princeton-nlp/tree-of-thought-llm	tree-of-thoughts-llm			
 p027	https://github.com/kubesphere/kubesphere	RESOURCE_CANDIDATE	kubesphere/kubesphere	SKILL	REJECT						
 p028	https://coursera.org/learn/artificial-intelligence-finance	COURSE_CANDIDATE	Artificial Intelligence in Finance	COURSE	KEEP	COURSE	https://coursera.org/learn/artificial-intelligence-finance	Artificial Intelligence in Finance			
-p029	https://github.com/nikivdev/code	RESOURCE_CANDIDATE	nikivdev/code	AGENT	KEEP	AGENT	https://github.com/nikivdev/code	nikivdev/code	MIT		true
+p029	https://github.com/nikivdev/code	RESOURCE_CANDIDATE	nikivdev/code	AGENT	REJECT						
 p030	https://spheron.network/blog/neutts-air-spheron-voice-ai	RESOURCE_CANDIDATE	Deploy NeuTTS Air: Ultra-Realistic On-Device Voice AI with Instant Voice Cloning | Spheron	ARTICLE	KEEP	ARTICLE	https://spheron.network/blog/neutts-air-spheron-voice-ai	Deploy NeuTTS Air: Ultra-Realistic On-Device Voice AI with Instant Voice Cloning | Spheron			
 p031	https://github.com/huggingface/cookbook	RESOURCE_CANDIDATE	huggingface/cookbook	LIBRARY	KEEP	ARTICLE	https://github.com/huggingface/cookbook	huggingface/cookbook	Apache-2.0		true
 p032	https://github.com/0x4m4/hexstrike-ai	RESOURCE_CANDIDATE	0x4m4/hexstrike-ai	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/0x4m4/hexstrike-ai	0x4m4/hexstrike-ai	MIT		true
@@ -45,18 +45,18 @@ p043	https://chat.tune.app	RESOURCE_CANDIDATE	Tune AI	PRODUCT	KEEP	PRODUCT	https
 p044	https://digiassets.co.il/en/prompt-library	RESOURCE_CANDIDATE	SEO and GEO Prompt Library for Claude and ChatGPT	PROMPT	KEEP	PROMPT	https://digiassets.co.il/en/prompt-library	SEO and GEO Prompt Library for Claude and ChatGPT			
 p045	https://github.com/openai/skills	RESOURCE_CANDIDATE	openai/skills	SKILL	KEEP	SKILL	https://github.com/openai/skills	openai/skills			
 p046	https://coursera.org/series/ai-product-management	COURSE_CANDIDATE	AI for Product Management: Role-Tailored Learning for PMs	COURSE	KEEP	COURSE	https://coursera.org/series/ai-product-management	AI for Product Management: Role-Tailored Learning for PMs			
-p047	https://github.com/ntegrals/openbrowser	RESOURCE_CANDIDATE	ntegrals/openbrowser	AGENT	KEEP	LIBRARY	https://github.com/ntegrals/openbrowser	ntegrals/openbrowser	MIT		true
+p047	https://github.com/ntegrals/openbrowser	RESOURCE_CANDIDATE	ntegrals/openbrowser	AGENT	REJECT						
 p048	https://medium.com/@thehumanmode/how-to-summarize-long-pdfs-and-find-key-information-with-ai-f16cb6c090fd	RESOURCE_CANDIDATE	Medium	ARTICLE	KEEP	ARTICLE	https://medium.com/@thehumanmode/how-to-summarize-long-pdfs-and-find-key-information-with-ai-f16cb6c090fd				
-p049	https://github.com/akshayykadam/pixelboard	RESOURCE_CANDIDATE	Akshayykadam/PixelBoard	LIBRARY	REJECT						
+p049	https://github.com/akshayykadam/pixelboard	RESOURCE_CANDIDATE	Akshayykadam/PixelBoard	LIBRARY	KEEP	LIBRARY					
 p050	https://github.com/spiculedata/saiku	RESOURCE_CANDIDATE	spiculedata/saiku	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/spiculedata/saiku	spiculedata/saiku	Apache-2.0		true
-p051	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	RESOURCE_CANDIDATE	Running an AI Hackathon: Step 1, Engaging Users	NEWS	KEEP	ARTICLE	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	Running an AI Hackathon: Step 1, Engaging Users			
+p051	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	RESOURCE_CANDIDATE	Running an AI Hackathon: Step 1, Engaging Users	NEWS	KEEP	NEWS	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	Running an AI Hackathon: Step 1, Engaging Users			
 p052	https://multica.ai	RESOURCE_CANDIDATE	Multica	PRODUCT	KEEP	PRODUCT	https://multica.ai	Multica			
 p053	https://github.com/anthropics/prompt-eng-interactive-tutorial	RESOURCE_CANDIDATE	anthropics/prompt-eng-interactive-tutorial	PROMPT	KEEP	COURSE	https://github.com/anthropics/prompt-eng-interactive-tutorial	anthropics/prompt-eng-interactive-tutorial			
 p054	https://github.com/oracle/skills	RESOURCE_CANDIDATE	oracle/skills	SKILL	KEEP	SKILL	https://github.com/oracle/skills	oracle/skills	UPL-1.0		true
 p055	https://oreilly.com/radar/this-week-in-ai-agents-rewrite-the-rules	COURSE_CANDIDATE	This Week in AI: Agents Rewrite the Rules	COURSE	KEEP	NEWS	https://oreilly.com/radar/this-week-in-ai-agents-rewrite-the-rules	This Week in AI: Agents Rewrite the Rules			
 p056	https://github.com/apache/pinot	RESOURCE_CANDIDATE	apache/pinot	AGENT	KEEP	AGENT	https://github.com/apache/pinot	apache/pinot	Apache-2.0		true
 p057	https://dev.to/elementalsilk/claudeonomics-ai-code-editors-c16	RESOURCE_CANDIDATE	Claudeonomics - AI Code Editors - DEV Community	ARTICLE	KEEP	ARTICLE	https://dev.to/elementalsilk/claudeonomics-ai-code-editors-c16	Claudeonomics - AI Code Editors - DEV Community			
-p058	https://github.com/awslabs/awsome-distributed-ai	RESOURCE_CANDIDATE	awslabs/awsome-distributed-ai	LIBRARY	KEEP		https://github.com/awslabs/awsome-distributed-ai	awslabs/awsome-distributed-ai	MIT-0		true
+p058	https://github.com/awslabs/awsome-distributed-ai	RESOURCE_CANDIDATE	awslabs/awsome-distributed-ai	LIBRARY	KEEP	AWESOME_LIST	https://github.com/awslabs/awsome-distributed-ai	awslabs/awsome-distributed-ai	MIT-0		true
 p059	https://github.com/credittone/hooker	RESOURCE_CANDIDATE	CreditTone/hooker	MCP_SERVER	REJECT						
 p060	https://linkedin.com/posts/magalieheraud_swissaisummit-ai-innovation-activity-7520371332820344832-QX6k	RESOURCE_CANDIDATE	#swissaisummit #ai #innovation #switzerland	NEWS	REJECT						
 p061	https://prompthero.com	RESOURCE_CANDIDATE	PromptHero	PRODUCT	KEEP	PRODUCT	https://prompthero.com	PromptHero			
@@ -67,7 +67,7 @@ p065	https://github.com/kuafuai/andee	RESOURCE_CANDIDATE	kuafuai/andee	AGENT	KEE
 p066	https://perplexity.ai/hub/blog/llm-gateway	RESOURCE_CANDIDATE	How Does an LLM Gateway Work? A Practical Guide	ARTICLE	KEEP	ARTICLE	https://perplexity.ai/hub/blog/llm-gateway	How Does an LLM Gateway Work? A Practical Guide			
 p067	https://github.com/chatopera/synonyms	RESOURCE_CANDIDATE	chatopera/Synonyms	LIBRARY	KEEP	LIBRARY	https://github.com/chatopera/synonyms	chatopera/Synonyms			
 p068	https://github.com/huggingface/hf-mcp-server	RESOURCE_CANDIDATE	huggingface/hf-mcp-server	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/huggingface/hf-mcp-server	huggingface/hf-mcp-server	MIT		true
-p069	https://linkedin.com/posts/swiss-ai-summit_swissaisummit-activity-7523659060617842688-egwk	RESOURCE_CANDIDATE	#swissaisummit	NEWS	REJECT						
+p069	https://linkedin.com/posts/swiss-ai-summit_swissaisummit-activity-7523659060617842688-egwk	RESOURCE_CANDIDATE	#swissaisummit	NEWS	KEEP	ARTICLE					
 p070	https://richtabor.com/ralph	RESOURCE_CANDIDATE	How I Got Ralph to Ship Overnight	PRODUCT	KEEP	ARTICLE	https://richtabor.com/ralph	How I Got Ralph to Ship Overnight			
 p071	https://github.com/microsoft/promptwizard	RESOURCE_CANDIDATE	microsoft/PromptWizard	PROMPT	KEEP	LIBRARY	https://github.com/microsoft/promptwizard	microsoft/PromptWizard	MIT		true
 p072	https://github.com/huggingface/skills	RESOURCE_CANDIDATE	huggingface/skills	SKILL	KEEP	SKILL	https://github.com/huggingface/skills	huggingface/skills	Apache-2.0		true
@@ -95,7 +95,7 @@ p093	https://acibademinternational.com/blog/ai-scribes-why-your-doctors-note-is-
 p094	https://github.com/qixing-jk/all-api-hub	RESOURCE_CANDIDATE	qixing-jk/all-api-hub	LIBRARY	REJECT						
 p095	https://github.com/f/mcptools	RESOURCE_CANDIDATE	f/mcptools	MCP_SERVER	KEEP	LIBRARY	https://github.com/f/mcptools	f/mcptools	MIT		true
 p096	https://linkedin.com/posts/janvanalphen_whos-here-for-their-very-first-generative-activity-7521497669144395776-FFsN	RESOURCE_CANDIDATE	“Who’s here for their very first Generative AI Belgium Meetup?” Well, that’s a lot of hands. Turns out bringing the…	NEWS	REJECT						
-p097	https://animatedllm.github.io	RESOURCE_CANDIDATE	AnimatedLLM	PRODUCT	KEEP		https://animatedllm.github.io	AnimatedLLM			
+p097	https://animatedllm.github.io	RESOURCE_CANDIDATE	AnimatedLLM	PRODUCT	KEEP	COURSE	https://animatedllm.github.io	AnimatedLLM			
 p098	https://context.dev/prompts	RESOURCE_CANDIDATE	AI Prompt Library: 520 Prompts for ChatGPT & Claude	PROMPT	KEEP	PROMPT	https://context.dev/prompts	AI Prompt Library: 520 Prompts for ChatGPT & Claude			
 p099	https://github.com/nateherkai/scroll-craft	RESOURCE_CANDIDATE	nateherkai/scroll-craft	SKILL	KEEP	SKILL	https://github.com/nateherkai/scroll-craft	nateherkai/scroll-craft	MIT		true
 p100	https://community.deeplearning.ai/t/ai-grading-problem/895897/10	COURSE_CANDIDATE	AI Grading problem - #10 by gent.spah - Data I/O and Processing with Python and SQL	COURSE	REJECT						
