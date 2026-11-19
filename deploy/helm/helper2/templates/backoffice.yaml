@@ -63,6 +63,9 @@ spec:
             {{- with .Values.app.publicBaseUrl }}
             - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }
             {{- end }}
+            {{- with .Values.app.indexNowKey }}
+            - { name: H2_INDEXNOW_KEY, value: {{ . | quote }} }
+            {{- end }}
             - { name: H2_SCOUT_ENABLED, value: {{ $bo.scoutEnabled | toString | quote }} }
             - { name: H2_SCOUT_INITIAL_DELAY, value: {{ required "backoffice.scoutInitialDelay" $bo.scoutInitialDelay | quote }} }
             - { name: H2_SCOUT_CRON, value: {{ required "backoffice.scoutCron" $bo.scoutCron | quote }} }

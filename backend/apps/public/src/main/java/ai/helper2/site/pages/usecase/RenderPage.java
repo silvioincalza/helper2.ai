@@ -1,6 +1,7 @@
 package ai.helper2.site.pages.usecase;
 
 import ai.helper2.catalog.ResourceDetail;
+import ai.helper2.catalog.ResourcePathsKt;
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.search.MergedResult;
 import ai.helper2.shared.Verification;
@@ -11,7 +12,6 @@ import ai.helper2.site.pages.PageHead;
 import ai.helper2.site.pages.PageKind;
 import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
-import ai.helper2.site.pages.ResourcePathsKt;
 import ai.helper2.site.pages.ResourceView;
 import ai.helper2.site.pages.SiteLists;
 import java.util.LinkedHashMap;

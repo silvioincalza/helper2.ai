@@ -1,5 +1,6 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.IndexRule
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.ValueOrigin
@@ -80,23 +81,11 @@ data class ResourceView(
 }
 
 object IndexPolicy {
-  val INDEXED_TYPES =
-    setOf(
-      ResourceType.PRODUCT,
-      ResourceType.AGENT,
-      ResourceType.MODEL,
-      ResourceType.MCP_SERVER,
-      ResourceType.LIBRARY,
-      ResourceType.SKILL,
-      ResourceType.DATASET,
-      ResourceType.PAPER,
-      ResourceType.EVENT,
-      ResourceType.COURSE,
-    )
+  val INDEXED_TYPES = IndexRule.INDEXED_TYPES
 
-  val LISTED_TYPES = INDEXED_TYPES + ResourceType.PROMPT
+  val LISTED_TYPES = IndexRule.LISTED_TYPES
 
-  const val PROMPT_MIN_LENGTH = 200
+  const val PROMPT_MIN_LENGTH = IndexRule.PROMPT_MIN_LENGTH
 
   fun indexWorthy(r: ResourceView): Boolean {
     val description = r.sourceDescription ?: return false

@@ -31,7 +31,7 @@ Every line of the Privacy page that names the list matches it.
 
 **Not on this table, and why.** Y Combinator receives nothing: Hacker News search is Algolia's. The MCP Registry, the
 news feeds of AI companies, `huggingface/ai-deadlines` and `tech-conferences/conference-data` (confs.tech) are read by our server with a plain `GET` that carries nothing
-about a visitor. The research assistant's `check_url` sends a plain `HEAD` from our server to a public address a review item
+about a visitor. IndexNow (api.indexnow.org) receives, once a day from the back office, the public addresses of the resource pages that changed, and shares them with the search engines that take part (Microsoft Bing and others); nothing about a visitor goes, and the Privacy page names it under "Who receives data". The research assistant's `check_url` sends a plain `HEAD` from our server to a public address a review item
 names, with nothing about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
 setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/helper2.ai/issues/433)).
 

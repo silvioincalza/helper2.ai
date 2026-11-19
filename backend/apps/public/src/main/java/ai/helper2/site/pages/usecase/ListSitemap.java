@@ -1,9 +1,9 @@
 package ai.helper2.site.pages.usecase;
 
+import ai.helper2.catalog.ResourcePathsKt;
 import ai.helper2.catalog.usecase.ListIndexableResources;
 import ai.helper2.site.pages.Hub;
 import ai.helper2.site.pages.IndexPolicy;
-import ai.helper2.site.pages.ResourcePathsKt;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

@@ -52,7 +52,7 @@ Both are about the public site itself, and only the public app serves them.
 
    **Readable addresses.** The id is the key; the slug only helps people and search engines read the link. The slug
    is the title in plain lowercase words: accents dropped, every run of other characters one hyphen, at most 60
-   characters cut at a hyphen (`Slug`, `ResourcePaths.kt`). It is computed from the title on each request, not
+   characters cut at a hyphen (`Slug`, `catalog/ResourcePaths.kt` in `libs/core`, shared with the back office, [0053](0053-indexnow-daily-batch.md)). It is computed from the title on each request, not
    stored, so a new title gives a new slug and the old one moves with a 301. A title with no Latin letter or digit has
    no slug, and its address is `/resource/{id}`. The frontend computes the same slug (`frontend/src/lib/slug.ts`);
    both sides test the same list of titles. Every link the app writes, the canonical, the JSON-LD, the related links
@@ -178,8 +178,8 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 
 - `backend/apps/public/src/main/java/ai/helper2/site/package-info.java` — the module and its four parts.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt`
-  (`PageHead`, `ResourceView`, `IndexPolicy`), `SiteLists.kt`, `LlmsTxt.kt`, `Pages.kt` (the head of each page, `JsonLd`), `ResourcePaths.kt`
-  (`Slug`, `resourcePath`).
+  (`PageHead`, `ResourceView`, `IndexPolicy`), `SiteLists.kt`, `LlmsTxt.kt`, `Pages.kt` (the head of each page, `JsonLd`);
+  `backend/libs/core/src/main/kotlin/ai/helper2/catalog/ResourcePaths.kt` (`Slug`, `resourcePath`) and `IndexRule.kt`.
 - `backend/apps/public/src/main/java/ai/helper2/site/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`,
   `internal/PageTemplate`, `internal/PageHtml` (the escaping), `internal/CatalogSiteLists` (the lists of the site pages), `web/PageRoutes`, `web/CrawlerFiles`,
   `config/PagesProperties`, `config/PagesUseCaseConfiguration` (the beans of the two use cases, which carry no Spring
@@ -281,7 +281,7 @@ and `H2_NOINDEX`. The other layers are not touched.
 
 - No 410 for resources removed on purpose: the catalog has no removed state.
 - No Open Graph image (brand first, then per resource): S7.3.8.
-- No hub pages per use case: the hubs are one per type ([0052](0052-hub-pages-per-resource-type.md)). No IndexNow pings: S7.3.7.
+- No hub pages per use case: the hubs are one per type ([0052](0052-hub-pages-per-resource-type.md)). IndexNow: [0053](0053-indexnow-daily-batch.md).
 
 ## Diagrams
 
@@ -292,5 +292,4 @@ the policy endpoint: [flow](../../diagrams/flow-0041-policy-endpoint.svg) · [se
 ## Backlog
 
 - Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint.
-- Open issues that change this decision: [S7.3.7](https://github.com/silvioincalza/helper2.ai/issues/817) IndexNow pings,
-  [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) an Open Graph image.
+- Open issues that change this decision: [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) an Open Graph image.

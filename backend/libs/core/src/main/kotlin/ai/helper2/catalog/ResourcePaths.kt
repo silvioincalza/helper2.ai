@@ -1,4 +1,4 @@
-package ai.helper2.site.pages
+package ai.helper2.catalog
 
 import java.text.Normalizer
 import java.util.UUID

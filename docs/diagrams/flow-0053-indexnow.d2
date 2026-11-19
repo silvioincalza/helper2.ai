@@ -1,0 +1,31 @@
+# Flowchart: what the daily IndexNow job sends (ADR 0053).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/catalog/usecase/SendChangedPages.java,
+#   catalog/config/IndexNowConfiguration.java, catalog/schedule/IndexNowSchedule.java, catalog/config/IndexNowNotice.java,
+#   backend/apps/public/src/main/java/ai/helper2/site/pages/web/IndexNowKeyFile.java,
+#   backend/libs/core/src/main/kotlin/ai/helper2/catalog/IndexRule.kt, ResourcePaths.kt.
+# Render: cd docs/diagrams && d2 fmt flow-0053-indexnow.d2 && d2 flow-0053-indexnow.d2 flow-0053-indexnow.svg
+
+...@style
+
+direction: down
+
+job: "IndexNowSchedule, H2_INDEXNOW_CRON\n(back office, cluster lock)" {class: end}
+key: "H2_INDEXNOW_KEY set?" {class: decision}
+off: "Off: nothing read, nothing sent" {class: data}
+read: "Index-worthy resources,\nnewest change first, at most 10,000\n(the sitemap's query, IndexRule)" {class: app}
+changed: "Changed in the last 25 hours?" {class: decision}
+nothing: "Nothing changed:\nnothing sent" {class: data}
+post: "POST api.indexnow.org/indexnow\nhost, key, keyLocation,\nreadable addresses" {class: hot}
+ok: "Accepted?" {class: decision}
+sent: "Count sent, log the number" {class: end}
+failed: "Count failed, log; no retry\n(the sitemap still has them)" {class: fail}
+
+job -> key
+key -> off: no
+key -> read: yes
+read -> changed
+changed -> nothing: none
+changed -> post: some
+post -> ok
+ok -> sent: yes
+ok -> failed: no
