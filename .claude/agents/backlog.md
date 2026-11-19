@@ -28,7 +28,8 @@ The rule: every pull request closes at least one story, and every story is an it
    When GitHub's hourly limit is used up, the import stops and says the time to run again: run it again then, it
    writes only what is missing. Never start a second import to get past the limit.
 4. Check on GitHub: the label of its kind, sub-issue of its feature, item of the Project with Context and
-   Priority. Set Status to In Progress when work starts. Never set Done: the merge closes the issue and the
+   Priority, and the same values in the Fields box of the issue. The import sets the issue fields Priority,
+   Context and Release, and puts a story with a release in the milestone of its release line. Set Status to In Progress when work starts. Never set Done: the merge closes the issue and the
    Project follows.
 5. Link. The pull request description has one `Closes #n` line per story it builds; `gh pr view --json
    closingIssuesReferences` shows them. A story the pull request only touches is named without `Closes`.
