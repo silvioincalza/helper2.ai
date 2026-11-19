@@ -60,3 +60,4 @@ Folders, one per context: `foundation`, `scout`, `search`, `guide`, `identity`, 
 | [0050](frontend/0050-frontend-feature-boundaries.md) | Frontend: feature boundaries and import style | [`frontend`](frontend/) | [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) | 0039, 0044, 0047 |
 | [0051](foundation/0051-use-cases-return-outcomes.md) | Use cases return outcomes | [`foundation`](foundation/) | [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) | 0002, 0003, 0036 |
 | [0052](frontend/0052-hub-pages-per-resource-type.md) | Hub pages per resource type | [`frontend`](frontend/) | [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) | 0003, 0023, 0039, 0040, 0041, 0050 |
+| [0053](frontend/0053-indexnow-daily-batch.md) | IndexNow: a daily batch of changed pages | [`frontend`](frontend/) | [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) | 0006, 0007, 0041, 0043 |

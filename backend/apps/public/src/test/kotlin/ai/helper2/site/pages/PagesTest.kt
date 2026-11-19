@@ -1,5 +1,7 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.Slug
+import ai.helper2.catalog.resourcePath
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.ValueOrigin

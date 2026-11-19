@@ -1,5 +1,6 @@
 package ai.helper2.site.pages.internal;
 
+import ai.helper2.catalog.ResourcePathsKt;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.Fact;
 import ai.helper2.site.pages.Link;
@@ -9,7 +10,6 @@ import ai.helper2.site.pages.PageHead;
 import ai.helper2.site.pages.PageLink;
 import ai.helper2.site.pages.Pages;
 import ai.helper2.site.pages.Related;
-import ai.helper2.site.pages.ResourcePathsKt;
 import ai.helper2.site.pages.config.PagesProperties;
 import java.util.List;
 import java.util.Map;

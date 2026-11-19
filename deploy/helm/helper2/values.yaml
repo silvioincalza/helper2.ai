@@ -50,6 +50,7 @@ app:
   environment: ""
   noindex: false
   publicBaseUrl: ""
+  indexNowKey: ""
   tracing:
     export: false
     sampling: 1.0

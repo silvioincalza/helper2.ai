@@ -112,6 +112,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0050](../adr/frontend/0050-frontend-feature-boundaries.md) | [flow](flow-0050-frontend-feature-boundaries.svg) | — (lint and CI only, no runtime path) | what ESLint decides for one import in `frontend/src`: the import style, the folders a folder may import, the feature boundary and its named compositions. |
 | [0051](../adr/foundation/0051-use-cases-return-outcomes.md) | [flow](flow-0051-use-cases-return-outcomes.svg) | [sequence](sequence-0051-use-cases-return-outcomes.svg) | a bookmark over the cap: the use case answers `OverLimit`, its unit of work rolls the row back, the controller maps the outcome to the 400 problem; and the build rule that keeps HTTP out of the use cases, with the list that only gets shorter. |
 | [0052](../adr/frontend/0052-hub-pages-per-resource-type.md) | [flow](flow-0052-hub-pages.svg) | [sequence](sequence-0052-hub-pages.svg) | what a hub address and the hub API answer from the list kept 10 minutes, and a person who lands on a hub from a search engine. |
+| [0053](../adr/frontend/0053-indexnow-daily-batch.md) | [flow](flow-0053-indexnow.svg) | [sequence](sequence-0053-indexnow.svg) | what the daily IndexNow job sends, and an engine checking the key file before it reads the pages. |
 
 ## Colors
 

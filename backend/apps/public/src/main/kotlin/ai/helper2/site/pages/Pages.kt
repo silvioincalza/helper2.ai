@@ -1,5 +1,6 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.resourcePath
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
 import java.time.ZoneOffset

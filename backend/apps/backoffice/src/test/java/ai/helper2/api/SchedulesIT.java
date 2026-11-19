@@ -37,6 +37,7 @@ class SchedulesIT extends ApiTestBase {
             "job.retention-audit",
             "job.retention-review-research",
             "job.retention-catalog",
+            "job.indexnow",
             "job.home-examples-pending",
             "job.home-examples-nightly",
             "job.retention-runtime-settings",
