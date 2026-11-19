@@ -220,7 +220,11 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-libs-build-cache
-      - run: ./gradlew --no-daemon -p libs :spotlessCheck spotlessCheck test
+      - run: |
+          set -euo pipefail
+          tasks=(:spotlessCheck spotlessCheck test)
+          if [[ -d loadtest ]]; then tasks+=(:loadtest:spotlessCheck :loadtest:gatlingClasses); fi
+          ./gradlew --no-daemon -p libs "${tasks[@]}"
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -322,6 +326,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/backend-setup
         with:
+          cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
       - name: Format, compile and run the tests that read every backend project
         run: ./gradlew --no-daemon -p architecture spotlessCheck test
