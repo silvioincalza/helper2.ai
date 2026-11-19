@@ -39,7 +39,11 @@ guide may call the model again. Both cost time and quota for nothing.
 2. **All state is in the page address (URL).** `q` (at most 200 characters), `ask` (at most 500), the refinement of
    the question (`clar`, the reply to the guide's question back, at most 300; `drop`, the parts of the reading the
    user removed, at most 8), filters, sort, page, view. A search change keeps the refinement; a new question starts
-   without one. The list pages keep their filters there too: `?site=` on News, `?kind=` and `?format=` on Events. A
+   without one. New words start without filters (`patchState`): Enter, Search, Ask the guide and a live search drop
+   the type, category and facet filters, open source, the date and the audience path, because they belonged to the
+   words before. The view and the sort stay: they are how the user reads results, not what the words ask for. The
+   same words keep everything, and a link that sets filters with its words (a category link, a home example) keeps
+   them. The list pages keep their filters there too: `?site=` on News, `?kind=` and `?format=` on Events. A
    link, a bookmark or Back shows the same page.
 3. **Search results** (`Results`, `useApi`). A new query aborts the old request. While it loads, the previous results
    stay on screen, dimmed, with `aria-busy`. Only the first load shows skeletons and one "querying" line per enabled
