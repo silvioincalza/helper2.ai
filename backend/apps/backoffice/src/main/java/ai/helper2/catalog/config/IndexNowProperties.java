@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("helper2.indexnow")
 public record IndexNowProperties(
     @Pattern(regexp = "|[A-Za-z0-9-]{8,128}") String key,
+    boolean noindex,
     @NotBlank @Pattern(regexp = "https?://[^/]+") String publicBaseUrl,
     @NotBlank String cron,
     @NotNull URI endpoint,
@@ -22,6 +23,6 @@ public record IndexNowProperties(
     @Min(1) @Max(10_000) int batch) {
 
   public boolean on() {
-    return !key.isEmpty();
+    return !key.isEmpty() && !noindex;
   }
 }

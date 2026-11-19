@@ -42,6 +42,7 @@ helper2:
     guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
   indexnow:
     key: ${H2_INDEXNOW_KEY:}
+    noindex: ${H2_NOINDEX:false}
     cron: ${H2_INDEXNOW_CRON:0 47 5 * * *}
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
     endpoint: https://api.indexnow.org/indexnow

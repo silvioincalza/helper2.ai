@@ -575,6 +575,7 @@ helper2.indexnow.batch = 10000
 helper2.indexnow.cron = ${H2_INDEXNOW_CRON:0 47 5 * * *}  =>  0 47 5 * * *
 helper2.indexnow.endpoint = https://api.indexnow.org/indexnow
 helper2.indexnow.key = ${H2_INDEXNOW_KEY:}  =>  <empty>
+helper2.indexnow.noindex = ${H2_NOINDEX:false}  =>  false
 helper2.indexnow.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
 helper2.indexnow.timeout = PT20S
 helper2.indexnow.window = PT25H

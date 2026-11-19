@@ -27,7 +27,7 @@ The catalog changes mostly once a day, when the Scout runs in the back office.
 4. **The key.** IndexNow proves the site owns the host with a key file at the site's root. The key is public by
    design, so it is a setting, not a secret: `H2_INDEXNOW_KEY` (Helm `app.indexNowKey`), the same value in both apps.
    The public app serves it at `/{key}.txt` (`IndexNowKeyFile`) and answers 404 for any other name. With no key, or
-   with `H2_NOINDEX` on (staging), the batch is off and there is no key file.
+   with `H2_NOINDEX` on (staging; the chart passes it to both apps), the batch is off and there is no key file.
 5. **The call.** `IndexNowNotice` uses the observed HTTP client ([0006](../foundation/0006-outbound-calls-and-resilience.md)) with a
    20 s timeout. A refused or failed batch is logged and counted (`helper2.indexnow.batches{outcome}`); no retry, see 3.
    Sent addresses are counted in `helper2.indexnow.urls`.
