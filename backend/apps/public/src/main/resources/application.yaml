@@ -24,7 +24,12 @@ management:
 resilience4j:
   circuitbreaker:
     instances:
-      llm-chat-guide:
+      llm-chat-guide-fast:
+        base-config: model
+        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+        slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}
+        slow-call-rate-threshold: 50
+      llm-chat-guide-reasoning:
         base-config: model
         ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
         slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}

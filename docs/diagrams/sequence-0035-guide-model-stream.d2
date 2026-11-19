@@ -24,7 +24,7 @@ ask -> ask: "ModelActivity.reportedTo(progress)"
 ask -> model: "choose(need, candidates)"
 model -> model: "CallTimeLimit: window,\nthinking limit (attempt 1)"
 model -> chat: "streamed(choose, model, prompt version)"
-chat -> chat: "circuit llm-chat-guide,\nbudget unit, observation start"
+chat -> chat: "circuit llm-chat-guide-reasoning,\nbudget unit, observation start"
 chat -> stream: "collect(flux, limits, watch)"
 stream -> client: "subscribe:\nprompt.stream().chatResponse()"
 client -> tf: "POST /v1/chat/completions\nstream: true, same body\n(virtual dispatcher thread)" {class: ai-call}

@@ -210,13 +210,12 @@ class SpringAiGuideModel implements GuideModel {
   private final String compareSystem;
   private final String explainSystem;
   private final String provider;
-  private final String fastModel;
-  private final String reasoningModel;
+  private final ModelRoute fast;
+  private final ModelRoute reasoning;
   private final boolean nativeSchemaForChoose;
   private final int chooseMaxTokens;
   private final ModelCallMetrics metrics;
   private final Thinking thinking;
-  private final BudgetedChat calls;
   private final DailyBudget budget;
   private final ModelStream stream;
 
@@ -248,7 +247,13 @@ class SpringAiGuideModel implements GuideModel {
     this.timeLimit = timeLimit;
     this.clock = clock;
     this.metrics = metrics;
-    this.calls = new BudgetedChat(LlmPolicies.GUIDE, budget, metrics, resilience);
+    this.fast =
+        new ModelRoute(
+            fastModel, new BudgetedChat(LlmPolicies.GUIDE_FAST, budget, metrics, resilience));
+    this.reasoning =
+        new ModelRoute(
+            reasoningModel,
+            new BudgetedChat(LlmPolicies.GUIDE_REASONING, budget, metrics, resilience));
     this.budget = budget;
     this.chat = ChatClient.builder(chatModel).build();
     this.planSystem = planSystem();
@@ -258,8 +263,6 @@ class SpringAiGuideModel implements GuideModel {
     this.explainSystem = explainSystem();
     this.thinking = thinking;
     this.provider = provider;
-    this.fastModel = fastModel;
-    this.reasoningModel = reasoningModel;
     this.nativeSchemaForChoose = nativeSchemaForChoose;
     this.chooseMaxTokens = chooseMaxTokens;
   }
@@ -271,12 +274,12 @@ class SpringAiGuideModel implements GuideModel {
 
   @Override
   public String getFastModel() {
-    return fastModel;
+    return fast.model();
   }
 
   @Override
   public String getReasoningModel() {
-    return reasoningModel;
+    return reasoning.model();
   }
 
   @Override
@@ -308,7 +311,7 @@ class SpringAiGuideModel implements GuideModel {
     String answer = answer(clarification);
     Plan plan =
         call(
-            fastModel,
+            fast,
             planSystem,
             "Audience: " + (path == null ? "any" : path.name()) + "\n" + need(request) + answer,
             Plan.class,
@@ -380,7 +383,7 @@ class SpringAiGuideModel implements GuideModel {
             .collect(Collectors.joining("\n"));
     Compared answer =
         call(
-            reasoningModel,
+            reasoning,
             compareSystem,
             need(request) + "\n\nSUBJECTS:\n" + list,
             Compared.class,
@@ -421,7 +424,7 @@ class SpringAiGuideModel implements GuideModel {
             .collect(Collectors.joining("\n"));
     Explained answer =
         call(
-            reasoningModel,
+            reasoning,
             explainSystem,
             need(request)
                 + "\n\n<subject-name>\n"
@@ -478,7 +481,7 @@ class SpringAiGuideModel implements GuideModel {
                 .collect(Collectors.joining("; "));
     Choice choice =
         call(
-            reasoningModel,
+            reasoning,
             chooseSystem,
             need(request)
                 + "\n\n<constraints>\n"
@@ -520,7 +523,7 @@ class SpringAiGuideModel implements GuideModel {
             .collect(Collectors.joining("\n"));
     Verdicts answer =
         call(
-            reasoningModel,
+            reasoning,
             verifySystem,
             need(request) + "\n\nPICKS:\n" + picks,
             Verdicts.class,
@@ -575,8 +578,25 @@ class SpringAiGuideModel implements GuideModel {
 
   static final int VERIFY_MAX_TOKENS = 4096;
 
+  /**
+   * One guide model, the model name the provider knows it by and the calls of its own circuit
+   * breaker: the fast model and the reasoning model fail apart, so an outage of one does not refuse
+   * the calls of the other.
+   */
+  private record ModelRoute(String model, BudgetedChat calls) {}
+
+  /**
+   * The step whose failure costs the whole AI answer: without a plan the guide answers with plain
+   * search results only. Its call is repeated once after a short provider outage.
+   */
+  private static boolean repeatsAfterAnOutage(ModelStep step) {
+    return step == ModelStep.PLAN;
+  }
+
+  static final Duration OUTAGE_PAUSE = Duration.ofMillis(300);
+
   private <T> T call(
-      String model,
+      ModelRoute route,
       String system,
       String user,
       Class<T> type,
@@ -585,6 +605,7 @@ class SpringAiGuideModel implements GuideModel {
       ModelStep modelStep,
       int thinkingTokens) {
     String step = modelStep.getLabel();
+    String model = route.model();
     Activity activity = new Activity(ModelActivity.watcher(), modelStep);
     RuntimeException last = null;
     FallbackReason fallback = null;
@@ -627,12 +648,16 @@ class SpringAiGuideModel implements GuideModel {
       try {
         T answer =
             stream == ModelStream.ON
-                ? calls.streamed(
-                    call,
-                    this::budgetSpent,
-                    () -> streamWithin(limits, asking, activity),
-                    whole -> read(whole, asking))
-                : calls.entity(call, this::budgetSpent, () -> askWithin(window.get(), asking));
+                ? route
+                    .calls()
+                    .streamed(
+                        call,
+                        this::budgetSpent,
+                        () -> streamWithin(limits, asking, activity),
+                        whole -> read(whole, asking))
+                : route
+                    .calls()
+                    .entity(call, this::budgetSpent, () -> askWithin(window.get(), asking));
         log.debug("guide {} answer: {}", step, answer);
         return answer;
       } catch (GuideBudgetExhausted e) {
@@ -670,6 +695,12 @@ class SpringAiGuideModel implements GuideModel {
             model,
             ModelErrors.category(e),
             e.getClass().getSimpleName());
+        if (attempt < 2 && repeatsAfterAnOutage(modelStep) && ModelErrors.isOutage(e)) {
+          log.warn("guide {} call repeated once after a provider outage", step);
+          metrics.outageRetry(step);
+          pauseAfterTheOutage(step);
+          continue;
+        }
         if (ModelErrors.isProviderError(e)) {
           break;
         }
@@ -693,6 +724,16 @@ class SpringAiGuideModel implements GuideModel {
     }
     throw new GuideUnavailable(
         "model call failed: " + last.getClass().getSimpleName(), ModelErrors.category(last));
+  }
+
+  private static void pauseAfterTheOutage(String step) {
+    try {
+      Thread.sleep(OUTAGE_PAUSE);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new GuideUnavailable(
+          "the question was cancelled during the " + step + " call", GuideUnavailable.CANCELLED);
+    }
   }
 
   private GuideBudgetExhausted budgetSpent() {

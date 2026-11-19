@@ -40,6 +40,15 @@ public final class ModelErrors {
     return false;
   }
 
+  /**
+   * A short provider outage: the provider is overloaded or down (a 5xx such as 529, or a broken
+   * connection), so one more try a moment later can work. A timeout is not one (it already used its
+   * time), nor is a rate limit (the next try is refused too) or a rejected request.
+   */
+  public static boolean isOutage(Throwable e) {
+    return isTransient(e) && "unavailable".equals(category(e));
+  }
+
   public static boolean isProviderError(Throwable e) {
     if (isTransient(e)) {
       return true;
