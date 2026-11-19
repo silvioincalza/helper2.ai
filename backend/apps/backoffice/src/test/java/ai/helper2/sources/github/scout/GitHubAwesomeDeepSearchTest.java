@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.InMemoryListSeedStore;
+import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.ScoutCursor;
@@ -108,6 +110,7 @@ class GitHubAwesomeDeepSearchTest {
   }
 
   final GitHubAwesomeCollectorTest.FakeModel model = new GitHubAwesomeCollectorTest.FakeModel();
+  final InMemoryListSeedStore addedLists = new InMemoryListSeedStore();
 
   GitHubAwesomeCollector collector() {
     return new GitHubAwesomeCollector(
@@ -124,12 +127,38 @@ class GitHubAwesomeDeepSearchTest {
         categories,
         meters,
         SeedDiscoveryHosts.store(),
+        addedLists,
         SourceFixtures.SHADOW_LIBRARIES);
   }
 
   double count(String name, String... tags) {
     var counter = meters.find(name).tags(tags).counter();
     return counter == null ? 0 : counter.count();
+  }
+
+  @Test
+  void aListAnAdministratorAddedIsReadFirstWhateverItsStarsAndName() {
+    addedLists.add(new ListSeed("small/llm-links", "42", SourceFixtures.CLOCK.instant(), null));
+    server.route(
+        "/repos/small/llm-links",
+        FixtureServer.Reply.ok(
+            """
+            {"full_name":"small/llm-links","html_url":"https://github.com/small/llm-links",
+             "description":"Links","stargazers_count":3,"archived":false,"fork":false,"topics":[]}\
+            """));
+    server.route(
+        "/repos/small/llm-links/readme",
+        FixtureServer.Reply.ok(
+            "# Links\n## Engines\n- [Ragflow](https://github.com/infiniflow/ragflow)\n"));
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getLists())
+        .extracting(l -> l.getUrl().getValue())
+        .startsWith("https://github.com/small/llm-links");
+    assertThat(batch.getHits())
+        .extracting(SourceHit::getExternalId)
+        .contains("small/llm-links", "infiniflow/ragflow");
   }
 
   @Test
@@ -258,6 +287,7 @@ class GitHubAwesomeDeepSearchTest {
             new CategoryMatcher(new CategoryCatalog(many)),
             meters,
             SeedDiscoveryHosts.store(),
+            new InMemoryListSeedStore(),
             SourceFixtures.SHADOW_LIBRARIES);
 
     Candidate candidate = c.collect(null, null, 500).getCandidates().getFirst();

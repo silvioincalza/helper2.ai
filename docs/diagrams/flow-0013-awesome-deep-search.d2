@@ -1,5 +1,6 @@
 # Flowchart: how a pass reads nested awesome lists, which links become review items, and where categories come from (ADR 0013).
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java, ProductLinks.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore),
 #   AwesomeListParser.java (Link, Entry.pointsAtList), GitHubAwesomeCollector.java (read, candidates, candidate),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryPages.java (productSite),
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java (propose with a daily cap),
@@ -11,7 +12,7 @@
 
 direction: down
 
-seeds: "Seed lists: top 10 by stars\n(depth 0, queued first)" {class: end}
+seeds: "Seed lists (depth 0, queued first):\nthe lists an administrator added (list_seed),\nthen the top 10 of the search by stars" {class: end}
 
 crawl: "AwesomeCrawl (breadth first)" {
   class: group
@@ -19,6 +20,9 @@ crawl: "AwesomeCrawl (breadth first)" {
   budget: "Time (15 min) or README\nbytes (50 MB) spent?" {class: decision}
   unread: "Lists left wait for the next pass\n(skip: time-budget / size-budget)" {class: end}
   nested: "Nested list?" {class: decision}
+  added: "Added by an administrator\nand not found by the search?" {class: decision}
+  addedFacts: "GET /repos/{owner}/{repo}:\nfound and not archived?\n(no star floor, no AI words)" {class: decision}
+  addedSkipped: "Skipped, stays added\n(skip: added-archived, added-unavailable)" {class: end}
   facts: "GET /repos/{owner}/{repo}:\nnot archived, not a fork, 50+ stars,\nAI words in name, description, topics?" {class: decision}
   dropped: "Not followed\n(skip: nested-archived, -fork,\n-few-stars, -not-ai, -unavailable)" {class: end}
   readme: "GET README (5 MB, 60 s)\nparse: entries, headings, links" {class: app}
@@ -29,7 +33,11 @@ crawl: "AwesomeCrawl (breadth first)" {
   skipped: "Skip: nested-depth (depth 2 reached),\nnested-seen (read or queued: cycle guard),\nnested-cap (30 tried this run)" {class: end}
   budget -> unread: "yes"
   budget -> nested: "no"
-  nested -> readme: "no (seed)"
+  nested -> added: "no (seed)"
+  added -> readme: "no"
+  added -> addedFacts: "yes"
+  addedFacts -> addedSkipped: "no"
+  addedFacts -> readme: "yes"
   nested -> facts: "yes"
   facts -> dropped: "no"
   facts -> readme: "yes"

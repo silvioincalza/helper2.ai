@@ -27,6 +27,8 @@ import type {
   DiscoveryHosts,
   DiscoveryHostEntry,
   DiscoveryHostKind,
+  ListSeeds,
+  ListSeedEntry,
   ShadowLibraries,
   ShadowLibraryEntry,
   KnownTargets,
@@ -218,6 +220,16 @@ export const adminApi = {
     request<void>('POST', `/admin/discovery-hosts/${encodeURIComponent(host)}/remove`, {
       body: { reason },
     }),
+  listListSeeds: (signal?: AbortSignal) =>
+    request<ListSeeds>('GET', '/admin/list-seeds', { signal }),
+  addListSeed: (body: { address: string; reason: string | null }) =>
+    request<ListSeedEntry>('POST', '/admin/list-seeds', { body }),
+  removeListSeed: (repository: string, reason: string | null) =>
+    request<void>(
+      'POST',
+      `/admin/list-seeds/${repository.split('/').map(encodeURIComponent).join('/')}/remove`,
+      { body: { reason } },
+    ),
   listShadowLibraries: (signal?: AbortSignal) =>
     request<ShadowLibraries>('GET', '/admin/shadow-libraries', { signal }),
   addShadowLibrary: (body: { name: string; reason: string | null }) =>

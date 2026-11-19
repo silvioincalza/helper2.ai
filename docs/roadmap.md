@@ -35,6 +35,7 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.3.10 An arXiv paper a list links to is read by its id](https://github.com/silvioincalza/helper2.ai/issues/848)
 - [S2.3.11 An npm package a list links to is read by its name](https://github.com/silvioincalza/helper2.ai/issues/849)
 - [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
+- [T2.3.1 One host check for every address the Scout reads or proposes](https://github.com/silvioincalza/helper2.ai/issues/856)
 
 ### Next
 
@@ -86,7 +87,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S4.1.11 A guide that rides out a short outage of one model](https://github.com/silvioincalza/helper2.ai/issues/853)
 - [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
 
 ### Next
@@ -116,6 +116,10 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S5.7.1 To choose between Keycloak and plain Spring Security sign-in](https://github.com/silvioincalza/helper2.ai/issues/295)
 
 ## E6 Back office
+
+### Now
+
+- [S6.2.34 Bulk Accept refuses research that a later edit to a confirmed value made stale](https://github.com/silvioincalza/helper2.ai/issues/861)
 
 ### Next
 

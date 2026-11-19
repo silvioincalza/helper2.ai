@@ -7,6 +7,8 @@ import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.ListEntryText;
+import ai.helper2.scout.ListSeed;
+import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.PopularityKind;
@@ -100,6 +102,7 @@ public class GitHubAwesomeCollector implements Collector {
   private final ProductLinks productLinks;
   private final CategoryMatcher categories;
   private final DiscoveryHostStore hosts;
+  private final ListSeedStore addedLists;
   private final AwesomeMetrics metrics;
 
   public GitHubAwesomeCollector(
@@ -115,6 +118,7 @@ public class GitHubAwesomeCollector implements Collector {
       CategoryMatcher categories,
       MeterRegistry meters,
       DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
       ShadowLibraries shadowLibraries) {
     this.clock = clock;
     this.resilience = resilience;
@@ -129,6 +133,7 @@ public class GitHubAwesomeCollector implements Collector {
     this.productLinks = new ProductLinks(deep.excludeDomains(), shadowLibraries);
     this.categories = categories;
     this.hosts = hosts;
+    this.addedLists = addedLists;
     this.metrics = new AwesomeMetrics(meters);
     this.http = HttpClients.gitHubClient(builder, settings);
     this.descriptor = CollectorDescriptors.gitHubAwesome(settings);
@@ -157,7 +162,7 @@ public class GitHubAwesomeCollector implements Collector {
       return CollectedBatch.notDue();
     }
     DiscoveryPages pages = new DiscoveryPages(hosts.lists());
-    Pass pass = read(discoverListRepos());
+    Pass pass = read(addedLists(), discoverListRepos());
     List<AwesomeListParser.Entry> all =
         pass.entries().stream().sorted(Comparator.comparing(GitHubAwesomeCollector::key)).toList();
     int offset = firstAfter(all, resumeKey(cursor.getOwnResume()));
@@ -262,6 +267,10 @@ public class GitHubAwesomeCollector implements Collector {
 
   record ListRepo(String fullName, JsonNode facts) {}
 
+  private List<String> addedLists() {
+    return addedLists.all().stream().map(ListSeed::getRepository).toList();
+  }
+
   List<ListRepo> discoverListRepos() {
     Map<String, Long> stars = new HashMap<>();
     Map<String, JsonNode> facts = new HashMap<>();
@@ -321,11 +330,11 @@ public class GitHubAwesomeCollector implements Collector {
 
   private static final String GITHUB = "https://github.com/";
 
-  private Pass read(List<ListRepo> seeds) {
+  private Pass read(List<String> added, List<ListRepo> seeds) {
     AwesomeCrawl.Limits crawlLimits = crawlLimits();
     ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
-        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits, budget, metrics);
+        AwesomeCrawl.crawl(added, seeds, gitHubLists(), crawlLimits, budget, metrics);
     Set<String> lists = new HashSet<>();
     crawl.forEach(r -> lists.add(r.list().fullName().toLowerCase(Locale.ROOT)));
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();

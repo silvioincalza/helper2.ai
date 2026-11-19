@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.RunStatus;
 import ai.helper2.scout.SeedDiscoveryHosts;
@@ -133,6 +134,7 @@ class GitHubAwesomeCollectorTest {
         ai.helper2.shared.CategoryMatcher.NONE,
         new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
         SeedDiscoveryHosts.store(),
+        new InMemoryListSeedStore(),
         SourceFixtures.SHADOW_LIBRARIES);
   }
 

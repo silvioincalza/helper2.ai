@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.classifier.RepoClassifier;
@@ -70,6 +71,7 @@ class GitHubAwesomeLiveTest {
             ai.helper2.shared.CategoryMatcher.NONE,
             new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),
             SeedDiscoveryHosts.store(),
+            new InMemoryListSeedStore(),
             SourceFixtures.SHADOW_LIBRARIES);
 
     List<String> lists = collector.discoverLists();
