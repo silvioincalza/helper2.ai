@@ -2,6 +2,8 @@
 # Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeCrawl.java, ListEntryLinks.java, ProductLinks.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/huggingface/scout/HuggingFaceModelReader.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/arxiv/scout/ArxivPaperReader.java, sources/npm/scout/NpmPackageReader.java,
+#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/RedisOutboundThrottle.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/CoursePages.java,
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt (ListSeedStore), scout/internal/JdbcListSeedStore.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java, ResourceCandidateJson.java,
@@ -17,6 +19,9 @@ scout: RunScout {class: app}
 collector: "GitHubAwesomeCollector\n+ AwesomeCrawl" {class: app}
 github: "api.github.com" {class: ext}
 hub: "huggingface.co" {class: ext}
+arxiv: "export.arxiv.org" {class: ext}
+npm: "registry.npmjs.org" {class: ext}
+redis: Redis {class: data}
 catalog: "IndexResources /\nIndexAwesomeLists" {class: app}
 review: "ReviewQueueCandidateReview" {class: app}
 pg: PostgreSQL {class: data}
@@ -29,7 +34,7 @@ github -> collector: "seed lists with their facts"
 collector -> github: "GET /repos/small/llm-links (an added list\nthe search did not find)"
 github -> collector: "found, not archived"
 collector -> github: "GET /repos/{seed}/readme"
-github -> collector: "Markdown: entries, a section \"Related lists\",\nlinks to a model, a course, a product site"
+github -> collector: "Markdown: entries, a section \"Related lists\",\nlinks to a model, a paper, a package,\na course, a product site"
 collector -> github: "GET /repos/{nested} (facts)"
 github -> collector: "alive, 700 stars, about AI"
 collector -> github: "GET /repos/{nested}/readme"
@@ -38,7 +43,12 @@ collector -> github: "POST /graphql (facts of the entries)"
 collector -> collector: "ListEntryLinks: each link by its kind;\nProductLinks: the safety checks;\nCategoryMatcher: tags from the heading"
 collector -> hub: "GET /api/models/{owner}/{name}\n(at most 100 a pass)"
 hub -> collector: "likes, tags, licence, dates, disabled"
-collector -> scout: "CollectedBatch: hits + 2 list ARTICLEs + MODEL hits,\nlist texts, candidates (COURSE, PRODUCT,\nMODEL under 10 likes), newCandidatesPerDay = 50"
+collector -> redis: "SET h2:v1:outbound:arxiv NX PX 3000\n(the slot all machines share; wait 3 s\nand try again, at most 5 times)"
+collector -> arxiv: "GET /api/query?id_list=… (50 ids a call,\nat most 200 papers a pass)"
+arxiv -> collector: "Atom: title, summary, categories, dates"
+collector -> npm: "GET /{name}/latest\n(at most 100 a pass)"
+npm -> collector: "name, description, keywords,\nlicence, repository, deprecated"
+collector -> scout: "CollectedBatch: hits + 2 list ARTICLEs + MODEL, PAPER\nand package hits,\nlist texts, candidates (COURSE, PRODUCT,\nMODEL under 10 likes), newCandidatesPerDay = 50"
 scout -> catalog: "index(merged hits)"
 catalog -> pg: "upsert resources; categories\nfrom title, records, headings"
 scout -> catalog: "replace(list texts)"

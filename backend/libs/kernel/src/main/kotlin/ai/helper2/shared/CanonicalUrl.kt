@@ -27,6 +27,9 @@ class CanonicalUrl private constructor(val value: String) {
       return if (namesModel) segments.joinToString("/") else null
     }
 
+  val arxivPaper: String?
+    get() = value.removePrefix(ARXIV).takeIf { value.startsWith(ARXIV) && ARXIV_PAPER.matches(it) }
+
   override fun equals(other: Any?) = other is CanonicalUrl && other.value == value
 
   override fun hashCode() = value.hashCode()
@@ -37,6 +40,8 @@ class CanonicalUrl private constructor(val value: String) {
     private const val GITHUB = "https://github.com/"
     private const val HUGGING_FACE = "https://huggingface.co/"
     private val HF_NAME = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,95}")
+    private const val ARXIV = "https://arxiv.org/abs/"
+    private val ARXIV_PAPER = Regex("\\d{4}\\.\\d{4,5}|[a-z][a-z-]{1,20}(\\.[A-Z]{2})?/\\d{7}")
     private const val ANY_REF = "HEAD"
     private val TRACKING_PARAMS =
       setOf("ref", "ref_src", "fbclid", "gclid", "mc_cid", "mc_eid", "source")
