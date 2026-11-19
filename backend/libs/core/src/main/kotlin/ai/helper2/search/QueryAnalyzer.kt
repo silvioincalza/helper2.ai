@@ -104,7 +104,7 @@ class QueryAnalyzer {
   }
 
   private fun contentTermsOf(words: List<String>): List<String> {
-    fun isFiller(w: String) = w in FUNCTION_WORDS || w in REQUEST_WORDS
+    fun isFiller(w: String) = w in FUNCTION_WORDS || w in REQUEST_WORDS || w in DEVICE_WORDS
     fun isContent(w: String?) = w != null && !isFiller(w) && w !in TYPE_WORDS
     val terms = words.filterIndexed { i, w ->
       val next = words.getOrNull(i + 1)
@@ -150,6 +150,7 @@ class QueryAnalyzer {
 
     val FUNCTION_WORDS = WORDS.words("function")
     val REQUEST_WORDS = WORDS.words("request")
+    val DEVICE_WORDS = WORDS.words("device")
     val SYNONYMS = WORDS.phrasesIn("en", "synonyms").map { it.split(' ').toSet() }
   }
 
