@@ -4,6 +4,7 @@ import ai.helper2.catalog.ResourcePathsKt;
 import ai.helper2.catalog.usecase.ListIndexableResources;
 import ai.helper2.site.pages.Hub;
 import ai.helper2.site.pages.IndexPolicy;
+import ai.helper2.site.pages.SiteLists;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,11 +19,8 @@ public class ListSitemap {
 
   static final Duration KEEP = Duration.ofHours(1);
   public static final int PART_SIZE = 10_000;
-  static final List<String> STATIC_PAGES =
-      Stream.concat(
-              Stream.of("/", "/sources", "/events", "/mission", "/privacy", "/terms", "/support"),
-              Hub.getEntries().stream().map(Hub::getPath))
-          .toList();
+  static final List<String> SITE_PAGES =
+      List.of("/", "/sources", "/events", "/mission", "/privacy", "/terms", "/support");
 
   private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
   private static final String NS = "http://www.sitemaps.org/schemas/sitemap/0.9";
@@ -30,6 +28,7 @@ public class ListSitemap {
   private static final Pattern RESOURCES_PART = Pattern.compile("resources-([1-9][0-9]{0,4})");
 
   private final ListIndexableResources resources;
+  private final SiteLists lists;
   private final Clock clock;
   private final String base;
   private final int limit;
@@ -41,8 +40,13 @@ public class ListSitemap {
   private volatile Built built;
 
   public ListSitemap(
-      ListIndexableResources resources, Clock clock, String publicBaseUrl, int limit) {
+      ListIndexableResources resources,
+      SiteLists lists,
+      Clock clock,
+      String publicBaseUrl,
+      int limit) {
     this.resources = resources;
+    this.lists = lists;
     this.clock = clock;
     this.base = publicBaseUrl;
     this.limit = limit;
@@ -105,9 +109,16 @@ public class ListSitemap {
 
   private String staticPages() {
     StringBuilder xml = new StringBuilder(XML).append("<urlset xmlns=\"" + NS + "\">\n");
-    STATIC_PAGES.forEach(
-        path -> xml.append("<url><loc>").append(base).append(path).append("</loc></url>\n"));
+    Stream.concat(SITE_PAGES.stream(), hubsWithResources())
+        .forEach(
+            path -> xml.append("<url><loc>").append(base).append(path).append("</loc></url>\n"));
     return xml.append("</urlset>\n").toString();
+  }
+
+  private Stream<String> hubsWithResources() {
+    return Hub.getEntries().stream()
+        .filter(hub -> !lists.hub(hub.getType()).isEmpty())
+        .map(Hub::getPath);
   }
 
   private String resourcePages(List<ListIndexableResources.Page> chunk) {

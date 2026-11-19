@@ -41,17 +41,21 @@ Google treats many thin pages made in bulk as spam. One page per type is a small
 4. **The server page.** Spring answers each hub address like the other site pages
    ([0041](0041-site-pages-for-crawlers-policy-endpoint.md) §2): `index`, the title `{Name}: newest in the catalog · helper2.ai`, a
    fixed description, a canonical, and a body with an `<h1>`, the description, the list ("Newest change first", up to
-   50 links) and the links to the other site pages and hubs. `/sitemaps/pages.xml` and `/llms.txt` list the hubs.
-5. **The API.** `GET /api/v1/hubs/{type}` returns `HubResponse` (`type`, `items`, `generatedAt`). A type without a hub
+   50 links) and the links to the other site pages and hubs. Its JSON-LD is a `CollectionPage` whose `mainEntity` is
+   an `ItemList` with one `ListItem` per link, in the same order. `/llms.txt` lists the hubs.
+5. **A hub with no resource.** It says `noindex, follow`, has no JSON-LD and is not in `/sitemaps/pages.xml`: a page
+   with a heading and no list is a thin page. Its address still answers 200, with the links to the other pages, and
+   the footer still links it. It says `index` and is back in the sitemap once its list has a resource.
+6. **The API.** `GET /api/v1/hubs/{type}` returns `HubResponse` (`type`, `items`, `generatedAt`). A type without a hub
    is a 404, an unknown type a 400. `Cache-Control: public, max-age=300`, and the `recent` rate limit, like the home
    lists. Public in the security chain. It lives in the `site` module (`site.pages.web.HubController`), next to the
    pages it serves, and reads the catalog through its use case.
-6. **The app page.** `features/hubs/HubPage.tsx`, one page for every hub address; the address says the type. It
+7. **The app page.** `features/hubs/HubPage.tsx`, one page for every hub address; the address says the type. It
    shows the name, one line on what the list is, and the list: each row is the title, linked to the resource page,
    and a byline with the host and the license. The states are the shared `ListState` (loading skeleton, error with
    **Try again**, "Nothing here yet."). No new style: the row is the news page's small story row
    ([0040](0040-design-system.md)).
-7. **Entry point: the footer.** A second footer row, "Browse by type", links the ten hubs on every page
+8. **Entry point: the footer.** A second footer row, "Browse by type", links the ten hubs on every page
    ([0040](0040-design-system.md) §5). The header stays as it is.
 
 ## Alternatives considered
@@ -68,7 +72,9 @@ Google treats many thin pages made in bulk as spam. One page per type is a small
 
 ## Consequences
 
-- Ten more pages that can rank, each with up to 50 internal links to resource pages.
+- Up to ten more pages that can rank, each with up to 50 internal links to resource pages.
+- A hub whose read fails before it ever had a list says `noindex` until the next read works, 10 minutes at most.
+  The sitemap is built once an hour, so a hub can be missing from it for up to an hour after its first resource.
 - One catalog query per hub every 10 minutes at most, whatever the traffic.
 - The hubs show the 50 newest changes, not the whole type: browsing the rest is the search page.
 - A hub's name and its line live twice, in `Hub.kt` (server) and in `en.json` (app), like the other site pages.

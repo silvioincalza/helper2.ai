@@ -114,14 +114,19 @@ class Pages(private val base: String) {
     )
   }
 
-  fun hub(hub: Hub, items: List<Related>): PageHead =
-    listed(
-      "${hub.label}: newest in the catalog",
-      hub.description,
-      hub.path,
-      items.takeIf { it.isNotEmpty() }?.let { Listing("Newest change first", it) },
-      Hub.SIZE,
-    )
+  fun hub(hub: Hub, items: List<Related>): PageHead {
+    val newest = items.take(Hub.SIZE)
+    val head =
+      listed(
+        "${hub.label}: newest in the catalog",
+        hub.description,
+        hub.path,
+        newest.takeIf { it.isNotEmpty() }?.let { Listing("Newest change first", it) },
+        Hub.SIZE,
+      )
+    return if (newest.isEmpty()) head.copy(robots = Robots.NOINDEX_FOLLOW)
+    else head.copy(jsonLd = listOf(collection(hub, newest)))
+  }
 
   private fun listed(
     name: String,
@@ -181,6 +186,21 @@ class Pages(private val base: String) {
         listOf(
           crumb(1, BRAND, "$base/"),
           crumb(2, r.title, url),
+        ),
+    )
+
+  private fun collection(hub: Hub, items: List<Related>): Map<String, Any?> =
+    mapOf(
+      "@context" to "https://schema.org",
+      "@type" to "CollectionPage",
+      "name" to hub.label,
+      "url" to base + hub.path,
+      "mainEntity" to
+        mapOf(
+          "@type" to "ItemList",
+          "numberOfItems" to items.size,
+          "itemListElement" to
+            items.mapIndexed { i, r -> crumb(i + 1, r.title, base + resourcePath(r.id, r.title)) },
         ),
     )
 
