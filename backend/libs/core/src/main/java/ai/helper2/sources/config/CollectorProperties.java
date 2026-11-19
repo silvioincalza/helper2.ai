@@ -136,6 +136,8 @@ public final class CollectorProperties {
         @PositiveOrZero int maxPerPass,
         @PositiveOrZero int maxModelsPerPass,
         @PositiveOrZero int modelIndexMinLikes,
+        @PositiveOrZero int maxPapersPerPass,
+        @PositiveOrZero int maxPackagesPerPass,
         @NotNull List<String> excludeDomains) {
 
       public Links {

@@ -10,6 +10,7 @@ import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.platform.llm.ModelCallMetrics;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
@@ -24,6 +25,7 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.sources.aideadlines.AiDeadlinesCollector;
+import ai.helper2.sources.arxiv.scout.ArxivPaperReader;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.classifier.SpringAiRepoClassifier;
 import ai.helper2.sources.config.CollectorDescriptors;
@@ -53,6 +55,7 @@ import ai.helper2.sources.liveweb.scout.LiveWebEventsCollector;
 import ai.helper2.sources.liveweb.scout.LiveWebNewsCollector;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.mcp.McpRegistryCollector;
+import ai.helper2.sources.npm.scout.NpmPackageReader;
 import ai.helper2.sources.pypi.PypiCollector;
 import ai.helper2.sources.pypi.PypiCollectors;
 import ai.helper2.sources.support.HttpClients;
@@ -294,7 +297,8 @@ class CollectorsConfiguration {
       DiscoveryHostStore hosts,
       ListSeedStore addedLists,
       ShadowLibraries shadowLibraries,
-      VitalityPolicy vitality) {
+      VitalityPolicy vitality,
+      OutboundThrottle throttle) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -338,7 +342,48 @@ class CollectorsConfiguration {
         new GitHubAwesomeCollector.LinkRules(
             new CoursePages(courses.platforms()),
             modelReader(p.get("hf-trending"), clock, resilience, observations, http),
-            listedModelAdmission(vitality, c.links().modelIndexMinLikes())));
+            listedModelAdmission(vitality, c.links().modelIndexMinLikes()),
+            paperReader(p.get("arxiv"), s, clock, resilience, observations, http, throttle),
+            packageReader(p.get("npm"), s, clock, resilience, observations, http)));
+  }
+
+  private static final String AWESOME_POLICY = "collector-" + CollectorIds.GITHUB_AWESOME;
+
+  private static @Nullable ArxivPaperReader paperReader(
+      SourceSettings arxiv,
+      SourceSettings collector,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http,
+      OutboundThrottle throttle) {
+    if (!arxiv.enabled()) {
+      return null;
+    }
+    return new ArxivPaperReader(
+        collectorClient(collector, observations, http).baseUrl(arxiv.baseUrl()).build(),
+        resilience,
+        AWESOME_POLICY,
+        clock,
+        throttle,
+        ArxivPaperReader.sleeping());
+  }
+
+  private static @Nullable NpmPackageReader packageReader(
+      SourceSettings npm,
+      SourceSettings collector,
+      Clock clock,
+      Resilience resilience,
+      ObservationRegistry observations,
+      HttpClientProperties http) {
+    if (!npm.enabled()) {
+      return null;
+    }
+    return new NpmPackageReader(
+        collectorClient(collector, observations, http).baseUrl(npm.baseUrl()).build(),
+        resilience,
+        AWESOME_POLICY,
+        clock);
   }
 
   static AdmissionPolicy listedModelAdmission(VitalityPolicy vitality, int minLikes) {
@@ -392,6 +437,8 @@ class CollectorsConfiguration {
         c.maxReadmeBytesPerRun().toBytes(),
         c.links().maxPerPass(),
         c.links().maxModelsPerPass(),
+        c.links().maxPapersPerPass(),
+        c.links().maxPackagesPerPass(),
         c.links().perDay(),
         excluded);
   }

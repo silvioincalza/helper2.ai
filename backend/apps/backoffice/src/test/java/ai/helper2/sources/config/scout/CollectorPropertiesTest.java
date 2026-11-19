@@ -111,6 +111,8 @@ class CollectorPropertiesTest {
       assertThat(awesome.links().maxPerPass()).isEqualTo(500);
       assertThat(awesome.links().maxModelsPerPass()).isEqualTo(100);
       assertThat(awesome.links().modelIndexMinLikes()).isEqualTo(10);
+      assertThat(awesome.links().maxPapersPerPass()).isEqualTo(200);
+      assertThat(awesome.links().maxPackagesPerPass()).isEqualTo(100);
       assertThat(awesome.links().excludeDomains()).contains("arxiv.org", "discord.gg");
       assertThat(c.getBean(CollectorProperties.HfProviderOrgs.class))
           .isEqualTo(

@@ -366,6 +366,8 @@ helper2:
         max-per-pass: 500
         max-models-per-pass: 100
         model-index-min-likes: 10
+        max-papers-per-pass: 200
+        max-packages-per-pass: 100
         exclude-domains: >-
           arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
           discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,

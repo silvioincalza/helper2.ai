@@ -76,7 +76,8 @@ Two kinds of source need more care:
      under an item that have no link of their own (a summary, the authors, a sub-item without a link) belong to it:
      their words are part of its text, at most 20 lines and 500 characters.
    - **Every link of an entry goes to the rule of its kind**, sorted by its host ([0013](0013-discovery.md) §17):
-     a GitHub repository by the rules below; a Hugging Face model by the Hub's own record; a page on a course
+     a GitHub repository by the rules below; a Hugging Face model, an arXiv paper and an npm package by their
+     source's own record, read by id; a page on a course
      platform (point 7) to review as a `COURSE_CANDIDATE`; any other link to review as a `RESOURCE_CANDIDATE`.
      Nothing a source cannot confirm is indexed without a person.
    - Each README (up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and

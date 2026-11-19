@@ -81,7 +81,10 @@ dependency without a release, measured (state, refused calls), and testable with
    `ArxivSource` takes the shared slot of `platform.resilience.OutboundThrottle`: `SET h2:v1:outbound:arxiv 1 NX PX 3000`
    in Redis (`RedisOutboundThrottle`, on the `redis` policy), so the key's expiry frees the slot on Redis' clock.
    Another replica holding the slot, or Redis down, means `RATE_LIMITED` (pause 3 s) without a call: the pace fails
-   closed, because breaking arXiv's terms costs more than a search without papers.
+   closed, because breaking arXiv's terms costs more than a search without papers. The Scout's reader of papers
+   by id takes the same slot before each call (`ArxivSource.takesSlot`, `ArxivPaperReader`,
+   [0013](../scout/0013-discovery.md) §17). It is a batch job, so it waits 3 s and tries again, at most 5 times,
+   then leaves the papers for the next pass.
 10. **Metrics and traces without user text.** Calls are observed (`http.client.requests`, one client span,
     trace context sent on). `BoundedUriConvention` tags the path with numeric and id-like segments replaced
     by `{id}`, and drops the query string from the tag and from the span's `http.url`.

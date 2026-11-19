@@ -31,7 +31,7 @@ class ListEntryLinksTest {
         new ProductLinks(EXCLUDED, ShadowLibraries.of("z-lib")),
         new CoursePages(
             List.of("coursera.org=Coursera", "huggingface.co/learn=Hugging Face Learn")),
-        readsModels);
+        new ListEntryLinks.Readers(readsModels, readsModels, readsModels));
   }
 
   static AwesomeListParser.Link link(String url, String text, String headingPath) {
@@ -76,9 +76,11 @@ class ListEntryLinksTest {
 
   @ParameterizedTest
   @CsvSource({
-    "https://arxiv.org/abs/2212.04356, excluded-domain",
+    "https://arxiv.org/list/cs.AI/recent, excluded-domain",
+    "https://arxiv.org/abs/not-an-id, excluded-domain",
     "https://pypi.org/project/transformers, excluded-domain",
-    "https://www.npmjs.com/package/ai, excluded-domain",
+    "https://www.npmjs.com/~someone, excluded-domain",
+    "https://www.npmjs.com/package/ai/access, excluded-domain",
     "https://huggingface.co/datasets/acme/qa, excluded-domain",
     "https://huggingface.co/spaces/acme/demo, excluded-domain",
     "http://huggingface.co/acme/voice-model, not-https",
@@ -93,6 +95,36 @@ class ListEntryLinksTest {
   }
 
   @Test
+  void anArxivPaperGoesToArxivByItsIdWhateverTheViewAndTheVersion() {
+    ListEntryLinks.Paper paper =
+        new ListEntryLinks.Paper("1706.03762", CanonicalUrl.of("https://arxiv.org/abs/1706.03762"));
+
+    assertThat(route("https://arxiv.org/abs/1706.03762v5", "Attention", "Papers")).isEqualTo(paper);
+    assertThat(route("https://arxiv.org/pdf/1706.03762.pdf", "pdf", "Papers")).isEqualTo(paper);
+    assertThat(route("https://huggingface.co/papers/1706.03762", "Attention", "Papers"))
+        .isEqualTo(paper);
+  }
+
+  @Test
+  void anNpmPackagePageGoesToTheRegistryByItsName() {
+    assertThat(route("https://www.npmjs.com/package/@langchain/core", "core", "SDKs"))
+        .isEqualTo(
+            new ListEntryLinks.Package(
+                "@langchain/core", CanonicalUrl.of("https://npmjs.com/package/@langchain/core")));
+    assertThat(route("https://www.npmjs.com/package/ai", "ai", "SDKs"))
+        .isEqualTo(
+            new ListEntryLinks.Package("ai", CanonicalUrl.of("https://npmjs.com/package/ai")));
+  }
+
+  @Test
+  void withoutTheirReadersAPaperAndAPackageFollowTheRuleOfOtherLinks() {
+    assertThat(links(false).route(link("https://arxiv.org/abs/1706.03762", "A", "P"), PAGES))
+        .isEqualTo(new Skipped("excluded-domain"));
+    assertThat(links(false).route(link("https://www.npmjs.com/package/ai", "ai", "S"), PAGES))
+        .isEqualTo(new Skipped("excluded-domain"));
+  }
+
+  @Test
   void withoutAHubReaderAModelLinkFollowsTheRuleOfOtherLinks() {
     assertThat(links(false).route(link("https://huggingface.co/acme/voice-model", "V", "M"), PAGES))
         .isEqualTo(new Skipped("excluded-domain"));
@@ -100,10 +132,11 @@ class ListEntryLinksTest {
 
   @Test
   void theModelPageOfALinkIsKnownWithoutAnyCall() {
-    assertThat(links.modelPage(link("https://hf.co/acme/voice-model", "V", "M")))
+    assertThat(links.confirmablePage(link("https://hf.co/acme/voice-model", "V", "M")))
         .isEqualTo(CanonicalUrl.of("https://huggingface.co/acme/voice-model"));
-    assertThat(links.modelPage(link("https://acme.ai", "V", "M"))).isNull();
-    assertThat(links.modelPage(link("http://huggingface.co/acme/voice-model", "V", "M"))).isNull();
+    assertThat(links.confirmablePage(link("https://acme.ai", "V", "M"))).isNull();
+    assertThat(links.confirmablePage(link("http://huggingface.co/acme/voice-model", "V", "M")))
+        .isNull();
   }
 
   @Test
