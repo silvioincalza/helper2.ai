@@ -244,6 +244,10 @@ export const adminApi = {
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
       body: reason.trim() ? { reason: reason.trim() } : {},
     }),
+  removeResourceNotAboutAi: (resourceId: string, reason: string) =>
+    request<void>('POST', `/admin/ai-check/${encodeURIComponent(resourceId)}/remove`, {
+      body: { reason: reason.trim() },
+    }),
   prioritiseEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/prioritise`),
   listAuditEntries: (page: number, size: number, signal?: AbortSignal) =>

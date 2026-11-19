@@ -68,6 +68,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcResourceRemoval jdbcResourceRemoval(JdbcClient jdbc) {
+    return new JdbcResourceRemoval(jdbc);
+  }
+
+  @Bean
   JdbcCatalogRetention jdbcCatalogRetention(JdbcClient jdbc, JdbcCatalogWriter writer) {
     return new JdbcCatalogRetention(jdbc, writer);
   }

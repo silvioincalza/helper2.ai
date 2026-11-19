@@ -622,6 +622,36 @@ paths:
         "401": { $ref: "./common.yaml#/components/responses/Problem" }
         "403": { $ref: "./common.yaml#/components/responses/Problem" }
 
+  /admin/ai-check/{resourceId}/remove:
+    post:
+      tags: [enrichment-queue]
+      operationId: removeResourceNotAboutAi
+      summary: Remove a listed resource that is not about AI, and keep the Scout from adding its address again.
+      description: >-
+        For a resource the AI check lists. In one transaction: an audit entry REMOVE_RESOURCE with the resource's
+        address and the reason, a rejected decision for the address (the key a rejected resource candidate keeps,
+        never the address itself), then the resource and what belongs to it (source records, labels, embedding,
+        enrichment runs, review items, links to it). The Scout and the review queue skip an address with a rejected
+        decision. Saved items keep their own title and address.
+      parameters:
+        - {
+            name: resourceId,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResourceRemoval" }
+      responses:
+        "204": { description: Removed. }
+        "400": { $ref: "./common.yaml#/components/responses/Problem" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+        "404": { $ref: "./common.yaml#/components/responses/Problem" }
+
   /admin/enrichment-queue/{resourceId}/requeue:
     post:
       tags: [enrichment-queue]
@@ -1969,6 +1999,18 @@ components:
           maxItems: 20
           items: { type: string, maxLength: 60 }
 
+    ResourceRemoval:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          {
+            type: string,
+            minLength: 1,
+            maxLength: 500,
+            description: Why the resource is removed; kept in the audit trail.,
+          }
+
     AwesomeListCheck:
       type: object
       required: [checked, set, notAList, keptCurated, unavailable]
@@ -2707,6 +2749,7 @@ components:
                 REMOVE_KNOWN_TARGET,
                 ADD_SHADOW_LIBRARY,
                 REMOVE_SHADOW_LIBRARY,
+                REMOVE_RESOURCE,
               ],
           }
         targetId:
