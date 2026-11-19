@@ -66,7 +66,7 @@ class GitHubAwesomeLiveTest {
             List.of("topic:awesome-list topic:llm"),
             new GitHubAwesomeCollector.Limits(1, 1000, 80, 50, 50, 25),
             new GitHubAwesomeCollector.Deep(
-                1, 3, Duration.ofMinutes(5), 20_000_000L, 50, 0, 0, List.of("youtube.com")),
+                1, 3, Duration.ofMinutes(5), 20_000_000L, 50, 0, 0, 0, 0, List.of("youtube.com")),
             nano,
             ai.helper2.shared.CategoryMatcher.NONE,
             new io.micrometer.core.instrument.simple.SimpleMeterRegistry(),

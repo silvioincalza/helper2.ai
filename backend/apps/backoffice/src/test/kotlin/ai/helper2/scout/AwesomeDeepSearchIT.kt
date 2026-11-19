@@ -9,10 +9,13 @@ import ai.helper2.shared.CategoryMatcher
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
 import ai.helper2.sources.SourceFixtures
+import ai.helper2.sources.arxiv.scout.ArxivPaperReader
+import ai.helper2.sources.arxiv.scout.ArxivPaperReaderTest
 import ai.helper2.sources.classifier.RepoClassifier
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector
 import ai.helper2.sources.huggingface.scout.HuggingFaceModelReader
 import ai.helper2.sources.liveweb.scout.CoursePages
+import ai.helper2.sources.npm.scout.NpmPackageReader
 import ai.helper2.sources.support.RunInterval
 import ai.helper2.sources.support.SourceSettings
 import ai.helper2.testing.FixtureServer
@@ -132,8 +135,10 @@ class AwesomeDeepSearchIT {
         10_000_000L,
         500,
         100,
+        200,
+        100,
         50,
-        listOf("arxiv.org"),
+        listOf("arxiv.org", "npmjs.com"),
       ),
       RepoClassifier.Heuristic(),
       categories,
@@ -152,8 +157,27 @@ class AwesomeDeepSearchIT {
           Clock.systemUTC(),
         ),
         AdmissionPolicy(),
+        ArxivPaperReader(
+          fixtureClient(),
+          Resilience.NONE,
+          "collector-github-awesome",
+          Clock.systemUTC(),
+          { _, _ -> true },
+          {},
+        ),
+        NpmPackageReader(
+          fixtureClient(),
+          Resilience.NONE,
+          "collector-github-awesome",
+          Clock.systemUTC(),
+        ),
       ),
     )
+
+  private fun fixtureClient() =
+    TestHttp.restClientBuilder(Duration.ofSeconds(5), ObservationRegistry.NOOP)
+      .baseUrl(github.baseUrl())
+      .build()
 
   private class MemStore : ScoutStore {
     val cursors = mutableMapOf<String, ScoutCursor>()
@@ -382,6 +406,112 @@ class AwesomeDeepSearchIT {
     assertEquals(null, resourceType(paper))
     assertEquals(null, resourceType(course))
     assertEquals(null, resourceType(site))
+  }
+
+  private fun routesForAList(readme: String) {
+    github.route(
+      "/search/repositories",
+      FixtureServer.Reply.ok(
+        """
+        {"items":[{"full_name":"$seed","html_url":"https://github.com/$seed","stargazers_count":5000,
+          "description":"Curated LLM tools","topics":["llm"]}]}
+        """
+      ),
+    )
+    github.route("/repos/$seed/readme", FixtureServer.Reply.ok(readme))
+    github.route("/graphql", FixtureServer.Reply.ok("""{"data":{}}"""))
+  }
+
+  private fun recordsOf(url: String): List<String> =
+    jdbc
+      .sql("SELECT source_id || ' ' || title FROM source_record WHERE resource_id = :id")
+      .param("id", resourceId(url))
+      .query(String::class.java)
+      .list()
+      .filterNotNull()
+
+  @Test
+  fun `an arXiv paper a list links to is read by its id and is one paper whatever the link`() {
+    val id = "24${run.filter { it.isDigit() }.padEnd(2, '0').take(2)}.${(10000..99999).random()}"
+    val paper = "https://arxiv.org/abs/$id"
+    routesForAList(
+      """
+      # Awesome LLM
+      ## Papers
+      - [Paper $run](https://arxiv.org/abs/${id}v3) - Agents. [[pdf]](https://arxiv.org/pdf/$id.pdf)
+      - [Unknown](https://arxiv.org/abs/0001.00001)
+      """
+        .trimIndent()
+    )
+    github.route(
+      "/api/query",
+      FixtureServer.Reply.ok(
+        ArxivPaperReaderTest.feed(ArxivPaperReaderTest.entry(id, "Paper $run", "cs.MA"))
+      ),
+    )
+
+    scout().tryStart()
+
+    assertEquals(ResourceType.PAPER.name, resourceType(paper))
+    assertEquals(listOf("github-awesome Paper $run"), recordsOf(paper))
+    assertEquals("Papers", listHeadingOf(paper))
+    assertEquals(null, resourceType("https://arxiv.org/abs/0001.00001"))
+    assertEquals(1, github.requests.count { it.startsWith("/api/query") })
+  }
+
+  @Test
+  fun `an npm package a list links to is read by its name and lands on the right resource`() {
+    val scoped = "@acme-$run/agents"
+    val repository = "https://github.com/acme-$run/agents-js"
+    val alone = "llm-kit-$run"
+    val old = "old-llm-$run"
+    routesForAList(
+      """
+      # Awesome LLM
+      ## SDKs
+      - [Agents](https://www.npmjs.com/package/$scoped) - Agent SDK.
+      - [Kit](https://www.npmjs.com/package/$alone) - LLM kit.
+      - [Old](https://www.npmjs.com/package/$old) - Old client.
+      """
+        .trimIndent()
+    )
+    github.route(
+      "/$scoped/latest",
+      FixtureServer.Reply.ok(
+        """
+        {"name":"$scoped","description":"Agent SDK for LLM apps","keywords":["llm","ai"],
+         "license":"MIT","repository":{"url":"git+$repository.git"}}
+        """
+      ),
+    )
+    github.route(
+      "/$alone/latest",
+      FixtureServer.Reply.ok(
+        """
+        {"name":"$alone","description":"A kit for LLM apps","keywords":["llm","ai"],
+         "license":"Apache-2.0","repository":"https://github.com/someone-$run/misc"}
+        """
+      ),
+    )
+    github.route(
+      "/$old/latest",
+      FixtureServer.Reply.ok(
+        """
+        {"name":"$old","description":"An old LLM client","keywords":["llm","ai"],
+         "deprecated":"Use another one"}
+        """
+      ),
+    )
+
+    scout().tryStart()
+
+    assertEquals(listOf("github-awesome $scoped"), recordsOf(repository))
+    assertEquals("SDKs", listHeadingOf(repository))
+    assertEquals(null, resourceType("https://npmjs.com/package/$scoped"))
+    assertEquals(listOf("github-awesome $alone"), recordsOf("https://npmjs.com/package/$alone"))
+    assertEquals("SDKs", listHeadingOf("https://npmjs.com/package/$alone"))
+    assertEquals(null, resourceType("https://npmjs.com/package/$old"))
+    assertEquals(null, resourceType("https://github.com/someone-$run/misc"))
   }
 
   private fun product(host: String) =

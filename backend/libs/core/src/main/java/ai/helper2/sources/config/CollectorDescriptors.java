@@ -70,6 +70,7 @@ public final class CollectorDescriptors {
                 ResourceType.DATASET,
                 ResourceType.PRODUCT,
                 ResourceType.COURSE,
+                ResourceType.PAPER,
                 ResourceType.AWESOME_LIST),
             settings.timeout(),
             settings.cacheTtl())
@@ -79,7 +80,8 @@ public final class CollectorDescriptors {
         .withAttribution(
             "Repository metadata from the GitHub API; list headings and entry lines are indexed for"
                 + " search, never stored. Lists linked from lists are followed. A linked Hugging"
-                + " Face model is read from the Hugging Face Hub API; links to course pages and"
+                + " Face model, arXiv paper and npm package are read from the Hugging Face Hub, arXiv and"
+                + " npm registry APIs; links to course pages and"
                 + " product sites are added only after a person checks them.")
         .enabledWhen(settings.enabled() && settings.hasToken())
         .withPriority(25);

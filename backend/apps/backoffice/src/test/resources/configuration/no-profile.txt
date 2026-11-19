@@ -646,6 +646,8 @@ helper2.scout.github-awesome.classify-max-tokens = 8192
 helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
 helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
 helper2.scout.github-awesome.links.max-models-per-pass = 100
+helper2.scout.github-awesome.links.max-packages-per-pass = 100
+helper2.scout.github-awesome.links.max-papers-per-pass = 200
 helper2.scout.github-awesome.links.max-per-pass = 500
 helper2.scout.github-awesome.links.model-index-min-likes = 10
 helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50

@@ -329,7 +329,16 @@ class GitHubAwesomeDeepSearchTest {
     server.route("/api/models/someone/tiny-experiment", FixtureServer.Reply.ok(TINY_MODEL));
     deep =
         new GitHubAwesomeCollector.Deep(
-            2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 100, 50, List.of("arxiv.org"));
+            2,
+            30,
+            Duration.ofMinutes(15),
+            50_000_000L,
+            500,
+            100,
+            200,
+            100,
+            50,
+            List.of("arxiv.org"));
     linkRules =
         new GitHubAwesomeCollector.LinkRules(
             new ai.helper2.sources.liveweb.scout.CoursePages(List.of("coursera.org=Coursera")),
@@ -346,7 +355,9 @@ class GitHubAwesomeDeepSearchTest {
                 new ai.helper2.scout.admission.AdmissionRules(
                     Map.of(
                         GitHubAwesomeCollector.ID,
-                        new ai.helper2.scout.admission.IndexFloor(0, null, 10)))));
+                        new ai.helper2.scout.admission.IndexFloor(0, null, 10)))),
+            null,
+            null);
   }
 
   List<String> modelCalls() {
@@ -454,7 +465,7 @@ class GitHubAwesomeDeepSearchTest {
     aListWithOneLinkOfEachKind();
     deep =
         new GitHubAwesomeCollector.Deep(
-            2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 1, 50, List.of("arxiv.org"));
+            2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 1, 200, 100, 50, List.of("arxiv.org"));
 
     collector().collect(null, null, 500);
 
@@ -490,5 +501,190 @@ class GitHubAwesomeDeepSearchTest {
     assertThat(resumed.getLists().getFirst().getEntries())
         .extracting(e -> e.getUrl().getValue())
         .contains("https://huggingface.co/acme/voice-model");
+  }
+
+  static final String PAPERS_AND_PACKAGES =
+      """
+      # Awesome LLM
+      ## Papers
+      - [Attention](https://arxiv.org/abs/1706.03762v5) - Transformers. [[pdf]](https://arxiv.org/pdf/1706.03762.pdf)
+      - [Unknown](https://arxiv.org/abs/9999.99999)
+      ## SDKs
+      - [LangChain core](https://www.npmjs.com/package/@langchain/core) - Abstractions.
+      - [Agent kit](https://www.npmjs.com/package/llm-agent-kit) - Agents.
+      - [Old client](https://www.npmjs.com/package/old-llm-client)
+      """;
+
+  boolean arxivSlotFree = true;
+
+  void aListWithPapersAndPackages(int maxPapers, int maxPackages) {
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(PAPERS_AND_PACKAGES));
+    server.route("/graphql", FixtureServer.Reply.ok("{\"data\":{}}"));
+    server.route(
+        "/api/query",
+        FixtureServer.Reply.ok(
+            ai.helper2.sources.arxiv.scout.ArxivPaperReaderTest.feed(
+                ai.helper2.sources.arxiv.scout.ArxivPaperReaderTest.entry(
+                    "1706.03762", "Attention Is All You Need", "cs.CL"))));
+    server.route(
+        "/@langchain/core/latest",
+        FixtureServer.Reply.ok(
+            """
+            {"name":"@langchain/core","description":"Core LangChain.js abstractions",
+             "keywords":["llm","ai"],"license":"MIT",
+             "repository":{"url":"git+ssh://git@github.com/langchain-ai/langchainjs.git"}}\
+            """));
+    server.route(
+        "/llm-agent-kit/latest",
+        FixtureServer.Reply.ok(
+            """
+            {"name":"llm-agent-kit","description":"Agents for LLM apps","keywords":["llm","ai"],
+             "repository":"https://github.com/someone/misc"}\
+            """));
+    server.route(
+        "/old-llm-client/latest",
+        FixtureServer.Reply.ok(
+            """
+            {"name":"old-llm-client","description":"An LLM client","keywords":["llm","ai"],
+             "deprecated":"Use another one"}\
+            """));
+    deep =
+        new GitHubAwesomeCollector.Deep(
+            2,
+            30,
+            Duration.ofMinutes(15),
+            50_000_000L,
+            500,
+            100,
+            maxPapers,
+            maxPackages,
+            50,
+            List.of("arxiv.org", "npmjs.com"));
+    org.springframework.web.client.RestClient http =
+        TestHttp.restClientBuilder(
+                Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP)
+            .baseUrl(server.baseUrl())
+            .build();
+    linkRules =
+        new GitHubAwesomeCollector.LinkRules(
+            new ai.helper2.sources.liveweb.scout.CoursePages(List.of()),
+            null,
+            new ai.helper2.scout.admission.AdmissionPolicy(),
+            new ai.helper2.sources.arxiv.scout.ArxivPaperReader(
+                http,
+                Resilience.NONE,
+                GitHubAwesomeCollector.POLICY,
+                SourceFixtures.CLOCK,
+                (host, interval) -> arxivSlotFree,
+                pause -> {}),
+            new ai.helper2.sources.npm.scout.NpmPackageReader(
+                http, Resilience.NONE, GitHubAwesomeCollector.POLICY, SourceFixtures.CLOCK));
+  }
+
+  List<String> calls(String prefix) {
+    return server.requests.stream().filter(r -> r.startsWith(prefix)).toList();
+  }
+
+  static List<SourceHit> packages(CollectedBatch batch) {
+    return batch.getHits().stream()
+        .filter(h -> h.getCanonicalUrl().getHost().equals("npmjs.com"))
+        .toList();
+  }
+
+  static List<SourceHit> ofType(CollectedBatch batch, ResourceType type) {
+    return batch.getHits().stream().filter(h -> h.getType() == type).toList();
+  }
+
+  @Test
+  void aPaperLinkedTwiceIsAskedOnceByItsIdAndIsOnePaper() {
+    aListWithPapersAndPackages(200, 100);
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(calls("/api/query")).hasSize(1);
+    assertThat(calls("/api/query").getFirst()).contains("id_list=1706.03762,9999.99999");
+    assertThat(ofType(batch, ResourceType.PAPER))
+        .extracting(SourceHit::getExternalId, SourceHit::getSourceId)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(
+                "https://arxiv.org/abs/1706.03762", GitHubAwesomeCollector.ID));
+    assertThat(batch.getLists().getFirst().getEntries())
+        .extracting(e -> e.getUrl().getValue(), e -> e.getHeadingPath())
+        .contains(
+            org.assertj.core.groups.Tuple.tuple("https://arxiv.org/abs/1706.03762", "Papers"));
+    assertThat(batch.getCandidates()).isEmpty();
+    assertThat(count(AwesomeMetrics.PAPERS)).isEqualTo(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "paper-not-kept")).isEqualTo(1);
+  }
+
+  @Test
+  void aPackageIsReadByItsNameAndItsListEntryNamesTheResourceItJoins() {
+    aListWithPapersAndPackages(200, 100);
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(server.requests)
+        .contains("/@langchain/core/latest", "/llm-agent-kit/latest", "/old-llm-client/latest");
+    assertThat(packages(batch))
+        .extracting(SourceHit::getTitle, h -> h.getVitality().getDeprecated())
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("@langchain/core", false),
+            org.assertj.core.groups.Tuple.tuple("llm-agent-kit", false),
+            org.assertj.core.groups.Tuple.tuple("old-llm-client", true));
+    assertThat(batch.getLists().getFirst().getEntries())
+        .extracting(e -> e.getUrl().getValue(), e -> e.getHeadingPath())
+        .contains(
+            org.assertj.core.groups.Tuple.tuple(
+                "https://github.com/langchain-ai/langchainjs", "SDKs"),
+            org.assertj.core.groups.Tuple.tuple("https://npmjs.com/package/llm-agent-kit", "SDKs"));
+    assertThat(count(AwesomeMetrics.PACKAGES)).isEqualTo(3);
+  }
+
+  @Test
+  void atMostTheCapsOfPapersAndPackagesAreReadInAPass() {
+    aListWithPapersAndPackages(1, 1);
+
+    collector().collect(null, null, 500);
+
+    assertThat(calls("/api/query").getFirst())
+        .contains("id_list=1706.03762")
+        .doesNotContain("9999.99999");
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "paper-cap")).isEqualTo(1);
+    assertThat(server.requests.stream().filter(r -> r.endsWith("/latest"))).hasSize(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "package-cap")).isEqualTo(2);
+  }
+
+  @Test
+  void whenArxivsSharedSlotStaysTakenThePapersWaitAndThePackagesAreStillRead() {
+    aListWithPapersAndPackages(200, 100);
+    arxivSlotFree = false;
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(calls("/api/query")).isEmpty();
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "paper-rate-limited")).isEqualTo(2);
+    assertThat(packages(batch)).hasSize(3);
+  }
+
+  @Test
+  void whenTheRegistryFailsTheOtherPackagesWaitForTheNextPass() {
+    aListWithPapersAndPackages(200, 100);
+    server.route("/@langchain/core/latest", new FixtureServer.Reply(500, "", Map.of(), 0));
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(server.requests.stream().filter(r -> r.endsWith("/latest"))).hasSize(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "package-unavailable")).isEqualTo(3);
+    assertThat(ofType(batch, ResourceType.PAPER)).hasSize(1);
+  }
+
+  @Test
+  void papersAndPackagesAreReadOnlyOnTheFirstRunOfAPass() {
+    aListWithPapersAndPackages(200, 100);
+
+    collector().collect(null, "1", 500);
+
+    assertThat(calls("/api/query")).isEmpty();
+    assertThat(server.requests.stream().filter(r -> r.endsWith("/latest"))).isEmpty();
   }
 }
