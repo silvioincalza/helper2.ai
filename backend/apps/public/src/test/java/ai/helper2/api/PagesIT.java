@@ -127,6 +127,16 @@ class PagesIT extends ApiTestBase {
   }
 
   @Test
+  void llmsTxtIsPlainTextOnThePublicHost() throws Exception {
+    mvc.perform(get("/llms.txt"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", "text/plain;charset=UTF-8"))
+        .andExpect(content().string(org.hamcrest.Matchers.startsWith("# helper2.ai\n")))
+        .andExpect(
+            content().string(org.hamcrest.Matchers.containsString("(https://helper2.ai/sources)")));
+  }
+
+  @Test
   void theSitemapIsAnIndexOfItsParts() throws Exception {
     String index = xml("/sitemap.xml");
     assertThat(index)

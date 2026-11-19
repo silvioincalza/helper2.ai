@@ -95,7 +95,12 @@ Both are about the public site itself, and only the public app serves them.
    Each part in the index carries the newest `<lastmod>` it holds. A part that does not exist is a 404. The catalog
    query applies the same rule as `IndexPolicy` and reads at most `helper2.pages.sitemap-limit` resources (200,000).
    An integration test opens the listed pages of the first part and checks they say `index`. The index and its parts
-   are built together at most once an hour and kept in memory; both answers share the `sitemap` rate limit. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
+   are built together at most once an hour and kept in memory; both answers share the `sitemap` rate limit.
+   `/llms.txt` (the [llms.txt](https://llmstxt.org/) format, served as `text/plain`) says in a few lines what
+   helper2.ai is, how search and the guide work, and links the main pages, the sitemap and the source code. It
+   states no number the code reads from configuration, so it cannot drift from the running server, and it holds no
+   line written to steer an assistant: only facts the site pages also state. It names the rule of the Terms page on
+   automated bulk copying. It is built from `H2_PUBLIC_BASE_URL`; with `H2_NOINDEX` on it is a 404, like the sitemap. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
    `/admin`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
    `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header stays ([0037](../identity/0037-http-edge.md)), every robots meta says
    `noindex` too, `robots.txt` allows all (a blocked page never shows its noindex) and there is no sitemap.
@@ -173,7 +178,7 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 
 - `backend/apps/public/src/main/java/ai/helper2/site/package-info.java` — the module and its four parts.
 - `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt`
-  (`PageHead`, `ResourceView`, `IndexPolicy`), `SiteLists.kt`, `Pages.kt` (the head of each page, `JsonLd`), `ResourcePaths.kt`
+  (`PageHead`, `ResourceView`, `IndexPolicy`), `SiteLists.kt`, `LlmsTxt.kt`, `Pages.kt` (the head of each page, `JsonLd`), `ResourcePaths.kt`
   (`Slug`, `resourcePath`).
 - `backend/apps/public/src/main/java/ai/helper2/site/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`,
   `internal/PageTemplate`, `internal/PageHtml` (the escaping), `internal/CatalogSiteLists` (the lists of the site pages), `web/PageRoutes`, `web/CrawlerFiles`,
@@ -200,7 +205,8 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 - `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`), `frontend/src/lib/slug.ts`,
   `frontend/src/lib/searchState.ts` (`resourcePath`), `frontend/src/features/resource/ResourcePage.tsx` (the address replaced).
 - Tests: `site/pages/PagesTest.kt` (slug list, site page bodies), `site/pages/PageHtmlTest.java`,
-  `site/pages/usecase/ListSitemapTest.java` (the index and its parts), `api/PagesIT.java`,
+  `site/pages/usecase/ListSitemapTest.java` (the index and its parts), `site/pages/LlmsTxtTest.kt`,
+  `site/pages/web/LlmsTxtRouteTest.java`, `api/PagesIT.java`,
   `site/policy/web/PolicyControllerTest.java` (every number comes from its module), `api/PolicyApiIT.java` (contract,
   cache header, values from configuration, rate limit), `frontend/src/lib/head.test.tsx`, `frontend/src/lib/slug.test.ts`
   (same slug list).
@@ -274,8 +280,8 @@ and `H2_NOINDEX`. The other layers are not touched.
 ### Open points
 
 - No 410 for resources removed on purpose: the catalog has no removed state.
-- No Open Graph image (brand first, then per resource).
-- No hub pages per type or use case (`/mcp-servers`), no `llms.txt`, no IndexNow pings.
+- No Open Graph image (brand first, then per resource): S7.3.8.
+- No hub pages per type or use case (`/mcp-servers`): S7.3.6. No IndexNow pings: S7.3.7.
 
 ## Diagrams
 
@@ -286,4 +292,6 @@ the policy endpoint: [flow](../../diagrams/flow-0041-policy-endpoint.svg) · [se
 ## Backlog
 
 - Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint.
-- Open issues that change this decision: none.
+- Open issues that change this decision: [S7.3.6](https://github.com/silvioincalza/helper2.ai/issues/816) hub pages per
+  type, [S7.3.7](https://github.com/silvioincalza/helper2.ai/issues/817) IndexNow pings,
+  [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) an Open Graph image.
