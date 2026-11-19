@@ -50,7 +50,9 @@ the guide work long before that, and what makes the wait feel long is the first 
      `helper2.llm.call{step,model,prompt,outcome}`, `helper2.llm.tokens{step,prompt,type}`,
      `helper2.llm.tokens_unknown{step,prompt,type}` (calls whose answer reported no such count),
      `helper2.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
-     [0008](0008-llm-integration.md), or `time`, [0035](../guide/0035-guide-model-stream.md)), `helper2.guide.budget.remaining`,
+     [0008](0008-llm-integration.md), or `time`, [0035](../guide/0035-guide-model-stream.md)),
+     `helper2.llm.outage_retry{step}` (a guide plan call asked once more after a short provider outage,
+     [0031](../guide/0031-guide-pipeline.md)), `helper2.guide.budget.remaining`,
      `helper2.guide.judge{kind,evaluator,verdict,verify,prompt}` (the staging judge, [0046](../operations/0046-evaluation-guide-and-search.md)),
      `helper2.search.translation.budget.remaining`;
    - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](../scout/0020-resource-vitality.md)), `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of

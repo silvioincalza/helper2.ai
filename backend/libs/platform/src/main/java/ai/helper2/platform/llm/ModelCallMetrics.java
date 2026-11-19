@@ -83,6 +83,12 @@ public final class ModelCallMetrics {
     meters.counter(THINKING_FALLBACK, "step", step, "reason", reason.tag()).increment();
   }
 
+  public static final String OUTAGE_RETRY = "helper2.llm.outage_retry";
+
+  public void outageRetry(String step) {
+    meters.counter(OUTAGE_RETRY, "step", step).increment();
+  }
+
   public static final String TOKENS_UNKNOWN = "helper2.llm.tokens_unknown";
 
   public void tokens(String step, String prompt, ChatResponse response) {

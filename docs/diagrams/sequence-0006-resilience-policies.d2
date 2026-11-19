@@ -1,6 +1,6 @@
 # Sequence: a Scout collector riding out a short 503 under collector-<id> (retry outside, circuit inside), then a
 # search source whose circuit has opened, answered as SKIPPED without a call; then the guide's model calls under
-# llm-chat-guide while the provider is down. The redis circuit is in sequence-0005-redis-disposable-cache.
+# llm-chat-guide-fast while the fast model is down (the reasoning model keeps its own circuit). The redis circuit is in sequence-0005-redis-disposable-cache.
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java, support/TransientSourceFailure.java,
 #   HttpClients.java, backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
 #   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*),
@@ -51,13 +51,18 @@ recover: After 30 s {
   res -> search: "hits"
 }
 
-llm: "Guide: Token Factory down (policy llm-chat-guide)" {
-  guide -> res: "call(llm-chat-guide, plan attempt)"
+llm: "Guide: the fast model is down (policy llm-chat-guide-fast)" {
+  guide -> res: "call(llm-chat-guide-fast, plan attempt 1)"
   res -> tf: "budget unit, then the request"
-  tf -> res: "timeout after 40 s (provider error: counted)"
-  res -> guide: "failure → GuideUnavailable(timeout):\ndegraded answer"
-  res -> res: "5 of the last 10 calls failed:\ncircuit OPEN for 30 s"
-  guide -> res: "call(llm-chat-guide, plan attempt)"
+  tf -> res: "529 overloaded (provider error: counted)"
+  res -> guide: "failure: a short outage (ModelErrors.isOutage)"
+  guide -> guide: "wait 300 ms, helper2.llm.outage_retry +1"
+  guide -> res: "call(llm-chat-guide-fast, plan attempt 2)"
+  res -> tf: "budget unit, then the request"
+  tf -> res: "529 again (counted)"
+  res -> guide: "failure → GuideUnavailable(unavailable):\ndegraded answer"
+  res -> res: "5 of the last 10 calls failed:\nllm-chat-guide-fast OPEN for 30 s\n(llm-chat-guide-reasoning stays CLOSED)"
+  guide -> res: "call(llm-chat-guide-fast, plan attempt)"
   res -> guide: "CallRefused CIRCUIT_OPEN:\nno request, no budget unit"
   guide -> guide: "GuideUnavailable(circuit_open):\ndegraded answer at once"
 }

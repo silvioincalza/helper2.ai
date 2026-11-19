@@ -858,7 +858,7 @@ tests:
               name: source-npm
             exp_annotations:
               summary: "Circuit source-npm has not closed for 5 minutes (prod)."
-              description: "The resilience policy source-npm keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide means guide answers are top search results (also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+              description: "The resilience policy source-npm keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide-fast means guide questions get no plan and answer with top search results, llm-chat-guide-reasoning means guide answers are top search results (both also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
               runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
 
   - interval: 1m
@@ -897,7 +897,7 @@ tests:
               name: collector-hf-trending
             exp_annotations:
               summary: "Circuit collector-hf-trending has not closed for 5 minutes (prod)."
-              description: "The resilience policy collector-hf-trending keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide means guide answers are top search results (also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+              description: "The resilience policy collector-hf-trending keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide-fast means guide questions get no plan and answer with top search results, llm-chat-guide-reasoning means guide answers are top search results (both also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
               runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
 
   - interval: 1h

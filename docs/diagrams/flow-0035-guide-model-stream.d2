@@ -14,7 +14,7 @@ direction: down
 mode: "H2_GUIDE_MODEL_STREAM?" {class: decision}
 blocking: "Blocking call\n(ADR 0008): prompt.call()\n.responseEntity(converter)" {class: app}
 window: "CallTimeLimit.forACallStartingNow:\nwindow = min(model timeout,\ntime left - margin)" {class: app}
-units: "BudgetedChat.streamed:\ncircuit llm-chat-guide, one budget unit,\none helper2.llm.call observation\naround the whole subscription" {class: app}
+units: "BudgetedChat.streamed:\nthe model's circuit (llm-chat-guide-fast\nor -reasoning), one budget unit,\none helper2.llm.call observation\naround the whole subscription" {class: app}
 ask: "prompt.stream().chatResponse()\nsame options, system and user text;\nschema on the options, or the\nformat text after the user text" {class: ai}
 collect: "ChatStream.collect on the\nquestion's virtual thread:\nnext signal?" {class: decision}
 chunk: "Chunk: join the text, keep the last\nfinish reason and the highest token counts" {class: app}
