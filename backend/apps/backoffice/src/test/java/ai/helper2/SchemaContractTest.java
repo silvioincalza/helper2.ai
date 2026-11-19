@@ -87,6 +87,7 @@ class SchemaContractTest {
                     Map.entry("resource_label.resource_id", "resource CASCADE"),
                     Map.entry("source_record.resource_id", "resource CASCADE"),
                     Map.entry("resource_embedding.resource_id", "resource CASCADE"),
+                    Map.entry("resource_embedding_refused.resource_id", "resource CASCADE"),
                     Map.entry("awesome_list_entry.list_id", "resource CASCADE"),
                     Map.entry("awesome_list_entry.resource_id", "resource CASCADE"),
                     Map.entry("awesome_list.list_id", "resource CASCADE"),
