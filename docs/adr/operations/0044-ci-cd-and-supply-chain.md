@@ -66,16 +66,18 @@ Harbor could put an image under a tag first.
      at once and takes the library classes from the cache that pushes to `main` fill, or compiles them. What the
      images pack waits only for the two app builds. `backend/gradle.properties` turns on parallel project execution
      and the build cache: the libraries' test tasks run side by side, and a project whose inputs did not change takes
-     its results from the cache that pushes to `main` fill. Only the three test jobs save the Gradle home to the
+     its results from the cache that pushes to `main` fill. Only the three test jobs and `backend-architecture-test` save the Gradle home to the
      Actions cache, and only on a push: their home holds the dependencies, the compiled classes and the test results
      of the chain, and one dependency bundle is about 460 MiB. Each test job also runs `spotlessCheck` (the libs job
      `:spotlessCheck` too), so the formatter jars Spotless resolves (google-java-format, ktfmt) are in the home it
-     saves, and the build jobs read them from that cache instead of Maven Central, which can answer 429. The build jobs, `package`, pull requests and manual
+     saves, and the build jobs read them from that cache instead of Maven Central, which can answer 429. For the same
+     reason the libs test job compiles the Gatling simulations of `backend/loadtest` again: every dependency a backend
+     job resolves is in a home that some job saves. The build jobs, `package`, pull requests and manual
      runs restore it and save nothing. The one job is `backend-architecture-test`: `spotlessCheck` and `test` of
      `backend/architecture` (`-p architecture`), the tests that read the sources of every backend project
      ([0002](../foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §8). Like an app build, it
-     waits for `backend-libs-build` and unpacks its cache when the libs chain is selected. It uploads no cache and
-     saves no Gradle home;
+     waits for `backend-libs-build` and unpacks its cache when the libs chain is selected. It uploads no build cache;
+     on a push it saves its Gradle home, which holds the dependencies of its own tests;
    - chart: `make -C deploy/k8s chart-check` (`helm lint --strict`, `helm template | kubeconform -strict` for
      staging, prod, and prod with the off-site backup on; the self-test of `check-release.sh`, the check after a
      deploy, §3);
