@@ -341,7 +341,12 @@ class GitHubAwesomeDeepSearchTest {
                 Resilience.NONE,
                 GitHubAwesomeCollector.POLICY,
                 SourceFixtures.CLOCK),
-            ai.helper2.scout.admission.AdmissionFixtures.AS_CONFIGURED);
+            new ai.helper2.scout.admission.AdmissionPolicy(
+                new ai.helper2.search.VitalityPolicy(),
+                new ai.helper2.scout.admission.AdmissionRules(
+                    Map.of(
+                        GitHubAwesomeCollector.ID,
+                        new ai.helper2.scout.admission.IndexFloor(0, null, 10)))));
   }
 
   List<String> modelCalls() {
@@ -390,6 +395,27 @@ class GitHubAwesomeDeepSearchTest {
     assertThat(batch.getCandidates().getFirst().getPlatform()).isEqualTo("Coursera");
     assertThat(count(AwesomeMetrics.SKIPS, "reason", "link-excluded-domain")).isEqualTo(1);
     assertThat(count(AwesomeMetrics.MODELS)).isEqualTo(1);
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.CsvSource({"9, false", "10, true"})
+  void aListedModelIsIndexedFromTenLikesAndWaitsForAPersonUnderThat(int likes, boolean indexed) {
+    aListWithOneLinkOfEachKind();
+    server.route(
+        "/api/models/someone/tiny-experiment",
+        FixtureServer.Reply.ok(
+            "{\"id\":\"someone/tiny-experiment\",\"likes\":" + likes + ",\"tags\":[]}"));
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    String tiny = "https://huggingface.co/someone/tiny-experiment";
+    assertThat(models(batch).stream().anyMatch(h -> h.getExternalId().equals(tiny)))
+        .isEqualTo(indexed);
+    assertThat(
+            batch.getCandidates().stream()
+                .anyMatch(
+                    c -> c.getUrl().getValue().equals(tiny) && c.getType() == ResourceType.MODEL))
+        .isEqualTo(!indexed);
   }
 
   @Test

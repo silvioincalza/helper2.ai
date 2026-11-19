@@ -96,7 +96,9 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   public record LinkRules(
-      CoursePages courses, @Nullable HuggingFaceModelReader models, AdmissionPolicy admission) {}
+      CoursePages courses,
+      @Nullable HuggingFaceModelReader models,
+      AdmissionPolicy modelAdmission) {}
 
   private final RestClient http;
   private final Clock clock;
@@ -509,8 +511,7 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private boolean indexedWithoutAPerson(SourceHit model) {
-    return !(linkRules.admission().decide(model, CollectorIds.HF_TRENDING)
-        instanceof Admission.Review);
+    return !(linkRules.modelAdmission().decide(model, ID) instanceof Admission.Review);
   }
 
   private Candidate courseCandidate(
