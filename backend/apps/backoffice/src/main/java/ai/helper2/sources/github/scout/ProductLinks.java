@@ -120,6 +120,19 @@ final class ProductLinks {
   }
 
   Checked check(@Nullable String raw, DiscoveryPages pages) {
+    Checked page = page(raw);
+    return page.site() == null ? page : product(page.site(), pages);
+  }
+
+  Checked product(CanonicalUrl page, DiscoveryPages pages) {
+    if (under(page.getHost(), excludedDomains)) {
+      return Checked.skipped(Skip.EXCLUDED_DOMAIN);
+    }
+    CanonicalUrl site = pages.productSite(page);
+    return site == null ? Checked.skipped(Skip.NOT_A_PRODUCT_PAGE) : Checked.kept(site);
+  }
+
+  Checked page(@Nullable String raw) {
     URI uri = parse(raw);
     if (uri == null) {
       return Checked.skipped(Skip.MALFORMED);
@@ -143,11 +156,7 @@ final class ProductLinks {
       return Checked.skipped(Skip.REDIRECT);
     }
     CanonicalUrl page = CanonicalUrl.of("https://" + host + nullToEmpty(uri.getRawPath()));
-    if (page == null) {
-      return Checked.skipped(Skip.MALFORMED);
-    }
-    CanonicalUrl site = pages.productSite(page);
-    return site == null ? Checked.skipped(Skip.NOT_A_PRODUCT_PAGE) : Checked.kept(site);
+    return page == null ? Checked.skipped(Skip.MALFORMED) : Checked.kept(page);
   }
 
   private static @Nullable URI parse(@Nullable String raw) {
@@ -204,9 +213,6 @@ final class ProductLinks {
     }
     if (under(host, SHORTENERS)) {
       return Skip.REDIRECT;
-    }
-    if (under(host, excludedDomains)) {
-      return Skip.EXCLUDED_DOMAIN;
     }
     if (shadowLibraries.isShadowLibrary(host)) {
       return Skip.SHADOW_LIBRARY;

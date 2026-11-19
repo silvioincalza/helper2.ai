@@ -69,6 +69,7 @@ public final class CollectorDescriptors {
                 ResourceType.MODEL,
                 ResourceType.DATASET,
                 ResourceType.PRODUCT,
+                ResourceType.COURSE,
                 ResourceType.AWESOME_LIST),
             settings.timeout(),
             settings.cacheTtl())
@@ -77,8 +78,9 @@ public final class CollectorDescriptors {
                 "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service"))
         .withAttribution(
             "Repository metadata from the GitHub API; list headings and entry lines are indexed for"
-                + " search, never stored. Lists linked from lists are followed; links to product"
-                + " sites are added only after a person checks them.")
+                + " search, never stored. Lists linked from lists are followed. A linked Hugging"
+                + " Face model is read from the Hugging Face Hub API; links to course pages and"
+                + " product sites are added only after a person checks them.")
         .enabledWhen(settings.enabled() && settings.hasToken())
         .withPriority(25);
   }

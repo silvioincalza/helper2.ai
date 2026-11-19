@@ -364,6 +364,7 @@ helper2:
       links:
         per-day: ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}
         max-per-pass: 500
+        max-models-per-pass: 100
         exclude-domains: >-
           arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
           discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,

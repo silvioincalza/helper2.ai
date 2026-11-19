@@ -66,8 +66,10 @@ class ReviewQueueCandidateReview implements CandidateReview {
   }
 
   private int remainingToday(String sourceId, int newPerDay) {
-    return Math.max(
-        0, newPerDay - queue.candidatesOpenedToday(ReviewQueue.Kind.RESOURCE_CANDIDATE, sourceId));
+    int opened =
+        queue.candidatesOpenedToday(ReviewQueue.Kind.RESOURCE_CANDIDATE, sourceId)
+            + queue.candidatesOpenedToday(ReviewQueue.Kind.COURSE_CANDIDATE, sourceId);
+    return Math.max(0, newPerDay - opened);
   }
 
   private boolean open(String sourceId, Candidate c) {

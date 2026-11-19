@@ -2,6 +2,7 @@ package ai.helper2.scout
 
 import ai.helper2.TestcontainersConfiguration
 import ai.helper2.platform.resilience.Resilience
+import ai.helper2.scout.admission.AdmissionPolicy
 import ai.helper2.scout.usecase.RunScout
 import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.CategoryMatcher
@@ -10,6 +11,8 @@ import ai.helper2.shared.ResourceType
 import ai.helper2.sources.SourceFixtures
 import ai.helper2.sources.classifier.RepoClassifier
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector
+import ai.helper2.sources.huggingface.scout.HuggingFaceModelReader
+import ai.helper2.sources.liveweb.scout.CoursePages
 import ai.helper2.sources.support.RunInterval
 import ai.helper2.sources.support.SourceSettings
 import ai.helper2.testing.FixtureServer
@@ -122,13 +125,34 @@ class AwesomeDeepSearchIT {
       RunInterval(Duration.ofDays(1)),
       listOf("topic:awesome-list topic:llm"),
       GitHubAwesomeCollector.Limits(10, 1000, 1000, 1000, 50, 25),
-      GitHubAwesomeCollector.Deep(2, 30, Duration.ofMinutes(5), 10_000_000L, 500, 50, listOf()),
+      GitHubAwesomeCollector.Deep(
+        2,
+        30,
+        Duration.ofMinutes(5),
+        10_000_000L,
+        500,
+        100,
+        50,
+        listOf("arxiv.org"),
+      ),
       RepoClassifier.Heuristic(),
       categories,
       SimpleMeterRegistry(),
       SeedDiscoveryHosts.store(),
       InMemoryListSeedStore(),
       SourceFixtures.SHADOW_LIBRARIES,
+      GitHubAwesomeCollector.LinkRules(
+        CoursePages(listOf("courses-$run.org=Courses $run")),
+        HuggingFaceModelReader(
+          TestHttp.restClientBuilder(Duration.ofSeconds(5), ObservationRegistry.NOOP)
+            .baseUrl(github.baseUrl())
+            .build(),
+          Resilience.NONE,
+          "collector-github-awesome",
+          Clock.systemUTC(),
+        ),
+        AdmissionPolicy(),
+      ),
     )
 
   private class MemStore : ScoutStore {
@@ -242,6 +266,122 @@ class AwesomeDeepSearchIT {
       listOf("voice-and-audio"),
       (details.path("tags") as Iterable<JsonNode>).map { it.asString() },
     )
+  }
+
+  private val model = "https://huggingface.co/hub-$run/whisper"
+  private val course = "https://courses-$run.org/learn/generative-ai"
+  private val paper = "https://arxiv.org/abs/2212.$run"
+
+  private fun routesWithOneLinkOfEachKind() {
+    github.route(
+      "/search/repositories",
+      FixtureServer.Reply.ok(
+        """
+        {"items":[{"full_name":"$seed","html_url":"https://github.com/$seed","stargazers_count":5000,
+          "description":"Curated LLM tools","topics":["llm"]}]}
+        """
+      ),
+    )
+    github.route(
+      "/repos/$seed/readme",
+      FixtureServer.Reply.ok(
+        """
+        # Awesome LLM
+        ## Models
+        - [Whisper $run]($model) - Speech to text. [Paper]($paper)
+        ## Learn
+        - [Generative AI course $run]($course) - A course.
+        ## Tools
+        ### Text-to-speech
+        - [Voice $run]($site) - Speaks.
+        - [Store](https://github.com/$engine) - Embedded.
+        """
+          .trimIndent()
+      ),
+    )
+    github.route(
+      "/api/models/hub-$run/whisper",
+      FixtureServer.Reply.ok(
+        """
+        {"id":"hub-$run/whisper","likes":120,"downloads":5000,
+         "tags":["transformers","license:mit"],"pipeline_tag":"automatic-speech-recognition",
+         "createdAt":"2024-01-01T00:00:00Z","lastModified":"2026-10-01T00:00:00Z"}
+        """
+      ),
+    )
+    github.route(
+      "/graphql",
+      FixtureServer.Reply.ok(
+        """
+        {"data":{"r0":{"nameWithOwner":"$engine","url":"https://github.com/$engine",
+          "description":"Fast storage","stargazerCount":900,"isArchived":false,
+          "isFork":false,"repositoryTopics":{"nodes":[{"topic":{"name":"llm"}}]}}}}
+        """
+      ),
+    )
+  }
+
+  private fun resourceId(url: String): UUID = ResourceId.of(CanonicalUrl.of(url)!!).value
+
+  private fun resourceType(url: String): String? =
+    jdbc
+      .sql("SELECT type FROM resource WHERE id = :id")
+      .param("id", resourceId(url))
+      .query(String::class.java)
+      .optional()
+      .orElse(null)
+
+  private fun listHeadingOf(url: String): String? =
+    jdbc
+      .sql(
+        "SELECT heading_path FROM awesome_list_entry WHERE list_id = :list AND resource_id = :entry"
+      )
+      .param("list", id(seed))
+      .param("entry", resourceId(url))
+      .query(String::class.java)
+      .optional()
+      .orElse(null)
+
+  private fun reviewItems(kind: String, url: String): List<JsonNode> =
+    jdbc
+      .sql("SELECT details FROM review_item WHERE kind = :kind AND candidate_url = :u")
+      .param("kind", kind)
+      .param("u", url)
+      .query(String::class.java)
+      .list()
+      .filterNotNull()
+      .map { json.readTree(it) }
+
+  private fun reviewItemsOf(url: String): Int =
+    jdbc
+      .sql("SELECT count(*) FROM review_item WHERE candidate_url = :u")
+      .param("u", url)
+      .query(Int::class.javaObjectType)
+      .single()
+
+  @Test
+  fun `every link of a list entry goes to the rule of its kind`() {
+    routesWithOneLinkOfEachKind()
+
+    scout().tryStart()
+
+    assertEquals(ResourceType.MODEL.name, resourceType(model))
+    assertEquals("Models", listHeadingOf(model))
+    assertEquals("Tools > Text-to-speech", listHeadingOf("https://github.com/$engine"))
+    val courses = reviewItems("COURSE_CANDIDATE", course)
+    assertEquals(1, courses.size)
+    assertEquals(ResourceType.COURSE.name, courses.single().path("type").asString())
+    assertEquals("Courses $run", courses.single().path("platform").asString())
+    val products = reviewItems("RESOURCE_CANDIDATE", site)
+    assertEquals(1, products.size)
+    val foundIn = products.single().path("foundBy")[0].path("awesome")
+    assertEquals("https://github.com/$seed", foundIn.path("list").asString())
+    assertEquals("Tools > Text-to-speech", foundIn.path("section").asString())
+    assertEquals(0, reviewItemsOf(model))
+    assertEquals(0, reviewItemsOf(paper))
+    assertEquals(null, resourceType(paper))
+    assertEquals(null, resourceType(course))
+    assertEquals(null, resourceType(site))
   }
 
   private fun product(host: String) =

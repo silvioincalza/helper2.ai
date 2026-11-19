@@ -23,6 +23,20 @@ class CanonicalUrlTest {
   }
 
   @Test
+  fun `a hugging face model is an owner and a name, not a dataset, a space or a page of the site`() {
+    assertEquals(
+      "openai/whisper-large-v3",
+      CanonicalUrl.of("https://hf.co/openai/whisper-large-v3/tree/main")?.huggingFaceModel,
+    )
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/datasets/acme/qa")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/spaces/acme/demo")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/docs/hub")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/learn/agents")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/openai")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://example.com/openai/whisper")?.huggingFaceModel)
+  }
+
+  @Test
   fun `a github repository is an owner and a repo, not a page of the site`() {
     assertEquals(
       true,

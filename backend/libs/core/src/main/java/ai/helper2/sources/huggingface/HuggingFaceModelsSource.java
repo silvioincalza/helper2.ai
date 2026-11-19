@@ -147,7 +147,7 @@ public class HuggingFaceModelsSource implements SearchSource {
     return toHit(m, sourceId, now, position, Set.of());
   }
 
-  static final List<String> EXPANDED_FIELDS =
+  public static final List<String> EXPANDED_FIELDS =
       List.of(
           "downloads",
           "likes",

@@ -111,6 +111,8 @@ class GitHubAwesomeDeepSearchTest {
 
   final GitHubAwesomeCollectorTest.FakeModel model = new GitHubAwesomeCollectorTest.FakeModel();
   final InMemoryListSeedStore addedLists = new InMemoryListSeedStore();
+  GitHubAwesomeCollector.LinkRules linkRules = GitHubAwesomeCollectorTest.NO_LINK_RULES;
+  GitHubAwesomeCollector.Deep deep = GitHubAwesomeCollectorTest.DEEP;
 
   GitHubAwesomeCollector collector() {
     return new GitHubAwesomeCollector(
@@ -122,13 +124,14 @@ class GitHubAwesomeDeepSearchTest {
         new RunInterval(Duration.ofDays(1)),
         List.of("topic:awesome-list topic:llm"),
         new GitHubAwesomeCollector.Limits(10, 1000, 1000, 1000, 50, 25),
-        GitHubAwesomeCollectorTest.DEEP,
+        deep,
         model,
         categories,
         meters,
         SeedDiscoveryHosts.store(),
         addedLists,
-        SourceFixtures.SHADOW_LIBRARIES);
+        SourceFixtures.SHADOW_LIBRARIES,
+        linkRules);
   }
 
   double count(String name, String... tags) {
@@ -288,10 +291,178 @@ class GitHubAwesomeDeepSearchTest {
             meters,
             SeedDiscoveryHosts.store(),
             new InMemoryListSeedStore(),
-            SourceFixtures.SHADOW_LIBRARIES);
+            SourceFixtures.SHADOW_LIBRARIES,
+            linkRules);
 
     Candidate candidate = c.collect(null, null, 500).getCandidates().getFirst();
 
     assertThat(candidate.getTags()).hasSize(Candidate.MAX_TAGS).contains("c0", "c11");
+  }
+
+  static final String ONE_LINK_OF_EACH_KIND =
+      """
+      # Awesome LLM
+      ## Models
+      - [Voice model](https://huggingface.co/acme/voice-model) - Speaks. [Paper](https://arxiv.org/abs/2212.04356)
+      - [Tiny](https://hf.co/someone/tiny-experiment) - An experiment.
+      ## Courses
+      - [Generative AI for everyone](https://www.coursera.org/learn/generative-ai-for-everyone)
+      ## Tools
+      - [Interpreter](https://github.com/openinterpreter/openinterpreter) - Runs code. [Site](https://interpreter.ai)
+      """;
+
+  static final String VOICE_MODEL =
+      """
+      {"id":"acme/voice-model","likes":120,"downloads":5000,"tags":["license:mit"],
+       "pipeline_tag":"text-to-speech","lastModified":"2026-10-01T00:00:00.000Z"}\
+      """;
+
+  static final String TINY_MODEL =
+      """
+      {"id":"someone/tiny-experiment","likes":3,"downloads":10,"tags":[],
+       "pipeline_tag":"text-generation"}\
+      """;
+
+  void aListWithOneLinkOfEachKind() {
+    server.route("/repos/acme/awesome-llm/readme", FixtureServer.Reply.ok(ONE_LINK_OF_EACH_KIND));
+    server.route("/api/models/acme/voice-model", FixtureServer.Reply.ok(VOICE_MODEL));
+    server.route("/api/models/someone/tiny-experiment", FixtureServer.Reply.ok(TINY_MODEL));
+    deep =
+        new GitHubAwesomeCollector.Deep(
+            2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 100, 50, List.of("arxiv.org"));
+    linkRules =
+        new GitHubAwesomeCollector.LinkRules(
+            new ai.helper2.sources.liveweb.scout.CoursePages(List.of("coursera.org=Coursera")),
+            new ai.helper2.sources.huggingface.scout.HuggingFaceModelReader(
+                TestHttp.restClientBuilder(
+                        Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP)
+                    .baseUrl(server.baseUrl())
+                    .build(),
+                Resilience.NONE,
+                GitHubAwesomeCollector.POLICY,
+                SourceFixtures.CLOCK),
+            ai.helper2.scout.admission.AdmissionFixtures.AS_CONFIGURED);
+  }
+
+  List<String> modelCalls() {
+    return server.requests.stream().filter(r -> r.startsWith("/api/models/")).toList();
+  }
+
+  static List<SourceHit> models(CollectedBatch batch) {
+    return batch.getHits().stream().filter(h -> h.getType() == ResourceType.MODEL).toList();
+  }
+
+  @Test
+  void everyLinkOfAListEntryGoesToTheRuleOfItsKind() {
+    aListWithOneLinkOfEachKind();
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(models(batch))
+        .extracting(SourceHit::getExternalId, SourceHit::getSourceId)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(
+                "https://huggingface.co/acme/voice-model", GitHubAwesomeCollector.ID));
+    assertThat(GitHubAwesomeCollectorTest.entryHits(batch))
+        .extracting(SourceHit::getExternalId)
+        .contains("openinterpreter/openinterpreter");
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue(), Candidate::getType, Candidate::getTitle)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(
+                "https://coursera.org/learn/generative-ai-for-everyone",
+                ResourceType.COURSE,
+                "Generative AI for everyone"),
+            org.assertj.core.groups.Tuple.tuple(
+                "https://interpreter.ai", ResourceType.PRODUCT, "interpreter.ai"),
+            org.assertj.core.groups.Tuple.tuple(
+                "https://huggingface.co/someone/tiny-experiment",
+                ResourceType.MODEL,
+                "someone/tiny-experiment"));
+    assertThat(batch.getCandidates())
+        .allSatisfy(c ->
+            assertThat(c.getFacts().get(GitHubAwesomeCollector.FOUND_IN))
+                .isInstanceOfSatisfying(
+                    Map.class,
+                    found ->
+                        assertThat(found.get("list"))
+                            .isEqualTo("https://github.com/acme/awesome-llm")));
+    assertThat(batch.getCandidates().getFirst().getPlatform()).isEqualTo("Coursera");
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "link-excluded-domain")).isEqualTo(1);
+    assertThat(count(AwesomeMetrics.MODELS)).isEqualTo(1);
+  }
+
+  @Test
+  void aModelOfAListIsAnEntryOfTheListIndexWithItsHeading() {
+    aListWithOneLinkOfEachKind();
+
+    ListText list = collector().collect(null, null, 500).getLists().getFirst();
+
+    assertThat(list.getEntries())
+        .extracting(e -> e.getUrl().getValue(), e -> e.getHeadingPath(), e -> e.getText())
+        .contains(
+            org.assertj.core.groups.Tuple.tuple(
+                "https://huggingface.co/acme/voice-model", "Models", "Voice model - Speaks. Paper"),
+            org.assertj.core.groups.Tuple.tuple(
+                "https://huggingface.co/someone/tiny-experiment",
+                "Models",
+                "Tiny - An experiment."));
+  }
+
+  @Test
+  void aModelTheHubDoesNotShowIsCountedAndNothingComesOfIt() {
+    aListWithOneLinkOfEachKind();
+    server.route("/api/models/acme/voice-model", new FixtureServer.Reply(404, "{}", Map.of(), 0));
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(models(batch)).isEmpty();
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "model-not-found")).isEqualTo(1);
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue())
+        .doesNotContain("https://huggingface.co/acme/voice-model");
+  }
+
+  @Test
+  void atMostTheCapOfModelsIsReadInAPass() {
+    aListWithOneLinkOfEachKind();
+    deep =
+        new GitHubAwesomeCollector.Deep(
+            2, 30, Duration.ofMinutes(15), 50_000_000L, 500, 1, 50, List.of("arxiv.org"));
+
+    collector().collect(null, null, 500);
+
+    assertThat(modelCalls()).hasSize(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "model-cap")).isEqualTo(1);
+  }
+
+  @Test
+  void whenTheHubFailsTheOtherModelsWaitForTheNextPassAndTheRestOfThePassIsKept() {
+    aListWithOneLinkOfEachKind();
+    server.route("/api/models/acme/voice-model", new FixtureServer.Reply(500, "", Map.of(), 0));
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(modelCalls()).hasSize(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "model-unavailable")).isEqualTo(2);
+    assertThat(GitHubAwesomeCollectorTest.entryHits(batch))
+        .extracting(SourceHit::getExternalId)
+        .containsExactly("openinterpreter/openinterpreter");
+    assertThat(batch.getCandidates())
+        .extracting(Candidate::getType)
+        .containsExactly(ResourceType.COURSE, ResourceType.PRODUCT);
+  }
+
+  @Test
+  void modelsAreReadOnlyOnTheFirstRunOfAPassButStayEntriesOfTheListIndex() {
+    aListWithOneLinkOfEachKind();
+
+    CollectedBatch resumed = collector().collect(null, "1", 500);
+
+    assertThat(modelCalls()).isEmpty();
+    assertThat(models(resumed)).isEmpty();
+    assertThat(resumed.getLists().getFirst().getEntries())
+        .extracting(e -> e.getUrl().getValue())
+        .contains("https://huggingface.co/acme/voice-model");
   }
 }
