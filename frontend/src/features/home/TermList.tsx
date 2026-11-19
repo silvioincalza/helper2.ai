@@ -165,7 +165,11 @@ function TableRow({ cells }: { cells: TermCells }) {
         </Link>
       </td>
       <td className="h2-cell-meta">
-        <Ai ai={cells.ai}>{cells.where}</Ai>
+        <Ai ai={cells.ai}>
+          <span className="h2-cell-meta__text" title={cells.where}>
+            {cells.where}
+          </span>
+        </Ai>
       </td>
     </tr>
   );

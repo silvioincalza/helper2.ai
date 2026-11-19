@@ -169,6 +169,27 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
     expect(within(section).queryByRole('button', { name: /show all/ })).not.toBeInTheDocument();
   });
 
+  it('a long source is cut to the width of its column, and its full name is its tooltip', async () => {
+    const host = 'brief-and-proof-lab.hklilinjie.chatgpt.site';
+    mockApi({
+      'GET /recent': () =>
+        makeRecent({
+          items: [
+            makeCard({
+              title: 'Brief & Proof',
+              sources: [{ ...makeCard().sources[0]!, url: `https://${host}/mcp` }],
+            }),
+          ],
+        }),
+    });
+    renderApp('/');
+    const { table: t } = await table('New in the catalog');
+    await within(t).findByRole('link', { name: 'Brief & Proof' });
+    const source = within(t).getByText(host);
+    expect(source).toHaveClass('h2-cell-meta__text');
+    expect(source).toHaveAttribute('title', host);
+  });
+
   it('a row with no stated date says when helper2.ai first saw it', async () => {
     const base = makeCard();
     mockApi({
