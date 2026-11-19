@@ -925,10 +925,11 @@ paths:
     get:
       tags: [list-seeds]
       operationId: listListSeeds
-      summary: The awesome lists an administrator added for the Scout to read, with who added each and why.
+      summary: The lists an administrator added for the Scout to read, with who added each and why.
       description: >-
         The awesome-list collector reads these GitHub repositories at the start of every pass, before the lists its
-        own search finds, whatever their stars and name (ADR 0012).
+        own search finds, whatever their stars and name. It reads an added web page through the live web page reader,
+        at most once in the days set by H2_SCOUT_AWESOME_WEB_PAGES_EVERY (ADR 0012).
       responses:
         "200":
           description: Every list, oldest first.
@@ -940,11 +941,14 @@ paths:
     post:
       tags: [list-seeds]
       operationId: addListSeed
-      summary: Add a GitHub repository as a list to read.
+      summary: Add a GitHub repository or a web page as a list to read.
       description: >-
-        The address is "owner/name" or "https://github.com/owner/name", kept in lower case as "owner/name". 400 when it
-        is anything else (a file path, a branch, another site), for a reason that is not one plain line, and when
-        50 lists are added already. 409 when the repository is added already. Recorded in the audit trail.
+        A GitHub repository is "owner/name" or "https://github.com/owner/name", kept in lower case as "owner/name".
+        A web page is an https address with a public host name and no user info, port or fragment. 400 when the
+        address is anything else (a file path or a branch on GitHub, http, an IP address, a private name), when the
+        page is on a host that is never read (the detail gives the host and the reason), for a reason that is not
+        one plain line, and when 50 lists are added already. 409 when the list is added already. Recorded in the
+        audit trail.
       requestBody:
         required: true
         content:
@@ -961,26 +965,20 @@ paths:
         "403": { $ref: "./common.yaml#/components/responses/Problem" }
         "409": { $ref: "./common.yaml#/components/responses/Problem" }
 
-  /admin/list-seeds/{owner}/{repository}/remove:
+  /admin/list-seeds/{id}/remove:
     parameters:
       - {
-          name: owner,
+          name: id,
           in: path,
           required: true,
-          schema: { type: string, maxLength: 39 },
-        }
-      - {
-          name: repository,
-          in: path,
-          required: true,
-          schema: { type: string, maxLength: 100 },
+          schema: { type: string, format: uuid },
         }
     post:
       tags: [list-seeds]
       operationId: removeListSeed
       summary: Stop reading an added list.
       description: >-
-        404 when the repository is not an added list. The list and the resources found in it stay in the catalog.
+        404 when no added list has this id. The list and the resources found in it stay in the catalog.
         Recorded in the audit trail.
       requestBody:
         content:
@@ -1969,9 +1967,15 @@ components:
 
     ListSeedEntry:
       type: object
-      required: [repository, addedBy, addedAt]
+      required: [id, kind, address, addedBy, addedAt]
       properties:
-        repository: { type: string, description: 'The GitHub repository, as "owner/name" in lower case.' }
+        id: { type: string, format: uuid, description: The same for the same address; the remove path takes it. }
+        kind: { type: string, enum: [GITHUB_REPOSITORY, WEB_PAGE] }
+        address:
+          {
+            type: string,
+            description: 'A GitHub repository as "owner/name" in lower case, or the https address of a web page.',
+          }
         addedBy: { type: string, description: The administrator who added it. }
         addedAt: { type: string, format: date-time }
         reason: { type: [string, "null"] }
@@ -1993,7 +1997,7 @@ components:
           {
             type: string,
             maxLength: 300,
-            description: '"owner/name" or "https://github.com/owner/name".',
+            description: '"owner/name", "https://github.com/owner/name" or the https address of a web page.',
           }
         reason:
           {

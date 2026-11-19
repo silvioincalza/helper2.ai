@@ -224,12 +224,10 @@ export const adminApi = {
     request<ListSeeds>('GET', '/admin/list-seeds', { signal }),
   addListSeed: (body: { address: string; reason: string | null }) =>
     request<ListSeedEntry>('POST', '/admin/list-seeds', { body }),
-  removeListSeed: (repository: string, reason: string | null) =>
-    request<void>(
-      'POST',
-      `/admin/list-seeds/${repository.split('/').map(encodeURIComponent).join('/')}/remove`,
-      { body: { reason } },
-    ),
+  removeListSeed: (id: string, reason: string | null) =>
+    request<void>('POST', `/admin/list-seeds/${encodeURIComponent(id)}/remove`, {
+      body: { reason },
+    }),
   listShadowLibraries: (signal?: AbortSignal) =>
     request<ShadowLibraries>('GET', '/admin/shadow-libraries', { signal }),
   addShadowLibrary: (body: { name: string; reason: string | null }) =>

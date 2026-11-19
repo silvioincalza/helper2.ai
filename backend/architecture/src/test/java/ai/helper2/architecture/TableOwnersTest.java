@@ -63,6 +63,7 @@ class TableOwnersTest {
           Map.entry("enrichment_queue_control", "scout"),
           Map.entry("discovery_host", "scout"),
           Map.entry("list_seed", "scout"),
+          Map.entry("list_seed_last_read", "scout"),
           Map.entry("shadow_library", "search"));
 
   private static final Set<String> SHARED_TABLES = Set.of("enrichment_queue_control catalog");

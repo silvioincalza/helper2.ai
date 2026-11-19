@@ -221,6 +221,12 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     most `nested.max-depth` (2) steps from a seed, breadth first (`AwesomeCrawl`).
     - The seeds are the lists an administrator added, then the top lists of the topic search
       ([0012](0012-scout-collectors-and-events.md) point 6). An added list is read whatever its stars and words.
+    - A web page an administrator added is a seed too (`WebPageLists`, [0012](0012-scout-collectors-and-events.md)
+      point 6). It is read through the live web page reader as Markdown, at most once in
+      `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), for one live web credit of the Scout's daily cap; the passes
+      between two reads use what the last read gave (`list_seed_last_read`). The GitHub lists it links to are followed like those of a seed
+      README, and its links to product sites go to review (point 17) with the page as the list. It comes after the
+      GitHub seeds in a pass, so an entry two lists share keeps the section of the GitHub list.
     - A link is a nested list when the repository's name says "awesome", or when it sits under a heading below the
       title that names a section of lists ("Other awesome lists", "Related lists", "Lists of lists").
     - It is followed only when its GitHub facts (`GET /repos/{owner}/{repo}`) say it is alive and about AI: not
@@ -236,7 +242,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
 16. **Limits per run.** Reading stops when `max-run-time` (15 min) or `max-readme-bytes-per-run` (50 MB of README) is
     spent; the lists left wait for the next pass. Every call goes through the collector's resilience policy
     (`collector-github-awesome`) and its GitHub client ([0006](../foundation/0006-outbound-calls-and-resilience.md)):
-    one README at most 5 MB in 60 s. A rate limit on a seed stops the pass. A rate limit on a nested list stops the
+    one README at most 5 MB in 60 s. An added web page counts on the same time and size budget; its read goes
+    through the page reader's policy (`collector-gap-web`), at most 2 MB an answer. A rate limit on a seed stops the pass. A rate limit on a nested list stops the
     following and keeps what was read. A full run makes at most about 70 GitHub calls for lists (6 searches, 40
     READMEs, 30 facts) plus the GraphQL calls for entries: far below GitHub's 5,000 calls an hour.
 17. **Every link of an entry goes to the rule of its kind.** `AwesomeListParser` keeps every Markdown link of an entry
@@ -330,14 +337,16 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
 19. **Metrics.** `helper2.scout.awesome.lists{depth=seed|nested}` counts lists read, `helper2.scout.awesome.candidates`
     links proposed, `helper2.scout.awesome.models`, `.papers` and `.packages` what the sources confirmed, `helper2.scout.awesome.skips{reason}` every skip: a nested list (`nested-seen`, `nested-depth`,
     `nested-cap`, `nested-archived`, `nested-fork`, `nested-few-stars`, `nested-not-ai`, `nested-unavailable`), a budget
-    (`time-budget`, `size-budget`, `rate-limited`, `readme-unavailable`), a link (`link-seen`, `link-cap`, and `link-`
+    (`time-budget`, `size-budget`, `rate-limited`, `readme-unavailable`), an added web page (`page-never-read`,
+    `page-credit-cap`, `page-reader-off`, `page-unavailable`), a link (`link-seen`, `link-cap`, and `link-`
     plus the reason of `ProductLinks`) a model (`model-cap`, `model-not-found`, `model-rate-limited`,
     `model-unavailable`), a paper (`paper-cap`, `paper-not-kept`, `paper-rate-limited`, `paper-unavailable`) or a
     package (`package-cap`, `package-not-found`, `package-not-ai`, `package-rate-limited`, `package-unavailable`). The reasons are a fixed set ([0009](../foundation/0009-observability.md)). No
     URL or list text is logged.
 20. **Configuration.** Under `helper2.scout.github-awesome` (`CollectorProperties.GitHubAwesome`):
     `H2_SCOUT_AWESOME_MAX_RUN_TIME`, `H2_SCOUT_AWESOME_MAX_README_BYTES`, `H2_SCOUT_AWESOME_NESTED_DEPTH`,
-    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`; `links.max-per-pass`,
+    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`, `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`,
+    `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER`, `H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`; `links.max-per-pass`,
     `links.max-models-per-pass`, `links.model-index-min-likes`, `links.max-papers-per-pass` and
     `links.max-packages-per-pass` are fixed in the YAML. Defaults in `helper2-shared.yaml`. Depth 0 turns nested lists
     off; 0 links a day turns the review items off; 0 models a pass turns the reading of models off. The Hub client
@@ -400,9 +409,15 @@ No new table for deep search, no new dependency.
   `sources/npm/NpmSource.java` (`ofLatestVersion`);
   `sources/liveweb/scout/CoursePages.java` (the course rule);
   `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt` (`huggingFaceModel`, `arxivPaper`).
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt` — `ListSeed`, `ListSeedStore`,
-  `ListAddresses`; `scout/usecase/ManageListSeeds.kt`; `scout/internal/JdbcListSeedStore.java`;
-  `admin/web/ListSeedsController.java`; `V2026.11.8.4__list_seed.sql`; `frontend/src/admin/ListSeedsPanel.tsx`.
+- `sources/github/scout/ListReader.java`, `GitHubReadmeReader.java`, `WebPageReader.java`, `WebPageLists.java` (an
+  added web page: when it is read, its credit, the hosts never read), `AwesomeLists.java` (`readsAsList`),
+  `GitHubAwesomeCollector.java` (`ListRepo`, `pageHit`, `alsoWrites`);
+  `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java` (`curatedWebLists`);
+  `scout/usecase/RunScout.kt` (`index`: every source a collector writes).
+- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt` — `ListKind`, `ListSeed`, `ListSeedStore`,
+  `ListAddresses`, `HostsNeverRead`; `scout/usecase/ManageListSeeds.kt`; `scout/internal/JdbcListSeedStore.java`;
+  `admin/web/ListSeedsController.java`; `V2026.11.8.4__list_seed.sql`, `V2026.11.8.5__list_seed_web_page.sql`;
+  `CollectorProperties.GitHubAwesome.WebPages`; `frontend/src/admin/ListSeedsPanel.tsx`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`,
   `HostLists`, `DiscoveryHostStore`, `HostNames`; `scout/usecase/ManageDiscoveryHosts.kt`;
   `scout/internal/JdbcDiscoveryHostStore.java`; `admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
@@ -430,7 +445,8 @@ No new table for deep search, no new dependency.
 - Tests: `DiscoveryCollectorTest` (`tavilysOwnPagesAreNeitherCandidatesNorListPages`), `TavilySourceTest`,
   `DiscoveryPagesTest`, `DiscoveryCollectorRegistrarTest`, `CollectorsParityIT`, `ScoutSourceDescriptorsParityTest`, `RunIntervalTest`, `IndexAcceptedCandidateTest`,
   `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `ListEntryLinksTest`,
-  `HuggingFaceModelReaderTest`, `ArxivPaperReaderTest`, `NpmPackageReaderTest`, `CoursePagesTest`, `GitHubAwesomeDeepSearchTest`,
+  `HuggingFaceModelReaderTest`, `ArxivPaperReaderTest`, `NpmPackageReaderTest`, `CoursePagesTest`, `GitHubAwesomeDeepSearchTest`, `WebPageListsTest`, `ManageListSeedsTest`,
+  `JdbcListSeedStoreIT`, `ListSeedsApiIT`, `ListSeedsPanel.test.tsx`,
   `AwesomeListParserTest`, `CategoryMatcherTest`, `CollectorPropertiesTest`, `AwesomeListSearchIT`,
   `AwesomeDeepSearchIT`, `ManageDiscoveryHostsTest`, `JdbcDiscoveryHostStoreIT` (the seed), `DiscoveryHostsApiIT`,
   `CatalogPurgeExpiredDataIT`, `JdbcCatalogWriterIT`, `ResiliencePoliciesConfigIT`, `ReportAndReviewIT`
@@ -499,7 +515,16 @@ No new table for deep search, no new dependency.
 - Privacy: no user data in the searches. The Hugging Face Hub, arXiv and the npm registry are asked only for an id
   a public list links. No author of a paper and no maintainer of a package is kept. `discovery_host` and `list_seed` hold the GitHub user ID of the
   administrator who added a host or a list and the reason they wrote. The Privacy page lists both, with their
-  retention.
+  retention. The address of an added web page goes to the live web processor, which reads the page; the Privacy
+  page names it under "Who receives data". From the page we keep its address, its title, the list index (word
+  forms, heading paths) and the product links with their words: never its text.
+  The live web processor's written agreement names the reading of product pages; whether it also covers the
+  reading of a third party's list page is a point for the lawyer, not settled here.
+- An added web page is not deleted between two reads: it is read at least every 21 days and the list index is kept
+  30 days after its last refresh (`H2_RETENTION_LIST_INDEX`). Its resource (source `curated-web-lists`) is indexed by
+  the Scout like a GitHub list, so no retention period deletes it: `H2_RETENTION_WEB_NEWS` covers the records of the web search sources, not
+  those of `curated-web-lists`, and `H2_RETENTION_OBSERVED_UNSEEN` covers observed resources only. After its list is
+  removed from "Lists to read" the resource stays, and its list index goes 30 days after the last read.
 - List pages are indexed without review. Their claims are not facts in the catalog: they are `ARTICLE`s, and
   enrichment cites only what they say about themselves.
 - An accepted candidate is in search at once, without a type check by a model; its description is the search excerpt
@@ -513,7 +538,8 @@ No new table for deep search, no new dependency.
 - A link of a list entry to a PyPI package ([S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851)) gives nothing: no reader confirms these by id. A paper outside the AI categories of the arXiv source is not kept. A package read from a list has no downloads and no date of its last release: the latest-version document states neither. A package that joins its repository is linked to its list on the run that read it; a later run of the same pass links it only when the repository is an entry too. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
 - Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap.
 - No weekly alert watches the Scout's credits (`helper2_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
-- There is no host deny list and no cap on list pages per host per pass; vendor compare and alternatives pages are not dropped; Chrome Web Store, Firefox add-on and GPT links are not recognised; press pages keep long excerpts, and an excerpt can hold an email address; open candidates do not expire; any collector can be the source of a candidate.
+- An added web page: the type rule counts every linked line of the Markdown the page reader gives, navigation and footer links too, so a page with a long menu can pass it; its entries and links follow the rules of a README; a page that keeps failing costs up to 3 credits in a row before it waits `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`; `robots.txt` is not read by us: the page reader's operator fetches the page.
+- There is no host deny list for discovery and no cap on list pages per host per pass; vendor compare and alternatives pages are not dropped; Chrome Web Store, Firefox add-on and GPT links are not recognised; press pages keep long excerpts, and an excerpt can hold an email address; open candidates do not expire; any collector can be the source of a candidate.
 - No replay evaluation on a recorded snapshot tunes each category's `min-score`, the list-title rule and the words, although the search facts are kept per record and candidate.
 - A query that keeps failing keeps its category's pass open: only that query is searched again at each run, until it answers. A pass left open with candidates held back over the daily cap loses those of the searches already done (the resume cursor skips them). A failed attempt counts what its depth costs, so a 429 is counted too.
 - Accepting a candidate that was listed meanwhile does not apply the admin's edits to the listed page.
@@ -574,6 +600,6 @@ discovery hosts: [flow](../../diagrams/flow-0013-discovery-hosts.svg) · [sequen
 - Decides: [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
 - Open issues that change it:
   - [S2.3.5](https://github.com/silvioincalza/helper2.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
-  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a web page that lists AI resources is split into its items.
+  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a list page that discovery finds is split into its items and each item is checked; a web page an administrator added is read (point 15).
   - [S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850): a PyPI package a list links to is read by its name.
   - [S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851): a Hugging Face dataset or Space a list links to is read by its id.

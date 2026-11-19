@@ -1,12 +1,12 @@
 package ai.helper2.sources.github.scout;
 
-import ai.helper2.platform.http.ObservedHttp;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.ListEntryText;
+import ai.helper2.scout.ListKind;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.ListText;
@@ -63,11 +63,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.MissingNode;
 import tools.jackson.databind.node.ObjectNode;
 
 public class GitHubAwesomeCollector implements Collector {
 
   static final String ID = CollectorIds.GITHUB_AWESOME;
+
+  static final String WEB_LISTS_ID = CollectorIds.CURATED_WEB_LISTS;
 
   static final String POLICY = "collector-" + ID;
 
@@ -116,6 +119,7 @@ public class GitHubAwesomeCollector implements Collector {
   private final RepoClassifier classifier;
   private final RepoClassifier fallback = new RepoClassifier.Heuristic();
   private final SourceDescriptor descriptor;
+  private final SourceDescriptor webLists;
   private final Deep deep;
   private final ListEntryLinks entryLinks;
   private final LinkRules linkRules;
@@ -123,6 +127,8 @@ public class GitHubAwesomeCollector implements Collector {
   private final DiscoveryHostStore hosts;
   private final ListSeedStore addedLists;
   private final AwesomeMetrics metrics;
+  private final ListReader readmes;
+  private final WebPageLists webPages;
 
   public GitHubAwesomeCollector(
       SourceSettings settings,
@@ -140,6 +146,42 @@ public class GitHubAwesomeCollector implements Collector {
       ListSeedStore addedLists,
       ShadowLibraries shadowLibraries,
       LinkRules linkRules) {
+    this(
+        settings,
+        builder,
+        clock,
+        resilience,
+        interval,
+        topicQueries,
+        limits,
+        deep,
+        classifier,
+        categories,
+        meters,
+        hosts,
+        addedLists,
+        shadowLibraries,
+        linkRules,
+        WebPageLists.notRead(addedLists, clock));
+  }
+
+  public GitHubAwesomeCollector(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      Resilience resilience,
+      RunInterval interval,
+      List<String> topicQueries,
+      Limits limits,
+      Deep deep,
+      RepoClassifier classifier,
+      CategoryMatcher categories,
+      MeterRegistry meters,
+      DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
+      ShadowLibraries shadowLibraries,
+      LinkRules linkRules,
+      WebPageLists webPages) {
     this.clock = clock;
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -164,12 +206,20 @@ public class GitHubAwesomeCollector implements Collector {
     this.addedLists = addedLists;
     this.metrics = new AwesomeMetrics(meters);
     this.http = HttpClients.gitHubClient(builder, settings);
+    this.readmes = new GitHubReadmeReader(http, resilience, clock);
+    this.webPages = webPages;
     this.descriptor = CollectorDescriptors.gitHubAwesome(settings);
+    this.webLists = CollectorDescriptors.curatedWebLists(settings);
   }
 
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public List<SourceDescriptor> alsoWrites() {
+    return List.of(webLists);
   }
 
   @Override
@@ -308,10 +358,28 @@ public class GitHubAwesomeCollector implements Collector {
     return discoverListRepos().stream().map(ListRepo::fullName).toList();
   }
 
-  record ListRepo(String fullName, JsonNode facts) {}
+  record WebPage(String address, String title) {}
+
+  record ListRepo(String fullName, JsonNode facts, @Nullable WebPage page) {
+
+    ListRepo(String fullName, JsonNode facts) {
+      this(fullName, facts, null);
+    }
+
+    static ListRepo webPage(CanonicalUrl url, String address, String title) {
+      return new ListRepo(url.getValue(), MissingNode.getInstance(), new WebPage(address, title));
+    }
+
+    @Nullable CanonicalUrl url() {
+      return CanonicalUrl.of(page == null ? GITHUB + fullName : fullName);
+    }
+  }
 
   private List<String> addedLists() {
-    return addedLists.all().stream().map(ListSeed::getRepository).toList();
+    return addedLists.all().stream()
+        .filter(seed -> seed.getKind() == ListKind.GITHUB_REPOSITORY)
+        .map(ListSeed::getAddress)
+        .toList();
   }
 
   List<ListRepo> discoverListRepos() {
@@ -376,7 +444,14 @@ public class GitHubAwesomeCollector implements Collector {
     AwesomeCrawl.Limits crawlLimits = crawlLimits();
     ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
-        AwesomeCrawl.crawl(added, seeds, gitHubLists(), crawlLimits, budget, metrics);
+        AwesomeCrawl.crawl(
+            added,
+            webPages.read(budget, metrics),
+            seeds,
+            gitHubLists(),
+            crawlLimits,
+            budget,
+            metrics);
     Set<String> lists = new HashSet<>();
     crawl.forEach(r -> lists.add(r.list().fullName().toLowerCase(Locale.ROOT)));
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();
@@ -444,7 +519,7 @@ public class GitHubAwesomeCollector implements Collector {
     Map<String, String> papers = new LinkedHashMap<>();
     Map<String, String> packages = new LinkedHashMap<>();
     for (AwesomeCrawl.Read r : pass.crawl()) {
-      CanonicalUrl list = CanonicalUrl.of(GITHUB + r.list().fullName());
+      CanonicalUrl list = r.list().url();
       if (list == null) {
         continue;
       }
@@ -673,7 +748,7 @@ public class GitHubAwesomeCollector implements Collector {
       List<AwesomeCrawl.Read> crawl, Map<String, CanonicalUrl> listedAs) {
     List<ListText> texts = new ArrayList<>();
     for (AwesomeCrawl.Read r : crawl) {
-      CanonicalUrl url = CanonicalUrl.of(GITHUB + r.list().fullName());
+      CanonicalUrl url = r.list().url();
       if (url != null) {
         texts.add(
             new ListText(url, r.parsed().headingsText(), searchEntries(r.parsed(), listedAs)));
@@ -706,17 +781,46 @@ public class GitHubAwesomeCollector implements Collector {
   private static List<SourceHit> listHits(List<AwesomeCrawl.Read> lists, Instant now) {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
-      ResourceType type =
-          AwesomeLists.isAwesomeList(
-                  read.list().fullName(), restTopics(read.list().facts()), read.parsed())
-              ? ResourceType.AWESOME_LIST
-              : ResourceType.ARTICLE;
-      SourceHit hit = listHit(read.list(), type, now);
+      SourceHit hit =
+          read.list().page() == null
+              ? listHit(read.list(), typeOfRepository(read), now)
+              : pageHit(read.list(), read.list().page(), typeOfWebPage(read), now);
       if (hit != null) {
         hits.add(hit);
       }
     }
     return hits;
+  }
+
+  private static ResourceType typeOfRepository(AwesomeCrawl.Read read) {
+    return AwesomeLists.isAwesomeList(
+            read.list().fullName(), restTopics(read.list().facts()), read.parsed())
+        ? ResourceType.AWESOME_LIST
+        : ResourceType.ARTICLE;
+  }
+
+  private static ResourceType typeOfWebPage(AwesomeCrawl.Read read) {
+    return AwesomeLists.readsAsList(read.parsed())
+        ? ResourceType.AWESOME_LIST
+        : ResourceType.ARTICLE;
+  }
+
+  private static @Nullable SourceHit pageHit(
+      ListRepo list, WebPage page, ResourceType type, Instant now) {
+    CanonicalUrl canonical = list.url();
+    if (canonical == null) {
+      return null;
+    }
+    return new SourceHit(
+            WEB_LISTS_ID,
+            canonical.getValue(),
+            URI.create(page.address()),
+            canonical,
+            page.title(),
+            type,
+            now)
+        .withAudience(Audience.BOTH)
+        .withTags(Set.of(LIST_TAG));
   }
 
   private static List<String> restTopics(@Nullable JsonNode repo) {
@@ -772,25 +876,12 @@ public class GitHubAwesomeCollector implements Collector {
                     now)));
   }
 
-  static final int README_MAX_BYTES = 5 * 1024 * 1024;
+  static final int README_MAX_BYTES = GitHubReadmeReader.MAX_BYTES;
 
-  static final Duration README_DEADLINE = Duration.ofSeconds(60);
+  static final Duration README_DEADLINE = GitHubReadmeReader.DEADLINE;
 
   private String readme(String list) {
-    String[] parts = list.split("/", 2);
-    return resilience.call(
-        POLICY,
-        () ->
-            HttpClients.getText(
-                () ->
-                    http.get()
-                        .uri("/repos/{owner}/{repo}/readme", parts[0], parts[1])
-                        .header("Accept", "application/vnd.github.raw+json")
-                        .attributes(ObservedHttp.maxResponseBytes(README_MAX_BYTES))
-                        .attributes(ObservedHttp.deadline(README_DEADLINE))
-                        .retrieve()
-                        .body(String.class),
-                clock));
+    return readmes.markdown(list);
   }
 
   Map<String, JsonNode> repoFacts(List<AwesomeListParser.Entry> entries) {

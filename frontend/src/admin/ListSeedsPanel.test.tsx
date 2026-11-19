@@ -6,8 +6,14 @@ import { ADMIN } from '@/test/fixtures';
 import { json, mockApi } from '@/test/mockApi';
 import { renderAdmin, settle } from '@/test/render';
 
-const entry = (repository: string, reason: string | null = null): ListSeedEntry => ({
-  repository,
+const PAGE = 'https://blog.acme.dev/best-ai-tools';
+
+const entry = (address: string, reason: string | null = null): ListSeedEntry => ({
+  id: address.startsWith('https://')
+    ? '6f1c3a52-8d0e-3b7a-9c41-2e5d7f8a9b10'
+    : '0b6e2d4f-1a3c-3e5f-8a7b-9c0d1e2f3a4b',
+  kind: address.startsWith('https://') ? 'WEB_PAGE' : 'GITHUB_REPOSITORY',
+  address,
   addedBy: '42',
   addedAt: '2026-11-19T21:00:00Z',
   reason,
@@ -36,13 +42,15 @@ function open(handlers: Parameters<typeof mockApi>[0]) {
 
 const form = () => screen.getByRole('form', { name: 'Add a list' });
 
-describe('Feature: an admin adds the GitHub lists the Scout reads (ADR 0012)', () => {
+describe('Feature: an admin adds the GitHub lists and web pages the Scout reads (ADR 0012)', () => {
   it('Scenario: each added list shows who added it and why', async () => {
     const { container } = open({ 'GET /admin/list-seeds': () => SEED });
 
     const table = await screen.findByRole('table', { name: 'Added lists (1 of 50)' });
     expect(within(table).getByRole('rowheader', { name: 'acme/awesome-rag' })).toBeInTheDocument();
-    expect(within(table).getByText(/the best RAG list/)).toBeInTheDocument();
+    expect(
+      within(table).getByRole('rowheader', { name: 'acme/awesome-rag' }).closest('tr'),
+    ).toHaveTextContent(/GitHub · by 42 · .* · the best RAG list/);
     await settle();
     expect(await axeViolations(container)).toEqual([]);
   });
@@ -69,7 +77,7 @@ describe('Feature: an admin adds the GitHub lists the Scout reads (ADR 0012)', (
     await screen.findByRole('table', { name: 'Added lists (1 of 50)' });
 
     await user.type(
-      within(form()).getByRole('textbox', { name: 'GitHub repository' }),
+      within(form()).getByRole('textbox', { name: 'GitHub repository or web page' }),
       ' https://github.com/Acme/awesome-agents ',
     );
     await user.type(within(form()).getByRole('textbox', { name: 'Reason (optional)' }), 'agents');
@@ -82,41 +90,92 @@ describe('Feature: an admin adds the GitHub lists the Scout reads (ADR 0012)', (
       api.calls.find((c) => c.method === 'POST' && c.path === '/admin/list-seeds')?.body,
     ).toEqual({ address: 'https://github.com/Acme/awesome-agents', reason: 'agents' });
     expect(await screen.findByRole('table', { name: 'Added lists (2 of 50)' })).toBeInTheDocument();
-    expect(within(form()).getByRole('textbox', { name: 'GitHub repository' })).toHaveValue('');
+    expect(
+      within(form()).getByRole('textbox', { name: 'GitHub repository or web page' }),
+    ).toHaveValue('');
   });
 
   it('Scenario: an empty address is not sent, and a refused one says why', async () => {
     const { api } = open({
       'GET /admin/list-seeds': () => SEED,
       'POST /admin/list-seeds': () =>
-        refused(400, 'invalid-request', 'address: a GitHub repository, as owner/name.'),
+        refused(
+          400,
+          'invalid-request',
+          'address: pages on coursera.org are never read: its terms forbid automated reading without written consent.',
+        ),
     });
     const user = userEvent.setup();
     await screen.findByRole('table', { name: 'Added lists (1 of 50)' });
 
     await user.click(screen.getByRole('button', { name: 'Add list' }));
     expect(within(form()).getByRole('alert')).toHaveTextContent('Enter a GitHub repository');
-    expect(within(form()).getByRole('textbox', { name: 'GitHub repository' })).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
+    expect(
+      within(form()).getByRole('textbox', { name: 'GitHub repository or web page' }),
+    ).toHaveAttribute('aria-invalid', 'true');
     expect(api.calls.some((c) => c.method === 'POST')).toBe(false);
 
     await user.type(
-      within(form()).getByRole('textbox', { name: 'GitHub repository' }),
+      within(form()).getByRole('textbox', { name: 'GitHub repository or web page' }),
       'https://www.coursera.org/articles/ai',
     );
     await user.click(screen.getByRole('button', { name: 'Add list' }));
     expect(
-      await screen.findByText('Not saved: address: a GitHub repository, as owner/name.'),
+      await screen.findByText(
+        'Not saved: address: pages on coursera.org are never read: its terms forbid automated reading without written consent.',
+      ),
     ).toBeInTheDocument();
+  });
+
+  it('Scenario: a web page is added, shown as a web page and removed by its id', async () => {
+    let lists = SEED;
+    const { api } = open({
+      'GET /admin/list-seeds': () => lists,
+      'POST /admin/list-seeds': () => {
+        const added = entry(PAGE, 'a roundup');
+        lists = { ...lists, lists: [...lists.lists, added] };
+        return json(added, 201);
+      },
+      'POST /admin/list-seeds/6f1c3a52-8d0e-3b7a-9c41-2e5d7f8a9b10/remove': () => {
+        lists = SEED;
+        return undefined;
+      },
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Added lists (1 of 50)' });
+
+    await user.type(
+      within(form()).getByRole('textbox', { name: 'GitHub repository or web page' }),
+      PAGE,
+    );
+    await user.click(screen.getByRole('button', { name: 'Add list' }));
+
+    expect(await screen.findByText(`Added: ${PAGE} is read at the next pass.`)).toBeInTheDocument();
+    const table = await screen.findByRole('table', { name: 'Added lists (2 of 50)' });
+    expect(within(table).getByRole('rowheader', { name: PAGE }).closest('tr')).toHaveTextContent(
+      /Web page · by 42 · .* · a roundup/,
+    );
+
+    await user.click(screen.getByRole('button', { name: `Remove ${PAGE}` }));
+    await user.click(
+      within(screen.getByRole('group', { name: `Stop reading ${PAGE}?` })).getByRole('button', {
+        name: 'Remove list',
+      }),
+    );
+
+    expect(await screen.findByText(`Removed: ${PAGE}.`)).toBeInTheDocument();
+    expect(
+      api.calls.some(
+        (c) => c.path === '/admin/list-seeds/6f1c3a52-8d0e-3b7a-9c41-2e5d7f8a9b10/remove',
+      ),
+    ).toBe(true);
   });
 
   it('Scenario: a list is removed only after a review that says what stays', async () => {
     let lists = SEED;
     const { api } = open({
       'GET /admin/list-seeds': () => lists,
-      'POST /admin/list-seeds/acme/awesome-rag/remove': () => {
+      'POST /admin/list-seeds/0b6e2d4f-1a3c-3e5f-8a7b-9c0d1e2f3a4b/remove': () => {
         lists = { ...lists, lists: [] };
         return undefined;
       },

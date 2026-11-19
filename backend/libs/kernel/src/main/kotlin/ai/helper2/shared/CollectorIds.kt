@@ -4,6 +4,7 @@ object CollectorIds {
   const val AI_DEADLINES = "ai-deadlines"
   const val CONFS_TECH = "confs-tech"
   const val GITHUB_AWESOME = "github-awesome"
+  const val CURATED_WEB_LISTS = "curated-web-lists"
   const val GITHUB_TOPIC_LEADERS = "github-topic-leaders"
   const val GITHUB_SDKS = "github-sdks"
   const val HF_PROVIDER_ORGS = "hf-provider-orgs"

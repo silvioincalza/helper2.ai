@@ -61,17 +61,60 @@ Two kinds of source need more care:
    - A topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
      The lists they link to are read too ([0013](0013-discovery.md), deep search).
    - **Lists an administrator adds.** On `/admin/settings`, "Lists to read": a GitHub repository, as `owner/name` or
-     `https://github.com/owner/name`, with an optional reason (`ManageListSeeds`, table `list_seed`, at most 50). Any
-     other address is refused: a file path, a branch, another site. Each pass reads the added lists first, oldest
-     first, then the lists the search finds, so the README time and size budget goes to them first. The star floor,
-     the name rule and the AI words do not apply to an added list: a person chose it. Its facts come from
-     `GET /repos/{owner}/{repo}`; a list the search also found costs no extra call. An archived list and one GitHub
-     does not find are skipped (`helper2.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay
-     added; a renamed one is read under its new name. From there an added list is a seed like the others: its nested
-     lists, its entries, its links and its type follow the same rules. Removing it stops the reading; the
-     list and what was found in it stay in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`,
-     `POST /api/v1/admin/list-seeds/{owner}/{repository}/remove`, both changes in the audit trail (`ADD_LIST_SEED`,
-     `REMOVE_LIST_SEED`).
+     `https://github.com/owner/name`, or a web page, with an optional reason (`ManageListSeeds`, table `list_seed`,
+     at most 50 together). A GitHub address that is not one repository (a file path, a branch) is refused. Each pass
+     reads the added GitHub lists first, oldest first, then the lists the search finds, so the README time and size
+     budget goes to them first. The star floor, the name rule and the AI words do not apply to an added list: a
+     person chose it. Its facts come from `GET /repos/{owner}/{repo}`; a list the search also found costs no extra
+     call. An archived list and one GitHub does not find are skipped
+     (`helper2.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay added; a renamed one is
+     read under its new name. From there an added list is a seed like the others: its nested lists, its entries, its
+     links and its type follow the same rules. Removing it stops the reading; the list and what was found in it stay
+     in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`, `POST /api/v1/admin/list-seeds/{id}/remove`,
+     both changes in the audit trail (`ADD_LIST_SEED`, `REMOVE_LIST_SEED`). The id of an added list is made from its
+     address (`ListAddresses.idOf`), so it is the same at every read.
+   - **A web page as a list.** The address is https, with a public host name: no user info, no port, no fragment,
+     no IP address in any notation, no private or reserved name, no punycode label (`ListAddresses`, which uses
+     `PageScope.plainUrlProblem` and `HostNames`; 400 otherwise, with the rule that failed). Two addresses of one
+     page (with and without "www.", with and without a trailing slash) are one list: the key is the canonical URL.
+     - **Read through the live web page reader**, not by our own servers ([0014](0014-evidence-gated-enrichment.md),
+       `PageReader`): `WebPageReader` asks for the page as Markdown, and `AwesomeListParser` reads that Markdown like
+       a README. So the entries, the heading paths, the nested GitHub lists, every link of an entry and its rule, and
+       the list index work as they do for a README. A page that answers with no text or from another host is not a
+       list.
+     - **The page is a list resource too**: its canonical URL is its identity, its title is the page's first
+       heading (the host and path when it has none), its tag is `awesome-list`. It has no stars, licence or dates.
+     - **Its own source, `curated-web-lists`** ("Curated web lists", `CollectorDescriptors.curatedWebLists`): the
+       record of the page and its list resource carry it, so the Sources page shows the web lists apart from the
+       GitHub lists and names the live web page reader in its terms line. The same collector and the same crawl
+       write it: the collector names it in `Collector.alsoWrites`, and `RunScout` merges and indexes the hits of
+       each source it writes under that source. The entries a page links to keep `github-awesome`: their facts
+       come from GitHub, and one pass reads each entry once, whatever list it is in. Both apps register its
+       descriptor (`CollectorsConfiguration`, `ScoutSourceDescriptors`), so its `source` row exists before a
+       record. It has no switch of its own: it is on when `github-awesome` is on. Its type is `AWESOME_LIST` when it passes the counts of the README rule
+       below (`AwesomeLists.readsAsList`: at least 20 linked items that are at least half of the text lines), and
+       ARTICLE otherwise. The name part of the rule does not apply: a person added the page.
+     - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; from 1 to 21, so the list index, kept 30 days
+       after its last refresh, never expires between two reads). `list_seed.read_tried_at` holds the last try,
+       whatever its result, and `list_seed.read_failures` the tries in a row that gave no list. A try that gives
+       no list (no text, another host, the reader down, a stop in the middle) is tried again after
+       `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries
+       in a row the page waits the full `every`. A read that gives a list sets the count back to 0. Between two
+       reads each pass uses what the last read gave, kept in `list_seed_last_read` (one row per added web page,
+       replaced at each read that gives a list, deleted with its list): the headings, the entries, the links and
+       the two counts of the list rule, never the page text. A restart changes nothing; nothing of a page is
+       withdrawn.
+     - **Each read is one live web credit** on the Scout's daily cap (`ScoutLiveWebCredits`,
+       `helper2.live-web.credits{feature="scout-list-pages"}`), a failed read too. Past the cap, without a page
+       reader, or when the pass has spent its time or size budget, the page waits for the next pass
+       (`helper2.scout.awesome.skips{reason="page-credit-cap"|"page-reader-off"|"time-budget"|"size-budget"}`);
+       its `read_tried_at` does not change and nothing is withdrawn. The pages tried longest ago are read first.
+     - **Hosts never read.** `helper2.scout.github-awesome.web-pages.never-read`
+       (`H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`): entries `host=reason`, default `coursera.org` (its terms forbid
+       automated reading without written consent). A subdomain matches. A page on such a host is refused when it is
+       added (400 with the host and the reason, nothing written) and again before every read
+       (`skips{reason="page-never-read"}`), so a host added to the setting later stops the pages already added.
+       Removing a host is a change of the setting, not a release.
    - **An entry is a list item with a web link.** An indented item with its own link is its own entry. The lines
      under an item that have no link of their own (a summary, the authors, a sub-item without a link) belong to it:
      their words are part of its text, at most 20 lines and 500 characters.
@@ -122,7 +165,7 @@ Two kinds of source need more care:
      stays ARTICLE.
    - `AWESOME_LIST` is the most specific type (`ResourceType.specificity` 0), so when one record says it, the
      resource is an awesome list whatever other sources say ([0004](../foundation/0004-persistence-and-the-schema.md)
-     §3). That is why every path to it passes the README rule. Other sources that see a GitHub repository have no
+     §3). That is why every path to it passes the README rule, and an added web page its counts. Other sources that see a GitHub repository have no
      README at hand and keep their own type, so a repository a record wrongly calls ARTICLE still takes their type.
    - **Backfill:** `POST /api/v1/admin/ai-check/awesome-lists` (`CheckAwesomeLists`) reads the README of every
      catalog resource at `github.com/<owner>/<repo>` that is not `AWESOME_LIST` yet and that the rule names: the
@@ -368,7 +411,8 @@ the fields it asserts ([0038](../backoffice/0038-back-office-and-review.md)).
   `huggingface/scout/HuggingFaceTrendingCollector.java`, `HuggingFaceProviderOrgsCollector.java`,
   `tavily/scout/LiveWebNewsCollector.java`, `CourseCollector.java`, `LinkedInCollector.java`, `LiveWebEventsCollector.java`,
   `ScoutLiveWebCredits.java`, `ScoutLiveWebSearch.java`, `QueryProgress.java`,
-  `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`,
+  `github/scout/GitHubAwesomeCollector.java`, `AwesomeListParser.java`, `AwesomeLists.java`, `ListReader.java`,
+  `GitHubReadmeReader.java`, `WebPageReader.java`, `WebPageLists.java`,
   `aideadlines/AiDeadlinesCollector.java` (`nextEdition`, `toHit`); `classifier/RepoClassifier.java`,
   `SpringAiRepoClassifier.java`; `config/scout/CollectorsConfiguration.java` (beans).
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`,
@@ -500,4 +544,5 @@ live web events: [flow](../../diagrams/flow-0012-live-web-events-scout.svg) · [
   - [S2.2.6](https://github.com/silvioincalza/helper2.ai/issues/191): the `linkedin-scout`, `course-scout` and live web events collectors fixed.
   - [S2.13.1](https://github.com/silvioincalza/helper2.ai/issues/218): source requests and more registries.
   - [S2.14.1](https://github.com/silvioincalza/helper2.ai/issues/219): live collectors for hackathons, meetups, talks and workshops.
+  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a list page that discovery finds is split into its items; an added web page is read (point 6).
   - [S9.6.1](https://github.com/silvioincalza/helper2.ai/issues/340): each source's terms read again for commercial use.

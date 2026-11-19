@@ -399,14 +399,14 @@
       },
       "lists": {
         "title": "Lists to read",
-        "lede": "GitHub lists you want the Scout to read. The awesome-list collector reads them first at every pass, whatever their stars and name. Repositories in a list are checked like any other; links to other sites go to the review list.",
+        "lede": "GitHub lists and web pages you want the Scout to read. The awesome-list collector reads the GitHub lists first at every pass, whatever their stars and name. It reads a web page through the live web page reader, at most once in the days the configuration sets (7 unless changed), for one live web credit of the Scout's daily cap. Repositories in a list are checked like any other; links to other sites go to the review list. A page on a host whose terms forbid automated reading is refused.",
         "addTitle": "Add a list",
-        "address": "GitHub repository",
+        "address": "GitHub repository or web page",
         "reason": "Reason (optional)",
         "add": "Add list",
-        "empty": "Enter a GitHub repository, such as owner/awesome-llm.",
-        "added": "Added: {{repository}} is read at the next pass.",
-        "removed": "Removed: {{repository}}.",
+        "empty": "Enter a GitHub repository, such as owner/awesome-llm, or the https address of a web page.",
+        "added": "Added: {{address}} is read at the next pass.",
+        "removed": "Removed: {{address}}.",
         "refused": "Not saved: {{detail}}",
         "failed": "The action failed. Please try again.",
         "loadError": "Could not load the lists to read.",
@@ -414,14 +414,18 @@
         "listTitle_other": "Added lists ({{count}} of {{max}})",
         "none": "No list added. The collector reads the lists its own search finds.",
         "col": {
-          "repository": "Repository",
+          "list": "List",
           "added": "Added",
           "actions": "Actions"
         },
+        "kind": {
+          "GITHUB_REPOSITORY": "GitHub",
+          "WEB_PAGE": "Web page"
+        },
         "addedBy": "by {{who}} · {{at}}",
         "remove": "Remove",
-        "removeLabel": "Remove {{repository}}",
-        "removeTitle": "Stop reading {{repository}}?",
+        "removeLabel": "Remove {{address}}",
+        "removeTitle": "Stop reading {{address}}?",
         "removeEffect": "The list and the resources found in it stay in the catalog. Its entries leave the list index 30 days after the last pass that read it.",
         "confirmRemove": "Remove list",
         "cancel": "Cancel"

@@ -22,8 +22,13 @@ class CollectorsParityIT {
 
   @Test
   void everyCollectorIdCategoryAndFeedHasOneCollectorAndNoCollectorIsLeftOver() {
-    assertThat(collectors)
-        .extracting(c -> c.getDescriptor().getId())
+    assertThat(
+            collectors.stream()
+                .flatMap(c ->
+                    java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(c.getDescriptor()), c.alsoWrites().stream()))
+                .map(d -> d.getId())
+                .toList())
         .containsExactlyInAnyOrderElementsOf(ScoutSourceIds.of(env));
   }
 }

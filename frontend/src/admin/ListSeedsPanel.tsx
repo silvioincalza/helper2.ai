@@ -11,7 +11,7 @@ import { trimOrNull } from './adminModel';
 import { useAdminAction } from './useAdminAction';
 import { useFocusReturn } from './useFocusReturn';
 
-type Done = { kind: 'added'; repository: string } | { kind: 'removed'; repository: string };
+type Done = { kind: 'added'; address: string } | { kind: 'removed'; address: string };
 
 const FALLBACK = 'lists';
 
@@ -27,7 +27,7 @@ export function ListSeedsPanel() {
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
   const focus = useFocusReturn(removing !== null || seeds.loading);
   const closeRemove = (entry: ListSeedEntry) => {
-    focus.returnTo(entry.repository, FALLBACK);
+    focus.returnTo(entry.id, FALLBACK);
     setRemoving(null);
   };
 
@@ -49,7 +49,7 @@ export function ListSeedsPanel() {
       });
       setAddress('');
       setReason('');
-      return { kind: 'added', repository: saved.repository };
+      return { kind: 'added', address: saved.address };
     });
   };
 
@@ -58,8 +58,8 @@ export function ListSeedsPanel() {
     const gone = removing;
     void run(async () => {
       try {
-        await adminApi.removeListSeed(gone.repository, trimOrNull(removeReason));
-        return { kind: 'removed', repository: gone.repository };
+        await adminApi.removeListSeed(gone.id, trimOrNull(removeReason));
+        return { kind: 'removed', address: gone.address };
       } finally {
         closeRemove(gone);
       }
@@ -77,9 +77,9 @@ export function ListSeedsPanel() {
       {notice && (
         <p role={done ? 'status' : 'alert'} className={done ? 'banner' : 'banner banner-warn'}>
           {notice.kind === 'added'
-            ? t('admin.settings.lists.added', { repository: notice.repository })
+            ? t('admin.settings.lists.added', { address: notice.address })
             : notice.kind === 'removed'
-              ? t('admin.settings.lists.removed', { repository: notice.repository })
+              ? t('admin.settings.lists.removed', { address: notice.address })
               : notice.kind === 'refused'
                 ? t('admin.settings.lists.refused', { detail: notice.detail })
                 : t('admin.settings.lists.failed')}
@@ -96,7 +96,7 @@ export function ListSeedsPanel() {
             inputMode="url"
             autoComplete="off"
             spellCheck={false}
-            placeholder="owner/awesome-llm"
+            placeholder="owner/awesome-llm or https://…"
             maxLength={300}
             value={address}
             aria-invalid={empty}
@@ -127,7 +127,7 @@ export function ListSeedsPanel() {
       {removing && (
         <div className="h2-admin__form" role="group" aria-labelledby="ls-review-h">
           <h4 id="ls-review-h" ref={focusOnMount} tabIndex={-1} className="h2-admin__h">
-            {t('admin.settings.lists.removeTitle', { repository: removing.repository })}
+            {t('admin.settings.lists.removeTitle', { address: removing.address })}
           </h4>
           <p>{t('admin.settings.lists.removeEffect')}</p>
           <label>
@@ -180,18 +180,20 @@ export function ListSeedsPanel() {
               <table aria-labelledby="ls-list-h">
                 <thead>
                   <tr>
-                    <th scope="col">{t('admin.settings.lists.col.repository')}</th>
+                    <th scope="col">{t('admin.settings.lists.col.list')}</th>
                     <th scope="col">{t('admin.settings.lists.col.added')}</th>
                     <th scope="col">{t('admin.settings.lists.col.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {all.map((s) => (
-                    <tr key={s.repository}>
+                    <tr key={s.id}>
                       <th scope="row">
-                        <code>{s.repository}</code>
+                        <code>{s.address}</code>
                       </th>
                       <td>
+                        {t(`admin.settings.lists.kind.${s.kind}`)}
+                        {' · '}
                         {t('admin.settings.lists.addedBy', {
                           who: s.addedBy,
                           at: formatDate(s.addedAt, 'INSTANT'),
@@ -200,12 +202,12 @@ export function ListSeedsPanel() {
                       </td>
                       <td>
                         <button
-                          ref={focus.row(s.repository)}
+                          ref={focus.row(s.id)}
                           type="button"
                           className="btn"
                           aria-disabled={busy || undefined}
                           aria-label={t('admin.settings.lists.removeLabel', {
-                            repository: s.repository,
+                            address: s.address,
                           })}
                           onClick={() => {
                             if (busy) return;
