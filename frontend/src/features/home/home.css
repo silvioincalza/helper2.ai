@@ -398,6 +398,15 @@
   color: var(--muted);
   white-space: nowrap;
 }
+.h2-table .h2-cell-title {
+  width: 100%;
+}
+.h2-cell-meta__text {
+  display: block;
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .h2-home .h2-cell-title a,
 .h2-home .h2-log__title {
   display: inline-block;
