@@ -270,7 +270,10 @@ public final class CheckResearch {
       case "title" -> s.title();
       case "type" -> s.type();
       case "tags" -> s.tags().isEmpty() ? null : String.join(", ", s.tags());
-      default -> null;
+      default -> {
+        String value = s.confirmed().get(name);
+        yield value == null || value.isBlank() ? null : value;
+      }
     };
   }
 
