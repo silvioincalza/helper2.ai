@@ -15,7 +15,7 @@ query: "Query text\n(\"reranker model for retrieval\")" {class: end}
 analyze: "QueryAnalyzer.contentTermsOf" {
   class: group
   direction: down
-  filler: "Function word or request word?\n(5 languages; build, best, open, tool…)" {class: decision}
+  filler: "Function, request or device word?\n(5 languages; build, best, open, tool,\nlaptop, pc…)" {class: decision}
   drop: "Left out" {class: end}
   server: "\"server\" next to \"mcp\"?" {class: decision}
   type: "Type word (library, model, paper…)?" {class: decision}
