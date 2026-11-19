@@ -567,15 +567,21 @@ public class GitHubAwesomeCollector implements Collector {
       Map<String, CanonicalUrl> listedAs,
       Instant now,
       ReadmeBudget budget) {
+    List<ModelLink> window =
+        DailyWindow.of(
+            links.stream().sorted(Comparator.comparing(l -> l.model().page().getValue())).toList(),
+            deep.maxModelsPerPass(),
+            now);
+    metrics.skipped("model-cap", links.size() - window.size());
     List<SourceHit> hits = new ArrayList<>();
-    for (int i = 0; i < links.size(); i++) {
-      int left = links.size() - i;
-      String spent = i >= deep.maxModelsPerPass() ? "model-cap" : budget.spent();
+    for (int i = 0; i < window.size(); i++) {
+      int left = window.size() - i;
+      String spent = budget.spent();
       if (spent != null) {
         metrics.skipped(spent, left);
         return hits;
       }
-      ModelLink link = links.get(i);
+      ModelLink link = window.get(i);
       Optional<SourceHit> model;
       try {
         model = linkRules.models().read(link.model().id(), ID, now);
