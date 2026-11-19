@@ -90,6 +90,7 @@ class ManageDiscoveryHostsTest {
     "'', EMPTY",
     "com, TOO_BROAD",
     "co.uk, TOO_BROAD",
+    "com.au, TOO_BROAD",
     "10.0.0.1, TOO_BROAD",
     "https://acme.ai/, NOT_A_HOST",
     "acme.ai/blog, NOT_A_HOST",

@@ -66,9 +66,7 @@ object HostNames {
       return Checked.Invalid(Problem.NOT_A_HOST)
     }
     if (
-      labels.size < 2 ||
-        labels.last().all { it.isDigit() } ||
-        (labels.size == 2 && labels.first() in WebAddresses.SECOND_LEVEL)
+      labels.size < 2 || labels.last().all { it.isDigit() } || WebAddresses.isRegistrySuffix(labels)
     ) {
       return Checked.Invalid(Problem.TOO_BROAD)
     }

@@ -255,7 +255,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       the kept address drops; no private or reserved name (`localhost`,
       `.local`, `.internal`, `.corp`, `.example`, `.home.arpa` and others); no punycode label (a look-alike name can
       hide in it); labels of letters, digits and hyphens, a top-level domain of letters, no trailing dot, not a
-      registry's second level alone (`co.uk`). `ProductLinks` adds its own rules: no link that redirects (a URL
+      registry's second level alone: `co`, `com`, `go` and the like under a two-letter country code (`co.uk`,
+      `com.au`; `go.dev` is a site). `ProductLinks` adds its own rules: no link that redirects (a URL
       inside the path or the query, a redirect path such as `/out` or `/go`, a link shortener); not GitHub's own pages;
       not a shadow library. The query and the fragment are dropped.
     - **A Hugging Face model** (`huggingface.co/{owner}/{name}`, also written `hf.co`, with or without a file path;
@@ -369,7 +370,7 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
 23. **Fail closed.** A run whose lists cannot be read fails before any search, and its checkpoint stays. Discovery never
     runs on empty lists: an empty directory list would send every Product Hunt page to review as a product.
 24. **Only a host name.** `HostNames.check`: lower case, no trailing dot, no "www.". Refused (400): a scheme, path, port
-    or space; a name alone or a top-level domain ("com"); a registry's second level ("co.uk"); an IP address;
+    or space; a name alone or a top-level domain ("com"); a registry's second level under a country code ("co.uk", not "go.dev"); an IP address;
     github.com (discovery reads repositories by their own rule). An entry also matches every subdomain, so "com" would
     match nearly every site. At most 500 hosts.
 25. **The page.** On `/admin/settings`, below the spending limits: the two lists, each host with who added it, when and

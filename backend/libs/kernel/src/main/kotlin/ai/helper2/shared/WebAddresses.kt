@@ -9,9 +9,10 @@ object WebAddresses {
 
   private const val HTTPS_PORT = 443
 
-  @JvmField
-  val SECOND_LEVEL: Set<String> =
+  private val SECOND_LEVEL: Set<String> =
     setOf("co", "com", "net", "org", "gov", "edu", "ac", "or", "ne", "go")
+
+  private val COUNTRY_CODE = Regex("[a-z]{2}")
 
   enum class Refusal {
     MALFORMED,
@@ -107,10 +108,14 @@ object WebAddresses {
       labels.any { it.startsWith("xn--") } -> Refusal.PUNYCODE
       labels.any { !LABEL.matches(it) } || !TOP_LEVEL.matches(labels.last()) ->
         Refusal.NOT_A_HOST_NAME
-      labels.size == 2 && labels.first() in SECOND_LEVEL -> Refusal.NOT_A_HOST_NAME
+      isRegistrySuffix(labels) -> Refusal.NOT_A_HOST_NAME
       else -> null
     }
   }
+
+  @JvmStatic
+  fun isRegistrySuffix(labels: List<String>): Boolean =
+    labels.size == 2 && labels[0] in SECOND_LEVEL && COUNTRY_CODE.matches(labels[1])
 
   private fun numericAuthority(uri: URI): Boolean {
     val authority = uri.rawAuthority ?: return false
