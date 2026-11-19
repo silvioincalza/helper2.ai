@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 class JdbcListSeedStore implements ListSeedStore {
 
-  private static final String COLUMNS = "kind, address, added_by, added_at, reason, read_tried_at";
+  private static final String COLUMNS =
+      "kind, address, added_by, added_at, reason, read_tried_at, read_failures";
 
   private final JdbcClient jdbc;
 
@@ -57,10 +58,20 @@ class JdbcListSeedStore implements ListSeedStore {
   }
 
   @Override
-  public void readTried(String address, Instant at) {
+  public void readStarted(String address, Instant at) {
     jdbc.sql(
-            "UPDATE list_seed SET read_tried_at = :at WHERE address = :address AND kind = 'WEB_PAGE'")
+            """
+            UPDATE list_seed SET read_tried_at = :at, read_failures = read_failures + 1
+            WHERE address = :address AND kind = 'WEB_PAGE'
+            """)
         .param("at", Timestamp.from(at))
+        .param("address", address)
+        .update();
+  }
+
+  @Override
+  public void readSucceeded(String address) {
+    jdbc.sql("UPDATE list_seed SET read_failures = 0 WHERE address = :address")
         .param("address", address)
         .update();
   }
@@ -73,6 +84,7 @@ class JdbcListSeedStore implements ListSeedStore {
         rs.getString("added_by"),
         rs.getTimestamp("added_at").toInstant(),
         rs.getString("reason"),
-        tried == null ? null : tried.toInstant());
+        tried == null ? null : tried.toInstant(),
+        rs.getInt("read_failures"));
   }
 }

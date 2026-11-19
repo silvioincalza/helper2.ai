@@ -16,6 +16,7 @@ import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.PageReader;
 import ai.helper2.scout.ReadPage;
+import ai.helper2.scout.ScoutCursor;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
@@ -73,6 +74,10 @@ class WebPageListsTest {
 
     void pass(int days) {
       now = now.plus(Duration.ofDays(days));
+    }
+
+    void passHours(int hours) {
+      now = now.plus(Duration.ofHours(hours));
     }
   }
 
@@ -166,6 +171,7 @@ class WebPageListsTest {
             new ScoutLiveWebCredits(credits, keys, 40, meters),
             neverRead,
             Duration.ofDays(7),
+            Duration.ofHours(1),
             clock));
   }
 
@@ -434,7 +440,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void aPageThatCannotBeReadIsTriedAgainAfterSevenDaysAndTheGitHubListsAreStillRead() {
+  void aPageThatCannotBeReadIsTriedAgainAtTheNextPassAndTheGitHubListsAreStillRead() {
     addPage(PAGE);
     addRepository("acme/awesome-llm");
     server.route(
@@ -448,15 +454,61 @@ class WebPageListsTest {
     GitHubAwesomeCollector collector = collector();
 
     CollectedBatch batch = collector.collect(null, null, 500);
-    assertThat(scoutCredits()).isEqualTo(1);
-    clock.pass(1);
-    collector.collect(null, null, 500);
+    assertThat(added.all().getFirst().getReadFailures()).isEqualTo(1);
+    pages.failure = null;
+    pages.markdown.put(PAGE, linkedItems(3));
+    clock.passHours(1);
+    CollectedBatch retried = collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
 
-    assertThat(pages.asked).containsExactly(PAGE);
+    assertThat(pages.asked).containsExactly(PAGE, PAGE);
+    assertThat(scoutCredits()).isEqualTo(2);
     assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-unavailable")).isEqualTo(1);
     assertThat(listHits(batch))
         .extracting(SourceHit::getExternalId)
         .containsExactly("acme/awesome-llm", "lists/rag-collection");
+    assertThat(listHits(retried)).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+    assertThat(added.all().getFirst().getReadFailures()).isZero();
+  }
+
+  @Test
+  void afterThreeFailedTriesInARowTheFourthWaitsTheFullInterval() {
+    addPage(PAGE);
+    pages.failure = new SourceFailure.Unavailable("HTTP 503");
+    GitHubAwesomeCollector collector = collector();
+
+    for (int pass = 0; pass < 3; pass++) {
+      collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+      clock.passHours(1);
+    }
+    collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+
+    assertThat(pages.asked).hasSize(3);
+    assertThat(added.all().getFirst().getReadFailures()).isEqualTo(3);
+
+    clock.pass(7);
+    collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+
+    assertThat(pages.asked).hasSize(4);
+    assertThat(count("helper2.live-web.credits", "feature", "scout-list-pages")).isEqualTo(4);
+  }
+
+  @Test
+  void aSuccessfulReadResetsTheFailedTriesAndThePageWaitsTheFullInterval() {
+    addPage(PAGE);
+    pages.failure = new SourceFailure.Unavailable("HTTP 503");
+    GitHubAwesomeCollector collector = collector();
+    collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+    clock.passHours(1);
+    collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+    pages.failure = null;
+    clock.passHours(1);
+
+    collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+    clock.passHours(1);
+    collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
+
+    assertThat(pages.asked).hasSize(3);
+    assertThat(added.all().getFirst().getReadFailures()).isZero();
   }
 
   @Test
@@ -490,7 +542,8 @@ class WebPageListsTest {
     addPage(PAGE);
     addPage("https://lists.acme.dev/agents");
     pages.markdown.put("https://lists.acme.dev/agents", "# Agents\n");
-    added.readTried(PAGE, DAY_0.minus(Duration.ofDays(8)));
+    added.readStarted(PAGE, DAY_0.minus(Duration.ofDays(8)));
+    added.readSucceeded(PAGE);
     credits.counts.put(new QuotaCounter.Counter(keys.global(), QuotaKeys.SCOUT_CREDITS), 39L);
 
     collector().collect(null, null, 500);

@@ -33,6 +33,8 @@ public final class WebPageLists {
 
   static final String NOT_DUE = "page-not-due";
 
+  static final int MAX_FAILED_TRIES = 3;
+
   private static final Logger log = LoggerFactory.getLogger(WebPageLists.class);
 
   private static final PageReader NO_READER =
@@ -53,6 +55,7 @@ public final class WebPageLists {
   private final @Nullable ScoutLiveWebCredits credits;
   private final HostsNeverRead neverRead;
   private final Duration readEvery;
+  private final Duration retryAfter;
   private final Clock clock;
   private final Map<String, AwesomeCrawl.Read> lastRead = new ConcurrentHashMap<>();
 
@@ -62,9 +65,16 @@ public final class WebPageLists {
       ScoutLiveWebCredits credits,
       HostsNeverRead neverRead,
       Duration readEvery,
+      Duration retryAfter,
       Clock clock) {
     this(
-        seeds, new WebPageReader(reader), credits.forFeature(FEATURE), neverRead, readEvery, clock);
+        seeds,
+        new WebPageReader(reader),
+        credits.forFeature(FEATURE),
+        neverRead,
+        readEvery,
+        retryAfter,
+        clock);
   }
 
   private WebPageLists(
@@ -73,18 +83,26 @@ public final class WebPageLists {
       @Nullable ScoutLiveWebCredits credits,
       HostsNeverRead neverRead,
       Duration readEvery,
+      Duration retryAfter,
       Clock clock) {
     this.seeds = seeds;
     this.pages = pages;
     this.credits = credits;
     this.neverRead = neverRead;
     this.readEvery = readEvery;
+    this.retryAfter = retryAfter;
     this.clock = clock;
   }
 
   static WebPageLists notRead(ListSeedStore seeds, Clock clock) {
     return new WebPageLists(
-        seeds, new WebPageReader(NO_READER), null, HostsNeverRead.NONE, Duration.ofDays(7), clock);
+        seeds,
+        new WebPageReader(NO_READER),
+        null,
+        HostsNeverRead.NONE,
+        Duration.ofDays(7),
+        Duration.ofHours(1),
+        clock);
   }
 
   List<AwesomeCrawl.Read> read(ReadmeBudget budget, AwesomeMetrics metrics) {
@@ -99,8 +117,7 @@ public final class WebPageLists {
     lastRead.keySet().retainAll(added.stream().map(ListSeed::getAddress).toList());
     List<AwesomeCrawl.Read> lists = new ArrayList<>();
     for (ListSeed page : added) {
-      AwesomeCrawl.Read list =
-          listOf(page.getAddress(), page.getReadTriedAt(), now, budget, metrics);
+      AwesomeCrawl.Read list = listOf(page, now, budget, metrics);
       if (list != null) {
         lists.add(list);
       }
@@ -109,11 +126,8 @@ public final class WebPageLists {
   }
 
   private AwesomeCrawl.@Nullable Read listOf(
-      String address,
-      @Nullable Instant triedAt,
-      Instant now,
-      ReadmeBudget budget,
-      AwesomeMetrics metrics) {
+      ListSeed page, Instant now, ReadmeBudget budget, AwesomeMetrics metrics) {
+    String address = page.getAddress();
     HostsNeverRead.Refusal refusal = neverRead.refusalOf(address);
     if (refusal != null) {
       log.info("a list page on {} is not read: {}", refusal.getHost(), refusal.getReason());
@@ -121,7 +135,7 @@ public final class WebPageLists {
       lastRead.remove(address);
       return null;
     }
-    String waits = waitsBecause(triedAt, now, budget);
+    String waits = waitsBecause(page, now, budget);
     if (waits == null) {
       readNow(address, now, budget, metrics);
     } else if (!waits.equals(NOT_DUE)) {
@@ -131,9 +145,8 @@ public final class WebPageLists {
     return lastRead.get(address);
   }
 
-  private @Nullable String waitsBecause(
-      @Nullable Instant triedAt, Instant now, ReadmeBudget budget) {
-    if (triedAt != null && now.isBefore(triedAt.plus(readEvery))) {
+  private @Nullable String waitsBecause(ListSeed page, Instant now, ReadmeBudget budget) {
+    if (!due(page, now)) {
       return NOT_DUE;
     }
     String spent = budget.spent();
@@ -146,12 +159,22 @@ public final class WebPageLists {
     return credits.capReached() ? "page-credit-cap" : null;
   }
 
+  private boolean due(ListSeed page, Instant now) {
+    Instant tried = page.getReadTriedAt();
+    if (tried == null) {
+      return true;
+    }
+    int failures = page.getReadFailures();
+    Duration wait = failures > 0 && failures < MAX_FAILED_TRIES ? retryAfter : readEvery;
+    return !now.isBefore(tried.plus(wait));
+  }
+
   private void readNow(String address, Instant now, ReadmeBudget budget, AwesomeMetrics metrics) {
     CanonicalUrl url = CanonicalUrl.of(address);
     if (url == null || credits == null) {
       return;
     }
-    seeds.readTried(address, now);
+    seeds.readStarted(address, now);
     credits.spent(MissingNode.getInstance(), READ_DEPTH);
     try {
       String markdown = pages.markdown(address);
@@ -160,6 +183,7 @@ public final class WebPageLists {
       lastRead.put(
           address,
           new AwesomeCrawl.Read(ListRepo.webPage(url, address, title(parsed, url)), parsed, 0));
+      seeds.readSucceeded(address);
       metrics.listRead(0);
     } catch (SourceFailure | CallRefused e) {
       log.warn("a list page on {} is unavailable: {}", url.getHost(), e.getMessage());

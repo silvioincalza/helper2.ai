@@ -365,7 +365,13 @@ class CollectorsConfiguration {
       HostsNeverRead neverRead,
       Clock clock) {
     return new WebPageLists(
-        addedLists, reader, credits, neverRead, c.webPages().readEvery(), clock);
+        addedLists,
+        reader,
+        credits,
+        neverRead,
+        c.webPages().readEvery(),
+        c.webPages().retryAfter(),
+        clock);
   }
 
   private static final String AWESOME_POLICY = "collector-" + CollectorIds.GITHUB_AWESOME;

@@ -82,7 +82,13 @@ class InMemoryListSeedStore : ListSeedStore {
 
   override fun remove(address: String): ListSeed? = seeds.remove(address)
 
-  override fun readTried(address: String, at: Instant) {
-    seeds.computeIfPresent(address) { _, seed -> seed.copy(readTriedAt = at) }
+  override fun readStarted(address: String, at: Instant) {
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readTriedAt = at, readFailures = seed.readFailures + 1)
+    }
+  }
+
+  override fun readSucceeded(address: String) {
+    seeds.computeIfPresent(address) { _, seed -> seed.copy(readFailures = 0) }
   }
 }

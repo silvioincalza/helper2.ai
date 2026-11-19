@@ -66,9 +66,13 @@ class JdbcListSeedStoreIT {
     assertThat(store.add(new ListSeed(ListKind.WEB_PAGE, PAGE, "42", T0, "a roundup"))).isTrue();
     assertThat(page().getReadTriedAt()).isNull();
 
-    store.readTried(PAGE, T0.plusSeconds(3600));
+    store.readStarted(PAGE, T0);
+    store.readStarted(PAGE, T0.plusSeconds(3600));
+    assertThat(page().getReadFailures()).isEqualTo(2);
+    store.readSucceeded(PAGE);
 
     ListSeed read = page();
+    assertThat(read.getReadFailures()).isZero();
     assertThat(read.getKind()).isEqualTo(ListKind.WEB_PAGE);
     assertThat(read.getId())
         .isEqualTo(new ListSeed(ListKind.WEB_PAGE, PAGE, "1", T0, null).getId());

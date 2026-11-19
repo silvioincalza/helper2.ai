@@ -150,7 +150,10 @@ public final class CollectorProperties {
       }
     }
 
-    public record WebPages(@NotNull Duration readEvery, @NotNull List<String> neverRead) {
+    public record WebPages(
+        @NotNull Duration readEvery,
+        @NotNull Duration retryAfter,
+        @NotNull List<String> neverRead) {
 
       static final Duration LONGEST_READ_EVERY = Duration.ofDays(21);
 
@@ -173,6 +176,15 @@ public final class CollectorProperties {
         return readEvery == null
             || (readEvery.compareTo(Duration.ofDays(1)) >= 0
                 && readEvery.compareTo(LONGEST_READ_EVERY) <= 0);
+      }
+
+      @AssertTrue(message = "must be positive and not longer than read-every")
+      boolean isRetryAfterWithinReadEvery() {
+        return retryAfter == null
+            || readEvery == null
+            || (!retryAfter.isNegative()
+                && !retryAfter.isZero()
+                && retryAfter.compareTo(readEvery) <= 0);
       }
 
       @AssertTrue(message = "each entry is host=reason")

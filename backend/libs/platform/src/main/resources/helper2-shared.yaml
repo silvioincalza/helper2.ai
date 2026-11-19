@@ -375,6 +375,7 @@ helper2:
           chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
       web-pages:
         read-every: ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}
+        retry-after: ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}
         never-read: >-
           ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written
           consent}

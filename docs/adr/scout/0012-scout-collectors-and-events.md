@@ -89,7 +89,10 @@ Two kinds of source need more care:
        ARTICLE otherwise. The name part of the rule does not apply: a person added the page.
      - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; from 1 to 21, so the list index, kept 30 days
        after its last refresh, never expires between two reads). `list_seed.read_tried_at` holds the last try,
-       whatever its result. Between two reads each pass uses what the last read gave, kept in memory
+       whatever its result, and `list_seed.read_failures` the tries in a row that gave no list. A try that gives
+       no list (no text, another host, the reader down, a stop in the middle) is tried again after
+       `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries
+       in a row the page waits the full `every`. A read that gives a list sets the count back to 0. Between two reads each pass uses what the last read gave, kept in memory
        (`WebPageLists`): the entries, headings and links, never the page text. After a restart a page that is not
        due yet is left out of the passes until it is; nothing of it is withdrawn.
      - **Each read is one live web credit** on the Scout's daily cap (`ScoutLiveWebCredits`,

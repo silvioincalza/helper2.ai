@@ -22,6 +22,7 @@ constructor(
   val addedAt: Instant,
   val reason: String?,
   val readTriedAt: Instant? = null,
+  val readFailures: Int = 0,
 ) {
   val id: UUID
     get() = ListAddresses.idOf(address)
@@ -37,7 +38,9 @@ interface ListSeedStore {
 
   fun remove(address: String): ListSeed?
 
-  fun readTried(address: String, at: Instant)
+  fun readStarted(address: String, at: Instant)
+
+  fun readSucceeded(address: String)
 }
 
 class HostsNeverRead(reasons: Map<String, String>) {

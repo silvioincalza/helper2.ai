@@ -23,13 +23,13 @@ pages: "WebPageLists: each web page an administrator added,\nthe one tried longe
   direction: down
   never: "Host in the never-read setting\n(a subdomain matches)?" {class: decision}
   refused: "Not read\n(skip: page-never-read)" {class: end}
-  due: "Last try at least\n7 days ago, or never?" {class: decision}
+  due: "Never tried, or the last try\n7 days ago, or 1 hour ago after\n1 or 2 failed tries in a row?" {class: decision}
   can: "Time and size budget left, a page\nreader, and the Scout's daily\nlive web credits not spent?" {class: decision}
   waits: "Waits for the next pass (skip: time-budget,\nsize-budget, page-reader-off, page-credit-cap);\nnothing is withdrawn" {class: end}
-  read: "Store the try, count 1 credit (scout-list-pages),\nread the page as Markdown through the\nlive web page reader (collector-gap-web)" {class: ext}
+  read: "Store the try (failed tries + 1), count 1 credit (scout-list-pages),\nread the page as Markdown through the\nlive web page reader (collector-gap-web)" {class: ext}
   ok: "Text, from the host asked?" {class: decision}
-  failed: "Skip: page-unavailable;\ntried again after 7 days" {class: end}
-  parse: "AwesomeListParser reads the Markdown like a README;\nkept in memory until the next read:\nentries, headings, links, never the text" {class: app}
+  failed: "Skip: page-unavailable; tried again at the\nnext pass (1 hour), after 3 in a row in 7 days" {class: end}
+  parse: "AwesomeListParser reads the Markdown like a README;\nfailed tries back to 0; kept in memory until\nthe next read: entries, headings, links, never the text" {class: app}
   last: "What the last read gave,\nif this instance has it" {class: app}
   never -> refused: "yes"
   never -> due: "no"
