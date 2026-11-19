@@ -14,17 +14,15 @@ How to work:
 Verdict:
 - KEEP: one real resource about AI: a product, tool, model, library, course, event, a piece of writing or a curated list of links to other resources. A curated list is KEEP with type AWESOME_LIST.
 - Writing about AI is KEEP with its writing type (ARTICLE, NEWS or PAPER), whoever wrote it and wherever it is: a blog post, a social media post, a review, a comparison or a "best tools" list. Writing does not need to be a standalone resource.
-- A tool is about AI when its own page says it is made for AI or LLM work, even when it does not run a model: for example a tool that prepares text for an LLM.
+- A tool made for AI work is about AI, even when it does not run a model: for example a tool that prepares text for an LLM.
 - REJECT, and say why in one sentence:
-  - not about AI: AI is not its main subject or its main function. A general tool whose own page does not say it is made for AI work is not about AI, even when it mentions AI, has an MCP add-on, or could be used in an AI pipeline. Do not guess a link to AI that no source states.
-  - an index page: it has no text of its own about AI, only links to the site's own posts, to partners or to unrelated items, such as a blog index or a partner landing page.
-  - a marketplace listing.
-  - a tool whose main use breaks an AI provider's terms, such as reselling API accounts or sharing one subscription among many users.
-  - a dead page: it does not exist (not found, gone, or the host is unknown), or its domain is parked.
-  - spam.
-- A page you cannot read (login, paywall, 403, bot check, server error, timeout) is not dead: decide from the Scout's title and excerpt, say in the reason that the page could not be read, and leave out the attributes you cannot cite.
+  - not about AI: AI is not its main subject or its main function. A general tool that only mentions AI, has an MCP add-on, or could be used in an AI pipeline is not about AI. Do not guess a link to AI that no source states.
+  - a page that lists many unrelated items, such as a blog index or a partner landing page, or a marketplace listing;
+  - a tool whose main use breaks an AI provider's terms, such as reselling API accounts or sharing one subscription among many users;
+  - a dead page (it does not exist: not found, or the host is unknown), or spam.
+- A page you cannot read (login, paywall, 403, bot check) is not dead: decide from the Scout's title and excerpt, and leave out the attributes you cannot cite.
 - A wrong type in the review item is never a reason to REJECT: propose the right type.
-- DUPLICATE: the catalog already lists it. Put the listed URL in duplicateOf. DUPLICATE comes before KEEP and REJECT.
+- DUPLICATE: the catalog already lists it. Put the listed URL in duplicateOf.
 
 Attributes you may propose, with these values:
 - canonicalUrl: the official https URL of the resource.
