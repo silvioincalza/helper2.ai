@@ -1,6 +1,6 @@
 # Sequence: a crawler, then a person, open a resource page (ADR 0041).
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
-#   site/pages/usecase/RenderPage.java, ListSitemap.java, site/pages/web/CrawlerFiles.java, catalog/usecase/GetResourceDetail.java,
+#   site/pages/usecase/RenderPage.java, ListSitemap.java, site/pages/web/CrawlerFiles.java, site/pages/LlmsTxt.kt, catalog/usecase/GetResourceDetail.java,
 #   ListIndexableResources.java, frontend/src/lib/head.ts, slug.ts, features/resource/ResourcePage.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0041-pages-for-crawlers.d2 && d2 sequence-0041-pages-for-crawlers.d2 sequence-0041-pages-for-crawlers.svg
 
@@ -15,6 +15,9 @@ db: PostgreSQL {class: data}
 person: "Person\n(browser)" {class: person}
 
 crawl: "Crawl" {
+  bot -> edge: "GET /llms.txt"
+  edge -> api: "GET /llms.txt"
+  api -> bot: "200 text/plain: what helper2.ai is,\nthe main pages, the sitemap\n(no database read)"
   bot -> edge: "GET /sitemap.xml"
   edge -> api: "GET /sitemap.xml"
   api -> db: "index-worthy resources, last update\n(at most once an hour, kept in memory)"
