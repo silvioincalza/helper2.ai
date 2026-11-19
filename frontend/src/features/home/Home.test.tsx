@@ -38,7 +38,7 @@ describe('home', () => {
     mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
     const h1 = await screen.findByRole('heading', { level: 1 });
-    expect(h1).toHaveAccessibleName('helper2.ai The metasearch for the AI universe.');
+    expect(h1).toHaveAccessibleName('helper2.ai The metasearch for the AI ecosystem.');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(within(h1).getByText('helper2.ai')).toHaveClass('h2-hero__name');
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
