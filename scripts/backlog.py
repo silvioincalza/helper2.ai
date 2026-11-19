@@ -39,6 +39,9 @@ SHORT_WAIT = 300.0
 RESET_MARGIN = 5.0
 SERVER_ERROR_WAIT = 10.0
 VALUE_KEYS = ("name", "text", "number")
+ISSUE_VALUE_KEYS = ("name", "value")
+MILESTONE = "v{}.{}"
+ISSUES_PER_REQUEST = 5
 NOON = 1_800_000_000.0
 ROADMAP_HEADER = """# Roadmap
 
@@ -55,8 +58,14 @@ ISSUES_QUERY = """query($owner:String!,$name:String!,$endCursor:String){reposito
     projectItems(first:10){nodes{
       priority:fieldValueByName(name:"Priority"){... on ProjectV2ItemFieldSingleSelectValue{name}}
       replay:fieldValueByName(name:"Replay PR"){... on ProjectV2ItemFieldNumberValue{number}}}}}}}}"""
-PARENTS_QUERY = """query($owner:String!,$name:String!,$endCursor:String){repository(owner:$owner,name:$name){
-  issues(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{number parent{number}}}}}"""
+DETAILS_QUERY = """query($owner:String!,$name:String!,$endCursor:String){repository(owner:$owner,name:$name){
+  issues(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{number parent{number}
+    issueFieldValues(first:20){nodes{
+      ... on IssueFieldSingleSelectValue{name field{... on IssueFieldSingleSelect{name}}}
+      ... on IssueFieldTextValue{value field{... on IssueFieldText{name}}}}}}}}}"""
+ISSUE_FIELDS_QUERY = """query($owner:String!,$name:String!){repository(owner:$owner,name:$name){
+  issueFields(first:50){nodes{
+    ... on IssueFieldSingleSelect{id name options{id name}} ... on IssueFieldText{id name}}}}}"""
 BUDGET_QUERY = "query{rateLimit{remaining resetAt}}"
 PROJECTS_QUERY = """query($owner:String!){repositoryOwner(login:$owner){... on ProjectV2Owner{
   projectsV2(first:100){nodes{id number title}}}}}"""
@@ -96,6 +105,7 @@ class GhCli:
         self.backoff = backoff
         self.commands = 0
         self.budget: dict = {}
+        self.read: dict[str, list[dict]] = {}
         self.now = time.time
         self.sleep = time.sleep
 
@@ -193,15 +203,15 @@ class GhCli:
         owner, name = repo.split("/")
         return self.pages(query, lambda data: data["repository"]["issues"], owner=owner, name=name)
 
-    def mutate(self, changes: list[tuple[str, str]]) -> list[dict]:
+    def mutate(self, changes: list[tuple[str, str]], size: int = MUTATIONS_PER_REQUEST) -> list[dict]:
         if not self.write:
             for what, _ in changes:
                 print(f"  would {what}")
             return []
-        self.require_budget(len(changes))
+        self.require_budget(len(changes), size)
         results: list[dict] = []
-        for start in range(0, len(changes), MUTATIONS_PER_REQUEST):
-            batch = changes[start : start + MUTATIONS_PER_REQUEST]
+        for start in range(0, len(changes), size):
+            batch = changes[start : start + size]
             for what, _ in batch:
                 print(f"  {what}")
             sent = self.graphql("mutation{" + " ".join(f"m{n}:{mutation}" for n, (_, mutation) in enumerate(batch)) + "}")
@@ -210,8 +220,8 @@ class GhCli:
             self.sleep(self.pause)
         return results
 
-    def require_budget(self, changes: int) -> None:
-        needed = -(-changes // MUTATIONS_PER_REQUEST) * POINTS_PER_REQUEST
+    def require_budget(self, changes: int, size: int) -> None:
+        needed = -(-changes // size) * POINTS_PER_REQUEST
         if self.budget and needed > self.budget["left"]:
             sys.exit(
                 f"this run needs about {needed} points of GitHub's hourly limit and {self.budget['left']} are left "
@@ -256,6 +266,7 @@ class GhCli:
                     "title": i["title"],
                     "body": i.get("body") or "",
                     "author": i["author_association"],
+                    "milestone": (i.get("milestone") or {}).get("title"),
                 }
                 for i in listed
                 if "pull_request" not in i
@@ -284,8 +295,60 @@ class GhCli:
             payload,
         )
 
+    def details(self, repo: str) -> list[dict]:
+        if repo not in self.read:
+            self.read[repo] = self.repo_issues(DETAILS_QUERY, repo)
+        return self.read[repo]
+
     def parents(self, repo: str) -> dict[int, int | None]:
-        return {n["number"]: (n["parent"] or {}).get("number") for n in self.repo_issues(PARENTS_QUERY, repo)}
+        return {n["number"]: (n["parent"] or {}).get("number") for n in self.details(repo)}
+
+    def issue_fields(self, repo: str) -> dict[str, dict]:
+        owner, name = repo.split("/")
+        listed = self.graphql(ISSUE_FIELDS_QUERY, owner=owner, name=name)["repository"]["issueFields"]["nodes"]
+        return {
+            f["name"]: {"id": f["id"], "options": {o["name"]: o["id"] for o in f.get("options", [])}}
+            for f in listed
+            if f.get("name")
+        }
+
+    def issue_values(self, repo: str) -> dict[int, dict]:
+        return {
+            n["number"]: {
+                value["field"]["name"]: next(value[key] for key in ISSUE_VALUE_KEYS if key in value)
+                for value in n["issueFieldValues"]["nodes"]
+                if value.get("field")
+            }
+            for n in self.details(repo)
+        }
+
+    def set_issue_fields(self, edits: list[dict]) -> None:
+        self.mutate([(said_of_issue(edit), self.issue_mutation(edit)) for edit in edits], ISSUES_PER_REQUEST)
+
+    @staticmethod
+    def issue_mutation(edit: dict) -> str:
+        values = ",".join(GhCli.issue_value(edit["fields"][name], value) for name, value in edit["values"].items())
+        return (
+            f"setIssueFieldValue(input:{{issueId:{quoted(edit['issue']['node'])},issueFields:[{values}]}})"
+            "{clientMutationId}"
+        )
+
+    @staticmethod
+    def issue_value(field: dict, value) -> str:
+        if empty(value):
+            return f"{{fieldId:{quoted(field['id'])},delete:true}}"
+        if field["options"]:
+            return f"{{fieldId:{quoted(field['id'])},singleSelectOptionId:{quoted(field['options'][value])}}}"
+        return f"{{fieldId:{quoted(field['id'])},textValue:{quoted(str(value))}}}"
+
+    def milestones(self, repo: str) -> dict[str, int]:
+        return {m["title"]: m["number"] for m in self.api([f"repos/{repo}/milestones?state=all&per_page={PAGE}"])}
+
+    def set_milestone(self, repo: str, issue: dict, number: int, title: str) -> None:
+        self.change(
+            f"put #{issue['number']} in the milestone {title}",
+            ["api", "-X", "PATCH", f"repos/{repo}/issues/{issue['number']}", "-F", f"milestone={number}"],
+        )
 
     def add_sub_issue(self, repo: str, parent: int, child: dict) -> None:
         self.change(
@@ -379,6 +442,16 @@ def said(edit: dict) -> str:
     if empty(edit["value"]):
         return f"clear {edit['name']} of #{edit['issue']['number']}"
     return f"set {edit['name']} of #{edit['issue']['number']} to {edit['value']}"
+
+
+def said_of_issue(edit: dict) -> str:
+    values = ", ".join(f"{name} cleared" if empty(value) else f"{name} = {value}" for name, value in edit["values"].items())
+    return f"set the issue fields of #{edit['issue']['number']}: {values}"
+
+
+def milestone_of(release: str | None) -> str:
+    parts = (release or "").split(".")
+    return MILESTONE.format(*parts[:2]) if len(parts) > 2 else ""
 
 
 def quoted(text: str) -> str:
@@ -486,6 +559,8 @@ class Import:
             self.github.ensure_label(self.repo, name, color)
         issues = self.sync_issues()
         self.sync_hierarchy(issues)
+        self.sync_issue_fields(issues)
+        self.sync_milestones(issues)
         self.sync_project(issues)
 
     def sync_issues(self) -> dict[str, dict | None]:
@@ -542,6 +617,48 @@ class Import:
             linked += 1
         print(f"hierarchy: {linked} links added")
 
+    def sync_issue_fields(self, issues: dict[str, dict | None]) -> None:
+        fields = self.github.issue_fields(self.repo)
+        if not fields:
+            print("issue fields: the repository has none, so none is set")
+            return
+        current = self.github.issue_values(self.repo)
+        edits = []
+        for x in entries(self.doc):
+            issue = issues[x["id"]]
+            if issue is None:
+                print(f"  would set the issue fields of {x['id']}")
+                continue
+            values = {
+                name: value
+                for name, value in wanted_fields(x).items()
+                if name in fields and not same(current.get(issue["number"], {}).get(name), value)
+            }
+            for name, value in values.items():
+                if not empty(value):
+                    self.require_option("issue", name, fields[name], value)
+            if values:
+                edits.append({"issue": issue, "fields": fields, "values": values})
+        self.github.set_issue_fields(edits)
+        print(f"issue fields: {sum(len(edit['values']) for edit in edits)} values set on {len(edits)} issues")
+
+    def sync_milestones(self, issues: dict[str, dict | None]) -> None:
+        milestones = self.github.milestones(self.repo)
+        placed = 0
+        absent: set[str] = set()
+        for x in entries(self.doc):
+            issue, title = issues[x["id"]], milestone_of(x.get("release"))
+            if not title or issue is None or issue.get("milestone"):
+                continue
+            if title not in milestones:
+                absent.add(title)
+                continue
+            self.github.set_milestone(self.repo, issue, milestones[title], title)
+            placed += 1
+        for title in sorted(absent):
+            print(f"  no milestone {title}: make it on GitHub, then run again")
+        print(f"milestones: {placed} issues placed")
+
     def sync_project(self, issues: dict[str, dict | None]) -> None:
         title = self.doc["project"]
         project = self.github.project(self.owner, title) or self.github.create_project(self.owner, title)
@@ -570,7 +687,7 @@ class Import:
             if name not in fields or same((item or {}).get("values", {}).get(name), value):
                 continue
             if not empty(value):
-                self.require_option(name, fields[name], value)
+                self.require_option("Project", name, fields[name], value)
             edits.append({"item": item, "issue": issue, "name": name, "field": fields[name], "value": value})
         return edits
 
@@ -584,9 +701,9 @@ class Import:
         return self.github.fields(project) if missing else fields
 
     @staticmethod
-    def require_option(name: str, field: dict, value) -> None:
+    def require_option(where: str, name: str, field: dict, value) -> None:
         if field["options"] and value not in field["options"]:
-            sys.exit(f'the Project field {name} has no option "{value}": add it in the Project, then run again')
+            sys.exit(f'the {where} field {name} has no option "{value}": add it on GitHub, then run again')
 
 
 def roadmap(issues: list[dict]) -> str:
@@ -705,6 +822,13 @@ class FakeGitHub:
         self.board_items: dict[str, dict] = {}
         self.writes: list[str] = []
         self.room: int | None = None
+        self.issue_field_list: dict[str, dict] = {
+            "Context": {"id": "IF1", "options": {"Checkout": "c1", "Catalog": "c2"}},
+            "Priority": {"id": "IF2", "options": {priority: f"p-{priority}" for priority in PRIORITIES}},
+            "Release": {"id": "IF3", "options": {}},
+        }
+        self.issue_field_values: dict[int, dict] = {}
+        self.milestone_list: dict[str, int] = {"v2026.11": 1}
 
     def ensure_label(self, repo, name, color):
         if self.labels.get(name) != color:
@@ -739,6 +863,28 @@ class FakeGitHub:
     def add_sub_issue(self, repo, parent, child):
         self.parent[child["number"]] = parent
         self.writes.append(f"link {child['number']} under {parent}")
+
+    def issue_fields(self, repo):
+        return copy.deepcopy(self.issue_field_list)
+
+    def issue_values(self, repo):
+        return copy.deepcopy(self.issue_field_values)
+
+    def set_issue_fields(self, edits):
+        for edit in edits:
+            self.spend()
+            values = self.issue_field_values.setdefault(edit["issue"]["number"], {})
+            values.update(edit["values"])
+            for name in [name for name, value in values.items() if empty(value)]:
+                del values[name]
+            self.writes.append(f"issue fields of {edit['issue']['number']}")
+
+    def milestones(self, repo):
+        return dict(self.milestone_list)
+
+    def set_milestone(self, repo, issue, number, title):
+        self.stored[issue["number"] - 1]["milestone"] = title
+        self.writes.append(f"milestone of {issue['number']}")
 
     def project(self, owner, title):
         return self.board
@@ -882,6 +1028,13 @@ def self_test() -> None:
         "Replay PR": 3,
     }
     cases["an epic carries its context only"] = github.board_items["https://example.test/1"]["values"] == {"Context": "Checkout"}
+    cases["a story carries its issue fields, an epic its context only"] = (
+        github.issue_field_values[5] == {"Context": "Checkout", "Priority": "Replay", "Release": "2026.11.3"}
+        and github.issue_field_values[1] == {"Context": "Checkout"}
+    )
+    cases["a story with a release is in the milestone of its release line, a story without one is in none"] = (
+        github.stored[4]["milestone"] == "v2026.11" and "milestone" not in github.stored[6]
+    )
     cases["a story names the pull request that closes it"] = "replay pull request 03 (Checkout)" in github.stored[4]["body"]
 
     public = json.dumps([github.stored, github.board_items])
@@ -903,7 +1056,9 @@ def self_test() -> None:
     changed["stories"][2]["priority"] = "Next"
     imported(changed, github)
     cases["a changed entry updates its issue and its field, no duplicate"] = (
-        github.writes == ["update S2.1.1 To browse by category and price", "set Priority of 7"] and len(github.stored) == 7
+        github.writes == ["update S2.1.1 To browse by category and price", "issue fields of 7", "set Priority of 7"]
+        and len(github.stored) == 7
+        and github.issue_field_values[7]["Priority"] == "Next"
     )
 
     emptied = copy.deepcopy(changed)
@@ -911,9 +1066,13 @@ def self_test() -> None:
     github.writes.clear()
     imported(emptied, github)
     cases["a value taken out of the file is cleared in the Project"] = (
-        github.writes == ["update S1.1.1 To pay by card", "clear Release of 5", "clear Replay PR of 5"]
+        github.writes == ["update S1.1.1 To pay by card", "issue fields of 5", "clear Release of 5", "clear Replay PR of 5"]
         and github.board_items["https://example.test/5"]["values"] == {"Context": "Checkout", "Priority": "Replay"}
     )
+    cases["a value taken out of the file is cleared on the issue"] = github.issue_field_values[5] == {
+        "Context": "Checkout",
+        "Priority": "Replay",
+    }
     imported(changed, github)
 
     elsewhere = FakeGitHub()
@@ -924,6 +1083,32 @@ def self_test() -> None:
     cases["an item of another repository with the same number is left alone"] = (
         elsewhere.writes == [] and elsewhere.board_items["https://other.test/5"]["values"] == {"Priority": "Later"}
     )
+
+    plain_repo = FakeGitHub()
+    plain_repo.issue_field_list = {}
+    cases["a repository without issue fields gets none, and the run goes on"] = (
+        "issue fields: the repository has none" in imported(SAMPLE, plain_repo)
+        and plain_repo.issue_field_values == {}
+        and len(plain_repo.board_items) == 7
+    )
+
+    by_hand = FakeGitHub()
+    imported(SAMPLE, by_hand)
+    by_hand.stored[4]["milestone"] = "v2026.10"
+    by_hand.writes.clear()
+    imported(SAMPLE, by_hand)
+    cases["a milestone set by hand is kept"] = by_hand.writes == [] and by_hand.stored[4]["milestone"] == "v2026.10"
+
+    no_line = FakeGitHub()
+    no_line.milestone_list = {}
+    cases["a release line without a milestone places no issue and says so"] = (
+        "no milestone v2026.11: make it on GitHub" in imported(SAMPLE, no_line)
+        and not any("milestone" in issue for issue in no_line.stored)
+    )
+
+    cases["a context the issue field does not have stops the run"] = issue_field_option_is_required()
+    cases["issue fields are written one mutation per issue, five issues per request"] = issue_fields_are_batched()
+    cases["issue field values come with the parents, in the same pages"] = issue_values_come_with_the_parents()
 
     moved = copy.deepcopy(changed)
     moved["stories"][2]["parent"] = "F1.1"
@@ -1159,6 +1344,44 @@ def reads_are_paged() -> bool:
     )
 
 
+def issue_field_option_is_required() -> bool:
+    github = FakeGitHub()
+    del github.issue_field_list["Context"]["options"]["Catalog"]
+    return 'the issue field Context has no option "Catalog"' in stop_of(lambda: imported(SAMPLE, github))
+
+
+def issue_fields_are_batched() -> bool:
+    fields = {"Priority": {"id": "IF2", "options": {"Now": "p1"}}, "Release": {"id": "IF3", "options": {}}}
+    edits = [
+        {"issue": {"number": n, "node": f"N{n}"}, "fields": fields, "values": {"Priority": "Now", "Release": ""}}
+        for n in range(12)
+    ]
+    github = Scripted([written(5), written(5), written(2)], write=True)
+    quiet(lambda: github.set_issue_fields(edits))
+    sent = [json.loads(data)["query"] for _, data in github.sent]
+    one = (
+        'm0:setIssueFieldValue(input:{issueId:"N0",issueFields:'
+        '[{fieldId:"IF2",singleSelectOptionId:"p1"},{fieldId:"IF3",delete:true}]})'
+    )
+    return [query.count("setIssueFieldValue") for query in sent] == [5, 5, 2] and one in sent[0]
+
+
+def issue_values_come_with_the_parents() -> bool:
+    def value(field: str, **read) -> dict:
+        return {**read, "field": {"name": field}}
+
+    nodes = [
+        {"number": 5, "parent": {"number": 3}, "issueFieldValues": {"nodes": [value("Priority", name="Now"), {}]}},
+        {"number": 6, "parent": None, "issueFieldValues": {"nodes": [value("Release", value="2026.11.3")]}},
+    ]
+    github = Scripted([replied({"data": {"repository": {"issues": page_of(nodes, None)}}})])
+    return (
+        github.parents("example/shop") == {5: 3, 6: None}
+        and github.issue_values("example/shop") == {5: {"Priority": "Now"}, 6: {"Release": "2026.11.3"}}
+        and github.commands == 1
+    )
+
+
 def release_edits(count: int) -> list[dict]:
     field = {"id": "F1", "options": {}}
     return [
@@ -1256,6 +1479,8 @@ def dry_run_writes_nothing() -> bool:
             self.sent.append((args, data))
             if "projectsV2" in (data or ""):
                 return replied({"data": {"repositoryOwner": {"projectsV2": {"nodes": []}}}})
+            if "issueFields(" in (data or ""):
+                return replied({"data": {"repository": {"issueFields": {"nodes": []}}}})
             if data:
                 return replied({"data": {"repository": {"issues": page_of([], None)}}})
             return replied([])
@@ -1265,7 +1490,7 @@ def dry_run_writes_nothing() -> bool:
     with redirect_stdout(out):
         Import(SAMPLE, github).run()
     reads = all(args[:2] == ["api", "-i"] and "-X" not in args and "mutation" not in (data or "") for args, data in github.sent)
-    return reads and len(github.sent) == 3 and out.getvalue().count("would create the issue") == 7
+    return reads and len(github.sent) == 5 and out.getvalue().count("would create the issue") == 7
 
 
 def main() -> None:
