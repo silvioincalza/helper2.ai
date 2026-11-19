@@ -156,6 +156,7 @@ the product: the next source does not get it.
       | `github-topic-leaders` | `H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS` (1,000) stars and a push inside `H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN` (90 days); an unknown push date is not a push | `few-stars`, `not-active` |
       | `hf-trending` | 20 likes (`index-min-likes`) | `few-likes` |
       | `pypi` | a GitHub repository and a summary | `no-repository`, `no-description` |
+      | `github-awesome`, for a Hugging Face model a list links ([0013](0013-discovery.md) §17) | 10 likes (`links.model-index-min-likes`); its repositories have no floor | `few-likes` |
       | every other collector | none: the vitality rule alone | |
 
     - **A candidate always goes to a person.** For a candidate the rule only refuses: a candidate under the floor

@@ -251,8 +251,9 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       not a dataset, a Space or a page of the site: `CanonicalUrl.huggingFaceModel`). `HuggingFaceModelReader` asks
       the Hub for the model by its id (`GET /api/models/{owner}/{name}`, the fields the Hugging Face sources read).
       The facts are the Hub's: likes, downloads, tags, licence, dates, and `disabled`, which the vitality rule
-      refuses ([0020](0020-resource-vitality.md) §9). The admission rule decides with the floor of `hf-trending`
-      (20 likes, [0020](0020-resource-vitality.md) §11): a model at or above it is a `MODEL` hit, indexed without a
+      refuses ([0020](0020-resource-vitality.md) §9). The admission rule ([0020](0020-resource-vitality.md) §11) decides with the lists' own
+      floor, `links.model-index-min-likes` (10 likes; a person chose the model for a list, so it needs fewer than
+      the 20 of `hf-trending`): a model at or above it is a `MODEL` hit, indexed without a
       person; a model under it is a `RESOURCE_CANDIDATE` of type `MODEL`. The record is named by the model's address,
       so a model never takes the record of a repository with the same `owner/name`. A model the Hub does not show
       (401 or 404) gives nothing. The list index gets an entry row for every model link of a list, read or not
@@ -308,8 +309,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     URL or list text is logged.
 20. **Configuration.** Under `helper2.scout.github-awesome` (`CollectorProperties.GitHubAwesome`):
     `H2_SCOUT_AWESOME_MAX_RUN_TIME`, `H2_SCOUT_AWESOME_MAX_README_BYTES`, `H2_SCOUT_AWESOME_NESTED_DEPTH`,
-    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`; `links.max-per-pass` and
-    `links.max-models-per-pass` are fixed in the YAML. Defaults in `helper2-shared.yaml`. Depth 0 turns nested lists
+    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`; `links.max-per-pass`,
+    `links.max-models-per-pass` and `links.model-index-min-likes` are fixed in the YAML. Defaults in `helper2-shared.yaml`. Depth 0 turns nested lists
     off; 0 links a day turns the review items off; 0 models a pass turns the reading of models off. The Hub client
     is the one of `helper2.sources.hf-trending` (base URL, `H2_HF_TOKEN`, timeout).
 
@@ -432,7 +433,7 @@ No new table for deep search, no new dependency.
 ## Consequences
 - The catalog grows in the areas no registry covers. No product and no course enters it from the open web or from a
   list's link without a person; list pages are indexed as ARTICLE without review. A Hugging Face model a list links
-  is indexed without a person only when the Hub confirms it and it has the likes `hf-trending` asks for.
+  is indexed without a person only when the Hub confirms it and it has 10 likes or more.
 - Search can filter by the categories: every result carries their tags, and a resource also gets the categories of
   the sections it is listed under.
 - A person reviews the candidates of 4 or 5 categories a day instead of 34 at once. The total is a guess (50-200 a
@@ -473,7 +474,7 @@ No new table for deep search, no new dependency.
 
 ### Known limits
 - Each product that discovery finds (consumer tools, hosting, prompt libraries) waits for an admin: the weekly review load and the share accepted decide each category's `min-score` and the categories.
-- A link of a list entry to an arXiv paper, a PyPI or npm package, a Hugging Face dataset or a Space gives nothing: no reader confirms these by id. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
+- A link of a list entry to an arXiv paper ([S2.3.10](https://github.com/silvioincalza/helper2.ai/issues/848)), an npm package ([S2.3.11](https://github.com/silvioincalza/helper2.ai/issues/849)), a PyPI package ([S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851)) gives nothing: no reader confirms these by id. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
 - Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap.
 - No weekly alert watches the Scout's credits (`helper2_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
 - There is no host deny list and no cap on list pages per host per pass; vendor compare and alternatives pages are not dropped; Chrome Web Store, Firefox add-on and GPT links are not recognised; press pages keep long excerpts, and an excerpt can hold an email address; open candidates do not expire; any collector can be the source of a candidate.
@@ -538,3 +539,7 @@ discovery hosts: [flow](../../diagrams/flow-0013-discovery-hosts.svg) · [sequen
 - Open issues that change it:
   - [S2.3.5](https://github.com/silvioincalza/helper2.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
   - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a web page that lists AI resources is split into its items.
+  - [S2.3.10](https://github.com/silvioincalza/helper2.ai/issues/848): an arXiv paper a list links to is read by its id.
+  - [S2.3.11](https://github.com/silvioincalza/helper2.ai/issues/849): an npm package a list links to is read by its name.
+  - [S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850): a PyPI package a list links to is read by its name.
+  - [S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851): a Hugging Face dataset or Space a list links to is read by its id.

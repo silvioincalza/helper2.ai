@@ -19,6 +19,7 @@ import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
 import ai.helper2.search.ShadowLibraries;
+import ai.helper2.search.VitalityPolicy;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
@@ -63,6 +64,7 @@ import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -292,7 +294,7 @@ class CollectorsConfiguration {
       DiscoveryHostStore hosts,
       ListSeedStore addedLists,
       ShadowLibraries shadowLibraries,
-      AdmissionPolicy admission) {
+      VitalityPolicy vitality) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -336,7 +338,13 @@ class CollectorsConfiguration {
         new GitHubAwesomeCollector.LinkRules(
             new CoursePages(courses.platforms()),
             modelReader(p.get("hf-trending"), clock, resilience, observations, http),
-            admission));
+            listedModelAdmission(vitality, c.links().modelIndexMinLikes())));
+  }
+
+  static AdmissionPolicy listedModelAdmission(VitalityPolicy vitality, int minLikes) {
+    return new AdmissionPolicy(
+        vitality,
+        new AdmissionRules(Map.of(CollectorIds.GITHUB_AWESOME, new IndexFloor(0, null, minLikes))));
   }
 
   private static @Nullable HuggingFaceModelReader modelReader(
