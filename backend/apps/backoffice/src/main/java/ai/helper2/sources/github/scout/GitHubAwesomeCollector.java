@@ -549,7 +549,8 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private List<SourceHit> readPapers(List<String> linked, Instant now, ReadmeBudget budget) {
-    List<String> ids = linked.subList(0, Math.min(linked.size(), deep.maxPapersPerPass()));
+    List<String> ids =
+        DailyWindow.of(linked.stream().sorted().toList(), deep.maxPapersPerPass(), now);
     metrics.skipped("paper-cap", linked.size() - ids.size());
     List<SourceHit> hits = new ArrayList<>();
     for (int from = 0; from < ids.size(); from += ArxivPaperReader.BATCH) {
@@ -587,11 +588,17 @@ public class GitHubAwesomeCollector implements Collector {
       Map<String, CanonicalUrl> listedAs,
       Instant now,
       ReadmeBudget budget) {
+    List<Map.Entry<String, String>> window =
+        DailyWindow.of(
+            nameByPage.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList(),
+            deep.maxPackagesPerPass(),
+            now);
+    metrics.skipped("package-cap", nameByPage.size() - window.size());
     List<SourceHit> hits = new ArrayList<>();
-    int read = 0;
-    for (Map.Entry<String, String> linked : nameByPage.entrySet()) {
-      int left = nameByPage.size() - read;
-      String spent = read >= deep.maxPackagesPerPass() ? "package-cap" : budget.spent();
+    for (int i = 0; i < window.size(); i++) {
+      Map.Entry<String, String> linked = window.get(i);
+      int left = window.size() - i;
+      String spent = budget.spent();
       if (spent != null) {
         metrics.skipped(spent, left);
         return hits;
@@ -611,7 +618,6 @@ public class GitHubAwesomeCollector implements Collector {
         metrics.skipped("package-unavailable", left);
         return hits;
       }
-      read++;
       SourceHit found = answer.aiPackage();
       if (found == null) {
         metrics.skipped(answer.found() ? "package-not-ai" : "package-not-found");
@@ -642,15 +648,21 @@ public class GitHubAwesomeCollector implements Collector {
       Map<String, CanonicalUrl> listedAs,
       Instant now,
       ReadmeBudget budget) {
+    List<ModelLink> window =
+        DailyWindow.of(
+            links.stream().sorted(Comparator.comparing(l -> l.model().page().getValue())).toList(),
+            deep.maxModelsPerPass(),
+            now);
+    metrics.skipped("model-cap", links.size() - window.size());
     List<SourceHit> hits = new ArrayList<>();
-    for (int i = 0; i < links.size(); i++) {
-      int left = links.size() - i;
-      String spent = i >= deep.maxModelsPerPass() ? "model-cap" : budget.spent();
+    for (int i = 0; i < window.size(); i++) {
+      int left = window.size() - i;
+      String spent = budget.spent();
       if (spent != null) {
         metrics.skipped(spent, left);
         return hits;
       }
-      ModelLink link = links.get(i);
+      ModelLink link = window.get(i);
       Optional<SourceHit> model;
       try {
         model = linkRules.models().read(link.model().id(), ID, now);

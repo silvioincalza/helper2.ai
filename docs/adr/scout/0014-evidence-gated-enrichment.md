@@ -206,7 +206,8 @@ place to say that.
     - a `github` or `github-awesome` record: that repository's README;
     - a discovery record (`discovery-<category>`, `WebSources.isDiscovery`) whose URL is `github.com/<owner>/<repo>`: a
       person accepted it;
-    - an `hf-models`, `hf-trending` or `hf-provider-orgs` record: that model's card;
+    - an `hf-models`, `hf-trending` or `hf-provider-orgs` record, or a `github-awesome` record of a model a list
+      links to (`huggingface.co/{owner}/{name}`): that model's card;
     - an `mcp-registry` record: its repository's README, only when the entry's namespace is `io.github.<owner>` and
       `<owner>` owns the repository. Anyone can publish an entry that links any repository; without this check a famous
       README would prove facts about someone else's server.
