@@ -13,7 +13,7 @@ p011	https://github.com/volcengine/minecontext	RESOURCE_CANDIDATE	volcengine/Min
 p012	https://learnpresslms.com/blog/best-ai-for-homework-tools	RESOURCE_CANDIDATE	6+ Best AI for Homework Tools for Students & Teachers (2026)	ARTICLE	KEEP	ARTICLE	https://learnpresslms.com/blog/best-ai-for-homework-tools	6+ Best AI for Homework Tools for Students & Teachers (2026)			
 p013	https://github.com/prooflinedev/yek	RESOURCE_CANDIDATE	prooflinedev/yek	LIBRARY	KEEP	LIBRARY	https://github.com/prooflinedev/yek	prooflinedev/yek	MIT		true
 p014	https://github.com/coding-solo/godot-mcp	RESOURCE_CANDIDATE	Coding-Solo/godot-mcp	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/coding-solo/godot-mcp	Coding-Solo/godot-mcp	MIT		true
-p015	https://linkedin.com/posts/chexton_93-of-our-customers-with-access-to-our-mcp-activity-7517994315806257152-bb0p	RESOURCE_CANDIDATE	MCP Server Uptake Exceeds Expectations with 93% Adoption Rate	NEWS	REJECT						
+p015	https://linkedin.com/posts/chexton_93-of-our-customers-with-access-to-our-mcp-activity-7517994315806257152-bb0p	RESOURCE_CANDIDATE	MCP Server Uptake Exceeds Expectations with 93% Adoption Rate	NEWS	KEEP	NEWS	https://linkedin.com/posts/chexton_93-of-our-customers-with-access-to-our-mcp-activity-7517994315806257152-bb0p	MCP Server Uptake Exceeds Expectations with 93% Adoption Rate			
 p016	https://pygpt.net	RESOURCE_CANDIDATE	PyGPT	PRODUCT	KEEP	PRODUCT	https://pygpt.net	PyGPT			
 p017	https://founderz.com/ai-prompt-library	RESOURCE_CANDIDATE	AI Prompt Library | Free ChatGPT, Claude and Copilot prompts	PROMPT	KEEP	PROMPT	https://founderz.com/ai-prompt-library	AI Prompt Library | Free ChatGPT, Claude and Copilot prompts			
 p018	https://github.com/google-gemini/gemini-skills	RESOURCE_CANDIDATE	google-gemini/gemini-skills	SKILL	KEEP	SKILL	https://github.com/google-gemini/gemini-skills	google-gemini/gemini-skills	Apache-2.0		true
@@ -22,7 +22,7 @@ p020	https://github.com/coze-dev/coze-studio	RESOURCE_CANDIDATE	coze-dev/coze-st
 p021	https://coworkosapp.com/guides/best-open-source-ai-agents	RESOURCE_CANDIDATE	Best Open-Source AI Agents (2026): 13 Picks by Category	ARTICLE	KEEP	ARTICLE	https://coworkosapp.com/guides/best-open-source-ai-agents	Best Open-Source AI Agents (2026): 13 Picks by Category			
 p022	https://github.com/wzpan/wukong-robot	RESOURCE_CANDIDATE	wzpan/wukong-robot	LIBRARY	KEEP	PRODUCT	https://github.com/wzpan/wukong-robot	wzpan/wukong-robot	MIT		true
 p023	https://github.com/glidea/zenfeed	RESOURCE_CANDIDATE	glidea/zenfeed	MCP_SERVER	KEEP	PRODUCT	https://github.com/glidea/zenfeed	glidea/zenfeed	AGPL-3.0		true
-p024	https://linkedin.com/posts/delibero_youll-hear-we-have-an-mcp-server-in-a-activity-7516121833591603200-7qMp	RESOURCE_CANDIDATE	MCP Server: Ask What It Can Write and If It's Live	NEWS	REJECT						
+p024	https://linkedin.com/posts/delibero_youll-hear-we-have-an-mcp-server-in-a-activity-7516121833591603200-7qMp	RESOURCE_CANDIDATE	MCP Server: Ask What It Can Write and If It's Live	NEWS	KEEP	ARTICLE	https://linkedin.com/posts/delibero_youll-hear-we-have-an-mcp-server-in-a-activity-7516121833591603200-7qMp	MCP Server: Ask What It Can Write and If It's Live			
 p025	https://runthisllm.com	RESOURCE_CANDIDATE	RunThisLLM	PRODUCT	KEEP	PRODUCT	https://runthisllm.com	RunThisLLM			
 p026	https://github.com/princeton-nlp/tree-of-thought-llm	RESOURCE_CANDIDATE	princeton-nlp/tree-of-thought-llm	PROMPT	KEEP	PROMPT	https://github.com/princeton-nlp/tree-of-thought-llm	tree-of-thoughts-llm			
 p027	https://github.com/kubesphere/kubesphere	RESOURCE_CANDIDATE	kubesphere/kubesphere	SKILL	REJECT						
@@ -49,7 +49,7 @@ p047	https://github.com/ntegrals/openbrowser	RESOURCE_CANDIDATE	ntegrals/openbro
 p048	https://medium.com/@thehumanmode/how-to-summarize-long-pdfs-and-find-key-information-with-ai-f16cb6c090fd	RESOURCE_CANDIDATE	Medium	ARTICLE	KEEP	ARTICLE	https://medium.com/@thehumanmode/how-to-summarize-long-pdfs-and-find-key-information-with-ai-f16cb6c090fd				
 p049	https://github.com/akshayykadam/pixelboard	RESOURCE_CANDIDATE	Akshayykadam/PixelBoard	LIBRARY	REJECT						
 p050	https://github.com/spiculedata/saiku	RESOURCE_CANDIDATE	spiculedata/saiku	MCP_SERVER	KEEP	MCP_SERVER	https://github.com/spiculedata/saiku	spiculedata/saiku	Apache-2.0		true
-p051	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	RESOURCE_CANDIDATE	Running an AI Hackathon: Step 1, Engaging Users	NEWS	REJECT						
+p051	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	RESOURCE_CANDIDATE	Running an AI Hackathon: Step 1, Engaging Users	NEWS	KEEP	ARTICLE	https://linkedin.com/posts/arjunlagisetty_edu26-ai-highered-activity-7517222898369990656-q4wC	Running an AI Hackathon: Step 1, Engaging Users			
 p052	https://multica.ai	RESOURCE_CANDIDATE	Multica	PRODUCT	KEEP	PRODUCT	https://multica.ai	Multica			
 p053	https://github.com/anthropics/prompt-eng-interactive-tutorial	RESOURCE_CANDIDATE	anthropics/prompt-eng-interactive-tutorial	PROMPT	KEEP	COURSE	https://github.com/anthropics/prompt-eng-interactive-tutorial	anthropics/prompt-eng-interactive-tutorial			
 p054	https://github.com/oracle/skills	RESOURCE_CANDIDATE	oracle/skills	SKILL	KEEP	SKILL	https://github.com/oracle/skills	oracle/skills	UPL-1.0		true
