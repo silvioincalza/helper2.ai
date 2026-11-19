@@ -42,7 +42,6 @@ public final class TestPolicies {
     return circuitOpen(LlmPolicies.CHAT);
   }
 
-  /** The first policy's circuit is open; every other named policy exists and is closed. */
   public static Resilience circuitOpen(String policy, String... closed) {
     CircuitBreakerRegistry circuits = CircuitBreakerRegistry.ofDefaults();
     circuits.circuitBreaker(policy).transitionToForcedOpenState();

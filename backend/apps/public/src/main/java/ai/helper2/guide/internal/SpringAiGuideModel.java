@@ -578,17 +578,8 @@ class SpringAiGuideModel implements GuideModel {
 
   static final int VERIFY_MAX_TOKENS = 4096;
 
-  /**
-   * One guide model, the model name the provider knows it by and the calls of its own circuit
-   * breaker: the fast model and the reasoning model fail apart, so an outage of one does not refuse
-   * the calls of the other.
-   */
   private record ModelRoute(String model, BudgetedChat calls) {}
 
-  /**
-   * The step whose failure costs the whole AI answer: without a plan the guide answers with plain
-   * search results only. Its call is repeated once after a short provider outage.
-   */
   private static boolean repeatsAfterAnOutage(ModelStep step) {
     return step == ModelStep.PLAN;
   }
