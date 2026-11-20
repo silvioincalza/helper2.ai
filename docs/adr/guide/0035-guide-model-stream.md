@@ -129,7 +129,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
   tests and the staging comparison double. The progress events would appear for some steps only. Rejected; one
   setting for every step is simpler to reason about and to roll back.
 - **Keep blocking.** No new code. The page stays silent for up to 30 s, and a thinking call that runs long fails
-  the step. Kept as `OFF`, the default, until the staging comparison is done.
+  the step. Kept as `OFF`, the default of the chart and of every environment but prod.
 - **Show the partial answer text while it arrives.** Faster to read, but it is unchecked AI text on the page: it
   breaks the evidence gate of [0031](0031-guide-pipeline.md) and needs Art. 50 marking of text that may be
   withdrawn a second later. Rejected.
@@ -225,7 +225,7 @@ What changes against [0031](0031-guide-pipeline.md) and [0008](../foundation/000
 | 9 | Guardrails | Covered: the whole answer goes through the converter, the evidence gate and the reason check; no partial text is shown. |
 | 10 | Observability | Covered: `helper2.llm.call` around the whole stream, `helper2.llm.tokens_unknown`, `thinking_fallback{reason}`; Spring AI's chat model observation still runs. Gap, deferred: no timer for the first chunk. |
 | 11 | Evaluation | Covered: the guide eval runs against either mode; the wire tests run in both. A staging run `ON` against `OFF` is open ([#279](https://github.com/silvioincalza/helper2.ai/issues/279)). |
-| 12 | Deployment | Covered: one variable, Helm value `app.guideModelStream`, default `OFF`; rollback is `OFF`. |
+| 12 | Deployment | Covered: one variable, Helm value `app.guideModelStream`, default `OFF`, `ON` in `values-prod.yaml`; rollback is `OFF`. |
 | 13 | Security & Identity | Covered: same key, no new secret. |
 | 14 | Human-in-the-Loop | Covered: unchanged; the progress line tells the person what the system does. |
 | 15 | Cost & Reliability | Covered: one budget unit per call in both modes; a stopped stream stops the provider's work; the circuit sees mid-stream failures. |
