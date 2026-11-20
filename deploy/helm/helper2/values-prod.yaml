@@ -7,6 +7,8 @@ postgres:
 redis:
   storageClassName: local-path
 embedder:
+  enabled: true
+  clientNamespaces: [helper2-staging]
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/embedder
 networkPolicy:

@@ -67,9 +67,12 @@ cluster: KUBERNETES {
       shape: page
       class: config
     }
+    embedder: "helper2-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\n:8080 /v1/embeddings (ClusterIP, no Ingress)\nin: the two apps of prod and of staging · no egress" {class: ai}
     migrate: "helper2-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
 
     app -> postgres: "JDBC :5432\n(data + shedlock locks)"
+    app -> embedder: "query embeddings :8080" {class: ai-call}
+    bo -> embedder: "indexer, every 1 s" {class: ai-call}
     app -> redis: ":6379 AUTH"
     bo -> postgres: "JDBC :5432"
     bo -> redis: ":6379 AUTH\n(own session namespace)"
@@ -102,7 +105,7 @@ cluster: KUBERNETES {
 
   staging: "ns helper2-staging" {
     class: group
-    note: "Same chart and policies\n1 web pod, 1 public pod,\n1 back office pod (no PDB)\nScout off · no backup\nstaging host\nhelper2-embedder · 1 pod: the embedding\nmodel, in the namespace only (ADR 0054)" {class: app}
+    note: "Same chart and policies\n1 web pod, 1 public pod,\n1 back office pod (no PDB)\nScout off · no backup\nstaging host · no embedder of its own:\nits apps call prod's (ADR 0054)" {class: app}
   }
 
   observability: "ns observability" {
@@ -119,6 +122,7 @@ cluster: KUBERNETES {
   ingress.nginx -> prod.web: ":8080 (files: /assets/, /theme.js,\n/favicon.svg, /favicon.ico; else 404)" {class: hot}
   ingress.nginx -> prod.bo: ":8080 (admin hosts)"
   ingress.nginx -> staging.note: ":8080"
+  staging.note -> prod.embedder: "embeddings :8080\n(staging's two apps only)" {class: ai-call}
   ingress.nginx -> prod.canary.capp: "header + token only:\n/ (smoke test of a release)"
   ingress.nginx -> prod.canary.cweb: "header + token only:\n/assets/"
   observability.alloy -> prod.app: "scrape :8081" {class: config}
@@ -141,7 +145,6 @@ monitoring: MONITORING {
 egress: "INTERNET · app egress TCP 443 only (private ranges excluded)" {
   class: group
   nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
-  nvidia: "NVIDIA API catalog\nembeddings" {class: ai}
   sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nTavily · MCP Registry" {class: ext}
 }
 
@@ -172,7 +175,6 @@ delivery.workstation -> cluster.ingress.nginx: "admin hosts, DNS-only\n(VPN only
 cluster.observability.alloy -> monitoring.prometheus: "remote write"
 cluster.observability.alloy -> monitoring.tempo: "traces"
 cluster.prod.app -> egress.nebius: "chat completions" {class: ai-call}
-cluster.prod.app -> egress.nvidia: "/embeddings" {class: ai-call}
 cluster.prod.app -> egress.sources: "search"
 cluster.prod.bo -> egress.sources: "Scout + admin search"
 cluster.prod.bo -> egress.nebius: "enrichment" {class: ai-call}

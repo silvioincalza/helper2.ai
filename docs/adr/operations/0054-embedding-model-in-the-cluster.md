@@ -16,19 +16,25 @@ query per search that is not in the 7-day query vector cache.
 
 ## Decision
 
-1. **One more deployable, `helper2-embedder`**, in the Helm chart (`templates/embedder.yaml`), off by default
-   (`embedder.enabled`). It is one pod that holds the model in memory and answers `POST /v1/embeddings` with the body
-   NVIDIA's endpoint takes: `model`, `input`, `input_type` (`query` or `passage`), `dimensions`. The application's
-   client (`NvidiaEmbedder`) does not change.
-2. **Inside the namespace only.** A ClusterIP Service on port 8080, no Ingress. The network policy
-   `ingress-embedder` lets in the public app and the back office, nothing else, and the embedder has no way out: the
-   default egress policy denies everything and no policy opens one for it. It needs none, since the weights are in
-   the image. `make chart-check` fails a render that exposes it.
-3. **The chart points the apps at it.** With `embedder.enabled`, the public app and the back office get
-   `H2_NVIDIA_EMBEDDING_BASE_URL=http://helper2-embedder:8080/v1`, `H2_NVIDIA_EMBEDDING_MODEL` and
-   `H2_NVIDIA_API_KEY=in-cluster`, which override the values of the env Secret. The key only switches vector search
-   on ([0024](../search/0024-vector-search.md) §3): the embedder reads no credential, the network policy is what
-   keeps others out.
+1. **One pod for production and staging.** `helper2-embedder` is one more deployable of the Helm chart
+   (`templates/embedder.yaml`). The production release runs it (`embedder.enabled`), and staging runs none: its
+   apps call production's (`embedder.url`, `embedder.namespace`). No release calls NVIDIA's hosted endpoint.
+   The pod holds the model in memory and answers `POST /v1/embeddings` with the body NVIDIA's endpoint takes:
+   `model`, `input`, `input_type` (`query` or `passage`), `dimensions`. The application's client
+   (`NvidiaEmbedder`) does not change.
+2. **Inside the cluster only.** A ClusterIP Service on port 8080, no Ingress. The network policy
+   `ingress-embedder` lets in the public app and the back office of its own namespace and of the namespaces in
+   `embedder.clientNamespaces` (staging, and a canary there), nothing else. The embedder has no way out: the default egress policy
+   denies everything and no policy opens one for it. It needs none, since the weights are in the image. Staging's
+   apps are let out to the embedder pods of production's namespace and to nothing else there. `embedder.url` must be
+   the embedder Service of `embedder.namespace`: any other address fails the render. `make chart-check` fails a
+   render that exposes the embedder or lets another caller in.
+3. **The chart points the apps at it.** A release that runs or calls the embedder sets, on the public app and the
+   back office, `H2_NVIDIA_EMBEDDING_BASE_URL`, `H2_NVIDIA_EMBEDDING_MODEL`, `H2_NVIDIA_API_KEY=in-cluster` and
+   `H2_EMBEDDING_EVERY` (`embedder.indexEvery`, 1 s), which override the values of the env Secret. The key only
+   switches vector search on ([0024](../search/0024-vector-search.md) §3): the embedder reads no credential, the
+   network policy is what keeps others out. The indexer embeds one text a second: no outside rate limit holds it
+   back, and the embedder takes one call at a time.
 4. **The server** (`deploy/embedder/`): Python, Sentence Transformers on PyTorch for CPU, the standard library's HTTP
    server. `embedding_api.py` reads and checks the call and shapes the answer, with no model in it, so its tests run
    without the weights; `server.py` loads the model and serves.
@@ -51,8 +57,8 @@ query per search that is not in the 7-day query vector cache.
    new tag fails (`ci.yml`, job `embedder`), which also runs the API tests.
 7. **Size.** `embedder.threads` 2, requests 1 CPU and 6 Gi, limit 8 Gi, one replica, up to 300 s to start
    (`embedder.startupSeconds`). `embedder.nodeSelector` places it when a node must be avoided.
-8. **Staging first.** `values-staging.yaml` turns it on. Production keeps calling NVIDIA's endpoint until the checks
-   under Known limits are done.
+8. **One rollout.** The embedder is rolled out with the production release. Staging gets a new embedder when
+   production does.
 
 ### Code
 
@@ -76,6 +82,10 @@ query per search that is not in the 7-day query vector cache.
   a load that one CPU pod carries.
 - **vLLM on CPU.** Its `/v2/embed` applies the prefix, but the model card pins it to one vLLM version and names
   GPUs only, and it is a much larger server than two routes need.
+- **One embedder per environment.** Staging would try a new embedder before production, but each pod holds
+  6 Gi for a model that is idle most of the time.
+- **The shared embedder in its own namespace, as its own release.** Production and staging would depend on it
+  alike, and it would roll out apart from both. It needs a namespace, deployer rights and a deploy step of its own.
 - **Weights on a volume, downloaded when the pod starts.** A smaller image, but a start that depends on Hugging
   Face, an egress rule for it, and weights that no signature covers.
 - **A web framework (FastAPI, uvicorn) for the server.** More packages to pin and scan for two routes and one call
@@ -84,10 +94,13 @@ query per search that is not in the 7-day query vector cache.
 ## Consequences
 
 - No embedding call leaves the cluster: search queries and catalog text stay in it, and NVIDIA's hosted endpoint
-  is no longer in the path.
+  is no longer in the path. The Privacy page says so.
 - Vector search no longer depends on an outside provider's capacity or rate limit. It depends on one pod: while it
   restarts, searches lose the results by meaning and keep the keyword ones ([0024](../search/0024-vector-search.md)),
   and the indexer waits.
+- Staging depends on production's namespace for its embeddings, and shares the pod with it: a staging indexer
+  that embeds a full catalog waits in the same line as production's search queries.
+- A new embedder image reaches production without a run on staging first.
 - The model id stays `nvidia/nemotron-3.5-embed-1b`, so the stored vectors keep their model and nothing is embedded
   again.
 - The image holds the weights and PyTorch, several gigabytes: the first build and the first pull on a node are
@@ -103,11 +116,11 @@ query per search that is not in the 7-day query vector cache.
 - A text is cut at 1,024 tokens, where NVIDIA's endpoint cuts at 10,240. A longer description is embedded by its
   beginning.
 - The vectors stored from NVIDIA's endpoint and the ones this server makes are not compared yet. The model card
-  says the weights are the same model; a difference would mix two spaces under one model id. Compare a sample
-  before production turns the embedder on, and set a new model id if they differ.
-- One replica and one call at a time: a burst of new queries waits in line, each within its 3 s.
-- The Privacy page names NVIDIA as the receiver of search queries. It changes in the change that turns the embedder
-  on in production.
+  says the weights are the same model; a difference would mix two spaces under one model id. Compare a sample, and
+  set a new model id if they differ.
+- The pod has not run on the cluster yet: its start time, its memory and its latency there are not measured.
+- One replica and one call at a time: a burst of new queries waits in line behind the indexers of both
+  environments, each query within its 3 s.
 
 ## Diagrams
 
