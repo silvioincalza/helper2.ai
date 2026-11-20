@@ -7,7 +7,7 @@
 
 direction: down
 
-call: "POST /v1/embeddings\n(public app or back office,\nnetwork policy ingress-embedder)" {class: end}
+call: "POST /v1/embeddings\n(public app or back office of\nproduction or staging; nobody else\npasses ingress-embedder)" {class: end}
 size: "Content-Length given,\nat most 4 MB?" {class: decision}
 toolarge: "411 or 413,\nbody not read" {class: fail}
 valid: "JSON object, the served model,\n1 to 32 texts that are not empty,\ninput_type query or passage,\ndimensions 128 to 2048?" {class: decision}

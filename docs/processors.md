@@ -18,7 +18,6 @@ the Swiss-U.S. Data Privacy Framework and the UK Extension, each `Active`.
 | Google (deps.dev) | Public repository names, and the public package names the research assistant looks up, from our server | "Google LLC", Mountain View: all three | certified, all three | yes |
 | Google (Analytics, AdSense, the consent tool) | What the browser sends, after consent where the rules ask for it | same entry | certified, Swiss-US and EU-US | yes |
 | Google (BigQuery, `pypi`) | A fixed query; nothing about a visitor | same entry | named; no personal data goes | yes |
-| The AI service for search by meaning (NVIDIA) | Search text, the guide's searches, public text about resources | "NVIDIA Corporation", Santa Clara: all three | certified, all three | yes |
 | Stripe | A gift by card, on Stripe's own page. The contract is with Stripe Payments Europe, Limited (Ireland) | "Stripe, LLC", South San Francisco: all three, certified 11 May 2026, next due 11 May 2027 | certified, Swiss-US and EU-US | yes |
 | Hugging Face | Search words | not on the list | not certified; Art. 17(1)(b) FADP, Art. 49(1)(b) GDPR | yes |
 | npm | Search words | "npm" is not on the list, and GitHub's entry names no other covered entity | not certified; same basis | yes |

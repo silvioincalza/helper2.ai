@@ -1,6 +1,7 @@
 # Infrastructure, the workloads: what runs in the namespace helper2-prod, how each workload is sized and
 # rolled out, which ports it serves, and what the per-workload network policies let it accept and reach
-# (ingress and egress are denied by default; ADR 0043). The last box says what differs on staging.
+# (ingress and egress are denied by default; ADR 0043), the one embedder that production and staging share
+# (ADR 0054), and what differs on staging.
 # Not here: passwords (infrastructure-secrets.d2), images and the canary (infrastructure-delivery.d2),
 # backups and monitoring (infrastructure-data.d2).
 # Source of truth: deploy/helm/helper2/values.yaml, values-prod.yaml, values-staging.yaml,
@@ -45,24 +46,24 @@ prod: "ns helper2-prod · ingress + egress default-deny · one policy per worklo
     }
   }
 
+  embedder: "helper2-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\nrequests 1 CPU, 6Gi · limit 8Gi · read-only root, user 10001\n:8080 /v1/embeddings (Service helper2-embedder, ClusterIP)\nin: the public app and the back office of prod,\nand of staging with its canary · no egress, no Ingress" {class: ai}
+
   migrate: "helper2-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
 
   front.java -> stores.postgres: "JDBC :5432\n(the public app: data + shedlock locks)"
   front.java -> stores.redis: ":6379\n(the back office: own session namespace)"
   migrate -> stores.postgres: "JDBC :5432"
+  front.java -> embedder: "embeddings :8080\n(queries; the indexer every 1 s)" {class: ai-call}
 }
 
 staging: "ns helper2-staging · what differs from prod" {
   class: group
-  sizes: "1 web pod, 1 public pod, 1 back office pod\nno disruption budget · no backup\nstaging host, noindex" {class: app}
-  embedder: "helper2-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\nrequests 1 CPU, 6Gi · limit 8Gi · read-only root, user 10001\n:8080 /v1/embeddings (Service helper2-embedder, ClusterIP)\nin: the public app and the back office only · no egress, no Ingress" {class: ai}
-  sizes -> embedder: "embeddings :8080\n(instead of NVIDIA's endpoint)" {class: ai-call}
+  sizes: "1 web pod, 1 public pod, 1 back office pod\nno disruption budget · no backup\nstaging host, noindex\nno embedder of its own" {class: app}
 }
 
 outside: "INTERNET · app egress TCP 443 only (private ranges excluded)" {
   class: group
   nebius: "Nebius Token Factory · NVIDIA Nemotron\nthe public app: chat completions\nthe back office: enrichment" {class: ai}
-  nvidia: "NVIDIA API catalog · /embeddings\nthe public app: queries\nthe back office: the indexer" {class: ai}
   sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nTavily · MCP Registry\nthe public app: search\nthe back office: Scout + admin search" {class: ext}
 }
 
@@ -70,4 +71,5 @@ nginx -> prod.front.web: ":8080 (files: /assets/, /theme.js,\n/favicon.svg, /fav
 nginx -> prod.front.java.app: ":8080\n(only allowed caller)" {class: hot}
 nginx -> prod.front.java.bo: ":8080 (admin hosts)"
 nginx -> staging.sizes: ":8080"
+staging.sizes -> prod.embedder: "embeddings :8080\n(staging's apps only)" {class: ai-call}
 prod.front.java -> outside: "TCP 443" {class: ai-call}

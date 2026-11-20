@@ -59,11 +59,39 @@ H2_REDIS_{{ trimPrefix "h2_" . | upper }}_PASSWORD
 {{- end }}
 {{- end }}
 
+{{- define "helper2.embedderUrl" -}}
+{{- with .Values.embedder -}}
+{{- if and .enabled .url }}{{ fail "embedder.enabled runs the embedder in this release and embedder.url calls one of another release: set one" }}{{ end -}}
+{{- if .url -}}
+{{- if not (regexMatch "^http://helper2-embedder\\.[a-z0-9-]+\\.svc:8080/v1$" .url) }}{{ fail "embedder.url must be http://helper2-embedder.<namespace>.svc:8080/v1" }}{{ end -}}
+{{- if ne .url (printf "http://helper2-embedder.%s.svc:8080/v1" (required "embedder.namespace is required with embedder.url" .namespace)) }}{{ fail "embedder.url must name embedder.namespace" }}{{ end -}}
+{{ .url }}
+{{- else if .enabled -}}
+http://helper2-embedder:8080/v1
+{{- end -}}
+{{- end -}}
+{{- end }}
+
 {{- define "helper2.embedderEnv" -}}
-{{- if .Values.embedder.enabled }}
-- { name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1" }
-- { name: H2_NVIDIA_EMBEDDING_MODEL, value: {{ required "embedder.model" .Values.embedder.model | quote }} }
+{{- with include "helper2.embedderUrl" . }}
+- { name: H2_NVIDIA_EMBEDDING_BASE_URL, value: {{ . | quote }} }
+- { name: H2_NVIDIA_EMBEDDING_MODEL, value: {{ required "embedder.model" $.Values.embedder.model | quote }} }
 - { name: H2_NVIDIA_API_KEY, value: in-cluster }
+- { name: H2_EMBEDDING_EVERY, value: {{ required "embedder.indexEvery" $.Values.embedder.indexEvery | quote }} }
+{{- end }}
+{{- end }}
+
+{{- define "helper2.embedderEgress" -}}
+{{- with .Values.embedder }}
+{{- if .enabled }}
+- to: [{ podSelector: { matchLabels: { app: helper2-embedder } } }]
+  ports: [{ port: 8080, protocol: TCP }]
+{{- else if .url }}
+- to:
+    - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .namespace }} } }
+      podSelector: { matchLabels: { app: helper2-embedder } }
+  ports: [{ port: 8080, protocol: TCP }]
+{{- end }}
 {{- end }}
 {{- end }}
 

@@ -1,12 +1,14 @@
-# Runtime infrastructure of the hosted helper2 on Kubernetes, the overview: how a visitor's request gets in,
-# the three applications, their two stores, and what they call outside. One line per relation, no ports,
-# no secrets, no policies. The detail is in four views, each about one question:
+# Runtime infrastructure of the hosted helper2 on Kubernetes, the full picture in zones: how a request gets in,
+# what runs in production's namespace (the applications, the one embedder, the stores, the jobs), staging beside
+# it, what the applications call outside, how an image is delivered, and where backups, metrics and traces go.
+# One line per relation, between zones where it can be. Ports, sizes, secrets and policies are in four views:
 #   infrastructure-workloads.d2 (what runs in the namespace and what each may reach),
 #   infrastructure-secrets.d2 (who holds which password),
 #   infrastructure-delivery.d2 (how an image gets to the cluster, and the canary of a release),
 #   infrastructure-data.d2 (backups and monitoring).
-# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), the platform repo outside this repo
-#   (DNS, tunnel, ingress-nginx, the Ingresses helper2-public and helper2-admin).
+# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), deploy/k8s/Makefile,
+#   .github/workflows/cd.yml, deploy.yml, the platform repo outside this repo (DNS, tunnel, ingress-nginx,
+#   the Ingresses helper2-public and helper2-admin).
 # Render: cd docs/diagrams && d2 fmt infrastructure.d2 && d2 infrastructure.d2 infrastructure.svg
 
 ...@style
@@ -19,60 +21,107 @@ vars: {
 
 direction: right
 
-visitor: Visitor {class: person}
-owner: "Owner\n(VPN only)" {class: person}
+people: PEOPLE {
+  class: group
+  visitor: Visitor {class: person}
+  owner: "Owner\n(VPN only)" {class: person}
+}
 
 edge: "CLOUDFLARE EDGE" {
   class: group
   cloudflare: "Proxied DNS + TLS,\nplatform tunnel" {class: ext}
 }
 
-cluster: "KUBERNETES · ns helper2-prod (helper2-staging: the same chart, smaller)" {
+cluster: KUBERNETES {
   class: group
-  direction: right
 
   nginx: "ingress-nginx\n(its own namespace)" {class: app}
 
-  apps: APPLICATIONS {
+  prod: "ns helper2-prod · ingress + egress denied by default" {
     class: group
-    web: "helper2-web · 2 pods\nthe web app's files" {class: app}
-    java: "the two Java applications" {
+
+    apps: APPLICATIONS {
       class: group
-      app: "helper2 · 3 pods\npublic site and API" {class: app}
-      bo: "helper2-backoffice · 1 pod\nadmin, Scout, catalog jobs" {class: app}
+      web: "helper2-web · 2 pods\nthe web app's files" {class: app}
+      java: "call the stores, the embedder and the outside" {
+        class: group
+        app: "helper2 · 3 pods\npublic site and API" {class: app}
+        bo: "helper2-backoffice · 1 pod\nadmin, Scout, catalog jobs,\nembedding indexer" {class: app}
+      }
     }
-    embedder: "helper2-embedder · 1 pod\nembedding model, staging only\n(ADR 0054)" {class: ai}
-    java -> embedder: "embeddings\n(staging)" {class: ai-call}
+
+    embedder: "helper2-embedder · 1 pod\nNVIDIA embedding model on CPU\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
+
+    stores: STORES {
+      class: group
+      postgres: "PostgreSQL 18\n+ pgvector" {
+        shape: cylinder
+        class: data
+      }
+      redis: "Redis 8\ncache, sessions,\nrate limits" {
+        shape: cylinder
+        class: data
+      }
+    }
+
+    jobs: JOBS {
+      class: group
+      migrate: "migrate Job\nonce per release" {class: app}
+      backup: "pg-backup, nightly\npg-restore-check, weekly" {class: app}
+    }
+
+    apps.java -> embedder: "embeddings\nqueries; the indexer every 1 s" {class: ai-call}
+    apps.java -> stores: "each with its own\nrole and user"
+    jobs -> stores.postgres: "as the owner"
   }
 
-  stores: STORES {
+  staging: "ns helper2-staging" {
     class: group
-    postgres: "PostgreSQL 18\n+ pgvector" {
-      shape: cylinder
-      class: data
-    }
-    redis: "Redis 8\ncache, sessions,\nrate limits" {
-      shape: cylinder
-      class: data
-    }
+    all: "the same chart, 1 pod each\nno embedder, no backup" {class: app}
   }
 
-  nginx -> apps.web: files {class: hot}
-  nginx -> apps.java.app: "site + API" {class: hot}
-  nginx -> apps.java.bo: "admin hosts"
-  apps.java -> stores: "each with its own\nrole and user"
+  nginx -> prod.apps.web: files {class: hot}
+  nginx -> prod.apps.java.app: "site + API" {class: hot}
+  nginx -> prod.apps.java.bo: "admin hosts"
+  nginx -> staging.all: "staging host"
+  staging.all -> prod.embedder: "embeddings\n(staging's apps only)" {class: ai-call}
 }
 
 outside: "INTERNET · TCP 443 only" {
   class: group
-  grid-columns: 1
-  grid-gap: 24
   nebius: "Nebius Token Factory\nNVIDIA Nemotron\n(guide, enrichment)" {class: ai}
-  nvidia: "NVIDIA API catalog\nembeddings (production)" {class: ai}
   sources: "Public sources · search, Scout\nGitHub · Hugging Face · npm\narXiv · Tavily · MCP Registry" {class: ext}
+  r2: "Cloudflare R2, EU\nencrypted backup copy" {class: ext}
 }
 
-visitor -> edge.cloudflare: HTTPS {class: hot}
+monitoring: MONITORING {
+  class: group
+  stack: "Alloy → Prometheus · Tempo\nGrafana dashboards" {class: data}
+}
+
+delivery: "DELIVERY (private network)" {
+  class: group
+  github: "GitHub Actions\ncd.yml, deploy.yml" {class: ext}
+  runner: "Self-hosted runner\none job, no credentials" {class: app}
+  openbao: "OpenBao\nsecrets, signing key" {
+    shape: cylinder
+    class: data
+  }
+  harbor: "Harbor registry\nsigned images" {
+    shape: cylinder
+    class: data
+  }
+  github -> runner: job
+  runner -> openbao: "login, sign"
+  runner -> harbor: "push, check\nsignatures"
+}
+
+people.visitor -> edge.cloudflare: HTTPS {class: hot}
 edge.cloudflare -> cluster.nginx: "public hosts" {class: hot}
-owner -> cluster.nginx: "admin hosts"
-cluster.apps.java -> outside: "model calls\nand searches" {class: ai-call}
+people.owner -> cluster.nginx: "admin hosts"
+cluster.prod.apps.java -> outside.nebius: "model calls" {class: ai-call}
+cluster.prod.apps.java -> outside.sources: "searches"
+cluster.prod.jobs.backup -> outside.r2: "off-site copy"
+cluster.prod.apps.java -> monitoring.stack: "metrics and traces,\nthrough Alloy"
+delivery.runner -> cluster.prod: "helm upgrade,\nimages by digest" {class: config}
+delivery.harbor -> cluster.prod: "image pull" {class: config}
