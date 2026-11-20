@@ -90,6 +90,10 @@ web:
 
 embedder:
   enabled: false
+  clientNamespaces: []
+  url: ""
+  namespace: ""
+  indexEvery: PT1S
   image:
     repository: ""
     tag: nemotron-3.5-embed-1b-1

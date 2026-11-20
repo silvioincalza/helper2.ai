@@ -252,7 +252,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		out=$$("$${c[@]}" --set canary.token=$$tok); \
 		kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)' <<< "$$out"; \
 		names=$$(awk '/^kind:/ {k=$$2} /^  name:/ {print k "/" $$2}' <<< "$$out" | sort | xargs); \
-		if grep -q 'H2_NVIDIA_EMBEDDING_BASE_URL' <<< "$$out"; then \
+		if grep -qF 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1"' <<< "$$out"; then \
 			grep -q 'NetworkPolicy/canary-ingress-embedder ' <<< "$$names" || { echo "$$e canary: it calls the embedder, so the embedder must let it in"; exit 1; }; \
 			names=$${names/NetworkPolicy\/canary-ingress-embedder /}; \
 		fi; \
@@ -304,19 +304,34 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		--set embedder.enabled=true --set embedder.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice|-web)?:' | sort -u); \
 	test -n "$$imgs" || { echo "no images rendered"; exit 1; }; \
 	if grep -v '@sha256:[0-9a-f]\{64\}' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
-	echo "== the embedder (ADR 0054) is reached only inside the namespace: a ClusterIP Service, no Ingress, only the two apps let in, and the apps call it only when it is on"; \
-	on=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set embedder.enabled=true); \
-	emb=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set embedder.enabled=true --show-only templates/embedder.yaml); \
+	echo "== the embedder (ADR 0054): one pod, in prod's namespace, a ClusterIP Service, no Ingress; in come prod's two apps and staging's two apps, nothing else; staging runs none and calls prod's"; \
+	t=(helm template helper2 $(CHART) --set image.tag=000000000000); \
+	on=$$("$${t[@]}" -n helper2-prod -f $(CHART)/values-prod.yaml); \
+	emb=$$("$${t[@]}" -n helper2-prod -f $(CHART)/values-prod.yaml --show-only templates/embedder.yaml); \
 	if grep -qE '^  type: |nodePort|hostPort|hostNetwork|externalIPs' <<< "$$emb"; then echo "the embedder Service must be a plain ClusterIP"; exit 1; fi; \
 	if awk '/^kind: Ingress$$/ {p=1} /^---$$/ {p=0} p' <<< "$$on" | grep -q embedder; then echo "an Ingress names the embedder"; exit 1; fi; \
-	[ "$$(awk '/^  name: ingress-embedder$$/ {p=1} p' <<< "$$emb" | grep -c 'podSelector: { matchLabels: { app: helper2\(-backoffice\)\? } }')" -eq 2 ] \
-		&& ! awk '/^  name: ingress-embedder$$/ {p=1} p' <<< "$$emb" | grep -qE 'namespaceSelector|ipBlock' \
-		|| { echo "ingress-embedder must let in the public app and the back office, nothing else"; exit 1; }; \
+	pol=$$(awk '/^  name: ingress-embedder$$/ {p=1} p' <<< "$$emb"); \
+	[ "$$(grep -c 'podSelector: { matchLabels: { app: helper2\(-backoffice\)\? } }' <<< "$$pol")" -eq 2 ] \
+		&& [ "$$(grep -c 'namespaceSelector' <<< "$$pol")" -eq 1 ] \
+		&& grep -qF 'namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: helper2-staging } }' <<< "$$pol" \
+		&& grep -qF 'podSelector: { matchExpressions: [{ key: app, operator: In, values: [helper2, helper2-backoffice, helper2-canary] }] }' <<< "$$pol" \
+		&& ! grep -q 'ipBlock' <<< "$$pol" \
+		|| { echo "ingress-embedder must let in prod's two apps, and staging's two apps and its canary, nothing else"; exit 1; }; \
 	grep -q 'readOnlyRootFilesystem: true' <<< "$$emb" || { echo "the embedder must run on a read-only root filesystem"; exit 1; }; \
 	[ "$$(grep -c 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1"' <<< "$$on")" -eq 2 ] \
-		|| { echo "with the embedder on, the public app and the back office must both call it"; exit 1; }; \
-	off=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set embedder.enabled=false); \
-	if grep -qE 'helper2-embedder|H2_NVIDIA_' <<< "$$off"; then echo "with the embedder off, nothing of it may be rendered"; exit 1; fi; \
+		&& [ "$$(grep -c 'name: H2_EMBEDDING_EVERY, value: "PT1S"' <<< "$$on")" -eq 2 ] \
+		|| { echo "prod's public app and back office must both call the embedder, the indexer every second"; exit 1; }; \
+	stg=$$("$${t[@]}" -n helper2-staging -f $(CHART)/values-staging.yaml); \
+	if grep -qE '^  name: (helper2-embedder|ingress-embedder)$$' <<< "$$stg"; then echo "staging must not run an embedder of its own"; exit 1; fi; \
+	[ "$$(grep -c 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder.helper2-prod.svc:8080/v1"' <<< "$$stg")" -eq 2 ] \
+		|| { echo "staging's public app and back office must both call prod's embedder"; exit 1; }; \
+	awk '/^  name: egress-app$$/ {p=1} /^---$$/ {p=0} p' <<< "$$stg" | grep -A1 -F 'namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: helper2-prod } }' \
+		| grep -qF 'podSelector: { matchLabels: { app: helper2-embedder } }' \
+		|| { echo "staging's apps must be let out to the embedder pods of helper2-prod, and to nothing else there"; exit 1; }; \
+	if "$${t[@]}" -f $(CHART)/values-prod.yaml --set embedder.url=http://helper2-embedder.x.svc:8080/v1 --set embedder.namespace=x >/dev/null 2>&1; then echo "embedder.enabled with embedder.url must fail the render"; exit 1; fi; \
+	if "$${t[@]}" -f $(CHART)/values-staging.yaml --set embedder.url=http://example.org/v1 >/dev/null 2>&1; then echo "an embedder.url outside the cluster must fail the render"; exit 1; fi; \
+	off=$$("$${t[@]}" -f $(CHART)/values-prod.yaml --set embedder.enabled=false); \
+	if grep -qE 'helper2-embedder|H2_NVIDIA_|H2_EMBEDDING_EVERY' <<< "$$off"; then echo "with no embedder, nothing of it may be rendered"; exit 1; fi; \
 	echo "== Redis' memory limit is at least 3.5 times maxmemory (ADR 0005: an AOF rewrite forks and fills the page cache)"; \
 	for e in staging prod; do \
 		rd=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --show-only templates/redis.yaml); \

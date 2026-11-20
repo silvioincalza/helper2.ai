@@ -1,5 +1,5 @@
 # Architecture, C4 level 2: containers. What is deployed and runs on its own: the two web apps in the browser,
-# the three deployables of the chart (ADR 0043), the migrate Job, the embedder (ADR 0054) and the two stores.
+# the three deployables of the chart (ADR 0043), the migrate Job, the one embedder of production and staging (ADR 0054) and the two stores.
 # The modules inside the two Java apps are in architecture-context.d2; the folders inside the web apps are in
 # architecture-frontend.d2; sizes, ports and network policies are in infrastructure-workloads.d2.
 # Source of truth: deploy/helm/helper2/templates/app.yaml, web.yaml, backoffice.yaml, embedder.yaml, migrate.yaml,
@@ -35,7 +35,7 @@ helper2: "helper2 · Helm release, one namespace (ADR 0043)" {
   public: "helper2 · public app\nSpring Boot 4.1 · Java 25 + Kotlin\nthe shell (index.html) and pages for crawlers,\n/api/v1 (public.yaml): search, guide, setup, identity" {class: app}
   bo: "helper2-backoffice\nSpring Boot 4.1 · Java 25 + Kotlin\n/api/v1/admin (admin.yaml), the admin web app,\nScout, catalog jobs, review research" {class: app}
   libs: "shared libraries, in both apps\nkernel · platform · schema · core\n(search, catalog, sources, examples, identity)" {class: config}
-  embedder: "helper2-embedder\nembedding model in the cluster,\non for staging (ADR 0054)" {class: ai}
+  embedder: "helper2-embedder · production's namespace\nNVIDIA embedding model on CPU,\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
   migrate: "helper2-migrate Job\nFlyway as the owner,\nonce per release" {class: app}
 
   pg: "PostgreSQL 18 + pgvector\nsystem of record:\ncatalog, full text, vectors,\nusers, queues, audit" {
@@ -54,14 +54,13 @@ helper2: "helper2 · Helm release, one namespace (ADR 0043)" {
   migrate -> pg: "migrations" {class: config}
   public -> redis: "its own Redis user"
   bo -> redis: "its own Redis user"
-  public -> embedder: "query embedding\n(staging)" {class: ai-call}
-  bo -> embedder: "resource embeddings\n(staging)" {class: ai-call}
+  public -> embedder: "query embedding" {class: ai-call}
+  bo -> embedder: "resource embeddings,\nthe indexer" {class: ai-call}
 }
 
 outside: "INTERNET · TCP 443 only" {
   class: group
   nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
-  nvapi: "NVIDIA API catalog\nembeddings (production)" {class: ai}
   sources: "Public sources\nGitHub · Hugging Face · npm\narXiv · Tavily · MCP Registry" {class: ext}
   oauth: "github.com OAuth" {class: ext}
 }
@@ -75,8 +74,6 @@ crawler -> helper2.public: "page head, sitemap.xml"
 
 helper2.public -> outside.nebius: "guide, setup,\ntranslation" {class: ai-call}
 helper2.bo -> outside.nebius: "enrichment,\nreview research" {class: ai-call}
-helper2.public -> outside.nvapi: "/embeddings" {class: ai-call}
-helper2.bo -> outside.nvapi: "/embeddings" {class: ai-call}
 helper2.public -> outside.sources: "live search,\nsetup guides"
 helper2.bo -> outside.sources: "Scout collectors"
 helper2.public -> outside.oauth: "sign-in" {class: config}

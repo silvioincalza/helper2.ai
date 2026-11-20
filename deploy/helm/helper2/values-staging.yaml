@@ -7,7 +7,8 @@ postgres:
 redis:
   storageClassName: local-path
 embedder:
-  enabled: true
+  url: http://helper2-embedder.helper2-prod.svc:8080/v1
+  namespace: helper2-prod
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/embedder
 networkPolicy:

@@ -54,8 +54,8 @@ Where the containers run.
 
 | Diagram | Shows |
 |---|---|
-| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes, the overview: how a visitor's request gets in, the three applications and the embedder, their two stores, and what they call outside. The detail is in the four views below. |
-| [infrastructure-workloads](infrastructure-workloads.svg) | What runs in the namespace: each workload's size, rollout and ports, the migrate Job, what the network policies let each accept and reach, and what differs on staging. |
+| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes, the full picture in zones: how a request gets in, production's applications, the one embedder that production and staging share, the stores and the jobs, what they call outside, the delivery, and where backups, metrics and traces go. Ports, sizes, secrets and policies are in the four views below. |
+| [infrastructure-workloads](infrastructure-workloads.svg) | What runs in the namespace: each workload's size, rollout and ports, the migrate Job, what the network policies let each accept and reach, the embedder that production and staging share, and what differs on staging. |
 | [infrastructure-secrets](infrastructure-secrets.svg) | The two Secrets, where their values come from, and which workload reads which key: each app's database role and Redis user, the owner's password, the monitors. |
 | [infrastructure-delivery](infrastructure-delivery.svg) | How an image gets from GitHub to the cluster through the runner, OpenBao and Harbor, and the canary that runs beside production during a release. |
 | [infrastructure-data](infrastructure-data.svg) | The prod backup with its off-site copy to Cloudflare R2 and the restore check, and Alloy -> Prometheus / Tempo -> Grafana for observability. |

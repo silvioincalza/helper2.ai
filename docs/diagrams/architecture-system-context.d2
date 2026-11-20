@@ -23,15 +23,14 @@ people: PEOPLE {
   admin: "Admin\nreviews the index\n(VPN, GitHub sign-in)" {class: person}
 }
 
-helper2: "helper2.ai\nmetasearch for the AI ecosystem:\none box, federated search,\nan AI guide that answers only\nfrom retrieved results" {
+helper2: "helper2.ai\nmetasearch for the AI ecosystem:\none box, federated search,\nan AI guide that answers only\nfrom retrieved results;\nits own embedding model (ADR 0054)" {
   class: app
   style.bold: true
 }
 
-models: "NVIDIA MODELS" {
+models: "NVIDIA MODELS, HOSTED" {
   class: group
   nebius: "Nebius Token Factory\nNemotron: guide, enrichment,\ntranslation, review research" {class: ai}
-  nvapi: "NVIDIA API catalog\nembeddings (production;\nstaging embeds in the cluster)" {class: ai}
 }
 
 sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily · deps.dev\nHacker News · news feeds" {class: ext}
@@ -51,7 +50,6 @@ people.admin -> helper2: "review, Scout runs,\nsettings"
 people.visitor -> thirdparty: "consent, ads,\nanalytics, gifts"
 
 helper2 -> models.nebius: "model calls" {class: ai-call}
-helper2 -> models.nvapi: "/embeddings" {class: ai-call}
 helper2 -> sources: "HTTPS: live search,\nScout, setup guides"
 helper2 -> oauth: "sign-in" {class: config}
 

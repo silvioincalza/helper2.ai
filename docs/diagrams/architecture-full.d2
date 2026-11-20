@@ -39,7 +39,7 @@ edge: "EDGE · view: infrastructure" {
   cloudflare -> nginx: "public hosts" {class: hot}
 }
 
-cluster: "KUBERNETES · one namespace per environment · views: architecture-containers, infrastructure-workloads" {
+cluster: "KUBERNETES · production's namespace; staging: the same chart, production's embedder · views: architecture-containers, infrastructure-workloads" {
   class: group
 
   web: "helper2-web · nginx\nthe public web app's files" {class: app}
@@ -90,7 +90,7 @@ cluster: "KUBERNETES · one namespace per environment · views: architecture-con
     }
   }
 
-  embedder: "helper2-embedder\nembedding model,\non for staging (ADR 0054)" {class: ai}
+  embedder: "helper2-embedder\nNVIDIA embedding model on CPU,\nfor production and staging\n(ADR 0054)" {class: ai}
   migrate: "helper2-migrate Job\nFlyway, once per release" {class: app}
 
   public.guide -> libs.search: "retrieve candidates" {class: hot}
@@ -111,14 +111,13 @@ cluster: "KUBERNETES · one namespace per environment · views: architecture-con
   libs.search -> stores.redis: "source cache"
   public.guide -> stores.redis: "answers"
   libs.platform -> stores.redis: "budgets"
-  libs.catalog -> embedder: "embeddings\n(staging)" {class: ai-call}
+  libs.catalog -> embedder: "/embeddings" {class: ai-call}
   migrate -> stores.pg: "migrations" {class: config}
 }
 
 outside: "INTERNET · TCP 443 only" {
   class: group
   nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
-  nvapi: "NVIDIA API catalog\nembeddings (production)" {class: ai}
   hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily · deps.dev" {class: ext}
   oauth: "github.com OAuth" {class: ext}
 }
@@ -162,7 +161,6 @@ edge.nginx -> cluster.public: "guide (SSE), setup,\npages, sitemap" {class: hot}
 edge.nginx -> cluster.bo.backoffice: "admin API\nand web app"
 
 cluster.libs.platform -> outside.nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
-cluster.libs.catalog -> outside.nvapi: "/embeddings" {class: ai-call}
 cluster.libs.sources -> outside.hosts: "live search"
 cluster.bo.collectors -> outside.hosts: Scout
 cluster.public.setup -> outside.hosts: "registry, READMEs"

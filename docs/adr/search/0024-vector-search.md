@@ -21,8 +21,9 @@ never break keyword search.
    image, so every base64 data URI in a text or a query becomes a space before the call. The stored `text_hash`
    stays on the text as written. Settings: `H2_NVIDIA_API_KEY`, `H2_NVIDIA_EMBEDDING_BASE_URL`
    (`https://integrate.api.nvidia.com/v1`), `H2_NVIDIA_EMBEDDING_MODEL` (`nvidia/nemotron-3.5-embed-1b`).
-   Where the chart's embedder is on, the base URL is the pod that runs the same model in the namespace
-   ([0054](../operations/0054-embedding-model-in-the-cluster.md)).
+   On the hosted helper2 the base URL is the pod that runs the same model in the cluster, and the indexer's
+   period is 1 s ([0054](../operations/0054-embedding-model-in-the-cluster.md)): the rate limit, the batch
+   failures and the 5 s period below describe NVIDIA's hosted endpoint, the default without the chart's embedder.
    Hypertext Transfer Protocol (HTTP) status 429 is reported as rate-limited. The response must hold one vector of the right size per input.
    The client is the observed client from [0006](../foundation/0006-outbound-calls-and-resilience.md) (span, `http.client.requests`), with redirects off
    and a buffered body that carries a `Content-Length`.

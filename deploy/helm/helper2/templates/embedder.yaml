@@ -76,5 +76,9 @@ spec:
     - from:
         - podSelector: { matchLabels: { app: helper2 } }
         - podSelector: { matchLabels: { app: helper2-backoffice } }
+        {{- range $embedder.clientNamespaces }}
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } }
+          podSelector: { matchExpressions: [{ key: app, operator: In, values: [helper2, helper2-backoffice, helper2-canary] }] }
+        {{- end }}
       ports: [{ port: 8080, protocol: TCP }]
 {{- end }}

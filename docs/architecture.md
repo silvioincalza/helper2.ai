@@ -58,7 +58,7 @@ The views follow the C4 model: context, containers, components, then deployment.
 
 | View | Shows |
 |---|---|
-| [Deployment](diagrams/infrastructure.svg) | The hosted helper2 on Kubernetes, the overview: how a request gets in, the applications, their stores and what they call outside. Four views hold the detail: [workloads](diagrams/infrastructure-workloads.svg), [secrets](diagrams/infrastructure-secrets.svg), [delivery](diagrams/infrastructure-delivery.svg), [backups and monitoring](diagrams/infrastructure-data.svg). |
+| [Deployment](diagrams/infrastructure.svg) | The hosted helper2 on Kubernetes, the full picture in zones: how a request gets in, the applications, the one embedder, the stores, what they call outside, the delivery, backups and monitoring. Four views hold the detail: [workloads](diagrams/infrastructure-workloads.svg), [secrets](diagrams/infrastructure-secrets.svg), [delivery](diagrams/infrastructure-delivery.svg), [backups and monitoring](diagrams/infrastructure-data.svg). |
 
 **Domain and data**
 
@@ -100,7 +100,7 @@ namespace. The chart runs on any cluster ([ADR 0043](adr/operations/0043-runtime
 
 ![Infrastructure](diagrams/infrastructure.svg)
 
-The overview leaves out ports, secrets and policies. Each of these views answers one question:
+The full picture leaves out ports, sizes, secrets and policies. Each of these views answers one question:
 
 - [Workloads](diagrams/infrastructure-workloads.svg): what runs in the namespace and what each workload may reach.
 - [Secrets](diagrams/infrastructure-secrets.svg): who holds which password.
