@@ -8,6 +8,7 @@ const MONETISATION_OFF: Monetisation = {
   ga4MeasurementId: null,
   adsenseClient: null,
   adsenseSlot: null,
+  adsenseSlotSearch: null,
 };
 
 const MonetisationContext = createContext<Monetisation>(MONETISATION_OFF);

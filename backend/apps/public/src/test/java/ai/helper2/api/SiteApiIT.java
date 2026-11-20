@@ -30,6 +30,7 @@ class SiteApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.monetisation.ga4MeasurementId").value((Object) null))
             .andExpect(jsonPath("$.monetisation.adsenseClient").value((Object) null))
             .andExpect(jsonPath("$.monetisation.adsenseSlot").value((Object) null))
+            .andExpect(jsonPath("$.monetisation.adsenseSlotSearch").value((Object) null))
             .andReturn()
             .getResponse()
             .getContentAsString();

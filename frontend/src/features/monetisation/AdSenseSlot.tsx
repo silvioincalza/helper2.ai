@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { useMonetisation } from '@/context/MonetisationContext';
-import { asksForConsent, loadGoogleConsent } from '@/lib/googleConsent';
+import { adPlacement, adUnitOf, loadGoogleConsent, type AdPlacement } from '@/lib/googleConsent';
 import './sponsor.css';
 
 const SCRIPT_ID = 'h2-adsense';
@@ -23,11 +23,13 @@ function loadAdSense(client: string, doc: Document = document) {
   doc.head.appendChild(script);
 }
 
-export function AdSenseSlot() {
+export function AdSenseSlot({ placement }: { placement: AdPlacement }) {
   const { t } = useTranslation();
-  const { adsenseClient, adsenseSlot } = useMonetisation();
+  const monetisation = useMonetisation();
+  const { adsenseClient } = monetisation;
+  const adsenseSlot = adUnitOf(placement, monetisation);
   const { pathname, search } = useLocation();
-  const googleAllowed = asksForConsent(pathname, search);
+  const googleAllowed = adPlacement(pathname, search, monetisation) === placement;
 
   useEffect(() => {
     if (!adsenseClient || !adsenseSlot || !googleAllowed) return;

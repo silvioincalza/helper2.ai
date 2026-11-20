@@ -20,7 +20,8 @@ class MonetisationConfiguration {
         filled(p.stripePaymentUrl()).map(URI::create),
         filled(p.ga4MeasurementId()),
         filled(p.adsenseClient()),
-        filled(p.adsenseSlot()));
+        filled(p.adsenseSlot()),
+        filled(p.adsenseSlotSearch()));
   }
 
   private static Optional<String> filled(String value) {

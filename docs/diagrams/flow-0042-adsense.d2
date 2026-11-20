@@ -2,7 +2,7 @@
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/Monetisation.java,
 #   site/csp/ContentSecurityPolicy.java, CspHeaderWriter.java, CspNonce.java, site/pages/internal/PageHtml.java,
 #   site/pages/web/CrawlerFiles.java, frontend/src/lib/googleConsent.ts, features/monetisation/AnalyticsConsent.tsx,
-#   features/monetisation/AdSenseSlot.tsx, shell/Layout.tsx (Privacy choices).
+#   features/monetisation/AdSenseSlot.tsx, features/search/Results.tsx, shell/Layout.tsx (Privacy choices).
 # Render: cd docs/diagrams && d2 fmt flow-0042-adsense.d2 && d2 flow-0042-adsense.d2 flow-0042-adsense.svg
 
 ...@style
@@ -13,12 +13,12 @@ req: "A public request" {class: end}
 pub: "Publisher set?" {class: decision}
 plain: "As before:\nno tag, /ads.txt 404" {class: data}
 check: "Site check tag on every page,\n/ads.txt names Google" {class: hot}
-unit: "Ad unit set too?" {class: decision}
+unit: "At least one ad unit set too?\n(resource pages, search results)" {class: decision}
 strict: "CSP of ADR 0042,\nour own analytics bar" {class: data}
 nonce: "Nonce CSP for the whole public site" {class: hot}
-tool: "Resource page, or Privacy choices\npressed, in this page load?" {class: decision}
+tool: "A page with an ad, or Privacy choices\npressed, in this page load?" {class: decision}
 unknown: "Consent tool not loaded:\nno decision known, no analytics" {class: data}
-fc: "Load Google's consent tool once\n(never on an address with q or ask);\nit stays for the visit" {class: hot}
+fc: "Load Google's consent tool once\n(never for a guide question);\nit stays for the visit" {class: hot}
 
 ga: {
   class: group
@@ -40,8 +40,10 @@ ga: {
 }
 blocked: "Tool blocked: no analytics" {class: fail}
 
-page: "Resource page?" {class: decision}
-slot: "One AdSense box, Advertisements" {class: hot}
+page: "Which page?" {class: decision}
+slot: "One AdSense box, Advertisements,\nbetween the sections" {class: hot}
+results: "Results on screen?" {class: decision}
+below: "One AdSense box, Advertisements,\nbelow the results; Google receives\nthe search words" {class: hot}
 noslot: "No AdSense on this page" {class: data}
 
 req -> pub
@@ -56,5 +58,8 @@ tool -> fc: yes
 fc -> ga.applies: "TCF answer"
 fc -> blocked: "no TCF API"
 nonce -> page
-page -> slot: yes
-page -> noslot: no
+page -> slot: "resource page,\nits ad unit set"
+page -> results: "search for words (q, no ask),\nits ad unit set"
+results -> below: yes
+results -> noslot: "loading, nothing\nfound, failed"
+page -> noslot: "guide question,\nany other page"

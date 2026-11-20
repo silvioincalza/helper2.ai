@@ -47,6 +47,7 @@ app:
     ga4MeasurementId: ""
     adsenseClient: ""
     adsenseSlot: ""
+    adsenseSlotSearch: ""
   environment: ""
   noindex: false
   publicBaseUrl: ""

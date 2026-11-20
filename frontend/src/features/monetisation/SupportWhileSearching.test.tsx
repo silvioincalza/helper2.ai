@@ -11,6 +11,7 @@ const OFF: Monetisation = {
   ga4MeasurementId: null,
   adsenseClient: null,
   adsenseSlot: null,
+  adsenseSlotSearch: null,
 };
 const SUPPORT: Monetisation = { ...OFF, githubSponsorsUrl: 'https://github.com/sponsors/someone' };
 const site = (monetisation: Monetisation) => () => ({ monetisation });

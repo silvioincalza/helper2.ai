@@ -437,7 +437,7 @@ components:
       description: >-
         How the site funds itself (ADR 0042), as configured. Each value is null while that part is off (no link, no
         script).
-      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, adsenseClient, adsenseSlot]
+      required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, adsenseClient, adsenseSlot, adsenseSlotSearch]
       properties:
         githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
         stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
@@ -445,9 +445,10 @@ components:
         adsenseClient:
           type: [string, 'null']
           description: >-
-            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0042). Null unless the ad unit is set too:
-            then the page loads Google's consent tool and shows the slot on resource pages.
+            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0042). Null unless an ad unit is set too:
+            then the page loads Google's consent tool and shows the slot of each ad unit that is set.
         adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0042)." }
+        adsenseSlotSearch: { type: [string, 'null'], description: "AdSense ad unit of the slot below the search results (`H2_ADS_ADSENSE_SLOT_SEARCH`, ADR 0042)." }
 
     Policy:
       type: object

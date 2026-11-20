@@ -82,6 +82,7 @@ helper2:
     ga4-measurement-id: ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}
     adsense-client: ${H2_ADS_ADSENSE_CLIENT:}
     adsense-slot: ${H2_ADS_ADSENSE_SLOT:}
+    adsense-slot-search: ${H2_ADS_ADSENSE_SLOT_SEARCH:}
   schema:
     logins:
       h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}

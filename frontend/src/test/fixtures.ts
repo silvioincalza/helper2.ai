@@ -272,6 +272,7 @@ export const SITE_OFF: Site = {
     ga4MeasurementId: null,
     adsenseClient: null,
     adsenseSlot: null,
+    adsenseSlotSearch: null,
   },
 };
 

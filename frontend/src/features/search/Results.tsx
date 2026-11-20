@@ -46,6 +46,7 @@ import { ResultRow } from './ResultRow';
 import { ResultsAsOf } from './ResultsAsOf';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { SupportWhileSearching } from '@/features/monetisation/SupportWhileSearching';
+import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { SourceLine } from './SourceLine';
 import { TypeTabs } from './TypeTabs';
 import './results.css';
@@ -339,6 +340,9 @@ function ResultsBody({
             )
           )}
         </div>
+      )}
+      {!nothingSearched && res.results.length > 0 && (
+        <AdSenseSlot key={state.q} placement="search" />
       )}
 
       <section id="h2-sources" className="h2-results__sources" aria-labelledby="h2-sources-h">
