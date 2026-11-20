@@ -371,14 +371,14 @@ public class LiveWebEventsCollector implements Collector {
       }
       try {
         for (JsonNode r : root.path("results")) {
-          Optional<SourceHit> event = readPage(r, byUrl, today);
-          event.ifPresent(events::add);
-          if (event.isEmpty()) {
+          CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
+          if (url != null && LinkedInPosts.isPost(url)) {
             eventSiteOfPost(r, byUrl, now)
                 .ifPresent(
                     site -> siteByPost.put(site.getFacts().get("linkedFrom").toString(), site));
+          } else {
+            readPage(r, byUrl, today).ifPresent(events::add);
           }
-          CanonicalUrl url = CanonicalUrl.of(HttpClients.text(r, "url"));
           if (url != null) {
             processed.add(url.getValue());
           }

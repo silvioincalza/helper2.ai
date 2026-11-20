@@ -4,7 +4,12 @@ import { ADMIN } from '@/test/fixtures';
 import { axeViolations } from '@/test/a11y';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
-import type { EffectiveConfig, RuntimeSettingState, RuntimeSettings } from '@/api/types';
+import type {
+  EffectiveConfig,
+  RuntimeSettingState,
+  RuntimeSettings,
+  RuntimeSwitchState,
+} from '@/api/types';
 
 const CONFIG: EffectiveConfig = {
   publicApp: { build: '2026.11.1', publishedAt: '2026-11-11T10:00:00Z' },
@@ -123,7 +128,20 @@ const CREDITS: RuntimeSettingState = {
 const runtime = (...settings: RuntimeSettingState[]): RuntimeSettings => ({
   overridesActive: settings.filter((s) => s.overridden).length,
   settings,
+  switches: [],
 });
+const ADS: RuntimeSwitchState = {
+  key: 'ads.enabled',
+  label: 'Google ads',
+  help: 'On: one Google ad in each place whose ad unit is set. Off: no Google ad anywhere.',
+  variable: 'H2_ADS_ENABLED',
+  defaultOn: false,
+  on: false,
+  overridden: false,
+  inUse: true,
+  version: 0,
+  history: [],
+};
 const versionConflict = () =>
   new Response(
     JSON.stringify({
@@ -455,5 +473,76 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
         m.callsTo('POST', '/admin/runtime-settings/search.webGlobalDailyCredits/reset')[0]?.body,
       ).toEqual({ version: 7, reason: null }),
     );
+  });
+
+  it('Scenario: a switch is set to true after a review, sent as true, and reset to its default false', async () => {
+    let state = ADS;
+    const m = mockApi({
+      ...NO_HOSTS,
+      'GET /me': () => ADMIN,
+      'GET /admin/config': () => CONFIG,
+      'GET /admin/runtime-settings': () => ({ ...runtime(GUIDE), switches: [state] }),
+      'PUT /admin/runtime-switches/ads.enabled': ({ body }) => {
+        const b = body as { on: boolean };
+        state = {
+          ...ADS,
+          on: b.on,
+          overridden: true,
+          version: 4,
+          history: [
+            {
+              version: 4,
+              on: b.on,
+              changedBy: '12345',
+              changedAt: '2026-11-20T03:00:00Z',
+              reason: 'go live',
+            },
+          ],
+        };
+        return state;
+      },
+      'POST /admin/runtime-switches/ads.enabled/reset': () => {
+        state = { ...ADS, version: 5 };
+        return state;
+      },
+    });
+    const { container } = renderAdmin('/admin/settings');
+
+    const table = await screen.findByRole('table', { name: 'Switches you can change' });
+    const ads = within(table)
+      .getByRole('rowheader', { name: /^Google ads/ })
+      .closest('tr') as HTMLElement;
+    expect(within(ads).getAllByText('false')).toHaveLength(2);
+    await userEvent.click(within(ads).getByRole('button', { name: 'Set to true: Google ads' }));
+
+    const review = screen.getByRole('group', { name: 'Review the switch' });
+    expect(review).toHaveTextContent('Google ads: false → true');
+    expect(screen.getByRole('heading', { name: 'Review the switch' })).toHaveFocus();
+    await userEvent.type(within(review).getByRole('textbox', { name: /Reason/ }), 'go live');
+    await userEvent.click(within(review).getByRole('button', { name: 'Confirm change' }));
+
+    expect(await screen.findByText('Saved: Google ads is now true.')).toHaveAttribute(
+      'role',
+      'status',
+    );
+    expect(m.callsTo('PUT', '/admin/runtime-switches/ads.enabled')[0]?.body).toEqual({
+      on: true,
+      version: 0,
+      reason: 'go live',
+    });
+    expect(await axeViolations(container)).toEqual([]);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Reset to default: Google ads' }),
+    );
+    expect(screen.getByRole('group', { name: 'Review the switch' })).toHaveTextContent(
+      'Google ads: true → false (Default)',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm change' }));
+    expect(await screen.findByText('Saved: Google ads is now false.')).toBeInTheDocument();
+    expect(m.callsTo('POST', '/admin/runtime-switches/ads.enabled/reset')[0]?.body).toEqual({
+      version: 4,
+      reason: null,
+    });
   });
 });

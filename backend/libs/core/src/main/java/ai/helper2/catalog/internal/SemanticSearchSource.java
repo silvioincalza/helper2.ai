@@ -3,6 +3,7 @@ package ai.helper2.catalog.internal;
 import ai.helper2.catalog.DataOrigin;
 import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.Embedder.EmbeddingFailure;
+import ai.helper2.catalog.Embedder.FailureReason;
 import ai.helper2.catalog.ResourceRow;
 import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceDescriptor;
@@ -13,9 +14,13 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 
 public class SemanticSearchSource implements SearchSource {
+
+  private static final Logger log = LoggerFactory.getLogger(SemanticSearchSource.class);
 
   private final SourceDescriptor descriptor;
   private final JdbcCatalogSearch store;
@@ -77,11 +82,20 @@ public class SemanticSearchSource implements SearchSource {
     try {
       vector = embedder.embed(List.of(text), Embedder.Kind.QUERY).getFirst();
     } catch (EmbeddingFailure e) {
+      logFailed(e);
       throw e.rateLimited()
           ? new SourceFailure.RateLimited(Duration.ofMinutes(1))
           : new SourceFailure.Unavailable(e.getMessage());
     }
     queryVectors.put(text, vector);
     return vector;
+  }
+
+  private static void logFailed(EmbeddingFailure e) {
+    if (e.reason() == FailureReason.REFUSED) {
+      log.debug("Query embedding not sent: {}", e.getMessage());
+      return;
+    }
+    log.warn("Query embedding failed: {}", e.getMessage());
   }
 }

@@ -1,5 +1,8 @@
 package ai.helper2.site.monetisation.config;
 
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import java.net.URI;
 import java.util.Optional;
@@ -10,8 +13,9 @@ import org.springframework.context.annotation.Configuration;
 class MonetisationConfiguration {
 
   @Bean
-  Monetisation monetisation(MonetisationProperties p) {
-    return from(p);
+  CurrentMonetisation currentMonetisation(MonetisationProperties p, RuntimeSettings runtime) {
+    return new CurrentMonetisation(
+        from(p), runtime.declareSwitch(RuntimeSetting.ADS_ENABLED, p.adsEnabled()));
   }
 
   static Monetisation from(MonetisationProperties p) {
@@ -20,7 +24,9 @@ class MonetisationConfiguration {
         filled(p.stripePaymentUrl()).map(URI::create),
         filled(p.ga4MeasurementId()),
         filled(p.adsenseClient()),
-        filled(p.adsenseSlot()));
+        filled(p.adsenseSlot()),
+        filled(p.adsenseSlotSearch()),
+        filled(p.adsenseSlotGuide()));
   }
 
   private static Optional<String> filled(String value) {

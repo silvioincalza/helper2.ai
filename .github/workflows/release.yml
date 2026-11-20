@@ -268,7 +268,7 @@ jobs:
           set -euo pipefail
           tag=v$VERSION
           dir=$(mktemp -d)
-          for entry in sbom:helper2 sbom-backoffice:helper2-backoffice sbom-web:helper2-web sbom-postgres:helper2-postgres; do
+          for entry in sbom:helper2 sbom-backoffice:helper2-backoffice sbom-web:helper2-web sbom-postgres:helper2-postgres sbom-embedder:helper2-embedder; do
             artifact=${entry%%:*}; name=${entry#*:}
             if ! gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n "$artifact" -D "$dir/$artifact"; then
               echo "::warning::CD run $RUN has no artifact $artifact: release $tag has no SBOM for $name"; continue

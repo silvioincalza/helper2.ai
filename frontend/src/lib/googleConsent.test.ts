@@ -1,5 +1,6 @@
 import {
-  asksForConsent,
+  adPlacement,
+  adUnitOf,
   decide,
   loadGoogleConsent,
   onPrivacyChoices,
@@ -144,17 +145,44 @@ describe("Google's consent tool (ADR 0042)", () => {
     vi.useRealTimers();
   });
 
-  it('asks on a resource page only, and never on an address with search words or a guide question', () => {
-    expect(asksForConsent('/resource/11111111-1111-5111-8111-111111111111', '')).toBe(true);
-    expect(asksForConsent('/resource/11111111-1111-5111-8111-111111111111/acme', '')).toBe(true);
-    expect(asksForConsent('/resource/11111111-1111-5111-8111-111111111111', '?q=agents')).toBe(
-      false,
-    );
-    expect(asksForConsent('/resource/11111111-1111-5111-8111-111111111111', '?ask=which')).toBe(
-      false,
-    );
-    for (const path of ['/', '/search', '/news', '/events', '/saved', '/privacy', '/resources'])
-      expect(asksForConsent(path, '')).toBe(false);
+  describe('Feature: Google is asked only where an ad unit shows an ad', () => {
+    const RESOURCE = '/resource/11111111-1111-5111-8111-111111111111';
+    const BOTH = {
+      adsenseSlot: '1234567890',
+      adsenseSlotSearch: '2345678901',
+      adsenseSlotGuide: '3456789012',
+    };
+    const RESOURCE_ONLY = { ...BOTH, adsenseSlotSearch: null, adsenseSlotGuide: null };
+    const SEARCH_ONLY = { ...BOTH, adsenseSlot: null, adsenseSlotGuide: null };
+
+    it('Scenario: a resource page is the resource placement, unless its address has search words or a guide question', () => {
+      expect(adPlacement(RESOURCE, '', BOTH)).toBe('resource');
+      expect(adPlacement(`${RESOURCE}/acme`, '', BOTH)).toBe('resource');
+      expect(adPlacement(RESOURCE, '?q=agents', BOTH)).toBeUndefined();
+      expect(adPlacement(RESOURCE, '?ask=which', BOTH)).toBeUndefined();
+    });
+
+    it('Scenario: a search for words is the search placement, a guide question is the guide placement', () => {
+      expect(adPlacement('/search', '?q=agents', BOTH)).toBe('search');
+      expect(adPlacement('/search', '?q=agents&type=MODEL', BOTH)).toBe('search');
+      expect(adPlacement('/search', '?q=agents&ask=which+one', BOTH)).toBe('guide');
+      expect(adPlacement('/search', '?ask=which+one', BOTH)).toBe('guide');
+      expect(adPlacement('/search', '?q=agents&ask=which+one', SEARCH_ONLY)).toBeUndefined();
+      expect(adPlacement('/search', '', BOTH)).toBeUndefined();
+    });
+
+    it('Scenario: a placement whose ad unit is not set is none', () => {
+      expect(adPlacement(RESOURCE, '', SEARCH_ONLY)).toBeUndefined();
+      expect(adPlacement('/search', '?q=agents', RESOURCE_ONLY)).toBeUndefined();
+      expect(adUnitOf('resource', BOTH)).toBe('1234567890');
+      expect(adUnitOf('search', BOTH)).toBe('2345678901');
+      expect(adUnitOf('guide', BOTH)).toBe('3456789012');
+    });
+
+    it('Scenario: every other page is none', () => {
+      for (const path of ['/', '/news', '/events', '/saved', '/privacy', '/resources', '/ai-apps'])
+        expect(adPlacement(path, '?q=agents', BOTH)).toBeUndefined();
+    });
   });
 
   it('Privacy choices tells the page to load the tool, after the move away from a search address', async () => {

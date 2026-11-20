@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.config.PagesProperties;
 import ai.helper2.site.pages.internal.PageHtml;
@@ -48,7 +49,7 @@ class PageHtmlTest {
         new PageTemplate(new DefaultResourceLoader(), properties),
         JsonMapper.builder().build(),
         properties,
-        monetisation);
+        new CurrentMonetisation(monetisation, () -> true));
   }
 
   private static ResourceView hostile() {
@@ -135,6 +136,8 @@ class PageHtmlTest {
             Optional.empty(),
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
+            Optional.empty(),
+            Optional.empty(),
             Optional.empty());
     String page = html(SHELL, adsense).render(new Pages("https://helper2.ai").home(), "n0nce");
 

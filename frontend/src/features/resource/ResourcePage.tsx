@@ -162,7 +162,7 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
         </section>
       )}
 
-      <AdSenseSlot />
+      <AdSenseSlot placement="resource" />
 
       <FoundInLists foundIn={d.foundIn} />
 

@@ -14,7 +14,7 @@ webimg: deploy/web.Dockerfile (web image) {
   class: group
   direction: down
   web: "Stage web (node:26-alpine):\nnpm ci, gen:api, tsc, vite build\n→ frontend/dist" {class: app}
-  nginx: "Runtime (nginx-unprivileged, user 101):\n/assets, theme.js, favicon.svg served;\nindex.html kept as the shell, not served" {class: app}
+  nginx: "Runtime (nginx-unprivileged, user 101):\n/assets, theme.js, favicon.svg,\nfavicon.ico served;\nindex.html kept as the shell, not served" {class: app}
   web -> nginx
 }
 
@@ -30,8 +30,8 @@ serve: One request {
   class: group
   direction: down
   req: "GET <path>" {class: end}
-  files: "/assets/<file>, /theme.js\nor /favicon.svg? (Ingress)" {class: decision}
-  hashed: "web pods: the file;\n/assets a year, immutable;\nroot files 5 minutes" {class: end}
+  files: "A file address? (Ingress:\nnot an address of the public app)" {class: decision}
+  hashed: "web pods: the file, or a plain 404;\n/assets a year, immutable;\nroot files 5 minutes" {class: end}
   ctrl: "public app (port 8080, virtual thread):\na controller matches?\n(/api/v1/**, /oauth2, /login,\n/logout, /actuator, robots.txt)" {class: decision}
   api: "Controller answers\n(same origin, no CORS)" {class: end}
   route: "ClientRoutes.owns: no extension,\nnot api/ oauth2/ login/\nactuator/ or logout?" {class: decision}

@@ -124,24 +124,46 @@ kubectl -n helper2 port-forward deploy/helper2 8081 &
 curl -s localhost:8081/actuator/health/readiness    # {"status":"UP"}
 ```
 
-Route your host to two Services, both on port 80: exactly these three paths to `helper2-web`, and everything
-else to `helper2`.
+Route your host to two Services, both on port 80: the public app's own addresses to `helper2`, and everything
+else to `helper2-web`.
 
 | Path | Path type | Service |
 |---|---|---|
+| `/(.*/)?[^./]*$` | `ImplementationSpecific` | `helper2` |
+| `/[A-Za-z0-9-]{8,128}\.txt$` | `ImplementationSpecific` | `helper2` |
+| `/api/` | `Prefix` | `helper2` |
+| `/oauth2/` | `Prefix` | `helper2` |
+| `/login/` | `Prefix` | `helper2` |
+| `/sitemaps/` | `Prefix` | `helper2` |
+| `/robots.txt` | `Exact` | `helper2` |
+| `/sitemap.xml` | `Exact` | `helper2` |
+| `/llms.txt` | `Exact` | `helper2` |
+| `/ads.txt` | `Exact` | `helper2` |
+| `/index.html` | `Exact` | `helper2` |
 | `/assets/` | `Prefix` | `helper2-web` |
-| `/theme.js` | `Exact` | `helper2-web` |
-| `/favicon.svg` | `Exact` | `helper2-web` |
-| `/` | `Prefix` | `helper2` |
+| `/` | `Prefix` | `helper2-web` |
 
-The public app serves no web files, and the web pods answer 404 for anything else. A new file in
-`frontend/public` needs a new route here and in `deploy/web/nginx.conf` (the image build stops until both are
-there). For example:
+The first row is every address whose last segment has no dot: the pages, the API and the sign-in
+(`ClientRoutes.owns` in the public app says the same for the pages). The second row is the IndexNow key file. The
+rows after them are the public app's addresses that do have a dot in their last segment. Any other address is a
+file: the web pods serve `/assets/<file>`, `/theme.js`, `/favicon.svg` and `/favicon.ico`, and answer a plain 404
+for the rest, so a request for a file that does not exist never reaches the public app. The public app serves no
+web files. A new file in `frontend/public` needs a new `location` in `deploy/web/nginx.conf` (the image build stops
+until it is there) and no new route. A new address of the public app with a dot in its last segment needs a new row
+here and in your Ingress.
+
+The two regular expressions need the ingress-nginx annotation `nginx.ingress.kubernetes.io/use-regex`. With it
+ingress-nginx matches every path of the host as a regular expression, without regard to case, the longest path
+first, and the first match wins. The rows `/api/` and `/assets/` are also what the canary attaches to
+(`canary.appPaths`, `canary.webPaths`): keep their text and their path type. For example:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
-metadata: { name: helper2, namespace: helper2 }
+metadata:
+  name: helper2
+  namespace: helper2
+  annotations: { nginx.ingress.kubernetes.io/use-regex: "true" }
 spec:
   ingressClassName: nginx
   tls: [{ hosts: [helper2.example.com], secretName: helper2-tls }]   # e.g. issued by cert-manager
@@ -149,10 +171,19 @@ spec:
     - host: helper2.example.com
       http:
         paths:
+          - { path: '/(.*/)?[^./]*$', pathType: ImplementationSpecific, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: '/[A-Za-z0-9-]{8,128}\.txt$', pathType: ImplementationSpecific, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /api/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /oauth2/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /login/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /sitemaps/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /robots.txt, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /sitemap.xml, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /llms.txt, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /ads.txt, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /index.html, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
           - { path: /assets/, pathType: Prefix, backend: { service: { name: helper2-web, port: { number: 80 } } } }
-          - { path: /theme.js, pathType: Exact, backend: { service: { name: helper2-web, port: { number: 80 } } } }
-          - { path: /favicon.svg, pathType: Exact, backend: { service: { name: helper2-web, port: { number: 80 } } } }
-          - { path: /, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /, pathType: Prefix, backend: { service: { name: helper2-web, port: { number: 80 } } } }
 ```
 
 The back office (`/admin`) is its own Deployment, `helper2-backoffice`, behind the Service `helper2-admin`,

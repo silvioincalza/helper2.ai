@@ -35,6 +35,7 @@ jobs:
       chart: ${{ steps.map.outputs.chart }}
       monitoring: ${{ steps.map.outputs.monitoring }}
       postgres: ${{ steps.map.outputs.postgres }}
+      embedder: ${{ steps.map.outputs.embedder }}
       diagrams: ${{ steps.map.outputs.diagrams }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -404,6 +405,39 @@ jobs:
           fi
           echo "postgres.image.tag ${old:-none} -> $new"
 
+  embedder:
+    needs: changes
+    if: needs.changes.outputs.embedder == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: API tests
+        working-directory: deploy/embedder
+        run: python3 -m unittest -q test_embedding_api
+      - name: Changed, and tag bumped?
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          VALUES: deploy/helm/helper2/values.yaml
+        run: |
+          set -euo pipefail
+          if git diff --quiet "$BASE" HEAD -- deploy/embedder ':!deploy/embedder/test_embedding_api.py' ':!deploy/embedder/requirements.in'; then
+            echo "the embedder image is unchanged"; exit 0
+          fi
+          tag() {
+            git cat-file -e "$1:$VALUES" 2> /dev/null || return 0
+            git show "$1:$VALUES" | yq '.embedder.image.tag'
+          }
+          old=$(tag "$BASE"); new=$(tag HEAD)
+          if [[ $old == "$new" ]]; then
+            echo "::error file=$VALUES::deploy/embedder changed but embedder.image.tag is still $old: a pushed tag is never rebuilt, so set a new one"
+            exit 1
+          fi
+          echo "embedder.image.tag ${old:-none} -> $new"
+
   chart:
     needs: changes
     if: needs.changes.outputs.chart == 'true'
@@ -489,6 +523,7 @@ jobs:
       - backend-architecture-test
       - package
       - postgres-tag
+      - embedder
       - chart
       - monitoring
       - diagrams

@@ -15,7 +15,7 @@ import { SourceTiles } from '@/ui/SourceTiles';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
-import { useGuideStream } from '@/features/guide/useGuideStream';
+import { useGuideStream, type GuideStream } from '@/features/guide/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
@@ -46,6 +46,7 @@ import { ResultRow } from './ResultRow';
 import { ResultsAsOf } from './ResultsAsOf';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { SupportWhileSearching } from '@/features/monetisation/SupportWhileSearching';
+import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { SourceLine } from './SourceLine';
 import { TypeTabs } from './TypeTabs';
 import './results.css';
@@ -95,6 +96,11 @@ export function Results() {
     if (announce.current) announce.current.textContent = text;
   }, []);
   const found = search.loading || failed ? 0 : (search.data?.total ?? 0);
+  const [adQuery, setAdQuery] = useState<string | null>(null);
+  if (!search.loading) {
+    const answered = !failed && (search.data?.results.length ?? 0) > 0 ? state.q : null;
+    if (answered !== adQuery) setAdQuery(answered);
+  }
   useEffect(() => {
     say(found > 0 ? t('results.found', { count: found }) : '');
   }, [found, key, say, t]);
@@ -113,6 +119,7 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
+      {asked && guideAnswered(stream) && <AdSenseSlot key={asked} placement="guide" />}
       {search.loading &&
         (shown ? (
           <p role="status" className="h2-results__loading-line">
@@ -158,11 +165,18 @@ export function Results() {
             picks={picks}
             say={say}
             ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)}
+            adQuery={adQuery}
           />
         </div>
       )}
     </ResultKeys>
   );
+}
+
+function guideAnswered(stream: GuideStream): boolean {
+  const { answer, busy, error } = stream;
+  if (busy || error !== null || answer === null) return false;
+  return answer.status !== 'NEEDS_CLARIFICATION' && guidePicks(answer).length > 0;
 }
 
 function ResultsBody({
@@ -175,6 +189,7 @@ function ResultsBody({
   say,
   ask,
   loading,
+  adQuery,
 }: {
   res: SearchResponse;
   loading: boolean;
@@ -185,6 +200,7 @@ function ResultsBody({
   picks: readonly GuidePick[];
   say: (text: string) => void;
   ask?: (() => void) | undefined;
+  adQuery: string | null;
 }) {
   const { t } = useTranslation();
   const categories = useCategories();
@@ -340,6 +356,7 @@ function ResultsBody({
           )}
         </div>
       )}
+      {adQuery !== null && <AdSenseSlot key={adQuery} placement="search" />}
 
       <section id="h2-sources" className="h2-results__sources" aria-labelledby="h2-sources-h">
         <h2 id="h2-sources-h" className="h2-results__fan">

@@ -356,6 +356,37 @@
         "restoreLabel": "Restore {{value}} from {{at}}",
         "restore": "Restore"
       },
+      "switches": {
+        "title": "Switches you can change",
+        "lede": "Turn a feature on or off without a deploy. Every replica follows within about 20 seconds, and the audit trail records who changed what and why.",
+        "loadError": "Could not load the switches.",
+        "col": {
+          "setting": "Switch",
+          "now": "Now",
+          "default": "Default",
+          "actions": "Actions"
+        },
+        "turnOn": "Set to true",
+        "turnOff": "Set to false",
+        "turnLabel": "{{action}}: {{label}}",
+        "resetToDefault": "Reset to default",
+        "reviewTitle": "Review the switch",
+        "diff": "{{label}}: {{before}} → {{after}}",
+        "atDefault": "Default",
+        "changed": "Changed",
+        "notInUse": "(not in use)",
+        "reason": "Reason (optional)",
+        "confirm": "Confirm change",
+        "cancel": "Cancel",
+        "saved": "Saved: {{label}} is now {{value}}.",
+        "conflict": "Someone changed this switch first.",
+        "refused": "Not saved: {{detail}}",
+        "failed": "The action failed. Please try again.",
+        "history_one": "History ({{count}})",
+        "history_other": "History ({{count}})",
+        "historyEntry": "{{value}} · by {{who}} · {{at}}",
+        "backToDefault": "back to the default"
+      },
       "hosts": {
         "title": "Discovery hosts",
         "lede": "Sites discovery knows by name. A post on a writing site is proposed as an article; a page on a directory is never kept. The next discovery run uses your change.",

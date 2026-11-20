@@ -107,7 +107,7 @@ catalog: "catalog (Java)" {
 
 pg: "PostgreSQL\nresources, facts with evidence,\nreview items, embeddings,\nawesome-list search index" {shape: cylinder; class: data}
 nebius: "Nebius Token Factory\nNemotron 3.5 Super" {class: ai}
-nvapi: "NVIDIA API catalog\nnemotron-3.5-embed-1b" {class: ai}
+nvapi: "helper2-embedder, in the cluster\nnemotron-3.5-embed-1b on CPU\n(ADR 0054)" {class: ai}
 hosts: "registry.modelcontextprotocol.io\nhuggingface.co · api.github.com\nraw.githubusercontent.com · api.tavily.com\nnews feeds of 8 AI companies (ADR 0016)\nbigquery.googleapis.com · oauth2.googleapis.com (ADR 0017)\napi.deps.dev" {class: ext}
 
 backoffice: "admin module\nScoutRunsController · ReviewController\nResolveReview · GetReviewEvidence\n(drafts read and accepted\nthrough examples)\nPOST /admin/scout-runs\nPUT /admin/review-items/{id}/resolution\nGET /admin/review-items/{id}/evidence\nGET /admin/enrichment-queue\nPOST /admin/enrichment-queue/{id}/\nrequeue · skip · prioritise\nGET, POST /admin/discovery-hosts" {class: app}

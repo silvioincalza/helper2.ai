@@ -34,6 +34,7 @@ public class IndexEmbeddings {
   private final AtomicLong rejected = new AtomicLong();
   private final Counter rateLimited;
   private final Counter embeddingFailed;
+  private final Counter refusedByThePolicy;
   private final Counter databaseFailed;
   private Instant pausedUntil = Instant.MIN;
   private boolean caughtUp;
@@ -66,6 +67,7 @@ public class IndexEmbeddings {
         .register(registry);
     this.rateLimited = failures(registry, "rate_limited");
     this.embeddingFailed = failures(registry, "embedding");
+    this.refusedByThePolicy = failures(registry, "refused");
     this.databaseFailed = failures(registry, "database");
   }
 
@@ -170,6 +172,11 @@ public class IndexEmbeddings {
   }
 
   private void failed(EmbeddingFailure e) {
+    if (e.reason() == FailureReason.REFUSED) {
+      refusedByThePolicy.increment();
+      log.debug("Embedding batch not sent: {}", e.getMessage());
+      return;
+    }
     if (e.rateLimited()) {
       pausedUntil = clock.instant().plus(pauseAfterRateLimit);
       rateLimited.increment();

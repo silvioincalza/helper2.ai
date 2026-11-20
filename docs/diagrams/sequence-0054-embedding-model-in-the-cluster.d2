@@ -1,0 +1,40 @@
+# Sequence: a search query and a catalog text embedded inside the cluster, by the one embedder of production's
+# namespace, which staging's apps call too (ADR 0054).
+# Source of truth: backend/libs/core/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+#   catalog/internal/SemanticSearchSource.java, catalog/usecase/IndexEmbeddings.java,
+#   deploy/embedder/embedding_api.py, deploy/embedder/server.py,
+#   deploy/helm/helper2/templates/embedder.yaml, templates/_helpers.tpl (helper2.embedderEnv).
+# Render: cd docs/diagrams && d2 fmt sequence-0054-embedding-model-in-the-cluster.d2 && d2 sequence-0054-embedding-model-in-the-cluster.d2 sequence-0054-embedding-model-in-the-cluster.svg
+
+...@style
+
+shape: sequence_diagram
+
+visitor: Visitor {class: person}
+pub: "helper2 public app\nof production\n(SemanticSearchSource)" {class: app}
+bo: "helper2 back office\nof production\n(IndexEmbeddings)" {class: app}
+stg: "staging's public app\nand back office\n(ns helper2-staging)" {class: app}
+emb: "helper2-embedder\n(Service :8080 in ns helper2-prod,\ninside the cluster only)" {class: ai}
+db: PostgreSQL {class: data}
+
+visitor -> pub: "search"
+pub -> db: "query vector in the cache?"
+db -> pub: "no"
+pub -> emb: "POST /v1/embeddings\ninput_type query, dimensions 1024\n(3 s)" {class: hot}
+emb -> emb: "prefix query:, embed on the CPU,\nfirst 1024 values, normalise"
+emb -> pub: "200 one vector"
+pub -> db: "keep the vector 7 days;\nnearest rows of resource_embedding"
+db -> pub: "rows by distance"
+pub -> visitor: "results by meaning, fused by rank"
+
+bo -> db: "every 1 s: next resource\nwithout a current vector"
+db -> bo: "title and description"
+bo -> emb: "POST /v1/embeddings\ninput_type passage, dimensions 1024\n(30 s)" {class: hot}
+emb -> bo: "200 one vector"
+bo -> db: "store the vector and the text hash"
+
+stg -> emb: "POST /v1/embeddings across namespaces\n(let in by ingress-embedder,\nlet out by staging's egress-app)" {class: hot}
+emb -> stg: "200 one vector, after the calls\nahead of it: one at a time"
+
+pub -> emb: "while the pod restarts: no answer" {class: hot}
+pub -> visitor: "keyword results only"

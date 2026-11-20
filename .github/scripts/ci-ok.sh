@@ -17,6 +17,7 @@ SELECTED_BY='{
   "chart": "chart",
   "monitoring": "monitoring",
   "postgres-tag": "postgres",
+  "embedder": "embedder",
   "diagrams": "diagrams"
 }'
 PULL_REQUEST_ONLY='["postgres-tag"]'

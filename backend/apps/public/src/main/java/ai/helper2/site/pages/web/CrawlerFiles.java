@@ -1,6 +1,6 @@
 package ai.helper2.site.pages.web;
 
-import ai.helper2.site.monetisation.Monetisation;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.pages.LlmsTxt;
 import ai.helper2.site.pages.config.PagesProperties;
 import ai.helper2.site.pages.usecase.ListSitemap;
@@ -19,9 +19,9 @@ class CrawlerFiles {
 
   private final ListSitemap sitemap;
   private final PagesProperties properties;
-  private final Monetisation monetisation;
+  private final CurrentMonetisation monetisation;
 
-  CrawlerFiles(ListSitemap sitemap, PagesProperties properties, Monetisation monetisation) {
+  CrawlerFiles(ListSitemap sitemap, PagesProperties properties, CurrentMonetisation monetisation) {
     this.sitemap = sitemap;
     this.properties = properties;
     this.monetisation = monetisation;
@@ -35,6 +35,7 @@ class CrawlerFiles {
   @GetMapping(value = "/ads.txt", produces = MediaType.TEXT_PLAIN_VALUE)
   ResponseEntity<String> adsTxt() {
     return monetisation
+        .now()
         .adsTxt()
         .map(line -> ResponseEntity.ok().cacheControl(CACHE).body(line + "\n"))
         .orElseGet(() -> ResponseEntity.notFound().build());

@@ -1,0 +1,84 @@
+{{- if and .Values.embedder.enabled (not .Values.canary.only) }}
+{{- $embedder := .Values.embedder }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helper2-embedder
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ required "embedder.replicas" $embedder.replicas }}
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: helper2-embedder } }
+  template:
+    metadata:
+      labels: { app: helper2-embedder }
+    spec:
+      serviceAccountName: helper2
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      {{- with $embedder.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: embedder
+          image: {{ include "helper2.embedderImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - { name: EMBEDDER_MODEL_NAME, value: {{ required "embedder.model" $embedder.model | quote }} }
+            - { name: EMBEDDER_MAX_TOKENS, value: {{ required "embedder.maxTokens" $embedder.maxTokens | toString | quote }} }
+            - { name: EMBEDDER_THREADS, value: {{ required "embedder.threads" $embedder.threads | toString | quote }} }
+          ports:
+            - { containerPort: 8080, name: http }
+          startupProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+            failureThreshold: {{ div (int (required "embedder.startupSeconds" $embedder.startupSeconds)) 5 }}
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml $embedder.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: { sizeLimit: 64Mi } }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: helper2-embedder
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  selector: { app: helper2-embedder }
+  ports: [{ port: 8080, targetPort: http }]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ingress-embedder
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "helper2.labels" . | nindent 4 }}
+spec:
+  podSelector: { matchLabels: { app: helper2-embedder } }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: { matchLabels: { app: helper2 } }
+        - podSelector: { matchLabels: { app: helper2-backoffice } }
+        {{- range $embedder.clientNamespaces }}
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ . }} } }
+          podSelector: { matchExpressions: [{ key: app, operator: In, values: [helper2, helper2-backoffice, helper2-canary] }] }
+        {{- end }}
+      ports: [{ port: 8080, protocol: TCP }]
+{{- end }}

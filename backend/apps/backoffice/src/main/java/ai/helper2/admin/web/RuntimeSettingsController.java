@@ -9,6 +9,9 @@ import ai.helper2.api.generated.model.RuntimeSettingHistoryEntryDto;
 import ai.helper2.api.generated.model.RuntimeSettingResetDto;
 import ai.helper2.api.generated.model.RuntimeSettingStateDto;
 import ai.helper2.api.generated.model.RuntimeSettingsDto;
+import ai.helper2.api.generated.model.RuntimeSwitchChangeDto;
+import ai.helper2.api.generated.model.RuntimeSwitchHistoryEntryDto;
+import ai.helper2.api.generated.model.RuntimeSwitchStateDto;
 import ai.helper2.platform.ApiProblem;
 import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.NotFoundException;
@@ -38,11 +41,15 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
 
   @Override
   public ResponseEntity<RuntimeSettingsDto> listRuntimeSettings() {
-    List<GetRuntimeSettings.State> all = settings.all();
-    int overrides = (int) all.stream().filter(GetRuntimeSettings.State::overridden).count();
+    List<GetRuntimeSettings.State> limits = settings.of(RuntimeSetting.Kind.LIMIT);
+    int overrides = (int) limits.stream().filter(GetRuntimeSettings.State::overridden).count();
     return ResponseEntity.ok(
         new RuntimeSettingsDto(
-            overrides, all.stream().map(RuntimeSettingsController::dto).toList()));
+            overrides,
+            limits.stream().map(RuntimeSettingsController::dto).toList(),
+            settings.of(RuntimeSetting.Kind.SWITCH).stream()
+                .map(RuntimeSettingsController::switchDto)
+                .toList()));
   }
 
   @Override
@@ -71,9 +78,42 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
     };
   }
 
+  @Override
+  public ResponseEntity<RuntimeSwitchStateDto> changeRuntimeSwitch(
+      String key, RuntimeSwitchChangeDto body) {
+    RuntimeSetting setting = knownSwitch(key);
+    long value = RuntimeSetting.valueOf(body.getOn());
+    return switch (change.change(
+        Admins.id(), setting, value, body.getVersion(), body.getReason())) {
+      case ChangeRuntimeSetting.Outcome.Changed c -> ResponseEntity.ok(switchDto(c.state()));
+      case ChangeRuntimeSetting.Outcome.OutOfRange r ->
+          throw new ApiProblem(ProblemType.INVALID_REQUEST, "on: must be true or false.");
+      case ChangeRuntimeSetting.Outcome.Conflict c -> throw conflict();
+      case ChangeRuntimeSetting.Outcome.InvalidReason i -> throw invalidReason();
+    };
+  }
+
+  @Override
+  public ResponseEntity<RuntimeSwitchStateDto> resetRuntimeSwitch(
+      String key, RuntimeSettingResetDto body) {
+    return switch (reset.reset(
+        Admins.id(), knownSwitch(key), body.getVersion(), body.getReason())) {
+      case ResetRuntimeSetting.Outcome.Reset r -> ResponseEntity.ok(switchDto(r.state()));
+      case ResetRuntimeSetting.Outcome.Conflict c -> throw conflict();
+      case ResetRuntimeSetting.Outcome.InvalidReason i -> throw invalidReason();
+    };
+  }
+
   private static RuntimeSetting known(String key) {
     return RuntimeSetting.byKey(key)
+        .filter(s -> !s.isSwitch())
         .orElseThrow(() -> new NotFoundException("No runtime setting " + key + "."));
+  }
+
+  private static RuntimeSetting knownSwitch(String key) {
+    return RuntimeSetting.byKey(key)
+        .filter(RuntimeSetting::isSwitch)
+        .orElseThrow(() -> new NotFoundException("No runtime switch " + key + "."));
   }
 
   private static BadRequestException invalidReason() {
@@ -102,6 +142,34 @@ class RuntimeSettingsController implements RuntimeSettingsApi {
         s.inUse(),
         Math.toIntExact(s.version()),
         s.history().stream().map(RuntimeSettingsController::dto).toList());
+  }
+
+  private static RuntimeSwitchStateDto switchDto(GetRuntimeSettings.State s) {
+    RuntimeSetting r = s.setting();
+    return new RuntimeSwitchStateDto(
+        r.key(),
+        r.label(),
+        r.help(),
+        r.variable(),
+        on(s.defaultValue()),
+        on(s.value()),
+        s.overridden(),
+        s.inUse(),
+        Math.toIntExact(s.version()),
+        s.history().stream().map(RuntimeSettingsController::switchDto).toList());
+  }
+
+  private static RuntimeSwitchHistoryEntryDto switchDto(RuntimeSettingStore.Change c) {
+    return new RuntimeSwitchHistoryEntryDto(
+        Math.toIntExact(c.version()),
+        c.value() == null ? null : c.value() > 0,
+        c.changedBy(),
+        UtcTimes.odt(c.changedAt()),
+        c.reason());
+  }
+
+  private static boolean on(Long value) {
+    return value != null && value > 0;
   }
 
   private static RuntimeSettingHistoryEntryDto dto(RuntimeSettingStore.Change c) {
