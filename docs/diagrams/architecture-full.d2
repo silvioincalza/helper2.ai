@@ -1,0 +1,174 @@
+# Architecture, the whole system on one page: the people, the edge, the two web apps, the two Java apps with every
+# module, the shared libraries, the stores, the models, the public sources, delivery and operations.
+# One line per relation and no detail: each group names the view that holds its detail.
+# Source of truth: backend/settings.gradle.kts, backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
+#   frontend/src (features, shell, admin, shared code), frontend/eslint.config.js,
+#   deploy/helm/helper2 (values*.yaml, templates/*.yaml), .github/workflows/cd.yml, deploy.yml,
+#   backend/libs/platform/src/main/resources/helper2-shared.yaml (models, sources, embedding).
+# Render: cd docs/diagrams && d2 fmt architecture-full.d2 && d2 architecture-full.d2 architecture-full.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+visitor: "Visitor" {class: person}
+crawler: "Crawler,\nlink preview" {class: person}
+admin: "Admin\n(VPN, GitHub sign-in)" {class: person}
+
+browser: "IN THE BROWSER · view: architecture-frontend" {
+  class: group
+  spa: "public web app · React 19\nshell + features: home, search, guide,\nresource, setup, feeds, hubs, saved,\nsources, account, pages, monetisation" {class: app}
+  adminspa: "admin web app · React 19\nreview queue, research, Scout runs,\nexamples, settings, audit" {class: app}
+  shared: "shared code\nui · hooks · context\napi (generated) · lib · i18n · styles" {class: app}
+  spa -> shared
+  adminspa -> shared
+  thirdparty: "third parties, after consent\nGoogle consent tool · AdSense\nGoogle Analytics\nGitHub Sponsors · Stripe" {class: ext}
+  spa -> thirdparty: "consent, ads,\nanalytics, gifts"
+}
+
+edge: "EDGE · view: infrastructure" {
+  class: group
+  cloudflare: "Cloudflare\nDNS, TLS, tunnel" {class: ext}
+  nginx: "ingress-nginx\npublic hosts, admin hosts" {class: app}
+  cloudflare -> nginx: "public hosts" {class: hot}
+}
+
+cluster: "KUBERNETES · one namespace per environment · views: architecture-containers, infrastructure-workloads" {
+  class: group
+
+  web: "helper2-web · nginx\nthe public web app's files" {class: app}
+
+  public: "PUBLIC APP · helper2 · /api/v1 (public.yaml)" {
+    class: group
+    guide: "guide\nAI guide, evidence gate\nview: architecture-guide" {class: app}
+    setup: "setup\nSet it up, tool guide\nview: architecture-setup" {class: app}
+    site: "site\npages for crawlers, policy,\nmonetisation settings, CSP" {class: app}
+  }
+
+  bo: "BACK OFFICE APP · helper2-backoffice · /api/v1/admin (admin.yaml)" {
+    class: group
+    backoffice: "admin\nreview, runs, overview,\nsettings, the admin web app" {class: app}
+    scout: "scout\nindex growth, enrichment\nview: architecture-index" {class: app}
+    collectors: "sources (collectors)\ncollectors, evidence readers,\nresearch tools" {class: app}
+    research: "research\nreview research agent\nview: architecture-review-research" {class: app}
+    backoffice -> scout: "runs, backlog"
+    backoffice -> research: "start, steps (SSE)"
+    scout -> collectors: Collector {class: config}
+    collectors -> research: ResearchTool {class: config}
+  }
+
+  libs: "LIBRARIES · in both apps · view: architecture-context" {
+    class: group
+    webcontract: "shared web part\nGET /search, /sources,\n/categories (common.yaml)" {class: port}
+    search: "search\nfederated search, ranking\nview: architecture-search" {class: app}
+    catalog: "catalog\nindex, resource pages,\nevents, embeddings" {class: app}
+    sources: "sources\nlive adapters" {class: app}
+    examples: "examples\nhome examples" {class: app}
+    identity: "identity\nsign-in, bookmarks" {class: app}
+    platform: "platform\nLLM layer, HTTP, resilience,\nquota, edge\nview: architecture-platform" {class: app}
+    webcontract -> search: SearchResources {class: hot}
+    search -> sources: SearchSource {class: config}
+    search -> catalog: SearchSource {class: config}
+    examples -> search: "quality check" {class: config}
+  }
+
+  stores: "STORES · view: data-model" {
+    class: group
+    pg: "PostgreSQL 18 + pgvector\nsystem of record" {
+      shape: cylinder
+      class: data
+    }
+    redis: "Redis 8\ndisposable cache, sessions,\nrate limits, budgets" {
+      shape: cylinder
+      class: data
+    }
+  }
+
+  embedder: "helper2-embedder\nembedding model,\non for staging (ADR 0054)" {class: ai}
+  migrate: "helper2-migrate Job\nFlyway, once per release" {class: app}
+
+  public.guide -> libs.search: "retrieve candidates" {class: hot}
+  public.guide -> libs.platform: "model calls" {class: ai-call}
+  public.setup -> libs.catalog: "resource detail"
+  public.setup -> libs.platform: "model calls" {class: ai-call}
+  public.site -> libs.catalog: "indexable pages"
+  bo.scout -> libs.catalog: CatalogIndex {class: config}
+  bo.scout -> libs.platform: "model calls" {class: ai-call}
+  bo.research -> libs.platform: "model calls" {class: ai-call}
+  bo.backoffice -> libs.catalog: "review queue"
+  bo.backoffice -> libs.examples: "examples"
+
+  libs.catalog -> stores.pg: JDBC
+  libs.identity -> stores.pg: "users, bookmarks"
+  bo.scout -> stores.pg: "runs"
+  bo.research -> stores.pg: "runs, steps"
+  libs.search -> stores.redis: "source cache"
+  public.guide -> stores.redis: "answers"
+  libs.platform -> stores.redis: "budgets"
+  libs.catalog -> embedder: "embeddings\n(staging)" {class: ai-call}
+  migrate -> stores.pg: "migrations" {class: config}
+}
+
+outside: "INTERNET · TCP 443 only" {
+  class: group
+  nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
+  nvapi: "NVIDIA API catalog\nembeddings (production)" {class: ai}
+  hosts: "Public sources\nGitHub · Hugging Face · npm · arXiv\nMCP Registry · Tavily · deps.dev" {class: ext}
+  oauth: "github.com OAuth" {class: ext}
+}
+
+delivery: "DELIVERY · view: infrastructure-delivery" {
+  class: group
+  github: "GitHub Actions\ncd.yml, deploy.yml" {class: ext}
+  runner: "self-hosted runner" {class: app}
+  openbao: "OpenBao\nsecrets, signing key" {
+    shape: cylinder
+    class: data
+  }
+  harbor: "Harbor\nsigned images" {
+    shape: cylinder
+    class: data
+  }
+  github -> runner: job {class: config}
+  runner -> openbao: "OIDC, sign" {class: config}
+  runner -> harbor: push {class: config}
+}
+
+operations: "OPERATIONS · view: infrastructure-data" {
+  class: group
+  alloy: "Alloy" {class: app}
+  monitoring: "Prometheus · Tempo\nGrafana" {class: app}
+  backup: "pg-backup CronJob\nnightly dump, restore check" {class: app}
+  r2: "Cloudflare R2\nencrypted off-site copy" {class: ext}
+  alloy -> monitoring
+  backup -> r2: {class: config}
+}
+
+visitor -> browser.spa: uses {class: hot}
+admin -> browser.adminspa: uses
+visitor -> edge.cloudflare: HTTPS {class: hot}
+crawler -> edge.cloudflare: HTTPS
+admin -> edge.nginx: "admin hosts"
+
+edge.nginx -> cluster.web: files {class: hot}
+edge.nginx -> cluster.libs.webcontract: "search, sources,\ncategories" {class: hot}
+edge.nginx -> cluster.public: "guide (SSE), setup,\npages, sitemap" {class: hot}
+edge.nginx -> cluster.bo.backoffice: "admin API\nand web app"
+
+cluster.libs.platform -> outside.nebius: "plan, choose, check,\nenrich, translate" {class: ai-call}
+cluster.libs.catalog -> outside.nvapi: "/embeddings" {class: ai-call}
+cluster.libs.sources -> outside.hosts: "live search"
+cluster.bo.collectors -> outside.hosts: Scout
+cluster.public.setup -> outside.hosts: "registry, READMEs"
+cluster.libs.identity -> outside.oauth: "sign-in" {class: config}
+
+delivery.runner -> cluster: "helm upgrade,\nimages by digest" {class: config}
+delivery.harbor -> cluster: "image pull" {class: config}
+cluster -> operations.alloy: "metrics, traces" {class: config}
+operations.backup -> cluster.stores.pg: "pg_dump" {class: config}
