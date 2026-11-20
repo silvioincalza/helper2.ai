@@ -1,0 +1,80 @@
+# Architecture, C4 level 2: containers. What is deployed and runs on its own: the two web apps in the browser,
+# the three deployables of the chart (ADR 0043), the migrate Job, the one embedder of production and staging (ADR 0054) and the two stores.
+# The modules inside the two Java apps are in architecture-context.d2; the folders inside the web apps are in
+# architecture-frontend.d2; sizes, ports and network policies are in infrastructure-workloads.d2.
+# Source of truth: deploy/helm/helper2/templates/app.yaml, web.yaml, backoffice.yaml, embedder.yaml, migrate.yaml,
+#   postgres.yaml, redis.yaml, backend/settings.gradle.kts (apps and libraries),
+#   backend/apps/public, backend/apps/backoffice, frontend/vite.config.ts, frontend/vite.admin.config.ts,
+#   api/public.yaml, api/admin.yaml, api/common.yaml.
+# Render: cd docs/architecture/diagrams && d2 fmt architecture-containers.d2 && d2 architecture-containers.d2 architecture-containers.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+visitor: "Visitor" {class: person}
+crawler: "Crawler,\nlink preview" {class: person}
+admin: "Admin\n(VPN)" {class: person}
+
+browser: "IN THE BROWSER" {
+  class: group
+  spa: "public web app\nReact 19 · Vite · TypeScript\nfrontend/src (features, shell)\nbuild: dist" {class: app}
+  adminspa: "admin web app\nReact 19 · the same shared code\nfrontend/src/admin\nbuild: dist-admin, base /admin/" {class: app}
+}
+
+helper2: "helper2 · Helm release, one namespace (ADR 0043)" {
+  class: group
+
+  web: "helper2-web\nnginx · the public web app's files\n(every address that is not the public app's)" {class: app}
+  public: "helper2 · public app\nSpring Boot 4.1 · Java 25 + Kotlin\nthe shell (index.html) and pages for crawlers,\n/api/v1 (public.yaml): search, guide, setup, identity" {class: app}
+  bo: "helper2-backoffice\nSpring Boot 4.1 · Java 25 + Kotlin\n/api/v1/admin (admin.yaml), the admin web app,\nScout, catalog jobs, review research" {class: app}
+  libs: "shared libraries, in both apps\nkernel · platform · schema · core\n(search, catalog, sources, examples, identity)" {class: config}
+  embedder: "helper2-embedder · production's namespace\nNVIDIA embedding model on CPU,\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
+  migrate: "helper2-migrate Job\nFlyway as the owner,\nonce per release" {class: app}
+
+  pg: "PostgreSQL 18 + pgvector\nsystem of record:\ncatalog, full text, vectors,\nusers, queues, audit" {
+    shape: cylinder
+    class: data
+  }
+  redis: "Redis 8\ndisposable: source cache,\nguide answers, sessions,\nrate limits, budgets" {
+    shape: cylinder
+    class: data
+  }
+
+  public -> libs: {class: config}
+  bo -> libs: {class: config}
+  public -> pg: "JDBC · its own role"
+  bo -> pg: "JDBC · its own role"
+  migrate -> pg: "migrations" {class: config}
+  public -> redis: "its own Redis user"
+  bo -> redis: "its own Redis user"
+  public -> embedder: "query embedding" {class: ai-call}
+  bo -> embedder: "resource embeddings,\nthe indexer" {class: ai-call}
+}
+
+outside: "INTERNET · TCP 443 only" {
+  class: group
+  nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
+  sources: "Public sources\nGitHub · Hugging Face · npm\narXiv · Tavily · MCP Registry" {class: ext}
+  oauth: "github.com OAuth" {class: ext}
+}
+
+visitor -> browser.spa: uses {class: hot}
+admin -> browser.adminspa: uses
+browser.spa -> helper2.web: "JS, CSS, fonts" {class: hot}
+browser.spa -> helper2.public: "the shell, /api/v1 · JSON,\nguide over SSE" {class: hot}
+browser.adminspa -> helper2.bo: "files, /api/v1/admin · JSON,\nresearch steps over SSE"
+crawler -> helper2.public: "page head, sitemap.xml"
+
+helper2.public -> outside.nebius: "guide, setup,\ntranslation" {class: ai-call}
+helper2.bo -> outside.nebius: "enrichment,\nreview research" {class: ai-call}
+helper2.public -> outside.sources: "live search,\nsetup guides"
+helper2.bo -> outside.sources: "Scout collectors"
+helper2.public -> outside.oauth: "sign-in" {class: config}
+helper2.bo -> outside.oauth: "sign-in" {class: config}

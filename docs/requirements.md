@@ -78,7 +78,7 @@ describe how.
 | C-005 | AI Text Transparency    | Every AI-written text shown to users is labeled and marked machine-readable. | Regulatory | EU AI Act Art. 50 | High | Implemented |
 | C-006 | Storage Limitation      | Each kind of data is kept only as long as it serves its purpose, then deleted. | Regulatory | GDPR Art. 5(1)(e); nFADP Art. 6(4) | High | Implemented |
 | C-007 | Consent for Cookies     | Analytics and advertising cookies are set only after consent in the EU. | Regulatory | ePrivacy Directive Art. 5(3) | High | Implemented |
-| C-008 | Source Terms            | Every source and API is used within its own terms of use. | Regulatory | The terms of each source ([sources](sources.md)) | High | Implemented |
+| C-008 | Source Terms            | Every source and API is used within its own terms of use. | Regulatory | The terms of each source ([sources](backup/sources.md)) | High | Implemented |
 | C-009 | Digital Services Act    | The site meets the duties of the Digital Services Act for an intermediary service. | Regulatory | Regulation (EU) 2022/2065 (DSA) | High | Implemented |
 | C-010 | EU Hosting              | Every server runs in the EU. | Operational | | High | Implemented |
 | C-011 | Deployment              | The system runs on Kubernetes with Helm charts for staging and production, with no dependency on a specific cluster or infrastructure repository. | Operational | | High | Implemented |

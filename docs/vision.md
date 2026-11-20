@@ -68,9 +68,9 @@ retrieved, with a quote that code has checked word for word.
 
 ## Success measures
 
-- The product success criteria SC-1 to SC-7 in [the user journeys](user-journeys.md) hold, each checked by the tests
+- The product success criteria SC-1 to SC-7 in [the user journeys](backup/user-journeys.md) hold, each checked by the tests
   named there.
-- The evaluation runs ([evaluation](evaluation.md)): search relevance, and for the guide the answer rate, the
+- The evaluation runs ([evaluation](backup/evaluation.md)): search relevance, and for the guide the answer rate, the
   questions that must stay empty and do, P@3 and nDCG@3 of its picks, the picks the validator kept and rejected, and
   latency p50 / p90. A search change must not let nDCG@10 fall more than 0.005 below the stored baseline.
 - Latency stays within the budgets of the load test for search and the guide's search-only path.

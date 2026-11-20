@@ -1,9 +1,9 @@
 # Changelog
 
-One entry per release. The ADRs say why the code is as it is ([docs/adr](docs/adr/README.md)); this page says what
+One entry per release. The ADRs say why the code is as it is ([docs/architecture/decisions](docs/architecture/decisions/README.md)); this page says what
 each release holds for the people who use, run or build on helper2.ai. Versions are calendar versions, `YYYY.N.P`:
 the year, the number of the release in that year's month series and the patch
-([ADR 0045](docs/adr/operations/0045-releases-and-versions.md)). A breaking change goes on the first line of the
+([ADR 0045](docs/architecture/decisions/ADR-0045-releases-and-versions.md)). A breaking change goes on the first line of the
 release notes.
 
 ## 2026.11.3 (unreleased)
@@ -43,31 +43,31 @@ The first release of this repository. It is the starting point: the product as i
 
 - **Three deployables** from one Helm chart: the public app, the back office and the web image, with PostgreSQL 18
   (full-text and pgvector) and Redis 8 as a disposable cache
-  ([ADR 0043](docs/adr/operations/0043-runtime-topology-helm-chart-three-deployables.md)).
+  ([ADR 0043](docs/architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md)).
 - **One schema migration**, `V1__schema.sql`, run by its own Job before the apps start. Each app has its own
   database role and Redis user; the passwords are in their own Secret, `helper2-credentials`
-  ([ADR 0004](docs/adr/foundation/0004-persistence-and-the-schema.md)).
+  ([ADR 0004](docs/architecture/decisions/ADR-0004-persistence-and-the-schema.md)).
 - **Configuration** through `H2_` variables; secrets in OpenBao. Six spending limits change at runtime from the
   Settings page of the back office, audited and undoable
-  ([ADR 0007](docs/adr/foundation/0007-configuration-secrets-runtime-settings.md)).
+  ([ADR 0007](docs/architecture/decisions/ADR-0007-configuration-secrets-runtime-settings.md)).
 - **The back office** on its own host, over the VPN: overview, review queue, Scout runs, enrichment queue, home
-  examples, audit trail, settings ([ADR 0038](docs/adr/backoffice/0038-back-office-and-review.md)).
+  examples, audit trail, settings ([ADR 0038](docs/architecture/decisions/ADR-0038-back-office-and-review.md)).
 - **The Scout** runs once a day on prod and fills the catalog from its collectors. A claim a model proposes is
-  published only with evidence; the rest goes to review ([ADR 0014](docs/adr/scout/0014-evidence-gated-enrichment.md)).
+  published only with evidence; the rest goes to review ([ADR 0014](docs/architecture/decisions/ADR-0014-evidence-gated-enrichment.md)).
 - **Delivery.** CI and CD per component; images signed and deployed by digest, an SBOM and a scan per image, and a
   scan that stops a deploy on a Critical finding that has a fix. Releases come from release branches through a
-  canary, with an automatic rollback ([ADR 0044](docs/adr/operations/0044-ci-cd-and-supply-chain.md),
-  [ADR 0045](docs/adr/operations/0045-releases-and-versions.md)).
+  canary, with an automatic rollback ([ADR 0044](docs/architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md),
+  [ADR 0045](docs/architecture/decisions/ADR-0045-releases-and-versions.md)).
 - **Observability.** Logs, traces and meters, a Grafana dashboard per app and alert rules with their tests
-  ([ADR 0009](docs/adr/foundation/0009-observability.md)). Daily purges keep each store to its retention period
-  ([ADR 0010](docs/adr/foundation/0010-data-retention.md)).
-- **Setup from zero:** [docs/recreate.md](docs/recreate.md).
+  ([ADR 0009](docs/architecture/decisions/ADR-0009-observability.md)). Daily purges keep each store to its retention period
+  ([ADR 0010](docs/architecture/decisions/ADR-0010-data-retention.md)).
+- **Setup from zero:** [docs/backup/recreate.md](docs/backup/recreate.md).
 
 ### What builds on it
 
 - **Public API** under `/api/v1`, contract first: [api/public.yaml](api/public.yaml), with `api/admin.yaml` for the
   back office and `api/common.yaml` for what both share. Errors are typed RFC 9457 problems
-  ([ADR 0003](docs/adr/foundation/0003-contract-first-rest.md)).
+  ([ADR 0003](docs/architecture/decisions/ADR-0003-contract-first-rest.md)).
 - **`GET /api/v1/policy`** states every limit and retention period the text pages show.
 
 ### Legal

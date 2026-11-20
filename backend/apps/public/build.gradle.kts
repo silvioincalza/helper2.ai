@@ -65,7 +65,7 @@ tasks.named<Test>("test") {
     .withPropertyName("frontendPages")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
-    .files(rootProject.files("../docs/eval/search-baseline.json"))
+    .files(rootProject.files("../docs/backup/eval/search-baseline.json"))
     .withPropertyName("rankingBaseline")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs

@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Import;
 @Import(TestcontainersConfiguration.class)
 class ResearchEvalRecorder {
 
-  static final Path REPORTS = Path.of("../docs/eval");
+  static final Path REPORTS = Path.of("../docs/backup/eval");
   static final Path TRACES = Path.of("eval-data/research-traces");
 
   @Autowired ResearchModel model;

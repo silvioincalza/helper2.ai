@@ -1,7 +1,7 @@
 # AdSense go-live runbook
 
 How the Google ads start on prod, step by step, and how to stop them.
-[ADR 0042](../../docs/adr/money/0042-monetisation.md) says why each rule is there, and
+[ADR 0042](../../docs/architecture/decisions/ADR-0042-monetisation.md) says why each rule is there, and
 [RUNBOOK-release.md](RUNBOOK-release.md) is the release itself. Story:
 [S8.6.3](https://github.com/silvioincalza/helper2.ai/issues/872).
 

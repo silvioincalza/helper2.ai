@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { canonicalUrl, EXIT_BUDGET_SPENT, EXIT_FAILED, EXIT_NETWORK_QUOTA, guideRequest, guideRunStop, noticeCodes, resourceId, unsupportedClaims } from './eval-lib.mjs';
 
-const run = { id: 'b07', base: 'https://staging.example', report: 'docs/eval/guide-run.md' };
+const run = { id: 'b07', base: 'https://staging.example', report: 'docs/backup/eval/guide-run.md' };
 const answer = (status, ...codes) => ({ status, sources: [], notices: codes.map((code) => ({ code, message: `${code} message` })) });
 
 test('the first answer with the budget notice stops the run with its own exit code', () => {
@@ -15,7 +15,7 @@ test('the first answer with the budget notice stops the run with its own exit co
   assert.notEqual(EXIT_BUDGET_SPENT, EXIT_FAILED);
   assert.match(stop.message, /^Stopped at b07: the guide's daily model budget on https:\/\/staging\.example is used up \(GUIDE_BUDGET_SPENT\)/);
   assert.match(stop.message, /"GUIDE_BUDGET_SPENT message"/);
-  assert.match(stop.message, /docs\/eval\/guide-run\.md is unchanged/);
+  assert.match(stop.message, /docs\/backup\/eval\/guide-run\.md is unchanged/);
 });
 
 test('the budget notice stops the run whatever the status of its answer', () => {
@@ -40,7 +40,7 @@ test('the first answer with the network quota notice stops the run with its own 
   assert.equal(new Set([EXIT_FAILED, EXIT_BUDGET_SPENT, EXIT_NETWORK_QUOTA]).size, 3);
   assert.match(stop.message, /^Stopped at b07: the runner's network has used its guide questions for today on https:\/\/staging\.example \(GUIDE_NETWORK_QUOTA\)/);
   assert.match(stop.message, /Run again after 2026-11-10T00:00:00Z, from another network/);
-  assert.match(stop.message, /docs\/eval\/guide-run\.md is unchanged/);
+  assert.match(stop.message, /docs\/backup\/eval\/guide-run\.md is unchanged/);
   assert.doesNotMatch(stop.message, /model budget|this address/);
 });
 
@@ -101,7 +101,7 @@ test('the script stops at the first question when the backend says its budget is
     assert.equal(stdout.trim().split('\n').length, 1, 'one question asked');
     assert.match(stdout, /LLM_UNAVAILABLE \d+ms \| notices GUIDE_BUDGET_SPENT \|/);
     assert.match(stderr, new RegExp(`the guide's daily model budget on ${base} is used up \\(GUIDE_BUDGET_SPENT\\)`));
-    assert.match(stderr, /docs\/evaluation-adversarial\.md is unchanged/);
+    assert.match(stderr, /docs\/backup\/evaluation-adversarial\.md is unchanged/);
   } finally {
     server.close();
   }

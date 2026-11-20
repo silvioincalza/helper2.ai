@@ -1,0 +1,31 @@
+# Flowchart: a pull request to main and the Copilot review of each push (ADR 0044 §22). The ruleset asks Copilot to
+# review every push, requires ci-ok, and requires every review thread resolved; the owner merges once Copilot posted.
+# Source of truth: .github/settings/ruleset-main.json (copilot_code_review, required check ci-ok,
+#   required_review_thread_resolution), docs/backup/recreate.md.
+# Render: cd docs/architecture/diagrams && d2 fmt flow-0044-copilot-review.d2 && d2 flow-0044-copilot-review.d2 flow-0044-copilot-review.svg
+
+...@style
+
+direction: down
+
+push: "Pull request opened,\nor a new push to it\n(Update branch too)" {class: person}
+ask: "Ruleset: Copilot asked\nto review the push" {class: config}
+job: "GitHub Actions job\ncopilot-pull-request-reviewer\non the head commit" {class: app}
+reviewed: "Review posted on\nthe head commit?" {class: decision}
+waits: "Owner waits\n(not enforced by GitHub)" {class: fail}
+fallback: "Owner requests the\nCopilot review again" {class: person}
+threads: "Every review thread\nresolved?" {class: decision}
+open: "Merge blocked until\nthe threads are resolved" {class: fail}
+ci: "ci-ok green on the\nhead commit?" {class: decision}
+merge: "Owner merges\n(squash)" {class: end}
+
+push -> ask: {class: hot}
+ask -> job: {class: hot}
+job -> reviewed
+reviewed -> waits: no
+waits -> fallback
+fallback -> job
+reviewed -> threads: yes {class: hot}
+threads -> open: no
+threads -> ci: yes {class: hot}
+ci -> merge: yes {class: hot}

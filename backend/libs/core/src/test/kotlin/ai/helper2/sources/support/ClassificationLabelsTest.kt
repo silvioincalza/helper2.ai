@@ -28,7 +28,10 @@ class ClassificationLabelsTest {
     val file = File(docs(), "classifier-labels.tsv")
     val lines = file.readLines()
     val items = parse(lines)
-    assumeTrue(items.isNotEmpty(), "$file has no labelled rows yet (see docs/eval/README.md).")
+    assumeTrue(
+      items.isNotEmpty(),
+      "$file has no labelled rows yet (see docs/backup/eval/README.md).",
+    )
     val c = confusion(items)
     println(
       "isAiRelated on ${items.size} labelled items: precision %.3f, recall %.3f, $c"
@@ -83,8 +86,8 @@ class ClassificationLabelsTest {
     fun docs(): File =
       File(System.getProperty("user.dir"))
         .absoluteFile
-        .let { if (File(it, "docs/eval").isDirectory) it else it.parentFile }
-        .resolve("docs/eval")
+        .let { if (File(it, "docs/backup/eval").isDirectory) it else it.parentFile }
+        .resolve("docs/backup/eval")
 
     fun parse(lines: List<String>): List<Labelled> {
       val rows = lines.filter { it.isNotBlank() && !it.startsWith("#") }
