@@ -53,7 +53,7 @@ prod: "ns helper2-prod · ingress + egress default-deny · one policy per worklo
   front.java -> stores.postgres: "JDBC :5432\n(the public app: data + shedlock locks)"
   front.java -> stores.redis: ":6379\n(the back office: own session namespace)"
   migrate -> stores.postgres: "JDBC :5432"
-  front.java -> embedder: "embeddings :8080\n(queries; the indexer every 1 s)" {class: ai-call}
+  front.java -> embedder: "embeddings :8080\n(queries; the indexer every 3 s,\nstaging's every minute)" {class: ai-call}
 }
 
 staging: "ns helper2-staging · what differs from prod" {

@@ -70,7 +70,7 @@ cluster: KUBERNETES {
       backup: "pg-backup, nightly\npg-restore-check, weekly" {class: app}
     }
 
-    apps.java -> embedder: "embeddings\nqueries; the indexer every 1 s" {class: ai-call}
+    apps.java -> embedder: "embeddings\nqueries; the indexer every 3 s,\nstaging's every minute" {class: ai-call}
     apps.java -> stores: "each with its own\nrole and user"
     jobs -> stores.postgres: "as the owner"
   }
