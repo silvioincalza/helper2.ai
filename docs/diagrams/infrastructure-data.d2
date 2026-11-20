@@ -58,10 +58,7 @@ monitoring: MONITORING {
 
 prod.backups.backup -> r2: "HTTPS 443, only when\nbackup.offsite is on" {class: config}
 prod.backups.check -> r2: "HTTPS 443: the newest dump,\ndecrypted (backup.offsite)" {class: config}
-alloy -> prod.observed.app: "scrape :8081" {class: config}
-alloy -> prod.observed.bo: "scrape :8081" {class: config}
-alloy -> prod.observed.pgexp: "scrape :9187" {class: config}
-alloy -> prod.observed.redisexp: "scrape :9121" {class: config}
+alloy -> prod.observed: "scrape\n:8081, :9187, :9121" {class: config}
 prod.observed.app -> alloy: "traces OTLP/HTTP :4318"
 alloy -> monitoring.prometheus: "remote write"
 alloy -> monitoring.tempo: traces

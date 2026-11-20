@@ -16,7 +16,7 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 nginx: "ingress-nginx (ns ingress-nginx)\nIngress helper2-public: the public app's addresses → Service helper2,\nthe rest → Service helper2-web\nIngress helper2-admin → Service helper2-admin (private ranges only)" {class: app}
 
@@ -26,8 +26,11 @@ prod: "ns helper2-prod · ingress + egress default-deny · one policy per worklo
   front: "SERVE REQUESTS" {
     class: group
     web: "helper2-web Deployment (nginx) · 2 pods\nPDB minAvailable 1 · read-only root, user 101\n:8080 the web app's files (Service helper2-web)\n:8081 /healthz (in no Service)\nno egress" {class: app}
-    app: "helper2 Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
-    bo: "helper2-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout, catalog jobs\n:8080 (Service helper2-admin)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+    java: "egress: DNS, Postgres, Redis, Alloy, and TCP 443 outside" {
+      class: group
+      app: "helper2 Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+      bo: "helper2-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout, catalog jobs\n:8080 (Service helper2-admin)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+    }
   }
 
   stores: STORES {
@@ -44,10 +47,8 @@ prod: "ns helper2-prod · ingress + egress default-deny · one policy per worklo
 
   migrate: "helper2-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
 
-  front.app -> stores.postgres: "JDBC :5432\n(data + shedlock locks)"
-  front.app -> stores.redis: ":6379"
-  front.bo -> stores.postgres: "JDBC :5432"
-  front.bo -> stores.redis: ":6379\n(own session namespace)"
+  front.java -> stores.postgres: "JDBC :5432\n(the public app: data + shedlock locks)"
+  front.java -> stores.redis: ":6379\n(the back office: own session namespace)"
   migrate -> stores.postgres: "JDBC :5432"
 }
 
@@ -58,23 +59,15 @@ staging: "ns helper2-staging · what differs from prod" {
   sizes -> embedder: "embeddings :8080\n(instead of NVIDIA's endpoint)" {class: ai-call}
 }
 
-dns: "kube-dns :53 (ns kube-system)\nevery workload with egress" {class: app}
-
 outside: "INTERNET · app egress TCP 443 only (private ranges excluded)" {
   class: group
-  nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
-  nvidia: "NVIDIA API catalog\nembeddings" {class: ai}
-  sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nTavily · MCP Registry" {class: ext}
+  nebius: "Nebius Token Factory · NVIDIA Nemotron\nthe public app: chat completions\nthe back office: enrichment" {class: ai}
+  nvidia: "NVIDIA API catalog · /embeddings\nthe public app: queries\nthe back office: the indexer" {class: ai}
+  sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nTavily · MCP Registry\nthe public app: search\nthe back office: Scout + admin search" {class: ext}
 }
 
 nginx -> prod.front.web: ":8080 (files: /assets/, /theme.js,\n/favicon.svg, /favicon.ico; else 404)" {class: hot}
-nginx -> prod.front.app: ":8080\n(only allowed caller)" {class: hot}
-nginx -> prod.front.bo: ":8080 (admin hosts)"
+nginx -> prod.front.java.app: ":8080\n(only allowed caller)" {class: hot}
+nginx -> prod.front.java.bo: ":8080 (admin hosts)"
 nginx -> staging.sizes: ":8080"
-prod.front.app -> dns: DNS {class: config}
-prod.front.app -> outside.nebius: "chat completions" {class: ai-call}
-prod.front.app -> outside.nvidia: "/embeddings" {class: ai-call}
-prod.front.app -> outside.sources: "search"
-prod.front.bo -> outside.nebius: "enrichment" {class: ai-call}
-prod.front.bo -> outside.nvidia: "/embeddings\n(indexer)" {class: ai-call}
-prod.front.bo -> outside.sources: "Scout + admin search"
+prod.front.java -> outside: "TCP 443" {class: ai-call}

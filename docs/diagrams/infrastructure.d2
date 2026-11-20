@@ -65,14 +65,14 @@ cluster: "KUBERNETES · ns helper2-prod (helper2-staging: the same chart, smalle
 
 outside: "INTERNET · TCP 443 only" {
   class: group
-  nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
+  grid-columns: 1
+  grid-gap: 24
+  nebius: "Nebius Token Factory\nNVIDIA Nemotron\n(guide, enrichment)" {class: ai}
   nvidia: "NVIDIA API catalog\nembeddings (production)" {class: ai}
-  sources: "Public sources\nGitHub · Hugging Face · npm\narXiv · Tavily · MCP Registry" {class: ext}
+  sources: "Public sources · search, Scout\nGitHub · Hugging Face · npm\narXiv · Tavily · MCP Registry" {class: ext}
 }
 
 visitor -> edge.cloudflare: HTTPS {class: hot}
 edge.cloudflare -> cluster.nginx: "public hosts" {class: hot}
 owner -> cluster.nginx: "admin hosts"
-cluster.apps.java -> outside.nebius: "guide, enrichment" {class: ai-call}
-cluster.apps.java -> outside.nvidia: "embeddings" {class: ai-call}
-cluster.apps.java -> outside.sources: "search, Scout"
+cluster.apps.java -> outside: "model calls\nand searches" {class: ai-call}

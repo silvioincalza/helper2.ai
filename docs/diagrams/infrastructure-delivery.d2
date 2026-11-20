@@ -28,8 +28,8 @@ delivery: "DELIVERY (private network)" {
     shape: cylinder
     class: data
   }
-  runner -> openbao: "OIDC login, kv get,\nTransit sign (CD only)"
-  runner -> harbor: "push image and signature;\ncheck signatures before a deploy"
+  runner -> openbao: "OIDC login,\nkv get,\nTransit sign\n(CD only)"
+  runner -> harbor: "push image\nand signature;\ncheck signatures\nbefore a deploy"
   workstation -> openbao: "make credentials"
 }
 
@@ -46,12 +46,12 @@ cluster: "KUBERNETES · ns helper2-prod" {
 
   canary: "During a release only: Helm release helper2-canary (ADR 0045)" {
     class: group
-    cingress: "Ingress helper2-canary\ncanary-by-header X-Helper2-Canary\n= token of the run, no weight" {class: config}
+    cingress: "Ingress helper2-canary\ncanary-by-header X-Helper2-Canary\n= token of the run, no weight:\nreached with header + token only" {class: config}
     cmigrate: "helper2-canary-migrate Job\nprod's schema, before the rollout" {class: app}
     capp: "helper2-canary · 1 pod\npublic image of the release commit\nrole h2_public · Redis user h2_public" {class: app}
     cweb: "helper2-web-canary · 1 pod\n/assets/ only" {class: app}
-    cingress -> capp: "header + token only:\n/ (smoke test of a release)"
-    cingress -> cweb: "header + token only:\n/assets/"
+    cingress -> capp: "/ (smoke test)"
+    cingress -> cweb: "/assets/"
   }
 
   stores: "prod's Postgres and Redis\n(canary NetworkPolicies)" {
