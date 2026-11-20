@@ -313,7 +313,7 @@ groups:
         annotations:
           summary: "The embedding indexer has not finished a batch for 30 minutes ({{ $labels.environment }})."
           description: "The last successful batch was {{ $value | humanizeDuration }} ago (one runs every 5 s). New resources are found by keyword search only until it recovers."
-          runbook: "Dashboard helper2-backoffice, row 'Embedding indexer', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; database = Postgres. Logs: 'Embedding batch failed'."
+          runbook: "Dashboard helper2-backoffice, row 'Embedding indexer', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; refused = the circuit is open after repeated failures and no call was sent; database = Postgres. Logs: 'Embedding batch failed'."
       - alert: Helper2EmbeddingBacklogStuck
         expr: |
           max by (environment) (

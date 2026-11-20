@@ -1518,7 +1518,7 @@
       "type": "timeseries",
       "id": 27,
       "title": "Embedding failures by reason",
-      "description": "Failed indexer batches; the next batch retries the same resources.",
+      "description": "Failed indexer batches; the next batch retries the same resources. refused = the circuit is open after repeated failures, so no call was sent.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
