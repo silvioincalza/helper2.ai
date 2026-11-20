@@ -27,7 +27,7 @@ pub -> db: "keep the vector 7 days;\nnearest rows of resource_embedding"
 db -> pub: "rows by distance"
 pub -> visitor: "results by meaning, fused by rank"
 
-bo -> db: "every 1 s: next resource\nwithout a current vector"
+bo -> db: "every 3 s (staging: every minute):\nnext resource without a current vector"
 db -> bo: "title and description"
 bo -> emb: "POST /v1/embeddings\ninput_type passage, dimensions 1024\n(30 s)" {class: hot}
 emb -> bo: "200 one vector"
