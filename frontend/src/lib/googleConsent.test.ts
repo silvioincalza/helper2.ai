@@ -147,9 +147,13 @@ describe("Google's consent tool (ADR 0042)", () => {
 
   describe('Feature: Google is asked only where an ad unit shows an ad', () => {
     const RESOURCE = '/resource/11111111-1111-5111-8111-111111111111';
-    const BOTH = { adsenseSlot: '1234567890', adsenseSlotSearch: '2345678901' };
-    const RESOURCE_ONLY = { adsenseSlot: '1234567890', adsenseSlotSearch: null };
-    const SEARCH_ONLY = { adsenseSlot: null, adsenseSlotSearch: '2345678901' };
+    const BOTH = {
+      adsenseSlot: '1234567890',
+      adsenseSlotSearch: '2345678901',
+      adsenseSlotGuide: '3456789012',
+    };
+    const RESOURCE_ONLY = { ...BOTH, adsenseSlotSearch: null, adsenseSlotGuide: null };
+    const SEARCH_ONLY = { ...BOTH, adsenseSlot: null, adsenseSlotGuide: null };
 
     it('Scenario: a resource page is the resource placement, unless its address has search words or a guide question', () => {
       expect(adPlacement(RESOURCE, '', BOTH)).toBe('resource');
@@ -158,11 +162,12 @@ describe("Google's consent tool (ADR 0042)", () => {
       expect(adPlacement(RESOURCE, '?ask=which', BOTH)).toBeUndefined();
     });
 
-    it('Scenario: a search for words is the search placement, a guide question is none', () => {
+    it('Scenario: a search for words is the search placement, a guide question is the guide placement', () => {
       expect(adPlacement('/search', '?q=agents', BOTH)).toBe('search');
       expect(adPlacement('/search', '?q=agents&type=MODEL', BOTH)).toBe('search');
-      expect(adPlacement('/search', '?q=agents&ask=which+one', BOTH)).toBeUndefined();
-      expect(adPlacement('/search', '?ask=which+one', BOTH)).toBeUndefined();
+      expect(adPlacement('/search', '?q=agents&ask=which+one', BOTH)).toBe('guide');
+      expect(adPlacement('/search', '?ask=which+one', BOTH)).toBe('guide');
+      expect(adPlacement('/search', '?q=agents&ask=which+one', SEARCH_ONLY)).toBeUndefined();
       expect(adPlacement('/search', '', BOTH)).toBeUndefined();
     });
 
@@ -171,6 +176,7 @@ describe("Google's consent tool (ADR 0042)", () => {
       expect(adPlacement('/search', '?q=agents', RESOURCE_ONLY)).toBeUndefined();
       expect(adUnitOf('resource', BOTH)).toBe('1234567890');
       expect(adUnitOf('search', BOTH)).toBe('2345678901');
+      expect(adUnitOf('guide', BOTH)).toBe('3456789012');
     });
 
     it('Scenario: every other page is none', () => {

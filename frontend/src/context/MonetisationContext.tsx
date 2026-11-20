@@ -9,6 +9,7 @@ const MONETISATION_OFF: Monetisation = {
   adsenseClient: null,
   adsenseSlot: null,
   adsenseSlotSearch: null,
+  adsenseSlotGuide: null,
 };
 
 const MonetisationContext = createContext<Monetisation>(MONETISATION_OFF);

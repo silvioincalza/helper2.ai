@@ -21,7 +21,8 @@ class MonetisationConfiguration {
         filled(p.ga4MeasurementId()),
         filled(p.adsenseClient()),
         filled(p.adsenseSlot()),
-        filled(p.adsenseSlotSearch()));
+        filled(p.adsenseSlotSearch()),
+        filled(p.adsenseSlotGuide()));
   }
 
   private static Optional<String> filled(String value) {

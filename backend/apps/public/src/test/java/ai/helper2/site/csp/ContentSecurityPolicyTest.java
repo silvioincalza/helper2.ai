@@ -15,6 +15,7 @@ class ContentSecurityPolicyTest {
         Optional.ofNullable(ga4),
         Optional.empty(),
         Optional.empty(),
+        Optional.empty(),
         Optional.empty());
   }
 
@@ -45,6 +46,7 @@ class ContentSecurityPolicyTest {
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(ContentSecurityPolicy.forPublicSite(publisherOnly))
@@ -60,6 +62,7 @@ class ContentSecurityPolicyTest {
             Optional.of("G-TEST1234"),
             Optional.of("ca-pub-4688630163076563"),
             Optional.of("1234567890"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(ContentSecurityPolicy.forPublicSite(adsense))

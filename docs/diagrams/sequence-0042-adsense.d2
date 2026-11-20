@@ -23,7 +23,7 @@ home: "A visit starts on Home" {
   person -> api: "GET /"
   api -> person: "index.html, every script with the nonce;\nCSP names the nonce"
   person -> api: "GET /api/v1/site"
-  api -> person: "monetisation: adsenseClient,\nadsenseSlot, adsenseSlotSearch"
+  api -> person: "monetisation: adsenseClient,\nadsenseSlot, adsenseSlotSearch,\nadsenseSlotGuide"
   person -> person: "no ad on Home: nothing asked\nfrom Google, no Google Analytics"
 }
 
@@ -40,8 +40,16 @@ visit: "The visitor searches" {
   ads -> person: "the ad"
 }
 
+guide: "The visitor asks the guide" {
+  person -> person: "/search?q=...&ask=...: the search box\nleaves, no ad while the guide works"
+  person -> api: "POST /api/v1/guide/stream"
+  api -> person: "the answer, with a pick"
+  person -> ads: "one ad for the box below the answer\n(guide ad unit; the address holds\nthe question)" {class: hot}
+  ads -> person: "the ad"
+}
+
 resource: "The visitor opens a resource" {
-  person -> person: "/resource/{id}: the search box pauses\nits requests, the resource box asks"
+  person -> person: "/resource/{id}: the box left behind pauses\nits requests, the resource box asks"
   person -> ads: "one ad for the box between the sections\n(resource ad unit, no search words)"
   ads -> person: "the ad"
 }

@@ -136,6 +136,7 @@ class PageHtmlTest {
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
     String page = html(SHELL, adsense).render(new Pages("https://helper2.ai").home(), "n0nce");
 
