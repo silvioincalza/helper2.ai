@@ -17,13 +17,34 @@ the Kotlin interfaces on its edge. Java adapters implement those ports and talk 
 schedules of both apps on the driving side; the public web, the NVIDIA Nemotron models, Redis and PostgreSQL on the
 driven side.
 
+### The whole system on one page
+
+![The whole system](diagrams/architecture-full.svg)
+
+People on the left, the browser and the edge, then the cluster with the two apps, their modules, the shared libraries
+and the stores, and on the right what helper2 calls outside. Each group names the view that holds its detail.
+
 ### The same system, one view at a time
+
+The views follow the C4 model: context, containers, components, then deployment.
+
+**C4 level 1: system context**
 
 | View | Shows |
 |---|---|
-| [Context](diagrams/architecture-context.svg) | The modules as boxes, who calls helper2, and what it calls. |
-| [Context map](diagrams/context-map.svg) | The 10 bounded contexts of the backlog, the modules that hold each one, and the direction of each dependency. |
-| [Event storming](diagrams/event-storming.svg) | The big picture of the seven contexts the apps run: who does what, which events follow, which policies react, and the open stories. |
+| [System context](diagrams/architecture-system-context.svg) | helper2 as one box, the people who use it and the systems it talks to. |
+
+**C4 level 2: containers**
+
+| View | Shows |
+|---|---|
+| [Containers](diagrams/architecture-containers.svg) | What is deployed and runs on its own: the two web apps, the three deployables, the migrate Job, the embedder and the two stores. |
+
+**C4 level 3: components**
+
+| View | Shows |
+|---|---|
+| [Modules](diagrams/architecture-context.svg) | The modules as boxes, who calls helper2, and what it calls. |
 | [Hexagonal layers](diagrams/hexagonal-architecture.svg) | The domain inside, its ports on the edge, the adapters around it. |
 | [One search](diagrams/architecture-search.svg) | The search ports and every source, cache and translator adapter behind them. |
 | [One guide question](diagrams/architecture-guide.svg) | AskGuide, the search it reuses, the evidence gate and the LLM layer's guards. |
@@ -31,8 +52,21 @@ driven side.
 | [Set it up](diagrams/architecture-setup.svg) | The setup module on a resource page: run options from the registry and the README, the tool guide, its budgets and caches. |
 | [Review research](diagrams/architecture-review-research.svg) | The research module in the back office: its ports, the agent loop, the read-only tools and the live steps. |
 | [Edge and shared services](diagrams/architecture-platform.svg) | Identity, rate limits, errors and the SPA, and the platform services every module uses, with their Redis keys and tables. |
-| [Data model](diagrams/data-model.svg) | Every PostgreSQL table with its columns, keys and delete rules, grouped by area. |
+| [Frontend](diagrams/architecture-frontend.svg) | The two web apps built from `frontend/src`: features and the ones they compose, the shared layers, the generated API client, and who may import whom. |
+
+**Deployment**
+
+| View | Shows |
+|---|---|
 | [Deployment](diagrams/infrastructure.svg) | The hosted helper2 on Kubernetes, the full picture in zones: how a request gets in, the applications, the one embedder, the stores, what they call outside, the delivery, backups and monitoring. Four views hold the detail: [workloads](diagrams/infrastructure-workloads.svg), [secrets](diagrams/infrastructure-secrets.svg), [delivery](diagrams/infrastructure-delivery.svg), [backups and monitoring](diagrams/infrastructure-data.svg). |
+
+**Domain and data**
+
+| View | Shows |
+|---|---|
+| [Context map](diagrams/context-map.svg) | The 10 bounded contexts of the backlog, the modules that hold each one, and the direction of each dependency. |
+| [Event storming](diagrams/event-storming.svg) | The big picture of the seven contexts the apps run: who does what, which events follow, which policies react, and the open stories. |
+| [Data model](diagrams/data-model.svg) | Every PostgreSQL table with its columns, keys and delete rules, grouped by area. |
 
 - Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](adr/foundation/0002-modules-modular-monolith-hexagonal-where-the-rules-live.md).
 - The API is contract-first: controller interfaces and frontend types are generated from `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`;

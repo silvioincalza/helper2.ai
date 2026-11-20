@@ -1,0 +1,104 @@
+# Architecture, the frontend: the two web apps built from frontend/src, their folders and who may import whom
+# (ADR 0050). An arrow is an import that `npm run lint` lets pass; no arrow, no import.
+# Source of truth: frontend/eslint.config.js (SHARED_MAY_IMPORT, COMPOSES, boundary), frontend/src/main.tsx, routes.tsx,
+#   AppProviders.tsx, frontend/src/shell, frontend/src/features/*, frontend/src/admin (main.tsx, routes.tsx),
+#   frontend/src/ui, hooks, context, api, lib, i18n, styles, frontend/package.json (gen:api, build),
+#   frontend/vite.config.ts, vite.admin.config.ts, api/public.yaml, api/admin.yaml.
+# Render: cd docs/diagrams && d2 fmt architecture-frontend.d2 && d2 architecture-frontend.d2 architecture-frontend.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+visitor: "Visitor" {class: person}
+admin: "Admin\n(VPN)" {class: person}
+
+contract: "api/public.yaml\napi/admin.yaml\n(OpenAPI 3.1)" {class: data}
+
+src: "frontend/src · React 19 · Vite · TypeScript" {
+  class: group
+
+  publicapp: "PUBLIC APP · index.html → dist" {
+    class: group
+    root: "main.tsx · routes.tsx\nAppProviders.tsx\nrouter, lazy pages,\nMonetisation, Me, Bookmarks providers" {class: app}
+    shell: "shell/\nLayout, HomeOrResultsPage,\nRouteError, NotFoundPage" {class: app}
+    root -> shell
+  }
+
+  features: "features/ · a feature imports no other feature, but the ones it composes (COMPOSES)" {
+    class: group
+    home: "home\n/ · examples, lists, radar" {class: app}
+    search: "search\n/search · one box, results,\nfilters, timeline" {class: app}
+    resource: "resource\n/resource/:id · facts,\nevidence, report" {class: app}
+    guide: "guide\nthe AI guide's answer,\npicks, stream" {class: app}
+    setup: "setup\nSet it up, tool guide" {class: app}
+    feeds: "feeds\n/news, /events" {class: app}
+    monetisation: "monetisation\n/support · consent,\nad slot, gifts" {class: app}
+    hubs: "hubs\n/ai-apps … /courses" {class: app}
+    saved: "saved\n/saved" {class: app}
+    sources: "sources\n/sources" {class: app}
+    account: "account\n/account, /signin" {class: app}
+    pages: "pages\n/mission, /privacy, /terms" {class: app}
+
+    home -> feeds: composes {class: hot}
+    home -> search: composes {class: hot}
+    search -> guide: composes {class: hot}
+    search -> monetisation: composes {class: hot}
+    resource -> setup: composes {class: hot}
+    resource -> monetisation: composes {class: hot}
+  }
+
+  adminapp: "ADMIN APP · admin.html → dist-admin, base /admin/" {
+    class: group
+    admin: "admin/\nmain.tsx, routes.tsx, AdminShell,\nreview queue, research, Scout runs,\nexamples, settings, audit" {class: app}
+  }
+
+  shared: "SHARED CODE · each layer imports the layers below it" {
+    class: group
+    ui: "ui/\nAiLabel, ProofQuote, Badges,\nStatePanel, Skeleton, Term" {class: app}
+    hooks: "hooks/\nuseApi, usePolicy,\nuseCategories, useRetry" {class: app}
+    context: "context/\nMe, Bookmarks,\nMonetisation" {class: app}
+    base: "the base: import each other only" {
+      class: group
+      api: "api/\nclient.ts, admin.ts, types.ts\nschema.ts, admin-schema.ts\n(generated)" {class: port}
+      lib: "lib/\nsse, searchState, consent,\nanalytics, format, theme" {class: app}
+      i18n: "i18n/\ncopy" {class: app}
+      styles: "styles/\ntokens.css, app.css,\nshell.css" {class: app}
+    }
+    ui -> hooks
+    hooks -> context
+    context -> base
+  }
+
+  publicapp.root -> features: "routes: every page" {class: hot}
+  publicapp.shell -> features: "home or results"
+  publicapp -> shared
+  features -> shared: "never shell/ or admin/"
+  adminapp.admin -> shared: "no feature"
+  adminapp.admin -> publicapp.shell: "RouteError only" {class: config}
+}
+
+checks: "CHECKS IN CI\nnpm run lint: the import rules\nnpm run knip: dead code\nnpm run check:bundle\nadminBundle.test.ts" {class: config}
+
+backend: "helper2" {
+  class: group
+  web: "helper2-web (nginx)\nthe files of dist" {class: app}
+  public: "public app\nthe shell, /api/v1" {class: app}
+  bo: "back office app\nthe files of dist-admin,\n/api/v1/admin" {class: app}
+}
+
+visitor -> src.publicapp: "public hosts" {class: hot}
+admin -> src.adminapp: "admin host"
+contract -> src.shared.base.api: "npm run gen:api\n(openapi-typescript)" {class: config}
+checks -> src: {class: config}
+
+src.publicapp -> backend.web: "build: dist" {class: config}
+src.adminapp -> backend.bo: "build: dist-admin" {class: config}
+src.shared.base.api -> backend.public: "client.ts: JSON,\nguide over SSE" {class: hot}
+src.shared.base.api -> backend.bo: "admin.ts: JSON,\nresearch steps over SSE"
