@@ -319,12 +319,13 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		|| { echo "ingress-embedder must let in prod's two apps, and staging's two apps and its canary, nothing else"; exit 1; }; \
 	grep -q 'readOnlyRootFilesystem: true' <<< "$$emb" || { echo "the embedder must run on a read-only root filesystem"; exit 1; }; \
 	[ "$$(grep -c 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1"' <<< "$$on")" -eq 2 ] \
-		&& [ "$$(grep -c 'name: H2_EMBEDDING_EVERY, value: "PT1S"' <<< "$$on")" -eq 2 ] \
-		|| { echo "prod's public app and back office must both call the embedder, the indexer every second"; exit 1; }; \
+		&& [ "$$(grep -c 'name: H2_EMBEDDING_EVERY, value: "PT3S"' <<< "$$on")" -eq 2 ] \
+		|| { echo "prod's public app and back office must both call the embedder, the indexer every 3 s"; exit 1; }; \
 	stg=$$("$${t[@]}" -n helper2-staging -f $(CHART)/values-staging.yaml); \
 	if grep -qE '^  name: (helper2-embedder|ingress-embedder)$$' <<< "$$stg"; then echo "staging must not run an embedder of its own"; exit 1; fi; \
 	[ "$$(grep -c 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder.helper2-prod.svc:8080/v1"' <<< "$$stg")" -eq 2 ] \
-		|| { echo "staging's public app and back office must both call prod's embedder"; exit 1; }; \
+		&& [ "$$(grep -c 'name: H2_EMBEDDING_EVERY, value: "PT1M"' <<< "$$stg")" -eq 2 ] \
+		|| { echo "staging's public app and back office must both call prod's embedder, the indexer once a minute"; exit 1; }; \
 	awk '/^  name: egress-app$$/ {p=1} /^---$$/ {p=0} p' <<< "$$stg" | grep -A1 -F 'namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: helper2-prod } }' \
 		| grep -qF 'podSelector: { matchLabels: { app: helper2-embedder } }' \
 		|| { echo "staging's apps must be let out to the embedder pods of helper2-prod, and to nothing else there"; exit 1; }; \
