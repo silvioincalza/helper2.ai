@@ -28,6 +28,9 @@ app:
   replicas: 3
   dailyLimits:
     webSearchCredits: "250"
+  guideJudge:
+    model: nvidia/Nemotron-3-Ultra-550b-a55b
+    dailyCalls: 300
 web:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-web

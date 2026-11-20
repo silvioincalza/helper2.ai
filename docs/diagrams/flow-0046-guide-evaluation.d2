@@ -2,7 +2,7 @@
 # --intents and --adversarial differ only in the set, the pass rules and the report file).
 # Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (guideRunStop), docs/eval/guide-queries.json, docs/eval/guide-qrels.tsv,
 #   .github/workflows/guide-eval.yml (nightly run on staging),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java (the staging judge).
+#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java (the guide judge).
 # Render: cd docs/diagrams && d2 fmt flow-0046-guide-evaluation.d2 && d2 flow-0046-guide-evaluation.d2 flow-0046-guide-evaluation.svg
 
 ...@style
@@ -29,7 +29,7 @@ loop: For each query, in order {
   fromCache: "Mark (cache);\nleave out of latency" {class: end}
   row: "Keep status, AI picks,\nsources, checks, latency;\npassed = fresh model answer,\nanswered or empty as expected" {class: end}
   answered: "Answered (pick, comparison,\nexplanation, dated record)?" {class: decision}
-  judged: "Staging backend, after the answer:\nthe judge scores its claims\n(meter helper2.guide.judge,\nnot in the report)" {class: ai}
+  judged: "Backend (staging and prod), after the answer:\nthe judge scores its claims\n(meter helper2.guide.judge,\nnot in the report)" {class: ai}
   candidates: "GET /api/v1/search\n?q=<searchQuery>&size=24:\ncandidates for the pool" {class: app}
 
   pause -> post

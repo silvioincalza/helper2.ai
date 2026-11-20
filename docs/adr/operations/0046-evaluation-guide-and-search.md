@@ -217,9 +217,9 @@ repository. Relevance needs a human judgement per result, and judging every resu
     source whose absence costs no measurable quality for a group is not called for that group.
 
 ### The guide judge
-21. **Judge on staging.** The staging backend scores every claim the reason check read (a pick reason, a comparison
-    cell, an explanation sentence) with two Spring AI evaluators and a second, larger NVIDIA model. The nightly core
-    set drives it, like any staging visitor.
+21. **Judge on staging and in prod.** The backend scores every claim the reason check read (a pick reason, a
+    comparison cell, an explanation sentence) with two Spring AI evaluators and a second, larger NVIDIA model. On
+    staging the nightly core set drives it, like any staging visitor; in prod it scores the questions of real visitors.
     - **When.** `ReasonCheckStep` hands the claims and their verdicts to `GuideJudge` after the `checked` event and goes
       on. `SpringAiGuideJudge` judges them on a virtual thread of its own, so the answer never waits for it and the
       judge never changes it ([0031](../guide/0031-guide-pipeline.md), reason check, 9).
@@ -232,8 +232,9 @@ repository. Relevance needs a human judgement per result, and judging every resu
     - **Model and cap.** `H2_GUIDE_JUDGE_MODEL` names the judge model, a different model than the one that writes and
       verifies; empty keeps the judge off. `H2_GUIDE_JUDGE_DAILY_CALLS` (default 300) is its own daily cap
       (`DailyBudget` "guide-judge") and `llm-chat-guide-judge` its own circuit breaker, so the judge never spends the
-      guide's cap and a judge outage never opens the guide's breaker. Staging sets `nvidia/Nemotron-3-Ultra-550b-a55b`
-      (Nebius, United States) and a cap of 300 (the core set, about 130 calls, and a rerun); prod sets no model.
+      guide's cap and a judge outage never opens the guide's breaker. Staging and prod set `nvidia/Nemotron-3-Ultra-550b-a55b`
+      (Nebius, United States) and a cap of 300: on staging the core set, about 130 calls, and a rerun; in prod the
+      claims of the day's first real answers, until the cap is spent.
     - **Results.** The meter `helper2.guide.judge{kind, evaluator, verdict, verify, prompt}` counts each verdict, with
       the verify step's verdict next to it (`supported`, `removed`, `not_checked`, `unchecked`). No tag holds text. The
       guide row of the Grafana dashboard shows the verdicts and the share of claims where verify and the fact judge
@@ -250,7 +251,8 @@ answer on its own thread, the search harness offline in a test task. The two seq
 
 The guide:
 - `.github/workflows/guide-eval.yml` — the nightly run on staging; `deploy/helm/helper2/values-staging.yaml`
-  (`app.guideCacheTtl`, `app.dailyLimits`, `app.guideJudge`) — what staging runs with.
+  (`app.guideCacheTtl`, `app.dailyLimits`, `app.guideJudge`) — what staging runs with; `deploy/helm/helper2/values-prod.yaml`
+  (`app.guideJudge`) — the judge in prod.
 - `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideJudge.kt` (`GuideJudge`, `ClaimKind`),
   `guide/steps/ReasonCheckStep.kt` (the hand-over), `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java`
   (the evaluators, verdicts and meter), `GuideConfiguration.guideJudge`, `guide/config/GuideProperties.Judge`;
@@ -331,6 +333,10 @@ Search:
   tricked judge changes a meter, never an answer. Agreement with the verify step is not accuracy: both can be wrong
   the same way. The results are meters only: the run report does not show them. The judge's id is taken from Nebius's
   catalog; a wrong id fails every judge call as `error` and changes no answer.
+- In prod the cap of 300 calls covers about 150 claims a day: once it is spent, the claims of later answers count as
+  `skipped`, so the prod verdicts are a sample of the day's first answers, not of all of them. Each judged claim sends
+  the visitor's question, the claim and its evidence to the judge model on Nebius, in the United States (Privacy
+  page, AI models).
 - Frozen search snapshots age; pooled judging leaves results outside every top 20 unjudged; labelling takes about 5 hours per judge; Tavily credits are spent once per recorded query.
 
 ## Diagrams
@@ -346,3 +352,4 @@ search: [flow](../../diagrams/flow-0046-search-evaluation-harness.svg) · [seque
   - [#349](https://github.com/silvioincalza/helper2.ai/issues/349) S10.4.3 Guide relevance judged by a second person
   - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
   - [#607](https://github.com/silvioincalza/helper2.ai/issues/607) S10.4.5 A guide judge on staging that scores the claims the verify step checked
+  - [#883](https://github.com/silvioincalza/helper2.ai/issues/883) S10.4.7 The guide judge on prod, on its own daily cap
