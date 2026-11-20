@@ -17,6 +17,7 @@ networkPolicy:
 app:
   springProfiles: llm-nebius,oauth-github
   guideSimilarThreshold: 0.96
+  guideModelStream: "ON"
   tracing:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
