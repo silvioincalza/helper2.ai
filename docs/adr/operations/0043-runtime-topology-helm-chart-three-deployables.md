@@ -87,8 +87,15 @@ database connections. A change to the web app would rebuild and redeploy the bac
 7. **Edge: Cloudflare, ingress-nginx, one origin split by path.** The public names (`helper2.ai`, `www.helper2.ai`,
    `helper2.incalza.me`) are proxied by Cloudflare, which terminates Transport Layer Security (TLS) and sends the
    traffic through the platform's tunnel to ingress-nginx (namespace `ingress-nginx`). The Ingress `helper2-public`
-   routes `/assets/` (prefix), `/theme.js` and `/favicon.svg` (exact) to the Service `helper2-web` and everything else
-   to the Service `helper2`, port 80; on prod it also redirects `www.helper2.ai` to the apex (301, path and query
+   routes the public app's own addresses to the Service `helper2` and everything else to the Service `helper2-web`,
+   port 80. The public app's addresses are: every address whose last segment has no dot (the pages, the API, the
+   sign-in: the regular expression `/(.*/)?[^./]*$`, the rule of `ClientRoutes.owns`), `/api/`, `/oauth2/`,
+   `/login/` and `/sitemaps/` (prefix), `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/ads.txt` and `/index.html`
+   (exact) and the IndexNow key file (`/[A-Za-z0-9-]{8,128}\.txt$`). The list is in `deploy/k8s/README.md`. The
+   Ingress also names `/assets/` (prefix) for `helper2-web`: the canary attaches to it and to `/api/`
+   ([0045](0045-releases-and-versions.md) §6). The Ingress carries `nginx.ingress.kubernetes.io/use-regex`: ingress-nginx then matches every
+   path of the host as a regular expression, without regard to case, the longest path first. A request for a file
+   that does not exist gets the web image's plain 404 and never reaches the public app. On prod it also redirects `www.helper2.ai` to the apex (301, path and query
    kept). The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx; the
    Ingress `helper2-admin` routes them, from the in-network ranges only, to the Service `helper2-admin`
    ([0036](../identity/0036-identity-and-the-admin-host.md)). From ingress-nginx to the pods the traffic is plain Hypertext
@@ -178,7 +185,8 @@ database connections. A change to the web app would rebuild and redeploy the bac
     - `/assets/<file>`: Vite's content-hashed files (scripts, styles, fonts) and the link preview image
       (`frontend/public/assets/og-1.png`, whose name changes with its content,
       [0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §3), `public, max-age=31536000, immutable`;
-    - `/theme.js` and `/favicon.svg`, the root files of `frontend/public`: `public, max-age=300, must-revalidate`;
+    - `/theme.js`, `/favicon.svg` and `/favicon.ico`, the root files of `frontend/public`: `public, max-age=300,
+      must-revalidate`;
     - anything else: a plain 404 with `no-store`, never `index.html` and never a directory listing; another method:
       405.
 
@@ -353,6 +361,7 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change with the topology.
 ### Known limits
 
 - Each app role has a statement timeout (5 s public, 60 s back office), not a socket timeout: a connection whose network path dies without a reset waits for the operating system. The values are not measured yet: read the staging logs for "canceling statement due to statement timeout" before prod. The pool (16 a replica), the catalog bulkheads (3 a source) and `max_connections` (150) are not measured. They stay as they are until the load test, and the load test runs before the next release: read the pool wait, the calls the catalog bulkheads refuse and the search latency from it, then size the three together. A catalog bulkhead does not wait, so a fourth concurrent search on a replica gets no results from that catalog source.
+- The public routes need ingress-nginx: the two regular expressions and the order of the paths are its own (`use-regex`, `ImplementationSpecific`). Another controller needs the same split in its own words. An address of the public app with a dot in its last segment that is not in the list gets the web image's 404: the list in `deploy/k8s/README.md` and the operator's Ingress change together with the code. An address with no dot that the app does not know (`/wp-admin`) still reaches the public app and gets its 404 page.
 - Startup is slower than a native binary: Flyway and the language models load first; the startup probe allows up to 300 s.
 - Bookmarks and reports are user data; the backup is the only copy.
 - A day with runs by hand keeps one dump for each run, so the volume and the bucket can hold more than 7 dumps.

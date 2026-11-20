@@ -35,7 +35,7 @@ cluster: KUBERNETES {
 
   ingress: "ns ingress-nginx" {
     class: group
-    nginx: "ingress-nginx\nIngress helper2-public: /assets/, /theme.js,\n/favicon.svg → Service helper2-web;\nthe rest → Service helper2\nIngress helper2-admin → Service helper2-admin\n(back office pods; private ranges only)" {class: app}
+    nginx: "ingress-nginx\nIngress helper2-public: the public app's\naddresses → Service helper2;\nthe rest → Service helper2-web\nIngress helper2-admin → Service helper2-admin\n(back office pods; private ranges only)" {class: app}
   }
 
   prod: "ns helper2-prod · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
@@ -116,7 +116,7 @@ cluster: KUBERNETES {
   }
 
   ingress.nginx -> prod.app: ":8080\n(only allowed caller)" {class: hot}
-  ingress.nginx -> prod.web: ":8080 (/assets/, /theme.js, /favicon.svg)" {class: hot}
+  ingress.nginx -> prod.web: ":8080 (files: /assets/, /theme.js,\n/favicon.svg, /favicon.ico; else 404)" {class: hot}
   ingress.nginx -> prod.bo: ":8080 (admin hosts)"
   ingress.nginx -> staging.note: ":8080"
   ingress.nginx -> prod.canary.capp: "header + token only:\n/ (smoke test of a release)"

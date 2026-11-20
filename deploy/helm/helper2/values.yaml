@@ -159,6 +159,8 @@ canary:
   token: ""
   webPaths:
     - { path: /assets/, pathType: Prefix }
+  appPaths:
+    - { path: /api/, pathType: Prefix }
 
 monitoring:
   prometheusRule:

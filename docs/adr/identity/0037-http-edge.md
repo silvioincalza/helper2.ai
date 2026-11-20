@@ -77,7 +77,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
    `/actuator/prometheus` only there; the actuator serves only health and prometheus, and health is the one open to all. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (rules in [0001](../foundation/0001-stack-and-runtime.md)): the web image
    ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md), `deploy/web/nginx.conf`) caches hashed assets for one year and
-   `theme.js` and `favicon.svg` for 5 minutes, then revalidated; its other answers are plain 404s with `no-store`. On
+   `theme.js`, `favicon.svg` and `favicon.ico` for 5 minutes, then revalidated; its other answers are plain 404s with
+   `no-store`, and a request for a file that does not exist ends there, not in the public app. On
    every answer it sends its own CSP (`default-src 'none'`, `sandbox`), `nosniff`, CORP `same-origin` and
    `Referrer-Policy: no-referrer`, and it takes GET and HEAD only. The shell (`index.html`, from the public app) is
    `no-cache`, so a new release reaches browsers at once. Search and guide answers are `no-store`. On the back office (`AdminWebApp`, `BackOfficeEdge`): `/admin/assets/**` is

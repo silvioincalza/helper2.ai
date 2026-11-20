@@ -22,7 +22,7 @@ in: "Request" {class: end}
 web: Web image (helper2-web, ADR 0043) {
   class: group
   direction: down
-  path: "Ingress: /assets/ prefix,\n/theme.js or /favicon.svg?" {class: decision}
+  path: "A file address? (Ingress:\nnot an address of the public app)" {class: decision}
   method: "GET or HEAD?" {class: decision}
   e405: "405, no-store" {class: fail}
   found: "The file exists?" {class: decision}
