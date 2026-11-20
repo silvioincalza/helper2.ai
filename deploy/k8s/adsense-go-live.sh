@@ -4,10 +4,11 @@ set -euo pipefail
 REPO=${REPO:-silvioincalza/helper2.ai}
 SITE=${SITE:-https://helper2.ai}
 PUBLISHER=${PUBLISHER:-ca-pub-4688630163076563}
-UNIT_RESOURCE=${UNIT_RESOURCE:-9345575694}
-UNIT_SEARCH=${UNIT_SEARCH:-1139782613}
-UNIT_GUIDE=${UNIT_GUIDE:-4261217083}
+UNIT_RESOURCE=${UNIT_RESOURCE-9345575694}
+UNIT_SEARCH=${UNIT_SEARCH-1139782613}
+UNIT_GUIDE=${UNIT_GUIDE-4261217083}
 BRANCH=${BRANCH:-chore/adsense-prod-ad-units}
+STORY=${STORY:-872}
 VALUES=deploy/helm/helper2/values-prod.yaml
 DEFAULTS=deploy/helm/helper2/values.yaml
 DRY_RUN=false
@@ -130,7 +131,9 @@ git push --quiet --set-upstream origin "$BRANCH"
 echo "6. the pull request"
 gh pr create --repo "$REPO" --base main --head "$BRANCH" \
   --title "chore(deploy): the AdSense ad units on prod" \
-  --body "Sets the AdSense ad units in \`$VALUES\` (story S8.6.3, ADR 0042).
+  --body "Closes #$STORY
+
+Sets the AdSense ad units in \`$VALUES\` (story S8.6.3, ADR 0042).
 
 Checked by \`deploy/k8s/adsense-go-live.sh\` before this pull request: \`/ads.txt\` and the site check tag on $SITE; the
 owner confirmed that the site is \"Ready\" in AdSense, that Auto ads are off and that the European regulations
