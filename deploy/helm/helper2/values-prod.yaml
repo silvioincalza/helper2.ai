@@ -9,6 +9,7 @@ redis:
 embedder:
   enabled: true
   clientNamespaces: [helper2-staging]
+  indexEvery: PT3S
   threads: 4
   resources:
     requests: { cpu: "4", memory: 6Gi }
