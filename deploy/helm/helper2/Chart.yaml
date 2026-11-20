@@ -2,4 +2,4 @@ apiVersion: v2
 name: helper2
 description: Helper2.ai on any Kubernetes cluster - app, Postgres, Redis, network policies, optional backup.
 type: application
-version: 2026.11.8
+version: 2026.11.9
