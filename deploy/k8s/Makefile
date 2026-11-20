@@ -237,6 +237,8 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		[ "$$(grep -c '^  replicas: 1$$' <<< "$$out")" -eq 2 ] || { echo "$$e canary: the app and web Deployments must run one pod each"; exit 1; }; \
 		grep -qF "nginx.ingress.kubernetes.io/canary-by-header-value: \"$$tok\"" <<< "$$out" || { echo "$$e canary: the Ingress must route on the header and its token"; exit 1; }; \
 		if grep -q 'canary-weight' <<< "$$out"; then echo "$$e canary: no user traffic goes to a canary"; exit 1; fi; \
+		paths=$$(grep -o 'path: [^,]*, pathType: [A-Za-z]*' <<< "$$out" | xargs); \
+		[ "$$paths" = "path: /assets/, pathType: Prefix path: /api/, pathType: Prefix" ] || { echo "$$e canary: the Ingress must name /assets/ and /api/ as plain Prefix paths, the ones the public Ingress has: $$paths"; exit 1; }; \
 		if "$${c[@]}" >/dev/null 2>&1; then echo "$$e canary renders without a token"; exit 1; fi; \
 		if "$${c[@]}" --set canary.token=short >/dev/null 2>&1; then echo "$$e canary renders with a short token"; exit 1; fi; \
 	done; \

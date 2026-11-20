@@ -18,7 +18,7 @@ edge: Network edge {
   host: "Which host?" {class: decision}
   vpn: "Client in a\nprivate range?" {class: decision}
   e403: "403 from ingress-nginx" {class: fail}
-  path: "Path /assets/…, /theme.js\nor /favicon.svg?" {class: decision}
+  path: "A file address? (Ingress:\nnot an address of the public app)" {class: decision}
   host -> vpn: "admin host"
   vpn -> e403: no
   host -> path: "public host"

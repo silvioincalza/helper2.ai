@@ -22,7 +22,9 @@ spec:
           {{- range $canary.webPaths }}
           - { path: {{ .path }}, pathType: {{ .pathType }}, backend: { service: { name: {{ include "helper2.webName" $ }}, port: { number: 80 } } } }
           {{- end }}
-          - { path: /, pathType: Prefix, backend: { service: { name: {{ include "helper2.appName" . }}, port: { number: 80 } } } }
+          {{- range $canary.appPaths }}
+          - { path: {{ .path }}, pathType: {{ .pathType }}, backend: { service: { name: {{ include "helper2.appName" $ }}, port: { number: 80 } } } }
+          {{- end }}
 {{- with .Values.networkPolicy }}
 ---
 apiVersion: networking.k8s.io/v1
