@@ -13,6 +13,7 @@ import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
 import { ListSeedsPanel } from './ListSeedsPanel';
 import { KnownTargetsPanel } from './KnownTargetsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
+import { RuntimeSwitchesPanel } from './RuntimeSwitchesPanel';
 import { ShadowLibrariesPanel } from './ShadowLibrariesPanel';
 import { TableSkeleton } from '@/ui/Skeleton';
 
@@ -97,6 +98,9 @@ export default function SettingsPage() {
       <nav aria-label={t('admin.settings.contents')} className="h2-admin__contents">
         <ul>
           <li>
+            <a href="#sw-h">{t('admin.settings.switches.title')}</a>
+          </li>
+          <li>
             <a href="#rt-h">{t('admin.settings.runtime.title')}</a>
           </li>
           <li>
@@ -118,6 +122,12 @@ export default function SettingsPage() {
           ))}
         </ul>
       </nav>
+      <RuntimeSwitchesPanel
+        switches={runtime.data?.switches ?? []}
+        loading={runtime.loading}
+        error={runtime.error}
+        reload={runtime.reload}
+      />
       <RuntimeSettingsPanel
         settings={runtimeSettings}
         loading={runtime.loading}

@@ -3,19 +3,19 @@
 #   admin/web/RuntimeSettingsController.java, admin/config/SettingsReloadAfterCommit.java,
 #   platform/settings/RuntimeSetting.java, RuntimeSettings.java,
 #   JdbcRuntimeSettingStore.java, RuntimeSettingsConfiguration.java, platform/llm/DailyBudget.java,
-#   frontend/src/admin/RuntimeSettingsPanel.tsx.
+#   frontend/src/admin/RuntimeSettingsPanel.tsx, RuntimeSwitchesPanel.tsx.
 # Render: cd docs/diagrams && d2 fmt flow-0007-runtime-settings.d2 && d2 flow-0007-runtime-settings.d2 flow-0007-runtime-settings.svg
 
 ...@style
 
 direction: down
 
-req: "PUT /api/v1/admin/runtime-settings/{key}\n(back office, ADMIN, CSRF)" {class: end}
+req: "PUT /api/v1/admin/runtime-settings/{key} (a limit, value)\nor /runtime-switches/{key} (a switch, on: true or false = 1 or 0)\n(back office, ADMIN, CSRF)" {class: end}
 
 change: ChangeRuntimeSetting {
   class: group
   direction: down
-  known: "Key in the allow-list?" {class: decision}
+  known: "Key in the allow-list,\nof the kind of the path?" {class: decision}
   notfound: "404" {class: fail}
   reason: "Reason one plain line?\n(no control or format character)" {class: decision}
   badreason: "400, nothing stored" {class: fail}

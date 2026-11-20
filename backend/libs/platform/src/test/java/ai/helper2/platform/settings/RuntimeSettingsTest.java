@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -269,5 +270,29 @@ class RuntimeSettingsTest {
     assertThat(budget.limit()).isEqualTo(3);
     assertThat(budget.tryAcquire()).as("one more under the new limit").isTrue();
     assertThat(budget.tryAcquire()).isFalse();
+  }
+
+  @Test
+  void aSwitchFollowsItsOverrideAndItsDefault() {
+    BooleanSupplier ads = runtime.declareSwitch(RuntimeSetting.ADS_ENABLED, false);
+    runtime.tick();
+    assertThat(ads.getAsBoolean()).isFalse();
+
+    store.set(RuntimeSetting.ADS_ENABLED, 1L);
+    runtime.reloadIfChanged();
+    assertThat(ads.getAsBoolean()).isTrue();
+    assertThat(runtime.overrideCount()).as("a switch is not a spending limit").isZero();
+
+    store.set(RuntimeSetting.ADS_ENABLED, null);
+    runtime.reloadIfChanged();
+    assertThat(ads.getAsBoolean()).isFalse();
+  }
+
+  @Test
+  void aSwitchIsDeclaredAsASwitchAndALimitAsALimit() {
+    assertThatThrownBy(() -> runtime.declare(RuntimeSetting.ADS_ENABLED, 1))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> runtime.declareSwitch(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, true))
+        .isInstanceOf(IllegalStateException.class);
   }
 }

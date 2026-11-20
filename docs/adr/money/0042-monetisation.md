@@ -33,9 +33,9 @@ The constraints:
      for resource pages, `H2_ADS_ADSENSE_SLOT_SEARCH` for the box below the search results,
      `H2_ADS_ADSENSE_SLOT_GUIDE` for the box below a guide answer. **The publisher alone**
      answers Google's site check (8) and nothing else.
-   - `H2_ADS_ENABLED`, the ads switch, `false` by default. It is the default of the runtime setting `ads.enabled`
-     ([0007](../foundation/0007-configuration-secrets-runtime-settings.md) §10): an administrator turns the ads on
-     and off in the back office ("Google ads", 1 on, 0 off), with a reason and a line in the audit trail, and
+   - `H2_ADS_ENABLED`, the ads switch, `false` by default. It is the default of the runtime switch `ads.enabled`
+     ([0007](../foundation/0007-configuration-secrets-runtime-settings.md) §10): an administrator sets it to `true`
+     or `false` in the back office ("Google ads", under "Switches you can change"), with a reason and a line in the audit trail, and
      every replica follows within about 20 seconds, without a restart. **The switch, the publisher and at least
      one ad unit** turn on the rest in one step: Google's consent tool, the nonce CSP and the slot of each ad unit
      that is set. So the CSP changes only when the ads start, never before Google approves the site. A place is
@@ -217,8 +217,8 @@ The constraints:
   result.
 - **The ads switch as a Helm value only** — one place less to look at, but starting or stopping the ads is then a
   pull request and a release, and stopping them is what must be fast when Google reports a policy issue.
-- **The switch as a new on/off kind of runtime setting** — a checkbox in the back office instead of 1 and 0, but a
-  second value type in the store, the API and the page for one setting. A number from 0 to 1 uses what is there.
+- **The switch as a runtime limit from 0 to 1** — no new kind of setting, but the page and the API would say "1"
+  and "0" for what is true or false, and the overview would count it as a spending limit.
 - **One ad unit for every place** — one setting less, but no report per place and no way to switch one place off
   without a release.
 - **A nonce CSP on resource pages only** — does not work in a single-page app: the CSP of the first page stays.

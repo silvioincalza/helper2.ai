@@ -58,7 +58,7 @@ public class ChangeRuntimeSetting {
         AuditTrail.Action.CHANGE_SETTING,
         setting.key(),
         recorded(outcome),
-        new AuditTrail.Change(before.described(), Long.toString(value), why));
+        new AuditTrail.Change(before.described(), setting.shown(value), why));
     return outcome;
   }
 

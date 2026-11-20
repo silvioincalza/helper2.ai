@@ -13,7 +13,7 @@ owner.
 Prod sets the publisher today (`app.monetisation.adsenseClient`), so Google can check the site. No ad shows until
 an ad unit is set and the ads switch is on.
 
-The switch is in the back office: **Settings > "Google ads"**, 1 on, 0 off (runtime setting `ads.enabled`, default
+The switch is in the back office: **Settings > Switches you can change > "Google ads"**, `true` or `false` (runtime switch `ads.enabled`, default
 `H2_ADS_ENABLED`, `false`). It needs no release: every replica follows within about 20 seconds, and the audit trail
 keeps who changed it and why. While it is 0 the ad units are ignored, so they can reach prod days before the ads
 start. One ad unit per place:
@@ -63,8 +63,8 @@ The values reach prod with a release: [RUNBOOK-release.md](RUNBOOK-release.md), 
 yet: `curl -s https://helper2.ai/api/v1/site | jq .monetisation` still has no ad unit. Staging does not change: it
 has no ad unit, and Google serves ads only on the approved domain.
 
-**(Silvio)** On `https://admin.helper2.ai/settings`, row "Google ads": **Change**, enter `1`, **Review changes**,
-give the reason, **Confirm change**. The ads start within about 20 seconds.
+**(Silvio)** On `https://admin.helper2.ai/settings`, row "Google ads": **Set to true**, check that the review says
+`false → true`, give the reason, **Confirm change**. The ads start within about 20 seconds.
 
 ## 4. Checks on prod
 
@@ -100,7 +100,7 @@ Two days later: AdSense > Policy centre shows no issue, and Reports shows impres
 
 - **One place off:** set its value to `""` in `deploy/helm/helper2/values-prod.yaml`, in a pull request, and
   release. The other places keep their ads.
-- **All ads off:** set "Google ads" to `0` in the back office (or **Reset to default**). It takes about 20
+- **All ads off:** **Set to false** on "Google ads" in the back office (or **Reset to default**, which is `false`). It takes about 20
   seconds and no release. The ad units stay in the values, the publisher stays, so `/ads.txt` and the site check
   tag stay, the strict CSP is back, and our own Analytics bar replaces Google's dialog.
 - **The back office is down:** `make -C deploy/k8s ENV=prod rollback` to the revision before, as in
