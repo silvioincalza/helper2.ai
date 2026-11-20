@@ -16,7 +16,7 @@ class MonetisationConfigurationTest {
   void thePublisherAloneOnlyAnswersTheSiteCheck() {
     Monetisation m =
         MonetisationConfiguration.from(
-            new MonetisationProperties("", "", "", "ca-pub-4688630163076563", "", "", ""));
+            new MonetisationProperties("", "", "", "ca-pub-4688630163076563", "", "", "", true));
 
     assertThat(m.adsTxt()).isPresent();
     assertThat(m.adsenseOn()).isFalse();
@@ -27,7 +27,7 @@ class MonetisationConfigurationTest {
     Monetisation searchOnly =
         MonetisationConfiguration.from(
             new MonetisationProperties(
-                "", "", "", "ca-pub-4688630163076563", "", "2345678901", ""));
+                "", "", "", "ca-pub-4688630163076563", "", "2345678901", "", true));
 
     assertThat(searchOnly.adsenseOn()).isTrue();
     assertThat(searchOnly.adsenseSlot()).isEmpty();
@@ -36,7 +36,7 @@ class MonetisationConfigurationTest {
     Monetisation guideOnly =
         MonetisationConfiguration.from(
             new MonetisationProperties(
-                "", "", "", "ca-pub-4688630163076563", "", "", "3456789012"));
+                "", "", "", "ca-pub-4688630163076563", "", "", "3456789012", true));
 
     assertThat(guideOnly.adsenseOn()).isTrue();
     assertThat(guideOnly.adsenseSlotGuide()).contains("3456789012");
@@ -47,7 +47,7 @@ class MonetisationConfigurationTest {
     assertThat(
             VALIDATOR.validate(
                 new MonetisationProperties(
-                    "", "", "", "ca-pub-4688630163076563", "", "slot-2", "")))
+                    "", "", "", "ca-pub-4688630163076563", "", "slot-2", "", true)))
         .hasSize(1);
   }
 
@@ -60,7 +60,7 @@ class MonetisationConfigurationTest {
   void emptyMeansOff() {
     assertThat(
             MonetisationConfiguration.from(
-                new MonetisationProperties("", " ", null, "", "", "", "")))
+                new MonetisationProperties("", " ", null, "", "", "", "", true)))
         .isEqualTo(Monetisation.OFF);
   }
 
@@ -75,7 +75,8 @@ class MonetisationConfigurationTest {
                 "ca-pub-4688630163076563",
                 "1234567890",
                 "",
-                ""));
+                "",
+                true));
 
     assertThat(m.adsenseOn()).isTrue();
     assertThat(m.adsTxt()).contains("google.com, pub-4688630163076563, DIRECT, f08c47fec0942fa0");
@@ -95,9 +96,10 @@ class MonetisationConfigurationTest {
                     "ca-pub-4688630163076563",
                     "1234567890",
                     "",
-                    "")))
+                    "",
+                    true)))
         .isEmpty();
-    assertThat(VALIDATOR.validate(new MonetisationProperties("", "", "", "", "", "", "")))
+    assertThat(VALIDATOR.validate(new MonetisationProperties("", "", "", "", "", "", "", true)))
         .isEmpty();
   }
 
@@ -112,7 +114,8 @@ class MonetisationConfigurationTest {
                     "pub-4688630163076563",
                     "slot-1",
                     "",
-                    "")))
+                    "",
+                    true)))
         .hasSize(5);
   }
 }

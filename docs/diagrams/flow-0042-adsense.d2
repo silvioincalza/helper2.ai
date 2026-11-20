@@ -1,5 +1,6 @@
 # Flowchart: what a public page loads for Google AdSense and the consent tool (ADR 0042).
 # Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/Monetisation.java,
+#   site/monetisation/CurrentMonetisation.java (the ads switch, runtime setting ads.enabled),
 #   site/csp/ContentSecurityPolicy.java, CspHeaderWriter.java, CspNonce.java, site/pages/internal/PageHtml.java,
 #   site/pages/web/CrawlerFiles.java, frontend/src/lib/googleConsent.ts, features/monetisation/AnalyticsConsent.tsx,
 #   features/monetisation/AdSenseSlot.tsx, features/search/Results.tsx (both boxes of the search page),
@@ -14,7 +15,7 @@ req: "A public request" {class: end}
 pub: "Publisher set?" {class: decision}
 plain: "As before:\nno tag, /ads.txt 404" {class: data}
 check: "Site check tag on every page,\n/ads.txt names Google" {class: hot}
-unit: "At least one ad unit set too?\n(resource pages, search results,\nguide answer)" {class: decision}
+unit: "Ads switch on in the back office,\nand at least one ad unit set?\n(resource pages, search results,\nguide answer)" {class: decision}
 strict: "CSP of ADR 0042,\nour own analytics bar" {class: data}
 nonce: "Nonce CSP for the whole public site" {class: hot}
 tool: "A page with an ad, or Privacy choices\npressed, in this page load?" {class: decision}

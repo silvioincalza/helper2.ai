@@ -4,6 +4,7 @@ import ai.helper2.api.PublicCache;
 import ai.helper2.api.generated.SiteApi;
 import ai.helper2.api.generated.model.MonetisationDto;
 import ai.helper2.api.generated.model.SiteDto;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -16,15 +17,15 @@ class SiteController implements SiteApi {
 
   private static final CacheControl CACHE = PublicCache.SHORT;
 
-  private final SiteDto site;
+  private final CurrentMonetisation monetisation;
 
-  SiteController(Monetisation monetisation) {
-    this.site = new SiteDto(dto(monetisation));
+  SiteController(CurrentMonetisation monetisation) {
+    this.monetisation = monetisation;
   }
 
   @Override
   public ResponseEntity<SiteDto> getSite() {
-    return ResponseEntity.ok().cacheControl(CACHE).body(site);
+    return ResponseEntity.ok().cacheControl(CACHE).body(new SiteDto(dto(monetisation.now())));
   }
 
   static MonetisationDto dto(Monetisation shown) {

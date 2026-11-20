@@ -14,4 +14,5 @@ public record MonetisationProperties(
     @Pattern(regexp = "^$|ca-pub-[0-9]{16}") String adsenseClient,
     @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlot,
     @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlotSearch,
-    @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlotGuide) {}
+    @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlotGuide,
+    boolean adsEnabled) {}

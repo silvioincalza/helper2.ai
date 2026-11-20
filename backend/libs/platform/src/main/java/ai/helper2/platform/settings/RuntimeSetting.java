@@ -54,7 +54,15 @@ public enum RuntimeSetting {
       20_000,
       "H2_RESEARCH_DAILY_MODEL_CALLS",
       "Model calls of the review research agent a UTC day. A run takes up to 14; with fewer left,"
-          + " 0 included, research waits.");
+          + " 0 included, research waits."),
+  ADS_ENABLED(
+      "ads.enabled",
+      "Google ads",
+      "(1 on, 0 off)",
+      1,
+      "H2_ADS_ENABLED",
+      "1: one Google ad in each place whose ad unit is set (resource page, search results, guide"
+          + " answer). 0: no Google ad anywhere; the site check tag and /ads.txt stay.");
 
   public static final long MIN = 0;
 

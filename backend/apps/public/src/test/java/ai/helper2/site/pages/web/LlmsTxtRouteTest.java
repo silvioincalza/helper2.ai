@@ -2,6 +2,7 @@ package ai.helper2.site.pages.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.config.PagesProperties;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,7 @@ class LlmsTxtRouteTest {
     return new CrawlerFiles(
         null,
         new PagesProperties("https://helper2.ai", noindex, "file:/shell/index.html", 200_000),
-        Monetisation.OFF);
+        new CurrentMonetisation(Monetisation.OFF, () -> true));
   }
 
   @Test

@@ -80,6 +80,7 @@ helper2:
     github-sponsors-url: ${H2_SUPPORT_GITHUB_SPONSORS_URL:}
     stripe-payment-url: ${H2_SUPPORT_STRIPE_PAYMENT_URL:}
     ga4-measurement-id: ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}
+    ads-enabled: ${H2_ADS_ENABLED:false}
     adsense-client: ${H2_ADS_ADSENSE_CLIENT:}
     adsense-slot: ${H2_ADS_ADSENSE_SLOT:}
     adsense-slot-search: ${H2_ADS_ADSENSE_SLOT_SEARCH:}
