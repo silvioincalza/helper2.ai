@@ -47,6 +47,8 @@ app:
     ga4MeasurementId: ""
     adsenseClient: ""
     adsenseSlot: ""
+    adsenseSlotSearch: ""
+    adsenseSlotGuide: ""
   environment: ""
   noindex: false
   publicBaseUrl: ""
@@ -85,6 +87,26 @@ web:
   resources:
     requests: { cpu: 10m, memory: 16Mi }
     limits: { memory: 64Mi }
+
+embedder:
+  enabled: false
+  clientNamespaces: []
+  url: ""
+  namespace: ""
+  indexEvery: PT1S
+  image:
+    repository: ""
+    tag: nemotron-3.5-embed-1b-1
+    digest: ""
+  model: nvidia/nemotron-3.5-embed-1b
+  replicas: 1
+  maxTokens: 1024
+  threads: 2
+  startupSeconds: 300
+  nodeSelector: {}
+  resources:
+    requests: { cpu: "1", memory: 6Gi }
+    limits: { memory: 8Gi }
 
 postgres:
   image:
@@ -159,6 +181,8 @@ canary:
   token: ""
   webPaths:
     - { path: /assets/, pathType: Prefix }
+  appPaths:
+    - { path: /api/, pathType: Prefix }
 
 monitoring:
   prometheusRule:

@@ -86,7 +86,9 @@ describe('mission, privacy and terms pages', () => {
       'Art. 6(1)(f) GDPR',
     );
     expect(recipients).toHaveTextContent('Data Privacy Framework');
-    expect(recipients).toHaveTextContent('are sent to an external AI service in the United States');
+    expect(recipients).toHaveTextContent(
+      'by an AI model that runs on our own servers in the European Union',
+    );
     expect(recipients).not.toHaveTextContent('API catalog');
     expect(recipients).not.toHaveTextContent('trial');
     expect(recipients).toHaveTextContent('Cloudflare (United States)');

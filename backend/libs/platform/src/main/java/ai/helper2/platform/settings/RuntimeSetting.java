@@ -2,6 +2,7 @@ package ai.helper2.platform.settings;
 
 import java.util.Arrays;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public enum RuntimeSetting {
   SCOUT_MAX_ENRICHMENTS_PER_RUN(
@@ -54,10 +55,22 @@ public enum RuntimeSetting {
       20_000,
       "H2_RESEARCH_DAILY_MODEL_CALLS",
       "Model calls of the review research agent a UTC day. A run takes up to 14; with fewer left,"
-          + " 0 included, research waits.");
+          + " 0 included, research waits."),
+  ADS_ENABLED(
+      "ads.enabled",
+      "Google ads",
+      "H2_ADS_ENABLED",
+      "On: one Google ad in each place whose ad unit is set (resource page, search results, guide"
+          + " answer). Off: no Google ad anywhere; the site check tag and /ads.txt stay.");
+
+  public enum Kind {
+    LIMIT,
+    SWITCH
+  }
 
   public static final long MIN = 0;
 
+  private final Kind kind;
   private final String key;
   private final String label;
   private final String unit;
@@ -66,12 +79,41 @@ public enum RuntimeSetting {
   private final String help;
 
   RuntimeSetting(String key, String label, String unit, long max, String variable, String help) {
+    this(Kind.LIMIT, key, label, unit, max, variable, help);
+  }
+
+  RuntimeSetting(String key, String label, String variable, String help) {
+    this(Kind.SWITCH, key, label, "", 1, variable, help);
+  }
+
+  RuntimeSetting(
+      Kind kind, String key, String label, String unit, long max, String variable, String help) {
+    this.kind = kind;
     this.key = key;
     this.label = label;
     this.unit = unit;
     this.max = max;
     this.variable = variable;
     this.help = help;
+  }
+
+  public Kind kind() {
+    return kind;
+  }
+
+  public boolean isSwitch() {
+    return kind == Kind.SWITCH;
+  }
+
+  public static long valueOf(boolean on) {
+    return on ? 1 : 0;
+  }
+
+  public String shown(@Nullable Long value) {
+    if (value == null) {
+      return "no cap";
+    }
+    return isSwitch() ? Boolean.toString(value > 0) : Long.toString(value);
   }
 
   public String key() {

@@ -77,7 +77,7 @@ platform: "platform" {
 pg: "PostgreSQL\nfull-text + pgvector" {shape: cylinder; class: data}
 redis: "Redis\nh2:v1:src:* · h2:v1:quota:*" {shape: cylinder; class: data}
 nebius: "Nebius Token Factory" {class: ai}
-nvapi: "NVIDIA embeddings" {class: ai}
+nvapi: "helper2-embedder, in the cluster\nnemotron-3.5-embed-1b on CPU\n(ADR 0054)" {class: ai}
 hosts: "api.github.com · huggingface.co\nregistry.npmjs.org · export.arxiv.org\napi.tavily.com · hn.algolia.com" {class: ext}
 
 browser -> search.ctl: "GET /search" {class: hot}

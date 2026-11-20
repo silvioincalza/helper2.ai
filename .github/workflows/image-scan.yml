@@ -49,6 +49,11 @@ jobs:
             postgres=true
           fi
           echo "postgres=$postgres" >> "$GITHUB_OUTPUT"
+          embedder=false
+          if gh release download "$tag" -R "$GITHUB_REPOSITORY" -p "helper2-embedder-$tag.cdx.json" -O sbom-embedder.cdx.json; then
+            embedder=true
+          fi
+          echo "embedder=$embedder" >> "$GITHUB_OUTPUT"
           git fetch --quiet --force origin "refs/tags/$tag:refs/tags/$tag"
           { echo "found=true"; echo "tag=$tag"; echo "sha=$(git rev-parse "refs/tags/$tag^{commit}")"; } >> "$GITHUB_OUTPUT"
       - name: Scan (report-only)
@@ -87,6 +92,15 @@ jobs:
           grype sbom:sbom-postgres.cdx.json --only-fixed -o table=grype-postgres.txt -o sarif=grype-postgres.sarif
           { echo "### Grype, Postgres image, release $TAG (fixable only)"; echo '```'; cat grype-postgres.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           cat grype-postgres.txt
+      - name: Scan the embedder image (report-only)
+        if: steps.release.outputs.embedder == 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          grype sbom:sbom-embedder.cdx.json --only-fixed -o table=grype-embedder.txt -o sarif=grype-embedder.sarif
+          { echo "### Grype, embedder image, release $TAG (fixable only)"; echo '```'; cat grype-embedder.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cat grype-embedder.txt
       - if: steps.release.outputs.found == 'true'
         uses: ./.github/actions/upload-sarif
         continue-on-error: true
@@ -117,5 +131,13 @@ jobs:
         with:
           sarif: grype-postgres.sarif
           category: release/postgres
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          sha: ${{ steps.release.outputs.sha }}
+      - if: steps.release.outputs.embedder == 'true'
+        uses: ./.github/actions/upload-sarif
+        continue-on-error: true
+        with:
+          sarif: grype-embedder.sarif
+          category: release/embedder
           ref: refs/tags/${{ steps.release.outputs.tag }}
           sha: ${{ steps.release.outputs.sha }}

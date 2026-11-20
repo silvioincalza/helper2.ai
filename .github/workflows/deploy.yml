@@ -177,7 +177,9 @@ jobs:
           fi
           pg_tag=$(git show "$sha:deploy/helm/helper2/values.yaml" \
             | awk '/^postgres:/ {p=1; next} p && /^[^ #]/ {exit} p && $1 == "tag:" {print $2; exit}')
-          make verify-images TAG="$tag" PG_TAG="$pg_tag" HARBOR_KV=ci/harbor-pull DIGESTS=/dev/null
+          emb_tag=$(git show "$sha:deploy/helm/helper2/values.yaml" \
+            | awk '/^embedder:/ {p=1; next} p && /^[^ #]/ {exit} p && $1 == "tag:" {print $2; exit}')
+          make verify-images TAG="$tag" PG_TAG="$pg_tag" EMB_TAG="$emb_tag" HARBOR_KV=ci/harbor-pull DIGESTS=/dev/null
           git checkout --quiet --detach "$sha"
           if ! grep -q 'need_digest' Makefile || ! grep -q 'helper2.atDigest' ../helm/helper2/templates/_helpers.tpl; then
             if [[ $ROLLBACK != true ]]; then

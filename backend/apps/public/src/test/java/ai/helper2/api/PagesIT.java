@@ -98,7 +98,8 @@ class PagesIT extends ApiTestBase {
 
   @Test
   void filesAndTheApiAreNotClaimed() throws Exception {
-    for (String file : java.util.List.of("/assets/missing.js", "/theme.js", "/favicon.svg")) {
+    for (String file :
+        java.util.List.of("/assets/missing.js", "/theme.js", "/favicon.svg", "/favicon.ico")) {
       mvc.perform(get(file)).andExpect(status().isNotFound());
     }
     mvc.perform(get("/api/v1/home/examples")).andExpect(status().isOk());

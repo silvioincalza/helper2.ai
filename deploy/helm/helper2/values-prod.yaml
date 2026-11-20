@@ -6,6 +6,15 @@ postgres:
   storageClassName: local-path
 redis:
   storageClassName: local-path
+embedder:
+  enabled: true
+  clientNamespaces: [helper2-staging]
+  threads: 4
+  resources:
+    requests: { cpu: "4", memory: 6Gi }
+    limits: { memory: 8Gi }
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/embedder
 networkPolicy:
   ingressController:
     namespace: ingress-nginx
@@ -17,6 +26,7 @@ networkPolicy:
 app:
   springProfiles: llm-nebius,oauth-github
   guideSimilarThreshold: 0.96
+  guideModelStream: "ON"
   tracing:
     export: true
     endpoint: http://alloy.observability.svc:4318/v1/traces
@@ -27,6 +37,9 @@ app:
   replicas: 3
   dailyLimits:
     webSearchCredits: "250"
+  guideJudge:
+    model: nvidia/Nemotron-3-Ultra-550b-a55b
+    dailyCalls: 300
 web:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-web

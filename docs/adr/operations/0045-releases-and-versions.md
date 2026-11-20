@@ -93,8 +93,13 @@ read as a fix of that release. What a release branch gained must reach `main` ag
      not in it.
    - An Ingress with the ingress-nginx canary annotations routes the public host to it, only for requests with the
      header `X-Helper2-Canary` set to a token made for this run (32 hex characters, masked in the log). No weight: no
-     user reaches the canary. Only `/` and the hashed `/assets/` go to the canary: `/theme.js` and `/favicon.svg`
-     keep their names and are cached by the edge for hours, so they always come from the release that runs.
+     user reaches the canary. The canary Ingress names two plain paths, `/api/` for the public app and `/assets/` for
+     the web image (`canary.appPaths`, `canary.webPaths`). ingress-nginx attaches each one to the Service behind the
+     path of the public Ingress with the same text and the same path type
+     ([0043](0043-runtime-topology-helm-chart-three-deployables.md) §7), and every path of that Service then follows
+     the header: the pages and the API come from the canary's public app, the files from its web pod. `/theme.js`,
+     `/favicon.svg` and `/favicon.ico` keep their names and are cached by the edge for hours, so a visitor always
+     gets them from the release that runs.
    - The smoke test goes through the public host, the edge included (`check-release.sh smoke`). With the header: the
      page answers, one of its scripts names the new version, `/api/v1/sources` and a search answer 200. Each
      ingress-nginx controller loads the canary's backend on its own, and until it has, it sends the header to the

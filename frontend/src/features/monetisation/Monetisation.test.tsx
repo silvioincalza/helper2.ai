@@ -20,8 +20,10 @@ const OFF = {
   ga4MeasurementId: null,
   adsenseClient: null,
   adsenseSlot: null,
+  adsenseSlotSearch: null,
+  adsenseSlotGuide: null,
 };
-const site = (monetisation: Partial<Record<keyof typeof ON, string | null>>) => () => ({
+const site = (monetisation: Partial<Record<keyof typeof OFF, string | null>>) => () => ({
   monetisation: { ...OFF, ...monetisation },
 });
 
@@ -412,7 +414,7 @@ describe('monetisation (ADR 0042)', () => {
       await waitFor(() => expect(window.adsbygoogle?.pauseAdRequests).toBe(1));
     });
 
-    it('a search page shows no ad at all', async () => {
+    it('a search page shows no ad while its ad unit is not set', async () => {
       fakeTcf({ gdprApplies: false, eventStatus: 'tcloaded' });
       mockApi({ 'GET /site': site(ADSENSE), 'GET /search': () => makeSearch() });
       renderApp('/search?q=agents');

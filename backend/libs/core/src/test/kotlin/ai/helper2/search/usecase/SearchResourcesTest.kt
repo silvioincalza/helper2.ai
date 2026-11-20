@@ -27,6 +27,10 @@ import ai.helper2.search.hit
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.SourceMode
 import ai.helper2.testing.MovableClock
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
@@ -44,6 +48,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.slf4j.LoggerFactory
 
 class SearchResourcesTest {
 
@@ -307,6 +312,29 @@ class SearchResourcesTest {
     assertEquals(1, out.total)
     assertEquals(Freshness.STALE, out.results.single().freshness)
     assertTrue(out.coverage.partial)
+  }
+
+  @Test
+  fun `an unavailable source is logged with its id and its reason`() {
+    val logger = LoggerFactory.getLogger(SourceFanOut::class.java) as Logger
+    val appender = ListAppender<ILoggingEvent>().also { it.start() }
+    logger.addAppender(appender)
+    try {
+      val semantic =
+        FakeSource(descriptor("helper2-semantic")) {
+          throw SourceFailure.Unavailable("embedding call failed: HTTP 503")
+        }
+      service(listOf(semantic)).search(req("private notes about my client"))
+    } finally {
+      logger.detachAppender(appender)
+    }
+    val logged = appender.list.map { it.formattedMessage }
+    val warned = appender.list.filter { it.level == Level.WARN }.map { it.formattedMessage }
+    assertEquals(
+      listOf("source helper2-semantic unavailable: embedding call failed: HTTP 503"),
+      warned,
+    )
+    assertTrue(logged.none { it.contains("private notes") })
   }
 
   @Test

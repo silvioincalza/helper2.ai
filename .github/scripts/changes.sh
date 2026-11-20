@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BACKEND="backend-libs backend-public backend-backoffice"
-KEYS="frontend $BACKEND backend-architecture chart monitoring postgres diagrams web public backoffice"
+KEYS="frontend $BACKEND backend-architecture chart monitoring postgres embedder diagrams web public backoffice"
 ROOT=${CHANGES_ROOT:-.}
 SCRIPTS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
@@ -16,6 +16,7 @@ needs() {
     chart) echo "deploy/k8s/Makefile" ;;
     monitoring) echo "deploy/monitoring/helper2-rules.yaml" ;;
     postgres) echo "deploy/postgres/Dockerfile deploy/helm/helper2/values.yaml" ;;
+    embedder) echo "deploy/embedder/Dockerfile deploy/helm/helper2/values.yaml" ;;
     diagrams) echo "docs/diagrams/render.sh" ;;
     web) echo "deploy/web.Dockerfile" ;;
     public) echo "deploy/Dockerfile" ;;
@@ -52,6 +53,7 @@ classify() {
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
     deploy/postgres/*) echo "postgres chart" ;;
+    deploy/embedder/*) echo "embedder chart" ;;
     deploy/monitoring/*) echo "monitoring chart" ;;
     deploy/helm/* | deploy/k8s/* | deploy/grafana/*) echo "chart" ;;
     *) echo "$KEYS" ;;
@@ -192,6 +194,7 @@ deploy/grafana/helper2.json|chart
 deploy/grafana/helper2-backoffice.json|chart
 deploy/monitoring/helper2-rules.yaml|monitoring chart
 deploy/postgres/Dockerfile|postgres chart
+deploy/embedder/server.py|embedder chart
 docs/adr/README.md|diagrams
 docs/design/system/tokens.json|frontend diagrams
 docs/diagrams/flow-0044-ci-cd.d2|diagrams

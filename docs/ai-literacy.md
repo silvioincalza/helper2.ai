@@ -12,7 +12,7 @@ user is asked to make decisions about the models.
 ## What he knows and checks
 
 - **What the models are.** The guide and the Scout use NVIDIA Nemotron models on Nebius Token Factory; search by
-  meaning uses NVIDIA's embedding model. Only NVIDIA models are allowed: the app does not start with another model id
+  meaning uses NVIDIA's embedding model, which runs on our own servers. Only NVIDIA models are allowed: the app does not start with another model id
   ([ADR 0008](adr/foundation/0008-llm-integration.md)). No model is trained or changed by helper2.ai.
 - **What they get wrong.** A model can invent tools, quotes and dates. So the model never decides what is true: it may
   only pick among retrieved candidates, every pick needs a quote found word for word in the candidate's own text, and

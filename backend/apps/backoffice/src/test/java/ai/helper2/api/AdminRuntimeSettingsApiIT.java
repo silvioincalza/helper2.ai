@@ -28,6 +28,8 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
 
   static final String GAP = "scout.gapDailyCalls";
 
+  static final String ADS = "ads.enabled";
+
   @Autowired JdbcClient jdbc;
 
   @Autowired RuntimeSettings runtime;
@@ -76,8 +78,12 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     assertThat(JsonPath.<List<String>>read(body, "$.settings[*].key"))
         .containsExactly(
             java.util.Arrays.stream(RuntimeSetting.values())
+                .filter(s -> !s.isSwitch())
                 .map(RuntimeSetting::key)
                 .toArray(String[]::new));
+    assertThat(JsonPath.<List<String>>read(body, "$.switches[*].key")).containsExactly(ADS);
+    assertThat(JsonPath.<Boolean>read(body, "$.switches[0].defaultOn")).isFalse();
+    assertThat(JsonPath.<Boolean>read(body, "$.switches[0].on")).isFalse();
     assertThat(
             JsonPath.<List<Integer>>read(body, "$.settings[?(@.key=='" + GAP + "')].defaultValue"))
         .containsExactly(400);
@@ -229,6 +235,78 @@ class AdminRuntimeSettingsApiIT extends ApiTestBase {
     assertThat(audit())
         .extracting(r -> r.get("outcome"))
         .containsExactly("CHANGED", "CONFLICT", "RESET");
+  }
+
+  @Test
+  void theAdsSwitchTurnsOnWithTrueIsAuditedAsTrueAndResetsToFalse() throws Exception {
+    String on =
+        mvc.perform(
+                put("/api/v1/admin/runtime-switches/" + ADS)
+                    .with(admin)
+                    .with(csrf().asHeader())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"on\":true,\"version\":%d,\"reason\":\"go live\"}"
+                            .formatted(switchVersion())))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("RuntimeSwitchState", on);
+    assertThat(JsonPath.<Boolean>read(on, "$.on")).isTrue();
+    assertThat(JsonPath.<Boolean>read(on, "$.history[0].on")).isTrue();
+    assertThat(runtime.current(RuntimeSetting.ADS_ENABLED)).isEqualTo(1L);
+
+    String off =
+        mvc.perform(
+                post("/api/v1/admin/runtime-switches/" + ADS + "/reset")
+                    .with(admin)
+                    .with(csrf().asHeader())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"version\":%d}".formatted(switchVersion())))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    ContractValidator.assertMatches("RuntimeSwitchState", off);
+    assertThat(JsonPath.<Boolean>read(off, "$.on")).isFalse();
+    assertThat(JsonPath.<Object>read(off, "$.history[0].on")).isNull();
+
+    assertThat(audit())
+        .containsExactly(
+            Map.of(
+                "outcome",
+                "CHANGED",
+                "before",
+                "default false",
+                "after",
+                "true",
+                "reason",
+                "go live"),
+            Map.of("outcome", "RESET", "before", "true", "after", "default false"));
+  }
+
+  @Test
+  void aSwitchIsNotALimitAndALimitIsNotASwitch() throws Exception {
+    mvc.perform(
+            put("/api/v1/admin/runtime-settings/" + ADS)
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(change(1, 0, null)))
+        .andExpect(status().isNotFound());
+    mvc.perform(
+            put("/api/v1/admin/runtime-switches/" + GAP)
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"on\":true,\"version\":0}"))
+        .andExpect(status().isNotFound());
+  }
+
+  private int switchVersion() throws Exception {
+    return JsonPath.<List<Integer>>read(list(), "$.switches[?(@.key=='" + ADS + "')].version")
+        .getFirst();
   }
 
   private String list() throws Exception {

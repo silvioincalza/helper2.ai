@@ -21,8 +21,10 @@ The stack must be well known, typed end to end, and cheap to operate: one commit
    web files. `deploy/backoffice.Dockerfile` builds the back office with the admin web app (`dist-admin`) in
    `backend/apps/backoffice/src/main/resources/static/admin`. The SPA and `/api/v1` come from the same origin (the
    Ingress splits the paths), so there is no Cross-Origin Resource Sharing (CORS) setup.
-5. **SPA serving.** The web image serves `/assets/<file>` (365 days, immutable) and the root files `/theme.js` and
-   `/favicon.svg` (5 minutes, then revalidated); any other address there is a plain 404, never `index.html`. The public
+5. **SPA serving.** The web image serves `/assets/<file>` (365 days, immutable) and the root files `/theme.js`,
+   `/favicon.svg` and `/favicon.ico` (5 minutes, then revalidated); any other address there is a plain 404, never
+   `index.html`. The Ingress sends it every address that is not one of the public app's
+   ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md) §7). The public
    app has no static handler (`spring.web.resources.add-mappings: false`): every path the client router owns (no file
    extension, outside `/api`, `/oauth2`, `/login`, `/logout` and `/actuator`) is the shell, `index.html`, written by
    the pages module with `no-cache` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)). The shell comes from the web

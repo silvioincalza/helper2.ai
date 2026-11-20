@@ -6,20 +6,69 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 
 ## Overview
 
+The views follow the C4 model: context, containers, components, then deployment.
+
+### The whole system
+
+One page for a first read. Every other view is one part of it.
+
 | Diagram | Shows |
 |---|---|
-| [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin `search`, `guide`, `setup`, `scout` and `shared`) inside, its use cases and ports on its edge, adapters around it, driving side left (the controllers and schedules of both apps) and driven side right (the public web, the Nemotron models, Redis, PostgreSQL). Hand-drawn SVG: edit the file itself. |
-| [context-map](context-map.svg) | Context map: the 10 bounded contexts of the backlog (Foundation, Scout and catalog, Search, AI guide, Identity and the signed-in user, Back office, Site and frontend, Money and consent, Legal and compliance, Release and operations), the modules that hold each one, and the direction of each dependency, as `ApplicationModules.verify()` lets them pass. |
-| [event-storming](event-storming.svg) | Big picture event storming of the seven contexts the apps run, one lane each: actors, commands, external systems, aggregates, domain events, policies, read models and the open stories (hotspots), with the arrows of what triggers what. Hand-drawn SVG: edit the file itself. |
+| [architecture-full](architecture-full.svg) | The whole system on one page: the people, the edge, the two web apps, the two Java apps with every module, the shared libraries, the stores, the models, the public sources, delivery and operations. One line per relation; each group names the view that holds its detail. |
+
+### C4 level 1: system context
+
+helper2 as one box.
+
+| Diagram | Shows |
+|---|---|
+| [architecture-system-context](architecture-system-context.svg) | helper2 as one box: the visitor, the admin and the crawler who use it, and the systems it talks to (the Nemotron models, the public sources, GitHub sign-in, the browser's third parties, delivery and operations). |
+
+### C4 level 2: containers
+
+What is deployed and runs on its own.
+
+| Diagram | Shows |
+|---|---|
+| [architecture-containers](architecture-containers.svg) | What is deployed and runs on its own: the two web apps in the browser, `helper2-web`, the public app, the back office, the migrate Job, the embedder, PostgreSQL and Redis, and who calls whom. |
+
+### C4 level 3: components
+
+What is inside the containers: the modules of the two Java apps and the folders of the two web apps.
+
+| Diagram | Shows |
+|---|---|
 | [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included, and the public app's site with pages, policy, monetisation and the CSP), who calls helper2 and what it calls. |
+| [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin `search`, `guide`, `setup`, `scout` and `shared`) inside, its use cases and ports on its edge, adapters around it, driving side left (the controllers and schedules of both apps) and driven side right (the public web, the Nemotron models, Redis, PostgreSQL). Hand-drawn SVG: edit the file itself. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
 | [architecture-review-research](architecture-review-research.svg) | Review research: the back office starts a run, workers take it from the Postgres queue, the agent calls seven read-only tools through the module's ports, `EvidenceValidator` checks each value, and the steps stream to the admin over SSE. |
 | [architecture-index](architecture-index.svg) | How the index grows: Scout, collectors, enrichment and its gap round, catalog storage and embeddings. |
 | [architecture-setup](architecture-setup.svg) | "Set it up" on a resource page: the setup ports, the registry, README and tool-guide adapters, the fetch budget and the shared cache. |
 | [architecture-platform](architecture-platform.svg) | The edge and the shared services: identity, the CSP of each app (the public one from the site), rate limits, errors, the SPA, and platform llm, http, resilience, quota, shared cache and locks, with their Redis keys and tables. |
+| [architecture-frontend](architecture-frontend.svg) | The frontend: the public app and the admin app built from `frontend/src`, the features and the ones they compose (`COMPOSES`), the shared layers `ui/`, `hooks/`, `context/` and the base (`api/` generated from the contract, `lib/`, `i18n/`, `styles/`), and who may import whom (ADR 0050). |
+
+### Deployment
+
+Where the containers run.
+
+| Diagram | Shows |
+|---|---|
+| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes, the full picture in zones: how a request gets in, production's applications, the one embedder that production and staging share, the stores and the jobs, what they call outside, the delivery, and where backups, metrics and traces go. Ports, sizes, secrets and policies are in the four views below. |
+| [infrastructure-workloads](infrastructure-workloads.svg) | What runs in the namespace: each workload's size, rollout and ports, the migrate Job, what the network policies let each accept and reach, the embedder that production and staging share, and what differs on staging. |
+| [infrastructure-secrets](infrastructure-secrets.svg) | The two Secrets, where their values come from, and which workload reads which key: each app's database role and Redis user, the owner's password, the monitors. |
+| [infrastructure-delivery](infrastructure-delivery.svg) | How an image gets from GitHub to the cluster through the runner, OpenBao and Harbor, and the canary that runs beside production during a release. |
+| [infrastructure-data](infrastructure-data.svg) | The prod backup with its off-site copy to Cloudflare R2 and the restore check, and Alloy -> Prometheus / Tempo -> Grafana for observability. |
+
+### Domain and data
+
+The views C4 has no level for.
+
+| Diagram | Shows |
+|---|---|
+| [context-map](context-map.svg) | Context map: the 10 bounded contexts of the backlog (Foundation, Scout and catalog, Search, AI guide, Identity and the signed-in user, Back office, Site and frontend, Money and consent, Legal and compliance, Release and operations), the modules that hold each one, and the direction of each dependency, as `ApplicationModules.verify()` lets them pass. |
+| [event-storming](event-storming.svg) | Big picture event storming of the seven contexts the apps run, one lane each: actors, commands, external systems, aggregates, domain events, policies, read models and the open stories (hotspots), with the arrows of what triggers what. Hand-drawn SVG: edit the file itself. |
 | [data-model](data-model.svg) | Data model: every PostgreSQL table from the versioned migrations with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0010); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
-| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and ingress-nginx, the public and the admin host, the two namespaces and their workloads, what the network policy lets each workload reach (egress), the migrate Job, each app's database role and Redis user, the two Secrets, OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup with its optional off-site copy to Cloudflare R2 (on for prod). |
 
 ## Per ADR
 
@@ -113,6 +162,7 @@ Every `.d2` file names the code it describes in its first lines. When that code 
 | [0051](../adr/foundation/0051-use-cases-return-outcomes.md) | [flow](flow-0051-use-cases-return-outcomes.svg) | [sequence](sequence-0051-use-cases-return-outcomes.svg) | a bookmark over the cap: the use case answers `OverLimit`, its unit of work rolls the row back, the controller maps the outcome to the 400 problem; and the build rule that keeps HTTP out of the use cases, with the list that only gets shorter. |
 | [0052](../adr/frontend/0052-hub-pages-per-resource-type.md) | [flow](flow-0052-hub-pages.svg) | [sequence](sequence-0052-hub-pages.svg) | what a hub address and the hub API answer from the list kept 10 minutes, and a person who lands on a hub from a search engine. |
 | [0053](../adr/frontend/0053-indexnow-daily-batch.md) | [flow](flow-0053-indexnow.svg) | [sequence](sequence-0053-indexnow.svg) | what the daily IndexNow job sends, and an engine checking the key file before it reads the pages. |
+| [0054](../adr/operations/0054-embedding-model-in-the-cluster.md) | [flow](flow-0054-embedding-model-in-the-cluster.svg) | [sequence](sequence-0054-embedding-model-in-the-cluster.svg) | what the embedder does with one call, and a search query embedded inside the namespace. |
 
 ## Colors
 

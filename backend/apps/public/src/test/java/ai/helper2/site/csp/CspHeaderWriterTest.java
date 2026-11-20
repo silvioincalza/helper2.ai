@@ -14,7 +14,7 @@ class CspHeaderWriterTest {
   void everyRequestGetsThePublicPolicy() {
     MockHttpServletRequest req = new MockHttpServletRequest();
     MockHttpServletResponse res = new MockHttpServletResponse();
-    new CspHeaderWriter(PUBLIC).writeHeaders(req, res);
+    new CspHeaderWriter(() -> PUBLIC).writeHeaders(req, res);
     assertThat(res.getHeader(CspHeaderWriter.HEADER)).isEqualTo(PUBLIC);
   }
 
@@ -23,7 +23,7 @@ class CspHeaderWriterTest {
     MockHttpServletRequest req = new MockHttpServletRequest();
     MockHttpServletResponse res = new MockHttpServletResponse();
     res.setHeader(CspHeaderWriter.HEADER, "set-before");
-    new CspHeaderWriter(PUBLIC).writeHeaders(req, res);
+    new CspHeaderWriter(() -> PUBLIC).writeHeaders(req, res);
     assertThat(res.getHeader(CspHeaderWriter.HEADER)).isEqualTo("set-before");
   }
 
@@ -31,7 +31,7 @@ class CspHeaderWriterTest {
   void theNoncePolicyNamesThisRequestsNonce() {
     MockHttpServletRequest req = new MockHttpServletRequest();
     MockHttpServletResponse res = new MockHttpServletResponse();
-    new CspHeaderWriter(ContentSecurityPolicy.ADSENSE).writeHeaders(req, res);
+    new CspHeaderWriter(() -> ContentSecurityPolicy.ADSENSE).writeHeaders(req, res);
 
     String nonce = CspNonce.of(req);
     assertThat(nonce).hasSizeGreaterThanOrEqualTo(24);

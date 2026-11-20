@@ -297,6 +297,11 @@ class ScoutConfiguration {
   static final Duration LAST_SUCCESS_FRESH_FOR = Duration.ofSeconds(30);
 
   @Bean
+  MeterBinder scoutEnabledGauge(ScoutProperties scout) {
+    return new ScoutEnabledGauge(scout.enabled());
+  }
+
+  @Bean
   MeterBinder scoutLastSuccessGauges(
       List<Collector> collectors, LastSuccesses lastSuccesses, Clock clock) {
     List<String> sources = collectors.stream().map(c -> c.getDescriptor().getId()).toList();

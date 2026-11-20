@@ -64,6 +64,7 @@ spec:
             {{- end }}
             - { name: H2_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
             - { name: H2_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
+            {{- include "helper2.embedderEnv" . | nindent 12 }}
             {{- with .Values.app.monetisation }}
             {{- with .githubSponsorsUrl }}
             - { name: H2_SUPPORT_GITHUB_SPONSORS_URL, value: {{ . | quote }} }
@@ -79,6 +80,12 @@ spec:
             {{- end }}
             {{- with .adsenseSlot }}
             - { name: H2_ADS_ADSENSE_SLOT, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .adsenseSlotSearch }}
+            - { name: H2_ADS_ADSENSE_SLOT_SEARCH, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .adsenseSlotGuide }}
+            - { name: H2_ADS_ADSENSE_SLOT_GUIDE, value: {{ . | quote }} }
             {{- end }}
             {{- end }}
             {{- with .Values.app.publicBaseUrl }}

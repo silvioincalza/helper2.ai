@@ -20,7 +20,7 @@ class AdminPropertiesBindingTest {
   void theYamlDefaultBinds() {
     context.run(c ->
         assertThat(c.getBean(AdminProperties.class))
-            .isEqualTo(new AdminProperties("", "https://helper2.ai", 600)));
+            .isEqualTo(new AdminProperties("", "https://helper2.ai", 600, false)));
   }
 
   @Test

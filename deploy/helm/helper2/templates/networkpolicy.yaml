@@ -135,6 +135,7 @@ spec:
       ports: [{ port: 5432, protocol: TCP }]
     - to: [{ podSelector: { matchLabels: { app: redis } } }]
       ports: [{ port: 6379, protocol: TCP }]
+    {{- include "helper2.embedderEgress" $ | nindent 4 }}
     {{- if .otlp.namespace }}
     - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .otlp.namespace }} } } }]
       ports: [{ port: {{ .otlp.port }}, protocol: TCP }]

@@ -24,6 +24,7 @@ import type {
   EnrichmentQueueView,
   RuntimeSettings,
   RuntimeSettingState,
+  RuntimeSwitchState,
   DiscoveryHosts,
   DiscoveryHostEntry,
   DiscoveryHostKind,
@@ -210,6 +211,19 @@ export const adminApi = {
     request<RuntimeSettingState>(
       'POST',
       `/admin/runtime-settings/${encodeURIComponent(key)}/reset`,
+      { body },
+    ),
+  changeRuntimeSwitch: (
+    key: string,
+    body: { on: boolean; version: number; reason: string | null },
+  ) =>
+    request<RuntimeSwitchState>('PUT', `/admin/runtime-switches/${encodeURIComponent(key)}`, {
+      body,
+    }),
+  resetRuntimeSwitch: (key: string, body: { version: number; reason: string | null }) =>
+    request<RuntimeSwitchState>(
+      'POST',
+      `/admin/runtime-switches/${encodeURIComponent(key)}/reset`,
       { body },
     ),
   listDiscoveryHosts: (signal?: AbortSignal) =>

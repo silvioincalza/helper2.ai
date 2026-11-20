@@ -2,6 +2,7 @@ package ai.helper2.site.pages.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,7 @@ import org.springframework.http.HttpStatus;
 class AdsTxtTest {
 
   private static CrawlerFiles files(Monetisation monetisation) {
-    return new CrawlerFiles(null, null, monetisation);
+    return new CrawlerFiles(null, null, new CurrentMonetisation(monetisation, () -> true));
   }
 
   @Test
@@ -21,6 +22,8 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
+            Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     var res = files(adsense).adsTxt();
@@ -51,7 +54,9 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
-            Optional.of("1234567890"));
+            Optional.of("1234567890"),
+            Optional.empty(),
+            Optional.empty());
 
     assertThat(PageRoutes.cacheControl(adsense).getHeaderValue()).isEqualTo("no-store");
     assertThat(PageRoutes.cacheControl(Monetisation.OFF).getHeaderValue()).isEqualTo("no-cache");

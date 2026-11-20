@@ -248,7 +248,8 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `H2_` variable that sets it, or
    "No variable". Secrets are never shown. A change needs a new value and a restart, except for the spending
    limits at the top ([ADR 0007](adr/foundation/0007-configuration-secrets-runtime-settings.md)): Scout enrichments per run, enrichment
-   calls and gap rounds a day, the guide's model calls a day, translations a day, Live web credits a day. Each row:
+   calls and gap rounds a day, the guide's model calls a day, translations a day, Live web credits a day, research
+   model calls a day. Each row:
    the value now with "Changed" or "Default", the default and its variable, the allowed range ("0 to 3000 calls a
    day") and one line of help. **Change** opens a number field; a value outside the range says "Enter a whole
    number from 0 to 3000." and nothing is sent. **Review changes** shows "600 calls a day → 50 calls a day", says
@@ -258,6 +259,13 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    first." and the row shows the current value. Every replica applies a change within about 20 seconds. The
    overview says "2 spending limits changed at runtime", a link to this page; the audit trail shows each change
    as "default 600 → 50" with its reason.
+   **Switches you can change**, above the limits: "Google ads" ([ADR 0042](adr/money/0042-monetisation.md)), with
+   its value now (`true` or `false`) and "Changed" or "Default", the default and `H2_ADS_ENABLED`, and one line on
+   what true and false do. **Set to true** (or **Set to false**) opens the same review: "Google ads: false → true",
+   an optional reason, **Confirm change**: "Saved: Google ads is now true." **Reset to default** goes through the
+   same review. History lists the last changes as `true`, `false` or "back to the default". Someone changed it
+   first: "Someone changed this switch first." The audit trail shows "default false → true". The overview counts
+   limits only.
    **Known vendors, services and tools** ([ADR 0019](adr/scout/0019-known-targets-vendors-and-services.md)): the names a relationship may point
    at with no catalog resource, one table each for vendors, services and tools. Each row: the name, its other names, how
    many relationships carry it, who added it and when. **Add name** takes a kind, a name and other names, one per
@@ -356,32 +364,35 @@ Each item is a row: the kind, the resource, the reason, the date and the status 
    again. With the keyboard the bar is the first stop after "Skip to main content", and the page keeps a focused item
    above it. On a short screen (up to 480px tall) the bar sits at the top of the page and scrolls with it.
 4. **Google's question** (while AdSense is on, in place of step 3): where the EU, EEA, UK or Swiss rules apply,
-   Google's consent tool asks once, for ads and analytics, on the first resource page of a visit. Home, search and the
-   other pages never show it. "Privacy choices" in the footer asks again from any page
-   ([ADR 0042](adr/money/0042-monetisation.md)). A resource page shows one "Sponsored" AdSense box between its sections.
-5. **The ad.** A search page shows one "Sponsored" box above the results, with why it is there. While the search runs,
-   it shows a progress bar; the results replace the bar the moment they come, and the ad comes with them. One search,
-   one ad: a filter, a sort or the timeline keeps it, new search words show a new one. No ad next to a guide answer.
+   Google's consent tool asks once, for ads and analytics, on the first page of a visit that shows an ad: a resource
+   page, a search or a guide question. Home and the other pages never show it. "Privacy choices" in the
+   footer asks again from any page ([ADR 0042](adr/money/0042-monetisation.md)).
+5. **The ads.** One box marked "Advertisements" on a resource page, between its sections, and one below the results
+   of a search, after the list and "Show more". One search, one ad: a filter, a sort or the timeline keeps it, new
+   search words show a new one. A guide question shows one box below the guide's picks and answer instead, once
+   the answer is there and has a pick. No ad while results load or the guide works.
+6. **While a slow search loads**, a note from helper2.ai about supporting the site can show above the loading
+   results. It is not an ad; the results replace it the moment they come.
 
 **Exit:** the provider's page, the link back to search, the box.
 
 | State | Behavior |
 |---|---|
-| Loading | While the search runs, the ad box shows a progress bar. |
-| Success | The Support page offers the ways that are on; after a gift, `/support/thanks`. One search shows one ad, with the results. |
+| Loading | No ad while the first results load. After 700 ms the note from helper2.ai can show. |
+| Success | The Support page offers the ways that are on; after a gift, `/support/thanks`. A search with results shows one ad below them. |
 | Empty: nothing configured | No Support link, no bar, no ad box: the site as before. |
 | Partial | Not specified. |
 | Support page, no way on | "Giving is not open yet." |
 | Payment cancelled at Stripe | Stripe's page; back on the Support page, no message and no nagging. |
-| No ad to show | The box keeps its height and stays empty, so the results do not move. |
-| Search failed, or no source could search | No ad box: the error state is all the page shows. |
+| No ad to show | The box keeps its height and stays empty. It is below the results, so they do not move. |
+| Search failed, found nothing, or no source could search | No ad box: the state is all the page shows. |
 | Ad or analytics blocked by the browser | Nothing breaks; search works the same. |
-| AdSense on, the visit never opens a resource page | No Google dialog, and the visit is not counted in Google Analytics. |
-| Still typing: the words change before their results come | No ad for those words; the box keeps the ad it had. |
+| AdSense on, the visit never opens a page with an ad | No Google dialog, and the visit is not counted in Google Analytics. |
+| The guide asks back, picks nothing or fails | No ad box. |
 
 **How we know it worked:** gifts and amounts from the providers' dashboards; views of `/support` and
 `/support/thanks` in Google Analytics (for visitors who accepted; while AdSense is on, only in visits that opened a
-resource page); p95 time to results and CLS before and after the ad
+page with an ad); p95 time to results and CLS before and after the ad
 slot. If either gets worse, the slot goes.
 
 **Built by:** features [F8.1](https://github.com/silvioincalza/helper2.ai/issues/95), [F8.2](https://github.com/silvioincalza/helper2.ai/issues/96), [F8.3](https://github.com/silvioincalza/helper2.ai/issues/97); stories [S8.1.1](https://github.com/silvioincalza/helper2.ai/issues/328), [S8.2.1](https://github.com/silvioincalza/helper2.ai/issues/329), [S8.3.1](https://github.com/silvioincalza/helper2.ai/issues/330), [S8.3.2](https://github.com/silvioincalza/helper2.ai/issues/331).
