@@ -83,6 +83,9 @@ spec:
             {{- with .adsenseSlotSearch }}
             - { name: H2_ADS_ADSENSE_SLOT_SEARCH, value: {{ . | quote }} }
             {{- end }}
+            {{- with .adsenseSlotGuide }}
+            - { name: H2_ADS_ADSENSE_SLOT_GUIDE, value: {{ . | quote }} }
+            {{- end }}
             {{- end }}
             {{- with .Values.app.publicBaseUrl }}
             - { name: H2_PUBLIC_BASE_URL, value: {{ . | quote }} }

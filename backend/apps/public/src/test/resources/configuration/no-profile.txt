@@ -600,6 +600,7 @@ helper2.llm.provider-label = <empty>
 helper2.llm.reasoning-model = <empty>
 helper2.monetisation.adsense-client = ${H2_ADS_ADSENSE_CLIENT:}  =>  <empty>
 helper2.monetisation.adsense-slot = ${H2_ADS_ADSENSE_SLOT:}  =>  <empty>
+helper2.monetisation.adsense-slot-guide = ${H2_ADS_ADSENSE_SLOT_GUIDE:}  =>  <empty>
 helper2.monetisation.adsense-slot-search = ${H2_ADS_ADSENSE_SLOT_SEARCH:}  =>  <empty>
 helper2.monetisation.ga4-measurement-id = ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}  =>  <empty>
 helper2.monetisation.github-sponsors-url = ${H2_SUPPORT_GITHUB_SPONSORS_URL:}  =>  <empty>

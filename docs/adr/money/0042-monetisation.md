@@ -23,14 +23,15 @@ The constraints:
 
 ## Decision
 
-1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads six
+1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads seven
    `H2_` settings and publishes them as one value, `Monetisation`. An empty setting is off: no link, no script, no CSP
    origin. A value with the wrong shape (a non-https link, an ID that is not `G-...`, a publisher that is not
    `ca-pub-` and 16 digits) stops the app at startup. None is a secret: every page shows them.
    - `H2_SUPPORT_GITHUB_SPONSORS_URL`, `H2_SUPPORT_STRIPE_PAYMENT_URL`
    - `H2_ANALYTICS_GA4_MEASUREMENT_ID`
    - `H2_ADS_ADSENSE_CLIENT`, and one ad unit (8 to 12 digits) per place an ad can show: `H2_ADS_ADSENSE_SLOT`
-     for resource pages, `H2_ADS_ADSENSE_SLOT_SEARCH` for the box below the search results. **The publisher alone**
+     for resource pages, `H2_ADS_ADSENSE_SLOT_SEARCH` for the box below the search results,
+     `H2_ADS_ADSENSE_SLOT_GUIDE` for the box below a guide answer. **The publisher alone**
      answers Google's site check (8) and nothing else. **The publisher and at least one ad unit** turn on the rest
      in one step: Google's consent tool, the nonce CSP and the slot of each ad unit that is set. So the CSP changes
      only on the day the ads start, never before Google approves the site, and a place is switched off alone by
@@ -85,12 +86,13 @@ The constraints:
    - host-only cookies (`cookie_domain: 'none'`): on the site's own host, never on a parent domain such as
      `incalza.me` for staging. A withdrawal removes `_ga` cookies on the host and on every parent domain;
    - nothing on `/admin`.
-6. **One ad below the search results, none next to a guide answer.** A search address holds the search words
-   (`q`), and an ad network's script in the page reads the address. With an ad on the search page, Google receives
-   the search words, also from a visitor who answered "no" to Google's question (the ad is then not personalised).
-   The Privacy page says so. A guide question (`ask`) gets no ad: the guide answer, the guide picks, Home, text
-   pages, sign-in, error states and the back office carry none. An ad is never written by our AI and never looks
-   like an answer ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
+6. **One ad below the search results, or one below a guide answer.** A search address holds the search words
+   (`q`) and, for a guide question, the question (`ask`), and an ad network's script in the page reads the address.
+   With an ad on these pages, Google receives the search words or the question, also from a visitor who answered
+   "no" to Google's question (the ad is then not personalised). The Privacy page says so. A page shows one ad at
+   most: a guide question shows the guide box and no search box. Home, text pages, sign-in, error states and the
+   back office carry none. An ad is never written by our AI, never inside the text marked as AI-written and never
+   looks like an answer ([0033](../guide/0033-marking-ai-written-text-research-trail.md)).
    While the first results of a plain search are still loading after 700 ms, and a gift link is on (4), the space
    above the loading results shows a note of our own, marked "From helper2.ai": one line on what the site costs and
    a link to `/support` (`SupportWhileSearching`). It holds nothing back: the results replace it the moment they
@@ -102,7 +104,7 @@ The constraints:
    ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md)), without `data-h2-head`, so the app keeps it after a route change.
    `GET /ads.txt` answers one line, `google.com, pub-..., DIRECT, f08c47fec0942fa0` (Google's certification authority
    ID), cached for an hour; 404 without the publisher.
-9. **Two AdSense slots: on a resource page and below the search results.** Each is one box, marked
+9. **Three AdSense slots: on a resource page, below the search results and below a guide answer.** Each is one box, marked
    "Advertisements" (one of the two labels Google allows), of fixed height, with its own ad unit (1).
    - **Resource page:** between the resource's sections, never next to the AI summary. Not when the address has
      `q` or `ask`.
@@ -111,20 +113,23 @@ The constraints:
      first results load, not when a search finds nothing, not when it fails (Google allows no ad on a screen
      without content). The box is keyed on the search words, so a new search asks for a new ad, and a filter, a
      sort or one more page does not.
+   - **Guide answer** (`/search` with `ask`): after the guide's picks and its answer, before the result list,
+     outside every element marked as AI-written. Only for a finished answer with at least one pick: not while the
+     guide works, not when it asks back, picks nothing or fails. The box is keyed on the question.
 
-   No AdSense next to a guide answer, on Home, text pages, sign-in, error states or the back office. A box asks
+   No AdSense on Home, text pages, sign-in, error states or the back office. A box asks
    AdSense for one ad, after it has put Google's consent tool in the page (10): as in Google's own snippet, the
    tool's presence frame makes the ad request wait for the consent signal, also for a visit that lands on a page
    with an ad. The AdSense script stays loaded in the app, so leaving a page with an ad pauses its requests
    (`pauseAdRequests`), and **Auto ads and overlay formats (anchor, vignette, side rail) stay off in the AdSense
-   account**: Google would otherwise place ads on pages we keep free of them, such as a guide answer.
+   account**: Google would otherwise place more ads than one per page, and on pages we keep free of them.
 10. **Google's consent tool for AdSense and Google Analytics, on the pages that show an ad.** While AdSense is on,
     the page loads Google's Privacy & messaging tag (`fundingchoicesmessages.google.com/i/pub-...?ers=1`) when a
-    page of a placement opens (`lib/googleConsent.adPlacement`: a resource page, or a search for words when the
-    search ad unit is set), and our own bar (5) is off. On Home, text pages, a guide question and every other page
+    page of a placement opens (`lib/googleConsent.adPlacement`: a resource page, a search for words or a guide
+    question, each when its ad unit is set), and our own bar (5) is off. On Home, text pages and every other page
     nothing is requested from the tool, so a first visit to Home shows no dialog. The tag sees the page address:
-    on a search page that is the search words (6). It never loads for an address with `ask`. Google asks where the
-    EU, EEA, UK or Swiss rules apply.
+    with a search that is the search words, with a guide question the question (6). Google asks where the EU, EEA,
+    UK or Swiss rules apply.
     "Privacy choices" in the footer works on every page: it loads the tag if the visit has not loaded it yet (the
     visitor asked for it), then asks again (`googlefc.showRevocationMessage()`). On an address with `q` or `ask` it
     first moves to the Privacy page inside the app, then loads and asks there: no new page load, so no new document
@@ -194,8 +199,11 @@ The constraints:
   the site would earn only from resource pages.
 - **No Google ad on a search page after a "no" to Google's question** — the search words would reach Google only
   with consent. Not chosen: the non-personalised ad stays. A lawyer has to confirm the legal basis.
-- **An ad next to a guide answer** — Google's rules warn against ads on generated content nobody reviewed, the
-  address holds the visitor's question, and an ad must not look like an answer (0033).
+- **No ad next to a guide answer** — no risk from Google's rule on generated content, and the question stays
+  with us. Not chosen: the guide is where a visit spends most of its time. The guide ad unit can be emptied
+  without a release if Google objects.
+- **The guide ad inside the answer, or between the picks** — more views, but it would sit in text marked as
+  AI-written and read as a pick.
 - **An ad between the results** — more views, but it sits inside the list marked as AI-described and reads as a
   result.
 - **One ad unit for every place** — one setting less, but no report per place and no way to switch one place off
@@ -233,20 +241,24 @@ The constraints:
 
 ## Consequences
 
-- With all seven settings empty, the site loads no third-party script and sends the strict CSP.
+- With all eight settings empty, the site loads no third-party script and sends the strict CSP.
 - With ads on, inline styles are allowed on public pages. Scripts are not, until AdSense is on.
 - While AdSense is on, the public site loses part of its XSS protection: an injected script tag still needs the
   nonce, but `'unsafe-eval'` lets injected code run through eval-style calls, and every Google script runs with full
   access to the page. The admin host does not.
-- Google receives the page address, the IP address and browser data with every ad. On a search page the address
-  holds the search words, with or without consent. Outside Europe, Google
+- Google receives the page address, the IP address and browser data with every ad. With a search the address
+  holds the search words and with a guide answer the question, with or without consent. Outside Europe, Google
   Analytics runs without asking, and AdSense may personalise ads under Google's policies. If the consent tool is
   blocked, Europe and the rest are the same: no analytics.
 - While AdSense is on, Google Analytics misses every visit that never opens a page with an ad, in Europe and
   outside it, and the pages of a visit before the first one. With the search ad unit set, a visit is counted from
   its first search; with only the resource ad unit, from its first resource page. The numbers for Home are too low
   and are not comparable with the time before. That is the price of no Google dialog on Home.
-- With the search ad unit set, Google's dialog opens on the first search of a visit in Europe.
+- With the search or the guide ad unit set, Google's dialog opens on the first search or guide question of a visit
+  in Europe.
+- Google's publisher rules warn against ads on generated content that nobody reviewed. A guide answer is generated.
+  The box sits outside the answer and only where the guide picked a listed resource, but Google can still object:
+  then the guide ad unit is emptied.
 - Which TCF purposes GA4 needs is our reading (1 and 8), not a Google statement.
 - `no-store` turns off the browser's back/forward cache for the shell while AdSense is on.
 - GA4 and the ad clients run in the visitor's browser and talk to their hosts directly: the CSP must list the hosts,
@@ -268,8 +280,8 @@ They run in our origin with full access to the page.
 | T | A Google script, or a malicious ad, changes the page or the results | No SRI is possible for Google's scripts; ads only in their box; nothing on the admin host | Accepted while AdSense is on |
 | T | An injected script runs under the weaker CSP | Nonce per request, only on the shell and our JSON-LD, never on source text; `no-store`; `/index.html` redirects | `'unsafe-eval'`: eval-style sinks are open |
 | R | Invalid clicks get the AdSense account closed | No own clicks; nothing asks for clicks | Accepted |
-| I | Search words reach Google | Accepted for the ad below the results, and said on the Privacy page; GA gets the path only; the search box warns against personal data | Search words can be personal data, and they reach Google also after a "no": a lawyer confirms the legal basis |
-| I | The guide question reaches Google | No AdSense and no consent tool on an `ask` address; requests paused off the pages with an ad; Auto ads and overlay formats off | The AdSense script and the consent tool, once loaded, stay for the visit and could read a later guide address; the Privacy page says so |
+| I | Search words and guide questions reach Google | Accepted for the ads below the results and below a guide answer, and said on the Privacy page; GA gets the path only; the Privacy page warns against typing personal data; requests paused off the pages with an ad; Auto ads and overlay formats off | They can be personal data, a question more than search words, and they reach Google also after a "no": a lawyer confirms the legal basis |
+| S | An ad is taken for a guide pick | The box is marked "Advertisements", outside every AI-marked element, after the picks and the answer | Accepted |
 | I | Analytics without consent in Europe | Our bar, or the TCF answer (purposes 1 and 8, vendor 755); a "no" sets `ga-disable` and deletes cookies; tool blocked or not loaded yet = no GA | Our reading of the purposes |
 | D | Ad scripts slow the page (INP, CLS) | Fixed-height boxes; the search box comes after the list; scripts load after the app | Measure on prod |
 | E | A third-party script uses the CSRF token for same-origin writes | Writes need sign-in or are rate-limited; admin only on the admin host, with the strict CSP and no third-party script | Accepted on the public host |

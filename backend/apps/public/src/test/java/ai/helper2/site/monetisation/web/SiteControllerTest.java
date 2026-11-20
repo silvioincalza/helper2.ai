@@ -37,6 +37,7 @@ class SiteControllerTest {
                 Optional.of("G-TEST1234"),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty()));
 
     assertThat(m.getGithubSponsorsUrl()).hasToString("https://github.com/sponsors/someone");
@@ -64,7 +65,8 @@ class SiteControllerTest {
                 Optional.empty(),
                 ADSENSE_CLIENT,
                 Optional.empty(),
-                Optional.of("2345678901")));
+                Optional.of("2345678901"),
+                Optional.empty()));
 
     assertThat(searchOnly.getAdsenseClient()).isEqualTo(ADSENSE_CLIENT.get());
     assertThat(searchOnly.getAdsenseSlot()).isNull();
@@ -84,6 +86,7 @@ class SiteControllerTest {
         Optional.empty(),
         ADSENSE_CLIENT,
         adUnit,
+        Optional.empty(),
         Optional.empty());
   }
 }

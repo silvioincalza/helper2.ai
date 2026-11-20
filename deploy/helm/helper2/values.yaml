@@ -48,6 +48,7 @@ app:
     adsenseClient: ""
     adsenseSlot: ""
     adsenseSlotSearch: ""
+    adsenseSlotGuide: ""
   environment: ""
   noindex: false
   publicBaseUrl: ""

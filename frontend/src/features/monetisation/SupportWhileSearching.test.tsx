@@ -12,6 +12,7 @@ const OFF: Monetisation = {
   adsenseClient: null,
   adsenseSlot: null,
   adsenseSlotSearch: null,
+  adsenseSlotGuide: null,
 };
 const SUPPORT: Monetisation = { ...OFF, githubSponsorsUrl: 'https://github.com/sponsors/someone' };
 const site = (monetisation: Monetisation) => () => ({ monetisation });

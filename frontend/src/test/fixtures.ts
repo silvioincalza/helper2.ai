@@ -273,6 +273,7 @@ export const SITE_OFF: Site = {
     adsenseClient: null,
     adsenseSlot: null,
     adsenseSlotSearch: null,
+    adsenseSlotGuide: null,
   },
 };
 

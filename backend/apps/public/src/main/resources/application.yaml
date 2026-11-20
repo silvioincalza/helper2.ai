@@ -83,6 +83,7 @@ helper2:
     adsense-client: ${H2_ADS_ADSENSE_CLIENT:}
     adsense-slot: ${H2_ADS_ADSENSE_SLOT:}
     adsense-slot-search: ${H2_ADS_ADSENSE_SLOT_SEARCH:}
+    adsense-slot-guide: ${H2_ADS_ADSENSE_SLOT_GUIDE:}
   schema:
     logins:
       h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}

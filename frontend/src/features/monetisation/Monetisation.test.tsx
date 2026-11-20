@@ -21,6 +21,7 @@ const OFF = {
   adsenseClient: null,
   adsenseSlot: null,
   adsenseSlotSearch: null,
+  adsenseSlotGuide: null,
 };
 const site = (monetisation: Partial<Record<keyof typeof OFF, string | null>>) => () => ({
   monetisation: { ...OFF, ...monetisation },

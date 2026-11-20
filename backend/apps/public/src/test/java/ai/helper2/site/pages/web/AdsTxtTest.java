@@ -22,6 +22,7 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     var res = files(adsense).adsTxt();
@@ -53,6 +54,7 @@ class AdsTxtTest {
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
             Optional.of("1234567890"),
+            Optional.empty(),
             Optional.empty());
 
     assertThat(PageRoutes.cacheControl(adsense).getHeaderValue()).isEqualTo("no-store");

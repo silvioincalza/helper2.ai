@@ -15,7 +15,7 @@ import { SourceTiles } from '@/ui/SourceTiles';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
-import { useGuideStream } from '@/features/guide/useGuideStream';
+import { useGuideStream, type GuideStream } from '@/features/guide/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
@@ -114,6 +114,7 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
+      {asked && guideAnswered(stream) && <AdSenseSlot key={asked} placement="guide" />}
       {search.loading &&
         (shown ? (
           <p role="status" className="h2-results__loading-line">
@@ -164,6 +165,12 @@ export function Results() {
       )}
     </ResultKeys>
   );
+}
+
+function guideAnswered(stream: GuideStream): boolean {
+  const { answer, busy, error } = stream;
+  if (busy || error !== null || answer === null) return false;
+  return answer.status !== 'NEEDS_CLARIFICATION' && guidePicks(answer).length > 0;
 }
 
 function ResultsBody({

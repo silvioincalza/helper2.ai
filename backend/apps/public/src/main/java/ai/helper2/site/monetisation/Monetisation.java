@@ -9,10 +9,12 @@ public record Monetisation(
     Optional<String> ga4MeasurementId,
     Optional<String> adsenseClient,
     Optional<String> adsenseSlot,
-    Optional<String> adsenseSlotSearch) {
+    Optional<String> adsenseSlotSearch,
+    Optional<String> adsenseSlotGuide) {
 
   public static final Monetisation OFF =
       new Monetisation(
+          Optional.empty(),
           Optional.empty(),
           Optional.empty(),
           Optional.empty(),
@@ -25,7 +27,10 @@ public record Monetisation(
   }
 
   public boolean adsenseOn() {
-    return adsenseClient.isPresent() && (adsenseSlot.isPresent() || adsenseSlotSearch.isPresent());
+    return adsenseClient.isPresent()
+        && (adsenseSlot.isPresent()
+            || adsenseSlotSearch.isPresent()
+            || adsenseSlotGuide.isPresent());
   }
 
   public Optional<String> adsTxt() {

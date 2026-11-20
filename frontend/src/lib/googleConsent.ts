@@ -55,15 +55,17 @@ function hasSensitiveQuery(search: string): boolean {
   return params.has('q') || params.has('ask');
 }
 
-export type AdPlacement = 'resource' | 'search';
+export type AdPlacement = 'resource' | 'search' | 'guide';
 
 export interface AdUnits {
   adsenseSlot: string | null;
   adsenseSlotSearch: string | null;
+  adsenseSlotGuide: string | null;
 }
 
 export function adUnitOf(placement: AdPlacement, units: AdUnits): string | null {
-  return placement === 'resource' ? units.adsenseSlot : units.adsenseSlotSearch;
+  if (placement === 'resource') return units.adsenseSlot;
+  return placement === 'search' ? units.adsenseSlotSearch : units.adsenseSlotGuide;
 }
 
 export function adPlacement(
@@ -79,7 +81,8 @@ function placementOf(pathname: string, search: string): AdPlacement | undefined 
   if (pathname.startsWith('/resource/')) return hasSensitiveQuery(search) ? undefined : 'resource';
   if (pathname !== RESULTS_PATH) return undefined;
   const params = new URLSearchParams(search);
-  return params.has('q') && !params.has('ask') ? 'search' : undefined;
+  if (params.has('ask')) return 'guide';
+  return params.has('q') ? 'search' : undefined;
 }
 
 export function onPrivacyChoices(listener: () => void, win: Window = window): () => void {

@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { mockApi, problem } from '@/test/mockApi';
+import type { GuideResponse } from '@/api/types';
+import { heldSse, mockApi, problem, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
 import { makeDetail, makeSearch } from '@/test/fixtures';
 
@@ -8,7 +9,12 @@ const RESOURCE = `/resource/${ID}/acme-translator`;
 const CLIENT = 'ca-pub-4688630163076563';
 const RESOURCE_UNIT = '1234567890';
 const SEARCH_UNIT = '2345678901';
-type Units = { adsenseSlot: string | null; adsenseSlotSearch: string | null };
+const GUIDE_UNIT = '3456789012';
+type Units = {
+  adsenseSlot: string | null;
+  adsenseSlotSearch: string | null;
+  adsenseSlotGuide: string | null;
+};
 const site = (units: Units) => () => ({
   monetisation: {
     githubSponsorsUrl: null,
@@ -18,7 +24,12 @@ const site = (units: Units) => () => ({
     ...units,
   },
 });
-const BOTH: Units = { adsenseSlot: RESOURCE_UNIT, adsenseSlotSearch: SEARCH_UNIT };
+const BOTH: Units = {
+  adsenseSlot: RESOURCE_UNIT,
+  adsenseSlotSearch: SEARCH_UNIT,
+  adsenseSlotGuide: null,
+};
+const ALL: Units = { ...BOTH, adsenseSlotGuide: GUIDE_UNIT };
 const withAdSense = (search: () => unknown = () => makeSearch(), units: Units = BOTH) =>
   mockApi({
     'GET /site': site(units),
@@ -72,7 +83,7 @@ describe('Feature: the AdSense slot on a resource page (ADR 0042)', () => {
   );
 
   it('Scenario: with only the search ad unit set, a resource page shows no ad and asks nothing', async () => {
-    withAdSense(undefined, { adsenseSlot: null, adsenseSlotSearch: SEARCH_UNIT });
+    withAdSense(undefined, { ...BOTH, adsenseSlot: null });
     renderApp(RESOURCE);
     await screen.findByRole('heading', { level: 1 });
     await settle();
@@ -124,7 +135,7 @@ describe('Feature: the AdSense slot below the search results (ADR 0042)', () => 
     expectNoAd();
   });
 
-  it('Scenario: a guide question shows no ad and loads nothing from Google', async () => {
+  it('Scenario: a guide question shows no ad and loads nothing from Google while the guide ad unit is not set', async () => {
     withAdSense();
     renderApp('/search?q=agents&ask=which+agent+framework');
     await screen.findByRole('list', { name: 'Search results' });
@@ -133,10 +144,99 @@ describe('Feature: the AdSense slot below the search results (ADR 0042)', () => 
   });
 
   it('Scenario: with only the resource ad unit set, a search page shows no ad and asks nothing', async () => {
-    withAdSense(undefined, { adsenseSlot: RESOURCE_UNIT, adsenseSlotSearch: null });
+    withAdSense(undefined, { ...BOTH, adsenseSlotSearch: null });
     renderApp('/search?q=agents');
     await screen.findByRole('list', { name: 'Search results' });
     await settle();
     expectNothingFromGoogle();
+  });
+});
+
+describe('Feature: the AdSense slot below a guide answer (ADR 0042)', () => {
+  const ASK = '/search?q=postgres+mcp&ask=which+mcp+server+for+postgres';
+  const NO_PICK: GuideResponse = {
+    status: 'OK',
+    searchQuery: 'postgres mcp',
+    recommendations: [],
+    candidatesConsidered: 0,
+    sources: [],
+    notices: [],
+    generatedAt: '2026-10-30T10:00:00Z',
+  };
+  const PICKED: GuideResponse = {
+    ...NO_PICK,
+    candidatesConsidered: 1,
+    recommendations: [
+      {
+        resourceId: 'bbbbbbbb-bbbb-5bbb-8bbb-bbbbbbbbbbbb',
+        title: 'Postgres MCP',
+        url: 'https://github.com/acme/postgres-mcp',
+        type: 'MCP_SERVER',
+        reason: 'Read-only access fits an agent that only reads.',
+        quote: 'read-only access',
+        sourceIds: ['github'],
+        aiReasoned: true,
+        reasonCheck: 'NOT_CHECKED',
+      },
+    ],
+  };
+  const withGuide = (guide: () => unknown, units: Units = ALL) =>
+    mockApi({
+      'GET /site': site(units),
+      'GET /search': () => makeSearch(),
+      'POST /guide/stream': guide,
+    });
+  const picksBar = () => screen.getByRole('region', { name: 'Guide picks' });
+
+  it('Scenario: a finished answer with a pick shows one labelled box with the guide ad unit, and no search box', async () => {
+    withGuide(() => sse(PICKED));
+    renderApp(ASK);
+    await waitFor(() => expect(adBox()).not.toBeNull());
+    expect(screen.getAllByRole('complementary', { name: 'Advertisements' })).toHaveLength(1);
+    expect(adBox()!.querySelector('ins.adsbygoogle')).toHaveAttribute('data-ad-slot', GUIDE_UNIT);
+    expect(document.getElementById('h2-googlefc')).not.toBeNull();
+    expect(window.adsbygoogle).toHaveLength(1);
+  });
+
+  it('Scenario: the box comes after the picks and is not inside text marked as written by AI', async () => {
+    withGuide(() => sse(PICKED));
+    renderApp(ASK);
+    await waitFor(() => expect(adBox()).not.toBeNull());
+    expect(
+      picksBar().compareDocumentPosition(adBox()!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(within(picksBar()).queryByRole('complementary')).toBeNull();
+    expect(adBox()!.closest('[data-ai-generated], [data-ai-provider]')).toBeNull();
+    expect(adBox()!.querySelector('[data-ai-generated]')).toBeNull();
+  });
+
+  it('Scenario: while the guide is still reading there is no ad, and it comes with the answer', async () => {
+    const stream = heldSse();
+    withGuide(() => stream.response());
+    renderApp(ASK);
+    await waitFor(() => expect(picksBar()).toHaveTextContent('Guide is reading'));
+    await settle();
+    expectNoAd();
+
+    stream.finish(PICKED);
+    await waitFor(() => expect(adBox()).not.toBeNull());
+  });
+
+  it('Scenario: an answer without a pick shows no ad', async () => {
+    withGuide(() => sse(NO_PICK));
+    renderApp(ASK);
+    await waitFor(() => expect(picksBar()).not.toHaveTextContent('Guide is reading'));
+    await settle();
+    expectNoAd();
+  });
+
+  it('Scenario: a guide that fails shows no ad', async () => {
+    withGuide(() => problem(503, 'Service Unavailable'));
+    renderApp(ASK);
+    await within(await screen.findByRole('list', { name: 'Search results' })).findAllByRole(
+      'listitem',
+    );
+    await settle();
+    expectNoAd();
   });
 });
