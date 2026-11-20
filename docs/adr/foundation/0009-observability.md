@@ -43,7 +43,8 @@ the guide work long before that, and what makes the wait feel long is the first 
      `helper2.shared.cache{cache,result}` (`translation`, `query-vector`, `tool-guide`, `guide-answer`; a miss includes a database error
      or timeout);
    - catalog: `helper2.catalog.observations{outcome}`, `helper2.catalog.observations.queued`,
-     `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`;
+     `helper2.embedding.backlog`, `helper2.embedding.failures{reason}` (`refused` is a batch the open circuit did not
+     send), `helper2.embedding.last.success`;
    - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,
      `helper2.guide.step{step,intent}`, `helper2.guide.first_useful{intent}` (item 8),
      `helper2.guide.quote_origin{part,found}` (a quote and whether a record holds it, [0031](../guide/0031-guide-pipeline.md)),
@@ -58,6 +59,7 @@ the guide work long before that, and what makes the wait feel long is the first 
    - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](../scout/0020-resource-vitality.md)), `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
      each collector, read from Postgres at most every 30 s, so every replica reports it from start-up),
      `helper2.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
+     `helper2.scout.enabled` (1 when the Scout runs on its schedule on this environment, 0 when it is off),
      `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
      `helper2.scout.classifier.budget.remaining`;
    - platform: `helper2.rate-limit.fallback{limiter}` (rate-limit decisions made in one replica's memory while

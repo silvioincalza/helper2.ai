@@ -344,6 +344,22 @@ class ResourceEmbeddingTest {
   }
 
   @Test
+  void aRefusedBatchCountsAsRefusedNotAsAnEmbeddingFailure() {
+    embedEverythingSoFar();
+    insert("alpha", "x");
+    insert("beta", "y");
+    FailsOnBatches embedder = new FailsOnBatches(FailureReason.REFUSED);
+    SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    new IndexEmbeddings(
+            embeddings, embedder, 10, 5, Duration.ofMinutes(1), Clock.systemUTC(), registry)
+        .tick();
+
+    assertThat(failures(registry, "refused")).isEqualTo(1);
+    assertThat(failures(registry, "embedding")).isZero();
+  }
+
+  @Test
   void aRateLimitDuringTheFallbackKeepsTheVectorsAndPauses() {
     embedEverythingSoFar();
     UUID alpha = insert("alpha", "x");
