@@ -135,6 +135,10 @@ spec:
       ports: [{ port: 5432, protocol: TCP }]
     - to: [{ podSelector: { matchLabels: { app: redis } } }]
       ports: [{ port: 6379, protocol: TCP }]
+    {{- if $.Values.embedder.enabled }}
+    - to: [{ podSelector: { matchLabels: { app: helper2-embedder } } }]
+      ports: [{ port: 8080, protocol: TCP }]
+    {{- end }}
     {{- if .otlp.namespace }}
     - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: {{ .otlp.namespace }} } } }]
       ports: [{ port: {{ .otlp.port }}, protocol: TCP }]

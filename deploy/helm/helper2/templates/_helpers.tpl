@@ -53,6 +53,20 @@ H2_REDIS_{{ trimPrefix "h2_" . | upper }}_PASSWORD
 {{- end }}
 {{- end }}
 
+{{- define "helper2.embedderImage" -}}
+{{- with .Values.embedder.image -}}
+{{ required "embedder.image.repository is required (the embedding model image built from deploy/embedder)" .repository }}:{{ required "embedder.image.tag" .tag }}{{ include "helper2.atDigest" .digest }}
+{{- end }}
+{{- end }}
+
+{{- define "helper2.embedderEnv" -}}
+{{- if .Values.embedder.enabled }}
+- { name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1" }
+- { name: H2_NVIDIA_EMBEDDING_MODEL, value: {{ required "embedder.model" .Values.embedder.model | quote }} }
+- { name: H2_NVIDIA_API_KEY, value: in-cluster }
+{{- end }}
+{{- end }}
+
 {{- define "helper2.redisAuthRevision" -}}
 {{- $r := toString .Values.redis.auth.revision -}}
 {{- if not (regexMatch "^[0-9]+$" $r) }}{{ fail "redis.auth.revision must be a non-negative integer" }}{{ end -}}

@@ -31,7 +31,6 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Now
 
 - [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
-- [T2.3.1 One host check for every address the Scout reads or proposes](https://github.com/silvioincalza/helper2.ai/issues/856)
 
 ### Next
 
@@ -58,10 +57,15 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E3 Search
 
+### Now
+
+- [S3.3.5 An embedding model that runs in the cluster](https://github.com/silvioincalza/helper2.ai/issues/891)
+
 ### Next
 
 - [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
+- [S3.3.6 Production embeds with the model in the cluster](https://github.com/silvioincalza/helper2.ai/issues/892)
 - [S3.4.4 "awesome list" in a query hints the type AWESOME_LIST, with a new ranking baseline](https://github.com/silvioincalza/helper2.ai/issues/635)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
 - [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/helper2.ai/issues/574)
@@ -142,6 +146,7 @@ Replay is built and is closed by its pull request: it is not listed.
 ### Now
 
 - [S8.4.1 The ad networks' rules checked before any prod setting is filled](https://github.com/silvioincalza/helper2.ai/issues/332)
+- [S8.6.3 The three AdSense ad units set on prod, after Google approves the site](https://github.com/silvioincalza/helper2.ai/issues/872)
 
 ### Later
 
@@ -166,7 +171,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.3.7 v2026.11.8 on prod: main's work since v2026.11.7](https://github.com/silvioincalza/helper2.ai/issues/828)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
