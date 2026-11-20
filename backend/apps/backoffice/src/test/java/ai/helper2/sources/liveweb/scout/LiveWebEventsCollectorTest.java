@@ -757,6 +757,41 @@ class LiveWebEventsCollectorTest {
     assertThat(batch.getCheckpoint()).isEqualTo(SourceFixtures.CLOCK.instant().toString());
   }
 
+  static final String POST_WITH_ITS_DATE_AND_SITE_EXTRACT =
+      """
+      {"results":[
+        {"url":"%s","raw_content":"%s. Join us! [Details](https://www.agenticdays.com/)"},
+        {"url":"https://www.agenticdays.com/","raw_content":"%s"}
+      ],"failed_results":[],"usage":{"credits":1}}\
+      """
+          .formatted(POST_URL, CONFERENCE_PAGE, CONFERENCE_PAGE);
+
+  @Test
+  void a_linkedin_post_is_never_kept_as_the_event_even_when_the_model_reads_its_date() {
+    server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
+    server.route("/extract", FixtureServer.Reply.ok(POST_WITH_ITS_DATE_AND_SITE_EXTRACT));
+    UndatedEvents undated =
+        (since, after, limit) ->
+            List.of(
+                new UndatedEvents.Page(
+                    POST_URL,
+                    "Agentic Engineering Days Zurich 2026 | The AI Coding & Agents Conference | AI & ML Events",
+                    position(1)));
+
+    CollectedBatch batch =
+        collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
+            .collect(null, null, 500);
+
+    assertThat(batch.getHits())
+        .singleElement()
+        .satisfies(event -> {
+          assertThat(event.getCanonicalUrl().getHost()).isEqualTo("agenticdays.com");
+          assertThat(event.getTitle()).isEqualTo("Agentic Engineering Days Zurich 2026");
+          assertThat(event.getFacts())
+              .containsEntry("linkedFrom", CanonicalUrl.of(POST_URL).getValue());
+        });
+  }
+
   @Test
   void a_linkedin_post_leading_to_a_shadow_library_leads_nowhere() {
     server.route("/search", FixtureServer.Reply.ok(NO_RESULTS));
@@ -781,7 +816,7 @@ class LiveWebEventsCollectorTest {
         collector(40, reader(LiveWebEventsCollectorTest::readsConference), undated)
             .collect(null, null, 500);
 
-    assertThat(batch.getHits()).noneMatch(h -> h.getCanonicalUrl().getHost().contains("z-lib"));
+    assertThat(batch.getHits()).as("neither the post nor the shadow library").isEmpty();
     assertThat(server.requestBodies).noneMatch(body -> body.contains("z-lib"));
   }
 
