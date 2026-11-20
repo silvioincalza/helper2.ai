@@ -96,6 +96,11 @@ export function Results() {
     if (announce.current) announce.current.textContent = text;
   }, []);
   const found = search.loading || failed ? 0 : (search.data?.total ?? 0);
+  const [adQuery, setAdQuery] = useState<string | null>(null);
+  if (!search.loading) {
+    const answered = !failed && (search.data?.results.length ?? 0) > 0 ? state.q : null;
+    if (answered !== adQuery) setAdQuery(answered);
+  }
   useEffect(() => {
     say(found > 0 ? t('results.found', { count: found }) : '');
   }, [found, key, say, t]);
@@ -159,6 +164,7 @@ export function Results() {
             picks={picks}
             say={say}
             ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)}
+            adQuery={adQuery}
           />
         </div>
       )}
@@ -176,6 +182,7 @@ function ResultsBody({
   say,
   ask,
   loading,
+  adQuery,
 }: {
   res: SearchResponse;
   loading: boolean;
@@ -186,6 +193,7 @@ function ResultsBody({
   picks: readonly GuidePick[];
   say: (text: string) => void;
   ask?: (() => void) | undefined;
+  adQuery: string | null;
 }) {
   const { t } = useTranslation();
   const categories = useCategories();
@@ -341,9 +349,7 @@ function ResultsBody({
           )}
         </div>
       )}
-      {!nothingSearched && res.results.length > 0 && (
-        <AdSenseSlot key={state.q} placement="search" />
-      )}
+      {adQuery !== null && <AdSenseSlot key={adQuery} placement="search" />}
 
       <section id="h2-sources" className="h2-results__sources" aria-labelledby="h2-sources-h">
         <h2 id="h2-sources-h" className="h2-results__fan">
