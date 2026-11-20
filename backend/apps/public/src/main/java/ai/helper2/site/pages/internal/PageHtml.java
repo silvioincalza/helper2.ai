@@ -1,7 +1,7 @@
 package ai.helper2.site.pages.internal;
 
 import ai.helper2.catalog.ResourcePathsKt;
-import ai.helper2.site.monetisation.Monetisation;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.pages.Fact;
 import ai.helper2.site.pages.Link;
 import ai.helper2.site.pages.Listing;
@@ -26,13 +26,13 @@ public class PageHtml {
   private final PageTemplate template;
   private final ObjectMapper json;
   private final String base;
-  private final Monetisation monetisation;
+  private final CurrentMonetisation monetisation;
 
   public PageHtml(
       PageTemplate template,
       ObjectMapper json,
       PagesProperties properties,
-      Monetisation monetisation) {
+      CurrentMonetisation monetisation) {
     this.template = template;
     this.json = json;
     this.base = properties.publicBaseUrl();
@@ -82,6 +82,7 @@ public class PageHtml {
       meta(h, "name", "twitter:card", "summary_large_image");
     }
     monetisation
+        .now()
         .adsenseClient()
         .ifPresent(c ->
             h.append("<meta name=\"google-adsense-account\" content=\"")

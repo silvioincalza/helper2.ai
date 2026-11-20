@@ -22,6 +22,17 @@ public record Monetisation(
           Optional.empty(),
           Optional.empty());
 
+  public Monetisation withoutAdUnits() {
+    return new Monetisation(
+        githubSponsors,
+        stripePayment,
+        ga4MeasurementId,
+        adsenseClient,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
+  }
+
   public boolean analyticsOn() {
     return ga4MeasurementId.isPresent();
   }

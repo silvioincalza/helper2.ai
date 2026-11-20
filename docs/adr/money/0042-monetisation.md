@@ -23,7 +23,7 @@ The constraints:
 
 ## Decision
 
-1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads seven
+1. **One part of the site, off by default.** `site.monetisation` ([0041](../frontend/0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads eight
    `H2_` settings and publishes them as one value, `Monetisation`. An empty setting is off: no link, no script, no CSP
    origin. A value with the wrong shape (a non-https link, an ID that is not `G-...`, a publisher that is not
    `ca-pub-` and 16 digits) stops the app at startup. None is a secret: every page shows them.
@@ -32,19 +32,26 @@ The constraints:
    - `H2_ADS_ADSENSE_CLIENT`, and one ad unit (8 to 12 digits) per place an ad can show: `H2_ADS_ADSENSE_SLOT`
      for resource pages, `H2_ADS_ADSENSE_SLOT_SEARCH` for the box below the search results,
      `H2_ADS_ADSENSE_SLOT_GUIDE` for the box below a guide answer. **The publisher alone**
-     answers Google's site check (8) and nothing else. **The publisher and at least one ad unit** turn on the rest
-     in one step: Google's consent tool, the nonce CSP and the slot of each ad unit that is set. So the CSP changes
-     only on the day the ads start, never before Google approves the site, and a place is switched off alone by
-     emptying its ad unit.
+     answers Google's site check (8) and nothing else.
+   - `H2_ADS_ENABLED`, the ads switch, `false` by default. It is the default of the runtime setting `ads.enabled`
+     ([0007](../foundation/0007-configuration-secrets-runtime-settings.md) §10): an administrator turns the ads on
+     and off in the back office ("Google ads", 1 on, 0 off), with a reason and a line in the audit trail, and
+     every replica follows within about 20 seconds, without a restart. **The switch, the publisher and at least
+     one ad unit** turn on the rest in one step: Google's consent tool, the nonce CSP and the slot of each ad unit
+     that is set. So the CSP changes only when the ads start, never before Google approves the site. A place is
+     switched off alone by emptying its ad unit; the switch stops all of them and leaves the ad units set.
 
-   Helm sets them per environment (`app.monetisation.*`); a part is switched on with one value and a restart.
+   Helm sets the values per environment (`app.monetisation.*`); a part is switched on with one value and a
+   restart. The switch has no Helm value: it lives in the back office. `CurrentMonetisation.now()` is the value in force: with the ad units while
+   the switch is on, without them while it is off. The site reads it on every request (2, 3, 8) and never keeps
+   an answer from startup.
 2. **The page reads them from `GET /api/v1/site`.** A `monetisation` object, each value null while off; the AdSense
-   publisher and ad units only while the publisher and at least one ad unit are set. The answer is the same for every visitor, so it is not part of
+   publisher and ad units only while the switch is on and the publisher and at least one ad unit are set. The answer is the same for every visitor, so it is not part of
    `/me`, which is about the user. The running server decides, so staging and prod can differ (a separate GA4 stream
-   for staging) and no release is needed. `site.monetisation.web.SiteController` builds the answer once at start:
+   for staging) and no release is needed. `site.monetisation.web.SiteController` builds the answer from the value in force (1):
    the endpoint makes no decision, so there is no use case. The answer has no personal data and sets no cookie.
    - **Cached:** `Cache-Control: public, max-age=300`, like `/policy` and the home examples. The values change only
-     with a restart, so a browser can show a part up to 5 minutes after it was switched off, or miss a new one for
+     with a restart or with the ads switch, so a browser can show a part up to 5 minutes after it was switched off, or miss a new one for
      5 minutes. No ETag: the body is a few hundred bytes.
    - **Rate-limited** by the `site` limiter, `H2_RATE_LIMIT_RECENT_PER_MINUTE` requests per client address and
      minute, like the other public reads. Public in the security chain (`permitAll`).
@@ -53,7 +60,7 @@ The constraints:
      stays: settings first, then the consent question or Google's consent tool, then any script (5, 9, 10).
    - **The back office does not serve it** (404) and its web app never asks
      ([0043](../operations/0043-runtime-topology-helm-chart-three-deployables.md)).
-3. **The CSP follows the parts that are on.** `site.csp.ContentSecurityPolicy.forPublicSite` starts from the strict
+3. **The CSP follows the parts that are on, on every request.** `site.csp.ContentSecurityPolicy.forPublicSite` starts from the strict
    policy ([0037](../identity/0037-http-edge.md) §6) and adds only:
    - analytics: `https://www.googletagmanager.com` to `script-src`; the Google Analytics hosts to `connect-src` and
      `img-src`, and `https://*.google.com` to `connect-src`, as Google's CSP guide lists. No `'unsafe-inline'`, no
@@ -208,6 +215,10 @@ The constraints:
   AI-written and read as a pick.
 - **An ad between the results** — more views, but it sits inside the list marked as AI-described and reads as a
   result.
+- **The ads switch as a Helm value only** — one place less to look at, but starting or stopping the ads is then a
+  pull request and a release, and stopping them is what must be fast when Google reports a policy issue.
+- **The switch as a new on/off kind of runtime setting** — a checkbox in the back office instead of 1 and 0, but a
+  second value type in the store, the API and the page for one setting. A number from 0 to 1 uses what is there.
 - **One ad unit for every place** — one setting less, but no report per place and no way to switch one place off
   without a release.
 - **A nonce CSP on resource pages only** — does not work in a single-page app: the CSP of the first page stays.
@@ -243,7 +254,13 @@ The constraints:
 
 ## Consequences
 
-- With all eight settings empty, the site loads no third-party script and sends the strict CSP.
+- With the seven values empty, the site loads no third-party script and sends the strict CSP, whatever the switch.
+- The ads start and stop from the back office in about 20 seconds, on every replica. For those seconds two
+  replicas can answer differently, and a browser keeps `/api/v1/site` for 5 minutes and the CSP of its page load
+  for the visit. So after "on", a page already open shows no ad until it is loaded again; after "off", a page
+  already open can ask for one more ad, and a page loaded in the next 5 minutes can draw an empty box whose
+  script the strict CSP blocks (one CSP error in the console, no ad, nothing sent to Google).
+- The public pages are `no-store` while the ads are on and `no-cache` while they are off, decided per request.
 - With ads on, inline styles are allowed on public pages. Scripts are not, until AdSense is on.
 - While AdSense is on, the public site loses part of its XSS protection: an injected script tag still needs the
   nonce, but `'unsafe-eval'` lets injected code run through eval-style calls, and every Google script runs with full

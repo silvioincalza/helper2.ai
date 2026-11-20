@@ -2,6 +2,7 @@ package ai.helper2.site.pages.web;
 
 import ai.helper2.platform.ClientRoutes;
 import ai.helper2.site.csp.CspNonce;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.internal.PageHtml;
 import ai.helper2.site.pages.usecase.RenderPage;
@@ -21,15 +22,14 @@ class PageRoutes {
 
   @Bean
   RouterFunction<ServerResponse> pages(
-      RenderPage render, PageHtml html, Monetisation monetisation) {
-    CacheControl cache = cacheControl(monetisation);
+      RenderPage render, PageHtml html, CurrentMonetisation monetisation) {
     return RouterFunctions.route()
         .route(
             request ->
                 (request.method() == HttpMethod.GET || request.method() == HttpMethod.HEAD)
                     && html.available()
                     && ClientRoutes.owns(request.path()),
-            request -> answer(render, html, cache, request))
+            request -> answer(render, html, cacheControl(monetisation.now()), request))
         .build();
   }
 

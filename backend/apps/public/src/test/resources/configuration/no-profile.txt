@@ -598,6 +598,7 @@ helper2.llm.fast-model = <empty>
 helper2.llm.native-schema = ${H2_NEBIUS_NATIVE_SCHEMA:true}  =>  true
 helper2.llm.provider-label = <empty>
 helper2.llm.reasoning-model = <empty>
+helper2.monetisation.ads-enabled = ${H2_ADS_ENABLED:false}  =>  false
 helper2.monetisation.adsense-client = ${H2_ADS_ADSENSE_CLIENT:}  =>  <empty>
 helper2.monetisation.adsense-slot = ${H2_ADS_ADSENSE_SLOT:}  =>  <empty>
 helper2.monetisation.adsense-slot-guide = ${H2_ADS_ADSENSE_SLOT_GUIDE:}  =>  <empty>

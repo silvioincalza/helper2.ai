@@ -17,7 +17,7 @@ ASSUME_YES=false
 usage() {
   cat <<'USAGE'
 Sets the three AdSense ad units in the prod values and opens a pull request.
-It never merges and never deploys. See RUNBOOK-adsense.md.
+It never merges, never deploys and never turns the ads on: the back office does. See RUNBOOK-adsense.md.
 
   deploy/k8s/adsense-go-live.sh [--dry-run] [--yes]
 
@@ -139,6 +139,6 @@ Checked by \`deploy/k8s/adsense-go-live.sh\` before this pull request: \`/ads.tx
 owner confirmed that the site is \"Ready\" in AdSense, that Auto ads are off and that the European regulations
 message is published.
 
-The ads start with the release that carries this commit. After it, follow section 4 of
-\`deploy/k8s/RUNBOOK-adsense.md\`."
-echo "Next: review and merge it, then release (RUNBOOK-adsense.md, section 3)."
+No ad shows with the release that carries this commit: the ads start when \"Google ads\" is set to 1 in the back
+office (\`deploy/k8s/RUNBOOK-adsense.md\`, section 3). After it, follow section 4."
+echo "Next: review and merge it, release, then turn the ads on in the back office (RUNBOOK-adsense.md, section 3)."

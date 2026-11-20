@@ -2,6 +2,7 @@ package ai.helper2.site.pages.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -10,7 +11,7 @@ import org.springframework.http.HttpStatus;
 class AdsTxtTest {
 
   private static CrawlerFiles files(Monetisation monetisation) {
-    return new CrawlerFiles(null, null, monetisation);
+    return new CrawlerFiles(null, null, new CurrentMonetisation(monetisation, () -> true));
   }
 
   @Test

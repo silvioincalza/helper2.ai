@@ -78,7 +78,7 @@ are different: they only say how much we spend, and the right number changes wit
    `@ConditionalOnProperty` and `@ConditionalOnExpression` still use placeholders, and only for keys a record owns. Env names never follow a record path: the yaml mapping is the
    contract, so renaming a field never renames an `H2_` variable. The database password has no default
    in the base document; only the `dev` profile has the local one from `compose.yaml`.
-9. **Six limits change at runtime.** For the spending limits in `RuntimeSetting` (§10), the `H2_` value is the
+9. **Seven limits and the ads switch change at runtime.** For the settings in `RuntimeSetting` (§10), the `H2_` value is the
    default, not a ceiling: an administrator can change it from the back office, between 0 and a maximum in code.
    The record still binds the value at startup; the module reads the limit through a supplier (§14). Every other
    setting changes only with a deploy.
@@ -87,8 +87,10 @@ are different: they only say how much we spend, and the right number changes wit
 10. **An allow-list in code.** `platform.settings.RuntimeSetting` is the list: Scout enrichments per run
     (`H2_SCOUT_MAX_ENRICHMENTS`, at most 3,000), enrichment calls a day (`H2_SCOUT_DAILY_ENRICHMENT_CALLS`, 3,000),
     gap rounds a day (`H2_SCOUT_GAP_DAILY_CALLS`, 2,000), the guide's model calls a day
-    (`H2_GUIDE_DAILY_MODEL_CALLS`, 3,000), translations a day (`H2_SEARCH_DAILY_TRANSLATIONS`, 2,000) and Tavily
-    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 2,000). Each has a key, a unit, a line of help and
+    (`H2_GUIDE_DAILY_MODEL_CALLS`, 3,000), translations a day (`H2_SEARCH_DAILY_TRANSLATIONS`, 2,000), Tavily
+    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 2,000), research model calls a day
+    (`H2_RESEARCH_DAILY_MODEL_CALLS`, 20,000) and the ads switch (`H2_ADS_ENABLED`, 1 on or 0 off:
+    [0042](../money/0042-monetisation.md) §1). Each has a key, a unit, a line of help and
     that absolute maximum. Nothing else can change at runtime: no secret, no `H2_ADMINS`, no model id, prompt, token
     limit, ranking weight, rate limit, nor the Tavily quotas per visitor.
 11. **The `H2_` value is the default, not a ceiling.** The minimum is 0, which turns the use off. The maximum is in

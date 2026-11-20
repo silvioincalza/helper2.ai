@@ -10,8 +10,13 @@ owner.
 
 ## What turns the ads on
 
-Prod sets the publisher today (`app.monetisation.adsenseClient`), so Google can check the site. No ad shows until an
-ad unit is set too. One value per place:
+Prod sets the publisher today (`app.monetisation.adsenseClient`), so Google can check the site. No ad shows until
+an ad unit is set and the ads switch is on.
+
+The switch is in the back office: **Settings > "Google ads"**, 1 on, 0 off (runtime setting `ads.enabled`, default
+`H2_ADS_ENABLED`, `false`). It needs no release: every replica follows within about 20 seconds, and the audit trail
+keeps who changed it and why. While it is 0 the ad units are ignored, so they can reach prod days before the ads
+start. One ad unit per place:
 
 | Place | Helm value (`app.monetisation.`) | Setting | Ad unit in AdSense |
 |---|---|---|---|
@@ -19,8 +24,8 @@ ad unit is set too. One value per place:
 | Below the search results | `adsenseSlotSearch` | `H2_ADS_ADSENSE_SLOT_SEARCH` | `helper2-search-results` |
 | Below a guide answer | `adsenseSlotGuide` | `H2_ADS_ADSENSE_SLOT_GUIDE` | `helper2-guide-answer` |
 
-The first ad unit also turns on Google's consent tool and the nonce CSP for the whole public site. An empty value
-leaves that place without an ad.
+The switch and the first ad unit together also turn on Google's consent tool and the nonce CSP for the whole public
+site. An empty ad unit leaves that place without an ad.
 
 ## 1. Before
 
@@ -52,14 +57,18 @@ without an ad.
 
 **(Silvio)** Review and merge the pull request.
 
-## 3. The release
+## 3. The release, then the switch
 
-The values reach prod with a release: [RUNBOOK-release.md](RUNBOOK-release.md), sections 2 and 3. Staging does not
-change: it has no ad unit, and Google serves ads only on the approved domain.
+The values reach prod with a release: [RUNBOOK-release.md](RUNBOOK-release.md), sections 2 and 3. Nothing shows
+yet: `curl -s https://helper2.ai/api/v1/site | jq .monetisation` still has no ad unit. Staging does not change: it
+has no ad unit, and Google serves ads only on the approved domain.
+
+**(Silvio)** On `https://admin.helper2.ai/settings`, row "Google ads": **Change**, enter `1`, **Review changes**,
+give the reason, **Confirm change**. The ads start within about 20 seconds.
 
 ## 4. Checks on prod
 
-Right after the release, in a private window. A new ad unit can take up to an hour to fill.
+Right after the switch, in a private window. A new ad unit can take up to an hour to fill.
 
 1. **The CSP has a nonce**, and pages are not stored:
 
@@ -91,9 +100,10 @@ Two days later: AdSense > Policy centre shows no issue, and Reports shows impres
 
 - **One place off:** set its value to `""` in `deploy/helm/helper2/values-prod.yaml`, in a pull request, and
   release. The other places keep their ads.
-- **All ads off:** empty the three values and release. The publisher stays, so `/ads.txt` and the site check tag
-  stay, the strict CSP is back, and our own Analytics bar replaces Google's dialog.
-- **Faster than a release:** `make -C deploy/k8s ENV=prod rollback` to the revision before, as in
+- **All ads off:** set "Google ads" to `0` in the back office (or **Reset to default**). It takes about 20
+  seconds and no release. The ad units stay in the values, the publisher stays, so `/ads.txt` and the site check
+  tag stay, the strict CSP is back, and our own Analytics bar replaces Google's dialog.
+- **The back office is down:** `make -C deploy/k8s ENV=prod rollback` to the revision before, as in
   [RUNBOOK-release.md](RUNBOOK-release.md), section 5. It brings the whole release back, not only the ads.
 - **Google reports a policy issue on the guide answer:** empty `adsenseSlotGuide` first, then answer in the Policy
   centre.

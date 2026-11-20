@@ -40,6 +40,7 @@ helper2:
     grafana-url: ${H2_ADMIN_GRAFANA_URL:}
     public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
     guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
+    ads-enabled: ${H2_ADS_ENABLED:false}
   indexnow:
     key: ${H2_INDEXNOW_KEY:}
     noindex: ${H2_NOINDEX:false}
