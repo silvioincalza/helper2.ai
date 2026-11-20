@@ -281,8 +281,10 @@ internal class SourceFanOut(
           cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
           fallBackToCache(d, latency, SourceOutcome.RATE_LIMITED, "Source rate limit reached")
         }
-        is SourceFailure.Unavailable ->
+        is SourceFailure.Unavailable -> {
+          log.warn("source ${d.id} unavailable: ${cause.message}")
           fallBackToCache(d, latency, SourceOutcome.FAILED, "Source unavailable")
+        }
         else -> {
           log.warn("source ${d.id} failed: ${cause?.javaClass?.simpleName}")
           fallBackToCache(d, latency, SourceOutcome.FAILED, "Source returned an error")
