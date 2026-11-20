@@ -214,7 +214,7 @@ class AdminUseCaseConfiguration {
   GetRuntimeSettings getRuntimeSettings(
       RuntimeSettingStore store, RuntimeSettings runtime, AdminProperties admin) {
     guideDailyModelCalls(runtime, admin);
-    runtime.declare(RuntimeSetting.ADS_ENABLED, admin.adsEnabled() ? 1 : 0);
+    runtime.declareSwitch(RuntimeSetting.ADS_ENABLED, admin.adsEnabled());
     return new GetRuntimeSettings(store, runtime);
   }
 

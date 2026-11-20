@@ -776,7 +776,7 @@ paths:
     get:
       tags: [runtime-settings]
       operationId: listRuntimeSettings
-      summary: The spending limits an administrator may change at runtime, with their history.
+      summary: The spending limits and the switches an administrator may change at runtime, with their history.
       description: >-
         Each setting of the allow-list (ADR 0007): the value applied now, the default (the H2_ variable), the allowed
         range, its version and its last changes. The value a replica applies can be up to one refresh interval
@@ -849,6 +849,70 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RuntimeSettingState" }
+        "400": { $ref: "./common.yaml#/components/responses/Problem" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+        "404": { $ref: "./common.yaml#/components/responses/Problem" }
+        "409": { $ref: "./common.yaml#/components/responses/Problem" }
+
+  /admin/runtime-switches/{key}:
+    parameters:
+      - {
+          name: key,
+          in: path,
+          required: true,
+          schema: { type: string, maxLength: 100 },
+        }
+    put:
+      tags: [runtime-settings]
+      operationId: changeRuntimeSwitch
+      summary: Turn a runtime switch on or off.
+      description: >-
+        404 for a key that is not a switch of the allow-list. 409 when the version is not the switch's newest (someone
+        changed it first). Recorded in the audit trail with the value before and after (true or false).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RuntimeSwitchChange" }
+      responses:
+        "200":
+          description: Changed; this replica applies it now, the others within one refresh interval.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RuntimeSwitchState" }
+        "400": { $ref: "./common.yaml#/components/responses/Problem" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+        "404": { $ref: "./common.yaml#/components/responses/Problem" }
+        "409": { $ref: "./common.yaml#/components/responses/Problem" }
+
+  /admin/runtime-switches/{key}/reset:
+    parameters:
+      - {
+          name: key,
+          in: path,
+          required: true,
+          schema: { type: string, maxLength: 100 },
+        }
+    post:
+      tags: [runtime-settings]
+      operationId: resetRuntimeSwitch
+      summary: Back to the default (the H2_ variable).
+      description: >-
+        Appends a change with no value. 404 for a key that is not a switch of the allow-list; 409 when the version is
+        not the switch's newest.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RuntimeSettingReset" }
+      responses:
+        "200":
+          description: Back to the default.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RuntimeSwitchState" }
         "400": { $ref: "./common.yaml#/components/responses/Problem" }
         "401": { $ref: "./common.yaml#/components/responses/Problem" }
         "403": { $ref: "./common.yaml#/components/responses/Problem" }
@@ -1747,17 +1811,94 @@ components:
 
     RuntimeSettings:
       type: object
-      required: [overridesActive, settings]
+      required: [overridesActive, settings, switches]
       properties:
         overridesActive:
           {
             type: integer,
             minimum: 0,
-            description: Settings whose value is not the default now.,
+            description: Spending limits whose value is not the default now.,
           }
         settings:
           type: array
+          description: The spending limits.
           items: { $ref: "#/components/schemas/RuntimeSettingState" }
+        switches:
+          type: array
+          description: The switches, on or off.
+          items: { $ref: "#/components/schemas/RuntimeSwitchState" }
+
+    RuntimeSwitchState:
+      type: object
+      required:
+        [key, label, help, variable, defaultOn, "on", overridden, inUse, version, history]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        help: { type: string, description: One line on what on and off do. }
+        variable:
+          {
+            type: string,
+            description: The H2_ variable (true or false) whose value is the default.,
+          }
+        defaultOn: { type: boolean, description: The H2_ value. }
+        "on": { type: boolean, description: The value applied now. }
+        overridden:
+          {
+            type: boolean,
+            description: True when an administrator set the value; false when the default applies.,
+          }
+        inUse:
+          {
+            type: boolean,
+            description: False when no module of this replica uses the switch; a change is kept and applies when it is.,
+          }
+        version:
+          {
+            type: integer,
+            minimum: 0,
+            description: The switch's newest change; send it back with a change. 0 = never changed.,
+          }
+        history:
+          type: array
+          description: The last changes, newest first (at most 10).
+          items: { $ref: "#/components/schemas/RuntimeSwitchHistoryEntry" }
+
+    RuntimeSwitchHistoryEntry:
+      type: object
+      required: [version, "on", changedBy, changedAt, reason]
+      properties:
+        version: { type: integer, minimum: 1 }
+        "on":
+          {
+            type: [boolean, "null"],
+            description: The value set; null = back to the default.,
+          }
+        changedBy:
+          {
+            type: string,
+            description: "The administrator's provider subject (GitHub: the numeric user id).",
+          }
+        changedAt: { type: string, format: date-time }
+        reason: { type: [string, "null"] }
+
+    RuntimeSwitchChange:
+      type: object
+      required: ["on", version]
+      properties:
+        "on": { type: boolean }
+        version:
+          {
+            type: integer,
+            minimum: 0,
+            description: The version the change was made on.,
+          }
+        reason:
+          {
+            type: [string, "null"],
+            maxLength: 500,
+            description: "One plain line; a control or format character is a 400.",
+          }
 
     RuntimeSettingState:
       type: object

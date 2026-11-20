@@ -1,5 +1,7 @@
-# Sequence: Google checks the site; a visitor in Europe opens Home, searches, then opens a resource, with AdSense on (ADR 0042).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/internal/PageHtml.java, site/pages/web/CrawlerFiles.java,
+# Sequence: Google checks the site; a visitor in Europe opens Home, searches, then opens a resource, with AdSense on (ADR 0042):
+#   the publisher and an ad unit set, and the back office switch "Google ads" true.
+# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/CurrentMonetisation.java (ads switch
+#   true; read on every request), site/pages/internal/PageHtml.java, site/pages/web/CrawlerFiles.java,
 #   site/csp/CspHeaderWriter.java, frontend/src/lib/googleConsent.ts, features/monetisation/AnalyticsConsent.tsx,
 #   features/monetisation/AdSenseSlot.tsx, features/search/Results.tsx.
 # Render: cd docs/diagrams && d2 fmt sequence-0042-adsense.d2 && d2 sequence-0042-adsense.d2 sequence-0042-adsense.svg

@@ -6,7 +6,6 @@ import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import java.net.URI;
 import java.util.Optional;
-import java.util.function.IntSupplier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,8 +14,8 @@ class MonetisationConfiguration {
 
   @Bean
   CurrentMonetisation currentMonetisation(MonetisationProperties p, RuntimeSettings runtime) {
-    IntSupplier adsEnabled = runtime.declare(RuntimeSetting.ADS_ENABLED, p.adsEnabled() ? 1 : 0);
-    return new CurrentMonetisation(from(p), () -> adsEnabled.getAsInt() > 0);
+    return new CurrentMonetisation(
+        from(p), runtime.declareSwitch(RuntimeSetting.ADS_ENABLED, p.adsEnabled()));
   }
 
   static Monetisation from(MonetisationProperties p) {

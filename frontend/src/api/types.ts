@@ -94,6 +94,7 @@ export type EnrichmentQueueEntry = A['EnrichmentQueueEntry'];
 export type EnrichmentQueueView = A['EnrichmentQueueView'];
 export type RuntimeSettings = A['RuntimeSettings'];
 export type RuntimeSettingState = A['RuntimeSettingState'];
+export type RuntimeSwitchState = A['RuntimeSwitchState'];
 export type DiscoveryHosts = A['DiscoveryHosts'];
 export type DiscoveryHostEntry = A['DiscoveryHostEntry'];
 export type DiscoveryHostKind = A['DiscoveryHostKind'];

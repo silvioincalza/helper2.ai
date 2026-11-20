@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -33,10 +34,25 @@ public final class RuntimeSettings {
   }
 
   public IntSupplier declare(RuntimeSetting setting, int defaultValue) {
+    if (setting.isSwitch()) {
+      throw new IllegalStateException(
+          setting.key() + " is a switch: declare it with declareSwitch");
+    }
     register(setting, (long) defaultValue);
     return () -> {
       Long value = current(setting);
       return value == null ? defaultValue : (int) Math.min(value, Integer.MAX_VALUE);
+    };
+  }
+
+  public BooleanSupplier declareSwitch(RuntimeSetting setting, boolean defaultOn) {
+    if (!setting.isSwitch()) {
+      throw new IllegalStateException(setting.key() + " is a limit, not a switch");
+    }
+    register(setting, RuntimeSetting.valueOf(defaultOn));
+    return () -> {
+      Long value = current(setting);
+      return value != null && value > 0;
     };
   }
 
@@ -82,7 +98,7 @@ public final class RuntimeSettings {
   }
 
   public int overrideCount() {
-    return snapshot.get().overrides().size();
+    return (int) snapshot.get().overrides().keySet().stream().filter(s -> !s.isSwitch()).count();
   }
 
   public long version() {

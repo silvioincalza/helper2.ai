@@ -249,7 +249,7 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    "No variable". Secrets are never shown. A change needs a new value and a restart, except for the spending
    limits at the top ([ADR 0007](adr/foundation/0007-configuration-secrets-runtime-settings.md)): Scout enrichments per run, enrichment
    calls and gap rounds a day, the guide's model calls a day, translations a day, Live web credits a day, research
-   model calls a day, and the switch "Google ads" (1 on, 0 off: [ADR 0042](adr/money/0042-monetisation.md)). Each row:
+   model calls a day. Each row:
    the value now with "Changed" or "Default", the default and its variable, the allowed range ("0 to 3000 calls a
    day") and one line of help. **Change** opens a number field; a value outside the range says "Enter a whole
    number from 0 to 3000." and nothing is sent. **Review changes** shows "600 calls a day → 50 calls a day", says
@@ -259,6 +259,13 @@ Anyone can sign in, to keep saved items on the account. The daily limits are per
    first." and the row shows the current value. Every replica applies a change within about 20 seconds. The
    overview says "2 spending limits changed at runtime", a link to this page; the audit trail shows each change
    as "default 600 → 50" with its reason.
+   **Switches you can change**, above the limits: "Google ads" ([ADR 0042](adr/money/0042-monetisation.md)), with
+   its value now (`true` or `false`) and "Changed" or "Default", the default and `H2_ADS_ENABLED`, and one line on
+   what true and false do. **Set to true** (or **Set to false**) opens the same review: "Google ads: false → true",
+   an optional reason, **Confirm change**: "Saved: Google ads is now true." **Reset to default** goes through the
+   same review. History lists the last changes as `true`, `false` or "back to the default". Someone changed it
+   first: "Someone changed this switch first." The audit trail shows "default false → true". The overview counts
+   limits only.
    **Known vendors, services and tools** ([ADR 0019](adr/scout/0019-known-targets-vendors-and-services.md)): the names a relationship may point
    at with no catalog resource, one table each for vendors, services and tools. Each row: the name, its other names, how
    many relationships carry it, who added it and when. **Add name** takes a kind, a name and other names, one per

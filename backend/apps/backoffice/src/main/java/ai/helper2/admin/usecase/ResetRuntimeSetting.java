@@ -69,7 +69,6 @@ public class ResetRuntimeSetting {
   }
 
   private static String backToDefault(GetRuntimeSettings.State before) {
-    Long value = before.defaultValue();
-    return "default " + (value == null ? "no cap" : Long.toString(value));
+    return "default " + before.setting().shown(before.defaultValue());
   }
 }
