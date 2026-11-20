@@ -28,7 +28,7 @@ notChecked: "NOT_CHECKED (also when the\nquestion ran out of time):\nUI says it 
 event: "event: checked\n(supported, removed, notChecked)" {class: config}
 shown: "First 3 picks still in,\nin the model's order\n(spares are no rejection)" {class: app}
 cache: "Answer cached only when\nno AI pick is NOT_CHECKED" {class: data}
-judgeOn: "Judge model set?\n(H2_GUIDE_JUDGE_MODEL,\nstaging only)" {class: decision}
+judgeOn: "Judge model set?\n(H2_GUIDE_JUDGE_MODEL,\nstaging and prod)" {class: decision}
 judge: "Background thread: fact and\nrelevance evaluators per claim,\nown daily cap; counts\nhelper2.guide.judge" {class: ai}
 
 kept -> anyKept
@@ -55,7 +55,7 @@ secretOnly -> removed: yes
 secretOnly -> allNot: no
 allNot -> event
 event -> judgeOn
-judgeOn -> shown: "no (prod)"
+judgeOn -> shown: "no"
 judgeOn -> judge: yes {class: ai-call}
 judgeOn -> shown: "yes: does not wait"
 shown -> cache

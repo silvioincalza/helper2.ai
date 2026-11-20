@@ -187,10 +187,11 @@ lose a check, never create one.
 7. **Cache rule.** An answer with an AI pick left `NOT_CHECKED` is not cached ([0032](0032-guide-cost-guard-and-answer-cache.md)).
 8. **Budget.** The call takes a unit of the guide budget like plan and choose ([0008](../foundation/0008-llm-integration.md)), so a
    fresh question costs 3 calls, more with retries.
-9. **Judge, on staging.** After the `checked` event, `ReasonCheckStep` hands the claims and their verdicts to
-   `GuideJudge` and goes on at once. On staging, `SpringAiGuideJudge` scores them on its own thread with a second model
-   ([0046](../operations/0046-evaluation-guide-and-search.md), item 21). It never changes the answer and takes no unit of the
-   guide budget. In prod it is `GuideJudge.NONE`. A judge that cannot start is logged and the answer goes on.
+9. **Judge.** After the `checked` event, `ReasonCheckStep` hands the claims and their verdicts to
+   `GuideJudge` and goes on at once. `SpringAiGuideJudge` scores them on its own thread with a second model
+   ([0046](../operations/0046-evaluation-guide-and-search.md), item 21), on staging and in prod. It never changes the
+   answer and takes no unit of the guide budget. Without a judge model it is `GuideJudge.NONE`. A judge that cannot
+   start is logged and the answer goes on.
 
 ### Intents and asking back
 #### 1. Intents
