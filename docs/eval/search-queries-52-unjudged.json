@@ -1,0 +1,320 @@
+[
+  {
+    "id": "nav02",
+    "group": "navigational",
+    "text": "langchain",
+    "lang": "en"
+  },
+  {
+    "id": "nav03",
+    "group": "navigational",
+    "text": "llama.cpp",
+    "lang": "en"
+  },
+  {
+    "id": "nav04",
+    "group": "navigational",
+    "text": "vllm",
+    "lang": "en"
+  },
+  {
+    "id": "nav06",
+    "group": "navigational",
+    "text": "open webui",
+    "lang": "en"
+  },
+  {
+    "id": "nav07",
+    "group": "navigational",
+    "text": "crewai",
+    "lang": "en"
+  },
+  {
+    "id": "nav08",
+    "group": "navigational",
+    "text": "whisper",
+    "lang": "en"
+  },
+  {
+    "id": "nav10",
+    "group": "navigational",
+    "text": "github mcp server",
+    "lang": "en"
+  },
+  {
+    "id": "mcp01",
+    "group": "mcp-server",
+    "text": "an open-source MCP server so my agent can query a Postgres database",
+    "lang": "en",
+    "from": "b01"
+  },
+  {
+    "id": "mcp02",
+    "group": "mcp-server",
+    "text": "MCP server to read and create GitHub issues from an AI agent",
+    "lang": "en",
+    "from": "b02"
+  },
+  {
+    "id": "mcp04",
+    "group": "mcp-server",
+    "text": "MCP server that lets an agent browse the web with a headless browser",
+    "lang": "en",
+    "from": "b12"
+  },
+  {
+    "id": "mcp05",
+    "group": "mcp-server",
+    "text": "mcp server postgres",
+    "lang": "en"
+  },
+  {
+    "id": "mcp06",
+    "group": "mcp-server",
+    "text": "mcp server for filesystem access",
+    "lang": "en"
+  },
+  {
+    "id": "mcp08",
+    "group": "mcp-server",
+    "text": "mcp server notion",
+    "lang": "en"
+  },
+  {
+    "id": "mcp09",
+    "group": "mcp-server",
+    "text": "mcp server for kubernetes",
+    "lang": "en"
+  },
+  {
+    "id": "mcp10",
+    "group": "mcp-server",
+    "text": "mcp server sqlite",
+    "lang": "en"
+  },
+  {
+    "id": "mcp12",
+    "group": "mcp-server",
+    "text": "mcp server for sending email",
+    "lang": "en"
+  },
+  {
+    "id": "mod01",
+    "group": "model",
+    "text": "a small open model for text embeddings that runs on a laptop",
+    "lang": "en",
+    "from": "b03"
+  },
+  {
+    "id": "mod02",
+    "group": "model",
+    "text": "speech-to-text model I can self-host, Apache or MIT licence",
+    "lang": "en",
+    "from": "b05"
+  },
+  {
+    "id": "mod04",
+    "group": "model",
+    "text": "small model for code completion",
+    "lang": "en"
+  },
+  {
+    "id": "mod05",
+    "group": "model",
+    "text": "text to speech model",
+    "lang": "en"
+  },
+  {
+    "id": "mod06",
+    "group": "model",
+    "text": "open vision language model",
+    "lang": "en"
+  },
+  {
+    "id": "mod08",
+    "group": "model",
+    "text": "multilingual embedding model",
+    "lang": "en"
+  },
+  {
+    "id": "mod09",
+    "group": "model",
+    "text": "model for named entity recognition",
+    "lang": "en"
+  },
+  {
+    "id": "mod10",
+    "group": "model",
+    "text": "image generation model",
+    "lang": "en"
+  },
+  {
+    "id": "lng01",
+    "group": "multilingual",
+    "text": "un server MCP per leggere file da Google Drive",
+    "lang": "it",
+    "from": "b14"
+  },
+  {
+    "id": "lng02",
+    "group": "multilingual",
+    "text": "modello open source per trascrivere audio",
+    "lang": "it"
+  },
+  {
+    "id": "lng04",
+    "group": "multilingual",
+    "text": "tradurre documenti gratis con l'intelligenza artificiale",
+    "lang": "it"
+  },
+  {
+    "id": "lng05",
+    "group": "multilingual",
+    "text": "server mcp per database postgres",
+    "lang": "it"
+  },
+  {
+    "id": "lng06",
+    "group": "multilingual",
+    "text": "modèle open source pour résumer des textes",
+    "lang": "fr"
+  },
+  {
+    "id": "lng08",
+    "group": "multilingual",
+    "text": "KI Modell für Bildgenerierung",
+    "lang": "de"
+  },
+  {
+    "id": "lng09",
+    "group": "multilingual",
+    "text": "servidor mcp para github",
+    "lang": "es"
+  },
+  {
+    "id": "lng10",
+    "group": "multilingual",
+    "text": "assistente di programmazione ai per vscode",
+    "lang": "it"
+  },
+  {
+    "id": "sem01",
+    "group": "paraphrase",
+    "text": "a program that answers questions about my company's internal documents",
+    "lang": "en"
+  },
+  {
+    "id": "sem02",
+    "group": "paraphrase",
+    "text": "let a chatbot look things up in my SQL tables",
+    "lang": "en"
+  },
+  {
+    "id": "sem03",
+    "group": "paraphrase",
+    "text": "turn a recorded interview into written text on my own computer",
+    "lang": "en"
+  },
+  {
+    "id": "sem04",
+    "group": "paraphrase",
+    "text": "make my assistant able to open and read pages on the internet",
+    "lang": "en"
+  },
+  {
+    "id": "sem05",
+    "group": "paraphrase",
+    "text": "tool that checks whether model answers are made up",
+    "lang": "en"
+  },
+  {
+    "id": "sem06",
+    "group": "paraphrase",
+    "text": "give an agent memory that lasts between conversations",
+    "lang": "en"
+  },
+  {
+    "id": "sem07",
+    "group": "paraphrase",
+    "text": "draw pictures from a sentence without paying",
+    "lang": "en"
+  },
+  {
+    "id": "sem08",
+    "group": "paraphrase",
+    "text": "shrink a big language model so it fits on a small graphics card",
+    "lang": "en"
+  },
+  {
+    "id": "sem09",
+    "group": "paraphrase",
+    "text": "connect the coding assistant in my editor to my issue tracker",
+    "lang": "en"
+  },
+  {
+    "id": "sem10",
+    "group": "paraphrase",
+    "text": "keep an eye on how much my model calls cost",
+    "lang": "en"
+  },
+  {
+    "id": "sem11",
+    "group": "paraphrase",
+    "text": "teach an existing model my own writing style with few examples",
+    "lang": "en"
+  },
+  {
+    "id": "sem12",
+    "group": "paraphrase",
+    "text": "find which part of a photo is a cat",
+    "lang": "en"
+  },
+  {
+    "id": "sem13",
+    "group": "paraphrase",
+    "text": "spot spam and toxic comments automatically",
+    "lang": "en"
+  },
+  {
+    "id": "sem14",
+    "group": "paraphrase",
+    "text": "let several assistants split a job between them",
+    "lang": "en"
+  },
+  {
+    "id": "sem15",
+    "group": "paraphrase",
+    "text": "read numbers out of scanned invoices",
+    "lang": "en"
+  },
+  {
+    "id": "sem16",
+    "group": "paraphrase",
+    "text": "un programma che riassume le riunioni",
+    "lang": "it"
+  },
+  {
+    "id": "sem17",
+    "group": "paraphrase",
+    "text": "far parlare il computer con una voce naturale",
+    "lang": "it"
+  },
+  {
+    "id": "sem18",
+    "group": "paraphrase",
+    "text": "cercare documenti per significato e non per parole",
+    "lang": "it"
+  },
+  {
+    "id": "sem19",
+    "group": "paraphrase",
+    "text": "ein Assistent, der Code in meinem Terminal schreibt",
+    "lang": "de"
+  },
+  {
+    "id": "sem20",
+    "group": "paraphrase",
+    "text": "convertir una foto en un modelo 3d",
+    "lang": "es"
+  }
+]
