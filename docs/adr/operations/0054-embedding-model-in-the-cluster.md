@@ -31,11 +31,12 @@ query per search that is not in the 7-day query vector cache.
    render that exposes the embedder or lets another caller in.
 3. **The chart points the apps at it.** A release that runs or calls the embedder sets, on the public app and the
    back office, `H2_NVIDIA_EMBEDDING_BASE_URL`, `H2_NVIDIA_EMBEDDING_MODEL`, `H2_NVIDIA_API_KEY=in-cluster` and
-   `H2_EMBEDDING_EVERY` (`embedder.indexEvery`: 1 s in production, 10 s in staging, which shares production's pod),
+   `H2_EMBEDDING_EVERY` (`embedder.indexEvery`: 3 s in production, 1 minute in staging, which shares production's pod),
    which override the values of the env Secret. The key only
    switches vector search on ([0024](../search/0024-vector-search.md) §3): the embedder reads no credential, the
-   network policy is what keeps others out. The indexer embeds one text a second: no outside rate limit holds it
-   back, and the embedder takes one call at a time.
+   network policy is what keeps others out. Production's indexer embeds one text every 3 s and staging's one a
+   minute: no outside rate limit holds them back, but the embedder takes one call at a time and search queries wait
+   in the same line.
 4. **The server** (`deploy/embedder/`): Python, Sentence Transformers on PyTorch for CPU, the standard library's HTTP
    server. `embedding_api.py` reads and checks the call and shapes the answer, with no model in it, so its tests run
    without the weights; `server.py` loads the model and serves.
