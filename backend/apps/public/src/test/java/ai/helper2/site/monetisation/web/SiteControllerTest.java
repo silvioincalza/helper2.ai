@@ -36,6 +36,7 @@ class SiteControllerTest {
                 Optional.of(URI.create("https://buy.stripe.com/abc")),
                 Optional.of("G-TEST1234"),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty()));
 
     assertThat(m.getGithubSponsorsUrl()).hasToString("https://github.com/sponsors/someone");
@@ -54,6 +55,23 @@ class SiteControllerTest {
   }
 
   @Test
+  void eachAdUnitIsShownOnItsOwn() {
+    MonetisationDto searchOnly =
+        shown(
+            new Monetisation(
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                ADSENSE_CLIENT,
+                Optional.empty(),
+                Optional.of("2345678901")));
+
+    assertThat(searchOnly.getAdsenseClient()).isEqualTo(ADSENSE_CLIENT.get());
+    assertThat(searchOnly.getAdsenseSlot()).isNull();
+    assertThat(searchOnly.getAdsenseSlotSearch()).isEqualTo("2345678901");
+  }
+
+  @Test
   void theAnswerIsTheSameForEveryoneAndCachedForFiveMinutes() {
     assertThat(new SiteController(Monetisation.OFF).getSite().getHeaders().getCacheControl())
         .isEqualTo("max-age=300, public");
@@ -61,6 +79,11 @@ class SiteControllerTest {
 
   private static Monetisation adsense(Optional<String> adUnit) {
     return new Monetisation(
-        Optional.empty(), Optional.empty(), Optional.empty(), ADSENSE_CLIENT, adUnit);
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        ADSENSE_CLIENT,
+        adUnit,
+        Optional.empty());
   }
 }

@@ -33,6 +33,7 @@ class SiteController implements SiteApi {
         shown.stripePayment().orElse(null),
         shown.ga4MeasurementId().orElse(null),
         shown.adsenseOn() ? shown.adsenseClient().orElse(null) : null,
-        shown.adsenseOn() ? shown.adsenseSlot().orElse(null) : null);
+        shown.adsenseOn() ? shown.adsenseSlot().orElse(null) : null,
+        shown.adsenseOn() ? shown.adsenseSlotSearch().orElse(null) : null);
   }
 }

@@ -12,4 +12,5 @@ public record MonetisationProperties(
         String stripePaymentUrl,
     @Pattern(regexp = "^$|G-[A-Z0-9]{4,16}") String ga4MeasurementId,
     @Pattern(regexp = "^$|ca-pub-[0-9]{16}") String adsenseClient,
-    @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlot) {}
+    @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlot,
+    @Pattern(regexp = "^$|[0-9]{8,12}") String adsenseSlotSearch) {}

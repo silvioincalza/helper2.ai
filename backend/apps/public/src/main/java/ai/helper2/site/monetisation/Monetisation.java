@@ -8,18 +8,24 @@ public record Monetisation(
     Optional<URI> stripePayment,
     Optional<String> ga4MeasurementId,
     Optional<String> adsenseClient,
-    Optional<String> adsenseSlot) {
+    Optional<String> adsenseSlot,
+    Optional<String> adsenseSlotSearch) {
 
   public static final Monetisation OFF =
       new Monetisation(
-          Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty());
 
   public boolean analyticsOn() {
     return ga4MeasurementId.isPresent();
   }
 
   public boolean adsenseOn() {
-    return adsenseClient.isPresent() && adsenseSlot.isPresent();
+    return adsenseClient.isPresent() && (adsenseSlot.isPresent() || adsenseSlotSearch.isPresent());
   }
 
   public Optional<String> adsTxt() {
