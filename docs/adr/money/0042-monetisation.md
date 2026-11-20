@@ -111,8 +111,10 @@ The constraints:
    - **Search results** (`/search` with `q` and without `ask`): after the list and its "Show more" button, outside
      the element that marks the listed descriptions as AI-written. Only while results are on screen: not while the
      first results load, not when a search finds nothing, not when it fails (Google allows no ad on a screen
-     without content). The box is keyed on the search words, so a new search asks for a new ad, and a filter, a
-     sort or one more page does not.
+     without content). The box is keyed on the search words of the last search that came back with results, so a
+     new search asks for a new ad only once its results are there, and a filter, a sort or one more page does
+     not. While new words load, the results before and their ad stay; when the new search fails or finds nothing,
+     the box leaves.
    - **Guide answer** (`/search` with `ask`): after the guide's picks and its answer, before the result list,
      outside every element marked as AI-written. Only for a finished answer with at least one pick: not while the
      guide works, not when it asks back, picks nothing or fails. The box is keyed on the question.
