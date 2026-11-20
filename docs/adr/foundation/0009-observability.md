@@ -15,6 +15,9 @@ the guide work long before that, and what makes the wait feel long is the first 
    plain text). Trace and span ids (`traceId`, `spanId`) are in every log line written inside a request or an observed
    background task: Micrometer Tracing puts them in the logging context while a span is in scope. Startup lines and
    the threads of their own (guide heartbeat, embedding indexer, catalog write queue) have none. No second copy over OpenTelemetry Protocol (OTLP).
+   A search source that fails logs one WARN per call, with the source id: an unavailable source with its reason (a short
+   message built by code, never the query text or the provider's answer), an unexpected exception with its class. A call
+   the policy refuses (circuit open, busy) and a rate-limited call write no line: `helper2.source.requests{source,outcome}` counts them.
 2. **Traces.** `spring-boot-starter-opentelemetry`. Export only when `H2_TRACING_EXPORT=true`; sampling
    `H2_TRACING_SAMPLING` (1.0); endpoint `H2_OTLP_TRACES_ENDPOINT` (the chart: Alloy at
    `http://alloy.observability.svc:4318/v1/traces`, which forwards to Tempo). Resource attributes: `service.name`
@@ -192,6 +195,7 @@ the guide work long before that, and what makes the wait feel long is the first 
   `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` —
   translation and classifier budget gauges.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java`, `ObservationQueue.java` — catalog meters.
+- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` — the log line of a failed source call.
 - `deploy/grafana/helper2.json`, `helper2-backoffice.json` (Grafana dashboards); `deploy/helm/helper2/templates/app.yaml`,
   `backoffice.yaml` — scrape annotations, tracing env; `exporters.yaml` — the data store exporters;
   `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MonitorLogin.java` — the exporter's database role.
@@ -238,6 +242,6 @@ the guide work long before that, and what makes the wait feel long is the first 
 [flow](../../diagrams/flow-0009-observability.svg) · [sequence](../../diagrams/sequence-0009-observability.svg)
 
 ## Backlog
-- Decides: [F1.8](https://github.com/silvioincalza/helper2.ai/issues/27), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) (the data store exporters).
+- Decides: [F1.8](https://github.com/silvioincalza/helper2.ai/issues/27), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) (the data store exporters), [S1.8.8](https://github.com/silvioincalza/helper2.ai/issues/884) (the log line of an unavailable source).
 - Open issues that change it:
   - [S4.9.1](https://github.com/silvioincalza/helper2.ai/issues/285): the guide latency targets confirmed on prod data.

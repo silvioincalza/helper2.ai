@@ -324,15 +324,17 @@ class SearchResourcesTest {
         FakeSource(descriptor("helper2-semantic")) {
           throw SourceFailure.Unavailable("embedding call failed: HTTP 503")
         }
-      service(listOf(semantic)).search(req())
+      service(listOf(semantic)).search(req("private notes about my client"))
     } finally {
       logger.detachAppender(appender)
     }
+    val logged = appender.list.map { it.formattedMessage }
     val warned = appender.list.filter { it.level == Level.WARN }.map { it.formattedMessage }
     assertEquals(
       listOf("source helper2-semantic unavailable: embedding call failed: HTTP 503"),
       warned,
     )
+    assertTrue(logged.none { it.contains("private notes") })
   }
 
   @Test
