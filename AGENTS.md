@@ -35,6 +35,31 @@ Run the relevant tests before calling a change done.
 
 ## How to work
 
+### Specification (AI Unified Process)
+
+The product is specified in `docs/` with the AI Unified Process (`aiup-core` and the layer plugins). Before a product,
+domain or architecture decision, read:
+
+- the use case or test case you work on, in `docs/use_cases/` and `docs/test_cases/`;
+- only the `FR-*`, `NFR-*` and `C-*` rows of `docs/requirements.md` that the use case names on its `**Requirements:**`
+  line, never the whole catalog;
+- `docs/entity_model.md` (and `docs/entity_model/`), and `docs/glossary.md`;
+- the ADRs in `docs/adr/<context>/`;
+- `docs/architecture/stack.md`: the layer skill that builds and tests each layer;
+- `docs/open_questions.md`;
+- `docs/vision.md` and the whole `docs/requirements.md` only for work on the requirements themselves.
+
+Rules:
+
+- A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. Silvio sets `Approved`.
+- Requirement, use case and test case IDs never change once published. Code and tests name the IDs they build.
+- A requirement change updates the entity model and the use case diagram in the same change.
+- Build and test a use case with `/use-case-implement` and `/use-case-test`, which follow `docs/architecture/stack.md`.
+- A gap or a contradiction in a specification goes to `/open-questions`, never into an assumed answer.
+- An architecture decision is an ADR in `docs/adr/<context>/` (the `/adr` command, not `/architecture-decision`). It
+  names the `NFR-*` and `C-*` it serves.
+- `/next` gives the next step; `/spec-review` checks the specification.
+
 ### Architecture and code
 
 - Modular monolith (single repo; the style is used when the user asks or the project is one repo),
