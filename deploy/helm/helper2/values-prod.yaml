@@ -9,6 +9,10 @@ redis:
 embedder:
   enabled: true
   clientNamespaces: [helper2-staging]
+  threads: 4
+  resources:
+    requests: { cpu: "4", memory: 6Gi }
+    limits: { memory: 8Gi }
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/embedder
 networkPolicy:

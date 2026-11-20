@@ -31,7 +31,8 @@ query per search that is not in the 7-day query vector cache.
    render that exposes the embedder or lets another caller in.
 3. **The chart points the apps at it.** A release that runs or calls the embedder sets, on the public app and the
    back office, `H2_NVIDIA_EMBEDDING_BASE_URL`, `H2_NVIDIA_EMBEDDING_MODEL`, `H2_NVIDIA_API_KEY=in-cluster` and
-   `H2_EMBEDDING_EVERY` (`embedder.indexEvery`, 1 s), which override the values of the env Secret. The key only
+   `H2_EMBEDDING_EVERY` (`embedder.indexEvery`: 1 s in production, 10 s in staging, which shares production's pod),
+   which override the values of the env Secret. The key only
    switches vector search on ([0024](../search/0024-vector-search.md) §3): the embedder reads no credential, the
    network policy is what keeps others out. The indexer embeds one text a second: no outside rate limit holds it
    back, and the embedder takes one call at a time.
@@ -55,7 +56,8 @@ query per search that is not in the 7-day query vector cache.
    what it pushed, writes its SBOM (`make embedder-sbom`) and scans it. A deploy checks its signature and passes its
    digest to Helm (`EMB_DIGEST`, `embedder.image.digest`). A pull request that changes `deploy/embedder` without a
    new tag fails (`ci.yml`, job `embedder`), which also runs the API tests.
-7. **Size.** `embedder.threads` 2, requests 1 CPU and 6 Gi, limit 8 Gi, one replica, up to 300 s to start
+7. **Size.** In production `embedder.threads` 4, requests 4 CPU and 6 Gi, limit 8 Gi (the chart's default is 2
+   threads and 1 CPU), one replica, up to 300 s to start
    (`embedder.startupSeconds`). `embedder.nodeSelector` places it when a node must be avoided.
 8. **One rollout.** The embedder is rolled out with the production release. Staging gets a new embedder when
    production does.
@@ -110,16 +112,16 @@ query per search that is not in the 7-day query vector cache.
 
 ### Known limits
 
-- Latency is measured on an Apple M2 Pro only (float32, one text per call, 20 Nov 2026): a query or a short
-  catalog text about 160 ms at p50 and 200 ms at p95; about 400 tokens 0.6 s; about 1,000 tokens 1.9 s at p50 and
-  3.6 s at most with 2 threads. Peak memory about 6 GB. The cluster's CPUs are not measured: the query path allows
-  3 s and the indexer 30 s ([0024](../search/0024-vector-search.md)).
+- Latency on the cluster, measured with 2 threads and 1 CPU on a staging pod (one text per call, 20 Nov 2026, #892):
+  a query 0.57 s at p50 and 0.64 s at p95; about 400 tokens 3.2 s; about 1,000 tokens 7.5 s at p50 and 7.8 s at
+  most. Peak memory about 6.6 GB. The query path allows 3 s and the indexer 30 s
+  ([0024](../search/0024-vector-search.md)). The 4 threads and 4 CPU of production are not measured yet.
 - A text is cut at 1,024 tokens, where NVIDIA's endpoint cuts at 10,240. A longer description is embedded by its
   beginning.
-- The vectors stored from NVIDIA's endpoint and the ones this server makes are not compared yet. The model card
-  says the weights are the same model; a difference would mix two spaces under one model id. Compare a sample, and
-  set a new model id if they differ.
-- The pod has not run on the cluster yet: its start time, its memory and its latency there are not measured.
+- The vectors stored from NVIDIA's endpoint and the ones this server makes are the same space (190 texts, #892):
+  median cosine 1.0000, lowest 0.966 on texts of about 4,000 characters, cut at 1,024 tokens here. No new model id.
+- About 57,000 texts waited to be embedded when production switched (29,600 in production, 27,700 in staging). A
+  search query waits in the same line as both indexers.
 - One replica and one call at a time: a burst of new queries waits in line behind the indexers of both
   environments, each query within its 3 s.
 
