@@ -58,7 +58,6 @@ monitoring: MONITORING {
 
 prod.backups.backup -> r2: "HTTPS 443, only when\nbackup.offsite is on" {class: config}
 prod.backups.check -> r2: "HTTPS 443: the newest dump,\ndecrypted (backup.offsite)" {class: config}
-alloy -> prod.observed: "scrape\n:8081, :9187, :9121" {class: config}
-prod.observed.app -> alloy: "traces OTLP/HTTP :4318"
+prod.observed -> alloy: "metrics: Alloy scrapes :8081, :9187, :9121\ntraces: the public app sends OTLP/HTTP :4318"
 alloy -> monitoring.prometheus: "remote write"
 alloy -> monitoring.tempo: traces

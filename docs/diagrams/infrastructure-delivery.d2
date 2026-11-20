@@ -12,7 +12,7 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
 github: "GitHub Actions\n(cd.yml, deploy.yml)" {class: ext}
 
@@ -65,7 +65,5 @@ cluster: "KUBERNETES · ns helper2-prod" {
 }
 
 github -> delivery.runner: "job (main only)"
-delivery.runner -> cluster.canary: "a release: canary first,\nsmoke test, then remove it" {class: config}
-delivery.runner -> cluster.release: "helm upgrade --wait 12m\n(deployer ServiceAccount),\nevery image by its checked digest" {class: config}
-delivery.harbor -> cluster.release: "image pull" {class: config}
-delivery.harbor -> cluster.canary: "image pull" {class: config}
+delivery.runner -> cluster: "helm upgrade --wait 12m (deployer ServiceAccount),\nevery image by its checked digest;\na release: the canary first, smoke test, then remove it" {class: config}
+delivery.harbor -> cluster: "image pull" {class: config}
