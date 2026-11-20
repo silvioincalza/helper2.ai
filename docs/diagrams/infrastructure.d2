@@ -102,7 +102,7 @@ cluster: KUBERNETES {
 
   staging: "ns helper2-staging" {
     class: group
-    note: "Same chart and policies\n1 web pod, 1 public pod,\n1 back office pod (no PDB)\nScout off · no backup\nstaging host" {class: app}
+    note: "Same chart and policies\n1 web pod, 1 public pod,\n1 back office pod (no PDB)\nScout off · no backup\nstaging host\nhelper2-embedder · 1 pod: the embedding\nmodel, in the namespace only (ADR 0054)" {class: app}
   }
 
   observability: "ns observability" {
@@ -155,7 +155,7 @@ delivery: "DELIVERY (private network)" {
     shape: cylinder
     class: data
   }
-  harbor: "Harbor registry\nhelper2/apps/helper2-web:<commit>\nhelper2/apps/helper2:<commit>\nhelper2/apps/helper2-backoffice:<commit>\nhelper2/apps/postgres:<tag>" {
+  harbor: "Harbor registry\nhelper2/apps/helper2-web:<commit>\nhelper2/apps/helper2:<commit>\nhelper2/apps/helper2-backoffice:<commit>\nhelper2/apps/postgres:<tag>\nhelper2/apps/embedder:<tag>" {
     shape: cylinder
     class: data
   }
