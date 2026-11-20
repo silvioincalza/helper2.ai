@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import type { GuideResponse } from '@/api/types';
 import { heldSse, mockApi, problem, sse } from '@/test/mockApi';
 import { renderApp, settle } from '@/test/render';
@@ -133,6 +133,52 @@ describe('Feature: the AdSense slot below the search results (ADR 0042)', () => 
     await screen.findByRole('heading', { level: 2, name: 'Search is unavailable' });
     await settle();
     expectNoAd();
+  });
+
+  it('Scenario: new search words ask for a new ad only when their results are there', async () => {
+    let held: ((value: unknown) => void) | undefined;
+    let calls = 0;
+    withAdSense(() => (calls++ === 0 ? makeSearch() : new Promise((resolve) => (held = resolve))));
+    const { router } = renderApp('/search?q=agents');
+    await waitFor(() => expect(window.adsbygoogle).toHaveLength(1));
+    const first = document.querySelector('ins.adsbygoogle');
+
+    await act(() => router.navigate('/search?q=models'));
+    await waitFor(() => expect(held).toBeDefined());
+    await settle();
+    expect(window.adsbygoogle).toHaveLength(1);
+    expect(document.querySelector('ins.adsbygoogle')).toBe(first);
+
+    await act(async () => held!(makeSearch()));
+    await waitFor(() => expect(window.adsbygoogle).toHaveLength(2));
+    expect(document.querySelector('ins.adsbygoogle')).not.toBe(first);
+    expect(screen.getAllByRole('complementary', { name: 'Advertisements' })).toHaveLength(1);
+  });
+
+  it('Scenario: a filter keeps the ad of the search', async () => {
+    withAdSense();
+    const { router } = renderApp('/search?q=agents');
+    await waitFor(() => expect(window.adsbygoogle).toHaveLength(1));
+    const first = document.querySelector('ins.adsbygoogle');
+
+    await act(() => router.navigate('/search?q=agents&type=MODEL'));
+    await settle();
+    expect(window.adsbygoogle).toHaveLength(1);
+    expect(document.querySelector('ins.adsbygoogle')).toBe(first);
+  });
+
+  it('Scenario: when a new search fails, the ad leaves with the error and no new ad is asked for', async () => {
+    let calls = 0;
+    withAdSense(() => (calls++ === 0 ? makeSearch() : problem(503, 'Service Unavailable')));
+    const { router } = renderApp('/search?q=agents');
+    await waitFor(() => expect(window.adsbygoogle).toHaveLength(1));
+
+    await act(() => router.navigate('/search?q=models'));
+    await screen.findByRole('heading', { level: 2, name: 'Search is unavailable' });
+    await settle();
+    expect(adBox()).toBeNull();
+    expect(document.querySelector('ins.adsbygoogle')).toBeNull();
+    expect(window.adsbygoogle).toHaveLength(1);
   });
 
   it('Scenario: a guide question shows no ad and loads nothing from Google while the guide ad unit is not set', async () => {
