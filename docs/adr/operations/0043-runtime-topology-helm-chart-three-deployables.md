@@ -381,7 +381,7 @@ The chart and its runtime paths: [flow](../../diagrams/flow-0043-runtime-topolog
 the three deployables: [flow](../../diagrams/flow-0043-three-deployables.svg) ·
 [sequence](../../diagrams/sequence-0043-three-deployables.svg) ·
 [architecture context](../../diagrams/architecture-context.svg) · the topology itself:
-[infrastructure](../../diagrams/infrastructure.svg)
+[infrastructure](../../diagrams/infrastructure.svg) · [workloads](../../diagrams/infrastructure-workloads.svg) · [secrets](../../diagrams/infrastructure-secrets.svg) · [delivery](../../diagrams/infrastructure-delivery.svg) · [backups and monitoring](../../diagrams/infrastructure-data.svg)
 
 ## Backlog
 

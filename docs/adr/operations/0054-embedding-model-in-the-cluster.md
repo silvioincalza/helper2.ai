@@ -111,7 +111,7 @@ query per search that is not in the 7-day query vector cache.
 
 ## Diagrams
 
-[flow](../../diagrams/flow-0054-embedding-model-in-the-cluster.svg) · [sequence](../../diagrams/sequence-0054-embedding-model-in-the-cluster.svg) · [infrastructure](../../diagrams/infrastructure.svg)
+[flow](../../diagrams/flow-0054-embedding-model-in-the-cluster.svg) · [sequence](../../diagrams/sequence-0054-embedding-model-in-the-cluster.svg) · [infrastructure](../../diagrams/infrastructure.svg) · [workloads](../../diagrams/infrastructure-workloads.svg)
 
 ## Backlog
 

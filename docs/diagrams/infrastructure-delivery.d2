@@ -1,0 +1,71 @@
+# Infrastructure, the delivery: how an image gets from GitHub to the cluster (build, sign, check, deploy by
+# digest; ADR 0044), and the canary that runs beside production during a release only (ADR 0045).
+# Source of truth: .github/workflows/cd.yml, deploy.yml, release.yml, deploy/k8s/Makefile, deploy/k8s/CI.md,
+#   deploy/helm/helper2/templates/canary.yaml, migrate.yaml.
+# Render: cd docs/diagrams && d2 fmt infrastructure-delivery.d2 && d2 infrastructure-delivery.d2 infrastructure-delivery.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: down
+
+github: "GitHub Actions\n(cd.yml, deploy.yml)" {class: ext}
+
+delivery: "DELIVERY (private network)" {
+  class: group
+  runner: "Self-hosted GitHub runner\n(one JIT job, no credentials)" {class: app}
+  workstation: "Owner workstation\nmake, helm, bao" {class: person}
+  openbao: "OpenBao\nhelper2/kv: ci/<env>, ci/harbor, ci/harbor-pull, backup/r2\nhelper2/jwt: GitHub OIDC roles\nhelper2/transit: helper2-images (signing key)" {
+    shape: cylinder
+    class: data
+  }
+  harbor: "Harbor registry\nhelper2/apps/helper2-web:<commit>\nhelper2/apps/helper2:<commit>\nhelper2/apps/helper2-backoffice:<commit>\nhelper2/apps/postgres:<tag>\nhelper2/apps/embedder:<tag>" {
+    shape: cylinder
+    class: data
+  }
+  runner -> openbao: "OIDC login, kv get,\nTransit sign (CD only)"
+  runner -> harbor: "push image and signature;\ncheck signatures before a deploy"
+  workstation -> openbao: "make credentials"
+}
+
+cluster: "KUBERNETES · ns helper2-prod" {
+  class: group
+
+  release: "Helm release helper2" {
+    class: group
+    migrate: "helper2-migrate-<revision> Job\nonce per release, before the rollout" {class: app}
+    app: "helper2 (public app)\nand the web image of the same tag\n(init container: the shell)" {class: app}
+    web: "helper2-web" {class: app}
+    bo: "helper2-backoffice" {class: app}
+  }
+
+  canary: "During a release only: Helm release helper2-canary (ADR 0045)" {
+    class: group
+    cingress: "Ingress helper2-canary\ncanary-by-header X-Helper2-Canary\n= token of the run, no weight" {class: config}
+    cmigrate: "helper2-canary-migrate Job\nprod's schema, before the rollout" {class: app}
+    capp: "helper2-canary · 1 pod\npublic image of the release commit\nrole h2_public · Redis user h2_public" {class: app}
+    cweb: "helper2-web-canary · 1 pod\n/assets/ only" {class: app}
+    cingress -> capp: "header + token only:\n/ (smoke test of a release)"
+    cingress -> cweb: "header + token only:\n/assets/"
+  }
+
+  stores: "prod's Postgres and Redis\n(canary NetworkPolicies)" {
+    shape: cylinder
+    class: data
+  }
+
+  canary.capp -> stores
+  canary.cmigrate -> stores: "as the owner"
+  release.migrate -> stores: "as the owner"
+}
+
+github -> delivery.runner: "job (main only)"
+delivery.runner -> cluster.canary: "a release: canary first,\nsmoke test, then remove it" {class: config}
+delivery.runner -> cluster.release: "helm upgrade --wait 12m\n(deployer ServiceAccount),\nevery image by its checked digest" {class: config}
+delivery.harbor -> cluster.release: "image pull" {class: config}
+delivery.harbor -> cluster.canary: "image pull" {class: config}
