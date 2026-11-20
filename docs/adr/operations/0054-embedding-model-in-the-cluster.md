@@ -104,7 +104,8 @@ query per search that is not in the 7-day query vector cache.
 - The model id stays `nvidia/nemotron-3.5-embed-1b`, so the stored vectors keep their model and nothing is embedded
   again.
 - The image holds the weights and PyTorch, several gigabytes: the first build and the first pull on a node are
-  slow. CD's image job has 60 minutes.
+  slow. CD's image job has 60 minutes, and it writes the SBOM of this image with its temporary files in the
+  runner's work folder: the layers do not fit in `/tmp`.
 - A new model version is a new pinned commit and a new `embedder.image.tag`.
 
 ### Known limits
@@ -124,7 +125,7 @@ query per search that is not in the 7-day query vector cache.
 
 ## Diagrams
 
-[flow](../../diagrams/flow-0054-embedding-model-in-the-cluster.svg) · [sequence](../../diagrams/sequence-0054-embedding-model-in-the-cluster.svg) · [infrastructure](../../diagrams/infrastructure.svg)
+[flow](../../diagrams/flow-0054-embedding-model-in-the-cluster.svg) · [sequence](../../diagrams/sequence-0054-embedding-model-in-the-cluster.svg) · [infrastructure](../../diagrams/infrastructure.svg) · [workloads](../../diagrams/infrastructure-workloads.svg)
 
 ## Backlog
 

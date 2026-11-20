@@ -1,14 +1,14 @@
-# Runtime infrastructure of the hosted helper2 on Kubernetes: Cloudflare and the platform's ingress-nginx, the
-# public and the in-network admin host, the two namespaces and their workloads (2 web pods and 3 public app pods on prod, 1 each on staging, one back office
-# pod, rolling updates, disruption budget; ADR 0043),
-# what the per-workload network policies let each workload reach and accept, Redis auth and its AOF volume,
-# OpenBao and Harbor for delivery, Alloy -> Prometheus / Tempo for observability, and the prod backup
-# with its encrypted off-site copy to Cloudflare R2 (on for prod). During a release only, the canary: a second Helm
-# release helper2-canary beside prod, reached with a header and a token, on prod's Postgres and Redis (ADR 0045).
-# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml, templates/canary.yaml), the platform repo outside this repo (DNS, tunnel,
-#   ingress-nginx, Ingresses helper2-public (helper2-web for the web files) and helper2-admin, namespaces, deployer RBAC),
-#   deploy/k8s/Makefile, deploy/k8s/CI.md, .github/workflows/deploy.yml,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (management, tracing).
+# Runtime infrastructure of the hosted helper2 on Kubernetes, the full picture in zones: how a request gets in,
+# what runs in production's namespace (the applications, the one embedder, the stores, the jobs), staging beside
+# it, what the applications call outside, how an image is delivered, and where backups, metrics and traces go.
+# One line per relation, between zones where it can be. Ports, sizes, secrets and policies are in four views:
+#   infrastructure-workloads.d2 (what runs in the namespace and what each may reach),
+#   infrastructure-secrets.d2 (who holds which password),
+#   infrastructure-delivery.d2 (how an image gets to the cluster, and the canary of a release),
+#   infrastructure-data.d2 (backups and monitoring).
+# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), deploy/k8s/Makefile,
+#   .github/workflows/cd.yml, deploy.yml, the platform repo outside this repo (DNS, tunnel, ingress-nginx,
+#   the Ingresses helper2-public and helper2-admin).
 # Render: cd docs/diagrams && d2 fmt infrastructure.d2 && d2 infrastructure.d2 infrastructure.svg
 
 ...@style
@@ -19,169 +19,109 @@ vars: {
   }
 }
 
-direction: down
+direction: right
 
-visitor: Visitor {class: person}
-
-cloudflare: CLOUDFLARE EDGE {
+people: PEOPLE {
   class: group
-  dns: "Proxied DNS + TLS\nhelper2.ai · www.helper2.ai\n<staging host>" {class: ext}
-  tunnel: "Platform tunnel\n(the platform repo)" {class: ext}
-  dns -> tunnel: {class: hot}
+  visitor: Visitor {class: person}
+  owner: "Owner\n(VPN only)" {class: person}
+}
+
+edge: "CLOUDFLARE EDGE" {
+  class: group
+  cloudflare: "Proxied DNS + TLS,\nplatform tunnel" {class: ext}
 }
 
 cluster: KUBERNETES {
   class: group
 
-  ingress: "ns ingress-nginx" {
+  nginx: "ingress-nginx\n(its own namespace)" {class: app}
+
+  prod: "ns helper2-prod · ingress + egress denied by default" {
     class: group
-    nginx: "ingress-nginx\nIngress helper2-public: the public app's\naddresses → Service helper2;\nthe rest → Service helper2-web\nIngress helper2-admin → Service helper2-admin\n(back office pods; private ranges only)" {class: app}
-  }
 
-  prod: "ns helper2-prod · ingress + egress default-deny\none policy per workload · ServiceAccount helper2: no RBAC, no token" {
-    class: group
-    app: "helper2 Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8081 Actuator (in no Service)\nrole h2_public · Redis user h2_public\nschema check only" {class: app}
-    web: "helper2-web Deployment (nginx) · 2 pods\nPDB minAvailable 1 · read-only root, user 101\n:8080 the web app's files (Service helper2-web)\n:8081 /healthz (in no Service) · no egress" {class: app}
-    bo: "helper2-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout,\ncatalog jobs · schema check only\nrole h2_backoffice · Redis user h2_backoffice\n:8080 (Service helper2-admin)\n:8081 Actuator (in no Service)" {class: app}
-    postgres: "postgres StatefulSet\nPostgreSQL 18.6 + pgvector 0.8.6\nPVC 5Gi local-path" {
-      shape: cylinder
-      class: data
-    }
-    redis: "redis StatefulSet\nRedis 8.10.2 · requirepass (admin) +\nan ACL user per app (redis-users.acl)\nAOF everysec, no RDB · 128mb LRU\nlimit 448Mi (3.5× maxmemory: fork + page cache)\nPVC 1Gi local-path\ncache, sessions, rate limits" {
-      shape: cylinder
-      class: data
-    }
-    pgexp: "postgres-exporter Deployment · 1 pod\n:9187, role h2_monitor (pg_monitor)" {class: app}
-    redisexp: "redis-exporter Deployment · 1 pod\n:9121, Redis user h2_monitor (INFO)" {class: app}
-    backup: "pg-backup CronJob\n02:30 Europe/Zurich\npg_dump | gzip, one per run,\nnewest 7 dates" {class: app}
-    restore_check: "pg-restore-check CronJob\nSunday 04:00 Europe/Zurich\nnewest dump into its own Postgres\n(emptyDir), never prod's" {class: app}
-    backup_pvc: "PVC pg-backup\nnfs-k8s · kept on uninstall" {
-      shape: cylinder
-      class: data
-    }
-    secret: "Secret helper2-app-env\n(from OpenBao app_env, written by\nkubectl; no passwords)" {
-      shape: page
-      class: config
-    }
-    creds: "Secret helper2-credentials\nthe 8 passwords; each workload\nnames only its own keys" {
-      shape: page
-      class: config
-    }
-    embedder: "helper2-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\n:8080 /v1/embeddings (ClusterIP, no Ingress)\nin: the two apps of prod and of staging · no egress" {class: ai}
-    migrate: "helper2-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
-
-    app -> postgres: "JDBC :5432\n(data + shedlock locks)"
-    app -> embedder: "query embeddings :8080" {class: ai-call}
-    bo -> embedder: "indexer, every 1 s" {class: ai-call}
-    app -> redis: ":6379 AUTH"
-    bo -> postgres: "JDBC :5432"
-    bo -> redis: ":6379 AUTH\n(own session namespace)"
-    secret -> bo: envFrom {class: config}
-    backup -> postgres: ":5432"
-    pgexp -> postgres: ":5432 as h2_monitor"
-    redisexp -> redis: ":6379 as h2_monitor"
-    backup -> backup_pvc: "dump"
-    restore_check -> backup_pvc: "read-only, only\nwithout backup.offsite"
-    secret -> app: envFrom {class: config}
-    migrate -> postgres: "JDBC :5432 (owner)"
-    creds -> migrate: "owner + role passwords" {class: config}
-    creds -> app: "own role + Redis user" {class: config}
-    creds -> bo: "own role + Redis user" {class: config}
-    creds -> redis: "requirepass + ACL users via stdin" {class: config}
-    creds -> postgres: "owner" {class: config}
-    creds -> backup: "owner" {class: config}
-
-    canary: "During a release only: Helm release helper2-canary (ADR 0045)" {
+    apps: APPLICATIONS {
       class: group
-      capp: "helper2-canary · 1 pod\npublic image of the release commit\nrole h2_public · Redis user h2_public" {class: app}
-      cweb: "helper2-web-canary · 1 pod\n/assets/ only" {class: app}
-      cmigrate: "helper2-canary-migrate Job\nprod's schema, before the rollout" {class: app}
-      cingress: "Ingress helper2-canary\ncanary-by-header X-Helper2-Canary\n= token of the run, no weight" {class: config}
+      web: "helper2-web · 2 pods\nthe web app's files" {class: app}
+      java: "call the stores, the embedder and the outside" {
+        class: group
+        app: "helper2 · 3 pods\npublic site and API" {class: app}
+        bo: "helper2-backoffice · 1 pod\nadmin, Scout, catalog jobs,\nembedding indexer" {class: app}
+      }
     }
-    canary.capp -> postgres: "JDBC :5432\n(canary NetworkPolicies)"
-    canary.capp -> redis: ":6379 AUTH"
-    canary.cmigrate -> postgres: "JDBC :5432 (owner)"
+
+    embedder: "helper2-embedder · 1 pod\nNVIDIA embedding model on CPU\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
+
+    stores: STORES {
+      class: group
+      postgres: "PostgreSQL 18\n+ pgvector" {
+        shape: cylinder
+        class: data
+      }
+      redis: "Redis 8\ncache, sessions,\nrate limits" {
+        shape: cylinder
+        class: data
+      }
+    }
+
+    jobs: JOBS {
+      class: group
+      migrate: "migrate Job\nonce per release" {class: app}
+      backup: "pg-backup, nightly\npg-restore-check, weekly" {class: app}
+    }
+
+    apps.java -> embedder: "embeddings\nqueries; the indexer every 1 s" {class: ai-call}
+    apps.java -> stores: "each with its own\nrole and user"
+    jobs -> stores.postgres: "as the owner"
   }
 
   staging: "ns helper2-staging" {
     class: group
-    note: "Same chart and policies\n1 web pod, 1 public pod,\n1 back office pod (no PDB)\nScout off · no backup\nstaging host · no embedder of its own:\nits apps call prod's (ADR 0054)" {class: app}
+    all: "the same chart, 1 pod each\nno embedder, no backup" {class: app}
   }
 
-  observability: "ns observability" {
-    class: group
-    alloy: "Alloy\nscrapes :8081/actuator/prometheus\nand the exporters :9187, :9121\n(names on its allow-list)\nreceives OTLP :4318" {class: app}
-  }
+  nginx -> prod.apps.web: files {class: hot}
+  nginx -> prod.apps.java.app: "site + API" {class: hot}
+  nginx -> prod.apps.java.bo: "admin hosts"
+  nginx -> staging.all: "staging host"
+  staging.all -> prod.embedder: "embeddings\n(staging's apps only)" {class: ai-call}
+}
 
-  kubesystem: "ns kube-system" {
-    class: group
-    dns: "kube-dns :53\n(k8s-app=kube-dns)" {class: app}
-  }
-
-  ingress.nginx -> prod.app: ":8080\n(only allowed caller)" {class: hot}
-  ingress.nginx -> prod.web: ":8080 (files: /assets/, /theme.js,\n/favicon.svg, /favicon.ico; else 404)" {class: hot}
-  ingress.nginx -> prod.bo: ":8080 (admin hosts)"
-  ingress.nginx -> staging.note: ":8080"
-  staging.note -> prod.embedder: "embeddings :8080\n(staging's two apps only)" {class: ai-call}
-  ingress.nginx -> prod.canary.capp: "header + token only:\n/ (smoke test of a release)"
-  ingress.nginx -> prod.canary.cweb: "header + token only:\n/assets/"
-  observability.alloy -> prod.app: "scrape :8081" {class: config}
-  observability.alloy -> prod.bo: "scrape :8081" {class: config}
-  observability.alloy -> prod.pgexp: "scrape :9187" {class: config}
-  observability.alloy -> prod.redisexp: "scrape :9121" {class: config}
-  prod.app -> observability.alloy: "traces OTLP/HTTP :4318"
-  prod.app -> kubesystem.dns: "DNS (every workload)" {class: config}
+outside: "INTERNET · TCP 443 only" {
+  class: group
+  nebius: "Nebius Token Factory\nNVIDIA Nemotron\n(guide, enrichment)" {class: ai}
+  sources: "Public sources · search, Scout\nGitHub · Hugging Face · npm\narXiv · Tavily · MCP Registry" {class: ext}
+  r2: "Cloudflare R2, EU\nencrypted backup copy" {class: ext}
 }
 
 monitoring: MONITORING {
   class: group
-  prometheus: Prometheus {class: data}
-  tempo: Tempo {class: data}
-  grafana: "Grafana\ndashboards helper2.json,\nhelper2-backoffice.json" {class: app}
-  prometheus -> grafana
-  tempo -> grafana
+  stack: "Alloy → Prometheus · Tempo\nGrafana dashboards" {class: data}
 }
-
-egress: "INTERNET · app egress TCP 443 only (private ranges excluded)" {
-  class: group
-  nebius: "Nebius Token Factory\nNVIDIA Nemotron" {class: ai}
-  sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nTavily · MCP Registry" {class: ext}
-}
-
-r2: "Cloudflare R2 bucket, EU\n(backup.offsite, on for prod;\nrclone crypt and copy, never deletes;\nlifecycle rule: 7 days)" {class: ext}
 
 delivery: "DELIVERY (private network)" {
   class: group
-  runner: "Self-hosted GitHub runner\n(one JIT job, no credentials)" {class: app}
-  workstation: "Owner workstation\nmake, helm, bao" {class: person}
-  openbao: "OpenBao\nhelper2/kv: ci/<env>, ci/harbor, ci/harbor-pull, backup/r2\nhelper2/jwt: GitHub OIDC roles\nhelper2/transit: helper2-images (signing key)" {
+  github: "GitHub Actions\ncd.yml, deploy.yml" {class: ext}
+  runner: "Self-hosted runner\none job, no credentials" {class: app}
+  openbao: "OpenBao\nsecrets, signing key" {
     shape: cylinder
     class: data
   }
-  harbor: "Harbor registry\nhelper2/apps/helper2-web:<commit>\nhelper2/apps/helper2:<commit>\nhelper2/apps/helper2-backoffice:<commit>\nhelper2/apps/postgres:<tag>\nhelper2/apps/embedder:<tag>" {
+  harbor: "Harbor registry\nsigned images" {
     shape: cylinder
     class: data
   }
-  runner -> openbao: "OIDC login, kv get,\nTransit sign (CD only)"
-  runner -> harbor: "push image and signature;\ncheck signatures before a deploy"
-  workstation -> openbao: "make credentials"
+  github -> runner: job
+  runner -> openbao: "login, sign"
+  runner -> harbor: "push, check\nsignatures"
 }
 
-github: "GitHub Actions\n(cd.yml, deploy.yml)" {class: ext}
-
-visitor -> cloudflare.dns: HTTPS {class: hot}
-cloudflare.tunnel -> cluster.ingress.nginx: "public hosts" {class: hot}
-delivery.workstation -> cluster.ingress.nginx: "admin hosts, DNS-only\n(VPN only)"
-cluster.observability.alloy -> monitoring.prometheus: "remote write"
-cluster.observability.alloy -> monitoring.tempo: "traces"
-cluster.prod.app -> egress.nebius: "chat completions" {class: ai-call}
-cluster.prod.app -> egress.sources: "search"
-cluster.prod.bo -> egress.sources: "Scout + admin search"
-cluster.prod.bo -> egress.nebius: "enrichment" {class: ai-call}
-cluster.prod.backup -> r2: "HTTPS 443, only when\nbackup.offsite is on" {class: config}
-cluster.prod.restore_check -> r2: "HTTPS 443: the newest dump,\ndecrypted (backup.offsite)" {class: config}
-github -> delivery.runner: "job (main only)"
-delivery.runner -> cluster.prod: "helm upgrade --wait 12m\n(deployer ServiceAccount);\na release: canary first" {class: config}
-delivery.harbor -> cluster.prod.app: "image pull, and the web image\nof the same tag (init container: the shell)" {class: config}
-delivery.harbor -> cluster.prod.bo: "image pull" {class: config}
-delivery.harbor -> cluster.prod.web: "image pull" {class: config}
+people.visitor -> edge.cloudflare: HTTPS {class: hot}
+edge.cloudflare -> cluster.nginx: "public hosts" {class: hot}
+people.owner -> cluster.nginx: "admin hosts"
+cluster.prod.apps.java -> outside.nebius: "model calls" {class: ai-call}
+cluster.prod.apps.java -> outside.sources: "searches"
+cluster.prod.jobs.backup -> outside.r2: "off-site copy"
+cluster.prod.apps.java -> monitoring.stack: "metrics and traces,\nthrough Alloy"
+delivery.runner -> cluster.prod: "helm upgrade,\nimages by digest" {class: config}
+delivery.harbor -> cluster.prod: "image pull" {class: config}

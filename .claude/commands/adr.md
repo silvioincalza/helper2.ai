@@ -16,7 +16,8 @@ Draft an ADR for: $ARGUMENTS
    - `docs/diagrams/sequence-NNNN-<slug>.d2` — sequence of the call path
      (no runtime path: one line in the ADR saying why, no sequence diagram)
    - if the module structure or the runtime changes: update the `architecture-*` view of the
-     module that changed (and context if modules change) and/or `infrastructure.d2`
+     module that changed (and context if modules change) and/or the `infrastructure` view the change touches (`infrastructure.d2` the overview, `infrastructure-workloads.d2`,
+     `infrastructure-secrets.d2`, `infrastructure-delivery.d2`, `infrastructure-data.d2`)
    Start each `.d2` with what it shows and the source files it describes. Render each to SVG
    (`d2 <file>.d2 <file>.svg`) and commit both.
 5. Add the ADR to `docs/adr/README.md` (with the Diagrams column) and the diagrams to
