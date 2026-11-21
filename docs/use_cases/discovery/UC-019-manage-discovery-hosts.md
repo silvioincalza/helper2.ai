@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Tell discovery by name which sites write about many products and which sites only list products, so that its web searches turn the right pages into candidates and skip the directories.  
 **Trigger:** An administrator opens the discovery hosts of the back office to look at them, add a host, remove one or turn the reading of a directory host's lists on or off.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-026](../../requirements.md)  
 **API:** [listDiscoveryHosts](../../../api/admin.yaml#listDiscoveryHosts), [addDiscoveryHost](../../../api/admin.yaml#addDiscoveryHost), [removeDiscoveryHost](../../../api/admin.yaml#removeDiscoveryHost), [readDirectoryLists](../../../api/admin.yaml#readDirectoryLists)
