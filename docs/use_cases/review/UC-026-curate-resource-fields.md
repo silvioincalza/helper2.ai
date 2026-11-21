@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Fix a resource's field once and for all, by setting the resource's own value over every source and every enrichment run, or by dropping what the AI said about it.  
 **Trigger:** The Administrator sees a wrong value next to a field in the evidence of an enrichment check.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-033](../../requirements.md)  
 **API:** [setResourceField](../../../api/admin.yaml#setResourceField), [dropResourceField](../../../api/admin.yaml#dropResourceField)
@@ -83,7 +83,7 @@ An administrator sets the type, pricing, licence, open source, tech level, audie
 
 ### BR-002: Values a field takes
 
-The type is any resource type but OTHER; the audience is any audience but UNKNOWN; pricing and tech level are values of their own lists; the licence is an SPDX identifier of 2 to 40 characters; open source is true or false; the language is one the catalog takes; the published date is a day written as YYYY-MM-DD and not in the future; the description is 1 to 4,000 characters and is stored as written by the administrator.
+The type is any resource type but OTHER; the audience is any audience but UNKNOWN; pricing and tech level are values of their own lists; the licence is an SPDX identifier of 2 to 40 characters; open source is true or false; the language is one the catalog takes; the published date is a day written as YYYY-MM-DD and not later than tomorrow (UTC); the description is 1 to 4,000 characters and is stored as written by the administrator.
 
 ### BR-003: A curated value wins everywhere and stays
 
