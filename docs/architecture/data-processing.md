@@ -35,6 +35,13 @@ about a visitor. IndexNow (api.indexnow.org) receives, once a day from the back 
 names, with nothing about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
 setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/helper2.ai/issues/433)).
 
+Sites a link of a directory list leads to receive, from the back office, a status request of our own server when
+the link redirects ([ADR 0057](decisions/ADR-0057-follow-list-links.md)): a `HEAD` (a `GET` with no body read when
+the site refuses `HEAD`) and one `GET` of its `robots.txt` a day. Such a site can be anywhere. It sees the address of
+our server and our User-Agent, no cookie, no credential and nothing about a visitor; the Privacy page says so under
+"Who receives data". The page text the fast model checks against a name is public text about a resource, the kind
+Nebius already receives (the table above): at most 2,000 characters of a page and the name a list gives.
+
 **When to look again.** Before a release that adds a recipient, and when a "next due" date above has passed: an entry
 that is not renewed moves to the inactive list, and the Privacy line changes in the same change.
 

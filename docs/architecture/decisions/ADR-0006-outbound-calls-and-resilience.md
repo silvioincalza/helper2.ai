@@ -104,6 +104,12 @@ dependency without a release, measured (state, refused calls), and testable with
     repository secrets `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY` and `H2_NEBIUS_API_KEY`. It is not
     part of CI or CD.
 
+**Calls to a host a page names.** Two calls go to hosts that no configuration names, so they do not use the shared
+client: the research assistant's `check_url` and the Scout's status request
+([0057](ADR-0057-follow-list-links.md) point 8). Both resolve the name first, refuse an address that is not public
+(`PublicAddresses`), connect only to the addresses they checked and follow no redirect by themselves. The status
+request runs in the policy `page-status` (the circuit of a collector, no retry).
+
 ### The resilience policies
 14. **Resilience4j 2.4.0** (`resilience4j-spring-boot4`, `resilience4j-micrometer`; circuit breaker, bulkhead,
     retry). The build pins the version of the Spring Boot 4 module explicitly (`resilience4jVersion` in
@@ -124,6 +130,7 @@ dependency without a release, measured (state, refused calls), and testable with
     |---|---|---|---|
     | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, live-web, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 3 (the three of them and the shared caches' 2 stay below the database pool of 16) | none: the search deadline is the budget |
     | `collector-<id>` (hf-trending, live-web-scout, course-scout, discovery, linkedin-scout, live-web-events-scout, github-awesome, hf-provider-orgs, ai-deadlines, mcp-registry, gap-evidence, gap-web) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
+    | `page-status` (the Scout's status request to a site a list link leads to, [0057](ADR-0057-follow-list-links.md)) | as `collector-<id>`; an HTTP status is an answer, only a request with no answer counts | none | none: one try |
     | `redis` (search cache, budget counters, web-search quotas, rate limits, outbound throttle, session reads, the setup guide's fetch budget, the Scout's page text cache) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
     | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, guide answers, [0004](ADR-0004-persistence-and-the-schema.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the three catalog sources of 3, below the database pool of 16 | none: a miss costs one model call |
     | `llm-chat` (the other chat-model calls: query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0008](ADR-0008-llm-integration.md)) |
