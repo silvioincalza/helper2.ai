@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# One command that says if a change is ready: it runs the checks CI runs and exits non-zero on the first failure.
-# Usage: scripts/verify.sh [backend|frontend|docs|all]   (default: all)
 set -euo pipefail
 
 root="$(git rev-parse --show-toplevel)"

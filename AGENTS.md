@@ -61,6 +61,8 @@ Rules:
 - An architecture decision is an ADR in `docs/architecture/decisions/` (the `/adr` command, not `/architecture-decision`). It
   names the `NFR-*` and `C-*` it serves.
 - `/next` gives the next step; `/spec-review` checks the specification.
+- While `docs/` moves to the AI Unified Process layout, every page is written as the final text: no revision
+  table, no version or change log in a page, no "previously" or "moved from". Git holds the history.
 - Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG in
   `docs/architecture/diagrams/` (skill `aiup-diagrams`).
 - A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.
@@ -90,6 +92,8 @@ Rules:
 - Clean code: a use case reads top-down as the business action. Small methods with one level of
   abstraction each, names that say the intent, early returns, no flag arguments. Split a long
   method into named steps instead of adding comments.
+- No dead code and no dead docs: a file, a function, a setting, a page or a section that nothing uses or reads is
+  deleted in the change that makes it unused. Nothing is kept "for later" or as a backup copy.
 - No comments in code, config or scripts: names, small methods and ADRs say why. Only tool directives stay
   (shebangs, `# syntax=`, `eslint-disable-next-line`, `shellcheck disable`, the Makefile's `## ` help lines).
   Env files (`.env.example`, `deploy/k8s/app.env.example` and other dot files) are setup guides for people: their
@@ -194,6 +198,9 @@ Every review finding has one level, so findings from different agents can be com
   work that crosses roles; a small task stays with one agent.
 - Silvio is always in the loop: present the plan, trade-offs and open questions, and wait for his
   decision before implementing anything that is not trivial or that is hard to undo.
+- A choice with a drawback needs Silvio's approval before it is done: something lost, weakened, made slower, made
+  dearer, left out or done differently from what he asked. Say the drawback and what it costs, then wait.
+  Reporting it after the fact is not approval.
 - Keep working when the next step does not need Silvio's input. Do not stop to ask for a go-ahead
   on routine steps.
 - Stop and ask Silvio before:

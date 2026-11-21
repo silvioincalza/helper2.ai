@@ -19,8 +19,10 @@ In the same change that creates or edits a PlantUML or Mermaid diagram:
    - any other diagram → `<what-it-shows>.d2`, named like the files next to it
 2. The twin shows the same things as its source, nothing added and nothing dropped: the same actors, use cases with
    their `UC-*` IDs, entities and relations. An ER twin shows relationships only, as the Mermaid does.
-3. Start the `.d2` with what it shows and the file it mirrors. Follow the style of the existing diagrams
-   (`docs/architecture/diagrams/README.md`).
+3. Start the `.d2` with what it shows and the file it mirrors. Use the one style of the project: import
+   `...@style`, use only the classes `style.d2` defines (`person`, `app`, `ai`, `data`, `ext`, `group`, ...), the
+   same layout engine as the diagrams next to it, and no inline `style.` override. A look `style.d2` cannot give is
+   a change to `style.d2` for Silvio to approve, never a one-off.
 4. Render it with `docs/architecture/diagrams/render.sh` and commit the `.d2` and the `.svg`. D2 writes SVG, not
    JPEG: the SVG is the image. Make a PNG only when Silvio asks for one, and do not commit it.
 5. List the twin in the section "Specification (AI Unified Process)" of `docs/architecture/diagrams/README.md`,

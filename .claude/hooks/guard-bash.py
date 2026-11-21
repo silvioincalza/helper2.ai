@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""PreToolUse hook for Bash: stops the commands AGENTS.md says an assistant never runs.
-
-The deny rules in .claude/settings.json match the usual spelling of a command. This hook reads the
-whole command line, so a chained or re-ordered form is stopped too. Exit 2 blocks the call and
-shows the message to the assistant. Run `guard-bash.py --self-test` to check the rules.
-"""
-
 import json
 import re
 import sys
