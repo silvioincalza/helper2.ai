@@ -3,6 +3,7 @@
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java (readAsList),
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/AddDiscoveredList.kt (add),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java (read, switchedOff, waitsBecause),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GoneWebPages.java (readFailed),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ListEntryLinks.java (route).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0055-directory-lists.d2 && d2 flow-0055-directory-lists.d2 flow-0055-directory-lists.svg
 
@@ -29,6 +30,9 @@ day: "10 discovered lists read\ntoday already?" {class: decision}
 credits: "Scout's daily credits\nor the pass budget spent?" {class: decision}
 waits: "Waits for a later pass;\nlast read used" {class: end}
 read: "Read through the page reader\n(1 credit), kept as last read" {class: app}
+failed: "The read gave the page?" {class: decision}
+gone: "The site answers 404 or 410 to our own status\nrequest, on 3 checks in a row over a day?" {class: decision}
+forgotten: "What the list named and its ratings are removed;\nthe row in list_seed is deleted (ADR 0023 point 17)" {class: end}
 links: "Each link: the rule of its kind" {class: decision}
 confirmed: "Model, paper, package:\nindexed when its source confirms it" {class: end}
 candidate: "Product, course, article:\ncandidate in the review list" {class: end}
@@ -56,9 +60,13 @@ day -> waits: yes
 day -> credits: no {class: hot}
 credits -> waits: yes
 credits -> read: no {class: hot}
-read -> links: {class: hot}
+read -> failed: {class: hot}
+failed -> links: yes {class: hot}
+failed -> gone: no
+gone -> kept: no
+gone -> forgotten: yes
 kept -> links
 links -> confirmed: {class: hot}
 links -> candidate
-read -> index
+failed -> index: yes
 kept -> index

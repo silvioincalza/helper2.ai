@@ -113,8 +113,12 @@ What exists to follow a link:
    - **Caps, counted per try before the request.** `status-requests-per-day` (200) and
      `status-requests-per-host-per-day` (30), robots.txt included, in the daily quota counter of
      [0027](ADR-0027-live-web-store-first-daily-quota.md). When the counter cannot be read, no request is made.
-   - **Never a host that is never read** (`HostsNeverRead`), and only from the follower: only for the links of lists
-     whose reading an administrator turned on and the addresses they lead to.
+   - **Never a host that is never read** (`HostsNeverRead`), and from two callers only. The follower asks for the
+     links of lists whose reading an administrator turned on and the addresses they lead to. `GoneWebPages` asks
+     for the address of a web page list itself, after a read of it failed, to know whether its site says it is gone
+     (404, 410): [0023](ADR-0023-catalog-full-text-index.md) point 17. That address is a page an administrator
+     added or a list page of a host an administrator turned on, and it uses the code of the answer only: a
+     `location` is not followed. Both callers share the adapter, its rules and its caps; neither changes them.
 
 ### Budgets
 9. **Steps a day.** `web-pages.follow.steps-per-day` (`H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY`, 100), counted
@@ -132,7 +136,10 @@ What exists to follow a link:
 12. **Status requests.** 200 a day in all: at most 100 steps, and the robots.txt of at most 100 new hosts. 30 to one
     host a day: a directory whose every "Visit" link is a redirect on its own host is asked about once an hour on
     average, and its other entries wait for the next day. `H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY`,
-    `…_PER_HOST_PER_DAY`.
+    `…_PER_HOST_PER_DAY`. The checks of a list page that could not be read count on the same two caps: at most 2
+    requests for a failed read (the page, and the robots.txt of a host not asked that day), so at most 120 a day
+    when all 60 lists that can be read in a day fail. The two uses take from one count in the order of the pass; a
+    request a cap refuses is made at a later pass.
 13. **The pass.** Every read counts on the time and size budget of the collector's pass. When a cap, the credits or
     the pass budget is spent, the link is not recorded as tried and waits for a later pass. A status request that a
     cap or the open circuit refused was not made: it is no step, and the link waits too. The cap of one host stops
@@ -251,6 +258,10 @@ What exists to follow a link:
   one resource and links one page of the directory.
 - More spend, at the caps: 100 live web credits a day inside the Scout's 1,000; 50 calls of the fast model a day;
   200 status requests a day, 30 to one host.
+- The status request has a second use, inside the same caps: a web page list whose read failed is asked of its site,
+  and a page that answers 404 or 410 on 3 checks in a row over a day no longer names its resources
+  ([0023](ADR-0023-catalog-full-text-index.md) point 17). A day of many failed reads leaves fewer requests for
+  following links, and the other way round.
 - Requests of our own reach sites of third parties. They see the address of our server and our User-Agent. The
   Privacy page and [data processing](../data-processing.md) say so.
 - [0013](ADR-0013-discovery.md) point 17 and [0055](ADR-0055-directory-lists.md) still skip a redirect and a
@@ -288,7 +299,7 @@ What exists to follow a link:
 | Repudiation | Nobody knows why a candidate came from a list | The candidate keeps the list that named it; the last read keeps the link, the address found, the steps and who decided; the model calls are counted by step and model id. |
 | Information disclosure | A request of ours leaks a credential or a visitor | No cookie, credential or referrer; nothing about a visitor is in a pass; a third-party site sees the server address and the User-Agent only. Test: `noCookieNoCredentialAndNoReferrerIsSentAndTheUserAgentNamesHelper2`. |
 | Denial of service / cost exhaustion | A list of thousands of entries spends credits, model calls, or loads a site; a site answers slowly or with a huge body | 100 steps, 50 model calls, 200 status requests a day, 30 a host, all counted per try; the Scout's credit cap; the pass budget; 3 s, 5 s and 8 s limits; no body read; 512 KB of robots.txt; a robots matcher that does not backtrack. Tests: `everyTryCountsOnTheDayAndOnItsHostAndPastACapNoRequestIsMade`, `theBodyOfAGetForAStatusIsNotRead`, `aPatternOfManyStarsIsMatchedWithoutBacktrackingForever`. |
-| Elevation of privilege | A visitor or a page starts a request of our server | No endpoint starts following; only the pass of the collector does, for hosts an administrator turned on. |
+| Elevation of privilege | A visitor or a page starts a request of our server | No endpoint starts following or a check of a list page; only the pass of the collector does, for hosts an administrator turned on and pages an administrator added. |
 
 ### AI architecture check
 | # | Layer | State |
@@ -315,5 +326,6 @@ What exists to follow a link:
 ## Backlog
 - Decides: [S2.3.20](https://github.com/silvioincalza/helper2.ai/issues/980), in
   [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
-- The status code of `PageStatusReader` is what "a web page list its site says is gone" needs
-  ([S2.3.24](https://github.com/silvioincalza/helper2.ai/issues/998)).
+- The status code of `PageStatusReader` decides that a web page list is gone at its site:
+  [S2.3.24](https://github.com/silvioincalza/helper2.ai/issues/998), in
+  [0023](ADR-0023-catalog-full-text-index.md) point 17.
