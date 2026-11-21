@@ -1,0 +1,16 @@
+# Entity model of the site module: its entities and the relationships between them, no attributes.
+# D2 twin of docs/entity_model/site.md: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt entity-model-site.d2 && d2 entity-model-site.d2 entity-model-site.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+PUBLIC_APP_SETTING: {class: data}

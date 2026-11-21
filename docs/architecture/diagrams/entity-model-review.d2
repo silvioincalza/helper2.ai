@@ -1,0 +1,48 @@
+# Entity model of the review module: its entities and the relationships between them, no attributes.
+# D2 twin of docs/entity_model/review.md: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt entity-model-review.d2 && d2 entity-model-review.d2 entity-model-review.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+RESOURCE: {class: data}
+REVIEW_ITEM: {class: data}
+ENRICHMENT_RUN: {class: data}
+RELATIONSHIP: {class: data}
+ISSUE_REPORT: {class: data}
+REVIEW_RESEARCH: {class: data}
+REVIEW_RESEARCH_STEP: {class: data}
+CANDIDATE_DECISION: {class: data}
+
+RESOURCE <-> REVIEW_ITEM: "is reviewed in" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+ENRICHMENT_RUN <-> REVIEW_ITEM: "opens" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+RELATIONSHIP <-> REVIEW_ITEM: "is checked in" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+ISSUE_REPORT <-> REVIEW_ITEM: "is reviewed as" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+REVIEW_ITEM <-> REVIEW_RESEARCH: "is researched in" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+REVIEW_RESEARCH <-> REVIEW_RESEARCH_STEP: "records" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
