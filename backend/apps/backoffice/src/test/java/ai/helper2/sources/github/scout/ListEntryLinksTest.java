@@ -75,7 +75,7 @@ class ListEntryLinksTest {
     "https://medium.com/@someone/a-guide-to-ai-agents",
     "https://newsletter.ai/how-we-built-our-ai-stack",
   })
-  void uc020Br010ALinkThatReadsAsAnArticleByTheRuleOfDiscoveryIsAnArticleForReview(String url) {
+  void uc030Br007ALinkThatReadsAsAnArticleByTheRuleOfDiscoveryIsAnArticleForReview(String url) {
     assertThat(route(url + "?utm_source=list", "How we built it", "Reading"))
         .isEqualTo(new Article(CanonicalUrl.of(url)));
   }
@@ -87,7 +87,7 @@ class ListEntryLinksTest {
     "https://producthunt.com/stories/how-we-rank-ai-tools, not-a-product-page",
     "https://arxiv.org/list/cs.AI/recent-papers-of-the-week, excluded-domain",
   })
-  void uc020Br010ABlogIndexAnAuthorPageADirectoryPageAndAnExcludedDomainAreNoArticle(
+  void uc030Br007ABlogIndexAnAuthorPageADirectoryPageAndAnExcludedDomainAreNoArticle(
       String url, String reason) {
     assertThat(route(url, "Read more", "Reading")).isEqualTo(new Skipped(reason));
   }

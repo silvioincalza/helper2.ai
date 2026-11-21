@@ -130,7 +130,7 @@ public final class WebPageLists {
 
   List<AwesomeCrawl.Read> read(HostLists hosts, ReadmeBudget budget, AwesomeMetrics metrics) {
     Instant now = clock.instant();
-    // UC-020 BR-009: the lists an administrator added are read before the lists discovery added.
+    // UC-030 BR-004: the lists an administrator added are read before the lists discovery added.
     List<ListSeed> added =
         seeds.all().stream()
             .filter(seed -> seed.getKind() == ListKind.WEB_PAGE)
@@ -164,7 +164,7 @@ public final class WebPageLists {
     return lists;
   }
 
-  // UC-019 BR-008: with the switch of its host off, a list discovery added is no longer read;
+  // UC-030 BR-005: with the switch of its host off, a list discovery added is no longer read;
   // what its last read gave stays.
   private static boolean switchedOff(
       ListSeed page, CanonicalUrl url, HostLists hosts, AwesomeMetrics metrics) {
@@ -222,7 +222,7 @@ public final class WebPageLists {
     if (!due(page, now)) {
       return NOT_DUE;
     }
-    // UC-020 BR-009: discovery's lists share a number of reads a day; past it a list waits.
+    // UC-030 BR-004: discovery's lists share a number of reads a day; past it a list waits.
     if (page.getOrigin() == ListOrigin.DISCOVERY && reads.discoveredLeft <= 0) {
       return DAILY_CAP;
     }

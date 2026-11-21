@@ -87,26 +87,4 @@ class JdbcAwesomeListIndexIT {
     assertThat(emptied.removed()).containsExactly(idOf(kept));
     assertThat(entries()).isEmpty();
   }
-
-  @Test
-  void uc007Br008TheIndexKeepsWhetherAListIsOnADirectoryHostAndFollowsTheLastRead() {
-    List.of(list, kept).forEach(this::resource);
-    AwesomeListText onADirectoryHost =
-        new AwesomeListText(CanonicalUrl.of(list), "Agents", naming(kept).entries(), true);
-
-    index.replace(onADirectoryHost);
-
-    assertThat(directory()).isTrue();
-
-    index.replace(naming(kept));
-
-    assertThat(directory()).isFalse();
-  }
-
-  private boolean directory() {
-    return jdbc.sql("SELECT directory FROM awesome_list WHERE list_id = :list")
-        .param("list", idOf(list))
-        .query(Boolean.class)
-        .single();
-  }
 }

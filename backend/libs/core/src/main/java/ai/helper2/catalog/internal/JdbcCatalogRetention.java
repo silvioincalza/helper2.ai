@@ -72,7 +72,11 @@ class JdbcCatalogRetention implements CatalogRetention {
         jdbc.sql("DELETE FROM awesome_list WHERE updated_at < :cutoff")
             .param("cutoff", Timestamp.from(cutoff))
             .update();
-    return entries + lists;
+    int directoryEntries =
+        jdbc.sql("DELETE FROM directory_list_entry WHERE updated_at < :cutoff")
+            .param("cutoff", Timestamp.from(cutoff))
+            .update();
+    return entries + lists + directoryEntries;
   }
 
   @Override

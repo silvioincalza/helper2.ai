@@ -4,7 +4,7 @@
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ManageDiscoveryHosts.kt (readLists), AddDiscoveredList.kt,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java,
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java, GitHubAwesomeCollector.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcAwesomeListIndex.java, JdbcResourceDetailReads.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcDirectoryListIndex.java, JdbcResourceDetailReads.java,
 #   frontend/src/features/resource/FoundInLists.tsx, frontend/src/admin/ReviewEvidence.tsx.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0055-directory-lists.d2 && d2 sequence-0055-directory-lists.d2 sequence-0055-directory-lists.svg
 
@@ -45,12 +45,12 @@ read: Next pass of the awesome-list collector {
   awesome -> db: "UPSERT list_seed_last_read"
   awesome -> sources: "model, paper, package by id"
   sources -> awesome: "facts, or not found"
-  awesome -> db: "resources and candidates;\nawesome_list (directory = true), awesome_list_entry"
+  awesome -> db: "resources and candidates; directory_list_entry\n(no resource for the list page)"
 }
 
 show: The pages {
   visitor -> public: "GET /api/v1/resources/{id}" {class: hot}
-  public -> db: "curated lists by name; count of directory lists"
+  public -> db: "curated lists by name; count in directory_list_entry"
   public -> visitor: "foundIn {lists, more, directoryLists: 3}"
   admin -> spa: "opens a review item of the resource"
   spa -> api: "GET /api/v1/admin/review-items/{id}/evidence"

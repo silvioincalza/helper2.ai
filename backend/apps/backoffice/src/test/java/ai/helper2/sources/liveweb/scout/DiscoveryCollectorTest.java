@@ -212,7 +212,7 @@ class DiscoveryCollectorTest {
   }
 
   @Test
-  void uc019Br007AListPageOfADirectoryHostWhoseListsAreReadIsAddedAsAListToRead() {
+  void uc030Br003AListPageOfADirectoryHostWhoseListsAreReadIsAddedAsAListToRead() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));
     hosts.add(
         new DiscoveryHost(
@@ -228,7 +228,7 @@ class DiscoveryCollectorTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  void uc019Br007AListPageTheRulesOfAnAddedPageRefuseWaitsForReviewAsWithTheSwitchOff() {
+  void uc030Br003AListPageTheRulesOfAnAddedPageRefuseWaitsForReviewAsWithTheSwitchOff() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));
     hosts.add(
         new DiscoveryHost(
@@ -250,7 +250,7 @@ class DiscoveryCollectorTest {
   }
 
   @Test
-  void uc019Br007WithTheSwitchOffNoListIsAdded() {
+  void uc030Br003WithTheSwitchOffNoListIsAdded() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));
     hosts.add(
         new DiscoveryHost(

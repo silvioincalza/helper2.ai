@@ -231,8 +231,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       between two reads use what the last read gave (`list_seed_last_read`). The GitHub lists it links to are followed like those of a seed
       README, and its links to product sites go to review (point 17) with the page as the list. It comes after the
       GitHub seeds in a pass, so an entry two lists share keeps the section of the GitHub list. A list page discovery
-      added on a directory host is read the same way, after the administrator's pages and within its own reads a day
-      ([0055](ADR-0055-directory-lists.md)).
+      added on a directory host is read the same way, after the administrator's pages and within its own reads a day;
+      it is never a resource ([0055](ADR-0055-directory-lists.md)).
     - A link is a nested list when the repository's name says "awesome", or when it sits under a heading below the
       title that names a section of lists ("Other awesome lists", "Related lists", "Lists of lists").
     - It is followed only when its GitHub facts (`GET /repos/{owner}/{repo}`) say it is alive and about AI: not

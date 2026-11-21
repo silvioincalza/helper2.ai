@@ -53,14 +53,11 @@ class JdbcAwesomeListIndex implements AwesomeListIndex {
             .list();
     jdbc.sql(
             """
-            INSERT INTO awesome_list (list_id, search_vector, updated_at, directory)
-            VALUES (:list, to_tsvector('english', h2_unaccent(translate(:headings, '/', ' '))), now(),
-                    :directory)
-            ON CONFLICT (list_id) DO UPDATE SET search_vector = EXCLUDED.search_vector,
-                updated_at = now(), directory = EXCLUDED.directory
+            INSERT INTO awesome_list (list_id, search_vector, updated_at)
+            VALUES (:list, to_tsvector('english', h2_unaccent(translate(:headings, '/', ' '))), now())
+            ON CONFLICT (list_id) DO UPDATE SET search_vector = EXCLUDED.search_vector, updated_at = now()
             """)
         .param("list", listId)
-        .param("directory", list.directory())
         .param("headings", list.headings())
         .update();
     List<UUID> removed = previous.stream().filter(id -> !written.contains(id)).toList();

@@ -91,7 +91,7 @@ class DiscoveryPagesTest {
   }
 
   @Test
-  void uc019Br007AListPageOfADirectoryHostWhoseListsAreReadIsAListToRead() {
+  void uc030Br003AListPageOfADirectoryHostWhoseListsAreReadIsAListToRead() {
     DiscoveryPages pages =
         new DiscoveryPages(
             new HostLists(Set.of(), Set.of("example.org", "other.org"), Set.of("example.org")));

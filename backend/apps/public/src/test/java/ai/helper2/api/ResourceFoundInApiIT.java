@@ -137,28 +137,34 @@ class ResourceFoundInApiIT extends ApiTestBase {
   void uc007Br008AListOnADirectoryHostIsCountedAndNeverNamed() throws Exception {
     UUID resource = curated("https://deepl.com/translator");
     UUID curatedList = list("awesome-translation", 1200);
-    UUID directoryList = list("best-translation-apps", 90000);
+    String directoryList = "https://directory-" + run + ".example/best-translation-apps";
     names(curatedList, resource, "Apps");
-    names(directoryList, resource, "Top 10");
     owner
         .sql(
             """
-            INSERT INTO awesome_list (list_id, search_vector, directory)
-            VALUES (:list, to_tsvector('english', 'best translation apps'), true)
+            INSERT INTO directory_list_entry (list_url, resource_id, list_title, heading_path)
+            VALUES (:url, :resource, 'Best translation apps', 'Top 10')
             """)
-        .param("list", directoryList)
+        .param("url", directoryList)
+        .param("resource", resource)
         .update();
-
-    String body =
-        mvc.perform(get("/api/v1/resources/" + resource))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.foundIn.lists", hasSize(1)))
-            .andExpect(jsonPath("$.foundIn.lists[0].listId").value(curatedList.toString()))
-            .andExpect(jsonPath("$.foundIn.more").value(0))
-            .andExpect(jsonPath("$.foundIn.directoryLists").value(1))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    assertThat(body).doesNotContain("best-translation-apps");
+    try {
+      String body =
+          mvc.perform(get("/api/v1/resources/" + resource))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.foundIn.lists", hasSize(1)))
+              .andExpect(jsonPath("$.foundIn.lists[0].listId").value(curatedList.toString()))
+              .andExpect(jsonPath("$.foundIn.more").value(0))
+              .andExpect(jsonPath("$.foundIn.directoryLists").value(1))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      assertThat(body).doesNotContain("best-translation-apps", "Best translation apps");
+    } finally {
+      owner
+          .sql("DELETE FROM directory_list_entry WHERE list_url = :url")
+          .param("url", directoryList)
+          .update();
+    }
   }
 }

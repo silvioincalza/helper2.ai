@@ -86,7 +86,7 @@
 
 ### Success Postconditions
 
-- The added list is stored with the administrator, the time and the reason, and the next pass of the awesome-list collector reads it.
+- The added list is stored with the administrator, the time and the reason, and the next pass of the awesome-list collector reads it (UC-030).
 - A removed list is no longer read; the resources found in it stay in the catalog.
 - The audit trail holds the change.
 
@@ -102,36 +102,16 @@ A GitHub repository is entered as "owner/name" or as its https address on github
 
 ### BR-002: Hosts Never Read
 
-A web page on a host the configuration names as never read is refused, with the reason the configuration gives. By default, coursera.org is never read because its terms forbid automated reading without written consent. A host covers its subdomains. The rule is applied again at every read, so a page added before its host was named is no longer read.
+A web page on a host the configuration names as never read is refused, with the reason the configuration gives. By default, coursera.org is never read because its terms forbid automated reading without written consent. A host covers its subdomains. The rule is applied again at every read (UC-030 BR-002), so a page added before its host was named is no longer read.
 
 ### BR-003: Number of Lists
 
-An administrator can add at most 50 lists. The lists discovery adds have their own number (BR-008) and do not count.
+An administrator can add at most 50 lists. The lists discovery adds have their own number (UC-030 BR-003) and do not count.
 
 ### BR-004: Reason
 
 The reason of a list follows the same rule as the reason of a discovery host (UC-019 BR-005).
 
-### BR-005: Reading an Added Repository
-
-The awesome-list collector reads every added GitHub repository at the start of each of its passes, before the lists its own search finds, whatever the repository's stars and name.
-
-### BR-006: Reading an Added Web Page
-
-An added web page is read through the live web page reader at most once every 7 days by default. After a failed read, the next try comes after 1 hour by default, for up to 3 failed tries; then the page waits the full 7 days again. The text of the last successful read is kept and used while the page is not due, waits or cannot be read. A page waits when the page reader is off, its daily credits are spent, or the time or size budget of the collector's pass is used up.
-
-### BR-007: Audit
+### BR-005: Audit
 
 Every attempt to add a list whose reason, address and host pass the checks, and every attempt to remove a list with a valid reason, is recorded in the audit trail with the administrator, the address, the result and the reason.
-
-### BR-008: Lists Discovery Adds
-
-Discovery adds a list page it finds on a directory host whose lists are read (UC-019 BR-007) as a web page to read. The page follows the rules of a web page an administrator adds: an accepted address (BR-001) and a host that is not one never read (BR-002). The list is stored with the discovery collector that found it and no reason. At most 100 such lists are added by default. A page these rules refuse, and a page found when the 100 are added, waits in the review list as an article candidate. A page that is a list to read already is not added again. An administrator removes such a list like any other.
-
-### BR-009: Reading the Lists Discovery Added
-
-A list discovery added is read like an added web page (BR-006), and only while the switch of its host is on (UC-019 BR-008). In each pass the web pages an administrator added are read first. At most 10 lists discovery added are read per day by default; the others wait for the next day and use the text of their last read meanwhile.
-
-### BR-010: Links to Articles
-
-A link of a list that reads as an article by the rule of discovery (a post on a writing host or below a writing place of a site) becomes an article candidate in the review list, within the limits of the collector for new candidates. A blog's index, an author's page, a page on a directory host and a page on an excluded domain are skipped.

@@ -149,7 +149,7 @@ class JdbcListSeedStoreIT {
   }
 
   @Test
-  void uc020Br008AListDiscoveryAddedKeepsItsOriginAndOnlyAWebPageCanHaveIt() {
+  void uc030Br003AListDiscoveryAddedKeepsItsOriginAndOnlyAWebPageCanHaveIt() {
     ListSeed found =
         new ListSeed(
             ListKind.WEB_PAGE, PAGE, "discovery-coding", T0, null, null, 0, ListOrigin.DISCOVERY);

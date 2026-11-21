@@ -127,9 +127,6 @@ class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
                 SELECT e.list_id, l.title, e.heading_path, count(*) OVER () AS total
                 FROM awesome_list_entry e JOIN resource l ON l.id = e.list_id
                 WHERE e.resource_id = :id
-                  -- UC-007 BR-008: a list on a directory host is counted, never named.
-                  AND NOT EXISTS (SELECT 1 FROM awesome_list a
-                                  WHERE a.list_id = e.list_id AND a.directory)
                 ORDER BY l.popularity DESC, l.title, e.list_id
                 LIMIT :limit
                 """)
@@ -148,12 +145,9 @@ class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
         rows.stream().map(ListRow::entry).toList(), more, directoryLists(resourceId));
   }
 
+  // UC-007 BR-008: a list on a directory host is counted, never named.
   private int directoryLists(UUID resourceId) {
-    return jdbc.sql(
-            """
-            SELECT count(*) FROM awesome_list_entry e JOIN awesome_list a ON a.list_id = e.list_id
-            WHERE e.resource_id = :id AND a.directory
-            """)
+    return jdbc.sql("SELECT count(*) FROM directory_list_entry WHERE resource_id = :id")
         .param("id", resourceId)
         .query(Integer.class)
         .single();
@@ -163,19 +157,16 @@ class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
   public List<DirectoryList> directoryListsNaming(UUID resourceId) {
     return jdbc.sql(
             """
-            SELECT l.title, l.url, e.heading_path
-            FROM awesome_list_entry e
-            JOIN awesome_list a ON a.list_id = e.list_id
-            JOIN resource l ON l.id = e.list_id
-            WHERE e.resource_id = :id AND a.directory
-            ORDER BY l.title, e.list_id
+            SELECT list_title, list_url, heading_path FROM directory_list_entry
+            WHERE resource_id = :id
+            ORDER BY list_title, list_url
             LIMIT :limit
             """)
         .param("id", resourceId)
         .param("limit", MAX_DIRECTORY_LISTS)
         .query((rs, n) ->
             new DirectoryList(
-                rs.getString("title"), rs.getString("url"), rs.getString("heading_path")))
+                rs.getString("list_title"), rs.getString("list_url"), rs.getString("heading_path")))
         .list();
   }
 

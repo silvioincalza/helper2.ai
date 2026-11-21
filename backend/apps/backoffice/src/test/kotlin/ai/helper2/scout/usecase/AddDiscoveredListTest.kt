@@ -23,7 +23,7 @@ class AddDiscoveredListTest {
   private fun page(address: String): CanonicalUrl = CanonicalUrl.of(address)!!
 
   @Test
-  fun `UC-020 BR-008 a list page discovery found is a list to read, named after its collector`() {
+  fun `UC-030 BR-003 a list page discovery found is a list to read, named after its collector`() {
     val outcome = lists.add(page("https://futurepedia.io/best-ai-coding-tools"), "discovery-coding")
 
     assertEquals(Outcome.ADDED, outcome)
@@ -43,7 +43,7 @@ class AddDiscoveredListTest {
   }
 
   @Test
-  fun `UC-020 BR-008 a page that is a list already is not added twice, whoever added it`() {
+  fun `UC-030 BR-003 a page that is a list already is not added twice, whoever added it`() {
     store.add(ListSeed(ListKind.WEB_PAGE, "https://futurepedia.io/best-ai-tools", "42", now, null))
 
     val outcome = lists.add(page("https://www.futurepedia.io/best-ai-tools/"), "discovery-coding")
@@ -53,7 +53,7 @@ class AddDiscoveredListTest {
   }
 
   @Test
-  fun `UC-020 BR-008 past the number of discovered lists a page waits for review`() {
+  fun `UC-030 BR-003 past the number of discovered lists a page waits for review`() {
     lists.add(page("https://futurepedia.io/best-1"), "discovery-coding")
     lists.add(page("https://futurepedia.io/best-2"), "discovery-coding")
 
@@ -64,7 +64,7 @@ class AddDiscoveredListTest {
   }
 
   @Test
-  fun `UC-020 BR-008 the lists an administrator added do not count against discovery`() {
+  fun `UC-030 BR-003 the lists an administrator added do not count against discovery`() {
     repeat(2) { store.add(ListSeed(ListKind.GITHUB_REPOSITORY, "acme/list-$it", "42", now, null)) }
 
     assertEquals(

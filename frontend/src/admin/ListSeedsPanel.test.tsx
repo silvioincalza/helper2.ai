@@ -218,7 +218,7 @@ describe('Feature: an admin adds the GitHub lists and web pages the Scout reads 
     expect(await screen.findByRole('table', { name: 'Added lists (1 of 50)' })).toBeInTheDocument();
   });
 
-  it('Scenario: UC-020 BR-008 a list discovery found says so and does not count against the added lists', async () => {
+  it('Scenario: UC-030 BR-003 a list discovery found says so and does not count against the added lists', async () => {
     const found: ListSeedEntry = {
       ...entry('https://futurepedia.io/best-ai-coding-tools'),
       origin: 'DISCOVERY',

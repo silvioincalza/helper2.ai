@@ -4,6 +4,8 @@
 
 **Requirements:** NFR-012, NFR-015, C-008, C-012, C-014
 
+**Use cases:** UC-030 (reading), UC-019 (the switch), UC-020 (the lists an administrator adds), UC-007 and UC-024 (where it shows)
+
 ## Context
 
 A directory host lists products ([0013](ADR-0013-discovery.md) point 21). No page of it is kept: none is a product's
@@ -21,7 +23,7 @@ post when a search finds it.
 ## Decision
 
 ### The switch
-1. **One switch per directory host, off.** `discovery_host.reads_lists` (`V2026.11.8.6__directory_lists.sql`), false
+1. **One switch per directory host, off.** `discovery_host.reads_lists` (`V2026.11.9.1__directory_lists.sql`), false
    for every host and for a new one. The table refuses it on a writing host. An administrator turns the reading on
    host by host after checking the host.
 2. **Only an administrator, audited.** `ManageDiscoveryHosts.readLists`, `POST
@@ -69,8 +71,8 @@ post when a search finds it.
     product pages has its own budget (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`) and is not touched.
 11. **Switch off.** A discovered list is read only while the switch of its host is on, checked at every pass. With
     the switch off, or the host removed, it is not read (`page-host-off`) and costs nothing. Its last read is still
-    used, so the list stays a resource, its entries stay in the list index and are not aged out, and the count on
-    the public page stays. Turning the switch on resumes the reading. A new list page of the host waits for review.
+    used: what the list names is written again at each pass, so it is not aged out and the count on the public page
+    stays. Turning the switch on resumes the reading. A new list page of the host waits for review.
 
 ### What a list gives
 12. **The rule of each kind.** The links of a discovered list follow [0013](ADR-0013-discovery.md) point 17 with no
@@ -82,18 +84,25 @@ post when a search finds it.
     the route `Article`: a `RESOURCE_CANDIDATE` of type `ARTICLE`, titled by the link's words, inside the same caps.
     A blog's index, an author's page, a page on a directory host and a page on an excluded domain are skipped as
     they are for products. This holds for every list, on GitHub or on the web.
-14. **List → resource.** The relation is the list index ([0023](ADR-0023-catalog-full-text-index.md)):
-    `awesome_list_entry` has a row for each GitHub repository, model, paper and package of a list that is in the
-    catalog. No new table.
-
-### Where people see it
-15. **Marked in the index.** `awesome_list.directory` is true when the list is a page of a directory host, whoever
-    added it. `WebPageLists` sets it from the host lists at each pass (`ListText.onDirectoryHost`), and
-    `JdbcAwesomeListIndex` writes it with the list.
+14. **A list page of a directory host is never a resource.** The collector writes no hit for it
+    (`GitHubAwesomeCollector.listHits`), whoever added the page: the host decides, read from the host lists at each
+    pass. So it has no page, it is in no search result, in no hub and no sitemap, and it is not counted among the
+    resources. Its words are not in the list index either: a resource is not found by the words a directory list
+    uses around it.
+15. **List → resource, two relations.**
+    - A curated list (an awesome list on GitHub, a web page that is not on a directory host) is a resource; the list
+      index ([0023](ADR-0023-catalog-full-text-index.md)) keeps what it names in `awesome_list_entry`, by the id of
+      the list. Nothing changes there.
+    - A list page of a directory host is kept by its address in `directory_list_entry` (`list_url`, `resource_id`,
+      `list_title`, `heading_path`, `updated_at`; owned by the catalog, read-only for the public app):
+      one row for each GitHub repository, model, paper and package of the list that is in the catalog.
+      `DirectoryListIndex.replace` writes the rows of a list at each pass (`ListText.directoryListTitle` marks such
+      a list for the Scout's `ListIndex`). The rows of a list not read for `H2_RETENTION_LIST_INDEX` (30 days) are
+      deleted with the list index.
 16. **The public page counts, the back office names.**
     - `GET /api/v1/resources/{id}`: `foundIn.directoryLists` is the number of directory lists that name the
-      resource. `foundIn.lists` and `foundIn.more` never hold one. The page says "Named in 3 directory lists" under
-      the curated lists it names. A search result found through a directory list does not name the list.
+      resource, counted in `directory_list_entry`. `foundIn.lists` and `foundIn.more` are the curated lists, as
+      before. The page says "Named in 3 directory lists" under the curated lists it names.
     - `GET /api/v1/admin/review-items/{id}/evidence`: `directoryLists` names up to 50 of them for the item's
       resource: title, the address of the page, the headings above the entry. The review page shows each as a link
       (https only, `rel="noopener noreferrer nofollow"`).
@@ -103,7 +112,7 @@ post when a search finds it.
     ([0013](ADR-0013-discovery.md) point 19). A read counts on `helper2.live-web.credits{feature="scout-list-pages"}`.
 
 ### Code
-- `backend/libs/schema/src/main/resources/db/migration/V2026.11.8.6__directory_lists.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V2026.11.9.1__directory_lists.sql`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` (`HostLists.readsListsOf`,
   `DiscoveryHostStore.readLists`), `ListSeeds.kt` (`ListOrigin`, `DiscoveredLists`),
   `scout/usecase/ManageDiscoveryHosts.kt` (`readLists`), `AddDiscoveredList.kt`, `ManageListSeeds.kt`;
@@ -112,9 +121,10 @@ post when a search finds it.
   `DiscoveryCollector.java` (`readAsList`); `sources/github/scout/WebPageLists.java` (`Reads`, `switchedOff`),
   `ListEntryLinks.java` (`Article`), `GitHubAwesomeCollector.java`;
   `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`WebPages`).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `AwesomeListEntries.java`,
-  `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcAwesomeListIndex.java`, `JdbcResourceDetailReads.java`,
-  `JdbcCatalogSearch.java`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/DirectoryListIndex.java`, `AwesomeListEntries.java`,
+  `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcDirectoryListIndex.java`, `JdbcResourceDetailReads.java`,
+  `JdbcCatalogRetention.java`; `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`
+  (`listIndex`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`,
   `ListSeedsController.java`, `ReviewController.java`, `admin/usecase/GetReviewEvidence.java`;
   `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`; `api/admin.yaml`,
@@ -123,7 +133,7 @@ post when a search finds it.
   `frontend/src/features/resource/FoundInLists.tsx`.
 - Tests: `ManageDiscoveryHostsTest`, `AddDiscoveredListTest`, `ManageListSeedsTest`, `DiscoveryPagesTest`,
   `DiscoveryCollectorTest`, `WebPageListsTest`, `ListEntryLinksTest`, `JdbcDiscoveryHostStoreIT`,
-  `JdbcListSeedStoreIT`, `DiscoveryHostsApiIT`, `JdbcAwesomeListIndexIT`, `AwesomeListSearchIT`,
+  `JdbcListSeedStoreIT`, `DiscoveryHostsApiIT`, `JdbcDirectoryListIndexIT`,
   `ResourceFoundInApiIT`, `DiscoveryHostsPanel.test.tsx`, `ListSeedsPanel.test.tsx`, `ReviewEvidence.test.tsx`,
   `ResourcePage.test.tsx`.
 
@@ -150,6 +160,11 @@ post when a search finds it.
 - **One cap for every added list.** Simpler, but discovery could then fill the 50 places of an administrator.
 - **A daily cap counted in Redis.** The reads are already in `list_seed`; counting them there needs no second
   store and survives a cache flush.
+- **A directory list as a resource kept out of every public read** (a mark on the list, and a condition in search,
+  the resource page, the hubs, the sitemap, the guide and the counts) — no new table and the list index is reused,
+  but each public read must remember the condition, and one that forgets shows the page: a trap for every later
+  read. Its own table keyed by the address needs one small table and one writer, and nothing public can show what
+  is not a resource.
 - **Drop a discovered list when the switch goes off.** Clean, but the links already found would leave the index
   after 30 days and the count on the public page would fall for no reason a visitor can see.
 
@@ -165,11 +180,12 @@ post when a search finds it.
   the article links of every list.
 - A list whose links point to the directory's own pages, or through a redirect, gives little: those links are
   skipped by the link rules. Its GitHub repositories, models, papers and packages are still read.
-- The list page itself becomes a resource of the source `curated-web-lists`, with its address, its first heading as
-  title and the list index, like a page an administrator added. Search can find it.
+- A list page of a directory host is not a resource, so search does not find it, and it gives no words and no
+  categories to the resources it names. A web page on a directory host that an administrator adds by hand follows
+  the same rule.
 - Nothing new is kept about a person. From a discovered page the Scout keeps what it keeps from an added page: the
   address, the title, the headings, the links with their words and up to 500 characters of each entry, until the
-  next read. An entry's text can hold a name the page prints. `list_seed.added_by` holds a collector id for a
+  next read; and the address and the title with each resource it names. An entry's text can hold a name the page prints. `list_seed.added_by` holds a collector id for a
   discovered list, not an administrator. The Privacy page says that such pages are read and what is kept.
 - Retention ([0010](ADR-0010-data-retention.md)): a discovered list stays in `list_seed` until an administrator
   removes it; its last read goes with it. Its audit rows follow the audit trail.
@@ -184,6 +200,9 @@ post when a search finds it.
 - The reads of a day are counted from the last try of each list: a list tried twice in one UTC day counts once.
 - The count on the public page includes a directory list whose switch is off, and a list whose page no longer
   names the resource until its next read.
+- A list page of a directory host that waits for review (switch off, or refused) is an `ARTICLE` candidate. When an
+  administrator accepts it, it becomes an `ARTICLE` resource like any accepted candidate: a person's decision on
+  one page, not a list that is read.
 - The page a crawler gets (`PageHtml`) names the curated lists and does not give the number of directory lists.
 
 ### STRIDE
@@ -204,8 +223,8 @@ post when a search finds it.
 | 3 | Orchestration | Covered: the awesome-list collector's pass, its budgets, a list that waits is read at a later pass. |
 | 4 | Tool & API | Covered: the live web page reader for the page; the Hub, arXiv and npm by id for its links. |
 | 5 | Memory | Deferred, safe: nothing about users. |
-| 6 | Knowledge & RAG | Covered: more lists in the list index; a directory list is found by search and not named. |
-| 7 | Data | Covered: three columns in one migration; the origin of a list and the mark of a directory list are stored. |
+| 6 | Knowledge & RAG | Covered: a directory list adds resources, not words: it is not in the list index and not in search. |
+| 7 | Data | Covered: two columns and one table in one migration; the origin of a list and what a directory list names are stored. |
 | 8 | Browser & Computer Use | Covered: one page a read through the page reader, no link followed, no redirect. |
 | 9 | Guardrails | Covered: the switch, the address rules, the hosts never read, the link rules. |
 | 10 | Observability | Covered: two skip reasons, the credit metric per feature, the audit row. |

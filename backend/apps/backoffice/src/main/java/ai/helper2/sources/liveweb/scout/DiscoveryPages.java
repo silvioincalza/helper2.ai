@@ -174,7 +174,7 @@ public final class DiscoveryPages {
       return Shape.LIST;
     }
     // UC-019 BR-001: a list page of a directory host waits for review, it is not indexed.
-    // UC-019 BR-007: with the switch of its host on, it is a list to read.
+    // UC-030 BR-003: with the switch of its host on, it is a list to read.
     return hosts.readsListsOf(host) ? Shape.LIST_TO_READ : Shape.LIST_TO_REVIEW;
   }
 

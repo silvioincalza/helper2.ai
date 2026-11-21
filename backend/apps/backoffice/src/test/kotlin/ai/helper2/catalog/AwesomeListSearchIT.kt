@@ -222,18 +222,6 @@ class AwesomeListSearchIT {
   }
 
   @Test
-  fun `UC-007 BR-008 a match through a list on a directory host is found and does not name the list`() {
-    catalog()
-    val entries = listOf(entry(listed, "Listed - a $word store", "Tools > Vector databases"))
-    indexLists.replace(listOf(AwesomeListText(url(list), "Awesome Things\nTools\n", entries, true)))
-
-    val found = search(word).filter { it.row().title() == "listed-$run/tool" }
-
-    assertEquals(1, found.size)
-    assertNull(found.single().foundIn())
-  }
-
-  @Test
   fun `an entry is found by the name part of an owner-name in its line`() {
     catalog()
     indexLists.replace(

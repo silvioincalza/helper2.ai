@@ -174,7 +174,7 @@ public class DiscoveryCollector implements Collector {
         found.stream().filter(f -> f.page().shape() != Shape.LIST).map(this::candidate).toList());
   }
 
-  // UC-019 BR-007: a list page of a directory host whose lists are read is added as a list to
+  // UC-030 BR-003: a list page of a directory host whose lists are read is added as a list to
   // read; a page the rules of an added web page refuse waits for review.
   private @Nullable Found readAsList(Found found) {
     if (found.page().shape() != Shape.LIST_TO_READ) {

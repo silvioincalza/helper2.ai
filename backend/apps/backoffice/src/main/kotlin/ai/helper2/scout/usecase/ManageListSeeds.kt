@@ -100,7 +100,7 @@ class ManageListSeeds(
       ?.let {
         return Added.AlreadyListed(it)
       }
-    // UC-020 BR-003: the lists discovery added have their own number (BR-008).
+    // UC-020 BR-003: the lists discovery added have their own number (UC-030 BR-003).
     if (all.count { it.origin == ListOrigin.ADMINISTRATOR } >= MAX_SEEDS) {
       return Added.Full
     }

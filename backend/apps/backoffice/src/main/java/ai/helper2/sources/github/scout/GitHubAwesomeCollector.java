@@ -764,7 +764,7 @@ public class GitHubAwesomeCollector implements Collector {
                 url,
                 r.parsed().headingsText(),
                 searchEntries(r.parsed(), listedAs),
-                r.list().isOnADirectoryHost()));
+                r.list().isOnADirectoryHost() ? r.list().page().title() : null));
       }
     }
     return texts;
@@ -794,6 +794,10 @@ public class GitHubAwesomeCollector implements Collector {
   private static List<SourceHit> listHits(List<AwesomeCrawl.Read> lists, Instant now) {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
+      // UC-030 BR-009: a list page of a directory host is never a resource of the catalog.
+      if (read.list().isOnADirectoryHost()) {
+        continue;
+      }
       SourceHit hit =
           read.list().page() == null
               ? listHit(read.list(), typeOfRepository(read), now)

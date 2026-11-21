@@ -7,7 +7,17 @@ ALTER TABLE list_seed ALTER COLUMN origin DROP DEFAULT;
 ALTER TABLE list_seed ADD CONSTRAINT list_seed_discovery_check
     CHECK (origin = 'ADMINISTRATOR' OR kind = 'WEB_PAGE');
 
-ALTER TABLE awesome_list ADD COLUMN directory boolean NOT NULL DEFAULT false;
+CREATE TABLE directory_list_entry (
+    list_url     text        NOT NULL CHECK (length(list_url) <= 300),
+    resource_id  uuid        NOT NULL REFERENCES resource (id) ON DELETE CASCADE,
+    list_title   text        NOT NULL CHECK (length(list_title) BETWEEN 1 AND 300),
+    heading_path text        NOT NULL CHECK (length(heading_path) <= 200),
+    updated_at   timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (list_url, resource_id)
+);
+CREATE INDEX directory_list_entry_resource_idx ON directory_list_entry (resource_id);
+CREATE INDEX directory_list_entry_updated_idx ON directory_list_entry (updated_at);
+GRANT SELECT ON directory_list_entry TO h2_public;
 
 ALTER TABLE admin_audit DROP CONSTRAINT admin_audit_action_check;
 ALTER TABLE admin_audit ADD CONSTRAINT admin_audit_action_check CHECK (action IN

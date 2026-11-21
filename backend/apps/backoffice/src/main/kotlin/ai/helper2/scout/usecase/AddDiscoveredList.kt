@@ -36,7 +36,7 @@ class AddDiscoveredList(
     if (all.any { it.identity == list.identity }) {
       return Outcome.ALREADY_ADDED
     }
-    // UC-020 BR-008: discovery adds at most its own number of lists; past it a page waits for
+    // UC-030 BR-003: discovery adds at most its own number of lists; past it a page waits for
     // review.
     if (all.count { it.origin == ListOrigin.DISCOVERY } >= maxLists) {
       return Outcome.WAITS_FOR_REVIEW

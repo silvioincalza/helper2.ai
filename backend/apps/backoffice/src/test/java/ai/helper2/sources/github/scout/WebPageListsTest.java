@@ -627,7 +627,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void uc019Br008WithTheSwitchOffAListDiscoveryAddedIsNotReadAndWhatItGaveStays() {
+  void uc030Br005WithTheSwitchOffAListDiscoveryAddedIsNotReadAndWhatItGaveStays() {
     String list = "https://futurepedia.io/best-ai-coding-tools";
     directoryHost("futurepedia.io", true);
     addDiscovered(list);
@@ -635,7 +635,7 @@ class WebPageListsTest {
     CollectedBatch on = collector().collect(null, null, 500);
 
     assertThat(pages.asked).containsExactly(list);
-    assertThat(listHits(on)).extracting(SourceHit::getExternalId).containsExactly(list);
+    assertThat(on.getLists()).extracting(l -> l.getUrl().getValue()).containsExactly(list);
 
     directoryHost("futurepedia.io", false);
     clock.pass(7);
@@ -643,11 +643,10 @@ class WebPageListsTest {
 
     assertThat(pages.asked).containsExactly(list);
     assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-host-off")).isEqualTo(1);
-    assertThat(listHits(off)).extracting(SourceHit::getExternalId).containsExactly(list);
     assertThat(off.getLists())
         .filteredOn(l -> l.getUrl().getValue().equals(list))
         .singleElement()
-        .satisfies(l -> assertThat(l.getOnDirectoryHost()).isTrue());
+        .satisfies(l -> assertThat(l.getDirectoryListTitle()).isEqualTo("Best AI tools"));
     assertThat(off.getCandidates())
         .extracting(c -> c.getUrl().getValue())
         .containsExactlyElementsOf(
@@ -660,7 +659,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void uc019Br008AListDiscoveryAddedIsNeverReadBeforeTheSwitchOfItsHostIsOn() {
+  void uc030Br005AListDiscoveryAddedIsNeverReadBeforeTheSwitchOfItsHostIsOn() {
     directoryHost("futurepedia.io", false);
     addDiscovered("https://futurepedia.io/best-ai-coding-tools");
 
@@ -671,7 +670,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void uc020Br009DiscoverysListsShareANumberOfReadsADayAndTheRestWaitForTheNextDay() {
+  void uc030Br004DiscoverysListsShareANumberOfReadsADayAndTheRestWaitForTheNextDay() {
     directoryHost("futurepedia.io", true);
     discoveredReadsPerDay = 2;
     for (int i = 0; i < 3; i++) {
@@ -695,7 +694,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void uc020Br009TheListsAnAdministratorAddedAreReadFirstAndDoNotCountOnDiscoverysReads() {
+  void uc030Br004TheListsAnAdministratorAddedAreReadFirstAndDoNotCountOnDiscoverysReads() {
     directoryHost("futurepedia.io", true);
     discoveredReadsPerDay = 1;
     addDiscovered("https://futurepedia.io/best-0");
@@ -708,7 +707,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void uc007Br008AListOnADirectoryHostIsMarkedForTheListIndexWhoeverAddedIt() {
+  void uc030Br009AListPageOfADirectoryHostIsNeverAResourceWhoeverAddedIt() {
     directoryHost("futurepedia.io", true);
     addDiscovered("https://futurepedia.io/best-0");
     addPage("https://producthunt.com/lists/ai-tools");
@@ -717,6 +716,13 @@ class WebPageListsTest {
 
     CollectedBatch batch = collector().collect(null, null, 500);
 
+    assertThat(batch.getHits())
+        .extracting(SourceHit::getExternalId)
+        .contains(PAGE_ID)
+        .doesNotContain("https://producthunt.com/lists/ai-tools", "https://futurepedia.io/best-0");
+    assertThat(batch.getHits())
+        .extracting(h -> h.getCanonicalUrl().getHost())
+        .doesNotContain("producthunt.com", "futurepedia.io");
     assertThat(batch.getLists())
         .extracting(l -> l.getUrl().getValue(), ListText::getOnDirectoryHost)
         .containsExactlyInAnyOrder(
@@ -726,7 +732,7 @@ class WebPageListsTest {
   }
 
   @Test
-  void uc020Br010ALinkToAnArticleInAListIsAnArticleCandidateWithItsListAndSection() {
+  void uc030Br007ALinkToAnArticleInAListIsAnArticleCandidateWithItsListAndSection() {
     addPage(PAGE);
     pages.markdown.put(
         PAGE,

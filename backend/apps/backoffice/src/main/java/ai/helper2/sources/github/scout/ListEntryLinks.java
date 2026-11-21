@@ -73,7 +73,7 @@ final class ListEntryLinks {
     if (product.site() != null) {
       return new Product(product.site());
     }
-    // UC-020 BR-010: a link that reads as an article by the rule of discovery is an article.
+    // UC-030 BR-007: a link that reads as an article by the rule of discovery is an article.
     boolean article =
         product.skip() == ProductLinks.Skip.NOT_A_PRODUCT_PAGE && pages.isWritingPage(page);
     return article ? new Article(page) : new Skipped(product.skip().tag());

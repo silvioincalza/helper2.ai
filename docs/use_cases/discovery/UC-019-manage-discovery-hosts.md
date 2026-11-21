@@ -117,7 +117,7 @@
 
 ### BR-001: Kinds of Hosts
 
-A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: no page on it becomes a product candidate or an article candidate, and none is indexed without review. A page on it whose title reads as a list is proposed as an article candidate in the review list, where an administrator decides, unless the lists of the host are read (BR-007); on any other host such a page is indexed as a list. This holds for the subdomains of a directory host too. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
+A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: no page on it becomes a product candidate or an article candidate, and none is indexed without review. A page on it whose title reads as a list is proposed as an article candidate in the review list, where an administrator decides, unless the lists of the host are read (BR-007, UC-030 BR-003); on any other host such a page is indexed as a list. This holds for the subdomains of a directory host too. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
 
 ### BR-002: Plain Host Form
 
@@ -139,10 +139,6 @@ The reason is optional. When given, it is one line of at most 500 characters wit
 
 Every attempt to add a host whose reason and name pass the checks, and every attempt to remove a host or to switch the reading of its lists with a valid reason, is recorded in the audit trail with the administrator, the host, the result and the reason.
 
-### BR-007: Reading the Lists of a Directory Host
+### BR-007: Switch of a Directory Host
 
-A directory host has a switch "read its lists". It is off when the host is added. Only an administrator turns it on, host by host, after checking the host. A writing host has no switch. With the switch on, a page of the host whose title reads as a list is added as a list to read, by the rules of an added web page (UC-020 BR-008); a page those rules refuse waits in the review list as with the switch off. Every other page of the host is still never kept. This holds for the subdomains of the host too.
-
-### BR-008: Switch Turned Off
-
-When the switch of a directory host is turned off, or the host is removed from its list, the lists discovery added from that host are no longer read. What their last read gave stays: the lists stay in the catalog and still name their resources. Turning the switch on again resumes the reading.
+A directory host has a switch "read its lists". It is off when the host is added. Only an administrator turns it on or off, host by host, after checking the host. A writing host has no switch. What the Scout reads while the switch is on, and what stays when it is turned off, is in UC-030 (BR-003, BR-005). The switch covers the subdomains of the host too.

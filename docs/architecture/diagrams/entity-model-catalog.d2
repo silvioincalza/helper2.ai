@@ -23,6 +23,7 @@ ENRICHMENT_RUN: {class: data}
 RELATIONSHIP_EVIDENCE: {class: data}
 AWESOME_LIST: {class: data}
 AWESOME_LIST_ENTRY: {class: data}
+DIRECTORY_LIST_ENTRY: {class: data}
 KNOWN_TARGET: {class: data}
 KNOWN_TARGET_NAME: {class: data}
 ISSUE_REPORT: {class: data}
@@ -81,6 +82,10 @@ RESOURCE <-> AWESOME_LIST_ENTRY: "lists as a list" {
   target-arrowhead.shape: cf-many
 }
 RESOURCE <-> AWESOME_LIST_ENTRY: "is listed in" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> DIRECTORY_LIST_ENTRY: "is named by" {
   source-arrowhead.shape: cf-one-required
   target-arrowhead.shape: cf-many
 }

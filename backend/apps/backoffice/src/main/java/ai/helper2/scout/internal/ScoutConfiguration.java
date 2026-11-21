@@ -2,6 +2,7 @@ package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.CatalogWriter.Forgotten;
+import ai.helper2.catalog.DirectoryListIndex;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.ScoutPolicy;
@@ -273,9 +274,28 @@ class ScoutConfiguration {
   }
 
   @Bean
-  ListIndex listIndex(IndexAwesomeLists indexAwesomeLists) {
-    return lists ->
-        indexAwesomeLists.replace(lists.stream().map(ScoutConfiguration::catalogText).toList());
+  ListIndex listIndex(IndexAwesomeLists indexAwesomeLists, DirectoryListIndex directoryLists) {
+    return lists -> {
+      // UC-030 BR-009: a list page of a directory host is kept by its address, not as a resource.
+      lists.stream()
+          .filter(ListText::getOnDirectoryHost)
+          .map(ScoutConfiguration::directoryList)
+          .forEach(directoryLists::replace);
+      indexAwesomeLists.replace(
+          lists.stream()
+              .filter(list -> !list.getOnDirectoryHost())
+              .map(ScoutConfiguration::catalogText)
+              .toList());
+    };
+  }
+
+  private static DirectoryListIndex.DirectoryList directoryList(ListText list) {
+    return new DirectoryListIndex.DirectoryList(
+        list.getUrl(),
+        list.getDirectoryListTitle(),
+        list.getEntries().stream()
+            .map(e -> new DirectoryListIndex.Entry(e.getUrl(), e.getHeadingPath()))
+            .toList());
   }
 
   private static AwesomeListText catalogText(ListText list) {
@@ -284,8 +304,7 @@ class ScoutConfiguration {
         list.getHeadings(),
         list.getEntries().stream()
             .map(e -> new AwesomeListText.Entry(e.getUrl(), e.getText(), e.getHeadingPath()))
-            .toList(),
-        list.getOnDirectoryHost());
+            .toList());
   }
 
   @Bean

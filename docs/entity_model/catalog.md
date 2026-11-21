@@ -20,6 +20,7 @@ erDiagram
     RESOURCE ||--o| AWESOME_LIST : "is indexed as"
     RESOURCE ||--o{ AWESOME_LIST_ENTRY : "lists as a list"
     RESOURCE ||--o{ AWESOME_LIST_ENTRY : "is listed in"
+    RESOURCE ||--o{ DIRECTORY_LIST_ENTRY : "is named by"
     KNOWN_TARGET ||--o{ KNOWN_TARGET_NAME : "is meant by"
     RESOURCE ||--o{ ISSUE_REPORT : "is reported by"
     REMOVED_RESOURCE
@@ -183,7 +184,6 @@ The full-text index of a curated list ("awesome list") that is itself a resource
 | list_id       | Resource that is the list                            | String    | 36               | Primary Key, Foreign Key (RESOURCE.id) |
 | search_vector | Full-text index of the list's own words              | String    | -                | Not Null                               |
 | updated_at    | When the list was last read                          | DateTime  | -                | Not Null                               |
-| directory     | Whether the list is a page of a directory host; false by default | Boolean | -      | Not Null                               |
 
 ### AWESOME_LIST_ENTRY
 
@@ -201,6 +201,22 @@ One resource a curated list names, with the headings above its entry and the wor
 
 - A list names a resource at most once (list_id, resource_id are the key).
 - A list never names itself (list_id differs from resource_id).
+
+### DIRECTORY_LIST_ENTRY
+
+One resource that a list page of a directory host names. The page itself is never a resource: it is kept by its address.
+
+| Attribute    | Description                                                              | Data Type | Length/Precision | Validation Rules                       |
+|--------------|--------------------------------------------------------------------------|-----------|------------------|----------------------------------------|
+| list_url     | Address of the list page                                                 | String    | 300              | Primary Key                            |
+| resource_id  | Resource the entry names                                                 | String    | 36               | Primary Key, Foreign Key (RESOURCE.id) |
+| list_title   | Title of the list page, its first heading                                | String    | 300              | Not Null                               |
+| heading_path | Headings above the entry, at most 200 characters                         | String    | -                | Not Null                               |
+| updated_at   | When the list was last read                                              | DateTime  | -                | Not Null                               |
+
+#### Constraints
+
+- A list page names a resource at most once (list_url, resource_id are the key).
 
 ### KNOWN_TARGET
 

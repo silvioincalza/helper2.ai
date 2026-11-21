@@ -814,11 +814,11 @@
       "message": "status 'Implemented' but its use cases make it 'Open' (UC-016 Reviewed)"
     },
     {
-      "fingerprint": "f6cf771db8b4962d44d4187751b696e3f29860d4",
+      "fingerprint": "cdbfc8b77cd2e715f9a5224f27502d9c983786b3",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",
       "element": "C-008",
-      "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Reviewed)"
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Reviewed, UC-030 Draft)"
     },
     {
       "fingerprint": "30ee0960c2bb56f9643f9eeb8922931b48c7f7a1",
@@ -1199,11 +1199,11 @@
       "message": "status 'Implemented' but its use cases make it 'Open' (UC-021 Reviewed)"
     },
     {
-      "fingerprint": "d7d467cf03635f82f92793dd5959ba9217d80ee5",
+      "fingerprint": "8e0abd97352cf7170a1283dd7c4250baf4bd4676",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",
       "element": "NFR-015",
-      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Reviewed, UC-001 Reviewed)"
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Reviewed, UC-030 Draft, UC-001 Reviewed)"
     }
   ]
 }
