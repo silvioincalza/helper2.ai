@@ -659,6 +659,23 @@ class WebPageListsTest {
   }
 
   @Test
+  void uc030Br002TheLastReadOfAListOnAHostNeverReadIsNotUsedAlsoWithTheSwitchOff() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+    collector().collect(null, null, 500);
+
+    directoryHost("futurepedia.io", false);
+    neverRead = new HostsNeverRead(Map.of("futurepedia.io", "the owner asked"));
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getLists()).extracting(l -> l.getUrl().getValue()).doesNotContain(list);
+    assertThat(batch.getCandidates()).isEmpty();
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-never-read")).isEqualTo(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-host-off")).isZero();
+  }
+
+  @Test
   void uc030Br005AListDiscoveryAddedIsNeverReadBeforeTheSwitchOfItsHostIsOn() {
     directoryHost("futurepedia.io", false);
     addDiscovered("https://futurepedia.io/best-ai-coding-tools");
