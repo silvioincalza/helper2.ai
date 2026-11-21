@@ -67,7 +67,8 @@ class JdbcRepositoryVisits implements RepositoryVisits {
                       THEN extra -> 'vitality'
                       ELSE coalesce(extra -> 'vitality', '{}'::jsonb)
                            || jsonb_build_object('archived', :archived, 'checkedAt', CAST(:visitedAt AS text))
-                 END - 'gone' - 'notFoundAt' - 'parent' - 'parentArchived' - 'lastReleaseAt')
+                 END - 'gone' - 'notFoundAt' - 'notFoundVisits' - 'parent' - 'parentArchived'
+                     - 'lastReleaseAt')
                 || CAST(:facts AS jsonb))
             WHERE id = :id
             """)
@@ -107,13 +108,17 @@ class JdbcRepositoryVisits implements RepositoryVisits {
     return facts;
   }
 
+  // UC-030 BR-010: the visits in a row that did not find the repository are counted; a visit that
+  // finds it, or a source that states it again, starts the count again.
   private void recordNotFound(UUID recordId, Instant visitedAt) {
     jdbc.sql(
             """
             UPDATE source_record
             SET extra = jsonb_set(extra, '{vitality}',
                 coalesce(extra -> 'vitality', '{}'::jsonb)
-                || jsonb_build_object('visitedAt', CAST(:visitedAt AS text))
+                || jsonb_build_object('visitedAt', CAST(:visitedAt AS text),
+                       'notFoundVisits',
+                       coalesce(CAST(extra -> 'vitality' ->> 'notFoundVisits' AS integer), 0) + 1)
                 || CASE WHEN NOT coalesce(jsonb_exists(extra -> 'vitality', 'notFoundAt'), false)
                         THEN jsonb_build_object('notFoundAt', CAST(:visitedAt AS text))
                         WHEN repository_url IS NULL

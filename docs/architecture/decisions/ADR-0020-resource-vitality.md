@@ -108,6 +108,11 @@ the product: the next source does not get it.
      second one at least 24 hours later stores `gone`, and only on the record that is the repository: a record
      that merely links it (a package whose repository has no record of its own) never becomes `gone`. A source
      that states `archived` again, or a later visit that finds the repository, removes `gone` and `notFoundAt`.
+     Each "not found" also adds one to `notFoundVisits`, the visits in a row that did not find the repository,
+     removed with `notFoundAt`. The sweep hands the records of a batch that were not found to `ForgetGoneLists`: a
+     curated list whose repository is `gone` and was not found on
+     `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row no longer names its resources
+     ([0023](ADR-0023-catalog-full-text-index.md) point 17).
      An answer where more than one repository in five is not found, in a batch of 10 or more, is not believed:
      those repositories count as unanswered and get only `visitedAt`, so the sweep moves on to the next batch. The catalog search reads a `gone` record as `archived` (`ResourceRows.statedVitality`), so
      the rule of §2 refuses it with the reason `archived`: the rule itself has no new fact. As with `archived`,

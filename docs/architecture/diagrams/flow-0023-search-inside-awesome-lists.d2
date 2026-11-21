@@ -2,6 +2,8 @@
 # Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeListParser.java, MarkdownText.java,
 #   GitHubAwesomeCollector.java (read, searchText, listHits), backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt
 #   (indexListsQuietly), backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcAwesomeListIndex.java,
+#   catalog/usecase/ForgetGoneLists.java, catalog/internal/JdbcGoneLists.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/SweepRepositories.kt (sweepOneBatch),
 #   JdbcCatalogSearch.java (searchSql, searchFound), CatalogSearchSource.java, search/web/CardMapper.java,
 #   frontend/src/features/search/ResultRow.tsx, catalog/internal/JdbcResourceDetailReads.java (naming),
 #   frontend/src/features/resource/FoundInLists.tsx, backend/libs/schema/src/main/resources/db/migration/V1__schema.sql
@@ -50,6 +52,18 @@ replace: "JdbcAwesomeListIndex.replace (one transaction per list)" {
 
 fail: "A failed list index: logged,\nthe pass goes on; the next one rebuilds it" {class: fail}
 
+forget: "ForgetGoneLists (after a batch of the repository sweep)" {
+  class: group
+  direction: down
+  visit: "GitHub did not find the repository\nof a record at this visit" {class: end}
+  gone: "The record is the repository of a list,\nis marked gone, and was not found on\n3 visits in a row?" {class: decision}
+  kept: "The list keeps\nwhat it named" {class: end}
+  removed: "Delete the list's entry rows and its row;\nrefresh the categories of what it named" {class: data}
+  visit -> gone
+  gone -> kept: no
+  gone -> removed: yes
+}
+
 search: "Index query (helper2-index)" {
   class: group
   direction: down
@@ -93,3 +107,5 @@ page: "Resource page (GET /api/v1/resources/{id})" {
 }
 
 replace.rows -> page.named: "later, a resource page"
+replace.topics -> forget.gone: "later, the list's\nrepository is deleted"
+forget.removed -> page.named: "the list no longer\nnames the resource"

@@ -75,6 +75,7 @@ helper2:
       every: ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}
       initial-delay: PT2M
       batch: ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}
+      gone-list-visits: ${H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS:3}
   research:
     enabled: ${H2_RESEARCH_ENABLED:true}
     model: ${H2_RESEARCH_MODEL:FAST}

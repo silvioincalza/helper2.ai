@@ -322,7 +322,8 @@ class JdbcCatalogWriter implements CatalogWriter {
                                               > CAST(stated.vitality ->> 'statedAt' AS timestamptz)
                                            THEN kept.vitality || stated.vitality
                                                 || jsonb_build_object('archived', kept.vitality -> 'archived')
-                                         ELSE (kept.vitality - 'checkedAt' - 'gone' - 'notFoundAt')
+                                         ELSE (kept.vitality - 'checkedAt' - 'gone' - 'notFoundAt'
+                                               - 'notFoundVisits')
                                               || stated.vitality
                                        END AS vitality
                                 FROM (SELECT CASE WHEN source_record.repository_url

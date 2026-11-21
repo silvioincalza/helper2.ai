@@ -95,6 +95,7 @@
 ### Failure Postconditions
 
 - A list that could not be read keeps what its last read gave.
+- A curated list on GitHub that is gone at its source names no resource any more (BR-010).
 - No item enters the catalog from a link alone.
 
 ## Business Rules
@@ -129,8 +130,12 @@ A link of a list that reads as an article by the rule of discovery (a post on a 
 
 ### BR-008: Which List Names Which Resource
 
-For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment. The record of a list is replaced at each pass that covers the list and has no retention period: when a list is no longer read (an administrator removed it, its reading is turned off, its host is never read, or the list no longer exists), what it named at its last read stays. A record is removed only with the resource it names or, for a curated list, with the list's own resource. A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
+For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment. The record of a list is replaced at each pass that covers the list and has no retention period: when a list is no longer read because an administrator removed it, its reading is turned off or its host is never read, what it named at its last read stays. A record is removed only with the resource it names, for a curated list with the list's own resource, or when the list is gone at its source (BR-010). A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
 
 ### BR-009: A List Page of a Directory Host Is Never a Resource
 
 A list page of a directory host is never a resource of the catalog, whoever added it, and a list discovery added stays one after its host is removed from the directory hosts: it has no page, it is in no search result and it is not counted among the resources. The catalog keeps only its address, its title and the resources it names. The public page of a resource gives the number of such lists that name it (UC-007 BR-008); the back office names them (UC-024 BR-019).
+
+### BR-010: A List Gone at Its Source
+
+A curated list on GitHub is gone at its source when GitHub answers that its repository does not exist. The repository sweep asks this for the repository of every such list, whoever found the list (UC-018 BR-009). When the sweep does not find the repository on 3 visits in a row by default, and the repository is marked gone (UC-018 BR-009), what the list named is removed: the list names no resource any more, on the public page of a resource (UC-007 BR-008) and in search. Only the answer "not found" counts. A visit that fails for another reason (no answer, a limit on calls, an error) removes nothing and does not count. A visit that finds the repository starts the count again, and a renamed repository is found under its new name. The list's own resource follows the rule of a repository that is gone (UC-018 BR-009) and is not deleted. When the repository exists again, the next read of the list records again what it names. A web page is never gone by this rule, on a directory host or not: the live web page reader does not say that a page no longer exists, so a page that cannot be read keeps what its last read gave (BR-002).

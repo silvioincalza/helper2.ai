@@ -33,7 +33,8 @@ public record ScoutProperties(
       boolean enabled,
       @NotNull Duration every,
       @NotNull Duration initialDelay,
-      @Min(1) @Max(100) int batch) {}
+      @Min(1) @Max(100) int batch,
+      @Min(1) int goneListVisits) {}
 
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}
 

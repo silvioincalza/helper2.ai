@@ -156,9 +156,42 @@ whether a query finds a resource there:
    `data-ai-*` mark.
 16. **Retention.** Rows go with the list or the resource (`ON DELETE CASCADE`, [0010](ADR-0010-data-retention.md)).
    No period deletes them: `JdbcAwesomeListIndex.replace` writes the rows of a list again each time a pass reads the
-   list, and that is the only other thing that removes a row. A list that is no longer read (it left the top lists, an
-   administrator removed it, or its repository is gone) keeps the rows of its last read for as long as the list and the
-   resource are in the catalog.
+   list. A list that is no longer read because it left the top lists or an administrator removed it keeps the rows of
+   its last read for as long as the list and the resource are in the catalog. A list on GitHub whose repository is
+   gone loses its rows (point 17).
+17. **A list gone at its source no longer names its resources** (UC-030 BR-010).
+   - **How "gone" is known, for a list on GitHub.** The repository sweep of
+     [0020](ADR-0020-resource-vitality.md) §7 already asks GitHub about every record that is a repository, so about
+     the own record of every curated list on GitHub, whoever found the list: an administrator, the collector's search
+     or a link in another list. GitHub answers `NOT_FOUND` for a repository it does not know
+     (`GitHubRepositoryStates`); a renamed repository is found under its new name, so a rename is not gone. No call is
+     added.
+   - **The count.** Each visit that does not find the repository adds one to `extra.vitality.notFoundVisits` of the
+     record (`JdbcRepositoryVisits.recordNotFound`). A visit that finds it, or a source that states the repository
+     again, removes the count; a visit without an answer leaves it. A rate limit, an answer without data and a batch
+     where more than one repository in five is missing store nothing, as before.
+   - **The rule.** After each batch the sweep hands the records GitHub did not find to `ForgetGoneLists`
+     (`SweepRepositories.sweepOneBatch`). `JdbcGoneLists.forget` takes the ones that are the repository itself
+     (`repository_url IS NULL`), are marked `gone` (two visits at least 24 hours apart, 0020 §7) and were not found
+     on `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row. It deletes the `awesome_list_entry` rows and
+     the `awesome_list` row of each such list, in one transaction; `ForgetGoneLists` then refreshes the categories of
+     the resources the list named.
+   - **Why 3.** One "not found" is not believed anywhere in the Scout: a wrong answer of GitHub would wipe a list.
+     Two is the rule that marks a repository `gone`, and that mark is undone by the next visit that finds it. Deleting
+     the rows is undone only by the next read of the list, so it asks for one visit more. The mark `gone` stays a
+     condition, so three visits inside one day, in a small catalog the sweep goes round in minutes, delete nothing.
+   - **The list's own resource** follows 0020 §7 and nothing else: marked `gone`, it is read as archived and search
+     refuses it; it is not deleted, and its page no longer names what it listed. A list another list links, and
+     GitHub does not find in the collector's pass, is withdrawn by the collector as any linked repository
+     ([0011](ADR-0011-scout-runner.md) §4); its rows go with its resource.
+   - **When the repository is back**, the visit that finds it removes `gone` and the count, and the next pass that
+     reads the list writes its rows again.
+   - **A web page is left out**, a curated one and a list page of a directory host
+     ([0055](ADR-0055-directory-lists.md)). The page reader answers a page it could not read in `failed_results`
+     with its address and a free text (`error`), and `LiveWebPageReader` reads only `results`: nothing tells a 404
+     or a 410 from a time-out or a block. A failed read keeps what the last read gave. Knowing that a page is gone
+     needs a request of our own to the page (a `HEAD` or `GET` through the Scout's host check), which is a new call
+     to a third party's site and its own decision.
 
 ### Code
 
@@ -170,6 +203,10 @@ whether a query finds a resource there:
   `CatalogSearchSource.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `AwesomeListIndex.java`,
   `usecase/IndexAwesomeLists.java`.
+- `backend/libs/core/src/main/java/ai/helper2/catalog/GoneLists.java`, `usecase/ForgetGoneLists.java`,
+  `internal/JdbcGoneLists.java`, `internal/JdbcRepositoryVisits.java` (`recordNotFound`);
+  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/SweepRepositories.kt` (`GoneListRule`),
+  `scout/config/ScoutProperties.java` (`RepositorySweep.goneListVisits`) — a list gone at its source.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
   `withTranslation`; `SearchResources.kt` — early and late sources (`startSources`); `Ports.kt` — `QueryTranslator`; `QueryAnalyzer.kt`.
@@ -191,7 +228,9 @@ whether a query finds a resource there:
   title), `catalog/AwesomeListSearchIT.kt`, `catalog/internal/PlainWordsTest.java`,
   `catalog/internal/AwesomeListSearchPerfTest.java` (perfTest only), `sources/github/scout/AwesomeListParserTest.java`,
   `scout/usecase/RunScoutTest.kt`, `search/web/CardMapperTest.kt`, `api/ResourceFoundInApiIT.java` (the lists of a
-  resource, their order and the cap), `ResourcePage.test.tsx`.
+  resource, their order and the cap), `ResourcePage.test.tsx`; `catalog/usecase/ForgetGoneListsTest.java`,
+  `catalog/internal/JdbcGoneListsIT.java`, `JdbcRepositoryVisitsIT.java` (the count), `SweepRepositoriesTest.kt`
+  (a list gone at its source).
 
 ## Alternatives considered
 
@@ -212,6 +251,21 @@ whether a query finds a resource there:
 - **An external search engine** (OpenSearch, Meilisearch) — a new service to run, secure and back up for one person.
 - **Add the list words to the resource's own `search_vector`** — a list's words would then rank like the resource's own
   and could not be explained or retired per list.
+- **A list gone after one "not found"** — one wrong answer of GitHub wipes what a list named until its next read.
+  **After a time window** (not found for 30 days) — the sweep comes back to a record every few days at most, so a
+  window counts visits anyway, with a date to compare and a length to choose on top; and a window that starts at the
+  first "not found" does not see a visit that found the repository in between unless that visit clears it, which is
+  the count again. **Three visits in a row, with the mark `gone`** — chosen (point 17).
+- **Where the count of "not found" lives.** `list_seed.read_failures` — holds only the lists an administrator or
+  discovery added, not the ones the collector's search or another list finds, and it counts every failed read of a
+  web page, not a "not found". A column on `awesome_list` — a migration, and the collector would have to ask GitHub
+  again about every list it no longer reads to feed it: up to one call per list and pass. A table of its own — the
+  same call, one more table. **On the list's own source record, `extra.vitality.notFoundVisits`** — chosen: the
+  sweep already visits that record and stores `notFoundAt` and `gone` there, so there is no migration, no call and
+  one writer.
+- **The collector decides that a list is gone** (a 404 on `/repos/{owner}/{repo}` or on the README in
+  `AwesomeCrawl`) — it sees only the lists of this pass: a deleted repository leaves the search results and is never
+  asked again. A missing README of a repository that still exists is not "gone" either.
 
 ## Consequences
 
@@ -229,6 +283,12 @@ whether a query finds a resource there:
   new dependency.
 - The list index is English-stemmed: a list in another language matches only its exact word forms. A repository
   renamed since the list was written is matched by its old URL, so its entry is left out (open point).
+- A list on GitHub that was deleted stops naming its resources at the third visit of the sweep that does not find
+  it: with 35,000 records and a round of about 5 days, 10 to 15 days after it went (ESTIMATE, from the round of
+  [0020](ADR-0020-resource-vitality.md)). Until then the public page of a resource still names it.
+- A GitHub that wrongly answers "not found" for a list on three visits in a row, over more than a day, removes what
+  the list named until the collector reads the list again. The sweep's guard (more than one repository in five
+  missing is not believed) stands in front of it.
 
 ### Measurement
 
@@ -284,7 +344,7 @@ OWASP LLM Top 10: the translator's answer is untrusted (point 7); no model reads
 | Orchestration | Covered: translation in parallel with early sources; the list index is part of the Scout pass, a failure is logged and the next pass rebuilds. |
 | Tool & API | Covered: the same GitHub calls as before for the lists. |
 | Knowledge & RAG | Covered: full-text recall by language, by name words and by list words, ranked below direct matches. Embeddings of list text deferred. |
-| Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and no retention period; no text column. |
+| Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and no retention period; no text column. The rows of a list on GitHub go when its repository is gone (point 17). |
 | Guardrails | Covered: untrusted translation, cleaning, caps, bind parameters, half weight. |
 | Observability | Covered: translation budget gauge, a log line per list pass. |
 | Evaluation | Gap, deferred: the search set has no grades yet ([0046](ADR-0046-evaluation-guide-and-search.md)); the owner/name cases are store-level ITs, not graded metrics. |
@@ -301,14 +361,19 @@ Tracked privately (S9.6.3).
 - A search waits for the slowest answering source up to its deadline: Tavily (6 s) sets the worst case, and a non-English query can start most sources up to 2.5 s later for translation.
 - The English/Italian lexicon still runs next to translation, so Italian gets two kinds of help and other languages rely on the model.
 - Awesome-list words are English-stemmed: a list in another language matches only exact word forms. An entry whose repository was renamed since the list was written links the old URL and is left out of the index.
+- A curated list that is a web page, and a list on GitHub whose repository stays but whose README is deleted, keep
+  the rows of their last read: nothing says that such a list is gone (point 17).
+- A list that left the top lists of the collector's search and still exists keeps the rows of its last read.
+- With the repository sweep off (`H2_SCOUT_REPOSITORY_SWEEP_ENABLED=false`, or no GitHub token) no list is ever gone.
+- No metric counts the lists forgotten: `ForgetGoneLists` writes one log line per batch that forgot a list.
 
 ### Open points
 
 - The exact-title boost for owner/name titles and the half weight of list words are decided on the graded search set.
 - A renamed repository is not matched by its record URL.
 - The list index is not language-aware.
-- A list that is no longer read, or whose repository no longer exists, keeps naming its resources: nothing checks
-  that a list still exists and nothing removes the rows of its last read.
+- A web page that no longer exists keeps naming its resources: the page reader does not say that a page is gone
+  (point 17).
 
 ## Diagrams
 

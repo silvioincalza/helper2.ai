@@ -999,7 +999,8 @@ class JdbcCatalogWriterIT {
             """
             UPDATE source_record
             SET extra = jsonb_set(extra, '{vitality}', jsonb_build_object(
-                'gone', true, 'notFoundAt', :at::text, 'checkedAt', :at::text, 'visitedAt', :at::text))
+                'gone', true, 'notFoundAt', :at::text, 'notFoundVisits', 2, 'checkedAt', :at::text,
+                'visitedAt', :at::text))
             WHERE source_id = 'github' AND external_id = :id
             """)
         .param("at", before.toString())
@@ -1010,6 +1011,17 @@ class JdbcCatalogWriterIT {
     writer.upsert(merge(repository(url, new Vitality(false, false))), DataOrigin.INDEXED, LIVE);
 
     assertThat(statedInTheIndex(url)).isEqualTo(new Vitality(false, false));
+    // UC-030 BR-010: a source that states the repository again starts the count of visits again.
+    assertThat(
+            jdbc.sql(
+                    """
+                    SELECT extra -> 'vitality' ->> 'notFoundVisits' FROM source_record
+                    WHERE source_id = 'github' AND external_id = :id
+                    """)
+                .param("id", "github:" + url)
+                .query(String.class)
+                .optional())
+        .isEmpty();
   }
 
   @Test
