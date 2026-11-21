@@ -21,4 +21,4 @@ case in `docs/backup/eval/guide-adversarial.json`."
 
 Return: threat model table (threat, impact, likelihood, mitigation, status), findings ranked by the
 severity levels in `AGENTS.md`, the smallest fix for each and how to check it.
-A finding that should not be public is marked private: it goes to Silvio, never to GitHub.
+A finding that should not be public is marked private: it goes to the human in the loop, never to GitHub.

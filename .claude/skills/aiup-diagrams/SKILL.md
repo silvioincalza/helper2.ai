@@ -22,9 +22,9 @@ In the same change that creates or edits a PlantUML or Mermaid diagram:
 3. Start the `.d2` with what it shows and the file it mirrors. Use the one style of the project: import
    `...@style`, use only the classes `style.d2` defines (`person`, `app`, `ai`, `data`, `ext`, `group`, ...), the
    same layout engine as the diagrams next to it, and no inline `style.` override. A look `style.d2` cannot give is
-   a change to `style.d2` for Silvio to approve, never a one-off.
+   a change to `style.d2` for the human in the loop to approve, never a one-off.
 4. Render it with `docs/architecture/diagrams/render.sh` and commit the `.d2` and the `.svg`. D2 writes SVG, not
-   JPEG: the SVG is the image. Make a PNG only when Silvio asks for one, and do not commit it.
+   JPEG: the SVG is the image. Make a PNG only when the human in the loop asks for one, and do not commit it.
 5. List the twin in the section "Specification (AI Unified Process)" of `docs/architecture/diagrams/README.md`,
    with its source file.
 6. Check before you finish: the `.d2` compiles, and the count of actors, use cases, entities and relations is the

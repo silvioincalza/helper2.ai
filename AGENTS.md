@@ -53,7 +53,7 @@ domain or architecture decision, read:
 
 Rules:
 
-- A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. Silvio sets `Approved`.
+- A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. The human in the loop sets `Approved`.
 - Requirement, use case and test case IDs never change once published. Code and tests name the IDs they build.
 - A requirement change updates the entity model and the use case diagram in the same change.
 - Build and test a use case with `/use-case-implement` and `/use-case-test`, which follow `docs/architecture/stack.md`.
@@ -63,13 +63,13 @@ Rules:
 - `/next` gives the next step; `/spec-review` checks the specification.
 - Until the migration to the AI Unified Process is complete (the issues, the Project, the backlog and `docs/` all
   follow it: epic E11), every page is written as the final text: no revision table, no version or change log in a
-  page, no "previously" or "moved from". When Silvio says the migration is complete, revision history starts in
+  page, no "previously" or "moved from". When the human in the loop says the migration is complete, revision history starts in
   the specification pages only: `docs/vision.md`, `docs/requirements.md`, the use cases and the entity model.
   ADRs and code stay free of history, then as now: an ADR that no longer holds is `Superseded`.
 - Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG in
   `docs/architecture/diagrams/` (skill `aiup-diagrams`).
 - A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.
-  `/pr-sweep <n>` fixes review comments and failing checks until only Silvio's approval is missing.
+  `/pr-sweep <n>` fixes review comments and failing checks until only the human in the loop's approval is missing.
 
 ### Architecture and code
 
@@ -107,7 +107,7 @@ Rules:
 
 ### Choices and decisions
 
-- Versions: use the latest compatible release of every dependency and tool. Ask Silvio before
+- Versions: use the latest compatible release of every dependency and tool. Ask the human in the loop before
   picking a version, and say why when the latest does not work.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
   operational cost), recommend one, state the trade-off. Revisit an existing feature's choice
@@ -194,20 +194,20 @@ Every review finding has one level, so findings from different agents can be com
 - Medium: a feature works worse, and there is a workaround.
 - Low: polish, naming, a small inconsistency.
 
-## Working with Silvio
+## Working with the human in the loop
 
 - Specialist agents (`.claude/agents/`: architect, backlog, metasearch, performance, security,
   privacy-legal, ux-journeys, ui-design) can work on one task together. One coordinator gives them the task,
   shares their findings, resolves conflicts and merges the result. Use several agents only for
   work that crosses roles; a small task stays with one agent.
-- Silvio is always in the loop: present the plan, trade-offs and open questions, and wait for his
+- A human is always in the loop: present the plan, trade-offs and open questions, and wait for his
   decision before implementing anything that is not trivial or that is hard to undo.
-- A choice with a drawback needs Silvio's approval before it is done: something lost, weakened, made slower, made
+- A choice with a drawback needs the human in the loop's approval before it is done: something lost, weakened, made slower, made
   dearer, left out or done differently from what he asked. Say the drawback and what it costs, then wait.
   Reporting it after the fact is not approval.
-- Keep working when the next step does not need Silvio's input. Do not stop to ask for a go-ahead
+- Keep working when the next step does not need the human in the loop's input. Do not stop to ask for a go-ahead
   on routine steps.
-- Stop and ask Silvio before:
+- Stop and ask the human in the loop before:
   - deleting important data;
   - force-pushing (this includes `--force-with-lease` after a rebase);
   - modifying external systems;
@@ -215,7 +215,7 @@ Every review finding has one level, so findings from different agents can be com
   - making a decision that needs his approval.
 - Fix the review comments on a PR (automated review findings included) without waiting to be asked.
 - Explain everything in simple words first, then the technical detail.
-- Write documentation as Silvio would write it: his voice, plain short sentences, the style and
+- Write documentation as the human in the loop would write it: his voice, plain short sentences, the style and
   structure of the existing docs.
 
 ## Branches and worktrees
@@ -234,11 +234,11 @@ Every review finding has one level, so findings from different agents can be com
   `Depends on #N`.
 - After a PR merges, update every open worktree that depends on it, direct dependents first:
   - clean worktree: rebase onto `origin/main` (a stacked branch after a squash merge:
-    `git rebase --onto origin/main <old-base>`), run its tests, ask Silvio, then push with `--force-with-lease`
+    `git rebase --onto origin/main <old-base>`), run its tests, ask the human in the loop, then push with `--force-with-lease`
     and retarget its PR to `main`;
   - worktree with uncommitted work, or owned by a running session: do not touch it; add a line
     to `.private/notes/worktrees.md` so its owner rebases at a safe point.
-- When Silvio has merged a branch, remove its worktree (`git worktree remove`) and delete the branch.
+- When the human in the loop has merged a branch, remove its worktree (`git worktree remove`) and delete the branch.
 - `/sync-worktrees` does the update steps above.
 
 ## AI architecture check
@@ -274,11 +274,11 @@ deferred (safe for now, say why).
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
-- Every change reaches `main` through a pull request. Open it with `gh` from Silvio's machine
+- Every change reaches `main` through a pull request. Open it with `gh` from the human in the loop's machine
   (never through a tool that adds an AI footer). Its description closes the stories it builds, one `Closes #n`
-  line each. Silvio reviews and merges it himself: never
+  line each. The human in the loop reviews and merges it himself: never
   merge to `main`, never push to `main` directly, never deploy to prod.
-- This holds even when Silvio asks for a merge in a session ("merge", "merge all"). Get the PR
+- This holds even when the human in the loop asks for a merge in a session ("merge", "merge all"). Get the PR
   ready (checks green, review threads answered), then give him the command to run, one line per
   PR: `gh pr merge <n> --squash --delete-branch`. For a stack, give the order. Never use
   `gh pr merge`, `gh stack merge` or auto-merge yourself.

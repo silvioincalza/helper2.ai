@@ -1,7 +1,7 @@
 # Review
 
-How a change to helper2.ai is reviewed, by the `reviewer` agent, by an automated review and by Silvio.
-Severity levels are the ones in `AGENTS.md` (section Severity). Silvio approves and merges; nobody else does.
+How a change to helper2.ai is reviewed, by the `reviewer` agent, by an automated review and by the human in the loop.
+Severity levels are the ones in `AGENTS.md` (section Severity). The human in the loop approves and merges; nobody else does.
 
 ## Before the review
 
@@ -31,11 +31,11 @@ Severity levels are the ones in `AGENTS.md` (section Severity). Silvio approves 
 - A lasting decision has its ADR with diagrams. The specification (`docs/`) matches the code.
 - No dead code and no dead docs: nothing unused or unread is left behind. No page carries a revision history until the
   migration to the AI Unified Process is complete (`AGENTS.md`).
-- A drawback the change accepts was approved by Silvio before it was built, and the pull request names it.
+- A drawback the change accepts was approved by the human in the loop before it was built, and the pull request names it.
 - No AI attribution anywhere. Notes, plans and reviews are not in the diff (they live in `.private/`).
 
 ## Findings
 
 - Each finding: severity, file and line, what breaks, the smallest fix.
 - At most five nits per review. Style that Spotless, Prettier or ESLint already decide is not a finding.
-- A point for a lawyer or a security finding that should not be public goes to Silvio, never to GitHub.
+- A point for a lawyer or a security finding that should not be public goes to the human in the loop, never to GitHub.

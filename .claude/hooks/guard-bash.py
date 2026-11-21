@@ -4,10 +4,10 @@ import re
 import shlex
 import sys
 
-MERGE = "Silvio merges every pull request himself. Give him the link."
-PUSH_MAIN = "Nothing is pushed to main. Push the branch and Silvio opens the pull request."
-FORCE_PUSH = "A force push needs Silvio's OK first. Ask him, or use --force-with-lease on your own branch."
-PROD = "An assistant never changes prod. Give Silvio the approval link or the command."
+MERGE = "The human in the loop merges every pull request himself. Give him the link."
+PUSH_MAIN = "Nothing is pushed to main. Push the branch and the human in the loop opens the pull request."
+FORCE_PUSH = "A force push needs the human in the loop's OK first. Ask him, or use --force-with-lease on your own branch."
+PROD = "An assistant never changes prod. Give the human in the loop the approval link or the command."
 ATTRIBUTION = "No AI attribution in a commit, pull request, issue or comment. Remove the line."
 UNREADABLE = "The command line cannot be read (an open quote). Write it again."
 
@@ -126,7 +126,7 @@ def self_test():
         "git push --force-with-lease origin fix/x",
         "git push -u origin docs/main-page",
         "gh pr view 12 --json mergeable",
-        'gh pr create --body "Silvio: gh pr merge 12 --squash --delete-branch"',
+        'gh pr create --body "the human in the loop: gh pr merge 12 --squash --delete-branch"',
         "git commit -m 'docs: how to run git push origin main by hand'",
         "helm upgrade helper2 deploy/helm -n helper2-staging",
         "kubectl get pods -n helper2-prod",

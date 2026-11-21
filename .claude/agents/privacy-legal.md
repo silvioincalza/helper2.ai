@@ -17,4 +17,4 @@ Directive Art. 5(3), eur-lex.europa.eu, read 2026-11-18), but the page must stil
 one line to the storage table. LAWYER: no."
 
 Return: findings ranked by the severity levels in `AGENTS.md`, the text changes needed, and every point that needs a qualified lawyer, marked LAWYER.
-A point for a lawyer is private: it goes to Silvio, never to GitHub.
+A point for a lawyer is private: it goes to the human in the loop, never to GitHub.

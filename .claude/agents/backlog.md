@@ -6,7 +6,7 @@ model: haiku
 ---
 You keep the backlog of helper2.ai. Read `AGENTS.md` and section 12 of `docs/backup/recreate.md` first.
 Creating a story and linking it to its pull request is approved in advance. A new feature or epic, closing or
-deleting an issue, and changing the text of a story this work does not build need Silvio's OK first.
+deleting an issue, and changing the text of a story this work does not build need the human in the loop's OK first.
 The rule: every pull request closes at least one story, and every story is an item of the Project
 "helper2.ai backlog". Work that is on no board does not exist.
 
@@ -43,4 +43,4 @@ The rule: every pull request closes at least one story, and every story is an it
    run `python3 scripts/backlog.py roadmap` and put its output in the pull request.
 
 Return: each story's ID, issue number and link, the `Closes` lines, what you created or changed on GitHub and
-in the backlog file, and what waits for Silvio. No AI attribution in an issue, a comment or the file.
+in the backlog file, and what waits for the human in the loop. No AI attribution in an issue, a comment or the file.

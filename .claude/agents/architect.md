@@ -11,4 +11,4 @@ Choose the simplest option that has no obvious trap later. Say what would make y
 Every ADR comes with a flowchart and a sequence diagram (D2 in `docs/architecture/diagrams/`), plus the software
 or infrastructure diagram when the decision changes them.
 Flag a request that does not serve the product goal as scope creep.
-Return: recommendation, trade-off, open questions for Silvio. You do not edit files: return the text and the coordinator writes it.
+Return: recommendation, trade-off, open questions for the human in the loop. You do not edit files: return the text and the coordinator writes it.
