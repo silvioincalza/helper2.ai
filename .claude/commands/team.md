@@ -13,7 +13,7 @@ Task: $ARGUMENTS
 4. STOP. Present to the human in the loop: the plan, the trade-offs, the open questions. Explain in simple words
    first, then the technical detail. Wait for his decision.
 5. After his OK: implement with tests that name the `UC-*`, run `verifier`, then `reviewer` (and security or any
-   other specialist the change touches) on the result. Before the pull request opens, run backlog for its story and the
+   other specialist the change touches) on the result. Open the pull request yourself once `scripts/verify.sh` passes; before it opens, run backlog for its story and the
    `Closes` lines. Report what changed and what is still open.
 6. Docs: write them in the human in the loop's voice and in the style of the existing docs. No AI attribution.
    Working notes and reviews go in `.private/`, never in the repo.
