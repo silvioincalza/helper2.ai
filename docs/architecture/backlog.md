@@ -39,6 +39,11 @@ The backlog file is one JSON object:
 | `features` | `id`, `kind` (`feature`), `parent`, `title`, `source`, `context` |
 | `stories`, `tasks` | `id`, `kind`, `parent`, `title`, `story`, `criteria`, `needs`, `context`, `priority`, `release`, `replay_pr`, and `private` for an item that stays private |
 
+Any entry can also have `docs`: a list of repository paths, an anchor allowed (`docs/user-journeys.md#uj-3`).
+The issue then has a Docs section that links each path on `main`. A path must be a file of the repository: the
+import stops before it writes when one is missing, so a renamed doc is caught at the next import. A private entry
+links no docs.
+
 `priority` is one of Replay, Now, Next, Later, Parked, Accepted. Replay means built: the story waits for its pull
 request.
 
