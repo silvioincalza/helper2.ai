@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor, Signed-in User  
 **Goal:** Keep a list of resources to come back to, in the browser without an account and on the account across devices once signed in  
 **Trigger:** The visitor saves a resource from its result row or its resource page  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-015, FR-017](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-012-save-resources.md)  
@@ -26,7 +26,7 @@
 5. Signed-in User saves another resource or removes a saved one.
 6. System stores the change on the account.
 7. Signed-in User opens the Saved page on any device.
-8. System shows the resources saved on the account, the most recently saved first.
+8. System shows the resources saved on the account, the most recently saved first, each with its type, its host and the day it was saved, and lets the user narrow the list to one type.
 
 ## Alternative Flows
 
@@ -35,7 +35,7 @@
 **Trigger:** The browser does not allow the site to keep data, for example in a private window (step 2)  
 **Flow:**
 
-1. System explains that saving is not available in this browser.
+1. System keeps the saved resource for this visit only and says that the browser blocked storage, so saved resources are lost when the visitor leaves the page.
 2. Use case ends.
 
 ### A2: The Move into the Account Fails
@@ -53,15 +53,17 @@
 **Flow:**
 
 1. System refuses the whole request and stores nothing.
-2. Use case ends.
+2. System says that the list could not be synchronised with the account; in a move the resources stay in the browser (A2), in a single save the resource leaves the list.
+3. Use case ends.
 
 ### A4: The Account Is Full
 
 **Trigger:** The account would hold more than 500 saved resources after a move or a single save (step 4)  
 **Flow:**
 
-1. System refuses the whole request, stores nothing, and says that an account keeps at most 500 saved resources.
-2. Use case ends.
+1. System refuses the whole request and stores nothing.
+2. System says that the list could not be synchronised with the account; in a move the resources stay in the browser (A2), in a single save the resource leaves the list.
+3. Use case ends.
 
 ### A5: Saving or Removing on the Account Fails
 
@@ -69,6 +71,14 @@
 **Flow:**
 
 1. System puts the list back as it was before the change and says that the change did not work.
+2. Use case ends.
+
+### A6: Nothing Is Saved
+
+**Trigger:** The list of saved resources is empty (step 8)  
+**Flow:**
+
+1. System says that nothing is saved yet and how to save a resource, with a link back to search.
 2. Use case ends.
 
 ## Postconditions
@@ -91,7 +101,7 @@ A visitor who is not signed in saves resources in the browser only; they are not
 
 ### BR-002: At Most 500 Saved Resources
 
-An account keeps at most 500 saved resources. A save or a move that would go above the limit is refused as a whole.
+An account keeps at most 500 saved resources. A save or a move that would go above the limit is refused as a whole; a move in several batches (BR-006) is refused batch by batch.
 
 ### BR-003: Web Address
 
@@ -99,7 +109,7 @@ The address of a saved resource is a web address starting with http or https and
 
 ### BR-004: What Is Saved
 
-A saved resource keeps the resource identifier, its title (at most 300 characters), its address, its type when known, and the time it was saved. It keeps its own copy of title and address, so it stays on the list even when the catalog changes.
+A saved resource keeps the resource identifier, its title (at most 300 characters), its address, its type when known, and the time it was saved. It keeps its own copy of title and address, so it stays on the list even when the catalog changes or no longer holds the resource.
 
 ### BR-005: Saving Twice Changes Nothing
 
@@ -111,7 +121,7 @@ The browser moves at most 200 saved resources into the account at a time and rem
 
 ### BR-007: Order
 
-The Saved page shows the resources the most recently saved first.
+The Saved page shows the resources saved on the account the most recently saved first.
 
 ### BR-008: Saved Resources Follow the Account
 

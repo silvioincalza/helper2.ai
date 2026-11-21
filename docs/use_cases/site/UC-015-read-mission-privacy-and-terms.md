@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** Understand what helper2.ai is for, what data it keeps and for how long, and which terms apply, with the numbers the code really applies  
 **Trigger:** The visitor opens Mission, Privacy or Terms from the footer  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-021, C-016](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-015-read-mission-privacy-and-terms.md)  
@@ -48,7 +48,7 @@
 
 ### BR-001: Numbers Come from the Code
 
-The numbers on the pages are the values the running code applies, never numbers typed into the text: the AI guide's maximum candidates and picks, the daily guide questions, free answers and web searches, the retention period of every store, and the facts about sources such as the number of categories and the length of quotes.
+A number on the pages that a configuration variable can change is the value the running application started with, never a number typed into the text: the AI guide's maximum candidates and picks, the daily guide questions, free answers and web searches, the retention period of every store, and the facts about sources such as the number of categories and the length of quotes. A number that no variable can change, such as the lifetime of a sign-in (UC-011 BR-009), is written in the text.
 
 ### BR-002: Retention Periods Shown
 

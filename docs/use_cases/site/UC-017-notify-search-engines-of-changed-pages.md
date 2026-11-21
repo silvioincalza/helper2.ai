@@ -8,7 +8,7 @@
 **Secondary Actors:** Search Engine  
 **Goal:** Tell search engines once a day which resource pages changed, so that they index new and changed pages soon  
 **Trigger:** The daily notification time is reached (05:47 UTC by default)  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-024](../../requirements.md)  
 **Layers:** Service
@@ -78,7 +78,7 @@ The notification runs once a day at 05:47 UTC by default (`H2_INDEXNOW_CRON`), o
 
 ### BR-002: Changed Pages
 
-A page is sent when it is worth indexing (UC-014 BR-003) and changed in the last 25 hours. At most 10,000 pages are read for one batch.
+A page is sent when it is worth indexing (UC-014 BR-003) and changed in the last 25 hours. At most 10,000 pages, the newest change first, are read for one batch. A page is sent under its current address (UC-014 BR-008).
 
 ### BR-003: Key
 

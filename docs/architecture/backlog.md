@@ -42,6 +42,11 @@ The backlog file is one JSON object:
 `priority` is one of Replay, Now, Next, Later, Parked, Accepted. Replay means built: the story waits for its pull
 request.
 
+A story names the use case it builds in the first line of its `criteria` (`Builds UC-005.`), so the board, the
+specification and the code trace to each other. New behaviour needs a use case whose `**Status:**` is `Approved`:
+when it is not, the story is created with `needs` set to the approval, not refused. A bug fix, a task and work
+with no use case (tooling, operations, docs) name none. The `backlog` agent writes the stories this way.
+
 Two commands read GitHub and write nothing there:
 
 ```bash
