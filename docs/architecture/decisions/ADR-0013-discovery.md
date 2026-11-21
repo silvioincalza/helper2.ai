@@ -331,8 +331,9 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       off: a model link then follows the rule of other links.
     - A candidate is never indexed straight away. Its title is the link's words (the name of the product or the
       course), or the host when the words name only a place ("website", "demo"); a model's title is its id. It has
-      no excerpt: the list's text is not kept. Its `foundBy` entry records `github-awesome`, the list's URL and the
-      section's heading path.
+      no excerpt: the list's text is not kept. Its `foundBy` entry records `github-awesome`, the list's URL, the
+      section's heading path and, for a list page of a directory host, the title of the page. Once accepted, the
+      resource is named by that list ([0055](ADR-0055-directory-lists.md) point 15).
     - At most `links.per-day` (50) new items a UTC day. `ReviewQueueCandidateReview` counts the items this collector
       opened since midnight UTC in the database, courses included. Past the cap, a link opens nothing new but still
       joins the OPEN item of the same site, so a product that discovery and a list both found is one item with both
