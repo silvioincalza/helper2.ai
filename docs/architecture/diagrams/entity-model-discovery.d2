@@ -1,0 +1,33 @@
+# Entity model of the discovery module: its entities and the relationships between them, no attributes.
+# D2 twin of docs/entity_model/discovery.md: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt entity-model-discovery.d2 && d2 entity-model-discovery.d2 entity-model-discovery.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+SOURCE: {class: data}
+SCOUT_RUN: {class: data}
+SOURCE_CURSOR: {class: data}
+LIST_SEED: {class: data}
+LIST_SEED_LAST_READ: {class: data}
+
+SOURCE <-> SCOUT_RUN: "is collected by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+SOURCE <-> SOURCE_CURSOR: "resumes from" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-one
+}
+LIST_SEED <-> LIST_SEED_LAST_READ: "was last read as" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-one
+}
