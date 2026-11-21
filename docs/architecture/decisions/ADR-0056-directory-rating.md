@@ -59,7 +59,7 @@ recognises are written from how such pages commonly print a rating, and are not 
     (7 days), read or failed. A failed read keeps the figures of the last read.
 
 ### What is kept
-11. **One table.** `directory_rating` (`V2026.11.9.2__directory_rating.sql`, owned by the catalog, read-only for the
+11. **One table.** `directory_rating` (`V2026.11.9.3__directory_rating.sql`, owned by the catalog, read-only for the
     public app): the address of the list, the resource, the host, the address of the page that states the figures
     (the list page or the page of the item), the average, the scale, the number of votes, the time of the read and
     the time of the last try. One row per list and resource. A row with no figures records a page of an item that
@@ -127,7 +127,7 @@ recognises are written from how such pages commonly print a rating, and are not 
     compare. The patterns are extended only from such a measurement, each with a test that quotes the phrasing.
 
 ### Code
-- `backend/libs/schema/src/main/resources/db/migration/V2026.11.9.2__directory_rating.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V2026.11.9.3__directory_rating.sql`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/StatedFigures.java`, `DirectoryRating.java`,
   `DirectoryRatingIndex.java`, `ResourceRatings.java`, `ResourceDetail.java`;
   `catalog/internal/JdbcDirectoryRatingIndex.java`, `JdbcResourceRatings.java`, `CatalogResultRatings.java`;
