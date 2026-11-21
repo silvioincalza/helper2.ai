@@ -2,8 +2,10 @@
 
 ## Claude Code
 
-- Specialist agents are in `.claude/agents/`, slash commands in `.claude/commands/`. Each file
-  says in its `description` when to use it.
+- Specialist agents are in `.claude/agents/`, slash commands in `.claude/commands/`, skills in `.claude/skills/`.
+  Each file says in its `description` when to use it.
+- `.claude/hooks/guard-bash.py` stops a merge, a push to main, a plain force push, a change to prod and AI
+  attribution before the command runs. Do not work around it: ask Silvio.
 - Never let a commit, PR, issue or comment carry a "Generated with Claude Code" footer or a
   Co-Authored-By line. If a tool adds one automatically, do not post through it: give the text
   to Silvio to post.

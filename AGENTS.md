@@ -32,7 +32,8 @@ cd frontend && npm run format        # Prettier (CI runs format:check)
 cd frontend && npm run knip          # dead code and unused dependencies, strict (CI runs it)
 ```
 
-Run the relevant tests before calling a change done.
+Run the relevant tests before calling a change done. `scripts/verify.sh [backend|frontend|docs|all]` runs what CI
+runs and fails on the first error; the `verifier` agent runs it and reports.
 
 ## How to work
 
@@ -60,6 +61,10 @@ Rules:
 - An architecture decision is an ADR in `docs/architecture/decisions/` (the `/adr` command, not `/architecture-decision`). It
   names the `NFR-*` and `C-*` it serves.
 - `/next` gives the next step; `/spec-review` checks the specification.
+- Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG in
+  `docs/architecture/diagrams/` (skill `aiup-diagrams`).
+- A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.
+  `/pr-sweep <n>` fixes review comments and failing checks until only Silvio's approval is missing.
 
 ### Architecture and code
 
@@ -267,7 +272,7 @@ deferred (safe for now, say why).
   PR: `gh pr merge <n> --squash --delete-branch`. For a stack, give the order. Never use
   `gh pr merge`, `gh stack merge` or auto-merge yourself.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
-  `.claude/agents/`, `.claude/commands/`). AI notes, reviews, plans, memory and machine-local
+  `.claude/agents/`, `.claude/commands/`, `.claude/skills/`, `.claude/hooks/`). AI notes, reviews, plans, memory and machine-local
   settings never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
   `.claude/settings.local.json`). Plans, including the refactor plan and the AI scaffold map,
   live in `.private/plans/`. Product prompts the app runs are code and stay in the repo.
