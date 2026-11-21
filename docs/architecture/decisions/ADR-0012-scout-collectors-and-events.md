@@ -263,7 +263,7 @@ Two kinds of source need more care:
 18. **Credits are counted and capped with discovery's.** Every search adds its credits (Tavily's `usage.credits`, or
     1) to the day's global credit counter and to the Scout's own counter (`ScoutLiveWebCredits`,
     [0013](ADR-0013-discovery.md) §10), with the metric `helper2.live-web.credits{feature="scout-linkedin"}`. Past the
-    Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, 40, shared with the discovery categories) the pass is left open
+    Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, shared with the discovery categories) the pass is left open
     ("Daily live web credit cap of the Scout reached") and tried again the next day. The same holds for the news
     (`scout-news`), the courses (`scout-courses`) and the events: no live web collector of the Scout spends a credit
     outside the cap. News and courses stopped by the cap between two searches keep what they found and leave the pass

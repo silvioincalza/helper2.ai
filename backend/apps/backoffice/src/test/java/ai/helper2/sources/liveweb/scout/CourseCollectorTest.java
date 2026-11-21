@@ -60,7 +60,7 @@ class CourseCollectorTest {
         new RunInterval(Duration.ofDays(7)),
         "new artificial intelligence course or certification",
         platforms,
-        new ScoutLiveWebCredits(counter, keys, 40, meters));
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters));
   }
 
   @Test

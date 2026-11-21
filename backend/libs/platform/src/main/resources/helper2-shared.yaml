@@ -308,7 +308,7 @@ helper2:
     evidence:
       page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
       page-text-ttl: ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}
-    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:1000}
     admission:
       github-topic-leaders:
         index-min-stars: ${H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}

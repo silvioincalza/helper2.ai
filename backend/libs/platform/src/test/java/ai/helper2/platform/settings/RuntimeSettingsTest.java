@@ -21,6 +21,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class RuntimeSettingsTest {
 
@@ -143,6 +145,7 @@ class RuntimeSettingsTest {
     assertThat(runtime.overrideCount()).isZero();
   }
 
+  // UC-028 BR-003: the live web credits have their maximum as default when none is configured.
   @Test
   void aCapWithAnEmptyDefaultIsTheCodeMaximumAndAResetNeverRemovesIt() {
     RuntimeSetting global = RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS;
@@ -159,6 +162,37 @@ class RuntimeSettingsTest {
     assertThat(credits.get())
         .as("reset: back to the code maximum, not to no cap")
         .isEqualTo(global.max());
+  }
+
+  // UC-028 BR-003: the live web credits of production, 3,000 a day, are inside the allowed range,
+  // so the application starts with them; one more stops the start with the variable's name.
+  @Test
+  void theLiveWebCreditsOfProductionAreInsideTheRangeAndOneMoreStopsTheStart() {
+    RuntimeSetting global = RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS;
+
+    assertThat(runtime.declareCap(global, 3_000L).get()).isEqualTo(3_000L);
+    assertThatThrownBy(() -> new RuntimeSettings(store, clock, REFRESH).declareCap(global, 3_001L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("H2_LIVE_WEB_DAILY_CREDITS");
+  }
+
+  // UC-028 BR-002, BR-003: a Scout credit limit starts at its configured default, takes a change up
+  // to its maximum, and a reset brings the default back.
+  @ParameterizedTest
+  @EnumSource(
+      value = RuntimeSetting.class,
+      names = {"SCOUT_SEARCH_DAILY_CREDITS", "SCOUT_PAGE_READ_DAILY_CREDITS"})
+  void aScoutCreditLimitStartsAtItsDefaultAndAResetBringsItBack(RuntimeSetting limit) {
+    IntSupplier credits = runtime.declare(limit, 1_000);
+    assertThat(credits.getAsInt()).isEqualTo(1_000);
+
+    store.set(limit, limit.max());
+    runtime.reloadIfChanged();
+    assertThat(credits.getAsInt()).isEqualTo(3_000);
+
+    store.set(limit, null);
+    runtime.reloadIfChanged();
+    assertThat(credits.getAsInt()).isEqualTo(1_000);
   }
 
   @Test

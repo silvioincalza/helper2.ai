@@ -107,7 +107,7 @@ const CREDITS: RuntimeSettingState = {
   unit: 'credits a day',
   help: 'Live web calls a UTC day for all of helper2.ai. 0: no live call, stored results only.',
   min: 0,
-  max: 2000,
+  max: 3000,
   variable: 'H2_LIVE_WEB_DAILY_CREDITS',
   defaultValue: null,
   value: 120,

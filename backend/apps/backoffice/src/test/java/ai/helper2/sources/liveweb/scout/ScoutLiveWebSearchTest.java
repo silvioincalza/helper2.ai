@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ class ScoutLiveWebSearchTest {
             TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP), settings),
         SourceFixtures.CLOCK,
         resilience,
-        new ScoutLiveWebCredits(counter, keys, 40, meters).forFeature("scout-under-test"),
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters).forFeature("scout-under-test"),
         POLICY,
         depth);
   }
@@ -94,6 +95,22 @@ class ScoutLiveWebSearchTest {
                 .counter()
                 .count())
         .isEqualTo(3.0);
+  }
+
+  // UC-028 BR-002: the limit applied now stops the search, and a raised limit opens it again.
+  @Test
+  void theCapIsReadAtEachSearchSoAChangeAtRuntimeApplies() {
+    AtomicLong limit = new AtomicLong(0);
+    ScoutLiveWebCredits credits = new ScoutLiveWebCredits(counter, keys, limit::get, meters);
+    assertThat(credits.capReached()).as("0 turns the Scout's searches off").isTrue();
+
+    limit.set(3_000);
+    counter.counts.put(scoutCredits(), 2_999L);
+    assertThat(credits.capReached()).isFalse();
+    assertThat(credits.dailyCap()).isEqualTo(3_000);
+
+    limit.set(2_999);
+    assertThat(credits.capReached()).isTrue();
   }
 
   @Test

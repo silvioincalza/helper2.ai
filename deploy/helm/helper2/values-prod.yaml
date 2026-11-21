@@ -37,7 +37,7 @@ app:
     adsenseClient: ca-pub-4688630163076563
   replicas: 3
   dailyLimits:
-    webSearchCredits: "250"
+    webSearchCredits: "3000"
   guideJudge:
     model: nvidia/Nemotron-3-Ultra-550b-a55b
     dailyCalls: 300
