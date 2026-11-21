@@ -51,7 +51,6 @@ class CatalogConfiguration {
         catalog.semantic().queryVectorTtl(),
         retention.webNews(),
         retention.resolvedReviewItems(),
-        retention.listIndex(),
         retention.pastEvents(),
         NvidiaEmbedder.MAX_REASON);
   }

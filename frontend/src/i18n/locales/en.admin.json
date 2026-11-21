@@ -490,7 +490,7 @@
         "remove": "Remove",
         "removeLabel": "Remove {{address}}",
         "removeTitle": "Stop reading {{address}}?",
-        "removeEffect": "The list and the resources found in it stay in the catalog. Its entries leave the list index 30 days after the last pass that read it.",
+        "removeEffect": "The list and the resources found in it stay in the catalog. What it named at its last read stays too.",
         "confirmRemove": "Remove list",
         "cancel": "Cancel"
       },

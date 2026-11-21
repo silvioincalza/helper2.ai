@@ -447,7 +447,7 @@ No new table for deep search, no new dependency.
   `backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (open candidate, category filter,
   `candidatesOpenedToday`), `catalog/usecase/IndexAwesomeLists.java`, `catalog/internal/JdbcCatalogWriter.java`
-  (`extra`), `JdbcCategoryLabels.java` (`of`), `catalog/usecase/RefreshCategories.java`, `JdbcAwesomeListIndex.java`, `JdbcCatalogRetention.java`.
+  (`extra`), `JdbcCategoryLabels.java` (`of`), `catalog/usecase/RefreshCategories.java`, `JdbcAwesomeListIndex.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `RESOURCE_CANDIDATE` review kind,
   `discovery_host` and its seed rows, `candidate_decision`); `catalog/internal/JdbcReviewQueue.java`
   (`proposeCandidate`, `candidateKnown`, `listedAs`), `JdbcReviewDecisions.java`; `R__curated_seed.sql` — the directories, linked, not copied;
@@ -536,11 +536,11 @@ No new table for deep search, no new dependency.
   forms, heading paths) and the product links with their words: never its text.
   The live web processor's written agreement names the reading of product pages; whether it also covers the
   reading of a third party's list page is a point for the lawyer, not settled here.
-- An added web page is not deleted between two reads: it is read at least every 21 days and the list index is kept
-  30 days after its last refresh (`H2_RETENTION_LIST_INDEX`). Its resource (source `curated-web-lists`) is indexed by
+- An added web page is not deleted between two reads: the list index has no retention period and keeps what the
+  last read gave until the next read writes it again ([0023](ADR-0023-catalog-full-text-index.md) point 16). Its resource (source `curated-web-lists`) is indexed by
   the Scout like a GitHub list, so no retention period deletes it: `H2_RETENTION_WEB_NEWS` covers the records of the web search sources, not
   those of `curated-web-lists`, and `H2_RETENTION_OBSERVED_UNSEEN` covers observed resources only. After its list is
-  removed from "Lists to read" the resource stays, and its list index goes 30 days after the last read.
+  removed from "Lists to read" the resource stays, and so does what its list index held at the last read.
 - List pages are indexed without review. Their claims are not facts in the catalog: they are `ARTICLE`s, and
   enrichment cites only what they say about themselves.
 - An accepted candidate is in search at once, without a type check by a model; its description is the search excerpt

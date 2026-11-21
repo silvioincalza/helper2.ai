@@ -41,8 +41,7 @@ class CatalogPropertiesBindingTest {
                   Duration.ofDays(90),
                   Duration.ofDays(180),
                   Duration.ofDays(3650),
-                  Duration.ofDays(180),
-                  Duration.ofDays(30)));
+                  Duration.ofDays(180)));
     });
   }
 
@@ -65,6 +64,18 @@ class CatalogPropertiesBindingTest {
           assertThat(catalog.reconcileByProjection()).isFalse();
           assertThat(c.getBean(CatalogRetentionProperties.class).webNews())
               .isEqualTo(Duration.ofDays(30));
+        });
+  }
+
+  @Test
+  void aLeftOverListIndexPeriodIsIgnoredAndStartupGoesOn() {
+    context
+        .withSystemProperties("H2_RETENTION_LIST_INDEX=P30D")
+        .withPropertyValues("H2_RETENTION_LIST_INDEX=P30D")
+        .run(c -> {
+          assertThat(c).hasNotFailed();
+          assertThat(c.getBean(CatalogRetentionProperties.class).observedUnseen())
+              .isEqualTo(Duration.ofDays(180));
         });
   }
 

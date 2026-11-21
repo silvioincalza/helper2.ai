@@ -157,8 +157,6 @@ public final class CollectorProperties {
         @PositiveOrZero int maxDiscovered,
         @PositiveOrZero int discoveredReadsPerDay) {
 
-      static final Duration LONGEST_READ_EVERY = Duration.ofDays(21);
-
       public WebPages {
         neverRead = clean(neverRead);
       }
@@ -173,11 +171,9 @@ public final class CollectorProperties {
         return reasons;
       }
 
-      @AssertTrue(message = "must be between one day and 21 days")
-      boolean isReadEveryWithinTheListIndexRetention() {
-        return readEvery == null
-            || (readEvery.compareTo(Duration.ofDays(1)) >= 0
-                && readEvery.compareTo(LONGEST_READ_EVERY) <= 0);
+      @AssertTrue(message = "must be at least one day")
+      boolean isReadEveryAtLeastADay() {
+        return readEvery == null || readEvery.compareTo(Duration.ofDays(1)) >= 0;
       }
 
       @AssertTrue(message = "must be positive and not longer than read-every")

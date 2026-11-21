@@ -96,8 +96,7 @@ Two kinds of source need more care:
        record. It has no switch of its own: it is on when `github-awesome` is on. Its type is `AWESOME_LIST` when it passes the counts of the README rule
        below (`AwesomeLists.readsAsList`: at least 20 linked items that are at least half of the text lines), and
        ARTICLE otherwise. The name part of the rule does not apply: a person added the page.
-     - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; from 1 to 21, so the list index, kept 30 days
-       after its last refresh, never expires between two reads). `list_seed.read_tried_at` holds the last try,
+     - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; at least 1 day). `list_seed.read_tried_at` holds the last try,
        whatever its result, and `list_seed.read_failures` the tries in a row that gave no list. A try that gives
        no list (no text, another host, the reader down, a stop in the middle) is tried again after
        `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries

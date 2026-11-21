@@ -103,8 +103,8 @@ post when a search finds it.
       `list_title`, `heading_path`, `updated_at`; owned by the catalog, read-only for the public app):
       one row for each GitHub repository, model, paper and package of the list that is in the catalog.
       `DirectoryListIndex.replace` writes the rows of a list at each pass (`ListText.directoryListTitle` marks such
-      a list for the Scout's `ListIndex`). The rows of a list not read for `H2_RETENTION_LIST_INDEX` (30 days) are
-      deleted with the list index.
+      a list for the Scout's `ListIndex`). No period deletes the rows: they stay until the next read of the list
+      writes them again, and a row goes with its resource (`ON DELETE CASCADE`), as in the list index.
 16. **The public page counts, the back office names.**
     - `GET /api/v1/resources/{id}`: `foundIn.directoryLists` is the number of directory lists that name the
       resource, counted in `directory_list_entry`. `foundIn.lists` and `foundIn.more` are the curated lists, as
@@ -128,8 +128,8 @@ post when a search finds it.
   `ListEntryLinks.java` (`Article`), `GitHubAwesomeCollector.java`;
   `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`WebPages`).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/DirectoryListIndex.java`, `AwesomeListEntries.java`,
-  `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcDirectoryListIndex.java`, `JdbcResourceDetailReads.java`,
-  `JdbcCatalogRetention.java`; `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`
+  `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcDirectoryListIndex.java`, `JdbcResourceDetailReads.java`;
+  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`
   (`listIndex`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`,
   `ListSeedsController.java`, `ReviewController.java`, `admin/usecase/GetReviewEvidence.java`;
@@ -171,8 +171,9 @@ post when a search finds it.
   but each public read must remember the condition, and one that forgets shows the page: a trap for every later
   read. Its own table keyed by the address needs one small table and one writer, and nothing public can show what
   is not a resource.
-- **Drop a discovered list when the switch goes off.** Clean, but the links already found would leave the index
-  after 30 days and the count on the public page would fall for no reason a visitor can see.
+- **Drop a discovered list when the switch goes off.** Clean, but the rows of what it named would stay with no
+  list behind them, since only a read of the list writes them again, and turning the switch on again would have to
+  find and read every list again.
 
 ## Consequences
 
@@ -197,7 +198,9 @@ post when a search finds it.
   next read; and the address and the title with each resource it names. An entry's text can hold a name the page prints. `list_seed.added_by` holds a collector id for a
   discovered list, not an administrator. The Privacy page says that such pages are read and what is kept.
 - Retention ([0010](ADR-0010-data-retention.md)): a discovered list stays in `list_seed` until an administrator
-  removes it; its last read goes with it. Its audit rows follow the audit trail.
+  removes it; its last read goes with it. Its audit rows follow the audit trail. What a list named
+  (`awesome_list_entry`, `directory_list_entry`) has no period: it stays until the next read of the list writes it
+  again, or until the resource it names goes.
 
 ### Known limits
 - The list index links a list to the repositories, models, papers and packages it names. A product accepted from
@@ -205,7 +208,11 @@ post when a search finds it.
 - A discovered list an administrator removes can be found and added again by a later search.
 - The reads of a day are counted from the last try of each list: a list tried twice in one UTC day counts once.
 - The count on the public page includes a directory list whose switch is off, and a list whose page no longer
-  names the resource until its next read.
+  names the resource until its next read. It never falls by time alone.
+- A list that is no longer read keeps naming its resources for good: a curated list whose repository or page no
+  longer exists, a list an administrator removed from the lists to read, a directory list whose switch is off or
+  whose host is never read. Nothing checks that a list still exists, and only a read of the list or the end of the
+  resource removes a row. A clean-up of such lists is an open point.
 - A list page of a directory host that waits for review (switch off, or refused) is an `ARTICLE` candidate. When an
   administrator accepts it, it becomes an `ARTICLE` resource like any accepted candidate: a person's decision on
   one page, not a list that is read.
