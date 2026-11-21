@@ -75,6 +75,18 @@ class DiscoveryPagesTest {
   }
 
   @Test
+  void uc019Br001NoPageOfADirectoryHostIsKeptNotEvenAListPage() {
+    DiscoveryPages directory = new DiscoveryPages(new HostLists(Set.of(), Set.of("example.org")));
+    CanonicalUrl list = CanonicalUrl.of("https://example.org/lists/12-best-ai-tools");
+    CanonicalUrl onASubdomain = CanonicalUrl.of("https://tools.example.org/top-10-ai-agents");
+
+    assertThat(directory.classify(list, "12 Best AI Tools")).isNull();
+    assertThat(directory.classify(onASubdomain, "Top 10 AI agents")).isNull();
+    assertThat(PAGES.classify(list, "12 Best AI Tools").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST);
+  }
+
+  @Test
   void aPostAboutAProductIsAnArticle() {
     String engadget =
         "https://www.engadget.com/2300677/google-gemini-carbon-promises-significant-leap-in-ai-coding";

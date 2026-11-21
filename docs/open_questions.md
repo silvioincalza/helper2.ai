@@ -102,12 +102,17 @@ three lists (decides alone, asks first, never does) and make `AGENTS.md` point a
 **Element:** UC-019 BR-001  
 **Raised by:** /use-case-spec, 2026-11-21  
 **Blocking:** Yes  
-**Status:** Open  
+**Status:** Resolved  
 
 A page with a list-like title is taken as a list before the host lists are read, so a list page of a host marked as
 a directory is indexed without review. The rule says a page on a directory host is never kept; ADR 0013 documents
 the order the code uses. Readings: (a) intended: a directory host stops product and article candidates only; (b) not
 intended: every page of a directory host is dropped.
+
+**Answer:** Not intended. No page of a directory host is kept, a list page neither: a list page must not enter the
+catalog without review, and a directory's terms forbid copying its listings.  
+**Answered by:** the human in the loop, 2026-11-21  
+**Resolved in:** UC-019 BR-001  
 
 ## OQ-010: Must the re-check also reject a verified licence, open source or platform whose quote does not state the value?
 

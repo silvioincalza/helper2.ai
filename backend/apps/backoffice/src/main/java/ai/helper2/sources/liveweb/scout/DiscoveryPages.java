@@ -151,6 +151,10 @@ public final class DiscoveryPages {
     if (site != null && (isRepository(url) || pagePath(url).isEmpty())) {
       return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
     }
+    // UC-019 BR-001: no page of a directory host is kept, a list page neither.
+    if (hostIn(url.getHost(), directoryHosts)) {
+      return null;
+    }
     if (isListPage(title, url)) {
       return new Page(Shape.LIST, url, title);
     }

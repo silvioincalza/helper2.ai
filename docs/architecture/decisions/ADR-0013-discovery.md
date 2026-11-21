@@ -101,6 +101,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
      not about AI (`Classification.isAiRelated`);
    - **a GitHub repository or a home page is a product**, whatever its title says ("an open-source alternative to
      ChatGPT" is a product's own words);
+   - dropped: a page on a directory's host (point 21), whatever its title says. A directory's terms forbid copying
+     its listings, so its list pages are not indexed either;
    - **list page**: any other page with a list-like title ("12 best ...", "best AI coding tools", "X vs Y", "ChatGPT
      alternatives"). Indexed as an `ARTICLE` hit, with Tavily's excerpt (400 characters) as its description. It stays
      an `ARTICLE` even when its title names an event ("10 best AI tools for event planning"): only the news mapping

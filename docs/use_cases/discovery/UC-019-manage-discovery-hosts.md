@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Tell discovery by name which sites write about many products and which sites only list products, so that its web searches turn the right pages into candidates and skip the directories.  
 **Trigger:** An administrator opens the discovery hosts of the back office to look at them, add a host or remove one.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-026](../../requirements.md)  
 **API:** [listDiscoveryHosts](../../../api/admin.yaml#listDiscoveryHosts), [addDiscoveryHost](../../../api/admin.yaml#addDiscoveryHost), [removeDiscoveryHost](../../../api/admin.yaml#removeDiscoveryHost)
@@ -105,7 +105,7 @@
 
 ### BR-001: Kinds of Hosts
 
-A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: a page on it is never kept. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
+A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: no page on it is kept, not as a product, not as an article and not as a list, whatever its title says, because the terms of a directory forbid copying its listings. This holds for its subdomains too. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
 
 ### BR-002: Plain Host Form
 
