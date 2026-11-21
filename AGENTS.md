@@ -60,7 +60,6 @@ Rules:
 - Present the plan and wait before anything not trivial or hard to undo. Stop and ask before deleting important
   data, modifying external systems or any destructive operation.
 - No dead code and no dead docs: what nothing uses or reads is deleted in the change that makes it unused.
-- No comments in code, config or scripts; only tool directives stay.
 - Code, ADRs and docs state the rule in force, never who decided it or when, and never what it replaced. Name the
   role (the human in the loop, the maintainer), never a person.
 - Until the human in the loop says the migration to the AI Unified Process is complete (epic E11), every page is the
