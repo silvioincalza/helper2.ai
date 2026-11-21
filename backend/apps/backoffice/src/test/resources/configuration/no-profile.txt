@@ -606,6 +606,7 @@ helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
 helper2.retention.enrichment-runs = ${H2_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
 helper2.retention.inactive-accounts = ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}  =>  P730D
+helper2.retention.list-index = ${H2_RETENTION_LIST_INDEX:P30D}  =>  P30D
 helper2.retention.live-web-results = ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}  =>  P7D
 helper2.retention.observed-unseen = ${H2_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
 helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D

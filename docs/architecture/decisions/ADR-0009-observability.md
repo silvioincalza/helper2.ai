@@ -108,7 +108,7 @@ the guide work long before that, and what makes the wait feel long is the first 
      `Helper2BackofficeBudgetLow`: the same for the back office's budgets and credits (scout_enrichment, scout_gap,
      scout_classifier, scout_event_reader, examples_draft, scout_evidence_credits; the shared translation cap is the
      public rule's);
-   - `Helper2LiveWebCreditsHigh`: more than 200 Tavily credits in a day, both apps added up;
+   - `Helper2LiveWebCreditsHigh`: more than 2,500 Tavily credits in a day, both apps added up;
    - `Helper2ObservationsLost`: `helper2.catalog.observations` with outcome `dropped` or `failed` for 10 min (a
      single burst that ends does not fire);
    - `Helper2EmbeddingIndexerStalled`: no successful indexer batch for 30 min; `Helper2EmbeddingBacklogStuck`:

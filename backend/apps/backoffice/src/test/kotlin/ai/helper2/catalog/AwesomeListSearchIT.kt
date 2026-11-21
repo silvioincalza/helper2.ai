@@ -4,7 +4,6 @@ import ai.helper2.TestcontainersConfiguration
 import ai.helper2.catalog.internal.JdbcCatalogSearch
 import ai.helper2.catalog.usecase.IndexAwesomeLists
 import ai.helper2.catalog.usecase.IndexResources
-import ai.helper2.catalog.usecase.PurgeExpiredData
 import ai.helper2.search.ListMatch
 import ai.helper2.search.NOW
 import ai.helper2.search.PopularityKind
@@ -19,6 +18,7 @@ import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
 import ai.helper2.testing.AsBackOffice
+import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -37,7 +37,7 @@ class AwesomeListSearchIT {
   @Autowired lateinit var indexResources: IndexResources
   @Autowired lateinit var indexLists: IndexAwesomeLists
   @Autowired lateinit var catalogSearch: JdbcCatalogSearch
-  @Autowired lateinit var purge: PurgeExpiredData
+  @Autowired lateinit var retention: CatalogRetention
   @Autowired lateinit var jdbc: JdbcClient
 
   private val word = "zq" + UUID.randomUUID().toString().replace("-", "").take(10)
@@ -184,19 +184,24 @@ class AwesomeListSearchIT {
   }
 
   @Test
-  fun `UC-030 BR-008 what a list named stays when no pass reads the list again`() {
+  fun `retention deletes rows no pass refreshed`() {
     catalog()
     indexLists.replace(listOf(listText(entry(listed, "Listed", "Tools"))))
     jdbc
       .sql(
-        "UPDATE awesome_list_entry SET updated_at = now() - interval '400 days' WHERE list_id = :l"
+        "UPDATE awesome_list_entry SET updated_at = now() - interval '40 days' WHERE list_id = :l"
       )
       .param("l", id(list))
       .update()
+    jdbc
+      .sql("UPDATE awesome_list SET updated_at = now() - interval '40 days' WHERE list_id = :l")
+      .param("l", id(list))
+      .update()
 
-    purge.purge()
+    val deleted = retention.deleteListIndexUpdatedBefore(Instant.now().minusSeconds(30L * 86_400))
 
-    assertEquals(listOf(id(listed) to "Tools"), entries())
+    assertTrue(deleted >= 2, "$deleted")
+    assertEquals(emptyList(), entries())
   }
 
   @Test

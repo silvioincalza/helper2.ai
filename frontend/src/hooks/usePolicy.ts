@@ -63,6 +63,7 @@ export type PolicyValues = Record<
   | 'guideQuestionCounters'
   | 'webNews'
   | 'pendingReviewPages'
+  | 'listIndex'
   | 'pageText'
   | 'pageRead'
   | 'backups'
@@ -112,6 +113,7 @@ export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValue
     guideQuestionCounters: d(r.guideQuestionCountersSeconds),
     webNews: d(r.webNewsSeconds),
     pendingReviewPages: d(r.pendingReviewPagesSeconds),
+    listIndex: d(r.listIndexSeconds),
     pageText: d(r.pageTextSeconds),
     pageRead: d(r.pageReadSeconds),
     backups: d(r.backupsSeconds),

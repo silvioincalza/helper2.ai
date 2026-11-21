@@ -227,7 +227,10 @@ class CollectorPropertiesTest {
   }
 
   @Test
-  void aWebPageIsReadAtMostOnceADayAndAHostNeverReadHasAReason() {
+  void aWebPageIsReadAtLeastEveryThreeWeeksAndAHostNeverReadHasAReason() {
+    context
+        .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=P30D")
+        .run(c -> assertThat(c).hasFailed());
     context
         .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=PT1H")
         .run(c -> assertThat(c).hasFailed());

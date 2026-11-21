@@ -328,6 +328,7 @@ export const POLICY: Policy = {
     guideQuestionCountersSeconds: 2 * 86_400,
     webNewsSeconds: 180 * 86_400,
     pendingReviewPagesSeconds: 180 * 86_400,
+    listIndexSeconds: 30 * 86_400,
     pageTextSeconds: 86_400,
     pageReadSeconds: 30 * 86_400,
     backupsSeconds: 7 * 86_400,

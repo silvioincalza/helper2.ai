@@ -7,6 +7,8 @@ public interface CatalogRetention {
 
   int deleteWebNewsRetrievedBefore(Instant cutoff);
 
+  int deleteListIndexUpdatedBefore(Instant cutoff);
+
   int deleteEventsEndedBefore(Instant cutoff);
 
   int deleteEnrichmentRunsStartedBefore(Instant cutoff);

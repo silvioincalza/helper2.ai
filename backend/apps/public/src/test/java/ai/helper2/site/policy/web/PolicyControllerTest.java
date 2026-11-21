@@ -32,6 +32,7 @@ class PolicyControllerTest {
                 Duration.ofDays(1),
                 Duration.ofDays(180),
                 Duration.ofDays(150),
+                Duration.ofDays(20),
                 Duration.ofDays(3650),
                 200),
             new ScoutPolicy(Duration.ofHours(24), Duration.ofDays(30), 4, 300, 400, 2400),
@@ -93,6 +94,7 @@ class PolicyControllerTest {
     assertThat(p.getRetention().getGuideQuestionCountersSeconds()).isEqualTo(172_800);
     assertThat(p.getRetention().getWebNewsSeconds()).isEqualTo(15_552_000);
     assertThat(p.getRetention().getPendingReviewPagesSeconds()).isEqualTo(12_960_000);
+    assertThat(p.getRetention().getListIndexSeconds()).isEqualTo(1_728_000);
     assertThat(p.getRetention().getPageTextSeconds()).isEqualTo(86_400);
     assertThat(p.getRetention().getPageReadSeconds()).isEqualTo(2_592_000);
     assertThat(p.getRetention().getBackupsSeconds()).isEqualTo(604_800);

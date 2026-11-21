@@ -19,6 +19,7 @@ const CHANGED = {
     guideQuestionCountersSeconds: 5 * DAY,
     webNewsSeconds: 200 * DAY,
     pendingReviewPagesSeconds: 150 * DAY,
+    listIndexSeconds: 45 * DAY,
     pageTextSeconds: 48 * 3600,
     pageReadSeconds: 60 * DAY,
     backupsSeconds: 9 * DAY,
