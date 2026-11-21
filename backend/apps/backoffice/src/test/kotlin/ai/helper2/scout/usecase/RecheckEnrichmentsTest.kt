@@ -173,7 +173,7 @@ class RecheckEnrichmentsTest {
   }
 
   @Test
-  fun `a verified licence, open source or platform whose quote does not state it is rejected`() {
+  fun `UC-022 A9 - a verified licence, open source or platform whose quote does not state it is rejected`() {
     val unstatedLicence = UUID.randomUUID()
     val unstatedOpenSource = UUID.randomUUID()
     val unstatedPlatform = UUID.randomUUID()
