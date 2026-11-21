@@ -22,6 +22,7 @@ description: Use before adding or upgrading a library, a tool or a version, befo
 - An ADR names the `NFR-*` and `C-*` it serves on its `**Requirements:**` line.
 - ADRs and code stay free of history: an ADR that no longer holds is `Superseded`.
 - Open work is a backlog issue. Docs and ADRs point at issue IDs (`S10.12.1`), never at a roadmap section.
+  An issue links a doc only when it needs it to be understood or built: the `docs` field of its backlog entry.
 - Every piece of work has a story on the Project board before its pull request opens. The `backlog` agent finds
   it, or creates it with every attribute (ID, story line, acceptance criteria, Context, Priority, parent feature),
   sets its Status to In Progress and gives the `Closes #n` line. No pull request without a story.
