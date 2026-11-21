@@ -76,6 +76,8 @@ The specification keeps its diagrams in the formats the AI Unified Process reads
 the entity model. Each one has a D2 twin here, in the look of the other diagrams. The PlantUML or Mermaid file is the
 source of truth: change it first, then its twin, in the same pull request. A twin shows the same actors, use cases,
 entities and relations, nothing more.
+Each twin is committed as `.d2`, `.svg` and `.png`. `render.sh --png` writes the PNGs; `render.sh` alone checks that each
+twin has one.
 
 | Diagram | Twin of | Shows |
 |---|---|---|
