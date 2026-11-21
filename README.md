@@ -96,7 +96,7 @@ Details and known gaps: [docs/backup/testing.md](docs/backup/testing.md).
 
 The Helm chart runs on any Kubernetes cluster ([deploy/k8s/README.md](deploy/k8s/README.md)). helper2.ai's
 staging and production use it, deployed by GitHub Actions ([deploy/k8s/CI.md](deploy/k8s/CI.md)). To set up the repository and its
-bindings from zero: [docs/backup/recreate.md](docs/backup/recreate.md).
+bindings from zero: [deploy/k8s/RUNBOOK-new-repository.md](deploy/k8s/RUNBOOK-new-repository.md).
 
 ## License
 

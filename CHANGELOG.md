@@ -61,7 +61,7 @@ The first release of this repository. It is the starting point: the product as i
 - **Observability.** Logs, traces and meters, a Grafana dashboard per app and alert rules with their tests
   ([ADR 0009](docs/architecture/decisions/ADR-0009-observability.md)). Daily purges keep each store to its retention period
   ([ADR 0010](docs/architecture/decisions/ADR-0010-data-retention.md)).
-- **Setup from zero:** [docs/backup/recreate.md](docs/backup/recreate.md).
+- **Setup from zero:** [deploy/k8s/RUNBOOK-new-repository.md](deploy/k8s/RUNBOOK-new-repository.md).
 
 ### What builds on it
 
