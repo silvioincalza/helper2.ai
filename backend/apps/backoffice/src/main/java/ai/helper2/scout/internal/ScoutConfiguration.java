@@ -283,11 +283,6 @@ class ScoutConfiguration {
       DirectoryListIndex directoryLists,
       DirectoryRatingIndex directoryRatings) {
     return lists -> {
-      // UC-030 BR-010: the figures a directory states are kept with what its list names.
-      lists.stream()
-          .map(ListText::getRatings)
-          .filter(Objects::nonNull)
-          .forEach(directoryRatings::replace);
       // UC-030 BR-009: a list page of a directory host is kept by its address, not as a resource.
       lists.stream()
           .filter(ListText::getOnDirectoryHost)
@@ -298,6 +293,12 @@ class ScoutConfiguration {
               .filter(list -> !list.getOnDirectoryHost())
               .map(ScoutConfiguration::catalogText)
               .toList());
+      // UC-030 BR-010: the figures a directory states are kept with what its list names. They come
+      // last: a rating that cannot be written never keeps a list from being indexed.
+      lists.stream()
+          .map(ListText::getRatings)
+          .filter(Objects::nonNull)
+          .forEach(directoryRatings::replace);
     };
   }
 
