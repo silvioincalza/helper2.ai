@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** See what is new in the catalog and which AI events are coming up, so the visitor can keep up and plan without searching.  
 **Trigger:** The visitor opens the home page, the News page or the Events page.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-012, FR-013](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-008-follow-new-resources-and-events.md)  
@@ -99,8 +99,8 @@ A row shows the title of a resource, never a description, so the lists carry no 
 
 ### BR-007: Freshness
 
-The new resources list may be served from a shared cache for up to 2 minutes.
+The new resources list may be served from a shared cache for up to 2 minutes, and the upcoming events for up to 5 minutes.
 
 ### BR-008: Rate Limits
 
-A visitor may ask for the new resources at most 60 times per minute by default (H2_RATE_LIMIT_RECENT_PER_MINUTE); the upcoming events fall under the general limit of 120 requests per minute (UC-007 BR-010).
+A visitor may ask for the new resources at most 60 times per minute by default; the upcoming events fall under the general limit of 120 requests per minute (UC-007 BR-010).

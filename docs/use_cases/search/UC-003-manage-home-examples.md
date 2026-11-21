@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Source Provider  
 **Goal:** Keep a pool of example searches on the home page where every shown example finds a clearly fitting result near the top  
 **Trigger:** The administrator opens the home examples in the back office, or the time of a scheduled check arrives  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-037](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -37,7 +37,7 @@
 
 ### A1: Invalid Example
 
-**Trigger:** A label, query or list of expected results breaks a rule (step 4)  
+**Trigger:** A label, query or list of expected results breaks a rule (step 4 or step 7)  
 **Flow:**
 
 1. System refuses the example and lists every problem.
@@ -45,7 +45,7 @@
 
 ### A2: Expected Resource Not in the Catalog
 
-**Trigger:** An expected resource is not in the catalog (step 4)  
+**Trigger:** An expected resource is not in the catalog (step 4 or step 7)  
 **Flow:**
 
 1. System refuses the example and names each unknown resource.
@@ -53,7 +53,7 @@
 
 ### A3: Duplicate Label or Query
 
-**Trigger:** Another example already has the same label or the same query (step 4)  
+**Trigger:** Another example already has the same label or the same query (step 4 or step 7)  
 **Flow:**
 
 1. System refuses the example and says that the label or query is taken.
@@ -99,6 +99,14 @@
 1. System adds no example and reports the item as unreadable.
 2. Use case ends.
 
+### A9: Accepted Draft Refused
+
+**Trigger:** The accepted draft breaks a rule of BR-001, its resource is no longer in the catalog, or another example now has its label or query (step 12)  
+**Flow:**
+
+1. System adds no example, tells the administrator why and records the refused addition in the audit trail.
+2. Use case ends.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -129,7 +137,7 @@ No two examples of the same language share a label or a query, ignoring case. Ex
 
 ### BR-004: Check Outcome
 
-A check searches the example's query with its audience path, without the live web search, and looks at the first 10 results. The outcome is PASS when an expected resource is among the first 3, WEAK when the best is ranked 4 to 10, and FAIL otherwise. A check whose search was degraded records nothing.
+A check searches the example's query with its audience path, without the live web search, and looks at the first 10 results. The outcome is PASS when an expected resource is among the first 3, WEAK when the best is ranked 4 to 10, and FAIL otherwise. A check whose search was degraded records nothing, and so does a check of an example whose query, audience path or expected results changed while it ran.
 
 ### BR-005: Check Schedule
 

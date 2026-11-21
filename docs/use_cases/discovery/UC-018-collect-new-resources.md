@@ -8,7 +8,7 @@
 **Secondary Actors:** Source Provider  
 **Goal:** Bring the new and changed AI resources of every source into the catalog, or into the review queue when a person must decide, so that search finds them without anyone adding them by hand.  
 **Trigger:** The daily run time of the Scout has passed, or an administrator asks to start a run for all sources or for one source.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-025, C-008](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -19,6 +19,7 @@
 - At least one collector is configured for the sources the Scout reads.
 - For a scheduled run, the daily run of the Scout is switched on.
 - For a run an administrator starts, the administrator is signed in to the back office with the ADMIN role.
+- For a repository sweep, the sweep is switched on and GitHub can be read.
 
 ## Main Success Scenario
 
@@ -52,7 +53,7 @@
 **Flow:**
 
 1. System tells the administrator that no collector has this source.
-2. Nothing starts and no budget is spent.
+2. Nothing starts, no budget is spent and nothing is recorded in the audit trail.
 3. Use case ends.
 
 ### A3: Run Already in Progress
@@ -70,11 +71,12 @@
 **Flow:**
 
 1. System records the collector's run as skipped, with the reason or "not due yet".
-2. Use case continues at step 4 with the next collector.
+2. When the collector waits for a daily limit of its source, System keeps the pass open, so that the next run goes on with it whatever the interval says.
+3. Use case continues at step 4 with the next collector.
 
 ### A5: Collection Fails
 
-**Trigger:** The Source Provider does not answer or answers with an error (step 4)  
+**Trigger:** The Source Provider does not answer or answers with an error, or the items read cannot be stored or proposed (step 4)  
 **Flow:**
 
 1. System keeps the collector's pass open, so that the next run reads the same items again.
@@ -122,7 +124,7 @@
 
 1. System takes the source records whose GitHub repository was visited the longest time ago, up to the sweep batch.
 2. System asks the Source Provider for the current state of each repository.
-3. System records for each record whether its repository was found, is archived, or was not found, and when it was visited.
+3. System records for each record whether its repository was found, is archived, or was not found, and when it was visited; a record whose repository did not answer keeps its state and gets only the time of the visit.
 4. Use case ends.
 
 ## Postconditions
@@ -143,7 +145,7 @@
 
 ### BR-001: Daily Schedule
 
-The scheduled run is off unless the Scout is switched on (off by default). When it is on, the Scout runs once a day at 03:07 UTC by default. Each instance checks whether the run is due 20 seconds after it starts and then every 10 minutes by default; a run missed while no instance was up starts at the next check. A run an administrator starts does not count as the scheduled run.
+The scheduled run is off unless the Scout is switched on (off by default, on in the deployed environments). When it is on, the Scout runs once a day at 03:07 UTC by default. Each instance checks whether the run is due 20 seconds after it starts and then every 10 minutes by default; a run missed while no instance was up starts at the next check. A run an administrator starts does not count as the scheduled run.
 
 ### BR-002: One Run at a Time
 
@@ -155,7 +157,7 @@ A collector reads at most 1,000 items in one run by default (5,000 for the MCP R
 
 ### BR-004: Collector Interval
 
-Each collector reads its source only when its own interval has passed since its last pass, for example every hour for the MCP Registry, once a day for Hugging Face trending and the awesome lists, every 5 days for the live web search, and every 7 days for the discovery categories, courses and the GitHub topic leaders by default. A collector that is switched off in the configuration is recorded as skipped.
+Each collector reads its source only when its own interval has passed since its last pass, for example every hour for the MCP Registry, once a day for Hugging Face trending and the awesome lists, every 5 days for the live web search, and every 7 days for the discovery categories, courses and the GitHub topic leaders by default. An interval of whole days counts calendar days in UTC. An interval shorter than a day takes effect only in the runs an administrator starts, because the scheduled run is daily. A collector that is switched off in the configuration is recorded as skipped.
 
 ### BR-005: Refused Items
 
@@ -167,7 +169,7 @@ An item that is not refused is indexed at once unless its collector sets a floor
 
 ### BR-007: Enrichment Budget per Run
 
-A run enriches at most 20 resources by default; an administrator can change this number at runtime. A resource whose text and model have not changed since its last judged enrichment gives its place back to the budget. When the language model is unavailable, the run stops enriching for the rest of the run.
+A run enriches at most 20 resources by default (200 in the deployed environments); an administrator can change this number at runtime. The budget counts resources, not model calls (UC-021 BR-014). A resource whose text and model have not changed since its last judged enrichment gives its place back to the budget. When the language model is unavailable, the run stops enriching for the rest of the run.
 
 ### BR-008: Run History
 
@@ -175,8 +177,12 @@ The run records of the Scout are kept for 90 days by default; older records that
 
 ### BR-009: Repository Sweep
 
-The repository sweep is on by default and visits 50 source records every 10 minutes, starting 2 minutes after startup. A record whose repository is not found is marked gone only when the repository was also missing at a visit at least 24 hours earlier and the record has no repository link of its own.
+The repository sweep is on by default and visits 50 source records every 10 minutes, starting 2 minutes after startup. A record whose repository is not found is marked gone only when the repository was also missing at a visit at least 24 hours earlier and the record is the repository itself, not a record that only links to it.
 
 ### BR-010: Audit of Started Runs
 
-Every run an administrator asks for is recorded in the audit trail with the administrator, the source asked for, and whether the run started or was refused because another run was in progress.
+Every run an administrator asks for is recorded in the audit trail with the administrator, the source asked for, and whether the run started or was refused because another run was in progress. A request for a source that no collector has is refused before anything starts and is not recorded.
+
+### BR-011: Daily Cap of Proposed Candidates
+
+A collector may cap the new candidates it proposes to the review queue per UTC day: 25 for the GitHub topic leaders, 50 for the links of the awesome lists, 20 for PyPI, and 500 for the libraries and SDKs, by default. The candidates above the cap are held back for the next run (A7).

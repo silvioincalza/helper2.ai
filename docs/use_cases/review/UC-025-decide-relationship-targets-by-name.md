@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Answer once what a target name means (a resource of the catalog, a vendor, a service, a tool, or no real target) and so decide every open relationship candidate that names it.  
 **Trigger:** The Administrator opens the review queue for relationship candidates.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-032](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -25,7 +25,7 @@
 3. The Administrator chooses a group and answers what the name is: a resource of the catalog, a vendor, a service, a tool, or not a real target, with an optional note.
 4. The system takes the open items of the group, the oldest first.
 5. The system decides each item on its own: for a catalog resource it points the relationship at that resource and accepts the item; for a vendor, a service or a tool it adds the name as a known target of that kind and closes the item as superseded with the relationship verified; for not a real target it rejects the item and its relationship.
-6. The system records one audit entry for each decided item, with the identifier of the batch.
+6. The system records the decision of each item in the audit trail, with the identifier of the batch; a link also records the change of the target, and a new known target its addition.
 7. The system says how many items were decided, how many were skipped and how many of the name are still open, and shows the next group.
 
 ## Alternative Flows
@@ -87,7 +87,7 @@
 - For a catalog resource, each decided relationship points at that resource, chosen by a person, and is verified.
 - For a vendor, a service or a tool, the name is a known target of that kind and each decided relationship is verified with that kind.
 - For not a real target, each decided relationship is rejected.
-- The audit trail holds one entry for each decided item, with the batch.
+- The audit trail holds the decision of each decided item, with the batch.
 
 ### Failure Postconditions
 
@@ -122,4 +122,4 @@ A page holds 1 to 100 groups, 50 by default. A group spans every discovery categ
 
 ### BR-007: Notes
 
-A decision note follows the note rule of single review decisions (UC-024 BR-016).
+A decision note follows the note rule of single review decisions (UC-024 BR-016). It is kept for a link and a reject; a vendor, service or tool answer writes its own fixed note.
