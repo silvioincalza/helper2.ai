@@ -7,5 +7,6 @@ public record CatalogPolicy(
     Duration queryVectors,
     Duration webNews,
     Duration pendingReviewPages,
+    Duration listIndex,
     Duration pastEvents,
     int errorLogChars) {}
