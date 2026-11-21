@@ -8,7 +8,7 @@
 **Secondary Actors:** Payment Provider  
 **Goal:** Give money to help run helper2.ai through a payment provider's own page, while the site shows support, analytics and ads only where they are switched on  
 **Trigger:** The visitor opens the support page from the footer  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-022, FR-023, C-007](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-016-support-helper2-ai.md)  
@@ -45,6 +45,14 @@
 1. System opens the GitHub sponsoring page in a new tab, and the visitor stays on helper2.ai.
 2. Use case ends.
 
+### A3: The Site-Wide Settings Cannot Be Read
+
+**Trigger:** The site-wide settings cannot be read (step 2)  
+**Flow:**
+
+1. System offers no way to give and says that giving is not open yet; it asks no analytics question and shows no ad.
+2. Use case ends.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -59,11 +67,11 @@
 
 ### BR-001: Ways to Give
 
-A way to give is offered only when its address is configured: a GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`) or a Stripe payment page (`H2_SUPPORT_STRIPE_PAYMENT_URL`). Both go to the provider's own page, and giving changes nothing on helper2.ai.
+A way to give is offered only when its address is configured: a GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`) or a Stripe payment page (`H2_SUPPORT_STRIPE_PAYMENT_URL`). Both go to the provider's own page, GitHub in a new tab and Stripe in the same tab, and giving changes nothing on helper2.ai.
 
 ### BR-002: Analytics Question
 
-The site asks whether a visit may be counted with Google Analytics only when a measurement identifier is configured (`H2_ANALYTICS_GA4_MEASUREMENT_ID`). The answer is kept in the browser and can be changed from the footer.
+The site asks whether a visit may be counted with Google Analytics only when a measurement identifier is configured (`H2_ANALYTICS_GA4_MEASUREMENT_ID`). It asks every visitor, on every page of the public site, and counts a visit only after the visitor accepts; the site works the same before an answer and after a rejection. The answer is kept in the browser and can be changed from the footer. A rejection, or an acceptance taken back, stops the counting and removes the analytics cookies.
 
 ### BR-003: Ads
 

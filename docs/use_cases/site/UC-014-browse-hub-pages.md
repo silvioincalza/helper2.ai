@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor, Search Engine  
 **Goal:** Find the newest resources of one type, and let search engines find every page of helper2.ai worth indexing  
 **Trigger:** The visitor opens a hub page from the footer or from a search engine result, or a search engine reads the site  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-020](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-014-browse-hub-pages.md)  
@@ -67,7 +67,7 @@
 **Trigger:** The address of a resource page does not match the current title of the resource (step 7)  
 **Flow:**
 
-1. System sends the search engine permanently to the current address of the page.
+1. System sends the reader permanently to the current address of the page.
 2. Use case continues at step 7.
 
 ### A6: Unknown Page
@@ -97,15 +97,15 @@ There is one hub page per type: AI apps (`/ai-apps`), AI models (`/ai-models`), 
 
 ### BR-002: Hub List
 
-A hub page lists at most 50 resources of its type that are worth indexing, newest change first. The list is read again at most every 10 minutes; when a new read fails, the last list is shown.
+A hub page lists at most 50 resources of its type that are worth indexing, newest change first. The list is read again at most every 10 minutes; when a new read fails, the last list is shown, and when no list was read before, the hub is shown as empty (A1).
 
 ### BR-003: Pages Worth Indexing
 
-Products, agents, models, MCP servers, libraries, skills, datasets, papers, events, courses and prompts are listed for indexing; a prompt only when its description has at least 200 characters. A resource page asks to be indexed only when its source states a description and, for a type other than a prompt, at least one fact; otherwise it asks not to be indexed but to be followed.
+Products, agents, models, MCP servers, libraries, skills, datasets, papers, events, courses and prompts are listed for indexing; a prompt only when its description has at least 200 characters. A resource page asks to be indexed only when it has a description that its source, the community or an administrator states, never one written by AI, and, for a type other than a prompt, at least one fact: a license, a price, a publication date, an event date a source states, or a link to another resource. Otherwise it asks not to be indexed but to be followed.
 
 ### BR-004: Sitemap
 
-The sitemap lists the site pages (home, sources, events, mission, privacy, terms and support), every hub page with resources, and the resource pages worth indexing in parts of 10,000 pages, at most 200,000 resource pages by default. It is built again at most once an hour, and the crawler files may be kept by crawlers for one hour.
+The sitemap lists the site pages (home, sources, events, mission, privacy, terms and support), every hub page with resources, and the resource pages worth indexing in parts of 10,000 pages, at most 200,000 resource pages, the newest change first. It is built again at most once an hour, and the crawler files may be kept by crawlers for one hour.
 
 ### BR-005: Crawler Rules
 
