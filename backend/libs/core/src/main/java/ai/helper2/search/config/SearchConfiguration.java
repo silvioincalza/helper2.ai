@@ -14,6 +14,7 @@ import ai.helper2.search.Ranking;
 import ai.helper2.search.RankingWeights;
 import ai.helper2.search.RecordedOutcomes;
 import ai.helper2.search.ResultObserver;
+import ai.helper2.search.ResultRatings;
 import ai.helper2.search.SearchCache;
 import ai.helper2.search.SearchPolicy;
 import ai.helper2.search.SearchSource;
@@ -106,8 +107,21 @@ class SearchConfiguration {
   }
 
   @Bean
-  Ranking ranking(VitalityPolicy vitality) {
-    return new Ranking(Ranking.FUSION_K, new RankingWeights(), vitality);
+  Ranking ranking(VitalityPolicy vitality, SearchProperties properties, ResultRatings ratings) {
+    RankingWeights measured = new RankingWeights();
+    // UC-001 BR-023: the weight of the rating is the one weight the configuration sets.
+    RankingWeights weights =
+        new RankingWeights(
+            measured.getExactTitle(),
+            measured.getTitle(),
+            measured.getAudience(),
+            measured.getPathType(),
+            measured.getTypeHint(),
+            measured.getPopularity(),
+            measured.getLaneWindow(),
+            measured.getUnmaintained(),
+            properties.ranking().ratingWeight());
+    return new Ranking(Ranking.FUSION_K, weights, vitality, ratings);
   }
 
   @Bean

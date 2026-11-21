@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 final class ListEntryLinks {
 
-  sealed interface Route permits Model, Paper, Package, Course, Product, Skipped {}
+  sealed interface Route permits Model, Paper, Package, Course, Product, Article, Skipped {}
 
   record Model(String id, CanonicalUrl page) implements Route {}
 
@@ -24,6 +24,8 @@ final class ListEntryLinks {
   record Readers(boolean models, boolean papers, boolean packages) {}
 
   record Product(CanonicalUrl site) implements Route {}
+
+  record Article(CanonicalUrl page) implements Route {}
 
   record Skipped(String reason) implements Route {}
 
@@ -68,7 +70,13 @@ final class ListEntryLinks {
       return new Course(page, platform.get());
     }
     ProductLinks.Checked product = productLinks.product(page, pages);
-    return product.site() == null ? new Skipped(product.skip().tag()) : new Product(product.site());
+    if (product.site() != null) {
+      return new Product(product.site());
+    }
+    // UC-030 BR-007: a link that reads as an article by the rule of discovery is an article.
+    boolean article =
+        product.skip() == ProductLinks.Skip.NOT_A_PRODUCT_PAGE && pages.isWritingPage(page);
+    return article ? new Article(page) : new Skipped(product.skip().tag());
   }
 
   private @Nullable Route confirmable(CanonicalUrl page) {
@@ -93,6 +101,36 @@ final class ListEntryLinks {
                 || NpmPackageReader.nameOf(page) != null);
     return named ? page : null;
   }
+
+  /** UC-030 BR-008: the page of a link that waits for a person, the address its candidate has. */
+  @Nullable CanonicalUrl reviewedPage(AwesomeListParser.Link link, DiscoveryPages pages) {
+    if (confirmablePage(link) != null) {
+      return null;
+    }
+    return switch (route(link, pages)) {
+      case Course course -> course.page();
+      case Product product -> product.site();
+      case Article article -> article.page();
+      case Model _, Paper _, Package _, Skipped _ -> null;
+    };
+  }
+
+  /**
+   * UC-030 BR-011: the directory's own page of an item, for a link of one of its lists: a safe
+   * address on the host of the list that is neither the list nor the front page.
+   */
+  @Nullable CanonicalUrl directoryItemPage(AwesomeListParser.Link link, CanonicalUrl list) {
+    CanonicalUrl page = productLinks.page(link.url()).site();
+    boolean ofTheItem =
+        page != null
+            && page.getHost().equals(list.getHost())
+            && !page.equals(list)
+            && !page.getValue().equals("https://" + page.getHost())
+            && page.getValue().length() <= MAX_PAGE_ADDRESS;
+    return ofTheItem ? page : null;
+  }
+
+  static final int MAX_PAGE_ADDRESS = 300;
 
   static String title(AwesomeListParser.Link link, CanonicalUrl page) {
     String words = link.text().strip();

@@ -1,10 +1,12 @@
 package ai.helper2.catalog.usecase;
 
 import ai.helper2.catalog.AwesomeListEntries;
+import ai.helper2.catalog.DirectoryRating;
 import ai.helper2.catalog.EnrichmentFacts;
 import ai.helper2.catalog.RecordRow;
 import ai.helper2.catalog.ResourceCards;
 import ai.helper2.catalog.ResourceDetail;
+import ai.helper2.catalog.ResourceRatings;
 import ai.helper2.catalog.ResourceRow;
 import ai.helper2.catalog.Resources;
 import ai.helper2.search.FieldConflict;
@@ -29,12 +31,15 @@ public class GetResourceDetail {
   private final EnrichmentFacts enrichment;
   private final ResourceCards cards;
   private final AwesomeListEntries listEntries;
+  private final ResourceRatings ratings;
 
   public GetResourceDetail(
       Resources store,
       EnrichmentFacts enrichment,
       ResourceCards cards,
-      AwesomeListEntries listEntries) {
+      AwesomeListEntries listEntries,
+      ResourceRatings ratings) {
+    this.ratings = ratings;
     this.store = store;
     this.enrichment = enrichment;
     this.cards = cards;
@@ -69,7 +74,9 @@ public class GetResourceDetail {
         enrichment.summary(id),
         records.stream().map(ResourceDetail.SourceRecordInfo::of).toList(),
         row.enrichmentStatus(),
-        listEntries.naming(id, ResourceDetail.FoundIn.MAX_LISTS));
+        listEntries.naming(id, ResourceDetail.FoundIn.MAX_LISTS),
+        // UC-007 BR-011: no stated figure, no rating: the page says "not rated yet".
+        DirectoryRating.of(ratings.stated(id)).orElse(null));
   }
 
   private List<ResourceDetail.Assertion> assertions(

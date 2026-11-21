@@ -7,6 +7,7 @@ import ai.helper2.api.common.model.VerificationDto;
 import ai.helper2.api.generated.ResourceDetailApi;
 import ai.helper2.api.generated.model.AiSummaryDto;
 import ai.helper2.api.generated.model.AssertionDto;
+import ai.helper2.api.generated.model.DirectoryRatingDto;
 import ai.helper2.api.generated.model.EvidenceDto;
 import ai.helper2.api.generated.model.FoundInDto;
 import ai.helper2.api.generated.model.FoundInListDto;
@@ -14,12 +15,14 @@ import ai.helper2.api.generated.model.RelationshipDto;
 import ai.helper2.api.generated.model.ResourceDetailDto;
 import ai.helper2.api.generated.model.SourceRecordInfoDto;
 import ai.helper2.api.generated.model.SummaryClaimDto;
+import ai.helper2.catalog.DirectoryRating;
 import ai.helper2.catalog.ResourceDetail;
 import ai.helper2.catalog.usecase.GetResourceDetail;
 import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.llm.LlmSettings;
 import ai.helper2.search.web.CardMapper;
 import ai.helper2.shared.UtcTimes;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -113,6 +116,7 @@ class ResourceDetailController implements ResourceDetailApi {
             .enrichmentStatus(
                 ResourceDetailDto.EnrichmentStatusEnum.fromValue(d.enrichmentStatus()))
             .foundIn(foundIn(d.foundIn()))
+            .rating(rating(d.rating()))
             .aiContent(aiContent(d, provider));
     return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(dto);
   }
@@ -146,12 +150,20 @@ class ResourceDetailController implements ResourceDetailApi {
     return AiContentMarking.marker(provider, models, fields);
   }
 
+  // UC-007 BR-011: the score and the number of directories, never their names.
+  private static @Nullable DirectoryRatingDto rating(@Nullable DirectoryRating rating) {
+    return rating == null
+        ? null
+        : new DirectoryRatingDto(BigDecimal.valueOf(rating.shownScore()), rating.directories());
+  }
+
   private static FoundInDto foundIn(ResourceDetail.FoundIn found) {
     return new FoundInDto(
         found.lists().stream()
             .map(l -> new FoundInListDto(l.listId(), l.listTitle(), l.headingPath()))
             .toList(),
-        found.more());
+        found.more(),
+        found.directoryLists());
   }
 
   private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const script = fileURLToPath(new URL('./industry-events-seed.mjs', import.meta.url));
-const research = fileURLToPath(new URL('../docs/research/', import.meta.url));
+const research = fileURLToPath(new URL('./', import.meta.url));
 const seed = fileURLToPath(new URL('../backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql', import.meta.url));
 const industryFiles = readdirSync(research).filter((name) => /^industry-events-\d{4}-\d{2}-\d{2}\.json$/.test(name));
 

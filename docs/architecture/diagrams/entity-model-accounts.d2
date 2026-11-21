@@ -1,0 +1,23 @@
+# Entity model of the accounts module: its entities and the relationships between them, no attributes.
+# D2 twin of docs/entity_model/accounts.md: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt entity-model-accounts.d2 && d2 entity-model-accounts.d2 entity-model-accounts.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+APP_USER: {class: data}
+BOOKMARK: {class: data}
+ADMIN_AUDIT: {class: data}
+
+APP_USER <-> BOOKMARK: "saves" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}

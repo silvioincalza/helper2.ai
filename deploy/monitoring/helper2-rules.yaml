@@ -285,14 +285,14 @@ groups:
           description: "Only {{ $value | humanizePercentage }} of today's {{ $labels.budget }} is left. At 0 the step waits until 00:00 UTC: enrichment, gap rounds, the classifier and the event reader skip their model call, example drafts stop, the evidence step reads no page. The backlog waits for the next day."
           runbook: "Dashboard helper2-backoffice, row 'Enrichment and budgets': a large backlog after a fresh database spends the caps for days, as planned; a sudden drop on a normal day is a loop. Caps (back office Settings page or H2_): scout.dailyEnrichmentCalls (H2_SCOUT_DAILY_ENRICHMENT_CALLS), scout.gapDailyCalls (H2_SCOUT_GAP_DAILY_CALLS), H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS, H2_SCOUT_PAGE_READER_DAILY_CREDITS."
       - alert: Helper2LiveWebCreditsHigh
-        expr: sum by (environment) (increase(helper2_live_web_credits_total{application=~"helper2|helper2-backoffice"}[1d])) > 200
+        expr: sum by (environment) (increase(helper2_live_web_credits_total{application=~"helper2|helper2-backoffice"}[1d])) > 2500
         for: 0m
         labels:
           severity: warning
         annotations:
-          summary: "Tavily used more than 200 credits in the last 24 hours ({{ $labels.environment }})."
-          description: "{{ $value | humanize }} Tavily credits (live calls and the Scout's discovery, news, courses, LinkedIn, events and evidence reads) in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
-          runbook: "Dashboard: helper2_live_web_credits_total by feature (every scout-* feature is the Scout, on the helper2-backoffice dashboard). Many addresses at the limit = rotating IPs: set H2_LIVE_WEB_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+          summary: "Tavily used more than 2,500 credits in the last 24 hours ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} Tavily credits (live calls and the Scout's discovery, news, courses, LinkedIn, events and evidence reads) in the last 24 hours. Prod's cap for all live calls is 3,000 a day: at the cap the live web stops for visitors until 00:00 UTC. At this pace the monthly credits also run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+          runbook: "Dashboard: helper2_live_web_credits_total by feature (every scout-* feature is the Scout, on the helper2-backoffice dashboard). Many addresses at the limit = rotating IPs: lower the live web credits a day on the back office Settings page, or set H2_LIVE_WEB_DAILY_CREDITS (no release). A Scout that reads much: lower its search and page-read credits on the same page. Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
 
   - name: helper2-catalog
     rules:

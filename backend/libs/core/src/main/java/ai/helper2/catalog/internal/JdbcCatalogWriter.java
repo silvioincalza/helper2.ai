@@ -322,13 +322,15 @@ class JdbcCatalogWriter implements CatalogWriter {
                                               > CAST(stated.vitality ->> 'statedAt' AS timestamptz)
                                            THEN kept.vitality || stated.vitality
                                                 || jsonb_build_object('archived', kept.vitality -> 'archived')
-                                         ELSE (kept.vitality - 'checkedAt' - 'gone' - 'notFoundAt')
+                                         ELSE (kept.vitality - 'checkedAt' - 'gone' - 'notFoundAt'
+                                               - 'notFoundVisits')
                                               || stated.vitality
                                        END AS vitality
                                 FROM (SELECT CASE WHEN source_record.repository_url
                                                        IS NOT DISTINCT FROM EXCLUDED.repository_url
                                                   THEN source_record.extra -> 'vitality' END AS vitality) kept,
                                      (SELECT EXCLUDED.extra -> 'vitality' AS vitality) stated) newest)
+                      || jsonb_build_object('popularity', %3$s)
               RETURNING id, source_id, external_id, resource_id, fingerprint
             )
             SELECT up.id, up.resource_id, old.fingerprint IS DISTINCT FROM up.fingerprint AS changed,
@@ -337,7 +339,9 @@ class JdbcCatalogWriter implements CatalogWriter {
             """
                 .formatted(
                     ORIGIN_RANK.formatted("(source_record.extra ->> 'dataOrigin')"),
-                    ORIGIN_RANK.formatted("(EXCLUDED.extra ->> 'dataOrigin')")))
+                    ORIGIN_RANK.formatted("(EXCLUDED.extra ->> 'dataOrigin')"),
+                    StoredPopularity.merged(
+                        "source_record.extra -> 'popularity'", "EXCLUDED.extra -> 'popularity'")))
         .param("rows", json.writeValueAsString(rows))
         .query((rs, i) ->
             new UpsertedRecord(

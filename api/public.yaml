@@ -486,13 +486,12 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0010), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds, pastEventsSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds, pastEventsSeconds]
           properties:
             webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0027)." }
             guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0032)." }
             webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`H2_RETENTION_WEB_NEWS`)." }
             pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
-            listIndexSeconds: { type: integer, format: int64, minimum: 0, description: "The search index of an awesome list, after the list was last read (`H2_RETENTION_LIST_INDEX`)." }
             pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
             pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
             backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_RETENTION_BACKUPS`, from the chart's `backup.retentionDays`, ADR 0043)." }
@@ -661,6 +660,12 @@ components:
         sourceRecords: { type: array, items: { $ref: '#/components/schemas/SourceRecordInfo' } }
         enrichmentStatus: { type: string, enum: [NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE] }
         foundIn: { $ref: '#/components/schemas/FoundIn' }
+        rating:
+          oneOf: [{ $ref: '#/components/schemas/DirectoryRating' }, { type: 'null' }]
+          description: |
+            One rating from 1 to 5, made from the average and the number of votes directories state for the resource
+            (ADR 0056). Null when no directory states them: the resource is not rated yet. A stated figure and a
+            formula, not AI-written, so `aiContent` never names it.
         aiContent:
           oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
           description: |
@@ -682,8 +687,9 @@ components:
       type: object
       description: |
         The curated lists that name this resource (ADR 0023): the most popular list first, then by title. The lists'
-        own words, not AI-written.
-      required: [lists, more]
+        own words, not AI-written. A list on a directory host is never in `lists` or `more`: `directoryLists` counts
+        it (ADR 0055).
+      required: [lists, more, directoryLists]
       properties:
         lists:
           type: array
@@ -691,6 +697,24 @@ components:
           description: At most 10 lists; empty when no list names the resource.
           items: { $ref: '#/components/schemas/FoundInList' }
         more: { type: integer, minimum: 0, description: The lists that name the resource and are not in `lists`. }
+        directoryLists:
+          type: integer
+          minimum: 0
+          description: How many lists on directory hosts name the resource; their names and addresses are not given.
+
+    DirectoryRating:
+      type: object
+      required: [score, directories]
+      properties:
+        score:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: The rating, with one decimal. The number of votes weighs it; few votes stay near 3.
+        directories:
+          type: integer
+          minimum: 1
+          description: How many directories state the figures; their names and addresses are not given.
 
     FoundInList:
       type: object

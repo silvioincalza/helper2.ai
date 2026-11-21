@@ -2,6 +2,7 @@ package ai.helper2.search
 
 import ai.helper2.shared.Audience
 import ai.helper2.shared.AudiencePath
+import ai.helper2.shared.ResourceId
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.WordLists
 import kotlin.math.ln
@@ -16,7 +17,17 @@ data class RankingWeights(
   val popularity: Double = 0.008,
   val laneWindow: Int = 10,
   val unmaintained: Double = 0.008,
+  val rating: Double = 0.0,
 )
+
+/** The directory rating of results, from 1 to 5; a result that is not rated yet is no key. */
+fun interface ResultRatings {
+  fun of(ids: Collection<ResourceId>): Map<ResourceId, Double>
+
+  companion object {
+    @JvmField val NONE = ResultRatings { emptyMap() }
+  }
+}
 
 class Ranking
 @JvmOverloads
@@ -24,6 +35,7 @@ constructor(
   val k: Int = FUSION_K,
   val weights: RankingWeights = RankingWeights(),
   private val vitality: VitalityPolicy = VitalityPolicy(),
+  private val ratings: ResultRatings = ResultRatings.NONE,
 ) {
   fun rank(
     results: List<MergedResult>,
@@ -38,9 +50,10 @@ constructor(
       (titleTerms?.flatMap { normalize(it).split(' ') } ?: q.split(' ')).filter {
         it.length > 1 && it !in STOPWORDS
       }
+    val rated = if (weights.rating == 0.0) emptyMap() else ratings.of(results.map { it.id })
     val byScore =
       results
-        .map { it.copy(score = score(it, q, terms, path, typeHints, votes(it))) }
+        .map { it.copy(score = score(it, q, terms, path, typeHints, votes(it), rated[it.id])) }
         .sortedWith(
           compareByDescending<MergedResult> { it.score }
             .thenBy { it.title.lowercase() }
@@ -82,6 +95,7 @@ constructor(
     path: AudiencePath?,
     typeHints: Set<ResourceType>,
     votes: List<SourceHit>,
+    rating: Double?,
   ): Double {
     var s = fusion(votes)
     val title = normalize(r.title)
@@ -95,6 +109,7 @@ constructor(
     if (r.type in typeHints) s += weights.typeHint
     s += weights.popularity * popularity(r.popularity)
     if (vitality.isUnmaintained(r)) s -= weights.unmaintained
+    s += weights.rating * ratingSignal(rating)
     return s
   }
 
@@ -130,6 +145,14 @@ constructor(
       )
 
     internal const val MIN_PREFIX = 4
+
+    /** The rating a result counts with when it is not rated yet: the middle of the scale. */
+    const val NEUTRAL_RATING = 3.0
+
+    // UC-001 BR-023: from -1 (rated 1) to +1 (rated 5); a result that is not rated yet counts as
+    // the middle of the scale, so it is not ranked lower for it.
+    internal fun ratingSignal(rating: Double?): Double =
+      ((rating ?: NEUTRAL_RATING).coerceIn(1.0, 5.0) - NEUTRAL_RATING) / 2
 
     internal fun laneOf(r: MergedResult): AudiencePath? =
       when {

@@ -12,6 +12,7 @@ import ai.helper2.search.PopularityMetric
 import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.Vitality
 import ai.helper2.search.descriptor
+import ai.helper2.shared.CanonicalUrl
 import ai.helper2.shared.ResourceType
 import java.time.Clock
 import java.time.Duration
@@ -54,18 +55,23 @@ class IndexAcceptedCandidateTest {
       )
 
   private val sdks = descriptor("github-sdks").copy(resourceTypes = setOf(ResourceType.LIBRARY))
+  private val lists =
+    descriptor("github-awesome")
+      .copy(resourceTypes = setOf(ResourceType.PRODUCT, ResourceType.COURSE, ResourceType.ARTICLE))
 
   private val resource = UUID.randomUUID()
   private val catalog = RecordingIndex(listOf(resource))
   private val listed = mutableMapOf<String, ListedResource>()
   private val openWebUi = ListedResource(UUID.randomUUID(), "Open WebUI")
   private var stored: AcceptedCandidate? = null
+  private val named = mutableListOf<Triple<UUID, String, NamingList>>()
   private val accept =
     IndexAcceptedCandidate(
-      listOf(Found(selfHosted), Found(agentPlatforms), Found(linkedIn), Found(sdks)),
+      listOf(Found(selfHosted), Found(agentPlatforms), Found(linkedIn), Found(sdks), Found(lists)),
       catalog,
       { url -> listed[url.value] },
       { details -> stored ?: throw InvalidCandidate("unreadable: $details") },
+      { id, title, list -> named += Triple(id, title, list) },
       Clock.fixed(NOW, ZoneOffset.UTC),
     )
 
@@ -292,6 +298,7 @@ class IndexAcceptedCandidateTest {
         RecordingIndex(emptyList()),
         { null },
         { candidate() },
+        { _, _, _ -> },
         Clock.fixed(NOW, ZoneOffset.UTC),
       )
     assertThrows<InvalidCandidate> { unchanged.index(candidate()) }
@@ -319,6 +326,82 @@ class IndexAcceptedCandidateTest {
     assertThrows<InvalidCandidate> { accept.accept("{...}") }
     stored = candidate(sourceId = "unknown")
     assertThrows<InvalidCandidate> { accept.accept("{...}") }
+  }
+
+  private fun namedByLists(vararg finders: Map<String, Any>) =
+    candidate(sourceId = "github-awesome", facts = mapOf("foundBy" to finders.toList()))
+
+  private fun finder(list: String, section: String, directoryList: String? = null) =
+    mapOf(
+      "sourceId" to "github-awesome",
+      "awesome" to
+        listOfNotNull(
+            "list" to list,
+            "section" to section,
+            directoryList?.let { "directoryList" to it },
+          )
+          .toMap(),
+    )
+
+  @Test
+  fun `UC-030 BR-008 an accepted product is named by the directory list that proposed it`() {
+    stored =
+      namedByLists(
+        finder("https://futurepedia.io/best-ai-coding-tools", "Editors", "Best AI coding tools")
+      )
+
+    accept.accept("{...}")
+
+    assertEquals(
+      listOf(
+        Triple(
+          resource,
+          "Open WebUI",
+          NamingList(
+            CanonicalUrl.of("https://futurepedia.io/best-ai-coding-tools")!!,
+            "Editors",
+            "Best AI coding tools",
+          ),
+        )
+      ),
+      named,
+    )
+  }
+
+  @Test
+  fun `UC-030 BR-008 an accepted product is named by the curated list that proposed it`() {
+    stored = namedByLists(finder("https://github.com/acme/awesome-llm", "Tools > Chat"))
+
+    accept.accept("{...}")
+
+    assertEquals(
+      NamingList(CanonicalUrl.of("https://github.com/acme/awesome-llm")!!, "Tools > Chat", null),
+      named.single().third,
+    )
+  }
+
+  @Test
+  fun `UC-030 BR-008 a page already in the catalog is named by the list too`() {
+    stored = namedByLists(finder("https://github.com/acme/awesome-llm", "Tools"))
+    listed["https://openwebui.com"] = openWebUi
+
+    accept.accept("{...}")
+
+    assertEquals(openWebUi.id, named.single().first)
+  }
+
+  @Test
+  fun `UC-030 BR-008 a candidate no list proposed, or with an unreadable list, is named by none`() {
+    stored =
+      candidate(facts = mapOf("foundBy" to listOf(mapOf("sourceId" to "discovery-self-hosted"))))
+    accept.accept("{...}")
+    stored =
+      namedByLists(mapOf("sourceId" to "github-awesome", "awesome" to mapOf("list" to "not a url")))
+    accept.accept("{...}")
+    stored = namedByLists(mapOf("sourceId" to "github-awesome", "awesome" to "text"))
+    accept.accept("{...}")
+
+    assertEquals(emptyList(), named)
   }
 
   @Test

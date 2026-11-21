@@ -1,0 +1,63 @@
+# Infrastructure, backups and monitoring: the nightly dump of production with its encrypted off-site copy and
+# the weekly restore check (ADR 0043), and the way metrics and traces leave the namespace (ADR 0009).
+# Source of truth: deploy/helm/helper2/templates/backup.yaml, exporters.yaml, prometheusrule.yaml, values-prod.yaml,
+#   backend/libs/platform/src/main/resources/helper2-shared.yaml (management, tracing), deploy/grafana.
+# Render: cd docs/architecture/diagrams && d2 fmt infrastructure-data.d2 && d2 infrastructure-data.d2 infrastructure-data.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+prod: "ns helper2-prod" {
+  class: group
+
+  backups: "BACKUP (on for prod)" {
+    class: group
+    postgres: "postgres" {
+      shape: cylinder
+      class: data
+    }
+    backup: "pg-backup CronJob\n02:30 Europe/Zurich\npg_dump | gzip, one per run,\nnewest 7 dates" {class: app}
+    pvc: "PVC pg-backup\nnfs-k8s · kept on uninstall" {
+      shape: cylinder
+      class: data
+    }
+    check: "pg-restore-check CronJob\nSunday 04:00 Europe/Zurich\nnewest dump into its own Postgres\n(emptyDir), never prod's" {class: app}
+    backup -> postgres: ":5432"
+    backup -> pvc: dump
+    check -> pvc: "read-only, only\nwithout backup.offsite"
+  }
+
+  observed: "OBSERVED" {
+    class: group
+    app: "helper2 (public app)\n:8081 Actuator" {class: app}
+    bo: "helper2-backoffice\n:8081 Actuator" {class: app}
+    pgexp: "postgres-exporter · 1 pod\n:9187, role h2_monitor" {class: app}
+    redisexp: "redis-exporter · 1 pod\n:9121, Redis user h2_monitor" {class: app}
+  }
+}
+
+r2: "Cloudflare R2 bucket, EU\n(backup.offsite; rclone crypt and copy,\nnever deletes; lifecycle rule: 7 days)" {class: ext}
+
+alloy: "Alloy (ns observability)\nscrapes the names on its allow-list\nreceives OTLP :4318" {class: app}
+
+monitoring: MONITORING {
+  class: group
+  prometheus: Prometheus {class: data}
+  tempo: Tempo {class: data}
+  grafana: "Grafana\ndashboards helper2.json,\nhelper2-backoffice.json" {class: app}
+  prometheus -> grafana
+  tempo -> grafana
+}
+
+prod.backups.backup -> r2: "HTTPS 443, only when\nbackup.offsite is on" {class: config}
+prod.backups.check -> r2: "HTTPS 443: the newest dump,\ndecrypted (backup.offsite)" {class: config}
+prod.observed -> alloy: "metrics: Alloy scrapes :8081, :9187, :9121\ntraces: the public app sends OTLP/HTTP :4318"
+alloy -> monitoring.prometheus: "remote write"
+alloy -> monitoring.tempo: traces

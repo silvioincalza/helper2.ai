@@ -19,7 +19,6 @@ const CHANGED = {
     guideQuestionCountersSeconds: 5 * DAY,
     webNewsSeconds: 200 * DAY,
     pendingReviewPagesSeconds: 150 * DAY,
-    listIndexSeconds: 45 * DAY,
     pageTextSeconds: 48 * 3600,
     pageReadSeconds: 60 * DAY,
     backupsSeconds: 9 * DAY,
@@ -111,7 +110,9 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent('200 days after we last retrieved them');
     expect(keep).toHaveTextContent('200 days after their feed last listed them');
     expect(keep).toHaveTextContent('until we decide, then 150 days.');
-    expect(keep).toHaveTextContent('45 days after a list was last read');
+    expect(keep).toHaveTextContent(
+      'which list names which tool: as long as we list the tool and the list, with no time limit. We keep what a list named when we last read it, also when the list is no longer read; reading the list again replaces it. When GitHub tells us on several checks in a row, over at least a day, that the repository of a list on GitHub no longer exists, we delete what that list named. A list that is a web page has no such check: what it named stays until we read the page again or no longer list the tool.',
+    );
     expect(keep).toHaveTextContent('Technical logs and request traces: up to 3 months.');
     expect(keep).toHaveTextContent(
       'When a source withdraws a record, every such fact that only its quotes supported goes with it.',

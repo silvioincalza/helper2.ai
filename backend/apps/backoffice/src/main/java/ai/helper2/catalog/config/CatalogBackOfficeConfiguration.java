@@ -6,10 +6,12 @@ import ai.helper2.catalog.CatalogWriter;
 import ai.helper2.catalog.CategoryInputs;
 import ai.helper2.catalog.CategoryLabels;
 import ai.helper2.catalog.CuratedFields;
+import ai.helper2.catalog.GoneLists;
 import ai.helper2.catalog.JobMarkers;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.KnownTargetList;
+import ai.helper2.catalog.ListNamings;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ResourceRemoval;
 import ai.helper2.catalog.Resources;
@@ -20,6 +22,7 @@ import ai.helper2.catalog.usecase.BackfillCategories;
 import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
 import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.catalog.usecase.EditKnownTargetCandidate;
+import ai.helper2.catalog.usecase.ForgetGoneLists;
 import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.GetReviewItem;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
@@ -29,6 +32,7 @@ import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ListWellKnownResources;
 import ai.helper2.catalog.usecase.LookUpResourceTitles;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
+import ai.helper2.catalog.usecase.NameResourceByList;
 import ai.helper2.catalog.usecase.PurgeExpiredData;
 import ai.helper2.catalog.usecase.RemoveResource;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
@@ -128,6 +132,16 @@ public class CatalogBackOfficeConfiguration {
   }
 
   @Bean
+  ForgetGoneLists forgetGoneLists(GoneLists lists, CategoryLabels labels, UnitOfWork unitOfWork) {
+    return new ForgetGoneLists(lists, labels, unitOfWork);
+  }
+
+  @Bean
+  NameResourceByList nameResourceByList(ListNamings namings, CategoryLabels labels) {
+    return new NameResourceByList(namings, labels);
+  }
+
+  @Bean
   IndexResources indexResources(CatalogWriter writer, Resources resources) {
     return new IndexResources(writer, resources);
   }
@@ -164,8 +178,7 @@ public class CatalogBackOfficeConfiguration {
             periods.enrichmentRuns(),
             periods.webNews(),
             periods.pastEvents(),
-            periods.observedUnseen(),
-            periods.listIndex()));
+            periods.observedUnseen()));
   }
 
   @Bean

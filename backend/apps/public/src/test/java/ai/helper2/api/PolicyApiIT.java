@@ -43,7 +43,6 @@ class PolicyApiIT extends ApiTestBase {
             .andExpect(jsonPath("$.retention.webNewsSeconds").value(15_552_000))
             .andExpect(jsonPath("$.retention.pastEventsSeconds").value(315_360_000))
             .andExpect(jsonPath("$.retention.pendingReviewPagesSeconds").value(15_552_000))
-            .andExpect(jsonPath("$.retention.listIndexSeconds").value(2_592_000))
             .andExpect(jsonPath("$.retention.pageTextSeconds").value(86_400))
             .andExpect(jsonPath("$.retention.pageReadSeconds").value(2_592_000))
             .andExpect(jsonPath("$.retention.backupsSeconds").value(604_800))

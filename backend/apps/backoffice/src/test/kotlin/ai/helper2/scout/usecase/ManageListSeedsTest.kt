@@ -5,6 +5,7 @@ import ai.helper2.scout.HostsNeverRead
 import ai.helper2.scout.InMemoryListSeedStore
 import ai.helper2.scout.ListAddresses
 import ai.helper2.scout.ListKind
+import ai.helper2.scout.ListOrigin
 import ai.helper2.scout.ListSeed
 import ai.helper2.shared.UnitOfWork
 import java.time.Clock
@@ -225,6 +226,24 @@ class ManageListSeedsTest {
 
     assertEquals(ManageListSeeds.Added.Full, added)
     assertEquals(ManageListSeeds.MAX_SEEDS, store.all().size)
+  }
+
+  @Test
+  fun `UC-020 BR-003 the lists discovery added do not take the room of an administrator's lists`() {
+    repeat(ManageListSeeds.MAX_SEEDS) {
+      store.add(
+        ListSeed(
+          ListKind.WEB_PAGE,
+          "https://futurepedia.io/best-$it",
+          "discovery-coding",
+          now,
+          null,
+          origin = ListOrigin.DISCOVERY,
+        )
+      )
+    }
+
+    assertIs<ManageListSeeds.Added.Done>(seeds.add("42", "acme/awesome-rag", null))
   }
 
   @Test

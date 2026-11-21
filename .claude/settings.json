@@ -6,6 +6,25 @@
   },
   "includeCoAuthoredBy": false,
   "permissions": {
+    "allow": [
+      "Bash(scripts/verify.sh:*)",
+      "Bash(./scripts/verify.sh:*)",
+      "Bash(python3 .claude/hooks/guard-bash.py --self-test)",
+      "Bash(python3 scripts/adr-check.py:*)",
+      "Bash(python3 scripts/backlog.py roadmap:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.secrets)",
@@ -16,6 +35,19 @@
       "Bash(git push origin main:*)",
       "Bash(git push * main)",
       "Bash(git push *:main)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.py\""
+          }
+        ]
+      }
     ]
   }
 }

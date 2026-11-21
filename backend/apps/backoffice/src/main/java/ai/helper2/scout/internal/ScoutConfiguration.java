@@ -2,6 +2,8 @@ package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.CatalogWriter.Forgotten;
+import ai.helper2.catalog.DirectoryListIndex;
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.ScoutPolicy;
@@ -9,6 +11,7 @@ import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.catalog.usecase.LinkKnownRelationshipTargets;
+import ai.helper2.catalog.usecase.NameResourceByList;
 import ai.helper2.catalog.usecase.ProposeKnownTargets;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLock;
@@ -71,6 +74,7 @@ import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.scout.usecase.ManageDiscoveryHosts;
 import ai.helper2.scout.usecase.ManageListSeeds;
+import ai.helper2.scout.usecase.NamingLists;
 import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RequeueEnrichment;
@@ -96,6 +100,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
@@ -273,9 +278,37 @@ class ScoutConfiguration {
   }
 
   @Bean
-  ListIndex listIndex(IndexAwesomeLists indexAwesomeLists) {
-    return lists ->
-        indexAwesomeLists.replace(lists.stream().map(ScoutConfiguration::catalogText).toList());
+  ListIndex listIndex(
+      IndexAwesomeLists indexAwesomeLists,
+      DirectoryListIndex directoryLists,
+      DirectoryRatingIndex directoryRatings) {
+    return lists -> {
+      // UC-030 BR-009: a list page of a directory host is kept by its address, not as a resource.
+      lists.stream()
+          .filter(ListText::getOnDirectoryHost)
+          .map(ScoutConfiguration::directoryList)
+          .forEach(directoryLists::replace);
+      indexAwesomeLists.replace(
+          lists.stream()
+              .filter(list -> !list.getOnDirectoryHost())
+              .map(ScoutConfiguration::catalogText)
+              .toList());
+      // UC-030 BR-010: the figures a directory states are kept with what its list names. They come
+      // last: a rating that cannot be written never keeps a list from being indexed.
+      lists.stream()
+          .map(ListText::getRatings)
+          .filter(Objects::nonNull)
+          .forEach(directoryRatings::replace);
+    };
+  }
+
+  private static DirectoryListIndex.DirectoryList directoryList(ListText list) {
+    return new DirectoryListIndex.DirectoryList(
+        list.getUrl(),
+        list.getDirectoryListTitle(),
+        list.getEntries().stream()
+            .map(e -> new DirectoryListIndex.Entry(e.getUrl(), e.getHeadingPath()))
+            .toList());
   }
 
   private static AwesomeListText catalogText(ListText list) {
@@ -362,6 +395,9 @@ class ScoutConfiguration {
         runtime.declare(RuntimeSetting.SCOUT_MAX_ENRICHMENTS_PER_RUN, scout.maxEnrichmentsPerRun());
     IntSupplier gapDailyCalls =
         runtime.declare(RuntimeSetting.SCOUT_GAP_DAILY_CALLS, scout.gapDailyCalls());
+    IntSupplier dailyPageReadCredits =
+        runtime.declare(
+            RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS, scout.evidence().dailyPageReadCredits());
     OfficialPages pages =
         officialPages(
             pageReader.getIfAvailable(),
@@ -369,7 +405,7 @@ class ScoutConfiguration {
             webSearchQuota.getIfAvailable(),
             sharedCaches.getIfAvailable(),
             pageTextCache(redis.getIfAvailable(), json, resilience, scoutPolicy.pageText()),
-            scout.evidence(),
+            dailyPageReadCredits,
             scoutPolicy.pageRead(),
             clock,
             budgetCounter,
@@ -409,20 +445,18 @@ class ScoutConfiguration {
       @Nullable WebSearchQuota quota,
       @Nullable SharedCaches caches,
       PageTextCache textCache,
-      ScoutProperties.Evidence evidence,
+      IntSupplier dailyPageReadCredits,
       Duration pageReadTtl,
       Clock clock,
       CallCounter counter,
       MeterRegistry meters) {
-    if (reader == null
-        || !reader.getAvailable()
-        || roots == null
-        || evidence.dailyPageReadCredits() <= 0) {
-      log.info("Evidence ladder: product pages off (no reader, no key or no credits)");
+    if (reader == null || !reader.getAvailable() || roots == null) {
+      log.info("Evidence ladder: product pages off (no reader or no key)");
       return null;
     }
+    // UC-028 BR-002: the limit is read at each page read; 0 turns the reads off until it is raised.
     DailyBudget credits =
-        new DailyBudget(evidence.dailyPageReadCredits(), clock, "scout-evidence-extract", counter);
+        new DailyBudget(dailyPageReadCredits, clock, "scout-evidence-extract", counter);
     Gauge.builder("helper2.scout.evidence.credits.remaining", credits, DailyBudget::remaining)
         .description("Page reads left for product pages under today's cap (UTC day)")
         .register(meters);
@@ -432,7 +466,7 @@ class ScoutConfiguration {
             : new SharedCachePageLedger(caches.named(SharedCachePageLedger.CACHE), pageReadTtl);
     log.info(
         "Evidence ladder: product pages on, {} Extract credits a day",
-        evidence.dailyPageReadCredits());
+        dailyPageReadCredits.getAsInt());
     return new OfficialPages(
         reader,
         new PageReaderCreditBudget(credits, quota, meters),
@@ -477,14 +511,22 @@ class ScoutConfiguration {
       CatalogIndex index,
       ReviewQueue queue,
       ResourceCandidateJson details,
+      NameResourceByList nameByList,
       Clock clock) {
+    NamingLists namingLists =
+        (resource, title, list) ->
+            nameByList.name(
+                resource,
+                title,
+                new NameResourceByList.NamingList(
+                    list.getUrl(), list.getHeadingPath(), list.getDirectoryListTitle()));
     CatalogLookup lookup =
         url ->
             queue
                 .listedAs(url.getValue())
                 .map(l -> new ListedResource(l.resourceId(), l.title()))
                 .orElse(null);
-    return new IndexAcceptedCandidate(collectors, index, lookup, details, clock);
+    return new IndexAcceptedCandidate(collectors, index, lookup, details, namingLists, clock);
   }
 
   @Bean

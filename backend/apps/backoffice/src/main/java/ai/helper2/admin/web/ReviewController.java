@@ -13,6 +13,8 @@ import ai.helper2.api.common.model.VerificationDto;
 import ai.helper2.api.generated.ReviewApi;
 import ai.helper2.api.generated.model.AlreadyListedDto;
 import ai.helper2.api.generated.model.CandidateEditDto;
+import ai.helper2.api.generated.model.DirectoryListDto;
+import ai.helper2.api.generated.model.DirectoryRatingSourceDto;
 import ai.helper2.api.generated.model.DraftedExampleDto;
 import ai.helper2.api.generated.model.KnownTargetWriteDto;
 import ai.helper2.api.generated.model.NewResourceDto;
@@ -32,6 +34,7 @@ import ai.helper2.api.generated.model.ReviewRelationshipDto;
 import ai.helper2.api.generated.model.ReviewResolutionDto;
 import ai.helper2.api.generated.model.ReviewRunDto;
 import ai.helper2.api.generated.model.ReviewStatusDto;
+import ai.helper2.catalog.DirectoryRating;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
@@ -49,6 +52,8 @@ import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
+import java.math.BigDecimal;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -329,10 +334,25 @@ class ReviewController implements ReviewApi {
         new ReviewEvidenceDto(
                 item,
                 view.validationErrors(),
-                view.fields().stream().map(ReviewController::field).toList())
+                view.fields().stream().map(ReviewController::field).toList(),
+                view.directoryLists().stream()
+                    .map(
+                        l -> new DirectoryListDto(l.title(), URI.create(l.page()), l.headingPath()))
+                    .toList(),
+                view.directoryRatings().stream().map(ReviewController::ratingSource).toList())
             .run(view.run() == null ? null : run(view.run()))
             .relationship(view.relationship() == null ? null : relationship(view.relationship()))
             .aiContent(marker(view, item)));
+  }
+
+  private static DirectoryRatingSourceDto ratingSource(DirectoryRating.Stated stated) {
+    return new DirectoryRatingSourceDto(
+        stated.host(),
+        URI.create(stated.page()),
+        BigDecimal.valueOf(stated.figures().average()),
+        stated.figures().scale(),
+        stated.figures().votes(),
+        UtcTimes.odt(stated.readAt()));
   }
 
   private @Nullable AiContentMarkerDto marker(GetReviewEvidence.View e, ReviewItemDto item) {

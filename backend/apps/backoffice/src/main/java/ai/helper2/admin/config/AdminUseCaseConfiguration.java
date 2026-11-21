@@ -19,9 +19,11 @@ import ai.helper2.admin.usecase.ResolveReviewItems;
 import ai.helper2.admin.usecase.ReviewItemViews;
 import ai.helper2.admin.usecase.ShowReviewItem;
 import ai.helper2.catalog.AiCheckReport;
+import ai.helper2.catalog.AwesomeListEntries;
 import ai.helper2.catalog.AwesomeListSuspects;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.RelationshipTargets;
+import ai.helper2.catalog.ResourceRatings;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.enrichment.ValidationIssues;
@@ -130,14 +132,23 @@ class AdminUseCaseConfiguration {
 
   @Bean
   GetReviewEvidence getReviewEvidence(
-      ReviewQueue queue, ReviewEvidence evidence, ReviewItemViews views) {
-    return new ReadOnlyGetReviewEvidence(queue, evidence, views);
+      ReviewQueue queue,
+      ReviewEvidence evidence,
+      ReviewItemViews views,
+      AwesomeListEntries listEntries,
+      ResourceRatings ratings) {
+    return new ReadOnlyGetReviewEvidence(queue, evidence, views, listEntries, ratings);
   }
 
   static class ReadOnlyGetReviewEvidence extends GetReviewEvidence {
 
-    ReadOnlyGetReviewEvidence(ReviewQueue queue, ReviewEvidence evidence, ReviewItemViews views) {
-      super(queue, evidence, views);
+    ReadOnlyGetReviewEvidence(
+        ReviewQueue queue,
+        ReviewEvidence evidence,
+        ReviewItemViews views,
+        AwesomeListEntries listEntries,
+        ResourceRatings ratings) {
+      super(queue, evidence, views, listEntries, ratings);
     }
 
     @Override

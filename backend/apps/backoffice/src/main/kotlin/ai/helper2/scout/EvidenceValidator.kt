@@ -219,9 +219,6 @@ class EvidenceValidator(
           ),
       )
 
-    private val MUST_STATE_VALUE =
-      setOf("license", "openSource", "platforms", "pricing", "type", "useCase")
-
     internal fun statingWords(field: String, value: String): List<String> {
       val v = value.lowercase()
       if (field == "license") {
@@ -344,7 +341,8 @@ class EvidenceValidator(
         check(f.citations, label)
           ?: return CheckedField(f.field, f.value, Verification.REJECTED, emptyList())
       val stating =
-        if (f.field in MUST_STATE_VALUE) cited.filter { statesValue(it.excerpt, f.field, f.value) }
+        if (f.field in EvidenceRules.MUST_STATE_VALUE)
+          cited.filter { statesValue(it.excerpt, f.field, f.value) }
         else cited
       val selfDeclared = stating.ifEmpty { cited }.all { isSelfDeclared(it) }
       val origin = if (selfDeclared) ValueOrigin.SELF_DECLARED else ValueOrigin.AI_EXTRACTED
@@ -359,7 +357,8 @@ class EvidenceValidator(
           errors += "$label: conflicts with source-provided value"
           CheckedField(f.field, f.value, Verification.CONFLICTING, cited, origin)
         }
-        f.field in MUST_STATE_VALUE && cited.none { statesValue(it.excerpt, f.field, f.value) } -> {
+        f.field in EvidenceRules.MUST_STATE_VALUE &&
+          cited.none { statesValue(it.excerpt, f.field, f.value) } -> {
           val error = "$label: ${ScoutPolicy.UNSTATED_VALUE}"
           errors += error
           unstated += error
@@ -536,7 +535,8 @@ class EvidenceValidator(
 }
 
 object EvidenceRules {
-  @JvmField val NEWLY_STATED = setOf("pricing", "type", "useCase")
+  @JvmField
+  val MUST_STATE_VALUE = setOf("license", "openSource", "platforms", "pricing", "type", "useCase")
 
   @JvmStatic
   fun statesValue(excerpt: String, field: String, value: String): Boolean {

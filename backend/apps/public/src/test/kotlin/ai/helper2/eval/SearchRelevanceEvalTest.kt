@@ -52,7 +52,7 @@ class SearchRelevanceEvalTest {
     )
     assumeTrue(
       !qrels.isEmpty,
-      "docs/eval/search-qrels.tsv has no judgements yet: label backend/eval-data/search-pool.tsv first.",
+      "eval/search-qrels.tsv has no judgements yet: label backend/eval-data/search-pool.tsv first.",
     )
     val measured = SearchEvaluation.mean(evaluation.scores().mapNotNull { it.ndcg10 })
     val current =

@@ -75,6 +75,41 @@ class DiscoveryPagesTest {
   }
 
   @Test
+  void uc019Br001AListPageOfADirectoryHostWaitsForReviewAndItsOtherPagesAreDropped() {
+    DiscoveryPages directory = new DiscoveryPages(new HostLists(Set.of(), Set.of("example.org")));
+    CanonicalUrl list = CanonicalUrl.of("https://example.org/lists/12-best-ai-tools");
+    CanonicalUrl onASubdomain = CanonicalUrl.of("https://tools.example.org/top-10-ai-agents");
+    CanonicalUrl post = CanonicalUrl.of("https://example.org/blog/how-we-rank-ai-tools");
+
+    assertThat(directory.classify(list, "12 Best AI Tools").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST_TO_REVIEW);
+    assertThat(directory.classify(onASubdomain, "Top 10 AI agents").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST_TO_REVIEW);
+    assertThat(directory.classify(post, "How we rank AI tools")).isNull();
+    assertThat(PAGES.classify(list, "12 Best AI Tools").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST);
+  }
+
+  @Test
+  void uc030Br003AListPageOfADirectoryHostWhoseListsAreReadIsAListToRead() {
+    DiscoveryPages pages =
+        new DiscoveryPages(
+            new HostLists(Set.of(), Set.of("example.org", "other.org"), Set.of("example.org")));
+    CanonicalUrl list = CanonicalUrl.of("https://example.org/lists/12-best-ai-tools");
+    CanonicalUrl onASubdomain = CanonicalUrl.of("https://tools.example.org/top-10-ai-agents");
+    CanonicalUrl switchOff = CanonicalUrl.of("https://other.org/lists/12-best-ai-tools");
+    CanonicalUrl post = CanonicalUrl.of("https://example.org/blog/how-we-rank-ai-tools");
+
+    assertThat(pages.classify(list, "12 Best AI Tools").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST_TO_READ);
+    assertThat(pages.classify(onASubdomain, "Top 10 AI agents").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST_TO_READ);
+    assertThat(pages.classify(switchOff, "12 Best AI Tools").shape())
+        .isEqualTo(DiscoveryPages.Shape.LIST_TO_REVIEW);
+    assertThat(pages.classify(post, "How we rank AI tools")).isNull();
+  }
+
+  @Test
   void aPostAboutAProductIsAnArticle() {
     String engadget =
         "https://www.engadget.com/2300677/google-gemini-carbon-promises-significant-leap-in-ai-coding";

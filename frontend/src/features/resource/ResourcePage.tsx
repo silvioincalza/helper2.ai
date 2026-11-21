@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/format';
 import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { WhereFrom } from './WhereFrom';
 import { FoundInLists } from './FoundInLists';
+import { DirectoryRating, RATING_FIELD } from './DirectoryRating';
 import { cardHeadFor, Resource, ResourceSkeleton } from './Resource';
 import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { resourcePath } from '@/lib/searchState';
@@ -113,6 +114,7 @@ function ResourceView({ id }: { id: string }) {
 
 function DetailSections({ detail: d }: { detail: ResourceDetail }) {
   const { t } = useTranslation();
+  const [reportField, setReportField] = useState('');
   const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');
   const candidates = d.relationships.filter(
     (r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING',
@@ -164,13 +166,15 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
 
       <AdSenseSlot placement="resource" />
 
+      <DirectoryRating rating={d.rating} onReport={() => setReportField(RATING_FIELD)} />
+
       <FoundInLists foundIn={d.foundIn} />
 
       <WhereFrom detail={d} />
 
       <section aria-labelledby="report-h" className="panel">
         <h2 id="report-h">{t('report.title')}</h2>
-        <ReportForm resourceId={d.card.id} />
+        <ReportForm key={reportField} resourceId={d.card.id} field={reportField} />
       </section>
     </>
   );

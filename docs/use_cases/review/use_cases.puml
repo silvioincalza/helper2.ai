@@ -1,0 +1,24 @@
+@startuml Review
+left to right direction
+
+actor "Administrator" as admin
+actor "Scheduler" as scheduler
+actor "Language Model" as llm
+actor "Source Provider" as source_provider
+
+rectangle "Review" {
+    usecase "UC-024\nReview Candidates" as UC024
+    usecase "UC-025\nDecide Relationship Targets by Name" as UC025
+    usecase "UC-026\nCurate Resource Fields" as UC026
+    usecase "UC-027\nResearch Review Items" as UC027
+}
+
+admin --> UC024
+admin --> UC025
+admin --> UC026
+admin --> UC027
+scheduler --> UC027
+UC027 --> llm
+UC027 --> source_provider
+
+@enduml

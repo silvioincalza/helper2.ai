@@ -79,12 +79,23 @@ function EvidenceBody({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
-  const { item, run, relationship, fields, validationErrors } = evidence;
+  const { item, run, relationship, fields, validationErrors, directoryLists, directoryRatings } =
+    evidence;
   const retargetable = item.status === 'OPEN' && item.kind === 'RELATIONSHIP_CANDIDATE';
   const targetCurated = relationship?.targetOrigin === 'CURATED';
-  if (!run && !relationship) return <p className="muted">{t('admin.evidence.none')}</p>;
+  if (!run && !relationship) {
+    return (
+      <>
+        <DirectoryLists lists={directoryLists} />
+        <DirectoryRatings ratings={directoryRatings} />
+        <p className="muted">{t('admin.evidence.none')}</p>
+      </>
+    );
+  }
   return (
     <>
+      <DirectoryLists lists={directoryLists} />
+      <DirectoryRatings ratings={directoryRatings} />
       {run && (
         <dl className="h2-admin__run">
           <dt>{t('admin.evidence.model')}</dt>
@@ -172,6 +183,77 @@ function EvidenceBody({
       {!relationship && fields.length === 0 && (
         <p className="muted">{t('admin.evidence.noFields')}</p>
       )}
+    </>
+  );
+}
+
+// UC-024 BR-020: the back office names the directories whose figures make the rating.
+function DirectoryRatings({ ratings }: { ratings: ReviewEvidence['directoryRatings'] }) {
+  const { t } = useTranslation();
+  if (ratings.length === 0) return null;
+  return (
+    <>
+      <p id="rq-directory-ratings" className="h2-admin__h3">
+        {t('admin.evidence.directoryRatings', { count: ratings.length })}
+      </p>
+      <ul aria-labelledby="rq-directory-ratings">
+        {ratings.map((rating) => {
+          const href = safeHref(rating.page);
+          return (
+            <li key={rating.page}>
+              {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                  {rating.host}
+                </a>
+              ) : (
+                rating.host
+              )}{' '}
+              <span className="muted">
+                {t('admin.evidence.directoryRating', {
+                  average: rating.average,
+                  scale: rating.scale,
+                  count: rating.votes,
+                  date: formatDate(rating.readAt, 'INSTANT'),
+                })}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+function DirectoryLists({ lists }: { lists: ReviewEvidence['directoryLists'] }) {
+  const { t } = useTranslation();
+  if (lists.length === 0) return null;
+  return (
+    <>
+      <p id="rq-directory-lists" className="h2-admin__h3">
+        {t('admin.evidence.directoryLists', { count: lists.length })}
+      </p>
+      <ul aria-labelledby="rq-directory-lists">
+        {lists.map((list) => {
+          const href = safeHref(list.page);
+          return (
+            <li key={list.page}>
+              {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                  {list.title}
+                </a>
+              ) : (
+                list.title
+              )}
+              {list.headingPath && (
+                <span className="muted">
+                  {' '}
+                  {t('admin.evidence.directoryListUnder', { heading: list.headingPath })}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

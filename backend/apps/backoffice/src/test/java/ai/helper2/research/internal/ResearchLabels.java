@@ -13,9 +13,9 @@ import java.util.UUID;
 
 record ResearchLabels(List<Label> labels) {
 
-  static final Path FILE = Path.of("../docs/eval/research-labels.tsv");
+  static final Path FILE = Path.of("../eval/research-labels.tsv");
 
-  static final Path MANUAL = Path.of("../docs/eval/research-labels-manual.tsv");
+  static final Path MANUAL = Path.of("../eval/research-labels-manual.tsv");
 
   static final List<String> ATTRIBUTES =
       List.of("type", "canonicalUrl", "title", "license", "pricing", "openSource");

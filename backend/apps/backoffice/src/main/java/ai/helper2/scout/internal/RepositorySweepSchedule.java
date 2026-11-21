@@ -1,6 +1,7 @@
 package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.enrichment.RepositoryVisits;
+import ai.helper2.catalog.usecase.ForgetGoneLists;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.platform.ScheduledJob;
@@ -35,6 +36,7 @@ class RepositorySweepSchedule implements SchedulingConfigurer {
       ScoutProperties scout,
       ObjectProvider<RepositoryStates> states,
       RepositoryVisits visits,
+      ForgetGoneLists goneLists,
       ClusterLocks locks,
       Clock clock,
       MeterRegistry meters) {
@@ -42,7 +44,13 @@ class RepositorySweepSchedule implements SchedulingConfigurer {
     RepositoryStates github = states.getIfAvailable();
     this.sweep =
         settings.enabled() && github != null
-            ? new SweepRepositories(visits, github, clock, settings.batch(), meters)
+            ? new SweepRepositories(
+                visits,
+                github,
+                clock,
+                settings.batch(),
+                meters,
+                notFound -> goneLists.forget(notFound, settings.goneListVisits()))
             : null;
     this.lock = locks.keptAlive("scout-repository-sweep", LEASE);
     this.meters = meters;

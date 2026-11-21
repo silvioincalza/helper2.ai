@@ -389,7 +389,7 @@
       },
       "hosts": {
         "title": "Discovery hosts",
-        "lede": "Sites discovery knows by name. A post on a writing site is proposed as an article; a page on a directory is never kept. The next discovery run uses your change.",
+        "lede": "Sites discovery knows by name. A post on a writing site is proposed as an article; a page on a directory is never kept. The list pages of a directory are read as lists only after you turn that on for the host, once you have checked the host. The next discovery run uses your change.",
         "addTitle": "Add a host",
         "host": "Host",
         "list": "List",
@@ -426,7 +426,35 @@
           "DIRECTORY": "Its pages can then be proposed as products."
         },
         "confirmRemove": "Remove host",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "lists": {
+          "on": "its lists are read",
+          "off": "its lists are not read"
+        },
+        "switch": {
+          "on": "Read its lists",
+          "off": "Stop reading its lists"
+        },
+        "switchLabel": {
+          "on": "Read the lists of {{host}}",
+          "off": "Stop reading the lists of {{host}}"
+        },
+        "switchTitle": {
+          "on": "Read the lists of {{host}}?",
+          "off": "Stop reading the lists of {{host}}?"
+        },
+        "switchEffect": {
+          "on": "Check the host first. A list page discovery finds on it is then added to the lists to read and read at most once a week, one live web credit a read. Each link of the list follows the rule of its kind: what its source confirms is indexed, the rest waits in the review list.",
+          "off": "The lists discovery added from this host are no longer read. What they already named stays. A new list page of this host waits in the review list."
+        },
+        "confirmSwitch": {
+          "on": "Read its lists",
+          "off": "Stop reading"
+        },
+        "reading": {
+          "on": "The lists of {{host}} are read from the next run.",
+          "off": "The lists of {{host}} are no longer read."
+        }
       },
       "lists": {
         "title": "Lists to read",
@@ -453,11 +481,16 @@
           "GITHUB_REPOSITORY": "GitHub",
           "WEB_PAGE": "Web page"
         },
-        "addedBy": "by {{who}} · {{at}}",
+        "by": {
+          "ADMINISTRATOR": "by {{who}} · {{at}}",
+          "DISCOVERY": "found by {{who}} on a directory host · {{at}}"
+        },
+        "discovered_one": "{{count}} more list was found by discovery on a directory host whose lists are read. It does not count against the lists you can add.",
+        "discovered_other": "{{count}} more lists were found by discovery on directory hosts whose lists are read. They do not count against the lists you can add.",
         "remove": "Remove",
         "removeLabel": "Remove {{address}}",
         "removeTitle": "Stop reading {{address}}?",
-        "removeEffect": "The list and the resources found in it stay in the catalog. Its entries leave the list index 30 days after the last pass that read it.",
+        "removeEffect": "The list and the resources found in it stay in the catalog. What it named at its last read stays too.",
         "confirmRemove": "Remove list",
         "cancel": "Cancel"
       },
@@ -681,6 +714,12 @@
       "loading": "Loading the evidence…",
       "loadError": "Could not load the evidence.",
       "none": "No run or relationship behind this item. Decide from what it says above.",
+      "directoryLists_one": "Named in {{count}} directory list",
+      "directoryLists_other": "Named in {{count}} directory lists",
+      "directoryListUnder": "under {{heading}}",
+      "directoryRatings_one": "Rated by {{count}} directory page",
+      "directoryRatings_other": "Rated by {{count}} directory pages",
+      "directoryRating": "{{average}} out of {{scale}}, {{count}} votes, read {{date}}",
       "targetCurated": "target chosen by an admin",
       "model": "Model",
       "prompt": "Prompt",

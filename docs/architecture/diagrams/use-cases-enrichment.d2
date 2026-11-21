@@ -1,0 +1,45 @@
+# Use cases of the Enrichment module: its actors and the use cases each one starts or serves.
+# D2 twin of docs/use_cases/enrichment/use_cases.puml: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt use-cases-enrichment.d2 && d2 use-cases-enrichment.d2 use-cases-enrichment.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+admin: "Administrator" {class: person}
+scheduler: "Scheduler" {class: ext}
+llm: "Language Model" {class: ai}
+embedder: "Embedding Service" {class: ai}
+source_provider: "Source Provider" {class: ext}
+
+module: "Enrichment" {
+  class: group
+  UC021: "UC-021\nEnrich Resources" {
+    class: app
+    shape: oval
+  }
+  UC022: "UC-022\nManage the Enrichment Queue" {
+    class: app
+    shape: oval
+  }
+  UC023: "UC-023\nKeep the Catalog About AI" {
+    class: app
+    shape: oval
+  }
+}
+
+scheduler -> module.UC021
+admin -> module.UC022
+admin -> module.UC023
+scheduler -> module.UC023
+module.UC021 -> llm
+module.UC021 -> embedder
+module.UC021 -> source_provider
+module.UC023 -> source_provider
