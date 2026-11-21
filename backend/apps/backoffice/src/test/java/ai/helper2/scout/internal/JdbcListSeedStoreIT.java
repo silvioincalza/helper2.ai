@@ -138,6 +138,67 @@ class JdbcListSeedStoreIT {
     assertThat(store.lastReads().get(PAGE).getFollowed()).isEmpty();
   }
 
+  // UC-030 BR-012: the checks in a row that said a page is gone are counted from the first one.
+  @Test
+  void uc030Br012TheChecksThatSayAPageIsGoneAreCountedWithTheTimeOfTheFirst() {
+    store.add(new ListSeed(ListKind.WEB_PAGE, PAGE, "42", T0, null));
+
+    ListSeed first = store.goneChecked(PAGE, T0);
+    ListSeed second = store.goneChecked(PAGE, T0.plusSeconds(3600));
+
+    assertThat(first.getGoneChecks()).isEqualTo(1);
+    assertThat(second.getGoneChecks()).isEqualTo(2);
+    assertThat(second.getGoneSince().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(T0);
+    assertThat(page().getGoneChecks()).isEqualTo(2);
+    assertThat(store.goneChecked("https://it-blog.acme.dev/not-a-list", T0)).isNull();
+  }
+
+  // UC-030 BR-012: an answer of the site and a good read both start the count again.
+  @Test
+  void uc030Br012AnAnswerOfTheSiteAndAGoodReadStartTheCountOfGoneChecksAgain() {
+    store.add(new ListSeed(ListKind.WEB_PAGE, PAGE, "42", T0, null));
+    store.goneChecked(PAGE, T0);
+
+    store.notGone(PAGE);
+
+    assertThat(page().getGoneChecks()).isZero();
+    assertThat(page().getGoneSince()).isNull();
+
+    store.goneChecked(PAGE, T0);
+    store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
+
+    assertThat(page().getGoneChecks()).isZero();
+    assertThat(page().getGoneSince()).isNull();
+  }
+
+  // UC-030 BR-012: a page an administrator added that is gone stays a list to read, without its
+  // last read.
+  @Test
+  void uc030Br012AGonePageAnAdministratorAddedKeepsItsRowAndLosesItsLastRead() {
+    store.add(new ListSeed(ListKind.WEB_PAGE, PAGE, "42", T0, null));
+    store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
+    store.goneChecked(PAGE, T0);
+
+    store.forgotten(PAGE);
+
+    assertThat(store.lastReads()).doesNotContainKey(PAGE);
+    assertThat(page().getGoneChecks()).isEqualTo(1);
+  }
+
+  // UC-030 BR-012: a list discovery added that is gone is no longer a list to read.
+  @Test
+  void uc030Br012AGoneListDiscoveryAddedIsRemovedWithItsLastRead() {
+    store.add(
+        new ListSeed(
+            ListKind.WEB_PAGE, PAGE, "discovery-coding", T0, null, null, 0, ListOrigin.DISCOVERY));
+    store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
+
+    store.forgotten(PAGE);
+
+    assertThat(store.lastReads()).doesNotContainKey(PAGE);
+    assertThat(store.all()).noneMatch(s -> s.getAddress().equals(PAGE));
+  }
+
   @Test
   void aGitHubListHasNoStoredRead() {
     store.add(repository("it-acme/awesome-rag", "42", T0, null));

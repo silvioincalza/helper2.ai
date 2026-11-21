@@ -385,6 +385,7 @@ helper2:
         max-discovered: ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}
         discovered-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}
         item-page-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}
+        gone-checks: ${H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS:3}
         follow:
           steps-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}
           check-calls-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}

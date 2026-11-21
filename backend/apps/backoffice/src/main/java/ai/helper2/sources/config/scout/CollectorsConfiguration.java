@@ -20,6 +20,7 @@ import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.DomainRoots;
+import ai.helper2.scout.GoneWebPageRule;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.PageStatusReader;
@@ -57,6 +58,7 @@ import ai.helper2.sources.github.scout.GitHubAwesomeCollector;
 import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
 import ai.helper2.sources.github.scout.GitHubTopicLeadersCollector;
+import ai.helper2.sources.github.scout.GoneWebPages;
 import ai.helper2.sources.github.scout.ItemPageReads;
 import ai.helper2.sources.github.scout.ListLinkFollower;
 import ai.helper2.sources.github.scout.SdkSearchPlan;
@@ -398,7 +400,8 @@ class CollectorsConfiguration {
       ScoutLiveWebCredits credits,
       HostsNeverRead neverRead,
       Clock clock,
-      ListLinkFollower follower) {
+      ListLinkFollower follower,
+      GoneWebPages gone) {
     return new WebPageLists(
         addedLists,
         reader,
@@ -408,7 +411,18 @@ class CollectorsConfiguration {
         c.webPages().retryAfter(),
         c.webPages().discoveredReadsPerDay(),
         clock,
-        follower);
+        follower,
+        gone);
+  }
+
+  @Bean
+  GoneWebPages goneWebPages(
+      CollectorProperties.GitHubAwesome c,
+      PageStatusReader statuses,
+      ListSeedStore addedLists,
+      GoneWebPageRule catalog,
+      MeterRegistry meters) {
+    return new GoneWebPages(statuses, addedLists, catalog, c.webPages().goneChecks(), meters);
   }
 
   @Bean

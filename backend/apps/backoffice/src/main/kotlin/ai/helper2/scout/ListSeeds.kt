@@ -34,6 +34,8 @@ constructor(
   val readTriedAt: Instant? = null,
   val readFailures: Int = 0,
   val origin: ListOrigin = ListOrigin.ADMINISTRATOR,
+  val goneChecks: Int = 0,
+  val goneSince: Instant? = null,
 ) {
   val id: UUID
     get() = ListAddresses.idOf(address)
@@ -91,6 +93,34 @@ interface ListSeedStore {
   fun followed(address: String, followed: List<ListReading.Followed>)
 
   fun lastReads(): Map<String, ListReading>
+
+  /**
+   * UC-030 BR-012: one more status check in a row said that the web page is gone. Gives the list
+   * with its new count, or nothing when the list is no longer a list to read.
+   */
+  fun goneChecked(address: String, at: Instant): ListSeed?
+
+  /** UC-030 BR-012: the site answered for the page, so the count of gone checks starts again. */
+  fun notGone(address: String)
+
+  /**
+   * UC-030 BR-012: a web page that is gone keeps no last read, and a list discovery added is no
+   * longer a list to read.
+   */
+  fun forgotten(address: String)
+}
+
+/**
+ * UC-030 BR-012: where the Scout hands a web page list whose site says the page is gone. True when
+ * the catalog held something the list named.
+ */
+fun interface GoneWebPageRule {
+  fun forget(list: CanonicalUrl, at: Instant): Boolean
+
+  companion object {
+    /** Counts the lists gone at their source that no longer name their resources, by kind. */
+    const val FORGOTTEN = "helper2.scout.lists.forgotten"
+  }
 }
 
 /** Where discovery hands a list page it found on a directory host whose lists are read. */

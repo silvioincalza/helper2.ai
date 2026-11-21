@@ -157,6 +157,7 @@ public final class CollectorProperties {
         @PositiveOrZero int maxDiscovered,
         @PositiveOrZero int discoveredReadsPerDay,
         @PositiveOrZero int itemPageReadsPerDay,
+        @Positive int goneChecks,
         @NotNull @Valid Follow follow) {
 
       /**
