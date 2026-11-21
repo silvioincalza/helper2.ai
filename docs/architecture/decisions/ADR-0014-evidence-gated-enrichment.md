@@ -283,7 +283,7 @@ place to say that.
       nothing is read either. The per-run enrichment budget ([0011](ADR-0011-scout-runner.md)) counts resources, not gap
       calls: a run can make up to its budget plus the gap calls left today. Gauge `helper2.scout.gap.budget.remaining`.
     - Extract credits: `helper2.scout.evidence.daily-page-read-credits` (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`), a
-      runtime setting of [0007](ADR-0007-configuration-secrets-runtime-settings.md) §10, 3,000 when empty. Each
+      runtime setting of [0007](ADR-0007-configuration-secrets-runtime-settings.md) §10, 1,000 by default. Each
       credit also counts on the global Tavily credit counter of live search
       ([0027](ADR-0027-live-web-store-first-daily-quota.md), `H2_LIVE_WEB_DAILY_CREDITS`), and on
       `helper2.live-web.credits{feature=scout-evidence}`. When the global counter cannot answer, no page is read. Gauge
@@ -446,7 +446,7 @@ links, adds or renames an ABOUT target in the review list ([0038](ADR-0038-back-
   unproven fields and fewer review items, at most 400 extra model calls a day, inside the 500.
 - The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (500);
   unchanged text costs nothing and does not use up a slot of the run. Extract credits stop at the page-read limit of the day
-  (3,000 by default, ≤ 2 credits a product), inside the global cap. See [costs](../costs.md).
+  (1,000 by default, ≤ 2 credits a product), inside the global cap. See [costs](../costs.md).
 - A new prompt does not re-enrich the catalog: the code re-check cleans the stored answers once; only resources that
   still miss facts and have something new to read go to the model again, accepted products first.
 - Any new wording of the enrichment prompt is a new version, a typo fix too. From then on a re-check sends every

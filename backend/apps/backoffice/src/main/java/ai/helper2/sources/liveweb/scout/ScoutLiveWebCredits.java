@@ -3,6 +3,7 @@ package ai.helper2.sources.liveweb.scout;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,19 +18,19 @@ public class ScoutLiveWebCredits {
 
   private final QuotaCounter counter;
   private final QuotaKeys keys;
-  private final Supplier<Long> dailyCap;
+  private final LongSupplier dailyCap;
   private final MeterRegistry meters;
   private final String feature;
 
   public ScoutLiveWebCredits(
-      QuotaCounter counter, QuotaKeys keys, Supplier<Long> dailyCap, MeterRegistry meters) {
+      QuotaCounter counter, QuotaKeys keys, LongSupplier dailyCap, MeterRegistry meters) {
     this(counter, keys, dailyCap, meters, FEATURE);
   }
 
   private ScoutLiveWebCredits(
       QuotaCounter counter,
       QuotaKeys keys,
-      Supplier<Long> dailyCap,
+      LongSupplier dailyCap,
       MeterRegistry meters,
       String feature) {
     this.counter = counter;
@@ -44,13 +45,13 @@ public class ScoutLiveWebCredits {
   }
 
   public long dailyCap() {
-    return dailyCap.get();
+    return dailyCap.getAsLong();
   }
 
   // UC-028 BR-002: the Scout's searches stop at the limit applied now; 0 turns them off.
   public boolean capReached() {
     try {
-      return counter.used(scout()) >= dailyCap.get();
+      return counter.used(scout()) >= dailyCap.getAsLong();
     } catch (RuntimeException e) {
       log.warn("Scout live web credits unreadable: {}", e.getClass().getSimpleName());
       return true;

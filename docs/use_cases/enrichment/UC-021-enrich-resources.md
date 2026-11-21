@@ -166,7 +166,7 @@ Audience and tech level are judgements of the model: they are stored as AI estim
 
 ### BR-008: Daily Budgets
 
-The enrichment uses at most 500 model calls per UTC day by default, the added reading rounds included; of these, the added reading rounds use at most 400. The official pages use at most 3,000 page-reading credits per day by default. Administrators can change both call budgets and the page-reading credits at runtime (UC-028).
+The enrichment uses at most 500 model calls per UTC day by default, the added reading rounds included; of these, the added reading rounds use at most 400. The official pages use at most 1,000 page-reading credits per day by default. Administrators can change both call budgets and the page-reading credits at runtime (UC-028).
 
 ### BR-009: Unchanged Input Is Not Asked Again
 

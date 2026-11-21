@@ -67,7 +67,7 @@ describe how.
 | NFR-012 | Back Office Access         | 100% of back office requests come through the VPN and need a signed-in user with the administrator role. | Security | High | Implemented |
 | NFR-013 | Model Provenance           | Every guide answer records the provider and the model ids that wrote it, and the page shows them. | Maintainability | Medium | Implemented |
 | NFR-014 | Daily Enrichment Budget    | The language model is called at most 500 times per day in total for enrichment, gap rounds included; an administrator may raise the limit up to 3,000. | Scalability | High | Implemented |
-| NFR-015 | Live Web Budget            | Each visitor gets at most 3 live web searches per day for search and 3 for the guide, and the Scout spends at most its two daily limits of live web credits, one for its searches and one for its page reads, each 3,000 by default. | Scalability | High | Implemented |
+| NFR-015 | Live Web Budget            | Each visitor gets at most 3 live web searches per day for search and 3 for the guide, and the Scout spends at most its two daily limits of live web credits, one for its searches and one for its page reads, each 1,000 by default and at most 3,000. | Scalability | High | Implemented |
 
 ## Constraints
 

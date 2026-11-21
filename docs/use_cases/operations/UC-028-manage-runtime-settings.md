@@ -104,7 +104,7 @@ A limit takes a whole number from 0 to its maximum; 0 turns the limited work off
 
 ### BR-003: Default Value
 
-Without a change, a setting has the value configured for the application at start, through the variable shown with it. A reset brings that default back. The live web credits for all of helper2.ai, the live web credits for the Scout's searches and the page-read credits have their maximum as default when none is configured. An application does not start with a configured default outside the allowed range.
+Without a change, a setting has the value configured for the application at start, through the variable shown with it. A reset brings that default back. The live web credits for all of helper2.ai have their maximum as default when none is configured. The live web credits for the Scout's searches and the page-read credits are 1,000 a day each by default. An application does not start with a configured default outside the allowed range.
 
 ### BR-004: Change on the Version Seen
 

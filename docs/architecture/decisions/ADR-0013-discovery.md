@@ -180,7 +180,7 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
     and to the Scout's own counter (`ScoutLiveWebCredits`; Redis, same key, field `scout-credits`). A search costs
     Tavily's `usage.credits`, or 2 (advanced) or 1 (basic) when the answer does not say. The metric is
     `helper2.live-web.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits` (`H2_SCOUT_DAILY_CREDITS`,
-    a runtime setting of [0007](ADR-0007-configuration-secrets-runtime-settings.md) §10, 3,000 when empty) the categories due that day are SKIPPED ("Daily Tavily credit cap of the Scout reached") and try again the next
+    a runtime setting of [0007](ADR-0007-configuration-secrets-runtime-settings.md) §10, 1,000 by default) the categories due that day are SKIPPED ("Daily Tavily credit cap of the Scout reached") and try again the next
     day: the skip is `CollectedBatch.deferred`, so their pass stays open. The cap is checked again before each search:
     a pass that reaches it stops there, keeps its checkpoint and remembers the searches it made (§11). Every attempt counts, a retried one too
     (`ScoutLiveWebCredits.countedAttempt`): a failed attempt costs what its depth costs, since Tavily may have charged a
@@ -502,7 +502,7 @@ No new table for deep search, no new dependency.
   course pages and models under the like floor together.
 - Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). A normal day is about 12 credits
   (5 categories × ~1.2 searches × 2 credits); on LinkedIn's day its 20 basic searches bring the day to about 32. The
-  daily cap is 3,000 by default, so it stops a fault, not a normal day, until an administrator lowers it. Deep search spends no credits.
+  daily cap is 1,000 by default, so it stops a fault, not a normal day, until an administrator lowers it. Deep search spends no credits.
 - The global daily credit cap of the live search (`H2_LIVE_WEB_DAILY_CREDITS`) counts the Scout's discovery credits
   too: a day of discovery leaves less for visitors. The Scout itself checks only its own cap.
 - 34 run records a week and 34 rows on the Sources page, grouped by family so they stay readable.

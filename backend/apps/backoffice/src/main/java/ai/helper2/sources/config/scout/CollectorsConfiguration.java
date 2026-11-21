@@ -76,6 +76,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,12 +187,9 @@ class CollectorsConfiguration {
       QuotaKeys keys,
       RuntimeSettings runtime,
       MeterRegistry meters) {
-    // UC-028 BR-003: without a configured value the limit is its maximum.
-    return new ScoutLiveWebCredits(
-        counter,
-        keys,
-        runtime.declareCap(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS, c.dailyCredits()),
-        meters);
+    IntSupplier dailyCredits =
+        runtime.declare(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS, c.dailyCredits());
+    return new ScoutLiveWebCredits(counter, keys, dailyCredits::getAsInt, meters);
   }
 
   @Bean
@@ -276,7 +274,7 @@ class CollectorsConfiguration {
         "Scout sources",
         SettingsGroup.SCOUT_SOURCES,
         List.of(
-            Setting.cap(
+            Setting.count(
                 "scoutSources.dailyCredits",
                 "Live web credits a day, Scout searches",
                 credits.dailyCredits(),

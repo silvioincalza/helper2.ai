@@ -54,7 +54,7 @@ class CollectorPropertiesTest {
         .withSystemProperties("H2_SCOUT_DAILY_CREDITS=40")
         .run(c ->
             assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits())
-                .isEqualTo(40L));
+                .isEqualTo(40));
   }
 
   @Test
@@ -66,8 +66,8 @@ class CollectorPropertiesTest {
       assertThat(discovery.searchDepth()).isEqualTo("advanced");
       assertThat(discovery.maxResults()).isEqualTo(10);
       assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits())
-          .as("UC-028 BR-003: none configured, the runtime setting applies its maximum")
-          .isNull();
+          .as("UC-028 BR-003: the default of the runtime setting when no variable is set")
+          .isEqualTo(1000);
       assertThat(discovery.excludeDomains()).contains("producthunt.com", "alternativeto.net");
       assertThat(c.getBean(CollectorProperties.HfTrending.class))
           .isEqualTo(new CollectorProperties.HfTrending(Duration.ofDays(1)));

@@ -211,7 +211,7 @@ class ScoutConfiguration {
                 scout.gapDailyCalls(),
                 "calls a day",
                 "H2_SCOUT_GAP_DAILY_CALLS"),
-            Setting.cap(
+            Setting.count(
                 "scout.evidenceDailyExtractCredits",
                 "Page reads a day, product pages",
                 scout.evidence().dailyPageReadCredits(),
@@ -362,9 +362,8 @@ class ScoutConfiguration {
         runtime.declare(RuntimeSetting.SCOUT_MAX_ENRICHMENTS_PER_RUN, scout.maxEnrichmentsPerRun());
     IntSupplier gapDailyCalls =
         runtime.declare(RuntimeSetting.SCOUT_GAP_DAILY_CALLS, scout.gapDailyCalls());
-    // UC-028 BR-003: without a configured value the limit is its maximum.
-    Supplier<Long> dailyPageReadCredits =
-        runtime.declareCap(
+    IntSupplier dailyPageReadCredits =
+        runtime.declare(
             RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS, scout.evidence().dailyPageReadCredits());
     OfficialPages pages =
         officialPages(
@@ -373,7 +372,7 @@ class ScoutConfiguration {
             webSearchQuota.getIfAvailable(),
             sharedCaches.getIfAvailable(),
             pageTextCache(redis.getIfAvailable(), json, resilience, scoutPolicy.pageText()),
-            () -> Math.toIntExact(dailyPageReadCredits.get()),
+            dailyPageReadCredits,
             scoutPolicy.pageRead(),
             clock,
             budgetCounter,

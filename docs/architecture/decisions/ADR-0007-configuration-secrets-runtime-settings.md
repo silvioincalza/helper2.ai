@@ -104,10 +104,10 @@ are different: they only say how much we spend, and the right number changes wit
     code; going above it needs a pull request. A value outside 0 to the maximum is refused by the server (400) and
     blocked in the form. A default above the maximum stops startup with the variable's name. Every runtime setting is
     a finite number: an empty `H2_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 2,000 credits a
-    day. So "Reset to default" never removes the global Tavily cap. The Scout's two credit limits work the same
-    way: `H2_SCOUT_DAILY_CREDITS` and `H2_SCOUT_PAGE_READER_DAILY_CREDITS` are empty by default and apply as
-    3,000 credits a day each, so neither holds the Scout back until an administrator lowers it. The maximum
-    stops a fault that would spend without end. A page read also takes a credit of the global cap, so the
+    day. So "Reset to default" never removes the global Tavily cap. The Scout's two credit limits have
+    a default below their maximum: `H2_SCOUT_DAILY_CREDITS` and `H2_SCOUT_PAGE_READER_DAILY_CREDITS` are 1,000
+    credits a day each, and an administrator can raise each to 3,000. The default is far above a normal day, so
+    it does not hold the Scout back; it stops a fault that would spend without end. A page read also takes a credit of the global cap, so the
     global cap bounds the page reads too; the Scout's searches count on the global counter but are stopped only
     by their own limit ([0013](ADR-0013-discovery.md) §10). The other choice, refusing a reset when the
     default is empty, still leaves no cap on a fresh install and makes "reset" mean two things; the code maximum is

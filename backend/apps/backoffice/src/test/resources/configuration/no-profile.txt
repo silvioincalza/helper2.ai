@@ -627,7 +627,7 @@ helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
 helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
 helper2.scout.courses.query = new artificial intelligence course or certification
 helper2.scout.cron = ${H2_SCOUT_CRON:0 7 3 * * *}  =>  0 7 3 * * *
-helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:}  =>  <empty>
+helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:1000}  =>  1000
 helper2.scout.daily-enrichment-calls = ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}  =>  500
 helper2.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
 helper2.scout.discovery.interval = ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
@@ -637,7 +637,7 @@ helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  => 
 helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
 helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
 helper2.scout.enrichment-model = ${H2_SCOUT_ENRICHMENT_MODEL:FAST}  =>  FAST
-helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:}  =>  <empty>
+helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:1000}  =>  1000
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
 helper2.scout.gap-daily-calls = ${H2_SCOUT_GAP_DAILY_CALLS:400}  =>  400
