@@ -227,10 +227,12 @@ class CollectorPropertiesTest {
   }
 
   @Test
-  void aWebPageIsReadAtLeastEveryThreeWeeksAndAHostNeverReadHasAReason() {
+  void aWebPageIsReadAtMostOnceADayWithNoLongestTimeBetweenReadsAndAHostNeverReadHasAReason() {
     context
-        .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=P30D")
-        .run(c -> assertThat(c).hasFailed());
+        .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=P60D")
+        .run(c ->
+            assertThat(c.getBean(CollectorProperties.GitHubAwesome.class).webPages().readEvery())
+                .isEqualTo(Duration.ofDays(60)));
     context
         .withPropertyValues("H2_SCOUT_AWESOME_WEB_PAGES_EVERY=PT1H")
         .run(c -> assertThat(c).hasFailed());

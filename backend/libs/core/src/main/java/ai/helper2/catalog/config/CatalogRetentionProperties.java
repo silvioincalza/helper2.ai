@@ -13,5 +13,4 @@ public record CatalogRetentionProperties(
     @NotNull Duration enrichmentRuns,
     @NotNull Duration webNews,
     @NotNull Duration pastEvents,
-    @NotNull Duration observedUnseen,
-    @NotNull Duration listIndex) {}
+    @NotNull Duration observedUnseen) {}

@@ -155,16 +155,19 @@ whether a query finds a resource there:
    ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md)). The list's own words again: no AI label and no
    `data-ai-*` mark.
 16. **Retention.** Rows go with the list or the resource (`ON DELETE CASCADE`, [0010](ADR-0010-data-retention.md)).
-   A list that leaves the top lists is no longer read, so its rows are not refreshed: the catalog purge deletes rows not
-   refreshed for `H2_RETENTION_LIST_INDEX` (30 days).
+   No period deletes them: `JdbcAwesomeListIndex.replace` writes the rows of a list again each time a pass reads the
+   list, and that is the only other thing that removes a row. A list that is no longer read (it left the top lists, an
+   administrator removed it, or its repository is gone) keeps the rows of its last read for as long as the list and the
+   resource are in the catalog.
 
 ### Code
 
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `h2_unaccent`, `h2_ts_config`, `h2_name_words`,
   `search_vector`, `awesome_list`, `awesome_list_entry`.
+  `V2026.11.9.2__list_index_without_period.sql` — no index on `updated_at` of the list tables: no purge reads it.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `plainWords`, `searchSql`,
   `searchFound`, the language stemmer in the index query; `JdbcAwesomeListIndex.java` — the list index;
-  `CatalogSearchSource.java`; `JdbcCatalogRetention.java` (`deleteListIndexUpdatedBefore`).
+  `CatalogSearchSource.java`.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `AwesomeListIndex.java`,
   `usecase/IndexAwesomeLists.java`.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
@@ -281,11 +284,11 @@ OWASP LLM Top 10: the translator's answer is untrusted (point 7); no model reads
 | Orchestration | Covered: translation in parallel with early sources; the list index is part of the Scout pass, a failure is logged and the next pass rebuilds. |
 | Tool & API | Covered: the same GitHub calls as before for the lists. |
 | Knowledge & RAG | Covered: full-text recall by language, by name words and by list words, ranked below direct matches. Embeddings of list text deferred. |
-| Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and a retention rule; no text column. |
+| Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and no retention period; no text column. |
 | Guardrails | Covered: untrusted translation, cleaning, caps, bind parameters, half weight. |
 | Observability | Covered: translation budget gauge, a log line per list pass. |
 | Evaluation | Gap, deferred: the search set has no grades yet ([0046](ADR-0046-evaluation-guide-and-search.md)); the owner/name cases are store-level ITs, not graded metrics. |
-| Deployment | Covered: V1, one optional setting (`H2_RETENTION_LIST_INDEX`), no chart change. |
+| Deployment | Covered: V1, no setting, no chart change. |
 | Security & Identity | Covered: no new endpoint or role. |
 | Human-in-the-loop | Deferred, safe: lists are public, read-only and capped. |
 | Cost & Reliability | Covered: the translator's daily cap and cache; no new calls for names or lists; p95 measured above. |
@@ -304,6 +307,8 @@ Tracked privately (S9.6.3).
 - The exact-title boost for owner/name titles and the half weight of list words are decided on the graded search set.
 - A renamed repository is not matched by its record URL.
 - The list index is not language-aware.
+- A list that is no longer read, or whose repository no longer exists, keeps naming its resources: nothing checks
+  that a list still exists and nothing removes the rows of its last read.
 
 ## Diagrams
 

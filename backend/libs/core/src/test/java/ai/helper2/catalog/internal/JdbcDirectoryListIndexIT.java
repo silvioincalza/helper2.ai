@@ -4,12 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.AwesomeListEntries;
-import ai.helper2.catalog.CatalogRetention;
 import ai.helper2.catalog.DirectoryListIndex;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.testing.AsBackOffice;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +24,6 @@ class JdbcDirectoryListIndexIT {
 
   @Autowired DirectoryListIndex index;
   @Autowired AwesomeListEntries entries;
-  @Autowired CatalogRetention retention;
   @Autowired JdbcClient jdbc;
 
   private final String run = UUID.randomUUID().toString().substring(0, 8);
@@ -90,7 +87,7 @@ class JdbcDirectoryListIndexIT {
   }
 
   @Test
-  void uc030Br009AReadReplacesWhatTheListNamedAndAnOldReadIsDeletedWithTheListIndex() {
+  void uc030Br008AReadReplacesWhatTheListNamed() {
     resource(named);
     index.replace(naming(named));
 
@@ -99,12 +96,22 @@ class JdbcDirectoryListIndexIT {
     assertThat(entries.naming(idOf(named), 10).directoryLists()).isZero();
 
     index.replace(naming(named));
-    jdbc.sql(
-            "UPDATE directory_list_entry SET updated_at = now() - interval '40 days' WHERE list_url = :url")
-        .param("url", list)
-        .update();
-    retention.deleteListIndexUpdatedBefore(Instant.now().minusSeconds(30L * 86_400));
 
-    assertThat(entries.directoryListsNaming(idOf(named))).isEmpty();
+    assertThat(entries.directoryListsNaming(idOf(named))).hasSize(1);
+  }
+
+  @Test
+  void uc030Br008WhatAListNamedGoesWithTheResourceItNamed() {
+    resource(named);
+    index.replace(naming(named));
+
+    jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", idOf(named)).update();
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM directory_list_entry WHERE list_url = :url")
+                .param("url", list)
+                .query(Integer.class)
+                .single())
+        .isZero();
   }
 }

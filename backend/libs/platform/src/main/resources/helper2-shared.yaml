@@ -705,7 +705,6 @@ helper2:
   retention:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
     observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
-    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
     enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
     resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
     resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
