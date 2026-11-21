@@ -14,7 +14,7 @@ frontend() {
 }
 
 docs() {
-  (cd "$root" && python3 scripts/adr-check.py && python3 .claude/hooks/guard-bash.py --self-test)
+  (cd "$root" && python3 scripts/adr-check.py && python3 .claude/hooks/guard-bash.py --self-test && scripts/spec-lint.sh)
 }
 
 case "$what" in
