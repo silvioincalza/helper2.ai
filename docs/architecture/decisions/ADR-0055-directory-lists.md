@@ -58,8 +58,10 @@ post when a search finds it.
 8. **The reader of added web pages.** `WebPageLists` reads a discovered list like any added web page: through the
    live web page reader, at most once in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), one credit a read, the last
    read kept in `list_seed_last_read` and used between two reads. No page of a directory other than an added list
-   page is read, and no link that redirects is followed. The one exception is the directory's page of an item, read
-   for its rating only ([0056](ADR-0056-directory-rating.md) point 6).
+   page is read, and no link that redirects is followed, with two exceptions on a host whose switch is on: the
+   directory's page of an item is read for its rating ([0056](ADR-0056-directory-rating.md) point 6), and a link of
+   an entry that points at no item is followed to the item's own page
+   ([0057](ADR-0057-follow-list-links.md)).
 9. **A budget of its own inside the Scout's.** A read costs one credit of the Scout's daily cap
    (`H2_SCOUT_DAILY_CREDITS`, 40 by default), the cap the category searches, LinkedIn, the events scout, the courses
    and the research assistant's web search also count on ([0013](ADR-0013-discovery.md) point 10). So that the
@@ -206,8 +208,9 @@ post when a search finds it.
   open or waits for the next day.
 - More review items, inside the 50 new items a day of the awesome-list collector: the links of the new lists, and
   the article links of every list.
-- A list whose links point to the directory's own pages, or through a redirect, gives little: those links are
-  skipped by the link rules. Its GitHub repositories, models, papers and packages are still read.
+- A list whose links point to the directory's own pages, or through a redirect, gives resources only through the
+  following of [0057](ADR-0057-follow-list-links.md), within its steps a day. Its GitHub repositories, models, papers
+  and packages are read directly.
 - A list page of a directory host is not a resource, so search does not find it, and it gives no words and no
   categories to the resources it names. A web page on a directory host that an administrator adds by hand follows
   the same rule.

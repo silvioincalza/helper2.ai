@@ -662,6 +662,11 @@ helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
 helper2.scout.github-awesome.web-pages.discovered-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}  =>  10
+helper2.scout.github-awesome.web-pages.follow.check-calls-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}  =>  50
+helper2.scout.github-awesome.web-pages.follow.check-max-tokens = 8192
+helper2.scout.github-awesome.web-pages.follow.status-requests-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY:200}  =>  200
+helper2.scout.github-awesome.web-pages.follow.status-requests-per-host-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_HOST_PER_DAY:30}  =>  30
+helper2.scout.github-awesome.web-pages.follow.steps-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}  =>  100
 helper2.scout.github-awesome.web-pages.item-page-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}  =>  100
 helper2.scout.github-awesome.web-pages.max-discovered = ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}  =>  100
 helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
@@ -953,6 +958,7 @@ resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.h
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
 resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$RejectedInput
 resilience4j.circuitbreaker.instances.llm-embed.base-config = model
+resilience4j.circuitbreaker.instances.page-status.base-config = collector
 resilience4j.circuitbreaker.instances.redis.base-config = store
 resilience4j.circuitbreaker.instances.research-huggingface.base-config = collector
 resilience4j.circuitbreaker.instances.research-web-search.base-config = collector

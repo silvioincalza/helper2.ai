@@ -119,6 +119,26 @@ class JdbcListSeedStoreIT {
   }
 
   @Test
+  void uc030Br013WhatFollowingGaveIsKeptWithTheReadAndStartsAgainWithTheNextRead() {
+    store.add(new ListSeed(ListKind.WEB_PAGE, PAGE, "42", T0, null));
+    store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
+    List<ListReading.Followed> followed =
+        List.of(
+            new ListReading.Followed(
+                "https://it-dir.acme.dev/tool/vectorly", "https://vectorly.io", 1, "code"),
+            new ListReading.Followed("https://it-dir.acme.dev/tool/other", null, 3, null));
+
+    store.followed(PAGE, followed);
+
+    assertThat(new JdbcListSeedStore(jdbcClient, json).lastReads().get(PAGE).getFollowed())
+        .isEqualTo(followed);
+
+    store.readSucceeded(
+        PAGE, new ListReading(T0.plusSeconds(60), List.of(), List.of(), List.of(), 0, 0));
+    assertThat(store.lastReads().get(PAGE).getFollowed()).isEmpty();
+  }
+
+  @Test
   void aGitHubListHasNoStoredRead() {
     store.add(repository("it-acme/awesome-rag", "42", T0, null));
 

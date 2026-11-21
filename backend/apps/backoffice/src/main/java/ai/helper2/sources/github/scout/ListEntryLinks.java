@@ -133,8 +133,12 @@ final class ListEntryLinks {
   static final int MAX_PAGE_ADDRESS = 300;
 
   static String title(AwesomeListParser.Link link, CanonicalUrl page) {
-    String words = link.text().strip();
-    boolean namesNothing = words.isEmpty() || PLACE_WORDS.contains(words.toLowerCase(Locale.ROOT));
-    return namesNothing ? page.getHost() : words;
+    return namesNothing(link.text()) ? page.getHost() : link.text().strip();
+  }
+
+  /** The words of a link that say where it goes ("website", "here") name no item. */
+  static boolean namesNothing(String linkText) {
+    String words = linkText.strip();
+    return words.isEmpty() || PLACE_WORDS.contains(words.toLowerCase(Locale.ROOT));
   }
 }

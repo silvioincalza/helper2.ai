@@ -195,6 +195,7 @@ twin has one.
 | [0053](../decisions/ADR-0053-indexnow-daily-batch.md) | [flow](flow-0053-indexnow.svg) | [sequence](sequence-0053-indexnow.svg) | what the daily IndexNow job sends, and an engine checking the key file before it reads the pages. |
 | [0054](../decisions/ADR-0054-embedding-model-in-the-cluster.md) | [flow](flow-0054-embedding-model-in-the-cluster.svg) | [sequence](sequence-0054-embedding-model-in-the-cluster.svg) | what the embedder does with one call, and a search query embedded inside the namespace. |
 | [0055](../decisions/ADR-0055-directory-lists.md) | [flow](flow-0055-directory-lists.svg) | [sequence](sequence-0055-directory-lists.svg) | what happens to a list page discovery finds on a directory host and when a discovered list is read; an administrator turns a host on, the list is added and read, the public page counts it and the back office names it. |
+| [0057](../decisions/ADR-0057-follow-list-links.md) | [flow](flow-0057-follow-list-links.svg) | [sequence](sequence-0057-follow-list-links.svg) | how a link of a directory list is followed in at most 3 steps and who says that the page reached is the item's; a pass reads the directory's page of an item, asks a redirect with a status request of its own, checks the page by code and by the fast model, and keeps what following gave. |
 
 ## Colors
 

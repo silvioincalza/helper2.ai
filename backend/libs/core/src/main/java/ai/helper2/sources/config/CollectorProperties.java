@@ -156,7 +156,20 @@ public final class CollectorProperties {
         @NotNull List<String> neverRead,
         @PositiveOrZero int maxDiscovered,
         @PositiveOrZero int discoveredReadsPerDay,
-        @PositiveOrZero int itemPageReadsPerDay) {
+        @PositiveOrZero int itemPageReadsPerDay,
+        @NotNull @Valid Follow follow) {
+
+      /**
+       * UC-030 BR-013, BR-014: the caps of a UTC day for following the links of the list pages of
+       * directory hosts: steps, calls of the model that checks a page, and the Scout's own status
+       * requests, in all and to one host. 0 steps a day follows no link.
+       */
+      public record Follow(
+          @PositiveOrZero int stepsPerDay,
+          @PositiveOrZero int checkCallsPerDay,
+          @Positive int checkMaxTokens,
+          @PositiveOrZero int statusRequestsPerDay,
+          @PositiveOrZero int statusRequestsPerHostPerDay) {}
 
       public WebPages {
         neverRead = clean(neverRead);
