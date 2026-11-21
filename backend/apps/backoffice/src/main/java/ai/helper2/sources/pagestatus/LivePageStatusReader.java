@@ -60,7 +60,7 @@ public final class LivePageStatusReader implements PageStatusReader {
 
   /** Refusals of the robots.txt request that say nothing about what the site allows. */
   private static final Set<Reason> NOT_ABOUT_ROBOTS =
-      EnumSet.of(Reason.DAILY_CAP, Reason.HOST_CAP, Reason.PRIVATE_ADDRESS);
+      EnumSet.of(Reason.DAILY_CAP, Reason.HOST_CAP, Reason.PRIVATE_ADDRESS, Reason.NOT_ASKED);
 
   private static final Logger log = LoggerFactory.getLogger(LivePageStatusReader.class);
 
@@ -225,7 +225,7 @@ public final class LivePageStatusReader implements PageStatusReader {
       return new Tried(null, timedOut(e.getCause()) ? Reason.TIMEOUT : Reason.UNAVAILABLE);
     } catch (SourceFailure | CallRefused e) {
       log.info("a status request to {} was not made: {}", host, e.getClass().getSimpleName());
-      return new Tried(null, Reason.UNAVAILABLE);
+      return new Tried(null, Reason.NOT_ASKED);
     }
   }
 

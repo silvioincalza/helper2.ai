@@ -22,6 +22,7 @@ sealed interface PageStatus {
     DAILY_CAP,
     HOST_CAP,
     TIMEOUT,
+    NOT_ASKED,
     UNAVAILABLE;
 
     val tag: String

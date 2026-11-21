@@ -19,6 +19,7 @@ import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.DomainRoots;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.PageStatusReader;
@@ -465,6 +466,7 @@ class CollectorsConfiguration {
       CollectorProperties.GitHubAwesome c,
       CollectorProperties.Discovery discovery,
       ShadowLibraries shadowLibraries,
+      DomainRoots domains,
       LiveWebPageReader reader,
       PageStatusReader statuses,
       ItemPageJudge judge,
@@ -477,6 +479,7 @@ class CollectorsConfiguration {
     return new ListLinkFollower(
         deep(c, discovery).excludeDomains(),
         shadowLibraries,
+        domains,
         reader,
         statuses,
         judge,

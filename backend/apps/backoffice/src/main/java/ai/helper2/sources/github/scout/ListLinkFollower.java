@@ -3,6 +3,7 @@ package ai.helper2.sources.github.scout;
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.CallRefused;
+import ai.helper2.scout.DomainRoots;
 import ai.helper2.scout.HostLists;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListReading.Followed;
@@ -116,6 +117,7 @@ public final class ListLinkFollower {
   }
 
   private final ProductLinks links;
+  private final DomainRoots domains;
   private final WebPageReader pages;
   private final PageStatusReader statuses;
   private final ItemPageJudge judge;
@@ -130,6 +132,7 @@ public final class ListLinkFollower {
   public ListLinkFollower(
       Collection<String> excludedDomains,
       ShadowLibraries shadowLibraries,
+      DomainRoots domains,
       PageReader reader,
       PageStatusReader statuses,
       ItemPageJudge judge,
@@ -141,6 +144,7 @@ public final class ListLinkFollower {
       int stepsPerDay,
       MeterRegistry meters) {
     this.links = new ProductLinks(excludedDomains, shadowLibraries);
+    this.domains = domains;
     this.pages = new WebPageReader(reader);
     this.statuses = statuses;
     this.judge = judge;
@@ -344,7 +348,7 @@ public final class ListLinkFollower {
       String address = absolute(link.group(2), itemPage);
       Place place = address == null ? new Nowhere("malformed") : placeOf(address, list, hosts, way);
       if (place instanceof Reached reached
-          && ItemPageCheck.nameInAddress(way.name, reached.page(), isOwnSite(reached))) {
+          && ItemPageCheck.nameInAddress(way.name, reached.page(), siteOf(reached))) {
         return address;
       }
       boolean leadsOn = place instanceof Reached || place instanceof Redirect;
@@ -370,7 +374,7 @@ public final class ListLinkFollower {
 
   // UC-030 BR-013: code decides first; the model is asked only where code cannot decide.
   private @Nullable Followed checked(AwesomeListParser.Link link, Reached reached, Way way) {
-    if (ItemPageCheck.nameInAddress(way.name, reached.page(), isOwnSite(reached))) {
+    if (ItemPageCheck.nameInAddress(way.name, reached.page(), siteOf(reached))) {
       return found(link, reached, way, BY_CODE);
     }
     if (reached.repository() != null || neverRead.refusal(reached.page().getHost()) != null) {
@@ -404,14 +408,23 @@ public final class ListLinkFollower {
     return answer.name().toLowerCase(Locale.ROOT);
   }
 
-  /** On a host many items share (a repository, a model, a paper, a package) only the path names. */
-  private static boolean isOwnSite(Reached reached) {
+  /**
+   * The site of a page that is a site of its own: its registrable domain. Null on a host many items
+   * share (a repository, a model, a paper, a package), where only the path names the item.
+   */
+  private @Nullable String siteOf(Reached reached) {
     CanonicalUrl page = reached.page();
-    return reached.repository() == null
-        && !page.getHost().equals(GITHUB)
-        && page.getHuggingFaceModel() == null
-        && page.getArxivPaper() == null
-        && NpmPackageReader.nameOf(page) == null;
+    boolean shared =
+        reached.repository() != null
+            || page.getHost().equals(GITHUB)
+            || page.getHuggingFaceModel() != null
+            || page.getArxivPaper() != null
+            || NpmPackageReader.nameOf(page) != null;
+    if (shared) {
+      return null;
+    }
+    String site = domains.registrable(page.getHost());
+    return site == null ? page.getHost() : site;
   }
 
   private Followed found(AwesomeListParser.Link link, Reached reached, Way way, String by) {

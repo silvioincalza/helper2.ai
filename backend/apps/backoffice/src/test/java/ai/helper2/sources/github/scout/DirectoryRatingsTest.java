@@ -26,6 +26,7 @@ import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.classifier.ItemPageJudge;
+import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
@@ -149,6 +150,7 @@ class DirectoryRatingsTest {
         new ListLinkFollower(
             List.of(),
             SourceFixtures.SHADOW_LIBRARIES,
+            new PublicSuffixDomains(),
             pages,
             address -> new PageStatus.Answered(200, null),
             ItemPageJudge.NOT_ASKED,

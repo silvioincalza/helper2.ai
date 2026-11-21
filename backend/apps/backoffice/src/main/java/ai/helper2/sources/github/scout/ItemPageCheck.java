@@ -30,25 +30,24 @@ final class ItemPageCheck {
   private ItemPageCheck() {}
 
   /**
-   * The name is a whole part of the address: a label of the host, the host written in one word
-   * ({@code acme.ai} for "Acme AI"), or a segment of the path. On a host many items share (a
-   * repository, a model, a package) only the path counts.
+   * The name is a whole part of the address: the name of the site (the part of the host before its
+   * public suffix: {@code acme} of {@code app.acme.co.uk}), the site written in one word ({@code
+   * acme.ai} for "Acme AI"), or a segment of the path. A subdomain names a part of a site ("app",
+   * "docs"), not the item. On a host many items share (a repository, a model, a package) only the
+   * path counts.
    */
-  static boolean nameInAddress(String name, CanonicalUrl page, boolean ownSite) {
+  static boolean nameInAddress(String name, CanonicalUrl page, @Nullable String site) {
     String key = String.join("", words(name));
     if (key.length() < MIN_NAME) {
       return false;
     }
-    String address = page.getValue().substring("https://".length());
-    int slash = address.indexOf('/');
-    String host = slash < 0 ? address : address.substring(0, slash);
     List<String> parts = new ArrayList<>();
-    if (ownSite) {
-      String site = host.startsWith("www.") ? host.substring(4) : host;
-      List<String> labels = Arrays.asList(site.split("\\."));
-      labels.subList(0, labels.size() - 1).forEach(label -> parts.add(joined(label)));
+    if (site != null) {
+      parts.add(joined(site.substring(0, Math.max(site.indexOf('.'), 0))));
       parts.add(joined(site));
     }
+    String address = page.getValue().substring("https://".length());
+    int slash = address.indexOf('/');
     if (slash >= 0) {
       Arrays.stream(address.substring(slash + 1).split("/")).forEach(s -> parts.add(joined(s)));
     }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.PageStatus;
@@ -76,10 +77,15 @@ class LivePageStatusReaderTest {
     }
   }
 
-  static final Resilience DIRECT =
+  boolean circuitOpen;
+
+  final Resilience resilience =
       new Resilience() {
         @Override
         public <T> T call(String policy, Supplier<T> work) {
+          if (circuitOpen) {
+            throw new CallRefused(policy, CallRefused.Reason.CIRCUIT_OPEN, null);
+          }
           return work.get();
         }
 
@@ -122,7 +128,7 @@ class LivePageStatusReaderTest {
           return answers.getOrDefault(
               method + " " + url, new LivePageStatusReader.Answer(404, null, ""));
         },
-        DIRECT,
+        resilience,
         counts,
         new QuotaKeys("", clock),
         limits,
@@ -295,6 +301,22 @@ class LivePageStatusReaderTest {
     assertThat(status(reader, "https://vectorly.io/b"))
         .isEqualTo(new PageStatus.Refused(Reason.DAILY_CAP));
     assertThat(sent).hasSize(5);
+  }
+
+  @Test
+  void aRequestTheOpenCircuitRefusesSaysNothingAboutRobotsAndTheSiteIsAskedLater() {
+    dns.put("vectorly.io", "93.184.216.34");
+    answer("HEAD https://vectorly.io/go", 302, "https://vectorly.io/home", "");
+    LivePageStatusReader reader = reader();
+    circuitOpen = true;
+
+    assertThat(status(reader, "https://vectorly.io/go"))
+        .isEqualTo(new PageStatus.Refused(Reason.NOT_ASKED));
+    assertThat(sent).isEmpty();
+
+    circuitOpen = false;
+    assertThat(status(reader, "https://vectorly.io/go"))
+        .isEqualTo(new PageStatus.Answered(302, "https://vectorly.io/home"));
   }
 
   @Test

@@ -15,6 +15,7 @@ import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.classifier.ItemPageJudge;
+import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.URI;
@@ -62,6 +63,7 @@ class ListLinkFollowerTest {
     return new ListLinkFollower(
         List.of("wikipedia.org"),
         SourceFixtures.SHADOW_LIBRARIES,
+        new PublicSuffixDomains(),
         pages,
         this::status,
         (name, pageText) -> {

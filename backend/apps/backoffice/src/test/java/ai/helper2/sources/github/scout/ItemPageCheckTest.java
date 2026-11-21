@@ -3,11 +3,16 @@ package ai.helper2.sources.github.scout;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.sources.evidence.PublicSuffixDomains;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /** UC-030 BR-013: the check by code that a page is the page of the item an entry names. */
 class ItemPageCheckTest {
+
+  private static String siteOf(String address) {
+    return new PublicSuffixDomains().registrable(CanonicalUrl.of(address).getHost());
+  }
 
   @ParameterizedTest
   @CsvSource({
@@ -18,9 +23,12 @@ class ItemPageCheckTest {
     "Acme AI, https://app.acmeai.com/start",
     "Café Écrit, https://cafeecrit.fr",
     "RagFlow, https://docs.example.dev/ragflow",
+    "Acme, https://app.acme.co.uk/start",
+    "Acme, https://acme.github.io",
   })
   void theNameIsAWholePartOfTheAddressOfAnOwnSite(String name, String address) {
-    assertThat(ItemPageCheck.nameInAddress(name, CanonicalUrl.of(address), true)).isTrue();
+    assertThat(ItemPageCheck.nameInAddress(name, CanonicalUrl.of(address), siteOf(address)))
+        .isTrue();
   }
 
   @ParameterizedTest
@@ -31,9 +39,14 @@ class ItemPageCheckTest {
     "Go, https://go.dev",
     "Vectorly, https://reviews.example.com/best-tools",
     "Bard, https://gemini.google.com",
+    "App, https://app.acme.com",
+    "Docs, https://docs.acme.com/start",
+    "Gemini, https://gemini.google.com",
+    "GitHub, https://acme.github.io",
   })
-  void aNameThatIsOnlyAPieceOfAWordOrTooShortProvesNothing(String name, String address) {
-    assertThat(ItemPageCheck.nameInAddress(name, CanonicalUrl.of(address), true)).isFalse();
+  void aNameThatIsAPieceOfAWordASubdomainOrTooShortProvesNothing(String name, String address) {
+    assertThat(ItemPageCheck.nameInAddress(name, CanonicalUrl.of(address), siteOf(address)))
+        .isFalse();
   }
 
   @ParameterizedTest
@@ -45,7 +58,7 @@ class ItemPageCheckTest {
     "tiny-llm, https://huggingface.co/acme/tiny-llm, true",
   })
   void onAHostManyItemsShareOnlyThePathNamesTheItem(String name, String address, boolean named) {
-    assertThat(ItemPageCheck.nameInAddress(name, CanonicalUrl.of(address), false)).isEqualTo(named);
+    assertThat(ItemPageCheck.nameInAddress(name, CanonicalUrl.of(address), null)).isEqualTo(named);
   }
 
   @ParameterizedTest

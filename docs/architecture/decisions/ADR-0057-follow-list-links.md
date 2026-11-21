@@ -57,8 +57,10 @@ What exists to follow a link:
 
 ### The check that the page is the item's
 5. **Code first** (`ItemPageCheck`). The page reached is the item's own when the name of the entry is
-   - a whole part of its address: a label of the host, the host written in one word (`acme.ai` for "Acme AI"), or a
-     segment of the path. On a host many items share (GitHub, Hugging Face, arXiv, npm) only the path counts;
+   - a whole part of its address: the name of the site (the part of the host before its public suffix: `acme` of
+     `app.acme.co.uk`, by the Public Suffix List of `DomainRoots`), the site written in one word (`acme.ai` for
+     "Acme AI"), or a segment of the path. A subdomain ("app", "docs") names a part of a site and does not count. On
+     a host many items share (GitHub, Hugging Face, arXiv, npm) only the path counts;
    - or in its title: the words of the name, next to each other and in order, in the first heading of the Markdown
      (the reader gives no other title).
    A name shorter than 3 letters and digits proves nothing. Code says yes or cannot decide; it never says no. The
@@ -106,7 +108,8 @@ What exists to follow a link:
      the group for every robot; the longest rule decides; `*` and `$`). It is read with the same transport (at most
      512 KB), kept one day per host in memory, and counts on the caps. A site with no robots.txt (404, 410) states no
      rule. A robots.txt that cannot be read (another status, a time-out, a redirect to another site) allows nothing.
-     A redirect to the same site with or without `www.` is read once.
+     A redirect to the same site with or without `www.` is read once. A request the open circuit or a cap refused
+     says nothing about robots.txt and is not kept.
    - **Caps, counted per try before the request.** `status-requests-per-day` (200) and
      `status-requests-per-host-per-day` (30), robots.txt included, in the daily quota counter of
      [0027](ADR-0027-live-web-store-first-daily-quota.md). When the counter cannot be read, no request is made.
@@ -161,7 +164,7 @@ What exists to follow a link:
       `no-link-to-the-item`, `no-redirect`, `directory-host`, `model-no`, a refusal of the host check, …);
     - `helper2.scout.follow.requests{host,outcome}`: status requests, `outcome` the status class (`2xx` to `5xx`) or
       the refusal (`host-check`, `never-read`, `private-address`, `robots`, `daily-cap`, `host-cap`, `timeout`,
-      `unavailable`);
+      `unavailable`, and `not-asked` when the circuit is open);
     - `helper2.scout.follow.waits{reason}`: a pass stopped following (`steps-daily-cap`, `credit-cap`, a budget);
     - `helper2.scout.follow.check.budget.remaining`: model calls left today. The model calls also count on the
       model metrics of every call, step `check-item-page`.
