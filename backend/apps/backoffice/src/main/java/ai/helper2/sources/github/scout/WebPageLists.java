@@ -68,6 +68,7 @@ public final class WebPageLists {
   private final Duration retryAfter;
   private final int discoveredReadsPerDay;
   private final Clock clock;
+  private final @Nullable ListLinkFollower follower;
 
   public WebPageLists(
       ListSeedStore seeds,
@@ -80,13 +81,37 @@ public final class WebPageLists {
       Clock clock) {
     this(
         seeds,
+        reader,
+        credits,
+        neverRead,
+        readEvery,
+        retryAfter,
+        discoveredReadsPerDay,
+        clock,
+        null);
+  }
+
+  /** With a follower, the links of the list pages of directory hosts are followed (BR-013). */
+  public WebPageLists(
+      ListSeedStore seeds,
+      PageReader reader,
+      ScoutLiveWebCredits credits,
+      HostsNeverRead neverRead,
+      Duration readEvery,
+      Duration retryAfter,
+      int discoveredReadsPerDay,
+      Clock clock,
+      @Nullable ListLinkFollower follower) {
+    this(
+        seeds,
         new WebPageReader(reader),
         credits.forFeature(FEATURE),
         neverRead,
         readEvery,
         retryAfter,
         discoveredReadsPerDay,
-        clock);
+        clock,
+        follower);
   }
 
   private WebPageLists(
@@ -97,7 +122,9 @@ public final class WebPageLists {
       Duration readEvery,
       Duration retryAfter,
       int discoveredReadsPerDay,
-      Clock clock) {
+      Clock clock,
+      @Nullable ListLinkFollower follower) {
+    this.follower = follower;
     this.seeds = seeds;
     this.pages = pages;
     this.credits = credits;
@@ -117,7 +144,8 @@ public final class WebPageLists {
         Duration.ofDays(7),
         Duration.ofHours(1),
         0,
-        clock);
+        clock,
+        null);
   }
 
   /** What one pass may still read: the collector's budget and the day's share of discovery. */
@@ -134,6 +162,9 @@ public final class WebPageLists {
 
   List<AwesomeCrawl.Read> read(HostLists hosts, ReadmeBudget budget, AwesomeMetrics metrics) {
     Instant now = clock.instant();
+    if (follower != null) {
+      follower.passStarted();
+    }
     // UC-030 BR-004: the lists an administrator added are read before the lists discovery added.
     List<ListSeed> added =
         seeds.all().stream()
@@ -155,16 +186,19 @@ public final class WebPageLists {
         continue;
       }
       ListReading last = stored.get(page.getAddress());
-      AwesomeListParser.Parsed parsed =
+      AwesomeListParser.Parsed read =
           switchedOff(page, url, hosts, metrics)
               ? lastRead(last)
               : listOf(page, last, now, reads, metrics);
-      if (parsed != null) {
+      if (read != null) {
         // UC-030 BR-009: a list discovery added is a list of a directory host for good, also
         // after its host is removed from the directory hosts.
         boolean directory =
             page.getOrigin() == ListOrigin.DISCOVERY || hosts.isDirectory(url.getHost());
         boolean readNow = reads.readNow.contains(page.getAddress());
+        List<ListReading.Followed> known = readNow || last == null ? List.of() : last.getFollowed();
+        AwesomeListParser.Parsed parsed =
+            directory ? followed(page, url, read, known, hosts, reads.budget) : read;
         Instant readAt = readNow || last == null ? now : last.getReadAt();
         lists.add(
             new AwesomeCrawl.Read(
@@ -176,6 +210,26 @@ public final class WebPageLists {
       }
     }
     return lists;
+  }
+
+  // UC-030 BR-013: the links of a list page of a directory host are followed only while the
+  // switch of its host is on; with the switch off, what following gave since its last read stays.
+  private AwesomeListParser.Parsed followed(
+      ListSeed page,
+      CanonicalUrl url,
+      AwesomeListParser.Parsed read,
+      List<ListReading.Followed> known,
+      HostLists hosts,
+      ReadmeBudget budget) {
+    if (follower == null) {
+      return read;
+    }
+    boolean mayTry = hosts.readsListsOf(url.getHost());
+    ListLinkFollower.Result result = follower.follow(url, read, known, mayTry, hosts, budget);
+    if (result.changed()) {
+      seeds.followed(page.getAddress(), result.followed());
+    }
+    return result.parsed();
   }
 
   // UC-030 BR-005: with the switch of its host off, a list discovery added is no longer read;

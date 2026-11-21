@@ -97,7 +97,8 @@ class JdbcListSeedStore implements ListSeedStore {
             ON CONFLICT (address) DO UPDATE SET
                 read_at = EXCLUDED.read_at, headings = EXCLUDED.headings,
                 entries = EXCLUDED.entries, links = EXCLUDED.links,
-                text_lines = EXCLUDED.text_lines, linked_items = EXCLUDED.linked_items
+                text_lines = EXCLUDED.text_lines, linked_items = EXCLUDED.linked_items,
+                followed = '[]'
             """)
         .param("address", address)
         .param("at", Timestamp.from(reading.getReadAt()))
@@ -109,12 +110,30 @@ class JdbcListSeedStore implements ListSeedStore {
         .update();
   }
 
+  // UC-030 BR-013: what following gave belongs to one read; a new read starts it again.
+  @Override
+  public void followed(String address, List<ListReading.Followed> followed) {
+    ArrayNode rows = json.createArrayNode();
+    for (ListReading.Followed f : followed) {
+      rows.addObject()
+          .put("link", f.getLink())
+          .put("item", f.getItem())
+          .put("steps", f.getSteps())
+          .put("decidedBy", f.getDecidedBy());
+    }
+    jdbc.sql(
+            "UPDATE list_seed_last_read SET followed = CAST(:followed AS jsonb) WHERE address = :address")
+        .param("followed", json.writeValueAsString(rows))
+        .param("address", address)
+        .update();
+  }
+
   @Override
   public Map<String, ListReading> lastReads() {
     Map<String, ListReading> readings = new LinkedHashMap<>();
     jdbc.sql(
             """
-            SELECT address, read_at, headings, entries, links, text_lines, linked_items
+            SELECT address, read_at, headings, entries, links, text_lines, linked_items, followed
             FROM list_seed_last_read ORDER BY address
             """)
         .query(rs -> {
@@ -178,13 +197,23 @@ class JdbcListSeedStore implements ListSeedStore {
               l.path("headingPath").asString(""),
               l.path("entryText").asString("")));
     }
+    List<ListReading.Followed> followed = new ArrayList<>();
+    for (JsonNode f : json.readTree(rs.getString("followed"))) {
+      followed.add(
+          new ListReading.Followed(
+              f.path("link").asString(""),
+              f.path("item").isString() ? f.path("item").asString() : null,
+              f.path("steps").asInt(0),
+              f.path("decidedBy").isString() ? f.path("decidedBy").asString() : null));
+    }
     return new ListReading(
         rs.getTimestamp("read_at").toInstant(),
         headings,
         entries,
         links,
         rs.getInt("text_lines"),
-        rs.getInt("linked_items"));
+        rs.getInt("linked_items"),
+        followed);
   }
 
   private static ListSeed seed(ResultSet rs) throws SQLException {

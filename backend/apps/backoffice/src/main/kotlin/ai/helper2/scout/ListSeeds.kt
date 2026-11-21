@@ -42,13 +42,16 @@ constructor(
     get() = ListAddresses.identityOf(kind, address)
 }
 
-data class ListReading(
+data class ListReading
+@JvmOverloads
+constructor(
   val readAt: Instant,
   val headings: List<String>,
   val entries: List<Entry>,
   val links: List<Link>,
   val textLines: Int,
   val linkedItems: Int,
+  val followed: List<Followed> = emptyList(),
 ) {
   data class Entry(
     val repository: String,
@@ -65,6 +68,12 @@ data class ListReading(
     val headingPath: String,
     val entryText: String,
   )
+
+  /**
+   * UC-030 BR-013: what following one link of the list gave: the address of the item's own page, or
+   * nothing. [decidedBy] says who decided that the page is the item's: `code` or `model`.
+   */
+  data class Followed(val link: String, val item: String?, val steps: Int, val decidedBy: String?)
 }
 
 interface ListSeedStore {
@@ -77,6 +86,9 @@ interface ListSeedStore {
   fun readStarted(address: String, at: Instant)
 
   fun readSucceeded(address: String, reading: ListReading)
+
+  /** UC-030 BR-013: keeps what following the links of the last read of a page gave. */
+  fun followed(address: String, followed: List<ListReading.Followed>)
 
   fun lastReads(): Map<String, ListReading>
 }

@@ -44,7 +44,8 @@ recognises are written from how such pages commonly print a rating, and are not 
 6. **Then the directory's page of the item.** When the entry states no figures and links to exactly one page on the
    host of the list that is neither the list nor the front page (`ListEntryLinks.directoryItemPage`), that page is
    read through the live web page reader (`WebPageReader`, the reader of list pages). Only the three figures are
-   taken; nothing else of the page is kept, and no link on it is followed. A page that states two different ratings
+   taken for the rating and nothing else of the page is kept. A page the following of links read in the same pass
+   ([0057](ADR-0057-follow-list-links.md) point 15) is not read again: its figures are taken from that read. A page that states two different ratings
    (the item and its alternatives) gives nothing.
 7. **Only where an administrator turned the reading on.** A page of an item is read only when the switch of its host
    is on ([0055](ADR-0055-directory-lists.md) point 1), the host is not one never read, the page reader is on and
@@ -217,8 +218,8 @@ recognises are written from how such pages commonly print a rating, and are not 
 - The patterns are not measured on real pages. A directory that prints its rating in another phrasing, in an image
   or only in structured data gives nothing.
 - An entry is rated only when it names exactly one resource. A list whose entries link only to the directory's own
-  pages names no resource, so nothing is rated ([S2.3.20](https://github.com/silvioincalza/helper2.ai/issues/980)
-  follows such links).
+  pages names no resource until its link is followed to the item's own page
+  ([0057](ADR-0057-follow-list-links.md)).
 - The figures are read from the first 500 characters of an entry.
 - A page of an item that also shows the ratings of other items gives nothing.
 - A rating a directory removed stays until its page is read again; the rating of a list that is gone stays until
