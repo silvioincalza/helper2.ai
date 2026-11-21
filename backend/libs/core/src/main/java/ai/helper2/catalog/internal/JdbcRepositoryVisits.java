@@ -11,6 +11,11 @@ import tools.jackson.databind.node.ObjectNode;
 class JdbcRepositoryVisits implements RepositoryVisits {
 
   private static final String GONE_CONFIRMED_AFTER = "24 hours";
+  private static final String STARS_OF_THE_VISIT =
+      """
+      jsonb_build_array(jsonb_build_object('kind', 'GITHUB_STARS', 'value', CAST(:stars AS bigint), \
+      'asOf', CAST(:visitedAt AS text)))\
+      """;
 
   private final JdbcClient jdbc;
 
@@ -74,22 +79,16 @@ class JdbcRepositoryVisits implements RepositoryVisits {
   }
 
   // ADR-0020 §7: the stars go only on the record that is the repository; a record that links it
-  // (a package) would borrow them. The record's other counts stay, and the trigger
+  // (a package) would borrow them. They are stored by the rule of StoredPopularity, and the trigger
   // source_record_popularity computes the popularity of the resource again (ADR-0025 §3).
   private void recordStars(UUID recordId, long stars, Instant visitedAt) {
     jdbc.sql(
             """
             UPDATE source_record
-            SET extra = jsonb_set(extra, '{popularity}',
-                (SELECT coalesce(jsonb_agg(p), '[]'::jsonb)
-                 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(extra -> 'popularity') = 'array'
-                                                THEN extra -> 'popularity' ELSE '[]'::jsonb END) p
-                 WHERE p ->> 'kind' IS DISTINCT FROM 'GITHUB_STARS')
-                || jsonb_build_array(jsonb_build_object(
-                       'kind', 'GITHUB_STARS', 'value', CAST(:stars AS bigint),
-                       'asOf', CAST(:visitedAt AS text))))
+            SET extra = jsonb_set(extra, '{popularity}', %s)
             WHERE id = :id AND repository_url IS NULL
-            """)
+            """
+                .formatted(StoredPopularity.merged("extra -> 'popularity'", STARS_OF_THE_VISIT)))
         .param("stars", stars)
         .param("visitedAt", visitedAt.toString())
         .param("id", recordId)

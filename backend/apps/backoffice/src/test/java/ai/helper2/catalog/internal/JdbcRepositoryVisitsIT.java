@@ -275,6 +275,21 @@ class JdbcRepositoryVisitsIT {
     assertThat(resourcePopularityOf(repo)).isGreaterThan(BigDecimal.ZERO);
   }
 
+  // S2.11.6, ADR-0020 §7 (newest wins per kind of count): a visit older than the stored count does
+  // not take its place.
+  @Test
+  void aVisitOlderThanTheStoredStarsDoesNotReplaceThem() {
+    String stored =
+        "[{\"asOf\": \"2026-01-03T00:00:00Z\", \"kind\": \"GITHUB_STARS\", \"value\": 1200}]";
+    UUID repo = record("https://github.com/aa-visits/stated-later", null);
+    storedPopularity(repo, stored);
+
+    visits.record(repo, new Found(false, null, null, 9L), T1);
+
+    assertThat(popularityOf(repo)).isEqualTo(stored);
+    assertThat(vitalityOf(repo)).contains("\"visitedAt\": \"" + T1 + "\"");
+  }
+
   // S2.11.6, ADR-0020 §7: a package that links a repository does not borrow its stars.
   @Test
   void aRecordThatOnlyLinksTheRepositoryGetsNoStars() {

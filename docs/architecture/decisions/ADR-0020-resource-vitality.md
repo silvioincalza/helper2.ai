@@ -90,12 +90,20 @@ the product: the next source does not get it.
      The fork rule of §2 does not read the parent: a fork with stars or a recent push is already a result.
    - **The sweep reads the stars too**, in the same GraphQL call (`stargazerCount`): no new call and no new
      schedule. It stores them as the `GITHUB_STARS` count of `extra.popularity`, dated with the visit, and only on
-     the record that is the repository: a record that links it gets none, by the rule above. The other counts of
-     the record stay. The count keeps the source of its record as its label. The trigger of
-     [0025](ADR-0025-ranking.md) §3 then computes `resource.popularity` again, so the stars of §2 and the popularity
-     term follow the repository (`JdbcRepositoryVisits.recordStars`).
+     the record that is the repository: a record that links it gets none, by the rule above. The count keeps the
+     source of its record as its label. The trigger of [0025](ADR-0025-ranking.md) §3 then computes
+     `resource.popularity` again, so the stars of §2 and the popularity term follow the repository
+     (`JdbcRepositoryVisits.recordStars`).
    - A visit that reads no count keeps the stored one: a repository that is not found, one that gives no answer,
      and an answer without a number. No count is never zero stars.
+   - **Newest wins on each count too.** The counts of a record (`extra.popularity`) have two writers, the writer of
+     hits and the sweep, and both store through one rule (`StoredPopularity`), kind by kind, by the date each count
+     carries (`asOf`), as for `archived` above:
+     - a kind the writer does not state keeps its stored count: a hit without stars leaves the stars of the sweep;
+     - a stated count takes the place of the stored one when it was read after it, or at the same time;
+     - a stated count read before the stored one is dropped: a hit served from the search cache does not put an
+       old count back;
+     - a count without a date that can be read is older than a dated one.
    - **A repository GitHub does not find twice is `gone`.** The first "not found" stores only `notFoundAt`. A
      second one at least 24 hours later stores `gone`, and only on the record that is the repository: a record
      that merely links it (a package whose repository has no record of its own) never becomes `gone`. A source
@@ -222,8 +230,9 @@ the product: the next source does not get it.
   35,000 records at 50 every 10 minutes take about 5 days (ESTIMATE, 144 GraphQL calls a day).
 - The stars of a record that is a repository are at most one round old, about 5 days (ESTIMATE, as above). The
   sweep makes no call more for them.
-- The stars have two writers: the writer of hits (`JdbcCatalogWriter`), which writes every count of a record as
-  its hit states them, and the sweep, which writes only the stars. The last one to write wins.
+- The counts of a record are merged, never wiped: a writer adds what it read and leaves the rest. A record of a
+  source that states no stars (a news story or a web page whose address is the repository) gets its stars from the
+  sweep and keeps them.
 - A repository that is gone stops being a result at the second visit that does not find it, about two rounds
   after it went. It comes back at the first visit that finds it again, up to one round later.
 - Each catalog search reads the stored facts of its rows: one more query by `resource_id` (indexed), not
@@ -254,9 +263,10 @@ the product: the next source does not get it.
   old as the last time a collector or a search found the resource
   ([S2.11.7](https://github.com/silvioincalza/helper2.ai/issues/976)); a PyPI package has no count
   ([S2.11.8](https://github.com/silvioincalza/helper2.ai/issues/977)).
-- A hit that states no stars for a record that is a repository (a news story or a web page whose address is the
-  repository) removes the stars the sweep stored, until the next visit. A hit served from the search cache can
-  put back a count older than the sweep's.
+- A count its source no longer states stays on the record, with its date, until a newer read states another
+  value. No writer removes a count.
+- The date of a count is the clock of the instance that read it. Two reads of one count a few moments apart, on
+  two instances whose clocks differ, can be stored in the wrong order.
 - What `stargazerCount` adds to the GraphQL cost of a batch is not measured.
 - `due` sorts every record with a GitHub repository at each tick, with no index on `visitedAt`. Not measured.
 - A renamed repository is found under its new name by GitHub, so it is not `gone`; the record keeps the old link.
