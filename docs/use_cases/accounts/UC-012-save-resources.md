@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor, Signed-in User  
 **Goal:** Keep a list of resources to come back to, in the browser without an account and on the account across devices once signed in  
 **Trigger:** The visitor saves a resource from its result row or its resource page  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-015, FR-017](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-012-save-resources.md)  

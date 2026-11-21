@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Decide what the machine could not decide on its own (new resource, course, example and known target candidates, enrichment checks, unverified relationships and reported errors), so that only checked content reaches the catalog.  
 **Trigger:** The Administrator opens the back office to work through what needs a person.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-031, FR-032, NFR-012](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

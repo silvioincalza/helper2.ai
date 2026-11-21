@@ -7,7 +7,7 @@
 **Primary Actor:** Scheduler  
 **Goal:** Remove every record that is past its retention period, so that helper2.ai keeps data no longer than its privacy notice states  
 **Trigger:** The daily retention time is reached (03:17 UTC by default)  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-040, C-006](../../requirements.md)  
 **Layers:** Service

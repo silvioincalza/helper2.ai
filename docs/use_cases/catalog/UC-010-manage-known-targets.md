@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Keep the list of vendors, services and tools that a relationship may name without a catalog resource, so relationships to them are verified and the rest go to review.  
 **Trigger:** The administrator opens the known vendors, services and tools on the Settings page of the back office.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-035](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Embedding Service, Source Provider  
 **Goal:** Give each catalog resource a short summary, typed fields, relationships and a search embedding, keeping only the facts that a quote from its sources states, so that visitors can filter and find it and every AI-written fact can be checked.  
 **Trigger:** A Scout run reaches a resource that changed or the next resource of the enrichment backlog, or the embedding indexer's interval passes.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-028, NFR-014, C-002, C-005](../../requirements.md)  
 **Layers:** Service

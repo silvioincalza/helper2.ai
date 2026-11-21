@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Embedding Service, Source Provider  
 **Goal:** Get a short answer to a need in plain words, built only from retrieved catalog results, with every claim backed by a quote that code has found word for word in the source  
 **Trigger:** The visitor chooses "Ask the guide" (or Shift+Enter) for the words in the search box  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-007, FR-008, FR-009, NFR-002, NFR-004, NFR-006, NFR-007, NFR-008, NFR-010, NFR-013, NFR-015, C-001, C-003, C-005](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-005-ask-the-ai-guide.md)  
