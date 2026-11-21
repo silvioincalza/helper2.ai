@@ -5,6 +5,9 @@ tools: Read, Grep, Glob, Bash, Edit
 model: haiku
 ---
 You keep the backlog of helper2.ai. Read `AGENTS.md` and `docs/architecture/backlog.md` first.
+Inputs (AI Unified Process): the `UC-*.md` the work builds, in `docs/use_cases/<module>/`, with its `**Status:**`
+and its `**Requirements:**` line. Name the `UC-*` IDs in every story and in your return. A gap in a use case is an
+open question for `/open-questions`, never an assumed answer.
 Creating a story and linking it to its pull request is approved in advance. A new feature or epic, closing or
 deleting an issue, and changing the text of a story this work does not build need the human in the loop's OK first.
 The rule: every pull request closes at least one story, and every story is an item of the Project
