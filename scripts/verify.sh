@@ -9,7 +9,8 @@ backend() {
 }
 
 frontend() {
-  (cd "$root/frontend" && npm run format:check && npm run lint && npm run typecheck && npm run knip && npm test -- --run)
+  (cd "$root/frontend" && npm run format:check && npm run lint && npm run knip && npm run typecheck && npm test -- --run \
+    && npx vite build && npm run check:bundle && npx vite build --config vite.admin.config.ts)
 }
 
 docs() {
