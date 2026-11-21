@@ -63,8 +63,9 @@ Rules:
 - `/next` gives the next step; `/spec-review` checks the specification.
 - Until the migration to the AI Unified Process is complete (the issues, the Project, the backlog and `docs/` all
   follow it: epic E11), every page is written as the final text: no revision table, no version or change log in a
-  page, no "previously" or "moved from". Revision history in the pages starts when Silvio says the migration is
-  complete, not before.
+  page, no "previously" or "moved from". When Silvio says the migration is complete, revision history starts in
+  the specification pages only: `docs/vision.md`, `docs/requirements.md`, the use cases and the entity model.
+  ADRs and code stay free of history, then as now: an ADR that no longer holds is `Superseded`.
 - Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG in
   `docs/architecture/diagrams/` (skill `aiup-diagrams`).
 - A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.
@@ -100,8 +101,9 @@ Rules:
   (shebangs, `# syntax=`, `eslint-disable-next-line`, `shellcheck disable`, the Makefile's `## ` help lines).
   Env files (`.env.example`, `deploy/k8s/app.env.example` and other dot files) are setup guides for people: their
   comments say what each key is and how to make its value.
-- Code and docs state the rule in force, never who decided it or when, and never what it replaced. Decision history
-  goes to memory in `.private/`.
+- Code, ADRs and docs state the rule in force, never who decided it or when, and never what it replaced. Decision
+  history goes to memory in `.private/`. The one exception is the revision history of the specification pages, once
+  the migration to the AI Unified Process is complete (section Specification).
 
 ### Choices and decisions
 
