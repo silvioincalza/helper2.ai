@@ -69,6 +69,38 @@ class ListEntryLinksTest {
                 "Hugging Face Learn"));
   }
 
+  @Test
+  void uc030Br008AProductACourseAndAnArticleAreNamedByTheAddressTheirCandidateHas() {
+    assertThat(
+            links.reviewedPage(
+                link(
+                    "https://www.coursera.org/learn/generative-ai-for-everyone",
+                    "Generative AI for everyone",
+                    "Courses"),
+                PAGES))
+        .isEqualTo(CanonicalUrl.of("https://coursera.org/learn/generative-ai-for-everyone"));
+    assertThat(
+            links.reviewedPage(
+                link("https://acme.ai/blog/how-we-built-our-rag-stack", "A post", "R"), PAGES))
+        .isEqualTo(CanonicalUrl.of("https://acme.ai/blog/how-we-built-our-rag-stack"));
+    assertThat(links.reviewedPage(link("https://cursor.com/?ref=list", "Cursor", "E"), PAGES))
+        .isEqualTo(CanonicalUrl.of("https://cursor.com"));
+  }
+
+  @Test
+  void uc030Br008APageASourceConfirmsAndASkippedLinkAreNoReviewedPage() {
+    assertThat(
+            links.reviewedPage(
+                link("https://huggingface.co/acme/voice-model", "Voice", "M"), PAGES))
+        .isNull();
+    assertThat(
+            links(false)
+                .reviewedPage(link("https://huggingface.co/acme/voice-model", "Voice", "M"), PAGES))
+        .isNull();
+    assertThat(links.reviewedPage(link("https://acme.ai/blog", "The blog", "R"), PAGES)).isNull();
+    assertThat(links.reviewedPage(link("http://10.0.0.1/admin", "Admin", "R"), PAGES)).isNull();
+  }
+
   @ParameterizedTest
   @CsvSource({
     "https://acme.ai/blog/how-we-built-our-rag-stack",

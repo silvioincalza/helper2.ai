@@ -102,6 +102,19 @@ final class ListEntryLinks {
     return named ? page : null;
   }
 
+  /** UC-030 BR-008: the page of a link that waits for a person, the address its candidate has. */
+  @Nullable CanonicalUrl reviewedPage(AwesomeListParser.Link link, DiscoveryPages pages) {
+    if (confirmablePage(link) != null) {
+      return null;
+    }
+    return switch (route(link, pages)) {
+      case Course course -> course.page();
+      case Product product -> product.site();
+      case Article article -> article.page();
+      case Model _, Paper _, Package _, Skipped _ -> null;
+    };
+  }
+
   static String title(AwesomeListParser.Link link, CanonicalUrl page) {
     String words = link.text().strip();
     boolean namesNothing = words.isEmpty() || PLACE_WORDS.contains(words.toLowerCase(Locale.ROOT));

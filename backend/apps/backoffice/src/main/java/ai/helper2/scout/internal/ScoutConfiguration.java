@@ -10,6 +10,7 @@ import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.catalog.usecase.LinkKnownRelationshipTargets;
+import ai.helper2.catalog.usecase.NameResourceByList;
 import ai.helper2.catalog.usecase.ProposeKnownTargets;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLock;
@@ -72,6 +73,7 @@ import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.scout.usecase.ManageDiscoveryHosts;
 import ai.helper2.scout.usecase.ManageListSeeds;
+import ai.helper2.scout.usecase.NamingLists;
 import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RequeueEnrichment;
@@ -498,14 +500,22 @@ class ScoutConfiguration {
       CatalogIndex index,
       ReviewQueue queue,
       ResourceCandidateJson details,
+      NameResourceByList nameByList,
       Clock clock) {
+    NamingLists namingLists =
+        (resource, title, list) ->
+            nameByList.name(
+                resource,
+                title,
+                new NameResourceByList.NamingList(
+                    list.getUrl(), list.getHeadingPath(), list.getDirectoryListTitle()));
     CatalogLookup lookup =
         url ->
             queue
                 .listedAs(url.getValue())
                 .map(l -> new ListedResource(l.resourceId(), l.title()))
                 .orElse(null);
-    return new IndexAcceptedCandidate(collectors, index, lookup, details, clock);
+    return new IndexAcceptedCandidate(collectors, index, lookup, details, namingLists, clock);
   }
 
   @Bean

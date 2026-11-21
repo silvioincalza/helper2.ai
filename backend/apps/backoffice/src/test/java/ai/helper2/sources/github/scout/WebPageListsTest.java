@@ -659,6 +659,23 @@ class WebPageListsTest {
   }
 
   @Test
+  void uc030Br002TheLastReadOfAListOnAHostNeverReadIsNotUsedAlsoWithTheSwitchOff() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+    collector().collect(null, null, 500);
+
+    directoryHost("futurepedia.io", false);
+    neverRead = new HostsNeverRead(Map.of("futurepedia.io", "the owner asked"));
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getLists()).extracting(l -> l.getUrl().getValue()).doesNotContain(list);
+    assertThat(batch.getCandidates()).isEmpty();
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-never-read")).isEqualTo(1);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-host-off")).isZero();
+  }
+
+  @Test
   void uc030Br005AListDiscoveryAddedIsNeverReadBeforeTheSwitchOfItsHostIsOn() {
     directoryHost("futurepedia.io", false);
     addDiscovered("https://futurepedia.io/best-ai-coding-tools");
@@ -754,6 +771,50 @@ class WebPageListsTest {
                 ResourceType.ARTICLE));
     assertThat(batch.getCandidates().getFirst().getFacts().get(GitHubAwesomeCollector.FOUND_IN))
         .isEqualTo(Map.of("list", PAGE_ID, "section", "Reading"));
+  }
+
+  @Test
+  void uc030Br008AListOfADirectoryNamesTheProductsItsLinksPointToAndTheirCandidatesKeepIt() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getCandidates())
+        .extracting(Candidate::getType)
+        .containsExactly(ResourceType.PRODUCT, ResourceType.PRODUCT, ResourceType.PRODUCT);
+    assertThat(batch.getLists().getFirst().getEntries())
+        .extracting(e -> e.getUrl().getValue(), ListEntryText::getHeadingPath)
+        .containsExactlyElementsOf(
+            batch.getCandidates().stream()
+                .map(c -> tuple(c.getUrl().getValue(), "Tools"))
+                .toList());
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getFacts().get(GitHubAwesomeCollector.FOUND_IN))
+        .containsOnly(Map.of("list", list, "section", "Tools", "directoryList", "Best AI tools"));
+  }
+
+  @Test
+  void uc030Br008ACuratedListNamesTheArticleItsLinkPointsToAfterThePagesASourceConfirms() {
+    addPage(PAGE);
+    pages.markdown.put(
+        PAGE,
+        """
+        # Best AI tools
+        ## Reading
+        - [How we built our RAG stack](https://acme.ai/blog/how-we-built-our-rag-stack) - A post.
+        - [The blog](https://acme.ai/blog) - Every post.
+        - [Ragflow](https://github.com/infiniflow/ragflow) - RAG engine.
+        """);
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getLists().getFirst().getEntries())
+        .extracting(e -> e.getUrl().getValue(), ListEntryText::getHeadingPath)
+        .containsExactly(
+            tuple("https://github.com/infiniflow/ragflow", "Reading"),
+            tuple("https://acme.ai/blog/how-we-built-our-rag-stack", "Reading"));
   }
 
   @Test

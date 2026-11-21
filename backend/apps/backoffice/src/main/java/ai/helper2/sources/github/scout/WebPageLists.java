@@ -147,6 +147,9 @@ public final class WebPageLists {
       if (url == null) {
         continue;
       }
+      if (neverRead(page.getAddress(), metrics)) {
+        continue;
+      }
       ListReading last = stored.get(page.getAddress());
       AwesomeListParser.Parsed parsed =
           switchedOff(page, url, hosts, metrics)
@@ -178,6 +181,18 @@ public final class WebPageLists {
     return true;
   }
 
+  // UC-030 BR-002: a page on a host that is never read is not read and its last read is not used,
+  // whatever the switch of its host says.
+  private boolean neverRead(String address, AwesomeMetrics metrics) {
+    HostsNeverRead.Refusal refusal = neverRead.refusalOf(address);
+    if (refusal == null) {
+      return false;
+    }
+    log.info("a list page on {} is not read: {}", refusal.getHost(), refusal.getReason());
+    metrics.skipped("page-never-read");
+    return true;
+  }
+
   private static int discoveredReadsToday(List<ListSeed> pages, Instant now) {
     Instant midnight = now.truncatedTo(ChronoUnit.DAYS);
     return (int)
@@ -195,12 +210,6 @@ public final class WebPageLists {
       Reads reads,
       AwesomeMetrics metrics) {
     String address = page.getAddress();
-    HostsNeverRead.Refusal refusal = neverRead.refusalOf(address);
-    if (refusal != null) {
-      log.info("a list page on {} is not read: {}", refusal.getHost(), refusal.getReason());
-      metrics.skipped("page-never-read");
-      return null;
-    }
     String waits = waitsBecause(page, now, reads);
     if (waits == null) {
       if (page.getOrigin() == ListOrigin.DISCOVERY) {

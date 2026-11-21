@@ -101,10 +101,20 @@ post when a search finds it.
       the list. Nothing changes there.
     - A list page of a directory host is kept by its address in `directory_list_entry` (`list_url`, `resource_id`,
       `list_title`, `heading_path`, `updated_at`; owned by the catalog, read-only for the public app):
-      one row for each GitHub repository, model, paper and package of the list that is in the catalog.
+      one row for each resource of the list that is in the catalog, whatever its kind.
       `DirectoryListIndex.replace` writes the rows of a list at each pass (`ListText.directoryListTitle` marks such
       a list for the Scout's `ListIndex`). No period deletes the rows: they stay until the next read of the list
       writes them again, and a row goes with its resource (`ON DELETE CASCADE`), as in the list index.
+    - **Every kind.** `GitHubAwesomeCollector.searchEntries` gives the index the repositories, the models, the
+      papers and the packages of a list first, then the pages that wait for a person: a product, a course and an
+      article, by the address their candidate has (`ListEntryLinks.reviewedPage`). The index keeps the ones that
+      are in the catalog, so a list read again names an accepted product. Both relations follow this rule.
+    - **On accept.** A candidate keeps the list that named it in its `foundBy` entry: the address, the heading
+      path and, for a list page of a directory host, its title. When an administrator accepts it,
+      `IndexAcceptedCandidate` hands each list to `NameResourceByList` (port `ListNamings`), which writes one row
+      in the relation of that list, in the transaction of the decision. A candidate whose page is in the catalog
+      already names that resource. The row of a curated list carries the title of the resource as its words until
+      the next read of the list writes the words of the entry.
 16. **The public page counts, the back office names.**
     - `GET /api/v1/resources/{id}`: `foundIn.directoryLists` is the number of directory lists that name the
       resource, counted in `directory_list_entry`. `foundIn.lists` and `foundIn.more` are the curated lists, as
@@ -128,7 +138,8 @@ post when a search finds it.
   `ListEntryLinks.java` (`Article`), `GitHubAwesomeCollector.java`;
   `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`WebPages`).
 - `backend/libs/core/src/main/java/ai/helper2/catalog/DirectoryListIndex.java`, `AwesomeListEntries.java`,
-  `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcDirectoryListIndex.java`, `JdbcResourceDetailReads.java`;
+  `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcDirectoryListIndex.java`, `JdbcResourceDetailReads.java`,
+  `ListNamings.java`, `catalog/internal/JdbcListNamings.java`, `catalog/usecase/NameResourceByList.java`;
   `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`
   (`listIndex`).
 - `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`,
@@ -140,7 +151,8 @@ post when a search finds it.
 - Tests: `ManageDiscoveryHostsTest`, `AddDiscoveredListTest`, `ManageListSeedsTest`, `DiscoveryPagesTest`,
   `DiscoveryCollectorTest`, `WebPageListsTest`, `ListEntryLinksTest`, `JdbcDiscoveryHostStoreIT`,
   `JdbcListSeedStoreIT`, `DiscoveryHostsApiIT`, `JdbcDirectoryListIndexIT`,
-  `ResourceFoundInApiIT`, `DiscoveryHostsPanel.test.tsx`, `ListSeedsPanel.test.tsx`, `ReviewEvidence.test.tsx`,
+  `ResourceFoundInApiIT`, `JdbcListNamingsIT`, `NameResourceByListTest`, `IndexAcceptedCandidateTest`,
+  `ListEntryLinksTest`, `DiscoveryHostsPanel.test.tsx`, `ListSeedsPanel.test.tsx`, `ReviewEvidence.test.tsx`,
   `ResourcePage.test.tsx`.
 
 ## Alternatives considered
@@ -203,8 +215,10 @@ post when a search finds it.
   again, or until the resource it names goes.
 
 ### Known limits
-- The list index links a list to the repositories, models, papers and packages it names. A product accepted from
-  a list's link has no entry row, so no list counts for it on the public page.
+- A product, a course and an article come after the pages a source confirms in the index of a list. In a list
+  past the caps of the index ([0023](ADR-0023-catalog-full-text-index.md) point 10) the last of them have no row.
+- A resource an administrator accepted under another address than the link of the list is named by the list
+  until its next read, which no longer finds it.
 - A discovered list an administrator removes can be found and added again by a later search.
 - The reads of a day are counted from the last try of each list: a list tried twice in one UTC day counts once.
 - The count on the public page includes a directory list whose switch is off, and a list whose page no longer
