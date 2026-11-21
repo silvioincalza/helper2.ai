@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** See everything the catalog knows about one AI resource, and for every fact who states it and when, so the visitor can judge whether the resource fits.  
 **Trigger:** The visitor opens the page of a resource from a result row, a home list, the News or Events page, a saved resource or a shared link.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-010, NFR-005, NFR-010, C-005](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-007-view-resource-details.md)  
@@ -130,4 +130,4 @@ Every value an AI model wrote (an extracted fact, a relationship found by a mode
 
 ### BR-010: General Rate Limit
 
-A visitor may make at most 120 requests per minute to the public interface by default (H2_RATE_LIMIT_DEFAULT_PER_MINUTE).
+A visitor may make at most 120 requests per minute to the public interface by default.
