@@ -169,6 +169,7 @@ resilience4j:
       collector-pypi: {base-config: collector}
       collector-gap-evidence: {base-config: collector}
       collector-gap-web: {base-config: collector}
+      page-status: {base-config: collector}
       redis: {base-config: store}
       llm-chat:
         base-config: model
@@ -384,6 +385,12 @@ helper2:
         max-discovered: ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}
         discovered-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}
         item-page-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}
+        follow:
+          steps-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}
+          check-calls-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}
+          check-max-tokens: 8192
+          status-requests-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY:200}
+          status-requests-per-host-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_HOST_PER_DAY:30}
     ai-deadlines:
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
     confs-tech:

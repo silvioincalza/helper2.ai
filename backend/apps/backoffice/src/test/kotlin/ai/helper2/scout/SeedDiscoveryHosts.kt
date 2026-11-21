@@ -100,5 +100,9 @@ class InMemoryListSeedStore : ListSeedStore {
     if (address in seeds) readings[address] = reading
   }
 
+  override fun followed(address: String, followed: List<ListReading.Followed>) {
+    readings.computeIfPresent(address) { _, reading -> reading.copy(followed = followed) }
+  }
+
   override fun lastReads(): Map<String, ListReading> = readings.toMap()
 }

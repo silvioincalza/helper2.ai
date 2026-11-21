@@ -5,7 +5,6 @@ import ai.helper2.search.ShadowLibraries;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
@@ -177,22 +176,7 @@ public final class CheckUrlTool implements ResearchTool {
   }
 
   static Hop pinnedHead(URI url, List<InetAddress> checked, Duration timeLeft) throws IOException {
-    String host = url.getHost();
-    DnsResolver pinned =
-        new DnsResolver() {
-          @Override
-          public InetAddress[] resolve(String name) throws UnknownHostException {
-            if (!name.equalsIgnoreCase(host)) {
-              throw new UnknownHostException(name);
-            }
-            return checked.toArray(InetAddress[]::new);
-          }
-
-          @Override
-          public String resolveCanonicalHostname(String name) {
-            return name;
-          }
-        };
+    DnsResolver pinned = PublicAddresses.pinned(url.getHost(), checked);
     try (CloseableHttpClient http =
         HttpClients.custom()
             .setConnectionManager(
