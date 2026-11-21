@@ -28,7 +28,7 @@ STATUS = "Status"
 PRIVATE_TITLE = "Tracked privately ({})"
 PRIVATE_BODY = "Tracked privately ({}). The text is not in this public repository."
 ATTRIBUTION = ("Co-Authored-By", "Generated with")
-ROADMAP_PAGE = "docs/roadmap.md"
+ROADMAP_PAGE = "docs/backup/roadmap.md"
 IMPORT_LOCK_WAIT = 600.0
 GH_ATTEMPTS = 5
 THROTTLED = ("rate limit", "secondary", "unknown owner type")
@@ -1502,7 +1502,7 @@ def main() -> None:
     importer.add_argument("--write", action="store_true", help="write to GitHub; without it the run only prints")
     importer.add_argument("--pause", type=float, default=1.0, help="seconds to wait after each write")
     importer.set_defaults(run=command_import)
-    page = commands.add_parser("roadmap", help="write docs/roadmap.md from the open issues")
+    page = commands.add_parser("roadmap", help="write docs/backup/roadmap.md from the open issues")
     page.add_argument("--repo", help="owner/name; the repository of this checkout when absent")
     page.add_argument("--output", default=None)
     page.set_defaults(run=command_roadmap)

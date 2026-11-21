@@ -1,0 +1,23 @@
+@startuml AI Guide
+left to right direction
+
+actor "Visitor" as visitor
+actor "Language Model" as llm
+actor "Embedding Service" as embedder
+actor "Source Provider" as source_provider
+
+rectangle "AI Guide" {
+    usecase "UC-005\nAsk the AI Guide" as UC005
+    usecase "UC-006\nSet Up a Resource" as UC006
+}
+
+visitor --> UC005
+visitor --> UC006
+
+UC005 --> llm
+UC005 --> embedder
+UC005 --> source_provider
+UC006 --> llm
+UC006 --> source_provider
+
+@enduml

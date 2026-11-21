@@ -12,7 +12,7 @@ Two dashboards, one per app, each with an `environment` variable (prod, staging)
 
 The pod rows read the cluster's cAdvisor and kube-state-metrics series, and the logs rows read Loki (datasource uid
 `loki`); both select the namespace `helper2-$environment`, and the logs rows add a `level` variable.
-Meters and tags: [ADR 0009](../../docs/adr/foundation/0009-observability.md).
+Meters and tags: [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md).
 
 The datasources are referenced by uid (`prometheus`, `loki`): provision them with these uids. There are no
 `${DS_*}` inputs to rewrite.

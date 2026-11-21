@@ -1,0 +1,121 @@
+# Architecture
+
+Helper2 is a modular monolith in two Spring Boot apps, the public app and the back office, over shared libraries
+with Spring Modulith modules, hexagonal where business rules live. A React single-page app is served from its own
+web image. PostgreSQL is the system of record and Redis a disposable cache. The decisions behind each part are in the [ADRs](../architecture/decisions/README.md), one per
+feature, in the order a reader should learn them. Open work is in the
+[backlog](https://github.com/silvioincalza/helper2.ai/issues): each ADR lists its open issues in its Backlog section.
+
+## Software architecture
+
+### Hexagonal: logic inside, adapters outside
+
+![Hexagonal architecture](../architecture/diagrams/hexagonal-architecture.svg)
+
+The Kotlin domain (search, guide, setup, scout and the shared kernel) holds the rules and depends only on its ports,
+the Kotlin interfaces on its edge. Java adapters implement those ports and talk to the outside: REST controllers and
+schedules of both apps on the driving side; the public web, the NVIDIA Nemotron models, Redis and PostgreSQL on the
+driven side.
+
+### The whole system on one page
+
+![The whole system](../architecture/diagrams/architecture-full.svg)
+
+People on the left, the browser and the edge, then the cluster with the two apps, their modules, the shared libraries
+and the stores, and on the right what helper2 calls outside. Each group names the view that holds its detail.
+
+### The same system, one view at a time
+
+The views follow the C4 model: context, containers, components, then deployment.
+
+**C4 level 1: system context**
+
+| View | Shows |
+|---|---|
+| [System context](../architecture/diagrams/architecture-system-context.svg) | helper2 as one box, the people who use it and the systems it talks to. |
+
+**C4 level 2: containers**
+
+| View | Shows |
+|---|---|
+| [Containers](../architecture/diagrams/architecture-containers.svg) | What is deployed and runs on its own: the two web apps, the three deployables, the migrate Job, the embedder and the two stores. |
+
+**C4 level 3: components**
+
+| View | Shows |
+|---|---|
+| [Modules](../architecture/diagrams/architecture-context.svg) | The modules as boxes, who calls helper2, and what it calls. |
+| [Hexagonal layers](../architecture/diagrams/hexagonal-architecture.svg) | The domain inside, its ports on the edge, the adapters around it. |
+| [One search](../architecture/diagrams/architecture-search.svg) | The search ports and every source, cache and translator adapter behind them. |
+| [One guide question](../architecture/diagrams/architecture-guide.svg) | AskGuide, the search it reuses, the evidence gate and the LLM layer's guards. |
+| [How the index grows](../architecture/diagrams/architecture-index.svg) | Scout, its collectors, enrichment and its gap round (README, model card), and how the catalog stores and embeds. |
+| [Set it up](../architecture/diagrams/architecture-setup.svg) | The setup module on a resource page: run options from the registry and the README, the tool guide, its budgets and caches. |
+| [Review research](../architecture/diagrams/architecture-review-research.svg) | The research module in the back office: its ports, the agent loop, the read-only tools and the live steps. |
+| [Edge and shared services](../architecture/diagrams/architecture-platform.svg) | Identity, rate limits, errors and the SPA, and the platform services every module uses, with their Redis keys and tables. |
+| [Frontend](../architecture/diagrams/architecture-frontend.svg) | The two web apps built from `frontend/src`: features and the ones they compose, the shared layers, the generated API client, and who may import whom. |
+
+**Deployment**
+
+| View | Shows |
+|---|---|
+| [Deployment](../architecture/diagrams/infrastructure.svg) | The hosted helper2 on Kubernetes, the full picture in zones: how a request gets in, the applications, the one embedder, the stores, what they call outside, the delivery, backups and monitoring. Four views hold the detail: [workloads](../architecture/diagrams/infrastructure-workloads.svg), [secrets](../architecture/diagrams/infrastructure-secrets.svg), [delivery](../architecture/diagrams/infrastructure-delivery.svg), [backups and monitoring](../architecture/diagrams/infrastructure-data.svg). |
+
+**Domain and data**
+
+| View | Shows |
+|---|---|
+| [Context map](../architecture/diagrams/context-map.svg) | The 10 bounded contexts of the backlog, the modules that hold each one, and the direction of each dependency. |
+| [Event storming](../architecture/diagrams/event-storming.svg) | The big picture of the seven contexts the apps run: who does what, which events follow, which policies react, and the open stories. |
+| [Data model](../architecture/diagrams/data-model.svg) | Every PostgreSQL table with its columns, keys and delete rules, grouped by area. |
+
+- Module boundaries are checked by `ModularityTest` (Spring Modulith + ArchUnit): [ADR 0002](../architecture/decisions/ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md).
+- The API is contract-first: controller interfaces and frontend types are generated from `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`;
+  the shared part once, in the library `libs/core`: [ADR 0003](../architecture/decisions/ADR-0003-contract-first-rest.md).
+
+### Context map
+
+![Context map](../architecture/diagrams/context-map.svg)
+
+An arrow from A to B says that A uses B. Every context uses Foundation: its modules (`shared`, `platform`, `api`)
+are open. The other arrows are the module dependencies that pass `ApplicationModules.verify()`; a module is reached
+only through its base package or a named interface (`search.usecase`, `catalog.usecase`, `scout.usecase`,
+`examples.usecase`, the search cards). Three contexts have no module of their own: Money and consent lives in
+`site.monetisation`, Legal and compliance is the text pages over `GET /policy`, and Release and operations is the
+chart and the workflows that deploy the three deployables.
+
+### Event storming
+
+![Big picture event storming](../architecture/diagrams/event-storming.svg)
+
+The big picture of what happens in the public app, the web site and the back office, one lane per context. Read a lane
+from left to right: an actor (small yellow) runs a command (blue), a system or aggregate answers, a domain event
+(orange) happens, and a policy (lilac) reacts. An arrow means "triggers". The other outcomes of a step sit under it.
+The magenta notes are open backlog stories. Foundation, release and legal work are left out: they are not behaviour
+of the apps. The colours are Brandolini's. Update it when a flow of the apps changes.
+
+## Infrastructure
+
+Staging and production (`helper2.ai`) run on one Kubernetes cluster, one Helm release per
+namespace. The chart runs on any cluster ([ADR 0043](../architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md), [deploy/k8s/README.md](../../deploy/k8s/README.md)).
+
+![Infrastructure](../architecture/diagrams/infrastructure.svg)
+
+The full picture leaves out ports, sizes, secrets and policies. Each of these views answers one question:
+
+- [Workloads](../architecture/diagrams/infrastructure-workloads.svg): what runs in the namespace and what each workload may reach.
+- [Secrets](../architecture/diagrams/infrastructure-secrets.svg): who holds which password.
+- [Delivery](../architecture/diagrams/infrastructure-delivery.svg): how an image gets to the cluster, and the canary of a release.
+- [Backups and monitoring](../architecture/diagrams/infrastructure-data.svg): the dumps and where metrics and traces go.
+
+## Where to read next
+
+| To understand | Read |
+|---|---|
+| One search, end to end | [0022 federated search](../architecture/decisions/ADR-0022-federated-search.md) → [0025 ranking](../architecture/decisions/ADR-0025-ranking.md) → [0023 language](../architecture/decisions/ADR-0023-catalog-full-text-index.md) → [0024 vector search](../architecture/decisions/ADR-0024-vector-search.md) |
+| One guide question, end to end | [0008 LLM layer](../architecture/decisions/ADR-0008-llm-integration.md) → [0031 evidence gate and reason check](../architecture/decisions/ADR-0031-guide-pipeline.md) → [0032 cost guard](../architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md) |
+| How the index grows | [0011 Scout runner](../architecture/decisions/ADR-0011-scout-runner.md) → [0014 enrichment](../architecture/decisions/ADR-0014-evidence-gated-enrichment.md) → [0012 collectors](../architecture/decisions/ADR-0012-scout-collectors-and-events.md) → [0021 resource identity](../architecture/decisions/ADR-0021-resource-identity-one-resource-per-repository.md) |
+| Configuration and secrets | [0007](../architecture/decisions/ADR-0007-configuration-secrets-runtime-settings.md) |
+| Logs, traces and meters (full meter list) | [0009 observability](../architecture/decisions/ADR-0009-observability.md) |
+| From commit to prod | [0044 CI/CD](../architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md) → [0045 release](../architecture/decisions/ADR-0045-releases-and-versions.md) |
+
+All diagrams, with a flowchart and a sequence diagram per feature: [diagrams/](../architecture/diagrams/README.md).

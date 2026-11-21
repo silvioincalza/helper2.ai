@@ -1,0 +1,15 @@
+@startuml Operations
+left to right direction
+
+actor "Administrator" as admin
+actor "Scheduler" as scheduler
+
+rectangle "Operations" {
+    usecase "UC-028\nManage Runtime Settings" as UC028
+    usecase "UC-029\nPurge Expired Data" as UC029
+}
+
+admin --> UC028
+scheduler --> UC029
+
+@enduml

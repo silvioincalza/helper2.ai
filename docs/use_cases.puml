@@ -1,0 +1,81 @@
+@startuml Modules
+left to right direction
+
+actor "Visitor" as visitor
+actor "Signed-in User" as user
+actor "Administrator" as admin
+actor "Scheduler" as scheduler
+actor "Search Engine" as search_engine
+actor "Language Model" as llm
+actor "Embedding Service" as embedder
+actor "Source Provider" as source_provider
+actor "Identity Provider" as idp
+actor "Payment Provider" as payment
+
+package "Search" as search
+package "AI Guide" as ai_guide
+package "Catalog" as catalog
+package "Accounts" as accounts
+package "Site" as site
+package "Discovery" as discovery
+package "Enrichment" as enrichment
+package "Review" as review
+package "Operations" as operations
+
+visitor --> search
+visitor --> ai_guide
+visitor --> catalog
+visitor --> accounts
+visitor --> site
+user --> accounts
+admin --> search
+admin --> catalog
+admin --> accounts
+admin --> discovery
+admin --> enrichment
+admin --> review
+admin --> operations
+scheduler --> search
+scheduler --> site
+scheduler --> discovery
+scheduler --> enrichment
+scheduler --> review
+scheduler --> operations
+search_engine --> site
+
+search --> llm
+search --> embedder
+search --> source_provider
+ai_guide --> llm
+ai_guide --> embedder
+ai_guide --> source_provider
+accounts --> idp
+site --> payment
+site --> search_engine
+discovery --> source_provider
+enrichment --> llm
+enrichment --> embedder
+enrichment --> source_provider
+review --> llm
+review --> source_provider
+
+search ..> catalog : "searches and dates resources"
+search ..> review : "sends example drafts to review"
+ai_guide ..> search : "picks from search results"
+ai_guide ..> catalog : "reads resource details"
+catalog ..> enrichment : "relationships found by enrichment runs"
+catalog ..> review : "opens review items for reports"
+site ..> catalog : "lists indexable resources"
+site ..> operations : "reads runtime switches"
+discovery ..> catalog : "indexes resources of a source"
+discovery ..> enrichment : "enriches collected resources"
+discovery ..> review : "sends candidates to review"
+enrichment ..> catalog : "enriches resources with evidence"
+enrichment ..> review : "opens review items for conflicts"
+review ..> catalog : "decides on resources and reports"
+review ..> enrichment : "decides on enrichment results"
+review ..> discovery : "indexes accepted candidates"
+operations ..> accounts : "records administrator actions"
+operations ..> site : "publishes site settings"
+
+@enduml

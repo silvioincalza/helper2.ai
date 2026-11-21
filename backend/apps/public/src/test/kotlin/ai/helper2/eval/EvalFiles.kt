@@ -60,9 +60,9 @@ object EvalFiles {
 
   val root: File =
     File(System.getProperty("user.dir")).absoluteFile.let {
-      if (File(it, "docs/eval").isDirectory) it else it.parentFile
+      if (File(it, "docs/backup/eval").isDirectory) it else it.parentFile
     }
-  val docs: File = File(root, "docs/eval")
+  val docs: File = File(root, "docs/backup/eval")
   val data: File = File(root, "backend/eval-data")
   val snapshots: File = File(data, "search-snapshots")
 

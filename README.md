@@ -5,7 +5,7 @@ papers and news — with **one page and one box**. Typing searches every source;
 on the same page. The guide runs on **NVIDIA Nemotron on Nebius Token Factory** and can only recommend
 what it actually found, with a quote that code has checked word for word.
 
-helper2.ai searches a **disclosed set of sources** ([docs/sources.md](docs/sources.md)), shows what
+helper2.ai searches a **disclosed set of sources** ([docs/backup/sources.md](docs/backup/sources.md)), shows what
 happened to each one on every search, and never fills in dates, popularity or facts that no source stated.
 
 helper2.ai is a product, built and run by Silvio Incalza. The only instance is **https://helper2.ai**
@@ -16,11 +16,11 @@ of the system.
 
 | | |
 |---|---|
-| What is built and why | [ADRs, one per decision](docs/adr/README.md) · [architecture and diagrams](docs/architecture.md) |
-| What is still open | [the roadmap](docs/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
+| What is built and why | [ADRs, one per decision](docs/architecture/decisions/README.md) · [architecture and diagrams](docs/backup/architecture.md) |
+| What is still open | [the roadmap](docs/backup/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
 | What changed | [CHANGELOG](CHANGELOG.md) |
-| Product | [user journeys](docs/user-journeys.md) · [sources](docs/sources.md) · [processors and transfers](docs/processors.md) · [costs](docs/cost-analysis.md) |
-| Quality | [testing](docs/testing.md) · [evaluation](docs/evaluation.md) · [AI literacy](docs/ai-literacy.md) |
+| Product | [user journeys](docs/backup/user-journeys.md) · [sources](docs/backup/sources.md) · [processors and transfers](docs/backup/processors.md) · [costs](docs/backup/cost-analysis.md) |
+| Quality | [testing](docs/backup/testing.md) · [evaluation](docs/backup/evaluation.md) · [AI literacy](docs/backup/ai-literacy.md) |
 | Stack | Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin · React 19, Vite · PostgreSQL 18 (full-text + pgvector) · Redis 8 · contract-first [OpenAPI 3.1](api/public.yaml) |
 
 ## How the models are used
@@ -36,9 +36,9 @@ of the system.
 - Calls go through Spring AI's OpenAI-compatible client, base URL `https://api.tokenfactory.nebius.com/v1` (the `/v1` is required).
 - Every answer records the provider and model ids; the page shows them.
 - No key, provider down or credits exhausted: the guide shows the top real search results (`LLM_UNAVAILABLE`), and search keeps working.
-- Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0032](docs/adr/guide/0032-guide-cost-guard-and-answer-cache.md)).
+- Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0032](docs/architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md)).
 - **Live web search** adds web results to search and to the guide (only with `H2_LIVE_WEB_API_KEY`). A stored answer is reused
-  first, and each visitor gets a few live web searches a day ([ADR 0027](docs/adr/search/0027-live-web-store-first-daily-quota.md)).
+  first, and each visitor gets a few live web searches a day ([ADR 0027](docs/architecture/decisions/ADR-0027-live-web-store-first-daily-quota.md)).
 
 ## Known limitations
 
@@ -47,9 +47,9 @@ of the system.
 - **A new question takes a few seconds**: three model calls plus a federated search. A repeated question is instant
   from the cache.
 - **Results can be cached or partial** when a source hits its rate limit; the source panel says so.
-- **English UI.** Queries work in any language ([ADR 0023](docs/adr/search/0023-catalog-full-text-index.md)).
+- **English UI.** Queries work in any language ([ADR 0023](docs/architecture/decisions/ADR-0023-catalog-full-text-index.md)).
 
-Every known limit sits with its decision: the Consequences of each [ADR](docs/adr/README.md).
+Every known limit sits with its decision: the Consequences of each [ADR](docs/architecture/decisions/README.md).
 
 ## Run locally
 
@@ -87,16 +87,16 @@ cd frontend && npm ci && npm run dev    # http://localhost:5173, proxies /api, /
 ```bash
 (cd backend && ./gradlew test)             # unit + integration (Testcontainers)
 (cd frontend && npm test -- --run)
-node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 21 fixed guide questions, writes docs/eval/guide-run.md
+node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 21 fixed guide questions, writes docs/backup/eval/guide-run.md
 ```
 
-Details and known gaps: [docs/testing.md](docs/testing.md).
+Details and known gaps: [docs/backup/testing.md](docs/backup/testing.md).
 
 ## How helper2.ai runs
 
 The Helm chart runs on any Kubernetes cluster ([deploy/k8s/README.md](deploy/k8s/README.md)). helper2.ai's
 staging and production use it, deployed by GitHub Actions ([deploy/k8s/CI.md](deploy/k8s/CI.md)). To set up the repository and its
-bindings from zero: [docs/recreate.md](docs/recreate.md).
+bindings from zero: [docs/backup/recreate.md](docs/backup/recreate.md).
 
 ## License
 

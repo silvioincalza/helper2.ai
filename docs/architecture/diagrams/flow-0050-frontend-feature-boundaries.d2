@@ -1,0 +1,58 @@
+# Flowchart: what ESLint decides for one import in frontend/src (ADR 0050): the import style first, then the folder
+# that may be imported, then the feature boundary with its named compositions.
+# Source of truth: frontend/eslint.config.js (importStyle, boundary, SHARED_MAY_IMPORT, COMPOSES, asSelector),
+#   frontend/package.json (lint), .github/workflows/ci.yml (frontend-check: npm run lint).
+# Render: cd docs/architecture/diagrams && d2 fmt flow-0050-frontend-feature-boundaries.d2 && d2 flow-0050-frontend-feature-boundaries.d2 flow-0050-frontend-feature-boundaries.svg
+
+...@style
+
+direction: down
+
+start: "An import in src/<folder>/<file>\n(import, export from, import(), vi.mock)" {class: end}
+package: "A package\n(react, vitest, ...)?" {class: decision}
+relative: "Starts with a dot?" {class: decision}
+same: "./name, a file of\nthe same folder?" {class: decision}
+alias: "@/<own folder>/name?" {class: decision}
+
+where: "Which folder is the file in?" {class: decision}
+shared: "api, lib, i18n, styles: these four\ncontext: + context\nhooks: + context, hooks\nui: + context, hooks, ui" {class: data}
+feature: "features/<name>:\nshared code, own files" {class: data}
+shell: "shell/, routes.tsx, main.tsx:\nshared code, every feature, shell/" {class: data}
+admin: "admin/: shared code, own files,\nshell/RouteError" {class: data}
+free: "src/test/ and src/*.test.tsx:\nevery folder" {class: data}
+
+listed: "Target folder\nin the list?" {class: decision}
+other: "A file of\nanother feature?" {class: decision}
+composes: "Named in COMPOSES?\nhome: feeds, search\nsearch: guide, monetisation\nresource: setup, monetisation" {class: decision}
+
+ok: "Import passes" {class: end}
+fail: "npm run lint fails:\nthe message names the rule and ADR 0050" {class: end}
+
+start -> package: {class: hot}
+package -> ok: "yes"
+package -> relative: "no" {class: hot}
+relative -> same: "yes"
+same -> ok: "yes"
+same -> fail: "no: ../ or ./sub/"
+relative -> alias: "no, @/" {class: hot}
+alias -> fail: "yes: write ./"
+alias -> where: "no" {class: hot}
+
+where -> shared
+where -> feature
+where -> shell
+where -> admin
+where -> free
+
+shared -> listed
+shell -> listed
+admin -> listed
+feature -> other
+free -> ok
+
+listed -> ok: "yes"
+listed -> fail: "no"
+other -> listed: "no"
+other -> composes: "yes"
+composes -> ok: "yes"
+composes -> fail: "no"

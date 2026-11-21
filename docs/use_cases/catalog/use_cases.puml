@@ -1,0 +1,19 @@
+@startuml Catalog
+left to right direction
+
+actor "Visitor" as visitor
+actor "Administrator" as admin
+
+rectangle "Catalog" {
+    usecase "UC-007\nView Resource Details" as UC007
+    usecase "UC-008\nFollow New Resources and Events" as UC008
+    usecase "UC-009\nReport Wrong Information" as UC009
+    usecase "UC-010\nManage Known Targets" as UC010
+}
+
+visitor --> UC007
+visitor --> UC008
+visitor --> UC009
+admin --> UC010
+
+@enduml

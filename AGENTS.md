@@ -15,8 +15,9 @@ as scope creep.
 - `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — contract first (OpenAPI 3.1); backend and frontend generate from them
 - PostgreSQL 18 (full-text + pgvector), Redis 8 (disposable cache)
 - `deploy/` — Helm charts for staging and prod
-- `docs/adr/<context>/` — one ADR per decision, numbered in the order the system is built
-- The backlog is the GitHub issues of this repository (epics, features, stories, tasks). `docs/roadmap.md` is generated
+- `docs/architecture/decisions/ADR-NNNN-<slug>.md` — one ADR per decision, numbered in the order the system is built,
+  grouped by context in its README
+- The backlog is the GitHub issues of this repository (epics, features, stories, tasks). `docs/backup/roadmap.md` is generated
   from the open issues (`python3 scripts/backlog.py roadmap`): never edit it by hand
 - LLMs: NVIDIA models only (Nemotron on Nebius Token Factory)
 
@@ -34,6 +35,31 @@ cd frontend && npm run knip          # dead code and unused dependencies, strict
 Run the relevant tests before calling a change done.
 
 ## How to work
+
+### Specification (AI Unified Process)
+
+The product is specified in `docs/` with the AI Unified Process (`aiup-core` and the layer plugins). Before a product,
+domain or architecture decision, read:
+
+- the use case or test case you work on, in `docs/use_cases/` and `docs/test_cases/`;
+- only the `FR-*`, `NFR-*` and `C-*` rows of `docs/requirements.md` that the use case names on its `**Requirements:**`
+  line, never the whole catalog;
+- `docs/entity_model.md` (and `docs/entity_model/`), and `docs/glossary.md`;
+- the ADRs in `docs/architecture/decisions/`;
+- `docs/architecture/stack.md`: the layer skill that builds and tests each layer;
+- `docs/open_questions.md`;
+- `docs/vision.md` and the whole `docs/requirements.md` only for work on the requirements themselves.
+
+Rules:
+
+- A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. Silvio sets `Approved`.
+- Requirement, use case and test case IDs never change once published. Code and tests name the IDs they build.
+- A requirement change updates the entity model and the use case diagram in the same change.
+- Build and test a use case with `/use-case-implement` and `/use-case-test`, which follow `docs/architecture/stack.md`.
+- A gap or a contradiction in a specification goes to `/open-questions`, never into an assumed answer.
+- An architecture decision is an ADR in `docs/architecture/decisions/` (the `/adr` command, not `/architecture-decision`). It
+  names the `NFR-*` and `C-*` it serves.
+- `/next` gives the next step; `/spec-review` checks the specification.
 
 ### Architecture and code
 
@@ -76,7 +102,8 @@ Run the relevant tests before calling a change done.
 - Architecture choices: compare 2-3 realistic options on simplicity, coupling, testability,
   operational cost, failure modes, security, reversibility and cognitive load for a one-person
   team. Recommend one.
-- Lasting decision → new ADR in `docs/adr/<context>/` (next number), linked from `docs/adr/README.md`.
+- Lasting decision → new ADR `docs/architecture/decisions/ADR-NNNN-<slug>.md` (next number), linked from
+  `docs/architecture/decisions/README.md` under its context.
   It states the decision in force, in the present tense, as the code is, with these sections in this order: Context,
   Decision, Alternatives considered, Consequences, Diagrams, Backlog. Known limits go in its Consequences. Its
   Backlog section lists the features it decides and the open issues that change it.
@@ -85,7 +112,7 @@ Run the relevant tests before calling a change done.
   it, or creates it with every attribute (ID, story line, acceptance criteria, Context, Priority, parent feature),
   sets its Status to In Progress and gives the `Closes #n` line. No pull request without a story.
 - Every ADR has a flowchart (the decisions in the code) and a sequence diagram (the call path),
-  as D2 sources in `docs/diagrams/` (`flow-NNNN-<slug>.d2`, `sequence-NNNN-<slug>.d2`) with the
+  as D2 sources in `docs/architecture/diagrams/` (`flow-NNNN-<slug>.d2`, `sequence-NNNN-<slug>.d2`) with the
   rendered SVG committed next to them, linked from the ADR and both README indexes. When the
   decision changes the module structure or the runtime, also update the `architecture-*` view of the
   module that changed (and `architecture-context` if modules change) and/or the `infrastructure` views (the overview and `infrastructure-workloads`, `-secrets`, `-delivery`, `-data`: the one the change touches). A decision with no runtime path (e.g. versioning) says so in one line instead

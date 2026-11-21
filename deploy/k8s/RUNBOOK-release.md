@@ -2,7 +2,7 @@
 
 How a release reaches prod, step by step: what must be true before, who does each step, what to check after it, and
 how to go back. [CI.md](CI.md) says what each workflow does and
-[ADR 0045](../../docs/adr/operations/0045-releases-and-versions.md) says why. This page is the order to follow on the
+[ADR 0045](../../docs/architecture/decisions/ADR-0045-releases-and-versions.md) says why. This page is the order to follow on the
 day.
 
 **(Silvio)** marks a step only the owner can do: a workflow run, a merge, the approval on `prod`, a setting of the
@@ -25,7 +25,7 @@ A release keeps prod's database. Nothing is dumped, dropped or loaded.
 - **A migration file prod already ran never changes.** Flyway compares each file with the checksum it stored. When
   they differ, the migrate Job fails, the canary fails with it, and prod is as it was: no table changed. No step
   brings such a database to the new file: it would have to be created again, empty
-  ([ADR 0004](../../docs/adr/foundation/0004-persistence-and-the-schema.md) §5).
+  ([ADR 0004](../../docs/architecture/decisions/ADR-0004-persistence-and-the-schema.md) §5).
 - **Redis** is kept. Sessions, rate-limit windows and the day's counters stay. The guide-answer cache is kept per
   build, so the new release starts with an empty one, once.
 - **The nightly dump** (`pg-backup`, 02:30, 7 days, with the off-site copy) is the only way back for data. A restore
@@ -37,12 +37,12 @@ Each line is checked once. A release run does not check them.
 
 | What | Check | Set up by |
 |---|---|---|
-| The environment `prod`, with its required reviewer and its two deployment rules (`main`, tags `v*`) | `gh api repos/$R/environments/prod --jq '.protection_rules[].type'` prints `required_reviewers` | **(Silvio)** [docs/recreate.md](../../docs/recreate.md) §7 |
+| The environment `prod`, with its required reviewer and its two deployment rules (`main`, tags `v*`) | `gh api repos/$R/environments/prod --jq '.protection_rules[].type'` prints `required_reviewers` | **(Silvio)** [docs/backup/recreate.md](../../docs/backup/recreate.md) §7 |
 | The three rulesets: `main`, `release/**`, tags `v*` | `gh api repos/$R/rulesets --jq '.[].name'` | **(Silvio)** recreate.md §5 |
 | The variables `BAO_ADDR`, `BAO_AUDIENCE`, `H2_STAGING_URL` | `gh variable list -R $R` | **(Silvio)** recreate.md §7 |
 | The OpenBao roles `deploy`, `deploy-staging` and `deploy-prod` accept this repository; `deploy-prod` reads `ci/prod`, `ci/harbor-pull` and `ci/harbor` | a green push run of `cd` proves `deploy` and `deploy-staging`; `deploy-prod` is proved by the first prod job | **(Silvio)** recreate.md §8, [CI.md, Security model](CI.md#security-model) |
 | `ci/prod` holds prod's `app.env` and the `deployer` kubeconfig; the off-site backup Secret is on prod | `make -C deploy/k8s ENV=prod credentials`, `make -C deploy/k8s ENV=prod backup-credentials` | **(Silvio)** recreate.md §9 |
-| Staging's and prod's `app.env` in OpenBao hold `H2_DATABASE_MONITOR_PASSWORD` and `H2_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `helper2-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Silvio)** [ADR 0009](../../docs/adr/foundation/0009-observability.md) §7; the allow-list in the platform repo |
+| Staging's and prod's `app.env` in OpenBao hold `H2_DATABASE_MONITOR_PASSWORD` and `H2_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `helper2-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Silvio)** [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md) §7; the allow-list in the platform repo |
 | Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `H2_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/helper2.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) | **(Silvio)** per step |
 | The ad networks' rules are read before a prod ad setting is filled | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Silvio)** |
 | The Privacy and Terms pages: the points for a lawyer are answered, or the owner releases with them open | [F9.3](https://github.com/silvioincalza/helper2.ai/issues/102) | **(Silvio)** |
@@ -63,7 +63,7 @@ Before every release. Nothing here changes prod.
    ```
 
 2. **The last nightly guide evaluation passed** on staging
-   ([docs/evaluation.md](../../docs/evaluation.md)): `gh run list -R $R --workflow guide-eval.yml --limit 3`.
+   ([docs/backup/evaluation.md](../../docs/backup/evaluation.md)): `gh run list -R $R --workflow guide-eval.yml --limit 3`.
 3. **Prod is healthy now**, and you know the revision a rollback goes back to: the one marked `deployed`.
 
    ```bash
@@ -105,7 +105,7 @@ Before every release. Nothing here changes prod.
 7. **[CHANGELOG.md](../../CHANGELOG.md) has the entry of the version**, on the commit to release.
 8. **For the first release only: the load-test baseline is recorded**
    ([S10.11.1](https://github.com/silvioincalza/helper2.ai/issues/356)), run against staging, never prod, with the two
-   simulations of [docs/testing.md](../../docs/testing.md).
+   simulations of [docs/backup/testing.md](../../docs/backup/testing.md).
 
 ## 3. The release
 
