@@ -64,7 +64,7 @@ The stack must be well known, typed end to end, and cheap to operate: one commit
 
 ## Diagrams
 [flow](../diagrams/flow-0001-stack-and-runtime.svg) · [sequence](../diagrams/sequence-0001-stack-and-runtime.svg)
-The modules are in the [context view](../diagrams/architecture-context.svg); each module group has its own view in [architecture](../../backup/architecture.md).
+The modules are in the [context view](../diagrams/architecture-context.svg); each module group has its own view in [the diagrams](../diagrams/README.md).
 
 ## Backlog
 - Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20).

@@ -443,7 +443,7 @@ links, adds or renames an ABOUT target in the review list ([0038](ADR-0038-back-
   unproven fields and fewer review items, at most 400 extra model calls a day, inside the 500.
 - The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (500);
   unchanged text costs nothing and does not use up a slot of the run. At most 20 Extract credits a day (about 10
-  products), inside the global cap. See [cost-analysis](../../backup/cost-analysis.md).
+  products), inside the global cap. See [costs](../costs.md).
 - A new prompt does not re-enrich the catalog: the code re-check cleans the stored answers once; only resources that
   still miss facts and have something new to read go to the model again, accepted products first.
 - Any new wording of the enrichment prompt is a new version, a typo fix too. From then on a re-check sends every
