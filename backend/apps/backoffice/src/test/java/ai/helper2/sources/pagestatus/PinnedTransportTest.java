@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -125,6 +127,65 @@ class PinnedTransportTest {
         new PinnedTransport().send("GET", url("/big"), LOOPBACK, 1_024);
 
     assertThat(answer.body()).hasSize(1_024);
+  }
+
+  @Test
+  void aSiteThatSendsItsAnswerSlowlyIsDroppedAtTheDeadlineOfTheCall() throws IOException {
+    try (ServerSocket slow = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+      Thread.ofVirtual().start(() -> dribble(slow));
+      long started = System.nanoTime();
+
+      assertThatThrownBy(() ->
+              new PinnedTransport(Duration.ofMillis(500))
+                  .send(
+                      "HEAD",
+                      URI.create("http://site.test:" + slow.getLocalPort() + "/"),
+                      LOOPBACK,
+                      0))
+          .isInstanceOf(IOException.class);
+      assertThat(Duration.ofNanos(System.nanoTime() - started)).isLessThan(Duration.ofSeconds(4));
+    }
+  }
+
+  private static void dribble(ServerSocket server) {
+    try (Socket client = server.accept()) {
+      OutputStream out = client.getOutputStream();
+      out.write("HTTP/1.1 200 OK\r\n".getBytes(StandardCharsets.US_ASCII));
+      for (int i = 0; i < 100; i++) {
+        out.write('X');
+        out.flush();
+        Thread.sleep(100);
+      }
+    } catch (IOException | InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  @Test
+  void anAnswerWithAHeaderLineOverTheCapIsRefused() throws IOException {
+    try (ServerSocket huge = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+      Thread.ofVirtual()
+          .start(() -> {
+            try (Socket client = huge.accept()) {
+              OutputStream out = client.getOutputStream();
+              out.write(
+                  ("HTTP/1.1 302 Found\r\nLocation: /" + "a".repeat(64 * 1024) + "\r\n\r\n")
+                      .getBytes(StandardCharsets.US_ASCII));
+              out.flush();
+            } catch (IOException e) {
+              Thread.currentThread().interrupt();
+            }
+          });
+
+      assertThatThrownBy(() ->
+              new PinnedTransport()
+                  .send(
+                      "HEAD",
+                      URI.create("http://site.test:" + huge.getLocalPort() + "/"),
+                      LOOPBACK,
+                      0))
+          .isInstanceOf(IOException.class);
+    }
   }
 
   @Test
